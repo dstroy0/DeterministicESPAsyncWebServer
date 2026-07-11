@@ -68,7 +68,7 @@ void msgpack_map(MsgpackWriter *w, size_t count);                      ///< map 
 // ---------------------------------------------------------------------------
 
 /** @brief Type of the next object (returned by msgpack_peek). */
-enum MsgpackType
+enum class MsgpackType : uint8_t
 {
     MSGPACK_TYPE_UINT = 0,
     MSGPACK_TYPE_INT,

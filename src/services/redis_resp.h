@@ -36,7 +36,7 @@
 #include <stdint.h>
 
 /** @brief RESP2/RESP3 reply value types. */
-enum RespType
+enum class RespType : uint8_t
 {
     RESP_SIMPLE,  ///< simple string (+); value in str/str_len
     RESP_ERROR,   ///< error (-); message in str/str_len
@@ -59,11 +59,12 @@ enum RespType
 struct RespReply
 {
     RespType type;
-    int64_t ival;    ///< value for RESP_INTEGER; 0/1 for RESP_BOOL; child count for aggregates
-    double dval;     ///< value for RESP_DOUBLE (best-effort; str is authoritative)
+    int64_t ival;    ///< value for RespType::RESP_INTEGER; 0/1 for RespType::RESP_BOOL; child count for aggregates
+    double dval;     ///< value for RespType::RESP_DOUBLE (best-effort; str is authoritative)
     const char *str; ///< bytes for simple/error/bulk/big-number/bulk-error/verbatim/double text
     size_t str_len;  ///< length of @ref str
-    int64_t count;   ///< child count for RESP_ARRAY / RESP_SET / RESP_PUSH / RESP_MAP (map = 2*pairs)
+    int64_t count;   ///< child count for RespType::RESP_ARRAY / RespType::RESP_SET / RespType::RESP_PUSH /
+                     ///< RespType::RESP_MAP (map = 2*pairs)
 };
 
 /**

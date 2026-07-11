@@ -172,7 +172,7 @@ void test_decode_uint()
     cbor_uint(&w, 1000);
     CborReader r;
     cbor_reader_init(&r, buf, cbor_len(&w));
-    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_UINT, cbor_peek(&r));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_UINT, cbor_peek(&r));
     uint64_t v;
     TEST_ASSERT_TRUE(cbor_read_uint(&r, &v));
     TEST_ASSERT_EQUAL_UINT64(1000, v);
@@ -244,7 +244,7 @@ void test_decode_roundtrip_map()
     TEST_ASSERT_TRUE(cbor_read_bool(&r, &b));
     TEST_ASSERT_TRUE(b);
     TEST_ASSERT_TRUE(cbor_reader_ok(&r));
-    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_INVALID, cbor_peek(&r)); // everything consumed
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_INVALID, cbor_peek(&r)); // everything consumed
 }
 
 // A buffer shorter than the encoded item fails closed.
@@ -286,42 +286,42 @@ void test_peek_each_type()
     cbor_init(&w, b, sizeof(b));
     cbor_int(&w, -5);
     cbor_reader_init(&r, b, cbor_len(&w));
-    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_INT, cbor_peek(&r));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_INT, cbor_peek(&r));
     cbor_init(&w, b, sizeof(b));
     cbor_bytes(&w, d, 2);
     cbor_reader_init(&r, b, cbor_len(&w));
-    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_BYTES, cbor_peek(&r));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_BYTES, cbor_peek(&r));
     cbor_init(&w, b, sizeof(b));
     cbor_text(&w, "x");
     cbor_reader_init(&r, b, cbor_len(&w));
-    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_TEXT, cbor_peek(&r));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_TEXT, cbor_peek(&r));
     cbor_init(&w, b, sizeof(b));
     cbor_array(&w, 1);
     cbor_reader_init(&r, b, cbor_len(&w));
-    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_ARRAY, cbor_peek(&r));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_ARRAY, cbor_peek(&r));
     cbor_init(&w, b, sizeof(b));
     cbor_map(&w, 1);
     cbor_reader_init(&r, b, cbor_len(&w));
-    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_MAP, cbor_peek(&r));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_MAP, cbor_peek(&r));
     cbor_init(&w, b, sizeof(b));
     cbor_bool(&w, true);
     cbor_reader_init(&r, b, cbor_len(&w));
-    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_BOOL, cbor_peek(&r));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_BOOL, cbor_peek(&r));
     cbor_init(&w, b, sizeof(b));
     cbor_null(&w);
     cbor_reader_init(&r, b, cbor_len(&w));
-    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_NULL, cbor_peek(&r));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_NULL, cbor_peek(&r));
     cbor_init(&w, b, sizeof(b));
     cbor_float(&w, 1.5f);
     cbor_reader_init(&r, b, cbor_len(&w));
-    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_FLOAT, cbor_peek(&r));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_FLOAT, cbor_peek(&r));
 
     const uint8_t tag[] = {0xc0}; // major 6 (tag) is unsupported
     cbor_reader_init(&r, tag, 1);
-    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_INVALID, cbor_peek(&r));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_INVALID, cbor_peek(&r));
     const uint8_t simple[] = {0xe0}; // major 7, unassigned simple value
     cbor_reader_init(&r, simple, 1);
-    TEST_ASSERT_EQUAL_INT(CBOR_TYPE_INVALID, cbor_peek(&r));
+    TEST_ASSERT_EQUAL_INT(CborType::CBOR_TYPE_INVALID, cbor_peek(&r));
 }
 
 // A uint above 0xFFFFFFFF uses the 8-byte (0x1b) head and round-trips.

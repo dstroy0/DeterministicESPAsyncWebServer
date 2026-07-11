@@ -183,34 +183,34 @@ static bool read_head(CborReader *r, uint8_t *major, uint64_t *val)
 CborType cbor_peek(CborReader *r)
 {
     if (r->err || r->pos >= r->len)
-        return CBOR_TYPE_INVALID;
+        return CborType::CBOR_TYPE_INVALID;
     uint8_t b = r->buf[r->pos];
     switch (b >> 5)
     {
     case 0:
-        return CBOR_TYPE_UINT;
+        return CborType::CBOR_TYPE_UINT;
     case 1:
-        return CBOR_TYPE_INT;
+        return CborType::CBOR_TYPE_INT;
     case 2:
-        return CBOR_TYPE_BYTES;
+        return CborType::CBOR_TYPE_BYTES;
     case 3:
-        return CBOR_TYPE_TEXT;
+        return CborType::CBOR_TYPE_TEXT;
     case 4:
-        return CBOR_TYPE_ARRAY;
+        return CborType::CBOR_TYPE_ARRAY;
     case 5:
-        return CBOR_TYPE_MAP;
+        return CborType::CBOR_TYPE_MAP;
     case 7: {
         uint8_t info = (uint8_t)(b & 0x1f);
         if (info == 20 || info == 21)
-            return CBOR_TYPE_BOOL;
+            return CborType::CBOR_TYPE_BOOL;
         if (info == 22)
-            return CBOR_TYPE_NULL;
+            return CborType::CBOR_TYPE_NULL;
         if (info == 26 || info == 27)
-            return CBOR_TYPE_FLOAT;
-        return CBOR_TYPE_INVALID;
+            return CborType::CBOR_TYPE_FLOAT;
+        return CborType::CBOR_TYPE_INVALID;
     }
     default:
-        return CBOR_TYPE_INVALID; // major 6 (tags) unsupported
+        return CborType::CBOR_TYPE_INVALID; // major 6 (tags) unsupported
     }
 }
 

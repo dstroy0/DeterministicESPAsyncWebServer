@@ -221,56 +221,56 @@ static bool take_be(MsgpackReader *r, size_t nbytes, uint64_t *out)
 MsgpackType msgpack_peek(MsgpackReader *r)
 {
     if (r->err || r->pos >= r->len)
-        return MSGPACK_TYPE_INVALID;
+        return MsgpackType::MSGPACK_TYPE_INVALID;
     uint8_t b = r->buf[r->pos];
     if (b <= 0x7f)
-        return MSGPACK_TYPE_UINT; // positive fixint
+        return MsgpackType::MSGPACK_TYPE_UINT; // positive fixint
     if (b >= 0xe0)
-        return MSGPACK_TYPE_INT; // negative fixint
+        return MsgpackType::MSGPACK_TYPE_INT; // negative fixint
     // b is now in [0x80, 0xdf]; each fix* range's lower bound is already
     // established by the preceding checks, so test only the ascending upper bound.
     if (b <= 0x8f)
-        return MSGPACK_TYPE_MAP; // fixmap   (0x80-0x8f)
+        return MsgpackType::MSGPACK_TYPE_MAP; // fixmap   (0x80-0x8f)
     if (b <= 0x9f)
-        return MSGPACK_TYPE_ARRAY; // fixarray (0x90-0x9f)
+        return MsgpackType::MSGPACK_TYPE_ARRAY; // fixarray (0x90-0x9f)
     if (b <= 0xbf)
-        return MSGPACK_TYPE_STR; // fixstr   (0xa0-0xbf)
+        return MsgpackType::MSGPACK_TYPE_STR; // fixstr   (0xa0-0xbf)
     switch (b)
     {
     case 0xc0:
-        return MSGPACK_TYPE_NIL;
+        return MsgpackType::MSGPACK_TYPE_NIL;
     case 0xc2:
     case 0xc3:
-        return MSGPACK_TYPE_BOOL;
+        return MsgpackType::MSGPACK_TYPE_BOOL;
     case 0xc4:
     case 0xc5:
     case 0xc6:
-        return MSGPACK_TYPE_BIN;
+        return MsgpackType::MSGPACK_TYPE_BIN;
     case 0xca:
     case 0xcb:
-        return MSGPACK_TYPE_FLOAT;
+        return MsgpackType::MSGPACK_TYPE_FLOAT;
     case 0xcc:
     case 0xcd:
     case 0xce:
     case 0xcf:
-        return MSGPACK_TYPE_UINT;
+        return MsgpackType::MSGPACK_TYPE_UINT;
     case 0xd0:
     case 0xd1:
     case 0xd2:
     case 0xd3:
-        return MSGPACK_TYPE_INT;
+        return MsgpackType::MSGPACK_TYPE_INT;
     case 0xd9:
     case 0xda:
     case 0xdb:
-        return MSGPACK_TYPE_STR;
+        return MsgpackType::MSGPACK_TYPE_STR;
     case 0xdc:
     case 0xdd:
-        return MSGPACK_TYPE_ARRAY;
+        return MsgpackType::MSGPACK_TYPE_ARRAY;
     case 0xde:
     case 0xdf:
-        return MSGPACK_TYPE_MAP;
+        return MsgpackType::MSGPACK_TYPE_MAP;
     default:
-        return MSGPACK_TYPE_INVALID; // 0xc1, ext (0xc7-0xc9, 0xd4-0xd8)
+        return MsgpackType::MSGPACK_TYPE_INVALID; // 0xc1, ext (0xc7-0xc9, 0xd4-0xd8)
     }
 }
 

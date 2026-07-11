@@ -55,12 +55,12 @@ void test_parse_simple_and_error()
     RespReply r;
     size_t c;
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"+OK\r\n", 5, &r, &c));
-    TEST_ASSERT_EQUAL(RESP_SIMPLE, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_SIMPLE, r.type);
     TEST_ASSERT_EQUAL_MEMORY("OK", r.str, 2);
     TEST_ASSERT_EQUAL_size_t(5, c);
 
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"-ERR no\r\n", 9, &r, &c));
-    TEST_ASSERT_EQUAL(RESP_ERROR, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_ERROR, r.type);
     TEST_ASSERT_EQUAL_MEMORY("ERR no", r.str, 6);
 }
 
@@ -69,7 +69,7 @@ void test_parse_integer()
     RespReply r;
     size_t c;
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)":1000\r\n", 7, &r, &c));
-    TEST_ASSERT_EQUAL(RESP_INTEGER, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_INTEGER, r.type);
     TEST_ASSERT_EQUAL_INT64(1000, r.ival);
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)":-5\r\n", 5, &r, &c));
     TEST_ASSERT_EQUAL_INT64(-5, r.ival);
@@ -80,13 +80,13 @@ void test_parse_bulk_and_nil()
     RespReply r;
     size_t c;
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"$5\r\nhello\r\n", 11, &r, &c));
-    TEST_ASSERT_EQUAL(RESP_BULK, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_BULK, r.type);
     TEST_ASSERT_EQUAL_size_t(5, r.str_len);
     TEST_ASSERT_EQUAL_MEMORY("hello", r.str, 5);
     TEST_ASSERT_EQUAL_size_t(11, c);
 
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"$-1\r\n", 5, &r, &c)); // nil bulk
-    TEST_ASSERT_EQUAL(RESP_NIL, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_NIL, r.type);
 }
 
 // An array is parsed as a header (count); the caller then parses each element
@@ -98,15 +98,15 @@ void test_parse_array_cursor()
     RespReply r;
     size_t c;
     TEST_ASSERT_TRUE(resp_parse(msg, len, &r, &c));
-    TEST_ASSERT_EQUAL(RESP_ARRAY, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_ARRAY, r.type);
     TEST_ASSERT_EQUAL_INT64(2, r.count);
     size_t off = c;
     TEST_ASSERT_TRUE(resp_parse(msg + off, len - off, &r, &c)); // element 0
-    TEST_ASSERT_EQUAL(RESP_BULK, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_BULK, r.type);
     TEST_ASSERT_EQUAL_MEMORY("foo", r.str, 3);
     off += c;
     TEST_ASSERT_TRUE(resp_parse(msg + off, len - off, &r, &c)); // element 1
-    TEST_ASSERT_EQUAL(RESP_INTEGER, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_INTEGER, r.type);
     TEST_ASSERT_EQUAL_INT64(42, r.ival);
 }
 
@@ -150,7 +150,7 @@ void test_parse_guard_subconditions_and_edges()
     TEST_ASSERT_FALSE(resp_parse((const uint8_t *)":-\r\n", 4, &r, &c));         // '-' then no digit
     TEST_ASSERT_FALSE(resp_parse((const uint8_t *)"$5\r\nhelloAB", 11, &r, &c)); // bulk with wrong terminator
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"*-1\r\n", 5, &r, &c));         // nil array
-    TEST_ASSERT_EQUAL_INT(RESP_NIL, r.type);
+    TEST_ASSERT_EQUAL_INT(RespType::RESP_NIL, r.type);
 }
 
 // RESP3: null (_), boolean (#t/#f).
@@ -159,11 +159,11 @@ void test_parse_resp3_null_bool()
     RespReply r;
     size_t c;
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"_\r\n", 3, &r, &c));
-    TEST_ASSERT_EQUAL(RESP_NIL, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_NIL, r.type);
     TEST_ASSERT_EQUAL_size_t(3, c);
 
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"#t\r\n", 4, &r, &c));
-    TEST_ASSERT_EQUAL(RESP_BOOL, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_BOOL, r.type);
     TEST_ASSERT_EQUAL_INT64(1, r.ival);
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"#f\r\n", 4, &r, &c));
     TEST_ASSERT_EQUAL_INT64(0, r.ival);
@@ -176,7 +176,7 @@ void test_parse_resp3_double()
     RespReply r;
     size_t c;
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)",3.14\r\n", 7, &r, &c));
-    TEST_ASSERT_EQUAL(RESP_DOUBLE, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_DOUBLE, r.type);
     TEST_ASSERT_EQUAL_MEMORY("3.14", r.str, 4);
     TEST_ASSERT_TRUE(fabs(r.dval - 3.14) < 1e-9);
 
@@ -198,19 +198,19 @@ void test_parse_resp3_bignum_bulkerr_verbatim()
     const char *big = "(3492890328409238509324850943850943825024385\r\n";
     const char *digits = "3492890328409238509324850943850943825024385";
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)big, strlen(big), &r, &c));
-    TEST_ASSERT_EQUAL(RESP_BIG_NUMBER, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_BIG_NUMBER, r.type);
     TEST_ASSERT_EQUAL_size_t(strlen(digits), r.str_len);
     TEST_ASSERT_EQUAL_MEMORY(digits, r.str, r.str_len);
 
     const char *be = "!21\r\nSYNTAX invalid syntax\r\n";
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)be, strlen(be), &r, &c));
-    TEST_ASSERT_EQUAL(RESP_BULK_ERROR, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_BULK_ERROR, r.type);
     TEST_ASSERT_EQUAL_MEMORY("SYNTAX invalid syntax", r.str, 21);
     TEST_ASSERT_EQUAL_size_t(strlen(be), c);
 
     const char *vb = "=15\r\ntxt:Some string\r\n";
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)vb, strlen(vb), &r, &c));
-    TEST_ASSERT_EQUAL(RESP_VERBATIM, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_VERBATIM, r.type);
     TEST_ASSERT_EQUAL_MEMORY("txt:Some string", r.str, 15); // format prefix kept
 }
 
@@ -222,7 +222,7 @@ void test_parse_resp3_map_set_push()
     RespReply r;
     size_t c;
     TEST_ASSERT_TRUE(resp_parse(m, len, &r, &c));
-    TEST_ASSERT_EQUAL(RESP_MAP, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_MAP, r.type);
     TEST_ASSERT_EQUAL_INT64(4, r.count); // 2 pairs -> 4 children
     size_t off = c;
     int64_t seen_vals = 0;
@@ -237,10 +237,10 @@ void test_parse_resp3_map_set_push()
     TEST_ASSERT_EQUAL_INT64(3, seen_vals);
 
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)"~2\r\n", 4, &r, &c));
-    TEST_ASSERT_EQUAL(RESP_SET, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_SET, r.type);
     TEST_ASSERT_EQUAL_INT64(2, r.count);
     TEST_ASSERT_TRUE(resp_parse((const uint8_t *)">3\r\n", 4, &r, &c));
-    TEST_ASSERT_EQUAL(RESP_PUSH, r.type);
+    TEST_ASSERT_EQUAL(RespType::RESP_PUSH, r.type);
     TEST_ASSERT_EQUAL_INT64(3, r.count);
 }
 

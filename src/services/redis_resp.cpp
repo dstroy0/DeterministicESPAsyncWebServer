@@ -217,7 +217,7 @@ bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed
     {
     case '+':
     case '-':
-        out->type = (buf[0] == '+') ? RESP_SIMPLE : RESP_ERROR;
+        out->type = (buf[0] == '+') ? RespType::RESP_SIMPLE : RespType::RESP_ERROR;
         out->str = (const char *)(buf + header_from);
         out->str_len = header_to - header_from;
         *consumed = after_header;
@@ -227,7 +227,7 @@ bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed
         int64_t v;
         if (!parse_int(buf, header_from, header_to, &v))
             return false;
-        out->type = RESP_INTEGER;
+        out->type = RespType::RESP_INTEGER;
         out->ival = v;
         *consumed = after_header;
         return true;
@@ -242,7 +242,7 @@ bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed
             return false;
         if (buf[0] == '$' && blen < 0) // $-1 = nil
         {
-            out->type = RESP_NIL;
+            out->type = RespType::RESP_NIL;
             *consumed = after_header;
             return true;
         }
@@ -255,7 +255,9 @@ bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed
         size_t need = after_header + (size_t)blen + 2; // body + trailing CRLF
         if (buf[after_header + (size_t)blen] != '\r' || buf[after_header + (size_t)blen + 1] != '\n')
             return false; // malformed terminator
-        out->type = (buf[0] == '$') ? RESP_BULK : (buf[0] == '!') ? RESP_BULK_ERROR : RESP_VERBATIM;
+        out->type = (buf[0] == '$')   ? RespType::RESP_BULK
+                    : (buf[0] == '!') ? RespType::RESP_BULK_ERROR
+                                      : RespType::RESP_VERBATIM;
         out->str = (const char *)(buf + after_header);
         out->str_len = (size_t)blen;
         *consumed = need;
@@ -271,13 +273,13 @@ bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed
             return false;
         if (buf[0] == '*' && n < 0) // *-1 = nil array
         {
-            out->type = RESP_NIL;
+            out->type = RespType::RESP_NIL;
             *consumed = after_header;
             return true;
         }
         if (n < 0)
             return false;
-        out->type = (buf[0] == '*') ? RESP_ARRAY : (buf[0] == '~') ? RESP_SET : RESP_PUSH;
+        out->type = (buf[0] == '*') ? RespType::RESP_ARRAY : (buf[0] == '~') ? RespType::RESP_SET : RespType::RESP_PUSH;
         out->ival = n;
         out->count = n;
         *consumed = after_header; // header only; the caller parses each element next
@@ -288,7 +290,7 @@ bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed
         int64_t n;
         if (!parse_int(buf, header_from, header_to, &n) || n < 0)
             return false;
-        out->type = RESP_MAP;
+        out->type = RespType::RESP_MAP;
         out->ival = n * 2;
         out->count = n * 2;
         *consumed = after_header;
@@ -296,21 +298,21 @@ bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed
     }
 
     case '_': // RESP3 null
-        out->type = RESP_NIL;
+        out->type = RespType::RESP_NIL;
         *consumed = after_header;
         return true;
 
     case '#': { // boolean
         if (header_to - header_from != 1 || (buf[header_from] != 't' && buf[header_from] != 'f'))
             return false;
-        out->type = RESP_BOOL;
+        out->type = RespType::RESP_BOOL;
         out->ival = (buf[header_from] == 't') ? 1 : 0;
         *consumed = after_header;
         return true;
     }
 
     case ',': // double (text authoritative; dval best-effort)
-        out->type = RESP_DOUBLE;
+        out->type = RespType::RESP_DOUBLE;
         out->str = (const char *)(buf + header_from);
         out->str_len = header_to - header_from;
         parse_double(buf, header_from, header_to, &out->dval);
@@ -318,7 +320,7 @@ bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed
         return true;
 
     case '(': // big number (digits kept as text)
-        out->type = RESP_BIG_NUMBER;
+        out->type = RespType::RESP_BIG_NUMBER;
         out->str = (const char *)(buf + header_from);
         out->str_len = header_to - header_from;
         *consumed = after_header;

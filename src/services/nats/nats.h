@@ -60,7 +60,7 @@ size_t nats_build_ping(char *buf, size_t cap);
 size_t nats_build_pong(char *buf, size_t cap);
 
 /** @brief Inbound message kind. */
-enum NatsMsgType
+enum class NatsMsgType : uint8_t
 {
     NATS_MSG,  ///< a delivered message (subject/sid/reply/payload set)
     NATS_INFO, ///< server INFO (arg = the JSON)

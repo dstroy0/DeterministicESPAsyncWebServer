@@ -172,7 +172,7 @@ void test_decode_uint()
     MsgpackReader r;
     msgpack_reader_init(&r, in, sizeof(in));
     uint64_t v;
-    TEST_ASSERT_EQUAL(MSGPACK_TYPE_UINT, msgpack_peek(&r));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_UINT, msgpack_peek(&r));
     TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
     TEST_ASSERT_EQUAL_UINT64(0, v);
     TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
@@ -186,7 +186,7 @@ void test_decode_uint()
     TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
     TEST_ASSERT_EQUAL_UINT64(0x100000000ULL, v);
     TEST_ASSERT_TRUE(msgpack_reader_ok(&r));
-    TEST_ASSERT_EQUAL(MSGPACK_TYPE_INVALID, msgpack_peek(&r)); // exhausted
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_INVALID, msgpack_peek(&r)); // exhausted
 }
 
 void test_decode_int()
@@ -196,7 +196,7 @@ void test_decode_int()
     MsgpackReader r;
     msgpack_reader_init(&r, in, sizeof(in));
     int64_t v;
-    TEST_ASSERT_EQUAL(MSGPACK_TYPE_INT, msgpack_peek(&r));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_INT, msgpack_peek(&r));
     TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
     TEST_ASSERT_EQUAL_INT64(-1, v);
     TEST_ASSERT_TRUE(msgpack_read_int(&r, &v));
@@ -222,12 +222,12 @@ void test_decode_str_and_bytes()
     msgpack_reader_init(&r, in, sizeof(in));
     const char *s;
     size_t n;
-    TEST_ASSERT_EQUAL(MSGPACK_TYPE_STR, msgpack_peek(&r));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_STR, msgpack_peek(&r));
     TEST_ASSERT_TRUE(msgpack_read_str(&r, &s, &n));
     TEST_ASSERT_EQUAL_size_t(3, n);
     TEST_ASSERT_EQUAL_CHAR_ARRAY("abc", s, 3);
     const uint8_t *bin;
-    TEST_ASSERT_EQUAL(MSGPACK_TYPE_BIN, msgpack_peek(&r));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_BIN, msgpack_peek(&r));
     TEST_ASSERT_TRUE(msgpack_read_bytes(&r, &bin, &n));
     TEST_ASSERT_EQUAL_size_t(2, n);
     TEST_ASSERT_EQUAL_UINT8(0xde, bin[0]);
@@ -241,14 +241,14 @@ void test_decode_simple_and_float()
     msgpack_reader_init(&r, in, sizeof(in));
     bool bv;
     float fv;
-    TEST_ASSERT_EQUAL(MSGPACK_TYPE_NIL, msgpack_peek(&r));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_NIL, msgpack_peek(&r));
     TEST_ASSERT_TRUE(msgpack_read_nil(&r));
-    TEST_ASSERT_EQUAL(MSGPACK_TYPE_BOOL, msgpack_peek(&r));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_BOOL, msgpack_peek(&r));
     TEST_ASSERT_TRUE(msgpack_read_bool(&r, &bv));
     TEST_ASSERT_FALSE(bv);
     TEST_ASSERT_TRUE(msgpack_read_bool(&r, &bv));
     TEST_ASSERT_TRUE(bv);
-    TEST_ASSERT_EQUAL(MSGPACK_TYPE_FLOAT, msgpack_peek(&r));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_FLOAT, msgpack_peek(&r));
     TEST_ASSERT_TRUE(msgpack_read_float(&r, &fv));
     TEST_ASSERT_EQUAL_FLOAT(1.0f, fv);
     // float64 (0xcb) narrows to float
@@ -264,7 +264,7 @@ void test_decode_array_and_map()
     MsgpackReader r;
     msgpack_reader_init(&r, in, sizeof(in));
     size_t count;
-    TEST_ASSERT_EQUAL(MSGPACK_TYPE_ARRAY, msgpack_peek(&r));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_ARRAY, msgpack_peek(&r));
     TEST_ASSERT_TRUE(msgpack_read_array(&r, &count));
     TEST_ASSERT_EQUAL_size_t(3, count);
     uint64_t v;
@@ -273,7 +273,7 @@ void test_decode_array_and_map()
         TEST_ASSERT_TRUE(msgpack_read_uint(&r, &v));
         TEST_ASSERT_EQUAL_UINT64(i + 1, v);
     }
-    TEST_ASSERT_EQUAL(MSGPACK_TYPE_MAP, msgpack_peek(&r));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_MAP, msgpack_peek(&r));
     TEST_ASSERT_TRUE(msgpack_read_map(&r, &count));
     TEST_ASSERT_EQUAL_size_t(1, count);
     const char *s;
@@ -348,11 +348,11 @@ void test_decode_fails_closed()
     // unsupported byte (0xc1) peeks INVALID and any read fails
     uint8_t t4[] = {0xc1};
     msgpack_reader_init(&r, t4, sizeof(t4));
-    TEST_ASSERT_EQUAL(MSGPACK_TYPE_INVALID, msgpack_peek(&r));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_INVALID, msgpack_peek(&r));
     TEST_ASSERT_FALSE(msgpack_read_int(&r, (int64_t *)&v));
     // empty buffer
     msgpack_reader_init(&r, t4, 0);
-    TEST_ASSERT_EQUAL(MSGPACK_TYPE_INVALID, msgpack_peek(&r));
+    TEST_ASSERT_EQUAL(MsgpackType::MSGPACK_TYPE_INVALID, msgpack_peek(&r));
     TEST_ASSERT_FALSE(msgpack_read_nil(&r));
 }
 
@@ -535,21 +535,21 @@ static void peek_is(uint8_t byte, MsgpackType want)
 // peek reports the right type for every wide (multi-byte) format marker.
 void test_peek_wide_types()
 {
-    peek_is(0xcc, MSGPACK_TYPE_UINT);
-    peek_is(0xcd, MSGPACK_TYPE_UINT);
-    peek_is(0xce, MSGPACK_TYPE_UINT);
-    peek_is(0xcf, MSGPACK_TYPE_UINT);
-    peek_is(0xd0, MSGPACK_TYPE_INT);
-    peek_is(0xd1, MSGPACK_TYPE_INT);
-    peek_is(0xd2, MSGPACK_TYPE_INT);
-    peek_is(0xd3, MSGPACK_TYPE_INT);
-    peek_is(0xd9, MSGPACK_TYPE_STR);
-    peek_is(0xda, MSGPACK_TYPE_STR);
-    peek_is(0xdb, MSGPACK_TYPE_STR);
-    peek_is(0xdc, MSGPACK_TYPE_ARRAY);
-    peek_is(0xdd, MSGPACK_TYPE_ARRAY);
-    peek_is(0xde, MSGPACK_TYPE_MAP);
-    peek_is(0xdf, MSGPACK_TYPE_MAP);
+    peek_is(0xcc, MsgpackType::MSGPACK_TYPE_UINT);
+    peek_is(0xcd, MsgpackType::MSGPACK_TYPE_UINT);
+    peek_is(0xce, MsgpackType::MSGPACK_TYPE_UINT);
+    peek_is(0xcf, MsgpackType::MSGPACK_TYPE_UINT);
+    peek_is(0xd0, MsgpackType::MSGPACK_TYPE_INT);
+    peek_is(0xd1, MsgpackType::MSGPACK_TYPE_INT);
+    peek_is(0xd2, MsgpackType::MSGPACK_TYPE_INT);
+    peek_is(0xd3, MsgpackType::MSGPACK_TYPE_INT);
+    peek_is(0xd9, MsgpackType::MSGPACK_TYPE_STR);
+    peek_is(0xda, MsgpackType::MSGPACK_TYPE_STR);
+    peek_is(0xdb, MsgpackType::MSGPACK_TYPE_STR);
+    peek_is(0xdc, MsgpackType::MSGPACK_TYPE_ARRAY);
+    peek_is(0xdd, MsgpackType::MSGPACK_TYPE_ARRAY);
+    peek_is(0xde, MsgpackType::MSGPACK_TYPE_MAP);
+    peek_is(0xdf, MsgpackType::MSGPACK_TYPE_MAP);
 }
 
 // read_int accepts a positive fixint and every unsigned/signed width.

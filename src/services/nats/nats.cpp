@@ -227,25 +227,25 @@ bool nats_parse(const char *buf, size_t len, NatsMsg *out, size_t *consumed)
 
     if (verb_is(buf, line_len, "PING"))
     {
-        out->type = NATS_PING;
+        out->type = NatsMsgType::NATS_PING;
         *consumed = after_line;
         return true;
     }
     if (verb_is(buf, line_len, "PONG"))
     {
-        out->type = NATS_PONG;
+        out->type = NatsMsgType::NATS_PONG;
         *consumed = after_line;
         return true;
     }
     if (verb_is(buf, line_len, "+OK"))
     {
-        out->type = NATS_OK;
+        out->type = NatsMsgType::NATS_OK;
         *consumed = after_line;
         return true;
     }
     if (verb_is(buf, line_len, "-ERR") || verb_is(buf, line_len, "INFO"))
     {
-        out->type = (buf[0] == '-') ? NATS_ERR : NATS_INFO;
+        out->type = (buf[0] == '-') ? NatsMsgType::NATS_ERR : NatsMsgType::NATS_INFO;
         size_t a = 4; // skip the verb: both "-ERR" and "INFO" are 4 chars
         while (a < line_len && (buf[a] == ' ' || buf[a] == '\t'))
             a++;
@@ -284,7 +284,7 @@ bool nats_parse(const char *buf, size_t len, NatsMsg *out, size_t *consumed)
         if (after_line + 2 > len || size > len - after_line - 2)
             return false; // payload + trailing CRLF not fully buffered
         size_t total = after_line + size + 2;
-        out->type = NATS_MSG;
+        out->type = NatsMsgType::NATS_MSG;
         out->subject = tok[0];
         out->subject_len = tlen[0];
         out->sid = tok[1];
@@ -300,7 +300,7 @@ bool nats_parse(const char *buf, size_t len, NatsMsg *out, size_t *consumed)
         return true;
     }
 
-    out->type = NATS_UNKNOWN;
+    out->type = NatsMsgType::NATS_UNKNOWN;
     *consumed = after_line;
     return true;
 }

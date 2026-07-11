@@ -67,7 +67,7 @@ void test_parse_msg()
     NatsMsg m;
     size_t c;
     TEST_ASSERT_TRUE(nats_parse(raw, len, &m, &c));
-    TEST_ASSERT_EQUAL(NATS_MSG, m.type);
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_MSG, m.type);
     TEST_ASSERT_EQUAL_MEMORY("foo", m.subject, m.subject_len);
     TEST_ASSERT_EQUAL_MEMORY("1", m.sid, m.sid_len);
     TEST_ASSERT_EQUAL_size_t(0, m.reply_len);
@@ -85,7 +85,7 @@ void test_parse_msg_with_reply()
     NatsMsg m;
     size_t c;
     TEST_ASSERT_TRUE(nats_parse(raw, strlen(raw), &m, &c));
-    TEST_ASSERT_EQUAL(NATS_MSG, m.type);
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_MSG, m.type);
     TEST_ASSERT_EQUAL_MEMORY("_INBOX.7", m.reply, m.reply_len);
     TEST_ASSERT_EQUAL_MEMORY("hello", m.payload, 5);
 }
@@ -95,16 +95,16 @@ void test_parse_control_lines()
     NatsMsg m;
     size_t c;
     TEST_ASSERT_TRUE(nats_parse("PING\r\n", 6, &m, &c));
-    TEST_ASSERT_EQUAL(NATS_PING, m.type);
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_PING, m.type);
     TEST_ASSERT_TRUE(nats_parse("PONG\r\n", 6, &m, &c));
-    TEST_ASSERT_EQUAL(NATS_PONG, m.type);
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_PONG, m.type);
     TEST_ASSERT_TRUE(nats_parse("+OK\r\n", 5, &m, &c));
-    TEST_ASSERT_EQUAL(NATS_OK, m.type);
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_OK, m.type);
     TEST_ASSERT_TRUE(nats_parse("-ERR 'Unknown Protocol Operation'\r\n", 35, &m, &c));
-    TEST_ASSERT_EQUAL(NATS_ERR, m.type);
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_ERR, m.type);
     TEST_ASSERT_EQUAL_MEMORY("'Unknown Protocol Operation'", m.arg, m.arg_len);
     TEST_ASSERT_TRUE(nats_parse("INFO {\"server_id\":\"x\"}\r\n", 24, &m, &c));
-    TEST_ASSERT_EQUAL(NATS_INFO, m.type);
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_INFO, m.type);
     TEST_ASSERT_EQUAL_MEMORY("{\"server_id\":\"x\"}", m.arg, m.arg_len);
 }
 
@@ -172,12 +172,12 @@ void test_parse_edges()
     // MSG line with trailing whitespace before the CRLF still parses.
     const char *raw = "MSG a b 3 \r\nXXX\r\n";
     TEST_ASSERT_TRUE(nats_parse(raw, strlen(raw), &m, &c));
-    TEST_ASSERT_EQUAL(NATS_MSG, m.type);
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_MSG, m.type);
     TEST_ASSERT_EQUAL_size_t(3, m.payload_len);
 
     // An unrecognized verb parses as UNKNOWN (consumes the line).
     TEST_ASSERT_TRUE(nats_parse("ZZZ whatever\r\n", 14, &m, &c));
-    TEST_ASSERT_EQUAL(NATS_UNKNOWN, m.type);
+    TEST_ASSERT_EQUAL(NatsMsgType::NATS_UNKNOWN, m.type);
 }
 
 int main()

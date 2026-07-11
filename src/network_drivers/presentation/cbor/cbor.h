@@ -61,7 +61,7 @@ void cbor_map(CborWriter *w, size_t count);                      ///< definite-l
 // ---------------------------------------------------------------------------
 
 /** @brief Major type of the next item (returned by cbor_peek). */
-enum CborType
+enum class CborType : uint8_t
 {
     CBOR_TYPE_UINT = 0,
     CBOR_TYPE_INT,
