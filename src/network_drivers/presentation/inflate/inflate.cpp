@@ -140,40 +140,40 @@ int construct(Huffman *h, const short *lengths, int n)
 }
 
 // Decode literal/length + distance codes into the output. Returns 0 on the
-// end-of-block symbol, INFLATE_ERR_MALFORMED, or INFLATE_ERR_OVERFLOW.
-int codes(State *s, const Huffman *lencode, const Huffman *distcode)
+// end-of-block symbol, InflateResult::INFLATE_ERR_MALFORMED, or InflateResult::INFLATE_ERR_OVERFLOW.
+InflateResult codes(State *s, const Huffman *lencode, const Huffman *distcode)
 {
     int symbol;
     do
     {
         symbol = decode(s, lencode);
         if (symbol < 0)
-            return INFLATE_ERR_MALFORMED;
+            return InflateResult::INFLATE_ERR_MALFORMED;
         if (symbol < 256)
         {
             if (s->outcnt >= s->outcap)
-                return INFLATE_ERR_OVERFLOW;
+                return InflateResult::INFLATE_ERR_OVERFLOW;
             s->out[s->outcnt++] = (uint8_t)symbol;
         }
         else if (symbol > 256)
         {
             symbol -= 257;
             if (symbol >= 29)
-                return INFLATE_ERR_MALFORMED; // invalid length code (286/287)
+                return InflateResult::INFLATE_ERR_MALFORMED; // invalid length code (286/287)
             int len = LEN_BASE[symbol] + bits(s, LEN_EXTRA[symbol]);
             if (s->err)
-                return INFLATE_ERR_MALFORMED;
+                return InflateResult::INFLATE_ERR_MALFORMED;
 
             symbol = decode(s, distcode);
             if (symbol < 0 || symbol >= 30)
-                return INFLATE_ERR_MALFORMED;
+                return InflateResult::INFLATE_ERR_MALFORMED;
             size_t dist = (size_t)(DIST_BASE[symbol] + bits(s, DIST_EXTRA[symbol]));
             if (s->err)
-                return INFLATE_ERR_MALFORMED;
+                return InflateResult::INFLATE_ERR_MALFORMED;
             if (dist > s->outcnt)
-                return INFLATE_ERR_MALFORMED; // reference before start of output
+                return InflateResult::INFLATE_ERR_MALFORMED; // reference before start of output
             if (len > (int)(s->outcap - s->outcnt))
-                return INFLATE_ERR_OVERFLOW;
+                return InflateResult::INFLATE_ERR_OVERFLOW;
             for (int k = 0; k < len; k++)
             {
                 s->out[s->outcnt] = s->out[s->outcnt - dist];
@@ -181,33 +181,33 @@ int codes(State *s, const Huffman *lencode, const Huffman *distcode)
             }
         }
     } while (symbol != 256); // 256 = end of block
-    return 0;
+    return InflateResult::INFLATE_OK;
 }
 
 // Uncompressed (stored) block: byte-align, read LEN/NLEN, copy LEN bytes.
-int stored(State *s)
+InflateResult stored(State *s)
 {
     s->bitbuf = 0;
     s->bitcnt = 0; // discard bits to the next byte boundary
     if (s->incnt + 4 > s->inlen)
-        return INFLATE_ERR_MALFORMED;
+        return InflateResult::INFLATE_ERR_MALFORMED;
     int len = s->in[s->incnt] | (s->in[s->incnt + 1] << 8);
     int nlen = s->in[s->incnt + 2] | (s->in[s->incnt + 3] << 8);
     s->incnt += 4;
     if ((len ^ nlen) != 0xFFFF)
-        return INFLATE_ERR_MALFORMED; // NLEN must be ones-complement of LEN
+        return InflateResult::INFLATE_ERR_MALFORMED; // NLEN must be ones-complement of LEN
     if (s->incnt + (size_t)len > s->inlen)
-        return INFLATE_ERR_MALFORMED;
+        return InflateResult::INFLATE_ERR_MALFORMED;
     if ((size_t)len > s->outcap - s->outcnt)
-        return INFLATE_ERR_OVERFLOW;
+        return InflateResult::INFLATE_ERR_OVERFLOW;
     memcpy(s->out + s->outcnt, s->in + s->incnt, (size_t)len);
     s->incnt += (size_t)len;
     s->outcnt += (size_t)len;
-    return 0;
+    return InflateResult::INFLATE_OK;
 }
 
 // Fixed-Huffman block (RFC 1951 sec 3.2.6).
-int fixed(State *s, Huffman *lencode, Huffman *distcode, short *lengths)
+InflateResult fixed(State *s, Huffman *lencode, Huffman *distcode, short *lengths)
 {
     int sym = 0;
     for (; sym < 144; sym++)
@@ -226,7 +226,7 @@ int fixed(State *s, Huffman *lencode, Huffman *distcode, short *lengths)
 }
 
 // Dynamic-Huffman block (RFC 1951 sec 3.2.7).
-int dynamic(State *s, Huffman *lencode, Huffman *distcode, short *lengths)
+InflateResult dynamic(State *s, Huffman *lencode, Huffman *distcode, short *lengths)
 {
     static const short ORDER[19] = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15};
 
@@ -234,25 +234,25 @@ int dynamic(State *s, Huffman *lencode, Huffman *distcode, short *lengths)
     int ndist = bits(s, 5) + 1;
     int ncode = bits(s, 4) + 4;
     if (s->err)
-        return INFLATE_ERR_MALFORMED;
+        return InflateResult::INFLATE_ERR_MALFORMED;
     // GCOVR_EXCL_LINE HLIT/HDIST are 5-bit, so nlen<=288==MAXLCODES and ndist<=32==MAXDCODES; the bound can never
     // exceed
     if (nlen > MAXLCODES || ndist > MAXDCODES)
-        return INFLATE_ERR_MALFORMED; // GCOVR_EXCL_LINE unreachable: nlen/ndist bounded to the maxes by the 5-bit
-                                      // fields
+        return InflateResult::INFLATE_ERR_MALFORMED; // GCOVR_EXCL_LINE unreachable: nlen/ndist bounded to the maxes by
+                                                     // the 5-bit fields
 
     // Code-length code lengths, in the permuted order.
     int index;
     for (index = 0; index < ncode; index++)
         lengths[ORDER[index]] = (short)bits(s, 3);
     if (s->err)
-        return INFLATE_ERR_MALFORMED;
+        return InflateResult::INFLATE_ERR_MALFORMED;
     for (; index < 19; index++)
         lengths[ORDER[index]] = 0;
 
     // Build the code-length code (reuse lencode temporarily); it must be complete.
     if (construct(lencode, lengths, 19) != 0)
-        return INFLATE_ERR_MALFORMED;
+        return InflateResult::INFLATE_ERR_MALFORMED;
 
     // Read the literal/length and distance code lengths.
     index = 0;
@@ -260,7 +260,7 @@ int dynamic(State *s, Huffman *lencode, Huffman *distcode, short *lengths)
     {
         int symbol = decode(s, lencode);
         if (symbol < 0)
-            return INFLATE_ERR_MALFORMED;
+            return InflateResult::INFLATE_ERR_MALFORMED;
         if (symbol < 16)
         {
             lengths[index++] = (short)symbol;
@@ -271,7 +271,7 @@ int dynamic(State *s, Huffman *lencode, Huffman *distcode, short *lengths)
         if (symbol == 16)
         {
             if (index == 0)
-                return INFLATE_ERR_MALFORMED; // no previous length to repeat
+                return InflateResult::INFLATE_ERR_MALFORMED; // no previous length to repeat
             repeat_len = lengths[index - 1];
             repeat = 3 + bits(s, 2);
         }
@@ -284,33 +284,33 @@ int dynamic(State *s, Huffman *lencode, Huffman *distcode, short *lengths)
             repeat = 11 + bits(s, 7);
         }
         if (s->err)
-            return INFLATE_ERR_MALFORMED;
+            return InflateResult::INFLATE_ERR_MALFORMED;
         if (index + repeat > nlen + ndist)
-            return INFLATE_ERR_MALFORMED; // repeat past the end
+            return InflateResult::INFLATE_ERR_MALFORMED; // repeat past the end
         while (repeat--)
             lengths[index++] = (short)repeat_len;
     }
 
     if (lengths[256] == 0)
-        return INFLATE_ERR_MALFORMED; // no end-of-block code
+        return InflateResult::INFLATE_ERR_MALFORMED; // no end-of-block code
 
     // Build the literal/length and distance tables.
     int err = construct(lencode, lengths, nlen);
     if (err && (err < 0 || nlen != lencode->count[0] + lencode->count[1]))
-        return INFLATE_ERR_MALFORMED;
+        return InflateResult::INFLATE_ERR_MALFORMED;
     err = construct(distcode, lengths + nlen, ndist);
     if (err && (err < 0 || ndist != distcode->count[0] + distcode->count[1]))
-        return INFLATE_ERR_MALFORMED; // incomplete distance code (ok only for 0/1 codes)
+        return InflateResult::INFLATE_ERR_MALFORMED; // incomplete distance code (ok only for 0/1 codes)
 
     return codes(s, lencode, distcode);
 }
 } // namespace
 
-int inflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len, void *scratch,
-                size_t scratch_len)
+InflateResult inflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len,
+                          void *scratch, size_t scratch_len)
 {
     if (scratch_len < INFLATE_SCRATCH_SIZE)
-        return INFLATE_ERR_SCRATCH;
+        return InflateResult::INFLATE_ERR_SCRATCH;
 
     Tables *t = (Tables *)scratch;
     Huffman lencode = {t->lcount, t->lsym};
@@ -338,9 +338,9 @@ int inflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap
         last = bits(&s, 1);
         int type = bits(&s, 2);
         if (s.err)
-            return INFLATE_ERR_MALFORMED;
+            return InflateResult::INFLATE_ERR_MALFORMED;
 
-        int rc;
+        InflateResult rc;
         if (type == 0)
             rc = stored(&s);
         else if (type == 1)
@@ -348,14 +348,14 @@ int inflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap
         else if (type == 2)
             rc = dynamic(&s, &lencode, &distcode, t->lengths);
         else
-            return INFLATE_ERR_MALFORMED; // type 3 is reserved
+            return InflateResult::INFLATE_ERR_MALFORMED; // type 3 is reserved
 
-        if (rc != 0)
+        if (rc != InflateResult::INFLATE_OK)
             return rc;
     } while (!last);
 
     *out_len = s.outcnt;
-    return INFLATE_OK;
+    return InflateResult::INFLATE_OK;
 }
 
 #endif // DETWS_ENABLE_WS_DEFLATE

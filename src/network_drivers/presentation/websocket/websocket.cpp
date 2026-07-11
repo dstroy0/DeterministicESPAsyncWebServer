@@ -168,10 +168,10 @@ bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t
         if (scr && cbuf)
         {
             size_t clen = 0;
-            int rc = deflate_raw(payload, len, cbuf, cap, &clen, scr, DEFLATE_SCRATCH_SIZE);
+            DeflateResult rc = deflate_raw(payload, len, cbuf, cap, &clen, scr, DEFLATE_SCRATCH_SIZE);
             // Only adopt it if it actually shrank the message; otherwise send it
             // uncompressed (the per-message RSV1 flag makes that legal).
-            if (rc == DEFLATE_OK && clen < len)
+            if (rc == DeflateResult::DEFLATE_OK && clen < len)
             {
                 payload = cbuf;
                 len = (uint16_t)clen;
@@ -290,14 +290,14 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
             in[comp_len + 2] = 0xff;
             in[comp_len + 3] = 0xff;
             size_t dlen = 0;
-            int rc = inflate_raw(in, comp_len + 4, out, WS_FRAME_SIZE, &dlen, tbl, INFLATE_SCRATCH_SIZE);
-            if (rc == INFLATE_ERR_OVERFLOW)
+            InflateResult rc = inflate_raw(in, comp_len + 4, out, WS_FRAME_SIZE, &dlen, tbl, INFLATE_SCRATCH_SIZE);
+            if (rc == InflateResult::INFLATE_ERR_OVERFLOW)
             {
                 ws_close(ws, WsCloseCode::WS_CLOSE_TOO_BIG);
                 ws->parse_state = WsParseState::WS_ERROR;
                 return;
             }
-            if (rc != INFLATE_OK)
+            if (rc != InflateResult::INFLATE_OK)
             {
                 ws_close(ws, WsCloseCode::WS_CLOSE_PROTOCOL);
                 ws->parse_state = WsParseState::WS_ERROR;

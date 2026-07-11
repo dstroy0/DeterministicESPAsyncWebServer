@@ -186,11 +186,11 @@ void emit_match(BitWriter *w, const Tables *t, int len, int dist)
 }
 } // namespace
 
-int deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len, void *scratch,
-                size_t scratch_len)
+DeflateResult deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len,
+                          void *scratch, size_t scratch_len)
 {
     if (scratch_len < DEFLATE_SCRATCH_SIZE)
-        return DEFLATE_ERR_SCRATCH;
+        return DeflateResult::DEFLATE_ERR_SCRATCH;
 
     Tables *t = (Tables *)scratch;
     build_fixed(t);
@@ -293,9 +293,9 @@ int deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap
     }
 
     if (w.overflow)
-        return DEFLATE_ERR_OVERFLOW;
+        return DeflateResult::DEFLATE_ERR_OVERFLOW;
     *out_len = w.cnt - 4; // strip the marker for the on-wire payload
-    return DEFLATE_OK;
+    return DeflateResult::DEFLATE_OK;
 }
 
 #endif // DETWS_ENABLE_WS_DEFLATE

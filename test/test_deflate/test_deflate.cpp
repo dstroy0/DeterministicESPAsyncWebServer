@@ -32,8 +32,8 @@ void tearDown()
 static size_t roundtrip(const uint8_t *src, size_t src_len)
 {
     size_t clen = 0;
-    int rc = deflate_raw(src, src_len, g_comp, sizeof(g_comp), &clen, g_dscratch, sizeof(g_dscratch));
-    TEST_ASSERT_EQUAL_INT(DEFLATE_OK, rc);
+    int rc = (int)deflate_raw(src, src_len, g_comp, sizeof(g_comp), &clen, g_dscratch, sizeof(g_dscratch));
+    TEST_ASSERT_EQUAL_INT(DeflateResult::DEFLATE_OK, rc);
 
     // Append the 00 00 ff ff marker the sender stripped (RFC 7692 sec 7.2.2).
     TEST_ASSERT_TRUE(clen + 4 <= sizeof(g_comp));
@@ -43,8 +43,9 @@ static size_t roundtrip(const uint8_t *src, size_t src_len)
     g_comp[clen + 3] = 0xff;
 
     size_t dlen = 0;
-    rc = inflate_raw(g_comp, clen + 4, g_decompressed, sizeof(g_decompressed), &dlen, g_iscratch, sizeof(g_iscratch));
-    TEST_ASSERT_EQUAL_INT(INFLATE_OK, rc);
+    rc = (int)inflate_raw(g_comp, clen + 4, g_decompressed, sizeof(g_decompressed), &dlen, g_iscratch,
+                          sizeof(g_iscratch));
+    TEST_ASSERT_EQUAL_INT(InflateResult::INFLATE_OK, rc);
     TEST_ASSERT_EQUAL_size_t(src_len, dlen);
     if (src_len)
         TEST_ASSERT_EQUAL_MEMORY(src, g_decompressed, src_len);
@@ -142,8 +143,8 @@ void test_output_overflow_fails_closed()
         buf[i] = (uint8_t)rng();
     uint8_t tiny[16];
     size_t clen = 0;
-    int rc = deflate_raw(buf, sizeof(buf), tiny, sizeof(tiny), &clen, g_dscratch, sizeof(g_dscratch));
-    TEST_ASSERT_EQUAL_INT(DEFLATE_ERR_OVERFLOW, rc);
+    int rc = (int)deflate_raw(buf, sizeof(buf), tiny, sizeof(tiny), &clen, g_dscratch, sizeof(g_dscratch));
+    TEST_ASSERT_EQUAL_INT(DeflateResult::DEFLATE_ERR_OVERFLOW, rc);
 }
 
 void test_scratch_too_small_fails_closed()
@@ -151,8 +152,8 @@ void test_scratch_too_small_fails_closed()
     uint8_t small[DEFLATE_SCRATCH_SIZE - 1];
     size_t clen = 0;
     const char *s = "anything";
-    int rc = deflate_raw((const uint8_t *)s, strlen(s), g_comp, sizeof(g_comp), &clen, small, sizeof(small));
-    TEST_ASSERT_EQUAL_INT(DEFLATE_ERR_SCRATCH, rc);
+    int rc = (int)deflate_raw((const uint8_t *)s, strlen(s), g_comp, sizeof(g_comp), &clen, small, sizeof(small));
+    TEST_ASSERT_EQUAL_INT(DeflateResult::DEFLATE_ERR_SCRATCH, rc);
 }
 
 int main()

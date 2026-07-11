@@ -990,8 +990,8 @@ void test_ws_permessage_deflate_outbound()
     uint8_t out[256];
     uint8_t scr[INFLATE_SCRATCH_SIZE];
     size_t out_len = 0;
-    int rc = inflate_raw(comp, plen + 4, out, sizeof(out), &out_len, scr, sizeof(scr));
-    TEST_ASSERT_EQUAL_INT(INFLATE_OK, rc);
+    int rc = (int)inflate_raw(comp, plen + 4, out, sizeof(out), &out_len, scr, sizeof(scr));
+    TEST_ASSERT_EQUAL_INT(InflateResult::INFLATE_OK, rc);
     TEST_ASSERT_EQUAL_size_t(mlen, out_len);
     TEST_ASSERT_EQUAL_MEMORY(msg, out, mlen);
 }

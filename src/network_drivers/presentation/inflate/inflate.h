@@ -43,7 +43,7 @@
 #define INFLATE_SCRATCH_SIZE 1536
 
 /** @brief inflate_raw() return codes. */
-enum InflateResult
+enum class InflateResult : int32_t
 {
     INFLATE_OK = 0,             ///< success; *out_len holds the decompressed length
     INFLATE_ERR_MALFORMED = -1, ///< invalid / truncated DEFLATE stream
@@ -58,10 +58,10 @@ enum InflateResult
  * @param dst,dst_cap         output buffer and its capacity (also the window).
  * @param out_len             set to the decompressed length on success.
  * @param scratch,scratch_len caller working memory (>= INFLATE_SCRATCH_SIZE).
- * @return INFLATE_OK (0) on success, else a negative ::InflateResult.
+ * @return InflateResult::INFLATE_OK (0) on success, else a negative ::InflateResult.
  */
-int inflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len, void *scratch,
-                size_t scratch_len);
+InflateResult inflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len,
+                          void *scratch, size_t scratch_len);
 
 #endif // DETWS_ENABLE_WS_DEFLATE
 #endif // DETERMINISTICESPASYNCWEBSERVER_INFLATE_H

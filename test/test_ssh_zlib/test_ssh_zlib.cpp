@@ -69,9 +69,9 @@ static void verify_stream()
     TEST_ASSERT_EQUAL_HEX8(0x78, g_stream[0]); // zlib CMF (deflate, 32 KB window)
     TEST_ASSERT_EQUAL_HEX8(0x9C, g_stream[1]); // zlib FLG (default level)
     size_t dlen = 0;
-    int rc = inflate_raw(g_stream + 2, g_stream_len - 2, g_decoded, sizeof(g_decoded), &dlen, g_iscratch,
-                         sizeof(g_iscratch));
-    TEST_ASSERT_EQUAL_INT(INFLATE_OK, rc);
+    int rc = (int)inflate_raw(g_stream + 2, g_stream_len - 2, g_decoded, sizeof(g_decoded), &dlen, g_iscratch,
+                              sizeof(g_iscratch));
+    TEST_ASSERT_EQUAL_INT(InflateResult::INFLATE_OK, rc);
     TEST_ASSERT_EQUAL_size_t(g_orig_len, dlen);
     TEST_ASSERT_EQUAL_MEMORY(g_orig, g_decoded, g_orig_len);
 }

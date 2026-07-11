@@ -48,7 +48,7 @@
 #define DEFLATE_SCRATCH_SIZE 4096
 
 /** @brief deflate_raw() return codes (mirror ::InflateResult). */
-enum DeflateResult
+enum class DeflateResult : int32_t
 {
     DEFLATE_OK = 0,            ///< success; *out_len holds the compressed length
     DEFLATE_ERR_OVERFLOW = -2, ///< output would exceed dst_cap (incompressible)
@@ -67,10 +67,10 @@ enum DeflateResult
  * @param dst,dst_cap         output buffer and its capacity.
  * @param out_len             set to the compressed length on success.
  * @param scratch,scratch_len caller working memory (>= DEFLATE_SCRATCH_SIZE).
- * @return DEFLATE_OK (0) on success, else a negative ::DeflateResult.
+ * @return DeflateResult::DEFLATE_OK (0) on success, else a negative ::DeflateResult.
  */
-int deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len, void *scratch,
-                size_t scratch_len);
+DeflateResult deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len,
+                          void *scratch, size_t scratch_len);
 
 #endif // DETWS_ENABLE_WS_DEFLATE
 #endif // DETERMINISTICESPASYNCWEBSERVER_DEFLATE_H
