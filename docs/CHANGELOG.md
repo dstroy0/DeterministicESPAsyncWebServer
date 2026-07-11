@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`7d4a1fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7d4a1fe07d35244f4828d71f20ce25d5b16b3e10))
+- update CHANGELOG.md [skip ci] ([`00e74e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/00e74e4a1b83c607f88499a4f8cf87a8975b46c7))
 - update CHANGELOG.md [skip ci] ([`55bf745`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/55bf745c3c213d69e1fa40929c9f1574647ba248))
 - update CHANGELOG.md [skip ci] ([`676f0ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/676f0ef7365bb526fbcd493bc88434d24713d498))
 - rebuild only the examples a diff touches (ESP32 + Arduino) ([`4f4ca24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f4ca24695c5b6d635f4d7adb03325d569422685))
@@ -44,6 +46,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5a9c6ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a9c6eaf645d41fe748a6d2dbc98f53fa007903a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`468a2e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/468a2e4952a211bc3f6f5666c6bac6f776636676))
 - update ESP32 build footprints [skip ci] ([`d88fbda`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d88fbdaf02e52320ea895b611ceb2b4f8ffcf736))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3c484ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c484ab9827edbbf02ecc2f8e7a28c6b18c22ff7))
@@ -70,6 +73,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- scoped enums for forward/gateway/docstore/webdav/sqlite (enum class 29/N) ([`3b7b4c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b7b4c04bd1e879efdbe16b167fe34e5e0e5ce48))
 - scoped enums for devicenet/enocean/j2735/sparkplug/zwave/promisc (enum class 24/N) ([`3e9bc5f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e9bc5fb3e20262a3a343bd94a9a4059766d3ab1))
 - scoped enums for statsd/ws_client/mtconnect/ota/sigfox (enum class 18/N) ([`623b9f6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/623b9f65053d21460ba3f4d52862c5ed7c88fd4d))
 - scoped enums (enum class 13/N) ([`4baae75`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4baae756b53afec14160f4a8e1bbbe634a8f763d))
