@@ -11,6 +11,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`6bed828`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6bed828568067aba7e218ca8c7b98d36121cf0b6))
 - update CHANGELOG.md [skip ci] ([`82234b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/82234b30545f46bf6c1177da820fa88cb58be6e7))
 - update CHANGELOG.md [skip ci] ([`6effbf7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6effbf765ad9cbd4e55f5a65f83efec746b86fd7))
 - update test report + coverage [skip ci] ([`4d40840`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4d40840f67777954295df522bc5c08ced4c852f2))
@@ -34,6 +35,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`50a9176`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50a917646fa8b25ac968e545f72ec13fc1950d77))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c3f57ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3f57ef6f9dce5b24305acd29897d90d92089e3a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f924f75`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f924f75e4c3db0c8db2a01d762fa8c7168371daf))
 - update ESP32 build footprints [skip ci] ([`b4cea4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4cea4a68c0f5a52febe585337fe5889954dfc11))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`64ad2c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64ad2c382f69e9b94f957e06c35b05e6d211bc22))
@@ -53,6 +56,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- CoapMethodMask is a bitmask -> struct of static constexpr, not enum class ([`6bbe2ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6bbe2adf033a613078bf2c4af730329d7cd3b0a6))
 - scoped enums for the HTTP router (enum class 49/N) ([`ebfd69c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebfd69cccbc320a4fa8c555ab20ff8c67ce36667))
 - scoped enums for the transport layer (enum class 45/N) ([`a0b527b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0b527b9e03f71198e7bcb9d58d51d636807ece3))
 - scoped enums ParseState/HttpVersion (enum class 40/N) ([`767cbc0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/767cbc0e5365e6beef1352aa6b2f6c145885df5d))
