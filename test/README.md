@@ -2363,7 +2363,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(0x080, f.id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, f.dlc);</code>
       * <code>Assert true (canopen_parse(&f, &m))</code>
-      * <code>Assert equal int (CANOPEN_T_SYNC, m.type)</code>
+      * <code>Assert equal int (CanopenType::CANOPEN_T_SYNC, m.type)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, m.node_id);</code>
   </details>
 
@@ -2376,7 +2376,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(0x70A, f.id); // 0x700 + 10</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, f.dlc);</code>
       * <code>Assert true (canopen_parse(&f, &m))</code>
-      * <code>Assert equal int (CANOPEN_T_HEARTBEAT, m.type)</code>
+      * <code>Assert equal int (CanopenType::CANOPEN_T_HEARTBEAT, m.type)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(10, m.node_id);</code>
       * <code>Assert true (canopen_parse_heartbeat(&f, &node, &state))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(10, node);</code>
@@ -2411,7 +2411,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(6, f.dlc);</code>
       * <code>Assert equal memory (payload, f.data, 6)</code>
       * <code>Assert true (canopen_parse(&f, &m))</code>
-      * <code>Assert equal int (CANOPEN_T_TPDO, m.type)</code>
+      * <code>Assert equal int (CanopenType::CANOPEN_T_TPDO, m.type)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(2, m.pdo_num);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(7, m.node_id);</code>
       * <code>Assert true (canopen_build_rpdo(&f, 4, 1, payload, 8))</code>
@@ -2502,11 +2502,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Extended frames are not CANopen default-profile.
     * **Assertions**:
       * <code>Assert true (canopen_parse(&f, &m))</code>
-      * <code>Assert equal int (CANOPEN_T_TPDO, m.type)</code>
+      * <code>Assert equal int (CanopenType::CANOPEN_T_TPDO, m.type)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, m.pdo_num);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(10, m.node_id);</code>
       * <code>Assert true (canopen_parse(&f, &m))</code>
-      * <code>Assert equal int (CANOPEN_T_SDO_RX, m.type)</code>
+      * <code>Assert equal int (CanopenType::CANOPEN_T_SDO_RX, m.type)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(15, m.node_id);</code>
       * <code>Assert false (canopen_parse(&f, &m))</code>
   </details>
@@ -2553,9 +2553,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8(cases[i].node, m.node_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(cases[i].pdo, m.pdo_num);</code>
       * <code>Assert true (canopen_parse(&f, &m))</code>
-      * <code>Assert equal int (CANOPEN_T_UNKNOWN, m.type)</code>
+      * <code>Assert equal int (CanopenType::CANOPEN_T_UNKNOWN, m.type)</code>
       * <code>Assert true (canopen_parse(&f, &m))</code>
-      * <code>Assert equal int (CANOPEN_T_UNKNOWN, m.type)</code>
+      * <code>Assert equal int (CanopenType::CANOPEN_T_UNKNOWN, m.type)</code>
       * <code>Assert false (canopen_parse(NULL, &m))</code>
       * <code>Assert false (canopen_parse(&f, NULL))</code>
   </details>
@@ -2672,16 +2672,16 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Peek each type
     * **Assertions**:
-      * <code>Assert equal int (CBOR_TYPE_INT, cbor_peek(&r))</code>
-      * <code>Assert equal int (CBOR_TYPE_BYTES, cbor_peek(&r))</code>
-      * <code>Assert equal int (CBOR_TYPE_TEXT, cbor_peek(&r))</code>
-      * <code>Assert equal int (CBOR_TYPE_ARRAY, cbor_peek(&r))</code>
-      * <code>Assert equal int (CBOR_TYPE_MAP, cbor_peek(&r))</code>
-      * <code>Assert equal int (CBOR_TYPE_BOOL, cbor_peek(&r))</code>
-      * <code>Assert equal int (CBOR_TYPE_NULL, cbor_peek(&r))</code>
-      * <code>Assert equal int (CBOR_TYPE_FLOAT, cbor_peek(&r))</code>
-      * <code>Assert equal int (CBOR_TYPE_INVALID, cbor_peek(&r))</code>
-      * <code>Assert equal int (CBOR_TYPE_INVALID, cbor_peek(&r))</code>
+      * <code>Assert equal int (CborType::CBOR_TYPE_INT, cbor_peek(&r))</code>
+      * <code>Assert equal int (CborType::CBOR_TYPE_BYTES, cbor_peek(&r))</code>
+      * <code>Assert equal int (CborType::CBOR_TYPE_TEXT, cbor_peek(&r))</code>
+      * <code>Assert equal int (CborType::CBOR_TYPE_ARRAY, cbor_peek(&r))</code>
+      * <code>Assert equal int (CborType::CBOR_TYPE_MAP, cbor_peek(&r))</code>
+      * <code>Assert equal int (CborType::CBOR_TYPE_BOOL, cbor_peek(&r))</code>
+      * <code>Assert equal int (CborType::CBOR_TYPE_NULL, cbor_peek(&r))</code>
+      * <code>Assert equal int (CborType::CBOR_TYPE_FLOAT, cbor_peek(&r))</code>
+      * <code>Assert equal int (CborType::CBOR_TYPE_INVALID, cbor_peek(&r))</code>
+      * <code>Assert equal int (CborType::CBOR_TYPE_INVALID, cbor_peek(&r))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -2764,7 +2764,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Decode uint
     * **Assertions**:
-      * <code>Assert equal int (CBOR_TYPE_UINT, cbor_peek(&r))</code>
+      * <code>Assert equal int (CborType::CBOR_TYPE_UINT, cbor_peek(&r))</code>
       * <code>Assert true (cbor_read_uint(&r, &v))</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(1000, v);</code>
       * <code>Assert true (cbor_reader_ok(&r))</code>
@@ -2809,7 +2809,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (cbor_read_bool(&r, &b))</code>
       * <code>Assert true (b)</code>
       * <code>Assert true (cbor_reader_ok(&r))</code>
-      * <code>Assert equal int (CBOR_TYPE_INVALID, cbor_peek(&r))</code>
+      * <code>Assert equal int (CborType::CBOR_TYPE_INVALID, cbor_peek(&r))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11779,7 +11779,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(4 + 6, buf[1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[2] & 0x01); // I-format: bit0 = 0</code>
       * <code>Assert true (iec104_parse(buf, n, &a, &c))</code>
-      * <code>Assert equal int (IEC104_I, a.format)</code>
+      * <code>Assert equal int (Iec104Format::IEC104_I, a.format)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(100, a.ns);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(50, a.nr);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(6, a.asdu_len);</code>
@@ -11795,7 +11795,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x01, buf[2]);</code>
       * <code>Assert true (iec104_parse(buf, n, &a, &c))</code>
-      * <code>Assert equal int (IEC104_S, a.format)</code>
+      * <code>Assert equal int (Iec104Format::IEC104_S, a.format)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(1234, a.nr);</code>
   </details>
 
@@ -11806,7 +11806,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
       * <code>Assert true (iec104_parse(buf, n, &a, &c))</code>
-      * <code>Assert equal int (IEC104_U, a.format)</code>
+      * <code>Assert equal int (Iec104Format::IEC104_U, a.format)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(IEC104_STARTDT_ACT, a.u_cmd);</code>
   </details>
 
@@ -12413,10 +12413,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Tp bam roundtrip
     * **Assertions**:
       * <code>Assert true (j1939_build_bam_cm(&cm, sa, pgn, 16))</code>
-      * <code>Assert equal int (J1939_TP_STARTED, j1939_tp_feed(&rx, &cm))</code>
+      * <code>Assert equal int (J1939TpResult::J1939_TP_STARTED, j1939_tp_feed(&rx, &cm))</code>
       * <code>Assert true (j1939_build_tp_dt(&dt, sa, J1939_ADDR_GLOBAL, seq, msg + off, len))</code>
-      * <code>Assert equal int (J1939_TP_PROGRESS, r)</code>
-      * <code>Assert equal int (J1939_TP_COMPLETE, r)</code>
+      * <code>Assert equal int (J1939TpResult::J1939_TP_PROGRESS, r)</code>
+      * <code>Assert equal int (J1939TpResult::J1939_TP_COMPLETE, r)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(16, rx.total_size);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(pgn, rx.pgn);</code>
       * <code>Assert equal memory (msg, rx.buf, 16)</code>
@@ -12427,8 +12427,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Tp out of sequence errors
     * **Assertions**:
-      * <code>Assert equal int (J1939_TP_STARTED, j1939_tp_feed(&rx, &cm))</code>
-      * <code>Assert equal int (J1939_TP_ERROR, j1939_tp_feed(&rx, &dt))</code>
+      * <code>Assert equal int (J1939TpResult::J1939_TP_STARTED, j1939_tp_feed(&rx, &cm))</code>
+      * <code>Assert equal int (J1939TpResult::J1939_TP_ERROR, j1939_tp_feed(&rx, &dt))</code>
       * <code>Assert false (rx.active)</code>
   </details>
 
@@ -12457,13 +12457,13 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A TP.DT with no active session is ignored.
     * **Assertions**:
-      * <code>Assert equal int (J1939_TP_IGNORED, j1939_tp_feed(nullptr, &cm))</code>
-      * <code>Assert equal int (J1939_TP_IGNORED, j1939_tp_feed(&rx, nullptr))</code>
-      * <code>Assert equal int (J1939_TP_IGNORED, j1939_tp_feed(&rx, &notext))</code>
-      * <code>Assert equal int (J1939_TP_IGNORED, j1939_tp_feed(&rx, &cm_ctrl))</code>
-      * <code>Assert equal int (J1939_TP_ERROR, j1939_tp_feed(&rx, &cm_bad))</code>
-      * <code>Assert equal int (J1939_TP_IGNORED, j1939_tp_feed(&rx, &dt))</code>
-      * <code>Assert equal int (J1939_TP_IGNORED, j1939_tp_feed(&rx, &other))</code>
+      * <code>Assert equal int (J1939TpResult::J1939_TP_IGNORED, j1939_tp_feed(nullptr, &cm))</code>
+      * <code>Assert equal int (J1939TpResult::J1939_TP_IGNORED, j1939_tp_feed(&rx, nullptr))</code>
+      * <code>Assert equal int (J1939TpResult::J1939_TP_IGNORED, j1939_tp_feed(&rx, &notext))</code>
+      * <code>Assert equal int (J1939TpResult::J1939_TP_IGNORED, j1939_tp_feed(&rx, &cm_ctrl))</code>
+      * <code>Assert equal int (J1939TpResult::J1939_TP_ERROR, j1939_tp_feed(&rx, &cm_bad))</code>
+      * <code>Assert equal int (J1939TpResult::J1939_TP_IGNORED, j1939_tp_feed(&rx, &dt))</code>
+      * <code>Assert equal int (J1939TpResult::J1939_TP_IGNORED, j1939_tp_feed(&rx, &other))</code>
   </details>
 
 </details>
@@ -14052,7 +14052,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(1, mbus_build_ack(buf, sizeof(buf)));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xE5, buf[0]);</code>
       * <code>Assert true (mbus_parse(buf, 1, &f, &c))</code>
-      * <code>Assert equal int (MBUS_FRAME_ACK, f.type)</code>
+      * <code>Assert equal int (MbusFrameType::MBUS_FRAME_ACK, f.type)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, c);</code>
   </details>
 
@@ -14064,7 +14064,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(5, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, 5);</code>
       * <code>Assert true (mbus_parse(buf, n, &f, &c))</code>
-      * <code>Assert equal int (MBUS_FRAME_SHORT, f.type)</code>
+      * <code>Assert equal int (MbusFrameType::MBUS_FRAME_SHORT, f.type)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(MBUS_C_SND_NKE, f.c);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x05, f.a);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(5, c);</code>
@@ -14091,7 +14091,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x68, buf[3]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x16, buf[n - 1]);</code>
       * <code>Assert true (mbus_parse(buf, n, &f, &c))</code>
-      * <code>Assert equal int (MBUS_FRAME_LONG, f.type)</code>
+      * <code>Assert equal int (MbusFrameType::MBUS_FRAME_LONG, f.type)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(MBUS_C_RSP_UD, f.c);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x01, f.a);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(MBUS_CI_RSP_VARIABLE, f.ci);</code>
@@ -14115,13 +14115,13 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Dif data len
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, mbus_dif_data_len(MBUS_DIF_INT8));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(4, mbus_dif_data_len(MBUS_DIF_INT32));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(4, mbus_dif_data_len(MBUS_DIF_REAL32));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(6, mbus_dif_data_len(MBUS_DIF_INT48));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(8, mbus_dif_data_len(MBUS_DIF_INT64));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(3, mbus_dif_data_len(MBUS_DIF_BCD6));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len(MBUS_DIF_VARIABLE));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_INT8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_INT32));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_REAL32));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_INT48));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(8, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_INT64));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_BCD6));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_VARIABLE));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -14130,20 +14130,20 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Record walk
     * **Assertions**:
       * <code>Assert true (mbus_record_next(body, sizeof(body), &pos, &r))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MBUS_DIF_INT32, r.coding);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(MbusDifCoding::MBUS_DIF_INT32, r.coding);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x13, r.vif);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(4, r.data_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x2A, r.data[0]);</code>
       * <code>Assert true (mbus_record_next(body, sizeof(body), &pos, &r))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MBUS_DIF_INT16, r.coding);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(MbusDifCoding::MBUS_DIF_INT16, r.coding);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x5A, r.vif);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(2, r.data_len);</code>
       * <code>Assert true (mbus_record_next(body, sizeof(body), &pos, &r))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MBUS_DIF_INT32, r.coding); // DIFE skipped</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(MbusDifCoding::MBUS_DIF_INT32, r.coding); // DIFE skipped</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x13, r.vif);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(4, r.data_len);</code>
       * <code>Assert true (mbus_record_next(body, sizeof(body), &pos, &r))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MBUS_DIF_VARIABLE, r.coding);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(MbusDifCoding::MBUS_DIF_VARIABLE, r.coding);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(3, r.data_len);</code>
       * <code>Assert equal memory ("ABC", r.data, 3)</code>
       * <code>Assert false (mbus_record_next(body, sizeof(body), &pos, &r))</code>
@@ -14183,14 +14183,14 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Dif data len remaining
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len(MBUS_DIF_NONE));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(3, mbus_dif_data_len(MBUS_DIF_INT24));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len(MBUS_DIF_READOUT));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, mbus_dif_data_len(MBUS_DIF_BCD2));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(2, mbus_dif_data_len(MBUS_DIF_BCD4));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(4, mbus_dif_data_len(MBUS_DIF_BCD8));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(6, mbus_dif_data_len(MBUS_DIF_BCD12));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len(MBUS_DIF_SPECIAL));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_NONE));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_INT24));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_READOUT));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_BCD2));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_BCD4));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(4, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_BCD8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(6, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_BCD12));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_SPECIAL));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -14200,7 +14200,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (mbus_record_next(dife_trunc, sizeof(dife_trunc), &pos, &r))</code>
       * <code>Assert true (mbus_record_next(special, sizeof(special), &pos, &r))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MBUS_DIF_SPECIAL, r.coding);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(MbusDifCoding::MBUS_DIF_SPECIAL, r.coding);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, pos); // consumed only the DIF</code>
       * <code>Assert false (mbus_record_next(no_vif, sizeof(no_vif), &pos, &r))</code>
       * <code>Assert false (mbus_record_next(vife_trunc, sizeof(vife_trunc), &pos, &r))</code>
@@ -15643,7 +15643,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: positive fixint, uint8, uint16, uint32, uint64
     * **Assertions**:
-      * <code>Assert equal (MSGPACK_TYPE_UINT, msgpack_peek(&r))</code>
+      * <code>Assert equal (MsgpackType::MSGPACK_TYPE_UINT, msgpack_peek(&r))</code>
       * <code>Assert true (msgpack_read_uint(&r, &v))</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(0, v);</code>
       * <code>Assert true (msgpack_read_uint(&r, &v))</code>
@@ -15657,7 +15657,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (msgpack_read_uint(&r, &v))</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(0x100000000ULL, v);</code>
       * <code>Assert true (msgpack_reader_ok(&r))</code>
-      * <code>Assert equal (MSGPACK_TYPE_INVALID, msgpack_peek(&r))</code>
+      * <code>Assert equal (MsgpackType::MSGPACK_TYPE_INVALID, msgpack_peek(&r))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15665,7 +15665,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: negative fixint (-1, -32), int8 (-128), int16 (-32768), int32 (-2147483648)
     * **Assertions**:
-      * <code>Assert equal (MSGPACK_TYPE_INT, msgpack_peek(&r))</code>
+      * <code>Assert equal (MsgpackType::MSGPACK_TYPE_INT, msgpack_peek(&r))</code>
       * <code>Assert true (msgpack_read_int(&r, &v))</code>
       * <code>TEST_ASSERT_EQUAL_INT64(-1, v);</code>
       * <code>Assert true (msgpack_read_int(&r, &v))</code>
@@ -15686,11 +15686,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Decode str and bytes
     * **Assertions**:
-      * <code>Assert equal (MSGPACK_TYPE_STR, msgpack_peek(&r))</code>
+      * <code>Assert equal (MsgpackType::MSGPACK_TYPE_STR, msgpack_peek(&r))</code>
       * <code>Assert true (msgpack_read_str(&r, &s, &n))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, n);</code>
       * <code>Assert equal char array ("abc", s, 3)</code>
-      * <code>Assert equal (MSGPACK_TYPE_BIN, msgpack_peek(&r))</code>
+      * <code>Assert equal (MsgpackType::MSGPACK_TYPE_BIN, msgpack_peek(&r))</code>
       * <code>Assert true (msgpack_read_bytes(&r, &bin, &n))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, n);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0xde, bin[0]);</code>
@@ -15702,14 +15702,14 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: float64 (0xcb) narrows to float
     * **Assertions**:
-      * <code>Assert equal (MSGPACK_TYPE_NIL, msgpack_peek(&r))</code>
+      * <code>Assert equal (MsgpackType::MSGPACK_TYPE_NIL, msgpack_peek(&r))</code>
       * <code>Assert true (msgpack_read_nil(&r))</code>
-      * <code>Assert equal (MSGPACK_TYPE_BOOL, msgpack_peek(&r))</code>
+      * <code>Assert equal (MsgpackType::MSGPACK_TYPE_BOOL, msgpack_peek(&r))</code>
       * <code>Assert true (msgpack_read_bool(&r, &bv))</code>
       * <code>Assert false (bv)</code>
       * <code>Assert true (msgpack_read_bool(&r, &bv))</code>
       * <code>Assert true (bv)</code>
-      * <code>Assert equal (MSGPACK_TYPE_FLOAT, msgpack_peek(&r))</code>
+      * <code>Assert equal (MsgpackType::MSGPACK_TYPE_FLOAT, msgpack_peek(&r))</code>
       * <code>Assert true (msgpack_read_float(&r, &fv))</code>
       * <code>Assert equal float (1.0f, fv)</code>
       * <code>Assert true (msgpack_read_float(&r, &fv))</code>
@@ -15721,12 +15721,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Decode array and map
     * **Assertions**:
-      * <code>Assert equal (MSGPACK_TYPE_ARRAY, msgpack_peek(&r))</code>
+      * <code>Assert equal (MsgpackType::MSGPACK_TYPE_ARRAY, msgpack_peek(&r))</code>
       * <code>Assert true (msgpack_read_array(&r, &count))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, count);</code>
       * <code>Assert true (msgpack_read_uint(&r, &v))</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(i + 1, v);</code>
-      * <code>Assert equal (MSGPACK_TYPE_MAP, msgpack_peek(&r))</code>
+      * <code>Assert equal (MsgpackType::MSGPACK_TYPE_MAP, msgpack_peek(&r))</code>
       * <code>Assert true (msgpack_read_map(&r, &count))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, count);</code>
       * <code>Assert true (msgpack_read_str(&r, &s, &n))</code>
@@ -15769,9 +15769,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert false (msgpack_reader_ok(&r))</code>
       * <code>Assert false (msgpack_read_uint(&r, &v))</code>
       * <code>Assert false (msgpack_reader_ok(&r))</code>
-      * <code>Assert equal (MSGPACK_TYPE_INVALID, msgpack_peek(&r))</code>
+      * <code>Assert equal (MsgpackType::MSGPACK_TYPE_INVALID, msgpack_peek(&r))</code>
       * <code>Assert false (msgpack_read_int(&r, (int64_t *)&v))</code>
-      * <code>Assert equal (MSGPACK_TYPE_INVALID, msgpack_peek(&r))</code>
+      * <code>Assert equal (MsgpackType::MSGPACK_TYPE_INVALID, msgpack_peek(&r))</code>
       * <code>Assert false (msgpack_read_nil(&r))</code>
   </details>
 
@@ -16256,10 +16256,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert false (nats_parse("MSG foo\\r\\n", 9, &m, &c))</code>
       * <code>Assert false (nats_parse("MSG a b xyz\\r\\n", 13, &m, &c))</code>
       * <code>Assert true (nats_parse(raw, strlen(raw), &m, &c))</code>
-      * <code>Assert equal (NATS_MSG, m.type)</code>
+      * <code>Assert equal (NatsMsgType::NATS_MSG, m.type)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, m.payload_len);</code>
       * <code>Assert true (nats_parse("ZZZ whatever\\r\\n", 14, &m, &c))</code>
-      * <code>Assert equal (NATS_UNKNOWN, m.type)</code>
+      * <code>Assert equal (NatsMsgType::NATS_UNKNOWN, m.type)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16310,7 +16310,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: The second message follows at the consumed offset.
     * **Assertions**:
       * <code>Assert true (nats_parse(raw, len, &m, &c))</code>
-      * <code>Assert equal (NATS_MSG, m.type)</code>
+      * <code>Assert equal (NatsMsgType::NATS_MSG, m.type)</code>
       * <code>Assert equal memory ("foo", m.subject, m.subject_len)</code>
       * <code>Assert equal memory ("1", m.sid, m.sid_len)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, m.reply_len);</code>
@@ -16326,7 +16326,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Parse msg with reply
     * **Assertions**:
       * <code>Assert true (nats_parse(raw, strlen(raw), &m, &c))</code>
-      * <code>Assert equal (NATS_MSG, m.type)</code>
+      * <code>Assert equal (NatsMsgType::NATS_MSG, m.type)</code>
       * <code>Assert equal memory ("_INBOX.7", m.reply, m.reply_len)</code>
       * <code>Assert equal memory ("hello", m.payload, 5)</code>
   </details>
@@ -16337,16 +16337,16 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Parse control lines
     * **Assertions**:
       * <code>Assert true (nats_parse("PING\\r\\n", 6, &m, &c))</code>
-      * <code>Assert equal (NATS_PING, m.type)</code>
+      * <code>Assert equal (NatsMsgType::NATS_PING, m.type)</code>
       * <code>Assert true (nats_parse("PONG\\r\\n", 6, &m, &c))</code>
-      * <code>Assert equal (NATS_PONG, m.type)</code>
+      * <code>Assert equal (NatsMsgType::NATS_PONG, m.type)</code>
       * <code>Assert true (nats_parse("+OK\\r\\n", 5, &m, &c))</code>
-      * <code>Assert equal (NATS_OK, m.type)</code>
+      * <code>Assert equal (NatsMsgType::NATS_OK, m.type)</code>
       * <code>Assert true (nats_parse("-ERR 'Unknown Protocol Operation'\\r\\n", 35, &m, &c))</code>
-      * <code>Assert equal (NATS_ERR, m.type)</code>
+      * <code>Assert equal (NatsMsgType::NATS_ERR, m.type)</code>
       * <code>Assert equal memory ("'Unknown Protocol Operation'", m.arg, m.arg_len)</code>
       * <code>Assert true (nats_parse("INFO {\\"server_id\\":\\"x\\"}\\r\\n", 24, &m, &c))</code>
-      * <code>Assert equal (NATS_INFO, m.type)</code>
+      * <code>Assert equal (NatsMsgType::NATS_INFO, m.type)</code>
       * <code>Assert equal memory ("{\\"server_id\\":\\"x\\"}", m.arg, m.arg_len)</code>
   </details>
 
@@ -16667,9 +16667,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT8(3, frames);</code>
       * <code>Assert true (n2k_fastpacket_build_frame(&f, seq, i, 6, pgn, sa, 0xFF, msg, 20))</code>
-      * <code>Assert equal int (N2K_FP_STARTED, r)</code>
-      * <code>Assert equal int (N2K_FP_PROGRESS, r)</code>
-      * <code>Assert equal int (N2K_FP_COMPLETE, r)</code>
+      * <code>Assert equal int (N2kFpResult::N2K_FP_STARTED, r)</code>
+      * <code>Assert equal int (N2kFpResult::N2K_FP_PROGRESS, r)</code>
+      * <code>Assert equal int (N2kFpResult::N2K_FP_COMPLETE, r)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(20, rx.total_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(pgn, rx.pgn);</code>
       * <code>Assert equal memory (msg, rx.buf, 20)</code>
@@ -16681,7 +16681,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Fastpacket single frame completes
     * **Assertions**:
       * <code>Assert true (n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F200, 0x15, 0xFF, msg, 5))</code>
-      * <code>Assert equal int (N2K_FP_COMPLETE, n2k_fastpacket_feed(&rx, &f))</code>
+      * <code>Assert equal int (N2kFpResult::N2K_FP_COMPLETE, n2k_fastpacket_feed(&rx, &f))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(5, rx.total_len);</code>
       * <code>Assert equal memory (msg, rx.buf, 5)</code>
   </details>
@@ -16691,8 +16691,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A frame from sequence 4 (different message) must not be accepted into seq 3.
     * **Assertions**:
-      * <code>Assert equal int (N2K_FP_STARTED, n2k_fastpacket_feed(&rx, &f0))</code>
-      * <code>Assert equal int (N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, &other))</code>
+      * <code>Assert equal int (N2kFpResult::N2K_FP_STARTED, n2k_fastpacket_feed(&rx, &f0))</code>
+      * <code>Assert equal int (N2kFpResult::N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, &other))</code>
       * <code>Assert true (rx.active)</code>
   </details>
 
@@ -16701,8 +16701,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Fastpacket out of order errors
     * **Assertions**:
-      * <code>Assert equal int (N2K_FP_STARTED, n2k_fastpacket_feed(&rx, &f0))</code>
-      * <code>Assert equal int (N2K_FP_ERR, n2k_fastpacket_feed(&rx, &f2))</code>
+      * <code>Assert equal int (N2kFpResult::N2K_FP_STARTED, n2k_fastpacket_feed(&rx, &f0))</code>
+      * <code>Assert equal int (N2kFpResult::N2K_FP_ERR, n2k_fastpacket_feed(&rx, &f2))</code>
       * <code>Assert false (rx.active)</code>
   </details>
 
@@ -16717,11 +16717,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert false (n2k_fastpacket_build_frame(&f, 0, 0, 6, 0x01F801, 0x15, 0xFF, data, 0))</code>
       * <code>TEST_ASSERT_FALSE(</code>
       * <code>TEST_ASSERT_FALSE(</code>
-      * <code>Assert equal int (N2K_FP_IGNORED, n2k_fastpacket_feed(nullptr, &f))</code>
-      * <code>Assert equal int (N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, nullptr))</code>
-      * <code>Assert equal int (N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, &notext))</code>
-      * <code>Assert equal int (N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, &shortdlc))</code>
-      * <code>Assert equal int (N2K_FP_ERR, n2k_fastpacket_feed(&rx, &bad_total))</code>
+      * <code>Assert equal int (N2kFpResult::N2K_FP_IGNORED, n2k_fastpacket_feed(nullptr, &f))</code>
+      * <code>Assert equal int (N2kFpResult::N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, nullptr))</code>
+      * <code>Assert equal int (N2kFpResult::N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, &notext))</code>
+      * <code>Assert equal int (N2kFpResult::N2K_FP_IGNORED, n2k_fastpacket_feed(&rx, &shortdlc))</code>
+      * <code>Assert equal int (N2kFpResult::N2K_FP_ERR, n2k_fastpacket_feed(&rx, &bad_total))</code>
   </details>
 
 </details>
@@ -22624,11 +22624,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Parse simple and error
     * **Assertions**:
       * <code>Assert true (resp_parse((const uint8_t *)"+OK\\r\\n", 5, &r, &c))</code>
-      * <code>Assert equal (RESP_SIMPLE, r.type)</code>
+      * <code>Assert equal (RespType::RESP_SIMPLE, r.type)</code>
       * <code>Assert equal memory ("OK", r.str, 2)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(5, c);</code>
       * <code>Assert true (resp_parse((const uint8_t *)"-ERR no\\r\\n", 9, &r, &c))</code>
-      * <code>Assert equal (RESP_ERROR, r.type)</code>
+      * <code>Assert equal (RespType::RESP_ERROR, r.type)</code>
       * <code>Assert equal memory ("ERR no", r.str, 6)</code>
   </details>
 
@@ -22638,7 +22638,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Parse integer
     * **Assertions**:
       * <code>Assert true (resp_parse((const uint8_t *)":1000\\r\\n", 7, &r, &c))</code>
-      * <code>Assert equal (RESP_INTEGER, r.type)</code>
+      * <code>Assert equal (RespType::RESP_INTEGER, r.type)</code>
       * <code>TEST_ASSERT_EQUAL_INT64(1000, r.ival);</code>
       * <code>Assert true (resp_parse((const uint8_t *)":-5\\r\\n", 5, &r, &c))</code>
       * <code>TEST_ASSERT_EQUAL_INT64(-5, r.ival);</code>
@@ -22650,12 +22650,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Parse bulk and nil
     * **Assertions**:
       * <code>Assert true (resp_parse((const uint8_t *)"$5\\r\\nhello\\r\\n", 11, &r, &c))</code>
-      * <code>Assert equal (RESP_BULK, r.type)</code>
+      * <code>Assert equal (RespType::RESP_BULK, r.type)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(5, r.str_len);</code>
       * <code>Assert equal memory ("hello", r.str, 5)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(11, c);</code>
       * <code>Assert true (resp_parse((const uint8_t *)"$-1\\r\\n", 5, &r, &c))</code>
-      * <code>Assert equal (RESP_NIL, r.type)</code>
+      * <code>Assert equal (RespType::RESP_NIL, r.type)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -22664,13 +22664,13 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Parse array cursor
     * **Assertions**:
       * <code>Assert true (resp_parse(msg, len, &r, &c))</code>
-      * <code>Assert equal (RESP_ARRAY, r.type)</code>
+      * <code>Assert equal (RespType::RESP_ARRAY, r.type)</code>
       * <code>TEST_ASSERT_EQUAL_INT64(2, r.count);</code>
       * <code>Assert true (resp_parse(msg + off, len - off, &r, &c))</code>
-      * <code>Assert equal (RESP_BULK, r.type)</code>
+      * <code>Assert equal (RespType::RESP_BULK, r.type)</code>
       * <code>Assert equal memory ("foo", r.str, 3)</code>
       * <code>Assert true (resp_parse(msg + off, len - off, &r, &c))</code>
-      * <code>Assert equal (RESP_INTEGER, r.type)</code>
+      * <code>Assert equal (RespType::RESP_INTEGER, r.type)</code>
       * <code>TEST_ASSERT_EQUAL_INT64(42, r.ival);</code>
   </details>
 
@@ -22712,7 +22712,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert false (resp_parse((const uint8_t *)":-\\r\\n", 4, &r, &c))</code>
       * <code>Assert false (resp_parse((const uint8_t *)"$5\\r\\nhelloAB", 11, &r, &c))</code>
       * <code>Assert true (resp_parse((const uint8_t *)"*-1\\r\\n", 5, &r, &c))</code>
-      * <code>Assert equal int (RESP_NIL, r.type)</code>
+      * <code>Assert equal int (RespType::RESP_NIL, r.type)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -22721,10 +22721,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Parse resp3 null bool
     * **Assertions**:
       * <code>Assert true (resp_parse((const uint8_t *)"_\\r\\n", 3, &r, &c))</code>
-      * <code>Assert equal (RESP_NIL, r.type)</code>
+      * <code>Assert equal (RespType::RESP_NIL, r.type)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, c);</code>
       * <code>Assert true (resp_parse((const uint8_t *)"#t\\r\\n", 4, &r, &c))</code>
-      * <code>Assert equal (RESP_BOOL, r.type)</code>
+      * <code>Assert equal (RespType::RESP_BOOL, r.type)</code>
       * <code>TEST_ASSERT_EQUAL_INT64(1, r.ival);</code>
       * <code>Assert true (resp_parse((const uint8_t *)"#f\\r\\n", 4, &r, &c))</code>
       * <code>TEST_ASSERT_EQUAL_INT64(0, r.ival);</code>
@@ -22737,7 +22737,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Parse resp3 double
     * **Assertions**:
       * <code>Assert true (resp_parse((const uint8_t *)",3.14\\r\\n", 7, &r, &c))</code>
-      * <code>Assert equal (RESP_DOUBLE, r.type)</code>
+      * <code>Assert equal (RespType::RESP_DOUBLE, r.type)</code>
       * <code>Assert equal memory ("3.14", r.str, 4)</code>
       * <code>Assert true (fabs(r.dval - 3.14) &lt; 1e-9)</code>
       * <code>Assert true (resp_parse((const uint8_t *)",inf\\r\\n", 6, &r, &c))</code>
@@ -22756,15 +22756,15 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Parse resp3 bignum bulkerr verbatim
     * **Assertions**:
       * <code>Assert true (resp_parse((const uint8_t *)big, strlen(big), &r, &c))</code>
-      * <code>Assert equal (RESP_BIG_NUMBER, r.type)</code>
+      * <code>Assert equal (RespType::RESP_BIG_NUMBER, r.type)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(strlen(digits), r.str_len);</code>
       * <code>Assert equal memory (digits, r.str, r.str_len)</code>
       * <code>Assert true (resp_parse((const uint8_t *)be, strlen(be), &r, &c))</code>
-      * <code>Assert equal (RESP_BULK_ERROR, r.type)</code>
+      * <code>Assert equal (RespType::RESP_BULK_ERROR, r.type)</code>
       * <code>Assert equal memory ("SYNTAX invalid syntax", r.str, 21)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(strlen(be), c);</code>
       * <code>Assert true (resp_parse((const uint8_t *)vb, strlen(vb), &r, &c))</code>
-      * <code>Assert equal (RESP_VERBATIM, r.type)</code>
+      * <code>Assert equal (RespType::RESP_VERBATIM, r.type)</code>
       * <code>Assert equal memory ("txt:Some string", r.str, 15)</code>
   </details>
 
@@ -22774,16 +22774,16 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Parse resp3 map set push
     * **Assertions**:
       * <code>Assert true (resp_parse(m, len, &r, &c))</code>
-      * <code>Assert equal (RESP_MAP, r.type)</code>
+      * <code>Assert equal (RespType::RESP_MAP, r.type)</code>
       * <code>TEST_ASSERT_EQUAL_INT64(4, r.count); // 2 pairs -&gt; 4 children</code>
       * <code>Assert true (resp_parse(m + off, len - off, &r, &c))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(len, off);</code>
       * <code>TEST_ASSERT_EQUAL_INT64(3, seen_vals);</code>
       * <code>Assert true (resp_parse((const uint8_t *)"~2\\r\\n", 4, &r, &c))</code>
-      * <code>Assert equal (RESP_SET, r.type)</code>
+      * <code>Assert equal (RespType::RESP_SET, r.type)</code>
       * <code>TEST_ASSERT_EQUAL_INT64(2, r.count);</code>
       * <code>Assert true (resp_parse((const uint8_t *)"&gt;3\\r\\n", 4, &r, &c))</code>
-      * <code>Assert equal (RESP_PUSH, r.type)</code>
+      * <code>Assert equal (RespType::RESP_PUSH, r.type)</code>
       * <code>TEST_ASSERT_EQUAL_INT64(3, r.count);</code>
   </details>
 
