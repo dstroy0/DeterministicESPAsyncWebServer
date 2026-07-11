@@ -382,6 +382,7 @@
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
         "+<server/auth.cpp>",
+        "+<server/response.cpp>",
         "+<server/webdav.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/application/web_assets.cpp>",
@@ -437,6 +438,7 @@
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
         "+<server/auth.cpp>",
+        "+<server/response.cpp>",
         "+<server/webdav.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/application/web_assets.cpp>",
@@ -1017,6 +1019,7 @@
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
         "+<server/auth.cpp>",
+        "+<server/response.cpp>",
         "+<server/webdav.cpp>"
       ],
       "tests": ["test_keepalive"]
@@ -1043,6 +1046,7 @@
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
         "+<server/auth.cpp>",
+        "+<server/response.cpp>",
         "+<server/webdav.cpp>"
       ],
       "tests": ["test_range"]
@@ -1223,6 +1227,7 @@
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
         "+<server/auth.cpp>",
+        "+<server/response.cpp>",
         "+<server/webdav.cpp>",
         "+<services/upload_service/upload_service.cpp>"
       ],
