@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`de81d4f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/de81d4f3ae6a134bdb048edd9b4d6f237d0584f7))
+
+### Changes
+
+- auto-apply the two compat fixes that make the rebuilt core build via arduino-cli ([`3bb5565`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3bb55658d0e13e12983e2712477567c43e6d0e9a))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`4049955`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4049955d4f0a1b9dc48b05fb5555045ac32264a6))
+
 ## [5.95.8] - 2026-07-11
 
 <details>
