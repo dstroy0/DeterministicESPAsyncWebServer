@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`3e36a6d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e36a6d674eeae69f3327284e6bf4305a10e45ae))
+- update CHANGELOG.md [skip ci] ([`9f951c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f951c21b2fda8bb9536e2e284a4e30ed09b1975))
 - update test report + coverage [skip ci] ([`3c8ec50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c8ec5062b61b27130356feab96abfcaad1fc341))
 - update CHANGELOG.md [skip ci] ([`8a5f1d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a5f1d29e5d2905e243e6fa7516b300fd7bbe3d3))
 - update test report + coverage [skip ci] ([`e252c8a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e252c8a85eb8746f1d0f658facb73418ee03ece2))
@@ -142,6 +144,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- one declaration per line - ip/graphql/smb (S1659) ([`72213bc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/72213bccf9a85e272201e09e371c301a30ad826c))
 - one declaration per line - relay + ssh_transport (S1659) ([`6922bb7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6922bb777f2677e1a3ed53066e84aaff4e0879b9))
 - zwave/wisun/wifi_sniffer/ld2410/dshot anon enums -> namespacing structs ([`c14bfab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c14bfab91bd8c9668ef87da3dc4e35dea2e9e0fd))
 - thread/zigbee/profinet anon wire-const enums -> namespacing structs ([`de3fda3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/de3fda3639401a4ee12a5be56e5b7ad65b8dba65))
