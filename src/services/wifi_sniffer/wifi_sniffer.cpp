@@ -57,13 +57,13 @@ void detws_wifi_stats_add(WifiStats *s, const WifiFrame *f)
         return;
     switch (f->type)
     {
-    case WIFI_TYPE_MGMT:
+    case WifiType::WIFI_TYPE_MGMT:
         s->mgmt++;
         break;
-    case WIFI_TYPE_CTRL:
+    case WifiType::WIFI_TYPE_CTRL:
         s->ctrl++;
         break;
-    case WIFI_TYPE_DATA:
+    case WifiType::WIFI_TYPE_DATA:
         s->data++;
         break;
     default:

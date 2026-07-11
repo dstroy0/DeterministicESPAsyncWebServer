@@ -84,13 +84,13 @@ void test_parse_rejects_over_length()
 
 void test_control_bytes()
 {
-    TEST_ASSERT_TRUE(zwave_is_ack(ZWAVE_ACK));
-    TEST_ASSERT_TRUE(zwave_is_nak(ZWAVE_NAK));
-    TEST_ASSERT_TRUE(zwave_is_can(ZWAVE_CAN));
-    TEST_ASSERT_FALSE(zwave_is_ack(ZWAVE_SOF));
+    TEST_ASSERT_TRUE(zwave_is_ack(Zwave::ZWAVE_ACK));
+    TEST_ASSERT_TRUE(zwave_is_nak(Zwave::ZWAVE_NAK));
+    TEST_ASSERT_TRUE(zwave_is_can(Zwave::ZWAVE_CAN));
+    TEST_ASSERT_FALSE(zwave_is_ack(Zwave::ZWAVE_SOF));
     uint8_t ack[1];
     TEST_ASSERT_EQUAL_UINT16(1, zwave_build_ack(ack, sizeof(ack)));
-    TEST_ASSERT_EQUAL_HEX8(ZWAVE_ACK, ack[0]);
+    TEST_ASSERT_EQUAL_HEX8(Zwave::ZWAVE_ACK, ack[0]);
     TEST_ASSERT_EQUAL_UINT16(0, zwave_build_ack(ack, 0)); // no room
 }
 

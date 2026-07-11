@@ -35,7 +35,7 @@ void test_parse_data(void)
 {
     WifiFrame f;
     TEST_ASSERT_TRUE(detws_wifi_parse(DATA_FROMDS, sizeof(DATA_FROMDS), &f));
-    TEST_ASSERT_EQUAL_UINT8(WIFI_TYPE_DATA, f.type);
+    TEST_ASSERT_EQUAL_UINT8(WifiType::WIFI_TYPE_DATA, f.type);
     TEST_ASSERT_EQUAL_UINT8(0, f.subtype);
     TEST_ASSERT_TRUE(f.from_ds);
     TEST_ASSERT_FALSE(f.to_ds);
@@ -48,7 +48,7 @@ void test_parse_beacon(void)
 {
     WifiFrame f;
     TEST_ASSERT_TRUE(detws_wifi_parse(BEACON, sizeof(BEACON), &f));
-    TEST_ASSERT_EQUAL_UINT8(WIFI_TYPE_MGMT, f.type);
+    TEST_ASSERT_EQUAL_UINT8(WifiType::WIFI_TYPE_MGMT, f.type);
     TEST_ASSERT_EQUAL_UINT8(8, f.subtype); // beacon subtype
     TEST_ASSERT_EQUAL_UINT8(3, f.naddr);
 }
@@ -57,7 +57,7 @@ void test_parse_ctrl_short(void)
 {
     WifiFrame f;
     TEST_ASSERT_TRUE(detws_wifi_parse(CTS, sizeof(CTS), &f));
-    TEST_ASSERT_EQUAL_UINT8(WIFI_TYPE_CTRL, f.type);
+    TEST_ASSERT_EQUAL_UINT8(WifiType::WIFI_TYPE_CTRL, f.type);
     TEST_ASSERT_EQUAL_UINT8(0x0C, f.subtype); // CTS
     TEST_ASSERT_EQUAL_UINT8(1, f.naddr);      // only addr1 fits
     // Too short is rejected.

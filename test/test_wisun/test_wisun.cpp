@@ -18,8 +18,8 @@ void test_build_coap_get(void)
 {
     uint8_t buf[64];
     // CON GET "sensors/temp", msg id 0x1234, no token.
-    size_t n = wisun_build_coap(WISUN_COAP_CON, WISUN_COAP_GET, 0x1234, nullptr, 0, "sensors/temp", nullptr, 0, buf,
-                                sizeof(buf));
+    size_t n = wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 0x1234, nullptr, 0,
+                                "sensors/temp", nullptr, 0, buf, sizeof(buf));
     // Header: 0x40 (ver1, CON, tkl0), code 0x01, mid 0x12 0x34.
     TEST_ASSERT_EQUAL_HEX8(0x40, buf[0]);
     TEST_ASSERT_EQUAL_HEX8(0x01, buf[1]);
@@ -39,7 +39,8 @@ void test_build_coap_put_with_token_and_payload(void)
     uint8_t buf[64];
     const uint8_t token[2] = {0xAB, 0xCD};
     const uint8_t body[3] = {0x31, 0x32, 0x33};
-    size_t n = wisun_build_coap(WISUN_COAP_NON, WISUN_COAP_PUT, 0x0005, token, 2, "led", body, 3, buf, sizeof(buf));
+    size_t n = wisun_build_coap(WisunCoap::WISUN_COAP_NON, WisunCoap::WISUN_COAP_PUT, 0x0005, token, 2, "led", body, 3,
+                                buf, sizeof(buf));
     // Header: 0x52 (ver=01, type NON=01, tkl=0010), code 0x03 (PUT), mid 0x00 0x05.
     TEST_ASSERT_EQUAL_HEX8(0x52, buf[0]);
     TEST_ASSERT_EQUAL_HEX8(0x03, buf[1]);
@@ -61,8 +62,8 @@ void test_build_coap_long_segment_extended_length(void)
 {
     // A 13-char path segment forces the extended-length nibble (0xD).
     uint8_t buf[64];
-    size_t n =
-        wisun_build_coap(WISUN_COAP_CON, WISUN_COAP_GET, 1, nullptr, 0, "abcdefghijklm", nullptr, 0, buf, sizeof(buf));
+    size_t n = wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr, 0, "abcdefghijklm",
+                                nullptr, 0, buf, sizeof(buf));
     // Option header: delta 11 (0xB), length 13 -> nibble 0xD, ext byte 13-13=0.
     TEST_ASSERT_EQUAL_HEX8(0xBD, buf[4]);
     TEST_ASSERT_EQUAL_HEX8(0x00, buf[5]); // extended length = 0
@@ -74,10 +75,12 @@ void test_build_coap_rejects_bad_args(void)
 {
     uint8_t buf[64];
     uint8_t tok[9] = {0};
-    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(WISUN_COAP_CON, WISUN_COAP_GET, 1, tok, 9, "x", nullptr, 0, buf,
+    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, tok, 9, "x",
+                                                 nullptr, 0, buf,
                                                  sizeof(buf))); // tkl > 8
     uint8_t tiny[3];
-    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(WISUN_COAP_CON, WISUN_COAP_GET, 1, nullptr, 0, "x", nullptr, 0, tiny,
+    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr, 0,
+                                                 "x", nullptr, 0, tiny,
                                                  sizeof(tiny))); // too small
 }
 
@@ -129,9 +132,9 @@ void test_registry_full_and_misses(void)
     wisun_init(&fan, &br, nullptr, 2); // null storage -> cap 0
     TEST_ASSERT_EQUAL_INT(-1, wisun_node_register(&fan, &a, 1));
     uint8_t buf[8];
-    TEST_ASSERT_EQUAL_size_t(0,
-                             wisun_build_coap(WISUN_COAP_CON, WISUN_COAP_GET, 1, nullptr, 0, "x", nullptr, 0, nullptr,
-                                              sizeof(buf))); // null out
+    TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr, 0,
+                                                 "x", nullptr, 0, nullptr,
+                                                 sizeof(buf))); // null out
 }
 
 void test_coap_length_ext()

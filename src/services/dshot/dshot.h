@@ -31,21 +31,21 @@
 #if DETWS_ENABLE_DSHOT
 
 /** @brief The standard DShot special commands (value field 0..47; throttle starts at 48). */
-enum
+struct DshotCmd
 {
-    DSHOT_CMD_MOTOR_STOP = 0, ///< disarm / zero throttle.
-    DSHOT_CMD_BEACON1 = 1,    ///< beep (1..5 = rising tones).
-    DSHOT_CMD_BEACON5 = 5,
-    DSHOT_CMD_ESC_INFO = 6,         ///< request ESC info (telemetry bit must be set).
-    DSHOT_CMD_SPIN_DIRECTION_1 = 7, ///< set spin direction normal (send 6x).
-    DSHOT_CMD_SPIN_DIRECTION_2 = 8, ///< set spin direction reversed (send 6x).
-    DSHOT_CMD_3D_MODE_OFF = 9,      ///< disable bidirectional 3D mode (send 6x).
-    DSHOT_CMD_3D_MODE_ON = 10,      ///< enable bidirectional 3D mode (send 6x).
-    DSHOT_CMD_SETTINGS_REQUEST = 11,
-    DSHOT_CMD_SAVE_SETTINGS = 12, ///< persist settings (send 6x).
-    DSHOT_THROTTLE_MIN = 48,      ///< first real throttle step.
-    DSHOT_THROTTLE_MAX = 2047,    ///< last throttle step (2000 steps of resolution).
-    DSHOT_VALUE_MAX = 2047,       ///< widest value the 11-bit field holds.
+    static constexpr uint8_t DSHOT_CMD_MOTOR_STOP = 0; ///< disarm / zero throttle.
+    static constexpr uint8_t DSHOT_CMD_BEACON1 = 1;    ///< beep (1..5 = rising tones).
+    static constexpr uint8_t DSHOT_CMD_BEACON5 = 5;
+    static constexpr uint8_t DSHOT_CMD_ESC_INFO = 6;         ///< request ESC info (telemetry bit must be set).
+    static constexpr uint8_t DSHOT_CMD_SPIN_DIRECTION_1 = 7; ///< set spin direction normal (send 6x).
+    static constexpr uint8_t DSHOT_CMD_SPIN_DIRECTION_2 = 8; ///< set spin direction reversed (send 6x).
+    static constexpr uint8_t DSHOT_CMD_3D_MODE_OFF = 9;      ///< disable bidirectional 3D mode (send 6x).
+    static constexpr uint8_t DSHOT_CMD_3D_MODE_ON = 10;      ///< enable bidirectional 3D mode (send 6x).
+    static constexpr uint8_t DSHOT_CMD_SETTINGS_REQUEST = 11;
+    static constexpr uint8_t DSHOT_CMD_SAVE_SETTINGS = 12; ///< persist settings (send 6x).
+    static constexpr uint8_t DSHOT_THROTTLE_MIN = 48;      ///< first real throttle step.
+    static constexpr uint8_t DSHOT_THROTTLE_MAX = 2047;    ///< last throttle step (2000 steps of resolution).
+    static constexpr uint8_t DSHOT_VALUE_MAX = 2047;       ///< widest value the 11-bit field holds.
 };
 
 /**

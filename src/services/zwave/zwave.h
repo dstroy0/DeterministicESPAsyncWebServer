@@ -37,12 +37,12 @@
 #include <stdint.h>
 
 /** @brief Z-Wave Serial API control bytes / frame markers. */
-enum
+struct Zwave
 {
-    ZWAVE_SOF = 0x01, ///< start of a data frame
-    ZWAVE_ACK = 0x06, ///< frame acknowledged
-    ZWAVE_NAK = 0x15, ///< frame rejected (checksum)
-    ZWAVE_CAN = 0x18, ///< frame cancelled (retransmit)
+    static constexpr uint8_t ZWAVE_SOF = 0x01; ///< start of a data frame
+    static constexpr uint8_t ZWAVE_ACK = 0x06; ///< frame acknowledged
+    static constexpr uint8_t ZWAVE_NAK = 0x15; ///< frame rejected (checksum)
+    static constexpr uint8_t ZWAVE_CAN = 0x18; ///< frame cancelled (retransmit)
 };
 
 /** @brief Data-frame type. */

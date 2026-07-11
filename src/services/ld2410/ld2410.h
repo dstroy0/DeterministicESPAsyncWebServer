@@ -36,12 +36,12 @@
 #define LD2410_FRAME_MAX 72
 
 /** @brief Target presence state (report payload byte 2). */
-enum
+struct Ld2410State
 {
-    LD2410_STATE_NONE = 0x00,   ///< no target
-    LD2410_STATE_MOVING = 0x01, ///< moving target only
-    LD2410_STATE_STATIC = 0x02, ///< stationary target only
-    LD2410_STATE_BOTH = 0x03,   ///< both a moving and a stationary target
+    static constexpr uint8_t LD2410_STATE_NONE = 0x00;   ///< no target
+    static constexpr uint8_t LD2410_STATE_MOVING = 0x01; ///< moving target only
+    static constexpr uint8_t LD2410_STATE_STATIC = 0x02; ///< stationary target only
+    static constexpr uint8_t LD2410_STATE_BOTH = 0x03;   ///< both a moving and a stationary target
 };
 
 /** @brief A decoded LD2410 target report. Engineering fields are 0 unless @ref engineering. */

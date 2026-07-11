@@ -18,7 +18,7 @@ void test_encode_known_vector(void)
 {
     TEST_ASSERT_EQUAL_HEX16(0x82C6, detws_dshot_encode(1046, false, false));
     // motor stop (value 0) -> all zero.
-    TEST_ASSERT_EQUAL_HEX16(0x0000, detws_dshot_encode(DSHOT_CMD_MOTOR_STOP, false, false));
+    TEST_ASSERT_EQUAL_HEX16(0x0000, detws_dshot_encode(DshotCmd::DSHOT_CMD_MOTOR_STOP, false, false));
     // value 1: v12 = 2 -> crc 2 -> 0x0022.
     TEST_ASSERT_EQUAL_HEX16(0x0022, detws_dshot_encode(1, false, false));
 }

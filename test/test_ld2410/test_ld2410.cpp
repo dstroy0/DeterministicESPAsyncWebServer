@@ -52,7 +52,7 @@ void test_parse_basic()
     Ld2410Report r;
     TEST_ASSERT_TRUE(ld2410_parse_report(BASIC, sizeof(BASIC), &r));
     TEST_ASSERT_EQUAL_UINT8(0, r.engineering);
-    TEST_ASSERT_EQUAL_UINT8(LD2410_STATE_MOVING, r.state);
+    TEST_ASSERT_EQUAL_UINT8(Ld2410State::LD2410_STATE_MOVING, r.state);
     TEST_ASSERT_EQUAL_UINT16(250, r.moving_cm);
     TEST_ASSERT_EQUAL_UINT8(80, r.moving_energy);
     TEST_ASSERT_EQUAL_UINT16(300, r.static_cm);
@@ -65,7 +65,7 @@ void test_parse_engineering()
     Ld2410Report r;
     TEST_ASSERT_TRUE(ld2410_parse_report(ENG, sizeof(ENG), &r));
     TEST_ASSERT_EQUAL_UINT8(1, r.engineering);
-    TEST_ASSERT_EQUAL_UINT8(LD2410_STATE_BOTH, r.state);
+    TEST_ASSERT_EQUAL_UINT8(Ld2410State::LD2410_STATE_BOTH, r.state);
     TEST_ASSERT_EQUAL_UINT16(100, r.moving_cm);
     TEST_ASSERT_EQUAL_UINT16(150, r.static_cm);
     TEST_ASSERT_EQUAL_UINT16(200, r.detect_cm);
@@ -163,9 +163,9 @@ void test_helpers()
     TEST_ASSERT_TRUE(ld2410_present(&r));
     TEST_ASSERT_EQUAL_UINT16(250, ld2410_distance_cm(&r)); // moving -> moving distance
 
-    r.state = LD2410_STATE_STATIC;
+    r.state = Ld2410State::LD2410_STATE_STATIC;
     TEST_ASSERT_EQUAL_UINT16(300, ld2410_distance_cm(&r)); // static -> static distance
-    r.state = LD2410_STATE_NONE;
+    r.state = Ld2410State::LD2410_STATE_NONE;
     TEST_ASSERT_FALSE(ld2410_present(&r));
     TEST_ASSERT_EQUAL_UINT16(0, ld2410_distance_cm(&r));
     TEST_ASSERT_FALSE(ld2410_present(nullptr));

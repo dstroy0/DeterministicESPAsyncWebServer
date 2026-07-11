@@ -29,12 +29,12 @@
 #if DETWS_ENABLE_WISUN
 
 /** @brief CoAP message type + method codes (RFC 7252) used by the connector. */
-enum
+struct WisunCoap
 {
-    WISUN_COAP_CON = 0, ///< Confirmable.
-    WISUN_COAP_NON = 1, ///< Non-confirmable.
-    WISUN_COAP_GET = 1, ///< method code 0.01.
-    WISUN_COAP_PUT = 3  ///< method code 0.03.
+    static constexpr uint8_t WISUN_COAP_CON = 0; ///< Confirmable.
+    static constexpr uint8_t WISUN_COAP_NON = 1; ///< Non-confirmable.
+    static constexpr uint8_t WISUN_COAP_GET = 1; ///< method code 0.01.
+    static constexpr uint8_t WISUN_COAP_PUT = 3; ///< method code 0.03.
 };
 
 /**

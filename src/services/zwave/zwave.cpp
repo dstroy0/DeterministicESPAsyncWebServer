@@ -34,7 +34,7 @@ uint16_t zwave_build_frame(zwave_type type, uint8_t cmd, const uint8_t *data, ui
     uint16_t total = (uint16_t)(2 + frame_len);  // SOF + LEN + frame_len bytes
     if (total > cap)
         return 0;
-    out[0] = ZWAVE_SOF;
+    out[0] = Zwave::ZWAVE_SOF;
     out[1] = frame_len;
     out[2] = (uint8_t)type;
     out[3] = cmd;
@@ -50,7 +50,7 @@ int zwave_parse_frame(const uint8_t *raw, uint16_t len, uint8_t *type, uint8_t *
 {
     if (!raw || len < 1)
         return 0;
-    if (raw[0] != ZWAVE_SOF)
+    if (raw[0] != Zwave::ZWAVE_SOF)
         return -1; // not a data frame (could be a control byte - test those first)
     if (len < 2)
         return 0;
@@ -75,22 +75,22 @@ int zwave_parse_frame(const uint8_t *raw, uint16_t len, uint8_t *type, uint8_t *
 
 bool zwave_is_ack(uint8_t b)
 {
-    return b == ZWAVE_ACK;
+    return b == Zwave::ZWAVE_ACK;
 }
 bool zwave_is_nak(uint8_t b)
 {
-    return b == ZWAVE_NAK;
+    return b == Zwave::ZWAVE_NAK;
 }
 bool zwave_is_can(uint8_t b)
 {
-    return b == ZWAVE_CAN;
+    return b == Zwave::ZWAVE_CAN;
 }
 
 uint16_t zwave_build_ack(uint8_t *out, uint16_t cap)
 {
     if (!out || cap < 1)
         return 0;
-    out[0] = ZWAVE_ACK;
+    out[0] = Zwave::ZWAVE_ACK;
     return 1;
 }
 

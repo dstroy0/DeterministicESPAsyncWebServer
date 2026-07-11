@@ -25,12 +25,12 @@
 #if DETWS_ENABLE_WIFI_SNIFFER
 
 /** @brief 802.11 frame type (Frame Control bits 2-3). */
-enum
+struct WifiType
 {
-    WIFI_TYPE_MGMT = 0, ///< management (beacon, probe, auth, assoc, ...).
-    WIFI_TYPE_CTRL = 1, ///< control (RTS/CTS/ACK, ...).
-    WIFI_TYPE_DATA = 2, ///< data.
-    WIFI_TYPE_EXT = 3   ///< extension.
+    static constexpr uint8_t WIFI_TYPE_MGMT = 0; ///< management (beacon, probe, auth, assoc, ...).
+    static constexpr uint8_t WIFI_TYPE_CTRL = 1; ///< control (RTS/CTS/ACK, ...).
+    static constexpr uint8_t WIFI_TYPE_DATA = 2; ///< data.
+    static constexpr uint8_t WIFI_TYPE_EXT = 3;  ///< extension.
 };
 
 /** @brief A decoded 802.11 MAC header. Addresses not present for the frame's length are left zeroed. */
