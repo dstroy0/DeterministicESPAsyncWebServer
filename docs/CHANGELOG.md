@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.95.10] - 2026-07-11
+
+<details>
+<summary><b>Show Changelog for version 5.95.10 - 2026-07-11</b></summary>
+
+### Bug Fixes
+
+- make the transport tcpip-context check work on core-locking lwIP (arduino 3.x / PSRAM) ([`0e24f14`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e24f14f9824ef373ec114fa05477ae184ef9101))
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`0cdcc67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0cdcc6719dc45b668b6743b0451386f541ce2db0))
+- update CHANGELOG.md [skip ci] ([`5fabf3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5fabf3f51b952198737c72bfab6e6ddd61b5d153))
+
+### Changes
+
+- Bump version: 5.95.9 → 5.95.10 ([`754f301`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/754f30195b26280366fd1e772460425b54264ff6))
+
+</details>
+
 ## [5.95.9] - 2026-07-11
 
 <details>
