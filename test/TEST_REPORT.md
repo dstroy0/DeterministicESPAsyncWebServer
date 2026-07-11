@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-11 04:11:16
+**Generated:** 2026-07-11 06:05:36
 **Command:** `pio test` over 214 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 3023 passed - 177s
+**Result:** ✅ 3023 passed - 187s
 
 ---
 
@@ -193,7 +193,7 @@
 | `test_nts`               | `native_nts`            |     5 |   ✅   | 00:00:00.536 |
 | `test_dds`               | `native_dds`            |     5 |   ✅   | 00:00:00.526 |
 | `test_xmpp`              | `native_xmpp`           |    11 |   ✅   | 00:00:00.548 |
-| `test_rawl2`             | `native_rawl2`          |     5 |   ✅   | 00:00:00.556 |
+| `test_rawl2`             | `native_rawl2`          |     5 |   ✅   | 00:00:00.747 |
 | `test_spa_router`        | `native_spa_router`     |     2 |   ✅   | 00:00:00.512 |
 | `test_goose`             | `native_goose`          |     4 |   ✅   | 00:00:00.742 |
 | `test_mtconnect`         | `native_mtconnect`      |    12 |   ✅   | 00:00:00.564 |
@@ -216,9 +216,9 @@
 | `test_mbplus`            | `native_mbplus`         |     6 |   ✅   | 00:00:00.553 |
 | `test_interbus`          | `native_interbus`       |     5 |   ✅   | 00:00:00.570 |
 | `test_iccp`              | `native_iccp`           |     5 |   ✅   | 00:00:00.557 |
-| `test_wave`              | `native_wave`           |     9 |   ✅   | 00:00:00.654 |
+| `test_wave`              | `native_wave`           |     9 |   ✅   | 00:00:00.751 |
 | `test_utmc`              | `native_utmc`           |     6 |   ✅   | 00:00:00.542 |
-| `test_ocit`              | `native_ocit`           |     4 |   ✅   | 00:00:00.564 |
+| `test_ocit`              | `native_ocit`           |     4 |   ✅   | 00:00:10.907 |
 | `test_atc`               | `native_atc`            |     5 |   ✅   | 00:00:00.565 |
 | `test_southbound`        | `native_southbound`     |     6 |   ✅   | 00:00:00.580 |
 | `test_exc_decoder`       | `native_exc_decoder`    |     7 |   ✅   | 00:00:00.581 |
@@ -5941,12 +5941,12 @@ _Host tests for services/utmc: the UTMC common-database request/response codec._
 
 _Host tests for services/ocit: the OCIT-Outstations message codec._
 
-|   # | Test                       | Status | Description                                     |
-| --: | :------------------------- | :----: | :---------------------------------------------- |
-|   1 | `test_build_and_parse`     |   ✅   | [02][01 02][00 03][04][00 00 12 34] = 10 bytes. |
-|   2 | `test_set_u16_helper`      |   ✅   | Set u16 helper                                  |
-|   3 | `test_get_no_value`        |   ✅   | Get no value                                    |
-|   4 | `test_parse_rejects_short` |   ✅   | Parse rejects short                             |
+|   # | Test                       | Status | Description         |
+| --: | :------------------------- | :----: | :------------------ |
+|   1 | `test_build_and_parse`     |   ✅   | Build and parse     |
+|   2 | `test_set_u16_helper`      |   ✅   | Set u16 helper      |
+|   3 | `test_get_no_value`        |   ✅   | Get no value        |
+|   4 | `test_parse_rejects_short` |   ✅   | Parse rejects short |
 
 </details>
 
