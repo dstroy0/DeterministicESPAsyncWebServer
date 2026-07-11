@@ -77,8 +77,8 @@ void setup()
     WiFi.setSleep(false);
 
     coap_server_init();
-    coap_server_add_resource("/big", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_big);
-    coap_server_add_resource("/upload", (uint8_t)CoapMethodMask::COAP_ALLOW_PUT, h_upload);
+    coap_server_add_resource("/big", CoapMethodMask::COAP_ALLOW_GET, h_big);
+    coap_server_add_resource("/upload", CoapMethodMask::COAP_ALLOW_PUT, h_upload);
     coap_server_begin_udp(5683);
     Serial.println("CoAP server on :5683");
     Serial.println("  GET coap://<ip>/big      (block-wise responses)");

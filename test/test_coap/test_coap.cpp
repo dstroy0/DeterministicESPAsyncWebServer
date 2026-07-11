@@ -92,18 +92,17 @@ void setUp()
 
     coap_server_init();
     coap_server_add_resource("/temp",
-                             (uint8_t)CoapMethodMask::COAP_ALLOW_GET | (uint8_t)CoapMethodMask::COAP_ALLOW_POST |
-                                 (uint8_t)CoapMethodMask::COAP_ALLOW_PUT | (uint8_t)CoapMethodMask::COAP_ALLOW_DELETE,
+                             CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_POST |
+                                 CoapMethodMask::COAP_ALLOW_PUT | CoapMethodMask::COAP_ALLOW_DELETE,
                              h_resource);
-    coap_server_add_resource("/ro", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_resource);
-    coap_server_add_resource("/a/b", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_resource);
-    coap_server_add_resource("/longresourcename12345", (uint8_t)CoapMethodMask::COAP_ALLOW_GET,
+    coap_server_add_resource("/ro", CoapMethodMask::COAP_ALLOW_GET, h_resource);
+    coap_server_add_resource("/a/b", CoapMethodMask::COAP_ALLOW_GET, h_resource);
+    coap_server_add_resource("/longresourcename12345", CoapMethodMask::COAP_ALLOW_GET,
                              h_resource); // >12 chars: extended opt length
-    coap_server_add_resource("/", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_resource);
-    coap_server_add_resource("/big",
-                             (uint8_t)CoapMethodMask::COAP_ALLOW_GET | (uint8_t)CoapMethodMask::COAP_ALLOW_POST |
-                                 (uint8_t)CoapMethodMask::COAP_ALLOW_PUT,
-                             h_big);
+    coap_server_add_resource("/", CoapMethodMask::COAP_ALLOW_GET, h_resource);
+    coap_server_add_resource(
+        "/big", CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_POST | CoapMethodMask::COAP_ALLOW_PUT,
+        h_big);
 }
 
 void tearDown()
@@ -872,14 +871,14 @@ static void h_overflow(const CoapRequest *req, CoapResponse *resp)
 // coap_server_add_resource rejects null args and a full table.
 void test_add_resource_limits()
 {
-    TEST_ASSERT_FALSE(coap_server_add_resource(nullptr, (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_resource));
-    TEST_ASSERT_FALSE(coap_server_add_resource("/x", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, nullptr));
+    TEST_ASSERT_FALSE(coap_server_add_resource(nullptr, CoapMethodMask::COAP_ALLOW_GET, h_resource));
+    TEST_ASSERT_FALSE(coap_server_add_resource("/x", CoapMethodMask::COAP_ALLOW_GET, nullptr));
     int added = 0;
-    while (coap_server_add_resource("/fill", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_resource))
+    while (coap_server_add_resource("/fill", CoapMethodMask::COAP_ALLOW_GET, h_resource))
         if (++added > 64)
             break; // safety: the table is bounded, so this loop must terminate
     TEST_ASSERT_LESS_THAN(64, added);
-    TEST_ASSERT_FALSE(coap_server_add_resource("/nope", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_resource));
+    TEST_ASSERT_FALSE(coap_server_add_resource("/nope", CoapMethodMask::COAP_ALLOW_GET, h_resource));
 }
 
 // A datagram too short for a header, and a token length that runs past the buffer.
@@ -1021,7 +1020,7 @@ void test_block1_continue_no_space()
 // A handler reporting an over-capacity body is clamped, not overflowed.
 void test_response_payload_clamped()
 {
-    TEST_ASSERT_TRUE(coap_server_add_resource("/of", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_overflow));
+    TEST_ASSERT_TRUE(coap_server_add_resource("/of", CoapMethodMask::COAP_ALLOW_GET, h_overflow));
     uint8_t req[32], resp[256], tok[1] = {0};
     CoapEnc e;
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 0, 1);
@@ -1053,7 +1052,7 @@ void test_well_known_core_truncates()
         memset(g_longpaths[i], 'a' + i, 34);
         g_longpaths[i][0] = '/';
         g_longpaths[i][34] = '\0'; // 8 * ("<path>" + ',') = 8*36-1 = 287 > MAX_PAYLOAD (256)
-        TEST_ASSERT_TRUE(coap_server_add_resource(g_longpaths[i], (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_resource));
+        TEST_ASSERT_TRUE(coap_server_add_resource(g_longpaths[i], CoapMethodMask::COAP_ALLOW_GET, h_resource));
     }
     uint8_t req[64], resp[512], tok[1] = {0};
     CoapEnc e;

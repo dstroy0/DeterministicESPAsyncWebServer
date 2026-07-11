@@ -57,13 +57,15 @@ enum class CoapMethod : uint8_t
     COAP_DELETE = 4,
 };
 
-// Allowed-methods bitmask helpers for coap_server_add_resource() (bit per method).
-enum class CoapMethodMask : uint8_t
+// Allowed-methods bitmask for coap_server_add_resource() (bit per method). A mask is OR'd together,
+// so these are integer constants in a namespacing struct, not an enum class (which would force a cast
+// at every |). The bit position is the CoapMethod ordinal.
+struct CoapMethodMask
 {
-    COAP_ALLOW_GET = 1u << (unsigned)CoapMethod::COAP_GET,       ///< 0x02
-    COAP_ALLOW_POST = 1u << (unsigned)CoapMethod::COAP_POST,     ///< 0x04
-    COAP_ALLOW_PUT = 1u << (unsigned)CoapMethod::COAP_PUT,       ///< 0x08
-    COAP_ALLOW_DELETE = 1u << (unsigned)CoapMethod::COAP_DELETE, ///< 0x10
+    static constexpr uint8_t COAP_ALLOW_GET = 1u << (unsigned)CoapMethod::COAP_GET;       ///< 0x02
+    static constexpr uint8_t COAP_ALLOW_POST = 1u << (unsigned)CoapMethod::COAP_POST;     ///< 0x04
+    static constexpr uint8_t COAP_ALLOW_PUT = 1u << (unsigned)CoapMethod::COAP_PUT;       ///< 0x08
+    static constexpr uint8_t COAP_ALLOW_DELETE = 1u << (unsigned)CoapMethod::COAP_DELETE; ///< 0x10
 };
 
 /** @brief Build a CoAP response Code byte from its class and detail (e.g. COAP_CODE(2,5) = 2.05). */

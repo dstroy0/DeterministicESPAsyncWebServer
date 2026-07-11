@@ -16,7 +16,7 @@ shape as any CoAP handler; what makes it observable is that observers are tracke
 by the library and you call `coap_notify()` when the representation changes:
 
 ```cpp
-coap_server_add_resource("/count", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_count);
+coap_server_add_resource("/count", CoapMethodMask::COAP_ALLOW_GET, h_count);
 coap_server_begin_udp(5683);
 ```
 
@@ -94,7 +94,7 @@ void setup()
     WiFi.setSleep(false);
 
     coap_server_init();
-    coap_server_add_resource("/count", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_count);
+    coap_server_add_resource("/count", CoapMethodMask::COAP_ALLOW_GET, h_count);
     coap_server_begin_udp(5683);
     Serial.println("CoAP server on :5683, observe coap://<ip>/count");
 }

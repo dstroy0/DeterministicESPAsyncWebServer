@@ -15,10 +15,10 @@ mask, and a handler:
 
 ```cpp
 coap_server_init();
-coap_server_add_resource("/info", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, coap_info);
-coap_server_add_resource("/led", (uint8_t)CoapMethodMask::COAP_ALLOW_GET | (uint8_t)CoapMethodMask::COAP_ALLOW_PUT,
+coap_server_add_resource("/info", CoapMethodMask::COAP_ALLOW_GET, coap_info);
+coap_server_add_resource("/led", CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_PUT,
                          coap_led);
-coap_server_add_resource("/hello", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, coap_hello);
+coap_server_add_resource("/hello", CoapMethodMask::COAP_ALLOW_GET, coap_hello);
 coap_server_begin_udp(5683);
 ```
 
@@ -146,10 +146,10 @@ void setup()
 
     // Build the resource table, then bind the server to UDP/5683.
     coap_server_init();
-    coap_server_add_resource("/info", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, coap_info);
-    coap_server_add_resource("/led", (uint8_t)CoapMethodMask::COAP_ALLOW_GET | (uint8_t)CoapMethodMask::COAP_ALLOW_PUT,
+    coap_server_add_resource("/info", CoapMethodMask::COAP_ALLOW_GET, coap_info);
+    coap_server_add_resource("/led", CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_PUT,
                          coap_led);
-    coap_server_add_resource("/hello", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, coap_hello);
+    coap_server_add_resource("/hello", CoapMethodMask::COAP_ALLOW_GET, coap_hello);
     coap_server_begin_udp(5683);
     Serial.println("CoAP server listening on UDP/5683 (try: coap-client -m get coap://<ip>/info)");
 
