@@ -9162,7 +9162,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Eval all clear
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_NONE, detws_guardrail_eval(&h, 8192, 4096, 512));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_NONE, detws_guardrail_eval(&h, 8192, 4096, 512));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9170,7 +9170,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Eval heap breach
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_HEAP, detws_guardrail_eval(&h, 8192, 4096, 512));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_HEAP, detws_guardrail_eval(&h, 8192, 4096, 512));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9178,7 +9178,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Eval frag and stack
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_FRAG | DETWS_BREACH_STACK, b);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_FRAG | DetwsBreach::DETWS_BREACH_STACK, b);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9186,7 +9186,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Eval all breached
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_HEAP | DETWS_BREACH_FRAG | DETWS_BREACH_STACK, b);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9211,7 +9211,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A null health snapshot reports no breach (nothing to evaluate).
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_NONE, detws_guardrail_eval(nullptr, 8192, 4096, 512));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_NONE, detws_guardrail_eval(nullptr, 8192, 4096, 512));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9232,7 +9232,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(0, h.free_heap);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, h.stack_free);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_NONE, detws_guardrails_check());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_NONE, detws_guardrails_check());</code>
   </details>
 
 </details>
