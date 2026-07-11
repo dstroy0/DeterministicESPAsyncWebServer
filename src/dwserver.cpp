@@ -407,65 +407,6 @@ int DetWebServer::append_resp_trailer(char *buf, size_t cap, int hlen, uint8_t s
     return hlen + n;
 }
 
-// ---------------------------------------------------------------------------
-// Middleware chain + built-in rate limiter
-// ---------------------------------------------------------------------------
-
-void DetWebServer::use(Middleware mw)
-{
-    if (mw == nullptr || _middleware_count >= MAX_MIDDLEWARE)
-        return;
-    _middleware[_middleware_count++] = mw;
-}
-
-// Run the chain in registration order. The first middleware to return MwResult::MW_HALT
-// stops dispatch; it is responsible for having sent a response.
-bool DetWebServer::run_middleware(uint8_t slot_id, HttpReq *req)
-{
-    for (uint8_t i = 0; i < _middleware_count; i++)
-    {
-        if (_middleware[i] && _middleware[i](slot_id, req) == MwResult::MW_HALT)
-            return true;
-    }
-    return false;
-}
-
-void DetWebServer::enable_rate_limit(uint16_t max_requests, uint32_t window_ms)
-{
-    _rl_max = max_requests;
-    _rl_window_ms = window_ms;
-    _rl_window_start = millis();
-    _rl_count = 0;
-}
-
-// Fixed-window counter. Unsigned subtraction is rollover-safe across the millis()
-// wrap. On the request that tips past _rl_max, reply 429 + Retry-After and stop.
-bool DetWebServer::rate_limit_check(uint8_t slot_id)
-{
-    if (_rl_max == 0 || _rl_window_ms == 0)
-        return false; // disabled
-
-    uint32_t now = millis();
-    if ((uint32_t)(now - _rl_window_start) >= _rl_window_ms)
-    {
-        _rl_window_start = now; // new window
-        _rl_count = 0;
-    }
-
-    _rl_count++;
-    if (_rl_count <= _rl_max)
-        return false; // within budget
-
-    // Over budget: advertise how long until the window resets, then 429.
-    uint32_t elapsed = (uint32_t)(now - _rl_window_start);
-    uint32_t remain_ms = (_rl_window_ms > elapsed) ? (_rl_window_ms - elapsed) : 0;
-    char secs[12];
-    snprintf(secs, sizeof(secs), "%lu", (unsigned long)((remain_ms + 999) / 1000));
-    add_response_header(slot_id, "Retry-After", secs);
-    send(slot_id, 429, DET_MIME_TEXT_PLAIN, "Too Many Requests");
-    return true;
-}
-
 int32_t DetWebServer::listen(uint16_t port, ConnProto proto)
 {
     if (_listener_count >= MAX_LISTENERS)
