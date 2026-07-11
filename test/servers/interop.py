@@ -31,6 +31,7 @@ from peers import (
     modbus_peer,
     mqtt_peer,
     mtconnect_peer,
+    ntp_peer,
     opcua_peer,
     redis_peer,
     smtp_peer,
@@ -57,6 +58,7 @@ _MODULES = [
     ftp_peer,
     smtp_peer,
     syslog_peer,
+    ntp_peer,
 ]
 
 
