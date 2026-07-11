@@ -38,12 +38,43 @@ jobs:
       matrix: ${{ steps.set.outputs.matrix }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # full history so the diff base (github.event.before) is present
       - uses: actions/setup-python@v6
         with:
           python-version: "3.x"
+      # Same single source of truth as the PlatformIO build - the example READMEs - and the same
+      # affected-example selection: rebuild only the examples the diff touches, FULL on shared/core
+      # src, this workflow, the matrix generator, dispatch, first push, or [ci full] / full-ci label.
       - id: set
-        # Same single source of truth as the PlatformIO build - the example READMEs.
-        run: echo "matrix=$(python tools/ci/example_footprints.py matrix)" >> "$GITHUB_OUTPUT"
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -e
+          FULL=0
+          case "$EVENT" in workflow_dispatch | schedule) FULL=1 ;; esac
+          printf '%s' "$PR_LABELS" | grep -q '"full-ci"' && FULL=1 || true
+          if [ "$EVENT" = "pull_request" ]; then BASE="$PR_BASE"; HEAD="$PR_HEAD"; else BASE="$BEFORE"; HEAD="$HEAD_SHA"; fi
+          if git rev-parse --verify -q "$HEAD^{commit}" >/dev/null; then
+            git log -1 --format=%B "$HEAD" | grep -qiE '\[(ci )?full( ci)?\]' && FULL=1 || true
+          fi
+          if [ "$FULL" = "0" ] && { [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] \
+               || ! git rev-parse --verify -q "$BASE^{commit}" >/dev/null; }; then
+            FULL=1 # first push on a branch / unknown base -> be safe
+          fi
+          if [ "$FULL" = "1" ]; then
+            M="$(python tools/ci/example_footprints.py matrix </dev/null)"
+          else
+            M="$(git diff --name-only "$BASE" "$HEAD" | python tools/ci/example_footprints.py matrix)"
+          fi
+          N="$(printf '%s' "$M" | python -c 'import sys,json;print(len(json.load(sys.stdin)))')"
+          echo "full=$FULL selected=$N example(s)"
+          echo "matrix=$M" >> "$GITHUB_OUTPUT"
 
       # Warm the core cache once here so the fan-out jobs restore instead of each
       # re-downloading the xtensa toolchain.
@@ -66,6 +97,8 @@ jobs:
   build:
     name: ${{ matrix.example.name }}
     needs: discover
+    # Skip cleanly when the diff touched no example (empty matrix would otherwise error).
+    if: ${{ needs.discover.outputs.matrix != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

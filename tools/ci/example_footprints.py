@@ -10,6 +10,14 @@ Three subcommands, used by .github/workflows/esp32-build.yml:
       `feature` is the example's DETWS_ENABLE_* signature (e.g. "TLS+MTLS"), or
       "core/<name>" when it enables nothing.
 
+      With a newline-separated list of changed paths on stdin, prints only the
+      AFFECTED subset: an example whose own directory changed, or that includes a
+      changed `src/services/<sub>/` feature (matched by the `services/<sub>/`
+      include in its .ino). Any other changed `src/` path (dwserver, shared
+      primitives, network drivers, a top-level `services/*.h`) is shared code and
+      falls back to the FULL matrix - the safe default. Empty stdin -> FULL, so a
+      workflow_dispatch / schedule / first push still rebuilds everything.
+
   example_footprints.py fragment <build.log> <out.json>
       Parse the `Flash:`/`RAM:` "used N bytes" lines from a `pio ci` build log and
       write one footprint fragment {feature, example, flags, board, flash_bytes,
@@ -55,7 +63,7 @@ def feature_key(flags, name):
     return "+".join(short) if short else f"core/{name}"
 
 
-def cmd_matrix():
+def all_items():
     items = []
     for ino in sorted(glob.glob(f"{EX_ROOT}/**/*.ino", recursive=True)):
         d = os.path.dirname(ino)
@@ -69,6 +77,52 @@ def cmd_matrix():
                 "feature": feature_key(flags, os.path.basename(d)),
             }
         )
+    return items
+
+
+def affected_items(items, changed):
+    """The subset of items a changed-file set touches, or the full list on any shared/core change."""
+    features = set()  # src/services/<sub>/... -> feature subdir
+    example_hits = []  # changed paths under examples/
+    for f in changed:
+        f = f.strip().replace(os.sep, "/")
+        if not f:
+            continue
+        if f.startswith(f"{EX_ROOT}/"):
+            example_hits.append(f)
+        elif f.startswith("src/services/") and f.count("/") >= 3:
+            features.add(f.split("/")[2])  # e.g. src/services/smb/smb2.cpp -> "smb"
+        elif f.startswith("src/"):
+            return items  # shared/core src (dwserver, shared_primitives, a top-level services/*.h) -> FULL
+        elif (
+            f == "platformio.ini"
+            or f == "tools/ci/example_footprints.py"
+            or (f.startswith(".github/workflows/") and f.endswith("build.yml"))
+        ):
+            return items  # build config / matrix generator / the build workflow -> FULL
+        # else: docs, memory, unrelated tooling -> not build-affecting, ignore
+
+    sel = []
+    for it in items:
+        pfx = f"{EX_ROOT}/{it['name']}/"
+        if any(h.startswith(pfx) for h in example_hits):
+            sel.append(it)
+            continue
+        if features:
+            try:
+                txt = open(it["ino"], encoding="utf-8", errors="replace").read()
+            except OSError:
+                txt = ""
+            if any(f"services/{sub}/" in txt for sub in features):
+                sel.append(it)
+    return sel
+
+
+def cmd_matrix():
+    items = all_items()
+    changed = [] if sys.stdin.isatty() else sys.stdin.read().splitlines()
+    if changed:
+        items = affected_items(items, changed)
     print(json.dumps(items))
 
 
