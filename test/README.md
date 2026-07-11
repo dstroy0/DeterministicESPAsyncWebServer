@@ -6977,7 +6977,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: motor stop (value 0) -> all zero.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_HEX16(0x82C6, detws_dshot_encode(1046, false, false));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX16(0x0000, detws_dshot_encode(DSHOT_CMD_MOTOR_STOP, false, false));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0000, detws_dshot_encode(DshotCmd::DSHOT_CMD_MOTOR_STOP, false, false));</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(0x0022, detws_dshot_encode(1, false, false));</code>
   </details>
 
@@ -13313,7 +13313,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (ld2410_parse_report(BASIC, sizeof(BASIC), &r))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, r.engineering);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(LD2410_STATE_MOVING, r.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(Ld2410State::LD2410_STATE_MOVING, r.state);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(250, r.moving_cm);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(80, r.moving_energy);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(300, r.static_cm);</code>
@@ -13328,7 +13328,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (ld2410_parse_report(ENG, sizeof(ENG), &r))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, r.engineering);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(LD2410_STATE_BOTH, r.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(Ld2410State::LD2410_STATE_BOTH, r.state);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(100, r.moving_cm);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(150, r.static_cm);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(200, r.detect_cm);</code>
@@ -32669,7 +32669,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Parse data
     * **Assertions**:
       * <code>Assert true (detws_wifi_parse(DATA_FROMDS, sizeof(DATA_FROMDS), &f))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(WIFI_TYPE_DATA, f.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(WifiType::WIFI_TYPE_DATA, f.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, f.subtype);</code>
       * <code>Assert true (f.from_ds)</code>
       * <code>Assert false (f.to_ds)</code>
@@ -32683,7 +32683,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Parse beacon
     * **Assertions**:
       * <code>Assert true (detws_wifi_parse(BEACON, sizeof(BEACON), &f))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(WIFI_TYPE_MGMT, f.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(WifiType::WIFI_TYPE_MGMT, f.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(8, f.subtype); // beacon subtype</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(3, f.naddr);</code>
   </details>
@@ -32694,7 +32694,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Too short is rejected.
     * **Assertions**:
       * <code>Assert true (detws_wifi_parse(CTS, sizeof(CTS), &f))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(WIFI_TYPE_CTRL, f.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(WifiType::WIFI_TYPE_CTRL, f.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x0C, f.subtype); // CTS</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, f.naddr);      // only addr1 fits</code>
       * <code>Assert false (detws_wifi_parse(CTS, 9, &f))</code>
@@ -32785,8 +32785,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Build coap rejects bad args
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(WISUN_COAP_CON, WISUN_COAP_GET, 1, tok, 9, "x", nullptr, 0, buf,</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(WISUN_COAP_CON, WISUN_COAP_GET, 1, nullptr, 0, "x", nullptr, 0, tiny,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, tok, 9, "x",</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr, 0,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32816,7 +32816,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert false (wisun_node_find(&fan, &c, nullptr))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, wisun_joined_count(&fan));</code>
       * <code>Assert equal int (-1, wisun_node_register(&fan, &a, 1))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, wisun_build_coap(WisunCoap::WISUN_COAP_CON, WisunCoap::WISUN_COAP_GET, 1, nullptr, 0,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33412,12 +33412,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Control bytes
     * **Assertions**:
-      * <code>Assert true (zwave_is_ack(ZWAVE_ACK))</code>
-      * <code>Assert true (zwave_is_nak(ZWAVE_NAK))</code>
-      * <code>Assert true (zwave_is_can(ZWAVE_CAN))</code>
-      * <code>Assert false (zwave_is_ack(ZWAVE_SOF))</code>
+      * <code>Assert true (zwave_is_ack(Zwave::ZWAVE_ACK))</code>
+      * <code>Assert true (zwave_is_nak(Zwave::ZWAVE_NAK))</code>
+      * <code>Assert true (zwave_is_can(Zwave::ZWAVE_CAN))</code>
+      * <code>Assert false (zwave_is_ack(Zwave::ZWAVE_SOF))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(1, zwave_build_ack(ack, sizeof(ack)));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(ZWAVE_ACK, ack[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Zwave::ZWAVE_ACK, ack[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, zwave_build_ack(ack, 0)); // no room</code>
   </details>
 
