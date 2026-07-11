@@ -101,28 +101,28 @@
     "example": "Foundation/07.DmaIngest",
     "flags": "-DDETWS_ENABLE_DMA=1 -DDETWS_ENABLE_PREEMPT_QUEUE=1 -DDETWS_DMA_SIMULATE=1",
     "board": "esp32dev",
-    "flash_bytes": 269393,
+    "flash_bytes": 269401,
     "ram_bytes": 28600
   },
   "DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE": {
     "example": "Foundation/09.InterfaceForward",
     "flags": "-DDETWS_ENABLE_DMA=1 -DDETWS_ENABLE_PREEMPT_QUEUE=1 -DDETWS_ENABLE_FORWARD=1 -DDETWS_DMA_SIMULATE=1",
     "board": "esp32dev",
-    "flash_bytes": 270805,
+    "flash_bytes": 270813,
     "ram_bytes": 29096
   },
   "DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE": {
     "example": "Foundation/10.RadioGateway",
     "flags": "-DDETWS_ENABLE_DMA=1 -DDETWS_ENABLE_PREEMPT_QUEUE=1 -DDETWS_ENABLE_GATEWAY=1 -DDETWS_DMA_SIMULATE=1",
     "board": "esp32dev",
-    "flash_bytes": 270549,
+    "flash_bytes": 270557,
     "ram_bytes": 28720
   },
   "DNC": {
     "example": "L7-Application/69.EthernetDnc",
     "flags": "-DDETWS_ENABLE_DNC=1",
     "board": "esp32dev",
-    "flash_bytes": 733825,
+    "flash_bytes": 733829,
     "ram_bytes": 61112
   },
   "DNS_RESOLVER": {
@@ -332,15 +332,15 @@
     "example": "L7-Application/54.OAuth2",
     "flags": "-DDETWS_ENABLE_OAUTH2=1 -DDETWS_ENABLE_HTTP_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 764009,
-    "ram_bytes": 89176
+    "flash_bytes": 763737,
+    "ram_bytes": 88808
   },
   "OIDC": {
     "example": "L7-Application/50.OidcAuth",
     "flags": "-DDETWS_ENABLE_OIDC=1",
     "board": "esp32dev",
-    "flash_bytes": 764621,
-    "ram_bytes": 79472
+    "flash_bytes": 764341,
+    "ram_bytes": 79120
   },
   "OPCUA": {
     "example": "L7-Application/55.OpcUa",
@@ -402,7 +402,7 @@
     "example": "Foundation/08.PreemptLanes",
     "flags": "-DDETWS_ENABLE_PREEMPT_QUEUE=1",
     "board": "esp32dev",
-    "flash_bytes": 268393,
+    "flash_bytes": 268401,
     "ram_bytes": 23936
   },
   "PROMISC+FORWARD+ETHERNET": {
