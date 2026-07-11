@@ -380,6 +380,7 @@
         "+<network_drivers/presentation/multipart/multipart.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<dwserver.cpp>",
+        "+<server/webdav.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/application/web_assets.cpp>",
         "+<services/web_terminal/web_terminal.cpp>",
@@ -432,6 +433,7 @@
         "+<network_drivers/presentation/multipart/multipart.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<dwserver.cpp>",
+        "+<server/webdav.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/application/web_assets.cpp>",
         "+<services/web_terminal/web_terminal.cpp>",
@@ -1008,7 +1010,8 @@
         "+<network_drivers/presentation/sse/sse.cpp>",
         "+<network_drivers/presentation/multipart/multipart.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<dwserver.cpp>"
+        "+<dwserver.cpp>",
+        "+<server/webdav.cpp>"
       ],
       "tests": ["test_keepalive"]
     },
@@ -1031,7 +1034,8 @@
         "+<network_drivers/presentation/sse/sse.cpp>",
         "+<network_drivers/presentation/multipart/multipart.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
-        "+<dwserver.cpp>"
+        "+<dwserver.cpp>",
+        "+<server/webdav.cpp>"
       ],
       "tests": ["test_range"]
     },
@@ -1209,6 +1213,7 @@
         "+<network_drivers/presentation/multipart/multipart.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<dwserver.cpp>",
+        "+<server/webdav.cpp>",
         "+<services/upload_service/upload_service.cpp>"
       ],
       "tests": ["test_upload"]
