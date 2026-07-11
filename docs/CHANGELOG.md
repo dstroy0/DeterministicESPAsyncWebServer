@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`d681cbd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d681cbd0c24811606ab71c6cffb86a3783cccfe2))
 - update CHANGELOG.md [skip ci] ([`0f425f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f425f9ebc90c4d22d46534056332b9ad118507b))
 - update test report + coverage [skip ci] ([`d880311`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d88031172d08b0873dd2cfadb2720a774a9dfc21))
 - update CHANGELOG.md [skip ci] ([`cb1d47d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb1d47d3e9c9e379b479968a115e26d6c9c7a83d))
@@ -107,6 +108,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- nrf24.cpp anon cmd/reg/cfg/status enums -> namespacing structs ([`f2750cc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f2750ccebf3f785858559060362ac75a8717c9a4))
 - lora.cpp anon register/mode/irq enums -> namespacing structs ([`e3ed013`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3ed013af8392cc51aa6e432a1a8d2d72d888cf1))
 - dds/southbound anon enums -> namespacing structs ([`7961536`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7961536a08a37e6f1ed4b183e4409827499ea316))
 - ocit/rawl2/wave anon wire-const enums -> namespacing structs ([`67eccc2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/67eccc29743683c0c23be97a96bc09c2e33389e0))
