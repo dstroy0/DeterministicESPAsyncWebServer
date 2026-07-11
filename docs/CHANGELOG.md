@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`567b7c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/567b7c20082090992c484f8bae4bbc6a4d409cb5))
+- update CHANGELOG.md [skip ci] ([`a265163`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a265163b0edda58cd5457435aabda025585446df))
 - update CHANGELOG.md [skip ci] ([`5e9051e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e9051e61f96de0cace1e2fe2d458e0cc0fb6fad))
 - update CHANGELOG.md [skip ci] ([`67eefef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/67eefef0e2458de34f9ce734ee9d9300745618ad))
 - update test report + coverage [skip ci] ([`37f0265`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37f02658dd18a4d9a4701045e8485f7c4ddb6e5e))
@@ -71,6 +73,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`563ee52`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/563ee52b419a88a61df41ba748614b77440daba1))
+- update ESP32 build footprints [skip ci] ([`d2a66aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d2a66aa8332476b6cf94d46899a467de2c7e41f6))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f2f3832`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f2f383254d0c03e3c7c7dfc7b319a576de726810))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8ea408b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8ea408bea3381e0d47605046f678e660e8b79d92))
 - update ESP32 build footprints [skip ci] ([`400be1d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/400be1d9c1fae4efa1ed34d0b953a7a1129ad340))
@@ -119,6 +123,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- TLS-in-QUIC anon enums -> structs; handshake state -> enum class ([`c896baa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c896baa6a26787a9512631b6d091d1898d6ec39d))
 - h3 frame/settings -> structs; stream role -> enum class ([`a7cdbbe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7cdbbe56c66c340889ed127f86e5557ee478b2f))
 - quic_packet/quic_tp anon enums -> namespacing structs ([`80bf513`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80bf51334aedb0933d9499a542636ca49c57758b))
 - quic_frame anon enums -> namespacing structs ([`2a2b485`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2a2b4853110a5129ebe58a0af5947f667281fff2))
