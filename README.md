@@ -497,7 +497,6 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | Core  | `BUS_CAPTURE`  |            17.9 KB |         < 0.5 KB |
 | Core  | `FORWARD`      |            17.9 KB |         < 0.5 KB |
 | Core  | `PROMISC`      |            11.5 KB |         < 0.5 KB |
-| Core  | `IPV6`         |             0.5 KB |         < 0.5 KB |
 | L5    | `SSH`          |       66.3-66.7 KB |     21.6-21.8 KB |
 | L6    | `TLS`          |            99.7 KB |          49.5 KB |
 | L6    | `WS_DEFLATE`   |         2.6-7.9 KB |       7.8-9.5 KB |
@@ -511,7 +510,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `UPLOAD`       |            39.6 KB |           4.9 KB |
 | L7    | `OPCUA_CLIENT` |        6.8-28.2 KB |     10.0-13.6 KB |
 | L7    | `NTP`          |            23.2 KB |           2.3 KB |
-| L7    | `MDNS`         |            23.0 KB |           1.6 KB |
+| L7    | `MDNS`         |            22.9 KB |           1.6 KB |
 | L7    | `TIME_SOURCE`  |            18.8 KB |           1.4 KB |
 | L7    | `DASHBOARD`    |            18.4 KB |         < 0.5 KB |
 | L7    | `RTC`          |            13.5 KB |         < 0.5 KB |
