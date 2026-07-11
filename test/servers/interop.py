@@ -26,6 +26,7 @@ import sys
 
 from peers import (
     coap_peer,
+    dns_peer,
     ftp_peer,
     http_peer,
     modbus_peer,
@@ -59,6 +60,7 @@ _MODULES = [
     smtp_peer,
     syslog_peer,
     ntp_peer,
+    dns_peer,
 ]
 
 
