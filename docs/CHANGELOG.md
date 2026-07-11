@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`733426f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/733426fab521fa067d6d271d452f3888bd7f77f1))
 - update test report + coverage [skip ci] ([`f8eb5d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8eb5d02daa7e4e8f265177ce569085146aac755))
 - update CHANGELOG.md [skip ci] ([`0c6b7b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c6b7b1e56d3023e20bc272f1aac0f2c68a0b317))
 - update test report + coverage [skip ci] ([`3e36a6d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e36a6d674eeae69f3327284e6bf4305a10e45ae))
@@ -87,6 +88,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`955e939`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/955e9392b1f53cdec1fcbf5624b6c0c09dc3ece4))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ad0d918`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad0d918a6d067fe86af9484fddc012b02e881588))
+- update ESP32 build footprints [skip ci] ([`3efa5b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3efa5b97734a3b10a3c9229b9af9542880875a07))
 - update ESP32 build footprints [skip ci] ([`5a290c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5a290c97a2fa34c98eb89e888dc3733f587cdead))
 - document why the cipher/mac tags stay anonymous plain enums ([`b37c91a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b37c91af2080c05dd5ff0a6f4dd50b25d27862a7))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`793078d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/793078d8e824798fdace24467f41747eee77f8f9))
@@ -147,6 +151,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- one declaration per line - fins/snmp_v3/ssh_transport (S1659) ([`b18408f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b18408f2850c6116a6fc736ec81d0ee8b24af7c3))
+- one declaration per line - http3 (S1659) ([`85964c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/85964c83d996c552ab454d964c01b675510ed824))
 - one declaration per line - ssh crypto (S1659) ([`9e4521c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e4521c9ffefe7e72fba2b1a785687dd1b37ab71))
 - one declaration per line - ip/graphql/smb (S1659) ([`72213bc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/72213bccf9a85e272201e09e371c301a30ad826c))
 - one declaration per line - relay + ssh_transport (S1659) ([`6922bb7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6922bb777f2677e1a3ed53066e84aaff4e0879b9))
