@@ -284,6 +284,23 @@ encode (`ua_w_datavalue`, the Read-service hot op). All pure little-endian codec
   (`DETWS_OPCUA_BUF`) with MaxChunkCount 1 - the server never honors the client's huge sizes, so a Hello
   cannot induce an over-allocation. That bound is structural (fixed buffers), not a tunable.
 
+### Modbus TCP slave codec (DETWS_ENABLE_MODBUS)
+
+`modbus_process_adu()` is the whole Modbus TCP slave path (Modbus Application Protocol): parse the MBAP
+header, dispatch the function code against the coil/register data model, build the response ADU. Pure
+(no sockets, no heap). Host figures from [`perf/bench_modbus.cpp`](../perf/bench_modbus.cpp); the device
+figure is the rig `/bench` CCOUNT op (Read Holding Registers x8).
+
+| Operation                            | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------------------------------ | ---------: | --------: | --------------: | -------------: |
+| `modbus_process_adu` read holding x8 |       17.6 |     683.3 |             477 |           1987 |
+| `modbus_process_adu` write multi x2  |       12.6 |    1351.2 |               - |              - |
+
+- A Read Holding Registers round trip is ~2.0 us on the S3 - the **cheapest of all the protocol request
+  paths** (a fixed binary MBAP header + a direct index into the register array, no text/TLV/negotiation).
+  Modbus is the lightest per-transaction protocol on the device, fitting its role as a high-rate PLC/SCADA
+  poll target - a single connection can be polled at hundreds of Hz without the codec being the limit.
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
