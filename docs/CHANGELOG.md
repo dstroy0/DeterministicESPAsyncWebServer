@@ -6,10 +6,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- overflow-safe bounds in command emitters (SonarCloud) ([`4d177b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4d177b4594ba2eb81d36acea13bc652b932df302))
 - cast scoped HttpClientError to int at detws_webhook_post return ([`5ae0a5b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ae0a5bb287ec256eb1953c0d0a382ed5d79f7e7))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`33fd2a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33fd2a8ebea3314397a699d79c27f60f8ec44fc3))
 - update CHANGELOG.md [skip ci] ([`d7bc20f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7bc20f59960c304e230eba5a242e76bf86e1949))
 - update CHANGELOG.md [skip ci] ([`ac3b3ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac3b3ce08798297bf1acbe56757de239e07cb4bc))
 - update CHANGELOG.md [skip ci] ([`aadbb97`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aadbb9763520de72958aac49cee1c5cc417d4bea))
@@ -19,6 +21,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`db1f69e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db1f69e617b16b548ed7e586f9d0d3af06417f18))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`46fc06b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/46fc06b92d0c7fba70eea4ba459f2c6a6ec1b69c))
 - update ESP32 build footprints [skip ci] ([`e51517d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e51517d619a2f89a77aa292a90de8a59eb18c3de))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`64817bf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64817bf7c7ec57c1a425bdaacec8bb4f0784cd25))
