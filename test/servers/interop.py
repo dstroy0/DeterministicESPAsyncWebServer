@@ -29,6 +29,7 @@ from peers import (
     http_peer,
     modbus_peer,
     mqtt_peer,
+    mtconnect_peer,
     opcua_peer,
     snmp_peer,
     sse_peer,
@@ -37,7 +38,18 @@ from peers import (
 )
 
 # Module list; each contributes one or more peers (module-level or via PEERS).
-_MODULES = [http_peer, ws_peer, sse_peer, webdav_peer, snmp_peer, modbus_peer, coap_peer, mqtt_peer, opcua_peer]
+_MODULES = [
+    http_peer,
+    ws_peer,
+    sse_peer,
+    webdav_peer,
+    mtconnect_peer,
+    snmp_peer,
+    modbus_peer,
+    coap_peer,
+    mqtt_peer,
+    opcua_peer,
+]
 
 
 def _peers():
