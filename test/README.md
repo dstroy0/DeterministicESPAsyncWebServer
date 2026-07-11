@@ -17475,16 +17475,16 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Crafted headers whose "alg" value trips a find_field edge (before sig verify) -> ERR_ALG:
     * **Assertions**:
       * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_ALG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_ALG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_ALG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert false (detws_oidc_jwks_find(K_JWKS_BADN, "bad", &bad))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_NOT_YET,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_NOT_YET,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert true (detws_oidc_token_kid(K_TOK_VALID, strlen(K_TOK_VALID), kid, sizeof(kid)))</code>
       * <code>Assert equal string ("test-key-1", kid)</code>
       * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
@@ -17494,20 +17494,20 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, key.e[2]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x01, key.e[3]);</code>
       * <code>Assert false (detws_oidc_jwks_find(K_JWKS, "nope", &key))</code>
-      * <code>Assert equal int (DETWS_OIDC_OK, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_OK, rc)</code>
       * <code>Assert equal string ("user-42", c.sub)</code>
       * <code>Assert equal string ("alice@example.com", c.email)</code>
       * <code>Assert true (c.iat == 1700000000LL)</code>
       * <code>Assert true (c.exp == 4102444800LL)</code>
-      * <code>Assert equal int (DETWS_OIDC_OK, rc)</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_EXPIRED, rc)</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_ISS, rc)</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_AUD, rc)</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_ALG, rc)</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_SIGNATURE, rc)</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_SIGNATURE, rc)</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_KEY, rc)</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_OK, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_EXPIRED, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_ISS, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_AUD, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_ALG, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_KEY, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_FORMAT, rc)</code>
       * <code>Assert false (detws_oidc_token_kid(nullptr, 10, kid, sizeof(kid)))</code>
       * <code>Assert false (detws_oidc_token_kid("a.b.c", 5, nullptr, sizeof(kid)))</code>
       * <code>Assert false (detws_oidc_token_kid("a.b.c", 5, kid, 0))</code>
@@ -17517,14 +17517,14 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert false (detws_oidc_jwks_find("{\\"foo\\":1}", "k", &key))</code>
       * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"x\\"", "x", &key))</code>
       * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "k1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify_with_key(nullptr, 5, &key, ISS, AUD, NOW, nullptr))</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify_with_key("a.b.c", 0, &key, ISS, AUD, NOW, nullptr))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify("aa.bb", 5, K_JWKS, ISS, AUD, NOW, nullptr))</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify("a.b.c.d", 7, K_JWKS, ISS, AUD, NOW, nullptr))</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify(buf, strlen(buf), K_JWKS, ISS, AUD, NOW, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert false (detws_oidc_jwks_find("", "k", &key))</code>
       * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\\\\\\\b\\"}]}", "zzz", &key))</code>
       * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"abc}]}", "abc", &key))</code>
@@ -17540,11 +17540,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: No `aud` member at all -> aud_contains find_field fails -> ERR_AUD.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_NOT_YET,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_NOT_YET,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17583,14 +17583,14 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert false (detws_oidc_jwks_find("{\\"foo\\":1}", "k", &key))</code>
       * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"x\\"", "x", &key))</code>
       * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "k1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify_with_key(nullptr, 5, &key, ISS, AUD, NOW, nullptr))</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify_with_key("a.b.c", 0, &key, ISS, AUD, NOW, nullptr))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify("aa.bb", 5, K_JWKS, ISS, AUD, NOW, nullptr))</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify("a.b.c.d", 7, K_JWKS, ISS, AUD, NOW, nullptr))</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify(buf, strlen(buf), K_JWKS, ISS, AUD, NOW, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert false (detws_oidc_jwks_find("", "k", &key))</code>
       * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\\\\\\\b\\"}]}", "zzz", &key))</code>
       * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"abc}]}", "abc", &key))</code>
@@ -17606,14 +17606,14 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Wrong segment counts (one '.' / three '.').
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify_with_key(nullptr, 5, &key, ISS, AUD, NOW, nullptr))</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify_with_key("a.b.c", 0, &key, ISS, AUD, NOW, nullptr))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify("aa.bb", 5, K_JWKS, ISS, AUD, NOW, nullptr))</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify("a.b.c.d", 7, K_JWKS, ISS, AUD, NOW, nullptr))</code>
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, detws_oidc_verify(buf, strlen(buf), K_JWKS, ISS, AUD, NOW, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17651,7 +17651,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Verify valid token and claims
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OIDC_OK, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_OK, rc)</code>
       * <code>Assert equal string ("user-42", c.sub)</code>
       * <code>Assert equal string ("alice@example.com", c.email)</code>
       * <code>Assert true (c.iat == 1700000000LL)</code>
@@ -17663,7 +17663,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Verify aud array
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OIDC_OK, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_OK, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17671,7 +17671,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Reject expired
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OIDC_ERR_EXPIRED, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_EXPIRED, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17679,7 +17679,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Reject wrong issuer
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OIDC_ERR_ISS, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_ISS, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17687,7 +17687,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Reject wrong audience
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OIDC_ERR_AUD, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_AUD, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17695,7 +17695,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Reject non rs256 header
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OIDC_ERR_ALG, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_ALG, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17703,7 +17703,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Reject tampered payload
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_SIGNATURE, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17711,7 +17711,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Reject tampered signature
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_SIGNATURE, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17719,7 +17719,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: JWKS whose only key has a different kid than the token's.
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OIDC_ERR_KEY, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_KEY, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17727,7 +17727,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: No kid extractable -> the sole JWKS key is selected, then the token shape
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OIDC_ERR_FORMAT, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_FORMAT, rc)</code>
   </details>
 
 </details>
