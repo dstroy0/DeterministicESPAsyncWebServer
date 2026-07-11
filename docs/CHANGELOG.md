@@ -2,6 +2,16 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`3b2667b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b2667bc787d47feb0da63f2a0e351c67379ba50))
+
+### Documentation
+
+- log the QUIC frame-parser interop blocker; handshake now runs on PSRAM ([`353cfe9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/353cfe9278c098621cb958ff413f5af1480d05a9))
+
 ## [5.95.11] - 2026-07-11
 
 <details>
