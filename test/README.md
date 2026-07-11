@@ -6419,11 +6419,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Flow control
     * **Assertions**:
       * <code>Assert true (dnc_flow_can_send(&f))</code>
-      * <code>Assert true (dnc_flow_feed(&f, DNC_XOFF))</code>
+      * <code>Assert true (dnc_flow_feed(&f, (uint8_t)DncFlowByte::DNC_XOFF))</code>
       * <code>Assert false (dnc_flow_can_send(&f))</code>
       * <code>Assert false (dnc_flow_feed(&f, 'G'))</code>
       * <code>Assert false (dnc_flow_can_send(&f))</code>
-      * <code>Assert true (dnc_flow_feed(&f, DNC_XON))</code>
+      * <code>Assert true (dnc_flow_feed(&f, (uint8_t)DncFlowByte::DNC_XON))</code>
       * <code>Assert true (dnc_flow_can_send(&f))</code>
   </details>
 
@@ -6445,8 +6445,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: next block decodes normally
     * **Assertions**:
-      * <code>Assert equal (DNC_EV_OVERFLOW, ev)</code>
-      * <code>Assert equal (DNC_EV_LINE, ev)</code>
+      * <code>Assert equal (DncEvent::DNC_EV_OVERFLOW, ev)</code>
+      * <code>Assert equal (DncEvent::DNC_EV_LINE, ev)</code>
       * <code>Assert equal string ("G1", d.line)</code>
   </details>
 
@@ -6464,7 +6464,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Decode eia three is not xoff
     * **Assertions**:
-      * <code>Assert equal (DNC_EV_LINE, ev)</code>
+      * <code>Assert equal (DncEvent::DNC_EV_LINE, ev)</code>
       * <code>Assert equal string ("M30", d.line)</code>
   </details>
 
@@ -6490,7 +6490,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Iso roundtrip
     * **Assertions**:
-      * <code>Assert equal int (DNC_STREAM_OK, dnc_stream(&cfg, prog, strlen(prog), mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DncStreamResult::DNC_STREAM_OK,</code>
       * <code>Assert equal int (1, m.prog_start)</code>
       * <code>Assert equal int (1, m.prog_end)</code>
       * <code>Assert equal int (3, m.nlines)</code>
@@ -6504,7 +6504,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Eia roundtrip
     * **Assertions**:
-      * <code>Assert equal int (DNC_STREAM_OK, dnc_stream(&cfg, prog, strlen(prog), mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DncStreamResult::DNC_STREAM_OK,</code>
       * <code>Assert equal int (1, m.prog_start)</code>
       * <code>Assert equal int (1, m.prog_end)</code>
       * <code>Assert equal int (2, m.nlines)</code>
@@ -6517,7 +6517,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Crlf and parity
     * **Assertions**:
-      * <code>Assert equal int (DNC_STREAM_OK, dnc_stream(&cfg, prog, strlen(prog), mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DncStreamResult::DNC_STREAM_OK,</code>
       * <code>Assert equal int (2, m.nlines)</code>
       * <code>Assert equal string ("G90", m.lines[0])</code>
       * <code>Assert equal string ("G0 X0", m.lines[1])</code>
@@ -6528,7 +6528,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Xoff pacing
     * **Assertions**:
-      * <code>Assert equal int (DNC_STREAM_OK, dnc_stream(&cfg, prog, strlen(prog), mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DncStreamResult::DNC_STREAM_OK,</code>
       * <code>Assert true (m.paused_seen)</code>
       * <code>Assert equal int (3, m.nlines)</code>
       * <code>Assert equal string ("N30 M30", m.lines[2])</code>
@@ -6539,7 +6539,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: 8 leader + 8 trailer NUL runout bytes were emitted (skipped by the decoder)
     * **Assertions**:
-      * <code>Assert equal int (DNC_STREAM_OK, dnc_stream(&cfg, prog, plen, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (DncStreamResult::DNC_STREAM_OK, dnc_stream(&cfg, prog, plen, mock_send, mock_recv, &m))</code>
       * <code>Assert equal int (1, m.nlines)</code>
       * <code>Assert equal string ("M30", m.lines[0])</code>
       * <code>Assert greater or equal (16u, m.bytes_sent)</code>
@@ -6550,7 +6550,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Empty program
     * **Assertions**:
-      * <code>Assert equal int (DNC_STREAM_OK, dnc_stream(&cfg, "", 0, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (DncStreamResult::DNC_STREAM_OK, dnc_stream(&cfg, "", 0, mock_send, mock_recv, &m))</code>
       * <code>Assert equal int (1, m.prog_start)</code>
       * <code>Assert equal int (1, m.prog_end)</code>
       * <code>Assert equal int (0, m.nlines)</code>
@@ -6561,7 +6561,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Encode error
     * **Assertions**:
-      * <code>Assert equal int (DNC_STREAM_ERR_ENCODE, dnc_stream(&cfg, prog, strlen(prog), mock_send, mock_recv, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DncStreamResult::DNC_STREAM_ERR_ENCODE,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6569,9 +6569,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Io error and args
     * **Assertions**:
-      * <code>Assert equal int (DNC_STREAM_ERR_IO, dnc_stream(&cfg, "M30", 3, mock_send, mock_recv, &m))</code>
-      * <code>Assert equal int (DNC_STREAM_ERR_ARG, dnc_stream(nullptr, "M30", 3, mock_send, mock_recv, &m))</code>
-      * <code>Assert equal int (DNC_STREAM_ERR_ARG, dnc_stream(&cfg, nullptr, 3, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (DncStreamResult::DNC_STREAM_ERR_IO, dnc_stream(&cfg, "M30", 3, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (DncStreamResult::DNC_STREAM_ERR_ARG, dnc_stream(nullptr, "M30", 3, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (DncStreamResult::DNC_STREAM_ERR_ARG, dnc_stream(&cfg, nullptr, 3, mock_send, mock_recv, &m))</code>
   </details>
 
 </details>
