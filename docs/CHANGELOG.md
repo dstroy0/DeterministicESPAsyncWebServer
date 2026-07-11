@@ -14,6 +14,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`295f1e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/295f1e187df1a9eaf742c618e5d0dd3f8b30472d))
+- update CHANGELOG.md [skip ci] ([`5609ad8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5609ad81eb28425e6a533f212f0288dec7f3754d))
 - update test report + coverage [skip ci] ([`8092d5c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8092d5cc6dd95ec1d23773967fdbc91a8f218218))
 - update CHANGELOG.md [skip ci] ([`e779020`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e7790200bac30ed04fe11c2eae977b3474c45986))
 - update test report + coverage [skip ci] ([`888ab2d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/888ab2df89707adae234e3a50533e9e022abfec9))
@@ -260,6 +262,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - retro - type CoAP public request/response fields ([`ffe6d19`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffe6d192698380cffd684eba7338b1d81fdca32f))
 - retro - type opcode/kind params, drop silencing casts ([`8a65e92`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a65e927d727fd7dfe953291ec6f4bc01c90aafa))
 - scoped enums, type-safe negotiator (enum class 34/N) ([`b7bbd01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7bbd0133969c24a269d9df9db12d34c2e5f9785))
+
+### Testing
+
+- reproducible ESP32-S3 pentest/perf target firmware (pentesting/rig_firmware) ([`7087318`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/708731886265e7836d9abc88f45c0b59e2d22a28))
 
 ## [5.95.2] - 2026-07-11
 
