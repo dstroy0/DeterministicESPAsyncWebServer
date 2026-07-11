@@ -29,7 +29,7 @@
 #include <stdint.h>
 
 /** @brief Result of a drip-feed. 0 is success; each failure is a distinct code. */
-enum DncStreamResult
+enum class DncStreamResult : int32_t
 {
     DNC_STREAM_OK = 0,
     DNC_STREAM_ERR_ARG = -1,    ///< a required argument was null
@@ -58,7 +58,8 @@ typedef int (*DncRecvFn)(void *ctx, uint8_t *buf, size_t cap);
  *
  * @return ::DNC_STREAM_OK, or a ::DncStreamResult error.
  */
-int dnc_stream(const DncCfg *cfg, const char *program, size_t prog_len, DncSendFn send, DncRecvFn recv, void *ctx);
+DncStreamResult dnc_stream(const DncCfg *cfg, const char *program, size_t prog_len, DncSendFn send, DncRecvFn recv,
+                           void *ctx);
 
 #endif // DETWS_ENABLE_DNC
 

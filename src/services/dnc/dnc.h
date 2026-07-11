@@ -42,21 +42,21 @@
 #include <stdint.h>
 
 /** @brief Which punched-tape character code the wire stream uses. */
-enum DncCode
+enum class DncCode : uint8_t
 {
     DNC_CODE_ISO = 0, ///< ISO 7-bit / ASCII (RS-358), EOB = LF, marker = '%'.
     DNC_CODE_EIA = 1, ///< EIA RS-244 odd-parity tape code, EOB = 0x80, marker = EOR 0x0B.
 };
 
 /** @brief Software flow-control bytes (both tape codes; these are the raw ASCII controls). */
-enum
+enum class DncFlowByte : uint8_t
 {
     DNC_XON = 0x11,  ///< DC1 - resume sending.
     DNC_XOFF = 0x13, ///< DC3 - pause sending.
 };
 
 /** @brief EIA RS-244 special codes (not general text characters). */
-enum
+enum class DncEiaCode : uint8_t
 {
     DNC_EIA_EOB = 0x80, ///< EIA End-of-Block (channel 8 only; the ISO LF equivalent).
     DNC_EIA_EOR = 0x0B, ///< EIA End-of-Record (the ISO '%' rewind-stop equivalent).
@@ -150,7 +150,7 @@ size_t dnc_encode_marker(const DncCfg *cfg, uint8_t *out, size_t out_cap);
 size_t dnc_encode_leader(const DncCfg *cfg, uint8_t *out, size_t out_cap);
 
 /** @brief What ::dnc_decode_feed produced for the byte just fed. */
-enum DncEvent
+enum class DncEvent : uint8_t
 {
     DNC_EV_NONE = 0,   ///< byte absorbed (mid-block, runout, or flow/ignored); nothing to report.
     DNC_EV_LINE,       ///< a complete non-empty block is ready in DncDecoder::line (NUL-terminated).
@@ -163,11 +163,11 @@ enum DncEvent
 struct DncDecoder
 {
     DncCode code;                      ///< the tape code being decoded.
-    char line[DETWS_DNC_LINE_MAX + 1]; ///< the current block, NUL-terminated when DNC_EV_LINE fires.
-    uint16_t len;                      ///< bytes accumulated in @ref line so far (the line length on DNC_EV_LINE).
-    bool overflow;                     ///< the current block overran; drop until the next End-of-Block.
-    bool in_program;                   ///< a program-start `%` has been seen (so the next `%` is the end).
-    bool line_ready;                   ///< internal: the previous feed delivered a line; reset on the next feed.
+    char line[DETWS_DNC_LINE_MAX + 1]; ///< the current block, NUL-terminated when DncEvent::DNC_EV_LINE fires.
+    uint16_t len;    ///< bytes accumulated in @ref line so far (the line length on DncEvent::DNC_EV_LINE).
+    bool overflow;   ///< the current block overran; drop until the next End-of-Block.
+    bool in_program; ///< a program-start `%` has been seen (so the next `%` is the end).
+    bool line_ready; ///< internal: the previous feed delivered a line; reset on the next feed.
 };
 
 /** @brief Reset a decoder for a given tape code. */

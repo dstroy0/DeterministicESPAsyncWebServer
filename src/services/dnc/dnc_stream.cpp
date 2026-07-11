@@ -56,10 +56,11 @@ static bool emit_runout(DncFlow *flow, DncSendFn send, DncRecvFn recv, void *ctx
     return true;
 }
 
-int dnc_stream(const DncCfg *cfg, const char *program, size_t prog_len, DncSendFn send, DncRecvFn recv, void *ctx)
+DncStreamResult dnc_stream(const DncCfg *cfg, const char *program, size_t prog_len, DncSendFn send, DncRecvFn recv,
+                           void *ctx)
 {
     if (!cfg || !send || !recv || (prog_len && !program))
-        return DNC_STREAM_ERR_ARG;
+        return DncStreamResult::DNC_STREAM_ERR_ARG;
 
     DncFlow flow;
     dnc_flow_init(&flow);
@@ -67,14 +68,14 @@ int dnc_stream(const DncCfg *cfg, const char *program, size_t prog_len, DncSendF
 
     // leader runout
     if (cfg->leader_len && !emit_runout(&flow, send, recv, ctx, cfg->leader_len))
-        return DNC_STREAM_ERR_IO;
+        return DncStreamResult::DNC_STREAM_ERR_IO;
 
     // program-start marker
     size_t n = dnc_encode_marker(cfg, buf, sizeof(buf));
     if (n == 0)
-        return DNC_STREAM_ERR_ENCODE;
+        return DncStreamResult::DNC_STREAM_ERR_ENCODE;
     if (!emit(&flow, send, recv, ctx, buf, n))
-        return DNC_STREAM_ERR_IO;
+        return DncStreamResult::DNC_STREAM_ERR_IO;
 
     // one block per source line
     size_t i = 0;
@@ -88,22 +89,22 @@ int dnc_stream(const DncCfg *cfg, const char *program, size_t prog_len, DncSendF
             line_len--; // strip a trailing CR (CRLF sources)
         n = dnc_encode_block(cfg, program + i, line_len, buf, sizeof(buf));
         if (n == 0)
-            return DNC_STREAM_ERR_ENCODE; // untranslatable char or over-long block - fail closed
+            return DncStreamResult::DNC_STREAM_ERR_ENCODE; // untranslatable char or over-long block - fail closed
         if (!emit(&flow, send, recv, ctx, buf, n))
-            return DNC_STREAM_ERR_IO;
+            return DncStreamResult::DNC_STREAM_ERR_IO;
         i = j + 1; // skip the LF
     }
 
     // program-end marker (byte-identical to the start marker)
     n = dnc_encode_marker(cfg, buf, sizeof(buf));
     if (!emit(&flow, send, recv, ctx, buf, n))
-        return DNC_STREAM_ERR_IO;
+        return DncStreamResult::DNC_STREAM_ERR_IO;
 
     // trailer runout
     if (cfg->leader_len && !emit_runout(&flow, send, recv, ctx, cfg->leader_len))
-        return DNC_STREAM_ERR_IO;
+        return DncStreamResult::DNC_STREAM_ERR_IO;
 
-    return DNC_STREAM_OK;
+    return DncStreamResult::DNC_STREAM_OK;
 }
 
 #endif // DETWS_ENABLE_DNC

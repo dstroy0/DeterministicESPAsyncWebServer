@@ -89,12 +89,12 @@ void send_program()
 
     DncCfg cfg;
     memset(&cfg, 0, sizeof(cfg));
-    cfg.code = DNC_CODE_ISO; // ISO 7-bit / ASCII; use DNC_CODE_EIA for an EIA RS-244 controller
-    cfg.crlf = true;         // many controllers expect CR before the LF End-of-Block
-    cfg.leader_len = 16;     // a short NUL runout before/after the program
+    cfg.code = DncCode::DNC_CODE_ISO; // ISO 7-bit / ASCII; use DncCode::DNC_CODE_EIA for an EIA RS-244 controller
+    cfg.crlf = true;                  // many controllers expect CR before the LF End-of-Block
+    cfg.leader_len = 16;              // a short NUL runout before/after the program
 
     int rc = dnc_stream(&cfg, PROGRAM, strlen(PROGRAM), cl_send, cl_recv, &cid);
-    if (rc == DNC_STREAM_OK)
+    if (rc == DncStreamResult::DNC_STREAM_OK)
         Serial.println("program sent - the controller has the full drip-feed");
     else
         Serial.printf("drip-feed failed (DncStreamResult %d) - see the README troubleshooting table\n", rc);

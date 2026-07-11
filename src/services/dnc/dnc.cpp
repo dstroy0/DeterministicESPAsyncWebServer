@@ -70,7 +70,7 @@ static const DncEiaPair DNC_EIA_MAP[] = {
     {'/', 0x31},
     {'\t', 0x3E},
     // the '%' rewind-stop is EIA End-of-Record
-    {'%', (uint8_t)DNC_EIA_EOR},
+    {'%', (uint8_t)DncEiaCode::DNC_EIA_EOR},
 };
 
 static const size_t DNC_EIA_MAP_LEN = sizeof(DNC_EIA_MAP) / sizeof(DNC_EIA_MAP[0]);
@@ -111,12 +111,12 @@ void dnc_flow_init(DncFlow *f)
 
 bool dnc_flow_feed(DncFlow *f, uint8_t rx)
 {
-    if (rx == DNC_XOFF)
+    if (rx == (uint8_t)DncFlowByte::DNC_XOFF)
     {
         f->paused = true;
         return true;
     }
-    if (rx == DNC_XON)
+    if (rx == (uint8_t)DncFlowByte::DNC_XON)
     {
         f->paused = false;
         return true;
@@ -127,11 +127,11 @@ bool dnc_flow_feed(DncFlow *f, uint8_t rx)
 // Append one End-of-Block to out[n..]; returns the new count or 0 on overflow.
 static size_t dnc_put_eob(const DncCfg *cfg, uint8_t *out, size_t cap, size_t n)
 {
-    if (cfg->code == DNC_CODE_EIA)
+    if (cfg->code == DncCode::DNC_CODE_EIA)
     {
         if (n >= cap)
             return 0;
-        out[n++] = (uint8_t)DNC_EIA_EOB;
+        out[n++] = (uint8_t)DncEiaCode::DNC_EIA_EOB;
         return n;
     }
     if (cfg->crlf)
@@ -154,7 +154,7 @@ size_t dnc_encode_block(const DncCfg *cfg, const char *line, size_t line_len, ui
     for (size_t i = 0; i < line_len; i++)
     {
         uint8_t b;
-        if (cfg->code == DNC_CODE_EIA)
+        if (cfg->code == DncCode::DNC_CODE_EIA)
         {
             uint8_t e = dnc_iso_to_eia(line[i]);
             if (e == 0xFF)
@@ -177,11 +177,11 @@ size_t dnc_encode_block(const DncCfg *cfg, const char *line, size_t line_len, ui
 size_t dnc_encode_marker(const DncCfg *cfg, uint8_t *out, size_t out_cap)
 {
     size_t n = 0;
-    if (cfg->code == DNC_CODE_EIA)
+    if (cfg->code == DncCode::DNC_CODE_EIA)
     {
         if (n >= out_cap)
             return 0;
-        out[n++] = (uint8_t)DNC_EIA_EOR;
+        out[n++] = (uint8_t)DncEiaCode::DNC_EIA_EOR;
     }
     else
     {
@@ -230,11 +230,11 @@ DncEvent dnc_decode_feed(DncDecoder *d, uint8_t wire)
     bool is_marker = false;
     uint8_t ascii = 0;
 
-    if (d->code == DNC_CODE_EIA)
+    if (d->code == DncCode::DNC_CODE_EIA)
     {
-        if (wire == (uint8_t)DNC_EIA_EOB)
+        if (wire == (uint8_t)DncEiaCode::DNC_EIA_EOB)
             is_eob = true;
-        else if (wire == (uint8_t)DNC_EIA_EOR)
+        else if (wire == (uint8_t)DncEiaCode::DNC_EIA_EOR)
             is_marker = true;
         else
             ascii = (uint8_t)dnc_eia_to_iso(wire); // 0 for blank/runout/unknown -> ignored
@@ -246,7 +246,7 @@ DncEvent dnc_decode_feed(DncDecoder *d, uint8_t wire)
             is_eob = true;
         else if (v == '%')
             is_marker = true;
-        else if (v == '\r' || v == 0x00 || v == (uint8_t)DNC_EIA_DEL)
+        else if (v == '\r' || v == 0x00 || v == (uint8_t)DncEiaCode::DNC_EIA_DEL)
             ascii = 0; // CR / NUL / DEL runout - ignored
         else
             ascii = v;
@@ -260,10 +260,10 @@ DncEvent dnc_decode_feed(DncDecoder *d, uint8_t wire)
         if (!d->in_program)
         {
             d->in_program = true;
-            return DNC_EV_PROG_START;
+            return DncEvent::DNC_EV_PROG_START;
         }
         d->in_program = false;
-        return DNC_EV_PROG_END;
+        return DncEvent::DNC_EV_PROG_END;
     }
 
     if (is_eob)
@@ -273,27 +273,27 @@ DncEvent dnc_decode_feed(DncDecoder *d, uint8_t wire)
             d->overflow = false;
             d->len = 0;
             d->line[0] = 0;
-            return DNC_EV_OVERFLOW;
+            return DncEvent::DNC_EV_OVERFLOW;
         }
         if (d->len == 0)
-            return DNC_EV_NONE; // blank block (leader / CR LF pair) - nothing to report
+            return DncEvent::DNC_EV_NONE; // blank block (leader / CR LF pair) - nothing to report
         d->line[d->len] = 0;
         d->line_ready = true; // keep line/len valid for the caller until the next feed
-        return DNC_EV_LINE;
+        return DncEvent::DNC_EV_LINE;
     }
 
     if (ascii == 0)
-        return DNC_EV_NONE; // ignored character
+        return DncEvent::DNC_EV_NONE; // ignored character
 
     if (d->overflow)
-        return DNC_EV_NONE; // dropping the rest of an over-long block until its EOB
+        return DncEvent::DNC_EV_NONE; // dropping the rest of an over-long block until its EOB
     if (d->len >= DETWS_DNC_LINE_MAX)
     {
         d->overflow = true;
-        return DNC_EV_NONE;
+        return DncEvent::DNC_EV_NONE;
     }
     d->line[d->len++] = (char)ascii;
-    return DNC_EV_NONE;
+    return DncEvent::DNC_EV_NONE;
 }
 
 #endif // DETWS_ENABLE_DNC
