@@ -826,10 +826,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Before any listener, restart() forwards the no-listeners error (no stop()/begin()).
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT32(DETWS_ERR_NO_LISTENERS, srv.restart());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_NO_LISTENERS, srv.restart());</code>
       * <code>TEST_ASSERT_EQUAL_INT32(0, srv.listen((uint16_t)9500));</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.begin());</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.restart());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.begin());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.restart());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1415,10 +1415,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: begin() before any listen() -> no-listeners error, no side effects.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT32(DETWS_ERR_NO_LISTENERS, srv.begin());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_NO_LISTENERS, srv.begin());</code>
       * <code>TEST_ASSERT_EQUAL_INT32(i, srv.listen((uint16_t)(9100 + i)));</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DETWS_ERR_LISTENER_FULL, srv.listen(9999));</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.begin());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_LISTENER_FULL, srv.listen(9999));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.begin());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1426,8 +1426,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Begin port convenience
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.begin((uint16_t)8080));</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DETWS_ERR_LISTENER_FULL, full.begin((uint16_t)9999));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.begin((uint16_t)8080));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_LISTENER_FULL, full.begin((uint16_t)9999));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9838,7 +9838,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Bring up an HTTP/3-only DetWebServer with one route.
     * **Assertions**:
       * <code>Assert true (server.h3_cert(CERT, sizeof(CERT), SERVER_SEED, 443))</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DETWS_OK, server.begin());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, server.begin());</code>
       * <code>Assert true (quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
       * <code>Assert greater than (0, g_out_n)</code>
       * <code>Assert true (quic_parse_long_header(g_out[0], g_out_len[0], &sh_hdr))</code>
