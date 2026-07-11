@@ -17,15 +17,15 @@
 
 uint8_t detws_guardrail_eval(const DetwsHealth *h, uint32_t heap_min, uint32_t frag_min_block, uint32_t stack_min)
 {
-    uint8_t b = DETWS_BREACH_NONE;
+    uint8_t b = DetwsBreach::DETWS_BREACH_NONE;
     if (!h)
         return b;
     if (h->free_heap < heap_min)
-        b |= DETWS_BREACH_HEAP;
+        b |= DetwsBreach::DETWS_BREACH_HEAP;
     if (h->largest_free_block < frag_min_block)
-        b |= DETWS_BREACH_FRAG;
+        b |= DetwsBreach::DETWS_BREACH_FRAG;
     if (h->stack_free < stack_min)
-        b |= DETWS_BREACH_STACK;
+        b |= DetwsBreach::DETWS_BREACH_STACK;
     return b;
 }
 
@@ -86,7 +86,7 @@ uint8_t detws_guardrails_check(void)
     detws_guardrails_sample(&h);
     uint8_t b =
         detws_guardrail_eval(&h, DETWS_GUARDRAIL_HEAP_MIN, DETWS_GUARDRAIL_FRAG_MIN_BLOCK, DETWS_GUARDRAIL_STACK_MIN);
-    if (b != DETWS_BREACH_NONE && s_gr.cb)
+    if (b != DetwsBreach::DETWS_BREACH_NONE && s_gr.cb)
         s_gr.cb(b, &h);
     return b;
 }
@@ -103,7 +103,7 @@ void detws_guardrails_begin(detws_breach_fn)
 }
 uint8_t detws_guardrails_check(void)
 {
-    return DETWS_BREACH_NONE;
+    return DetwsBreach::DETWS_BREACH_NONE;
 }
 
 #endif // ARDUINO

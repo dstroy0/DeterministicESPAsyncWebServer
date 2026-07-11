@@ -32,8 +32,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/** @brief Per-stream state (RFC 9113 sec 5.1, server side of a client-initiated stream). */
-// Per-stream lifecycle state (a mutually-exclusive internal state, not a wire value).
+/** @brief Per-stream state (RFC 9113 sec 5.1, server side of a client-initiated stream). A
+ *  mutually-exclusive internal lifecycle state, not a wire value. */
 enum class H2StreamState : uint8_t
 {
     H2_ST_IDLE = 0,

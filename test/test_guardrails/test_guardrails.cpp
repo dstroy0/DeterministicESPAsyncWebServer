@@ -17,27 +17,28 @@ void tearDown()
 void test_eval_all_clear()
 {
     DetwsHealth h = {20000, 15000, 10000, 2048};
-    TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_NONE, detws_guardrail_eval(&h, 8192, 4096, 512));
+    TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_NONE, detws_guardrail_eval(&h, 8192, 4096, 512));
 }
 
 void test_eval_heap_breach()
 {
     DetwsHealth h = {4000, 3000, 8000, 2048}; // free_heap below 8192
-    TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_HEAP, detws_guardrail_eval(&h, 8192, 4096, 512));
+    TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_HEAP, detws_guardrail_eval(&h, 8192, 4096, 512));
 }
 
 void test_eval_frag_and_stack()
 {
     DetwsHealth h = {20000, 15000, 1000, 256}; // largest block < 4096, stack < 512
     uint8_t b = detws_guardrail_eval(&h, 8192, 4096, 512);
-    TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_FRAG | DETWS_BREACH_STACK, b);
+    TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_FRAG | DetwsBreach::DETWS_BREACH_STACK, b);
 }
 
 void test_eval_all_breached()
 {
     DetwsHealth h = {100, 50, 100, 100};
     uint8_t b = detws_guardrail_eval(&h, 8192, 4096, 512);
-    TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_HEAP | DETWS_BREACH_FRAG | DETWS_BREACH_STACK, b);
+    TEST_ASSERT_EQUAL_UINT8(
+        DetwsBreach::DETWS_BREACH_HEAP | DetwsBreach::DETWS_BREACH_FRAG | DetwsBreach::DETWS_BREACH_STACK, b);
 }
 
 void test_json()
@@ -60,7 +61,7 @@ void test_json_small_buffer_fails_closed()
 void test_eval_null_health_is_clear()
 {
     // A null health snapshot reports no breach (nothing to evaluate).
-    TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_NONE, detws_guardrail_eval(nullptr, 8192, 4096, 512));
+    TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_NONE, detws_guardrail_eval(nullptr, 8192, 4096, 512));
 }
 
 void test_json_guards_fail_closed()
@@ -85,7 +86,7 @@ void test_host_sampler_stubs()
     TEST_ASSERT_EQUAL_UINT32(0, h.stack_free);
     detws_guardrails_sample(nullptr); // null guard: must not crash
     detws_guardrails_begin(nullptr);
-    TEST_ASSERT_EQUAL_UINT8(DETWS_BREACH_NONE, detws_guardrails_check());
+    TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_NONE, detws_guardrails_check());
 }
 
 int main()

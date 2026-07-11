@@ -37,13 +37,14 @@ struct DetwsHealth
     uint32_t stack_free;         ///< calling task's remaining stack (bytes).
 };
 
-/** @brief Guardrail breach flags (bitmask). */
-enum
+/** @brief Guardrail breach flags: a bitmask OR'd together, so integer constants in a namespacing
+ *  struct (cast-free at every | / &). */
+struct DetwsBreach
 {
-    DETWS_BREACH_NONE = 0,
-    DETWS_BREACH_HEAP = 1,  ///< free heap below DETWS_GUARDRAIL_HEAP_MIN.
-    DETWS_BREACH_FRAG = 2,  ///< largest block below DETWS_GUARDRAIL_FRAG_MIN_BLOCK.
-    DETWS_BREACH_STACK = 4, ///< task stack remaining below DETWS_GUARDRAIL_STACK_MIN.
+    static constexpr uint8_t DETWS_BREACH_NONE = 0;
+    static constexpr uint8_t DETWS_BREACH_HEAP = 1;  ///< free heap below DETWS_GUARDRAIL_HEAP_MIN.
+    static constexpr uint8_t DETWS_BREACH_FRAG = 2;  ///< largest block below DETWS_GUARDRAIL_FRAG_MIN_BLOCK.
+    static constexpr uint8_t DETWS_BREACH_STACK = 4; ///< task stack remaining below DETWS_GUARDRAIL_STACK_MIN.
 };
 
 // ---------------------------------------------------------------------------
