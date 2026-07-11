@@ -22,7 +22,9 @@ static size_t ftp_emit(char *buf, size_t cap, size_t n, const char *s, size_t sl
     // slen cannot wrap n + slen.
     if (n == FTP_SENT || n > cap || slen > cap - n)
         return FTP_SENT;
-    memcpy(buf + n, s, slen);
+    // The guard above proves n + slen <= cap, so this write stays inside buf[0, cap). S3519 can't link
+    // buf's size to the separate cap parameter and follows an infeasible path (same FP as mms.cpp).
+    memcpy(buf + n, s, slen); // NOSONAR - bound proven above; analyzer follows an infeasible path
     return n + slen;
 }
 
