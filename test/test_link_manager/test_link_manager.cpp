@@ -12,9 +12,9 @@ static LinkManager g_m;
 
 void setUp(void)
 {
-    g_ifaces[0] = {LINK_KIND_ETH, 20, false};
-    g_ifaces[1] = {LINK_KIND_WIFI_STA, 10, false};
-    g_ifaces[2] = {LINK_KIND_WIFI_AP, 5, false};
+    g_ifaces[0] = {LinkKind::LINK_KIND_ETH, 20, false};
+    g_ifaces[1] = {LinkKind::LINK_KIND_WIFI_STA, 10, false};
+    g_ifaces[2] = {LinkKind::LINK_KIND_WIFI_AP, 5, false};
     detws_link_init(&g_m, g_ifaces, 3);
 }
 void tearDown(void)
@@ -55,7 +55,7 @@ void test_escalation_and_failover(void)
 void test_tie_break_lower_index(void)
 {
     // Two interfaces at equal priority: the lower index wins.
-    LinkIface pair[2] = {{LINK_KIND_ETH, 10, true}, {LINK_KIND_WIFI_STA, 10, true}};
+    LinkIface pair[2] = {{LinkKind::LINK_KIND_ETH, 10, true}, {LinkKind::LINK_KIND_WIFI_STA, 10, true}};
     LinkManager m;
     detws_link_init(&m, pair, 2);
     TEST_ASSERT_EQUAL_INT(0, detws_link_active(&m));

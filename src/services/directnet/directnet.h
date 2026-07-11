@@ -28,19 +28,19 @@
 
 #if DETWS_ENABLE_DIRECTNET
 
-/** @brief DirectNET control bytes. */
-enum
+/** @brief DirectNET control bytes: wire values compared/emitted, so integer constants in a struct. */
+struct DnetByte
 {
-    DNET_ENQ = 0x05,
-    DNET_ACK = 0x06,
-    DNET_NAK = 0x15,
-    DNET_SOH = 0x01,
-    DNET_STX = 0x02,
-    DNET_ETX = 0x03,
-    DNET_ETB = 0x17,
-    DNET_EOT = 0x04,
-    DNET_READ = 0x30, ///< request type: read ('0').
-    DNET_WRITE = 0x38 ///< request type: write ('8').
+    static constexpr uint8_t DNET_ENQ = 0x05;
+    static constexpr uint8_t DNET_ACK = 0x06;
+    static constexpr uint8_t DNET_NAK = 0x15;
+    static constexpr uint8_t DNET_SOH = 0x01;
+    static constexpr uint8_t DNET_STX = 0x02;
+    static constexpr uint8_t DNET_ETX = 0x03;
+    static constexpr uint8_t DNET_ETB = 0x17;
+    static constexpr uint8_t DNET_EOT = 0x04;
+    static constexpr uint8_t DNET_READ = 0x30;  ///< request type: read ('0').
+    static constexpr uint8_t DNET_WRITE = 0x38; ///< request type: write ('8').
 };
 
 /** @brief Longitudinal XOR checksum (the DirectNET LRC) over @p len bytes. */

@@ -42,7 +42,7 @@ size_t detws_dnet_header(uint8_t slave, uint8_t type, uint16_t address, uint8_t 
     if (!out || cap < n)
         return 0;
     size_t i = 0;
-    out[i++] = DNET_SOH;
+    out[i++] = DnetByte::DNET_SOH;
     put_hex(out + i, slave, 2);
     i += 2;
     out[i++] = type;
@@ -50,7 +50,7 @@ size_t detws_dnet_header(uint8_t slave, uint8_t type, uint16_t address, uint8_t 
     i += 4;
     put_hex(out + i, blocks, 2);
     i += 2;
-    out[i++] = DNET_ETB;
+    out[i++] = DnetByte::DNET_ETB;
     // LRC over the framed body (slave..ETB), i.e. everything after SOH up to and including ETB.
     out[i] = detws_dnet_lrc(out + 1, i - 1);
     i++;
@@ -65,13 +65,13 @@ size_t detws_dnet_data(const uint8_t *data, size_t data_len, uint8_t *out, size_
     if (n > cap)
         return 0;
     size_t i = 0;
-    out[i++] = DNET_STX;
+    out[i++] = DnetByte::DNET_STX;
     if (data_len)
     {
         memcpy(out + i, data, data_len);
         i += data_len;
     }
-    out[i++] = DNET_ETX;
+    out[i++] = DnetByte::DNET_ETX;
     // LRC over data..ETX (everything after STX up to and including ETX).
     out[i] = detws_dnet_lrc(out + 1, i - 1);
     i++;
@@ -82,11 +82,11 @@ bool detws_dnet_data_parse(const uint8_t *frame, size_t len, const uint8_t **dat
 {
     if (!frame || len < 3) // STX + ETX + LRC minimum
         return false;
-    if (frame[0] != DNET_STX)
+    if (frame[0] != DnetByte::DNET_STX)
         return false;
     // The byte before the LRC must be ETX.
     size_t etx_idx = len - 2;
-    if (frame[etx_idx] != DNET_ETX)
+    if (frame[etx_idx] != DnetByte::DNET_ETX)
         return false;
     if (detws_dnet_lrc(frame + 1, len - 2) != frame[len - 1]) // over data..ETX
         return false;

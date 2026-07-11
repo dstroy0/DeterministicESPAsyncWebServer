@@ -25,13 +25,14 @@
 
 #if DETWS_ENABLE_LINK_MANAGER
 
-/** @brief Interface kind (informational; selection is by priority). */
-enum
+/** @brief Interface kind (informational; selection is by priority). Stored in a uint8_t field and
+ *  compared, so integer constants in a namespacing struct - cast-free. */
+struct LinkKind
 {
-    LINK_KIND_ETH = 0,      ///< wired Ethernet PHY.
-    LINK_KIND_WIFI_STA = 1, ///< WiFi station.
-    LINK_KIND_WIFI_AP = 2,  ///< WiFi softAP.
-    LINK_KIND_OTHER = 3
+    static constexpr uint8_t LINK_KIND_ETH = 0;      ///< wired Ethernet PHY.
+    static constexpr uint8_t LINK_KIND_WIFI_STA = 1; ///< WiFi station.
+    static constexpr uint8_t LINK_KIND_WIFI_AP = 2;  ///< WiFi softAP.
+    static constexpr uint8_t LINK_KIND_OTHER = 3;
 };
 
 /** @brief One managed interface. */
