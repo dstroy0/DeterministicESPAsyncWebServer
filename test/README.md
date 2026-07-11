@@ -670,9 +670,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: ch0, +/-4.096V, 128 SPS: OS\|MUX_AIN0\|PGA1\|MODE_SINGLE\|DR128\|COMP_DISABLE.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX16(0xC383, ads1115_config_single(0, ADS1115_GAIN_1, ADS1115_DR_128));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX16(0xF1E3, ads1115_config_single(3, ADS1115_GAIN_TWOTHIRDS, ADS1115_DR_860));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX16(0xDB03, ads1115_config_single(1, ADS1115_GAIN_16, ADS1115_DR_8));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0xC383,</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0xDB03,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -688,11 +688,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: gain 1 (+/-4.096 V) -> 125 uV/LSB.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT32(4095875, ads1115_raw_to_uv(32767, ADS1115_GAIN_1));   // near +full-scale</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(-4096000, ads1115_raw_to_uv(-32768, ADS1115_GAIN_1)); // -full-scale</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(0, ads1115_raw_to_uv(0, ADS1115_GAIN_1));</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(1024000, ads1115_raw_to_uv(16384, ADS1115_GAIN_2));</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(-1536000, ads1115_raw_to_uv(-8192, ADS1115_GAIN_TWOTHIRDS));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(4095875, ads1115_raw_to_uv(32767, Ads1115Gain::ADS1115_GAIN_1));   // near +full-scale</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-4096000, ads1115_raw_to_uv(-32768, Ads1115Gain::ADS1115_GAIN_1)); // -full-scale</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(0, ads1115_raw_to_uv(0, Ads1115Gain::ADS1115_GAIN_1));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(1024000, ads1115_raw_to_uv(16384, Ads1115Gain::ADS1115_GAIN_2));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1536000, ads1115_raw_to_uv(-8192, Ads1115Gain::ADS1115_GAIN_TWOTHIRDS));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -700,7 +700,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: An out-of-range gain code clamps to GAIN_2 (its FSR), so the conversion never indexes past the
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT32(ads1115_raw_to_uv(16384, ADS1115_GAIN_2), ads1115_raw_to_uv(16384, 99));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(ads1115_raw_to_uv(16384, Ads1115Gain::ADS1115_GAIN_2), ads1115_raw_to_uv(16384, 99));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -709,8 +709,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: On a host build there is no I2C: begin and both reads fail closed (false).
     * **Assertions**:
       * <code>Assert false (ads1115_begin(0x48))</code>
-      * <code>Assert false (ads1115_read_raw(0, ADS1115_GAIN_2, &raw))</code>
-      * <code>Assert false (ads1115_read_uv(0, ADS1115_GAIN_2, &uv))</code>
+      * <code>Assert false (ads1115_read_raw(0, Ads1115Gain::ADS1115_GAIN_2, &raw))</code>
+      * <code>Assert false (ads1115_read_uv(0, Ads1115Gain::ADS1115_GAIN_2, &uv))</code>
   </details>
 
 </details>
