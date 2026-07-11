@@ -14680,7 +14680,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(7 + 2, n);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x7F | 0x80, resp[7]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(MODBUS_EX_ILLEGAL_FUNCTION, resp[8]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_FUNCTION, resp[8]);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -14690,7 +14690,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(7 + 2, n);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x03 | 0x80, resp[7]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(MODBUS_EX_ILLEGAL_DATA_ADDRESS, resp[8]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, resp[8]);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -14699,7 +14699,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Exception illegal value
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(7 + 2, n);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(MODBUS_EX_ILLEGAL_DATA_VALUE, resp[8]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, resp[8]);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -14708,7 +14708,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Write single coil bad value
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT8(0x05 | 0x80, resp[7]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(MODBUS_EX_ILLEGAL_DATA_VALUE, resp[8]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, resp[8]);</code>
       * <code>Assert equal int (0, g_wcalls)</code>
   </details>
 
@@ -14874,7 +14874,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (pn &gt; 0)</code>
       * <code>Assert equal int (0, got)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(MODBUS_EX_ILLEGAL_DATA_ADDRESS, ex);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, ex);</code>
   </details>
 
   <details style="margin-left: 20px;">
