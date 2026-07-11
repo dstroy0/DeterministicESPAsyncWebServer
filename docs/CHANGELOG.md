@@ -2,15 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.9] - 2026-07-11
+
+<details>
+<summary><b>Show Changelog for version 5.95.9 - 2026-07-11</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`c3e0a75`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3e0a758afc41d6284b8fd96b4e59a38b1d9b261))
 - update CHANGELOG.md [skip ci] ([`b8d9671`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b8d9671773a8ae79e792deb6eaab35af44085383))
 - update CHANGELOG.md [skip ci] ([`de81d4f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/de81d4f3ae6a134bdb048edd9b4d6f237d0584f7))
 
 ### Changes
 
+- Bump version: 5.95.8 → 5.95.9 ([`497617e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/497617e05425b94cf8564864649cc2888044e4a9))
 - auto-apply the two compat fixes that make the rebuilt core build via arduino-cli ([`3bb5565`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3bb55658d0e13e12983e2712477567c43e6d0e9a))
 
 ### Documentation
@@ -18,6 +23,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - mark HTTP/2 + HTTP/3 PSRAM path unblocked (arena verified on HW) ([`1ebd523`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ebd5235a1315b87b435104aeb770d4cec4abb23))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4c33038`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c330381caaad0f7727bf7d3dca3a1198bb88a82))
 - update ESP32 build footprints [skip ci] ([`4049955`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4049955d4f0a1b9dc48b05fb5555045ac32264a6))
+
+</details>
 
 ## [5.95.8] - 2026-07-11
 
