@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`dc6ea0b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc6ea0b75a17c688cb417991f6cd86d79a5f337d))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`982183e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/982183e8e1fd57707e025be401bf0242cd93111f))
+
+### Features
+
+- advanced WebSocket frame-abuse + ping-flood attacks (RFC 6455) ([`3471507`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3471507c9f81418ec7977cac459ca5f6dc1f3075))
+
 ## [5.95.5] - 2026-07-11
 
 <details>
