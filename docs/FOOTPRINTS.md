@@ -43,11 +43,11 @@ from each example's `pio ci` size report and aggregated into
 | `JWT`                                    | L6-Presentation/06.JWTAuth              | 735.7 KB (57.5%) | 65.3 KB (20.4%)  |
 | `KEEPALIVE`                              | L4-Transport/01.KeepAlive               | 734.3 KB (57.4%) | 64.8 KB (20.2%)  |
 | `LD2410`                                 | L7-Application/62.Ld2410                | 264.3 KB (20.7%) | 21.1 KB (6.6%)   |
-| `LOGBUF`                                 | L7-Application/41.LogBuffer             | 735.0 KB (57.4%) | 67.9 KB (21.2%)  |
+| `LOGBUF`                                 | L7-Application/41.LogBuffer             | 735.0 KB (57.4%) | 67.8 KB (21.2%)  |
 | `LORA+GATEWAY`                           | Foundation/11.LoRaGateway               | 269.9 KB (21.1%) | 21.2 KB (6.6%)   |
 | `MDNS`                                   | L7-Application/15.mDNS                  | 758.4 KB (59.3%) | 66.6 KB (20.8%)  |
 | `MODBUS`                                 | L7-Application/30.ModbusTcp             | 735.3 KB (57.4%) | 65.1 KB (20.3%)  |
-| `MODBUS+MODBUS_MASTER`                   | L7-Application/43.ModbusScan            | 735.6 KB (57.5%) | 65.1 KB (20.3%)  |
+| `MODBUS+MODBUS_MASTER`                   | L7-Application/43.ModbusScan            | 735.6 KB (57.5%) | 65.0 KB (20.3%)  |
 | `MPR121`                                 | L7-Application/63.Mpr121                | 280.9 KB (21.9%) | 21.3 KB (6.7%)   |
 | `MQTT`                                   | L7-Application/24.MqttClient            | 718.9 KB (56.2%) | 63.8 KB (19.9%)  |
 | `MSGPACK`                                | L6-Presentation/14.MsgPack              | 737.0 KB (57.6%) | 64.8 KB (20.3%)  |
