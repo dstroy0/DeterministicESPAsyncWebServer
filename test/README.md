@@ -6088,7 +6088,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (open_ch(0, false))</code>
       * <code>Assert true (det_dma_sim_feed(0, msg, sizeof(msg)))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, g_ev.size()); // nothing until we pump the engine</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(DET_DMA_RX));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(det_dma_dir::DET_DMA_RX));</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(5, g_ev[0].len);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, g_ev[0].channel);</code>
       * <code>Assert equal memory (msg, g_ev[0].data.data(), sizeof(msg))</code>
@@ -6101,7 +6101,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (open_ch(0, false))</code>
       * <code>Assert true (det_dma_sim_feed(0, msg, sizeof(msg)))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(2, count_dir(DET_DMA_RX));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, count_dir(det_dma_dir::DET_DMA_RX));</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(DETWS_DMA_BUF_SIZE, g_ev[0].len);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(3, g_ev[1].len);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(msg), got.size());</code>
@@ -6115,7 +6115,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (open_ch(0, false))</code>
       * <code>Assert true (det_dma_sim_feed(0, msg, sizeof(msg)))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(2, count_dir(DET_DMA_RX));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, count_dir(det_dma_dir::DET_DMA_RX));</code>
       * <code>Assert not equal (g_ev[0].ptr, g_ev[1].ptr)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, g_ev[0].seq);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(1, g_ev[1].seq); // per-channel sequence increments</code>
@@ -6129,8 +6129,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (open_ch(0, false))</code>
       * <code>Assert true (det_dma_tx_submit(0, out, sizeof(out)))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(DET_DMA_TX));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, count_dir(DET_DMA_RX)); // no loopback -&gt; no RX</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(det_dma_dir::DET_DMA_TX));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, count_dir(det_dma_dir::DET_DMA_RX)); // no loopback -&gt; no RX</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(4, g_ev[0].len);</code>
       * <code>Assert null (g_ev[0].ptr)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(4, n);</code>
@@ -6146,7 +6146,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (det_dma_tx_submit(0, a, sizeof(a)))</code>
       * <code>Assert false (det_dma_tx_submit(0, b, sizeof(b)))</code>
       * <code>Assert true (det_dma_tx_submit(0, b, sizeof(b)))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(2, count_dir(DET_DMA_TX));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, count_dir(det_dma_dir::DET_DMA_TX));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6167,8 +6167,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (open_ch(0, true))</code>
       * <code>Assert true (det_dma_tx_submit(0, ping, sizeof(ping)))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(DET_DMA_TX));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(DET_DMA_RX));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(det_dma_dir::DET_DMA_TX));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(det_dma_dir::DET_DMA_RX));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(ping), got.size());</code>
       * <code>Assert equal memory (ping, got.data(), sizeof(ping))</code>
   </details>
@@ -7037,15 +7037,15 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: OneShot125: 125..250 us.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(125000, detws_esc_pwm_ns(0, DETWS_ESC_ONESHOT125));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(250000, detws_esc_pwm_ns(1000, DETWS_ESC_ONESHOT125));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(187500, detws_esc_pwm_ns(500, DETWS_ESC_ONESHOT125));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(5000, detws_esc_pwm_ns(0, DETWS_ESC_MULTISHOT));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(25000, detws_esc_pwm_ns(1000, DETWS_ESC_MULTISHOT));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(15000, detws_esc_pwm_ns(500, DETWS_ESC_MULTISHOT));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1500000, detws_esc_pwm_ns(500, DETWS_ESC_PWM));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(84000, detws_esc_pwm_ns(1000, DETWS_ESC_ONESHOT42));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(250000, detws_esc_pwm_ns(5000, DETWS_ESC_ONESHOT125));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(125000, detws_esc_pwm_ns(0, DetwsEscPwm::DETWS_ESC_ONESHOT125));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(250000, detws_esc_pwm_ns(1000, DetwsEscPwm::DETWS_ESC_ONESHOT125));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(187500, detws_esc_pwm_ns(500, DetwsEscPwm::DETWS_ESC_ONESHOT125));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5000, detws_esc_pwm_ns(0, DetwsEscPwm::DETWS_ESC_MULTISHOT));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(25000, detws_esc_pwm_ns(1000, DetwsEscPwm::DETWS_ESC_MULTISHOT));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(15000, detws_esc_pwm_ns(500, DetwsEscPwm::DETWS_ESC_MULTISHOT));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1500000, detws_esc_pwm_ns(500, DetwsEscPwm::DETWS_ESC_PWM));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(84000, detws_esc_pwm_ns(1000, DetwsEscPwm::DETWS_ESC_ONESHOT42));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(250000, detws_esc_pwm_ns(5000, DetwsEscPwm::DETWS_ESC_ONESHOT125));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17805,10 +17805,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: STRING decodes as a pointer into the source buffer, so keep the buffer in scope
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(OPCUA_VAR_NULL, out.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(OpcUaVariantType::OPCUA_VAR_NULL, out.type);</code>
       * <code>Assert equal uint (1, wn.n)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(OPCUA_VAR_NULL, nb[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(OPCUA_VAR_BOOL, out.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(OpcUaVariantType::OPCUA_VAR_NULL, nb[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(OpcUaVariantType::OPCUA_VAR_BOOL, out.type);</code>
       * <code>Assert true (out.b)</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-77, out.i32);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0xCAFEBABEu, out.u32);</code>
@@ -18150,8 +18150,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Datavalue good int32
     * **Assertions**:
       * <code>Assert true (w.ok)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, ua_r_u8(&r));            // mask: value present</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_INT32, ua_r_u8(&r)); // Variant encoding byte</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, ua_r_u8(&r));                              // mask: value present</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_INT32, ua_r_u8(&r)); // Variant encoding byte</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-7, ua_r_i32(&r));</code>
       * <code>Assert false (r.err)</code>
   </details>
@@ -18205,7 +18205,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, ua_r_u8(&r));  // AdditionalHeader body none</code>
       * <code>TEST_ASSERT_EQUAL_INT32(2, ua_r_i32(&r)); // count</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x01, ua_r_u8(&r));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_INT32, ua_r_u8(&r));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_INT32, ua_r_u8(&r));</code>
       * <code>TEST_ASSERT_EQUAL_INT32(4242, ua_r_i32(&r));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x02, ua_r_u8(&r));</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(OPCUA_STATUS_BAD_NODE_ID_UNKNOWN, ua_r_u32(&r));</code>
@@ -18356,7 +18356,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Datavalue roundtrip
     * **Assertions**:
       * <code>Assert true (ua_r_datavalue(&r, &got, &st))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_DOUBLE, got.type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_DOUBLE, got.type);</code>
       * <code>Assert true (got.f64 == 3.25)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(OPCUA_STATUS_GOOD, st);</code>
       * <code>Assert false (r.err)</code>
@@ -18374,7 +18374,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT16(1, wr.items[0].ns);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(10, wr.items[0].id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(OPCUA_ATTR_VALUE, wr.items[0].attribute);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_INT32, wr.items[0].value.type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_INT32, wr.items[0].value.type);</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-1234, wr.items[0].value.i32);</code>
       * <code>Assert true (rn &gt; 0)</code>
       * <code>Assert true (opcua_parse_header(resp, rn, &h))</code>
@@ -18607,9 +18607,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(2, rr.items[1].id);</code>
       * <code>Assert true (sn &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_INT32(2, n);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_UINT32, cvals[0].type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_UINT32, cvals[0].type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(4242, cvals[0].u32);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_DOUBLE, cvals[1].type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_DOUBLE, cvals[1].type);</code>
       * <code>Assert true (cvals[1].f64 == 2.5)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(OPCUA_STATUS_GOOD, csts[0]);</code>
   </details>
@@ -18641,7 +18641,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (opcua_parse_write(req, rn, &wr))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, wr.count);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(10, wr.items[0].id);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_UINT32, wr.items[0].value.type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_UINT32, wr.items[0].value.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(4242, wr.items[0].value.u32);</code>
       * <code>Assert true (sn &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_INT32(1, nres);</code>
@@ -19749,9 +19749,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: DMA highest, then forward, then device, all above the user lane.
     * **Assertions**:
-      * <code>TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(DETWS_PQ_LANE_FORWARD),</code>
-      * <code>TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(DETWS_PQ_LANE_DEVICE),</code>
-      * <code>TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(DETWS_PQ_LANE_USER),</code>
+      * <code>TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_FORWARD),</code>
+      * <code>TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_DEVICE),</code>
+      * <code>TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_USER),</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19759,9 +19759,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: The USER lane is already started by setUp; start the internal DMA lane too.
     * **Assertions**:
-      * <code>Assert true (detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma))</code>
+      * <code>Assert true (detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma))</code>
       * <code>Assert true (detws_pq_post(&u, 0))</code>
-      * <code>Assert true (detws_pq_post_lane(DETWS_PQ_LANE_DMA, &d, 0))</code>
+      * <code>Assert true (detws_pq_post_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &d, 0))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, g_seen.size());</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_seen_dma.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(22, g_seen_dma[0]);</code>
@@ -19774,13 +19774,13 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Lane start stop running independent
     * **Assertions**:
-      * <code>Assert true (detws_pq_running_lane(DETWS_PQ_LANE_USER))</code>
-      * <code>Assert false (detws_pq_running_lane(DETWS_PQ_LANE_DMA))</code>
-      * <code>Assert true (detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma))</code>
-      * <code>Assert true (detws_pq_running_lane(DETWS_PQ_LANE_DMA))</code>
-      * <code>Assert false (detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma))</code>
-      * <code>Assert false (detws_pq_running_lane(DETWS_PQ_LANE_DMA))</code>
-      * <code>Assert true (detws_pq_running_lane(DETWS_PQ_LANE_USER))</code>
+      * <code>Assert true (detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_USER))</code>
+      * <code>Assert false (detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_DMA))</code>
+      * <code>Assert true (detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma))</code>
+      * <code>Assert true (detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_DMA))</code>
+      * <code>Assert false (detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma))</code>
+      * <code>Assert false (detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_DMA))</code>
+      * <code>Assert true (detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_USER))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19788,9 +19788,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Lane high water is per lane
     * **Assertions**:
-      * <code>Assert true (detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma))</code>
-      * <code>TEST_ASSERT_GREATER_OR_EQUAL_size_t(2, detws_pq_high_water_lane(DETWS_PQ_LANE_DMA));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pq_high_water_lane(DETWS_PQ_LANE_DEVICE)); // untouched lane</code>
+      * <code>Assert true (detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma))</code>
+      * <code>TEST_ASSERT_GREATER_OR_EQUAL_size_t(2, detws_pq_high_water_lane(detws_pq_lane::DETWS_PQ_LANE_DMA));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pq_high_water_lane(detws_pq_lane::DETWS_PQ_LANE_DEVICE)); // untouched lane</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19798,14 +19798,14 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Guards: urgent-post to a bad lane / with a null item fails closed; drain of a bad lane is a no-op.
     * **Assertions**:
-      * <code>Assert true (detws_pq_start_lane(DETWS_PQ_LANE_DMA, &cfg))</code>
-      * <code>Assert true (detws_pq_post_lane(DETWS_PQ_LANE_DMA, &a, 0))</code>
-      * <code>Assert true (detws_pq_post_lane_urgent(DETWS_PQ_LANE_DMA, &b, 0))</code>
+      * <code>Assert true (detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &cfg))</code>
+      * <code>Assert true (detws_pq_post_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &a, 0))</code>
+      * <code>Assert true (detws_pq_post_lane_urgent(detws_pq_lane::DETWS_PQ_LANE_DMA, &b, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2u, (uint32_t)g_seen_dma.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(20u, g_seen_dma[0]); // urgent item first</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(10u, g_seen_dma[1]);</code>
-      * <code>Assert false (detws_pq_post_lane_urgent((detws_pq_lane)DETWS_PQ_LANE_COUNT, &a, 0))</code>
-      * <code>Assert false (detws_pq_post_lane_urgent(DETWS_PQ_LANE_DMA, nullptr, 0))</code>
+      * <code>Assert false (detws_pq_post_lane_urgent((detws_pq_lane)detws_pq_lane::DETWS_PQ_LANE_COUNT, &a, 0))</code>
+      * <code>Assert false (detws_pq_post_lane_urgent(detws_pq_lane::DETWS_PQ_LANE_DMA, nullptr, 0))</code>
   </details>
 
 </details>
