@@ -16922,7 +16922,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(32, n);</code>
       * <code>Assert equal memory (SIG, buf, 8)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, r32(buf + 8)); // MessageType NEGOTIATE</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(NTLMSSP_CLIENT_DEFAULT_FLAGS, r32(buf + 12));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(NtlmsspFlags::NTLMSSP_CLIENT_DEFAULT_FLAGS, r32(buf + 12));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, ntlmssp_build_negotiate(buf, 16, 0)); // overflow</code>
   </details>
 
@@ -16935,7 +16935,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert equal memory (sc, ch.server_challenge, 8)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(ti_len, ch.target_info_len);</code>
       * <code>Assert equal memory (ti, ch.target_info, ti_len)</code>
-      * <code>Assert true ((ch.flags & NTLMSSP_NEGOTIATE_TARGET_INFO) != 0)</code>
+      * <code>Assert true ((ch.flags & NtlmsspFlags::NTLMSSP_NEGOTIATE_TARGET_INFO) != 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
