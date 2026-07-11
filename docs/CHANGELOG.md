@@ -4,13 +4,24 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- reject SERVICE_REQUEST before key exchange completes (pentest finding) ([`9edb319`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9edb31998ae189750e0e8d4425876e65a685c568))
+
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`2fb4422`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fb4422f553d77232809a9e7f791867c045a801d))
+- update CHANGELOG.md [skip ci] ([`ab8bd3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab8bd3a8c5497095fb232f420f0051ea73472fb9))
 - update CHANGELOG.md [skip ci] ([`a4d816e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4d816ef9276676eb2192267757d285826ec8dd7))
 - update CHANGELOG.md [skip ci] ([`b06168c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b06168c06ac71b18d1150532cff3b12c44fc6816))
 
+### Changes
+
+- Bump version: 5.95.13 → 5.95.14 ([`6556d97`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6556d97fafa8ee1849077d2508f0d0b49d71e4be))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a18d12d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a18d12dfeac84221bb561a0cf13ba6f29ed77cbc))
 - update ESP32 build footprints [skip ci] ([`64600e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64600e200aefafacc9ca6d7fb538e3c6429da913))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cb76528`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb765284f74e8ce8ecfb9029ad0195efe41a3f4f))
 
