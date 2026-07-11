@@ -5915,7 +5915,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: SOH(1) + slave(2) + type(1) + addr(4) + blocks(2) + ETB(1) + LRC(1) = 12.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(12, n);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(DNET_SOH, out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DnetByte::DNET_SOH, out[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_body, out + 1, sizeof(expect_body)); // 10 bytes, out[1..10]</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(lrc, out[11]);</code>
   </details>
@@ -5926,8 +5926,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: STX + ABCD + ETX + LRC = 7.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(7, n);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(DNET_STX, buf[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(DNET_ETX, buf[5]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DnetByte::DNET_STX, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(DnetByte::DNET_ETX, buf[5]);</code>
       * <code>Assert true (detws_dnet_data_parse(buf, n, &d, &dl))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(4, dl);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, d, 4);</code>
@@ -5947,11 +5947,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_header(1, DNET_READ, 0x40, 2, nullptr, sizeof(out))); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_header(1, DNET_READ, 0x40, 2, out, 5));               // cap too small</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_data(payload, 4, nullptr, sizeof(out)));              // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_data(nullptr, 4, out, sizeof(out)));                  // len but null data</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_data(payload, 4, out, 3));                            // n &gt; cap</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_header(1, DnetByte::DNET_READ, 0x40, 2, nullptr, sizeof(out))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_header(1, DnetByte::DNET_READ, 0x40, 2, out, 5)); // cap too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_data(payload, 4, nullptr, sizeof(out)));          // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_data(nullptr, 4, out, sizeof(out)));              // len but null data</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_data(payload, 4, out, 3));                        // n &gt; cap</code>
       * <code>Assert false (detws_dnet_data_parse(nullptr, 5, &d, &dl))</code>
       * <code>Assert false (detws_dnet_data_parse(two, sizeof(two), &d, &dl))</code>
       * <code>Assert false (detws_dnet_data_parse(no_etx, sizeof(no_etx), &d, &dl))</code>
