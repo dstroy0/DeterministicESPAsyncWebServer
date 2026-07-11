@@ -1244,3 +1244,10 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       fewer ops), still data-independent. Decode is once-per-request (not a hot byte loop) so the win is
       modest - do it only with (a) RFC 4648 test vectors both directions, and (b) a **timing-invariance
       check** on the S3 rig (CCOUNT must not vary with the input bytes), measured through `/bench`.
+- [ ] **Hand-rolled SSE record framer** (S) - `sse_format()` builds each `event:`/`id:`/`data:` record with
+      three `snprintf("%s")` calls; the CCOUNT bench measured ~3393 cyc / 14 us for a fully-addressed record
+      on the S3, dominated by the Xtensa `vsnprintf` path (~7x the `mime_type` lookup). A branchless
+      `memcpy`-based framer (fixed field prefixes + `strlen`/`memcpy` of each value + the terminators) would
+      cut it by roughly an order of magnitude. Not worth it at SSE's per-event cadence, but a real win for a
+      high-rate broadcast fan-out (many subscribers, high push rate). Gate on the existing `test_sse_format`
+      byte-exact tests + the `/bench` figure.

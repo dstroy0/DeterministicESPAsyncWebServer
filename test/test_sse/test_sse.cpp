@@ -8,6 +8,7 @@
 //   WRITE       -- sse_write() guard conditions and return values
 //   STRESS      -- sustained alloc/free cycles and multi-slot isolation
 
+#include "network_drivers/presentation/presentation.h" // http_conn_open (SSE-teardown regression)
 #include "network_drivers/presentation/sse/sse.h"
 #include <string.h>
 #include <unity.h>
@@ -283,6 +284,88 @@ void test_sse_write_does_not_affect_other_slots()
 }
 
 // ====================================================================
+// TEARDOWN REGRESSION - a reused HTTP slot must not inherit a stale SSE binding
+// ====================================================================
+//
+// Regression for the SSE-teardown slot leak (docs/BUGS.md): sse_free() had no caller, so a closed or
+// idle-reaped SSE stream left its sse_pool entry active. When a new HTTP connection reused that conn
+// slot, http_poll_slot() saw sse_find(slot) and skipped HTTP dispatch, wedging the server (a live,
+// HW-reproduced DoS). http_conn_open() now releases any stale WS/SSE binding for the slot.
+
+void test_http_conn_open_releases_stale_sse_binding()
+{
+    sse_alloc(0, "/events");
+    TEST_ASSERT_NOT_NULL(sse_find(0)); // slot 0 has an SSE binding
+    http_conn_open(0);                 // a fresh HTTP connection reuses the slot
+    TEST_ASSERT_NULL(sse_find(0));     // ...and must NOT inherit the stale binding
+}
+
+void test_http_conn_open_leaves_other_slot_sse_binding()
+{
+    sse_alloc(0, "/events");
+    sse_alloc(1, "/metrics");
+    http_conn_open(0);                 // reuse slot 0 only
+    TEST_ASSERT_NULL(sse_find(0));     // slot 0 cleared
+    TEST_ASSERT_NOT_NULL(sse_find(1)); // slot 1's binding is untouched
+}
+
+// ====================================================================
+// FORMAT TESTS - sse_format() exact wire bytes (WHATWG event-stream)
+// ====================================================================
+
+void test_sse_format_data_only()
+{
+    char buf[64];
+    int n = sse_format(buf, sizeof(buf), "hello", nullptr, nullptr);
+    TEST_ASSERT_EQUAL_STRING("data: hello\n\n", buf);
+    TEST_ASSERT_EQUAL((int)strlen("data: hello\n\n"), n);
+}
+
+void test_sse_format_event_and_data()
+{
+    char buf[64];
+    int n = sse_format(buf, sizeof(buf), "payload", "update", nullptr);
+    TEST_ASSERT_EQUAL_STRING("event: update\ndata: payload\n\n", buf);
+    TEST_ASSERT_EQUAL((int)strlen("event: update\ndata: payload\n\n"), n);
+}
+
+void test_sse_format_id_and_data()
+{
+    char buf[64];
+    int n = sse_format(buf, sizeof(buf), "payload", nullptr, "42");
+    TEST_ASSERT_EQUAL_STRING("id: 42\ndata: payload\n\n", buf);
+    TEST_ASSERT_EQUAL((int)strlen("id: 42\ndata: payload\n\n"), n);
+}
+
+void test_sse_format_all_fields_ordering()
+{
+    // Field order per WHATWG: event, then id, then data (blank line terminates).
+    char buf[64];
+    int n = sse_format(buf, sizeof(buf), "body", "status", "1");
+    TEST_ASSERT_EQUAL_STRING("event: status\nid: 1\ndata: body\n\n", buf);
+    TEST_ASSERT_EQUAL((int)strlen("event: status\nid: 1\ndata: body\n\n"), n);
+}
+
+void test_sse_format_null_data_returns_zero()
+{
+    char buf[64];
+    TEST_ASSERT_EQUAL(0, sse_format(buf, sizeof(buf), nullptr, "x", "1"));
+}
+
+void test_sse_format_overflow_returns_zero()
+{
+    // A record that cannot fit must report 0, never a partial (truncated) frame.
+    char buf[8];
+    TEST_ASSERT_EQUAL(0, sse_format(buf, sizeof(buf), "a-long-payload-value", "an-event", "99"));
+}
+
+void test_sse_format_zero_size_returns_zero()
+{
+    char buf[8];
+    TEST_ASSERT_EQUAL(0, sse_format(buf, 0, "data", nullptr, nullptr));
+}
+
+// ====================================================================
 // STRESS TESTS
 // ====================================================================
 
@@ -409,6 +492,19 @@ int main()
     RUN_TEST(test_sse_write_with_id_returns_true);
     RUN_TEST(test_sse_write_with_all_fields_returns_true);
     RUN_TEST(test_sse_write_does_not_affect_other_slots);
+
+    // Teardown regression (SSE slot leak -> DoS)
+    RUN_TEST(test_http_conn_open_releases_stale_sse_binding);
+    RUN_TEST(test_http_conn_open_leaves_other_slot_sse_binding);
+
+    // Format
+    RUN_TEST(test_sse_format_data_only);
+    RUN_TEST(test_sse_format_event_and_data);
+    RUN_TEST(test_sse_format_id_and_data);
+    RUN_TEST(test_sse_format_all_fields_ordering);
+    RUN_TEST(test_sse_format_null_data_returns_zero);
+    RUN_TEST(test_sse_format_overflow_returns_zero);
+    RUN_TEST(test_sse_format_zero_size_returns_zero);
 
     // Stress
     RUN_TEST(stress_sse_alloc_free_100_cycles);

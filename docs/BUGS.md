@@ -8,6 +8,40 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SSE teardown slot leak wedges the whole HTTP server (sse_free never called)
+
+- **Status:** FIXED (found on hardware 2026-07-11 by the pentest rig's new `sse_exhaustion` attack).
+- **Found:** `pentesting/detws_pentest.py --only sse_exhaustion` against the S3 rig (`pentesting/rig_firmware`,
+  pinned `espressif32@6.13.0`, MAX_CONNS=4, MAX_SSE_CONNS=2). A **single clean run** on a freshly-booted,
+  healthy board (heap 252636) drove the server permanently unresponsive: `/health` -> `56` then `28`
+  (timeout), no recovery past `CONN_TIMEOUT_MS` (5 s), and **no crash/reboot** (serial clean) - a hard wedge.
+- **Symptom:** one burst of `GET /events` connections beyond `MAX_SSE_CONNS` and the device stops answering
+  every endpoint, forever, without rebooting (so no watchdog catches it). A remotely-triggerable permanent DoS.
+- **Root cause (JTAG-confirmed):** `sse_free()` had **zero callers** - dead code. WebSocket teardown is wired
+  (`ws_free()` in `dwserver.cpp` handle loop), but SSE had no equivalent, so a closed / idle-reaped / aborted
+  SSE stream never released its `sse_pool` entry. An SSE upgrade also leaves the slot as `ConnProto::PROTO_HTTP`
+  (SSE is a long-lived HTTP response, not a protocol switch), so the leaked binding persists on the HTTP slot.
+  The kill step is in `http_poll_slot()`: `if (sse_find(i)) return;` skips HTTP dispatch for a slot it believes
+  is a live SSE stream. Once `sse_pool` is full of leaked entries (slot_id 0,1), any **new** HTTP connection
+  reusing conn slot 0 or 1 matches the stale `sse_find()` and is silently never dispatched -> the client hangs.
+  Live JTAG on a wedged board: `sse_pool[0]`+`sse_pool[1]` both `active` (paths `/events`), `conn_pool[1]`
+  already `CONN_FREE` (stale binding to a freed slot), a `GET /health` curl sat unparsed in a slot's rx ring,
+  and `conn_pool[0].last_activity_ms` climbed 163048 -> 423695 across two halts (each hung-then-retried
+  connection refreshed it), so the idle sweep never reaped it. `loopTask`/`worker`/`tcpip_thread` all alive.
+- **Fix:** `src/network_drivers/presentation/presentation.cpp` - new `http_release_upgrade_bindings(slot)` calls
+  `ws_free(slot)` + `sse_free(slot)` (both no-ops when unbound). Invoked from `http_evt_close()` (FIN/RST/error
+  on an SSE or WS slot frees its binding) **and** `http_conn_open()` (a reused slot must not inherit a stale
+  binding - covers the idle-sweep / abort free paths that never fire a close event). Verified on the rig: the
+  exact `sse_exhaustion` burst that permanently wedged the board now recovers (`/health` -> 200 within ~5 s);
+  native `test_sse` (+2 regression tests) and `test_presentation` green.
+- **Lesson:** every presentation-layer binding (WS/SSE) needs a teardown wired to **every** transport free path,
+  not just the graceful protocol-close path; clean up stale bindings at slot **reuse** to cover the direct-free
+  paths (idle sweep, abort) that never emit a close event. Also: the liveness oracle must settle-recheck so a
+  permanent wedge (stays down) is distinguished from a connection-holding attack's transient pool saturation
+  (recovers) - the same discriminator that proved the fix.
+
+---
+
 ## Basic-auth password compared with strcmp: NUL-truncating + not constant-time
 
 - **Status:** FIXED (found on hardware 2026-07-11 by the pentest rig's `auth_bypass` attack).

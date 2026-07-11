@@ -20,7 +20,10 @@
 #include "presentation.h"
 #include "network_drivers/session/proto_handler.h" // ProtoHandler (the L5 dispatch seam this registers into)
 #if DETWS_ENABLE_WEBSOCKET
-#include "network_drivers/presentation/websocket/websocket.h" // ws_find(): a WS-upgraded slot must never be HTTP-parsed
+#include "network_drivers/presentation/websocket/websocket.h" // ws_find()/ws_free(): a WS-upgraded slot must never be HTTP-parsed
+#endif
+#if DETWS_ENABLE_SSE
+#include "network_drivers/presentation/sse/sse.h" // sse_free(): release an SSE binding when its HTTP slot closes/reuses
 #endif
 #if DETWS_ENABLE_TLS
 #include "network_drivers/tls/tls.h"
@@ -42,10 +45,28 @@ void http_reset(uint8_t slot_id)
     http_parser_reset(&http_pool[slot_id]);
 }
 
+// Release any WebSocket / SSE binding still attached to a slot. WS and SSE upgrades leave the slot
+// as ConnProto::PROTO_HTTP (SSE is just a long-lived HTTP response; WS is pumped separately), so this
+// HTTP proto handler owns their teardown. Both frees are no-ops when the slot has no such binding.
+// Called on close AND on a fresh accept, because a slot can be reaped by the idle sweep or aborted
+// (SSE pool full) without a close event ever firing - so a reused slot must not inherit a stale
+// binding. A stale sse binding is the DoS: http_poll_slot() sees sse_find(slot) and skips HTTP
+// dispatch, wedging every later connection that reuses the slot.
+static inline void http_release_upgrade_bindings(uint8_t slot_id)
+{
+#if DETWS_ENABLE_WEBSOCKET
+    ws_free(slot_id);
+#endif
+#if DETWS_ENABLE_SSE
+    sse_free(slot_id);
+#endif
+}
+
 void http_conn_open(uint8_t slot_id)
 {
     if (slot_id >= MAX_CONNS)
         return;
+    http_release_upgrade_bindings(slot_id); // a reused slot must not inherit a prior WS/SSE binding
 #if DETWS_ENABLE_KEEPALIVE
     http_req_count[slot_id] = 0; // fresh connection: clear the keep-alive request tally
 #endif
@@ -207,6 +228,7 @@ static void http_evt_close(uint8_t slot)
     if (conn_pool[slot].tls)
         det_tls_conn_free(slot); // also covers timeouts (EvtType::EVT_ERROR)
 #endif
+    http_release_upgrade_bindings(slot); // FIN/RST/error on an SSE or WS slot must free its binding
     http_reset(slot);
 }
 // HTTP's poll pump is instance-bound (it dispatches into a DetWebServer's routes), so the routing

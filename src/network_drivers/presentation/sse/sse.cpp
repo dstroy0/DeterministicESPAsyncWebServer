@@ -63,18 +63,13 @@ void sse_free(uint8_t slot_id)
     }
 }
 
-bool sse_write(SseConn *sse, const char *data, const char *event, const char *id)
+int sse_format(char *buf, size_t n, const char *data, const char *event, const char *id)
 {
-    if (!data)
-        return false;
+    if (!data || n == 0)
+        return 0;
 
-    TcpConn *conn = &conn_pool[sse->slot_id];
-    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
-        return false;
-
-    char buf[SSE_BUF_SIZE];
     int pos = 0;
-    int rem = (int)sizeof(buf);
+    int rem = (int)n;
 
     // pos starts at 0 here, so the first field needs no remaining-space guard; the
     // later fields do, since a truncated snprintf advances pos toward (or past) rem.
@@ -86,6 +81,19 @@ bool sse_write(SseConn *sse, const char *data, const char *event, const char *id
         pos += snprintf(buf + pos, (size_t)(rem - pos), "data: %s\n\n", data);
 
     if (pos <= 0 || pos >= rem)
+        return 0;
+    return pos;
+}
+
+bool sse_write(SseConn *sse, const char *data, const char *event, const char *id)
+{
+    TcpConn *conn = &conn_pool[sse->slot_id];
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
+        return false;
+
+    char buf[SSE_BUF_SIZE];
+    int pos = sse_format(buf, sizeof(buf), data, event, id);
+    if (pos <= 0)
         return false;
 
     det_conn_send(conn->id, buf, (u16_t)pos);

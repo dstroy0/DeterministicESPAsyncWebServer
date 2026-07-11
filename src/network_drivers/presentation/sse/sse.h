@@ -90,6 +90,23 @@ SseConn *sse_find(uint8_t slot_id);
 void sse_free(uint8_t slot_id);
 
 /**
+ * @brief Format one SSE event record into a caller buffer (no transport).
+ *
+ * Emits `event: <event>\n` (if event), `id: <id>\n` (if id), then
+ * `data: <data>\n\n` per the WHATWG event-stream format.  data must not be
+ * nullptr.  Pure: no connection state, so it is unit-testable and benchable
+ * on its own; sse_write() wraps it with the det_conn_send() I/O.
+ *
+ * @param buf    Destination buffer.
+ * @param n      Size of @p buf.
+ * @param data   Event data (required).
+ * @param event  Event name (optional).
+ * @param id     Event ID (optional).
+ * @return Bytes written (excluding the terminator), or 0 on empty/overflow.
+ */
+int sse_format(char *buf, size_t n, const char *data, const char *event, const char *id);
+
+/**
  * @brief Write one SSE event record to a client.
  *
  * Formats and sends `event: ...\nid: ...\ndata: ...\n\n`.  Any optional

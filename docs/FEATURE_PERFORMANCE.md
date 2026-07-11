@@ -180,6 +180,24 @@ device costs of hot pure primitives on the auth and ETag/Digest paths - no netwo
 - `mime_type` (path extension -> content-type, run on every file-serving response) is ~1.96 us - cheap; the
   content-type lookup is never the request-path bottleneck.
 
+### Server-Sent Events framing (DETWS_ENABLE_SSE)
+
+`sse_format()` builds one `event:`/`id:`/`data:` record (WHATWG event-stream format) into a buffer; it is
+the pure, transport-free hot op behind every `sse_send()` / `sse_broadcast()`. Host figures from
+[`perf/bench_sse.cpp`](../perf/bench_sse.cpp); the device figure is the rig `/bench` CCOUNT op (N=20000 warm).
+
+| Operation                      | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------------------------ | ---------: | --------: | --------------: | -------------: |
+| `sse_format` data-only         |       62.5 |     432.1 |               - |              - |
+| `sse_format` event + id + data |      180.2 |     299.7 |            3393 |          14137 |
+
+- A fully-addressed record (named event + resumable id + data) costs ~14.1 us on the S3 - notably more than
+  the codec primitives above, because the framing is three `snprintf("%s")` calls and the Xtensa `vsnprintf`
+  path dominates. At SSE's push cadence (events, not per-byte) this is invisible, but a hand-rolled
+  memcpy-based framer would cut it by an order of magnitude if a high-rate broadcast fan-out ever needs it
+  (noted in the ROADMAP perf items). The data-only shape (the common broadcast case) is ~3x cheaper on the
+  host, so the device cost scales down similarly.
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
