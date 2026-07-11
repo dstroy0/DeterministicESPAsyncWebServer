@@ -301,6 +301,27 @@ figure is the rig `/bench` CCOUNT op (Read Holding Registers x8).
   Modbus is the lightest per-transaction protocol on the device, fitting its role as a high-rate PLC/SCADA
   poll target - a single connection can be polled at hundreds of Hz without the codec being the limit.
 
+### WebSocket permessage-deflate (RFC 7692)
+
+The compress/decompress hot ops on every WebSocket data frame when permessage-deflate is negotiated:
+`deflate_raw()` (TX) and `inflate_raw()` (RX). Both are pure (a caller scratch, no heap). Host figures
+from [`perf/bench_deflate.cpp`](../perf/bench_deflate.cpp); the device figure is the rig `/bench` CCOUNT
+op (inflate of a ~70 B JSON message).
+
+| Operation                    | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ---------------------------- | ---------: | --------: | --------------: | -------------: |
+| `deflate_raw` (JSON message) |     5366.3 |      37.5 |               - |              - |
+| `inflate_raw` (JSON message) |     5133.5 |      39.2 |           47131 |         196379 |
+
+- These are **by far the most expensive per-message ops** on the device: `inflate_raw` is ~196 us to
+  decompress one small WebSocket frame (real LZ77 back-references + Huffman decode), ~10x the SNMP BER
+  path and ~100x the Modbus codec. permessage-deflate trades ~200 us of CPU per message for the bandwidth
+  saving - worth it on a slow/metered link, a poor trade on a fast LAN. Enable it deliberately, not by default.
+- **Decompression-bomb note (security):** the pentest `ws_deflate_bomb` sent a **986 B** compressed frame
+  that inflates to **1 MB (a 1014:1 ratio)**; the device bounded `inflate_raw` to `WS_FRAME_SIZE` and
+  **refused it without allocating the expanded payload** - a WebSocket zip bomb cannot exhaust memory.
+  The output cap is structural (a fixed message buffer), so the defense holds regardless of the ratio.
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
