@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`67eefef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/67eefef0e2458de34f9ce734ee9d9300745618ad))
 - update test report + coverage [skip ci] ([`37f0265`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37f02658dd18a4d9a4701045e8485f7c4ddb6e5e))
 - update CHANGELOG.md [skip ci] ([`79f9d9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79f9d9a71c24aa511d8c4e47da8a8f6a423c1eee))
 - update test report + coverage [skip ci] ([`4fb1d8d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4fb1d8debce8932985673615092089a63c31d581))
@@ -69,6 +70,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8ea408b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8ea408bea3381e0d47605046f678e660e8b79d92))
+- update ESP32 build footprints [skip ci] ([`400be1d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/400be1d9c1fae4efa1ed34d0b953a7a1129ad340))
 - reconcile HTTP/3 status (host-tested end-to-end) + roadmap dwserver split ([`b265ac4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b265ac49026e0c50c8f2019a2b3d64f2b0694db0))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`456277e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/456277ed3b11c0c26c33a7dc3e118c6565d3daf2))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1c8410b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c8410b0ef9c0da24588bf5fb8e6a9059d4acf6d))
@@ -114,6 +117,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- quic_packet/quic_tp anon enums -> namespacing structs ([`80bf513`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80bf51334aedb0933d9499a542636ca49c57758b))
 - quic_frame anon enums -> namespacing structs ([`2a2b485`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2a2b4853110a5129ebe58a0af5947f667281fff2))
 - nrf24.cpp anon cmd/reg/cfg/status enums -> namespacing structs ([`f2750cc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f2750ccebf3f785858559060362ac75a8717c9a4))
 - lora.cpp anon register/mode/irq enums -> namespacing structs ([`e3ed013`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3ed013af8392cc51aa6e432a1a8d2d72d888cf1))
