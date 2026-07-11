@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ba9c2fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba9c2fdc6605e26d808b36680a639c0e8be3f935))
 - update CHANGELOG.md [skip ci] ([`1b1ffc8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1b1ffc86530c519e5fe25e89715055b8afc58e2b))
 - update CHANGELOG.md [skip ci] ([`c129f0a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c129f0a0af57ac084f235a6ca46bb0b46c19030b))
 - update CHANGELOG.md [skip ci] ([`6fdfdf1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6fdfdf19e3d13774b8dc4eae955c2c66dc8cfe60))
@@ -78,6 +79,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5afa24b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5afa24bb27e2ddf84f77d668f21c1998340050b4))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`20d2d70`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/20d2d70e8b3d262c60cd99ba025b534552c52dd1))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cb1994f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb1994fe3ae8905902b02cda51da98b87861b893))
 - one folder per implemented service (.h+.cpp -> own dir) ([`5d00f7d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5d00f7de0cbb0273c48af62390527003af3a85ab))
@@ -134,6 +136,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- zwave/wisun/wifi_sniffer/ld2410/dshot anon enums -> namespacing structs ([`c14bfab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c14bfab91bd8c9668ef87da3dc4e35dea2e9e0fd))
 - thread/zigbee/profinet anon wire-const enums -> namespacing structs ([`de3fda3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/de3fda3639401a4ee12a5be56e5b7ad65b8dba65))
 - ble_gatt/nts anon wire-const enums -> namespacing structs ([`c0b0b9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c0b0b9f6a7230e354438a3b805e1e6ef4c825145))
 - webdav/http_delivery/sqlite anon enums -> constexpr/enum class/struct ([`96190ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96190ec1c881fa76cc326812bcc5f607d18e1e2c))
