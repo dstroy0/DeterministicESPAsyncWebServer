@@ -339,6 +339,23 @@ The device is an MQTT client; these are its pure packet build/parse hot ops - `m
   field + the payload copy) - cheap; an MQTT client can publish at a high rate without the encode being
   the limit. The network round trip and the broker, not the codec, set the publish throughput ceiling.
 
+### Redis RESP2/RESP3 codec (DETWS_ENABLE_REDIS)
+
+The Redis wire codec a device uses to talk to a Redis server: `resp_encode_command` (build an outbound
+command) and `resp_parse` (decode one value of a server reply - the untrusted-input cursor). Both pure.
+Host figures from [`perf/bench_redis.cpp`](../perf/bench_redis.cpp); the device figure is the rig
+`/bench` CCOUNT op (`resp_parse` of an array header).
+
+| Operation                             | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `resp_encode_command` (SET)           |       66.4 |     708.1 |               - |              - |
+| `resp_parse` (array reply, per value) |       64.7 |     432.5 |             244 |           1016 |
+
+- `resp_parse` decodes one value per call at ~1.0 us on the device (it is a **cursor**, not a recursive
+  descent - an aggregate reports its child count and the caller loops, so there is no per-depth stack cost
+  and a deeply-nested reply cannot blow the stack). Encoding a command is comparably cheap. RESP is the
+  lightest of the client codecs; the Redis round-trip cost is the network, not the parse.
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
