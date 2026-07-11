@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`7f34bbc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f34bbc660d821fd5e8a7b1f8364714eb0e1a05c))
 - update CHANGELOG.md [skip ci] ([`2629e08`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2629e085f487c47ca4f90c2ff7cb5a87f8cefe59))
 - update CHANGELOG.md [skip ci] ([`900e386`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/900e3866b73f771344e424fe224ed9870d9b990c))
 - update CHANGELOG.md [skip ci] ([`a6749fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6749fb1404cd2f7f34d51686aa3df58371413fd))
@@ -22,6 +23,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- start SSH bring-up - server responds, but RSTs at KEX on the IDF-5.5 S3 ([`1831862`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/18318628d9ae844ee09824875f681dd10929685e))
 - device QUIC/HTTP-3 throughput bench ([`ed68d7f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed68d7fe2d541c6b4a4897e9c8ab7da941e252ff))
 - log the QUIC frame-parser interop blocker; handshake now runs on PSRAM ([`353cfe9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/353cfe9278c098621cb958ff413f5af1480d05a9))
 
