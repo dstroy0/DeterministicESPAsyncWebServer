@@ -2,14 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.13] - 2026-07-11
+
+<details>
+<summary><b>Show Changelog for version 5.95.13 - 2026-07-11</b></summary>
 
 ### Bug Fixes
 
+- wire the dispatcher emit callback at the handler seam so the server can reply ([`31ccddf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31ccddf70f0dbbb46906b4f94d63f374b662ac99))
 - parse the full QUIC frame grammar so a real client's request is not rejected ([`3c153a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c153a647eec6f31d6b3b5f9a01b7d17766c8e8d))
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`a2e1387`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a2e1387b13ceeafa422c6a9fd7f2fe5e9fa84623))
+- update CHANGELOG.md [skip ci] ([`c7ad547`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c7ad547e65ef85b1c67a747e85eeb7ee9d354998))
 - update CHANGELOG.md [skip ci] ([`3ddbee9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ddbee9215d0df20d383e105d080b8e018c6c3ec))
 - update CHANGELOG.md [skip ci] ([`7f34bbc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f34bbc660d821fd5e8a7b1f8364714eb0e1a05c))
 - update CHANGELOG.md [skip ci] ([`2629e08`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2629e085f487c47ca4f90c2ff7cb5a87f8cefe59))
@@ -20,6 +26,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 5.95.12 → 5.95.13 ([`b0a81c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b0a81c0576da0c7e6ce49d8f91ba4212afdd8dd0))
 - Bump version: 5.95.11 → 5.95.12 ([`ba930dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba930dcb30a092452c781e46c23edce1c173ddb5))
 
 ### Documentation
@@ -33,6 +40,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - add a PlatformIO SSH rig; SSH resets at KEX on BOTH lwIP models (not core-locking) ([`b210fb8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b210fb81abea37178924c43ee52128d799bb19ab))
 - advanced QUIC/HTTP-3 abuse attack (Initial flood + anti-amplification + malformed fuzz) ([`5b88186`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b88186ba36ae73dd314a50fa56937eedd80b60f))
 - real QUIC/HTTP-3 interop peer (aioquic) - device-as-server ALPN h3 ([`c2dcdd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c2dcdd6d5c65a69f9846a0d3b452e7771ab9ea71))
+
+</details>
 
 ## [5.95.11] - 2026-07-11
 
