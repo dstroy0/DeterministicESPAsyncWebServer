@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- remove NTLM dead store + two redundant casts ([`73e8106`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73e8106464da966f9489197bfbb421e5924f8751))
+- update CHANGELOG.md [skip ci] ([`ec6b8d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec6b8d35ff69f1f1d461e07cbf9b83df2ff590bc))
 - suppress two design-conflict rules + fix trivial smells ([`1d8d711`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d8d711da3f5d15526beaa0c5ed933fadaf0dc77))
 - update CHANGELOG.md [skip ci] ([`4ec5c25`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4ec5c25422bfb472f00ec01767f83a2f3f541e7f))
 - idempotent PlatformIO publish (already-published is a no-op) ([`82cb24e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/82cb24e170bf36cf63e4a7d54e76dddc3a97f613))
