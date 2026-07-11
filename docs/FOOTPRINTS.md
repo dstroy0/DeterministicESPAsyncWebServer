@@ -65,7 +65,7 @@ from each example's `pio ci` size report and aggregated into
 | `PCA9685`                                | L7-Application/65.Pca9685               | 277.9 KB (21.7%) | 21.3 KB (6.7%)   |
 | `PER_IP_THROTTLE`                        | L4-Transport/05.PerIpThrottle           | 733.9 KB (57.3%) | 65.2 KB (20.4%)  |
 | `PN532+GATEWAY`                          | Foundation/14.NfcGateway                | 281.4 KB (22.0%) | 21.4 KB (6.7%)   |
-| `PREEMPT_QUEUE`                          | Foundation/08.PreemptLanes              | 262.1 KB (20.5%) | 23.4 KB (7.3%)   |
+| `PREEMPT_QUEUE`                          | Foundation/06.PreemptQueue              | 267.7 KB (20.9%) | 23.4 KB (7.3%)   |
 | `PROMISC+FORWARD+ETHERNET`               | Foundation/21.WifiCapture               | 746.7 KB (58.3%) | 46.4 KB (14.5%)  |
 | `PROVISIONING`                           | L7-Application/17.Provisioning          | 741.0 KB (57.9%) | 66.3 KB (20.7%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`              | L7-Application/47.RadioPower            | 733.6 KB (57.3%) | 64.8 KB (20.2%)  |
@@ -78,7 +78,7 @@ from each example's `pio ci` size report and aggregated into
 | `SMTP`                                   | L7-Application/57.SmtpAlert             | 717.4 KB (56.0%) | 59.7 KB (18.6%)  |
 | `SNMP`                                   | L7-Application/14.SNMP                  | 742.2 KB (58.0%) | 76.9 KB (24.0%)  |
 | `SNMP+SNMP_TRAP`                         | L7-Application/26.SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |
-| `SSH`                                    | L5-Session/03.SSHHostKey                | 801.8 KB (62.6%) | 86.6 KB (27.1%)  |
+| `SSH`                                    | L5-Session/01.SSH                       | 802.5 KB (62.7%) | 86.6 KB (27.1%)  |
 | `STATS`                                  | L7-Application/22.Stats                 | 735.4 KB (57.4%) | 64.9 KB (20.3%)  |
 | `STATS+METRICS`                          | L7-Application/21.PrometheusMetrics     | 737.5 KB (57.6%) | 64.9 KB (20.3%)  |
 | `STATSD`                                 | L7-Application/59.StatsdMetrics         | 711.3 KB (55.6%) | 44.0 KB (13.8%)  |
