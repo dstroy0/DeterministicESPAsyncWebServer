@@ -120,7 +120,14 @@ static void sha512_block(uint64_t h[8], const uint8_t blk[128])
         W[i] = W[i - 16] + s0 + W[i - 7] + s1;
     }
 
-    uint64_t a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f = h[5], g = h[6], hh = h[7];
+    uint64_t a = h[0];
+    uint64_t b = h[1];
+    uint64_t c = h[2];
+    uint64_t d = h[3];
+    uint64_t e = h[4];
+    uint64_t f = h[5];
+    uint64_t g = h[6];
+    uint64_t hh = h[7];
 
     for (int i = 0; i < 80; i++)
     {

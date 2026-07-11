@@ -310,7 +310,9 @@ int ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8
                                                          "\x00\x00\x00\x0b"
                                                          "ssh-ed25519",
                                                          4 + 11) == 0;
-        uint8_t n_be[SSH_RSA_KEY_BYTES], e_be[4], ed_pub[32];
+        uint8_t n_be[SSH_RSA_KEY_BYTES];
+        uint8_t e_be[4];
+        uint8_t ed_pub[32];
         bool key_ok = (is_ed ? parse_ssh_ed25519_blob(req.pk_blob, req.pk_blob_len, ed_pub)
                              : parse_ssh_rsa_blob(req.pk_blob, req.pk_blob_len, n_be, e_be)) &&
                       s_auth.pk_cb && s_auth.pk_cb(req.user, req.pk_blob, req.pk_blob_len);

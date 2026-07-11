@@ -158,7 +158,10 @@ static void aes256_encrypt_block(const uint32_t rk[60], const uint8_t in[16], ui
         // GF multiply-by-2 (xtime) per term.
         for (int c = 0; c < 4; c++)
         {
-            uint8_t a = s[c * 4], b = s[c * 4 + 1], cc = s[c * 4 + 2], d = s[c * 4 + 3];
+            uint8_t a = s[c * 4];
+            uint8_t b = s[c * 4 + 1];
+            uint8_t cc = s[c * 4 + 2];
+            uint8_t d = s[c * 4 + 3];
             uint8_t e = a ^ b ^ cc ^ d;
             s[c * 4] = a ^ e ^ xtime(a ^ b);
             s[c * 4 + 1] = b ^ e ^ xtime(b ^ cc);

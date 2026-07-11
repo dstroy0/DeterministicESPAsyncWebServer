@@ -95,7 +95,8 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     qt->have_peer = true;
 
     // ECDHE shared secret and the server's public key share.
-    uint8_t ecdhe[32], server_pub[32];
+    uint8_t ecdhe[32];
+    uint8_t server_pub[32];
     ssh_x25519(ecdhe, qt->cfg.ephemeral_priv, ch.client_x25519);
     ssh_x25519_base(server_pub, qt->cfg.ephemeral_priv);
 

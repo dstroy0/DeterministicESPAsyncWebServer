@@ -61,7 +61,10 @@ void chacha_core(const uint32_t in[16], uint8_t out[64])
 }
 
 // "expand 32-byte k"
-const uint32_t SIGMA0 = 0x61707865, SIGMA1 = 0x3320646e, SIGMA2 = 0x79622d32, SIGMA3 = 0x6b206574;
+const uint32_t SIGMA0 = 0x61707865;
+const uint32_t SIGMA1 = 0x3320646e;
+const uint32_t SIGMA2 = 0x79622d32;
+const uint32_t SIGMA3 = 0x6b206574;
 } // namespace
 
 void ssh_chacha20_xor(const uint8_t key[SSH_CHACHA20_KEY_LEN], const uint8_t iv[8], uint64_t counter, const uint8_t *in,

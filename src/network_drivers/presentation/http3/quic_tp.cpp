@@ -116,7 +116,8 @@ bool quic_tp_parse(const uint8_t *buf, size_t len, QuicTransportParams *tp)
     size_t off = 0;
     while (off < len)
     {
-        uint64_t id = 0, vlen = 0;
+        uint64_t id = 0;
+        uint64_t vlen = 0;
         size_t c = 0;
         if (!quic_varint_decode(buf + off, len - off, &id, &c))
             return false;

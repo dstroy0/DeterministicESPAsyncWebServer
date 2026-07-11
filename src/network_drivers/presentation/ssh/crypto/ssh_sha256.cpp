@@ -121,7 +121,14 @@ static void sha256_block(uint32_t h[8], const uint8_t blk[64])
     }
 
     // Working variables seeded from the current hash state.
-    uint32_t a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f = h[5], g = h[6], hh = h[7];
+    uint32_t a = h[0];
+    uint32_t b = h[1];
+    uint32_t c = h[2];
+    uint32_t d = h[3];
+    uint32_t e = h[4];
+    uint32_t f = h[5];
+    uint32_t g = h[6];
+    uint32_t hh = h[7];
 
     // 64 compression rounds. Each mixes in one schedule word W[i] and round
     // constant K256[i] using the Ch/Maj choice/majority functions and the

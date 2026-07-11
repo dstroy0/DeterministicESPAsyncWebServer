@@ -148,7 +148,8 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
     //   aes E&M / plaintext : block 16, base = length + padding_length + payload  (compute_padding)
     bool chacha = s->enc_out && km->cipher_mode == SSH_CIPHER_CHACHA20POLY1305;
     bool etm = s->enc_out && km->cipher_mode == SSH_CIPHER_AES256CTR && ssh_mac_is_etm(km->mac_mode);
-    size_t pad_len, tag_len;
+    size_t pad_len;
+    size_t tag_len;
     if (chacha)
     {
         size_t base = 1 + payload_len;
