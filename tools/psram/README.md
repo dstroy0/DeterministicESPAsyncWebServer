@@ -319,6 +319,25 @@ tools/psram/rebuild_arduino_core_psram.sh \
 Run it inside Linux/WSL/macOS. It backs up your core before touching it and caps build
 parallelism (half your cores by default) so it does not hog the machine.
 
+After installing the libs it applies two small compatibility fixes automatically, because the
+`idf-release_v5.5` builder tracks a newer commit than the stock arduino-cli 3.3.x **hardware**
+core it sits next to, and the two diverge in a way that breaks a sketch build:
+
+1. It removes the rebuilt `include/newlib/platform_include/errno.h` shim. That file is an
+   `#include_next` wrapper, but on arduino-cli's include order the `#include_next` lands on the
+   neighbouring lwip `errno.h` instead of newlib's, so `<errno.h>` stops defining `errno` and
+   `FS/vfs_api.cpp` fails with `'errno' was not declared`. Stock libs do not ship it.
+2. It localizes `__wrap_esp_log_write` / `__wrap_esp_log_writev` inside
+   `libespressif__esp_diagnostics.a`. The newer `esp_diagnostics` wraps those log symbols, which
+   collide with the arduino core's own `esp32-hal-log-wrapper.c` (a multiple-definition link
+   error); the same object also exports `__wrap_log_printf`, which the core needs, so localizing
+   just the two duplicates keeps the good symbol while letting the core's win.
+
+Both are verified end to end on an ESP32-S3: a 48 KB `EXT_RAM_BSS_ATTR` arena links into
+`.ext_ram.bss` at `0x3c050000` (zero internal DRAM) and is read/write at runtime (the board
+boots clean and sums the whole arena correctly). If you rebuild the libs by hand (Path B),
+apply these two fixes yourself.
+
 ## Verify it actually worked
 
 Do not trust it, check. Two ways.

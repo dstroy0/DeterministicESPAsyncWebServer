@@ -119,5 +119,44 @@ echo "==> installing into: $CORE_DIR"
 BK="${CORE_DIR}.bak.$(date +%s)"
 cp -a "$CORE_DIR" "$BK"; echo "==> backed up original to $BK"
 cp -a "$LIBS_OUT/." "$CORE_DIR/"
+
+# --- Compatibility post-processing ---------------------------------------------------------
+# The idf-release_v5.5 lib-builder tracks a newer commit than the stock arduino-cli 3.3.x
+# *hardware* core sources it is installed alongside, which introduces two mismatches that break
+# an otherwise-clean sketch build. Both fixes are targeted and reshape the libs to match stock.
+# (Verified on hardware: an EXT_RAM_BSS_ATTR arena links at 0x3c0xxxxx and is read/write at
+# runtime, board boots clean.)
+TOOLS_DIR="$(cd "$CORE_DIR/../.." && pwd)"                                   # .../packages/esp32/tools
+TC_BIN="$(ls -d "$TOOLS_DIR"/esp-x32/*/bin 2>/dev/null | sort -V | tail -1 || true)"
+
+# (1) The rebuilt libs ship include/newlib/platform_include/errno.h - an #include_next wrapper
+#     that adds ESP-specific error codes. On arduino-cli's include ordering its #include_next
+#     resolves to the neighbouring lwip errno.h instead of newlib's, so <errno.h> never defines
+#     errno and FS/vfs_api.cpp fails to compile ("'errno' was not declared"). Stock libs do not
+#     ship this file; remove it so <errno.h> resolves to the toolchain's newlib header.
+ERRNO_SHIM="$CORE_DIR/include/newlib/platform_include/errno.h"
+if [ -f "$ERRNO_SHIM" ]; then
+  mv "$ERRNO_SHIM" "$ERRNO_SHIM.disabled"
+  echo "==> disabled shadowing platform_include/errno.h (fixes 'errno was not declared' in FS/vfs_api.cpp)"
+fi
+
+# (2) The newer esp_diagnostics wraps esp_log_write/writev; the arduino core's own
+#     esp32-hal-log-wrapper.c ALSO defines __wrap_esp_log_write/writev -> a multiple-definition
+#     link error. The same diag object provides __wrap_log_printf, which the core
+#     (chip-debug-report.cpp) needs, so it cannot simply be dropped. Localize only the two
+#     conflicting symbols so the core's definitions win while __wrap_log_printf stays exported.
+DIAG="$CORE_DIR/lib/libespressif__esp_diagnostics.a"
+if [ -n "$TC_BIN" ] && [ -f "$DIAG" ]; then
+  TMP="$(mktemp -d)"
+  ( cd "$TMP" \
+    && "$TC_BIN/xtensa-esp-elf-ar" x "$DIAG" esp_diagnostics_log_hook.c.obj \
+    && "$TC_BIN/xtensa-esp-elf-objcopy" --localize-symbol=__wrap_esp_log_write \
+         --localize-symbol=__wrap_esp_log_writev esp_diagnostics_log_hook.c.obj \
+    && "$TC_BIN/xtensa-esp-elf-ar" r "$DIAG" esp_diagnostics_log_hook.c.obj )
+  rm -rf "$TMP"
+  echo "==> localized duplicate __wrap_esp_log_write/writev in esp_diagnostics (keeps __wrap_log_printf)"
+fi
+# -------------------------------------------------------------------------------------------
+
 echo "==> done. Do a FULL clean rebuild of your sketch (S3 + PSRAM=OPI)."
 echo "    EXT_RAM_BSS_ATTR arrays now land in PSRAM (0x3Cxxxxxx), zero heap."
