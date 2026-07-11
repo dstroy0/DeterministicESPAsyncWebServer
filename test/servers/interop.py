@@ -26,6 +26,7 @@ import sys
 
 from peers import (
     coap_peer,
+    ftp_peer,
     http_peer,
     modbus_peer,
     mqtt_peer,
@@ -51,6 +52,7 @@ _MODULES = [
     mqtt_peer,
     opcua_peer,
     redis_peer,
+    ftp_peer,
 ]
 
 
