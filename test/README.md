@@ -6683,16 +6683,16 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: 172.32.x is OUTSIDE the 172.16/12 private block -> public.
     * **Assertions**:
-      * <code>Assert equal int (DETWS_IP_UNSPECIFIED, detws_dns_classify(0u))</code>
-      * <code>Assert equal int (DETWS_IP_BROADCAST, detws_dns_classify(0xFFFFFFFFu))</code>
-      * <code>Assert equal int (DETWS_IP_LOOPBACK, detws_dns_classify(IPV4(127, 0, 0, 1)))</code>
-      * <code>Assert equal int (DETWS_IP_PRIVATE, detws_dns_classify(IPV4(10, 0, 0, 5)))</code>
-      * <code>Assert equal int (DETWS_IP_PRIVATE, detws_dns_classify(IPV4(172, 16, 0, 1)))</code>
-      * <code>Assert equal int (DETWS_IP_PRIVATE, detws_dns_classify(IPV4(192, 168, 1, 1)))</code>
-      * <code>Assert equal int (DETWS_IP_LINKLOCAL, detws_dns_classify(IPV4(169, 254, 1, 1)))</code>
-      * <code>Assert equal int (DETWS_IP_MULTICAST, detws_dns_classify(IPV4(224, 0, 0, 1)))</code>
-      * <code>Assert equal int (DETWS_IP_PUBLIC, detws_dns_classify(IPV4(8, 8, 8, 8)))</code>
-      * <code>Assert equal int (DETWS_IP_PUBLIC, detws_dns_classify(IPV4(172, 32, 0, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_UNSPECIFIED, detws_dns_classify(0u))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_BROADCAST, detws_dns_classify(0xFFFFFFFFu))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_LOOPBACK, detws_dns_classify(IPV4(127, 0, 0, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PRIVATE, detws_dns_classify(IPV4(10, 0, 0, 5)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PRIVATE, detws_dns_classify(IPV4(172, 16, 0, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PRIVATE, detws_dns_classify(IPV4(192, 168, 1, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_LINKLOCAL, detws_dns_classify(IPV4(169, 254, 1, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_MULTICAST, detws_dns_classify(IPV4(224, 0, 0, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PUBLIC, detws_dns_classify(IPV4(8, 8, 8, 8)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PUBLIC, detws_dns_classify(IPV4(172, 32, 0, 1)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8653,11 +8653,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Dir name
     * **Assertions**:
-      * <code>Assert equal string ("in", detws_gpio_dir_name(DETWS_GPIO_IN))</code>
-      * <code>Assert equal string ("in_pullup", detws_gpio_dir_name(DETWS_GPIO_IN_PULLUP))</code>
-      * <code>Assert equal string ("in_pulldown", detws_gpio_dir_name(DETWS_GPIO_IN_PULLDOWN))</code>
-      * <code>Assert equal string ("out", detws_gpio_dir_name(DETWS_GPIO_OUT))</code>
-      * <code>Assert equal string ("in", detws_gpio_dir_name(99))</code>
+      * <code>Assert equal string ("in", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_IN))</code>
+      * <code>Assert equal string ("in_pullup", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_IN_PULLUP))</code>
+      * <code>Assert equal string ("in_pulldown", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_IN_PULLDOWN))</code>
+      * <code>Assert equal string ("out", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_OUT))</code>
+      * <code>Assert equal string ("in", detws_gpio_dir_name((DetwsGpioDir)99))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8744,9 +8744,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Malformed tokens fail
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ 1 }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ 1 }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8754,8 +8754,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Query keyword forms fail
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("query Op"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("query 123"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("query Op"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("query 123"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8763,9 +8763,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: One string argument longer than the decode buffer (256).
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8773,7 +8773,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: String pool exhaustion
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8789,8 +8789,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: 31,31,31,31: the 4th separator check trips (plen reaches 95, then '.' -> 96).
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8819,7 +8819,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: \n \t \r \\ \/ and an unknown escape (\z) are all decoded by the arg lexer.
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_OK, run_rc("{ greet(name: \\"a\\\\nb\\\\tc\\\\rd\\\\\\\\e\\\\/f\\\\z\\") }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_OK, run_rc("{ greet(name: \\"a\\\\nb\\\\tc\\\\rd\\\\\\\\e\\\\/f\\\\z\\") }"))</code>
       * <code>Assert not null (strstr(out, "\\"greet\\":\\"hi a"))</code>
   </details>
 
@@ -8828,7 +8828,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: float, exponent, signed-exponent and negative-int argument values all parse
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_OK, run_rc("{ sensor(id: 7, x: 1.5, y: 2e3, z: -4, w: 1.2e-2) { value } }"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_OK,</code>
       * <code>Assert not null (strstr(out, "\\"value\\":70"))</code>
   </details>
 
@@ -8862,7 +8862,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Unterminated string arg fails
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"oops) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"oops) }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8870,7 +8870,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Arg missing colon fails
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8878,7 +8878,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Bad arg value fails
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8886,7 +8886,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Trailing junk fails
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ name } junk"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ name } junk"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8894,7 +8894,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Long field name hits limit
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_LIMIT, detws_graphql_execute(q, strlen(q), resolver, out, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_LIMIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8902,8 +8902,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Null inputs fail closed
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, detws_graphql_execute(0, 0, resolver, out, sizeof(out)))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, detws_graphql_execute("{ name }", 8, resolver, 0, 0))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, detws_graphql_execute(0, 0, resolver, out, sizeof(out)))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, detws_graphql_execute("{ name }", 8, resolver, 0, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8911,7 +8911,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Unknown operation keyword fails
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("subscription { name }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("subscription { name }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8983,39 +8983,39 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: \n \t \r \\ \/ and an unknown escape (\z) are all decoded by the arg lexer.
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, rc)</code>
       * <code>Assert not null (strstr(out, "\\"errors\\""))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, rc)</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_LIMIT, rc)</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_OVERFLOW, rc)</code>
-      * <code>Assert equal int (DETWS_GQL_OK, run_rc("{ greet(name: \\"a\\\\nb\\\\tc\\\\rd\\\\\\\\e\\\\/f\\\\z\\") }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_OK, run_rc("{ greet(name: \\"a\\\\nb\\\\tc\\\\rd\\\\\\\\e\\\\/f\\\\z\\") }"))</code>
       * <code>Assert not null (strstr(out, "\\"greet\\":\\"hi a"))</code>
-      * <code>Assert equal int (DETWS_GQL_OK, run_rc("{ sensor(id: 7, x: 1.5, y: 2e3, z: -4, w: 1.2e-2) { value } }"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_OK,</code>
       * <code>Assert not null (strstr(out, "\\"value\\":70"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"flag\\":true}}", run("{ flag(on: true) }"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"flag\\":false}}", run("{ flag(on: false) }"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"greet\\":\\"hi ?\\"}}", run("{ greet(name: null) }"))</code>
       * <code>Assert not null (strstr(run("{ ctrl }"), "\\\\u0001"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"oops) }"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ name } junk"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_LIMIT, detws_graphql_execute(q, strlen(q), resolver, out, sizeof(out)))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, detws_graphql_execute(0, 0, resolver, out, sizeof(out)))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, detws_graphql_execute("{ name }", 8, resolver, 0, 0))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("subscription { name }"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("{ 1 }"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("query Op"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, run_rc("query 123"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"oops) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ name } junk"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_LIMIT,</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, detws_graphql_execute(0, 0, resolver, out, sizeof(out)))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, detws_graphql_execute("{ name }", 8, resolver, 0, 0))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("subscription { name }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ 1 }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("query Op"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("query 123"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"nullval\\":null}}", run("{ nullval }"))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
-      * <code>Assert equal int (DETWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
       * <code>Assert false (detws_gql_arg_int(nullptr, "x", &i))</code>
       * <code>Assert false (detws_gql_arg_str(nullptr, "x", &s))</code>
       * <code>Assert false (detws_gql_arg_bool(nullptr, "x", &b))</code>
@@ -9029,7 +9029,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Mutation rejected
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_PARSE, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9037,7 +9037,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Depth limit
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_LIMIT, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9045,7 +9045,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Overflow fails closed
     * **Assertions**:
-      * <code>Assert equal int (DETWS_GQL_ERR_OVERFLOW, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, rc)</code>
   </details>
 
 </details>
@@ -25957,15 +25957,15 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: No API prefix configured: an /api path is just a route.
     * **Assertions**:
-      * <code>Assert equal int (DETWS_SPA_SERVE_SHELL, detws_spa_route("/", "/api/"))</code>
-      * <code>Assert equal int (DETWS_SPA_SERVE_SHELL, detws_spa_route("", "/api/"))</code>
-      * <code>Assert equal int (DETWS_SPA_SERVE_SHELL, detws_spa_route("/dashboard", "/api/"))</code>
-      * <code>Assert equal int (DETWS_SPA_SERVE_SHELL, detws_spa_route("/devices/42", "/api/"))</code>
-      * <code>Assert equal int (DETWS_SPA_SERVE_FILE, detws_spa_route("/app.js", "/api/"))</code>
-      * <code>Assert equal int (DETWS_SPA_SERVE_FILE, detws_spa_route("/assets/logo.svg", "/api/"))</code>
-      * <code>Assert equal int (DETWS_SPA_PASSTHROUGH, detws_spa_route("/api/state", "/api/"))</code>
-      * <code>Assert equal int (DETWS_SPA_PASSTHROUGH, detws_spa_route("/api/devices/42", "/api/"))</code>
-      * <code>Assert equal int (DETWS_SPA_SERVE_SHELL, detws_spa_route("/api/state", nullptr))</code>
+      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("/", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("/dashboard", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("/devices/42", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_FILE, detws_spa_route("/app.js", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_FILE, detws_spa_route("/assets/logo.svg", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_PASSTHROUGH, detws_spa_route("/api/state", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_PASSTHROUGH, detws_spa_route("/api/devices/42", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("/api/state", nullptr))</code>
   </details>
 
 </details>
