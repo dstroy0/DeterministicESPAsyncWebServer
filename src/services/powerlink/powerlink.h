@@ -29,15 +29,16 @@
 #if DETWS_ENABLE_POWERLINK
 
 /** @brief EPL message types (EPSG DS 301). */
-enum
+// POWERLINK message types + node ids: wire bytes, so integer constants in a namespacing struct.
+struct Epl
 {
-    EPL_MSG_SOC = 0x01,        ///< Start of Cycle (MN -> all, multicast).
-    EPL_MSG_PREQ = 0x03,       ///< Poll Request (MN -> CN, unicast).
-    EPL_MSG_PRES = 0x04,       ///< Poll Response (CN -> all, multicast, carries process data).
-    EPL_MSG_SOA = 0x05,        ///< Start of Async (MN -> all).
-    EPL_MSG_ASND = 0x06,       ///< Async Send.
-    EPL_NODE_BROADCAST = 0xFF, ///< broadcast node id (SoC/SoA destination).
-    EPL_NODE_MN = 0xF0         ///< the Managing Node id (240).
+    static constexpr uint8_t EPL_MSG_SOC = 0x01;        ///< Start of Cycle (MN -> all, multicast).
+    static constexpr uint8_t EPL_MSG_PREQ = 0x03;       ///< Poll Request (MN -> CN, unicast).
+    static constexpr uint8_t EPL_MSG_PRES = 0x04;       ///< Poll Response (CN -> all, multicast, carries process data).
+    static constexpr uint8_t EPL_MSG_SOA = 0x05;        ///< Start of Async (MN -> all).
+    static constexpr uint8_t EPL_MSG_ASND = 0x06;       ///< Async Send.
+    static constexpr uint8_t EPL_NODE_BROADCAST = 0xFF; ///< broadcast node id (SoC/SoA destination).
+    static constexpr uint8_t EPL_NODE_MN = 0xF0;        ///< the Managing Node id (240).
 };
 
 /**

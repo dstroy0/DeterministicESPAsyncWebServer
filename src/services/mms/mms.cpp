@@ -121,7 +121,7 @@ size_t detws_mms_read_request(uint32_t invoke_id, const char *item_name, uint8_t
     if (!n)
         return 0; // GCOVR_EXCL_LINE
     // A4 read [4]
-    n = tlv(MMS_SERVICE_READ, scratch, n, a0, sizeof(a0));
+    n = tlv(Mms::MMS_SERVICE_READ, scratch, n, a0, sizeof(a0));
     if (!n)
         return 0; // GCOVR_EXCL_LINE
 
@@ -129,12 +129,12 @@ size_t detws_mms_read_request(uint32_t invoke_id, const char *item_name, uint8_t
     uint8_t idc[5];
     size_t idlen = int_content(invoke_id, idc);
     uint8_t body[256];
-    size_t bn = tlv(MMS_TAG_INVOKE_ID, idc, idlen, body, sizeof(body));
+    size_t bn = tlv(Mms::MMS_TAG_INVOKE_ID, idc, idlen, body, sizeof(body));
     if (!bn || bn + n > sizeof(body))
         return 0;             // GCOVR_EXCL_LINE  bn+n maxes ~152 << 256 (name_len<=128); unreachable, kept defensively
     memcpy(body + bn, a0, n); // append the A4 read
     bn += n;
-    return tlv(MMS_PDU_CONFIRMED_REQUEST, body, bn, out, cap);
+    return tlv(Mms::MMS_PDU_CONFIRMED_REQUEST, body, bn, out, cap);
 }
 
 size_t detws_mms_read_response(uint32_t invoke_id, const uint8_t *data, size_t data_len, uint8_t *out, size_t cap)
@@ -148,19 +148,19 @@ size_t detws_mms_read_response(uint32_t invoke_id, const uint8_t *data, size_t d
         return 0;
     // A4 read response [4]
     uint8_t svc[256];
-    n = tlv(MMS_SERVICE_READ, scratch, n, svc, sizeof(svc));
+    n = tlv(Mms::MMS_SERVICE_READ, scratch, n, svc, sizeof(svc));
     if (!n)
         return 0;
 
     uint8_t idc[5];
     size_t idlen = int_content(invoke_id, idc);
     uint8_t body[256];
-    size_t bn = tlv(MMS_TAG_INVOKE_ID, idc, idlen, body, sizeof(body));
+    size_t bn = tlv(Mms::MMS_TAG_INVOKE_ID, idc, idlen, body, sizeof(body));
     if (!bn || bn + n > sizeof(body))
         return 0;
     memcpy(body + bn, svc, n);
     bn += n;
-    return tlv(MMS_PDU_CONFIRMED_RESPONSE, body, bn, out, cap);
+    return tlv(Mms::MMS_PDU_CONFIRMED_RESPONSE, body, bn, out, cap);
 }
 
 bool detws_mms_parse(const uint8_t *pdu, size_t len, MmsPdu *out)
@@ -168,8 +168,8 @@ bool detws_mms_parse(const uint8_t *pdu, size_t len, MmsPdu *out)
     if (!pdu || !out || len < 2)
         return false;
     out->pdu_tag = pdu[0];
-    if (out->pdu_tag != MMS_PDU_CONFIRMED_REQUEST && out->pdu_tag != MMS_PDU_CONFIRMED_RESPONSE &&
-        out->pdu_tag != MMS_PDU_CONFIRMED_ERROR)
+    if (out->pdu_tag != Mms::MMS_PDU_CONFIRMED_REQUEST && out->pdu_tag != Mms::MMS_PDU_CONFIRMED_RESPONSE &&
+        out->pdu_tag != Mms::MMS_PDU_CONFIRMED_ERROR)
         return false;
     // Decode the outer length.
     size_t off = 1;
@@ -190,7 +190,7 @@ bool detws_mms_parse(const uint8_t *pdu, size_t len, MmsPdu *out)
         return false;
 
     // First inner element must be the invokeID INTEGER.
-    if (off + 2 > len || pdu[off] != MMS_TAG_INVOKE_ID)
+    if (off + 2 > len || pdu[off] != Mms::MMS_TAG_INVOKE_ID)
         return false;
     size_t idlen = pdu[off + 1];
     if (idlen > 4 || off + 2 + idlen > len)

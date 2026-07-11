@@ -29,14 +29,15 @@
 #if DETWS_ENABLE_MMS
 
 /** @brief MMS PDU tags (context-specific) + the service tags used here. */
-enum
+// MMS PDU / service / BER tags: wire bytes, so integer constants in a namespacing struct.
+struct Mms
 {
-    MMS_PDU_CONFIRMED_REQUEST = 0xA0,
-    MMS_PDU_CONFIRMED_RESPONSE = 0xA1,
-    MMS_PDU_CONFIRMED_ERROR = 0xA2,
-    MMS_SERVICE_READ = 0xA4,  ///< confirmedServiceRequest/Response [4] read.
-    MMS_SERVICE_WRITE = 0xA5, ///< [5] write.
-    MMS_TAG_INVOKE_ID = 0x02  ///< Unsigned32 invokeID (INTEGER tag).
+    static constexpr uint8_t MMS_PDU_CONFIRMED_REQUEST = 0xA0;
+    static constexpr uint8_t MMS_PDU_CONFIRMED_RESPONSE = 0xA1;
+    static constexpr uint8_t MMS_PDU_CONFIRMED_ERROR = 0xA2;
+    static constexpr uint8_t MMS_SERVICE_READ = 0xA4;  ///< confirmedServiceRequest/Response [4] read.
+    static constexpr uint8_t MMS_SERVICE_WRITE = 0xA5; ///< [5] write.
+    static constexpr uint8_t MMS_TAG_INVOKE_ID = 0x02; ///< Unsigned32 invokeID (INTEGER tag).
 };
 
 /**

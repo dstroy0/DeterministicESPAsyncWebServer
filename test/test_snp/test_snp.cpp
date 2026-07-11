@@ -28,7 +28,7 @@ void test_build_and_parse(void)
 {
     uint8_t data[3] = {0x10, 0x20, 0x30};
     uint8_t buf[16];
-    size_t n = detws_snp_build(SNP_SOH, data, 3, buf, sizeof(buf));
+    size_t n = detws_snp_build(Snp::SNP_SOH, data, 3, buf, sizeof(buf));
     // [01][03][10 20 30][BCC] ; BCC = 01+03+10+20+30 = 0x64.
     const uint8_t expect[] = {0x01, 0x03, 0x10, 0x20, 0x30, 0x64};
     TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
@@ -36,7 +36,7 @@ void test_build_and_parse(void)
 
     SnpFrame f;
     TEST_ASSERT_TRUE(detws_snp_parse(buf, n, &f));
-    TEST_ASSERT_EQUAL_HEX8(SNP_SOH, f.control);
+    TEST_ASSERT_EQUAL_HEX8(Snp::SNP_SOH, f.control);
     TEST_ASSERT_EQUAL_size_t(3, f.data_len);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(data, f.data, 3);
 }
@@ -44,7 +44,7 @@ void test_build_and_parse(void)
 void test_empty_data(void)
 {
     uint8_t buf[8];
-    size_t n = detws_snp_build(SNP_ENQ, nullptr, 0, buf, sizeof(buf));
+    size_t n = detws_snp_build(Snp::SNP_ENQ, nullptr, 0, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_size_t(3, n);
     SnpFrame f;
     TEST_ASSERT_TRUE(detws_snp_parse(buf, n, &f));
@@ -56,7 +56,7 @@ void test_parse_rejects(void)
 {
     uint8_t data[2] = {0xAA, 0xBB};
     uint8_t buf[8];
-    size_t n = detws_snp_build(SNP_SOH, data, 2, buf, sizeof(buf));
+    size_t n = detws_snp_build(Snp::SNP_SOH, data, 2, buf, sizeof(buf));
     SnpFrame f;
     buf[n - 1] ^= 0xFF; // bad BCC
     TEST_ASSERT_FALSE(detws_snp_parse(buf, n, &f));

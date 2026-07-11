@@ -26,13 +26,14 @@
 #if DETWS_ENABLE_SNP
 
 /** @brief SNP control bytes (subset). */
-enum
+// SNP control bytes: wire values compared/emitted, so integer constants in a namespacing struct.
+struct Snp
 {
-    SNP_ENQ = 0x05, ///< enquiry / attach.
-    SNP_ACK = 0x06, ///< acknowledge.
-    SNP_NAK = 0x15, ///< negative acknowledge.
-    SNP_SOH = 0x01, ///< start of header (a request/response frame).
-    SNP_EOT = 0x04  ///< end of transmission.
+    static constexpr uint8_t SNP_ENQ = 0x05; ///< enquiry / attach.
+    static constexpr uint8_t SNP_ACK = 0x06; ///< acknowledge.
+    static constexpr uint8_t SNP_NAK = 0x15; ///< negative acknowledge.
+    static constexpr uint8_t SNP_SOH = 0x01; ///< start of header (a request/response frame).
+    static constexpr uint8_t SNP_EOT = 0x04; ///< end of transmission.
 };
 
 /** @brief Arithmetic-sum BCC: the low 8 bits of the sum of @p len bytes. */
