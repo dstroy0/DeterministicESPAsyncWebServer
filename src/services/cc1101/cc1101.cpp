@@ -25,7 +25,6 @@ const uint8_t STROBE_SIDLE = 0x36;
 const uint8_t STROBE_SFRX = 0x3A; ///< flush RX FIFO.
 const uint8_t STROBE_SFTX = 0x3B; ///< flush TX FIFO.
 const uint8_t STAT_VERSION = 0x31;
-const uint8_t STAT_RSSI = 0x34;
 const uint8_t STAT_RXBYTES = 0x3B;
 const uint8_t FIFO = 0x3F;
 

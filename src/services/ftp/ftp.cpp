@@ -17,9 +17,10 @@ static const size_t FTP_SENT = (size_t)-1; // "overflowed" sentinel threaded thr
 // Append raw bytes; propagates the overflow sentinel.
 static size_t ftp_emit(char *buf, size_t cap, size_t n, const char *s, size_t slen)
 {
-    // Overflow-safe bound: n <= cap is invariant (every non-sentinel return is <= cap), so
-    // cap - n never underflows; written as subtraction so a huge slen cannot wrap n + slen.
-    if (n == FTP_SENT || slen > cap - n)
+    // Overflow-safe bound: n <= cap is invariant (every non-sentinel return is <= cap), but guard
+    // n > cap explicitly so cap - n provably cannot underflow; written as subtraction so a huge
+    // slen cannot wrap n + slen.
+    if (n == FTP_SENT || n > cap || slen > cap - n)
         return FTP_SENT;
     memcpy(buf + n, s, slen);
     return n + slen;

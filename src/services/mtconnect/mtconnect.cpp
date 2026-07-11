@@ -364,7 +364,7 @@ void mtc_copy_str(char *dst, size_t cap, const char *src)
         return;
     size_t i = 0;
     if (src)
-        for (; src[i] != '\0' && i < cap - 1; i++)
+        for (; i < cap - 1 && src[i] != '\0'; i++) // range check first (short-circuits the src read)
             dst[i] = src[i];
     dst[i] = '\0';
 }

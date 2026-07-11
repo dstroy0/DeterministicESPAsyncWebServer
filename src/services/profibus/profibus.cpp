@@ -70,9 +70,7 @@ bool detws_pb_parse(const uint8_t *frame, size_t len, PbTelegram *out)
 
     if (frame[0] == Profibus::PB_SD1)
     {
-        // SD1 DA SA FC FCS ED
-        if (len < 6)
-            return false;
+        // SD1 DA SA FC FCS ED (len >= 6 already guaranteed above)
         uint8_t body[3] = {frame[1], frame[2], frame[3]};
         if (detws_pb_fcs(body, 3) != frame[4] || frame[5] != Profibus::PB_ED)
             return false;

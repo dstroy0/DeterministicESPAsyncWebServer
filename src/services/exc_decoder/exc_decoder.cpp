@@ -125,7 +125,7 @@ bool detws_exc_parse(const char *text, ExcInfo *out)
     {
         c += 10;
         size_t i = 0;
-        while (c[i] && c[i] != ')' && i < sizeof(out->cause) - 1)
+        while (i < sizeof(out->cause) - 1 && c[i] && c[i] != ')') // range check first (short-circuits the read)
         {
             out->cause[i] = c[i];
             i++;
