@@ -10,8 +10,7 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ## HTTP/3: QUIC frame parser rejects standard post-handshake frames - real clients get FRAME_ENCODING_ERROR
 
-- **Status:** OPEN (found on hardware 2026-07-11 with an aioquic client, right after the handshake-crash
-  fix; the QUIC handshake completes but the h3 request never runs).
+- **Status:** FIXED (library, 2026-07-11; found + fixed same day with an aioquic client on the PSRAM board).
 - **Symptom:** `QUIC handshake: CONNECTED`, then the device sends CONNECTION_CLOSE `error_code=0x07`
   (FRAME_ENCODING_ERROR) and the h3 `GET /` times out. aioquic's event log:
   `ConnectionTerminated(error_code=7, frame_type=0)`.
@@ -27,10 +26,12 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
   endpoint to be able to parse every defined frame type (it may ignore the ones it does not act on);
   returning FRAME_ENCODING_ERROR for a well-formed known frame is both a spec violation and an interop
   break with any real client.
-- **Fix (next):** extend `quic_frame_parse()` to **consume** (skip) all the standard frame types above with
-  their correct varint/byte layout, so they parse successfully and the dispatcher ignores the ones with no
-  server-side action (like it already does for MAX_DATA/PING). Then re-run the aioquic client: the h3 GET
-  should return 200. Handshake already works after the worker-stack fix (this file, above).
+- **Fix:** `quic_frame_parse()` (+ named constants in `quic_frame.h`) now **consumes** (skips) all the
+  standard frame types above with their correct varint/byte layout, so they parse successfully and the
+  dispatcher ignores the ones with no server-side action (like it already does for MAX_DATA/PING). Grouped
+  by wire shape (1/2/3 varints; length-prefixed NEW_TOKEN/NEW_CONNECTION_ID; fixed-width
+  PATH_CHALLENGE/RESPONSE). HW-verified with aioquic: `h3 GET / -> :status=200` (HeadersReceived +
+  DataReceived, body served over QUIC). HTTP/3 device-as-server now works end to end.
 - **Lesson:** "a minimal server only parses what it acts on" is wrong for QUIC - the transport must parse
   the whole frame grammar even to ignore it, or the first real-client packet closes the connection.
 

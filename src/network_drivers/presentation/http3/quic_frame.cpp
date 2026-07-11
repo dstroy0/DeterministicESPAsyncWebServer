@@ -119,7 +119,63 @@ size_t quic_frame_parse(const uint8_t *buf, size_t len, QuicFrame *out)
         return pos;
     }
 
-    return 0; // a frame type this minimal server does not handle
+    // Frames the server does not act on but MUST still parse so a well-formed frame from a real client is
+    // not rejected as FRAME_ENCODING_ERROR (RFC 9000 sec 12.4: parse the whole grammar even to ignore it).
+    // A real client sends these right after the handshake alongside the first request (MAX_STREAMS,
+    // NEW_CONNECTION_ID, MAX_STREAM_DATA, ...). Consume each frame's fields by its wire shape; the
+    // dispatcher then ignores the type. out->type is already set above.
+    if (type == QuicFrameType::QUIC_FT_MAX_STREAMS_BIDI || type == QuicFrameType::QUIC_FT_MAX_STREAMS_UNI ||
+        type == QuicFrameType::QUIC_FT_DATA_BLOCKED || type == QuicFrameType::QUIC_FT_STREAMS_BLOCKED_BIDI ||
+        type == QuicFrameType::QUIC_FT_STREAMS_BLOCKED_UNI || type == QuicFrameType::QUIC_FT_RETIRE_CONNECTION_ID)
+    {
+        uint64_t v = 0; // one varint
+        if (!rd(buf, len, &pos, &v))
+            return 0;
+        return pos;
+    }
+    if (type == QuicFrameType::QUIC_FT_STOP_SENDING || type == QuicFrameType::QUIC_FT_MAX_STREAM_DATA ||
+        type == QuicFrameType::QUIC_FT_STREAM_DATA_BLOCKED)
+    {
+        uint64_t v = 0; // two varints
+        if (!rd(buf, len, &pos, &v) || !rd(buf, len, &pos, &v))
+            return 0;
+        return pos;
+    }
+    if (type == QuicFrameType::QUIC_FT_RESET_STREAM)
+    {
+        uint64_t v = 0; // stream id, app error code, final size
+        if (!rd(buf, len, &pos, &v) || !rd(buf, len, &pos, &v) || !rd(buf, len, &pos, &v))
+            return 0;
+        return pos;
+    }
+    if (type == QuicFrameType::QUIC_FT_NEW_TOKEN)
+    {
+        uint64_t tlen = 0; // token length + token bytes
+        if (!rd(buf, len, &pos, &tlen) || pos + tlen > len)
+            return 0;
+        pos += tlen;
+        return pos;
+    }
+    if (type == QuicFrameType::QUIC_FT_NEW_CONNECTION_ID)
+    {
+        uint64_t seq = 0, retire = 0; // seq no, retire prior to, then a 1-byte CID length
+        if (!rd(buf, len, &pos, &seq) || !rd(buf, len, &pos, &retire) || pos >= len)
+            return 0;
+        uint8_t cidlen = buf[pos++];
+        if (pos + (size_t)cidlen + 16 > len) // connection id + 16-byte stateless reset token
+            return 0;
+        pos += (size_t)cidlen + 16;
+        return pos;
+    }
+    if (type == QuicFrameType::QUIC_FT_PATH_CHALLENGE || type == QuicFrameType::QUIC_FT_PATH_RESPONSE)
+    {
+        if (pos + 8 > len) // 8 bytes of opaque data
+            return 0;
+        pos += 8;
+        return pos;
+    }
+
+    return 0; // a genuinely unknown / reserved frame type
 }
 
 size_t quic_build_padding(uint8_t *out, size_t cap, size_t n)

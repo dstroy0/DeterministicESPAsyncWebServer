@@ -42,6 +42,25 @@ struct QuicFrameType
         0x1c; ///< transport-level close (carries the triggering frame type)
     static constexpr uint8_t QUIC_FT_CONNECTION_CLOSE_APP = 0x1d; ///< application-level close
     static constexpr uint8_t QUIC_FT_HANDSHAKE_DONE = 0x1e;
+    // Frames the minimal server does not act on but MUST still parse (skip) so a well-formed frame from
+    // a real client is not rejected as a FRAME_ENCODING_ERROR (RFC 9000 sec 12.4). Grouped by wire shape
+    // in quic_frame_parse(): 3 varints (RESET_STREAM), 2 varints (STOP_SENDING / MAX_STREAM_DATA /
+    // STREAM_DATA_BLOCKED), 1 varint (MAX_STREAMS / DATA_BLOCKED / STREAMS_BLOCKED / RETIRE_CONNECTION_ID),
+    // and the length-prefixed / fixed-width shapes (NEW_TOKEN, NEW_CONNECTION_ID, PATH_CHALLENGE/RESPONSE).
+    static constexpr uint8_t QUIC_FT_RESET_STREAM = 0x04;
+    static constexpr uint8_t QUIC_FT_STOP_SENDING = 0x05;
+    static constexpr uint8_t QUIC_FT_NEW_TOKEN = 0x07;
+    static constexpr uint8_t QUIC_FT_MAX_STREAM_DATA = 0x11;
+    static constexpr uint8_t QUIC_FT_MAX_STREAMS_BIDI = 0x12;
+    static constexpr uint8_t QUIC_FT_MAX_STREAMS_UNI = 0x13;
+    static constexpr uint8_t QUIC_FT_DATA_BLOCKED = 0x14;
+    static constexpr uint8_t QUIC_FT_STREAM_DATA_BLOCKED = 0x15;
+    static constexpr uint8_t QUIC_FT_STREAMS_BLOCKED_BIDI = 0x16;
+    static constexpr uint8_t QUIC_FT_STREAMS_BLOCKED_UNI = 0x17;
+    static constexpr uint8_t QUIC_FT_NEW_CONNECTION_ID = 0x18;
+    static constexpr uint8_t QUIC_FT_RETIRE_CONNECTION_ID = 0x19;
+    static constexpr uint8_t QUIC_FT_PATH_CHALLENGE = 0x1a;
+    static constexpr uint8_t QUIC_FT_PATH_RESPONSE = 0x1b;
 };
 
 /** @brief STREAM frame type bits. */
