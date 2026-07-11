@@ -356,6 +356,28 @@ Host figures from [`perf/bench_redis.cpp`](../perf/bench_redis.cpp); the device 
   and a deeply-nested reply cannot blow the stack). Encoding a command is comparably cheap. RESP is the
   lightest of the client codecs; the Redis round-trip cost is the network, not the parse.
 
+### FTP client wire codec (DETWS_ENABLE_FTP)
+
+The FTP control-channel codec a device uses to push/pull files (RFC 959 + RFC 2428): `ftp_build_command`
+(emit a `VERB<SP>ARG` line), `ftp_parse_reply` (scan a single- or multi-line 3-digit reply over a fixed
+buffer - the untrusted-input hot op), and `ftp_parse_pasv` (decode the `227 (h1,h2,h3,h4,p1,p2)` data
+address). All pure (the two sockets are the application's). Host figures from
+[`perf/bench_ftp.cpp`](../perf/bench_ftp.cpp); the device figure is the rig `/bench` CCOUNT op
+(`ftp_parse_reply` of a 3-line FEAT block).
+
+| Operation                           | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ----------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `ftp_build_command` (STOR)          |       22.4 |     893.1 |               - |              - |
+| `ftp_parse_reply` (multiline FEAT)  |       46.8 |     961.2 |             700 |           2916 |
+| `ftp_parse_pasv` (227 data address) |       67.1 |     759.6 |               - |              - |
+
+- `ftp_parse_reply` walks a possibly-multiline reply to the `NNN<SP>` terminator over a **fixed 512 B**
+  control buffer (no heap), so an oversized or never-terminated multiline cannot over-read or over-buffer -
+  it just returns "need more" until the caller's deadline (validated by the `ftp_malicious_server` attack).
+  At ~2.9 us on the device the parse is free relative to the control round trip; FTP throughput is the data
+  channel, not the codec. HW-verified device-as-FTP-client against a real `pyftpdlib` server (11/11 interop
+  checks, the STOR confirmed server-side).
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON

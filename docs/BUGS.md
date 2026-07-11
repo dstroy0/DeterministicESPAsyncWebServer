@@ -8,6 +8,26 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## FTP client first-connect heap drop - INVESTIGATED, NOT A BUG (one-time warmup)
+
+- **Status:** NOT A BUG (investigated on hardware 2026-07-11 while adding the `ftp_malicious_server` attack).
+- **Found:** the first-ever run of `ftp_malicious_server` against a freshly-booted S3 rig flagged the heap-drift
+  oracle: free heap fell 1344-1792 B (131836 -> 130044) and **stayed down** past the 6 s settle, which the
+  oracle reports as a determinism-promise violation ("no heap allocation after begin()").
+- **Why it is not a leak:** the drop is a **one-time lazy warmup** of the outbound-client TCP path
+  (`det_client_*` -> lwIP), which `begin()` never exercises - the server listener path is warm at boot, but the
+  first _outbound_ connect+send grows lwIP's TX pbuf / working-set backing once. Proof it is bounded, not
+  monotonic: (1) 8 more failed-open `/ftp/probe` + 8 more `/redis/probe` connections dropped **nothing**
+  further (plateaued at 130044); (2) a **second identical 9-dialog attack run was clean - 0 findings, heap
+  130044 -> 130044**. A real per-connection leak would fall by another ~1.8 KB on the second run. The library's
+  own code allocates nothing after `begin()`; the one-time growth is inside esp-idf/lwIP pools and is capped.
+- **Lesson:** the heap-drift oracle's first-touch false-positive fires the first time _any_ never-before-used
+  code path runs after begin() (here the outbound-client path). Distinguish warmup from a leak by re-running:
+  warmup plateaus immediately and the second run is clean; a leak is monotonic. The MQTT/Redis device-as-client
+  probes were judged clean earlier only because their path was already warm by the time the oracle sampled.
+
+---
+
 ## SSE teardown slot leak wedges the whole HTTP server (sse_free never called)
 
 - **Status:** FIXED (found on hardware 2026-07-11 by the pentest rig's new `sse_exhaustion` attack).
