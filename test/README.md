@@ -21035,9 +21035,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: 64KB asset, threshold 4KB, plenty of both heaps, 32KB DRAM reserve.
     * **Assertions**:
-      * <code>Assert equal int (PLACE_PSRAM, detws_psram_place(65536, false, 120000, 2000000, 4096, 32768))</code>
-      * <code>Assert equal int (PLACE_DRAM, detws_psram_place(65536, false, 120000, 0, 4096, 32768))</code>
-      * <code>Assert equal int (PLACE_FAIL, detws_psram_place(65536, false, 80000, 0, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_PSRAM, detws_psram_place(65536, false, 120000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, detws_psram_place(65536, false, 120000, 0, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_FAIL, detws_psram_place(65536, false, 80000, 0, 4096, 32768))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -21045,8 +21045,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: 512B hot buffer, threshold 4KB -> DRAM.
     * **Assertions**:
-      * <code>Assert equal int (PLACE_DRAM, detws_psram_place(512, false, 120000, 2000000, 4096, 32768))</code>
-      * <code>Assert equal int (PLACE_PSRAM, detws_psram_place(512, false, 33000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, detws_psram_place(512, false, 120000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_PSRAM, detws_psram_place(512, false, 33000, 2000000, 4096, 32768))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -21054,8 +21054,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: DMA-required buffer must be DRAM even if large.
     * **Assertions**:
-      * <code>Assert equal int (PLACE_DRAM, detws_psram_place(8192, true, 120000, 2000000, 4096, 32768))</code>
-      * <code>Assert equal int (PLACE_FAIL, detws_psram_place(8192, true, 40000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, detws_psram_place(8192, true, 120000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_FAIL, detws_psram_place(8192, true, 40000, 2000000, 4096, 32768))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -21063,9 +21063,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: At exactly the threshold -> treated as large (>=), prefers PSRAM.
     * **Assertions**:
-      * <code>Assert equal int (PLACE_FAIL, detws_psram_place(0, false, 120000, 2000000, 4096, 32768))</code>
-      * <code>Assert equal int (PLACE_PSRAM, detws_psram_place(4096, false, 120000, 2000000, 4096, 0))</code>
-      * <code>Assert equal int (PLACE_DRAM, detws_psram_place(100, false, 1100, 0, 4096, 1000))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_FAIL, detws_psram_place(0, false, 120000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_PSRAM, detws_psram_place(4096, false, 120000, 2000000, 4096, 0))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, detws_psram_place(100, false, 1100, 0, 4096, 1000))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25791,9 +25791,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Find.
     * **Assertions**:
-      * <code>Assert equal int (SOCK_ACQ_FREE, detws_sockpool_acquire(&g_pool, 100, 10, &idx, nullptr))</code>
+      * <code>Assert equal int (SockAcq::SOCK_ACQ_FREE, detws_sockpool_acquire(&g_pool, 100, 10, &idx, nullptr))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, idx);</code>
-      * <code>Assert equal int (SOCK_ACQ_FREE, detws_sockpool_acquire(&g_pool, 101, 11, &idx, nullptr))</code>
+      * <code>Assert equal int (SockAcq::SOCK_ACQ_FREE, detws_sockpool_acquire(&g_pool, 101, 11, &idx, nullptr))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, idx);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, detws_sockpool_in_use(&g_pool));</code>
       * <code>Assert true (detws_sockpool_find(&g_pool, 101, &found))</code>
@@ -25807,7 +25807,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Fill: id 100@t10, 101@t20, 102@t30.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(3, detws_sockpool_in_use(&g_pool));</code>
-      * <code>Assert equal int (SOCK_ACQ_RECYCLED, detws_sockpool_acquire(&g_pool, 103, 40, &idx, &evicted))</code>
+      * <code>Assert equal int (SockAcq::SOCK_ACQ_RECYCLED, detws_sockpool_acquire(&g_pool, 103, 40, &idx, &evicted))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(100, evicted);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, idx);                              // slot 0 held id 100</code>
       * <code>Assert false (detws_sockpool_find(&g_pool, 100, nullptr))</code>
@@ -25820,7 +25820,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Touch id 100 so it is no longer the LRU; now id 101 is oldest.
     * **Assertions**:
-      * <code>Assert equal int (SOCK_ACQ_RECYCLED, detws_sockpool_acquire(&g_pool, 103, 60, nullptr, &evicted))</code>
+      * <code>Assert equal int (SockAcq::SOCK_ACQ_RECYCLED, detws_sockpool_acquire(&g_pool, 103, 60, nullptr, &evicted))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(101, evicted);</code>
   </details>
 
@@ -25832,7 +25832,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (detws_sockpool_release(&g_pool, idx))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sockpool_in_use(&g_pool));</code>
       * <code>Assert false (detws_sockpool_release(&g_pool, idx))</code>
-      * <code>Assert equal int (SOCK_ACQ_FREE, detws_sockpool_acquire(&g_pool, 200, 20, nullptr, nullptr))</code>
+      * <code>Assert equal int (SockAcq::SOCK_ACQ_FREE, detws_sockpool_acquire(&g_pool, 200, 20, nullptr, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25840,7 +25840,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Empty pool fails
     * **Assertions**:
-      * <code>Assert equal int (SOCK_ACQ_FAIL, detws_sockpool_acquire(&empty, 1, 1, nullptr, nullptr))</code>
+      * <code>Assert equal int (SockAcq::SOCK_ACQ_FAIL, detws_sockpool_acquire(&empty, 1, 1, nullptr, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
