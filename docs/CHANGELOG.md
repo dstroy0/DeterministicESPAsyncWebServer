@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1c30126`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c30126d2e4fad322c9a88b6f9ba7c47cefce626))
 - update CHANGELOG.md [skip ci] ([`8225613`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/822561328eea52622523ad46bda2736130e31724))
 - update CHANGELOG.md [skip ci] ([`d051c56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d051c56731447c0b056a2606f8a919c21f2b5118))
 - update CHANGELOG.md [skip ci] ([`bdc4c90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdc4c9001b6601365316ead7d0e85b3bdd05a29a))
@@ -28,6 +29,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- MQTT 3.1.1 client codec bench (host + device) ([`bd3f4b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd3f4b3047a487c6c7f5571169dd5947990c8b55))
 - permessage-deflate codec bench (host + device) ([`685d5e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/685d5e92346ef15c25dc59a720b4929cfe1ad7b8))
 - Modbus TCP slave codec bench (host + device) ([`fcdfcb8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcdfcb81660488788cca626883047cccaa532e65))
 - OPC UA Binary codec bench (host + device) ([`dab3255`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dab32556e3ed401941d5e7f647c885b8e060d9cd))
