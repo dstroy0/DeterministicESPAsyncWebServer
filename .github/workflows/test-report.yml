@@ -167,8 +167,12 @@ jobs:
       # current: a full run regenerates it whole; an affected run recomputes just the envs that ran
       # (--merge), so a later #include change is already reflected next time. Deterministic output, so
       # it only shows a diff (and gets committed) when the include structure actually changed.
+      # Non-fatal: the graph is an optimization (select_envs falls back to FULL for anything not in
+      # it), and the real outputs are the report + coverage - a graph hiccup must not fail the job or
+      # block their commit. An unchanged graph is a no-op (deterministic output).
       - name: Refresh dependency graph
         if: ${{ github.event_name == 'push' && steps.sel.outputs.mode != 'none' }}
+        continue-on-error: true
         run: |
           if [ "${{ steps.sel.outputs.mode }}" = "full" ]; then
             python3 tools/gen_dep_graph.py --out test/dep_graph.json
