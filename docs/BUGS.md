@@ -8,6 +8,25 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## FTP command emitters used additive length checks that could wrap (buffer-overflow risk)
+
+- **Status:** FIXED (native_ftp: 16 cases pass, byte-identical output; the change is behavior-preserving
+  under the codec's own invariant and only hardens the helper against a hostile length).
+- **Found:** 2026-07-10, SonarCloud flagged the additive bound in `ftp_emit`.
+- **Symptom:** none in practice - every in-tree caller passes a `strnlen(_, cap)`-bounded length, so the
+  sum never wrapped. The risk is latent: `ftp_emit`/`ftp_emit_uint`/`ftp_finish` are general helpers that
+  take a raw `size_t` length, and a future caller passing a near-`SIZE_MAX` length would wrap the check.
+- **Root cause:** the room check was written as `n + slen > cap`. With `n` and `slen` both `size_t`, a
+  huge `slen` makes `n + slen` overflow to a small value that passes the check, after which
+  `memcpy(buf + n, s, slen)` writes past `buf`.
+- **Fix:** rewrote all three bounds as overflow-safe subtraction (`slen > cap - n`, `ri > cap - n`,
+  `n >= cap`). The codec keeps the invariant `n <= cap` on every non-sentinel return, so `cap - n` can
+  never underflow; the checks are now provably safe for any length.
+- **Lesson:** never bound a write with `offset + len > cap` when `len` is (or could become) untrusted -
+  use the subtraction form `len > cap - offset` and keep the `offset <= cap` invariant that makes it safe.
+
+---
+
 ## server.listen() returned DETWS_OK instead of the listener id (port-forward never matched)
 
 - **Status:** FIXED (HW: the relay/DNAT example now forwards a file byte-exact through the ESP32;

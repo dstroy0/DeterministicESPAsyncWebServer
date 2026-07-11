@@ -17,7 +17,9 @@ static const size_t FTP_SENT = (size_t)-1; // "overflowed" sentinel threaded thr
 // Append raw bytes; propagates the overflow sentinel.
 static size_t ftp_emit(char *buf, size_t cap, size_t n, const char *s, size_t slen)
 {
-    if (n == FTP_SENT || n + slen > cap)
+    // Overflow-safe bound: n <= cap is invariant (every non-sentinel return is <= cap), so
+    // cap - n never underflows; written as subtraction so a huge slen cannot wrap n + slen.
+    if (n == FTP_SENT || slen > cap - n)
         return FTP_SENT;
     memcpy(buf + n, s, slen);
     return n + slen;
@@ -38,7 +40,7 @@ static size_t ftp_emit_uint(char *buf, size_t cap, size_t n, unsigned v)
             rev[ri++] = (char)('0' + (v % 10));
             v /= 10;
         }
-    if (n + (size_t)ri > cap)
+    if ((size_t)ri > cap - n) // n <= cap invariant (checked above); subtraction form can't overflow
         return FTP_SENT;
     for (int k = 0; k < ri; k++)
         buf[n + k] = rev[ri - 1 - k];
@@ -48,7 +50,7 @@ static size_t ftp_emit_uint(char *buf, size_t cap, size_t n, unsigned v)
 // Finish: on no overflow and room for the NUL, terminate and return the length; else 0.
 static size_t ftp_finish(char *buf, size_t cap, size_t n)
 {
-    if (n == FTP_SENT || n + 1 > cap)
+    if (n == FTP_SENT || n >= cap) // no room for the NUL (n == cap); n <= cap invariant avoids n + 1 overflow
         return 0;
     buf[n] = 0;
     return n;
