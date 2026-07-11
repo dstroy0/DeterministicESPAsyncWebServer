@@ -17425,10 +17425,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, n);</code>
       * <code>Assert true (detws_ocit_parse(out, n, &m))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(OCIT_MSG_SET, m.msg_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OcitMsgType::OCIT_MSG_SET, m.msg_type);</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(0x0102, m.object_type);</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(0x0003, m.instance);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(OCIT_TYPE_UINT32, m.data_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OcitType::OCIT_TYPE_UINT32, m.data_type);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(4, m.value_len);</code>
   </details>
 
@@ -17439,8 +17439,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
       * <code>Assert true (detws_ocit_parse(out, n, &m))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(OCIT_MSG_SET, m.msg_type);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(OCIT_TYPE_UINT16, m.data_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OcitMsgType::OCIT_MSG_SET, m.msg_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(OcitType::OCIT_TYPE_UINT16, m.data_type);</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(0xBEEF, detws_ocit_value_u16(&m));</code>
   </details>
 
@@ -22553,7 +22553,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (detws_eth_parse(buf, n, &f))</code>
       * <code>Assert false (f.vlan)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(ETHERTYPE_IPV4, f.ethertype);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(RawL2::ETHERTYPE_IPV4, f.ethertype);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, f.payload_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(pl, f.payload, 2);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(SRC, f.src, 6);</code>
@@ -22561,7 +22561,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (f.vlan)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(5, f.pcp);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(4094, f.vid);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(ETHERTYPE_GOOSE, f.ethertype);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(RawL2::ETHERTYPE_GOOSE, f.ethertype);</code>
       * <code>Assert false (detws_eth_parse(buf, 10, &f))</code>
   </details>
 
@@ -31119,9 +31119,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: 1609dot2 wrap guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(WAVE_16092_SIGNED, pl, 3, nullptr, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(WAVE_16092_SIGNED, nullptr, 3, out, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(WAVE_16092_SIGNED, pl, 3, out, 4)); // needs 5</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, pl, 3, nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, nullptr, 3, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, pl, 3, out, 4)); // needs 5</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -31129,13 +31129,13 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A multi-octet PSID (SPaT).
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX8(WSMP_VERSION, out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Wave::WSMP_VERSION, out[0]);</code>
       * <code>Assert true (detws_wsmp_parse(out, n, &f))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(WAVE_PSID_BSM, f.psid);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(Wave::WAVE_PSID_BSM, f.psid);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(4, f.payload_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, f.payload, 4);</code>
       * <code>Assert true (detws_wsmp_parse(out, n, &f))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(WAVE_PSID_SPAT, f.psid);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(Wave::WAVE_PSID_SPAT, f.psid);</code>
   </details>
 
   <details style="margin-left: 20px;">
