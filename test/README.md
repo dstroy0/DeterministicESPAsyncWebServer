@@ -506,7 +506,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2894 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2903 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -26464,7 +26464,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_sse (37 tests)</b></summary>
+<summary><b>test_sse (46 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_sse_pool_size</b> &mdash; <i>Sse pool size</i></summary>
@@ -26737,6 +26737,84 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (s1-&gt;active)</code>
       * <code>Assert equal string ("/b", s1-&gt;path)</code>
       * <code>Assert equal (1, (int)s1-&gt;slot_id)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_http_conn_open_releases_stale_sse_binding</b> &mdash; <i>Http conn open releases stale sse binding</i></summary>
+
+    * **Objective**: Http conn open releases stale sse binding
+    * **Assertions**:
+      * <code>Assert not null (sse_find(0))</code>
+      * <code>Assert null (sse_find(0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_http_conn_open_leaves_other_slot_sse_binding</b> &mdash; <i>Http conn open leaves other slot sse binding</i></summary>
+
+    * **Objective**: Http conn open leaves other slot sse binding
+    * **Assertions**:
+      * <code>Assert null (sse_find(0))</code>
+      * <code>Assert not null (sse_find(1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sse_format_data_only</b> &mdash; <i>Sse format data only</i></summary>
+
+    * **Objective**: Sse format data only
+    * **Assertions**:
+      * <code>Assert equal string ("data: hello\\n\\n", buf)</code>
+      * <code>Assert equal ((int)strlen("data: hello\\n\\n"), n)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sse_format_event_and_data</b> &mdash; <i>Sse format event and data</i></summary>
+
+    * **Objective**: Sse format event and data
+    * **Assertions**:
+      * <code>Assert equal string ("event: update\\ndata: payload\\n\\n", buf)</code>
+      * <code>Assert equal ((int)strlen("event: update\\ndata: payload\\n\\n"), n)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sse_format_id_and_data</b> &mdash; <i>Sse format id and data</i></summary>
+
+    * **Objective**: Sse format id and data
+    * **Assertions**:
+      * <code>Assert equal string ("id: 42\\ndata: payload\\n\\n", buf)</code>
+      * <code>Assert equal ((int)strlen("id: 42\\ndata: payload\\n\\n"), n)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sse_format_all_fields_ordering</b> &mdash; <i>Field order per WHATWG: event, then id, then data (blank line terminates).</i></summary>
+
+    * **Objective**: Field order per WHATWG: event, then id, then data (blank line terminates).
+    * **Assertions**:
+      * <code>Assert equal string ("event: status\\nid: 1\\ndata: body\\n\\n", buf)</code>
+      * <code>Assert equal ((int)strlen("event: status\\nid: 1\\ndata: body\\n\\n"), n)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sse_format_null_data_returns_zero</b> &mdash; <i>Sse format null data returns zero</i></summary>
+
+    * **Objective**: Sse format null data returns zero
+    * **Assertions**:
+      * <code>Assert equal (0, sse_format(buf, sizeof(buf), nullptr, "x", "1"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sse_format_overflow_returns_zero</b> &mdash; <i>A record that cannot fit must report 0, never a partial (truncated) frame.</i></summary>
+
+    * **Objective**: A record that cannot fit must report 0, never a partial (truncated) frame.
+    * **Assertions**:
+      * <code>Assert equal (0, sse_format(buf, sizeof(buf), "a-long-payload-value", "an-event", "99"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sse_format_zero_size_returns_zero</b> &mdash; <i>Sse format zero size returns zero</i></summary>
+
+    * **Objective**: Sse format zero size returns zero
+    * **Assertions**:
+      * <code>Assert equal (0, sse_format(buf, 0, "data", nullptr, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
