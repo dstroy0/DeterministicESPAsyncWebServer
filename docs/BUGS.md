@@ -8,6 +8,34 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## HTTP/3: QUIC frame parser rejects standard post-handshake frames - real clients get FRAME_ENCODING_ERROR
+
+- **Status:** OPEN (found on hardware 2026-07-11 with an aioquic client, right after the handshake-crash
+  fix; the QUIC handshake completes but the h3 request never runs).
+- **Symptom:** `QUIC handshake: CONNECTED`, then the device sends CONNECTION_CLOSE `error_code=0x07`
+  (FRAME_ENCODING_ERROR) and the h3 `GET /` times out. aioquic's event log:
+  `ConnectionTerminated(error_code=7, frame_type=0)`.
+- **Root cause:** `quic_frame_parse()` (`quic_frame.cpp`) only decodes PADDING, PING, HANDSHAKE_DONE, ACK,
+  ACK_ECN, CRYPTO, STREAM (0x08-0x0f), MAX_DATA, and CONNECTION_CLOSE; for **every other frame type it
+  returns 0** (line ~122, "a frame type this minimal server does not handle"), and `process_frames()`
+  turns a 0 into FRAME_ENCODING_ERROR + closes the connection (quic_conn.cpp:193). But a real QUIC client
+  sends connection-management + flow-control frames right after the handshake - **MAX_STREAMS (0x12/0x13),
+  MAX_STREAM_DATA (0x11), NEW_CONNECTION_ID (0x18), NEW_TOKEN (0x07), DATA_BLOCKED (0x14),
+  STREAM_DATA_BLOCKED (0x15), STREAMS_BLOCKED (0x16/0x17), RESET_STREAM (0x04), STOP_SENDING (0x05),
+  RETIRE_CONNECTION_ID (0x19), PATH_CHALLENGE/PATH_RESPONSE (0x1a/0x1b)** - so the very first 1-RTT packet
+  carrying the h3 request also carries one of these and the whole packet is rejected. RFC 9000 requires an
+  endpoint to be able to parse every defined frame type (it may ignore the ones it does not act on);
+  returning FRAME_ENCODING_ERROR for a well-formed known frame is both a spec violation and an interop
+  break with any real client.
+- **Fix (next):** extend `quic_frame_parse()` to **consume** (skip) all the standard frame types above with
+  their correct varint/byte layout, so they parse successfully and the dispatcher ignores the ones with no
+  server-side action (like it already does for MAX_DATA/PING). Then re-run the aioquic client: the h3 GET
+  should return 200. Handshake already works after the worker-stack fix (this file, above).
+- **Lesson:** "a minimal server only parses what it acts on" is wrong for QUIC - the transport must parse
+  the whole frame grammar even to ignore it, or the first real-client packet closes the connection.
+
+---
+
 ## HTTP/3: QUIC handshake crashes the device - worker-task stack too small for Ed25519 signing
 
 - **Status:** FIXED (library, found on hardware 2026-07-11 bringing up the HTTP/3/QUIC server on the PSRAM
