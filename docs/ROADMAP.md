@@ -1190,3 +1190,18 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       RAM) each base service adds on top of the bare-bones baseline, so a user can budget a build. Extend the
       footprint tooling (`tools/ci/example_footprints.py`) to emit a "cost of enabling service X alone" delta
       against the minimal build and land it as a table in `docs/FOOTPRINTS.md`.
+
+### Split dwserver.cpp into single-purpose files
+
+> `src/dwserver.cpp` is a ~4,000-line monolith holding the whole DetWebServer implementation
+> (listen/begin lifecycle, routing + dispatch, request handling, the response builders, chunked
+> streaming, static-file + WebDAV serving, auth, and the HTTP/2 + HTTP/3 seams). One giant TU is
+> harder to navigate, debug, and extend than a set of focused units.
+
+- [ ] **Break dwserver.cpp into a `src/server/` of single-purpose files** (L) - carve the monolith into
+      cohesive translation units (e.g. `server/lifecycle` for listen/begin/restart, `server/routing` for
+      route matching + dispatch, `server/response` for the send/send_template/send_chunked builders,
+      `server/file_serving`, `server/webdav`, `server/auth`, and the `server/http2` / `server/http3` seams),
+      each with a clear internal header. Pure move-and-split - no behavior change - so the native + dual-core
+      builds and the full test suite stay green throughout; keep the owned-context / no-stdlib / single-owner
+      rules. Makes the core easier to debug, extend, and maintain.

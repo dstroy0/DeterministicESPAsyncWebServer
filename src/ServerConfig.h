@@ -4374,12 +4374,14 @@
 #endif
 
 /**
- * @brief HTTP/3 (RFC 9114) over QUIC (RFC 9000) - in progress, built codec-first.
+ * @brief HTTP/3 (RFC 9114) over QUIC (RFC 9000) - implemented, host-tested end-to-end (HW verification pending).
  *
  * Default off. HTTP/3 runs over QUIC (a reliable transport over UDP) with QPACK (RFC 9204)
- * header compression and its own binary framing. The pure, host-testable pieces land first - the
- * QUIC variable-length integer (RFC 9000 sec 16), the HTTP/3 + QPACK codecs - ahead of the QUIC
- * transport engine. Like HTTP/2 this is a PSRAM-class feature.
+ * header compression and its own binary framing. The full stack is in place and exercised by a
+ * host end-to-end test - the QUIC variable-length integer (RFC 9000 sec 16), packet protection +
+ * framing, the TLS 1.3-in-QUIC handshake, the transport connection engine, and the HTTP/3 + QPACK
+ * codecs. On-device (ESP32) HW verification and an example are still pending. Like HTTP/2 this is a
+ * PSRAM-class feature.
  */
 #ifndef DETWS_ENABLE_HTTP3
 #define DETWS_ENABLE_HTTP3 0

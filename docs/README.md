@@ -1,6 +1,6 @@
 # Documentation
 
-A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1 and HTTP/2 (with HTTP/3 over QUIC in progress), WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
+A multi-protocol network server for ESP32 with a fully deterministic memory footprint, RFC 7230 compliant request parsing, and an OSI-layered architecture. It serves HTTP/1.1 and HTTP/2 (with HTTP/3 over QUIC, host-tested), WebSocket, and Server-Sent Events, with optional HTTPS/TLS, SSH, Telnet, SNMP, CoAP, Modbus TCP, MQTT, and OPC UA.
 
 ## Installation
 
@@ -191,7 +191,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
 <tr>
   <td align="center"><a href="FEATURES.md#http11-parser" title="RFC 7230 request parser - validates method, path, header names and values byte-by-byte before storing anything. Always on.">HTTP/1.1 Parser</a></td>
   <td align="center"><a href="FEATURES.md#http2" title="HTTP/2 (RFC 9113) over the version-agnostic request/response core. Default off. Negotiated by TLS ALPN (&quot;h2&quot;, falling back to &quot;http/1.1&quot;); an h2 connection speaks the binary framing + HPACK header compression on top of the same routes and handlers as HTTP/1.1 (the response serializer branches on the connection's protocol). The three layers are pure and host-tested against the RFCs: **HPACK** (RFC 7541 - static + dynamic table, prefix-integer / string / canonical-Huffman coding; `native_hpack` vs the Appendix C vectors), the **frame layer** (RFC 9113 sec 4/6 - the 9-byte header + SETTINGS / WINDOW_UPDATE / RST_STREAM / GOAWAY / PING / HEADERS / DATA; `native_h2frame`), and the **connection/stream engine** (preface, SETTINGS exchange, per-stream HEADERS-&gt;request + DATA/flow-control, PING/RST/GOAWAY, reassembly; `native_h2conn` drives a full request/response cycle). A connection's engine is ~28 KB, so it does not fit internal DRAM alongside TLS: **HTTP/2 requires PSRAM** (set DETWS_H2_POOL_IN_PSRAM=1 on an S3 / P4 / WROVER; a compile-time guard enforces it). See src/network_drivers/presentation/http2/.">HTTP/2</a></td>
-  <td align="center"><a href="FEATURES.md#http3" title="HTTP/3 (RFC 9114) over QUIC (RFC 9000) - in progress, built codec-first. Default off. HTTP/3 runs over QUIC (a reliable transport over UDP) with QPACK (RFC 9204) header compression and its own binary framing. The pure, host-testable pieces land first - the QUIC variable-length integer (RFC 9000 sec 16), the HTTP/3 + QPACK codecs - ahead of the QUIC transport engine. Like HTTP/2 this is a PSRAM-class feature.">HTTP/3</a></td>
+  <td align="center"><a href="FEATURES.md#http3" title="HTTP/3 (RFC 9114) over QUIC (RFC 9000) - implemented, host-tested end-to-end. Default off. HTTP/3 runs over QUIC (a reliable transport over UDP) with QPACK (RFC 9204) header compression and its own binary framing. The full stack is in place and exercised by a host end-to-end test: a QUIC client completes the TLS 1.3-in-QUIC handshake, sends a QPACK-encoded HTTP/3 GET, and verifies the 1-RTT response - covering the QUIC variable-length integer (RFC 9000 sec 16), packet protection + framing, the TLS 1.3 handshake, the transport connection engine, and the HTTP/3 + QPACK codecs. On-device (ESP32) HW verification and an example are still pending. Like HTTP/2 this is a PSRAM-class feature.">HTTP/3</a></td>
   <td align="center"><a href="FEATURES.md#json" title="Zero-heap JSON writer/reader (json.h) for request bodies and responses. Always on.">JSON</a></td>
   <td align="center"><a href="FEATURES.md#jwt" title="JWT bearer-token authentication (HS256). Default off. When set, src/services/jwt/jwt.h verifies `Authorization: Bearer &lt;jwt&gt;` tokens signed with HMAC-SHA-256 (reusing the SSH crypto layer) and can read integer claims (e.g. `exp`) so a handler/middleware can gate routes on a stateless token. Signature verification is constant-time.">JWT</a></td>
 </tr>
@@ -836,6 +836,8 @@ src/
 │   │   └── DETWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
+│   │   ├── __pycache__/
+│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -1110,7 +1112,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_HART` | `0` | Opt-in HART / HART-IP process-instrument protocol codec. |
 | `DETWS_ENABLE_HOSTLINK` | `0` | Omron Host Link (C-mode) frame codec (`services/hostlink`). |
 | `DETWS_ENABLE_HTTP2` | `0` | HTTP/2 (RFC 9113) over the version-agnostic request/response core. |
-| `DETWS_ENABLE_HTTP3` | `0` | HTTP/3 (RFC 9114) over QUIC (RFC 9000) - in progress, built codec-first. |
+| `DETWS_ENABLE_HTTP3` | `0` | HTTP/3 (RFC 9114) over QUIC (RFC 9000) - implemented, host-tested end-to-end (HW verification pending). |
 | `DETWS_ENABLE_HTTP_CACHE` | `0` | Opt-in HTTP Cache-Control directive helpers. |
 | `DETWS_ENABLE_HTTP_CLIENT` | `0` | Outbound HTTP(S) client (raw lwIP, optional client-side mbedTLS). |
 | `DETWS_ENABLE_HTTP_CLIENT_TLS` | `0` | HTTPS client support inside the HTTP client (needs DETWS_ENABLE_TLS). |
@@ -1615,7 +1617,7 @@ const char *http_get_query (const HttpReq *req, const char *key); // case-sensit
 The core HTTP/1.1 parser enforces RFC 7230 byte-by-byte; the dispatcher returns the
 correct status codes (400/404/405/413/414/426/501) with `Allow` / `Sec-WebSocket-Version`
 headers where required; the WebSocket layer enforces RFC 6455 framing. HTTP/2 (RFC 9113 +
-HPACK RFC 7541) and the in-progress HTTP/3 stack (RFC 9114 over QUIC, RFC 9000) follow
+HPACK RFC 7541) and the HTTP/3 stack (RFC 9114 over QUIC, RFC 9000) follow
 their own specs, and every optional protocol is implemented against its authoritative
 standard.
 
