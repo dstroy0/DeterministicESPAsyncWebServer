@@ -2,19 +2,35 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.6] - 2026-07-11
+
+<details>
+<summary><b>Show Changelog for version 5.95.6 - 2026-07-11</b></summary>
+
+### Bug Fixes
+
+- constant-time, length-bounded Basic-auth credential compare (no strcmp) ([`1be7149`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1be71498139bd2953607bee3a39b7ffc96b88b68))
+- heap oracle settle-rechecks before flagging drift (kill transient false positives) ([`4766bd7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4766bd77c6a4cabd887f56097463d8da6b254467))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ecbfd73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ecbfd73da2e4a7e7741763707470ddab033d1037))
 - update CHANGELOG.md [skip ci] ([`dc6ea0b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc6ea0b75a17c688cb417991f6cd86d79a5f337d))
+
+### Changes
+
+- Bump version: 5.95.5 → 5.95.6 ([`88eb49a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/88eb49a16639e754564566dc43283d8a20e01122))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`0d697e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d697e52ae82caf2ab255dea7ec84a67bc97d548))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`982183e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/982183e8e1fd57707e025be401bf0242cd93111f))
 
 ### Features
 
 - advanced WebSocket frame-abuse + ping-flood attacks (RFC 6455) ([`3471507`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3471507c9f81418ec7977cac459ca5f6dc1f3075))
+
+</details>
 
 ## [5.95.5] - 2026-07-11
 
