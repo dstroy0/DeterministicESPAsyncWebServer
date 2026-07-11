@@ -198,6 +198,19 @@ void DetWebServer::send_unauth(uint8_t slot_id, const Route *r, bool stale)
     resp_end(slot_id, 401, (int)(sizeof(body) - 1), keep);
 }
 
+// Constant-time byte equality: compares all @p len bytes regardless of a mismatch, so a credential
+// compare neither truncates on an embedded NUL (as strcmp would) nor leaks via early-out timing how
+// many leading bytes matched (a Basic-auth password timing side-channel).
+static bool ct_equal(const void *a, const void *b, size_t len)
+{
+    const uint8_t *pa = (const uint8_t *)a;
+    const uint8_t *pb = (const uint8_t *)b;
+    uint8_t diff = 0;
+    for (size_t i = 0; i < len; i++)
+        diff |= (uint8_t)(pa[i] ^ pb[i]);
+    return diff == 0;
+}
+
 bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Route *r)
 {
     const char *auth_hdr = http_get_header(req, "Authorization");
@@ -218,9 +231,14 @@ bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Rou
 
     size_t ulen = (size_t)(colon - (const char *)decoded);
     const char *pass = colon + 1;
+    size_t plen = n - (size_t)(pass - (const char *)decoded); // real password byte length (may hold NULs)
 
-    return (ulen == strnlen(r->auth_user, MAX_AUTH_LEN)) && (memcmp(decoded, r->auth_user, ulen) == 0) &&
-           (strcmp(pass, r->auth_pass) == 0);
+    // Length-bounded, constant-time compare of BOTH fields (never strcmp): an embedded NUL in the decoded
+    // credential must not truncate the submitted password ("pass\0junk" must not equal "pass"), and the
+    // byte compare must run to completion so it does not leak how many leading bytes matched.
+    bool user_ok = (ulen == strnlen(r->auth_user, MAX_AUTH_LEN)) && ct_equal(decoded, r->auth_user, ulen);
+    bool pass_ok = (plen == strnlen(r->auth_pass, MAX_AUTH_LEN)) && ct_equal(pass, r->auth_pass, plen);
+    return user_ok && pass_ok;
 }
 
 // Validate an Authorization: Digest header (RFC 7616, SHA-256, qop=auth).

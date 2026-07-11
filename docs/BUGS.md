@@ -8,6 +8,29 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Basic-auth password compared with strcmp: NUL-truncating + not constant-time
+
+- **Status:** FIXED (found on hardware 2026-07-11 by the pentest rig's `auth_bypass` attack).
+- **Found:** `pentesting/detws_pentest.py --only auth_bypass` against the S3 rig. Sending
+  `Authorization: Basic base64("admin:admin\x00GARBAGE")` returned **200** on the protected route.
+- **Symptom:** a submitted password of the form `correct-password` + `\0` + junk authenticated, because
+  `check_basic_auth` compared the password with `strcmp(pass, r->auth_pass)` and `strcmp` stops at the
+  first embedded NUL - so `"admin\0GARBAGE"` compared equal to `"admin"`.
+- **Severity:** LOW as a direct exploit (the attacker still has to submit the correct password prefix, so
+  it grants no access they could not already get), but a real robustness + **timing-side-channel** weakness:
+  `strcmp`/`memcmp` early-out, leaking via response timing how many leading credential bytes matched, and the
+  NUL truncation means the decoded credential length was not validated.
+- **Root cause:** `src/server/auth.cpp check_basic_auth` used `memcmp` for the username (length-checked, ok)
+  but `strcmp` for the password, and never bounded the password to its decoded byte length.
+- **Fix:** compute the real password byte length (`plen = n - (pass - decoded)`) and compare BOTH fields with
+  a new constant-time, length-bounded `ct_equal()` - so an embedded NUL cannot truncate the compare and the
+  byte loop always runs to completion (no timing early-out). Verified: native test_auth/test_digest_auth green
+  (261), and on the rig the null-truncation vector now returns 401.
+- **Lesson:** never compare a secret with `strcmp`/`memcmp` - use a length-bounded constant-time equality.
+  A password check must be validated against its actual byte length, not a C-string terminator.
+
+---
+
 ## Connection pool wedges (no recovery) under a saturation + RST-race flood - was masked by the crash
 
 - **Status:** OPEN (observed on hardware 2026-07-11; root cause not yet isolated).
