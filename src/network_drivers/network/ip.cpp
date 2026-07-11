@@ -35,7 +35,9 @@ int hexval(char c)
 /** Parse the dotted-quad in s[0, len) into out[4]. Rejects empty octets, > 3 digits, or > 255. */
 bool parse_v4(const char *s, size_t len, uint8_t out[4])
 {
-    int oct = 0, val = -1, digits = 0;
+    int oct = 0;
+    int val = -1;
+    int digits = 0;
     for (size_t i = 0; i < len; i++)
     {
         char c = s[i];
@@ -112,8 +114,10 @@ void assemble_v6(const uint16_t *head, int nhead, const uint16_t *tail, int ntai
  */
 bool parse_v6(const char *s, size_t len, uint8_t out[16])
 {
-    uint16_t head[8], tail[8];
-    int nhead = 0, ntail = 0;
+    uint16_t head[8];
+    uint16_t tail[8];
+    int nhead = 0;
+    int ntail = 0;
     bool seen_dc = false; // have we passed the "::" yet?
     uint16_t *cur = head; // the list currently being filled (head, then tail after "::")
     int *ncur = &nhead;
@@ -251,7 +255,10 @@ size_t put_hex16(uint16_t v, char *o)
  */
 void longest_zero_run(const uint16_t g[8], int *start, int *len)
 {
-    int best_start = -1, best_len = 0, cur_start = -1, cur_len = 0;
+    int best_start = -1;
+    int best_len = 0;
+    int cur_start = -1;
+    int cur_len = 0;
     for (int k = 0; k < 8; k++)
     {
         if (g[k] == 0)
@@ -346,7 +353,8 @@ bool det_ip_parse(const char *s, DetIp *out)
         return false;
     // A ':' means it is v6; a '.' (and no ':') means v4. Bound the scan to a legal length.
     size_t len = 0;
-    bool colon = false, dot = false;
+    bool colon = false;
+    bool dot = false;
     while (s[len])
     {
         if (s[len] == ':')
@@ -403,7 +411,8 @@ size_t det_ip_format(const DetIp *ip, char *out, size_t cap)
     for (int k = 0; k < 8; k++)
         g[k] = (uint16_t)((ip->bytes[2 * k] << 8) | ip->bytes[2 * k + 1]);
 
-    int zs, zl;
+    int zs;
+    int zl;
     longest_zero_run(g, &zs, &zl);
 
     // Emit the hextets, replacing the [zs, zs+zl) run with "::" (inet_ntop6-style colon placement).

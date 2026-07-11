@@ -134,7 +134,8 @@ SmbResult smb_open(const SmbConfig *cfg, SmbHandle *h, SmbSendFn send, SmbRecvFn
         return SmbResult::SMB_ERR_PROTOCOL;
 
     // 2. SESSION_SETUP round 1: NTLMSSP NEGOTIATE wrapped in SPNEGO
-    uint8_t ntneg[64], sp1[128];
+    uint8_t ntneg[64];
+    uint8_t sp1[128];
     size_t ntneg_n = ntlmssp_build_negotiate(ntneg, sizeof(ntneg), NtlmsspFlags::NTLMSSP_CLIENT_DEFAULT_FLAGS);
     size_t sp1_n = spnego_wrap_negotiate(ntneg, ntneg_n, sp1, sizeof(sp1));
     mlen = smb2_build_session_setup(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 1, 0,
@@ -162,11 +163,14 @@ SmbResult smb_open(const SmbConfig *cfg, SmbHandle *h, SmbSendFn send, SmbRecvFn
         return SmbResult::SMB_ERR_PROTOCOL;
 
     // 3. Compute the NTLMv2 response, wrap the AUTHENTICATE in SPNEGO
-    uint8_t nt_hash[16], owf[16];
+    uint8_t nt_hash[16];
+    uint8_t owf[16];
     ntlm_nt_hash(cfg->pass, nt_hash);
     if (!ntlm_ntowfv2(nt_hash, cfg->user, domain, owf))
         return SmbResult::SMB_ERR_OVERFLOW;
-    uint8_t cli_chal[8], ts[8], skey[16];
+    uint8_t cli_chal[8];
+    uint8_t ts[8];
+    uint8_t skey[16];
     esp_fill_random(cli_chal, 8);
     find_av_timestamp(ch.target_info, ch.target_info_len, ts);
     size_t nt_len = ntlm_v2_response(owf, ch.server_challenge, cli_chal, ts, ch.target_info, ch.target_info_len,
@@ -250,7 +254,8 @@ SmbResult smb_close(SmbHandle *h, SmbSendFn send, SmbRecvFn recv, void *ctx)
 {
     if (!h || !send || !recv)
         return SmbResult::SMB_ERR_ARG;
-    uint8_t tx[128], rx[128];
+    uint8_t tx[128];
+    uint8_t rx[128];
     size_t mlen = smb2_build_close(tx + 4, sizeof(tx) - 4, h->next_message_id, h->session_id, h->tree_id, h->file_id);
     if (!mlen)
         return SmbResult::SMB_ERR_OVERFLOW;

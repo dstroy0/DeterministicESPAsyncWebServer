@@ -55,7 +55,8 @@ bool ntlm_ntowfv2(const uint8_t nt_hash[16], const char *user, const char *domai
 static void hmac_md5_2(const uint8_t key[16], const uint8_t *m1, size_t l1, const uint8_t *m2, size_t l2,
                        uint8_t out[16])
 {
-    uint8_t ipad[64], opad[64];
+    uint8_t ipad[64];
+    uint8_t opad[64];
     for (int i = 0; i < 64; i++)
     {
         uint8_t k = (i < 16) ? key[i] : 0;

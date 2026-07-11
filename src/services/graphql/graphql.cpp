@@ -29,7 +29,8 @@ namespace
 struct Node
 {
     char name[DETWS_GQL_NAME_MAX];
-    int first_arg, n_args;
+    int first_arg;
+    int n_args;
     int first_child; // -1 if leaf
     int next_sib;    // -1 if last
 };
@@ -81,7 +82,8 @@ int new_node()
 // ---- lexer helpers --------------------------------------------------------
 struct Lex
 {
-    const char *p, *e;
+    const char *p;
+    const char *e;
 };
 
 void skipws(Lex &L)
@@ -219,7 +221,8 @@ bool parse_value(Lex &L, DetwsGqlValue *v)
             neg = true;
             L.p++;
         }
-        bool any = false, is_float = false;
+        bool any = false;
+        bool is_float = false;
         unsigned long long ipart = 0; // accumulate unsigned: signed overflow on a huge literal is UB
         double fval = 0.0;
         while (L.p < L.e && *L.p >= '0' && *L.p <= '9')
@@ -323,7 +326,8 @@ int parse_field(Lex &L, int depth)
     if (peek(L) == '(')
     {
         L.p++; // '('
-        int first = -1, count = 0;
+        int first = -1;
+        int count = 0;
         while (peek(L) != ')')
         {
             if (s_gql.nargs >= DETWS_GQL_MAX_ARGS)
@@ -374,7 +378,8 @@ int parse_selection(Lex &L, int depth)
         return -1;
     }
     L.p++; // '{'
-    int first = -1, prev = -1;
+    int first = -1;
+    int prev = -1;
     while (peek(L) != '}')
     {
         if (L.p >= L.e)
@@ -432,7 +437,8 @@ bool parse_document(Lex &L)
 struct Writer
 {
     char *o;
-    size_t cap, n;
+    size_t cap;
+    size_t n;
     bool ovf;
 };
 void w_raw(Writer &w, const char *s, size_t len)

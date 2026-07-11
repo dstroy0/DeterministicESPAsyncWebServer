@@ -50,7 +50,10 @@ static void md5_compress(uint32_t s[4], const uint8_t block[64])
     uint32_t m[16];
     for (int i = 0; i < 16; i++)
         m[i] = rd32le(block + i * 4);
-    uint32_t a = s[0], b = s[1], c = s[2], d = s[3];
+    uint32_t a = s[0];
+    uint32_t b = s[1];
+    uint32_t c = s[2];
+    uint32_t d = s[3];
     for (int i = 0; i < 64; i++)
     {
         uint32_t f;
@@ -104,7 +107,10 @@ static void md4_compress(uint32_t s[4], const uint8_t block[64])
     uint32_t x[16];
     for (int i = 0; i < 16; i++)
         x[i] = rd32le(block + i * 4);
-    uint32_t a = s[0], b = s[1], c = s[2], d = s[3];
+    uint32_t a = s[0];
+    uint32_t b = s[1];
+    uint32_t c = s[2];
+    uint32_t d = s[3];
 #define F4(X, Y, Z) (((X) & (Y)) | (~(X) & (Z)))
 #define G4(X, Y, Z) (((X) & (Y)) | ((X) & (Z)) | ((Y) & (Z)))
 #define H4(X, Y, Z) ((X) ^ (Y) ^ (Z))
@@ -264,7 +270,8 @@ void hmac_md5(const uint8_t *key, size_t key_len, const uint8_t *msg, size_t msg
     else
         memcpy(k, key, key_len);
 
-    uint8_t ipad[64], opad[64];
+    uint8_t ipad[64];
+    uint8_t opad[64];
     for (int i = 0; i < 64; i++)
     {
         ipad[i] = (uint8_t)(k[i] ^ 0x36);

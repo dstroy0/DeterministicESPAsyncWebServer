@@ -135,12 +135,15 @@ bool spnego_parse_response(const uint8_t *blob, size_t len, const uint8_t **resp
 {
     if (!blob || !resp_token || !resp_len)
         return false;
-    size_t pos = 0, cstart, clen;
+    size_t pos = 0;
+    size_t cstart;
+    size_t clen;
     uint8_t tag;
     // [1] NegTokenResp
     if (!der_read(blob, len, &pos, &tag, &clen, &cstart) || tag != 0xa1)
         return false;
-    size_t neg_end = cstart + clen, p = cstart;
+    size_t neg_end = cstart + clen;
+    size_t p = cstart;
     // SEQUENCE
     if (!der_read(blob, neg_end, &p, &tag, &clen, &cstart) || tag != 0x30)
         return false;
@@ -153,7 +156,9 @@ bool spnego_parse_response(const uint8_t *blob, size_t len, const uint8_t **resp
             return false;
         if (tag == 0xa2)
         {
-            size_t q = cstart, cs2, cl2;
+            size_t q = cstart;
+            size_t cs2;
+            size_t cl2;
             uint8_t t2;
             if (!der_read(blob, cstart + clen, &q, &t2, &cl2, &cs2) || t2 != 0x04)
                 return false;
