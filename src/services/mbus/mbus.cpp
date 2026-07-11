@@ -78,14 +78,14 @@ bool mbus_parse(const uint8_t *buf, size_t len, MbusFrame *out, size_t *consumed
 {
     if (!buf || !out || len < 1)
         return false;
-    out->type = MBUS_FRAME_NONE;
+    out->type = MbusFrameType::MBUS_FRAME_NONE;
     out->c = out->a = out->ci = 0;
     out->data = nullptr;
     out->data_len = 0;
 
     if (buf[0] == MBUS_ACK)
     {
-        out->type = MBUS_FRAME_ACK;
+        out->type = MbusFrameType::MBUS_FRAME_ACK;
         if (consumed)
             *consumed = 1;
         return true;
@@ -96,7 +96,7 @@ bool mbus_parse(const uint8_t *buf, size_t len, MbusFrame *out, size_t *consumed
             return false;
         if (buf[3] != (uint8_t)(buf[1] + buf[2]))
             return false;
-        out->type = MBUS_FRAME_SHORT;
+        out->type = MbusFrameType::MBUS_FRAME_SHORT;
         out->c = buf[1];
         out->a = buf[2];
         if (consumed)
@@ -115,7 +115,7 @@ bool mbus_parse(const uint8_t *buf, size_t len, MbusFrame *out, size_t *consumed
             return false;
         if (checksum(buf + 4, L) != buf[4 + L])
             return false;
-        out->type = MBUS_FRAME_LONG;
+        out->type = MbusFrameType::MBUS_FRAME_LONG;
         out->c = buf[4];
         out->a = buf[5];
         out->ci = buf[6];
@@ -130,39 +130,39 @@ bool mbus_parse(const uint8_t *buf, size_t len, MbusFrame *out, size_t *consumed
 
 uint8_t mbus_dif_data_len(uint8_t coding)
 {
-    switch (coding & 0x0Fu)
+    switch ((MbusDifCoding)(coding & 0x0Fu))
     {
-    case MBUS_DIF_NONE:
+    case MbusDifCoding::MBUS_DIF_NONE:
         return 0;
-    case MBUS_DIF_INT8:
+    case MbusDifCoding::MBUS_DIF_INT8:
         return 1;
-    case MBUS_DIF_INT16:
+    case MbusDifCoding::MBUS_DIF_INT16:
         return 2;
-    case MBUS_DIF_INT24:
+    case MbusDifCoding::MBUS_DIF_INT24:
         return 3;
-    case MBUS_DIF_INT32:
+    case MbusDifCoding::MBUS_DIF_INT32:
         return 4;
-    case MBUS_DIF_REAL32:
+    case MbusDifCoding::MBUS_DIF_REAL32:
         return 4;
-    case MBUS_DIF_INT48:
+    case MbusDifCoding::MBUS_DIF_INT48:
         return 6;
-    case MBUS_DIF_INT64:
+    case MbusDifCoding::MBUS_DIF_INT64:
         return 8;
-    case MBUS_DIF_READOUT:
+    case MbusDifCoding::MBUS_DIF_READOUT:
         return 0;
-    case MBUS_DIF_BCD2:
+    case MbusDifCoding::MBUS_DIF_BCD2:
         return 1;
-    case MBUS_DIF_BCD4:
+    case MbusDifCoding::MBUS_DIF_BCD4:
         return 2;
-    case MBUS_DIF_BCD6:
+    case MbusDifCoding::MBUS_DIF_BCD6:
         return 3;
-    case MBUS_DIF_BCD8:
+    case MbusDifCoding::MBUS_DIF_BCD8:
         return 4;
-    case MBUS_DIF_VARIABLE:
+    case MbusDifCoding::MBUS_DIF_VARIABLE:
         return 0; // length carried in the LVAR octet
-    case MBUS_DIF_BCD12:
+    case MbusDifCoding::MBUS_DIF_BCD12:
         return 6;
-    default: // MBUS_DIF_SPECIAL
+    default: // MbusDifCoding::MBUS_DIF_SPECIAL
         return 0;
     }
 }
@@ -190,7 +190,7 @@ bool mbus_record_next(const uint8_t *body, size_t len, size_t *pos, MbusRecord *
     out->data = nullptr;
     out->data_len = 0;
 
-    if (coding == MBUS_DIF_SPECIAL) // manufacturer-specific / idle: no VIF, no fixed data
+    if (coding == (uint8_t)MbusDifCoding::MBUS_DIF_SPECIAL) // manufacturer-specific / idle: no VIF, no fixed data
     {
         *pos = p;
         return true;
@@ -209,7 +209,7 @@ bool mbus_record_next(const uint8_t *body, size_t len, size_t *pos, MbusRecord *
     }
 
     uint8_t dlen;
-    if (coding == MBUS_DIF_VARIABLE)
+    if (coding == (uint8_t)MbusDifCoding::MBUS_DIF_VARIABLE)
     {
         if (p >= len)
             return false;

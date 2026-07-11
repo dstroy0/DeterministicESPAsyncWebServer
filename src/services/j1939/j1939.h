@@ -66,7 +66,7 @@ struct J1939Id
 };
 
 /** @brief Result of feeding a frame to the TP reassembler. */
-enum J1939TpResult
+enum class J1939TpResult : uint8_t
 {
     J1939_TP_IGNORED = 0, ///< not a TP frame for the active session
     J1939_TP_STARTED,     ///< a BAM / RTS opened a session

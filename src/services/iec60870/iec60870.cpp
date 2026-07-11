@@ -75,7 +75,7 @@ bool iec104_parse(const uint8_t *buf, size_t len, Iec104Apci *out, size_t *consu
     out->asdu_len = 0;
     if ((c0 & 0x01u) == 0) // I-format
     {
-        out->format = IEC104_I;
+        out->format = Iec104Format::IEC104_I;
         out->ns = (uint16_t)((buf[2] >> 1) | ((uint16_t)buf[3] << 7));
         out->nr = (uint16_t)((buf[4] >> 1) | ((uint16_t)buf[5] << 7));
         out->asdu_len = (size_t)(L - 4);
@@ -83,12 +83,12 @@ bool iec104_parse(const uint8_t *buf, size_t len, Iec104Apci *out, size_t *consu
     }
     else if ((c0 & 0x03u) == 0x01u) // S-format
     {
-        out->format = IEC104_S;
+        out->format = Iec104Format::IEC104_S;
         out->nr = (uint16_t)((buf[4] >> 1) | ((uint16_t)buf[5] << 7));
     }
     else // U-format (bits 0-1 == 11)
     {
-        out->format = IEC104_U;
+        out->format = Iec104Format::IEC104_U;
         out->u_cmd = c0;
     }
     if (consumed)

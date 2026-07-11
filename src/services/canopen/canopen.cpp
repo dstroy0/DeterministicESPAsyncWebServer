@@ -152,25 +152,25 @@ bool canopen_parse(const CanFrame *f, CanopenMsg *out)
     uint32_t id = f->id & DET_CAN_STD_ID_MASK;
     uint32_t func = id & CANOPEN_FUNC_MASK;
     uint8_t node = (uint8_t)(id & CANOPEN_NODE_MASK);
-    out->type = CANOPEN_T_UNKNOWN;
+    out->type = CanopenType::CANOPEN_T_UNKNOWN;
     out->node_id = node;
     out->pdo_num = 0;
 
     if (id == CANOPEN_COB_NMT)
     {
-        out->type = CANOPEN_T_NMT;
+        out->type = CanopenType::CANOPEN_T_NMT;
         out->node_id = 0;
         return true;
     }
     if (id == CANOPEN_COB_SYNC) // function 0x080 with node 0
     {
-        out->type = CANOPEN_T_SYNC;
+        out->type = CanopenType::CANOPEN_T_SYNC;
         out->node_id = 0;
         return true;
     }
     if (id == CANOPEN_COB_TIME)
     {
-        out->type = CANOPEN_T_TIME;
+        out->type = CanopenType::CANOPEN_T_TIME;
         out->node_id = 0;
         return true;
     }
@@ -180,51 +180,51 @@ bool canopen_parse(const CanFrame *f, CanopenMsg *out)
     switch (func)
     {
     case CANOPEN_COB_EMCY:
-        out->type = CANOPEN_T_EMCY;
+        out->type = CanopenType::CANOPEN_T_EMCY;
         return true;
     case CANOPEN_COB_TPDO1:
-        out->type = CANOPEN_T_TPDO;
+        out->type = CanopenType::CANOPEN_T_TPDO;
         out->pdo_num = 1;
         return true;
     case CANOPEN_COB_RPDO1:
-        out->type = CANOPEN_T_RPDO;
+        out->type = CanopenType::CANOPEN_T_RPDO;
         out->pdo_num = 1;
         return true;
     case CANOPEN_COB_TPDO2:
-        out->type = CANOPEN_T_TPDO;
+        out->type = CanopenType::CANOPEN_T_TPDO;
         out->pdo_num = 2;
         return true;
     case CANOPEN_COB_RPDO2:
-        out->type = CANOPEN_T_RPDO;
+        out->type = CanopenType::CANOPEN_T_RPDO;
         out->pdo_num = 2;
         return true;
     case CANOPEN_COB_TPDO3:
-        out->type = CANOPEN_T_TPDO;
+        out->type = CanopenType::CANOPEN_T_TPDO;
         out->pdo_num = 3;
         return true;
     case CANOPEN_COB_RPDO3:
-        out->type = CANOPEN_T_RPDO;
+        out->type = CanopenType::CANOPEN_T_RPDO;
         out->pdo_num = 3;
         return true;
     case CANOPEN_COB_TPDO4:
-        out->type = CANOPEN_T_TPDO;
+        out->type = CanopenType::CANOPEN_T_TPDO;
         out->pdo_num = 4;
         return true;
     case CANOPEN_COB_RPDO4:
-        out->type = CANOPEN_T_RPDO;
+        out->type = CanopenType::CANOPEN_T_RPDO;
         out->pdo_num = 4;
         return true;
     case CANOPEN_COB_SDO_TX:
-        out->type = CANOPEN_T_SDO_TX;
+        out->type = CanopenType::CANOPEN_T_SDO_TX;
         return true;
     case CANOPEN_COB_SDO_RX:
-        out->type = CANOPEN_T_SDO_RX;
+        out->type = CanopenType::CANOPEN_T_SDO_RX;
         return true;
     case CANOPEN_COB_HEARTBEAT:
-        out->type = CANOPEN_T_HEARTBEAT;
+        out->type = CanopenType::CANOPEN_T_HEARTBEAT;
         return true;
     default:
-        return true; // unknown function code: type stays CANOPEN_T_UNKNOWN
+        return true; // unknown function code: type stays CanopenType::CANOPEN_T_UNKNOWN
     }
 }
 

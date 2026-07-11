@@ -56,7 +56,7 @@
 #define MBUS_MAX_DATA 252u ///< max user-data octets (L is one octet; 255 - 3)
 
 /** @brief M-Bus frame kinds. */
-enum MbusFrameType
+enum class MbusFrameType : uint8_t
 {
     MBUS_FRAME_NONE = 0,
     MBUS_FRAME_ACK,   ///< single 0xE5
@@ -76,7 +76,7 @@ struct MbusFrame
 };
 
 // DIF data-field coding (low nibble of the DIF). The decoded fixed lengths are in octets.
-enum MbusDifCoding
+enum class MbusDifCoding : uint8_t
 {
     MBUS_DIF_NONE = 0x0,     ///< no data
     MBUS_DIF_INT8 = 0x1,     ///< 8-bit integer

@@ -77,7 +77,7 @@
 #define IEC_FC_REQUEST_CLASS2 0x0B    ///< request class 2 data
 
 /** @brief -104 APCI frame formats. */
-enum Iec104Format
+enum class Iec104Format : uint8_t
 {
     IEC104_I = 0, ///< information transfer (numbered; carries an ASDU)
     IEC104_S,     ///< supervisory (acknowledge only)

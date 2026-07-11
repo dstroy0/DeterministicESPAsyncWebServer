@@ -42,7 +42,7 @@ void test_sync()
 
     CanopenMsg m;
     TEST_ASSERT_TRUE(canopen_parse(&f, &m));
-    TEST_ASSERT_EQUAL_INT(CANOPEN_T_SYNC, m.type);
+    TEST_ASSERT_EQUAL_INT(CanopenType::CANOPEN_T_SYNC, m.type);
     TEST_ASSERT_EQUAL_UINT8(0, m.node_id);
 }
 
@@ -55,7 +55,7 @@ void test_heartbeat_roundtrip()
 
     CanopenMsg m;
     TEST_ASSERT_TRUE(canopen_parse(&f, &m));
-    TEST_ASSERT_EQUAL_INT(CANOPEN_T_HEARTBEAT, m.type);
+    TEST_ASSERT_EQUAL_INT(CanopenType::CANOPEN_T_HEARTBEAT, m.type);
     TEST_ASSERT_EQUAL_UINT8(10, m.node_id);
 
     uint8_t node = 0, state = 0;
@@ -100,7 +100,7 @@ void test_pdo_roundtrip()
 
     CanopenMsg m;
     TEST_ASSERT_TRUE(canopen_parse(&f, &m));
-    TEST_ASSERT_EQUAL_INT(CANOPEN_T_TPDO, m.type);
+    TEST_ASSERT_EQUAL_INT(CanopenType::CANOPEN_T_TPDO, m.type);
     TEST_ASSERT_EQUAL_UINT8(2, m.pdo_num);
     TEST_ASSERT_EQUAL_UINT8(7, m.node_id);
 
@@ -210,13 +210,13 @@ void test_parse_classifies()
 
     f.id = 0x18A; // TPDO1 + node 10
     TEST_ASSERT_TRUE(canopen_parse(&f, &m));
-    TEST_ASSERT_EQUAL_INT(CANOPEN_T_TPDO, m.type);
+    TEST_ASSERT_EQUAL_INT(CanopenType::CANOPEN_T_TPDO, m.type);
     TEST_ASSERT_EQUAL_UINT8(1, m.pdo_num);
     TEST_ASSERT_EQUAL_UINT8(10, m.node_id);
 
     f.id = 0x60F; // SDO_RX + node 15
     TEST_ASSERT_TRUE(canopen_parse(&f, &m));
-    TEST_ASSERT_EQUAL_INT(CANOPEN_T_SDO_RX, m.type);
+    TEST_ASSERT_EQUAL_INT(CanopenType::CANOPEN_T_SDO_RX, m.type);
     TEST_ASSERT_EQUAL_UINT8(15, m.node_id);
 
     // Extended frames are not CANopen default-profile.
@@ -274,11 +274,13 @@ void test_parse_all_function_codes()
         uint8_t pdo;
     };
     const Case cases[] = {
-        {0x000, CANOPEN_T_NMT, 0, 0},    {0x100, CANOPEN_T_TIME, 0, 0},       {0x087, CANOPEN_T_EMCY, 7, 0},
-        {0x181, CANOPEN_T_TPDO, 1, 1},   {0x201, CANOPEN_T_RPDO, 1, 1},       {0x282, CANOPEN_T_TPDO, 2, 2},
-        {0x303, CANOPEN_T_RPDO, 3, 2},   {0x384, CANOPEN_T_TPDO, 4, 3},       {0x405, CANOPEN_T_RPDO, 5, 3},
-        {0x486, CANOPEN_T_TPDO, 6, 4},   {0x507, CANOPEN_T_RPDO, 7, 4},       {0x588, CANOPEN_T_SDO_TX, 8, 0},
-        {0x609, CANOPEN_T_SDO_RX, 9, 0}, {0x70A, CANOPEN_T_HEARTBEAT, 10, 0},
+        {0x000, CanopenType::CANOPEN_T_NMT, 0, 0},    {0x100, CanopenType::CANOPEN_T_TIME, 0, 0},
+        {0x087, CanopenType::CANOPEN_T_EMCY, 7, 0},   {0x181, CanopenType::CANOPEN_T_TPDO, 1, 1},
+        {0x201, CanopenType::CANOPEN_T_RPDO, 1, 1},   {0x282, CanopenType::CANOPEN_T_TPDO, 2, 2},
+        {0x303, CanopenType::CANOPEN_T_RPDO, 3, 2},   {0x384, CanopenType::CANOPEN_T_TPDO, 4, 3},
+        {0x405, CanopenType::CANOPEN_T_RPDO, 5, 3},   {0x486, CanopenType::CANOPEN_T_TPDO, 6, 4},
+        {0x507, CanopenType::CANOPEN_T_RPDO, 7, 4},   {0x588, CanopenType::CANOPEN_T_SDO_TX, 8, 0},
+        {0x609, CanopenType::CANOPEN_T_SDO_RX, 9, 0}, {0x70A, CanopenType::CANOPEN_T_HEARTBEAT, 10, 0},
     };
     for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
     {
@@ -291,11 +293,11 @@ void test_parse_all_function_codes()
     // An unallocated function code parses true but stays UNKNOWN.
     f.id = 0x681; // between SDO_RX (0x600) and HEARTBEAT (0x700), not allocated
     TEST_ASSERT_TRUE(canopen_parse(&f, &m));
-    TEST_ASSERT_EQUAL_INT(CANOPEN_T_UNKNOWN, m.type);
+    TEST_ASSERT_EQUAL_INT(CanopenType::CANOPEN_T_UNKNOWN, m.type);
     // A function base carried with node 0 is not classified further.
     f.id = 0x180; // TPDO1 base, node 0
     TEST_ASSERT_TRUE(canopen_parse(&f, &m));
-    TEST_ASSERT_EQUAL_INT(CANOPEN_T_UNKNOWN, m.type);
+    TEST_ASSERT_EQUAL_INT(CanopenType::CANOPEN_T_UNKNOWN, m.type);
     // Null frame / output rejected.
     TEST_ASSERT_FALSE(canopen_parse(NULL, &m));
     TEST_ASSERT_FALSE(canopen_parse(&f, NULL));

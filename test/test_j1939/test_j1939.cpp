@@ -118,7 +118,7 @@ void test_tp_bam_roundtrip()
 
     CanFrame cm;
     TEST_ASSERT_TRUE(j1939_build_bam_cm(&cm, sa, pgn, 16));
-    TEST_ASSERT_EQUAL_INT(J1939_TP_STARTED, j1939_tp_feed(&rx, &cm));
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_STARTED, j1939_tp_feed(&rx, &cm));
 
     uint8_t packets = j1939_tp_num_packets(16); // 3
     for (uint8_t seq = 1; seq <= packets; seq++)
@@ -129,9 +129,9 @@ void test_tp_bam_roundtrip()
         TEST_ASSERT_TRUE(j1939_build_tp_dt(&dt, sa, J1939_ADDR_GLOBAL, seq, msg + off, len));
         J1939TpResult r = j1939_tp_feed(&rx, &dt);
         if (seq < packets)
-            TEST_ASSERT_EQUAL_INT(J1939_TP_PROGRESS, r);
+            TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_PROGRESS, r);
         else
-            TEST_ASSERT_EQUAL_INT(J1939_TP_COMPLETE, r);
+            TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_COMPLETE, r);
     }
     TEST_ASSERT_EQUAL_UINT16(16, rx.total_size);
     TEST_ASSERT_EQUAL_HEX32(pgn, rx.pgn);
@@ -145,12 +145,12 @@ void test_tp_out_of_sequence_errors()
     j1939_tp_reset(&rx);
     CanFrame cm;
     j1939_build_bam_cm(&cm, 0x21, 0x00FECA, 16);
-    TEST_ASSERT_EQUAL_INT(J1939_TP_STARTED, j1939_tp_feed(&rx, &cm));
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_STARTED, j1939_tp_feed(&rx, &cm));
 
     uint8_t chunk[7] = {1, 2, 3, 4, 5, 6, 7};
     CanFrame dt;
     j1939_build_tp_dt(&dt, 0x21, J1939_ADDR_GLOBAL, 2, chunk, 7); // skips seq 1
-    TEST_ASSERT_EQUAL_INT(J1939_TP_ERROR, j1939_tp_feed(&rx, &dt));
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_ERROR, j1939_tp_feed(&rx, &dt));
     TEST_ASSERT_FALSE(rx.active);
 }
 
@@ -188,31 +188,31 @@ void test_tp_feed_error_paths()
     CanFrame cm;
     j1939_build_bam_cm(&cm, 0x21, 0x00FECA, 16);
 
-    TEST_ASSERT_EQUAL_INT(J1939_TP_IGNORED, j1939_tp_feed(nullptr, &cm)); // null rx
-    TEST_ASSERT_EQUAL_INT(J1939_TP_IGNORED, j1939_tp_feed(&rx, nullptr)); // null frame
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_IGNORED, j1939_tp_feed(nullptr, &cm)); // null rx
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_IGNORED, j1939_tp_feed(&rx, nullptr)); // null frame
     CanFrame notext = cm;
     notext.extended = false;
-    TEST_ASSERT_EQUAL_INT(J1939_TP_IGNORED, j1939_tp_feed(&rx, &notext)); // not a 29-bit frame
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_IGNORED, j1939_tp_feed(&rx, &notext)); // not a 29-bit frame
 
     CanFrame cm_ctrl = cm;
     cm_ctrl.data[0] = 0xFF; // not BAM/RTS -> not a receiver-side session start
-    TEST_ASSERT_EQUAL_INT(J1939_TP_IGNORED, j1939_tp_feed(&rx, &cm_ctrl));
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_IGNORED, j1939_tp_feed(&rx, &cm_ctrl));
 
     CanFrame cm_bad = cm;
     cm_bad.data[3] = 99; // packet count != ceil(total/7)
-    TEST_ASSERT_EQUAL_INT(J1939_TP_ERROR, j1939_tp_feed(&rx, &cm_bad));
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_ERROR, j1939_tp_feed(&rx, &cm_bad));
 
     // A TP.DT with no active session is ignored.
     j1939_tp_reset(&rx);
     const uint8_t chunk[7] = {1, 2, 3, 4, 5, 6, 7};
     CanFrame dt;
     j1939_build_tp_dt(&dt, 0x21, J1939_ADDR_GLOBAL, 1, chunk, 7);
-    TEST_ASSERT_EQUAL_INT(J1939_TP_IGNORED, j1939_tp_feed(&rx, &dt));
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_IGNORED, j1939_tp_feed(&rx, &dt));
 
     // An extended frame whose PGN is neither TP.CM nor TP.DT is ignored.
     CanFrame other;
     j1939_build_message(&other, 6, 0x00FEEE, 0x21, 0xFF, chunk, 3);
-    TEST_ASSERT_EQUAL_INT(J1939_TP_IGNORED, j1939_tp_feed(&rx, &other));
+    TEST_ASSERT_EQUAL_INT(J1939TpResult::J1939_TP_IGNORED, j1939_tp_feed(&rx, &other));
 }
 
 int main()

@@ -166,22 +166,22 @@ void j1939_tp_reset(J1939TpRx *rx)
 J1939TpResult j1939_tp_feed(J1939TpRx *rx, const CanFrame *f)
 {
     if (!rx || !f || !f->extended)
-        return J1939_TP_IGNORED;
+        return J1939TpResult::J1939_TP_IGNORED;
     J1939Id id;
     if (!j1939_decode_id(f->id, &id))
-        return J1939_TP_IGNORED; // GCOVR_EXCL_LINE  unreachable: decode_id only fails on a null out, and &id is
-                                 // non-null
+        return J1939TpResult::J1939_TP_IGNORED; // GCOVR_EXCL_LINE  unreachable: decode_id only fails on a null out, and
+                                                // &id is non-null
 
     if (id.pgn == J1939_PGN_TP_CM && f->dlc >= 8)
     {
         uint8_t control = f->data[0];
         if (control != J1939_TP_CM_BAM && control != J1939_TP_CM_RTS)
-            return J1939_TP_IGNORED; // CTS / EOM / Abort are not receiver-side session starts
+            return J1939TpResult::J1939_TP_IGNORED; // CTS / EOM / Abort are not receiver-side session starts
         uint16_t total = (uint16_t)(f->data[1] | (f->data[2] << 8));
         uint8_t packets = f->data[3];
         uint32_t pgn = (uint32_t)f->data[5] | ((uint32_t)f->data[6] << 8) | ((uint32_t)f->data[7] << 16);
         if (total < 9 || total > DETWS_J1939_TP_MAX || packets != j1939_tp_num_packets(total))
-            return J1939_TP_ERROR;
+            return J1939TpResult::J1939_TP_ERROR;
         rx->active = true;
         rx->sa = id.sa;
         rx->pgn = pgn;
@@ -189,18 +189,18 @@ J1939TpResult j1939_tp_feed(J1939TpRx *rx, const CanFrame *f)
         rx->num_packets = packets;
         rx->next_seq = 1;
         rx->received = 0;
-        return J1939_TP_STARTED;
+        return J1939TpResult::J1939_TP_STARTED;
     }
 
     if (id.pgn == J1939_PGN_TP_DT && f->dlc >= 1)
     {
         if (!rx->active || id.sa != rx->sa)
-            return J1939_TP_IGNORED;
+            return J1939TpResult::J1939_TP_IGNORED;
         uint8_t seq = f->data[0];
         if (seq != rx->next_seq)
         {
             j1939_tp_reset(rx);
-            return J1939_TP_ERROR; // out-of-sequence: abort the session
+            return J1939TpResult::J1939_TP_ERROR; // out-of-sequence: abort the session
         }
         uint16_t remaining = (uint16_t)(rx->total_size - rx->received);
         uint8_t take = remaining < J1939_TP_DT_LEN ? (uint8_t)remaining : (uint8_t)J1939_TP_DT_LEN;
@@ -210,12 +210,12 @@ J1939TpResult j1939_tp_feed(J1939TpRx *rx, const CanFrame *f)
         if (rx->received >= rx->total_size)
         {
             rx->active = false;
-            return J1939_TP_COMPLETE;
+            return J1939TpResult::J1939_TP_COMPLETE;
         }
-        return J1939_TP_PROGRESS;
+        return J1939TpResult::J1939_TP_PROGRESS;
     }
 
-    return J1939_TP_IGNORED;
+    return J1939TpResult::J1939_TP_IGNORED;
 }
 
 #endif // DETWS_ENABLE_J1939

@@ -82,7 +82,7 @@
 #define CANOPEN_ABORT_GENERAL 0x08000000u     ///< general error
 
 /** @brief CANopen message classes (the function decoded from the COB-ID). */
-enum CanopenType
+enum class CanopenType : uint8_t
 {
     CANOPEN_T_UNKNOWN = 0,
     CANOPEN_T_NMT,

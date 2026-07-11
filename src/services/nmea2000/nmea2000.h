@@ -39,7 +39,7 @@
 #define N2K_FP_FN_DATA 7u       ///< data octets in a continuation frame
 
 /** @brief Result of feeding a frame to the Fast Packet reassembler. */
-enum N2kFpResult
+enum class N2kFpResult : uint8_t
 {
     N2K_FP_IGNORED = 0, ///< not part of the active sequence
     N2K_FP_STARTED,     ///< first frame opened a sequence

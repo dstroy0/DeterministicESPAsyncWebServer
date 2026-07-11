@@ -30,7 +30,7 @@ void test_104_i_format_roundtrip()
     Iec104Apci a;
     size_t c;
     TEST_ASSERT_TRUE(iec104_parse(buf, n, &a, &c));
-    TEST_ASSERT_EQUAL_INT(IEC104_I, a.format);
+    TEST_ASSERT_EQUAL_INT(Iec104Format::IEC104_I, a.format);
     TEST_ASSERT_EQUAL_UINT16(100, a.ns);
     TEST_ASSERT_EQUAL_UINT16(50, a.nr);
     TEST_ASSERT_EQUAL_size_t(6, a.asdu_len);
@@ -47,7 +47,7 @@ void test_104_s_format()
     Iec104Apci a;
     size_t c;
     TEST_ASSERT_TRUE(iec104_parse(buf, n, &a, &c));
-    TEST_ASSERT_EQUAL_INT(IEC104_S, a.format);
+    TEST_ASSERT_EQUAL_INT(Iec104Format::IEC104_S, a.format);
     TEST_ASSERT_EQUAL_UINT16(1234, a.nr);
 }
 
@@ -59,7 +59,7 @@ void test_104_u_format()
     Iec104Apci a;
     size_t c;
     TEST_ASSERT_TRUE(iec104_parse(buf, n, &a, &c));
-    TEST_ASSERT_EQUAL_INT(IEC104_U, a.format);
+    TEST_ASSERT_EQUAL_INT(Iec104Format::IEC104_U, a.format);
     TEST_ASSERT_EQUAL_HEX8(IEC104_STARTDT_ACT, a.u_cmd);
 }
 

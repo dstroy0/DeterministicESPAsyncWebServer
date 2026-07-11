@@ -61,11 +61,11 @@ void n2k_fastpacket_reset(N2kFastPacketRx *rx)
 N2kFpResult n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f)
 {
     if (!rx || !f || !f->extended || f->dlc < 2)
-        return N2K_FP_IGNORED;
+        return N2kFpResult::N2K_FP_IGNORED;
     J1939Id id;
     if (!j1939_decode_id(f->id, &id))
-        return N2K_FP_IGNORED; // GCOVR_EXCL_LINE  unreachable: j1939_decode_id only fails on a null out, and &id is
-                               // non-null
+        return N2kFpResult::N2K_FP_IGNORED; // GCOVR_EXCL_LINE  unreachable: j1939_decode_id only fails on a null out,
+                                            // and &id is non-null
 
     uint8_t seq = (uint8_t)(f->data[0] >> N2K_FP_SEQ_SHIFT);
     uint8_t frame_idx = (uint8_t)(f->data[0] & N2K_FP_FRAME_MASK);
@@ -74,7 +74,7 @@ N2kFpResult n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f)
     {
         uint16_t total = f->data[1];
         if (total == 0 || total > DETWS_N2K_FP_MAX)
-            return N2K_FP_ERR;
+            return N2kFpResult::N2K_FP_ERR;
         n2k_fastpacket_reset(rx);
         rx->active = true;
         rx->seq = seq;
@@ -88,18 +88,18 @@ N2kFpResult n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f)
         if (rx->received >= total)
         {
             rx->active = false;
-            return N2K_FP_COMPLETE;
+            return N2kFpResult::N2K_FP_COMPLETE;
         }
-        return N2K_FP_STARTED;
+        return N2kFpResult::N2K_FP_STARTED;
     }
 
     // continuation frame: must match the active sequence / source / PGN and be in order.
     if (!rx->active || seq != rx->seq || id.sa != rx->sa || id.pgn != rx->pgn)
-        return N2K_FP_IGNORED;
+        return N2kFpResult::N2K_FP_IGNORED;
     if (frame_idx != rx->next_frame)
     {
         n2k_fastpacket_reset(rx);
-        return N2K_FP_ERR;
+        return N2kFpResult::N2K_FP_ERR;
     }
     uint16_t remaining = (uint16_t)(rx->total_len - rx->received);
     uint8_t n = remaining < N2K_FP_FN_DATA ? (uint8_t)remaining : (uint8_t)N2K_FP_FN_DATA;
@@ -109,9 +109,9 @@ N2kFpResult n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f)
     if (rx->received >= rx->total_len)
     {
         rx->active = false;
-        return N2K_FP_COMPLETE;
+        return N2kFpResult::N2K_FP_COMPLETE;
     }
-    return N2K_FP_PROGRESS;
+    return N2kFpResult::N2K_FP_PROGRESS;
 }
 
 bool n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da, const uint8_t *data,

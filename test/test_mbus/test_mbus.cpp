@@ -25,7 +25,7 @@ void test_ack()
     MbusFrame f;
     size_t c;
     TEST_ASSERT_TRUE(mbus_parse(buf, 1, &f, &c));
-    TEST_ASSERT_EQUAL_INT(MBUS_FRAME_ACK, f.type);
+    TEST_ASSERT_EQUAL_INT(MbusFrameType::MBUS_FRAME_ACK, f.type);
     TEST_ASSERT_EQUAL_size_t(1, c);
 }
 
@@ -40,7 +40,7 @@ void test_short_frame_roundtrip()
     MbusFrame f;
     size_t c;
     TEST_ASSERT_TRUE(mbus_parse(buf, n, &f, &c));
-    TEST_ASSERT_EQUAL_INT(MBUS_FRAME_SHORT, f.type);
+    TEST_ASSERT_EQUAL_INT(MbusFrameType::MBUS_FRAME_SHORT, f.type);
     TEST_ASSERT_EQUAL_HEX8(MBUS_C_SND_NKE, f.c);
     TEST_ASSERT_EQUAL_HEX8(0x05, f.a);
     TEST_ASSERT_EQUAL_size_t(5, c);
@@ -70,7 +70,7 @@ void test_long_frame_roundtrip()
     MbusFrame f;
     size_t c;
     TEST_ASSERT_TRUE(mbus_parse(buf, n, &f, &c));
-    TEST_ASSERT_EQUAL_INT(MBUS_FRAME_LONG, f.type);
+    TEST_ASSERT_EQUAL_INT(MbusFrameType::MBUS_FRAME_LONG, f.type);
     TEST_ASSERT_EQUAL_HEX8(MBUS_C_RSP_UD, f.c);
     TEST_ASSERT_EQUAL_HEX8(0x01, f.a);
     TEST_ASSERT_EQUAL_HEX8(MBUS_CI_RSP_VARIABLE, f.ci);
@@ -105,13 +105,13 @@ void test_parse_rejects_corruption()
 
 void test_dif_data_len()
 {
-    TEST_ASSERT_EQUAL_UINT8(1, mbus_dif_data_len(MBUS_DIF_INT8));
-    TEST_ASSERT_EQUAL_UINT8(4, mbus_dif_data_len(MBUS_DIF_INT32));
-    TEST_ASSERT_EQUAL_UINT8(4, mbus_dif_data_len(MBUS_DIF_REAL32));
-    TEST_ASSERT_EQUAL_UINT8(6, mbus_dif_data_len(MBUS_DIF_INT48));
-    TEST_ASSERT_EQUAL_UINT8(8, mbus_dif_data_len(MBUS_DIF_INT64));
-    TEST_ASSERT_EQUAL_UINT8(3, mbus_dif_data_len(MBUS_DIF_BCD6));
-    TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len(MBUS_DIF_VARIABLE));
+    TEST_ASSERT_EQUAL_UINT8(1, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_INT8));
+    TEST_ASSERT_EQUAL_UINT8(4, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_INT32));
+    TEST_ASSERT_EQUAL_UINT8(4, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_REAL32));
+    TEST_ASSERT_EQUAL_UINT8(6, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_INT48));
+    TEST_ASSERT_EQUAL_UINT8(8, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_INT64));
+    TEST_ASSERT_EQUAL_UINT8(3, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_BCD6));
+    TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_VARIABLE));
 }
 
 // Walk a record stream: INT32, INT16, an INT32 with a DIFE, and an LVAR ASCII string.
@@ -127,23 +127,23 @@ void test_record_walk()
     MbusRecord r;
 
     TEST_ASSERT_TRUE(mbus_record_next(body, sizeof(body), &pos, &r));
-    TEST_ASSERT_EQUAL_HEX8(MBUS_DIF_INT32, r.coding);
+    TEST_ASSERT_EQUAL_HEX8(MbusDifCoding::MBUS_DIF_INT32, r.coding);
     TEST_ASSERT_EQUAL_HEX8(0x13, r.vif);
     TEST_ASSERT_EQUAL_UINT8(4, r.data_len);
     TEST_ASSERT_EQUAL_HEX8(0x2A, r.data[0]);
 
     TEST_ASSERT_TRUE(mbus_record_next(body, sizeof(body), &pos, &r));
-    TEST_ASSERT_EQUAL_HEX8(MBUS_DIF_INT16, r.coding);
+    TEST_ASSERT_EQUAL_HEX8(MbusDifCoding::MBUS_DIF_INT16, r.coding);
     TEST_ASSERT_EQUAL_HEX8(0x5A, r.vif);
     TEST_ASSERT_EQUAL_UINT8(2, r.data_len);
 
     TEST_ASSERT_TRUE(mbus_record_next(body, sizeof(body), &pos, &r));
-    TEST_ASSERT_EQUAL_HEX8(MBUS_DIF_INT32, r.coding); // DIFE skipped
+    TEST_ASSERT_EQUAL_HEX8(MbusDifCoding::MBUS_DIF_INT32, r.coding); // DIFE skipped
     TEST_ASSERT_EQUAL_HEX8(0x13, r.vif);
     TEST_ASSERT_EQUAL_UINT8(4, r.data_len);
 
     TEST_ASSERT_TRUE(mbus_record_next(body, sizeof(body), &pos, &r));
-    TEST_ASSERT_EQUAL_HEX8(MBUS_DIF_VARIABLE, r.coding);
+    TEST_ASSERT_EQUAL_HEX8(MbusDifCoding::MBUS_DIF_VARIABLE, r.coding);
     TEST_ASSERT_EQUAL_UINT8(3, r.data_len);
     TEST_ASSERT_EQUAL_MEMORY("ABC", r.data, 3);
 
@@ -196,14 +196,14 @@ void test_build_and_parse_guards()
 
 void test_dif_data_len_remaining()
 {
-    TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len(MBUS_DIF_NONE));
-    TEST_ASSERT_EQUAL_UINT8(3, mbus_dif_data_len(MBUS_DIF_INT24));
-    TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len(MBUS_DIF_READOUT));
-    TEST_ASSERT_EQUAL_UINT8(1, mbus_dif_data_len(MBUS_DIF_BCD2));
-    TEST_ASSERT_EQUAL_UINT8(2, mbus_dif_data_len(MBUS_DIF_BCD4));
-    TEST_ASSERT_EQUAL_UINT8(4, mbus_dif_data_len(MBUS_DIF_BCD8));
-    TEST_ASSERT_EQUAL_UINT8(6, mbus_dif_data_len(MBUS_DIF_BCD12));
-    TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len(MBUS_DIF_SPECIAL));
+    TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_NONE));
+    TEST_ASSERT_EQUAL_UINT8(3, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_INT24));
+    TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_READOUT));
+    TEST_ASSERT_EQUAL_UINT8(1, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_BCD2));
+    TEST_ASSERT_EQUAL_UINT8(2, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_BCD4));
+    TEST_ASSERT_EQUAL_UINT8(4, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_BCD8));
+    TEST_ASSERT_EQUAL_UINT8(6, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_BCD12));
+    TEST_ASSERT_EQUAL_UINT8(0, mbus_dif_data_len((uint8_t)MbusDifCoding::MBUS_DIF_SPECIAL));
 }
 
 void test_record_edges()
@@ -218,7 +218,7 @@ void test_record_edges()
     const uint8_t special[] = {0x0F, 0xAB, 0xCD}; // SPECIAL coding: no VIF, no data
     pos = 0;
     TEST_ASSERT_TRUE(mbus_record_next(special, sizeof(special), &pos, &r));
-    TEST_ASSERT_EQUAL_HEX8(MBUS_DIF_SPECIAL, r.coding);
+    TEST_ASSERT_EQUAL_HEX8(MbusDifCoding::MBUS_DIF_SPECIAL, r.coding);
     TEST_ASSERT_EQUAL_size_t(1, pos); // consumed only the DIF
 
     const uint8_t no_vif[] = {0x04}; // INT32 DIF with no VIF
@@ -241,7 +241,8 @@ void test_record_edges()
 // A VIF with the extension bit set is followed by a present VIFE octet (the chain read).
 void test_record_vife_chain()
 {
-    const uint8_t body[] = {MBUS_DIF_INT8, 0x93, 0x13, 0x42}; // DIF INT8, VIF 0x93 (ext), VIFE 0x13, data
+    const uint8_t body[] = {(uint8_t)MbusDifCoding::MBUS_DIF_INT8, 0x93, 0x13,
+                            0x42}; // DIF INT8, VIF 0x93 (ext), VIFE 0x13, data
     size_t pos = 0;
     MbusRecord r;
     TEST_ASSERT_TRUE(mbus_record_next(body, sizeof(body), &pos, &r));
