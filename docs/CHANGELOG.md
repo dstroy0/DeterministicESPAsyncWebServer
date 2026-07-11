@@ -2,6 +2,23 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`f1bf9e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1bf9e8f5374f357ab6e2fded1d2121ba1be0490))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ac6b2e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac6b2e177c96b9dc82c04f8dd865d23ce475115d))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f0439d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0439d8a6051fe0d34a64d0ccfb84a5f040dfc6d))
+- update ESP32 build footprints [skip ci] ([`0ab4015`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ab40153f32dc47c924c0f6f42c3a28ae13157b9))
+
+### Refactor
+
+- scoped type-tag enums (enum class 7/N) ([`ab2cf59`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab2cf595afc8438671af3cc7be7e4cf14a46d34e))
+- scoped enums (enum class 6/N) ([`d851200`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d851200f8f4c439cb252868bbf4f2de5cc8a1328))
+
 ## [5.95.1] - 2026-07-11
 
 <details>
