@@ -400,6 +400,25 @@ device from the rig `/bench` `smtp_run` op.
   grow the client's footprint (validated by the `smtp_malicious_server` attack). HW-verified
   device-as-SMTP-client against a real `aiosmtpd` server (6/6 interop, the message confirmed server-side).
 
+### syslog client formatter (DETWS_ENABLE_SYSLOG)
+
+The RFC 5424 syslog client formats one `<PRI>1 - HOSTNAME APP-NAME - - - MSG` line per log call and ships
+it as a UDP datagram (`det_udp_sendto`). `syslog_format` is the pure per-line hot op (no socket, no heap).
+Host from [`perf/bench_syslog.cpp`](../perf/bench_syslog.cpp); device from the rig `/bench` `syslog_format`
+op.
+
+| Operation                  | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| -------------------------- | ---------: | --------: | --------------: | -------------: |
+| `syslog_format` (RFC 5424) |      159.1 |     452.5 |            3686 |          15358 |
+
+- At **~15 us** on the device the format is dominated by `snprintf` composing the header + four field
+  substitutions (newlib `snprintf` is not cheap on Xtensa - it is ~10x the leaner hand-rolled codecs). Still
+  trivial for a log line, and the datagram is fire-and-forget over UDP. The line is bounded to
+  `DETWS_SYSLOG_MSG_MAX` (256 B): an oversized message makes `syslog_format` return 0 and `syslog_log`
+  refuse (no overflow, no giant datagram - validated by the `syslog_injection` attack, which held the bound
+  at an 80 B datagram for a 2 KB input). HW-verified device-as-syslog-client against a UDP collector (7/7
+  interop; PRI/VERSION/HOSTNAME/APP-NAME/MSG validated as RFC 5424).
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON

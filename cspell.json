@@ -624,6 +624,7 @@
     "netif",
     "newkeys",
     "NEWKEYS",
+    "newlib",
     "newpcb",
     "nghttp",
     "NHDF",

@@ -8,6 +8,45 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Rig route table overflowed MAX_ROUTES (16) - silently dropped /ws, /events, /secure, /syslog/probe
+
+- **Status:** FIXED (rig-firmware config, found on hardware 2026-07-11 while adding the syslog `/syslog/probe`
+  route - it 404'd even though the new firmware was live, since its `/bench` field was present).
+- **Root cause:** `DetWebServer` has a fixed flat route table of `MAX_ROUTES` (default **16**); `server.on()`
+  / `on_ws()` / `on_sse()` / `dav()` each consume one slot and **return false (silently) when the table is
+  full** - the app does not check the return. The rig had grown to **20 registrations** (dav + 17 handlers +
+  ws + sse), so the four registered after slot 16 (`/syslog/probe`, `/secure`, `/ws`, `/events`) never took
+  effect. The overflow first occurred at the FTP tick (when the count crossed 16), silently disabling the
+  rig's WebSocket + SSE + auth surface from then on (those dims were covered in earlier ticks, so no false
+  coverage was claimed, but the rig had regressed).
+- **Fix:** rig `platformio.ini` `-DMAX_ROUTES=28` (test-firmware config; not a library change). Verified on
+  the rig: `/syslog/probe` now registers (7/7 interop), and `/secure` -> 401 + `/events` -> 200 are back.
+- **Lesson:** this is not a library defect (the fixed table + false-on-full is the documented O(MAX_ROUTES)
+  design), but `server.on()`'s return value is worth checking in apps that register many routes. Whenever a
+  new rig route 404s while a fresh `/bench` field proves the new firmware is live, suspect the route table is
+  full before anything else. Watch the count as more device-as-client probes accumulate.
+
+---
+
+## syslog MSG CR/LF passthrough (log-forging) - AUDITED, INFO-level (caller's responsibility, spec-permitted)
+
+- **Status:** NOT A LIBRARY BUG (audited 2026-07-11 via the new `syslog_injection` attack; recorded INFO).
+- **Observed:** `syslog_format()` copies the caller's MSG verbatim into the RFC 5424 line (`... - - - %s`),
+  so a message containing CR/LF/control bytes is emitted as-is. At a collector that splits a stream/file on
+  newlines this enables log forging (CWE-117): the attack sent `legit\r\n<34>1 - evil ... FORGED-RECORD` and
+  the collector received it verbatim in one datagram.
+- **Why it is INFO, not a finding:** over UDP (RFC 5426) **one datagram = one syslog message**, and RFC 5424
+  §6.4 permits any characters in MSG, so a _compliant_ receiver treats the whole datagram as one MSG and does
+  not split on `\n` - the passthrough does not break a compliant peer or violate the spec. CWE-117 output
+  neutralization is the responsibility of the code that logs untrusted data (the caller), which is why the
+  attack records it as INFO. The device stayed up and the fixed `DETWS_SYSLOG_MSG_MAX` (256 B) bound held
+  (a 2 KB message was refused: `syslog_format` -> 0, no datagram, largest observed datagram 80 B).
+- **Optional hardening (deferred, not done):** `syslog_format` _could_ replace control bytes in MSG with a
+  safe char for defense-in-depth (many production syslog clients do). Left as caller responsibility per the
+  library's "the app owns the log content" model; revisit if a user wants built-in sanitization.
+
+---
+
 ## Outbound-client-path first-touch heap drop (FTP + SMTP) - INVESTIGATED, NOT A BUG (one-time warmup)
 
 - **Status:** NOT A BUG (investigated on hardware 2026-07-11 while adding the `ftp_malicious_server` and
