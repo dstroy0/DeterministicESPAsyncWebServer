@@ -22,3 +22,6 @@ coverage_reports/
 .pio_cov/
 .pio_cov_wsl/
 docs/favicons/dist/
+
+# pentest rig run artifact (generated)
+rig_report.json

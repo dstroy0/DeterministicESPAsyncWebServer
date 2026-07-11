@@ -43,6 +43,7 @@ from peers import (
     statsd_peer,
     stomp_peer,
     syslog_peer,
+    tls_peer,
     webdav_peer,
     ws_peer,
 )
@@ -69,6 +70,7 @@ _MODULES = [
     stomp_peer,
     statsd_peer,
     jwt_peer,
+    tls_peer,
 ]
 
 

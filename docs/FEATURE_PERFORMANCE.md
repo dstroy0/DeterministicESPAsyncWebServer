@@ -537,6 +537,28 @@ signing input, base64url-encodes the MAC, and constant-time compares it. Host fr
   extra dots, oversized) with a genuinely valid token as the positive control. HW-verified against the real
   `PyJWT` library (6/6 interop: valid accepted, wrong-secret rejected, expired rejected by the `exp` check).
 
+### TLS handshake (DETWS_ENABLE_TLS)
+
+Unlike the codecs above, TLS is not a pure host op - it is an mbedTLS handshake terminated on the device from
+its 48 KB static BSS arena (zero heap, no `malloc`), so the meaningful number is the **device-side wall time**
+of a full handshake, measured end to end from a real client (Python `ssl` on the RPi) against the slim HTTPS
+rig on an ESP32-S3. Cipher suite `ECDHE-ECDSA-AES256-GCM-SHA384` (P-256), self-signed ECDSA leaf.
+
+| Operation                                | ESP32-S3 median | min    | max     | Rate (full req) |
+| ---------------------------------------- | --------------: | ------ | ------- | --------------: |
+| TLS 1.2 handshake (TCP+ClientHello..Fin) |          913 ms | 904 ms | 1073 ms |      ~1.0 req/s |
+
+- The handshake is **~0.9 s** and dominates any HTTPS request: at one full handshake per request the device
+  serves ~1 req/s, so the practical guidance is to **keep connections alive** and/or enable
+  `DETWS_ENABLE_TLS_RESUMPTION` (RFC 5077 tickets) so a returning client skips the ECDHE+ECDSA cost. The
+  cost is the asymmetric crypto (ECDHE key-gen + the ECDSA signature over the transcript) in software mbedTLS;
+  bulk AES-256-GCM record encryption after the handshake is comparatively free. Practicality: fine for an
+  admin/config endpoint or an occasional secure POST; not for a high-rate polled API without keep-alive.
+- HW-verified: `curl`/browsers/OpenSSL/Python (all 1.3-leading) negotiate down to TLS 1.2 and get `200`;
+  `tls_server_abuse` held every invariant (downgrade + weak-cipher refused, 7 malformed handshakes survived).
+  Bringing this up found and fixed two hardware-only bugs (a tcpip_thread self-deadlock and an RX ring smaller
+  than a modern ClientHello) - see [BUGS.md](BUGS.md).
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
