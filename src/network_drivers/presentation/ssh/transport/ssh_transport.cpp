@@ -216,21 +216,28 @@ static bool namelist_contains(const uint8_t *list, uint32_t len, const char *wan
 
 // One negotiation candidate: an algorithm name, the tag we store if it is chosen, and
 // whether we can actually perform it (e.g. we hold the matching host key).
-struct AlgCand
+// A negotiation candidate: the wire name, the enum value it maps to, and whether we can perform it.
+// Templated on the algorithm enum so each family (SshKexAlg / SshHostkeyAlg / cipher / mac / SshCompAlg)
+// keeps its own type end to end - no type-erased int tag to cast into and back out of.
+template <typename E> struct AlgCand
 {
     const char *name;
-    int tag;
+    E tag;
     bool avail;
 };
 
-// Steer-to-preferred negotiation: return the tag of the FIRST candidate (in OUR
-// preference order) that the client also offers and that we can perform, or -1.
-static int negotiate_alg(const uint8_t *client_list, uint32_t nlen, const AlgCand *cands, int n)
+// Steer-to-preferred negotiation: pick the FIRST candidate (in OUR preference order) that the client
+// also offers and that we can perform; write it to @p out and return true, or return false if none match.
+template <typename E>
+static bool negotiate_alg(const uint8_t *client_list, uint32_t nlen, const AlgCand<E> *cands, int n, E *out)
 {
     for (int i = 0; i < n; i++)
         if (cands[i].avail && namelist_contains(client_list, nlen, cands[i].name))
-            return cands[i].tag;
-    return -1;
+        {
+            *out = cands[i].tag;
+            return true;
+        }
+    return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -243,7 +250,7 @@ void ssh_transport_init(uint8_t i)
         return;
     SshSession *s = &ssh_sess[i];
     memset(s, 0, sizeof(*s));
-    s->phase = SSH_PHASE_BANNER;
+    s->phase = SshPhase::SSH_PHASE_BANNER;
 }
 
 // ---------------------------------------------------------------------------
@@ -289,7 +296,7 @@ int ssh_transport_recv_banner(uint8_t i, const uint8_t *data, size_t len, size_t
                 s->v_c[n] = '\0';
                 s->v_c_len = n;
                 s->banner_len = 0;
-                s->phase = SSH_PHASE_KEXINIT;
+                s->phase = SshPhase::SSH_PHASE_KEXINIT;
                 *consumed = k;
                 return 1;
             }
@@ -396,76 +403,71 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
     // RFC 8308: if the client offers ext-info-c we will send SSH_MSG_EXT_INFO.
     s->ext_info_c = namelist_contains(list, nlen, EXT_INFO_C);
     {
-        AlgCand kc[3];
+        AlgCand<SshKexAlg> kc[3];
         if (s_sshtr.prefer_rsa)
         {
-            kc[0] = {KEX_DH, SSH_KEX_DH_GROUP14, true};
-            kc[1] = {KEX_C25519, SSH_KEX_CURVE25519, true};
-            kc[2] = {KEX_C25519_LIBSSH, SSH_KEX_CURVE25519, true};
+            kc[0] = {KEX_DH, SshKexAlg::SSH_KEX_DH_GROUP14, true};
+            kc[1] = {KEX_C25519, SshKexAlg::SSH_KEX_CURVE25519, true};
+            kc[2] = {KEX_C25519_LIBSSH, SshKexAlg::SSH_KEX_CURVE25519, true};
         }
         else
         {
-            kc[0] = {KEX_C25519, SSH_KEX_CURVE25519, true};
-            kc[1] = {KEX_C25519_LIBSSH, SSH_KEX_CURVE25519, true};
-            kc[2] = {KEX_DH, SSH_KEX_DH_GROUP14, true};
+            kc[0] = {KEX_C25519, SshKexAlg::SSH_KEX_CURVE25519, true};
+            kc[1] = {KEX_C25519_LIBSSH, SshKexAlg::SSH_KEX_CURVE25519, true};
+            kc[2] = {KEX_DH, SshKexAlg::SSH_KEX_DH_GROUP14, true};
         }
-        int k = negotiate_alg(list, nlen, kc, 3);
-        if (k < 0)
+        if (!negotiate_alg(list, nlen, kc, 3, &s->kex_alg))
             return -1; // no mutual KEX
-        s->kex_alg = (uint8_t)k;
     }
     // server_host_key_algorithms: negotiate, restricted to keys we actually hold.
     if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
     {
-        AlgCand hc[2];
+        AlgCand<SshHostkeyAlg> hc[2];
         if (s_sshtr.prefer_rsa)
         {
-            hc[0] = {HOSTKEY_RSA, SSH_HOSTKEY_RSA, hostkey_rsa_available()};
-            hc[1] = {HOSTKEY_ED, SSH_HOSTKEY_ED25519, ssh_hostkey_ed25519_available()};
+            hc[0] = {HOSTKEY_RSA, SshHostkeyAlg::SSH_HOSTKEY_RSA, hostkey_rsa_available()};
+            hc[1] = {HOSTKEY_ED, SshHostkeyAlg::SSH_HOSTKEY_ED25519, ssh_hostkey_ed25519_available()};
         }
         else
         {
-            hc[0] = {HOSTKEY_ED, SSH_HOSTKEY_ED25519, ssh_hostkey_ed25519_available()};
-            hc[1] = {HOSTKEY_RSA, SSH_HOSTKEY_RSA, hostkey_rsa_available()};
+            hc[0] = {HOSTKEY_ED, SshHostkeyAlg::SSH_HOSTKEY_ED25519, ssh_hostkey_ed25519_available()};
+            hc[1] = {HOSTKEY_RSA, SshHostkeyAlg::SSH_HOSTKEY_RSA, hostkey_rsa_available()};
         }
-        int h = negotiate_alg(list, nlen, hc, 2);
-        if (h < 0)
+        if (!negotiate_alg(list, nlen, hc, 2, &s->hostkey_alg))
             return -1; // no mutual host-key algorithm
-        s->hostkey_alg = (uint8_t)h;
     }
     // encryption c2s / s2c: negotiate chacha20-poly1305@openssh.com (preferred) or aes256-ctr.
-    const AlgCand cc[2] = {{"chacha20-poly1305@openssh.com", SSH_CIPHER_CHACHA20POLY1305, true},
-                           {ALG_CIPHER, SSH_CIPHER_AES256CTR, true}};
+    const AlgCand<decltype(SSH_CIPHER_AES256CTR)> cc[2] = {
+        {"chacha20-poly1305@openssh.com", SSH_CIPHER_CHACHA20POLY1305, true}, {ALG_CIPHER, SSH_CIPHER_AES256CTR, true}};
     if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
-    int c2s = negotiate_alg(list, nlen, cc, 2);
-    if (c2s < 0)
+    decltype(SSH_CIPHER_AES256CTR) c2s, s2c;
+    if (!negotiate_alg(list, nlen, cc, 2, &c2s))
         return -1;
     if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
-    int s2c = negotiate_alg(list, nlen, cc, 2);
-    if (s2c < 0 || s2c != c2s) // require the same cipher both directions
+    if (!negotiate_alg(list, nlen, cc, 2, &s2c) || s2c != c2s) // require the same cipher both directions
         return -1;
-    s->cipher_alg = (uint8_t)c2s;
+    s->cipher_alg = c2s;
     // mac c2s / s2c: negotiated only for aes256-ctr (the chacha AEAD carries its own MAC). Prefer
     // the encrypt-then-MAC variants (OpenSSH's default), require the same MAC both directions.
-    const AlgCand mc[4] = {{"hmac-sha2-256-etm@openssh.com", SSH_MAC_HMAC_SHA256_ETM, true},
-                           {"hmac-sha2-512-etm@openssh.com", SSH_MAC_HMAC_SHA512_ETM, true},
-                           {ALG_MAC, SSH_MAC_HMAC_SHA256, true},
-                           {"hmac-sha2-512", SSH_MAC_HMAC_SHA512, true}};
+    const AlgCand<decltype(SSH_MAC_HMAC_SHA256)> mc[4] = {
+        {"hmac-sha2-256-etm@openssh.com", SSH_MAC_HMAC_SHA256_ETM, true},
+        {"hmac-sha2-512-etm@openssh.com", SSH_MAC_HMAC_SHA512_ETM, true},
+        {ALG_MAC, SSH_MAC_HMAC_SHA256, true},
+        {"hmac-sha2-512", SSH_MAC_HMAC_SHA512, true}};
     bool need_mac = (s->cipher_alg == SSH_CIPHER_AES256CTR);
+    decltype(SSH_MAC_HMAC_SHA256) m_c2s = SSH_MAC_HMAC_SHA256, m_s2c = SSH_MAC_HMAC_SHA256;
     if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
-    int m_c2s = need_mac ? negotiate_alg(list, nlen, mc, 4) : SSH_MAC_HMAC_SHA256;
-    if (need_mac && m_c2s < 0)
+    if (need_mac && !negotiate_alg(list, nlen, mc, 4, &m_c2s))
         return -1;
     if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
-    int m_s2c = need_mac ? negotiate_alg(list, nlen, mc, 4) : SSH_MAC_HMAC_SHA256;
-    if (need_mac && (m_s2c < 0 || m_s2c != m_c2s))
+    if (need_mac && (!negotiate_alg(list, nlen, mc, 4, &m_s2c) || m_s2c != m_c2s))
         return -1;
-    s->mac_alg = (uint8_t)m_c2s;
+    s->mac_alg = m_c2s;
     // compression c2s: we only decompress "none" (client->server compression is not implemented).
     if (!read_namelist(payload, len, &off, &list, &nlen) || !namelist_contains(list, nlen, ALG_COMP))
         return -1;
@@ -474,20 +476,20 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
         return -1;
 #if DETWS_ENABLE_SSH_ZLIB
     {
-        const AlgCand compc[3] = {{"zlib@openssh.com", SSH_COMP_ZLIB_DELAYED, true},
-                                  {"zlib", SSH_COMP_ZLIB, true},
-                                  {"none", SSH_COMP_NONE, true}};
-        int comp = negotiate_alg(list, nlen, compc, 3);
-        if (comp < 0)
+        const AlgCand<SshCompAlg> compc[3] = {{"zlib@openssh.com", SshCompAlg::SSH_COMP_ZLIB_DELAYED, true},
+                                              {"zlib", SshCompAlg::SSH_COMP_ZLIB, true},
+                                              {"none", SshCompAlg::SSH_COMP_NONE, true}};
+        SshCompAlg comp;
+        if (!negotiate_alg(list, nlen, compc, 3, &comp))
             return -1;
-        ssh_comp_set_s2c(i, (uint8_t)comp);
+        ssh_comp_set_s2c(i, comp);
     }
 #else
     if (!namelist_contains(list, nlen, ALG_COMP))
         return -1;
 #endif
 
-    s->phase = SSH_PHASE_DH_INIT;
+    s->phase = SshPhase::SSH_PHASE_DH_INIT;
     return 0;
 }
 
@@ -659,7 +661,7 @@ static int parse_ecdh_init(const uint8_t *payload, size_t len, uint8_t qc[32])
 //   ssh-ed25519  → string("ssh-ed25519") || string(pub32)   (RFC 8709 §4)
 static int encode_hostkey(uint8_t i, uint8_t *ks, size_t *ks_len, size_t cap)
 {
-    if (ssh_sess[i].hostkey_alg == SSH_HOSTKEY_ED25519)
+    if (ssh_sess[i].hostkey_alg == SshHostkeyAlg::SSH_HOSTKEY_ED25519)
     {
         Writer w = {ks, cap, 0, true};
         w_string(w, (const uint8_t *)HOSTKEY_ED, strlen(HOSTKEY_ED));
@@ -677,7 +679,7 @@ static int encode_hostkey(uint8_t i, uint8_t *ks, size_t *ks_len, size_t cap)
 static int sign_hash(uint8_t i, const uint8_t H[SSH_SHA256_DIGEST_LEN], uint8_t *sig, size_t *sig_len, size_t sig_cap,
                      const char **sig_name)
 {
-    if (ssh_sess[i].hostkey_alg == SSH_HOSTKEY_ED25519)
+    if (ssh_sess[i].hostkey_alg == SshHostkeyAlg::SSH_HOSTKEY_ED25519)
     {
         if (sig_cap < 64) // GCOVR_EXCL_LINE  the caller's sig buffer is SSH_RSA_SIG_BYTES (256) >= 64
             return -1;    // GCOVR_EXCL_LINE
@@ -703,7 +705,7 @@ static int build_kex_reply(uint8_t i, const uint8_t *ks, size_t ks_len, const ui
     Writer w = {out, cap, 0, true};
     w_u8(w, SSH_MSG_KEXDH_REPLY);
     w_string(w, ks, ks_len); // K_S
-    if (ssh_sess[i].kex_alg == SSH_KEX_CURVE25519)
+    if (ssh_sess[i].kex_alg == SshKexAlg::SSH_KEX_CURVE25519)
         w_string(w, spub, spub_len); // Q_S (raw string)
     else
         w_mpint(w, spub, spub_len); // f (mpint)
@@ -721,7 +723,7 @@ int ssh_kex_generate(uint8_t i)
 {
     if (i >= MAX_SSH_CONNS)
         return -1;
-    if (ssh_sess[i].kex_alg == SSH_KEX_CURVE25519)
+    if (ssh_sess[i].kex_alg == SshKexAlg::SSH_KEX_CURVE25519)
     {
         // X25519 ephemeral: random 32-byte scalar, public = X25519(scalar, base point).
         ssh_rng_fill(ssh_sess[i].ecdh_sk, 32);
@@ -745,7 +747,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     size_t cpub_len = 256, spub_len = 256;
     bool pub_is_string = false;
 
-    if (s->kex_alg == SSH_KEX_CURVE25519)
+    if (s->kex_alg == SshKexAlg::SSH_KEX_CURVE25519)
     {
         // curve25519-sha256 (RFC 8731): K = X25519(sk, Q_C); Q_C/Q_S hashed as strings.
         uint8_t qc[32], kk[32];
@@ -823,7 +825,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     ssh_dh_derive_keys_sid(i, k_be, H, s->session_id, s->cipher_alg, s->mac_alg);
     ssh_wipe(k_be, sizeof(k_be));
 
-    s->phase = SSH_PHASE_NEWKEYS;
+    s->phase = SshPhase::SSH_PHASE_NEWKEYS;
     return 0;
 }
 
@@ -849,7 +851,7 @@ void ssh_newkeys_complete(uint8_t i)
     ssh_pkt[i].kex_active = false;
     // On the first KEX advance to the service phase; on a re-key the connection
     // is already authenticated, so resume the open (channel) phase.
-    ssh_sess[i].phase = ssh_sess[i].authed ? SSH_PHASE_OPEN : SSH_PHASE_SERVICE;
+    ssh_sess[i].phase = ssh_sess[i].authed ? SshPhase::SSH_PHASE_OPEN : SshPhase::SSH_PHASE_SERVICE;
     // Reset the re-key timer: the volume/time budget is measured from this completed KEX.
     ssh_sess[i].last_kex_ms = detws_millis();
 }
@@ -882,6 +884,6 @@ int ssh_transport_begin_rekey(uint8_t i, uint8_t *out, size_t *out_len, size_t c
     // negotiated method once the peer's KEXINIT arrives; see the KEXINIT dispatch).
     if (ssh_kex_generate(i) != 0) // GCOVR_EXCL_LINE  i < MAX_SSH_CONNS is checked above and ssh_kex_generate only
         return -1;                // GCOVR_EXCL_LINE  fails for i >= MAX_SSH_CONNS
-    ssh_sess[i].phase = SSH_PHASE_KEXINIT;
+    ssh_sess[i].phase = SshPhase::SSH_PHASE_KEXINIT;
     return 0;
 }

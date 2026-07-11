@@ -262,7 +262,7 @@ void test_direct_tcpip_accept_confirms()
     TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_OPEN_CONFIRM, out[0]);
     uint32_t id = rd_u32(out + 5);
     TEST_ASSERT_TRUE(ssh_chan[0][id].open);
-    TEST_ASSERT_EQUAL_UINT8(SSH_CHAN_DIRECT_TCPIP, ssh_chan[0][id].type);
+    TEST_ASSERT_EQUAL_UINT8(SshChanType::SSH_CHAN_DIRECT_TCPIP, ssh_chan[0][id].type);
     TEST_ASSERT_EQUAL_INT(1, fwd_open_count);
     TEST_ASSERT_EQUAL_UINT32(id, fwd_open_channel);
     TEST_ASSERT_EQUAL_STRING("example.com", fwd_host);

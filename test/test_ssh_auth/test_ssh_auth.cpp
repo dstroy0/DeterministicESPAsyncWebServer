@@ -131,7 +131,7 @@ void test_handle_request_success()
     TEST_ASSERT_EQUAL_INT(0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
     TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_SUCCESS, out[0]);
     TEST_ASSERT_TRUE(ssh_sess[0].authed);
-    TEST_ASSERT_EQUAL(SSH_PHASE_OPEN, ssh_sess[0].phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_OPEN, ssh_sess[0].phase);
 }
 
 void test_handle_request_wrong_password_fails()
@@ -296,7 +296,7 @@ void test_pubkey_valid_signature_succeeds()
     TEST_ASSERT_EQUAL_INT(0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
     TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_SUCCESS, out[0]);
     TEST_ASSERT_TRUE(ssh_sess[0].authed);
-    TEST_ASSERT_EQUAL(SSH_PHASE_OPEN, ssh_sess[0].phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_OPEN, ssh_sess[0].phase);
 }
 
 void test_pubkey_tampered_signature_fails()

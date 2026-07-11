@@ -195,7 +195,7 @@ void ssh_conn_poll(uint8_t conn_slot)
     // long-lived / high-throughput session re-keys in place instead of being dropped at the
     // sequence-number wrap. The existing KEXINIT dispatch carries it to completion.
     SshSession *s = &ssh_sess[j];
-    if (s->phase == SSH_PHASE_OPEN && !ssh_pkt[j].kex_active)
+    if (s->phase == SshPhase::SSH_PHASE_OPEN && !ssh_pkt[j].kex_active)
     {
         uint32_t elapsed = detws_millis() - s->last_kex_ms;
         if (ssh_rekey_due(ssh_pkt[j].seq_no_send, ssh_pkt[j].seq_no_recv, elapsed, SSH_REKEY_PACKET_THRESHOLD,
@@ -278,7 +278,7 @@ void ssh_conn_rx(uint8_t conn_slot)
         return;
 
     size_t off = 0;
-    if (ssh_sess[j].phase == SSH_PHASE_BANNER)
+    if (ssh_sess[j].phase == SshPhase::SSH_PHASE_BANNER)
     {
         size_t consumed = 0;
         int rc = ssh_transport_recv_banner(j, buf, n, &consumed);
@@ -290,7 +290,7 @@ void ssh_conn_rx(uint8_t conn_slot)
         if (rc == 0)
             return; // need more banner bytes
         off = consumed;
-        ssh_sess[j].phase = SSH_PHASE_KEXINIT;
+        ssh_sess[j].phase = SshPhase::SSH_PHASE_KEXINIT;
     }
 
     if (off < n)

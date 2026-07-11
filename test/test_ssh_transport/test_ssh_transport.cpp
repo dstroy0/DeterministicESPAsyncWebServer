@@ -114,7 +114,7 @@ void test_recv_banner_complete()
     TEST_ASSERT_EQUAL_INT(1, rc);
     TEST_ASSERT_EQUAL_size_t(strlen(banner), consumed);
     TEST_ASSERT_EQUAL_STRING("SSH-2.0-OpenSSH_9.6", ssh_sess[0].v_c);
-    TEST_ASSERT_EQUAL(SSH_PHASE_KEXINIT, ssh_sess[0].phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_KEXINIT, ssh_sess[0].phase);
 }
 
 void test_recv_banner_bare_lf()
@@ -158,12 +158,12 @@ void test_kexinit_build_starts_with_msg_and_stores_is()
 
 void test_kexinit_parse_accepts_supported()
 {
-    ssh_sess[0].phase = SSH_PHASE_KEXINIT;
+    ssh_sess[0].phase = SshPhase::SSH_PHASE_KEXINIT;
     uint8_t buf[SSH_KEXINIT_MAX];
     size_t n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "rsa-sha2-256", "aes256-ctr", "hmac-sha2-256",
                                     "none");
     TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
-    TEST_ASSERT_EQUAL(SSH_PHASE_DH_INIT, ssh_sess[0].phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_DH_INIT, ssh_sess[0].phase);
     TEST_ASSERT_EQUAL_size_t(n, ssh_sess[0].i_c_len);
 }
 
@@ -204,8 +204,8 @@ void test_kexinit_parse_steers_to_curve_ed25519()
     size_t n = build_client_kexinit(buf, "curve25519-sha256,diffie-hellman-group14-sha256", "ssh-ed25519,rsa-sha2-256",
                                     "aes256-ctr", "hmac-sha2-256", "none");
     TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
-    TEST_ASSERT_EQUAL(SSH_KEX_CURVE25519, ssh_sess[0].kex_alg);
-    TEST_ASSERT_EQUAL(SSH_HOSTKEY_ED25519, ssh_sess[0].hostkey_alg);
+    TEST_ASSERT_EQUAL(SshKexAlg::SSH_KEX_CURVE25519, ssh_sess[0].kex_alg);
+    TEST_ASSERT_EQUAL(SshHostkeyAlg::SSH_HOSTKEY_ED25519, ssh_sess[0].hostkey_alg);
     ssh_kex_set_prefer_rsa(true); // restore default for later tests
 }
 
@@ -490,7 +490,7 @@ void test_kexdh_handle_produces_reply_and_installs_keys()
 
     TEST_ASSERT_EQUAL(SSH_MSG_KEXDH_REPLY, reply[0]);
     TEST_ASSERT_TRUE(ssh_sess[0].have_session_id);
-    TEST_ASSERT_EQUAL(SSH_PHASE_NEWKEYS, ssh_sess[0].phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_NEWKEYS, ssh_sess[0].phase);
     TEST_ASSERT_TRUE(ssh_keys[0].active);
 
     bool alg = false;
@@ -505,7 +505,7 @@ void test_kexdh_handle_produces_reply_and_installs_keys()
     // Receiving the peer's NEWKEYS activates the inbound direction and advances to the service phase.
     ssh_newkeys_complete(0);
     TEST_ASSERT_TRUE(ssh_pkt[0].enc_in);
-    TEST_ASSERT_EQUAL(SSH_PHASE_SERVICE, ssh_sess[0].phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_SERVICE, ssh_sess[0].phase);
 }
 
 void test_kexdh_handle_rejects_invalid_e()
@@ -568,8 +568,8 @@ void test_kexdh_handle_curve25519_ed25519_end_to_end()
         ssh_transport_init(0);
         ssh_hostkey_ed25519_set(seed);
         SshSession *s = &ssh_sess[0];
-        s->kex_alg = SSH_KEX_CURVE25519;
-        s->hostkey_alg = SSH_HOSTKEY_ED25519;
+        s->kex_alg = SshKexAlg::SSH_KEX_CURVE25519;
+        s->hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_ED25519;
 
         const char *vc = "SSH-2.0-CurveClient";
         strcpy(s->v_c, vc);
@@ -597,7 +597,7 @@ void test_kexdh_handle_curve25519_ed25519_end_to_end()
         TEST_ASSERT_EQUAL_INT(0, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)));
         TEST_ASSERT_EQUAL(SSH_MSG_KEXDH_REPLY, reply[0]);
         TEST_ASSERT_TRUE(s->have_session_id);
-        TEST_ASSERT_EQUAL(SSH_PHASE_NEWKEYS, s->phase);
+        TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_NEWKEYS, s->phase);
         TEST_ASSERT_TRUE(ssh_keys[0].active);
 
         // Parse reply: string(K_S) || string(Q_S) || string(sigblob).
@@ -658,8 +658,8 @@ void test_kexdh_handle_curve25519_rejects_low_order()
     static const uint8_t zero_seed[32] = {0};
     ssh_transport_init(0);
     ssh_hostkey_ed25519_set(zero_seed);
-    ssh_sess[0].kex_alg = SSH_KEX_CURVE25519;
-    ssh_sess[0].hostkey_alg = SSH_HOSTKEY_ED25519;
+    ssh_sess[0].kex_alg = SshKexAlg::SSH_KEX_CURVE25519;
+    ssh_sess[0].hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_ED25519;
     ssh_sess[0].v_c_len = ssh_sess[0].i_c_len = ssh_sess[0].i_s_len = 0;
     TEST_ASSERT_EQUAL_INT(0, ssh_kex_generate(0));
 
@@ -738,13 +738,13 @@ void test_begin_rekey_preserves_session_and_auth()
     size_t n = 0;
     TEST_ASSERT_EQUAL_INT(0, ssh_transport_begin_rekey(0, out, &n, sizeof(out)));
     TEST_ASSERT_EQUAL(SSH_MSG_KEXINIT, out[0]);
-    TEST_ASSERT_EQUAL(SSH_PHASE_KEXINIT, ssh_sess[0].phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_KEXINIT, ssh_sess[0].phase);
     TEST_ASSERT_TRUE(ssh_sess[0].have_session_id);
     TEST_ASSERT_TRUE(ssh_sess[0].authed);
 
     // After the re-key completes, an authenticated connection resumes OPEN.
     ssh_newkeys_complete(0);
-    TEST_ASSERT_EQUAL(SSH_PHASE_OPEN, ssh_sess[0].phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_OPEN, ssh_sess[0].phase);
 }
 
 // Build a KEXINIT with eight independently-chosen algorithm name-lists.

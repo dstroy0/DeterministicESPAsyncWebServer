@@ -145,7 +145,7 @@ void test_banner_then_kexinit_advances_and_replies()
     // The client identification string was captured.
     TEST_ASSERT_EQUAL_STRING("SSH-2.0-TestClient", ssh_sess[j].v_c);
     // Negotiation succeeded and the server replied + generated its ephemeral.
-    TEST_ASSERT_EQUAL(SSH_PHASE_DH_INIT, ssh_sess[j].phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_DH_INIT, ssh_sess[j].phase);
     // A server packet (KEXINIT) was written back.
     TEST_ASSERT_TRUE(tcp_captured_len() > 0);
 }
@@ -156,7 +156,7 @@ void test_poll_triggers_server_rekey()
     uint8_t j = conn_pool[0].proto_slot;
     // An authenticated, open session that has spent its volume budget (packet-count proxy).
     ssh_sess[j].authed = true;
-    ssh_sess[j].phase = SSH_PHASE_OPEN;
+    ssh_sess[j].phase = SshPhase::SSH_PHASE_OPEN;
     ssh_sess[j].last_kex_ms = 0;
     ssh_pkt[j].kex_active = false;
     ssh_pkt[j].enc_out = true;
@@ -167,7 +167,7 @@ void test_poll_triggers_server_rekey()
     ssh_conn_poll(0);
     // The server emitted a fresh KEXINIT and entered the re-key handshake (RFC 4253 §9).
     TEST_ASSERT_TRUE(tcp_captured_len() > 0);
-    TEST_ASSERT_EQUAL(SSH_PHASE_KEXINIT, ssh_sess[j].phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_KEXINIT, ssh_sess[j].phase);
 
     // A poll on an already-re-keying / under-budget session does not fire again.
     tcp_capture_reset();
@@ -212,7 +212,7 @@ void test_poll_rx_banner_guards()
     push_bytes(0, (const uint8_t *)partial, strlen(partial));
     ssh_conn_rx(0);
     uint8_t j = conn_pool[0].proto_slot;
-    TEST_ASSERT_EQUAL(SSH_PHASE_BANNER, ssh_sess[j].phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_BANNER, ssh_sess[j].phase);
 }
 
 // With an open channel (white-box), ssh_conn_send frames CHANNEL_DATA to the socket;
@@ -365,13 +365,13 @@ void test_poll_rekey_emit_fails()
 {
     ssh_conn_accept(0);
     uint8_t j = conn_pool[0].proto_slot;
-    ssh_sess[j].phase = SSH_PHASE_OPEN;
+    ssh_sess[j].phase = SshPhase::SSH_PHASE_OPEN;
     ssh_pkt[j].kex_active = false;
     ssh_sess[j].last_kex_ms = 0;
     ssh_pkt[j].seq_no_send = SSH_SEQ_CLOSE_THRESHOLD; // rekey due; ssh_emit's pkt_send then fails
     ssh_conn_poll(0);
 
-    ssh_sess[j].phase = SSH_PHASE_OPEN;
+    ssh_sess[j].phase = SshPhase::SSH_PHASE_OPEN;
     ssh_pkt[j].kex_active = false;
     ssh_pkt[j].seq_no_send = SSH_REKEY_PACKET_THRESHOLD; // rekey due; ssh_emit's arena borrow then fails
     drain_arena();

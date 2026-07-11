@@ -73,7 +73,7 @@ void tearDown()
 // zlib@openssh.com is delayed: not active until USERAUTH_SUCCESS, then active for every packet.
 void test_delayed_activation()
 {
-    ssh_comp_set_s2c(0, SSH_COMP_ZLIB_DELAYED);
+    ssh_comp_set_s2c(0, SshCompAlg::SSH_COMP_ZLIB_DELAYED);
     TEST_ASSERT_FALSE(ssh_comp_s2c_active(0)); // negotiated but not started
     ssh_comp_on_newkeys(0);                    // must NOT start a delayed stream
     TEST_ASSERT_FALSE(ssh_comp_s2c_active(0));
@@ -84,7 +84,7 @@ void test_delayed_activation()
 // zlib (non-delayed) starts right at NEWKEYS.
 void test_immediate_activation()
 {
-    ssh_comp_set_s2c(0, SSH_COMP_ZLIB);
+    ssh_comp_set_s2c(0, SshCompAlg::SSH_COMP_ZLIB);
     TEST_ASSERT_FALSE(ssh_comp_s2c_active(0));
     ssh_comp_on_newkeys(0);
     TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
@@ -93,7 +93,7 @@ void test_immediate_activation()
 // "none": never activates, whatever the events.
 void test_none_never_activates()
 {
-    ssh_comp_set_s2c(0, SSH_COMP_NONE);
+    ssh_comp_set_s2c(0, SshCompAlg::SSH_COMP_NONE);
     ssh_comp_on_newkeys(0);
     ssh_comp_on_auth_success(0);
     TEST_ASSERT_FALSE(ssh_comp_s2c_active(0));
@@ -103,7 +103,7 @@ void test_none_never_activates()
 // valid context-takeover zlib stream that decodes back to the originals.
 void test_packet_layer_stream_roundtrip()
 {
-    ssh_comp_set_s2c(0, SSH_COMP_ZLIB_DELAYED);
+    ssh_comp_set_s2c(0, SshCompAlg::SSH_COMP_ZLIB_DELAYED);
     ssh_comp_on_auth_success(0);
     TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
 
@@ -121,7 +121,7 @@ void test_packet_layer_stream_roundtrip()
 // A longer session that slides the window, driven through the packet layer.
 void test_packet_layer_window_slide()
 {
-    ssh_comp_set_s2c(0, SSH_COMP_ZLIB_DELAYED);
+    ssh_comp_set_s2c(0, SshCompAlg::SSH_COMP_ZLIB_DELAYED);
     ssh_comp_on_auth_success(0);
     uint8_t buf[1000];
     for (int k = 0; k < 30; k++)
@@ -137,7 +137,7 @@ void test_packet_layer_window_slide()
 // send fails closed rather than emitting an uncompressed (desynced) packet.
 void test_packet_compress_scratch_exhausted()
 {
-    ssh_comp_set_s2c(0, SSH_COMP_ZLIB);
+    ssh_comp_set_s2c(0, SshCompAlg::SSH_COMP_ZLIB);
     ssh_comp_on_newkeys(0);
     TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
     scratch_reset();

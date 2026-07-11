@@ -46,7 +46,7 @@ struct SshCompState
     uint8_t ll_len[288];               ///< their bit lengths.
     uint16_t d_code[30];               ///< fixed distance Huffman codes.
     uint8_t d_len[30];                 ///< their bit lengths.
-    uint8_t s2c_alg;                   ///< negotiated ::SshCompAlg.
+    SshCompAlg s2c_alg;                ///< negotiated compression algorithm.
     bool s2c_active;                   ///< true once the stream has started.
 };
 
@@ -68,11 +68,11 @@ void ssh_comp_reset(uint8_t i)
 {
     if (i >= MAX_SSH_CONNS)
         return;
-    s_ssh_comp.comp[i].s2c_alg = SSH_COMP_NONE;
+    s_ssh_comp.comp[i].s2c_alg = SshCompAlg::SSH_COMP_NONE;
     s_ssh_comp.comp[i].s2c_active = false;
 }
 
-void ssh_comp_set_s2c(uint8_t i, uint8_t alg)
+void ssh_comp_set_s2c(uint8_t i, SshCompAlg alg)
 {
     if (i >= MAX_SSH_CONNS)
         return;
@@ -84,7 +84,7 @@ void ssh_comp_on_newkeys(uint8_t i)
     if (i >= MAX_SSH_CONNS)
         return;
     SshCompState *c = &s_ssh_comp.comp[i];
-    if (c->s2c_alg == SSH_COMP_ZLIB && !c->s2c_active)
+    if (c->s2c_alg == SshCompAlg::SSH_COMP_ZLIB && !c->s2c_active)
         start_stream(c);
 }
 
@@ -93,7 +93,7 @@ void ssh_comp_on_auth_success(uint8_t i)
     if (i >= MAX_SSH_CONNS)
         return;
     SshCompState *c = &s_ssh_comp.comp[i];
-    if (c->s2c_alg == SSH_COMP_ZLIB_DELAYED && !c->s2c_active)
+    if (c->s2c_alg == SshCompAlg::SSH_COMP_ZLIB_DELAYED && !c->s2c_active)
         start_stream(c);
 }
 

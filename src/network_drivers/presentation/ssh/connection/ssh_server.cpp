@@ -89,11 +89,11 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         emit(i, buf, n);
         if (ssh_kex_generate(i) != 0) // ephemeral for the just-negotiated KEX method
             return -1;
-        s->phase = SSH_PHASE_DH_INIT;
+        s->phase = SshPhase::SSH_PHASE_DH_INIT;
         return 0;
 
     case SSH_MSG_KEXDH_INIT:
-        if (s->phase != SSH_PHASE_DH_INIT)
+        if (s->phase != SshPhase::SSH_PHASE_DH_INIT)
             return -1;
         if (ssh_kexdh_handle(i, payload, len, buf, &n, sizeof(buf)) != 0)
             return -1;
@@ -122,11 +122,11 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         if (ssh_auth_handle_service_request(payload, len, buf, &n, sizeof(buf)) != 0)
             return -1;
         emit(i, buf, n);
-        s->phase = SSH_PHASE_AUTH;
+        s->phase = SshPhase::SSH_PHASE_AUTH;
         return 0;
 
     case SSH_MSG_USERAUTH_REQUEST:
-        if (s->phase != SSH_PHASE_AUTH)
+        if (s->phase != SshPhase::SSH_PHASE_AUTH)
             return -1;
         if (ssh_auth_handle_request(i, payload, len, buf, &n, sizeof(buf)) != 0)
             return -1;

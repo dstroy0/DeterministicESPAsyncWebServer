@@ -28,7 +28,7 @@
 #if DETWS_ENABLE_SSH_ZLIB
 
 /** @brief Negotiated server-to-client compression algorithm. */
-enum SshCompAlg
+enum class SshCompAlg : uint8_t
 {
     SSH_COMP_NONE = 0,        ///< no compression (also the c2s direction, always)
     SSH_COMP_ZLIB = 1,        ///< "zlib" (RFC 4253) - starts right after NEWKEYS
@@ -39,7 +39,7 @@ enum SshCompAlg
 void ssh_comp_reset(uint8_t i);
 
 /** @brief Record the s2c algorithm negotiated in KEXINIT (::SshCompAlg). */
-void ssh_comp_set_s2c(uint8_t i, uint8_t alg);
+void ssh_comp_set_s2c(uint8_t i, SshCompAlg alg);
 
 /** @brief NEWKEYS completed: start the stream now if `zlib` was negotiated (idempotent). */
 void ssh_comp_on_newkeys(uint8_t i);

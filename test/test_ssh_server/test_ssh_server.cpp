@@ -161,7 +161,7 @@ void test_full_handshake_to_channel_data()
     // Banner exchange already done out-of-band; seed V_C and enter KEXINIT.
     strcpy(s->v_c, "SSH-2.0-TestClient");
     s->v_c_len = (uint16_t)strlen(s->v_c);
-    s->phase = SSH_PHASE_KEXINIT;
+    s->phase = SshPhase::SSH_PHASE_KEXINIT;
 
     // 1. Client KEXINIT → server replies KEXINIT, generates ephemeral.
     uint8_t pkt[2048];
@@ -170,7 +170,7 @@ void test_full_handshake_to_channel_data()
     TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL_INT(1, emt_n);
     TEST_ASSERT_EQUAL(SSH_MSG_KEXINIT, emt_type[0]);
-    TEST_ASSERT_EQUAL(SSH_PHASE_DH_INIT, s->phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_DH_INIT, s->phase);
 
     // 2. KEXDH_INIT (e = 2) → KEXDH_REPLY + NEWKEYS.
     uint8_t e_be[256];
@@ -195,7 +195,7 @@ void test_full_handshake_to_channel_data()
     emt_reset();
     TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, nk, &nk, 1));
     TEST_ASSERT_TRUE(ssh_pkt[0].enc_in && ssh_pkt[0].enc_out); // both directions now encrypted
-    TEST_ASSERT_EQUAL(SSH_PHASE_SERVICE, s->phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_SERVICE, s->phase);
     TEST_ASSERT_EQUAL_INT(1, emt_n);
     TEST_ASSERT_EQUAL(SSH_MSG_EXT_INFO, emt_type[0]);
 
@@ -206,7 +206,7 @@ void test_full_handshake_to_channel_data()
     emt_reset();
     TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL(SSH_MSG_SERVICE_ACCEPT, emt_type[0]);
-    TEST_ASSERT_EQUAL(SSH_PHASE_AUTH, s->phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_AUTH, s->phase);
 
     // 5. USERAUTH_REQUEST (password) → SUCCESS, open phase.
     n = 0;
@@ -220,7 +220,7 @@ void test_full_handshake_to_channel_data()
     TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_SUCCESS, emt_type[0]);
     TEST_ASSERT_TRUE(s->authed);
-    TEST_ASSERT_EQUAL(SSH_PHASE_OPEN, s->phase);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_OPEN, s->phase);
 
     // 6. CHANNEL_OPEN (session) → CONFIRMATION.
     n = 0;
@@ -263,7 +263,7 @@ void test_channel_open_before_auth_rejected()
 {
     SshSession *s = &ssh_sess[0];
     s->authed = false;
-    s->phase = SSH_PHASE_SERVICE;
+    s->phase = SshPhase::SSH_PHASE_SERVICE;
     uint8_t pkt[64];
     size_t n = 0;
     pkt[n++] = SSH_MSG_CHANNEL_OPEN;
@@ -307,7 +307,7 @@ static size_t build_password_auth(uint8_t *p, const char *user, const char *pass
 void test_auth_bruteforce_disconnect()
 {
     SshSession *s = &ssh_sess[0];
-    s->phase = SSH_PHASE_AUTH;
+    s->phase = SshPhase::SSH_PHASE_AUTH;
     s->authed = false;
     s->auth_failures = 0;
 
@@ -336,7 +336,7 @@ void test_auth_bruteforce_disconnect()
 void test_auth_success_after_failures()
 {
     SshSession *s = &ssh_sess[0];
-    s->phase = SSH_PHASE_AUTH;
+    s->phase = SshPhase::SSH_PHASE_AUTH;
     s->authed = false;
     s->auth_failures = 0;
 
@@ -449,7 +449,7 @@ void test_large_client_kexinit_accepted()
 
     TEST_ASSERT_TRUE(o > 512); // larger than the old SSH_KEXINIT_MAX
     SshSession *s = &ssh_sess[0];
-    s->phase = SSH_PHASE_KEXINIT;
+    s->phase = SshPhase::SSH_PHASE_KEXINIT;
     TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, pkt, o));
     TEST_ASSERT_TRUE(s->ext_info_c); // ext-info-c detected in the big list
 }
@@ -460,7 +460,7 @@ void test_extinfo_not_sent_without_ext_info_c()
     SshSession *s = &ssh_sess[0];
     strcpy(s->v_c, "SSH-2.0-NoExt");
     s->v_c_len = (uint16_t)strlen(s->v_c);
-    s->phase = SSH_PHASE_KEXINIT;
+    s->phase = SshPhase::SSH_PHASE_KEXINIT;
 
     uint8_t pkt[2048];
     size_t n = build_client_kexinit(pkt, /*ext_info_c=*/false);
@@ -622,7 +622,7 @@ void test_ssh_dispatch_bad_slot()
 // A KEXINIT whose payload is far too short fails negotiation.
 void test_ssh_kexinit_parse_fail()
 {
-    ssh_sess[0].phase = SSH_PHASE_KEXINIT;
+    ssh_sess[0].phase = SshPhase::SSH_PHASE_KEXINIT;
     uint8_t p[4] = {SSH_MSG_KEXINIT, 0, 0, 0};
     TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, p[0], p, sizeof(p)));
 }
@@ -630,14 +630,14 @@ void test_ssh_kexinit_parse_fail()
 // KEXDH_INIT outside the DH_INIT phase is rejected; a malformed one in-phase fails the handler.
 void test_ssh_kexdh_guards()
 {
-    ssh_sess[0].phase = SSH_PHASE_KEXINIT; // not DH_INIT
+    ssh_sess[0].phase = SshPhase::SSH_PHASE_KEXINIT; // not DH_INIT
     uint8_t bad[4] = {SSH_MSG_KEXDH_INIT, 0, 0, 0};
     TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, bad[0], bad, sizeof(bad))); // wrong phase
 
     SshSession *s = &ssh_sess[0];
     strcpy(s->v_c, "SSH-2.0-T");
     s->v_c_len = (uint16_t)strlen(s->v_c);
-    s->phase = SSH_PHASE_KEXINIT;
+    s->phase = SshPhase::SSH_PHASE_KEXINIT;
     uint8_t pkt[2048];
     size_t n = build_client_kexinit(pkt);
     TEST_ASSERT_EQUAL_INT(0, ssh_server_dispatch(0, pkt[0], pkt, n));            // -> DH_INIT
@@ -647,7 +647,7 @@ void test_ssh_kexdh_guards()
 // SERVICE_REQUEST with a truncated service name fails.
 void test_ssh_service_request_fail()
 {
-    ssh_sess[0].phase = SSH_PHASE_SERVICE;
+    ssh_sess[0].phase = SshPhase::SSH_PHASE_SERVICE;
     uint8_t bad[2] = {SSH_MSG_SERVICE_REQUEST, 0};
     TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, bad[0], bad, sizeof(bad)));
 }
@@ -655,10 +655,10 @@ void test_ssh_service_request_fail()
 // USERAUTH_REQUEST outside the AUTH phase is rejected; a truncated one in-phase fails the handler.
 void test_ssh_userauth_guards()
 {
-    ssh_sess[0].phase = SSH_PHASE_SERVICE; // not AUTH
+    ssh_sess[0].phase = SshPhase::SSH_PHASE_SERVICE; // not AUTH
     uint8_t p[2] = {SSH_MSG_USERAUTH_REQUEST, 0};
     TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, p[0], p, sizeof(p)));
-    ssh_sess[0].phase = SSH_PHASE_AUTH;
+    ssh_sess[0].phase = SshPhase::SSH_PHASE_AUTH;
     uint8_t bad[3] = {SSH_MSG_USERAUTH_REQUEST, 0, 0};
     TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, bad[0], bad, sizeof(bad)));
 }

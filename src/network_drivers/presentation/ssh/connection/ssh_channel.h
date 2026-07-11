@@ -29,7 +29,7 @@
 #include <stdint.h>
 
 /** @brief Channel type (RFC 4254). */
-enum SshChanType
+enum class SshChanType : uint8_t
 {
     SSH_CHAN_SESSION = 0,        ///< "session" - shell / exec / data
     SSH_CHAN_DIRECT_TCPIP = 1,   ///< "direct-tcpip" - client-initiated TCP forward (ssh -L)
@@ -41,7 +41,7 @@ struct SshChannel
 {
     bool open;             ///< True once the channel is confirmed open both ways.
     bool pending;          ///< True for a server-initiated channel we opened, awaiting the client's confirmation.
-    uint8_t type;          ///< SshChanType: session, direct-tcpip, or forwarded-tcpip.
+    SshChanType type;      ///< session, direct-tcpip, or forwarded-tcpip.
     uint32_t local_id;     ///< Our channel id (== slot index).
     uint32_t peer_id;      ///< Client's channel id.
     uint32_t local_window; ///< Bytes we may still receive before WINDOW_ADJUST.

@@ -337,7 +337,7 @@ int ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8
         if (sig_ok)
         {
             ssh_sess[i].authed = true;
-            ssh_sess[i].phase = SSH_PHASE_OPEN;
+            ssh_sess[i].phase = SshPhase::SSH_PHASE_OPEN;
             return ssh_auth_build_success(out, out_len, cap);
         }
         return ssh_auth_build_failure(out, out_len, cap, false);
@@ -359,7 +359,7 @@ int ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8
     if (ok)
     {
         ssh_sess[i].authed = true;
-        ssh_sess[i].phase = SSH_PHASE_OPEN;
+        ssh_sess[i].phase = SshPhase::SSH_PHASE_OPEN;
         return ssh_auth_build_success(out, out_len, cap);
     }
     return ssh_auth_build_failure(out, out_len, cap, false);

@@ -57,7 +57,7 @@
 // ---------------------------------------------------------------------------
 
 /** @brief SSH connection lifecycle phase. */
-enum SshPhase
+enum class SshPhase : uint8_t
 {
     SSH_PHASE_BANNER,  ///< Awaiting the client identification string.
     SSH_PHASE_KEXINIT, ///< Awaiting the client KEXINIT.
@@ -82,14 +82,14 @@ enum SshPhase
  * is required for key derivation and for every later re-key.
  */
 /** @brief Negotiated key-exchange method (crypto-agnostic KEX dispatch). */
-enum SshKexAlg
+enum class SshKexAlg : uint8_t
 {
     SSH_KEX_DH_GROUP14 = 0, ///< diffie-hellman-group14-sha256 (HW-accelerated MPI on ESP32)
     SSH_KEX_CURVE25519 = 1  ///< curve25519-sha256 (RFC 8731, X25519)
 };
 
 /** @brief Negotiated host-key / signature algorithm. */
-enum SshHostkeyAlg
+enum class SshHostkeyAlg : uint8_t
 {
     SSH_HOSTKEY_RSA = 0,    ///< rsa-sha2-256 (HW-accelerated on ESP32)
     SSH_HOSTKEY_ED25519 = 1 ///< ssh-ed25519 (RFC 8032)
@@ -99,12 +99,12 @@ struct SshSession
 {
     SshPhase phase; ///< Current handshake phase.
 
-    uint8_t kex_alg;     ///< SshKexAlg negotiated in KEXINIT.
-    uint8_t hostkey_alg; ///< SshHostkeyAlg negotiated in KEXINIT.
-    uint8_t cipher_alg;  ///< SSH_CIPHER_* negotiated in KEXINIT (0 = aes256-ctr).
-    uint8_t mac_alg;     ///< SSH_MAC_* negotiated in KEXINIT (aes cipher only; 0 = hmac-sha2-256).
-    uint8_t ecdh_sk[32]; ///< Server X25519 ephemeral private (curve25519 KEX only; wiped after).
-    uint8_t ecdh_pk[32]; ///< Server X25519 ephemeral public (curve25519 KEX only).
+    SshKexAlg kex_alg;         ///< negotiated in KEXINIT.
+    SshHostkeyAlg hostkey_alg; ///< negotiated in KEXINIT.
+    uint8_t cipher_alg;        ///< SSH_CIPHER_* negotiated in KEXINIT (0 = aes256-ctr).
+    uint8_t mac_alg;           ///< SSH_MAC_* negotiated in KEXINIT (aes cipher only; 0 = hmac-sha2-256).
+    uint8_t ecdh_sk[32];       ///< Server X25519 ephemeral private (curve25519 KEX only; wiped after).
+    uint8_t ecdh_pk[32];       ///< Server X25519 ephemeral public (curve25519 KEX only).
 
     char v_c[SSH_VERSION_MAX]; ///< Client identification string (no CR LF).
     uint16_t v_c_len;          ///< Length of v_c.
@@ -329,7 +329,7 @@ void ssh_newkeys_sent(uint8_t i);
  *
  * Called once the client's SSH_MSG_NEWKEYS has been received (the server having already sent its own,
  * via ssh_newkeys_sent()). Turns on the inbound cipher/MAC (enc_in), clears kex_active, and moves to
- * SSH_PHASE_SERVICE (or back to SSH_PHASE_OPEN on a re-key).
+ * SshPhase::SSH_PHASE_SERVICE (or back to SshPhase::SSH_PHASE_OPEN on a re-key).
  */
 void ssh_newkeys_complete(uint8_t i);
 
@@ -356,7 +356,7 @@ bool ssh_rekey_due(uint32_t seq_send, uint32_t seq_recv, uint32_t elapsed_ms, ui
  * @brief Begin a server-initiated re-key by emitting a fresh KEXINIT.
  *
  * Generates a new ephemeral DH key pair, builds and stores a new server
- * KEXINIT (I_S), and returns the transport to SSH_PHASE_KEXINIT. The session
+ * KEXINIT (I_S), and returns the transport to SshPhase::SSH_PHASE_KEXINIT. The session
  * id and authentication state are preserved, so once the re-key completes the
  * connection resumes in its prior (authenticated) phase.
  *

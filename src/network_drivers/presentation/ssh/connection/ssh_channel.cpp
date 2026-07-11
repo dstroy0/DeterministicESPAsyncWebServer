@@ -295,7 +295,7 @@ int ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_p
     SshChannel *c = &ssh_chan[i][slot];
     c->open = false;
     c->pending = true; // awaiting the client's CHANNEL_OPEN_CONFIRMATION
-    c->type = SSH_CHAN_FORWARDED_TCPIP;
+    c->type = SshChanType::SSH_CHAN_FORWARDED_TCPIP;
     c->local_id = (uint32_t)slot;
     c->peer_id = 0;
     c->local_window = SSH_CHAN_WINDOW;
@@ -381,7 +381,7 @@ int ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8
 
     SshChannel *c = &ssh_chan[i][slot];
     c->open = true;
-    c->type = is_dtcpip ? (uint8_t)SSH_CHAN_DIRECT_TCPIP : (uint8_t)SSH_CHAN_SESSION;
+    c->type = is_dtcpip ? SshChanType::SSH_CHAN_DIRECT_TCPIP : SshChanType::SSH_CHAN_SESSION;
     c->local_id = (uint32_t)slot;
     c->peer_id = sender;
     c->local_window = SSH_CHAN_WINDOW;
@@ -472,7 +472,7 @@ int ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8
 
     if (dlen > 0)
     {
-        if (c->type != SSH_CHAN_SESSION) // forwarded TCP bytes (ssh -L / -R) -> the forward owner
+        if (c->type != SshChanType::SSH_CHAN_SESSION) // forwarded TCP bytes (ssh -L / -R) -> the forward owner
         {
             if (s_chcb.forward_data_cb)
                 s_chcb.forward_data_cb(i, c->local_id, data, dlen);
