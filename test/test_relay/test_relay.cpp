@@ -84,15 +84,15 @@ static DetRelayEnd end_of(MockSock *s)
     return e;
 }
 
-static int run_relay(DetRelay *r, int max_steps)
+static DetRelayStatus run_relay(DetRelay *r, int max_steps)
 {
     for (int i = 0; i < max_steps; i++)
     {
-        int st = det_relay_step(r);
-        if (st != DET_RELAY_RUNNING)
+        DetRelayStatus st = det_relay_step(r);
+        if (st != DetRelayStatus::DET_RELAY_RUNNING)
             return st;
     }
-    return DET_RELAY_RUNNING; // never finished (a bug if it happens)
+    return DetRelayStatus::DET_RELAY_RUNNING; // never finished (a bug if it happens)
 }
 
 void test_bidirectional()
@@ -104,7 +104,7 @@ void test_bidirectional()
     DetRelay r;
     det_relay_init(&r, &ea, &eb);
 
-    TEST_ASSERT_EQUAL_INT(DET_RELAY_DONE, run_relay(&r, 64));
+    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 64));
     TEST_ASSERT_EQUAL_size_t(17, b.out_len);
     TEST_ASSERT_EQUAL_MEMORY("hello from client", b.out, 17);
     TEST_ASSERT_EQUAL_size_t(14, a.out_len);
@@ -126,7 +126,7 @@ void test_backpressure()
     DetRelay r;
     det_relay_init(&r, &ea, &eb);
 
-    TEST_ASSERT_EQUAL_INT(DET_RELAY_DONE, run_relay(&r, 1000));
+    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 1000));
     TEST_ASSERT_EQUAL_size_t(1000, b.out_len);
     TEST_ASSERT_EQUAL_MEMORY(data, b.out, 1000); // every byte carried across, in order
 }
@@ -146,15 +146,15 @@ void test_half_close_shutdown()
 
     // once a->b finishes (client EOF) the origin's half-close must fire, while b->a is still
     // streaming its long response (proving the two directions close independently)
-    int st = DET_RELAY_RUNNING;
+    DetRelayStatus st = DetRelayStatus::DET_RELAY_RUNNING;
     for (int i = 0; i < 10 && !r.b_shut_sent; i++)
         st = det_relay_step(&r);
     TEST_ASSERT_TRUE(r.b_shut_sent); // origin's shutdown fired on the client's FIN
     TEST_ASSERT_TRUE(b.shutdown_called);
     TEST_ASSERT_FALSE(r.b2a_done); // ...while the response direction is still open
-    TEST_ASSERT_EQUAL_INT(DET_RELAY_RUNNING, st);
+    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_RUNNING, st);
 
-    TEST_ASSERT_EQUAL_INT(DET_RELAY_DONE, run_relay(&r, 64));
+    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 64));
     TEST_ASSERT_EQUAL_MEMORY("req", b.out, 3);
     TEST_ASSERT_EQUAL_size_t(800, a.out_len);
     TEST_ASSERT_EQUAL_MEMORY(resp, a.out, 800);
@@ -171,10 +171,10 @@ void test_send_error()
     DetRelay r;
     det_relay_init(&r, &ea, &eb);
 
-    int st = DET_RELAY_RUNNING;
-    for (int i = 0; i < 8 && st == DET_RELAY_RUNNING; i++)
+    DetRelayStatus st = DetRelayStatus::DET_RELAY_RUNNING;
+    for (int i = 0; i < 8 && st == DetRelayStatus::DET_RELAY_RUNNING; i++)
         st = det_relay_step(&r);
-    TEST_ASSERT_EQUAL_INT(DET_RELAY_ERROR, st);
+    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_ERROR, st);
 }
 
 void test_one_way_idle_then_close()
@@ -187,7 +187,7 @@ void test_one_way_idle_then_close()
     DetRelay r;
     det_relay_init(&r, &ea, &eb);
 
-    TEST_ASSERT_EQUAL_INT(DET_RELAY_DONE, run_relay(&r, 32));
+    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 32));
     TEST_ASSERT_EQUAL_size_t(18, b.out_len);
     TEST_ASSERT_EQUAL_size_t(0, a.out_len);
 }
@@ -204,14 +204,14 @@ void test_note_eof_out_of_band()
     det_relay_init(&r, &ea, &eb);
 
     // one step moves the buffered data each way; without an EOF signal the relay keeps running
-    TEST_ASSERT_EQUAL_INT(DET_RELAY_RUNNING, det_relay_step(&r));
+    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_RUNNING, det_relay_step(&r));
     TEST_ASSERT_EQUAL_MEMORY("hello", b.out, 5);
     TEST_ASSERT_EQUAL_MEMORY("world", a.out, 5);
 
     // both peers close out of band -> the relay finishes and both shutdowns fire
     det_relay_note_eof(&r, false); // inbound closed
     det_relay_note_eof(&r, true);  // origin closed
-    TEST_ASSERT_EQUAL_INT(DET_RELAY_DONE, run_relay(&r, 8));
+    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 8));
     TEST_ASSERT_TRUE(a.shutdown_called);
     TEST_ASSERT_TRUE(b.shutdown_called);
 }

@@ -155,15 +155,15 @@ static const char *find_header(const uint8_t *buf, const uint8_t *end, const cha
 int http_client_parse_response(uint8_t *buf, size_t len, size_t *body_off, size_t *body_len)
 {
     if (!buf || len < 12 || memcmp(buf, "HTTP/1.", 7) != 0)
-        return HTTP_CLIENT_ERR_RESPONSE;
+        return (int)HttpClientError::HTTP_CLIENT_ERR_RESPONSE;
 
     // Status code: first space, then 3 digits.
     const uint8_t *sp = (const uint8_t *)memchr(buf, ' ', len);
     if (!sp || sp + 4 > buf + len)
-        return HTTP_CLIENT_ERR_RESPONSE;
+        return (int)HttpClientError::HTTP_CLIENT_ERR_RESPONSE;
     int status = (sp[1] - '0') * 100 + (sp[2] - '0') * 10 + (sp[3] - '0');
     if (status < 100 || status > 599)
-        return HTTP_CLIENT_ERR_RESPONSE;
+        return (int)HttpClientError::HTTP_CLIENT_ERR_RESPONSE;
 
     // Header terminator "\r\n\r\n".
     uint8_t *hdr_end = nullptr;
@@ -174,7 +174,7 @@ int http_client_parse_response(uint8_t *buf, size_t len, size_t *body_off, size_
             break;
         }
     if (!hdr_end)
-        return HTTP_CLIENT_ERR_RESPONSE;
+        return (int)HttpClientError::HTTP_CLIENT_ERR_RESPONSE;
 
     size_t off = (size_t)(hdr_end + 4 - buf);
     size_t avail = len - off;
@@ -314,18 +314,18 @@ static int http_request(const char *method, const char *url, const char *content
     char host[80], path[160];
     uint16_t port;
     if (!http_client_parse_url(url, &is_https, host, sizeof(host), &port, path, sizeof(path)))
-        return HTTP_CLIENT_ERR_URL;
+        return (int)HttpClientError::HTTP_CLIENT_ERR_URL;
     CL_DBG("[hc] url host=%s port=%u https=%d path=%s\n", host, (unsigned)port, (int)is_https, path);
 #if !DETWS_ENABLE_HTTP_CLIENT_TLS
     if (is_https)
-        return HTTP_CLIENT_ERR_TLS;
+        return (int)HttpClientError::HTTP_CLIENT_ERR_TLS;
 #endif
 
     // Build the request line + headers (+ optional body).
     char req[768];
     size_t reqlen = http_client_build_request(method, host, port, path, content_type, body, body_len, req, sizeof(req));
     if (reqlen == 0)
-        return HTTP_CLIENT_ERR_URL;
+        return (int)HttpClientError::HTTP_CLIENT_ERR_URL;
 
     uint32_t deadline = millis() + DETWS_HTTP_CLIENT_TIMEOUT_MS;
 
@@ -333,7 +333,8 @@ static int http_request(const char *method, const char *url, const char *content
     s_http.cid = det_client_open(host, port, DETWS_HTTP_CLIENT_TIMEOUT_MS);
     CL_DBG("[hc] det_client_open cid=%d\n", s_http.cid);
     if (s_http.cid < 0)
-        return (s_http.cid == -2) ? HTTP_CLIENT_ERR_DNS : HTTP_CLIENT_ERR_CONNECT;
+        return (s_http.cid == -2) ? (int)HttpClientError::HTTP_CLIENT_ERR_DNS
+                                  : (int)HttpClientError::HTTP_CLIENT_ERR_CONNECT;
 
     // The response to parse: raw wire bytes (http) or decrypted plaintext (https),
     // both land in s_http.rx.
@@ -349,12 +350,12 @@ static int http_request(const char *method, const char *url, const char *content
         {
             det_client_close(s_http.cid);
             s_http.cid = -1;
-            return HTTP_CLIENT_ERR_TLS;
+            return (int)HttpClientError::HTTP_CLIENT_ERR_TLS;
         }
 #else
         det_client_close(s_http.cid);
         s_http.cid = -1;
-        return HTTP_CLIENT_ERR_TLS;
+        return (int)HttpClientError::HTTP_CLIENT_ERR_TLS;
 #endif
     }
     else
@@ -365,7 +366,7 @@ static int http_request(const char *method, const char *url, const char *content
         {
             det_client_close(s_http.cid);
             s_http.cid = -1;
-            return HTTP_CLIENT_ERR_SEND;
+            return (int)HttpClientError::HTTP_CLIENT_ERR_SEND;
         }
         while ((int32_t)(deadline - millis()) > 0)
         {
@@ -385,12 +386,12 @@ static int http_request(const char *method, const char *url, const char *content
     s_http.cid = -1;
 
     if (resp_len == 0)
-        return HTTP_CLIENT_ERR_TIMEOUT;
+        return (int)HttpClientError::HTTP_CLIENT_ERR_TIMEOUT;
 
     size_t body_off = 0, blen = 0;
     int status = http_client_parse_response(s_http.rx, resp_len, &body_off, &blen);
     if (status < 0)
-        return HTTP_CLIENT_ERR_RESPONSE;
+        return (int)HttpClientError::HTTP_CLIENT_ERR_RESPONSE;
     if (out)
     {
         out->status = status;
@@ -438,11 +439,11 @@ void http_client_clear_verify()
 
 int http_get(const char *, HttpClientResult *)
 {
-    return HTTP_CLIENT_ERR_CONNECT;
+    return (int)HttpClientError::HTTP_CLIENT_ERR_CONNECT;
 }
 int http_post(const char *, const char *, const uint8_t *, size_t, HttpClientResult *)
 {
-    return HTTP_CLIENT_ERR_CONNECT;
+    return (int)HttpClientError::HTTP_CLIENT_ERR_CONNECT;
 }
 void http_client_set_ca(const uint8_t *, size_t)
 {

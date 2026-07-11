@@ -136,8 +136,8 @@ void service(uint8_t slot)
     for (int pass = 0; pass < DETWS_RELAY_DRAIN_MAX; pass++)
     {
         uint32_t moved = br->relay.bytes_a2b + br->relay.bytes_b2a;
-        int st = det_relay_step(&br->relay);
-        if (st == DET_RELAY_ERROR || st == DET_RELAY_DONE)
+        DetRelayStatus st = det_relay_step(&br->relay);
+        if (st == DetRelayStatus::DET_RELAY_ERROR || st == DetRelayStatus::DET_RELAY_DONE)
         {
             teardown(br, true);
             return;

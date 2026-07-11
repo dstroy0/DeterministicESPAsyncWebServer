@@ -35,7 +35,7 @@
 #include <stdint.h>
 
 /** @brief det_relay_step() outcome. */
-enum DetRelayStatus
+enum class DetRelayStatus : int32_t
 {
     DET_RELAY_ERROR = -1,  ///< a send/recv seam reported an error; the caller should close both sides
     DET_RELAY_RUNNING = 0, ///< still relaying (keep stepping)
@@ -92,7 +92,7 @@ void det_relay_init(DetRelay *r, const DetRelayEnd *client, const DetRelayEnd *o
  * @brief Do one non-blocking pass: flush any pending bytes and read more, in both directions.
  * @return a ::DetRelayStatus. Call repeatedly (per poll tick) until DONE or ERROR, then close both.
  */
-int det_relay_step(DetRelay *r);
+DetRelayStatus det_relay_step(DetRelay *r);
 
 /**
  * @brief Signal that a peer's send side has closed, when the transport reports EOF out of band (a

@@ -54,19 +54,19 @@ bool reply_complete(const char *buf, size_t len, int *code)
 }
 
 // Read one (possibly multi-line) reply into a stack buffer and return its code.
-int read_reply(SmtpRecvFn recv, void *ctx, int *code)
+SmtpResult read_reply(SmtpRecvFn recv, void *ctx, int *code)
 {
     char buf[DETWS_SMTP_REPLY_MAX];
     size_t len = 0;
     for (;;)
     {
         if (reply_complete(buf, len, code))
-            return SMTP_OK;
+            return SmtpResult::SMTP_OK;
         if (len >= sizeof(buf))
-            return SMTP_ERR_OVERFLOW;
+            return SmtpResult::SMTP_ERR_OVERFLOW;
         int n = recv(ctx, (uint8_t *)buf + len, sizeof(buf) - len);
         if (n <= 0)
-            return SMTP_ERR_IO;
+            return SmtpResult::SMTP_ERR_IO;
         len += (size_t)n;
     }
 }
@@ -76,10 +76,10 @@ int read_reply(SmtpRecvFn recv, void *ctx, int *code)
 int command(SmtpSendFn send, SmtpRecvFn recv, void *ctx, const char *line)
 {
     if (!send_str(send, ctx, line))
-        return SMTP_ERR_IO;
+        return (int)SmtpResult::SMTP_ERR_IO;
     int code = 0;
-    int r = read_reply(recv, ctx, &code);
-    return (r == SMTP_OK) ? code : r;
+    SmtpResult r = read_reply(recv, ctx, &code);
+    return (r == SmtpResult::SMTP_OK) ? code : (int)r;
 }
 
 // AUTH LOGIN leg: send @p secret base64-encoded + CRLF, return the reply code.
@@ -89,12 +89,12 @@ int auth_send_b64(SmtpSendFn send, SmtpRecvFn recv, void *ctx, const char *secre
     char b64[DETWS_SMTP_LINE_MAX];
     size_t slen = strlen(secret);
     if (((slen + 2) / 3) * 4 + 3 >= sizeof(b64)) // b64 + CRLF must fit
-        return SMTP_ERR_OVERFLOW;
+        return (int)SmtpResult::SMTP_ERR_OVERFLOW;
     base64_encode((const uint8_t *)secret, slen, b64);
     int n = snprintf(line, sizeof(line), "%s\r\n", b64);
     if (n < 0 || (size_t)n >= sizeof(line))
-        return SMTP_ERR_OVERFLOW; // GCOVR_EXCL_LINE  b64+CRLF was just checked to fit sizeof(b64)==sizeof(line); can't
-                                  // overflow
+        return (int)SmtpResult::SMTP_ERR_OVERFLOW; // GCOVR_EXCL_LINE  b64+CRLF was just checked to fit
+                                                   // sizeof(b64)==sizeof(line); can't overflow
     return command(send, recv, ctx, line);
 }
 
@@ -111,7 +111,7 @@ int build_message(char *out, size_t cap, const SmtpConfig *cfg, const SmtpMessag
                       "\r\n",
                       cfg->from, msg->to, msg->subject ? msg->subject : "");
     if (hn < 0 || (size_t)hn >= cap)
-        return SMTP_ERR_OVERFLOW;
+        return (int)SmtpResult::SMTP_ERR_OVERFLOW;
     size_t n = (size_t)hn;
 
     const char *b = msg->body ? msg->body : "";
@@ -124,7 +124,7 @@ int build_message(char *out, size_t cap, const SmtpConfig *cfg, const SmtpMessag
         if (c == '\n')
         {
             if (n + 2 > cap)
-                return SMTP_ERR_OVERFLOW;
+                return (int)SmtpResult::SMTP_ERR_OVERFLOW;
             out[n++] = '\r';
             out[n++] = '\n';
             at_line_start = true;
@@ -133,11 +133,11 @@ int build_message(char *out, size_t cap, const SmtpConfig *cfg, const SmtpMessag
         if (at_line_start && c == '.')
         {
             if (n + 1 > cap) // dot-stuff: a body line starting with '.' gets an extra '.'
-                return SMTP_ERR_OVERFLOW;
+                return (int)SmtpResult::SMTP_ERR_OVERFLOW;
             out[n++] = '.';
         }
         if (n + 1 > cap)
-            return SMTP_ERR_OVERFLOW;
+            return (int)SmtpResult::SMTP_ERR_OVERFLOW;
         out[n++] = c;
         at_line_start = false;
     }
@@ -145,12 +145,12 @@ int build_message(char *out, size_t cap, const SmtpConfig *cfg, const SmtpMessag
     if (!(n >= 2 && out[n - 2] == '\r' && out[n - 1] == '\n'))
     {
         if (n + 2 > cap)
-            return SMTP_ERR_OVERFLOW;
+            return (int)SmtpResult::SMTP_ERR_OVERFLOW;
         out[n++] = '\r';
         out[n++] = '\n';
     }
     if (n + 3 > cap) // terminating "."CRLF
-        return SMTP_ERR_OVERFLOW;
+        return (int)SmtpResult::SMTP_ERR_OVERFLOW;
     out[n++] = '.';
     out[n++] = '\r';
     out[n++] = '\n';
@@ -158,92 +158,92 @@ int build_message(char *out, size_t cap, const SmtpConfig *cfg, const SmtpMessag
 }
 } // namespace
 
-int smtp_run(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn send, SmtpRecvFn recv, void *ctx)
+SmtpResult smtp_run(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn send, SmtpRecvFn recv, void *ctx)
 {
     if (!cfg || !msg || !send || !recv || !cfg->host || !cfg->from || !cfg->from[0] || !msg->to || !msg->to[0])
-        return SMTP_ERR_ARG;
+        return SmtpResult::SMTP_ERR_ARG;
 
     char line[DETWS_SMTP_LINE_MAX];
     int code;
 
     // Greeting.
-    if (read_reply(recv, ctx, &code) != SMTP_OK)
-        return SMTP_ERR_IO;
+    if (read_reply(recv, ctx, &code) != SmtpResult::SMTP_OK)
+        return SmtpResult::SMTP_ERR_IO;
     if (code != 220)
-        return SMTP_ERR_PROTOCOL;
+        return SmtpResult::SMTP_ERR_PROTOCOL;
 
     // EHLO.
     int n = snprintf(line, sizeof(line), "EHLO %s\r\n", (cfg->helo && cfg->helo[0]) ? cfg->helo : "esp32");
     if (n < 0 || (size_t)n >= sizeof(line))
-        return SMTP_ERR_OVERFLOW;
+        return SmtpResult::SMTP_ERR_OVERFLOW;
     code = command(send, recv, ctx, line);
     if (code < 0)
-        return code;
+        return (SmtpResult)code;
     if (code != 250)
-        return SMTP_ERR_PROTOCOL;
+        return SmtpResult::SMTP_ERR_PROTOCOL;
 
     // AUTH LOGIN (only when a username is configured).
     if (cfg->user && cfg->user[0])
     {
         code = command(send, recv, ctx, "AUTH LOGIN\r\n");
         if (code < 0)
-            return code;
+            return (SmtpResult)code;
         if (code != 334)
-            return SMTP_ERR_AUTH;
+            return SmtpResult::SMTP_ERR_AUTH;
         code = auth_send_b64(send, recv, ctx, cfg->user);
         if (code < 0)
-            return code;
+            return (SmtpResult)code;
         if (code != 334)
-            return SMTP_ERR_AUTH;
+            return SmtpResult::SMTP_ERR_AUTH;
         code = auth_send_b64(send, recv, ctx, cfg->pass ? cfg->pass : "");
         if (code < 0)
-            return code;
+            return (SmtpResult)code;
         if (code != 235)
-            return SMTP_ERR_AUTH;
+            return SmtpResult::SMTP_ERR_AUTH;
     }
 
     // MAIL FROM.
     n = snprintf(line, sizeof(line), "MAIL FROM:<%s>\r\n", cfg->from);
     if (n < 0 || (size_t)n >= sizeof(line))
-        return SMTP_ERR_OVERFLOW;
+        return SmtpResult::SMTP_ERR_OVERFLOW;
     code = command(send, recv, ctx, line);
     if (code < 0)
-        return code;
+        return (SmtpResult)code;
     if (code != 250)
-        return SMTP_ERR_PROTOCOL;
+        return SmtpResult::SMTP_ERR_PROTOCOL;
 
     // RCPT TO.
     n = snprintf(line, sizeof(line), "RCPT TO:<%s>\r\n", msg->to);
     if (n < 0 || (size_t)n >= sizeof(line))
-        return SMTP_ERR_OVERFLOW;
+        return SmtpResult::SMTP_ERR_OVERFLOW;
     code = command(send, recv, ctx, line);
     if (code < 0)
-        return code;
+        return (SmtpResult)code;
     if (code != 250 && code != 251) // 251 = user not local; will forward
-        return SMTP_ERR_PROTOCOL;
+        return SmtpResult::SMTP_ERR_PROTOCOL;
 
     // DATA.
     code = command(send, recv, ctx, "DATA\r\n");
     if (code < 0)
-        return code;
+        return (SmtpResult)code;
     if (code != 354)
-        return SMTP_ERR_PROTOCOL;
+        return SmtpResult::SMTP_ERR_PROTOCOL;
 
     // The message itself, then wait for acceptance.
     char body[DETWS_SMTP_MSG_MAX];
     int mlen = build_message(body, sizeof(body), cfg, msg);
     if (mlen < 0)
-        return mlen;
+        return (SmtpResult)mlen;
     if (send(ctx, (const uint8_t *)body, (size_t)mlen) != mlen)
-        return SMTP_ERR_IO;
-    if (read_reply(recv, ctx, &code) != SMTP_OK)
-        return SMTP_ERR_IO;
+        return SmtpResult::SMTP_ERR_IO;
+    if (read_reply(recv, ctx, &code) != SmtpResult::SMTP_OK)
+        return SmtpResult::SMTP_ERR_IO;
     if (code != 250)
-        return SMTP_ERR_PROTOCOL;
+        return SmtpResult::SMTP_ERR_PROTOCOL;
 
     // QUIT is best-effort - the message is already accepted.
     (void)command(send, recv, ctx, "QUIT\r\n");
-    return SMTP_OK;
+    return SmtpResult::SMTP_OK;
 }
 
 // ---------------------------------------------------------------------------
@@ -335,25 +335,25 @@ int tls_recv(void *ctx, uint8_t *buf, size_t cap)
 #endif // DETWS_ENABLE_TLS
 } // namespace
 
-int smtp_send(const SmtpConfig *cfg, const SmtpMessage *msg)
+SmtpResult smtp_send(const SmtpConfig *cfg, const SmtpMessage *msg)
 {
     if (!cfg || !cfg->host)
-        return SMTP_ERR_ARG;
+        return SmtpResult::SMTP_ERR_ARG;
 
     SmtpXport x;
     x.cid = det_client_open(cfg->host, cfg->port, DETWS_SMTP_TIMEOUT_MS);
     if (x.cid < 0)
-        return SMTP_ERR_CONNECT;
+        return SmtpResult::SMTP_ERR_CONNECT;
     x.deadline = millis() + DETWS_SMTP_TIMEOUT_MS;
 
-    int rc;
+    SmtpResult rc;
     if (cfg->tls)
     {
 #if DETWS_ENABLE_TLS
         if (!det_tls_csess_begin(cfg->host, tls_bio_send, tls_bio_recv))
         {
             det_client_close(x.cid);
-            return SMTP_ERR_TLS;
+            return SmtpResult::SMTP_ERR_TLS;
         }
         int h;
         while ((h = det_tls_csess_handshake()) == 0 && (int32_t)(x.deadline - millis()) > 0)
@@ -362,13 +362,13 @@ int smtp_send(const SmtpConfig *cfg, const SmtpMessage *msg)
         {
             det_tls_csess_end();
             det_client_close(x.cid);
-            return SMTP_ERR_TLS;
+            return SmtpResult::SMTP_ERR_TLS;
         }
         rc = smtp_run(cfg, msg, tls_send, tls_recv, &x);
         det_tls_csess_end();
 #else
         det_client_close(x.cid);
-        return SMTP_ERR_TLS; // SMTPS requested but TLS not built in
+        return SmtpResult::SMTP_ERR_TLS; // SMTPS requested but TLS not built in
 #endif
     }
     else
@@ -382,9 +382,9 @@ int smtp_send(const SmtpConfig *cfg, const SmtpMessage *msg)
 
 #else // host build: no lwIP. smtp_run() above is host-testable; smtp_send() is a stub.
 
-int smtp_send(const SmtpConfig *, const SmtpMessage *)
+SmtpResult smtp_send(const SmtpConfig *, const SmtpMessage *)
 {
-    return SMTP_ERR_CONNECT;
+    return SmtpResult::SMTP_ERR_CONNECT;
 }
 
 #endif // ARDUINO

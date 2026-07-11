@@ -53,11 +53,11 @@ void send_alert(const char *subject, const char *body)
     msg.subject = subject;
     msg.body = body;
 
-    int rc = smtp_send(&cfg, &msg);
-    if (rc == SMTP_OK)
+    SmtpResult rc = smtp_send(&cfg, &msg);
+    if (rc == SmtpResult::SMTP_OK)
         Serial.println("email sent - check the mailbox on your mail server");
     else
-        Serial.printf("email failed (SmtpResult %d) - see the README troubleshooting table\n", rc);
+        Serial.printf("email failed (SmtpResult %d) - see the README troubleshooting table\n", (int)rc);
 }
 
 void setup()

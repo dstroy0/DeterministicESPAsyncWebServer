@@ -185,13 +185,13 @@ void test_response_edge_rejections()
 {
     size_t boff = 0, blen = 0;
     char r2[] = "HTTP/1.1XXXXXXXX"; // no space after the version
-    TEST_ASSERT_EQUAL_INT(HTTP_CLIENT_ERR_RESPONSE,
+    TEST_ASSERT_EQUAL_INT(HttpClientError::HTTP_CLIENT_ERR_RESPONSE,
                           http_client_parse_response((uint8_t *)r2, sizeof(r2) - 1, &boff, &blen));
     char r3[] = "HTTP/1.1 999 Z\r\n\r\n"; // status outside 100..599
-    TEST_ASSERT_EQUAL_INT(HTTP_CLIENT_ERR_RESPONSE,
+    TEST_ASSERT_EQUAL_INT(HttpClientError::HTTP_CLIENT_ERR_RESPONSE,
                           http_client_parse_response((uint8_t *)r3, sizeof(r3) - 1, &boff, &blen));
     char r4[] = "HTTP/1.1 200 OK\r\nHost: x\r\n"; // no blank-line terminator
-    TEST_ASSERT_EQUAL_INT(HTTP_CLIENT_ERR_RESPONSE,
+    TEST_ASSERT_EQUAL_INT(HttpClientError::HTTP_CLIENT_ERR_RESPONSE,
                           http_client_parse_response((uint8_t *)r4, sizeof(r4) - 1, &boff, &blen));
 
     char r5[] =
@@ -213,9 +213,9 @@ void test_response_edge_rejections()
 void test_host_transport_stubs()
 {
     HttpClientResult res;
-    TEST_ASSERT_EQUAL_INT(HTTP_CLIENT_ERR_CONNECT, http_get("http://x/", &res));
+    TEST_ASSERT_EQUAL_INT(HttpClientError::HTTP_CLIENT_ERR_CONNECT, http_get("http://x/", &res));
     const uint8_t b[] = "x";
-    TEST_ASSERT_EQUAL_INT(HTTP_CLIENT_ERR_CONNECT, http_post("http://x/", "text/plain", b, 1, &res));
+    TEST_ASSERT_EQUAL_INT(HttpClientError::HTTP_CLIENT_ERR_CONNECT, http_post("http://x/", "text/plain", b, 1, &res));
     http_client_set_ca(nullptr, 0);
     http_client_set_pin(nullptr);
     http_client_clear_verify();

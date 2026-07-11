@@ -29,7 +29,7 @@
 #include <stdint.h>
 
 /** @brief Result of an SMTP send. 0 is success; every failure is a distinct negative code. */
-enum SmtpResult
+enum class SmtpResult : int32_t
 {
     SMTP_OK = 0,
     SMTP_ERR_ARG = -1,      ///< a required field (host / from / to) was null or empty
@@ -74,16 +74,16 @@ struct SmtpMessage
 /**
  * @brief Drive the full SMTP exchange over @p send / @p recv. Pure - no lwIP or TLS -
  * so it is host-testable with a scripted transport.
- * @return SMTP_OK on a delivered message, else an ::SmtpResult error.
+ * @return SmtpResult::SMTP_OK on a delivered message, else an ::SmtpResult error.
  */
-int smtp_run(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn send, SmtpRecvFn recv, void *ctx);
+SmtpResult smtp_run(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn send, SmtpRecvFn recv, void *ctx);
 
 /**
  * @brief Blocking one-shot send over the real transport (det_client, plus TLS when
  * `cfg->tls`). Opens the connection, runs smtp_run(), and closes.
- * @return SMTP_OK or an ::SmtpResult error. On non-Arduino (host) builds there is no
- *         lwIP, so this returns SMTP_ERR_CONNECT; use smtp_run() directly in tests.
+ * @return SmtpResult::SMTP_OK or an ::SmtpResult error. On non-Arduino (host) builds there is no
+ *         lwIP, so this returns SmtpResult::SMTP_ERR_CONNECT; use smtp_run() directly in tests.
  */
-int smtp_send(const SmtpConfig *cfg, const SmtpMessage *msg);
+SmtpResult smtp_send(const SmtpConfig *cfg, const SmtpMessage *msg);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SMTP_H

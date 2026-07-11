@@ -32,7 +32,7 @@
 #if DETWS_ENABLE_HTTP_CLIENT
 
 // Transport / result error codes (negative; HTTP status codes are positive).
-enum HttpClientError
+enum class HttpClientError : int32_t
 {
     HTTP_CLIENT_ERR_URL = -1,      ///< Malformed URL.
     HTTP_CLIENT_ERR_DNS = -2,      ///< Host resolution failed.

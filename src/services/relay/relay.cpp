@@ -78,20 +78,20 @@ void det_relay_init(DetRelay *r, const DetRelayEnd *client, const DetRelayEnd *o
     r->b = *origin;
 }
 
-int det_relay_step(DetRelay *r)
+DetRelayStatus det_relay_step(DetRelay *r)
 {
     if (!r)
-        return DET_RELAY_ERROR;
+        return DetRelayStatus::DET_RELAY_ERROR;
     // a -> b: dst is b, so b's shutdown fires when this direction finishes
     if (pump(&r->a, &r->b, r->buf_a2b, &r->a2b_len, &r->a2b_off, &r->a_eof, &r->a2b_done, &r->b_shut_sent,
              &r->bytes_a2b) < 0)
-        return DET_RELAY_ERROR;
+        return DetRelayStatus::DET_RELAY_ERROR;
     // b -> a: dst is a
     if (pump(&r->b, &r->a, r->buf_b2a, &r->b2a_len, &r->b2a_off, &r->b_eof, &r->b2a_done, &r->a_shut_sent,
              &r->bytes_b2a) < 0)
-        return DET_RELAY_ERROR;
+        return DetRelayStatus::DET_RELAY_ERROR;
 
-    return (r->a2b_done && r->b2a_done) ? DET_RELAY_DONE : DET_RELAY_RUNNING;
+    return (r->a2b_done && r->b2a_done) ? DetRelayStatus::DET_RELAY_DONE : DetRelayStatus::DET_RELAY_RUNNING;
 }
 
 void det_relay_note_eof(DetRelay *r, bool origin)

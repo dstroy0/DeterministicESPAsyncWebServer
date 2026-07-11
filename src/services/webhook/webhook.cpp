@@ -109,7 +109,7 @@ int detws_ifttt_payload(const char *v1, const char *v2, const char *v3, char *ou
 int detws_webhook_post(const char *url, const char *json)
 {
     if (!url || !json)
-        return HTTP_CLIENT_ERR_URL;
+        return HttpClientError::HTTP_CLIENT_ERR_URL;
     HttpClientResult r;
     return http_post(url, DET_MIME_JSON, (const uint8_t *)json, strlen(json), &r);
 }
