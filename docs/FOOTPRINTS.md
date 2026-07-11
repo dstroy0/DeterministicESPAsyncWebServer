@@ -17,7 +17,7 @@ from each example's `pio ci` size report and aggregated into
 | `COAP`                                   | L7-Application/13.CoAP                  | 739.1 KB (57.7%) | 67.2 KB (21.0%)  |
 | `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD`       | L7-Application/28.CoapBlock             | 710.5 KB (55.5%) | 47.2 KB (14.8%)  |
 | `COAP+COAP_OBSERVE`                      | L7-Application/27.CoapObserve           | 712.3 KB (55.6%) | 45.0 KB (14.1%)  |
-| `CONFIG_STORE+CONFIG_IO`                 | L7-Application/42.ConfigExport          | 738.4 KB (57.7%) | 64.9 KB (20.3%)  |
+| `CONFIG_STORE+CONFIG_IO`                 | L7-Application/42.ConfigExport          | 738.4 KB (57.7%) | 64.8 KB (20.3%)  |
 | `CSRF`                                   | L7-Application/33.Csrf                  | 734.9 KB (57.4%) | 64.8 KB (20.3%)  |
 | `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.8 KB (58.9%) | 65.1 KB (20.4%)  |
 | `DEVICE_ID`                              | L7-Application/32.DeviceUuid            | 733.9 KB (57.3%) | 64.8 KB (20.3%)  |

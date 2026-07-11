@@ -66,8 +66,8 @@
     "example": "L7-Application/42.ConfigExport",
     "flags": "-DDETWS_ENABLE_CONFIG_STORE=1 -DDETWS_ENABLE_CONFIG_IO=1",
     "board": "esp32dev",
-    "flash_bytes": 756117,
-    "ram_bytes": 66412
+    "flash_bytes": 756113,
+    "ram_bytes": 66388
   },
   "CSRF": {
     "example": "L7-Application/33.Csrf",
@@ -353,8 +353,8 @@
     "example": "L7-Application/56.OpcUaClient",
     "flags": "-DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_OPCUA_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 782053,
-    "ram_bytes": 80504
+    "flash_bytes": 782049,
+    "ram_bytes": 80480
   },
   "OTA": {
     "example": "L7-Application/16.OTA",
@@ -570,8 +570,8 @@
     "example": "L7-Application/45.Totp",
     "flags": "-DDETWS_ENABLE_TOTP=1",
     "board": "esp32dev",
-    "flash_bytes": 752341,
-    "ram_bytes": 66392
+    "flash_bytes": 752337,
+    "ram_bytes": 66368
   },
   "UDP_TELEMETRY": {
     "example": "L7-Application/39.UdpTelemetry",
