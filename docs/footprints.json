@@ -399,11 +399,11 @@
     "ram_bytes": 21920
   },
   "PREEMPT_QUEUE": {
-    "example": "Foundation/06.PreemptQueue",
+    "example": "Foundation/08.PreemptLanes",
     "flags": "-DDETWS_ENABLE_PREEMPT_QUEUE=1",
     "board": "esp32dev",
-    "flash_bytes": 274077,
-    "ram_bytes": 23968
+    "flash_bytes": 268393,
+    "ram_bytes": 23936
   },
   "PROMISC+FORWARD+ETHERNET": {
     "example": "Foundation/21.WifiCapture",
