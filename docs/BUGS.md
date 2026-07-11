@@ -18,13 +18,21 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 - **Why it surfaced now:** the stale-pcb crash used to **reboot and self-heal** this exact wedge; fixing the
   crash removed that accidental recovery, exposing that the 4-slot pool's slots do not free under abnormal
   (RST-race / half-open saturation) teardown. Fixing one bug uncovered the one it was hiding.
-- **Root cause:** (to investigate) suspected connection-slot leak - a slot left in a non-`CONN_FREE` state
-  that the timeout sweep does not reclaim when the peer RSTs mid-request or holds the slot half-open. Needs
-  JTAG inspection of `conn_pool[]` states after the flood.
-- **Fix:** pending. Likely: the timeout sweep and/or the error/abort teardown must guarantee a slot returns
-  to `CONN_FREE` for every abnormal close (RST, half-open timeout), independent of the response path.
-- **Lesson:** a crash that reboots can _mask_ a resource-leak DoS; only after removing the crash does the
-  leak become observable. Fix crashes, then re-attack to find what the reboot was hiding.
+- **Root cause (JTAG-confirmed):** the idle-timeout timestamp is refreshed on _raw recv activity_ instead of
+  _accepted-data progress_. `lowlevel_recv_cb` set `slot->last_activity_ms = detws_millis()` **before** the
+  backpressure check. An oversized request line (or any body larger than `RX_BUF_SIZE`) fills the RX ring; the
+  segment is refused (`ERR_MEM`, kept as lwIP `refused_data`) and **redelivered every retransmit**. Each
+  redelivery refreshed `last_activity_ms`, so `check_timeouts` always saw the slot as recently active and never
+  reaped it. Live JTAG breakpoint at the reap check on a wedged slot: `now=810066`, `last_act=806956`,
+  `diff=3110 < timeout=5000` (and `last_act` climbing 358768 -> 806956 across samples = being refreshed). Four
+  such slots leak and permanently wedge the 4-slot pool. A Slowloris-class DoS.
+- **Fix:** move the `last_activity_ms` refresh in `lowlevel_recv_cb` to **after** the backpressure check, so a
+  refused/redelivered segment does not refresh the idle timer - only data actually accepted into the ring (real
+  progress) does. A no-progress connection now idle-times-out and is reaped; a legitimately backpressured
+  connection the worker is draining still refreshes on each accepted segment.
+- **Lesson:** (1) a crash that reboots can _mask_ a resource-leak DoS - fix crashes, then re-attack to find what
+  the reboot was hiding. (2) an idle/liveness timer must be driven by _progress_, not raw I/O events: refreshing
+  on a refused/retransmitted segment lets a stalled peer hold a slot forever.
 
 ---
 

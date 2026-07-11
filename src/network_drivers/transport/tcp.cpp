@@ -758,8 +758,6 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
         return ERR_OK;
     }
 
-    slot->last_activity_ms = detws_millis();
-
     /*
      * Backpressure without data loss: if the whole segment will not fit in the
      * free ring space, refuse it (return ERR_MEM without freeing) so lwIP retains
@@ -775,8 +773,16 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
         DETWS_OBS_NOTICE(slot->id, ConnState::CONN_ACTIVE, DetConnReason::DET_CONN_R_BACKPRESSURE);
         TcpEvt evt = {EvtType::EVT_DATA, slot->id, 0}; // wake the loop so it drains the ring
         enqueue(slot, evt);
+        // Do NOT refresh the idle timer here: a refused segment is redelivered by lwIP every
+        // retransmit until the ring drains, so refreshing on refusal keeps a backpressure-stuck
+        // connection alive forever (idle sweep never reaps it -> slot leak / pool-exhaustion DoS,
+        // e.g. an oversized request line that fills the ring and never completes). The timer is
+        // refreshed below only when data is actually ACCEPTED (real progress), so a connection
+        // that makes no progress times out and is reaped.
         return ERR_MEM; // do NOT pbuf_free(p): lwIP keeps it and redelivers
     }
+
+    slot->last_activity_ms = detws_millis(); // accepted data = progress: refresh the idle timer
 
     // Bulk-copy the segment into the ring via the shared producer primitive: a
     // contiguous memcpy per pbuf (two across the wrap), advancing a LOCAL head and
