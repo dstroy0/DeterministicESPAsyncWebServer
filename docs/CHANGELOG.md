@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`2edeeb1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2edeeb1cdcb59b83005ee534f3612c5462757fda))
 - update CHANGELOG.md [skip ci] ([`028d619`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/028d61938411deb6b9b62854772d3cd31e1e0bde))
 - update CHANGELOG.md [skip ci] ([`1c30126`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c30126d2e4fad322c9a88b6f9ba7c47cefce626))
 - update CHANGELOG.md [skip ci] ([`8225613`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/822561328eea52622523ad46bda2736130e31724))
@@ -18,6 +19,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- MTConnect done on all three dimensions (interop 10/~50) ([`34c4546`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34c4546a798fa4ebae9ee4016b05fe6e7ea27f2c))
 - MQTT done on all three dimensions (device-as-client attack) ([`755db61`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/755db61b312f2ba1c4de9f15a500b64f286d8ab9))
 - WebSocket done on all three dimensions (bench ~ -> OK) ([`9ca5fc3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ca5fc302c16b403fb3d34754d91188369842fc2))
 - Modbus done on all three dimensions (+10 attack families) ([`c29c527`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c29c527a1738931ae11c6ff0d0d8c6aee1fd4611))
@@ -41,6 +43,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- MTConnect /sample param-abuse attack ([`c566996`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c5669961cdb4d1361700b1f3af515eff5e7ee3df))
+- MTConnect peer (probe/current/sample XML validation) ([`8f26d87`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f26d87906e7ffc12ded761d736420d291d97724))
+- MTConnect agent (ANSI/MTC1.4) - /probe /current /sample ([`4d9a7e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4d9a7e367f6c76d879078f3dab3c405c17b3307b))
 - MQTT malicious-broker attack (device-as-client) ([`cf9bcad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf9bcad2f58fe989441b4086c7f38586e78ce39b))
 - /mqtt/probe device-as-client trigger route ([`9dd18fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9dd18fb9c904d2564b0d14d788713271087f4ba2))
 - WebSocket permessage-deflate zip-bomb attack ([`22c4f25`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/22c4f25ac38547871d21a5d49693e72e21412b0c))
