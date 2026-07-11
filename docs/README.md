@@ -588,6 +588,7 @@ src/
 │       ├── udp.cpp
 │       └── udp.h
 ├── server/
+│   ├── auth.cpp
 │   ├── dwserver_internal.h
 │   ├── file_serving.cpp
 │   └── webdav.cpp
