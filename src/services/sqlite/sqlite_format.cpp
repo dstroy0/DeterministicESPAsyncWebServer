@@ -155,7 +155,8 @@ bool sqlite_parse_table_leaf_cell(const uint8_t *page, size_t page_len, uint32_t
 {
     if (cell_off >= page_len)
         return false;
-    uint64_t payload_len = 0, rowid = 0;
+    uint64_t payload_len = 0;
+    uint64_t rowid = 0;
     size_t n1 = sqlite_varint_decode(page + cell_off, page_len - cell_off, &payload_len);
     if (n1 == 0)
         return false;
@@ -574,7 +575,8 @@ uint32_t write_value(const SqliteValue *v, uint64_t st, uint32_t vlen, uint8_t *
 // Total encoded length of a record (header + values), or 0 on invalid input.
 uint32_t record_len(const SqliteValue *cols, uint32_t n)
 {
-    uint32_t st_len = 0, val_len = 0;
+    uint32_t st_len = 0;
+    uint32_t val_len = 0;
     for (uint32_t c = 0; c < n; c++)
     {
         uint64_t st = 0;

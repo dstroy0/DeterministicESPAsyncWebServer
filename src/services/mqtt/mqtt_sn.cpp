@@ -36,7 +36,8 @@ uint8_t mqttsn_make_flags(bool dup, uint8_t qos, bool retain, bool will, bool cl
 static size_t frame_header(uint8_t *buf, size_t cap, uint8_t msg_type, size_t body_len, size_t *total)
 {
     size_t core = 1 + body_len; // MsgType + body
-    size_t lenfield, t;
+    size_t lenfield;
+    size_t t;
     if (1 + core <= 255)
     {
         lenfield = 1;
@@ -223,7 +224,8 @@ bool mqttsn_parse_header(const uint8_t *buf, size_t len, MqttsnHeader *out, size
 {
     if (!buf || !out || !consumed || len < 2)
         return false;
-    size_t lenfield, total;
+    size_t lenfield;
+    size_t total;
     if (buf[0] == MQTTSN_LEN3_PREFIX)
     {
         if (len < 3)

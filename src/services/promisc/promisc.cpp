@@ -19,7 +19,8 @@ bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out)
         return false;
     memset(out, 0, sizeof(*out));
 
-    const uint8_t fc0 = frame[0], fc1 = frame[1];
+    const uint8_t fc0 = frame[0];
+    const uint8_t fc1 = frame[1];
     out->type = (WifiFrameType)((fc0 >> 2) & 0x3);
     out->subtype = (uint8_t)((fc0 >> 4) & 0xF);
     out->to_ds = (fc1 & 0x01) != 0;
@@ -52,7 +53,9 @@ bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out)
         return false;
     out->hdr_len = hlen;
 
-    const uint8_t *a1 = frame + 4, *a2 = frame + 10, *a3 = frame + 16;
+    const uint8_t *a1 = frame + 4;
+    const uint8_t *a2 = frame + 10;
+    const uint8_t *a3 = frame + 16;
     if (!out->to_ds && !out->from_ds) // IBSS / management
     {
         out->dst = a1;

@@ -20,7 +20,8 @@ bool ci_eq(const char *a, const char *b)
 {
     while (*a && *b)
     {
-        char ca = *a, cb = *b;
+        char ca = *a;
+        char cb = *b;
         if (ca >= 'A' && ca <= 'Z')
             ca += 32;
         if (cb >= 'A' && cb <= 'Z')
@@ -41,7 +42,8 @@ bool parse_question(const uint8_t *q, size_t qlen, char *name, size_t name_cap, 
     if (qlen < 12)
         return false;
     // GCOVR_EXCL_STOP
-    size_t i = 12, n = 0;
+    size_t i = 12;
+    size_t n = 0;
     for (;;)
     {
         if (i >= qlen)

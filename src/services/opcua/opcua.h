@@ -65,7 +65,8 @@
 struct UaWriter
 {
     uint8_t *o;
-    size_t cap, n;
+    size_t cap;
+    size_t n;
     bool ok;
 };
 void ua_w_u8(UaWriter *w, uint8_t v);
@@ -83,7 +84,8 @@ void ua_w_string(UaWriter *w, const char *s, int32_t len);
 struct UaReader
 {
     const uint8_t *p;
-    size_t len, off;
+    size_t len;
+    size_t off;
     bool err;
 };
 uint8_t ua_r_u8(UaReader *r);

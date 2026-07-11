@@ -573,7 +573,8 @@ static void handle_packet(uint8_t type, uint8_t flags, const uint8_t *body, uint
         break;
     case MqttType::MQTT_PUBLISH: {
         char topic[DETWS_MQTT_MAX_TOPIC];
-        size_t tlen, plen;
+        size_t tlen;
+        size_t plen;
         const uint8_t *payload;
         uint16_t pid;
         if (!mqtt_parse_publish(body, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))
@@ -663,7 +664,8 @@ static void process_rx()
         size_t hn = avail < 5 ? avail : 5;
         for (size_t i = 0; i < hn; i++)
             hdr[i] = ring_peek(i);
-        uint8_t type, flags;
+        uint8_t type;
+        uint8_t flags;
         uint32_t rl;
         size_t hl;
         if (!mqtt_parse_fixed_header(hdr, hn, &type, &flags, &rl, &hl))
