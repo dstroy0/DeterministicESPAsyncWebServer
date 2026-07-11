@@ -141,11 +141,11 @@ void test_oidc_parse_edge_guards()
     const char *hdr_colon = "eyJhbGciOg.b.c";      // {"alg":
     const char *hdr_array = "eyJhbGciOlthYmM.b.c"; // {"alg":[abc
     const char *hdr_negnum = "eyJhbGciOi01fQ.b.c"; // {"alg":-5}
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG,
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_ALG,
                           detws_oidc_verify_with_key(hdr_colon, strlen(hdr_colon), &key, ISS, AUD, NOW, nullptr));
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG,
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_ALG,
                           detws_oidc_verify_with_key(hdr_array, strlen(hdr_array), &key, ISS, AUD, NOW, nullptr));
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG,
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_ALG,
                           detws_oidc_verify_with_key(hdr_negnum, strlen(hdr_negnum), &key, ISS, AUD, NOW, nullptr));
 
     // Scratch arena exhausted before the decode buffers can be borrowed -> fail closed.
@@ -153,7 +153,7 @@ void test_oidc_parse_edge_guards()
     while (scratch_alloc(256, 1))
     {
     }
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,
                           detws_oidc_verify_with_key(K_TOK_VALID, strlen(K_TOK_VALID), &key, ISS, AUD, NOW, nullptr));
     scratch_reset();
 
@@ -191,25 +191,25 @@ void test_oidc_signed_claim_guards()
     char pl[256];
     snprintf(pl, sizeof(pl), "{\"iss\":\"%s\",\"exp\":4102444800}", II);
     make_jwt(pl, tok, sizeof(tok));
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,
                           detws_oidc_verify_with_key(tok, strlen(tok), &key, ISS, AUD, NOW, nullptr));
 
     // aud is an array with no matching entry -> the array loop finds no match -> ERR_AUD.
     snprintf(pl, sizeof(pl), "{\"iss\":\"%s\",\"aud\":[\"other-app\"],\"exp\":4102444800}", II);
     make_jwt(pl, tok, sizeof(tok));
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,
                           detws_oidc_verify_with_key(tok, strlen(tok), &key, ISS, AUD, NOW, nullptr));
 
     // aud array whose entry has an unterminated quote -> the inner scan bails -> ERR_AUD.
     snprintf(pl, sizeof(pl), "{\"iss\":\"%s\",\"aud\":[\"x],\"exp\":4102444800}", II);
     make_jwt(pl, tok, sizeof(tok));
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD,
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,
                           detws_oidc_verify_with_key(tok, strlen(tok), &key, ISS, AUD, NOW, nullptr));
 
     // A token whose nbf is in the future -> ERR_NOT_YET.
     snprintf(pl, sizeof(pl), "{\"iss\":\"%s\",\"aud\":\"%s\",\"exp\":4102444800,\"nbf\":4102444800}", II, AUD);
     make_jwt(pl, tok, sizeof(tok));
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_NOT_YET,
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_NOT_YET,
                           detws_oidc_verify_with_key(tok, strlen(tok), &key, ISS, AUD, NOW, nullptr));
 
     // A valid signature over a payload segment that base64url-decodes to nothing -> ERR_FORMAT.
@@ -222,7 +222,7 @@ void test_oidc_signed_claim_guards()
         ssh_rsa_sign((const uint8_t *)signing, (size_t)sl, sig);
         b64url_enc(sig, 256, seg2);
         snprintf(tok, sizeof(tok), "%s.A.%s", seg0, seg2);
-        TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,
+        TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,
                               detws_oidc_verify_with_key(tok, strlen(tok), &key, ISS, AUD, NOW, nullptr));
     }
 }
@@ -257,8 +257,8 @@ void test_jwks_find_missing_kid_fails()
 void test_verify_valid_token_and_claims()
 {
     DetwsOidcClaims c;
-    int rc = detws_oidc_verify(K_TOK_VALID, strlen(K_TOK_VALID), K_JWKS, ISS, AUD, NOW, &c);
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_OK, rc);
+    DetwsOidcResult rc = detws_oidc_verify(K_TOK_VALID, strlen(K_TOK_VALID), K_JWKS, ISS, AUD, NOW, &c);
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_OK, rc);
     TEST_ASSERT_EQUAL_STRING("user-42", c.sub);
     TEST_ASSERT_EQUAL_STRING("alice@example.com", c.email);
     TEST_ASSERT_TRUE(c.iat == 1700000000LL);
@@ -267,32 +267,33 @@ void test_verify_valid_token_and_claims()
 
 void test_verify_aud_array()
 {
-    int rc = detws_oidc_verify(K_TOK_AUDARR, strlen(K_TOK_AUDARR), K_JWKS, ISS, AUD, NOW, nullptr);
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_OK, rc); // "client-123" is one element of the aud array
+    DetwsOidcResult rc = detws_oidc_verify(K_TOK_AUDARR, strlen(K_TOK_AUDARR), K_JWKS, ISS, AUD, NOW, nullptr);
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_OK, rc); // "client-123" is one element of the aud array
 }
 
 void test_reject_expired()
 {
-    int rc = detws_oidc_verify(K_TOK_EXPIRED, strlen(K_TOK_EXPIRED), K_JWKS, ISS, AUD, NOW, nullptr);
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_EXPIRED, rc);
+    DetwsOidcResult rc = detws_oidc_verify(K_TOK_EXPIRED, strlen(K_TOK_EXPIRED), K_JWKS, ISS, AUD, NOW, nullptr);
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_EXPIRED, rc);
 }
 
 void test_reject_wrong_issuer()
 {
-    int rc = detws_oidc_verify(K_TOK_VALID, strlen(K_TOK_VALID), K_JWKS, "https://evil.example", AUD, NOW, nullptr);
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ISS, rc);
+    DetwsOidcResult rc =
+        detws_oidc_verify(K_TOK_VALID, strlen(K_TOK_VALID), K_JWKS, "https://evil.example", AUD, NOW, nullptr);
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_ISS, rc);
 }
 
 void test_reject_wrong_audience()
 {
-    int rc = detws_oidc_verify(K_TOK_VALID, strlen(K_TOK_VALID), K_JWKS, ISS, "other-client", NOW, nullptr);
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_AUD, rc);
+    DetwsOidcResult rc = detws_oidc_verify(K_TOK_VALID, strlen(K_TOK_VALID), K_JWKS, ISS, "other-client", NOW, nullptr);
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD, rc);
 }
 
 void test_reject_non_rs256_header()
 {
-    int rc = detws_oidc_verify(K_TOK_HS256HDR, strlen(K_TOK_HS256HDR), K_JWKS, ISS, AUD, NOW, nullptr);
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_ALG, rc);
+    DetwsOidcResult rc = detws_oidc_verify(K_TOK_HS256HDR, strlen(K_TOK_HS256HDR), K_JWKS, ISS, AUD, NOW, nullptr);
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_ALG, rc);
 }
 
 void test_reject_tampered_payload()
@@ -302,8 +303,8 @@ void test_reject_tampered_payload()
     char *dot = strchr(tok, '.'); // end of header
     char *c = dot + 6;            // a byte inside the payload segment
     *c = (*c == 'A') ? 'B' : 'A'; // flip to a different valid base64url char
-    int rc = detws_oidc_verify(tok, strlen(tok), K_JWKS, ISS, AUD, NOW, nullptr);
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_SIGNATURE, rc);
+    DetwsOidcResult rc = detws_oidc_verify(tok, strlen(tok), K_JWKS, ISS, AUD, NOW, nullptr);
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_SIGNATURE, rc);
 }
 
 void test_reject_tampered_signature()
@@ -312,24 +313,24 @@ void test_reject_tampered_signature()
     strcpy(tok, K_TOK_VALID);
     char *sig = strrchr(tok, '.') + 1; // first char of the signature segment
     *sig = (*sig == 'Q') ? 'R' : 'Q';  // flip a meaningful (non-padding) base64url char
-    int rc = detws_oidc_verify(tok, strlen(tok), K_JWKS, ISS, AUD, NOW, nullptr);
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_SIGNATURE, rc);
+    DetwsOidcResult rc = detws_oidc_verify(tok, strlen(tok), K_JWKS, ISS, AUD, NOW, nullptr);
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_SIGNATURE, rc);
 }
 
 void test_reject_unknown_key()
 {
     // JWKS whose only key has a different kid than the token's.
     const char *other = "{\"keys\":[{\"kty\":\"RSA\",\"kid\":\"different\",\"n\":\"AQAB\",\"e\":\"AQAB\"}]}";
-    int rc = detws_oidc_verify(K_TOK_VALID, strlen(K_TOK_VALID), other, ISS, AUD, NOW, nullptr);
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_KEY, rc);
+    DetwsOidcResult rc = detws_oidc_verify(K_TOK_VALID, strlen(K_TOK_VALID), other, ISS, AUD, NOW, nullptr);
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_KEY, rc);
 }
 
 void test_reject_malformed()
 {
     // No kid extractable -> the sole JWKS key is selected, then the token shape
     // fails to split into three segments.
-    int rc = detws_oidc_verify("not-a-jwt", 9, K_JWKS, ISS, AUD, NOW, nullptr);
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT, rc);
+    DetwsOidcResult rc = detws_oidc_verify("not-a-jwt", 9, K_JWKS, ISS, AUD, NOW, nullptr);
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT, rc);
 }
 
 // token_kid rejects null args, a zero-cap output and a header segment that does not
@@ -363,27 +364,32 @@ void test_verify_guards_and_malformed()
 {
     DetwsOidcKey unloaded;
     unloaded.loaded = false;
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,
                           detws_oidc_verify_with_key("a.b.c", 5, &unloaded, ISS, AUD, NOW, nullptr));
 
     DetwsOidcKey key;
     key.loaded = false;
     TEST_ASSERT_TRUE(detws_oidc_jwks_find(K_JWKS, "test-key-1", &key));
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT, detws_oidc_verify_with_key(nullptr, 5, &key, ISS, AUD, NOW, nullptr));
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT, detws_oidc_verify_with_key("a.b.c", 0, &key, ISS, AUD, NOW, nullptr));
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT,
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,
+                          detws_oidc_verify_with_key(nullptr, 5, &key, ISS, AUD, NOW, nullptr));
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,
+                          detws_oidc_verify_with_key("a.b.c", 0, &key, ISS, AUD, NOW, nullptr));
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,
                           detws_oidc_verify_with_key("A.b.c", 5, &key, ISS, AUD, NOW, nullptr)); // header decode fail
 
     // Wrong segment counts (one '.' / three '.').
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT, detws_oidc_verify("aa.bb", 5, K_JWKS, ISS, AUD, NOW, nullptr));
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT, detws_oidc_verify("a.b.c.d", 7, K_JWKS, ISS, AUD, NOW, nullptr));
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,
+                          detws_oidc_verify("aa.bb", 5, K_JWKS, ISS, AUD, NOW, nullptr));
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,
+                          detws_oidc_verify("a.b.c.d", 7, K_JWKS, ISS, AUD, NOW, nullptr));
 
     // A valid header/payload but a truncated (wrong-length) signature.
     char buf[2048];
     snprintf(buf, sizeof(buf), "%s", K_TOK_VALID);
     char *last_dot = strrchr(buf, '.');
     last_dot[6] = '\0'; // keep only 5 signature chars -> decodes to != 256 bytes
-    TEST_ASSERT_EQUAL_INT(DETWS_OIDC_ERR_FORMAT, detws_oidc_verify(buf, strlen(buf), K_JWKS, ISS, AUD, NOW, nullptr));
+    TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,
+                          detws_oidc_verify(buf, strlen(buf), K_JWKS, ISS, AUD, NOW, nullptr));
 }
 
 // Crafted JWKS documents exercise the JSON field scanner and the RSA-JWK loader:

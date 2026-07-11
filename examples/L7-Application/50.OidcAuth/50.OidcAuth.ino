@@ -70,7 +70,7 @@ void setup()
 
         DetwsOidcClaims claims;
         int rc = detws_oidc_verify(token, strlen(token), JWKS, ISSUER, AUDIENCE, now, &claims);
-        if (rc != DETWS_OIDC_OK)
+        if (rc != DetwsOidcResult::DETWS_OIDC_OK)
         {
             char b[40];
             snprintf(b, sizeof(b), "{\"error\":%d}", rc);

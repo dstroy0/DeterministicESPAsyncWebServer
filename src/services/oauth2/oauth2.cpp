@@ -161,17 +161,18 @@ Oauth2Ctx s_oauth;
 int post_and_parse(Oauth2Ctx &c, const char *token_url, int body_len, DetwsOAuth2Tokens *out)
 {
     if (body_len <= 0)
-        return DETWS_OAUTH2_ERR_BUILD;
+        return (int)DetwsOAuth2Result::DETWS_OAUTH2_ERR_BUILD;
     HttpClientResult r;
     int st = http_post(token_url, "application/x-www-form-urlencoded", (const uint8_t *)c.body, (size_t)body_len, &r);
     if (st <= 0)
-        return DETWS_OAUTH2_ERR_TRANSPORT;
+        return (int)DetwsOAuth2Result::DETWS_OAUTH2_ERR_TRANSPORT;
     size_t k = r.body_len < sizeof(c.resp) - 1 ? r.body_len : sizeof(c.resp) - 1;
     if (r.body && k)
         memcpy(c.resp, r.body, k);
     c.resp[k] = '\0';
     if (!detws_oauth2_parse_token_response(c.resp, out))
-        return st >= 400 ? st : DETWS_OAUTH2_ERR_RESPONSE; // surface the provider's 4xx, else generic
+        return st >= 400 ? st
+                         : DetwsOAuth2Result::DETWS_OAUTH2_ERR_RESPONSE; // surface the provider's 4xx, else generic
     return st;
 }
 } // namespace

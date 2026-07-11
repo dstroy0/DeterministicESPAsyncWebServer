@@ -46,7 +46,7 @@ struct DetwsOAuth2Tokens
 };
 
 /** @brief oauth2 result codes (HTTP status codes are positive on success). */
-enum DetwsOAuth2Result
+enum class DetwsOAuth2Result : int32_t
 {
     DETWS_OAUTH2_ERR_BUILD = -1,     ///< request body did not fit @p cap.
     DETWS_OAUTH2_ERR_TRANSPORT = -2, ///< HTTP client error (no DNS / TLS / connection).

@@ -43,7 +43,7 @@
 #define DETWS_OIDC_RSA_BYTES 256
 
 /** @brief Verification result codes (0 = success, negatives = failure reasons). */
-enum DetwsOidcResult
+enum class DetwsOidcResult : int32_t
 {
     DETWS_OIDC_OK = 0,             ///< Token verified and all claims pass.
     DETWS_OIDC_ERR_FORMAT = -1,    ///< Not a 3-part JWT / bad base64 / oversized.
@@ -101,8 +101,9 @@ bool detws_oidc_jwks_find(const char *jwks_json, const char *kid, DetwsOidcKey *
  * @param claims            receives extracted claims on success (may be nullptr).
  * @return ::DETWS_OIDC_OK or a negative ::DetwsOidcResult.
  */
-int detws_oidc_verify_with_key(const char *token, size_t token_len, const DetwsOidcKey *key, const char *expected_iss,
-                               const char *expected_aud, uint32_t now_unix, DetwsOidcClaims *claims);
+DetwsOidcResult detws_oidc_verify_with_key(const char *token, size_t token_len, const DetwsOidcKey *key,
+                                           const char *expected_iss, const char *expected_aud, uint32_t now_unix,
+                                           DetwsOidcClaims *claims);
 
 /**
  * @brief Verify an ID token, resolving the key from @p jwks_json by the token's kid.
@@ -110,8 +111,8 @@ int detws_oidc_verify_with_key(const char *token, size_t token_len, const DetwsO
  * Convenience wrapper over detws_oidc_jwks_find() + detws_oidc_verify_with_key().
  * @return ::DETWS_OIDC_OK or a negative ::DetwsOidcResult (ERR_KEY if no key matches).
  */
-int detws_oidc_verify(const char *token, size_t token_len, const char *jwks_json, const char *expected_iss,
-                      const char *expected_aud, uint32_t now_unix, DetwsOidcClaims *claims);
+DetwsOidcResult detws_oidc_verify(const char *token, size_t token_len, const char *jwks_json, const char *expected_iss,
+                                  const char *expected_aud, uint32_t now_unix, DetwsOidcClaims *claims);
 
 #endif // DETWS_ENABLE_OIDC
 #endif // DETERMINISTICESPASYNCWEBSERVER_OIDC_H
