@@ -58,7 +58,7 @@ static const uint32_t OID_LED[] = {1, 3, 6, 1, 4, 1, 49374, 20, 0};       // INT
 // Dynamic read: report the current free heap as a Gauge32.
 bool get_free_heap(SnmpValue *out)
 {
-    out->type = SnmpTag::SNMP_GAUGE32;
+    out->type = (uint8_t)SnmpTag::SNMP_GAUGE32;
     out->uval = (uint32_t)ESP.getFreeHeap();
     return true;
 }
@@ -66,7 +66,7 @@ bool get_free_heap(SnmpValue *out)
 // Writable: drive the on-board LED from an INTEGER (0 = off, non-zero = on).
 bool set_led(const SnmpValue *in)
 {
-    if (in->type != SnmpTag::BER_INTEGER)
+    if (in->type != (uint8_t)SnmpTag::BER_INTEGER)
         return false; // wrong type -> the agent replies wrongType
     digitalWrite(LED_BUILTIN, in->ival ? HIGH : LOW);
     return true;
@@ -92,7 +92,7 @@ void setup()
     snmp_agent_init("public");              // read-only community
     snmp_agent_set_rw_community("private"); // read-write community (authorizes Set)
     snmp_agent_set_system("DeterministicESPAsyncWebServer SNMP agent", "admin@example.com", "esp32-detws", "lab bench");
-    snmp_agent_add_dynamic(OID_FREE_HEAP, 9, SnmpTag::SNMP_GAUGE32, get_free_heap);
+    snmp_agent_add_dynamic(OID_FREE_HEAP, 9, (uint8_t)SnmpTag::SNMP_GAUGE32, get_free_heap);
     snmp_agent_add_integer(OID_LED, 9, 0, set_led); // writable
 
 #if DETWS_ENABLE_SNMP_V3
