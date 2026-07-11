@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`e252c8a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e252c8a85eb8746f1d0f658facb73418ee03ece2))
+- update CHANGELOG.md [skip ci] ([`f0ef6c4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0ef6c4c65f62c0eb8b1f5f3a6f2b7ab75337478))
 - update CHANGELOG.md [skip ci] ([`ba9c2fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba9c2fdc6605e26d808b36680a639c0e8be3f935))
 - update CHANGELOG.md [skip ci] ([`1b1ffc8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1b1ffc86530c519e5fe25e89715055b8afc58e2b))
 - update CHANGELOG.md [skip ci] ([`c129f0a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c129f0a0af57ac084f235a6ca46bb0b46c19030b))
@@ -79,6 +81,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- document why the cipher/mac tags stay anonymous plain enums ([`b37c91a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b37c91af2080c05dd5ff0a6f4dd50b25d27862a7))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`793078d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/793078d8e824798fdace24467f41747eee77f8f9))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5afa24b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5afa24bb27e2ddf84f77d668f21c1998340050b4))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`20d2d70`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/20d2d70e8b3d262c60cd99ba025b534552c52dd1))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cb1994f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb1994fe3ae8905902b02cda51da98b87861b893))
