@@ -559,6 +559,29 @@ rig on an ESP32-S3. Cipher suite `ECDHE-ECDSA-AES256-GCM-SHA384` (P-256), self-s
   Bringing this up found and fixed two hardware-only bugs (a tcpip_thread self-deadlock and an RX ring smaller
   than a modern ClientHello) - see [BUGS.md](BUGS.md).
 
+### HTTP/2 over TLS (DETWS_ENABLE_HTTP2, PSRAM)
+
+HTTP/2 rides the TLS handshake (ALPN `h2`) and adds the binary framing + HPACK + a per-connection stream
+engine whose ~28 KB-per-conn pool lives in PSRAM. Measured device-as-server on the ESP32-S3 from a real h2
+client (Python `httpx`, backed by the `h2` library) against the PSRAM h2 rig.
+
+| Operation                                     | ESP32-S3            | Notes                                             |
+| --------------------------------------------- | ------------------- | ------------------------------------------------- |
+| Cold connect (TLS + ALPN h2 + first GET /)    | ~452 ms median      | TLS handshake dominates (see above)               |
+| Warm request (established connection, GET /)  | ~51 ms/req (19.5/s) | HEADERS/DATA + HPACK per stream, h2 pool in PSRAM |
+| Effective concurrent streams (one connection) | ~1-2                | excess streams are reset; device stays up         |
+
+- On a warm connection a request is **~51 ms** - the h2 framing (HPACK encode/decode, frame assembly) plus the
+  PSRAM-resident stream pool (external RAM is slower than internal DRAM) cost more than a plaintext HTTP/1.1
+  hit. The engine serves **sequential** streams reliably but **serializes** concurrent ones: a burst of 4-8
+  simultaneous streams completes only ~1-2 and resets the rest (the client sees a stream error), which is the
+  bounded-resource, deterministic trade-off - it never grows memory to absorb the fan-out, and the device
+  stays alive. Practicality: HTTP/2 here buys ALPN interop + header compression + one long-lived connection,
+  not high stream parallelism; drive it with modest concurrency.
+- HW-verified: the `http2` interop peer is 7/7 (ALPN h2, multiplexed streams, JSON/text bodies) and the
+  `h2_abuse` attack is held (rapid-reset / CONTINUATION-flood / HPACK-bomb / PING-flood, 0 findings). Bring-up
+  fixed a core-locking `tcp_write` assert on the IDF-5.5 PSRAM core - see [BUGS.md](BUGS.md).
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
