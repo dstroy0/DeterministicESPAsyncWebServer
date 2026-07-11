@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-11 06:05:36
+**Generated:** 2026-07-11 06:53:07
 **Command:** `pio test` over 214 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 3023 passed - 187s
+**Result:** ✅ 3023 passed - 197s
 
 ---
 
@@ -18,7 +18,7 @@
 | `test_ftp`               | `native_ftp`            |    16 |   ✅   | 00:00:00.539 |
 | `test_httpcache`         | `native_httpcache`      |    11 |   ✅   | 00:00:00.547 |
 | `test_det_primitives`    | `native_det_primitives` |     5 |   ✅   | 00:00:00.521 |
-| `test_det_ip`            | `native_det_ip`         |    11 |   ✅   | 00:00:00.607 |
+| `test_det_ip`            | `native_det_ip`         |    11 |   ✅   | 00:00:00.746 |
 | `test_det_arena`         | `native_det_arena`      |    19 |   ✅   | 00:00:00.654 |
 | `test_ssh_ed25519`       | `native_ssh_ed25519`    |    16 |   ✅   | 00:00:02.178 |
 | `test_crypto_kat`        | `native_crypto_kat`     |     9 |   ✅   | 00:00:01.449 |
@@ -33,15 +33,15 @@
 | `test_dmx`               | `native_dmx`            |     6 |   ✅   | 00:00:00.537 |
 | `test_nmea0183`          | `native_nmea0183`       |     8 |   ✅   | 00:00:00.535 |
 | `test_iolink`            | `native_iolink`         |     6 |   ✅   | 00:00:00.530 |
-| `test_sse`               | `native`                |    37 |   ✅   | 00:00:03.955 |
-| `test_session`           | `native`                |    19 |   ✅   | 00:00:00.522 |
-| `test_presentation`      | `native`                |    63 |   ✅   | 00:00:00.597 |
-| `test_transport`         | `native`                |    44 |   ✅   | 00:00:00.565 |
-| `test_websocket`         | `native`                |    69 |   ✅   | 00:00:00.669 |
-| `test_http_parser`       | `native`                |    93 |   ✅   | 00:00:00.575 |
-| `test_observability`     | `native_observability`  |    17 |   ✅   | 00:00:00.708 |
-| `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.026 |
-| `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.648 |
+| `test_sse`               | `native`                |    37 |   ✅   | 00:00:04.055 |
+| `test_session`           | `native`                |    19 |   ✅   | 00:00:00.683 |
+| `test_presentation`      | `native`                |    63 |   ✅   | 00:00:00.732 |
+| `test_transport`         | `native`                |    44 |   ✅   | 00:00:00.724 |
+| `test_websocket`         | `native`                |    69 |   ✅   | 00:00:00.780 |
+| `test_http_parser`       | `native`                |    93 |   ✅   | 00:00:00.725 |
+| `test_observability`     | `native_observability`  |    17 |   ✅   | 00:00:00.924 |
+| `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.313 |
+| `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.811 |
 | `test_provisioning`      | `native_prov`           |     7 |   ✅   | 00:00:00.568 |
 | `test_ssh_crypto`        | `native_ssh`            |    53 |   ✅   | 00:00:02.432 |
 | `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.482 |
@@ -49,36 +49,36 @@
 | `test_ssh_transport`     | `native_ssh`            |    37 |   ✅   | 00:00:01.690 |
 | `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.502 |
 | `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:00.933 |
-| `test_ssh_conn`          | `native_ssh_conn`       |    15 |   ✅   | 00:00:01.666 |
-| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:01.371 |
-| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.549 |
-| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.551 |
-| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.491 |
-| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.552 |
-| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.560 |
-| `test_json`              | `native_app`            |    28 |   ✅   | 00:00:00.533 |
-| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.562 |
-| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.560 |
-| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.581 |
-| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.552 |
-| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.529 |
-| `test_multipart`         | `native_app`            |    25 |   ✅   | 00:00:00.579 |
-| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.562 |
-| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.571 |
-| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.562 |
-| `test_chunked`           | `native_app`            |    14 |   ✅   | 00:00:00.567 |
-| `test_application`       | `native_app`            |    71 |   ✅   | 00:00:00.701 |
-| `test_webdav_handler`    | `native_webdav_handler` |    29 |   ✅   | 00:00:01.281 |
-| `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.216 |
+| `test_ssh_conn`          | `native_ssh_conn`       |    15 |   ✅   | 00:00:02.169 |
+| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:01.572 |
+| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.708 |
+| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.724 |
+| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.620 |
+| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.694 |
+| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.696 |
+| `test_json`              | `native_app`            |    28 |   ✅   | 00:00:00.673 |
+| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.706 |
+| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.700 |
+| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.749 |
+| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.715 |
+| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.692 |
+| `test_multipart`         | `native_app`            |    25 |   ✅   | 00:00:00.745 |
+| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.722 |
+| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.737 |
+| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.693 |
+| `test_chunked`           | `native_app`            |    14 |   ✅   | 00:00:00.721 |
+| `test_application`       | `native_app`            |    71 |   ✅   | 00:00:00.881 |
+| `test_webdav_handler`    | `native_webdav_handler` |    29 |   ✅   | 00:00:01.675 |
+| `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.600 |
 | `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:00.673 |
 | `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.450 |
 | `test_snmp_v3`           | `native_snmp_v3`        |    22 |   ✅   | 00:00:01.828 |
-| `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:00.754 |
+| `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:00.950 |
 | `test_coap`              | `native_coap`           |    44 |   ✅   | 00:00:00.631 |
 | `test_coap`              | `native_coap_observe`   |    46 |   ✅   | 00:00:00.674 |
 | `test_webdav`            | `native_webdav`         |    25 |   ✅   | 00:00:00.577 |
 | `test_modbus`            | `native_modbus`         |    23 |   ✅   | 00:00:00.540 |
-| `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.714 |
+| `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.917 |
 | `test_redis_resp`        | `native_redis`          |    14 |   ✅   | 00:00:00.558 |
 | `test_sqlite`            | `native_sqlite`         |    23 |   ✅   | 00:00:00.515 |
 | `test_stomp`             | `native_stomp`          |    14 |   ✅   | 00:00:00.544 |
@@ -126,20 +126,20 @@
 | `test_audit_log`         | `native_audit_log`      |    16 |   ✅   | 00:00:00.630 |
 | `test_oidc`              | `native_oidc`           |    19 |   ✅   | 00:00:07.290 |
 | `test_vfs`               | `native_vfs`            |    12 |   ✅   | 00:00:00.562 |
-| `test_graphql`           | `native_graphql`        |    32 |   ✅   | 00:00:00.562 |
+| `test_graphql`           | `native_graphql`        |    32 |   ✅   | 00:00:00.773 |
 | `test_espnow`            | `native_espnow`         |     8 |   ✅   | 00:00:00.559 |
 | `test_oauth2`            | `native_oauth2`         |     9 |   ✅   | 00:00:00.572 |
 | `test_opcua`             | `native_opcua`          |    47 |   ✅   | 00:00:00.622 |
 | `test_opcua_client`      | `native_opcua_client`   |    20 |   ✅   | 00:00:00.595 |
-| `test_keepalive`         | `native_keepalive`      |    11 |   ✅   | 00:00:01.134 |
-| `test_range`             | `native_range`          |    20 |   ✅   | 00:00:01.110 |
+| `test_keepalive`         | `native_keepalive`      |    11 |   ✅   | 00:00:01.400 |
+| `test_range`             | `native_range`          |    20 |   ✅   | 00:00:01.478 |
 | `test_syslog`            | `native_syslog`         |    10 |   ✅   | 00:00:00.556 |
-| `test_ntlm`              | `native_smb`            |     3 |   ✅   | 00:00:00.658 |
-| `test_smb_client`        | `native_smb`            |    10 |   ✅   | 00:00:00.412 |
-| `test_ntlmssp`           | `native_smb`            |     5 |   ✅   | 00:00:00.399 |
-| `test_smb_crypto`        | `native_smb`            |     5 |   ✅   | 00:00:00.393 |
-| `test_smb2`              | `native_smb`            |    19 |   ✅   | 00:00:00.451 |
-| `test_spnego`            | `native_smb`            |     4 |   ✅   | 00:00:00.403 |
+| `test_ntlm`              | `native_smb`            |     3 |   ✅   | 00:00:00.914 |
+| `test_smb_client`        | `native_smb`            |    10 |   ✅   | 00:00:00.599 |
+| `test_ntlmssp`           | `native_smb`            |     5 |   ✅   | 00:00:00.576 |
+| `test_smb_crypto`        | `native_smb`            |     5 |   ✅   | 00:00:00.567 |
+| `test_smb2`              | `native_smb`            |    19 |   ✅   | 00:00:00.653 |
+| `test_spnego`            | `native_smb`            |     4 |   ✅   | 00:00:00.570 |
 | `test_smtp`              | `native_smtp`           |    22 |   ✅   | 00:00:00.662 |
 | `test_ntp_server`        | `native_ntp_server`     |     8 |   ✅   | 00:00:00.555 |
 | `test_dns_server`        | `native_dns_server`     |    13 |   ✅   | 00:00:00.546 |
@@ -157,9 +157,9 @@
 | `test_quic_varint`       | `native_quic_varint`    |     3 |   ✅   | 00:00:00.549 |
 | `test_h3_frame`          | `native_h3frame`        |     7 |   ✅   | 00:00:00.582 |
 | `test_jwt`               | `native_jwt`            |    22 |   ✅   | 00:00:00.603 |
-| `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.147 |
+| `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.511 |
 | `test_http_client`       | `native_http_client`    |    15 |   ✅   | 00:00:00.534 |
-| `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.651 |
+| `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.830 |
 | `test_mqtt`              | `native_mqtt`           |    22 |   ✅   | 00:00:00.562 |
 | `test_ws_client`         | `native_ws_client`      |    16 |   ✅   | 00:00:00.584 |
 | `test_scratch`           | `native_scratch`        |    15 |   ✅   | 00:00:00.656 |
@@ -168,11 +168,11 @@
 | `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.640 |
 | `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.626 |
 | `test_ssh_comp`          | `native_ssh_comp`       |     6 |   ✅   | 00:00:01.094 |
-| `test_websocket`         | `native_ws_deflate`     |    74 |   ✅   | 00:00:01.164 |
+| `test_websocket`         | `native_ws_deflate`     |    74 |   ✅   | 00:00:01.408 |
 | `test_time_source`       | `native_time_source`    |    10 |   ✅   | 00:00:00.527 |
 | `test_config_store`      | `native_config_store`   |    15 |   ✅   | 00:00:00.627 |
 | `test_device_id`         | `native_device_id`      |     4 |   ✅   | 00:00:00.673 |
-| `test_auth_lockout`      | `native_auth_lockout`   |    12 |   ✅   | 00:00:00.632 |
+| `test_auth_lockout`      | `native_auth_lockout`   |    12 |   ✅   | 00:00:00.799 |
 | `test_csrf`              | `native_csrf`           |    10 |   ✅   | 00:00:00.607 |
 | `test_telemetry`         | `native_telemetry`      |     8 |   ✅   | 00:00:00.715 |
 | `test_dashboard`         | `native_dashboard`      |    15 |   ✅   | 00:00:00.601 |
@@ -227,7 +227,7 @@
 | `test_mdns_adaptive`     | `native_mdns_adaptive`  |     5 |   ✅   | 00:00:00.589 |
 | `test_sockpool`          | `native_sockpool`       |     6 |   ✅   | 00:00:00.560 |
 | `test_psram_pool`        | `native_psram_pool`     |     5 |   ✅   | 00:00:00.550 |
-| `test_happy_eyeballs`    | `native_happy_eyeballs` |     5 |   ✅   | 00:00:00.632 |
+| `test_happy_eyeballs`    | `native_happy_eyeballs` |     5 |   ✅   | 00:00:00.787 |
 | `test_wifi_sniffer`      | `native_wifi_sniffer`   |     6 |   ✅   | 00:00:00.570 |
 | `test_link_manager`      | `native_link_manager`   |     4 |   ✅   | 00:00:00.568 |
 | `test_cc1101`            | `native_cc1101`         |    11 |   ✅   | 00:00:00.591 |
@@ -237,10 +237,10 @@
 | `test_radio_sniff`       | `native_radio_sniff`    |     4 |   ✅   | 00:00:00.560 |
 | `test_ble_gatt`          | `native_ble_gatt`       |     7 |   ✅   | 00:00:00.710 |
 | `test_tls_policy`        | `native_tls_policy`     |     4 |   ✅   | 00:00:00.572 |
-| `test_wisun`             | `native_wisun`          |    10 |   ✅   | 00:00:00.636 |
+| `test_wisun`             | `native_wisun`          |    10 |   ✅   | 00:00:00.802 |
 | `test_logbuf`            | `native_logbuf`         |     5 |   ✅   | 00:00:00.585 |
 | `test_config_io`         | `native_config_io`      |     5 |   ✅   | 00:00:00.700 |
-| `test_workers`           | `native_workers`        |     6 |   ✅   | 00:00:00.711 |
+| `test_workers`           | `native_workers`        |     6 |   ✅   | 00:00:00.932 |
 | `test_clock`             | `native_clock`          |     7 |   ✅   | 00:00:00.602 |
 | `test_concurrency`       | `native_concurrency`    |     2 |   ✅   | 00:00:00.953 |
 | `test_concurrency`       | `native_tsan`           |     2 |   ✅   | 00:00:00.823 |
@@ -256,7 +256,7 @@
 | `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:01.015 |
 | `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.066 |
 | `test_quic_server`       | `native_quic_server`    |     4 |   ✅   | 00:00:00.986 |
-| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:01.632 |
+| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:02.127 |
 | `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.635 |
 
 ---
@@ -898,7 +898,7 @@ _Unit, stress, and race-condition tests for Layer 5 (Session)._
 |  12 | `test_evt_disconnect_calls_http_reset`             |   ✅   | Evt disconnect calls http reset                       |
 |  13 | `test_evt_error_calls_http_reset`                  |   ✅   | Evt error calls http reset                            |
 |  14 | `test_evt_data_calls_http_parse`                   |   ✅   | Evt data calls http parse                             |
-|  15 | `test_multiple_events_drained_in_one_tick`         |   ✅   | Slot 0: dirty state → EVT_CONNECT → reset             |
+|  15 | `test_multiple_events_drained_in_one_tick`         |   ✅   | Slot 0: dirty state → EvtType::EVT_CONNECT → reset    |
 |  16 | `race_external_free_between_ticks`                 |   ✅   | First tick: slot expires inside check_timeouts        |
 |  17 | `race_activity_update_saves_slot_from_timeout`     |   ✅   | Race - Activity update saves slot from timeout        |
 |  18 | `race_all_expire_then_idle_tick`                   |   ✅   | Race - All expire then idle tick                      |
@@ -915,71 +915,71 @@ _Unit, stress, and race-condition tests for Layer 5 (Session)._
 
 _Unit, stress, and race-condition tests for Layer 6 (Presentation)._
 
-|   # | Test                                                 | Status | Description                                                                      |
-| --: | :--------------------------------------------------- | :----: | :------------------------------------------------------------------------------- |
-|   1 | `test_fn_reset_sets_parse_state_to_method`           |   ✅   | Fn reset sets parse state to method                                              |
-|   2 | `test_fn_reset_sets_slot_id`                         |   ✅   | Fn reset sets slot id                                                            |
-|   3 | `test_fn_reset_clears_method`                        |   ✅   | Fn reset clears method                                                           |
-|   4 | `test_fn_reset_clears_path_and_idx`                  |   ✅   | Fn reset clears path and idx                                                     |
-|   5 | `test_fn_reset_clears_query_raw_and_params`          |   ✅   | Fn reset clears query raw and params                                             |
-|   6 | `test_fn_reset_clears_all_header_slots`              |   ✅   | Fn reset clears all header slots                                                 |
-|   7 | `test_fn_reset_clears_body_fields`                   |   ✅   | Fn reset clears body fields                                                      |
-|   8 | `test_fn_reset_out_of_range_is_nop`                  |   ✅   | Fn reset out of range is nop                                                     |
-|   9 | `test_fn_reset_is_idempotent`                        |   ✅   | Fn reset is idempotent                                                           |
-|  10 | `test_fn_get_header_null_when_no_headers`            |   ✅   | setUp already reset all slots - header_count is 0                                |
-|  11 | `test_fn_get_header_finds_single_header`             |   ✅   | Fn get header finds single header                                                |
-|  12 | `test_fn_get_header_finds_first_of_many`             |   ✅   | Fn get header finds first of many                                                |
-|  13 | `test_fn_get_header_finds_middle_of_many`            |   ✅   | Fn get header finds middle of many                                               |
-|  14 | `test_fn_get_header_finds_last_of_many`              |   ✅   | Fn get header finds last of many                                                 |
-|  15 | `test_fn_get_header_case_insensitive_lowercase`      |   ✅   | Fn get header case insensitive lowercase                                         |
-|  16 | `test_fn_get_header_case_insensitive_uppercase`      |   ✅   | Fn get header case insensitive uppercase                                         |
-|  17 | `test_fn_get_header_returns_null_for_absent_key`     |   ✅   | Fn get header returns null for absent key                                        |
-|  18 | `test_fn_get_header_does_not_bleed_across_slots`     |   ✅   | Fn get header does not bleed across slots                                        |
-|  19 | `test_fn_get_query_null_when_no_params`              |   ✅   | Fn get query null when no params                                                 |
-|  20 | `test_fn_get_query_finds_single_param`               |   ✅   | Fn get query finds single param                                                  |
-|  21 | `test_fn_get_query_finds_first_param`                |   ✅   | Fn get query finds first param                                                   |
-|  22 | `test_fn_get_query_finds_middle_param`               |   ✅   | Fn get query finds middle param                                                  |
-|  23 | `test_fn_get_query_finds_last_param`                 |   ✅   | Fn get query finds last param                                                    |
-|  24 | `test_fn_get_query_returns_null_for_absent_key`      |   ✅   | Fn get query returns null for absent key                                         |
-|  25 | `test_fn_get_query_empty_value`                      |   ✅   | Fn get query empty value                                                         |
-|  26 | `test_fn_get_query_does_not_bleed_across_slots`      |   ✅   | Fn get query does not bleed across slots                                         |
-|  27 | `test_get_parses_complete`                           |   ✅   | Get parses complete                                                              |
-|  28 | `test_post_body_stored`                              |   ✅   | Post body stored                                                                 |
-|  29 | `test_put_parses_complete`                           |   ✅   | Put parses complete                                                              |
-|  30 | `test_delete_parses_complete`                        |   ✅   | Delete parses complete                                                           |
-|  31 | `test_patch_parses_complete`                         |   ✅   | Patch parses complete                                                            |
-|  32 | `test_head_parses_complete`                          |   ✅   | Head parses complete                                                             |
-|  33 | `test_query_single_param`                            |   ✅   | Query single param                                                               |
-|  34 | `test_query_multiple_params`                         |   ✅   | Query multiple params                                                            |
-|  35 | `test_body_null_terminated`                          |   ✅   | Body null terminated                                                             |
-|  36 | `test_body_over_buf_size_is_413`                     |   ✅   | Content-Length > BODY_BUF_SIZE → PARSE_ENTITY_TOO_LARGE before any body is read. |
-|  37 | `test_overflow_method_sets_error`                    |   ✅   | Overflow method sets error                                                       |
-|  38 | `test_overflow_path_sets_414`                        |   ✅   | Overflow path sets 414                                                           |
-|  39 | `test_bad_lf_after_cr_sets_error`                    |   ✅   | Null byte would terminate the C-string in push(), so use a visible non-LF byte.  |
-|  40 | `test_headers_beyond_max_are_dropped`                |   ✅   | Headers beyond max are dropped                                                   |
-|  41 | `test_query_params_beyond_max_are_dropped`           |   ✅   | Query params beyond max are dropped                                              |
-|  42 | `test_incremental_two_pushes_completes`              |   ✅   | Incremental two pushes completes                                                 |
-|  43 | `test_body_starting_with_newline_stored`             |   ✅   | Body starting with newline stored                                                |
-|  44 | `test_put_body_stored`                               |   ✅   | Put body stored                                                                  |
-|  45 | `test_content_length_header_stored_in_headers_array` |   ✅   | Content length header stored in headers array                                    |
-|  46 | `stress_parse_reset_100_cycles`                      |   ✅   | Stress - Parse reset 100 cycles                                                  |
-|  47 | `stress_all_slots_parse_simultaneously`              |   ✅   | Stress - All slots parse simultaneously                                          |
-|  48 | `stress_method_at_max_7_chars_no_error`              |   ✅   | Stress - Method at max 7 chars no error                                          |
-|  49 | `stress_path_at_exact_limit_no_error`                |   ✅   | Stress - Path at exact limit no error                                            |
-|  50 | `stress_body_exactly_buf_size_all_stored`            |   ✅   | Stress - Body exactly buf size all stored                                        |
-|  51 | `stress_exactly_max_headers_all_stored`              |   ✅   | Stress - Exactly max headers all stored                                          |
-|  52 | `stress_exactly_max_query_params_all_stored`         |   ✅   | Stress - Exactly max query params all stored                                     |
-|  53 | `stress_incremental_byte_by_byte_no_error`           |   ✅   | Stress - Incremental byte by byte no error                                       |
-|  54 | `stress_sequential_requests_no_state_leak`           |   ✅   | Stress - Sequential requests no state leak                                       |
-|  55 | `race_interleaved_producer_consumer_ring_buffer`     |   ✅   | Producer writes first 100 bytes                                                  |
-|  56 | `race_ring_buffer_full_prevents_write`               |   ✅   | Race - Ring buffer full prevents write                                           |
-|  57 | `race_aba_slot_reuse_fresh_timestamp`                |   ✅   | Race - Aba slot reuse fresh timestamp                                            |
-|  58 | `race_double_free_is_nop`                            |   ✅   | Race - Double free is nop                                                        |
-|  59 | `race_concurrent_slot_parse_isolation`               |   ✅   | Slot 0: push a full request                                                      |
-|  60 | `race_reset_during_parse_header_val`                 |   ✅   | Race - Reset during parse header val                                             |
-|  61 | `race_reset_during_parse_query`                      |   ✅   | Race - Reset during parse query                                                  |
-|  62 | `race_reset_during_parse_body`                       |   ✅   | Race - Reset during parse body                                                   |
-|  63 | `race_parse_after_complete_is_nop`                   |   ✅   | Race - Parse after complete is nop                                               |
+|   # | Test                                                 | Status | Description                                                                                  |
+| --: | :--------------------------------------------------- | :----: | :------------------------------------------------------------------------------------------- |
+|   1 | `test_fn_reset_sets_parse_state_to_method`           |   ✅   | Fn reset sets parse state to method                                                          |
+|   2 | `test_fn_reset_sets_slot_id`                         |   ✅   | Fn reset sets slot id                                                                        |
+|   3 | `test_fn_reset_clears_method`                        |   ✅   | Fn reset clears method                                                                       |
+|   4 | `test_fn_reset_clears_path_and_idx`                  |   ✅   | Fn reset clears path and idx                                                                 |
+|   5 | `test_fn_reset_clears_query_raw_and_params`          |   ✅   | Fn reset clears query raw and params                                                         |
+|   6 | `test_fn_reset_clears_all_header_slots`              |   ✅   | Fn reset clears all header slots                                                             |
+|   7 | `test_fn_reset_clears_body_fields`                   |   ✅   | Fn reset clears body fields                                                                  |
+|   8 | `test_fn_reset_out_of_range_is_nop`                  |   ✅   | Fn reset out of range is nop                                                                 |
+|   9 | `test_fn_reset_is_idempotent`                        |   ✅   | Fn reset is idempotent                                                                       |
+|  10 | `test_fn_get_header_null_when_no_headers`            |   ✅   | setUp already reset all slots - header_count is 0                                            |
+|  11 | `test_fn_get_header_finds_single_header`             |   ✅   | Fn get header finds single header                                                            |
+|  12 | `test_fn_get_header_finds_first_of_many`             |   ✅   | Fn get header finds first of many                                                            |
+|  13 | `test_fn_get_header_finds_middle_of_many`            |   ✅   | Fn get header finds middle of many                                                           |
+|  14 | `test_fn_get_header_finds_last_of_many`              |   ✅   | Fn get header finds last of many                                                             |
+|  15 | `test_fn_get_header_case_insensitive_lowercase`      |   ✅   | Fn get header case insensitive lowercase                                                     |
+|  16 | `test_fn_get_header_case_insensitive_uppercase`      |   ✅   | Fn get header case insensitive uppercase                                                     |
+|  17 | `test_fn_get_header_returns_null_for_absent_key`     |   ✅   | Fn get header returns null for absent key                                                    |
+|  18 | `test_fn_get_header_does_not_bleed_across_slots`     |   ✅   | Fn get header does not bleed across slots                                                    |
+|  19 | `test_fn_get_query_null_when_no_params`              |   ✅   | Fn get query null when no params                                                             |
+|  20 | `test_fn_get_query_finds_single_param`               |   ✅   | Fn get query finds single param                                                              |
+|  21 | `test_fn_get_query_finds_first_param`                |   ✅   | Fn get query finds first param                                                               |
+|  22 | `test_fn_get_query_finds_middle_param`               |   ✅   | Fn get query finds middle param                                                              |
+|  23 | `test_fn_get_query_finds_last_param`                 |   ✅   | Fn get query finds last param                                                                |
+|  24 | `test_fn_get_query_returns_null_for_absent_key`      |   ✅   | Fn get query returns null for absent key                                                     |
+|  25 | `test_fn_get_query_empty_value`                      |   ✅   | Fn get query empty value                                                                     |
+|  26 | `test_fn_get_query_does_not_bleed_across_slots`      |   ✅   | Fn get query does not bleed across slots                                                     |
+|  27 | `test_get_parses_complete`                           |   ✅   | Get parses complete                                                                          |
+|  28 | `test_post_body_stored`                              |   ✅   | Post body stored                                                                             |
+|  29 | `test_put_parses_complete`                           |   ✅   | Put parses complete                                                                          |
+|  30 | `test_delete_parses_complete`                        |   ✅   | Delete parses complete                                                                       |
+|  31 | `test_patch_parses_complete`                         |   ✅   | Patch parses complete                                                                        |
+|  32 | `test_head_parses_complete`                          |   ✅   | Head parses complete                                                                         |
+|  33 | `test_query_single_param`                            |   ✅   | Query single param                                                                           |
+|  34 | `test_query_multiple_params`                         |   ✅   | Query multiple params                                                                        |
+|  35 | `test_body_null_terminated`                          |   ✅   | Body null terminated                                                                         |
+|  36 | `test_body_over_buf_size_is_413`                     |   ✅   | Content-Length > BODY_BUF_SIZE → ParseState::PARSE_ENTITY_TOO_LARGE before any body is read. |
+|  37 | `test_overflow_method_sets_error`                    |   ✅   | Overflow method sets error                                                                   |
+|  38 | `test_overflow_path_sets_414`                        |   ✅   | Overflow path sets 414                                                                       |
+|  39 | `test_bad_lf_after_cr_sets_error`                    |   ✅   | Null byte would terminate the C-string in push(), so use a visible non-LF byte.              |
+|  40 | `test_headers_beyond_max_are_dropped`                |   ✅   | Headers beyond max are dropped                                                               |
+|  41 | `test_query_params_beyond_max_are_dropped`           |   ✅   | Query params beyond max are dropped                                                          |
+|  42 | `test_incremental_two_pushes_completes`              |   ✅   | Incremental two pushes completes                                                             |
+|  43 | `test_body_starting_with_newline_stored`             |   ✅   | Body starting with newline stored                                                            |
+|  44 | `test_put_body_stored`                               |   ✅   | Put body stored                                                                              |
+|  45 | `test_content_length_header_stored_in_headers_array` |   ✅   | Content length header stored in headers array                                                |
+|  46 | `stress_parse_reset_100_cycles`                      |   ✅   | Stress - Parse reset 100 cycles                                                              |
+|  47 | `stress_all_slots_parse_simultaneously`              |   ✅   | Stress - All slots parse simultaneously                                                      |
+|  48 | `stress_method_at_max_7_chars_no_error`              |   ✅   | Stress - Method at max 7 chars no error                                                      |
+|  49 | `stress_path_at_exact_limit_no_error`                |   ✅   | Stress - Path at exact limit no error                                                        |
+|  50 | `stress_body_exactly_buf_size_all_stored`            |   ✅   | Stress - Body exactly buf size all stored                                                    |
+|  51 | `stress_exactly_max_headers_all_stored`              |   ✅   | Stress - Exactly max headers all stored                                                      |
+|  52 | `stress_exactly_max_query_params_all_stored`         |   ✅   | Stress - Exactly max query params all stored                                                 |
+|  53 | `stress_incremental_byte_by_byte_no_error`           |   ✅   | Stress - Incremental byte by byte no error                                                   |
+|  54 | `stress_sequential_requests_no_state_leak`           |   ✅   | Stress - Sequential requests no state leak                                                   |
+|  55 | `race_interleaved_producer_consumer_ring_buffer`     |   ✅   | Producer writes first 100 bytes                                                              |
+|  56 | `race_ring_buffer_full_prevents_write`               |   ✅   | Race - Ring buffer full prevents write                                                       |
+|  57 | `race_aba_slot_reuse_fresh_timestamp`                |   ✅   | Race - Aba slot reuse fresh timestamp                                                        |
+|  58 | `race_double_free_is_nop`                            |   ✅   | Race - Double free is nop                                                                    |
+|  59 | `race_concurrent_slot_parse_isolation`               |   ✅   | Slot 0: push a full request                                                                  |
+|  60 | `race_reset_during_parse_header_val`                 |   ✅   | Race - Reset during parse header val                                                         |
+|  61 | `race_reset_during_parse_query`                      |   ✅   | Race - Reset during parse query                                                              |
+|  62 | `race_reset_during_parse_body`                       |   ✅   | Race - Reset during parse body                                                               |
+|  63 | `race_parse_after_complete_is_nop`                   |   ✅   | Race - Parse after complete is nop                                                           |
 
 </details>
 
@@ -1133,101 +1133,101 @@ _Unit and stress tests for SHA-1, Base64, and the WebSocket frame parser._
 
 _Comprehensive unit tests for the standalone HTTP/1.1 parser._
 
-|   # | Test                                                     | Status | Description                                                                     |
-| --: | :------------------------------------------------------- | :----: | :------------------------------------------------------------------------------ |
-|   1 | `test_accessor_null_guards`                              |   ✅   | Accessor null guards                                                            |
-|   2 | `test_cookie_parse_edges`                                |   ✅   | Cookie parse edges                                                              |
-|   3 | `test_forwarded_ip_whitespace_and_invalid`               |   ✅   | Forwarded ip whitespace and invalid                                             |
-|   4 | `test_reset_sets_parse_method_state`                     |   ✅   | Reset sets parse method state                                                   |
-|   5 | `test_reset_preserves_slot_id`                           |   ✅   | Reset preserves slot id                                                         |
-|   6 | `test_reset_clears_method`                               |   ✅   | Reset clears method                                                             |
-|   7 | `test_reset_clears_path`                                 |   ✅   | Reset clears path                                                               |
-|   8 | `test_reset_clears_header_count`                         |   ✅   | Reset clears header count                                                       |
-|   9 | `test_reset_clears_body`                                 |   ✅   | Reset clears body                                                               |
-|  10 | `test_reset_clears_query_count`                          |   ✅   | Reset clears query count                                                        |
-|  11 | `test_feed_after_complete_does_not_change_state`         |   ✅   | Feed after complete does not change state                                       |
-|  12 | `test_feed_after_error_does_not_change_state`            |   ✅   | Feed after error does not change state                                          |
-|  13 | `test_feed_after_entity_too_large_does_not_change_state` |   ✅   | Feed after entity too large does not change state                               |
-|  14 | `test_method_get`                                        |   ✅   | Method get                                                                      |
-|  15 | `test_method_post`                                       |   ✅   | Method post                                                                     |
-|  16 | `test_method_put`                                        |   ✅   | Method put                                                                      |
-|  17 | `test_method_delete`                                     |   ✅   | Method delete                                                                   |
-|  18 | `test_method_patch`                                      |   ✅   | Method patch                                                                    |
-|  19 | `test_method_head`                                       |   ✅   | Method head                                                                     |
-|  20 | `test_method_options`                                    |   ✅   | Method options                                                                  |
-|  21 | `test_method_overflow_is_error`                          |   ✅   | More than 7 chars (sizeof method - 1) before a space → PARSE_ERROR              |
-|  22 | `test_path_root`                                         |   ✅   | Path root                                                                       |
-|  23 | `test_path_segments`                                     |   ✅   | Path segments                                                                   |
-|  24 | `test_path_without_query`                                |   ✅   | Path without query                                                              |
-|  25 | `test_path_overflow_is_414`                              |   ✅   | Build a path longer than MAX_PATH_LEN                                           |
-|  26 | `test_single_query_param`                                |   ✅   | Single query param                                                              |
-|  27 | `test_two_query_params`                                  |   ✅   | Two query params                                                                |
-|  28 | `test_query_key_not_found_returns_null`                  |   ✅   | Query key not found returns null                                                |
-|  29 | `test_query_empty_value`                                 |   ✅   | Query empty value                                                               |
-|  30 | `test_single_header_stored`                              |   ✅   | Single header stored                                                            |
-|  31 | `test_header_lookup_case_insensitive`                    |   ✅   | Header lookup case insensitive                                                  |
-|  32 | `test_cookie_basic_and_positions`                        |   ✅   | Cookie basic and positions                                                      |
-|  33 | `test_cookie_missing_and_no_header`                      |   ✅   | Cookie missing and no header                                                    |
-|  34 | `test_cookie_exact_name_not_substring`                   |   ✅   | Cookie exact name not substring                                                 |
-|  35 | `test_cookie_quoted_and_value_with_equals`               |   ✅   | Cookie quoted and value with equals                                             |
-|  36 | `test_forwarded_rfc7239`                                 |   ✅   | Forwarded rfc7239                                                               |
-|  37 | `test_forwarded_leftmost_client`                         |   ✅   | Both header forms list the original client leftmost.                            |
-|  38 | `test_forwarded_strips_quotes_and_port`                  |   ✅   | Forwarded strips quotes and port                                                |
-|  39 | `test_forwarded_ipv6_recovered_unknown_rejected`         |   ✅   | RFC 7239 §6: an IPv6 for= value is DQUOTE-wrapped + bracketed, optional :port.  |
-|  40 | `test_header_leading_space_stripped`                     |   ✅   | Header leading space stripped                                                   |
-|  41 | `test_content_length_header_parsed`                      |   ✅   | Content length header parsed                                                    |
-|  42 | `test_content_length_in_headers_array`                   |   ✅   | Content length in headers array                                                 |
-|  43 | `test_multiple_headers_stored`                           |   ✅   | Multiple headers stored                                                         |
-|  44 | `test_missing_header_returns_null`                       |   ✅   | Missing header returns null                                                     |
-|  45 | `test_get_no_body_completes`                             |   ✅   | Get no body completes                                                           |
-|  46 | `test_post_with_body`                                    |   ✅   | Post with body                                                                  |
-|  47 | `test_put_with_body`                                     |   ✅   | Put with body                                                                   |
-|  48 | `test_body_starting_with_newline`                        |   ✅   | Body starting with newline                                                      |
-|  49 | `test_post_content_length_zero`                          |   ✅   | Post content length zero                                                        |
-|  50 | `test_body_exactly_at_buffer_limit`                      |   ✅   | Body of exactly BODY_BUF_SIZE bytes - should succeed                            |
-|  51 | `test_body_null_terminated_after_complete`               |   ✅   | Body null terminated after complete                                             |
-|  52 | `test_body_one_over_limit_is_413`                        |   ✅   | Content-Length == BODY_BUF_SIZE + 1 → PARSE_ENTITY_TOO_LARGE                    |
-|  53 | `test_body_far_over_limit_is_413`                        |   ✅   | Body far over limit is 413                                                      |
-|  54 | `test_413_no_body_bytes_fed`                             |   ✅   | Even though we detected 413, no body bytes should have been stored              |
-|  55 | `test_413_header_still_stored`                           |   ✅   | Headers before the blank line must be accessible even when 413                  |
-|  56 | `test_body_exactly_at_limit_is_not_413`                  |   ✅   | BODY_BUF_SIZE is the max that fits - should NOT trigger 413                     |
-|  57 | `test_path_overflow_stops_feeding`                       |   ✅   | Bytes fed after URI_TOO_LONG are ignored - state must not change                |
-|  58 | `test_414_path_filled_to_capacity`                       |   ✅   | Buffer fills to MAX_PATH_LEN-1 chars before overflow is detected                |
-|  59 | `test_method_nul_byte_is_error`                          |   ✅   | Method nul byte is error                                                        |
-|  60 | `test_method_control_char_is_error`                      |   ✅   | Method control char is error                                                    |
-|  61 | `test_method_del_byte_is_error`                          |   ✅   | Method del byte is error                                                        |
-|  62 | `test_method_non_tchar_symbol_is_error`                  |   ✅   | '(' is VCHAR but not tchar                                                      |
-|  63 | `test_method_tchar_symbols_accepted`                     |   ✅   | '-' is a valid tchar; a custom method like "X-CMD" is valid per RFC 7230        |
-|  64 | `test_path_nul_byte_is_error`                            |   ✅   | Path nul byte is error                                                          |
-|  65 | `test_path_control_char_is_error`                        |   ✅   | Path control char is error                                                      |
-|  66 | `test_path_del_byte_is_error`                            |   ✅   | Path del byte is error                                                          |
-|  67 | `test_query_nul_byte_is_error`                           |   ✅   | Query nul byte is error                                                         |
-|  68 | `test_query_control_char_is_error`                       |   ✅   | Query control char is error                                                     |
-|  69 | `test_header_key_space_is_error`                         |   ✅   | Space in a field-name is not a valid tchar                                      |
-|  70 | `test_header_key_nul_byte_is_error`                      |   ✅   | Header key nul byte is error                                                    |
-|  71 | `test_header_key_control_char_is_error`                  |   ✅   | Header key control char is error                                                |
-|  72 | `test_header_key_mid_cr_is_error`                        |   ✅   | CR in the middle of a key name must be PARSE_ERROR, not blank-line detection    |
-|  73 | `test_header_key_colon_at_start_skips_header`            |   ✅   | Empty key name (colon immediately after CRLF): transition to val with empty key |
-|  74 | `test_long_standard_header_key_accepted`                 |   ✅   | Regression: "Sec-WebSocket-Extensions" (24 chars) is a standard header that     |
-|  75 | `test_overlong_header_key_truncated_not_error`           |   ✅   | A header name longer than MAX_KEY_LEN is capped (capacity), not rejected:       |
-|  76 | `test_header_val_nul_byte_is_error`                      |   ✅   | Header val nul byte is error                                                    |
-|  77 | `test_header_val_control_char_is_error`                  |   ✅   | Header val control char is error                                                |
-|  78 | `test_header_val_del_byte_is_error`                      |   ✅   | Header val del byte is error                                                    |
-|  79 | `test_header_val_htab_mid_value_allowed`                 |   ✅   | HTAB is valid mid-value (RFC 7230 §3.2)                                         |
-|  80 | `test_header_val_leading_htab_stripped`                  |   ✅   | Leading HTAB (OWS) is stripped just like leading SP                             |
-|  81 | `test_header_val_obs_text_allowed`                       |   ✅   | obs-text bytes (%x80-FF) are allowed for legacy compatibility (RFC 7230 §3.2.6) |
-|  82 | `test_version_http11_recognized`                         |   ✅   | Version http11 recognized                                                       |
-|  83 | `test_version_http10_recognized`                         |   ✅   | Version http10 recognized                                                       |
-|  84 | `test_version_unknown_is_http_unknown`                   |   ✅   | Version unknown is http unknown                                                 |
-|  85 | `test_version_reset_to_unknown`                          |   ✅   | Version reset to unknown                                                        |
-|  86 | `test_bad_expect_lf_is_error`                            |   ✅   | CRLF in version line replaced by CR + X (no LF)                                 |
-|  87 | `test_blank_line_non_lf_is_error`                        |   ✅   | Header block ends with CR + non-LF in the blank line                            |
-|  88 | `test_slots_are_independent`                             |   ✅   | Slots are independent                                                           |
-|  89 | `test_incremental_byte_by_byte`                          |   ✅   | Incremental byte by byte                                                        |
-|  90 | `test_incremental_two_chunks`                            |   ✅   | Incremental two chunks                                                          |
-|  91 | `stress_many_requests_same_slot`                         |   ✅   | Stress - Many requests same slot                                                |
-|  92 | `stress_max_headers`                                     |   ✅   | Build a request with MAX_HEADERS header lines                                   |
-|  93 | `stress_max_query_params`                                |   ✅   | Build a query string with MAX_QUERY_PARAMS parameters                           |
+|   # | Test                                                     | Status | Description                                                                              |
+| --: | :------------------------------------------------------- | :----: | :--------------------------------------------------------------------------------------- |
+|   1 | `test_accessor_null_guards`                              |   ✅   | Accessor null guards                                                                     |
+|   2 | `test_cookie_parse_edges`                                |   ✅   | Cookie parse edges                                                                       |
+|   3 | `test_forwarded_ip_whitespace_and_invalid`               |   ✅   | Forwarded ip whitespace and invalid                                                      |
+|   4 | `test_reset_sets_parse_method_state`                     |   ✅   | Reset sets parse method state                                                            |
+|   5 | `test_reset_preserves_slot_id`                           |   ✅   | Reset preserves slot id                                                                  |
+|   6 | `test_reset_clears_method`                               |   ✅   | Reset clears method                                                                      |
+|   7 | `test_reset_clears_path`                                 |   ✅   | Reset clears path                                                                        |
+|   8 | `test_reset_clears_header_count`                         |   ✅   | Reset clears header count                                                                |
+|   9 | `test_reset_clears_body`                                 |   ✅   | Reset clears body                                                                        |
+|  10 | `test_reset_clears_query_count`                          |   ✅   | Reset clears query count                                                                 |
+|  11 | `test_feed_after_complete_does_not_change_state`         |   ✅   | Feed after complete does not change state                                                |
+|  12 | `test_feed_after_error_does_not_change_state`            |   ✅   | Feed after error does not change state                                                   |
+|  13 | `test_feed_after_entity_too_large_does_not_change_state` |   ✅   | Feed after entity too large does not change state                                        |
+|  14 | `test_method_get`                                        |   ✅   | Method get                                                                               |
+|  15 | `test_method_post`                                       |   ✅   | Method post                                                                              |
+|  16 | `test_method_put`                                        |   ✅   | Method put                                                                               |
+|  17 | `test_method_delete`                                     |   ✅   | Method delete                                                                            |
+|  18 | `test_method_patch`                                      |   ✅   | Method patch                                                                             |
+|  19 | `test_method_head`                                       |   ✅   | Method head                                                                              |
+|  20 | `test_method_options`                                    |   ✅   | Method options                                                                           |
+|  21 | `test_method_overflow_is_error`                          |   ✅   | More than 7 chars (sizeof method - 1) before a space → ParseState::PARSE_ERROR           |
+|  22 | `test_path_root`                                         |   ✅   | Path root                                                                                |
+|  23 | `test_path_segments`                                     |   ✅   | Path segments                                                                            |
+|  24 | `test_path_without_query`                                |   ✅   | Path without query                                                                       |
+|  25 | `test_path_overflow_is_414`                              |   ✅   | Build a path longer than MAX_PATH_LEN                                                    |
+|  26 | `test_single_query_param`                                |   ✅   | Single query param                                                                       |
+|  27 | `test_two_query_params`                                  |   ✅   | Two query params                                                                         |
+|  28 | `test_query_key_not_found_returns_null`                  |   ✅   | Query key not found returns null                                                         |
+|  29 | `test_query_empty_value`                                 |   ✅   | Query empty value                                                                        |
+|  30 | `test_single_header_stored`                              |   ✅   | Single header stored                                                                     |
+|  31 | `test_header_lookup_case_insensitive`                    |   ✅   | Header lookup case insensitive                                                           |
+|  32 | `test_cookie_basic_and_positions`                        |   ✅   | Cookie basic and positions                                                               |
+|  33 | `test_cookie_missing_and_no_header`                      |   ✅   | Cookie missing and no header                                                             |
+|  34 | `test_cookie_exact_name_not_substring`                   |   ✅   | Cookie exact name not substring                                                          |
+|  35 | `test_cookie_quoted_and_value_with_equals`               |   ✅   | Cookie quoted and value with equals                                                      |
+|  36 | `test_forwarded_rfc7239`                                 |   ✅   | Forwarded rfc7239                                                                        |
+|  37 | `test_forwarded_leftmost_client`                         |   ✅   | Both header forms list the original client leftmost.                                     |
+|  38 | `test_forwarded_strips_quotes_and_port`                  |   ✅   | Forwarded strips quotes and port                                                         |
+|  39 | `test_forwarded_ipv6_recovered_unknown_rejected`         |   ✅   | RFC 7239 §6: an IPv6 for= value is DQUOTE-wrapped + bracketed, optional :port.           |
+|  40 | `test_header_leading_space_stripped`                     |   ✅   | Header leading space stripped                                                            |
+|  41 | `test_content_length_header_parsed`                      |   ✅   | Content length header parsed                                                             |
+|  42 | `test_content_length_in_headers_array`                   |   ✅   | Content length in headers array                                                          |
+|  43 | `test_multiple_headers_stored`                           |   ✅   | Multiple headers stored                                                                  |
+|  44 | `test_missing_header_returns_null`                       |   ✅   | Missing header returns null                                                              |
+|  45 | `test_get_no_body_completes`                             |   ✅   | Get no body completes                                                                    |
+|  46 | `test_post_with_body`                                    |   ✅   | Post with body                                                                           |
+|  47 | `test_put_with_body`                                     |   ✅   | Put with body                                                                            |
+|  48 | `test_body_starting_with_newline`                        |   ✅   | Body starting with newline                                                               |
+|  49 | `test_post_content_length_zero`                          |   ✅   | Post content length zero                                                                 |
+|  50 | `test_body_exactly_at_buffer_limit`                      |   ✅   | Body of exactly BODY_BUF_SIZE bytes - should succeed                                     |
+|  51 | `test_body_null_terminated_after_complete`               |   ✅   | Body null terminated after complete                                                      |
+|  52 | `test_body_one_over_limit_is_413`                        |   ✅   | Content-Length == BODY_BUF_SIZE + 1 → ParseState::PARSE_ENTITY_TOO_LARGE                 |
+|  53 | `test_body_far_over_limit_is_413`                        |   ✅   | Body far over limit is 413                                                               |
+|  54 | `test_413_no_body_bytes_fed`                             |   ✅   | Even though we detected 413, no body bytes should have been stored                       |
+|  55 | `test_413_header_still_stored`                           |   ✅   | Headers before the blank line must be accessible even when 413                           |
+|  56 | `test_body_exactly_at_limit_is_not_413`                  |   ✅   | BODY_BUF_SIZE is the max that fits - should NOT trigger 413                              |
+|  57 | `test_path_overflow_stops_feeding`                       |   ✅   | Bytes fed after URI_TOO_LONG are ignored - state must not change                         |
+|  58 | `test_414_path_filled_to_capacity`                       |   ✅   | Buffer fills to MAX_PATH_LEN-1 chars before overflow is detected                         |
+|  59 | `test_method_nul_byte_is_error`                          |   ✅   | Method nul byte is error                                                                 |
+|  60 | `test_method_control_char_is_error`                      |   ✅   | Method control char is error                                                             |
+|  61 | `test_method_del_byte_is_error`                          |   ✅   | Method del byte is error                                                                 |
+|  62 | `test_method_non_tchar_symbol_is_error`                  |   ✅   | '(' is VCHAR but not tchar                                                               |
+|  63 | `test_method_tchar_symbols_accepted`                     |   ✅   | '-' is a valid tchar; a custom method like "X-CMD" is valid per RFC 7230                 |
+|  64 | `test_path_nul_byte_is_error`                            |   ✅   | Path nul byte is error                                                                   |
+|  65 | `test_path_control_char_is_error`                        |   ✅   | Path control char is error                                                               |
+|  66 | `test_path_del_byte_is_error`                            |   ✅   | Path del byte is error                                                                   |
+|  67 | `test_query_nul_byte_is_error`                           |   ✅   | Query nul byte is error                                                                  |
+|  68 | `test_query_control_char_is_error`                       |   ✅   | Query control char is error                                                              |
+|  69 | `test_header_key_space_is_error`                         |   ✅   | Space in a field-name is not a valid tchar                                               |
+|  70 | `test_header_key_nul_byte_is_error`                      |   ✅   | Header key nul byte is error                                                             |
+|  71 | `test_header_key_control_char_is_error`                  |   ✅   | Header key control char is error                                                         |
+|  72 | `test_header_key_mid_cr_is_error`                        |   ✅   | CR in the middle of a key name must be ParseState::PARSE_ERROR, not blank-line detection |
+|  73 | `test_header_key_colon_at_start_skips_header`            |   ✅   | Empty key name (colon immediately after CRLF): transition to val with empty key          |
+|  74 | `test_long_standard_header_key_accepted`                 |   ✅   | Regression: "Sec-WebSocket-Extensions" (24 chars) is a standard header that              |
+|  75 | `test_overlong_header_key_truncated_not_error`           |   ✅   | A header name longer than MAX_KEY_LEN is capped (capacity), not rejected:                |
+|  76 | `test_header_val_nul_byte_is_error`                      |   ✅   | Header val nul byte is error                                                             |
+|  77 | `test_header_val_control_char_is_error`                  |   ✅   | Header val control char is error                                                         |
+|  78 | `test_header_val_del_byte_is_error`                      |   ✅   | Header val del byte is error                                                             |
+|  79 | `test_header_val_htab_mid_value_allowed`                 |   ✅   | HTAB is valid mid-value (RFC 7230 §3.2)                                                  |
+|  80 | `test_header_val_leading_htab_stripped`                  |   ✅   | Leading HTAB (OWS) is stripped just like leading SP                                      |
+|  81 | `test_header_val_obs_text_allowed`                       |   ✅   | obs-text bytes (%x80-FF) are allowed for legacy compatibility (RFC 7230 §3.2.6)          |
+|  82 | `test_version_http11_recognized`                         |   ✅   | Version http11 recognized                                                                |
+|  83 | `test_version_http10_recognized`                         |   ✅   | Version http10 recognized                                                                |
+|  84 | `test_version_unknown_is_http_unknown`                   |   ✅   | Version unknown is http unknown                                                          |
+|  85 | `test_version_reset_to_unknown`                          |   ✅   | Version reset to unknown                                                                 |
+|  86 | `test_bad_expect_lf_is_error`                            |   ✅   | CRLF in version line replaced by CR + X (no LF)                                          |
+|  87 | `test_blank_line_non_lf_is_error`                        |   ✅   | Header block ends with CR + non-LF in the blank line                                     |
+|  88 | `test_slots_are_independent`                             |   ✅   | Slots are independent                                                                    |
+|  89 | `test_incremental_byte_by_byte`                          |   ✅   | Incremental byte by byte                                                                 |
+|  90 | `test_incremental_two_chunks`                            |   ✅   | Incremental two chunks                                                                   |
+|  91 | `stress_many_requests_same_slot`                         |   ✅   | Stress - Many requests same slot                                                         |
+|  92 | `stress_max_headers`                                     |   ✅   | Build a request with MAX_HEADERS header lines                                            |
+|  93 | `stress_max_query_params`                                |   ✅   | Build a query string with MAX_QUERY_PARAMS parameters                                    |
 
 </details>
 
@@ -2087,7 +2087,7 @@ _Unit, stress, and race-condition tests for Layer 7 (Application)._
 |  32 | `stress_sequential_requests_no_state_leak`            |   ✅   | Stress - Sequential requests no state leak                                                       |
 |  33 | `stress_all_slots_dispatched_simultaneously`          |   ✅   | Stress - All slots dispatched simultaneously                                                     |
 |  34 | `stress_wildcard_matches_many_paths`                  |   ✅   | Stress - Wildcard matches many paths                                                             |
-|  35 | `stress_handle_with_no_complete_slots_is_nop`         |   ✅   | All slots in PARSE_METHOD (setUp resets them) - nothing to dispatch                              |
+|  35 | `stress_handle_with_no_complete_slots_is_nop`         |   ✅   | All slots in ParseState::PARSE_METHOD (setUp resets them) - nothing to dispatch                  |
 |  36 | `race_slot_complete_between_handle_calls`             |   ✅   | Race - Slot complete between handle calls                                                        |
 |  37 | `race_conn_freed_after_parse_complete`                |   ✅   | Race - Conn freed after parse complete                                                           |
 |  38 | `race_double_handle_no_double_dispatch`               |   ✅   | Race - Double handle no double dispatch                                                          |
