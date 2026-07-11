@@ -26,7 +26,7 @@
 #if DETWS_ENABLE_DNS_RESOLVER
 
 /** @brief IPv4 address category (RFC special-purpose ranges). */
-enum DetwsIpClass
+enum class DetwsIpClass : uint8_t
 {
     DETWS_IP_UNSPECIFIED = 0, ///< 0.0.0.0
     DETWS_IP_LOOPBACK,        ///< 127.0.0.0/8

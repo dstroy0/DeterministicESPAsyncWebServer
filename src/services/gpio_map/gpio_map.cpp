@@ -19,17 +19,17 @@
 #include <stdio.h>
 #include <string.h>
 
-const char *detws_gpio_dir_name(uint8_t dir)
+const char *detws_gpio_dir_name(DetwsGpioDir dir)
 {
     switch (dir)
     {
-    case DETWS_GPIO_IN:
+    case DetwsGpioDir::DETWS_GPIO_IN:
         return "in";
-    case DETWS_GPIO_IN_PULLUP:
+    case DetwsGpioDir::DETWS_GPIO_IN_PULLUP:
         return "in_pullup";
-    case DETWS_GPIO_IN_PULLDOWN:
+    case DetwsGpioDir::DETWS_GPIO_IN_PULLDOWN:
         return "in_pulldown";
-    case DETWS_GPIO_OUT:
+    case DetwsGpioDir::DETWS_GPIO_OUT:
         return "out";
     default:
         return "in";
@@ -112,7 +112,7 @@ bool detws_gpio_is_output(const DetwsGpioPin *pins, uint8_t count, uint8_t pin)
     if (!pins)
         return false;
     for (uint8_t i = 0; i < count; i++)
-        if (pins[i].pin == pin && pins[i].dir == DETWS_GPIO_OUT)
+        if (pins[i].pin == pin && pins[i].dir == DetwsGpioDir::DETWS_GPIO_OUT)
             return true;
     return false;
 }
@@ -129,13 +129,13 @@ void detws_gpio_begin_pins(const DetwsGpioPin *pins, uint8_t count)
     {
         switch (pins[i].dir)
         {
-        case DETWS_GPIO_OUT:
+        case DetwsGpioDir::DETWS_GPIO_OUT:
             pinMode(pins[i].pin, OUTPUT);
             break;
-        case DETWS_GPIO_IN_PULLUP:
+        case DetwsGpioDir::DETWS_GPIO_IN_PULLUP:
             pinMode(pins[i].pin, INPUT_PULLUP);
             break;
-        case DETWS_GPIO_IN_PULLDOWN:
+        case DetwsGpioDir::DETWS_GPIO_IN_PULLDOWN:
             pinMode(pins[i].pin, INPUT_PULLDOWN);
             break;
         default:

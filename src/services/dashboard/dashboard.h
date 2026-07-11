@@ -33,7 +33,7 @@
 class DetWebServer;
 
 /** @brief Widget rendering / interaction style. */
-enum DetwsWidgetType
+enum class DetwsWidgetType : uint8_t
 {
     // Display widgets - updated from the SSE value stream.
     DETWS_WIDGET_VALUE = 0, ///< plain numeric readout

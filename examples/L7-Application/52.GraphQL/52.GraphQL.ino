@@ -39,19 +39,19 @@ static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *
 {
     if (!strcmp(path, "heap"))
     {
-        out->type = DETWS_GQL_INT;
+        out->type = DetwsGqlType::DETWS_GQL_INT;
         out->i = ESP.getFreeHeap();
         return true;
     }
     if (!strcmp(path, "uptime"))
     {
-        out->type = DETWS_GQL_INT;
+        out->type = DetwsGqlType::DETWS_GQL_INT;
         out->i = millis() / 1000;
         return true;
     }
     if (!strcmp(path, "net.rssi"))
     {
-        out->type = DETWS_GQL_INT;
+        out->type = DetwsGqlType::DETWS_GQL_INT;
         out->i = WiFi.RSSI();
         return true;
     }
@@ -59,7 +59,7 @@ static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *
     {
         static char ip[20];
         WiFi.localIP().toString().toCharArray(ip, sizeof(ip));
-        out->type = DETWS_GQL_STR;
+        out->type = DetwsGqlType::DETWS_GQL_STR;
         out->s = ip;
         return true;
     }
@@ -69,7 +69,7 @@ static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *
         detws_gql_arg_str(args, "name", &who);
         static char b[64];
         snprintf(b, sizeof(b), "hi %s", who);
-        out->type = DETWS_GQL_STR;
+        out->type = DetwsGqlType::DETWS_GQL_STR;
         out->s = b;
         return true;
     }
@@ -88,10 +88,10 @@ void setup()
 
     server.on("/graphql", HTTP_POST, [](uint8_t id, HttpReq *req) {
         char body[512];
-        int rc = detws_graphql_execute((const char *)req->body, req->body_len, resolver, body, sizeof(body));
+        DetwsGqlResult rc = detws_graphql_execute((const char *)req->body, req->body_len, resolver, body, sizeof(body));
         // The engine writes {"data":...} on success or {"errors":...} on a parse
         // error; 200 with the GraphQL error envelope is the conventional reply.
-        server.send(id, rc == DETWS_GQL_OK ? 200 : 400, "application/json", body);
+        server.send(id, rc == DetwsGqlResult::DETWS_GQL_OK ? 200 : 400, "application/json", body);
     });
 
     server.begin(80);

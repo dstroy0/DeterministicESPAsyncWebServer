@@ -17,44 +17,44 @@ static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *
 {
     if (!strcmp(path, "name"))
     {
-        out->type = DETWS_GQL_STR;
+        out->type = DetwsGqlType::DETWS_GQL_STR;
         out->s = "esp32";
         return true;
     }
     if (!strcmp(path, "uptime"))
     {
-        out->type = DETWS_GQL_INT;
+        out->type = DetwsGqlType::DETWS_GQL_INT;
         out->i = 12345;
         return true;
     }
     if (!strcmp(path, "temp"))
     {
-        out->type = DETWS_GQL_FLOAT;
+        out->type = DetwsGqlType::DETWS_GQL_FLOAT;
         out->f = 21.5;
         return true;
     }
     if (!strcmp(path, "online"))
     {
-        out->type = DETWS_GQL_BOOL;
+        out->type = DetwsGqlType::DETWS_GQL_BOOL;
         out->b = true;
         return true;
     }
     if (!strcmp(path, "device.name"))
     {
-        out->type = DETWS_GQL_STR;
+        out->type = DetwsGqlType::DETWS_GQL_STR;
         out->s = "dev1";
         return true;
     }
     if (!strcmp(path, "device.uptime"))
     {
-        out->type = DETWS_GQL_INT;
+        out->type = DetwsGqlType::DETWS_GQL_INT;
         out->i = 99;
         return true;
     }
     if (!strcmp(path, "sensor.value"))
     {
         long long id = 0;
-        out->type = DETWS_GQL_INT;
+        out->type = DetwsGqlType::DETWS_GQL_INT;
         out->i = detws_gql_arg_int(args, "id", &id) ? id * 10 : -1;
         return true;
     }
@@ -64,7 +64,7 @@ static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *
         detws_gql_arg_str(args, "name", &who);
         static char b[64];
         snprintf(b, sizeof(b), "hi %s", who);
-        out->type = DETWS_GQL_STR;
+        out->type = DetwsGqlType::DETWS_GQL_STR;
         out->s = b;
         return true;
     }
@@ -72,20 +72,20 @@ static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *
     {
         bool on = false;
         detws_gql_arg_bool(args, "on", &on);
-        out->type = DETWS_GQL_BOOL;
+        out->type = DetwsGqlType::DETWS_GQL_BOOL;
         out->b = on;
         return true;
     }
     if (!strcmp(path, "ctrl")) // a string holding a control char (forces \uXXXX)
     {
         static const char c[] = {'a', 0x01, 'b', '\0'};
-        out->type = DETWS_GQL_STR;
+        out->type = DetwsGqlType::DETWS_GQL_STR;
         out->s = c;
         return true;
     }
     if (!strcmp(path, "nullval")) // resolves true with a null-typed value (w_scalar default)
     {
-        out->type = DETWS_GQL_NULL;
+        out->type = DetwsGqlType::DETWS_GQL_NULL;
         return true;
     }
     return false; // -> null
@@ -95,12 +95,12 @@ static char out[1024];
 
 static const char *run(const char *q)
 {
-    int rc = detws_graphql_execute(q, strlen(q), resolver, out, sizeof(out));
+    DetwsGqlResult rc = detws_graphql_execute(q, strlen(q), resolver, out, sizeof(out));
     (void)rc;
     return out;
 }
 
-static int run_rc(const char *q)
+static DetwsGqlResult run_rc(const char *q)
 {
     return detws_graphql_execute(q, strlen(q), resolver, out, sizeof(out));
 }
@@ -164,34 +164,34 @@ void test_comments_and_commas()
 
 void test_parse_error_reports_errors()
 {
-    int rc = detws_graphql_execute("{ name ", 7, resolver, out, sizeof(out));
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, rc);
+    DetwsGqlResult rc = detws_graphql_execute("{ name ", 7, resolver, out, sizeof(out));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, rc);
     TEST_ASSERT_NOT_NULL(strstr(out, "\"errors\""));
 }
 
 void test_mutation_rejected()
 {
-    int rc = detws_graphql_execute("mutation { x }", 14, resolver, out, sizeof(out));
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, rc);
+    DetwsGqlResult rc = detws_graphql_execute("mutation { x }", 14, resolver, out, sizeof(out));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, rc);
 }
 
 void test_depth_limit()
 {
-    int rc = detws_graphql_execute("{a{b{c{d{e{f{g}}}}}}}", 21, resolver, out, sizeof(out));
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_LIMIT, rc);
+    DetwsGqlResult rc = detws_graphql_execute("{a{b{c{d{e{f{g}}}}}}}", 21, resolver, out, sizeof(out));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_LIMIT, rc);
 }
 
 void test_overflow_fails_closed()
 {
     char tiny[8];
-    int rc = detws_graphql_execute("{ name uptime }", 15, resolver, tiny, sizeof(tiny));
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_OVERFLOW, rc);
+    DetwsGqlResult rc = detws_graphql_execute("{ name uptime }", 15, resolver, tiny, sizeof(tiny));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, rc);
 }
 
 void test_string_escapes_decoded()
 {
     // \n \t \r \\ \/ and an unknown escape (\z) are all decoded by the arg lexer.
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_OK, run_rc("{ greet(name: \"a\\nb\\tc\\rd\\\\e\\/f\\z\") }"));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_OK, run_rc("{ greet(name: \"a\\nb\\tc\\rd\\\\e\\/f\\z\") }"));
     TEST_ASSERT_NOT_NULL(strstr(out, "\"greet\":\"hi a"));
 }
 
@@ -199,7 +199,8 @@ void test_number_arg_variants_parse()
 {
     // float, exponent, signed-exponent and negative-int argument values all parse
     // (the resolver only reads `id`, but every number branch is exercised).
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_OK, run_rc("{ sensor(id: 7, x: 1.5, y: 2e3, z: -4, w: 1.2e-2) { value } }"));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_OK,
+                          run_rc("{ sensor(id: 7, x: 1.5, y: 2e3, z: -4, w: 1.2e-2) { value } }"));
     TEST_ASSERT_NOT_NULL(strstr(out, "\"value\":70"));
 }
 
@@ -222,22 +223,22 @@ void test_control_char_is_unicode_escaped()
 
 void test_unterminated_string_arg_fails()
 {
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: \"oops) }"));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: \"oops) }"));
 }
 
 void test_arg_missing_colon_fails()
 {
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"));
 }
 
 void test_bad_arg_value_fails()
 {
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"));
 }
 
 void test_trailing_junk_fails()
 {
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("{ name } junk"));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ name } junk"));
 }
 
 void test_long_field_name_hits_limit()
@@ -251,34 +252,35 @@ void test_long_field_name_hits_limit()
     q[n++] = ' ';
     q[n++] = '}';
     q[n] = '\0';
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_LIMIT, detws_graphql_execute(q, strlen(q), resolver, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_LIMIT,
+                          detws_graphql_execute(q, strlen(q), resolver, out, sizeof(out)));
 }
 
 void test_null_inputs_fail_closed()
 {
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, detws_graphql_execute(0, 0, resolver, out, sizeof(out)));
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, detws_graphql_execute("{ name }", 8, resolver, 0, 0));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, detws_graphql_execute(0, 0, resolver, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, detws_graphql_execute("{ name }", 8, resolver, 0, 0));
 }
 
 void test_unknown_operation_keyword_fails()
 {
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("subscription { name }"));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("subscription { name }"));
 }
 
 // A numeric arg with no digits (a bare '-'), an arg with no name, and a field name
 // that does not start with a name character are all parse errors.
 void test_malformed_tokens_fail()
 {
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"));
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"));
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("{ 1 }"));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ 1 }"));
 }
 
 // `query Op` with no selection set, and `query` followed by a non-name, are parse errors.
 void test_query_keyword_forms_fail()
 {
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("query Op"));  // no selection set follows
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_PARSE, run_rc("query 123")); // bad operation name
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("query Op"));  // no selection set follows
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("query 123")); // bad operation name
 }
 
 // Exceeding the argument, node and string-buffer pools each fails closed with a limit error.
@@ -290,14 +292,14 @@ void test_pool_limits()
     for (int i = 0; i < 25; i++) // > DETWS_GQL_MAX_ARGS (24)
         n += snprintf(q + n, sizeof(q) - n, "a%d:1 ", i);
     n += snprintf(q + n, sizeof(q) - n, ") }");
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_LIMIT, run_rc(q));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q));
 
     n = 0;
     n += snprintf(q + n, sizeof(q) - n, "{ ");
     for (int i = 0; i < 49; i++) // > DETWS_GQL_MAX_NODES (48)
         n += snprintf(q + n, sizeof(q) - n, "f%d ", i);
     n += snprintf(q + n, sizeof(q) - n, "}");
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_LIMIT, run_rc(q));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q));
 
     // One string argument longer than the decode buffer (256).
     n = 0;
@@ -308,7 +310,7 @@ void test_pool_limits()
     q[n++] = ')';
     q[n++] = '}';
     q[n] = '\0';
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_LIMIT, run_rc(q));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q));
 }
 
 // Many string arguments together exhaust the intern pool (a value fails to intern).
@@ -327,7 +329,7 @@ void test_string_pool_exhaustion()
     }
     n += snprintf(q + n, sizeof(q) - n, ") }");
     q[n] = '\0';
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_LIMIT, run_rc(q));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q));
 }
 
 // A resolver returning a null-typed value serializes as JSON null (w_scalar default).
@@ -364,12 +366,12 @@ void test_resolver_path_overflow()
     // 31,31,31,31: the 4th separator check trips (plen reaches 95, then '.' -> 96).
     const int dot_case[4] = {31, 31, 31, 31};
     build_nested_query(dot_case, 4, q);
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_OVERFLOW, run_rc(q));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, run_rc(q));
 
     // 31,31,6,31: the 4th segment copy trips (plen 71 + a 31-char name >= 96).
     const int seg_case[4] = {31, 31, 6, 31};
     build_nested_query(seg_case, 4, q);
-    TEST_ASSERT_EQUAL_INT(DETWS_GQL_ERR_OVERFLOW, run_rc(q));
+    TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, run_rc(q));
 }
 
 // The argument accessors reject null args and a wrong-typed / missing argument.

@@ -18,18 +18,18 @@ void tearDown()
 
 void test_dir_name()
 {
-    TEST_ASSERT_EQUAL_STRING("in", detws_gpio_dir_name(DETWS_GPIO_IN));
-    TEST_ASSERT_EQUAL_STRING("in_pullup", detws_gpio_dir_name(DETWS_GPIO_IN_PULLUP));
-    TEST_ASSERT_EQUAL_STRING("in_pulldown", detws_gpio_dir_name(DETWS_GPIO_IN_PULLDOWN));
-    TEST_ASSERT_EQUAL_STRING("out", detws_gpio_dir_name(DETWS_GPIO_OUT));
-    TEST_ASSERT_EQUAL_STRING("in", detws_gpio_dir_name(99)); // unknown -> in
+    TEST_ASSERT_EQUAL_STRING("in", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_IN));
+    TEST_ASSERT_EQUAL_STRING("in_pullup", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_IN_PULLUP));
+    TEST_ASSERT_EQUAL_STRING("in_pulldown", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_IN_PULLDOWN));
+    TEST_ASSERT_EQUAL_STRING("out", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_OUT));
+    TEST_ASSERT_EQUAL_STRING("in", detws_gpio_dir_name((DetwsGpioDir)99)); // unknown -> in
 }
 
 void test_json()
 {
     DetwsGpioPin pins[2] = {
-        {2, "LED", DETWS_GPIO_OUT, 1},
-        {0, "BOOT", DETWS_GPIO_IN_PULLUP, 0},
+        {2, "LED", DetwsGpioDir::DETWS_GPIO_OUT, 1},
+        {0, "BOOT", DetwsGpioDir::DETWS_GPIO_IN_PULLUP, 0},
     };
     char buf[256];
     int n = detws_gpio_json(pins, 2, buf, sizeof(buf));
@@ -48,7 +48,7 @@ void test_json_empty()
 
 void test_json_small_buffer_fails_closed()
 {
-    DetwsGpioPin pins[1] = {{2, "LED", DETWS_GPIO_OUT, 1}};
+    DetwsGpioPin pins[1] = {{2, "LED", DetwsGpioDir::DETWS_GPIO_OUT, 1}};
     char buf[8];
     TEST_ASSERT_EQUAL_INT(0, detws_gpio_json(pins, 1, buf, sizeof(buf)));
 }
@@ -93,8 +93,8 @@ void test_parse_set_no_prefix_match()
 void test_is_output()
 {
     DetwsGpioPin pins[2] = {
-        {2, "LED", DETWS_GPIO_OUT, 0},
-        {0, "BOOT", DETWS_GPIO_IN_PULLUP, 0},
+        {2, "LED", DetwsGpioDir::DETWS_GPIO_OUT, 0},
+        {0, "BOOT", DetwsGpioDir::DETWS_GPIO_IN_PULLUP, 0},
     };
     TEST_ASSERT_TRUE(detws_gpio_is_output(pins, 2, 2));
     TEST_ASSERT_FALSE(detws_gpio_is_output(pins, 2, 0));  // input pin

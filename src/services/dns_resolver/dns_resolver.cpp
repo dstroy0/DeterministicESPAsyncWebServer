@@ -16,34 +16,34 @@
 DetwsIpClass detws_dns_classify(uint32_t ip)
 {
     if (ip == 0u)
-        return DETWS_IP_UNSPECIFIED;
+        return DetwsIpClass::DETWS_IP_UNSPECIFIED;
     if (ip == 0xFFFFFFFFu)
-        return DETWS_IP_BROADCAST;
+        return DetwsIpClass::DETWS_IP_BROADCAST;
     uint8_t a = (uint8_t)((ip >> 24) & 0xFF);
     uint8_t b = (uint8_t)((ip >> 16) & 0xFF);
     if (a == 127)
-        return DETWS_IP_LOOPBACK;
+        return DetwsIpClass::DETWS_IP_LOOPBACK;
     if (a == 10)
-        return DETWS_IP_PRIVATE;
+        return DetwsIpClass::DETWS_IP_PRIVATE;
     if (a == 172 && b >= 16 && b <= 31)
-        return DETWS_IP_PRIVATE;
+        return DetwsIpClass::DETWS_IP_PRIVATE;
     if (a == 192 && b == 168)
-        return DETWS_IP_PRIVATE;
+        return DetwsIpClass::DETWS_IP_PRIVATE;
     if (a == 169 && b == 254)
-        return DETWS_IP_LINKLOCAL;
+        return DetwsIpClass::DETWS_IP_LINKLOCAL;
     if (a >= 224 && a <= 239)
-        return DETWS_IP_MULTICAST;
-    return DETWS_IP_PUBLIC;
+        return DetwsIpClass::DETWS_IP_MULTICAST;
+    return DetwsIpClass::DETWS_IP_PUBLIC;
 }
 
 bool detws_dns_verify(uint32_t ip)
 {
     switch (detws_dns_classify(ip))
     {
-    case DETWS_IP_UNSPECIFIED: // 0.0.0.0 - blocked / no answer
-    case DETWS_IP_BROADCAST:   // 255.255.255.255 - never a host
-    case DETWS_IP_LOOPBACK:    // 127.x - DNS-rebinding to localhost
-    case DETWS_IP_MULTICAST:   // 224-239 - never an A-record host
+    case DetwsIpClass::DETWS_IP_UNSPECIFIED: // 0.0.0.0 - blocked / no answer
+    case DetwsIpClass::DETWS_IP_BROADCAST:   // 255.255.255.255 - never a host
+    case DetwsIpClass::DETWS_IP_LOOPBACK:    // 127.x - DNS-rebinding to localhost
+    case DetwsIpClass::DETWS_IP_MULTICAST:   // 224-239 - never an A-record host
         return false;
     default:
         return true; // private / link-local / public are plausible

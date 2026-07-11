@@ -41,9 +41,12 @@ static const int LED_PIN = 2; // onboard LED on many ESP32 dev boards
 // Compile-time widget table - the dashboard's deterministic source of truth.
 // Display widgets are fed over SSE; control widgets send values back over WS.
 static const DetwsWidget WIDGETS[] = {
-    {DETWS_WIDGET_GAUGE, "Free heap", "heap", 0, 320000, "B"}, {DETWS_WIDGET_VALUE, "Uptime", "uptime", 0, 0, "s"},
-    {DETWS_WIDGET_CHART, "WiFi RSSI", "rssi", -100, 0, "dBm"}, {DETWS_WIDGET_TOGGLE, "Onboard LED", "led", 0, 1, ""},
-    {DETWS_WIDGET_SLIDER, "Brightness", "bright", 0, 255, ""}, {DETWS_WIDGET_BUTTON, "Identify", "ident", 0, 0, ""},
+    {DetwsWidgetType::DETWS_WIDGET_GAUGE, "Free heap", "heap", 0, 320000, "B"},
+    {DetwsWidgetType::DETWS_WIDGET_VALUE, "Uptime", "uptime", 0, 0, "s"},
+    {DetwsWidgetType::DETWS_WIDGET_CHART, "WiFi RSSI", "rssi", -100, 0, "dBm"},
+    {DetwsWidgetType::DETWS_WIDGET_TOGGLE, "Onboard LED", "led", 0, 1, ""},
+    {DetwsWidgetType::DETWS_WIDGET_SLIDER, "Brightness", "bright", 0, 255, ""},
+    {DetwsWidgetType::DETWS_WIDGET_BUTTON, "Identify", "ident", 0, 0, ""},
 };
 
 // Invoked when a control widget sends a value from the browser.

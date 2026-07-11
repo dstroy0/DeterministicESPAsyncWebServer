@@ -28,7 +28,7 @@
 class DetWebServer;
 
 /** @brief Configured direction of a mapped pin (how the panel renders / drives it). */
-enum DetwsGpioDir
+enum class DetwsGpioDir : uint8_t
 {
     DETWS_GPIO_IN = 0,      ///< read-only input.
     DETWS_GPIO_IN_PULLUP,   ///< input with internal pull-up.
@@ -41,7 +41,7 @@ struct DetwsGpioPin
 {
     uint8_t pin;       ///< GPIO number.
     const char *label; ///< human label (null-terminated, caller-owned).
-    uint8_t dir;       ///< DetwsGpioDir.
+    DetwsGpioDir dir;  ///< pin direction.
     uint8_t level;     ///< live level (0 / 1); filled by detws_gpio_read.
 };
 
@@ -50,7 +50,7 @@ struct DetwsGpioPin
 // ---------------------------------------------------------------------------
 
 /** @brief Short name for a direction ("in", "in_pullup", "in_pulldown", "out"). */
-const char *detws_gpio_dir_name(uint8_t dir);
+const char *detws_gpio_dir_name(DetwsGpioDir dir);
 
 /**
  * @brief Serialize a pin array as JSON `{"pins":[...]}` into @p out.
@@ -82,7 +82,7 @@ void detws_gpio_write(uint8_t pin, uint8_t level);
 
 /**
  * @brief Serve the GPIO map at @p path: GET returns the JSON, POST drives an
- *        output (body `pin=<n>&level=<0|1>`, only pins marked DETWS_GPIO_OUT).
+ *        output (body `pin=<n>&level=<0|1>`, only pins marked DetwsGpioDir::DETWS_GPIO_OUT).
  *        The pin table is caller-owned and must outlive the server.
  */
 void detws_gpio_map_begin(DetWebServer &server, const char *path, DetwsGpioPin *pins, uint8_t count);

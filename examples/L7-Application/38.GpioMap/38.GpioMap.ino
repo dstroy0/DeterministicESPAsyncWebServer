@@ -31,12 +31,12 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 DetWebServer server;
 
 // The pins to expose. Caller-owned and must outlive the server. Mark a pin
-// DETWS_GPIO_OUT to make it drivable from the panel.
+// DetwsGpioDir::DETWS_GPIO_OUT to make it drivable from the panel.
 static DetwsGpioPin gpio_pins[] = {
-    {2, "Onboard LED", DETWS_GPIO_OUT, 0},
-    {0, "BOOT button", DETWS_GPIO_IN_PULLUP, 0},
-    {4, "Relay", DETWS_GPIO_OUT, 0},
-    {34, "ADC sense", DETWS_GPIO_IN, 0},
+    {2, "Onboard LED", DetwsGpioDir::DETWS_GPIO_OUT, 0},
+    {0, "BOOT button", DetwsGpioDir::DETWS_GPIO_IN_PULLUP, 0},
+    {4, "Relay", DetwsGpioDir::DETWS_GPIO_OUT, 0},
+    {34, "ADC sense", DetwsGpioDir::DETWS_GPIO_IN, 0},
 };
 static const uint8_t gpio_count = sizeof(gpio_pins) / sizeof(gpio_pins[0]);
 

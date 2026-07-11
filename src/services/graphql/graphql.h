@@ -41,7 +41,7 @@
 #if DETWS_ENABLE_GRAPHQL
 
 /** @brief Scalar value kinds a resolver can return. */
-enum DetwsGqlType
+enum class DetwsGqlType : uint8_t
 {
     DETWS_GQL_NULL = 0,
     DETWS_GQL_INT,
@@ -53,7 +53,7 @@ enum DetwsGqlType
 /** @brief A scalar value (resolver output, or an argument). */
 struct DetwsGqlValue
 {
-    int type; ///< ::DetwsGqlType
+    DetwsGqlType type; ///< the value's type.
     long long i;
     double f;
     bool b;
@@ -79,7 +79,7 @@ bool detws_gql_arg_bool(const DetwsGqlArgs *args, const char *name, bool *out);
 typedef bool (*detws_gql_resolver_fn)(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *out);
 
 /** @brief detws_graphql_execute() result codes. */
-enum DetwsGqlResult
+enum class DetwsGqlResult : int32_t
 {
     DETWS_GQL_OK = 0,           ///< Executed; @p out holds `{"data":{...}}`.
     DETWS_GQL_ERR_PARSE = -1,   ///< Malformed query (syntax / unsupported construct).
@@ -99,7 +99,8 @@ enum DetwsGqlResult
  * @param out,cap    response buffer and capacity.
  * @return ::DETWS_GQL_OK or a negative ::DetwsGqlResult.
  */
-int detws_graphql_execute(const char *query, size_t len, detws_gql_resolver_fn resolver, char *out, size_t cap);
+DetwsGqlResult detws_graphql_execute(const char *query, size_t len, detws_gql_resolver_fn resolver, char *out,
+                                     size_t cap);
 
 #endif // DETWS_ENABLE_GRAPHQL
 #endif // DETERMINISTICESPASYNCWEBSERVER_GRAPHQL_H

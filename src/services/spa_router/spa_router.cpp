@@ -26,16 +26,16 @@ bool detws_spa_has_extension(const char *path)
 DetwsSpaAction detws_spa_route(const char *path, const char *api_prefix)
 {
     if (!path || path[0] == '\0' || (path[0] == '/' && path[1] == '\0'))
-        return DETWS_SPA_SERVE_SHELL; // "" or "/" -> the app shell
+        return DetwsSpaAction::DETWS_SPA_SERVE_SHELL; // "" or "/" -> the app shell
 
     if (api_prefix && api_prefix[0])
     {
         size_t pl = strlen(api_prefix);
         if (strncmp(path, api_prefix, pl) == 0)
-            return DETWS_SPA_PASSTHROUGH; // "/api/..." -> handlers
+            return DetwsSpaAction::DETWS_SPA_PASSTHROUGH; // "/api/..." -> handlers
     }
 
-    return detws_spa_has_extension(path) ? DETWS_SPA_SERVE_FILE : DETWS_SPA_SERVE_SHELL;
+    return detws_spa_has_extension(path) ? DetwsSpaAction::DETWS_SPA_SERVE_FILE : DetwsSpaAction::DETWS_SPA_SERVE_SHELL;
 }
 
 #endif // DETWS_ENABLE_SPA_ROUTER

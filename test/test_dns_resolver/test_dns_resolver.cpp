@@ -18,17 +18,17 @@ void tearDown()
 
 void test_classify()
 {
-    TEST_ASSERT_EQUAL_INT(DETWS_IP_UNSPECIFIED, detws_dns_classify(0u));
-    TEST_ASSERT_EQUAL_INT(DETWS_IP_BROADCAST, detws_dns_classify(0xFFFFFFFFu));
-    TEST_ASSERT_EQUAL_INT(DETWS_IP_LOOPBACK, detws_dns_classify(IPV4(127, 0, 0, 1)));
-    TEST_ASSERT_EQUAL_INT(DETWS_IP_PRIVATE, detws_dns_classify(IPV4(10, 0, 0, 5)));
-    TEST_ASSERT_EQUAL_INT(DETWS_IP_PRIVATE, detws_dns_classify(IPV4(172, 16, 0, 1)));
-    TEST_ASSERT_EQUAL_INT(DETWS_IP_PRIVATE, detws_dns_classify(IPV4(192, 168, 1, 1)));
-    TEST_ASSERT_EQUAL_INT(DETWS_IP_LINKLOCAL, detws_dns_classify(IPV4(169, 254, 1, 1)));
-    TEST_ASSERT_EQUAL_INT(DETWS_IP_MULTICAST, detws_dns_classify(IPV4(224, 0, 0, 1)));
-    TEST_ASSERT_EQUAL_INT(DETWS_IP_PUBLIC, detws_dns_classify(IPV4(8, 8, 8, 8)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_UNSPECIFIED, detws_dns_classify(0u));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_BROADCAST, detws_dns_classify(0xFFFFFFFFu));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_LOOPBACK, detws_dns_classify(IPV4(127, 0, 0, 1)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PRIVATE, detws_dns_classify(IPV4(10, 0, 0, 5)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PRIVATE, detws_dns_classify(IPV4(172, 16, 0, 1)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PRIVATE, detws_dns_classify(IPV4(192, 168, 1, 1)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_LINKLOCAL, detws_dns_classify(IPV4(169, 254, 1, 1)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_MULTICAST, detws_dns_classify(IPV4(224, 0, 0, 1)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PUBLIC, detws_dns_classify(IPV4(8, 8, 8, 8)));
     // 172.32.x is OUTSIDE the 172.16/12 private block -> public.
-    TEST_ASSERT_EQUAL_INT(DETWS_IP_PUBLIC, detws_dns_classify(IPV4(172, 32, 0, 1)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PUBLIC, detws_dns_classify(IPV4(172, 32, 0, 1)));
 }
 
 void test_verify_rejects_suspicious()

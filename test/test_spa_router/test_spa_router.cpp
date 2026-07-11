@@ -29,16 +29,16 @@ void test_has_extension(void)
 
 void test_route(void)
 {
-    TEST_ASSERT_EQUAL_INT(DETWS_SPA_SERVE_SHELL, detws_spa_route("/", "/api/"));
-    TEST_ASSERT_EQUAL_INT(DETWS_SPA_SERVE_SHELL, detws_spa_route("", "/api/"));
-    TEST_ASSERT_EQUAL_INT(DETWS_SPA_SERVE_SHELL, detws_spa_route("/dashboard", "/api/"));
-    TEST_ASSERT_EQUAL_INT(DETWS_SPA_SERVE_SHELL, detws_spa_route("/devices/42", "/api/"));
-    TEST_ASSERT_EQUAL_INT(DETWS_SPA_SERVE_FILE, detws_spa_route("/app.js", "/api/"));
-    TEST_ASSERT_EQUAL_INT(DETWS_SPA_SERVE_FILE, detws_spa_route("/assets/logo.svg", "/api/"));
-    TEST_ASSERT_EQUAL_INT(DETWS_SPA_PASSTHROUGH, detws_spa_route("/api/state", "/api/"));
-    TEST_ASSERT_EQUAL_INT(DETWS_SPA_PASSTHROUGH, detws_spa_route("/api/devices/42", "/api/"));
+    TEST_ASSERT_EQUAL_INT(DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("/", "/api/"));
+    TEST_ASSERT_EQUAL_INT(DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("", "/api/"));
+    TEST_ASSERT_EQUAL_INT(DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("/dashboard", "/api/"));
+    TEST_ASSERT_EQUAL_INT(DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("/devices/42", "/api/"));
+    TEST_ASSERT_EQUAL_INT(DetwsSpaAction::DETWS_SPA_SERVE_FILE, detws_spa_route("/app.js", "/api/"));
+    TEST_ASSERT_EQUAL_INT(DetwsSpaAction::DETWS_SPA_SERVE_FILE, detws_spa_route("/assets/logo.svg", "/api/"));
+    TEST_ASSERT_EQUAL_INT(DetwsSpaAction::DETWS_SPA_PASSTHROUGH, detws_spa_route("/api/state", "/api/"));
+    TEST_ASSERT_EQUAL_INT(DetwsSpaAction::DETWS_SPA_PASSTHROUGH, detws_spa_route("/api/devices/42", "/api/"));
     // No API prefix configured: an /api path is just a route.
-    TEST_ASSERT_EQUAL_INT(DETWS_SPA_SERVE_SHELL, detws_spa_route("/api/state", nullptr));
+    TEST_ASSERT_EQUAL_INT(DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("/api/state", nullptr));
 }
 
 int main(void)

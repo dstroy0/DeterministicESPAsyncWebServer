@@ -36,19 +36,19 @@ static const char *widget_type_name(DetwsWidgetType t)
 {
     switch (t)
     {
-    case DETWS_WIDGET_GAUGE:
+    case DetwsWidgetType::DETWS_WIDGET_GAUGE:
         return "gauge";
-    case DETWS_WIDGET_BAR:
+    case DetwsWidgetType::DETWS_WIDGET_BAR:
         return "bar";
-    case DETWS_WIDGET_SPARKLINE:
+    case DetwsWidgetType::DETWS_WIDGET_SPARKLINE:
         return "sparkline";
-    case DETWS_WIDGET_CHART:
+    case DetwsWidgetType::DETWS_WIDGET_CHART:
         return "chart";
-    case DETWS_WIDGET_BUTTON:
+    case DetwsWidgetType::DETWS_WIDGET_BUTTON:
         return "button";
-    case DETWS_WIDGET_TOGGLE:
+    case DetwsWidgetType::DETWS_WIDGET_TOGGLE:
         return "toggle";
-    case DETWS_WIDGET_SLIDER:
+    case DetwsWidgetType::DETWS_WIDGET_SLIDER:
         return "slider";
     default:
         return "value";

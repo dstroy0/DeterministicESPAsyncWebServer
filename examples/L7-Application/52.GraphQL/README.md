@@ -33,7 +33,7 @@ recursing into the resolver for each child; returning false yields `null`.
 and writes the response envelope:
 
 ```cpp
-int rc = detws_graphql_execute(req->body, req->body_len, resolver, body, sizeof(body));
+DetwsGqlResult rc = detws_graphql_execute(req->body, req->body_len, resolver, body, sizeof(body));
 server.send(id, rc == DETWS_GQL_OK ? 200 : 400, "application/json", body);
 ```
 
@@ -130,7 +130,7 @@ void setup()
 
     server.on("/graphql", HTTP_POST, [](uint8_t id, HttpReq *req) {
         char body[512];
-        int rc = detws_graphql_execute((const char *)req->body, req->body_len, resolver, body, sizeof(body));
+        DetwsGqlResult rc = detws_graphql_execute((const char *)req->body, req->body_len, resolver, body, sizeof(body));
         // The engine writes {"data":...} on success or {"errors":...} on a parse
         // error; 200 with the GraphQL error envelope is the conventional reply.
         server.send(id, rc == DETWS_GQL_OK ? 200 : 400, "application/json", body);

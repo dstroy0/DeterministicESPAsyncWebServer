@@ -27,7 +27,7 @@
 #if DETWS_ENABLE_SPA_ROUTER
 
 /** @brief What to do with a request path. */
-enum DetwsSpaAction
+enum class DetwsSpaAction : uint8_t
 {
     DETWS_SPA_SERVE_FILE,  ///< a real asset (has a file extension): serve it statically.
     DETWS_SPA_SERVE_SHELL, ///< a client route (extensionless): serve the SPA shell (index.html).

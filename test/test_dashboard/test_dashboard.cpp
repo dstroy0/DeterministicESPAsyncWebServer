@@ -10,8 +10,8 @@
 #include <unity.h>
 
 static const DetwsWidget W[] = {
-    {DETWS_WIDGET_GAUGE, "Temp", "temp", 0, 100, "C"},
-    {DETWS_WIDGET_VALUE, "Count", "count", 0, 0, ""},
+    {DetwsWidgetType::DETWS_WIDGET_GAUGE, "Temp", "temp", 0, 100, "C"},
+    {DetwsWidgetType::DETWS_WIDGET_VALUE, "Count", "count", 0, 0, ""},
 };
 
 void setUp()
@@ -135,10 +135,10 @@ void test_dispatch_control_invokes_cb()
 void test_layout_control_types()
 {
     static const DetwsWidget CW[] = {
-        {DETWS_WIDGET_CHART, "C", "c", 0, 1, ""},
-        {DETWS_WIDGET_BUTTON, "B", "b", 0, 0, ""},
-        {DETWS_WIDGET_TOGGLE, "T", "t", 0, 1, ""},
-        {DETWS_WIDGET_SLIDER, "S", "s", 0, 100, "%"},
+        {DetwsWidgetType::DETWS_WIDGET_CHART, "C", "c", 0, 1, ""},
+        {DetwsWidgetType::DETWS_WIDGET_BUTTON, "B", "b", 0, 0, ""},
+        {DetwsWidgetType::DETWS_WIDGET_TOGGLE, "T", "t", 0, 1, ""},
+        {DetwsWidgetType::DETWS_WIDGET_SLIDER, "S", "s", 0, 100, "%"},
     };
     detws_dashboard_configure(CW, 4);
     char buf[512];
@@ -153,8 +153,8 @@ void test_layout_control_types()
 void test_layout_bar_sparkline_types()
 {
     static const DetwsWidget AW[] = {
-        {DETWS_WIDGET_BAR, "B", "b", 0, 1, ""},
-        {DETWS_WIDGET_SPARKLINE, "S", "s", 0, 1, ""},
+        {DetwsWidgetType::DETWS_WIDGET_BAR, "B", "b", 0, 1, ""},
+        {DetwsWidgetType::DETWS_WIDGET_SPARKLINE, "S", "s", 0, 1, ""},
     };
     detws_dashboard_configure(AW, 2);
     char buf[256];
