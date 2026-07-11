@@ -29,6 +29,7 @@ from peers import (
     dns_peer,
     ftp_peer,
     h2_peer,
+    h3_peer,
     http_peer,
     jwt_peer,
     modbus_peer,
@@ -53,6 +54,7 @@ from peers import (
 _MODULES = [
     http_peer,
     h2_peer,
+    h3_peer,
     ws_peer,
     sse_peer,
     webdav_peer,

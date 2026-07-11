@@ -31,3 +31,4 @@ ntplib>=0.4          # ntp peer (RFC 5905 client; queries the device's NTP serve
 dnspython>=2.4       # dns peer (RFC 1035 client; queries the device's authoritative DNS server on UDP/53)
 PyJWT>=2.8           # jwt peer (mints HS256 tokens to validate the device's bearer-auth verifier)
 httpx[http2]>=0.27   # http2 peer (real HTTP/2 client via the h2 library; drives ALPN h2 at the device's HTTPS listener)
+aioquic>=1.0         # http3 peer (real QUIC/HTTP-3 client; ALPN h3 handshake + requests at the device's UDP:443)
