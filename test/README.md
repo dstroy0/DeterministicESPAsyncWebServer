@@ -21249,9 +21249,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (quic_conn_recv(&qc, dg, dl))</code>
       * <code>Assert true (sl &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_INITIAL, type);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(TLS_HS_SERVER_HELLO, sh[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, sh[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_HANDSHAKE, hstype);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(TLS_HS_ENCRYPTED_EXTENSIONS, hsflight[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS, hsflight[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qc.tls.hs_server.key, hs_server_keys.key, 16);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qc.tls.ap_server.key, ap_server_keys.key, 16);</code>
       * <code>Assert true (quic_conn_recv(&qc, idg, idl + hdl))</code>
@@ -21287,7 +21287,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (sl2 &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_INITIAL, type);</code>
       * <code>Assert true (sh_len &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(TLS_HS_SERVER_HELLO, sh[0]); // the ServerHello was retransmitted</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, sh[0]); // the ServerHello was retransmitted</code>
       * <code>Assert false (qc.pto_armed)</code>
       * <code>Assert equal uint (0, quic_conn_send(&qc, sdg2, sizeof(sdg2)))</code>
   </details>
@@ -21929,11 +21929,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Client transport params.
     * **Assertions**:
       * <code>Assert equal uint (ch_len, used)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);</code>
       * <code>Assert true (qt.hs_keys_ready)</code>
       * <code>Assert true (qt.ap_keys_ready)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(TLS_HS_SERVER_HELLO, si[0]);                // Initial flight = ServerHello</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(TLS_HS_ENCRYPTED_EXTENSIONS, sh_flight[0]); // then EE..Finished</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, si[0]);                // Initial flight = ServerHello</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS, sh_flight[0]); // then EE..Finished</code>
       * <code>Assert not null (peer)</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(524288, peer-&gt;initial_max_data);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.handshake_secret, cks.handshake_secret, 32);</code>
@@ -21943,10 +21943,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.server_ap_traffic, cks.server_ap_traffic, 32);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);</code>
       * <code>Assert equal uint (sizeof(cfin), used)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_DONE, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);</code>
       * <code>Assert true (qt.complete)</code>
-      * <code>Assert not null (quic_tls_keys(&qt, QUIC_ENC_HANDSHAKE, true))</code>
-      * <code>Assert not null (quic_tls_keys(&qt, QUIC_ENC_APP, false))</code>
+      * <code>Assert not null (quic_tls_keys(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, true))</code>
+      * <code>Assert not null (quic_tls_keys(&qt, QuicEnc::QUIC_ENC_APP, false))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -21954,8 +21954,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A Finished with the wrong verify_data must be rejected (decrypt_error).
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(51, qt.alert); // decrypt_error</code>
   </details>
 
@@ -21964,7 +21964,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Corrupt the ALPN protocol name "h3" -> "h9" so it no longer offers h3.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(120, qt.alert); // no_application_protocol</code>
   </details>
 
@@ -21974,9 +21974,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Delivering the whole message now completes it.
     * **Assertions**:
       * <code>Assert equal uint (0, used)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_START, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_START, qt.state);</code>
       * <code>Assert equal uint (ch_len, used)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -22032,7 +22032,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: ClientHello, handshake length 2, body = legacy_version only (no random / ciphers / extensions).
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(50, qt.alert); // decode_error</code>
   </details>
 
@@ -22041,18 +22041,18 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A Finished-typed message of the wrong length -> DECODE_ERROR inside process_client_finished.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(50, qt.alert); // decode_error</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(10, qt.alert); // unexpected_message</code>
-      * <code>Assert equal uint (sizeof(more), quic_tls_recv_crypto(&qt, QUIC_ENC_HANDSHAKE, more, sizeof(more)))</code>
-      * <code>Assert null (quic_tls_flight(&qt, QUIC_ENC_APP, &l))</code>
+      * <code>Assert equal uint (sizeof(more), quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, more, sizeof(more)))</code>
+      * <code>Assert null (quic_tls_flight(&qt, QuicEnc::QUIC_ENC_APP, &l))</code>
       * <code>Assert equal uint (0, l)</code>
-      * <code>Assert null (quic_tls_keys(&fresh, QUIC_ENC_HANDSHAKE, true))</code>
-      * <code>Assert null (quic_tls_keys(&fresh, QUIC_ENC_APP, false))</code>
+      * <code>Assert null (quic_tls_keys(&fresh, QuicEnc::QUIC_ENC_HANDSHAKE, true))</code>
+      * <code>Assert null (quic_tls_keys(&fresh, QuicEnc::QUIC_ENC_APP, false))</code>
       * <code>Assert null (quic_tls_keys(&fresh, 999, true))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(80, qt.alert); // internal_error</code>
   </details>
 
@@ -22064,10 +22064,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (ee &gt; 0 && cert_overhead &gt; 0 && cv &gt; 4 && fin &gt; 4)</code>
       * <code>Assert true (buf &gt; ee + cert_overhead + leave_a)</code>
       * <code>Assert true (cfg.cert_len &lt; sizeof(big_cert))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, run_handshake(&cfg));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, run_handshake(&cfg));</code>
       * <code>Assert true (buf &gt; ee + cert_overhead + leave_b)</code>
       * <code>Assert true (cfg.cert_len &lt; sizeof(big_cert))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, run_handshake(&cfg));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, run_handshake(&cfg));</code>
   </details>
 
 </details>
@@ -29776,7 +29776,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Handshake header: type 8, 24-bit length = n - 4.
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(TLS_HS_ENCRYPTED_EXTENSIONS, out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS, out[0]);</code>
       * <code>Assert equal uint (n - 4, (out[1] &lt;&lt; 16) | (out[2] &lt;&lt; 8) | out[3])</code>
       * <code>Assert equal uint (n - 6, (out[4] &lt;&lt; 8) | out[5])</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(alpn, out + 6, sizeof(alpn));</code>
@@ -29802,7 +29802,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Header: 0f, len = 2 + 2 + 64 = 68; algorithm ed25519; sig length 64.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(TLS_HS_CERTIFICATE_VERIFY, out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_CERTIFICATE_VERIFY, out[0]);</code>
       * <code>Assert equal uint (68, (out[1] &lt;&lt; 16) | (out[2] &lt;&lt; 8) | out[3])</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(TLS_SIG_ED25519, (out[4] &lt;&lt; 8) | out[5]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(64, (out[6] &lt;&lt; 8) | out[7]);</code>
