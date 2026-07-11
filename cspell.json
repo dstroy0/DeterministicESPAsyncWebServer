@@ -53,6 +53,7 @@
     "bignum",
     "Bitcask",
     "bitflag",
+    "bitflip",
     "bitmask",
     "Bjarne",
     "blockwise",

@@ -516,6 +516,27 @@ per-metric hot op. Host from [`perf/bench_statsd.cpp`](../perf/bench_statsd.cpp)
   `statsd_injection` attack, which held the bound at a 51 B datagram for a 2 KB name). HW-verified
   device-as-StatsD-client against a UDP collector (5/5 interop; name/value/type validated).
 
+### JWT HS256 bearer-auth verify (DETWS_ENABLE_JWT)
+
+The per-request bearer-token check the device runs to authenticate a caller: `jwt_verify_hs256` splits the
+compact JWT, enforces `alg == HS256` (rejecting `alg=none` / RS256 / HS384 before any HMAC), HMAC-SHA256s the
+signing input, base64url-encodes the MAC, and constant-time compares it. Host from
+[`perf/bench_jwt.cpp`](../perf/bench_jwt.cpp); device from the rig `/bench` op.
+
+| Operation          | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 us/op |
+| ------------------ | ---------: | --------: | --------------: | -------------: |
+| `jwt_verify_hs256` |     3243.0 |      43.5 |           33838 |          140.9 |
+
+- At **~141 us** this is the **heaviest per-request op** in the library after WS inflate - HMAC-SHA256 is two
+  SHA-256 compressions plus the base64url. That is fine for a login / occasional bearer check, but a route
+  hit at high request rate should cache the decision rather than re-verify every request. The important
+  property is the **security shape**: the `alg` header is enforced before the MAC (RFC 7515 §5.2), the
+  signature must be exactly 43 base64url chars, and the compare is constant-time - so the whole
+  alg-confusion / forgery class is closed. The `jwt_forgery` attack confirmed **14/14 forgeries rejected**
+  (alg=none, a valid HMAC under alg=HS384/RS256/None, wrong-secret, stripped/bit-flipped/truncated signature,
+  extra dots, oversized) with a genuinely valid token as the positive control. HW-verified against the real
+  `PyJWT` library (6/6 interop: valid accepted, wrong-secret rejected, expired rejected by the `exp` check).
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
