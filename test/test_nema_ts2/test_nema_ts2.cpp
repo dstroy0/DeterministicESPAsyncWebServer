@@ -25,7 +25,7 @@ void test_build_and_parse(void)
 {
     uint8_t data[3] = {0x01, 0x02, 0x03};
     uint8_t buf[16];
-    size_t n = detws_nema_ts2_build(0x05, 0x10, NEMA_TS2_FT_CMD_LOADSWITCH, data, 3, buf, sizeof(buf));
+    size_t n = detws_nema_ts2_build(0x05, 0x10, NemaTs2::NEMA_TS2_FT_CMD_LOADSWITCH, data, 3, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_size_t(3 + 3 + 2, n);
     TEST_ASSERT_EQUAL_HEX8(0x05, buf[0]);
     TEST_ASSERT_EQUAL_HEX8(0x10, buf[1]);
@@ -35,7 +35,7 @@ void test_build_and_parse(void)
     TEST_ASSERT_TRUE(detws_nema_ts2_parse(buf, n, &f));
     TEST_ASSERT_EQUAL_HEX8(0x05, f.address);
     TEST_ASSERT_EQUAL_HEX8(0x10, f.control);
-    TEST_ASSERT_EQUAL_HEX8(NEMA_TS2_FT_CMD_LOADSWITCH, f.frame_type);
+    TEST_ASSERT_EQUAL_HEX8(NemaTs2::NEMA_TS2_FT_CMD_LOADSWITCH, f.frame_type);
     TEST_ASSERT_EQUAL_size_t(3, f.data_len);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(data, f.data, 3);
 }
@@ -43,7 +43,7 @@ void test_build_and_parse(void)
 void test_no_data_frame(void)
 {
     uint8_t buf[8];
-    size_t n = detws_nema_ts2_build(0x01, 0x00, NEMA_TS2_FT_DETECTOR, nullptr, 0, buf, sizeof(buf));
+    size_t n = detws_nema_ts2_build(0x01, 0x00, NemaTs2::NEMA_TS2_FT_DETECTOR, nullptr, 0, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_size_t(5, n);
     NemaTs2Frame f;
     TEST_ASSERT_TRUE(detws_nema_ts2_parse(buf, n, &f));
@@ -55,7 +55,7 @@ void test_parse_rejects_bad_crc_and_short(void)
 {
     uint8_t data[2] = {0xAA, 0xBB};
     uint8_t buf[8];
-    size_t n = detws_nema_ts2_build(0x02, 0x00, NEMA_TS2_FT_CMD_MMU, data, 2, buf, sizeof(buf));
+    size_t n = detws_nema_ts2_build(0x02, 0x00, NemaTs2::NEMA_TS2_FT_CMD_MMU, data, 2, buf, sizeof(buf));
     NemaTs2Frame f;
     buf[n - 1] ^= 0xFF; // corrupt FCS high byte
     TEST_ASSERT_FALSE(detws_nema_ts2_parse(buf, n, &f));

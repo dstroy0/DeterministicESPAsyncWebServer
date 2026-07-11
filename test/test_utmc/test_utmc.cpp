@@ -30,7 +30,7 @@ void test_request(void)
 void test_response(void)
 {
     char buf[256];
-    detws_utmc_response("SIGN_7", "SLOW", UTMC_QUALITY_GOOD, "2026-07-06T12:00:00Z", buf, sizeof(buf));
+    detws_utmc_response("SIGN_7", "SLOW", Utmc::UTMC_QUALITY_GOOD, "2026-07-06T12:00:00Z", buf, sizeof(buf));
     TEST_ASSERT_TRUE(has(buf, "<UTMCResponse><object id=\"SIGN_7\""));
     TEST_ASSERT_TRUE(has(buf, "value=\"SLOW\""));
     TEST_ASSERT_TRUE(has(buf, "quality=\"0\""));
@@ -40,7 +40,7 @@ void test_response(void)
 void test_response_escapes(void)
 {
     char buf[256];
-    detws_utmc_response("A&B", "x<y", UTMC_QUALITY_SUSPECT, "t", buf, sizeof(buf));
+    detws_utmc_response("A&B", "x<y", Utmc::UTMC_QUALITY_SUSPECT, "t", buf, sizeof(buf));
     TEST_ASSERT_TRUE(has(buf, "id=\"A&amp;B\""));
     TEST_ASSERT_TRUE(has(buf, "value=\"x&lt;y\""));
     TEST_ASSERT_TRUE(has(buf, "quality=\"1\""));

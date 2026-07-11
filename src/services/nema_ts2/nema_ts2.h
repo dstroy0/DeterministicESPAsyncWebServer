@@ -27,12 +27,14 @@
 #if DETWS_ENABLE_NEMA_TS2
 
 /** @brief Common TS 2 frame types (the third octet). */
-enum
+// NEMA TS2 frame types: wire values compared, so integer constants in a namespacing struct.
+struct NemaTs2
 {
-    NEMA_TS2_FT_CMD_LOADSWITCH = 0,      ///< controller -> BIU: load-switch (signal-head) drivers.
-    NEMA_TS2_FT_STATUS_LOADSWITCH = 128, ///< BIU -> controller: load-switch status (frame type + 128).
-    NEMA_TS2_FT_CMD_MMU = 3,             ///< controller <-> MMU status frame.
-    NEMA_TS2_FT_DETECTOR = 9             ///< detector BIU -> controller: detector call/status.
+    static constexpr uint8_t NEMA_TS2_FT_CMD_LOADSWITCH = 0; ///< controller -> BIU: load-switch (signal-head) drivers.
+    static constexpr uint8_t NEMA_TS2_FT_STATUS_LOADSWITCH =
+        128;                                           ///< BIU -> controller: load-switch status (frame type + 128).
+    static constexpr uint8_t NEMA_TS2_FT_CMD_MMU = 3;  ///< controller <-> MMU status frame.
+    static constexpr uint8_t NEMA_TS2_FT_DETECTOR = 9; ///< detector BIU -> controller: detector call/status.
 };
 
 /** @brief HDLC/X.25 CRC-16 (CRC-16/X-25) over @p len bytes. */

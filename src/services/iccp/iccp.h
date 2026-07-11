@@ -28,17 +28,18 @@
 #if DETWS_ENABLE_ICCP
 
 /** @brief TASE.2 quality flags (DataFlags, the common bits). */
-enum
+// TASE.2 quality/state wire values + the 2-bit quality mask, so integer constants in a struct.
+struct Iccp
 {
-    ICCP_QUAL_VALID = 0x00,    ///< value is valid.
-    ICCP_QUAL_HELD = 0x01,     ///< value is held (frozen).
-    ICCP_QUAL_SUSPECT = 0x02,  ///< value is suspect.
-    ICCP_QUAL_NOTVALID = 0x03, ///< value is not valid.
-    ICCP_QUAL_MASK = 0x03,
-    ICCP_STATE_BETWEEN = 0x00, ///< StateQ: intermediate.
-    ICCP_STATE_OFF = 0x01,
-    ICCP_STATE_ON = 0x02,
-    ICCP_STATE_INVALID = 0x03
+    static constexpr uint8_t ICCP_QUAL_VALID = 0x00;    ///< value is valid.
+    static constexpr uint8_t ICCP_QUAL_HELD = 0x01;     ///< value is held (frozen).
+    static constexpr uint8_t ICCP_QUAL_SUSPECT = 0x02;  ///< value is suspect.
+    static constexpr uint8_t ICCP_QUAL_NOTVALID = 0x03; ///< value is not valid.
+    static constexpr uint8_t ICCP_QUAL_MASK = 0x03;
+    static constexpr uint8_t ICCP_STATE_BETWEEN = 0x00; ///< StateQ: intermediate.
+    static constexpr uint8_t ICCP_STATE_OFF = 0x01;
+    static constexpr uint8_t ICCP_STATE_ON = 0x02;
+    static constexpr uint8_t ICCP_STATE_INVALID = 0x03;
 };
 
 /**

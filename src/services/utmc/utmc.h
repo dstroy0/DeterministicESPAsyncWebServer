@@ -27,11 +27,12 @@
 #if DETWS_ENABLE_UTMC
 
 /** @brief UTMC data-quality flags. */
-enum
+// UTMC value-quality codes: wire values compared, so integer constants in a namespacing struct.
+struct Utmc
 {
-    UTMC_QUALITY_GOOD = 0,    ///< the value is good.
-    UTMC_QUALITY_SUSPECT = 1, ///< the value is suspect.
-    UTMC_QUALITY_ABSENT = 2   ///< no value available.
+    static constexpr uint8_t UTMC_QUALITY_GOOD = 0;    ///< the value is good.
+    static constexpr uint8_t UTMC_QUALITY_SUSPECT = 1; ///< the value is suspect.
+    static constexpr uint8_t UTMC_QUALITY_ABSENT = 2;  ///< no value available.
 };
 
 /**
