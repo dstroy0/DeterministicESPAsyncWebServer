@@ -2966,10 +2966,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(2 + 2 + 4 + 1, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(5, buf[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(CCLINK_CMD_REFRESH, buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(CclinkCmd::CCLINK_CMD_REFRESH, buf[1]);</code>
       * <code>Assert true (detws_cclink_parse(buf, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(5, f.station);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(CCLINK_CMD_REFRESH, f.command);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(CclinkCmd::CCLINK_CMD_REFRESH, f.command);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(6, f.payload_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xA5, f.payload[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x1234, detws_cclink_get_word(f.payload + 2, 4, 0));</code>
@@ -2997,7 +2997,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (detws_cclink_parse(buf, n, &f))</code>
       * <code>Assert false (detws_cclink_parse(buf, 2, &f))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_cclink_build(64, CCLINK_CMD_POLL, nullptr, 0, nullptr, 0, buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13986,12 +13986,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: 7E 05 00 10 03 00 CRClo CRChi 7E = 9 bytes.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(9, n);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MBPLUS_FLAG, buf[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MBPLUS_FLAG, buf[n - 1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mbplus::MBPLUS_FLAG, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mbplus::MBPLUS_FLAG, buf[n - 1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(5, buf[1]);</code>
       * <code>Assert true (detws_mbplus_parse(buf, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(5, f.address);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MBPLUS_CTRL_DATA, f.control);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mbplus::MBPLUS_CTRL_DATA, f.control);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, f.payload_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, f.payload, 3);</code>
   </details>
@@ -14003,7 +14003,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
       * <code>Assert true (detws_mbplus_parse(buf, n, &f))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MBPLUS_CTRL_TOKEN, f.control);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mbplus::MBPLUS_CTRL_TOKEN, f.control);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, f.payload_len);</code>
       * <code>Assert null (f.payload)</code>
   </details>
@@ -14025,8 +14025,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (detws_mbplus_parse(buf, n, &f))</code>
       * <code>Assert false (detws_mbplus_parse(buf, n, &f))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mbplus_build(0, MBPLUS_CTRL_DATA, nullptr, 0, buf, sizeof(buf)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mbplus_build(65, MBPLUS_CTRL_DATA, nullptr, 0, buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mbplus_build(0, Mbplus::MBPLUS_CTRL_DATA, nullptr, 0, buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mbplus_build(65, Mbplus::MBPLUS_CTRL_DATA, nullptr, 0, buf, sizeof(buf)));</code>
   </details>
 
   <details style="margin-left: 20px;">
