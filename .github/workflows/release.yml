@@ -1,4 +1,4 @@
-name: Release Arduino Library
+name: Release Library CI
 
 on:
   push:
