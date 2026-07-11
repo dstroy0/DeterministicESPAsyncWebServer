@@ -4948,7 +4948,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Incompressible data into a too-small buffer must report overflow, not write
     * **Assertions**:
-      * <code>Assert equal int (DEFLATE_ERR_OVERFLOW, rc)</code>
+      * <code>Assert equal int (DeflateResult::DEFLATE_ERR_OVERFLOW, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4956,7 +4956,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Scratch too small fails closed
     * **Assertions**:
-      * <code>Assert equal int (DEFLATE_ERR_SCRATCH, rc)</code>
+      * <code>Assert equal int (DeflateResult::DEFLATE_ERR_SCRATCH, rc)</code>
   </details>
 
 </details>
@@ -12083,8 +12083,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A back-reference whose copy length overflows the remaining output buffer -> OVERFLOW.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(INFLATE_ERR_MALFORMED,                                                                       \\</code>
-      * <code>Assert equal int (INFLATE_ERR_OVERFLOW, inflate_raw(k_repeat_in, sizeof(k_repeat_in)</code>
+      * <code>TEST_ASSERT_EQUAL_INT(InflateResult::INFLATE_ERR_MALFORMED,                                                        \\</code>
+      * <code>Assert equal int (InflateResult::INFLATE_ERR_OVERFLOW, inflate_raw(k_repeat_in, sizeof(k_repeat_in)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -12134,7 +12134,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Output overflow fails closed
     * **Assertions**:
-      * <code>Assert equal int (INFLATE_ERR_OVERFLOW, rc)</code>
+      * <code>Assert equal int (InflateResult::INFLATE_ERR_OVERFLOW, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -12142,7 +12142,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Scratch too small fails closed
     * **Assertions**:
-      * <code>Assert equal int (INFLATE_ERR_SCRATCH, rc)</code>
+      * <code>Assert equal int (InflateResult::INFLATE_ERR_SCRATCH, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -12150,7 +12150,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Half of the fixed-Huffman stream: decode runs out of input mid-symbol.
     * **Assertions**:
-      * <code>Assert equal int (INFLATE_ERR_MALFORMED, rc)</code>
+      * <code>Assert equal int (InflateResult::INFLATE_ERR_MALFORMED, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -12158,7 +12158,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Reserved block type is malformed
     * **Assertions**:
-      * <code>Assert equal int (INFLATE_ERR_MALFORMED, rc)</code>
+      * <code>Assert equal int (InflateResult::INFLATE_ERR_MALFORMED, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -12166,7 +12166,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Corrupt stored nlen is malformed
     * **Assertions**:
-      * <code>Assert equal int (INFLATE_ERR_MALFORMED, rc)</code>
+      * <code>Assert equal int (InflateResult::INFLATE_ERR_MALFORMED, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -12174,10 +12174,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: OVERFLOW: a valid stream decompressed into a buffer that is too small.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(INFLATE_ERR_OVERFLOW,</code>
-      * <code>Assert equal int (INFLATE_ERR_OVERFLOW, inflate_raw(k_stored_in, sizeof(k_stored_in)</code>
-      * <code>Assert equal int (INFLATE_ERR_MALFORMED, inflate_raw(bad_btype, sizeof(bad_btype), out, sizeof(out)</code>
-      * <code>Assert equal int (INFLATE_ERR_MALFORMED, inflate_raw(bad_stored, sizeof(bad_stored), out, sizeof(out)</code>
+      * <code>TEST_ASSERT_EQUAL_INT(InflateResult::INFLATE_ERR_OVERFLOW,</code>
+      * <code>Assert equal int (InflateResult::INFLATE_ERR_OVERFLOW, inflate_raw(k_stored_in, sizeof(k_stored_in)</code>
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
       * <code>Assert true (inflate_raw(trunc_stored, 1, out, sizeof(out), &out_len, g_scratch, sizeof(g_scratch))</code>
       * <code>Assert true (inflate_raw(k_hello_in, 3, out, sizeof(out), &out_len, g_scratch, sizeof(g_scratch))</code>
   </details>
@@ -32537,7 +32537,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (plen &lt; mlen)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(hdr + plen, sent_len);</code>
       * <code>Assert true (plen + 4 &lt;= sizeof(comp))</code>
-      * <code>Assert equal int (INFLATE_OK, rc)</code>
+      * <code>Assert equal int (InflateResult::INFLATE_OK, rc)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(mlen, out_len);</code>
       * <code>Assert equal memory (msg, out, mlen)</code>
   </details>
