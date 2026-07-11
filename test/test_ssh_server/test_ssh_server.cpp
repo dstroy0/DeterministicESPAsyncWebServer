@@ -275,6 +275,22 @@ void test_channel_open_before_auth_rejected()
     TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, pkt[0], pkt, n));
 }
 
+// Regression (pentest ssh_msgtype_abuse, HW-found 2026-07-11): a SERVICE_REQUEST before the key
+// exchange completes must be rejected. Without the phase guard a client could jump from DH_INIT straight
+// to userauth in cleartext, skipping KEX + host-key verification entirely (RFC 4253 §10).
+void test_service_request_before_newkeys_rejected()
+{
+    SshSession *s = &ssh_sess[0];
+    s->phase = SshPhase::SSH_PHASE_DH_INIT; // mid key-exchange; NEWKEYS not received, encryption not active
+    uint8_t pkt[64];
+    size_t n = 0;
+    pkt[n++] = SSH_MSG_SERVICE_REQUEST;
+    n += put_string(pkt + n, "ssh-userauth");
+    emt_reset();
+    TEST_ASSERT_EQUAL_INT(-1, ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_NOT_EQUAL(SshPhase::SSH_PHASE_AUTH, s->phase); // must NOT have advanced to userauth
+}
+
 void test_disconnect_closes()
 {
     uint8_t pkt[1] = {SSH_MSG_DISCONNECT};
@@ -747,6 +763,7 @@ int main()
     RUN_TEST(test_inbound_ext_info_ignored);
     RUN_TEST(test_large_client_kexinit_accepted);
     RUN_TEST(test_channel_open_before_auth_rejected);
+    RUN_TEST(test_service_request_before_newkeys_rejected);
     RUN_TEST(test_disconnect_closes);
     RUN_TEST(test_ignore_is_noop);
     RUN_TEST(test_auth_bruteforce_disconnect);

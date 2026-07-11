@@ -119,6 +119,12 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         return 0; // RFC 8308: a client may send its own EXT_INFO; we ignore it
 
     case SSH_MSG_SERVICE_REQUEST:
+        // RFC 4253 §10: a service request is only valid once the key exchange has completed (NEWKEYS
+        // advances the phase to SSH_PHASE_SERVICE and turns on encryption). Rejecting it in any earlier
+        // phase stops a client from jumping from DH_INIT straight to userauth in cleartext, skipping the
+        // whole key exchange + host-key verification. Found by the pentest's ssh_msgtype_abuse.
+        if (s->phase != SshPhase::SSH_PHASE_SERVICE)
+            return -1;
         if (ssh_auth_handle_service_request(payload, len, buf, &n, sizeof(buf)) != 0)
             return -1;
         emit(i, buf, n);

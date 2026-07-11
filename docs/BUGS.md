@@ -8,6 +8,27 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SSH: SERVICE_REQUEST accepted before key exchange completes - pre-encryption userauth bypass
+
+- **Status:** FIXED (library, 2026-07-11; found by the pentest tool's `ssh_msgtype_abuse` against the S3 rig).
+- **Symptom:** a client that sends its KEXINIT and then - instead of completing the key exchange - sends
+  `SSH_MSG_SERVICE_REQUEST("ssh-userauth")` gets `SSH_MSG_SERVICE_ACCEPT` back and the server advances to the
+  userauth phase, all in **cleartext** (no NEWKEYS, no session keys derived, no host-key verification).
+- **Root cause:** the `SSH_MSG_SERVICE_REQUEST` case in `ssh_server_dispatch()` had **no phase guard** (unlike
+  `KEXDH_INIT` and `USERAUTH_REQUEST`, which check their phase). It processed a service request in any phase,
+  so a client could jump `SSH_PHASE_DH_INIT` -> `SSH_PHASE_AUTH`, skipping the entire key exchange. RFC 4253
+  §10 requires the service request only after the key exchange (`ssh_newkeys_complete()` advances a fresh
+  connection to `SSH_PHASE_SERVICE` and turns on encryption).
+- **Fix:** guard the case with `if (s->phase != SSH_PHASE_SERVICE) return -1;`, so a premature service request
+  is rejected and the connection closed. Regression test `test_service_request_before_newkeys_rejected`.
+  HW-verified: the pentest `ssh_msgtype_abuse` attack goes from 1 finding to 0, and a real OpenSSH login
+  (which sends SERVICE_REQUEST in the correct phase, after NEWKEYS) still completes 6/6.
+- **Lesson:** every state-machine transition that grants a capability needs an explicit phase guard; the
+  raw-socket adversarial client that ignores the normal message order is the thing that finds the gap - a
+  well-behaved client (or a host test that drives the happy-path sequence) never would.
+
+---
+
 ## SSH: server drops every framed packet after the banner - the dispatcher's emit callback is never wired
 
 - **Status:** FIXED (library, 2026-07-11; root-caused + fixed with a real OpenSSH 10.0 client, tcpdump, and
