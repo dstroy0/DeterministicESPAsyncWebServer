@@ -582,6 +582,31 @@ client (Python `httpx`, backed by the `h2` library) against the PSRAM h2 rig.
   `h2_abuse` attack is held (rapid-reset / CONTINUATION-flood / HPACK-bomb / PING-flood, 0 findings). Bring-up
   fixed a core-locking `tcp_write` assert on the IDF-5.5 PSRAM core - see [BUGS.md](BUGS.md).
 
+### HTTP/3 over QUIC (DETWS_ENABLE_HTTP3, PSRAM)
+
+HTTP/3 runs the whole QUIC + TLS-1.3 stack in the library (no mbedTLS): X25519 key exchange, an Ed25519
+CertificateVerify, AES-128-GCM packet protection, and QPACK, with the QuicConn/H3Conn pool + ingest ring in
+PSRAM. Measured device-as-server on the ESP32-S3 from a real QUIC client (Python `aioquic`) against the PSRAM
+h3 rig.
+
+| Operation                                   | ESP32-S3    | Notes                                                     |
+| ------------------------------------------- | ----------- | --------------------------------------------------------- |
+| Cold connect (QUIC handshake + first GET /) | ~940-994 ms | X25519 + **Ed25519 sign** dominate (software field arith) |
+| Request streams served per QUIC connection  | ~2          | static stream budget; no MAX_STREAMS credit renewal       |
+
+- The **~0.95 s** cold connect is the heaviest of the three transports (TLS 1.2 ~0.9 s, h2 cold ~0.45 s): the
+  QUIC handshake adds an Ed25519 signature over the transcript on top of the X25519 exchange, both in software
+  field arithmetic (the same ssh_ed25519 path, ~10.5 KB of stack). Once up, a connection serves about **two**
+  request streams - the static per-connection stream table's initial budget - and does not renew stream credit
+  (it never emits MAX_STREAMS), so a third request stalls; a client that needs more opens a fresh connection.
+  This is the bounded-resource, zero-growth trade-off, not high request parallelism. Practicality: HTTP/3 here
+  is a standards-complete QUIC/h3 endpoint for a handful of requests (config, status, a secure POST), not a
+  high-throughput API surface.
+- HW-verified: the `http3` interop peer is 5/5 via aioquic (QUIC handshake, GET / -> 200 over QPACK + DATA,
+  multiplexed second stream). Bring-up fixed two hardware-only bugs - a worker-stack overflow in the QUIC
+  Ed25519 signer and a frame parser that rejected a real client's post-handshake frames - see
+  [BUGS.md](BUGS.md).
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
