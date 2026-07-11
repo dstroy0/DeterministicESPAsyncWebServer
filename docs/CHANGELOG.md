@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`465cb26`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/465cb2646c4934d775ca90a250f1825b11dfd0df))
+- update CHANGELOG.md [skip ci] ([`a3fdbb8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3fdbb86ef2883b2cc87c0dd70019f5da802388d))
 - update CHANGELOG.md [skip ci] ([`d3181a3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3181a3a9d0ef28ba60adf118bc623464cce5941))
 - update CHANGELOG.md [skip ci] ([`5360666`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5360666b164bad7ae7a7bd447e56377414a4bb7b))
 - update CHANGELOG.md [skip ci] ([`14238d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14238d347449a5883bba5757e4339083d07972c3))
@@ -96,6 +98,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- snp/powerlink/mms anon wire-const enums -> namespacing structs ([`575dc2d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/575dc2d40cc5181012a8ae93f724c4d0a70cf10c))
 - profibus/lonworks/sercos anon wire-const enums -> namespacing structs ([`1f7669e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f7669ea44f69cb1dcd39dfd221008ec1ff9f8d2))
 - cclink/interbus/mbplus anon wire-const enums -> structs / constexpr ([`bea92ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bea92ad2e77ac391af8159dda4113f3c70e701a6))
 - hw_health verdict enums -> enum class (return type end-to-end) ([`fbf05e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fbf05e2f4204f9f9d844abf54b47f0762908f889))
