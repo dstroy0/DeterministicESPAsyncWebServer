@@ -49,10 +49,16 @@
 /** @brief The 10-octet FINS routing header. */
 struct FinsHeader
 {
-    uint8_t icf, rsv, gct;
-    uint8_t dna, da1, da2; ///< destination network / node / unit
-    uint8_t sna, sa1, sa2; ///< source network / node / unit
-    uint8_t sid;           ///< service id
+    uint8_t icf;
+    uint8_t rsv;
+    uint8_t gct;
+    uint8_t dna;
+    uint8_t da1;
+    uint8_t da2; ///< destination network / node / unit
+    uint8_t sna;
+    uint8_t sa1;
+    uint8_t sa2; ///< source network / node / unit
+    uint8_t sid; ///< service id
 };
 
 /** @brief Build a command frame: header + MRC + SRC + params. Returns total octets, or 0. */
@@ -70,7 +76,8 @@ size_t fins_build_memory_area_read(uint8_t *buf, size_t cap, const FinsHeader *h
 struct FinsCommand
 {
     FinsHeader header;
-    uint8_t mrc, src;
+    uint8_t mrc;
+    uint8_t src;
     const uint8_t *params;
     size_t params_len;
 };
@@ -82,8 +89,10 @@ bool fins_parse_command(const uint8_t *buf, size_t len, FinsCommand *out);
 struct FinsResponse
 {
     FinsHeader header;
-    uint8_t mrc, src;   ///< echoed command code
-    uint8_t mres, sres; ///< end code (0/0 = normal completion)
+    uint8_t mrc;
+    uint8_t src; ///< echoed command code
+    uint8_t mres;
+    uint8_t sres; ///< end code (0/0 = normal completion)
     const uint8_t *data;
     size_t data_len;
 };

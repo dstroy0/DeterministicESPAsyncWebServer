@@ -165,8 +165,10 @@ static long inner_request_id(const uint8_t *mdata, size_t mdata_len, bool priv)
 {
     if (priv)
         return 0;
-    const uint8_t *ctxname, *pdu;
-    size_t ctxname_len, pdu_len;
+    const uint8_t *ctxname;
+    const uint8_t *pdu;
+    size_t ctxname_len;
+    size_t pdu_len;
     if (!parse_scoped(mdata, mdata_len, &ctxname, &ctxname_len, &pdu, &pdu_len))
         return 0;
     BerDec d;
@@ -323,7 +325,9 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
     // msgGlobalData
     if (!ber_read_header(&d, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE)
         return 0;
-    long msg_id, msg_max, sec_model;
+    long msg_id;
+    long msg_max;
+    long sec_model;
     if (!ber_read_integer(&d, &msg_id) || !ber_read_integer(&d, &msg_max))
         return 0;
     (void)msg_max;
@@ -355,7 +359,8 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
         return 0;
     const uint8_t *eid = sd.buf + sd.pos;
     sd.pos += eid_len;
-    long req_boots, req_time;
+    long req_boots;
+    long req_time;
     if (!ber_read_integer(&sd, &req_boots) || !ber_read_integer(&sd, &req_time))
         return 0;
     size_t uname_len;
@@ -465,8 +470,10 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
     }
 
     // Inner PDU -> dispatch (authenticated: writes allowed; v2c-style semantics).
-    const uint8_t *ctxname, *pdu;
-    size_t ctxname_len, pdu_len;
+    const uint8_t *ctxname;
+    const uint8_t *pdu;
+    size_t ctxname_len;
+    size_t pdu_len;
     if (!parse_scoped(scoped, scoped_len, &ctxname, &ctxname_len, &pdu, &pdu_len))
         return 0;
     size_t rpdu = snmp_dispatch_pdu(pdu, pdu_len, true, true, s_v3.v3_b, sizeof(s_v3.v3_b));

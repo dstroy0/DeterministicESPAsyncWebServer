@@ -98,7 +98,9 @@ static bool hostkey_rsa_available(void)
 // (RFC 8308) uses the same host-key ordering. Written into a caller buffer.
 static void build_kex_list(char *out, size_t cap)
 {
-    const char *c1 = KEX_C25519, *c2 = KEX_C25519_LIBSSH, *dh = KEX_DH;
+    const char *c1 = KEX_C25519;
+    const char *c2 = KEX_C25519_LIBSSH;
+    const char *dh = KEX_DH;
     if (s_sshtr.prefer_rsa)
         snprintf(out, cap, "%s,%s,%s,ext-info-s", dh, c1, c2);
     else
@@ -331,7 +333,8 @@ int ssh_kexinit_build(uint8_t i, uint8_t *payload, size_t *len, size_t cap)
     ssh_rng_fill(cookie, sizeof(cookie));
     w_bytes(w, cookie, sizeof(cookie));
 
-    char kexlist[160], hklist[48];
+    char kexlist[160];
+    char hklist[48];
     build_kex_list(kexlist, sizeof(kexlist));
     build_hostkey_list(hklist, sizeof(hklist));
     w_namelist(w, kexlist);         // kex_algorithms (preference-ordered, + ext-info-s)
@@ -745,14 +748,17 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     //    k_be holds K big-endian, right-aligned so hash_mpint / the KDF strip to minimal.
     uint8_t k_be[256];
     memset(k_be, 0, sizeof(k_be));
-    uint8_t cpub[256], spub[256]; // client / server public value (right-aligned)
-    size_t cpub_len = 256, spub_len = 256;
+    uint8_t cpub[256];
+    uint8_t spub[256]; // client / server public value (right-aligned)
+    size_t cpub_len = 256;
+    size_t spub_len = 256;
     bool pub_is_string = false;
 
     if (s->kex_alg == SshKexAlg::SSH_KEX_CURVE25519)
     {
         // curve25519-sha256 (RFC 8731): K = X25519(sk, Q_C); Q_C/Q_S hashed as strings.
-        uint8_t qc[32], kk[32];
+        uint8_t qc[32];
+        uint8_t kk[32];
         if (parse_ecdh_init(payload, len, qc) != 0)
             return -1;
         ssh_x25519(kk, s->ecdh_sk, qc);
