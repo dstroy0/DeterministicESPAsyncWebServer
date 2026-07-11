@@ -67,13 +67,18 @@ static void sha1_block(uint32_t h[5], const uint8_t block[64])
     for (int i = 16; i < 80; i++)
         w[i] = rot32(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
 
-    uint32_t a = h[0], b = h[1], c = h[2], d = h[3], e = h[4];
+    uint32_t a = h[0];
+    uint32_t b = h[1];
+    uint32_t c = h[2];
+    uint32_t d = h[3];
+    uint32_t e = h[4];
 
     // 80 rounds in four 20-round regimes, each with its own mixing function f
     // and constant k (FIPS 180-4 §6.1.2).
     for (int i = 0; i < 80; i++)
     {
-        uint32_t f, k;
+        uint32_t f;
+        uint32_t k;
         if (i < 20)
         {
             f = (b & c) | (~b & d); // choice

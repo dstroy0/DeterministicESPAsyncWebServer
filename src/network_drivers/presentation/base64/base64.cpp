@@ -25,7 +25,8 @@ static const char B64_TABLE[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstu
 
 void base64_encode(const uint8_t *src, size_t src_len, char *dst)
 {
-    size_t i = 0, j = 0;
+    size_t i = 0;
+    size_t j = 0;
 
     // Full groups: pack 3 input bytes into a 24-bit value, emit as 4 x 6-bit
     // characters (most-significant 6 bits first).
@@ -98,7 +99,10 @@ size_t base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
     // group, any non-base64 character, or misplaced '=' padding fails (return 0).
     while (*src)
     {
-        char c0 = src[0], c1 = src[1], c2 = src[2], c3 = src[3];
+        char c0 = src[0];
+        char c1 = src[1];
+        char c2 = src[2];
+        char c3 = src[3];
         if (!c1 || !c2 || !c3)
             return 0; // input length must be a multiple of 4
 

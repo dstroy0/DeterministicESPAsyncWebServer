@@ -95,7 +95,9 @@ static inline bool det_ring_read_byte(const uint8_t *buf, size_t cap, const DetA
 static inline size_t det_ring_read(const uint8_t *buf, size_t cap, const DetAtomic<size_t> &head,
                                    DetAtomic<size_t> &tail, uint8_t *dst, size_t maxn)
 {
-    size_t h = head, t = tail, n = 0;
+    size_t h = head;
+    size_t t = tail;
+    size_t n = 0;
     while (n < maxn && t != h)
     {
         dst[n++] = buf[t];

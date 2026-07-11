@@ -150,8 +150,10 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[
 
     // aes256-ctr + HMAC-SHA2-256: RFC 4253 §7.2 derives six values, each keyed by a label 'A'..'F'.
     // The AES contexts need both key and IV at init time, so derive all six values first.
-    uint8_t iv_c2s[SSH_SHA256_DIGEST_LEN], iv_s2c[SSH_SHA256_DIGEST_LEN];
-    uint8_t key_c2s[32], key_s2c[32];
+    uint8_t iv_c2s[SSH_SHA256_DIGEST_LEN];
+    uint8_t iv_s2c[SSH_SHA256_DIGEST_LEN];
+    uint8_t key_c2s[32];
+    uint8_t key_s2c[32];
 
     derive_key(K_be, H, session_id, 'A', iv_c2s);                    // IV  C→S (first 16 bytes used)
     derive_key(K_be, H, session_id, 'B', iv_s2c);                    // IV  S→C

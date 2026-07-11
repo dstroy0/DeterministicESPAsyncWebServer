@@ -38,7 +38,8 @@ inline bool det_utf8_valid(const uint8_t *s, size_t n)
             continue;
         }
         size_t need;
-        uint32_t cp, lo;
+        uint32_t cp;
+        uint32_t lo;
         if ((c & 0xE0) == 0xC0)
         {
             need = 1;

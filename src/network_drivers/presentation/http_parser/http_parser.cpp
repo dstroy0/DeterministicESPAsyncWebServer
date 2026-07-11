@@ -758,7 +758,8 @@ bool http_get_form(const HttpReq *req, const char *key, char *out, size_t out_si
             i++;
         bool key_matches = (i - ks == key_len) && (strncmp(body + ks, key, key_len) == 0);
 
-        size_t vs = i, ve = i;
+        size_t vs = i;
+        size_t ve = i;
         if (i < len && body[i] == '=')
         {
             vs = ++i;

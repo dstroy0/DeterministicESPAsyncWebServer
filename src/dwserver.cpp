@@ -2990,8 +2990,10 @@ static int parse_byte_range(const char *hdr, size_t size, size_t *out_start, siz
     if (strchr(p, ',')) // multi-range not supported -> fall back to full 200
         return 0;
 
-    bool have_start = false, have_end = false;
-    size_t start = 0, end = 0;
+    bool have_start = false;
+    bool have_end = false;
+    size_t start = 0;
+    size_t end = 0;
     const size_t SZMAX = (size_t)-1;
     if (*p >= '0' && *p <= '9')
     {
@@ -3220,7 +3222,8 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
 
 #if DETWS_ENABLE_RANGE
     accept_ranges = "Accept-Ranges: bytes\r\n"; // advertise range support on every file response
-    size_t r_start = 0, r_end = 0;
+    size_t r_start = 0;
+    size_t r_end = 0;
     int rr = parse_byte_range(http_get_header(&http_pool[slot_id], "Range"), file_size, &r_start, &r_end);
     if (rr < 0)
     {
@@ -3563,7 +3566,8 @@ static bool dav_copy_recursive(fs::FS &fsys, const char *src, const char *dst, i
         c.close();
         d.close();
 
-        char sp[256], dp[256];
+        char sp[256];
+        char dp[256];
         int wn1 = snprintf(sp, sizeof(sp), "%s/%s", src, base);
         int wn2 = snprintf(dp, sizeof(dp), "%s/%s", dst, base);
         if (wn1 <= 0 || wn1 >= (int)sizeof(sp) || wn2 <= 0 || wn2 >= (int)sizeof(dp))
