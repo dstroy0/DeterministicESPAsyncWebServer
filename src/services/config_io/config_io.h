@@ -26,7 +26,7 @@
 #if DETWS_ENABLE_CONFIG_IO
 
 /** @brief Type of a config field (selects the typed get/set used). */
-enum DetwsCfgType
+enum class DetwsCfgType : uint8_t
 {
     DETWS_CFG_STR = 0, ///< null-terminated string.
     DETWS_CFG_U32 = 1, ///< unsigned 32-bit integer (serialized as decimal).
@@ -35,8 +35,8 @@ enum DetwsCfgType
 /** @brief One field in an export/restore schema. */
 struct DetwsCfgField
 {
-    const char *key; ///< config-store key (<= 15 chars).
-    uint8_t type;    ///< DetwsCfgType.
+    const char *key;   ///< config-store key (<= 15 chars).
+    DetwsCfgType type; ///< the field's value type.
 };
 
 /**

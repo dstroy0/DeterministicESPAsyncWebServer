@@ -65,18 +65,18 @@ size_t senml_json_build(char *buf, size_t cap, const SenmlRecord *records, size_
             w.kv_str("u", r.unit);
         switch (r.value_kind)
         {
-        case SENML_V_FLOAT:
+        case SenmlValueKind::SENML_V_FLOAT:
             w.key("v");
             json_num(w, r.value);
             break;
-        case SENML_V_STRING:
+        case SenmlValueKind::SENML_V_STRING:
             if (r.value_str)
                 w.kv_str("vs", r.value_str);
             break;
-        case SENML_V_BOOL:
+        case SenmlValueKind::SENML_V_BOOL:
             w.kv_bool("vb", r.value_bool);
             break;
-        case SENML_V_NONE:
+        case SenmlValueKind::SENML_V_NONE:
             break;
         }
         if (r.has_time)
@@ -110,7 +110,8 @@ static size_t record_fields(const SenmlRecord &r)
         n++;
     if (r.unit)
         n++;
-    if (r.value_kind != SENML_V_NONE && !(r.value_kind == SENML_V_STRING && !r.value_str))
+    if (r.value_kind != SenmlValueKind::SENML_V_NONE &&
+        !(r.value_kind == SenmlValueKind::SENML_V_STRING && !r.value_str))
         n++;
     if (r.has_time)
         n++;
@@ -150,22 +151,22 @@ size_t senml_cbor_build(uint8_t *buf, size_t cap, const SenmlRecord *records, si
         }
         switch (r.value_kind)
         {
-        case SENML_V_FLOAT:
+        case SenmlValueKind::SENML_V_FLOAT:
             cbor_int(&w, SENML_LBL_V);
             cbor_num(&w, r.value);
             break;
-        case SENML_V_STRING:
+        case SenmlValueKind::SENML_V_STRING:
             if (r.value_str)
             {
                 cbor_int(&w, SENML_LBL_VS);
                 cbor_text(&w, r.value_str);
             }
             break;
-        case SENML_V_BOOL:
+        case SenmlValueKind::SENML_V_BOOL:
             cbor_int(&w, SENML_LBL_VB);
             cbor_bool(&w, r.value_bool);
             break;
-        case SENML_V_NONE:
+        case SenmlValueKind::SENML_V_NONE:
             break;
         }
         if (r.has_time)

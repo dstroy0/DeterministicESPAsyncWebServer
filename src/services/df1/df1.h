@@ -39,7 +39,7 @@
 #define DF1_ETX 0x03
 
 /** @brief Which error check the frame carries. */
-enum Df1Check
+enum class Df1Check : uint8_t
 {
     DF1_CHECK_BCC, ///< 1-octet block check character
     DF1_CHECK_CRC  ///< 2-octet CRC-16
@@ -53,7 +53,7 @@ uint16_t df1_crc(const uint8_t *data, size_t len);
 
 /**
  * @brief Build a full-duplex frame around @p data: DLE STX + stuffed data + DLE ETX + check.
- * @param check DF1_CHECK_BCC (1 octet) or DF1_CHECK_CRC (2 octets, low byte first; CRC over
+ * @param check Df1Check::DF1_CHECK_BCC (1 octet) or Df1Check::DF1_CHECK_CRC (2 octets, low byte first; CRC over
  *              the data + ETX).
  * @return total octets written, or 0 on overflow / bad input.
  */

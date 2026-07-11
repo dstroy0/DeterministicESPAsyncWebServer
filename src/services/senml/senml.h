@@ -35,7 +35,7 @@
 #include <stdint.h>
 
 /** @brief Which value field a record carries. */
-enum SenmlValueKind
+enum class SenmlValueKind : uint8_t
 {
     SENML_V_NONE,   ///< no value (e.g. a base-only record)
     SENML_V_FLOAT,  ///< numeric value (v) - emitted as int when integral, else float
@@ -52,9 +52,9 @@ struct SenmlRecord
     const char *name; ///< n (optional)
     const char *unit; ///< u (optional)
     SenmlValueKind value_kind;
-    double value;          ///< v (when value_kind == SENML_V_FLOAT)
-    const char *value_str; ///< vs (when value_kind == SENML_V_STRING)
-    bool value_bool;       ///< vb (when value_kind == SENML_V_BOOL)
+    double value;          ///< v (when value_kind == SenmlValueKind::SENML_V_FLOAT)
+    const char *value_str; ///< vs (when value_kind == SenmlValueKind::SENML_V_STRING)
+    bool value_bool;       ///< vb (when value_kind == SenmlValueKind::SENML_V_BOOL)
     bool has_time;
     double time; ///< t (optional)
 };

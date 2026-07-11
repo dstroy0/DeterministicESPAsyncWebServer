@@ -11,9 +11,9 @@
 #include <unity.h>
 
 static const DetwsCfgField SCHEMA[] = {
-    {"ssid", DETWS_CFG_STR},
-    {"port", DETWS_CFG_U32},
-    {"name", DETWS_CFG_STR},
+    {"ssid", DetwsCfgType::DETWS_CFG_STR},
+    {"port", DetwsCfgType::DETWS_CFG_U32},
+    {"name", DetwsCfgType::DETWS_CFG_STR},
 };
 static const size_t N = sizeof(SCHEMA) / sizeof(SCHEMA[0]);
 

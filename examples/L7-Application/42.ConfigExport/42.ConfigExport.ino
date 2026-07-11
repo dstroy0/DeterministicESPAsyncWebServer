@@ -31,9 +31,9 @@ DetWebServer server;
 
 // The persisted fields to back up / restore.
 static const DetwsCfgField SCHEMA[] = {
-    {"hostname", DETWS_CFG_STR},
-    {"http_port", DETWS_CFG_U32},
-    {"location", DETWS_CFG_STR},
+    {"hostname", DetwsCfgType::DETWS_CFG_STR},
+    {"http_port", DetwsCfgType::DETWS_CFG_U32},
+    {"location", DetwsCfgType::DETWS_CFG_STR},
 };
 static const size_t SCHEMA_N = sizeof(SCHEMA) / sizeof(SCHEMA[0]);
 

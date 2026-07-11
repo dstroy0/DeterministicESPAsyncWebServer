@@ -43,7 +43,7 @@ size_t df1_build_frame(uint8_t *buf, size_t cap, const uint8_t *data, size_t dat
     for (size_t i = 0; i < data_len; i++)
         if (data[i] == DF1_DLE)
             stuffed++; // a DLE data byte is doubled on the wire
-    size_t checklen = (check == DF1_CHECK_CRC) ? 2 : 1;
+    size_t checklen = (check == Df1Check::DF1_CHECK_CRC) ? 2 : 1;
     size_t total = 2 + stuffed + 2 + checklen; // DLE STX + data + DLE ETX + check
     if (total > cap)
         return 0;
@@ -60,7 +60,7 @@ size_t df1_build_frame(uint8_t *buf, size_t cap, const uint8_t *data, size_t dat
     buf[p++] = DF1_DLE;
     buf[p++] = DF1_ETX;
 
-    if (check == DF1_CHECK_CRC)
+    if (check == Df1Check::DF1_CHECK_CRC)
     {
         uint8_t etx = DF1_ETX;
         uint16_t c = crc16(0x0000, data, data_len); // CRC over the data ...
@@ -77,7 +77,7 @@ size_t df1_build_frame(uint8_t *buf, size_t cap, const uint8_t *data, size_t dat
 
 bool df1_parse_frame(const uint8_t *buf, size_t len, Df1Check check, uint8_t *out, size_t out_cap, size_t *out_len)
 {
-    size_t checklen = (check == DF1_CHECK_CRC) ? 2 : 1;
+    size_t checklen = (check == Df1Check::DF1_CHECK_CRC) ? 2 : 1;
     if (!buf || !out || len < 4 + checklen) // DLE STX DLE ETX + check
         return false;
     if (buf[0] != DF1_DLE || buf[1] != DF1_STX)
@@ -118,7 +118,7 @@ bool df1_parse_frame(const uint8_t *buf, size_t len, Df1Check check, uint8_t *ou
     if (!ended)
         return false;
 
-    if (check == DF1_CHECK_CRC)
+    if (check == Df1Check::DF1_CHECK_CRC)
     {
         if (i + 2 > len)
             return false;

@@ -62,7 +62,7 @@ int detws_config_export(const char *ns, const DetwsCfgField *fields, size_t n, c
     for (size_t i = 0; i < n; i++)
     {
         char val[VAL_MAX];
-        if (fields[i].type == DETWS_CFG_U32)
+        if (fields[i].type == DetwsCfgType::DETWS_CFG_U32)
             snprintf(val, sizeof(val), "%u", (unsigned)detws_config_get_u32(fields[i].key, 0));
         else
             detws_config_get_str(fields[i].key, val, sizeof(val), "");
@@ -109,12 +109,12 @@ int detws_config_import(const char *ns, const DetwsCfgField *fields, size_t n, c
                 val[vlen] = '\0';
 
                 int t = field_type(fields, n, key);
-                if (t == DETWS_CFG_U32)
+                if (t == (int)DetwsCfgType::DETWS_CFG_U32)
                 {
                     if (detws_config_set_u32(key, (uint32_t)det_strtoul(val, nullptr)))
                         count++;
                 }
-                else if (t == DETWS_CFG_STR)
+                else if (t == (int)DetwsCfgType::DETWS_CFG_STR)
                 {
                     if (detws_config_set_str(key, val))
                         count++;

@@ -23,7 +23,7 @@ void test_json_canonical()
     SenmlRecord r = {};
     r.base_name = "urn:dev:ow:10e2073a01080063";
     r.unit = "Cel";
-    r.value_kind = SENML_V_FLOAT;
+    r.value_kind = SenmlValueKind::SENML_V_FLOAT;
     r.value = 23.1;
     char buf[128];
     size_t n = senml_json_build(buf, sizeof(buf), &r, 1);
@@ -38,11 +38,11 @@ void test_json_multi_record()
     r[0].base_name = "urn:dev:ow:1;";
     r[0].name = "voltage";
     r[0].unit = "V";
-    r[0].value_kind = SENML_V_FLOAT;
+    r[0].value_kind = SenmlValueKind::SENML_V_FLOAT;
     r[0].value = 120.1;
     r[1].name = "current";
     r[1].unit = "A";
-    r[1].value_kind = SENML_V_FLOAT;
+    r[1].value_kind = SenmlValueKind::SENML_V_FLOAT;
     r[1].value = 1.25;
     char buf[160];
     size_t n = senml_json_build(buf, sizeof(buf), r, 2);
@@ -58,7 +58,7 @@ void test_json_string_bool_time()
 {
     SenmlRecord rs = {};
     rs.name = "status";
-    rs.value_kind = SENML_V_STRING;
+    rs.value_kind = SenmlValueKind::SENML_V_STRING;
     rs.value_str = "ok";
     rs.has_time = true;
     rs.time = 1600000000; // integral -> "1600000000", not "1.6e+09"
@@ -68,7 +68,7 @@ void test_json_string_bool_time()
 
     SenmlRecord rb = {};
     rb.name = "open";
-    rb.value_kind = SENML_V_BOOL;
+    rb.value_kind = SenmlValueKind::SENML_V_BOOL;
     rb.value_bool = true;
     TEST_ASSERT_GREATER_THAN(0, (int)senml_json_build(buf, sizeof(buf), &rb, 1));
     TEST_ASSERT_EQUAL_STRING("[{\"n\":\"open\",\"vb\":true}]", buf);
@@ -80,7 +80,7 @@ void test_cbor_round_trip()
     SenmlRecord r = {};
     r.name = "temp";
     r.unit = "Cel";
-    r.value_kind = SENML_V_FLOAT;
+    r.value_kind = SenmlValueKind::SENML_V_FLOAT;
     r.value = 42; // integral -> emitted as a CBOR integer
     uint8_t buf[64];
     size_t n = senml_cbor_build(buf, sizeof(buf), &r, 1);
@@ -121,7 +121,7 @@ void test_cbor_base_name_key()
 {
     SenmlRecord r = {};
     r.base_name = "dev1";
-    r.value_kind = SENML_V_NONE;
+    r.value_kind = SenmlValueKind::SENML_V_NONE;
     uint8_t buf[32];
     size_t n = senml_cbor_build(buf, sizeof(buf), &r, 1);
     CborReader rd;
@@ -140,7 +140,7 @@ void test_overflow_fails_closed()
     SenmlRecord r = {};
     r.base_name = "urn:dev:ow:10e2073a01080063";
     r.unit = "Cel";
-    r.value_kind = SENML_V_FLOAT;
+    r.value_kind = SenmlValueKind::SENML_V_FLOAT;
     r.value = 23.1;
     char small[16];
     TEST_ASSERT_EQUAL_size_t(0, senml_json_build(small, sizeof(small), &r, 1));
@@ -155,7 +155,7 @@ void test_json_base_time_and_none()
     r.base_name = "dev";
     r.has_base_time = true;
     r.base_time = 100; // integral -> "100"
-    r.value_kind = SENML_V_NONE;
+    r.value_kind = SenmlValueKind::SENML_V_NONE;
     char buf[64];
     TEST_ASSERT_GREATER_THAN(0, (int)senml_json_build(buf, sizeof(buf), &r, 1));
     TEST_ASSERT_EQUAL_STRING("[{\"bn\":\"dev\",\"bt\":100}]", buf);
@@ -168,7 +168,7 @@ void test_cbor_all_kinds()
     r.has_base_time = true;
     r.base_time = 5;
     r.name = "s";
-    r.value_kind = SENML_V_STRING;
+    r.value_kind = SenmlValueKind::SENML_V_STRING;
     r.value_str = "hi";
     r.has_time = true;
     r.time = 9;
@@ -203,7 +203,7 @@ void test_cbor_all_kinds()
 
     SenmlRecord rb = {};
     rb.name = "b";
-    rb.value_kind = SENML_V_BOOL;
+    rb.value_kind = SenmlValueKind::SENML_V_BOOL;
     rb.value_bool = true;
     uint8_t bb[32];
     size_t bn = senml_cbor_build(bb, sizeof(bb), &rb, 1);
