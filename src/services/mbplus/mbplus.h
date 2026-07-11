@@ -26,12 +26,13 @@
 
 #if DETWS_ENABLE_MBPLUS
 
-enum
+// Modbus Plus HDLC wire constants: integer values compared/emitted, in a namespacing struct.
+struct Mbplus
 {
-    MBPLUS_FLAG = 0x7E,      ///< HDLC frame delimiter.
-    MBPLUS_MAX_STATION = 64, ///< stations 1..64 on a Modbus Plus segment.
-    MBPLUS_CTRL_DATA = 0x00, ///< data frame control.
-    MBPLUS_CTRL_TOKEN = 0x01 ///< token pass control.
+    static constexpr uint8_t MBPLUS_FLAG = 0x7E;       ///< HDLC frame delimiter.
+    static constexpr uint8_t MBPLUS_MAX_STATION = 64;  ///< stations 1..64 on a Modbus Plus segment.
+    static constexpr uint8_t MBPLUS_CTRL_DATA = 0x00;  ///< data frame control.
+    static constexpr uint8_t MBPLUS_CTRL_TOKEN = 0x01; ///< token pass control.
 };
 
 /** @brief CRC-16/X-25 (the Modbus Plus HDLC FCS) over @p len bytes. */

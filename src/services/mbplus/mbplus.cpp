@@ -28,13 +28,13 @@ uint16_t detws_mbplus_crc(const uint8_t *bytes, size_t len)
 size_t detws_mbplus_build(uint8_t address, uint8_t control, const uint8_t *payload, size_t payload_len, uint8_t *out,
                           size_t cap)
 {
-    if (!out || (payload_len && !payload) || address < 1 || address > MBPLUS_MAX_STATION)
+    if (!out || (payload_len && !payload) || address < 1 || address > Mbplus::MBPLUS_MAX_STATION)
         return 0;
     size_t n = 1 + 1 + 1 + payload_len + 2 + 1; // 7E addr ctrl payload CRClo CRChi 7E
     if (n > cap)
         return 0;
     size_t i = 0;
-    out[i++] = MBPLUS_FLAG;
+    out[i++] = Mbplus::MBPLUS_FLAG;
     size_t body = i;
     out[i++] = address;
     out[i++] = control;
@@ -46,7 +46,7 @@ size_t detws_mbplus_build(uint8_t address, uint8_t control, const uint8_t *paylo
     uint16_t crc = detws_mbplus_crc(out + body, (i - body)); // over addr..last payload
     out[i++] = (uint8_t)crc;                                 // CRC low byte first
     out[i++] = (uint8_t)(crc >> 8);
-    out[i++] = MBPLUS_FLAG;
+    out[i++] = Mbplus::MBPLUS_FLAG;
     return i;
 }
 
@@ -55,7 +55,7 @@ bool detws_mbplus_parse(const uint8_t *frame, size_t len, MbPlusFrame *out)
     // Min: 7E addr ctrl CRClo CRChi 7E = 6 bytes.
     if (!frame || !out || len < 6)
         return false;
-    if (frame[0] != MBPLUS_FLAG || frame[len - 1] != MBPLUS_FLAG)
+    if (frame[0] != Mbplus::MBPLUS_FLAG || frame[len - 1] != Mbplus::MBPLUS_FLAG)
         return false;
     // Body is frame[1 .. len-2), the CRC is the last 2 body bytes.
     size_t body_end = len - 1;     // index of the trailing flag

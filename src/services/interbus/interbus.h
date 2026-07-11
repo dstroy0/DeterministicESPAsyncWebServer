@@ -28,10 +28,8 @@
 
 #if DETWS_ENABLE_INTERBUS
 
-enum
-{
-    INTERBUS_LOOPBACK = 0xFFFF ///< the loopback word that opens a summation frame.
-};
+/** @brief the loopback word that opens a summation frame. */
+static constexpr uint16_t INTERBUS_LOOPBACK = 0xFFFF;
 
 /** @brief CRC-16/CCITT-FALSE (the INTERBUS FCS) over @p len bytes. */
 uint16_t detws_interbus_fcs(const uint8_t *bytes, size_t len);
