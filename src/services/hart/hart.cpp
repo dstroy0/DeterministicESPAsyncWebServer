@@ -52,7 +52,7 @@ bool detws_hart_parse(const uint8_t *frame, size_t len, HartFrame *out)
 {
     if (!frame || !out)
         return false;
-    size_t addr_len = (frame[0] & HART_DELIM_LONG_ADDR) ? 5 : 1;
+    size_t addr_len = (frame[0] & HartDelim::HART_DELIM_LONG_ADDR) ? 5 : 1;
     // delimiter + addr + command + byte-count + checksum = minimum with no data
     size_t min = 1 + addr_len + 1 + 1 + 1;
     if (len < min)
@@ -81,7 +81,7 @@ bool detws_hart_parse(const uint8_t *frame, size_t len, HartFrame *out)
 size_t detws_hartip_build_header(uint8_t msg_type, uint8_t msg_id, uint8_t status, uint16_t seq, uint16_t total_len,
                                  uint8_t *out, size_t cap)
 {
-    if (cap < HARTIP_HEADER_LEN || !out)
+    if (cap < HartIp::HARTIP_HEADER_LEN || !out)
         return 0;
     out[0] = 1; // HART-IP protocol version
     out[1] = msg_type;
@@ -91,7 +91,7 @@ size_t detws_hartip_build_header(uint8_t msg_type, uint8_t msg_id, uint8_t statu
     out[5] = (uint8_t)seq;
     out[6] = (uint8_t)(total_len >> 8);
     out[7] = (uint8_t)total_len;
-    return HARTIP_HEADER_LEN;
+    return HartIp::HARTIP_HEADER_LEN;
 }
 
 #endif // DETWS_ENABLE_HART

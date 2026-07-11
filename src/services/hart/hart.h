@@ -29,26 +29,27 @@
 
 #if DETWS_ENABLE_HART
 
-/** @brief HART frame delimiter frame-type bits (low 3 bits) + long-address bit (bit 7). */
-enum
+/** @brief HART frame delimiter frame-type bits (low 3 bits) + long-address bit (bit 7). Wire values,
+ *  the LONG_ADDR bit is OR'd in, so integer constants in a namespacing struct (cast-free). */
+struct HartDelim
 {
-    HART_DELIM_BACK = 0x01,     ///< burst (field device, unsolicited).
-    HART_DELIM_STX = 0x02,      ///< master -> field device (request).
-    HART_DELIM_ACK = 0x06,      ///< field device -> master (response).
-    HART_DELIM_LONG_ADDR = 0x80 ///< OR into the delimiter for 5-byte unique-ID addressing.
+    static constexpr uint8_t HART_DELIM_BACK = 0x01;      ///< burst (field device, unsolicited).
+    static constexpr uint8_t HART_DELIM_STX = 0x02;       ///< master -> field device (request).
+    static constexpr uint8_t HART_DELIM_ACK = 0x06;       ///< field device -> master (response).
+    static constexpr uint8_t HART_DELIM_LONG_ADDR = 0x80; ///< OR into the delimiter for 5-byte unique-ID addressing.
 };
 
-/** @brief HART-IP message types + common message ids. */
-enum
+/** @brief HART-IP message types + common message ids (wire constants). */
+struct HartIp
 {
-    HARTIP_MSG_REQUEST = 0,
-    HARTIP_MSG_RESPONSE = 1,
-    HARTIP_MSG_PUBLISH = 2,
-    HARTIP_ID_SESSION_INIT = 0,
-    HARTIP_ID_SESSION_CLOSE = 1,
-    HARTIP_ID_KEEPALIVE = 2,
-    HARTIP_ID_TOKEN_PDU = 3, ///< a HART token-passing PDU (a HART frame) is the payload.
-    HARTIP_HEADER_LEN = 8
+    static constexpr uint8_t HARTIP_MSG_REQUEST = 0;
+    static constexpr uint8_t HARTIP_MSG_RESPONSE = 1;
+    static constexpr uint8_t HARTIP_MSG_PUBLISH = 2;
+    static constexpr uint8_t HARTIP_ID_SESSION_INIT = 0;
+    static constexpr uint8_t HARTIP_ID_SESSION_CLOSE = 1;
+    static constexpr uint8_t HARTIP_ID_KEEPALIVE = 2;
+    static constexpr uint8_t HARTIP_ID_TOKEN_PDU = 3; ///< a HART token-passing PDU (a HART frame) is the payload.
+    static constexpr uint8_t HARTIP_HEADER_LEN = 8;
 };
 
 /** @brief Longitudinal XOR checksum of @p len bytes (the HART frame check byte). */
