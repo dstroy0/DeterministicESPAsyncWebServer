@@ -13563,7 +13563,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (0, g_traps)</code>
       * <code>Assert equal int (2, g_traps)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_LOG_ERROR, g_last_level);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsLogLevel::DETWS_LOG_ERROR, g_last_level);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18804,7 +18804,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A normally-booted (valid/undefined) image never rolls back.
     * **Assertions**:
-      * <code>Assert equal int (DetwsOtaAction::DETWS_OTA_WAIT, detws_ota_decide(DETWS_OTA_IMG_VALID, false, 999999, 30000))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_WAIT,</code>
       * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_WAIT,</code>
   </details>
 
@@ -18846,7 +18846,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: On a host build there are no OTA partitions: img_state reports UNDEFINED and the
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OTA_IMG_UNDEFINED, detws_ota_img_state())</code>
+      * <code>Assert equal int (DetwsOtaImg::DETWS_OTA_IMG_UNDEFINED, detws_ota_img_state())</code>
       * <code>Assert equal int (DetwsOtaAction::DETWS_OTA_WAIT, detws_ota_rollback_tick(true))</code>
       * <code>Assert equal int (DetwsOtaAction::DETWS_OTA_WAIT, detws_ota_rollback_tick(false))</code>
   </details>
@@ -22234,9 +22234,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Ps names
     * **Assertions**:
-      * <code>Assert equal string ("none", detws_radio_ps_name(DETWS_PS_NONE))</code>
-      * <code>Assert equal string ("min_modem", detws_radio_ps_name(DETWS_PS_MIN_MODEM))</code>
-      * <code>Assert equal string ("max_modem", detws_radio_ps_name(DETWS_PS_MAX_MODEM))</code>
+      * <code>Assert equal string ("none", detws_radio_ps_name(DetwsRadioPs::DETWS_PS_NONE))</code>
+      * <code>Assert equal string ("min_modem", detws_radio_ps_name(DetwsRadioPs::DETWS_PS_MIN_MODEM))</code>
+      * <code>Assert equal string ("max_modem", detws_radio_ps_name(DetwsRadioPs::DETWS_PS_MAX_MODEM))</code>
       * <code>Assert equal string ("none", detws_radio_ps_name(99))</code>
   </details>
 
@@ -22245,7 +22245,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Apply is noop on host
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_PS_NONE, detws_radio_ps_get());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsRadioPs::DETWS_PS_NONE, detws_radio_ps_get());</code>
   </details>
 
 </details>
