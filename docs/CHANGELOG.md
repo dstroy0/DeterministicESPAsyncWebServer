@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`6d786a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d786a7ad8f956458e2da6c315eeef1d77cf5945))
+- update CHANGELOG.md [skip ci] ([`14f3d9d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14f3d9dbd55750e43592b0ee6b5584a09779af46))
 - update test report + coverage [skip ci] ([`5038fa3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5038fa33f537e939d3f2a928e2adea20210fbf88))
 - update CHANGELOG.md [skip ci] ([`95eb89f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/95eb89f7c457a1dc7574ec060f36e29466c61046))
 - update CHANGELOG.md [skip ci] ([`cf426a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf426a98bb2a1ad9ceb9061a5f4f703ee1535314))
@@ -38,6 +40,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f3940c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3940c392a32be71f11f18272672a00ebeb6ead5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e7f9883`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e7f9883509786db43267be5dc3f3fed27c3cfcb1))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f52966b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f52966b0afe472ce3056fcd9bfc4c2e54a380830))
 - update ESP32 build footprints [skip ci] ([`50a9176`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50a917646fa8b25ac968e545f72ec13fc1950d77))
@@ -61,6 +64,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- scoped enums for the open-domain services (enum class 53/N) ([`c48ff89`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c48ff89e4045dff20a2862607a7b8828e71d6b1e))
 - SMB2 wire constants -> namespacing structs, not anon enums ([`5989051`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/59890511865415860d1740b26f7f47913f6235e2))
 - NTLMSSP NegotiateFlags -> struct of static constexpr, not anon enum ([`28bc9a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28bc9a52c7331836f05dd1e7891d2ae5881e751a))
 - CoapMethodMask is a bitmask -> struct of static constexpr, not enum class ([`6bbe2ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6bbe2adf033a613078bf2c4af730329d7cd3b0a6))
