@@ -460,6 +460,25 @@ callback, and appends one compressed A answer (or NXDOMAIN / NOTIMP). Pure (no c
   `open_resolver=False`, `max_amp=1.64x`, and 14 malformed/pointer/opcode cases handled with the server up.
   HW-verified against the real `dnspython` client (11/11 interop: three A records + AA flag + NXDOMAIN).
 
+### NATS client codec (DETWS_ENABLE_NATS)
+
+The text pub/sub codec a device uses to talk to a NATS server: `nats_build_pub` (publish) and `nats_parse`
+(decode one inbound server frame - INFO/MSG/PING/+OK/-ERR, the untrusted-input hot op). Both pure. Host from
+[`perf/bench_nats.cpp`](../perf/bench_nats.cpp); device from the rig `/bench` `nats_parse` op.
+
+| Operation          | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------------ | ---------: | --------: | --------------: | -------------: |
+| `nats_build_pub`   |       33.8 |    1863.9 |               - |              - |
+| `nats_parse` (MSG) |      139.4 |     466.2 |            1573 |           6554 |
+
+- `nats_parse` decodes one frame per call at **~6.5 us** on the device (the MSG path tokenizes
+  subject/sid/reply/size, then bounds the payload byte-count against the buffer - `size > len - after_line -
+2` returns "need more", so a byte-count lie can never over-read or over-allocate). Building a PUB is a
+  cheap line emit. NATS is a light line-oriented protocol; the round-trip cost is the network, not the codec.
+  HW-verified device-as-NATS-client against a real `nats-server` (7/7 interop: INFO/CONNECT/SUB/PUB and the
+  PUB delivered to an independent subscriber through the broker); the `nats_malicious_server` attack held all
+  10 malformed-frame personalities.
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
