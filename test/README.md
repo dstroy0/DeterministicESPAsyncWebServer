@@ -506,7 +506,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2904 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2905 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -27920,7 +27920,7 @@ A thorough directory of all **2904 test cases** across **244 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_server (26 tests)</b></summary>
+<summary><b>test_ssh_server (27 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_ssh_dispatch_bad_slot</b> &mdash; <i>Ssh dispatch bad slot</i></summary>
@@ -28142,6 +28142,15 @@ A thorough directory of all **2904 test cases** across **244 suites**. Expand a 
     * **Objective**: Channel open before auth rejected
     * **Assertions**:
       * <code>Assert equal int (-1, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_service_request_before_newkeys_rejected</b> &mdash; <i>Service request before newkeys rejected</i></summary>
+
+    * **Objective**: Service request before newkeys rejected
+    * **Assertions**:
+      * <code>Assert equal int (-1, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert not equal (SshPhase::SSH_PHASE_AUTH, s-&gt;phase)</code>
   </details>
 
   <details style="margin-left: 20px;">
