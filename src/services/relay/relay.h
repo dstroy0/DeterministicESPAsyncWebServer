@@ -71,15 +71,22 @@ struct DetRelayEnd
 /** @brief A relay between two ends. Owns the per-direction carry buffers; zero heap. */
 struct DetRelay
 {
-    DetRelayEnd a, b;
+    DetRelayEnd a;
+    DetRelayEnd b;
     uint8_t buf_a2b[DETWS_RELAY_BUF];
     uint8_t buf_b2a[DETWS_RELAY_BUF];
-    uint16_t a2b_len, a2b_off; ///< bytes read from a pending send to b, and how many already sent
-    uint16_t b2a_len, b2a_off;
-    bool a_eof, b_eof;             ///< the recv side of a / b has hit EOF
-    bool a2b_done, b2a_done;       ///< the a->b / b->a direction has finished (EOF + drained)
-    bool a_shut_sent, b_shut_sent; ///< the shutdown seam of a / b has been called
-    uint32_t bytes_a2b, bytes_b2a; ///< bytes relayed each way (observability)
+    uint16_t a2b_len; ///< bytes read from a pending send to b
+    uint16_t a2b_off; ///< how many of those already sent
+    uint16_t b2a_len;
+    uint16_t b2a_off;
+    bool a_eof;         ///< the recv side of a has hit EOF
+    bool b_eof;         ///< the recv side of b has hit EOF
+    bool a2b_done;      ///< the a->b direction has finished (EOF + drained)
+    bool b2a_done;      ///< the b->a direction has finished (EOF + drained)
+    bool a_shut_sent;   ///< the shutdown seam of a has been called
+    bool b_shut_sent;   ///< the shutdown seam of b has been called
+    uint32_t bytes_a2b; ///< bytes relayed a->b (observability)
+    uint32_t bytes_b2a; ///< bytes relayed b->a (observability)
 };
 
 /**

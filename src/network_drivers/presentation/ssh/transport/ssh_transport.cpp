@@ -442,7 +442,8 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
         {"chacha20-poly1305@openssh.com", SSH_CIPHER_CHACHA20POLY1305, true}, {ALG_CIPHER, SSH_CIPHER_AES256CTR, true}};
     if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
-    decltype(SSH_CIPHER_AES256CTR) c2s, s2c;
+    decltype(SSH_CIPHER_AES256CTR) c2s;
+    decltype(SSH_CIPHER_AES256CTR) s2c;
     if (!negotiate_alg(list, nlen, cc, 2, &c2s))
         return -1;
     if (!read_namelist(payload, len, &off, &list, &nlen))
@@ -458,7 +459,8 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
         {ALG_MAC, SSH_MAC_HMAC_SHA256, true},
         {"hmac-sha2-512", SSH_MAC_HMAC_SHA512, true}};
     bool need_mac = (s->cipher_alg == SSH_CIPHER_AES256CTR);
-    decltype(SSH_MAC_HMAC_SHA256) m_c2s = SSH_MAC_HMAC_SHA256, m_s2c = SSH_MAC_HMAC_SHA256;
+    decltype(SSH_MAC_HMAC_SHA256) m_c2s = SSH_MAC_HMAC_SHA256;
+    decltype(SSH_MAC_HMAC_SHA256) m_s2c = SSH_MAC_HMAC_SHA256;
     if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
     if (need_mac && !negotiate_alg(list, nlen, mc, 4, &m_c2s))
