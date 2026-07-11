@@ -24259,7 +24259,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_NEGOTIATE, h.command);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(36, r16(b + 0)); // StructureSize</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(4, r16(b + 2));  // DialectCount</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_NEGOTIATE_SIGNING_ENABLED, r16(b + 4));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED, r16(b + 4));</code>
       * <code>Assert equal memory (gid, b + 12, 16)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0202, r16(b + 36));</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0210, r16(b + 38));</code>
@@ -24275,7 +24275,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (smb2_parse_negotiate_response(m, n, &r))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0300, r.dialect);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_NEGOTIATE_SIGNING_REQUIRED, r.security_mode);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_REQUIRED, r.security_mode);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x00080000, r.max_read);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x00040000, r.max_write);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xA0, r.server_guid[0]);</code>
@@ -24308,7 +24308,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX64(0xDEADBEEFULL, h.session_id); // echoes the server SessionId</code>
       * <code>TEST_ASSERT_EQUAL_HEX64(7, h.message_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(25, r16(b + 0)); // StructureSize</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SMB2_NEGOTIATE_SIGNING_ENABLED, b[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Smb2SecurityMode::SMB2_NEGOTIATE_SIGNING_ENABLED, b[3]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(64 + 24, r16(b + 12)); // SecurityBufferOffset = 88</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(40, r16(b + 14));      // SecurityBufferLength</code>
       * <code>Assert equal memory (tok, buf + 88, 40)</code>
@@ -24322,10 +24322,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: the final SUCCESS round carries no security buffer -> nullptr, still valid
     * **Assertions**:
       * <code>Assert true (smb2_parse_header(m, n, &h))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(SMB2_STATUS_MORE_PROCESSING_REQUIRED, h.status);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(Smb2Status::SMB2_STATUS_MORE_PROCESSING_REQUIRED, h.status);</code>
       * <code>TEST_ASSERT_EQUAL_HEX64(0x1234ULL, h.session_id);</code>
       * <code>Assert true (smb2_parse_session_setup_response(m, n, &r))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_SESSION_FLAG_IS_GUEST, r.session_flags);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2SessionFlags::SMB2_SESSION_FLAG_IS_GUEST, r.session_flags);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(sizeof(tok), r.sec_buf_len);</code>
       * <code>Assert equal memory (tok, r.sec_buf, sizeof(tok))</code>
       * <code>Assert true (smb2_parse_session_setup_response(m, n, &r))</code>
@@ -24382,7 +24382,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (smb2_parse_header(m, n, &h))</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x777, h.tree_id); // TreeId comes from the header</code>
       * <code>Assert true (smb2_parse_tree_connect_response(m, n, &r))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SMB2_SHARE_TYPE_DISK, r.share_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Smb2ShareType::SMB2_SHARE_TYPE_DISK, r.share_type);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x001f01ff, r.maximal_access);</code>
       * <code>Assert false (smb2_parse_tree_connect_response(bad, n, &r))</code>
       * <code>Assert false (smb2_parse_tree_connect_response(m, 70, &r))</code>
@@ -24399,10 +24399,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX32(0x777, h.tree_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(57, r16(b + 0)); // StructureSize</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2, r32(b + 4));  // ImpersonationLevel</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(SMB2_FILE_GENERIC_READ, r32(b + 24));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(SMB2_FILE_SHARE_READ, r32(b + 32));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(SMB2_FILE_OPEN, r32(b + 36));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(SMB2_FILE_NON_DIRECTORY_FILE, r32(b + 40));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(Smb2Access::SMB2_FILE_GENERIC_READ, r32(b + 24));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(Smb2ShareAccess::SMB2_FILE_SHARE_READ, r32(b + 32));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(Smb2Disposition::SMB2_FILE_OPEN, r32(b + 36));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(Smb2CreateOptions::SMB2_FILE_NON_DIRECTORY_FILE, r32(b + 40));</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(120, r16(b + 44));          // NameOffset</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(sizeof(name), r16(b + 46)); // NameLength</code>
       * <code>Assert equal memory (name, buf + 120, sizeof(name))</code>
