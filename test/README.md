@@ -24882,9 +24882,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (snmp_agent_add_string(shortoid, 1, "x", nullptr))</code>
       * <code>Assert false (snmp_agent_add_integer(shortoid, 1, 5, nullptr))</code>
-      * <code>Assert false (snmp_agent_add_dynamic(shortoid, 1, BER_INTEGER, nullptr))</code>
+      * <code>Assert false (snmp_agent_add_dynamic(shortoid, 1, (uint8_t)SnmpTag::BER_INTEGER, nullptr))</code>
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_NO_ACCESS, rv.err_status)</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ACCESS, rv.err_status)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24892,9 +24892,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Encoded as a 4-byte IpAddress-tagged string (RFC 2578 IpAddress = network-order octets).
     * **Assertions**:
-      * <code>Assert true (snmp_agent_add_dynamic(OID_IP, 9, SNMP_IPADDRESS, ip_getter))</code>
+      * <code>Assert true (snmp_agent_add_dynamic(OID_IP, 9, (uint8_t)SnmpTag::SNMP_IPADDRESS, ip_getter))</code>
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_IPADDRESS, rv.val_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_IPADDRESS, rv.val_tag);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(4, rv.str_len);</code>
       * <code>Assert equal memory (want, rv.str, 4)</code>
   </details>
@@ -24905,9 +24905,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Set wrong type and unknown
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_WRONG_TYPE, rv.err_status)</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_WRONG_TYPE, rv.err_status)</code>
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_NO_SUCH_NAME, rv.err_status)</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_SUCH_NAME, rv.err_status)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24916,11 +24916,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: non-repeaters = 1, max-repetitions = 2, one varbind at the system prefix.
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_NO_ERROR, rv.err_status)</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status)</code>
       * <code>Assert greater than (0, (int)rv.nvb)</code>
       * <code>Assert equal uint (0, snmp_agent_process(req, rl, resp, sizeof(resp)))</code>
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_END_OF_MIB_VIEW, rv.val_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_END_OF_MIB_VIEW, rv.val_tag);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24943,10 +24943,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (rl &gt; 0)</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_RESPONSE, rv.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_RESPONSE, rv.pdu_tag);</code>
       * <code>Assert equal int (111, rv.request_id)</code>
-      * <code>Assert equal int (SNMP_ERR_NO_ERROR, rv.err_status)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, rv.val_tag);</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, rv.val_tag);</code>
       * <code>Assert equal string (SYSDESCR_VAL, rv.str)</code>
   </details>
 
@@ -24956,8 +24956,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Get unknown v2c exception
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_NO_ERROR, rv.err_status)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_NO_SUCH_OBJECT, rv.val_tag);</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_NO_SUCH_OBJECT, rv.val_tag);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24966,8 +24966,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Get bad instance v2c nosuchinstance
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_NO_ERROR, rv.err_status)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_NO_SUCH_INSTANCE, rv.val_tag);</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_NO_SUCH_INSTANCE, rv.val_tag);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24976,7 +24976,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Get unknown v1 error
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_NO_SUCH_NAME, rv.err_status)</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_SUCH_NAME, rv.err_status)</code>
       * <code>Assert equal int (1, rv.err_index)</code>
   </details>
 
@@ -24986,8 +24986,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Getnext walks to first
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_NO_ERROR, rv.err_status)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, rv.val_tag);</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, rv.val_tag);</code>
       * <code>Assert equal uint (9, rv.oid_len)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1u, rv.oid[7]); // sysDescr index .1</code>
       * <code>Assert equal string (SYSDESCR_VAL, rv.str)</code>
@@ -24999,8 +24999,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Getnext past end endofmibview
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_NO_ERROR, rv.err_status)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_END_OF_MIB_VIEW, rv.val_tag);</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_END_OF_MIB_VIEW, rv.val_tag);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25009,7 +25009,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Set without rw community denied
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_NO_ACCESS, rv.err_status)</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ACCESS, rv.err_status)</code>
       * <code>Assert false (g_set_called)</code>
   </details>
 
@@ -25019,7 +25019,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Set with rw community invokes setter
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_NO_ERROR, rv.err_status)</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status)</code>
       * <code>Assert true (g_set_called)</code>
       * <code>Assert equal int (99, g_set_value)</code>
   </details>
@@ -25030,7 +25030,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Set readonly not writable
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_NOT_WRITABLE, rv.err_status)</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NOT_WRITABLE, rv.err_status)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25039,9 +25039,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: non-repeaters=0, max-repetitions=3, one repeater starting at the system prefix.
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_NO_ERROR, rv.err_status)</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status)</code>
       * <code>Assert equal uint (3, rv.nvb)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, rv.val_tag); // first = sysDescr</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, rv.val_tag); // first = sysDescr</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25050,7 +25050,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Dynamic counter value
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_COUNTER32, rv.val_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_COUNTER32, rv.val_tag);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(12345u, rv.uval);</code>
   </details>
 
@@ -25060,7 +25060,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Uptime is timeticks
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_TIMETICKS, rv.val_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_TIMETICKS, rv.val_tag);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25105,7 +25105,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Response too big reencodes
     * **Assertions**:
       * <code>Assert true (parse_resp(resp, n, &rv))</code>
-      * <code>Assert equal int (SNMP_ERR_TOO_BIG, rv.err_status)</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_TOO_BIG, rv.err_status)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25218,11 +25218,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (e.ok)</code>
       * <code>Assert true (ber_read_header(&d, &tag, &len))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(BER_SEQUENCE, tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_SEQUENCE, tag);</code>
       * <code>Assert true (ber_read_integer(&d, &ver))</code>
       * <code>Assert equal int (1, ver)</code>
       * <code>Assert true (ber_read_header(&d, &tag, &len))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, tag);</code>
       * <code>Assert equal uint (6, len)</code>
       * <code>Assert equal memory ("public", d.buf + d.pos, 6)</code>
   </details>
@@ -25338,12 +25338,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A value >= 128 octets forces the long-form definite length (0x81 <len>).
     * **Assertions**:
-      * <code>Assert true (ber_put_octet_string(&e, BER_OCTET_STRING, val, sizeof(val)))</code>
+      * <code>Assert true (ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, val, sizeof(val)))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(203, e.len); // tag(1) + 0x81 0xC8 (2) + 200</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x81, buf[1]); // long form, one length octet</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xC8, buf[2]); // 200</code>
       * <code>Assert true (ber_read_header(&d, &tag, &len))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, tag);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(200, len);</code>
   </details>
 
@@ -25410,7 +25410,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x04, tag);</code>
       * <code>Assert equal memory ("public", buf + d.pos, 6)</code>
       * <code>Assert true (ber_read_header(&d, &tag, &l))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_TRAPV2, tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_TRAPV2, tag);</code>
       * <code>Assert true (ber_read_integer(&d, &v))</code>
       * <code>Assert equal (7, v)</code>
       * <code>Assert true (ber_read_integer(&d, &v))</code>
@@ -25422,13 +25422,13 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (ber_read_header(&d, &tag, &l))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x30, tag);</code>
       * <code>Assert true (ber_read_header(&d, &tag, &l))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_TIMETICKS, tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_TIMETICKS, tag);</code>
       * <code>Assert true (ber_read_header(&d, &tag, &l))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x30, tag);</code>
       * <code>Assert true (ber_read_header(&d, &tag, &l))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x30, tag);</code>
       * <code>Assert true (ber_read_header(&d, &tag, &l))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_GAUGE32, tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_GAUGE32, tag);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25448,7 +25448,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Invalid varbind type
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_notify_build_v2c(buf, sizeof(buf), "public", SNMP_PDU_TRAPV2, 1, TRAP_OID,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_notify_build_v2c(buf, sizeof(buf), "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25456,9 +25456,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Build v2c null args
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_notify_build_v2c(nullptr, 128, "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_notify_build_v2c(buf, sizeof(buf), nullptr, (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, snmp_notify_build_v2c(buf, sizeof(buf), "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25498,7 +25498,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: V3 response scopedpdu overflow
     * **Assertions**:
-      * <code>Assert true (snmp_agent_add_dynamic(big_oid, 9, BER_OCTET_STRING, big_getter))</code>
+      * <code>Assert true (snmp_agent_add_dynamic(big_oid, 9, (uint8_t)SnmpTag::BER_OCTET_STRING, big_getter))</code>
       * <code>Assert true (rl &gt; 0)</code>
       * <code>Assert true (saw_overflow)</code>
       * <code>Assert true (saw_ok)</code>
@@ -25539,7 +25539,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (rl &gt; 0)</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert true (parse_v3(resp, n, nullptr, &r))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, r.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5u, r.oid[9]); // usmStatsWrongDigests</code>
       * <code>Assert true (rl &gt; 0)</code>
       * <code>Assert equal uint (0, snmp_v3_process(req, rl, resp, sizeof(resp)))</code>
@@ -25580,7 +25580,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert true (parse_v3(resp, n, nullptr, &r))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, r.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25641,7 +25641,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: usmStatsUnknownEngineIDs = 1.3.6.1.6.3.15.1.1.4.0
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, v.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, v.pdu_tag);</code>
       * <code>Assert true (v.engine_id_len &gt;= 5)</code>
       * <code>Assert equal uint (11, v.oid_len)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(15u, v.oid[6]);</code>
@@ -25655,10 +25655,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert true (parse_v3(resp, n, nullptr, &v))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_RESPONSE, v.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_RESPONSE, v.pdu_tag);</code>
       * <code>Assert equal int (42, v.request_id)</code>
-      * <code>Assert equal int (SNMP_ERR_NO_ERROR, v.err_status)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, v.val_tag);</code>
+      * <code>Assert equal int ((int)SnmpErr::SNMP_ERR_NO_ERROR, v.err_status)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, v.val_tag);</code>
       * <code>Assert equal string (SYSDESCR_VAL, v.str)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x01, v.flags & 0x03); // response is authNoPriv</code>
   </details>
@@ -25670,7 +25670,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert true (parse_v3(resp, n, privkey, &v))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_RESPONSE, v.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_RESPONSE, v.pdu_tag);</code>
       * <code>Assert equal int (77, v.request_id)</code>
       * <code>Assert equal string (SYSDESCR_VAL, v.str)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x03, v.flags & 0x03); // response is authPriv</code>
@@ -25683,7 +25683,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert true (parse_v3(resp, n, nullptr, &v))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, v.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, v.pdu_tag);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5u, v.oid[9]);</code>
   </details>
 
@@ -25694,7 +25694,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert true (parse_v3(resp, n, nullptr, &v))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, v.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, v.pdu_tag);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(3u, v.oid[9]); // usmStatsUnknownUserNames</code>
   </details>
 
@@ -25705,7 +25705,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert true (parse_v3(resp, n, nullptr, &v))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, v.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, v.pdu_tag);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2u, v.oid[9]);        // usmStatsNotInTimeWindows</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x01, v.flags & 0x03); // time reports are authenticated</code>
   </details>
