@@ -52,7 +52,7 @@
     "example": "L7-Application/28.CoapBlock",
     "flags": "-DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1 -DDETWS_COAP_MAX_PAYLOAD=1024",
     "board": "esp32dev",
-    "flash_bytes": 727537,
+    "flash_bytes": 727549,
     "ram_bytes": 48352
   },
   "COAP+COAP_OBSERVE": {
