@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`2629e08`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2629e085f487c47ca4f90c2ff7cb5a87f8cefe59))
+- update CHANGELOG.md [skip ci] ([`900e386`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/900e3866b73f771344e424fe224ed9870d9b990c))
 - update CHANGELOG.md [skip ci] ([`a6749fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6749fb1404cd2f7f34d51686aa3df58371413fd))
 - update CHANGELOG.md [skip ci] ([`ede07f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ede07f22fd81201569c169c50cf2ec54b449bc5d))
 - update CHANGELOG.md [skip ci] ([`3b2667b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b2667bc787d47feb0da63f2a0e351c67379ba50))
@@ -25,6 +27,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- advanced QUIC/HTTP-3 abuse attack (Initial flood + anti-amplification + malformed fuzz) ([`5b88186`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b88186ba36ae73dd314a50fa56937eedd80b60f))
 - real QUIC/HTTP-3 interop peer (aioquic) - device-as-server ALPN h3 ([`c2dcdd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c2dcdd6d5c65a69f9846a0d3b452e7771ab9ea71))
 
 ## [5.95.11] - 2026-07-11
