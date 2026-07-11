@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`4df87a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4df87a0a81aaad9f0e706086f942e3501a4c17ab))
+- update CHANGELOG.md [skip ci] ([`b85b49e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b85b49e3128c2aab2f93d304c066e6714024cc29))
 - update CHANGELOG.md [skip ci] ([`daf3ee8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/daf3ee85531dd7eb74fcfdbbca791c0b7637aecf))
 - update test report + coverage [skip ci] ([`986359f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/986359f20016060bbec8669f72cfd4fb5349034b))
 - update CHANGELOG.md [skip ci] ([`32e60eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32e60eba9bbfa178346b0a6b13cbf80b31cff7a9))
@@ -19,6 +21,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`915e63b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/915e63bac0cf9babe3068e52c1cf8801476279fa))
+- update ESP32 build footprints [skip ci] ([`5ea9b52`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ea9b5227207c6fd08547db823de3be2d175eb60))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`77c3a57`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77c3a57dc566b632e3467ea12352b1a81af8f026))
 - update ESP32 build footprints [skip ci] ([`a757a9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a757a9cf9f51fb6187860440071a50cf572db4bd))
 - update ESP32 build footprints [skip ci] ([`e951871`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e951871a31026e9620b872060f39a15c40b6be73))
@@ -29,6 +33,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- scoped enums for opcua/dshot/preempt_queue/dma (enum class 35/N) ([`bad0aa9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bad0aa92af40c2ca1993c8cfe8c9580505c3d59b))
 - retro - config_io field_type returns bool + DetwsCfgType out ([`4a83659`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a8365901cf65a85f04daf7f40225b8e5d1453a9))
 - retro - type CoAP public request/response fields ([`ffe6d19`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffe6d192698380cffd684eba7338b1d81fdca32f))
 - retro - type opcode/kind params, drop silencing casts ([`8a65e92`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a65e927d727fd7dfe953291ec6f4bc01c90aafa))
