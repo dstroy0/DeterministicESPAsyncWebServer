@@ -37,22 +37,22 @@
 #include <stdint.h>
 
 /** @brief HDLC-lite markers. */
-enum
+struct ThreadHdlc
 {
-    HDLC_FLAG = 0x7E,   ///< frame delimiter
-    HDLC_ESCAPE = 0x7D, ///< byte-stuffing escape
+    static constexpr uint8_t HDLC_FLAG = 0x7E;   ///< frame delimiter
+    static constexpr uint8_t HDLC_ESCAPE = 0x7D; ///< byte-stuffing escape
 };
 
 /** @brief Common spinel commands (the property accessors a gateway uses). */
-enum
+struct SpinelCmd
 {
-    SPINEL_CMD_NOOP = 0,
-    SPINEL_CMD_RESET = 1,
-    SPINEL_CMD_PROP_VALUE_GET = 2,
-    SPINEL_CMD_PROP_VALUE_SET = 3,
-    SPINEL_CMD_PROP_VALUE_INSERT = 4,
-    SPINEL_CMD_PROP_VALUE_REMOVE = 5,
-    SPINEL_CMD_PROP_VALUE_IS = 6, ///< an async property update from the NCP
+    static constexpr uint8_t SPINEL_CMD_NOOP = 0;
+    static constexpr uint8_t SPINEL_CMD_RESET = 1;
+    static constexpr uint8_t SPINEL_CMD_PROP_VALUE_GET = 2;
+    static constexpr uint8_t SPINEL_CMD_PROP_VALUE_SET = 3;
+    static constexpr uint8_t SPINEL_CMD_PROP_VALUE_INSERT = 4;
+    static constexpr uint8_t SPINEL_CMD_PROP_VALUE_REMOVE = 5;
+    static constexpr uint8_t SPINEL_CMD_PROP_VALUE_IS = 6; ///< an async property update from the NCP
 };
 
 /** @brief HDLC frame check sequence: CRC-16/X-25 over @p buf. */

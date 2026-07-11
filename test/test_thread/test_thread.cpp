@@ -32,7 +32,7 @@ void test_encode_decode_round_trip()
     uint8_t frame[32];
     uint16_t n = spinel_frame_encode(payload, 3, frame, sizeof(frame));
     TEST_ASSERT_GREATER_THAN_UINT16(0, n);
-    TEST_ASSERT_EQUAL_HEX8(HDLC_FLAG, frame[n - 1]);
+    TEST_ASSERT_EQUAL_HEX8(ThreadHdlc::HDLC_FLAG, frame[n - 1]);
 
     uint8_t pay[16];
     uint16_t plen = 0;
@@ -82,7 +82,7 @@ void test_decode_rejects_bad_fcs()
 
 void test_decode_rejects_dangling_escape()
 {
-    const uint8_t frame[2] = {HDLC_ESCAPE, HDLC_FLAG}; // escape with nothing before the flag
+    const uint8_t frame[2] = {ThreadHdlc::HDLC_ESCAPE, ThreadHdlc::HDLC_FLAG}; // escape with nothing before the flag
     uint8_t pay[8];
     uint16_t plen = 0;
     TEST_ASSERT_EQUAL_INT(-1, spinel_frame_decode(frame, sizeof(frame), pay, sizeof(pay), &plen));
@@ -153,7 +153,7 @@ void test_spinel_command_build_parse_round_trip()
     const uint8_t val[4] = {0xDE, 0xAD, 0xBE, 0xEF};
     uint8_t buf[32];
     // header 0x81, CMD_PROP_VALUE_SET, a large property id (multi-byte packed), a value.
-    uint16_t n = spinel_command_build(0x81, SPINEL_CMD_PROP_VALUE_SET, 1337, val, 4, buf, sizeof(buf));
+    uint16_t n = spinel_command_build(0x81, SpinelCmd::SPINEL_CMD_PROP_VALUE_SET, 1337, val, 4, buf, sizeof(buf));
     TEST_ASSERT_GREATER_THAN_UINT16(0, n);
 
     uint8_t header = 0;
@@ -163,7 +163,7 @@ void test_spinel_command_build_parse_round_trip()
     int off = spinel_command_parse(buf, n, &header, &cmd, &prop, &v, &vlen);
     TEST_ASSERT_GREATER_THAN_INT(0, off);
     TEST_ASSERT_EQUAL_HEX8(0x81, header);
-    TEST_ASSERT_EQUAL_UINT32(SPINEL_CMD_PROP_VALUE_SET, cmd);
+    TEST_ASSERT_EQUAL_UINT32(SpinelCmd::SPINEL_CMD_PROP_VALUE_SET, cmd);
     TEST_ASSERT_EQUAL_UINT32(1337, prop);
     TEST_ASSERT_EQUAL_UINT16(4, vlen);
     TEST_ASSERT_EQUAL_MEMORY(val, v, 4);
@@ -174,8 +174,8 @@ void test_spinel_command_through_hdlc()
     // The command payload rides inside an HDLC frame: build the command, frame it, decode
     // the frame, then parse the command back out - the full Thread codec stack.
     uint8_t payload[16];
-    uint16_t plen =
-        spinel_command_build(0x82, SPINEL_CMD_PROP_VALUE_GET, 2 /*NCP_VERSION*/, nullptr, 0, payload, sizeof(payload));
+    uint16_t plen = spinel_command_build(0x82, SpinelCmd::SPINEL_CMD_PROP_VALUE_GET, 2 /*NCP_VERSION*/, nullptr, 0,
+                                         payload, sizeof(payload));
     uint8_t frame[32];
     uint16_t fn = spinel_frame_encode(payload, plen, frame, sizeof(frame));
     TEST_ASSERT_GREATER_THAN_UINT16(0, fn);
@@ -188,7 +188,7 @@ void test_spinel_command_through_hdlc()
     const uint8_t *v = nullptr;
     uint16_t vlen = 0;
     TEST_ASSERT_GREATER_THAN_INT(0, spinel_command_parse(got, glen, &header, &cmd, &prop, &v, &vlen));
-    TEST_ASSERT_EQUAL_UINT32(SPINEL_CMD_PROP_VALUE_GET, cmd);
+    TEST_ASSERT_EQUAL_UINT32(SpinelCmd::SPINEL_CMD_PROP_VALUE_GET, cmd);
     TEST_ASSERT_EQUAL_UINT32(2, prop);
     TEST_ASSERT_EQUAL_UINT16(0, vlen);
 }
@@ -256,7 +256,7 @@ void test_thread_more_guards()
     uint8_t big[80];
     for (int i = 0; i < 70; i++)
         big[i] = 0x00;
-    big[70] = HDLC_FLAG;
+    big[70] = ThreadHdlc::HDLC_FLAG;
     TEST_ASSERT_EQUAL_INT(-1, spinel_frame_decode(big, 71, pay, sizeof(pay), &pl)); // unstuffed > scratch
     uint8_t p3[3] = {0x01, 0x02, 0x03};
     uint8_t fr[32];

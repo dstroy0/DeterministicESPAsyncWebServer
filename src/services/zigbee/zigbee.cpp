@@ -36,7 +36,7 @@ bool put_stuffed(uint8_t *out, uint16_t *p, uint16_t cap, uint8_t b)
     {
         if (*p + 2 > cap)
             return false;
-        out[(*p)++] = ASH_ESCAPE;
+        out[(*p)++] = Ash::ASH_ESCAPE;
         out[(*p)++] = (uint8_t)(b ^ 0x20);
     }
     else
@@ -76,7 +76,7 @@ uint16_t ash_frame_encode(uint8_t control, const uint8_t *payload, uint16_t len,
         return 0;
     if (p + 1 > cap)
         return 0;
-    out[p++] = ASH_FLAG; // the delimiter is never stuffed
+    out[p++] = Ash::ASH_FLAG; // the delimiter is never stuffed
     return p;
 }
 
@@ -87,7 +87,7 @@ int ash_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *control, uint8_t
         return 0;
     // Find the frame delimiter.
     uint16_t flag = 0;
-    while (flag < len && raw[flag] != ASH_FLAG)
+    while (flag < len && raw[flag] != Ash::ASH_FLAG)
         flag++;
     if (flag >= len)
         return 0; // no complete frame yet
@@ -98,7 +98,7 @@ int ash_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *control, uint8_t
     for (uint16_t i = 0; i < flag; i++)
     {
         uint8_t b = raw[i];
-        if (b == ASH_ESCAPE)
+        if (b == Ash::ASH_ESCAPE)
         {
             if (++i >= flag)
                 return -1; // dangling escape

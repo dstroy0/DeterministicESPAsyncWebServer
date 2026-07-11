@@ -17,16 +17,16 @@ void tearDown(void)
 void test_header_roundtrip(void)
 {
     uint8_t out[16];
-    size_t n = detws_pn_dcp_header(PN_FRAMEID_DCP_IDENT_REQ, PN_DCP_SERVICE_IDENTIFY, PN_DCP_TYPE_REQUEST, 0x11223344,
-                                   8, out, sizeof(out));
+    size_t n = detws_pn_dcp_header(Pn::PN_FRAMEID_DCP_IDENT_REQ, Pn::PN_DCP_SERVICE_IDENTIFY, Pn::PN_DCP_TYPE_REQUEST,
+                                   0x11223344, 8, out, sizeof(out));
     TEST_ASSERT_EQUAL_size_t(10, n);
     const uint8_t expect[] = {0xFE, 0xFE, 0x05, 0x00, 0x11, 0x22, 0x33, 0x44, 0x00, 0x08};
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, 10);
 
     PnDcpHeader h;
     TEST_ASSERT_TRUE(detws_pn_dcp_parse_header(out, n, &h));
-    TEST_ASSERT_EQUAL_HEX16(PN_FRAMEID_DCP_IDENT_REQ, h.frame_id);
-    TEST_ASSERT_EQUAL_HEX8(PN_DCP_SERVICE_IDENTIFY, h.service_id);
+    TEST_ASSERT_EQUAL_HEX16(Pn::PN_FRAMEID_DCP_IDENT_REQ, h.frame_id);
+    TEST_ASSERT_EQUAL_HEX8(Pn::PN_DCP_SERVICE_IDENTIFY, h.service_id);
     TEST_ASSERT_EQUAL_HEX32(0x11223344, h.xid);
     TEST_ASSERT_EQUAL_UINT16(8, h.data_length);
 }
@@ -35,13 +35,13 @@ void test_block_even_padding(void)
 {
     // NameOfStation "plc" is 3 bytes (odd) -> padded to an even total, filler not counted in length.
     uint8_t out[16];
-    size_t n = detws_pn_dcp_block(PN_DCP_OPT_DEVICE, PN_DCP_SUB_DEV_NAME_OF_STATION, (const uint8_t *)"plc", 3, out,
-                                  sizeof(out));
+    size_t n = detws_pn_dcp_block(Pn::PN_DCP_OPT_DEVICE, Pn::PN_DCP_SUB_DEV_NAME_OF_STATION, (const uint8_t *)"plc", 3,
+                                  out, sizeof(out));
     TEST_ASSERT_EQUAL_size_t(4 + 3 + 1, n); // 4 header + 3 value + 1 pad
     const uint8_t expect[] = {0x02, 0x02, 0x00, 0x03, 'p', 'l', 'c', 0x00};
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, n);
     // Even value -> no pad.
-    n = detws_pn_dcp_block(PN_DCP_OPT_IP, PN_DCP_SUB_IP_PARAM, (const uint8_t *)"ABCD", 4, out, sizeof(out));
+    n = detws_pn_dcp_block(Pn::PN_DCP_OPT_IP, Pn::PN_DCP_SUB_IP_PARAM, (const uint8_t *)"ABCD", 4, out, sizeof(out));
     TEST_ASSERT_EQUAL_size_t(8, n);
 }
 
@@ -69,17 +69,18 @@ void test_walk_blocks(void)
 {
     uint8_t buf[64];
     size_t n = 0;
-    n += detws_pn_dcp_block(PN_DCP_OPT_DEVICE, PN_DCP_SUB_DEV_NAME_OF_STATION, (const uint8_t *)"plc", 3, buf + n,
+    n += detws_pn_dcp_block(Pn::PN_DCP_OPT_DEVICE, Pn::PN_DCP_SUB_DEV_NAME_OF_STATION, (const uint8_t *)"plc", 3,
+                            buf + n, sizeof(buf) - n);
+    n += detws_pn_dcp_block(Pn::PN_DCP_OPT_IP, Pn::PN_DCP_SUB_IP_PARAM, (const uint8_t *)"ABCD", 4, buf + n,
                             sizeof(buf) - n);
-    n += detws_pn_dcp_block(PN_DCP_OPT_IP, PN_DCP_SUB_IP_PARAM, (const uint8_t *)"ABCD", 4, buf + n, sizeof(buf) - n);
 
     Seen s = {0, {0}, {0}, {0}};
     TEST_ASSERT_TRUE(detws_pn_dcp_walk(buf, n, collect, &s));
     TEST_ASSERT_EQUAL_INT(2, s.count);
-    TEST_ASSERT_EQUAL_HEX8(PN_DCP_OPT_DEVICE, s.opt[0]);
-    TEST_ASSERT_EQUAL_HEX8(PN_DCP_SUB_DEV_NAME_OF_STATION, s.sub[0]);
+    TEST_ASSERT_EQUAL_HEX8(Pn::PN_DCP_OPT_DEVICE, s.opt[0]);
+    TEST_ASSERT_EQUAL_HEX8(Pn::PN_DCP_SUB_DEV_NAME_OF_STATION, s.sub[0]);
     TEST_ASSERT_EQUAL_size_t(3, s.len[0]); // pad not counted
-    TEST_ASSERT_EQUAL_HEX8(PN_DCP_OPT_IP, s.opt[1]);
+    TEST_ASSERT_EQUAL_HEX8(Pn::PN_DCP_OPT_IP, s.opt[1]);
     TEST_ASSERT_EQUAL_size_t(4, s.len[1]);
 }
 

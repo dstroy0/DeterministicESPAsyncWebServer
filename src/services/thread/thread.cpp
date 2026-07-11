@@ -28,7 +28,7 @@ bool put_stuffed(uint8_t *out, uint16_t *p, uint16_t cap, uint8_t b)
     {
         if (*p + 2 > cap)
             return false;
-        out[(*p)++] = HDLC_ESCAPE;
+        out[(*p)++] = ThreadHdlc::HDLC_ESCAPE;
         out[(*p)++] = (uint8_t)(b ^ 0x20);
     }
     else
@@ -159,7 +159,7 @@ uint16_t spinel_frame_encode(const uint8_t *payload, uint16_t len, uint8_t *out,
         return 0;
     if (p + 1 > cap)
         return 0;
-    out[p++] = HDLC_FLAG;
+    out[p++] = ThreadHdlc::HDLC_FLAG;
     return p;
 }
 
@@ -168,7 +168,7 @@ int spinel_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *payload, uint
     if (!raw)
         return 0;
     uint16_t flag = 0;
-    while (flag < len && raw[flag] != HDLC_FLAG)
+    while (flag < len && raw[flag] != ThreadHdlc::HDLC_FLAG)
         flag++;
     if (flag >= len)
         return 0; // no complete frame yet
@@ -179,7 +179,7 @@ int spinel_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *payload, uint
     for (uint16_t i = 0; i < flag; i++)
     {
         uint8_t b = raw[i];
-        if (b == HDLC_ESCAPE)
+        if (b == ThreadHdlc::HDLC_ESCAPE)
         {
             if (++i >= flag)
                 return -1; // dangling escape

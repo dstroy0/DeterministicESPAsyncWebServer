@@ -36,13 +36,13 @@
 #include <stdint.h>
 
 /** @brief ASH markers / reset control bytes. */
-enum
+struct Ash
 {
-    ASH_FLAG = 0x7E,   ///< frame delimiter
-    ASH_ESCAPE = 0x7D, ///< byte-stuffing escape
-    ASH_RST = 0xC0,    ///< reset control byte
-    ASH_RSTACK = 0xC1, ///< reset acknowledge
-    ASH_ERROR = 0xC2,  ///< error
+    static constexpr uint8_t ASH_FLAG = 0x7E;   ///< frame delimiter
+    static constexpr uint8_t ASH_ESCAPE = 0x7D; ///< byte-stuffing escape
+    static constexpr uint8_t ASH_RST = 0xC0;    ///< reset control byte
+    static constexpr uint8_t ASH_RSTACK = 0xC1; ///< reset acknowledge
+    static constexpr uint8_t ASH_ERROR = 0xC2;  ///< error
 };
 
 /** @brief CRC-16/CCITT (polynomial 0x1021, MSB-first, init 0xFFFF) over @p buf. */

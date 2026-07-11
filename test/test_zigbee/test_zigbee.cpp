@@ -21,7 +21,7 @@ void tearDown()
 void test_crc16_rst_kat()
 {
     // CRC-16/CCITT (poly 0x1021, init 0xFFFF) of {0xC0} is 0x38BC (the ASH RST frame CRC).
-    const uint8_t rst[1] = {ASH_RST};
+    const uint8_t rst[1] = {Ash::ASH_RST};
     TEST_ASSERT_EQUAL_HEX16(0x38BC, ash_crc16(rst, 1));
 }
 
@@ -30,7 +30,7 @@ void test_encode_rst_frame_kat()
     // The documented ASH RST frame is C0 38 BC 7E (control, CRC hi/lo, flag).
     const uint8_t expect[4] = {0xC0, 0x38, 0xBC, 0x7E};
     uint8_t out[16];
-    uint16_t n = ash_frame_encode(ASH_RST, nullptr, 0, out, sizeof(out));
+    uint16_t n = ash_frame_encode(Ash::ASH_RST, nullptr, 0, out, sizeof(out));
     TEST_ASSERT_EQUAL_UINT16(4, n);
     TEST_ASSERT_EQUAL_MEMORY(expect, out, 4);
 }
@@ -94,7 +94,7 @@ void test_decode_rejects_bad_crc()
 
 void test_decode_rejects_dangling_escape()
 {
-    const uint8_t frame[3] = {0xC0, ASH_ESCAPE, ASH_FLAG}; // escape with nothing after it before the flag
+    const uint8_t frame[3] = {0xC0, Ash::ASH_ESCAPE, Ash::ASH_FLAG}; // escape with nothing after it before the flag
     uint8_t pay[8];
     uint16_t plen = 0;
     TEST_ASSERT_EQUAL_INT(-1, ash_frame_decode(frame, sizeof(frame), nullptr, pay, sizeof(pay), &plen));

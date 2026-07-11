@@ -27,26 +27,25 @@
 
 #if DETWS_ENABLE_PROFINET
 
-enum
+struct Pn
 {
-    PN_FRAMEID_DCP_HELLO = 0xFEFC,
-    PN_FRAMEID_DCP_GETSET = 0xFEFD,
-    PN_FRAMEID_DCP_IDENT_REQ = 0xFEFE,
-    PN_FRAMEID_DCP_IDENT_RES = 0xFEFF,
-    PN_DCP_SERVICE_GET = 0x03,
-    PN_DCP_SERVICE_SET = 0x04,
-    PN_DCP_SERVICE_IDENTIFY = 0x05,
-    PN_DCP_TYPE_REQUEST = 0x00,
-    PN_DCP_TYPE_RESPONSE_SUCCESS = 0x01,
-    // Common DCP options / suboptions.
-    PN_DCP_OPT_IP = 0x01,
-    PN_DCP_SUB_IP_PARAM = 0x02, ///< IP address / subnet / gateway.
-    PN_DCP_OPT_DEVICE = 0x02,
-    PN_DCP_SUB_DEV_NAME_OF_STATION = 0x02,
-    PN_DCP_SUB_DEV_ID = 0x03,
-    PN_DCP_OPT_ALL = 0xFF,
-    PN_DCP_SUB_ALL = 0xFF,
-    PN_DCP_HDR_LEN = 10
+    static constexpr uint16_t PN_FRAMEID_DCP_HELLO = 0xFEFC;
+    static constexpr uint16_t PN_FRAMEID_DCP_GETSET = 0xFEFD;
+    static constexpr uint16_t PN_FRAMEID_DCP_IDENT_REQ = 0xFEFE;
+    static constexpr uint16_t PN_FRAMEID_DCP_IDENT_RES = 0xFEFF;
+    static constexpr uint16_t PN_DCP_SERVICE_GET = 0x03;
+    static constexpr uint16_t PN_DCP_SERVICE_SET = 0x04;
+    static constexpr uint16_t PN_DCP_SERVICE_IDENTIFY = 0x05;
+    static constexpr uint16_t PN_DCP_TYPE_REQUEST = 0x00;
+    static constexpr uint16_t PN_DCP_TYPE_RESPONSE_SUCCESS = 0x01;
+    static constexpr uint16_t PN_DCP_OPT_IP = 0x01;
+    static constexpr uint16_t PN_DCP_SUB_IP_PARAM = 0x02; ///< IP address / subnet / gateway.
+    static constexpr uint16_t PN_DCP_OPT_DEVICE = 0x02;
+    static constexpr uint16_t PN_DCP_SUB_DEV_NAME_OF_STATION = 0x02;
+    static constexpr uint16_t PN_DCP_SUB_DEV_ID = 0x03;
+    static constexpr uint16_t PN_DCP_OPT_ALL = 0xFF;
+    static constexpr uint16_t PN_DCP_SUB_ALL = 0xFF;
+    static constexpr uint16_t PN_DCP_HDR_LEN = 10;
 };
 
 /**
