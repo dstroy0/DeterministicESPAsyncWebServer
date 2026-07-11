@@ -886,6 +886,7 @@
     "SASL",
     "savepoints",
     "sbox",
+    "scalarbase",
     "scalarmult",
     "scanline",
     "scanlines",

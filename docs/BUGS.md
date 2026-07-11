@@ -8,6 +8,30 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## HTTP/3: QUIC handshake crashes the device - worker-task stack too small for Ed25519 signing
+
+- **Status:** FIXED (library, found on hardware 2026-07-11 bringing up the HTTP/3/QUIC server on the PSRAM
+  board; the first QUIC handshake panicked the board).
+- **Symptom:** `h3_cert()` + `begin()` come up (`h3_cert=1`, `BEGIN=1`) and the QUIC listener binds UDP/443,
+  but the first client handshake reboots the board: `Guru Meditation ... Core 1 panic'ed (Unhandled debug
+exception)` - a task **stack canary** trip, no clean assert message.
+- **Root cause (JTAG addr2line of the backtrace):** the crash is deep in Ed25519 signing during the QUIC
+  TLS-1.3 CertificateVerify: `quic_server_poll -> quic_conn_recv -> quic_tls_recv_crypto ->
+process_client_hello -> tls13_build_cert_verify -> ssh_ed25519_sign -> ed_scalarbase/scalarmult/add ->
+ssh_gf_mul`. The QUIC TLS-1.3 handshake **reuses the SSH ed25519 signer**, whose software field
+  arithmetic peaks at ~10.5 KB of stack. `quic_server_poll` runs on the **worker task**, whose default
+  stack is only 8 KB unless SSH is enabled - and there was a compile guard forcing >= 12 KB
+  (`DETWS_WORKER_STACK_CURVE_MIN`) for `DETWS_ENABLE_SSH` but **not for `DETWS_ENABLE_HTTP3`**, even though
+  HTTP/3 exercises the same signer. So an HTTP/3-without-SSH build got the 8 KB default and overflowed.
+- **Fix:** `ServerConfig.h` - `DETWS_ENABLE_HTTP3` now bumps the default `DETWS_WORKER_TASK_STACK` to 12 KB
+  (same as SSH) and is included in the `DETWS_WORKER_STACK_CURVE_MIN` build guard. After the fix the QUIC
+  handshake completes (`QUIC handshake: CONNECTED` from an aioquic client) with no crash.
+- **Lesson:** a shared crypto primitive imposes its stack floor on **every** feature that reaches it -
+  when a new caller (HTTP/3) reuses SSH's ed25519, it must inherit SSH's stack guard, not just the code.
+  [[hw-testing-finds-integration-bugs]]
+
+---
+
 ## TLS: handshake crashes on a core-locking lwIP core (arduino 3.x / PSRAM) - `tcp_write` called without the core lock
 
 - **Status:** FIXED (library, found on hardware 2026-07-11 running HTTP/2-over-TLS on the rebuilt PSRAM

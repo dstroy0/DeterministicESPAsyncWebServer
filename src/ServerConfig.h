@@ -113,7 +113,10 @@
  * compile time.
  */
 #ifndef DETWS_WORKER_TASK_STACK
-#if defined(DETWS_ENABLE_SSH) && DETWS_ENABLE_SSH
+// SSH (curve25519 + ssh-ed25519) and HTTP/3 (the QUIC TLS-1.3 handshake reuses the same
+// ssh_ed25519 signer for CertificateVerify) both peak at ~10.5 KB on the worker task, so both need
+// the higher floor; everything else fits in 8 KB.
+#if (defined(DETWS_ENABLE_SSH) && DETWS_ENABLE_SSH) || (defined(DETWS_ENABLE_HTTP3) && DETWS_ENABLE_HTTP3)
 #define DETWS_WORKER_TASK_STACK 12288
 #else
 #define DETWS_WORKER_TASK_STACK 8192
@@ -5178,9 +5181,9 @@ enum class DetIface : uint8_t
 // arithmetic peaks at ~10.5 KB of worker stack (deeper than the RSA path). Enforce the
 // higher floor so a lowered stack is caught at build time instead of tripping the task
 // stack canary on the first modern-crypto handshake.
-#if DETWS_ENABLE_SSH && (DETWS_WORKER_TASK_STACK < DETWS_WORKER_STACK_CURVE_MIN)
+#if (DETWS_ENABLE_SSH || DETWS_ENABLE_HTTP3) && (DETWS_WORKER_TASK_STACK < DETWS_WORKER_STACK_CURVE_MIN)
 #error                                                                                                                 \
-    "DeterministicESPAsyncWebServer: DETWS_WORKER_TASK_STACK is below DETWS_WORKER_STACK_CURVE_MIN; SSH curve25519/ed25519 needs ~10.5 KB of worker stack - raise DETWS_WORKER_TASK_STACK (>= 12288) or marshal the handshake onto a dedicated larger-stack task"
+    "DeterministicESPAsyncWebServer: DETWS_WORKER_TASK_STACK is below DETWS_WORKER_STACK_CURVE_MIN; SSH and HTTP/3 (QUIC TLS-1.3) curve25519/ed25519 need ~10.5 KB of worker stack - raise DETWS_WORKER_TASK_STACK (>= 12288) or marshal the handshake onto a dedicated larger-stack task"
 #endif
 
 #if DETWS_ENABLE_TLS
