@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Auto-fix staged files so the CI Code-Formatting / Markdown-Formatting / Spellcheck jobs never
+# Auto-fix files so the CI Code-Formatting / Markdown-Formatting / Spellcheck jobs never
 # fail on something a tool can fix:
-#   1. clang-format -i on staged C/C++/.ino  (CI: clang-format-22 --style=file --dry-run --Werror)
+#   1. clang-format -i on EVERY tracked C/C++/.ino  (CI: clang-format-22 --style=file --dry-run
+#      --Werror scans the whole tree, so a drifted file fails CI on an unrelated commit; format
+#      the whole repo here and stage whatever changed, exactly matching the CI file set)
 #   2. prettier --write on staged .md/.json/.yml/.yaml  (CI: prettier --check "**/*.md")
 #   3. auto-add any unknown cspell words from the scanned set (README.md + docs/**/*.md) to
 #      cspell.json  (CI: cspell config cspell.json over README.md + docs/**/*.md)
@@ -18,10 +20,18 @@ cd "$(git rev-parse --show-toplevel)" 2>/dev/null || exit 0
 # Staged (added/copied/modified) paths matching the given pathspecs, excluding build_opt.h.
 staged() { git diff --cached --name-only --diff-filter=ACM -- "$@" 2>/dev/null | grep -v '/build_opt\.h$'; }
 
-# 1) clang-format C/C++/.ino
-mapfile -t CF < <(staged '*.cpp' '*.h' '*.hpp' '*.cc' '*.ino')
-if [ "${#CF[@]}" -gt 0 ] && command -v clang-format >/dev/null 2>&1; then
-    clang-format -i --style=file "${CF[@]}" && git add -- "${CF[@]}"
+# 1) clang-format EVERY tracked C/C++/.ino (whole-repo, CI parity), then stage what changed.
+# CI lints the entire tree, not just the diff, so a file that drifted in an earlier commit
+# (e.g. a comment edit that knocked a trailing-comment column out of alignment) would keep
+# failing CI on unrelated commits. Formatting the whole set here and staging only the files
+# clang-format actually modified keeps a clean tree focused while guaranteeing CI stays green.
+if command -v clang-format >/dev/null 2>&1; then
+    mapfile -t CF < <(git ls-files '*.cpp' '*.h' '*.hpp' '*.cc' '*.ino' | grep -v '/build_opt\.h$')
+    if [ "${#CF[@]}" -gt 0 ]; then
+        printf '%s\0' "${CF[@]}" | xargs -0 -P4 -n40 clang-format -i --style=file
+        mapfile -t CFCHG < <(git diff --name-only -- "${CF[@]}")
+        [ "${#CFCHG[@]}" -gt 0 ] && git add -- "${CFCHG[@]}"
+    fi
 fi
 
 # 2) black (the default Python formatter; line-length from pyproject.toml)

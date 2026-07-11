@@ -67,9 +67,9 @@ enum class SnmpErr : uint8_t
  */
 struct SnmpValue
 {
-    uint8_t type; ///< BER tag: SnmpTag::BER_INTEGER / SnmpTag::BER_OCTET_STRING / SnmpTag::BER_OID /
-                  ///< SnmpTag::SNMP_TIMETICKS / SnmpTag::SNMP_COUNTER32 / SnmpTag::SNMP_GAUGE32 /
-                  ///< SnmpTag::SNMP_IPADDRESS, or an exception tag.
+    uint8_t type;        ///< BER tag: SnmpTag::BER_INTEGER / SnmpTag::BER_OCTET_STRING / SnmpTag::BER_OID /
+                         ///< SnmpTag::SNMP_TIMETICKS / SnmpTag::SNMP_COUNTER32 / SnmpTag::SNMP_GAUGE32 /
+                         ///< SnmpTag::SNMP_IPADDRESS, or an exception tag.
     long ival;           ///< value for SnmpTag::BER_INTEGER
     uint32_t uval;       ///< value for SnmpTag::SNMP_TIMETICKS / SnmpTag::SNMP_COUNTER32 / SnmpTag::SNMP_GAUGE32 /
                          ///< SnmpTag::SNMP_IPADDRESS
