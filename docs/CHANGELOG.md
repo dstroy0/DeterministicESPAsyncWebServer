@@ -10,6 +10,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`4d40840`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4d40840f67777954295df522bc5c08ced4c852f2))
+- update CHANGELOG.md [skip ci] ([`48e732d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48e732d48394f0cdb3ebff7e315ab042d8e90a3c))
+- update CHANGELOG.md [skip ci] ([`b073564`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b0735649c6bfce2d161ece72701e2826f01e647f))
 - update CHANGELOG.md [skip ci] ([`4c74222`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c74222a6f990f2d2ec06171cc74e947f4d4f520))
 - update test report + coverage [skip ci] ([`ebf5a67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebf5a67894b9d4c55122177284b2e3f4057cb501))
 - update CHANGELOG.md [skip ci] ([`0027c19`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0027c19fdb515f49f384bf228912721d6fc2c7a8))
@@ -28,6 +31,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0b7341e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b7341e94f4158ec3f4f8318e128dd5496e73655))
+- update ESP32 build footprints [skip ci] ([`73c1cbf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73c1cbf48db282b8b9aa5f4bc29f7cd645e591e4))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cd51a73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cd51a73d920462d6b565af11d2a7001f6478e00a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3627476`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/362747672f37e2dc5aee9d9db88334cf3621a3c4))
 - update ESP32 build footprints [skip ci] ([`915e63b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/915e63bac0cf9babe3068e52c1cf8801476279fa))
@@ -42,6 +47,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- scoped enums ParseState/HttpVersion (enum class 40/N) ([`767cbc0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/767cbc0e5365e6beef1352aa6b2f6c145885df5d))
 - scoped enums DetIpFamily/DetIpScope (enum class 38/N) ([`8f558e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f558e856f228cbb13267636fda94cde9f1c499e))
 - scoped enums ConnProto/DetIface (enum class 36/N) ([`2ada4f4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ada4f49b9c3f7ffd187618d847687be8cb56ba3))
 - scoped enums for opcua/dshot/preempt_queue/dma (enum class 35/N) ([`bad0aa9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bad0aa92af40c2ca1993c8cfe8c9580505c3d59b))
