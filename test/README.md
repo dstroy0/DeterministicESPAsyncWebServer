@@ -2075,17 +2075,17 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Read Request handle 0x0025.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(3, att_read_req(0x0025, buf, sizeof(buf)));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(ATT_OP_READ_REQ, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_READ_REQ, buf[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x25, buf[1]); // LE low</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]); // LE high</code>
       * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(ATT_OP_WRITE_REQ, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_WRITE_REQ, buf[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x31, buf[1]);</code>
       * <code>Assert equal memory (val, buf + 3, 3)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(ATT_OP_HANDLE_VALUE_NTF, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_HANDLE_VALUE_NTF, buf[0]);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(5, n);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(ATT_OP_ERROR_RSP, buf[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(ATT_OP_READ_REQ, buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_ERROR_RSP, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_READ_REQ, buf[1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x0A, buf[4]);</code>
   </details>
 
@@ -2095,14 +2095,14 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Read rsp and build guards
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(4, n);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(ATT_OP_READ_RSP, out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_READ_RSP, out[0]);</code>
       * <code>Assert equal memory (val, out + 1, 3)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(val, 3, nullptr, sizeof(out)));         // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(nullptr, 3, out, sizeof(out)));         // len but null value</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(val, 3, out, 2));                       // cap &lt; 1 + vlen</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, att_write_req(0x10, nullptr, 3, out, sizeof(out)));  // handle_value: null value</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, att_notify(0x10, val, 3, out, 5));                   // handle_value: cap &lt; 3 + vlen</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, att_error_rsp(ATT_OP_READ_REQ, 0x10, 0x0A, out, 4)); // error_rsp: cap &lt; 5</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(val, 3, nullptr, sizeof(out)));        // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(nullptr, 3, out, sizeof(out)));        // len but null value</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(val, 3, out, 2));                      // cap &lt; 1 + vlen</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, att_write_req(0x10, nullptr, 3, out, sizeof(out))); // handle_value: null value</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, att_notify(0x10, val, 3, out, 5));                  // handle_value: cap &lt; 3 + vlen</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, att_error_rsp(AttOp::ATT_OP_READ_REQ, 0x10, 0x0A, out, 4)); // error_rsp: cap &lt; 5</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -2145,12 +2145,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Write Request with value.
     * **Assertions**:
       * <code>Assert true (att_parse(w, sizeof(w), &p))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(ATT_OP_WRITE_REQ, p.opcode);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_WRITE_REQ, p.opcode);</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(0x0031, p.handle);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, p.value_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x01, p.value[0]);</code>
       * <code>Assert true (att_parse(e, sizeof(e), &p))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(ATT_OP_READ_REQ, p.req_op);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_READ_REQ, p.req_op);</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(0x0025, p.handle);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x0A, p.error);</code>
       * <code>Assert true (att_parse(r, sizeof(r), &p))</code>
@@ -17100,9 +17100,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (detws_nts_ke_parse(req, n, collect, &c))</code>
       * <code>Assert equal int (3, c.count)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(NTS_KE_NEXT_PROTOCOL, c.types[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(NTS_KE_AEAD_ALGORITHM, c.types[1]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(NTS_KE_END_OF_MESSAGE, c.types[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Nts::NTS_KE_NEXT_PROTOCOL, c.types[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Nts::NTS_KE_AEAD_ALGORITHM, c.types[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Nts::NTS_KE_END_OF_MESSAGE, c.types[2]);</code>
       * <code>Assert true (c.crit[0])</code>
       * <code>Assert false (detws_nts_ke_parse(bad, sizeof(bad), nullptr, nullptr))</code>
       * <code>Assert false (detws_nts_ke_parse(trunc, sizeof(trunc), nullptr, nullptr))</code>
