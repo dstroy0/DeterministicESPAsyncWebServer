@@ -6,21 +6,27 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`5f35f04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f35f04ace1b4b21cad89ccad67f23378f4010f8))
 - update test report + coverage [skip ci] ([`199b9e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/199b9e843605c6dce7f9a7102c5200f20bd3e149))
 - update CHANGELOG.md [skip ci] ([`b1a5cde`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1a5cde4f69ec73d8f404fa64873cda3eadf99e7))
 
 ### Documentation
 
+- CoAP done on all three dimensions (interop 9/~50, +7 attack families) ([`cc74050`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc740500f99fe53bce98d484835adb9df592000a))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0c195ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c195ee8280c342cdb9b5d556576369f28a0f38f))
 - WebDAV done on all three dimensions (interop 9/~50) ([`a75d76e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a75d76e88e2f5a47121392a4582df80229679537))
 - update ESP32 build footprints [skip ci] ([`1e3a2c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e3a2c944206a6e241435654a7813cf8519a7b83))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`574d859`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/574d859feaf7cbae9859d5070c72d396ed166380))
 
 ### Performance
 
+- CoAP server codec bench (host + device) ([`06c1b66`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06c1b660dffe4c2a7b356714d321a21889030fa2))
 - 207 Multi-Status builder bench (host + device) ([`f0e9d3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0e9d3c723f3b466398907270eda5a7466db986b))
 
 ### Testing
 
+- advanced CoAP attacks (option abuse, block bomb, observe flood) ([`7ba931a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ba931aa927e560832dfb942dbc2f416052cefea))
+- CoAP server (RFC 7252) on UDP/5683 + /bench coap_process op ([`8c55510`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c555108cb252660553907a299340559b306122f))
 - WebDAV advanced attacks (RFC 4918) ([`85ff855`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/85ff855751d1a0c81433cd07d471c71297464337))
 - WebDAV peer (RFC 4918) + enable WebDAV on the rig ([`57b8021`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/57b802106e1d99daab3a00629024b4952db00615))
 
