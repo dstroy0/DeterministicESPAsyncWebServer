@@ -32965,9 +32965,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Build frame guards and 64bit
     * **Assertions**:
-      * <code>Assert equal uint (0, ws_client_build_frame(nullptr, sizeof(out), 0x1, (const uint8_t *)"x", 1, mask))</code>
-      * <code>Assert equal uint (0, ws_client_build_frame(out, sizeof(out), 0x1, (const uint8_t *)"x", 1, nullptr))</code>
-      * <code>Assert equal uint (0, ws_client_build_frame(out, 4, 0x1, (const uint8_t *)"hello", 5, mask))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(</code>
       * <code>Assert true (n &gt; sizeof(s_big_pl))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x80 | 127, s_big_out[1]); // 64-bit length marker</code>
   </details>
