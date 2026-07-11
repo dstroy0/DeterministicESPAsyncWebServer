@@ -107,10 +107,10 @@ static void wr16(uint8_t *p, uint16_t v)
 }
 
 // Build an exception PDU (fc|0x80, code). Always 2 bytes.
-static size_t pdu_exception(uint8_t fc, uint8_t code, uint8_t *out)
+static size_t pdu_exception(ModbusFunction fc, ModbusException code, uint8_t *out)
 {
-    out[0] = (uint8_t)(fc | 0x80);
-    out[1] = code;
+    out[0] = (uint8_t)((uint8_t)fc | 0x80);
+    out[1] = (uint8_t)code;
     return 2;
 }
 
@@ -120,28 +120,29 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
 {
     if (pdu_len < 1)
         return 0;
-    uint8_t fc = pdu[0];
+    ModbusFunction fc = static_cast<ModbusFunction>(pdu[0]);
 
     // Dispatch on the function code; each case validates its own request length and
     // address/quantity range, replying with the data or a Modbus exception PDU.
     switch (fc)
     {
     // FC1/FC2: read up to 2000 single-bit coils / discrete inputs, packed 8 per byte.
-    case MODBUS_FC_READ_COILS:
-    case MODBUS_FC_READ_DISCRETE_INPUTS: {
+    case ModbusFunction::MODBUS_FC_READ_COILS:
+    case ModbusFunction::MODBUS_FC_READ_DISCRETE_INPUTS: {
         if (pdu_len < 5)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         uint16_t start = rd16(pdu + 1), qty = rd16(pdu + 3);
-        uint16_t limit = (fc == MODBUS_FC_READ_COILS) ? DETWS_MODBUS_COILS : DETWS_MODBUS_DISCRETE_INPUTS;
-        const uint8_t *src = (fc == MODBUS_FC_READ_COILS) ? s_modbus.coils : s_modbus.discrete;
+        uint16_t limit =
+            (fc == ModbusFunction::MODBUS_FC_READ_COILS) ? DETWS_MODBUS_COILS : DETWS_MODBUS_DISCRETE_INPUTS;
+        const uint8_t *src = (fc == ModbusFunction::MODBUS_FC_READ_COILS) ? s_modbus.coils : s_modbus.discrete;
         if (qty < 1 || qty > 2000)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         if ((uint32_t)start + qty > limit)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
         uint8_t bytes = (uint8_t)((qty + 7) / 8);
         if ((size_t)2 + bytes > out_cap)
             return 0;
-        out[0] = fc;
+        out[0] = (uint8_t)fc;
         out[1] = bytes;
         memset(out + 2, 0, bytes);
         for (uint16_t i = 0; i < qty; i++)
@@ -151,21 +152,22 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
     }
 
     // FC3/FC4: read up to 125 16-bit holding / input registers, big-endian.
-    case MODBUS_FC_READ_HOLDING_REGS:
-    case MODBUS_FC_READ_INPUT_REGS: {
+    case ModbusFunction::MODBUS_FC_READ_HOLDING_REGS:
+    case ModbusFunction::MODBUS_FC_READ_INPUT_REGS: {
         if (pdu_len < 5)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         uint16_t start = rd16(pdu + 1), qty = rd16(pdu + 3);
-        uint16_t limit = (fc == MODBUS_FC_READ_HOLDING_REGS) ? DETWS_MODBUS_HOLDING_REGS : DETWS_MODBUS_INPUT_REGS;
-        const uint16_t *src = (fc == MODBUS_FC_READ_HOLDING_REGS) ? s_modbus.holding : s_modbus.input;
+        uint16_t limit =
+            (fc == ModbusFunction::MODBUS_FC_READ_HOLDING_REGS) ? DETWS_MODBUS_HOLDING_REGS : DETWS_MODBUS_INPUT_REGS;
+        const uint16_t *src = (fc == ModbusFunction::MODBUS_FC_READ_HOLDING_REGS) ? s_modbus.holding : s_modbus.input;
         if (qty < 1 || qty > 125)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         if ((uint32_t)start + qty > limit)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
         uint8_t bytes = (uint8_t)(qty * 2);
         if ((size_t)2 + bytes > out_cap)
             return 0;
-        out[0] = fc;
+        out[0] = (uint8_t)fc;
         out[1] = bytes;
         for (uint16_t i = 0; i < qty; i++)
             wr16(out + 2 + i * 2, src[start + i]);
@@ -173,17 +175,17 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
     }
 
     // FC5: write one coil (value 0xFF00 = on, 0x0000 = off); echo the request back.
-    case MODBUS_FC_WRITE_SINGLE_COIL: {
+    case ModbusFunction::MODBUS_FC_WRITE_SINGLE_COIL: {
         if (pdu_len < 5)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         uint16_t addr = rd16(pdu + 1), value = rd16(pdu + 3);
         if (value != 0x0000 && value != 0xFF00)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         if (addr >= DETWS_MODBUS_COILS)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
         bit_set(s_modbus.coils, addr, value == 0xFF00);
         if (s_modbus.write_cb)
-            s_modbus.write_cb(fc, addr, 1);
+            s_modbus.write_cb((uint8_t)fc, addr, 1);
         if (out_cap < 5)
             return 0;
         memcpy(out, pdu, 5); // echo request
@@ -191,15 +193,15 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
     }
 
     // FC6: write one holding register; echo the request back.
-    case MODBUS_FC_WRITE_SINGLE_REG: {
+    case ModbusFunction::MODBUS_FC_WRITE_SINGLE_REG: {
         if (pdu_len < 5)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         uint16_t addr = rd16(pdu + 1), value = rd16(pdu + 3);
         if (addr >= DETWS_MODBUS_HOLDING_REGS)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
         s_modbus.holding[addr] = value;
         if (s_modbus.write_cb)
-            s_modbus.write_cb(fc, addr, 1);
+            s_modbus.write_cb((uint8_t)fc, addr, 1);
         if (out_cap < 5)
             return 0;
         memcpy(out, pdu, 5);
@@ -207,47 +209,47 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
     }
 
     // FC15: write up to 1968 coils from a packed bitfield; reply start + quantity.
-    case MODBUS_FC_WRITE_MULTIPLE_COILS: {
+    case ModbusFunction::MODBUS_FC_WRITE_MULTIPLE_COILS: {
         if (pdu_len < 6)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         uint16_t start = rd16(pdu + 1), qty = rd16(pdu + 3);
         uint8_t bc = pdu[5];
         if (qty < 1 || qty > 1968 || bc != (uint8_t)((qty + 7) / 8) || pdu_len < (size_t)6 + bc)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         if ((uint32_t)start + qty > DETWS_MODBUS_COILS)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
         for (uint16_t i = 0; i < qty; i++)
         {
             bool v = (pdu[6 + (i >> 3)] >> (i & 7)) & 1u;
             bit_set(s_modbus.coils, (uint16_t)(start + i), v);
         }
         if (s_modbus.write_cb)
-            s_modbus.write_cb(fc, start, qty);
+            s_modbus.write_cb((uint8_t)fc, start, qty);
         if (out_cap < 5)
             return 0;
-        out[0] = fc;
+        out[0] = (uint8_t)fc;
         wr16(out + 1, start);
         wr16(out + 3, qty);
         return 5;
     }
 
     // FC16: write up to 123 holding registers; reply start + quantity.
-    case MODBUS_FC_WRITE_MULTIPLE_REGS: {
+    case ModbusFunction::MODBUS_FC_WRITE_MULTIPLE_REGS: {
         if (pdu_len < 6)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         uint16_t start = rd16(pdu + 1), qty = rd16(pdu + 3);
         uint8_t bc = pdu[5];
         if (qty < 1 || qty > 123 || bc != (uint8_t)(qty * 2) || pdu_len < (size_t)6 + bc)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_VALUE, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         if ((uint32_t)start + qty > DETWS_MODBUS_HOLDING_REGS)
-            return pdu_exception(fc, MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
+            return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
         for (uint16_t i = 0; i < qty; i++)
             s_modbus.holding[start + i] = rd16(pdu + 6 + i * 2);
         if (s_modbus.write_cb)
-            s_modbus.write_cb(fc, start, qty);
+            s_modbus.write_cb((uint8_t)fc, start, qty);
         if (out_cap < 5)
             return 0;
-        out[0] = fc;
+        out[0] = (uint8_t)fc;
         wr16(out + 1, start);
         wr16(out + 3, qty);
         return 5;
@@ -255,7 +257,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
 
     // Any unsupported function code: reply with the ILLEGAL FUNCTION exception.
     default:
-        return pdu_exception(fc, MODBUS_EX_ILLEGAL_FUNCTION, out);
+        return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_FUNCTION, out);
     }
 }
 

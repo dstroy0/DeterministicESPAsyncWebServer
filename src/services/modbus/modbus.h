@@ -39,7 +39,7 @@
 #if DETWS_ENABLE_MODBUS
 
 /** @brief Modbus function codes (Modbus Application Protocol §6). */
-enum ModbusFunction
+enum class ModbusFunction : uint8_t
 {
     MODBUS_FC_READ_COILS = 0x01,
     MODBUS_FC_READ_DISCRETE_INPUTS = 0x02,
@@ -52,7 +52,7 @@ enum ModbusFunction
 };
 
 /** @brief Modbus exception codes (Modbus Application Protocol §7). */
-enum ModbusException
+enum class ModbusException : uint8_t
 {
     MODBUS_EX_ILLEGAL_FUNCTION = 0x01,
     MODBUS_EX_ILLEGAL_DATA_ADDRESS = 0x02,

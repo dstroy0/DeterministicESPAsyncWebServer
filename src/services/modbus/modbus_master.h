@@ -30,7 +30,7 @@
 /**
  * @brief Build a read-request ADU (FC 0x03 holding or 0x04 input registers).
  *
- * @param fc     MODBUS_FC_READ_HOLDING_REGS (0x03) or MODBUS_FC_READ_INPUT_REGS (0x04).
+ * @param fc     ModbusFunction::MODBUS_FC_READ_HOLDING_REGS (0x03) or ModbusFunction::MODBUS_FC_READ_INPUT_REGS (0x04).
  * @param txid   transaction id echoed by the slave (caller's correlation token).
  * @param unit   unit / slave id.
  * @param start  first register address.

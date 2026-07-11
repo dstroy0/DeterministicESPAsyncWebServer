@@ -51,7 +51,8 @@ void setup()
     // /scan: read holding registers 0..3 via the master codec (self-scan).
     server.on("/scan", HTTP_GET, [](uint8_t id, HttpReq *) {
         uint8_t req[16], resp[MODBUS_ADU_MAX];
-        size_t rn = modbus_build_read(MODBUS_FC_READ_HOLDING_REGS, 1, 1, 0, 3, req, sizeof(req));
+        size_t rn =
+            modbus_build_read((uint8_t)ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1, 1, 0, 3, req, sizeof(req));
         size_t pn = modbus_process_adu(req, rn, resp, sizeof(resp));
         uint16_t regs[3];
         uint8_t ex = 0;

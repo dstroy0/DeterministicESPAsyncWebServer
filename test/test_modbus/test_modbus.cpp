@@ -171,7 +171,7 @@ void test_exception_illegal_function()
     size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_size_t(7 + 2, n);
     TEST_ASSERT_EQUAL_UINT8(0x7F | 0x80, resp[7]);
-    TEST_ASSERT_EQUAL_UINT8(MODBUS_EX_ILLEGAL_FUNCTION, resp[8]);
+    TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_FUNCTION, resp[8]);
 }
 
 void test_exception_illegal_address()
@@ -183,7 +183,7 @@ void test_exception_illegal_address()
     size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_size_t(7 + 2, n);
     TEST_ASSERT_EQUAL_UINT8(0x03 | 0x80, resp[7]);
-    TEST_ASSERT_EQUAL_UINT8(MODBUS_EX_ILLEGAL_DATA_ADDRESS, resp[8]);
+    TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, resp[8]);
 }
 
 void test_exception_illegal_value()
@@ -193,7 +193,7 @@ void test_exception_illegal_value()
     size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
     size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_size_t(7 + 2, n);
-    TEST_ASSERT_EQUAL_UINT8(MODBUS_EX_ILLEGAL_DATA_VALUE, resp[8]);
+    TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, resp[8]);
 }
 
 void test_write_single_coil_bad_value()
@@ -203,7 +203,7 @@ void test_write_single_coil_bad_value()
     size_t rl = build_adu(req, 7, 1, pdu, sizeof(pdu));
     size_t n = modbus_process_adu(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_UINT8(0x05 | 0x80, resp[7]);
-    TEST_ASSERT_EQUAL_UINT8(MODBUS_EX_ILLEGAL_DATA_VALUE, resp[8]);
+    TEST_ASSERT_EQUAL_UINT8(ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, resp[8]);
     TEST_ASSERT_EQUAL_INT(0, g_wcalls); // not applied
 }
 
@@ -270,7 +270,8 @@ void test_discrete_and_input_accessors()
 // and an out-of-range address.
 void test_exceptions_per_function()
 {
-    const uint8_t EV = MODBUS_EX_ILLEGAL_DATA_VALUE, EA = MODBUS_EX_ILLEGAL_DATA_ADDRESS;
+    const uint8_t EV = (uint8_t)ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE,
+                  EA = (uint8_t)ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS;
     // FC1/FC2 read coils/discrete.
     const uint8_t fc1_short[] = {0x01, 0x00, 0x00};
     assert_exception(fc1_short, 3, 0x01, EV); // < 5
