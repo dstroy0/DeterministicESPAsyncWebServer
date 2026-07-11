@@ -499,7 +499,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | Core  | `PROMISC`         |            11.5 KB |         < 0.5 KB |
 | Core  | `IPV6`            |             0.8 KB |         < 0.5 KB |
 | L4    | `PER_IP_THROTTLE` |           < 0.5 KB |           0.6 KB |
-| L5    | `SSH`             |       66.6-66.7 KB |     21.8-21.9 KB |
+| L5    | `SSH`             |       66.6-67.3 KB |     21.8-21.9 KB |
 | L5    | `TELNET`          |             0.6 KB |           0.6 KB |
 | L6    | `TLS`             |           100.1 KB |          49.9 KB |
 | L6    | `WS_DEFLATE`      |         2.9-7.9 KB |       8.0-9.5 KB |

@@ -24228,12 +24228,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: ProtocolId + StructureSize + Command at their offsets
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(64, smb2_build_header(buf, sizeof(buf), SMB2_TREE_CONNECT, 8, 0x1122334455667788ULL,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(64, smb2_build_header(buf, sizeof(buf), Smb2Command::SMB2_TREE_CONNECT, 8,</code>
       * <code>Assert equal memory (pid, buf, 4)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(64, r16(buf + 4));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_TREE_CONNECT, r16(buf + 12));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_TREE_CONNECT, r16(buf + 12));</code>
       * <code>Assert true (smb2_parse_header(buf, sizeof(buf), &h))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_TREE_CONNECT, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_TREE_CONNECT, h.command);</code>
       * <code>TEST_ASSERT_EQUAL_HEX64(0x1122334455667788ULL, h.message_id);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0xABCD, h.tree_id);</code>
       * <code>TEST_ASSERT_EQUAL_HEX64(0x99AABBCCDDEEFF00ULL, h.session_id);</code>
@@ -24256,15 +24256,15 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(64 + 36 + 8, n); // header + fixed body + 4 dialects</code>
       * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_NEGOTIATE, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_NEGOTIATE, h.command);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(36, r16(b + 0)); // StructureSize</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(4, r16(b + 2));  // DialectCount</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_NEGOTIATE_SIGNING_ENABLED, r16(b + 4));</code>
       * <code>Assert equal memory (gid, b + 12, 16)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0202, r16(b + 36));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0210, r16(b + 38));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0300, r16(b + 40));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0302, r16(b + 42));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0202, r16(b + 36));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0210, r16(b + 38));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0300, r16(b + 40));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0302, r16(b + 42));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_build_negotiate(buf, 100, gid, 0));</code>
   </details>
 
@@ -24274,7 +24274,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: an empty security buffer -> nullptr, still valid
     * **Assertions**:
       * <code>Assert true (smb2_parse_negotiate_response(m, n, &r))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0300, r.dialect);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0300, r.dialect);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_NEGOTIATE_SIGNING_REQUIRED, r.security_mode);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x00080000, r.max_read);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x00040000, r.max_write);</code>
@@ -24304,7 +24304,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(64 + 24 + 40, n);</code>
       * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_SESSION_SETUP, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_SESSION_SETUP, h.command);</code>
       * <code>TEST_ASSERT_EQUAL_HEX64(0xDEADBEEFULL, h.session_id); // echoes the server SessionId</code>
       * <code>TEST_ASSERT_EQUAL_HEX64(7, h.message_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(25, r16(b + 0)); // StructureSize</code>
@@ -24364,7 +24364,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(64 + 8 + sizeof(path), n);</code>
       * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_TREE_CONNECT, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_TREE_CONNECT, h.command);</code>
       * <code>TEST_ASSERT_EQUAL_HEX64(0xABCDULL, h.session_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(9, r16(b + 0));            // StructureSize</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(72, r16(b + 4));           // PathOffset</code>
@@ -24395,7 +24395,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(64 + 56 + sizeof(name), n);</code>
       * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_CREATE, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_CREATE, h.command);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x777, h.tree_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(57, r16(b + 0)); // StructureSize</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2, r32(b + 4));  // ImpersonationLevel</code>
@@ -24431,7 +24431,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(64 + 24, n);</code>
       * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_CLOSE, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_CLOSE, h.command);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(24, r16(b + 0));                             // StructureSize</code>
       * <code>Assert equal memory (fid, b + 8, 16)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, smb2_build_close(buf, 80, 4, 0, 0, fid)); // overflow</code>
@@ -24448,7 +24448,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(64 + 48 + 1, n);</code>
       * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_READ, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_READ, h.command);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x777, h.tree_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(49, r16(b + 0));                                   // StructureSize</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(80, b[2]);                                           // Padding = header + 16</code>
@@ -24482,7 +24482,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(64 + 48 + sizeof(data), n);</code>
       * <code>Assert true (smb2_parse_header(buf, n, &h))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(SMB2_WRITE, h.command);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_WRITE, h.command);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(49, r16(b + 0));           // StructureSize</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(112, r16(b + 2));          // DataOffset</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(sizeof(data), r32(b + 4)); // Length</code>
@@ -24514,14 +24514,14 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: NEGOTIATE + 2x SESSION_SETUP + TREE_CONNECT + CREATE = 5 requests
     * **Assertions**:
-      * <code>Assert equal int (SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
       * <code>TEST_ASSERT_EQUAL_HEX64(m.session_id, h.session_id);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(m.tree_id, h.tree_id);</code>
       * <code>Assert equal memory (m.file_id, h.file_id, 16)</code>
       * <code>TEST_ASSERT_EQUAL_HEX64(4096, h.file_size);</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(5, h.next_message_id);</code>
       * <code>Assert equal int (5, m.req_count)</code>
-      * <code>Assert equal int (SMB_OK, smb_close(&h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_close(&h, mock_send, mock_recv, &m))</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(6, h.next_message_id);</code>
       * <code>Assert equal int (6, m.req_count)</code>
   </details>
@@ -24531,7 +24531,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Auth failure
     * **Assertions**:
-      * <code>Assert equal int (SMB_ERR_AUTH, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_AUTH, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24539,7 +24539,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Bad share
     * **Assertions**:
-      * <code>Assert equal int (SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24547,7 +24547,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Create not found
     * **Assertions**:
-      * <code>Assert equal int (SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24555,7 +24555,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Io error
     * **Assertions**:
-      * <code>Assert equal int (SMB_ERR_IO, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_IO, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24563,8 +24563,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Arg validation
     * **Assertions**:
-      * <code>Assert equal int (SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
-      * <code>Assert equal int (SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24572,8 +24572,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Read file
     * **Assertions**:
-      * <code>Assert equal int (SMB_OK, open_ok(&m, &cfg, &h))</code>
-      * <code>Assert equal int (SMB_OK, smb_read(&h, 0, buf, 2000, &got, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, open_ok(&m, &cfg, &h))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_read(&h, 0, buf, 2000, &got, mock_send, mock_recv, &m))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2000, got);</code>
       * <code>Assert equal memory (m.file_data, buf, 2000)</code>
   </details>
@@ -24583,8 +24583,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Read past eof
     * **Assertions**:
-      * <code>Assert equal int (SMB_OK, open_ok(&m, &cfg, &h))</code>
-      * <code>Assert equal int (SMB_OK, smb_read(&h, 0, buf, sizeof(buf), &got, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, open_ok(&m, &cfg, &h))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_read(&h, 0, buf, sizeof(buf), &got, mock_send, mock_recv, &m))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(100, got);</code>
       * <code>Assert equal memory (m.file_data, buf, 100)</code>
   </details>
@@ -24594,8 +24594,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Write file
     * **Assertions**:
-      * <code>Assert equal int (SMB_OK, open_ok(&m, &cfg, &h))</code>
-      * <code>Assert equal int (SMB_OK, smb_write(&h, 0, data, sizeof(data), &wrote, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, open_ok(&m, &cfg, &h))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_write(&h, 0, data, sizeof(data), &wrote, mock_send, mock_recv, &m))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2000, wrote);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2000, m.file_data_len);</code>
       * <code>Assert equal memory (data, m.file_data, 2000)</code>
@@ -24607,9 +24607,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Write then read roundtrip
     * **Assertions**:
-      * <code>Assert equal int (SMB_OK, open_ok(&m, &cfg, &h))</code>
-      * <code>Assert equal int (SMB_OK, smb_write(&h, 0, data, sizeof(data), &wrote, mock_send, mock_recv, &m))</code>
-      * <code>Assert equal int (SMB_OK, smb_read(&h, 0, back, sizeof(back), &got, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, open_ok(&m, &cfg, &h))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_write(&h, 0, data, sizeof(data), &wrote, mock_send, mock_recv, &m))</code>
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_read(&h, 0, back, sizeof(back), &got, mock_send, mock_recv, &m))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1500, got);</code>
       * <code>Assert equal memory (data, back, 1500)</code>
   </details>
