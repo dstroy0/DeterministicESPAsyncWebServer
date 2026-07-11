@@ -239,6 +239,27 @@ the device figure is the rig `/bench` CCOUNT op (N=20000 warm), including the ha
   no connection setup. UDP + the fixed resource table make CoAP the cheapest of the request paths per
   transaction on this device.
 
+### SNMP agent codec (DETWS_ENABLE_SNMP)
+
+`snmp_agent_process()` is the whole SNMP v1/v2c path (RFC 1157/3416): BER-decode the message + PDU,
+walk the MIB against the varbind OIDs, BER-encode the reply. Pure (no sockets, no heap). Host figures
+from [`perf/bench_snmp.cpp`](../perf/bench_snmp.cpp); the device figure is the rig `/bench` CCOUNT op.
+
+| Operation                           | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ----------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `snmp_agent_process` GET sysDescr.0 |      673.9 |      72.7 |            7005 |          29187 |
+| `snmp_agent_process` GETNEXT (walk) |      799.2 |      58.8 |               - |              - |
+
+- A GET round trip is ~29 us on the S3 - the heaviest of the request-path codecs, because BER is a
+  tag-length-value format decoded and re-encoded field by field (vs CoAP's simpler byte-oriented options
+  and HTTP's text parse). GETNEXT (the snmpwalk step) costs a bit more again for the lexicographic MIB
+  successor search. Still well under the datagram inter-arrival time of any realistic poll, so BER is not
+  a bottleneck for a monitored device.
+- **Amplification note (security):** the pentest `snmp_getbulk_amplification` measured a GETBULK with
+  max-repetitions=10000 producing only ~9.7x (40 B request -> 386 B reply) - the constrained agent caps
+  the reply at its small MIB + fixed tx buffer, so it is **not a usable reflection/amplification vector**
+  (unlike a full SNMP daemon over a large MIB). That bound is a determinism property, not a config knob.
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
