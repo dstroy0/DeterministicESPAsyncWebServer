@@ -26,24 +26,24 @@
 #if DETWS_ENABLE_BLE_GATT
 
 /** @brief ATT opcodes (subset). */
-enum
+struct AttOp
 {
-    ATT_OP_ERROR_RSP = 0x01,       ///< [op][req-op][handle:2][error]
-    ATT_OP_READ_REQ = 0x0A,        ///< [op][handle:2]
-    ATT_OP_READ_RSP = 0x0B,        ///< [op][value...]
-    ATT_OP_WRITE_REQ = 0x12,       ///< [op][handle:2][value...]
-    ATT_OP_WRITE_RSP = 0x13,       ///< [op]
-    ATT_OP_HANDLE_VALUE_NTF = 0x1B ///< [op][handle:2][value...]
+    static constexpr uint8_t ATT_OP_ERROR_RSP = 0x01;        ///< [op][req-op][handle:2][error]
+    static constexpr uint8_t ATT_OP_READ_REQ = 0x0A;         ///< [op][handle:2]
+    static constexpr uint8_t ATT_OP_READ_RSP = 0x0B;         ///< [op][value...]
+    static constexpr uint8_t ATT_OP_WRITE_REQ = 0x12;        ///< [op][handle:2][value...]
+    static constexpr uint8_t ATT_OP_WRITE_RSP = 0x13;        ///< [op]
+    static constexpr uint8_t ATT_OP_HANDLE_VALUE_NTF = 0x1B; ///< [op][handle:2][value...]
 };
 
 /** @brief GATT characteristic property bits (declaration properties byte). */
-enum
+struct GattProp
 {
-    GATT_PROP_READ = 0x02,
-    GATT_PROP_WRITE_NR = 0x04, ///< write without response.
-    GATT_PROP_WRITE = 0x08,
-    GATT_PROP_NOTIFY = 0x10,
-    GATT_PROP_INDICATE = 0x20
+    static constexpr uint8_t GATT_PROP_READ = 0x02;
+    static constexpr uint8_t GATT_PROP_WRITE_NR = 0x04; ///< write without response.
+    static constexpr uint8_t GATT_PROP_WRITE = 0x08;
+    static constexpr uint8_t GATT_PROP_NOTIFY = 0x10;
+    static constexpr uint8_t GATT_PROP_INDICATE = 0x20;
 };
 
 /** @brief Build a Read Request: [0x0A][handle:2 LE]. @return 3, or 0 on overflow. */

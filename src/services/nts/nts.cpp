@@ -31,7 +31,7 @@ size_t detws_nts_ke_record(bool critical, uint16_t type, const uint8_t *body, si
     size_t n = 4 + body_len;
     if (n > cap)
         return 0;
-    put_u16(out, (uint16_t)((type & 0x7FFF) | (critical ? NTS_KE_CRITICAL : 0)));
+    put_u16(out, (uint16_t)((type & 0x7FFF) | (critical ? Nts::NTS_KE_CRITICAL : 0)));
     put_u16(out + 2, (uint16_t)body_len);
     if (body_len)
         memcpy(out + 4, body, body_len);
@@ -41,20 +41,20 @@ size_t detws_nts_ke_record(bool critical, uint16_t type, const uint8_t *body, si
 size_t detws_nts_ke_request(uint8_t *out, size_t cap)
 {
     uint8_t proto[2];
-    put_u16(proto, NTS_NEXT_PROTO_NTPV4);
+    put_u16(proto, Nts::NTS_NEXT_PROTO_NTPV4);
     uint8_t aead[2];
-    put_u16(aead, NTS_AEAD_AES_SIV_CMAC_256);
+    put_u16(aead, Nts::NTS_AEAD_AES_SIV_CMAC_256);
 
     size_t n = 0, r;
-    r = detws_nts_ke_record(true, NTS_KE_NEXT_PROTOCOL, proto, 2, out + n, cap - n);
+    r = detws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, proto, 2, out + n, cap - n);
     if (!r)
         return 0;
     n += r;
-    r = detws_nts_ke_record(true, NTS_KE_AEAD_ALGORITHM, aead, 2, out + n, cap - n);
+    r = detws_nts_ke_record(true, Nts::NTS_KE_AEAD_ALGORITHM, aead, 2, out + n, cap - n);
     if (!r)
         return 0;
     n += r;
-    r = detws_nts_ke_record(true, NTS_KE_END_OF_MESSAGE, nullptr, 0, out + n, cap - n);
+    r = detws_nts_ke_record(true, Nts::NTS_KE_END_OF_MESSAGE, nullptr, 0, out + n, cap - n);
     if (!r)
         return 0;
     n += r;
@@ -69,14 +69,14 @@ bool detws_nts_ke_parse(const uint8_t *buf, size_t len, DetwsNtsKeCb cb, void *a
     {
         uint16_t tf = get_u16(buf + off);
         uint16_t blen = get_u16(buf + off + 2);
-        bool critical = (tf & NTS_KE_CRITICAL) != 0;
+        bool critical = (tf & Nts::NTS_KE_CRITICAL) != 0;
         uint16_t type = (uint16_t)(tf & 0x7FFF);
         if (off + 4 + blen > len)
             return false; // truncated body
         if (cb)
             cb(critical, type, blen ? (buf + off + 4) : nullptr, blen, arg);
         off += 4 + blen;
-        if (type == NTS_KE_END_OF_MESSAGE)
+        if (type == Nts::NTS_KE_END_OF_MESSAGE)
         {
             saw_end = true;
             break;
@@ -105,12 +105,12 @@ size_t detws_nts_ef(uint16_t field_type, const uint8_t *value, size_t value_len,
 
 size_t detws_nts_ef_unique_id(const uint8_t *nonce, size_t nonce_len, uint8_t *out, size_t cap)
 {
-    return detws_nts_ef(NTS_EF_UNIQUE_IDENTIFIER, nonce, nonce_len, out, cap);
+    return detws_nts_ef(NtsEf::NTS_EF_UNIQUE_IDENTIFIER, nonce, nonce_len, out, cap);
 }
 
 size_t detws_nts_ef_cookie(const uint8_t *cookie, size_t cookie_len, uint8_t *out, size_t cap)
 {
-    return detws_nts_ef(NTS_EF_COOKIE, cookie, cookie_len, out, cap);
+    return detws_nts_ef(NtsEf::NTS_EF_COOKIE, cookie, cookie_len, out, cap);
 }
 
 #endif // DETWS_ENABLE_NTS

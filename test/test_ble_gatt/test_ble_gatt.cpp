@@ -19,24 +19,24 @@ void test_build_pdus(void)
     uint8_t buf[16];
     // Read Request handle 0x0025.
     TEST_ASSERT_EQUAL_size_t(3, att_read_req(0x0025, buf, sizeof(buf)));
-    TEST_ASSERT_EQUAL_HEX8(ATT_OP_READ_REQ, buf[0]);
+    TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_READ_REQ, buf[0]);
     TEST_ASSERT_EQUAL_HEX8(0x25, buf[1]); // LE low
     TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]); // LE high
     // Write Request.
     const uint8_t val[3] = {0xDE, 0xAD, 0xBE};
     size_t n = att_write_req(0x0031, val, 3, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_size_t(6, n);
-    TEST_ASSERT_EQUAL_HEX8(ATT_OP_WRITE_REQ, buf[0]);
+    TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_WRITE_REQ, buf[0]);
     TEST_ASSERT_EQUAL_HEX8(0x31, buf[1]);
     TEST_ASSERT_EQUAL_MEMORY(val, buf + 3, 3);
     // Notification.
     n = att_notify(0x0031, val, 3, buf, sizeof(buf));
-    TEST_ASSERT_EQUAL_HEX8(ATT_OP_HANDLE_VALUE_NTF, buf[0]);
+    TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_HANDLE_VALUE_NTF, buf[0]);
     // Error Response.
-    n = att_error_rsp(ATT_OP_READ_REQ, 0x0025, 0x0A, buf, sizeof(buf)); // 0x0A = Attribute Not Found
+    n = att_error_rsp(AttOp::ATT_OP_READ_REQ, 0x0025, 0x0A, buf, sizeof(buf)); // 0x0A = Attribute Not Found
     TEST_ASSERT_EQUAL_size_t(5, n);
-    TEST_ASSERT_EQUAL_HEX8(ATT_OP_ERROR_RSP, buf[0]);
-    TEST_ASSERT_EQUAL_HEX8(ATT_OP_READ_REQ, buf[1]);
+    TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_ERROR_RSP, buf[0]);
+    TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_READ_REQ, buf[1]);
     TEST_ASSERT_EQUAL_HEX8(0x0A, buf[4]);
 }
 
@@ -50,31 +50,32 @@ void test_parse(void)
 {
     AttPdu p;
     // Write Request with value.
-    const uint8_t w[] = {ATT_OP_WRITE_REQ, 0x31, 0x00, 0x01, 0x02};
+    const uint8_t w[] = {AttOp::ATT_OP_WRITE_REQ, 0x31, 0x00, 0x01, 0x02};
     TEST_ASSERT_TRUE(att_parse(w, sizeof(w), &p));
-    TEST_ASSERT_EQUAL_HEX8(ATT_OP_WRITE_REQ, p.opcode);
+    TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_WRITE_REQ, p.opcode);
     TEST_ASSERT_EQUAL_HEX16(0x0031, p.handle);
     TEST_ASSERT_EQUAL_size_t(2, p.value_len);
     TEST_ASSERT_EQUAL_HEX8(0x01, p.value[0]);
     // Error Response.
-    const uint8_t e[] = {ATT_OP_ERROR_RSP, ATT_OP_READ_REQ, 0x25, 0x00, 0x0A};
+    const uint8_t e[] = {AttOp::ATT_OP_ERROR_RSP, AttOp::ATT_OP_READ_REQ, 0x25, 0x00, 0x0A};
     TEST_ASSERT_TRUE(att_parse(e, sizeof(e), &p));
-    TEST_ASSERT_EQUAL_HEX8(ATT_OP_READ_REQ, p.req_op);
+    TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_READ_REQ, p.req_op);
     TEST_ASSERT_EQUAL_HEX16(0x0025, p.handle);
     TEST_ASSERT_EQUAL_HEX8(0x0A, p.error);
     // Read Response value.
-    const uint8_t r[] = {ATT_OP_READ_RSP, 0xAA, 0xBB};
+    const uint8_t r[] = {AttOp::ATT_OP_READ_RSP, 0xAA, 0xBB};
     TEST_ASSERT_TRUE(att_parse(r, sizeof(r), &p));
     TEST_ASSERT_EQUAL_size_t(2, p.value_len);
     // Truncated write req -> false.
-    const uint8_t bad[] = {ATT_OP_WRITE_REQ, 0x31};
+    const uint8_t bad[] = {AttOp::ATT_OP_WRITE_REQ, 0x31};
     TEST_ASSERT_FALSE(att_parse(bad, sizeof(bad), &p));
 }
 
 void test_char_json(void)
 {
-    GattChar chars[2] = {{0x0025, 0x2A37, GATT_PROP_READ | GATT_PROP_NOTIFY}, // Heart Rate Measurement
-                         {0x0031, 0x2A6E, GATT_PROP_READ}};                   // Temperature
+    GattChar chars[2] = {
+        {0x0025, 0x2A37, GattProp::GATT_PROP_READ | GattProp::GATT_PROP_NOTIFY}, // Heart Rate Measurement
+        {0x0031, 0x2A6E, GattProp::GATT_PROP_READ}};                             // Temperature
     char buf[160];
     size_t n = gatt_char_json(chars, 2, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
@@ -95,14 +96,14 @@ void test_read_rsp_and_build_guards(void)
     const uint8_t val[3] = {1, 2, 3};
     size_t n = att_read_rsp(val, 3, out, sizeof(out));
     TEST_ASSERT_EQUAL_size_t(4, n);
-    TEST_ASSERT_EQUAL_HEX8(ATT_OP_READ_RSP, out[0]);
+    TEST_ASSERT_EQUAL_HEX8(AttOp::ATT_OP_READ_RSP, out[0]);
     TEST_ASSERT_EQUAL_MEMORY(val, out + 1, 3);
-    TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(val, 3, nullptr, sizeof(out)));         // null out
-    TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(nullptr, 3, out, sizeof(out)));         // len but null value
-    TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(val, 3, out, 2));                       // cap < 1 + vlen
-    TEST_ASSERT_EQUAL_size_t(0, att_write_req(0x10, nullptr, 3, out, sizeof(out)));  // handle_value: null value
-    TEST_ASSERT_EQUAL_size_t(0, att_notify(0x10, val, 3, out, 5));                   // handle_value: cap < 3 + vlen
-    TEST_ASSERT_EQUAL_size_t(0, att_error_rsp(ATT_OP_READ_REQ, 0x10, 0x0A, out, 4)); // error_rsp: cap < 5
+    TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(val, 3, nullptr, sizeof(out)));        // null out
+    TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(nullptr, 3, out, sizeof(out)));        // len but null value
+    TEST_ASSERT_EQUAL_size_t(0, att_read_rsp(val, 3, out, 2));                      // cap < 1 + vlen
+    TEST_ASSERT_EQUAL_size_t(0, att_write_req(0x10, nullptr, 3, out, sizeof(out))); // handle_value: null value
+    TEST_ASSERT_EQUAL_size_t(0, att_notify(0x10, val, 3, out, 5));                  // handle_value: cap < 3 + vlen
+    TEST_ASSERT_EQUAL_size_t(0, att_error_rsp(AttOp::ATT_OP_READ_REQ, 0x10, 0x0A, out, 4)); // error_rsp: cap < 5
 }
 
 // att_parse guards (null / empty / truncated) and the remaining opcodes.
@@ -112,14 +113,14 @@ void test_parse_guards_and_opcodes(void)
     TEST_ASSERT_FALSE(att_parse(nullptr, 5, &p)); // null pdu
     uint8_t z = 0;
     TEST_ASSERT_FALSE(att_parse(&z, 0, &p)); // len 0
-    const uint8_t err_trunc[3] = {ATT_OP_ERROR_RSP, ATT_OP_READ_REQ, 0x25};
+    const uint8_t err_trunc[3] = {AttOp::ATT_OP_ERROR_RSP, AttOp::ATT_OP_READ_REQ, 0x25};
     TEST_ASSERT_FALSE(att_parse(err_trunc, sizeof(err_trunc), &p)); // ERROR_RSP len < 5
-    const uint8_t rr[3] = {ATT_OP_READ_REQ, 0x25, 0x00};
+    const uint8_t rr[3] = {AttOp::ATT_OP_READ_REQ, 0x25, 0x00};
     TEST_ASSERT_TRUE(att_parse(rr, sizeof(rr), &p)); // READ_REQ
     TEST_ASSERT_EQUAL_HEX16(0x0025, p.handle);
-    const uint8_t rr_trunc[2] = {ATT_OP_READ_REQ, 0x25};
+    const uint8_t rr_trunc[2] = {AttOp::ATT_OP_READ_REQ, 0x25};
     TEST_ASSERT_FALSE(att_parse(rr_trunc, sizeof(rr_trunc), &p)); // READ_REQ len < 3
-    const uint8_t wrsp[1] = {ATT_OP_WRITE_RSP};
+    const uint8_t wrsp[1] = {AttOp::ATT_OP_WRITE_RSP};
     TEST_ASSERT_TRUE(att_parse(wrsp, sizeof(wrsp), &p)); // WRITE_RSP: no fields
     const uint8_t unk[2] = {0xFF, 0x01};
     TEST_ASSERT_TRUE(att_parse(unk, sizeof(unk), &p)); // unknown opcode: reported, no fields
@@ -129,7 +130,7 @@ void test_parse_guards_and_opcodes(void)
 // gatt_char_json rejects a null output, a zero cap, and a null array with a nonzero count.
 void test_char_json_guards(void)
 {
-    GattChar c = {0x10, 0x2A00, GATT_PROP_READ};
+    GattChar c = {0x10, 0x2A00, GattProp::GATT_PROP_READ};
     char out[64];
     TEST_ASSERT_EQUAL_size_t(0, gatt_char_json(&c, 1, nullptr, sizeof(out)));
     TEST_ASSERT_EQUAL_size_t(0, gatt_char_json(&c, 1, out, 0));

@@ -18,7 +18,7 @@ void test_ke_record(void)
 {
     uint8_t body[2] = {0x00, 0x00};
     uint8_t out[8];
-    size_t n = detws_nts_ke_record(true, NTS_KE_NEXT_PROTOCOL, body, 2, out, sizeof(out));
+    size_t n = detws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, body, 2, out, sizeof(out));
     const uint8_t expect[] = {0x80, 0x01, 0x00, 0x02, 0x00, 0x00}; // critical|type1, len2, NTPv4
     TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, n);
@@ -62,9 +62,9 @@ void test_ke_parse(void)
     Collected c = {0, {0}, {false}};
     TEST_ASSERT_TRUE(detws_nts_ke_parse(req, n, collect, &c));
     TEST_ASSERT_EQUAL_INT(3, c.count);
-    TEST_ASSERT_EQUAL_UINT16(NTS_KE_NEXT_PROTOCOL, c.types[0]);
-    TEST_ASSERT_EQUAL_UINT16(NTS_KE_AEAD_ALGORITHM, c.types[1]);
-    TEST_ASSERT_EQUAL_UINT16(NTS_KE_END_OF_MESSAGE, c.types[2]);
+    TEST_ASSERT_EQUAL_UINT16(Nts::NTS_KE_NEXT_PROTOCOL, c.types[0]);
+    TEST_ASSERT_EQUAL_UINT16(Nts::NTS_KE_AEAD_ALGORITHM, c.types[1]);
+    TEST_ASSERT_EQUAL_UINT16(Nts::NTS_KE_END_OF_MESSAGE, c.types[2]);
     TEST_ASSERT_TRUE(c.crit[0]);
 
     // No End-of-Message -> not well-formed.
@@ -89,7 +89,7 @@ void test_extension_field_padding(void)
 
     // 5-byte value: 4 + 5 = 9 -> padded to 12, last 3 bytes zeroed.
     uint8_t v[5] = {1, 2, 3, 4, 5};
-    n = detws_nts_ef(NTS_EF_COOKIE, v, 5, out, sizeof(out));
+    n = detws_nts_ef(NtsEf::NTS_EF_COOKIE, v, 5, out, sizeof(out));
     TEST_ASSERT_EQUAL_size_t(12, n);
     TEST_ASSERT_EQUAL_UINT16(12, (uint16_t)((out[2] << 8) | out[3]));
     TEST_ASSERT_EQUAL_HEX8(0x00, out[9]);

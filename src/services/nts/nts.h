@@ -33,28 +33,29 @@
 #if DETWS_ENABLE_NTS
 
 /** @brief NTS-KE record types (RFC 8915 sec 4). The critical bit is 0x8000. */
-enum
+struct Nts
 {
-    NTS_KE_CRITICAL = 0x8000,
-    NTS_KE_END_OF_MESSAGE = 0,
-    NTS_KE_NEXT_PROTOCOL = 1,
-    NTS_KE_ERROR = 2,
-    NTS_KE_WARNING = 3,
-    NTS_KE_AEAD_ALGORITHM = 4,
-    NTS_KE_COOKIE = 5,
-    NTS_KE_NTPV4_SERVER = 6,
-    NTS_KE_NTPV4_PORT = 7,
-    NTS_NEXT_PROTO_NTPV4 = 0,      ///< the only next-protocol defined.
-    NTS_AEAD_AES_SIV_CMAC_256 = 15 ///< the mandatory-to-implement AEAD (RFC 5297 / IANA id 15).
+    static constexpr uint16_t NTS_KE_CRITICAL = 0x8000;
+    static constexpr uint16_t NTS_KE_END_OF_MESSAGE = 0;
+    static constexpr uint16_t NTS_KE_NEXT_PROTOCOL = 1;
+    static constexpr uint16_t NTS_KE_ERROR = 2;
+    static constexpr uint16_t NTS_KE_WARNING = 3;
+    static constexpr uint16_t NTS_KE_AEAD_ALGORITHM = 4;
+    static constexpr uint16_t NTS_KE_COOKIE = 5;
+    static constexpr uint16_t NTS_KE_NTPV4_SERVER = 6;
+    static constexpr uint16_t NTS_KE_NTPV4_PORT = 7;
+    static constexpr uint16_t NTS_NEXT_PROTO_NTPV4 = 0; ///< the only next-protocol defined.
+    static constexpr uint16_t NTS_AEAD_AES_SIV_CMAC_256 =
+        15; ///< the mandatory-to-implement AEAD (RFC 5297 / IANA id 15).
 };
 
 /** @brief NTS NTP extension-field types (RFC 8915 sec 5.3; RFC 7822 EF format). */
-enum
+struct NtsEf
 {
-    NTS_EF_UNIQUE_IDENTIFIER = 0x0104,
-    NTS_EF_COOKIE = 0x0204,
-    NTS_EF_COOKIE_PLACEHOLDER = 0x0304,
-    NTS_EF_AUTH_AND_ENCRYPTED = 0x0404
+    static constexpr uint16_t NTS_EF_UNIQUE_IDENTIFIER = 0x0104;
+    static constexpr uint16_t NTS_EF_COOKIE = 0x0204;
+    static constexpr uint16_t NTS_EF_COOKIE_PLACEHOLDER = 0x0304;
+    static constexpr uint16_t NTS_EF_AUTH_AND_ENCRYPTED = 0x0404;
 };
 
 /** @brief RFC 8915 sec 5.1 TLS exporter label + per-direction context (C2S = 0x0000_0001_00, S2C = ..01). */
