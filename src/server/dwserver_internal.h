@@ -79,4 +79,22 @@ struct SendCtx
 };
 extern SendCtx s_send;
 
+// ---------------------------------------------------------------------------
+// WebSocket / SSE upgrade entry points (defined in server/websocket_sse.cpp, called
+// by the route dispatcher in dwserver.cpp when a matched route is a WS/SSE endpoint).
+// ---------------------------------------------------------------------------
+
+#if DETWS_ENABLE_WEBSOCKET
+/** @brief Perform the RFC 6455 101 handshake and hand the slot to the WS frame parser. */
+bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_connect);
+
+/** @brief Reject an unsupported Sec-WebSocket-Version with a 426 (RFC 6455 4.2.1) and close. */
+void ws_send_version_required(uint8_t slot_id);
+#endif
+
+#if DETWS_ENABLE_SSE
+/** @brief Send the SSE 200 headers and promote the slot to server-sent-events mode. */
+bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect);
+#endif
+
 #endif // DETERMINISTICESPASYNCWEBSERVER_SERVER_INTERNAL_H
