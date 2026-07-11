@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`f4835a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4835a08ea5f1a960093041ed578ba7960337c18))
+- update CHANGELOG.md [skip ci] ([`fa32c7c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa32c7c30c69be3b85f0375c94a75efcb3c96389))
 - remove NTLM dead store + two redundant casts ([`73e8106`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73e8106464da966f9489197bfbb421e5924f8751))
 - update CHANGELOG.md [skip ci] ([`ec6b8d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec6b8d35ff69f1f1d461e07cbf9b83df2ff590bc))
 - suppress two design-conflict rules + fix trivial smells ([`1d8d711`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d8d711da3f5d15526beaa0c5ed933fadaf0dc77))
@@ -29,6 +31,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`917ab55`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/917ab55a92f943551aa87b4ce2a5a809b4aa8487))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`82a06a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/82a06a568d6caa0dbe57ffd2ab9102c4f5f9f6c3))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1f0b95a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f0b95a58597dd36f45dd4e7a183bac6cd574a21))
 - update ESP32 build footprints [skip ci] ([`c375c48`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c375c48e810a58d5aff4655486795677d41fc527))
@@ -43,6 +46,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- scoped enums (enum class 12/N) ([`8aa6103`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8aa6103488aff50b71d6307cf9b7a2d03c66b1d7))
+- scoped type-tag enums (enum class 11/N) ([`fa86dd4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa86dd4e17680a161ef9614739fd0642c7e55653))
 - scoped enums (enum class 10/N) ([`6cd168f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6cd168f0a3eddb98e05e8c97d41d080b6c4e9b90))
 - scoped enums (enum class 9/N) ([`19fb12f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19fb12f58b9a4fbaa8207d771141deb9ab9ac92f))
 - scoped result enums (enum class 8/N) ([`81320fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/81320fa54b8c59b764d784774ac4dc13cc1173b6))
