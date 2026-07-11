@@ -26925,7 +26925,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
-      * <code>Assert equal (SSH_PHASE_OPEN, ssh_sess[0].phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, ssh_sess[0].phase)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -26976,7 +26976,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
-      * <code>Assert equal (SSH_PHASE_OPEN, ssh_sess[0].phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, ssh_sess[0].phase)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -27165,7 +27165,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert equal int (0, ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_CONFIRM, out[0])</code>
       * <code>Assert true (ssh_chan[0][id].open)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_CHAN_DIRECT_TCPIP, ssh_chan[0][id].type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SshChanType::SSH_CHAN_DIRECT_TCPIP, ssh_chan[0][id].type);</code>
       * <code>Assert equal int (1, fwd_open_count)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(id, fwd_open_channel);</code>
       * <code>Assert equal string ("example.com", fwd_host)</code>
@@ -27593,7 +27593,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Client banner followed by a framed KEXINIT, delivered together.
     * **Assertions**:
       * <code>Assert equal string ("SSH-2.0-TestClient", ssh_sess[j].v_c)</code>
-      * <code>Assert equal (SSH_PHASE_DH_INIT, ssh_sess[j].phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_DH_INIT, ssh_sess[j].phase)</code>
       * <code>Assert true (tcp_captured_len() &gt; 0)</code>
   </details>
 
@@ -27603,7 +27603,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: An authenticated, open session that has spent its volume budget (packet-count proxy).
     * **Assertions**:
       * <code>Assert true (tcp_captured_len() &gt; 0)</code>
-      * <code>Assert equal (SSH_PHASE_KEXINIT, ssh_sess[j].phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_KEXINIT, ssh_sess[j].phase)</code>
       * <code>Assert equal (0, tcp_captured_len())</code>
   </details>
 
@@ -27633,7 +27633,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Poll rx banner guards
     * **Assertions**:
-      * <code>Assert equal (SSH_PHASE_BANNER, ssh_sess[j].phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_BANNER, ssh_sess[j].phase)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -27974,7 +27974,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal int (1, emt_n)</code>
       * <code>Assert equal (SSH_MSG_KEXINIT, emt_type[0])</code>
-      * <code>Assert equal (SSH_PHASE_DH_INIT, s-&gt;phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_DH_INIT, s-&gt;phase)</code>
       * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal int (2, emt_n)</code>
       * <code>Assert equal (SSH_MSG_KEXDH_REPLY, emt_type[0])</code>
@@ -27984,16 +27984,16 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert false (ssh_pkt[0].enc_in)</code>
       * <code>Assert equal int (0, ssh_server_dispatch(0, nk, &nk, 1))</code>
       * <code>Assert true (ssh_pkt[0].enc_in && ssh_pkt[0].enc_out)</code>
-      * <code>Assert equal (SSH_PHASE_SERVICE, s-&gt;phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_SERVICE, s-&gt;phase)</code>
       * <code>Assert equal int (1, emt_n)</code>
       * <code>Assert equal (SSH_MSG_EXT_INFO, emt_type[0])</code>
       * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_SERVICE_ACCEPT, emt_type[0])</code>
-      * <code>Assert equal (SSH_PHASE_AUTH, s-&gt;phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_AUTH, s-&gt;phase)</code>
       * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, emt_type[0])</code>
       * <code>Assert true (s-&gt;authed)</code>
-      * <code>Assert equal (SSH_PHASE_OPEN, s-&gt;phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, s-&gt;phase)</code>
       * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_CONFIRM, emt_type[0])</code>
       * <code>Assert true (ssh_chan[0][0].open)</code>
@@ -28203,7 +28203,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert equal int (1, rc)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(strlen(banner), consumed);</code>
       * <code>Assert equal string ("SSH-2.0-OpenSSH_9.6", ssh_sess[0].v_c)</code>
-      * <code>Assert equal (SSH_PHASE_KEXINIT, ssh_sess[0].phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_KEXINIT, ssh_sess[0].phase)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28251,7 +28251,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Kexinit parse accepts supported
     * **Assertions**:
       * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
-      * <code>Assert equal (SSH_PHASE_DH_INIT, ssh_sess[0].phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_DH_INIT, ssh_sess[0].phase)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(n, ssh_sess[0].i_c_len);</code>
   </details>
 
@@ -28285,8 +28285,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Kexinit parse steers to curve ed25519
     * **Assertions**:
       * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
-      * <code>Assert equal (SSH_KEX_CURVE25519, ssh_sess[0].kex_alg)</code>
-      * <code>Assert equal (SSH_HOSTKEY_ED25519, ssh_sess[0].hostkey_alg)</code>
+      * <code>Assert equal (SshKexAlg::SSH_KEX_CURVE25519, ssh_sess[0].kex_alg)</code>
+      * <code>Assert equal (SshHostkeyAlg::SSH_HOSTKEY_ED25519, ssh_sess[0].hostkey_alg)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28397,11 +28397,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert equal int (0, ssh_kexdh_handle(0, pkt, n, reply, &rlen, sizeof(reply)))</code>
       * <code>Assert equal (SSH_MSG_KEXDH_REPLY, reply[0])</code>
       * <code>Assert true (ssh_sess[0].have_session_id)</code>
-      * <code>Assert equal (SSH_PHASE_NEWKEYS, ssh_sess[0].phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_NEWKEYS, ssh_sess[0].phase)</code>
       * <code>Assert true (ssh_keys[0].active)</code>
       * <code>Assert true (alg)</code>
       * <code>Assert true (ssh_pkt[0].enc_in)</code>
-      * <code>Assert equal (SSH_PHASE_SERVICE, ssh_sess[0].phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_SERVICE, ssh_sess[0].phase)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28422,7 +28422,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert equal int (0, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)))</code>
       * <code>Assert equal (SSH_MSG_KEXDH_REPLY, reply[0])</code>
       * <code>Assert true (s-&gt;have_session_id)</code>
-      * <code>Assert equal (SSH_PHASE_NEWKEYS, s-&gt;phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_NEWKEYS, s-&gt;phase)</code>
       * <code>Assert true (ssh_keys[0].active)</code>
       * <code>Assert true (rd_string(reply, rlen, &off, &ks, &ks_len))</code>
       * <code>Assert true (rd_string(reply, rlen, &off, &qs, &qs_len))</code>
@@ -28489,10 +28489,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert equal int (0, ssh_dh_generate(0))</code>
       * <code>Assert equal int (0, ssh_transport_begin_rekey(0, out, &n, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_KEXINIT, out[0])</code>
-      * <code>Assert equal (SSH_PHASE_KEXINIT, ssh_sess[0].phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_KEXINIT, ssh_sess[0].phase)</code>
       * <code>Assert true (ssh_sess[0].have_session_id)</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
-      * <code>Assert equal (SSH_PHASE_OPEN, ssh_sess[0].phase)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, ssh_sess[0].phase)</code>
   </details>
 
   <details style="margin-left: 20px;">
