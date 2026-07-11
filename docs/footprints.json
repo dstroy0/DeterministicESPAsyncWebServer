@@ -178,7 +178,7 @@
     "example": "L7-Application/52.GraphQL",
     "flags": "-DDETWS_ENABLE_GRAPHQL=1",
     "board": "esp32dev",
-    "flash_bytes": 756057,
+    "flash_bytes": 756049,
     "ram_bytes": 70736
   },
   "GUARDRAILS": {
