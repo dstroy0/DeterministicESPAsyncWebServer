@@ -31,7 +31,7 @@ struct port
     uint16_t rate_cap;     // uplink frames per second (0 = unlimited)
     uint16_t count;        // uplinks in the current window
     uint8_t id;
-    uint8_t kind;
+    det_gw_kind kind;
     bool used;
 };
 

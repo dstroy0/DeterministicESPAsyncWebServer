@@ -30,7 +30,7 @@
 #if DETWS_ENABLE_WEBDAV
 
 /** @brief WebDAV request methods recognized by the server. */
-enum WebDavMethod
+enum class WebDavMethod : uint8_t
 {
     DAV_M_OPTIONS,
     DAV_M_GET,

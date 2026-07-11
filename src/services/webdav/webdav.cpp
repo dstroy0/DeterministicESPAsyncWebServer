@@ -17,32 +17,32 @@
 WebDavMethod webdav_method(const char *m)
 {
     if (!m)
-        return DAV_M_UNSUPPORTED;
+        return WebDavMethod::DAV_M_UNSUPPORTED;
     if (!strcmp(m, "OPTIONS"))
-        return DAV_M_OPTIONS;
+        return WebDavMethod::DAV_M_OPTIONS;
     if (!strcmp(m, "GET"))
-        return DAV_M_GET;
+        return WebDavMethod::DAV_M_GET;
     if (!strcmp(m, "HEAD"))
-        return DAV_M_HEAD;
+        return WebDavMethod::DAV_M_HEAD;
     if (!strcmp(m, "PUT"))
-        return DAV_M_PUT;
+        return WebDavMethod::DAV_M_PUT;
     if (!strcmp(m, "DELETE"))
-        return DAV_M_DELETE;
+        return WebDavMethod::DAV_M_DELETE;
     if (!strcmp(m, "PROPFIND"))
-        return DAV_M_PROPFIND;
+        return WebDavMethod::DAV_M_PROPFIND;
     if (!strcmp(m, "PROPPATCH"))
-        return DAV_M_PROPPATCH;
+        return WebDavMethod::DAV_M_PROPPATCH;
     if (!strcmp(m, "MKCOL"))
-        return DAV_M_MKCOL;
+        return WebDavMethod::DAV_M_MKCOL;
     if (!strcmp(m, "COPY"))
-        return DAV_M_COPY;
+        return WebDavMethod::DAV_M_COPY;
     if (!strcmp(m, "MOVE"))
-        return DAV_M_MOVE;
+        return WebDavMethod::DAV_M_MOVE;
     if (!strcmp(m, "LOCK"))
-        return DAV_M_LOCK;
+        return WebDavMethod::DAV_M_LOCK;
     if (!strcmp(m, "UNLOCK"))
-        return DAV_M_UNLOCK;
-    return DAV_M_UNSUPPORTED;
+        return WebDavMethod::DAV_M_UNLOCK;
+    return WebDavMethod::DAV_M_UNSUPPORTED;
 }
 
 int webdav_depth(const char *depth_hdr, int dflt)

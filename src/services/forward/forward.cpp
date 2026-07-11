@@ -28,7 +28,7 @@ struct iface
     det_if_send_fn send;
     void *ctx;
     uint8_t id;
-    uint8_t kind;
+    det_if_kind kind;
     bool used;
 };
 
@@ -39,7 +39,7 @@ struct rule
     uint16_t count;        // frames forwarded in the current window
     uint8_t src;
     uint8_t dst;
-    uint8_t action;
+    det_fwd_action action;
     bool used;
 };
 
@@ -50,7 +50,7 @@ struct acl_entry
     uint16_t offset;
     uint8_t src;    // source interface, or DET_FWD_IF_ANY
     uint8_t patlen; // 0 = match any content
-    uint8_t action;
+    det_fwd_action action;
     bool used;
 };
 
@@ -77,7 +77,7 @@ struct ForwardCtx
     rule rules[DETWS_FWD_MAX_RULES];
     acl_entry acl[DETWS_FWD_MAX_ACL];
     route routes[DETWS_FWD_MAX_ROUTES];
-    uint8_t acl_default = DET_FWD_ALLOW; // frames matching no ACL entry (opt-in ACL)
+    det_fwd_action acl_default = det_fwd_action::DET_FWD_ALLOW; // frames matching no ACL entry (opt-in ACL)
 #if DETWS_FWD_INSPECT
     det_fwd_inspect_fn inspector = nullptr; // opt-in ingress inspection hook
     void *inspect_ctx = nullptr;
@@ -111,7 +111,7 @@ const iface *find_if(const ForwardCtx &f, uint8_t id)
 
 // Resolve the action for (src -> dst): a DENY wins; otherwise the first matching ALLOW
 // governs (its index is returned via @p allow_idx); otherwise default-deny (no route).
-enum resolve_result
+enum class resolve_result : uint8_t
 {
     R_NOROUTE,
     R_DENY,
@@ -125,19 +125,19 @@ resolve_result resolve(const ForwardCtx &f, uint8_t src, uint8_t dst, int *allow
     {
         if (!f.rules[i].used || f.rules[i].src != src || f.rules[i].dst != dst)
             continue;
-        if (f.rules[i].action == DET_FWD_DENY)
+        if (f.rules[i].action == det_fwd_action::DET_FWD_DENY)
             deny = true;
         else if (allow < 0)
             allow = (int)i;
     }
     if (deny)
-        return R_DENY;
+        return resolve_result::R_DENY;
     if (allow >= 0)
     {
         *allow_idx = allow;
-        return R_ALLOW;
+        return resolve_result::R_ALLOW;
     }
-    return R_NOROUTE;
+    return resolve_result::R_NOROUTE;
 }
 
 // Fixed 1-second window rate cap; fail-closed (returns true = drop) once the cap is hit.
@@ -191,8 +191,8 @@ bool acl_permits(const ForwardCtx &f, uint8_t src, const uint8_t *data, uint16_t
 {
     for (uint8_t i = 0; i < DETWS_FWD_MAX_ACL; i++)
         if (f.acl[i].used && acl_match(&f.acl[i], src, data, len))
-            return f.acl[i].action == DET_FWD_ALLOW;
-    return f.acl_default == DET_FWD_ALLOW;
+            return f.acl[i].action == det_fwd_action::DET_FWD_ALLOW;
+    return f.acl_default == det_fwd_action::DET_FWD_ALLOW;
 }
 } // namespace
 
@@ -202,7 +202,7 @@ void det_forward_reset(void)
     memset(s_fwd.rules, 0, sizeof(s_fwd.rules));
     memset(s_fwd.acl, 0, sizeof(s_fwd.acl));
     memset(s_fwd.routes, 0, sizeof(s_fwd.routes));
-    s_fwd.acl_default = DET_FWD_ALLOW;
+    s_fwd.acl_default = det_fwd_action::DET_FWD_ALLOW;
 #if DETWS_FWD_INSPECT
     s_fwd.inspector = nullptr;
     s_fwd.inspect_ctx = nullptr;
@@ -210,13 +210,13 @@ void det_forward_reset(void)
     memset(&s_fwd.stats, 0, sizeof(s_fwd.stats));
 }
 
-void det_forward_acl_set_default(uint8_t action)
+void det_forward_acl_set_default(det_fwd_action action)
 {
     s_fwd.acl_default = action;
 }
 
 bool det_forward_acl_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
-                         uint8_t action)
+                         det_fwd_action action)
 {
     if (patlen > DETWS_FWD_ACL_PATLEN || (patlen > 0 && (!pattern || !mask)))
         return false;
@@ -270,7 +270,7 @@ bool det_forward_route_add(uint8_t src_if, uint16_t offset, const uint8_t *patte
     return false; // table full
 }
 
-bool det_forward_add_if(uint8_t if_id, uint8_t kind, det_if_send_fn send, void *ctx)
+bool det_forward_add_if(uint8_t if_id, det_if_kind kind, det_if_send_fn send, void *ctx)
 {
     if (!send || find_if(s_fwd, if_id))
         return false;
@@ -288,7 +288,7 @@ bool det_forward_add_if(uint8_t if_id, uint8_t kind, det_if_send_fn send, void *
     return false; // table full
 }
 
-bool det_forward_add_rule(uint8_t src_if, uint8_t dst_if, uint8_t action, uint16_t rate_cap_per_sec)
+bool det_forward_add_rule(uint8_t src_if, uint8_t dst_if, det_fwd_action action, uint16_t rate_cap_per_sec)
 {
     for (uint8_t i = 0; i < DETWS_FWD_MAX_RULES; i++)
     {
@@ -316,7 +316,8 @@ uint8_t det_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len)
     }
 #if DETWS_FWD_INSPECT
     // Opt-in inspection hook: an app callback observes/filters the frame before routing.
-    if (s_fwd.inspector && s_fwd.inspector(src_if, data, len, s_fwd.inspect_ctx) == DET_FWD_INSPECT_DROP)
+    if (s_fwd.inspector &&
+        s_fwd.inspector(src_if, data, len, s_fwd.inspect_ctx) == det_fwd_verdict::DET_FWD_INSPECT_DROP)
     {
         s_fwd.stats.inspect_dropped++;
         return 0;
@@ -360,9 +361,9 @@ uint8_t det_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len)
             continue;
         int idx = -1;
         resolve_result r = resolve(s_fwd, src_if, s_fwd.if_[i].id, &idx);
-        if (r == R_NOROUTE)
+        if (r == resolve_result::R_NOROUTE)
             continue; // default-deny, silent
-        if (r == R_DENY)
+        if (r == resolve_result::R_DENY)
         {
             s_fwd.stats.blocked++;
             continue;

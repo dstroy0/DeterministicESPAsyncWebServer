@@ -52,7 +52,7 @@ void setup()
     det_gw_reset();
     det_gw_port_config p = {};
     p.port_id = RADIO_PORT;
-    p.kind = DET_GW_ZIGBEE;
+    p.kind = det_gw_kind::DET_GW_ZIGBEE;
     det_gw_add_port(&p);
     det_gw_set_uplink(northbound_publish, nullptr);
     det_gw_set_topic_prefix("zigbee");

@@ -50,7 +50,7 @@ bool detws_docstore_sync(DetwsDocStore *ds)
 
 namespace
 {
-enum FindKind
+enum class FindKind : uint8_t
 {
     FIND_STR,
     FIND_INT,
@@ -84,12 +84,12 @@ bool find_cb(const char *key, uint16_t key_len, void *vctx)
     const char *json = (const char *)f->doc;
 
     bool match = false;
-    if (f->kind == FIND_STR)
+    if (f->kind == FindKind::FIND_STR)
     {
         if (json_get_str(json, f->field, f->fieldtmp, sizeof(f->fieldtmp)))
             match = (strcmp(f->fieldtmp, f->sval) == 0);
     }
-    else if (f->kind == FIND_INT)
+    else if (f->kind == FindKind::FIND_INT)
     {
         long v = 0;
         if (json_get_int(json, f->field, &v))
@@ -124,7 +124,7 @@ uint32_t detws_docstore_find_str(DetwsDocStore *ds, const char *field, const cha
     FindCtx f;
     f.db = ds->db;
     f.field = field;
-    f.kind = FIND_STR;
+    f.kind = FindKind::FIND_STR;
     f.sval = value;
     f.user_cb = cb;
     f.user_ctx = ctx;
@@ -136,7 +136,7 @@ uint32_t detws_docstore_find_int(DetwsDocStore *ds, const char *field, long valu
     FindCtx f;
     f.db = ds->db;
     f.field = field;
-    f.kind = FIND_INT;
+    f.kind = FindKind::FIND_INT;
     f.ival = value;
     f.user_cb = cb;
     f.user_ctx = ctx;
@@ -148,7 +148,7 @@ uint32_t detws_docstore_find_bool(DetwsDocStore *ds, const char *field, bool val
     FindCtx f;
     f.db = ds->db;
     f.field = field;
-    f.kind = FIND_BOOL;
+    f.kind = FindKind::FIND_BOOL;
     f.bval = value;
     f.user_cb = cb;
     f.user_ctx = ctx;

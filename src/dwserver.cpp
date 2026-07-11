@@ -3777,7 +3777,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
 
     switch (webdav_method(req->method))
     {
-    case DAV_M_OPTIONS:
+    case WebDavMethod::DAV_M_OPTIONS:
         add_response_header(slot_id, "DAV", "1, 2");
         add_response_header(slot_id, "Allow",
                             "OPTIONS, GET, HEAD, PUT, DELETE, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK");
@@ -3785,8 +3785,8 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         send_empty(slot_id, 200);
         return;
 
-    case DAV_M_GET:
-    case DAV_M_HEAD: {
+    case WebDavMethod::DAV_M_GET:
+    case WebDavMethod::DAV_M_HEAD: {
         fs::File f = fsys.open(fs_path, "r");
         if (!f)
         {
@@ -3800,12 +3800,12 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
             dav_send_status(slot_id, 405, ""); // GET on a collection is not a download
             return;
         }
-        serve_file_internal(slot_id, webdav_method(req->method) == DAV_M_HEAD, fsys, fs_path, mime_type(fs_path),
-                            nullptr);
+        serve_file_internal(slot_id, webdav_method(req->method) == WebDavMethod::DAV_M_HEAD, fsys, fs_path,
+                            mime_type(fs_path), nullptr);
         return;
     }
 
-    case DAV_M_PUT: {
+    case WebDavMethod::DAV_M_PUT: {
 #if DETWS_ENABLE_STREAM_BODY
         if (req->body_streaming)
         {
@@ -3848,7 +3848,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         return;
     }
 
-    case DAV_M_DELETE: {
+    case WebDavMethod::DAV_M_DELETE: {
         if (!fsys.exists(fs_path))
         {
             dav_send_status(slot_id, 404, "");
@@ -3858,7 +3858,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         return;
     }
 
-    case DAV_M_MKCOL:
+    case WebDavMethod::DAV_M_MKCOL:
         if (fsys.exists(fs_path))
         {
             dav_send_status(slot_id, 405, ""); // already exists
@@ -3867,8 +3867,8 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         dav_send_status(slot_id, fsys.mkdir(fs_path) ? 201 : 409, "");
         return;
 
-    case DAV_M_COPY:
-    case DAV_M_MOVE: {
+    case WebDavMethod::DAV_M_COPY:
+    case WebDavMethod::DAV_M_MOVE: {
         const char *dest_hdr = http_get_header(req, "Destination");
         char dest_url[256];
         if (!dest_hdr || !webdav_dest_path(dest_hdr, dest_url, sizeof(dest_url)))
@@ -3907,7 +3907,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
             return;
         }
 
-        if (webdav_method(req->method) == DAV_M_MOVE)
+        if (webdav_method(req->method) == WebDavMethod::DAV_M_MOVE)
         {
             if (dest_exists)
                 dav_rm_recursive(fsys, dest_fs, 0); // replace
@@ -3943,7 +3943,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         return;
     }
 
-    case DAV_M_LOCK: {
+    case WebDavMethod::DAV_M_LOCK: {
         // Advisory lock: issue a synthetic exclusive-write token (NOT enforced).
         unsigned long tok = (unsigned long)millis();
 #ifdef ARDUINO
@@ -3968,11 +3968,11 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         return;
     }
 
-    case DAV_M_UNLOCK:
+    case WebDavMethod::DAV_M_UNLOCK:
         dav_send_status(slot_id, 204, ""); // advisory: nothing to release
         return;
 
-    case DAV_M_PROPFIND: {
+    case WebDavMethod::DAV_M_PROPFIND: {
         fs::File f = fsys.open(fs_path, "r");
         if (!f)
         {
@@ -4052,7 +4052,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         return;
     }
 
-    case DAV_M_PROPPATCH: {
+    case WebDavMethod::DAV_M_PROPPATCH: {
         // Read-only properties (no dead-property store): answer 207 with each
         // requested property refused 403, rather than 405 - keeps Explorer/Finder,
         // which PROPPATCH a timestamp right after a PUT, from erroring.
@@ -4071,7 +4071,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         return;
     }
 
-    case DAV_M_UNSUPPORTED:
+    case WebDavMethod::DAV_M_UNSUPPORTED:
     default:
         dav_send_status(
             slot_id, 405,

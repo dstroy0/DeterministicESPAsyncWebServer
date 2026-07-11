@@ -40,7 +40,7 @@
 #include <stdint.h>
 
 /** @brief Southbound radio / bus kind a port bridges (informational + topic hint). */
-enum det_gw_kind
+enum class det_gw_kind : uint8_t
 {
     DET_GW_OTHER = 0,
     DET_GW_LORA,
@@ -69,7 +69,7 @@ struct det_gw_msg
     uint16_t src_addr;      ///< source node address on the radio
     int16_t rssi;           ///< received signal strength (0 if the driver has none)
     uint8_t port_id;        ///< the port the frame arrived on
-    uint8_t kind;           ///< det_gw_kind of that port
+    det_gw_kind kind;       ///< det_gw_kind of that port
 };
 
 /**
@@ -88,7 +88,7 @@ typedef bool (*det_gw_tx_fn)(uint8_t port_id, uint16_t dst_addr, const uint8_t *
 struct det_gw_port_config
 {
     uint8_t port_id;   ///< caller-assigned id (used in topics and up/down-link calls).
-    uint8_t kind;      ///< det_gw_kind.
+    det_gw_kind kind;  ///< det_gw_kind.
     det_gw_tx_fn tx;   ///< downlink transmit (may be null for a receive-only port).
     void *ctx;         ///< opaque, forwarded to @ref tx.
     uint16_t rate_cap; ///< max uplink frames/second from this port (0 = unlimited).

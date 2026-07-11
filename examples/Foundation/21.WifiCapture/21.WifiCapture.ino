@@ -80,9 +80,9 @@ void setup()
 
     // Forwarding plane: Wi-Fi -> Ethernet, capped so a busy channel can't swamp the uplink.
     det_forward_reset();
-    det_forward_add_if(IF_WIFI, DET_IF_WIFI_STA, wifi_send, nullptr);
-    det_forward_add_if(IF_ETH, DET_IF_ETH, eth_send, nullptr);
-    det_forward_add_rule(IF_WIFI, IF_ETH, DET_FWD_ALLOW, 2000); // <= 2000 frames/s to the wire
+    det_forward_add_if(IF_WIFI, det_if_kind::DET_IF_WIFI_STA, wifi_send, nullptr);
+    det_forward_add_if(IF_ETH, det_if_kind::DET_IF_ETH, eth_send, nullptr);
+    det_forward_add_rule(IF_WIFI, IF_ETH, det_fwd_action::DET_FWD_ALLOW, 2000); // <= 2000 frames/s to the wire
 
     promisc_begin(CAPTURE_CHANNEL, on_frame);
     Serial.printf("Capturing on channel %u -> forwarding to %s:%u (PCAP over UDP)\n", CAPTURE_CHANNEL, COLLECTOR_IP,

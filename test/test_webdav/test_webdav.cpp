@@ -26,19 +26,19 @@ static bool contains(const char *hay, const char *needle)
 
 void test_method_classification()
 {
-    TEST_ASSERT_EQUAL_INT(DAV_M_OPTIONS, webdav_method("OPTIONS"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_PROPFIND, webdav_method("PROPFIND"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_PROPPATCH, webdav_method("PROPPATCH"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_MKCOL, webdav_method("MKCOL"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_COPY, webdav_method("COPY"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_MOVE, webdav_method("MOVE"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_LOCK, webdav_method("LOCK"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_UNLOCK, webdav_method("UNLOCK"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_PUT, webdav_method("PUT"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_GET, webdav_method("GET"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_DELETE, webdav_method("DELETE"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_UNSUPPORTED, webdav_method("BREW"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_UNSUPPORTED, webdav_method(nullptr));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_OPTIONS, webdav_method("OPTIONS"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_PROPFIND, webdav_method("PROPFIND"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_PROPPATCH, webdav_method("PROPPATCH"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_MKCOL, webdav_method("MKCOL"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_COPY, webdav_method("COPY"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_MOVE, webdav_method("MOVE"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_LOCK, webdav_method("LOCK"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNLOCK, webdav_method("UNLOCK"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_PUT, webdav_method("PUT"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_GET, webdav_method("GET"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_DELETE, webdav_method("DELETE"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNSUPPORTED, webdav_method("BREW"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNSUPPORTED, webdav_method(nullptr));
 }
 
 // Fail-closed guards on the pure builders: xml_escape zero-cap + plain-char truncation,
@@ -318,15 +318,15 @@ void test_proppatch_stops_when_full()
 
 void test_method_all_including_head()
 {
-    TEST_ASSERT_EQUAL_INT(DAV_M_HEAD, webdav_method("HEAD"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_OPTIONS, webdav_method("OPTIONS"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_MKCOL, webdav_method("MKCOL"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_COPY, webdav_method("COPY"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_MOVE, webdav_method("MOVE"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_LOCK, webdav_method("LOCK"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_UNLOCK, webdav_method("UNLOCK"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_UNSUPPORTED, webdav_method("BOGUS"));
-    TEST_ASSERT_EQUAL_INT(DAV_M_UNSUPPORTED, webdav_method(nullptr));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_HEAD, webdav_method("HEAD"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_OPTIONS, webdav_method("OPTIONS"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_MKCOL, webdav_method("MKCOL"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_COPY, webdav_method("COPY"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_MOVE, webdav_method("MOVE"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_LOCK, webdav_method("LOCK"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNLOCK, webdav_method("UNLOCK"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNSUPPORTED, webdav_method("BOGUS"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNSUPPORTED, webdav_method(nullptr));
 }
 
 void test_depth_and_dest_path_guards()

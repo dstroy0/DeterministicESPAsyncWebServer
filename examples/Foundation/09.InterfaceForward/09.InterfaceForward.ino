@@ -95,12 +95,12 @@ void setup()
 
     // Forwarding rule: A -> B allowed (default-deny otherwise), no rate cap.
     det_forward_reset();
-    det_forward_add_if(IF_B, DET_IF_WIFI_STA, if_b_send, nullptr);
-    det_forward_add_rule(IF_A, IF_B, DET_FWD_ALLOW, 0);
+    det_forward_add_if(IF_B, det_if_kind::DET_IF_WIFI_STA, if_b_send, nullptr);
+    det_forward_add_rule(IF_A, IF_B, det_fwd_action::DET_FWD_ALLOW, 0);
 
     // Ingress ACL: drop frames whose first byte is 0xFF (a "bad" marker) before forwarding.
     uint8_t bad_pat[1] = {0xFF}, bad_mask[1] = {0xFF};
-    det_forward_acl_add(IF_A, 0, bad_pat, bad_mask, 1, DET_FWD_DENY);
+    det_forward_acl_add(IF_A, 0, bad_pat, bad_mask, 1, det_fwd_action::DET_FWD_DENY);
 
     Serial.println("forwarding: IF_A (DMA) -> FORWARD lane -> ACL + plane -> IF_B egress");
 }

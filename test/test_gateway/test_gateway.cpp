@@ -39,7 +39,7 @@ static bool cap_uplink(const det_gw_msg *m, void *)
     u.len = m->len;
     u.rssi = m->rssi;
     u.port_id = m->port_id;
-    u.kind = m->kind;
+    u.kind = (uint8_t)m->kind;
     g_up.push_back(u);
     return true;
 }
@@ -65,7 +65,7 @@ static bool cap_tx(uint8_t port, uint16_t dst, const uint8_t *d, uint16_t n, voi
     return true;
 }
 
-static bool add_port(uint8_t id, uint8_t kind, uint16_t rate, bool withtx)
+static bool add_port(uint8_t id, det_gw_kind kind, uint16_t rate, bool withtx)
 {
     det_gw_port_config c = {};
     c.port_id = id;
@@ -98,14 +98,14 @@ void tearDown()
 
 void test_uplink_envelopes_and_publishes()
 {
-    TEST_ASSERT_TRUE(add_port(0, DET_GW_LORA, 0, false));
+    TEST_ASSERT_TRUE(add_port(0, det_gw_kind::DET_GW_LORA, 0, false));
     det_gw_set_uplink(cap_uplink, nullptr);
     const uint8_t hi[2] = {'h', 'i'};
     TEST_ASSERT_TRUE(det_gw_uplink(0, 0x42, hi, 2, -50));
     TEST_ASSERT_EQUAL_size_t(1, g_up.size());
     TEST_ASSERT_EQUAL_UINT16(0x42, g_up[0].src_addr);
     TEST_ASSERT_EQUAL_UINT8(0, g_up[0].port_id);
-    TEST_ASSERT_EQUAL_UINT8(DET_GW_LORA, g_up[0].kind);
+    TEST_ASSERT_EQUAL_UINT8(det_gw_kind::DET_GW_LORA, g_up[0].kind);
     TEST_ASSERT_EQUAL_INT16(-50, g_up[0].rssi);
     TEST_ASSERT_EQUAL_UINT32(0, g_up[0].seq);
     TEST_ASSERT_EQUAL_MEMORY(hi, g_up[0].payload.data(), 2);
@@ -114,7 +114,7 @@ void test_uplink_envelopes_and_publishes()
 
 void test_uplink_no_sink_drops()
 {
-    add_port(0, DET_GW_LORA, 0, false); // no det_gw_set_uplink()
+    add_port(0, det_gw_kind::DET_GW_LORA, 0, false); // no det_gw_set_uplink()
     const uint8_t x[1] = {1};
     TEST_ASSERT_FALSE(det_gw_uplink(0, 1, x, 1, 0));
     TEST_ASSERT_EQUAL_UINT32(1, stats().up_dropped);
@@ -132,7 +132,7 @@ void test_uplink_unknown_port_drops()
 
 void test_uplink_rate_cap()
 {
-    add_port(0, DET_GW_NRF24, 2, false); // 2 uplinks / second
+    add_port(0, det_gw_kind::DET_GW_NRF24, 2, false); // 2 uplinks / second
     det_gw_set_uplink(cap_uplink, nullptr);
     const uint8_t x[1] = {7};
     TEST_ASSERT_TRUE(det_gw_uplink(0, 1, x, 1, 0));
@@ -147,7 +147,7 @@ void test_uplink_rate_cap()
 
 void test_uplink_sink_refusal_counted()
 {
-    add_port(0, DET_GW_LORA, 0, false);
+    add_port(0, det_gw_kind::DET_GW_LORA, 0, false);
     det_gw_set_uplink(cap_uplink, nullptr);
     g_up_accept = false; // northbound stack refuses
     const uint8_t x[1] = {1};
@@ -158,7 +158,7 @@ void test_uplink_sink_refusal_counted()
 
 void test_downlink_transmits()
 {
-    add_port(0, DET_GW_LORA, 0, true); // with a tx callback
+    add_port(0, det_gw_kind::DET_GW_LORA, 0, true); // with a tx callback
     const uint8_t cmd[3] = {'c', 'm', 'd'};
     TEST_ASSERT_TRUE(det_gw_downlink(0, 0x10, cmd, 3));
     TEST_ASSERT_EQUAL_size_t(1, g_down.size());
@@ -170,7 +170,7 @@ void test_downlink_transmits()
 
 void test_downlink_no_tx_or_unknown_port_drops()
 {
-    add_port(0, DET_GW_LORA, 0, false); // receive-only (null tx)
+    add_port(0, det_gw_kind::DET_GW_LORA, 0, false); // receive-only (null tx)
     const uint8_t x[1] = {1};
     TEST_ASSERT_FALSE(det_gw_downlink(0, 1, x, 1)); // no tx
     TEST_ASSERT_FALSE(det_gw_downlink(9, 1, x, 1)); // unknown port
@@ -179,7 +179,7 @@ void test_downlink_no_tx_or_unknown_port_drops()
 
 void test_downlink_tx_refusal_counted()
 {
-    add_port(0, DET_GW_LORA, 0, true);
+    add_port(0, det_gw_kind::DET_GW_LORA, 0, true);
     g_tx_accept = false; // radio refuses
     const uint8_t x[1] = {1};
     TEST_ASSERT_FALSE(det_gw_downlink(0, 1, x, 1));
@@ -208,17 +208,17 @@ void test_topic_format()
 void test_add_port_validation_and_table_full()
 {
     TEST_ASSERT_FALSE(det_gw_add_port(nullptr));
-    TEST_ASSERT_TRUE(add_port(0, DET_GW_LORA, 0, false));
-    TEST_ASSERT_FALSE(add_port(0, DET_GW_LORA, 0, false)); // duplicate id
-    TEST_ASSERT_TRUE(add_port(1, DET_GW_NRF24, 0, false));
-    TEST_ASSERT_TRUE(add_port(2, DET_GW_ZIGBEE, 0, false));
-    TEST_ASSERT_TRUE(add_port(3, DET_GW_BLE, 0, false));
-    TEST_ASSERT_FALSE(add_port(4, DET_GW_LORA, 0, false)); // table full (DETWS_GW_MAX_PORTS = 4)
+    TEST_ASSERT_TRUE(add_port(0, det_gw_kind::DET_GW_LORA, 0, false));
+    TEST_ASSERT_FALSE(add_port(0, det_gw_kind::DET_GW_LORA, 0, false)); // duplicate id
+    TEST_ASSERT_TRUE(add_port(1, det_gw_kind::DET_GW_NRF24, 0, false));
+    TEST_ASSERT_TRUE(add_port(2, det_gw_kind::DET_GW_ZIGBEE, 0, false));
+    TEST_ASSERT_TRUE(add_port(3, det_gw_kind::DET_GW_BLE, 0, false));
+    TEST_ASSERT_FALSE(add_port(4, det_gw_kind::DET_GW_LORA, 0, false)); // table full (DETWS_GW_MAX_PORTS = 4)
 }
 
 void test_seq_increments_per_uplink()
 {
-    add_port(0, DET_GW_LORA, 0, false);
+    add_port(0, det_gw_kind::DET_GW_LORA, 0, false);
     det_gw_set_uplink(cap_uplink, nullptr);
     const uint8_t x[1] = {1};
     det_gw_uplink(0, 1, x, 1, 0);

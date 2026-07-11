@@ -34,7 +34,7 @@ static bool cap_send(uint8_t id, const uint8_t *d, uint16_t n, void *)
 static bool add_if(uint8_t id)
 {
     g_cap[id]; // ensure a capture entry exists (accept = true)
-    return det_forward_add_if(id, DET_IF_OTHER, cap_send, nullptr);
+    return det_forward_add_if(id, det_if_kind::DET_IF_OTHER, cap_send, nullptr);
 }
 
 static uint8_t ingress(uint8_t src, const char *s)
@@ -74,7 +74,7 @@ void test_allow_forwards()
 {
     add_if(1);
     add_if(2);
-    TEST_ASSERT_TRUE(det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0));
+    TEST_ASSERT_TRUE(det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0));
     TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "abc"));
     TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());
     TEST_ASSERT_EQUAL_size_t(0, g_cap[1].frames.size()); // source not touched
@@ -85,7 +85,7 @@ void test_allow_forwards()
 void test_no_self_forward()
 {
     add_if(1);
-    det_forward_add_rule(1, 1, DET_FWD_ALLOW, 0); // even an explicit self rule
+    det_forward_add_rule(1, 1, det_fwd_action::DET_FWD_ALLOW, 0); // even an explicit self rule
     TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "loop"));
     TEST_ASSERT_EQUAL_size_t(0, g_cap[1].frames.size());
 }
@@ -94,8 +94,8 @@ void test_deny_wins_over_allow()
 {
     add_if(1);
     add_if(2);
-    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
-    det_forward_add_rule(1, 2, DET_FWD_DENY, 0); // deny wins regardless of order
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0);
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_DENY, 0); // deny wins regardless of order
     TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "x"));
     TEST_ASSERT_EQUAL_size_t(0, g_cap[2].frames.size());
     TEST_ASSERT_EQUAL_UINT32(1, stats().blocked);
@@ -106,8 +106,8 @@ void test_multi_destination_fanout()
     add_if(1);
     add_if(2);
     add_if(3);
-    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
-    det_forward_add_rule(1, 3, DET_FWD_ALLOW, 0);
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0);
+    det_forward_add_rule(1, 3, det_fwd_action::DET_FWD_ALLOW, 0);
     TEST_ASSERT_EQUAL_UINT8(2, ingress(1, "bcast"));
     TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());
     TEST_ASSERT_EQUAL_size_t(1, g_cap[3].frames.size());
@@ -117,7 +117,7 @@ void test_rate_cap_drops_then_reopens()
 {
     add_if(1);
     add_if(2);
-    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 2); // 2 frames / second
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 2); // 2 frames / second
     TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "a"));
     TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "b"));
     TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "c")); // 3rd in the window -> dropped
@@ -132,7 +132,7 @@ void test_send_failure_counted()
 {
     add_if(1);
     add_if(2);
-    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0);
     g_cap[2].accept = false; // interface refuses
     TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "x"));
     TEST_ASSERT_EQUAL_UINT32(1, stats().send_fail);
@@ -142,8 +142,8 @@ void test_send_failure_counted()
 void test_add_if_validation_and_table_full()
 {
     TEST_ASSERT_TRUE(add_if(1));
-    TEST_ASSERT_FALSE(add_if(1));                                             // duplicate id
-    TEST_ASSERT_FALSE(det_forward_add_if(9, DET_IF_OTHER, nullptr, nullptr)); // null send
+    TEST_ASSERT_FALSE(add_if(1));                                                          // duplicate id
+    TEST_ASSERT_FALSE(det_forward_add_if(9, det_if_kind::DET_IF_OTHER, nullptr, nullptr)); // null send
     TEST_ASSERT_TRUE(add_if(2));
     TEST_ASSERT_TRUE(add_if(3));
     TEST_ASSERT_TRUE(add_if(4));
@@ -153,15 +153,15 @@ void test_add_if_validation_and_table_full()
 void test_add_rule_table_full()
 {
     for (int i = 0; i < DETWS_FWD_MAX_RULES; i++)
-        TEST_ASSERT_TRUE(det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0));
-    TEST_ASSERT_FALSE(det_forward_add_rule(1, 3, DET_FWD_ALLOW, 0)); // full
+        TEST_ASSERT_TRUE(det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0));
+    TEST_ASSERT_FALSE(det_forward_add_rule(1, 3, det_fwd_action::DET_FWD_ALLOW, 0)); // full
 }
 
 void test_unregistered_destination_is_inert()
 {
     add_if(1);
-    det_forward_add_rule(1, 9, DET_FWD_ALLOW, 0); // dst 9 never registered
-    TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "x"));  // nothing to forward to
+    det_forward_add_rule(1, 9, det_fwd_action::DET_FWD_ALLOW, 0); // dst 9 never registered
+    TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "x"));                  // nothing to forward to
 }
 
 // --- Ingress ACL tests ----------------------------------------------------------------
@@ -176,9 +176,9 @@ void test_acl_deny_by_byte_pattern()
 {
     add_if(1);
     add_if(2);
-    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0);
     uint8_t pat[1] = {0xFF}, msk[1] = {0xFF};
-    TEST_ASSERT_TRUE(det_forward_acl_add(1, 0, pat, msk, 1, DET_FWD_DENY)); // deny byte0 == 0xFF
+    TEST_ASSERT_TRUE(det_forward_acl_add(1, 0, pat, msk, 1, det_fwd_action::DET_FWD_DENY)); // deny byte0 == 0xFF
 
     uint8_t ok[3] = {'a', 'b', 'c'};
     uint8_t bad[3] = {0xFF, 0x00, 0x00};
@@ -192,10 +192,10 @@ void test_acl_allowlist_default_deny()
 {
     add_if(1);
     add_if(2);
-    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
-    det_forward_acl_set_default(DET_FWD_DENY); // allowlist: only permitted frames pass
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0);
+    det_forward_acl_set_default(det_fwd_action::DET_FWD_DENY); // allowlist: only permitted frames pass
     uint8_t pat[1] = {0xAA}, msk[1] = {0xFF};
-    det_forward_acl_add(1, 0, pat, msk, 1, DET_FWD_ALLOW); // permit byte0 == 0xAA
+    det_forward_acl_add(1, 0, pat, msk, 1, det_fwd_action::DET_FWD_ALLOW); // permit byte0 == 0xAA
 
     uint8_t good[2] = {0xAA, 0x01};
     uint8_t other[2] = {0xBB, 0x01};
@@ -208,10 +208,10 @@ void test_acl_first_match_wins()
 {
     add_if(1);
     add_if(2);
-    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0);
     uint8_t p1[1] = {0x01}, m1[1] = {0xFF};
-    det_forward_acl_add(1, 0, p1, m1, 1, DET_FWD_ALLOW);                       // 1st: permit byte0 == 0x01
-    det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_DENY); // 2nd: deny everything
+    det_forward_acl_add(1, 0, p1, m1, 1, det_fwd_action::DET_FWD_ALLOW); // 1st: permit byte0 == 0x01
+    det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, det_fwd_action::DET_FWD_DENY); // 2nd: deny everything
 
     uint8_t a[1] = {0x01};
     uint8_t b[1] = {0x02};
@@ -223,8 +223,8 @@ void test_acl_src_any_content_wildcard()
 {
     add_if(1);
     add_if(2);
-    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
-    det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_DENY); // any src, any content
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0);
+    det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, det_fwd_action::DET_FWD_DENY); // any src, any content
     uint8_t x[2] = {0x12, 0x34};
     TEST_ASSERT_EQUAL_UINT8(0, in1(x, 2));
     TEST_ASSERT_EQUAL_UINT32(1, stats().acl_denied);
@@ -234,20 +234,22 @@ void test_acl_short_frame_skips_entry()
 {
     add_if(1);
     add_if(2);
-    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0);
     uint8_t pat[2] = {0x11, 0x22}, msk[2] = {0xFF, 0xFF};
-    det_forward_acl_add(1, 4, pat, msk, 2, DET_FWD_DENY); // needs len >= 6
-    uint8_t shortf[3] = {0x11, 0x22, 0x33};               // too short at offset 4 -> ACE inapplicable
-    TEST_ASSERT_EQUAL_UINT8(1, in1(shortf, 3));           // default allow -> forwarded
+    det_forward_acl_add(1, 4, pat, msk, 2, det_fwd_action::DET_FWD_DENY); // needs len >= 6
+    uint8_t shortf[3] = {0x11, 0x22, 0x33};                               // too short at offset 4 -> ACE inapplicable
+    TEST_ASSERT_EQUAL_UINT8(1, in1(shortf, 3));                           // default allow -> forwarded
 }
 
 void test_acl_add_validation_and_table_full()
 {
     uint8_t big[DETWS_FWD_ACL_PATLEN + 1] = {0}, bm[DETWS_FWD_ACL_PATLEN + 1] = {0};
-    TEST_ASSERT_FALSE(det_forward_acl_add(1, 0, big, bm, DETWS_FWD_ACL_PATLEN + 1, DET_FWD_DENY)); // patlen too big
+    TEST_ASSERT_FALSE(
+        det_forward_acl_add(1, 0, big, bm, DETWS_FWD_ACL_PATLEN + 1, det_fwd_action::DET_FWD_DENY)); // patlen too big
     for (int i = 0; i < DETWS_FWD_MAX_ACL; i++)
-        TEST_ASSERT_TRUE(det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_ALLOW));
-    TEST_ASSERT_FALSE(det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_ALLOW)); // full
+        TEST_ASSERT_TRUE(det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, det_fwd_action::DET_FWD_ALLOW));
+    TEST_ASSERT_FALSE(
+        det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, det_fwd_action::DET_FWD_ALLOW)); // full
 }
 
 // --- policy routes (route-by-tag to interface) ---
@@ -265,7 +267,7 @@ void test_route_selects_egress_and_falls_through()
     add_if(1);
     add_if(2);
     add_if(3);
-    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);                 // normal path 1 -> 2
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0); // normal path 1 -> 2
     TEST_ASSERT_TRUE(route_firstbyte(DET_FWD_IF_ANY, 'X', 3, 0)); // policy: 'X...' -> if 3 only
 
     TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "Xyz")); // matched -> routed only to if 3
@@ -347,14 +349,14 @@ void test_route_add_validation_and_table_full()
 #if DETWS_FWD_INSPECT
 static int g_inspect_calls = 0;
 // Inspector that drops frames whose first byte is 'D', passes the rest, and counts calls.
-static uint8_t inspect_drop_D(uint8_t src, const uint8_t *d, uint16_t n, void *ctx)
+static det_fwd_verdict inspect_drop_D(uint8_t src, const uint8_t *d, uint16_t n, void *ctx)
 {
     (void)src;
     (void)ctx;
     g_inspect_calls++;
     if (n > 0 && d[0] == 'D')
-        return DET_FWD_INSPECT_DROP;
-    return DET_FWD_INSPECT_PASS;
+        return det_fwd_verdict::DET_FWD_INSPECT_DROP;
+    return det_fwd_verdict::DET_FWD_INSPECT_PASS;
 }
 
 void test_inspect_pass_and_drop()
@@ -362,7 +364,7 @@ void test_inspect_pass_and_drop()
     g_inspect_calls = 0;
     add_if(1);
     add_if(2);
-    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0);
     det_forward_set_inspector(inspect_drop_D, nullptr);
 
     TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "ok")); // passes inspection -> forwarded
@@ -378,11 +380,11 @@ void test_inspect_runs_after_acl()
     g_inspect_calls = 0;
     add_if(1);
     add_if(2);
-    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0);
     det_forward_set_inspector(inspect_drop_D, nullptr);
     // deny 'X...' at the ACL: the inspector must not even see an ACL-denied frame
     uint8_t pat[1] = {'X'}, msk[1] = {0xFF};
-    det_forward_acl_add(DET_FWD_IF_ANY, 0, pat, msk, 1, DET_FWD_DENY);
+    det_forward_acl_add(DET_FWD_IF_ANY, 0, pat, msk, 1, det_fwd_action::DET_FWD_DENY);
 
     TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "Xhi")); // ACL-denied
     TEST_ASSERT_EQUAL_INT(0, g_inspect_calls);     // inspector never called
@@ -393,7 +395,7 @@ void test_inspect_cleared_by_null()
 {
     add_if(1);
     add_if(2);
-    det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0);
+    det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0);
     det_forward_set_inspector(inspect_drop_D, nullptr);
     det_forward_set_inspector(nullptr, nullptr);    // clear it
     TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "Drop")); // would drop, but inspector is gone

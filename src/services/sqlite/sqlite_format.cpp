@@ -480,23 +480,23 @@ void value_serial(const SqliteValue *v, uint64_t *st, uint32_t *vlen)
 {
     switch (v->type)
     {
-    case SQLITE_COL_NULL:
+    case SqliteColType::SQLITE_COL_NULL:
         *st = 0;
         *vlen = 0;
         return;
-    case SQLITE_COL_FLOAT:
+    case SqliteColType::SQLITE_COL_FLOAT:
         *st = 7;
         *vlen = 8;
         return;
-    case SQLITE_COL_TEXT:
+    case SqliteColType::SQLITE_COL_TEXT:
         *st = 13 + (uint64_t)2 * v->len;
         *vlen = v->len;
         return;
-    case SQLITE_COL_BLOB:
+    case SqliteColType::SQLITE_COL_BLOB:
         *st = 12 + (uint64_t)2 * v->len;
         *vlen = v->len;
         return;
-    case SQLITE_COL_INT:
+    case SqliteColType::SQLITE_COL_INT:
     default:
         break;
     }
@@ -546,13 +546,13 @@ void value_serial(const SqliteValue *v, uint64_t *st, uint32_t *vlen)
 // Write a column's value bytes (big-endian for ints/floats) into out; returns the count.
 uint32_t write_value(const SqliteValue *v, uint64_t st, uint32_t vlen, uint8_t *out)
 {
-    if (v->type == SQLITE_COL_TEXT || v->type == SQLITE_COL_BLOB)
+    if (v->type == SqliteColType::SQLITE_COL_TEXT || v->type == SqliteColType::SQLITE_COL_BLOB)
     {
         if (vlen)
             memcpy(out, v->data, vlen);
         return vlen;
     }
-    if (v->type == SQLITE_COL_FLOAT)
+    if (v->type == SqliteColType::SQLITE_COL_FLOAT)
     {
         uint64_t u = 0;
         memcpy(&u, &v->f, 8); // native bit pattern -> emit big-endian
@@ -745,11 +745,11 @@ uint32_t sqlite_build_table_db(uint32_t page_size, const char *table_name, const
     uint32_t name_len = (uint32_t)strnlen(table_name, out_cap);
     uint32_t sql_len = (uint32_t)strnlen(create_sql, out_cap);
     SqliteValue master[5];
-    master[0] = {SQLITE_COL_TEXT, 0, 0, (const uint8_t *)"table", 5};
-    master[1] = {SQLITE_COL_TEXT, 0, 0, (const uint8_t *)table_name, name_len};
-    master[2] = {SQLITE_COL_TEXT, 0, 0, (const uint8_t *)table_name, name_len};
-    master[3] = {SQLITE_COL_INT, 2, 0, nullptr, 0}; // rootpage = 2
-    master[4] = {SQLITE_COL_TEXT, 0, 0, (const uint8_t *)create_sql, sql_len};
+    master[0] = {SqliteColType::SQLITE_COL_TEXT, 0, 0, (const uint8_t *)"table", 5};
+    master[1] = {SqliteColType::SQLITE_COL_TEXT, 0, 0, (const uint8_t *)table_name, name_len};
+    master[2] = {SqliteColType::SQLITE_COL_TEXT, 0, 0, (const uint8_t *)table_name, name_len};
+    master[3] = {SqliteColType::SQLITE_COL_INT, 2, 0, nullptr, 0}; // rootpage = 2
+    master[4] = {SqliteColType::SQLITE_COL_TEXT, 0, 0, (const uint8_t *)create_sql, sql_len};
     SqliteRow master_row = {1, master, 5};
     if (!write_leaf_page(out, page_size, 100, &master_row, 1))
         return 0;

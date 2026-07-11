@@ -54,7 +54,7 @@
 #include <stdint.h>
 
 /** @brief Interface kind (informational; the plane treats all interfaces the same). */
-enum det_if_kind
+enum class det_if_kind : uint8_t
 {
     DET_IF_OTHER = 0,
     DET_IF_WIFI_STA,
@@ -65,7 +65,7 @@ enum det_if_kind
 };
 
 /** @brief Rule action for a `(src, dst)` interface pair or an ACL entry. */
-enum det_fwd_action
+enum class det_fwd_action : uint8_t
 {
     DET_FWD_DENY = 0,
     DET_FWD_ALLOW = 1,
@@ -101,21 +101,21 @@ void det_forward_reset(void);
  * @return true; false if @p if_id is already registered, @p send is null, or the table
  *         is full (DETWS_FWD_MAX_IFACES).
  */
-bool det_forward_add_if(uint8_t if_id, uint8_t kind, det_if_send_fn send, void *ctx);
+bool det_forward_add_if(uint8_t if_id, det_if_kind kind, det_if_send_fn send, void *ctx);
 
 /**
  * @brief Add a forwarding rule. @p rate_cap_per_sec caps ALLOW rules (0 = unlimited); it
  *        is ignored for DENY rules.
  * @return true; false if the table is full (DETWS_FWD_MAX_RULES).
  */
-bool det_forward_add_rule(uint8_t src_if, uint8_t dst_if, uint8_t action, uint16_t rate_cap_per_sec);
+bool det_forward_add_rule(uint8_t src_if, uint8_t dst_if, det_fwd_action action, uint16_t rate_cap_per_sec);
 
 /**
  * @brief Set the ACL default action - what happens to a frame that matches no ACL entry.
- *        Default DET_FWD_ALLOW (an empty ACL passes everything, so the ACL is opt-in);
- *        set DET_FWD_DENY for allowlist semantics (only explicitly permitted frames pass).
+ *        Default det_fwd_action::DET_FWD_ALLOW (an empty ACL passes everything, so the ACL is opt-in);
+ *        set det_fwd_action::DET_FWD_DENY for allowlist semantics (only explicitly permitted frames pass).
  */
-void det_forward_acl_set_default(uint8_t action);
+void det_forward_acl_set_default(det_fwd_action action);
 
 /**
  * @brief Add an ingress access-control entry (evaluated in add order, first match wins).
@@ -129,7 +129,7 @@ void det_forward_acl_set_default(uint8_t action);
  * @return false if the ACL table is full or @p patlen exceeds DETWS_FWD_ACL_PATLEN.
  */
 bool det_forward_acl_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
-                         uint8_t action);
+                         det_fwd_action action);
 
 /**
  * @brief Add a policy route: a frame matching this byte pattern is forwarded only to
@@ -150,7 +150,7 @@ bool det_forward_route_add(uint8_t src_if, uint16_t offset, const uint8_t *patte
 
 #if DETWS_FWD_INSPECT
 /** @brief The verdict an inspection hook returns for a frame. */
-enum det_fwd_verdict
+enum class det_fwd_verdict : uint8_t
 {
     DET_FWD_INSPECT_PASS = 0, ///< let the frame continue to routing / forwarding
     DET_FWD_INSPECT_DROP = 1, ///< drop the frame (counted as inspect_dropped)
@@ -161,7 +161,7 @@ enum det_fwd_verdict
  *        return a ::det_fwd_verdict. Runs after the ACL and before policy routes / the fan-out.
  *        The callback must not block; it may record metrics, log, or decide to drop.
  */
-typedef uint8_t (*det_fwd_inspect_fn)(uint8_t src_if, const uint8_t *data, uint16_t len, void *ctx);
+typedef det_fwd_verdict (*det_fwd_inspect_fn)(uint8_t src_if, const uint8_t *data, uint16_t len, void *ctx);
 
 /**
  * @brief Install (or clear, with @p fn null) the ingress inspection hook.

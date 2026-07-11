@@ -107,7 +107,7 @@ void setup()
     det_gw_reset();
     det_gw_port_config p = {};
     p.port_id = RADIO_PORT;
-    p.kind = DET_GW_LORA;
+    p.kind = det_gw_kind::DET_GW_LORA;
     p.tx = radio_tx;
     det_gw_add_port(&p);
     det_gw_set_uplink(northbound_publish, nullptr);

@@ -243,7 +243,7 @@ bool sqlite_table_cursor_next(SqliteTableCursor *c, uint64_t *rowid, SqliteRecor
 size_t sqlite_varint_encode(uint64_t v, uint8_t *out, size_t cap);
 
 /** @brief Column value kind for the record writer. */
-enum SqliteColType
+enum class SqliteColType : uint8_t
 {
     SQLITE_COL_NULL,
     SQLITE_COL_INT,

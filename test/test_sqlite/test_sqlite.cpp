@@ -516,11 +516,11 @@ void test_encode_record_roundtrip(void)
 {
     // A row of (INT, TEXT, FLOAT, NULL, INT=0) round-trips through the record reader.
     SqliteValue cols[5];
-    cols[0] = {SQLITE_COL_INT, -12345, 0, nullptr, 0};
-    cols[1] = {SQLITE_COL_TEXT, 0, 0, (const uint8_t *)"hello", 5};
-    cols[2] = {SQLITE_COL_FLOAT, 0, 3.14159, nullptr, 0};
-    cols[3] = {SQLITE_COL_NULL, 0, 0, nullptr, 0};
-    cols[4] = {SQLITE_COL_INT, 0, 0, nullptr, 0}; // the constant 0 (serial type 8, 0 bytes)
+    cols[0] = {SqliteColType::SQLITE_COL_INT, -12345, 0, nullptr, 0};
+    cols[1] = {SqliteColType::SQLITE_COL_TEXT, 0, 0, (const uint8_t *)"hello", 5};
+    cols[2] = {SqliteColType::SQLITE_COL_FLOAT, 0, 3.14159, nullptr, 0};
+    cols[3] = {SqliteColType::SQLITE_COL_NULL, 0, 0, nullptr, 0};
+    cols[4] = {SqliteColType::SQLITE_COL_INT, 0, 0, nullptr, 0}; // the constant 0 (serial type 8, 0 bytes)
 
     uint8_t rec[128];
     uint32_t rl = sqlite_encode_record(cols, 5, rec, sizeof(rec));
@@ -567,8 +567,8 @@ void test_build_table_db_roundtrip(void)
     SqliteRow rows[3];
     for (int r = 0; r < 3; r++)
     {
-        rowvals[r][0] = {SQLITE_COL_INT, spec[r].a, 0, nullptr, 0};
-        rowvals[r][1] = {SQLITE_COL_TEXT, 0, 0, (const uint8_t *)spec[r].b, (uint32_t)strlen(spec[r].b)};
+        rowvals[r][0] = {SqliteColType::SQLITE_COL_INT, spec[r].a, 0, nullptr, 0};
+        rowvals[r][1] = {SqliteColType::SQLITE_COL_TEXT, 0, 0, (const uint8_t *)spec[r].b, (uint32_t)strlen(spec[r].b)};
         rows[r] = {(uint64_t)(r + 1), rowvals[r], 2};
     }
 
@@ -655,7 +655,7 @@ void test_encode_record_int_widths(void)
     };
     for (unsigned k = 0; k < sizeof(cases) / sizeof(cases[0]); k++)
     {
-        SqliteValue col = {SQLITE_COL_INT, cases[k].v, 0, nullptr, 0};
+        SqliteValue col = {SqliteColType::SQLITE_COL_INT, cases[k].v, 0, nullptr, 0};
         uint8_t rec[32];
         uint32_t rl = sqlite_encode_record(&col, 1, rec, sizeof(rec));
         TEST_ASSERT_TRUE(rl > 0);
@@ -675,7 +675,7 @@ void test_encode_record_blob(void)
 {
     // A BLOB column (serial type 12 + 2n) round-trips its raw bytes, including embedded NULs.
     const uint8_t blob[] = {0x00, 0xff, 0x10, 0x00, 0x7f, 0x80};
-    SqliteValue col = {SQLITE_COL_BLOB, 0, 0, blob, sizeof(blob)};
+    SqliteValue col = {SqliteColType::SQLITE_COL_BLOB, 0, 0, blob, sizeof(blob)};
     uint8_t rec[32];
     uint32_t rl = sqlite_encode_record(&col, 1, rec, sizeof(rec));
     TEST_ASSERT_TRUE(rl > 0);
@@ -698,7 +698,7 @@ void test_build_table_db_page_overflow_fails_closed(void)
     static SqliteRow rows[60];
     for (int r = 0; r < 60; r++)
     {
-        rowvals[r][0] = {SQLITE_COL_INT, 1000000 + r, 0, nullptr, 0}; // ~4-byte int + framing each
+        rowvals[r][0] = {SqliteColType::SQLITE_COL_INT, 1000000 + r, 0, nullptr, 0}; // ~4-byte int + framing each
         rows[r] = {(uint64_t)(r + 1), rowvals[r], 1};
     }
     static uint8_t img[1024];
@@ -710,12 +710,12 @@ void test_build_table_db_fails_closed(void)
     // A single row larger than one leaf page can hold must fail closed (bounded writer, no overflow pages).
     static uint8_t big[600];
     memset(big, 'X', sizeof(big));
-    SqliteValue col = {SQLITE_COL_TEXT, 0, 0, big, sizeof(big)};
+    SqliteValue col = {SqliteColType::SQLITE_COL_TEXT, 0, 0, big, sizeof(big)};
     SqliteRow row = {1, &col, 1};
     static uint8_t img[1024];
     TEST_ASSERT_EQUAL_UINT32(0, sqlite_build_table_db(512, "t", "CREATE TABLE t(b TEXT)", &row, 1, img, sizeof(img)));
     // Too small an output buffer also fails closed.
-    SqliteValue small = {SQLITE_COL_INT, 1, 0, nullptr, 0};
+    SqliteValue small = {SqliteColType::SQLITE_COL_INT, 1, 0, nullptr, 0};
     SqliteRow r2 = {1, &small, 1};
     TEST_ASSERT_EQUAL_UINT32(0, sqlite_build_table_db(512, "t", "CREATE TABLE t(a)", &r2, 1, img, 512));
 }

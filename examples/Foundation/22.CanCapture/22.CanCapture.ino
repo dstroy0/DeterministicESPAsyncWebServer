@@ -78,9 +78,9 @@ void setup()
 
     // Forwarding plane: CAN -> Ethernet.
     det_forward_reset();
-    det_forward_add_if(IF_CAN, DET_IF_BUS, can_send, nullptr);
-    det_forward_add_if(IF_ETH, DET_IF_ETH, eth_send, nullptr);
-    det_forward_add_rule(IF_CAN, IF_ETH, DET_FWD_ALLOW, 0); // CAN tops out ~a few k frames/s
+    det_forward_add_if(IF_CAN, det_if_kind::DET_IF_BUS, can_send, nullptr);
+    det_forward_add_if(IF_ETH, det_if_kind::DET_IF_ETH, eth_send, nullptr);
+    det_forward_add_rule(IF_CAN, IF_ETH, det_fwd_action::DET_FWD_ALLOW, 0); // CAN tops out ~a few k frames/s
 
     if (!bus_capture_begin(CAN_TX_PIN, CAN_RX_PIN, CAN_BITRATE, on_can))
     {
