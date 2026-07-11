@@ -82,7 +82,7 @@ from each example's `pio ci` size report and aggregated into
 | `STATS`                                  | L7-Application/22.Stats                 | 735.2 KB (57.4%) | 64.5 KB (20.2%)  |
 | `STATS+METRICS`                          | L7-Application/21.PrometheusMetrics     | 737.3 KB (57.6%) | 64.6 KB (20.2%)  |
 | `STATSD`                                 | L7-Application/59.StatsdMetrics         | 711.3 KB (55.6%) | 44.0 KB (13.8%)  |
-| `SYSLOG`                                 | L7-Application/19.Syslog                | 736.7 KB (57.6%) | 66.3 KB (20.7%)  |
+| `SYSLOG`                                 | L7-Application/19.Syslog                | 736.7 KB (57.6%) | 66.2 KB (20.7%)  |
 | `TELEMETRY`                              | L7-Application/34.Telemetry             | 742.1 KB (58.0%) | 64.7 KB (20.2%)  |
 | `TELNET`                                 | L5-Session/03.Telnet                    | 735.6 KB (57.5%) | 65.0 KB (20.3%)  |
 | `THREAD+GATEWAY`                         | Foundation/18.ThreadGateway             | 262.8 KB (20.5%) | 22.1 KB (6.9%)   |

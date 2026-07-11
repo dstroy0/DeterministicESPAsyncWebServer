@@ -521,8 +521,8 @@
     "example": "L7-Application/19.Syslog",
     "flags": "-DDETWS_ENABLE_SYSLOG=1",
     "board": "esp32dev",
-    "flash_bytes": 754417,
-    "ram_bytes": 67848
+    "flash_bytes": 754409,
+    "ram_bytes": 67840
   },
   "TELEMETRY": {
     "example": "L7-Application/34.Telemetry",
@@ -591,7 +591,7 @@
     "example": "L7-Application/51.Vfs",
     "flags": "-DDETWS_ENABLE_VFS=1",
     "board": "esp32dev",
-    "flash_bytes": 794581,
+    "flash_bytes": 794585,
     "ram_bytes": 70512
   },
   "WEBDAV": {
