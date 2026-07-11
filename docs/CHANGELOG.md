@@ -20,6 +20,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- device QUIC/HTTP-3 throughput bench ([`ed68d7f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed68d7fe2d541c6b4a4897e9c8ab7da941e252ff))
 - log the QUIC frame-parser interop blocker; handshake now runs on PSRAM ([`353cfe9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/353cfe9278c098621cb958ff413f5af1480d05a9))
 
 ### Testing
