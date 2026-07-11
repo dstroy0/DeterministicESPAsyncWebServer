@@ -117,7 +117,8 @@ int ssh_rsa_load_pubkey(void)
     }
 
     // Write n and e into the public-only BSS struct.
-    mbedtls_mpi n_mpi, e_mpi;
+    mbedtls_mpi n_mpi;
+    mbedtls_mpi e_mpi;
     mbedtls_mpi_init(&n_mpi);
     mbedtls_mpi_init(&e_mpi);
     mbedtls_rsa_export(rsa, &n_mpi, nullptr, nullptr, nullptr, &e_mpi);
@@ -203,7 +204,8 @@ int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4]
     mbedtls_rsa_init(&rsa, MBEDTLS_RSA_PKCS_V15, 0);
 #endif
 
-    mbedtls_mpi N, E;
+    mbedtls_mpi N;
+    mbedtls_mpi E;
     mbedtls_mpi_init(&N);
     mbedtls_mpi_init(&E);
     mbedtls_mpi_read_binary(&N, n_be, SSH_RSA_KEY_BYTES);
@@ -441,7 +443,10 @@ int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, uint8_t sig[SSH_RSA_SIG_BYT
 
     // 3. RSA private-key operation: s = em^d mod n (full-width, correct for
     //    any private exponent - no longer a d=1 stub).
-    SshBigNum n_bn, d_bn, m_bn, s_bn;
+    SshBigNum n_bn;
+    SshBigNum d_bn;
+    SshBigNum m_bn;
+    SshBigNum s_bn;
     bn_from_bytes(&n_bn, priv.n, SSH_RSA_KEY_BYTES);
     bn_from_bytes(&d_bn, priv.d, SSH_RSA_KEY_BYTES);
     bn_from_bytes(&m_bn, em, SSH_RSA_KEY_BYTES);
@@ -468,7 +473,9 @@ int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4]
     if (sig_len != SSH_RSA_KEY_BYTES)
         return -1;
 
-    SshBigNum n, s, m;
+    SshBigNum n;
+    SshBigNum s;
+    SshBigNum m;
     bn_from_bytes(&n, n_be, SSH_RSA_KEY_BYTES);
     bn_from_bytes(&s, sig, SSH_RSA_KEY_BYTES);
     if (bn_cmp(&s, &n) >= 0)

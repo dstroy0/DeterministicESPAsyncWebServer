@@ -60,7 +60,8 @@ static int gf_parity(const ssh_gf a)
 // 0 if a and b encode the same field element, -1 otherwise.
 static int gf_neq(const ssh_gf a, const ssh_gf b)
 {
-    uint8_t c[32], d[32];
+    uint8_t c[32];
+    uint8_t d[32];
     ssh_gf_pack(c, a);
     ssh_gf_pack(d, b);
     return ct_verify32(c, d);
@@ -85,7 +86,15 @@ static void gf_pow2523(ssh_gf out, const ssh_gf a)
 // p += q (twisted-Edwards addition, RFC 8032 §5.1.4 / the unified add formula).
 static void ed_add(ssh_gf p[4], ssh_gf q[4])
 {
-    ssh_gf a, b, c, d, t, e, f, g, h;
+    ssh_gf a;
+    ssh_gf b;
+    ssh_gf c;
+    ssh_gf d;
+    ssh_gf t;
+    ssh_gf e;
+    ssh_gf f;
+    ssh_gf g;
+    ssh_gf h;
     ssh_gf_sub(a, p[1], p[0]);
     ssh_gf_sub(t, q[1], q[0]);
     ssh_gf_mul(a, a, t);
@@ -116,7 +125,9 @@ static void ed_cswap(ssh_gf p[4], ssh_gf q[4], int b)
 // Encode a point to 32 bytes: y with x's low bit in the top bit.
 static void ed_pack(uint8_t r[32], ssh_gf p[4])
 {
-    ssh_gf tx, ty, zi;
+    ssh_gf tx;
+    ssh_gf ty;
+    ssh_gf zi;
     ssh_gf_inv(zi, p[2]);
     ssh_gf_mul(tx, p[0], zi);
     ssh_gf_mul(ty, p[1], zi);
@@ -156,7 +167,13 @@ static void ed_scalarbase(ssh_gf p[4], const uint8_t *s)
 // success, -1 if the encoding is not a valid curve point.
 static int ed_unpackneg(ssh_gf r[4], const uint8_t p[32])
 {
-    ssh_gf t, chk, num, den, den2, den4, den6;
+    ssh_gf t;
+    ssh_gf chk;
+    ssh_gf num;
+    ssh_gf den;
+    ssh_gf den2;
+    ssh_gf den4;
+    ssh_gf den6;
     ssh_gf_copy(r[2], GF1);
     ssh_gf_unpack(r[1], p); // y (top/sign bit masked off)
     ssh_gf_sq(num, r[1]);   // y^2
@@ -196,7 +213,8 @@ static int ed_unpackneg(ssh_gf r[4], const uint8_t p[32])
 static void ed_modL(uint8_t r[32], int64_t x[64])
 {
     int64_t carry;
-    int i, j;
+    int i;
+    int j;
     for (i = 63; i >= 32; --i)
     {
         carry = 0;
@@ -252,7 +270,10 @@ void ssh_ed25519_pubkey(uint8_t pub[32], const uint8_t seed[32])
 
 void ssh_ed25519_sign(uint8_t sig[64], const uint8_t *msg, size_t mlen, const uint8_t seed[32])
 {
-    uint8_t d[64], pub[32], r[64], h[64];
+    uint8_t d[64];
+    uint8_t pub[32];
+    uint8_t r[64];
+    uint8_t h[64];
     ssh_sha512(seed, 32, d);
     d[0] &= 248;
     d[31] &= 127;
@@ -318,7 +339,8 @@ bool ssh_ed25519_verify(const uint8_t pub[32], const uint8_t *msg, size_t mlen, 
     if (!ed_scalar_canonical(sig + 32))
         return false; // non-canonical S (RFC 8032 5.1.7): reject to prevent malleability
 
-    ssh_gf p[4], q[4];
+    ssh_gf p[4];
+    ssh_gf q[4];
     if (ed_unpackneg(q, pub) != 0)
         return false; // q = -A
 

@@ -106,12 +106,16 @@ static const uint8_t P25519_MINUS2_BE[32] = {0x7f, 0xff, 0xff, 0xff, 0xff, 0xff,
 // is a public constant; the base is packed to its canonical residue first.
 void ssh_gf_inv(ssh_gf out, const ssh_gf a)
 {
-    uint8_t le[32], be[32];
+    uint8_t le[32];
+    uint8_t be[32];
     ssh_gf_pack(le, a); // canonical little-endian residue in [0, p)
     for (int i = 0; i < 32; i++)
         be[i] = le[31 - i]; // to big-endian for mbedtls
 
-    mbedtls_mpi A, E, N, X;
+    mbedtls_mpi A;
+    mbedtls_mpi E;
+    mbedtls_mpi N;
+    mbedtls_mpi X;
     mbedtls_mpi_init(&A);
     mbedtls_mpi_init(&E);
     mbedtls_mpi_init(&N);
@@ -155,7 +159,8 @@ void ssh_gf_cswap(ssh_gf p, ssh_gf q, int b)
 // then emit 16-bit limbs low byte first.
 void ssh_gf_pack(uint8_t out[32], const ssh_gf a)
 {
-    ssh_gf t, m;
+    ssh_gf t;
+    ssh_gf m;
     ssh_gf_copy(t, a);
     gf_carry(t);
     gf_carry(t);
@@ -196,7 +201,13 @@ void ssh_x25519(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[3
     z[31] = (uint8_t)((scalar[31] & 127) | 64); // clamp the scalar (RFC 7748 §5)
     z[0] &= 248;
 
-    ssh_gf x, a, b, c, d, e, f;
+    ssh_gf x;
+    ssh_gf a;
+    ssh_gf b;
+    ssh_gf c;
+    ssh_gf d;
+    ssh_gf e;
+    ssh_gf f;
     ssh_gf_unpack(x, point);
     for (int i = 0; i < 16; i++)
     {

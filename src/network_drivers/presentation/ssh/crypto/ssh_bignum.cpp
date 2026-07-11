@@ -275,12 +275,18 @@ int bn_dh_validate(const SshBigNum *v)
 
 void bn_expmod_group14(SshBigNum *out, const SshBigNum *base, const SshBigNum *exp)
 {
-    uint8_t base_be[256], exp_be[256], p_be[256], res_be[256];
+    uint8_t base_be[256];
+    uint8_t exp_be[256];
+    uint8_t p_be[256];
+    uint8_t res_be[256];
     bn_to_bytes(base_be, base);
     bn_to_bytes(exp_be, exp);
     bn_to_bytes(p_be, &group14_p);
 
-    mbedtls_mpi B, E, P, R;
+    mbedtls_mpi B;
+    mbedtls_mpi E;
+    mbedtls_mpi P;
+    mbedtls_mpi R;
     mbedtls_mpi_init(&B);
     mbedtls_mpi_init(&E);
     mbedtls_mpi_init(&P);
