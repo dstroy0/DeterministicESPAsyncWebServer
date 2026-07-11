@@ -260,6 +260,30 @@ from [`perf/bench_snmp.cpp`](../perf/bench_snmp.cpp); the device figure is the r
   the reply at its small MIB + fixed tx buffer, so it is **not a usable reflection/amplification vector**
   (unlike a full SNMP daemon over a large MIB). That bound is a determinism property, not a config knob.
 
+### OPC UA Binary codec (DETWS_ENABLE_OPCUA)
+
+The OPC UA server's hot ops (IEC 62541 / OPC UA Part 6): the UACP Hello/Acknowledge handshake
+(`opcua_parse_hello` + `opcua_build_ack`, run once per connection) and the per-node DataValue Variant
+encode (`ua_w_datavalue`, the Read-service hot op). All pure little-endian codecs. Host figures from
+[`perf/bench_opcua.cpp`](../perf/bench_opcua.cpp); the device figure is the rig `/bench` CCOUNT op
+(parse HELLO + build ACK together).
+
+| Operation                           | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ----------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `opcua_parse_hello`                 |       15.0 |    3934.4 |               - |              - |
+| `opcua_build_ack`                   |       25.1 |    1115.1 |               - |              - |
+| HELLO parse + ACK build (handshake) |          - |         - |            1563 |           6512 |
+| `ua_w_datavalue` (scalar Double)    |       14.2 |     705.0 |               - |              - |
+
+- The whole handshake is ~6.5 us on the S3 - the cheapest connection-setup of the TCP protocols, because
+  OPC UA Binary is a fixed little-endian struct format (no text parse, no TLV). The built-in-type codec
+  (`ua_w_*` / `ua_r_*`) is a few ns per field, so the Read/Browse response cost scales with the number of
+  nodes + references, not the encoding.
+- **Buffer-negotiation note (security):** the pentest `opcua_hello_buffer_abuse` sent a HELLO advertising
+  4 GB Receive/Send/MaxMessage buffers; the ACK negotiated them **down to the server's fixed 8192 B**
+  (`DETWS_OPCUA_BUF`) with MaxChunkCount 1 - the server never honors the client's huge sizes, so a Hello
+  cannot induce an over-allocation. That bound is structural (fixed buffers), not a tunable.
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
