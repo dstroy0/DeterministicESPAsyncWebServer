@@ -292,16 +292,16 @@ bool is_v4_mapped_bytes(const uint8_t *b)
 DetIpScope classify_v4(const uint8_t *b)
 {
     if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0)
-        return DET_IP_SCOPE_UNSPECIFIED; // 0.0.0.0
+        return DetIpScope::DET_IP_SCOPE_UNSPECIFIED; // 0.0.0.0
     if (b[0] == 127)
-        return DET_IP_SCOPE_LOOPBACK; // 127/8
+        return DetIpScope::DET_IP_SCOPE_LOOPBACK; // 127/8
     if (b[0] == 169 && b[1] == 254)
-        return DET_IP_SCOPE_LINK_LOCAL; // 169.254/16
+        return DetIpScope::DET_IP_SCOPE_LINK_LOCAL; // 169.254/16
     if (b[0] == 10 || (b[0] == 172 && b[1] >= 16 && b[1] <= 31) || (b[0] == 192 && b[1] == 168))
-        return DET_IP_SCOPE_PRIVATE; // RFC 1918
+        return DetIpScope::DET_IP_SCOPE_PRIVATE; // RFC 1918
     if (b[0] >= 224 && b[0] <= 239)
-        return DET_IP_SCOPE_MULTICAST; // 224/4
-    return DET_IP_SCOPE_GLOBAL;
+        return DetIpScope::DET_IP_SCOPE_MULTICAST; // 224/4
+    return DetIpScope::DET_IP_SCOPE_GLOBAL;
 }
 
 /** Classify the sixteen v6 bytes at @p b (v4-mapped addresses defer to their embedded v4). */
@@ -315,24 +315,24 @@ DetIpScope classify_v6(const uint8_t *b)
             break;
         }
     if (allzero)
-        return DET_IP_SCOPE_UNSPECIFIED; // ::
+        return DetIpScope::DET_IP_SCOPE_UNSPECIFIED; // ::
 
     bool loopback = (b[15] == 1);
     for (int k = 0; k < 15 && loopback; k++)
         if (b[k])
             loopback = false;
     if (loopback)
-        return DET_IP_SCOPE_LOOPBACK; // ::1
+        return DetIpScope::DET_IP_SCOPE_LOOPBACK; // ::1
 
     if (is_v4_mapped_bytes(b))
         return classify_v4(b + 12); // ::ffff:a.b.c.d takes the v4 scope
     if (b[0] == 0xff)
-        return DET_IP_SCOPE_MULTICAST; // ff00::/8
+        return DetIpScope::DET_IP_SCOPE_MULTICAST; // ff00::/8
     if (b[0] == 0xfe && (b[1] & 0xc0) == 0x80)
-        return DET_IP_SCOPE_LINK_LOCAL; // fe80::/10
+        return DetIpScope::DET_IP_SCOPE_LINK_LOCAL; // fe80::/10
     if ((b[0] & 0xfe) == 0xfc)
-        return DET_IP_SCOPE_PRIVATE; // fc00::/7 (unique-local)
-    return DET_IP_SCOPE_GLOBAL;
+        return DetIpScope::DET_IP_SCOPE_PRIVATE; // fc00::/7 (unique-local)
+    return DetIpScope::DET_IP_SCOPE_GLOBAL;
 }
 } // namespace
 
@@ -364,14 +364,14 @@ bool det_ip_parse(const char *s, DetIp *out)
     {
         if (!parse_v6(s, len, out->bytes))
             return false;
-        out->family = DET_IP_V6;
+        out->family = DetIpFamily::DET_IP_V6;
         return true;
     }
     if (dot)
     {
         if (!parse_v4(s, len, out->bytes))
             return false;
-        out->family = DET_IP_V4;
+        out->family = DetIpFamily::DET_IP_V4;
         return true;
     }
     return false;
@@ -381,9 +381,9 @@ size_t det_ip_format(const DetIp *ip, char *out, size_t cap)
 {
     if (!ip || !out || cap == 0)
         return 0;
-    if (ip->family == DET_IP_V4)
+    if (ip->family == DetIpFamily::DET_IP_V4)
         return format_v4(ip->bytes, out, cap);
-    if (ip->family != DET_IP_V6)
+    if (ip->family != DetIpFamily::DET_IP_V6)
         return 0;
 
     // IPv4-mapped addresses print with a dotted tail: ::ffff:a.b.c.d (RFC 5952 §5).
@@ -433,18 +433,18 @@ size_t det_ip_format(const DetIp *ip, char *out, size_t cap)
 
 bool det_ip_is_v4_mapped(const DetIp *ip)
 {
-    return ip && ip->family == DET_IP_V6 && is_v4_mapped_bytes(ip->bytes);
+    return ip && ip->family == DetIpFamily::DET_IP_V6 && is_v4_mapped_bytes(ip->bytes);
 }
 
 DetIpScope det_ip_classify(const DetIp *ip)
 {
     if (!ip)
-        return DET_IP_SCOPE_UNSPECIFIED;
-    if (ip->family == DET_IP_V4)
+        return DetIpScope::DET_IP_SCOPE_UNSPECIFIED;
+    if (ip->family == DetIpFamily::DET_IP_V4)
         return classify_v4(ip->bytes);
-    if (ip->family == DET_IP_V6)
+    if (ip->family == DetIpFamily::DET_IP_V6)
         return classify_v6(ip->bytes);
-    return DET_IP_SCOPE_UNSPECIFIED;
+    return DetIpScope::DET_IP_SCOPE_UNSPECIFIED;
 }
 
 bool det_ip_equal(const DetIp *a, const DetIp *b)
@@ -452,12 +452,12 @@ bool det_ip_equal(const DetIp *a, const DetIp *b)
     if (!a || !b || a->family != b->family)
         return false;
     int n = 0;
-    if (a->family == DET_IP_V4)
+    if (a->family == DetIpFamily::DET_IP_V4)
         n = 4;
-    else if (a->family == DET_IP_V6)
+    else if (a->family == DetIpFamily::DET_IP_V6)
         n = 16;
     if (n == 0)
-        return true; // both the same non-address family (DET_IP_NONE)
+        return true; // both the same non-address family (DetIpFamily::DET_IP_NONE)
     return memcmp(a->bytes, b->bytes, (size_t)n) == 0;
 }
 
@@ -465,7 +465,7 @@ DetIp det_ip_from_v4_octets(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 {
     DetIp ip;
     memset(&ip, 0, sizeof(ip));
-    ip.family = DET_IP_V4;
+    ip.family = DetIpFamily::DET_IP_V4;
     ip.bytes[0] = a;
     ip.bytes[1] = b;
     ip.bytes[2] = c;
@@ -476,7 +476,7 @@ DetIp det_ip_from_v4_octets(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 DetIp det_ip_from_v6_bytes(const uint8_t bytes[16])
 {
     DetIp ip;
-    ip.family = DET_IP_V6;
+    ip.family = DetIpFamily::DET_IP_V6;
     memcpy(ip.bytes, bytes, 16);
     return ip;
 }
@@ -486,7 +486,7 @@ uint32_t det_ip_to_v4_be(const DetIp *ip)
     if (!ip)
         return 0;
     const uint8_t *b = ip->bytes;
-    if (ip->family == DET_IP_V4)
+    if (ip->family == DetIpFamily::DET_IP_V4)
         return ((uint32_t)b[0] << 24) | ((uint32_t)b[1] << 16) | ((uint32_t)b[2] << 8) | b[3];
     if (det_ip_is_v4_mapped(ip))
         return ((uint32_t)b[12] << 24) | ((uint32_t)b[13] << 16) | ((uint32_t)b[14] << 8) | b[15];
@@ -495,9 +495,9 @@ uint32_t det_ip_to_v4_be(const DetIp *ip)
 
 bool det_ip_is_unspecified(const DetIp *ip)
 {
-    if (!ip || ip->family == DET_IP_NONE)
+    if (!ip || ip->family == DetIpFamily::DET_IP_NONE)
         return true;
-    int n = (ip->family == DET_IP_V4) ? 4 : 16;
+    int n = (ip->family == DetIpFamily::DET_IP_V4) ? 4 : 16;
     for (int i = 0; i < n; i++)
         if (ip->bytes[i])
             return false;
@@ -508,7 +508,7 @@ bool det_ip_prefix_match(const DetIp *addr, const DetIp *net, uint8_t prefix_len
 {
     if (!addr || !net || addr->family != net->family)
         return false;
-    int bits = (addr->family == DET_IP_V4) ? 32 : (addr->family == DET_IP_V6 ? 128 : 0);
+    int bits = (addr->family == DetIpFamily::DET_IP_V4) ? 32 : (addr->family == DetIpFamily::DET_IP_V6 ? 128 : 0);
     if (bits == 0 || prefix_len > bits)
         return false;
     int whole = prefix_len / 8; // bytes that must match exactly

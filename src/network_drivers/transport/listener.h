@@ -171,7 +171,7 @@ void listener_accept_throttle_reset(void);
  * addresses onto one bucket (or evict a victim's) through a lossy hash. State is a
  * fixed BSS table of DETWS_PER_IP_THROTTLE_SLOTS buckets; a new address reuses an
  * empty, expired, or least-recently-started bucket so memory stays bounded. An
- * unspecified @p ip (family DET_IP_NONE) is passed through (allowed) since it cannot
+ * unspecified @p ip (family DetIpFamily::DET_IP_NONE) is passed through (allowed) since it cannot
  * be tracked. The accept callback consults this only when DETWS_ENABLE_PER_IP_THROTTLE
  * is set; the function is always compiled so it can be unit-tested. Call
  * listener_per_ip_throttle_reset() to clear the table.

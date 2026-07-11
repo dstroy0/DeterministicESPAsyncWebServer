@@ -593,7 +593,7 @@ void det_lwip_to_detip(const ip_addr_t *ra, DetIp *out)
 bool det_conn_remote_addr(uint8_t slot, DetIp *out)
 {
     if (out)
-        out->family = DET_IP_NONE;
+        out->family = DetIpFamily::DET_IP_NONE;
 #ifdef ARDUINO
     if (!out || slot >= MAX_CONNS)
         return false;

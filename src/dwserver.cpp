@@ -1729,7 +1729,7 @@ static void send_method_not_allowed(uint8_t slot_id, const char *allow)
 static DetIp lockout_client_ip(uint8_t slot_id)
 {
     DetIp ip;
-    ip.family = DET_IP_NONE;
+    ip.family = DetIpFamily::DET_IP_NONE;
     det_conn_remote_addr(slot_id, &ip);
     return ip;
 }

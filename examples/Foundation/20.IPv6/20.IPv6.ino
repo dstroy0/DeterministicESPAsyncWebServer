@@ -24,15 +24,15 @@ static const char *scope_name(DetIpScope s)
 {
     switch (s)
     {
-    case DET_IP_SCOPE_LOOPBACK:
+    case DetIpScope::DET_IP_SCOPE_LOOPBACK:
         return "loopback";
-    case DET_IP_SCOPE_LINK_LOCAL:
+    case DetIpScope::DET_IP_SCOPE_LINK_LOCAL:
         return "link-local";
-    case DET_IP_SCOPE_PRIVATE:
+    case DetIpScope::DET_IP_SCOPE_PRIVATE:
         return "unique-local";
-    case DET_IP_SCOPE_MULTICAST:
+    case DetIpScope::DET_IP_SCOPE_MULTICAST:
         return "multicast";
-    case DET_IP_SCOPE_GLOBAL:
+    case DetIpScope::DET_IP_SCOPE_GLOBAL:
         return "global";
     default:
         return "unspecified";

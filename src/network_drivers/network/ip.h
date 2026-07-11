@@ -29,7 +29,7 @@
 #include <stdint.h>
 
 /** @brief Address family tag. */
-enum DetIpFamily
+enum class DetIpFamily : uint8_t
 {
     DET_IP_NONE = 0, ///< empty / unparsed
     DET_IP_V4 = 4,   ///< IPv4 (bytes[0..3])
@@ -37,7 +37,7 @@ enum DetIpFamily
 };
 
 /** @brief Address scope, in rough order of reachability (used for allow/deny policy + logging). */
-enum DetIpScope
+enum class DetIpScope : uint8_t
 {
     DET_IP_SCOPE_UNSPECIFIED = 0, ///< 0.0.0.0 / ::
     DET_IP_SCOPE_LOOPBACK,        ///< 127.0.0.0/8 / ::1
@@ -50,8 +50,8 @@ enum DetIpScope
 /** @brief A v4 or v6 address in network (big-endian) byte order. */
 struct DetIp
 {
-    uint8_t family;    ///< DetIpFamily
-    uint8_t bytes[16]; ///< network order; v4 uses the first 4
+    DetIpFamily family; ///< address family tag
+    uint8_t bytes[16];  ///< network order; v4 uses the first 4
 };
 
 /** @brief Longest text an ::det_ip_format can produce, including the NUL (RFC 5952 v4-mapped). */
@@ -59,7 +59,7 @@ struct DetIp
 
 /**
  * @brief Parse an IPv4 or IPv6 textual address (RFC 4291 §2.2) into @p out.
- * @return true on success (@p out->family set to DET_IP_V4/V6), false if @p s is malformed.
+ * @return true on success (@p out->family set to DetIpFamily::DET_IP_V4/V6), false if @p s is malformed.
  */
 bool det_ip_parse(const char *s, DetIp *out);
 
@@ -95,7 +95,7 @@ DetIp det_ip_from_v6_bytes(const uint8_t bytes[16]);
  */
 uint32_t det_ip_to_v4_be(const DetIp *ip);
 
-/** @brief True if @p ip is empty (DET_IP_NONE) or the all-zero unspecified address (0.0.0.0 / ::). */
+/** @brief True if @p ip is empty (DetIpFamily::DET_IP_NONE) or the all-zero unspecified address (0.0.0.0 / ::). */
 bool det_ip_is_unspecified(const DetIp *ip);
 
 /**

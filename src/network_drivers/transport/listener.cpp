@@ -80,7 +80,7 @@ void listener_accept_throttle_reset(void)
 
 struct IpThrottleBucket
 {
-    DetIp addr;            ///< source address (family DET_IP_NONE marks an empty bucket).
+    DetIp addr;            ///< source address (family DetIpFamily::DET_IP_NONE marks an empty bucket).
     uint32_t window_start; ///< millis() at the start of this bucket's current window.
     uint16_t count;        ///< connections counted from this address in the window.
 };
@@ -101,7 +101,7 @@ bool listener_accept_allowed_ip(const DetIp *ip, uint32_t now_ms)
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_SLOTS; i++)
     {
         IpThrottleBucket *b = &s_iptt.buckets[i];
-        if (b->addr.family != DET_IP_NONE && det_ip_equal(&b->addr, ip))
+        if (b->addr.family != DetIpFamily::DET_IP_NONE && det_ip_equal(&b->addr, ip))
         {
             // Unsigned subtraction wraps correctly across the millis() rollover.
             if ((uint32_t)(now_ms - b->window_start) >= DETWS_PER_IP_THROTTLE_WINDOW_MS)
@@ -114,7 +114,7 @@ bool listener_accept_allowed_ip(const DetIp *ip, uint32_t now_ms)
             b->count++;
             return true;
         }
-        if (b->addr.family == DET_IP_NONE)
+        if (b->addr.family == DetIpFamily::DET_IP_NONE)
         {
             if (empty < 0)
                 empty = i;
@@ -143,7 +143,7 @@ void listener_per_ip_throttle_reset(void)
 {
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_SLOTS; i++)
     {
-        s_iptt.buckets[i].addr.family = DET_IP_NONE;
+        s_iptt.buckets[i].addr.family = DetIpFamily::DET_IP_NONE;
         s_iptt.buckets[i].window_start = 0;
         s_iptt.buckets[i].count = 0;
     }
@@ -158,7 +158,7 @@ void listener_per_ip_throttle_reset(void)
 
 struct IpAllowRule
 {
-    DetIp network;      ///< network address (family DET_IP_V4 / V6; DET_IP_NONE marks unused).
+    DetIp network; ///< network address (family DetIpFamily::DET_IP_V4 / V6; DetIpFamily::DET_IP_NONE marks unused).
     uint8_t prefix_len; ///< CIDR prefix length: 0..32 for v4, 0..128 for v6.
 };
 // IP allowlist state, owned by one instance (internal linkage): the CIDR rule table and its
@@ -174,7 +174,8 @@ bool listener_ip_allow_add(const DetIp *network, uint8_t prefix_len)
 {
     if (!network)
         return false;
-    int bits = (network->family == DET_IP_V4) ? 32 : (network->family == DET_IP_V6 ? 128 : -1);
+    int bits =
+        (network->family == DetIpFamily::DET_IP_V4) ? 32 : (network->family == DetIpFamily::DET_IP_V6 ? 128 : -1);
     if (bits < 0 || prefix_len > (uint8_t)bits)
         return false; // reject a malformed family or an over-long prefix
     if (s_allow.count >= DETWS_IP_ALLOWLIST_SLOTS)
@@ -209,11 +210,11 @@ bool listener_ip_allow_add_cidr(const char *cidr)
     addr[n] = '\0';
 
     DetIp net;
-    net.family = DET_IP_NONE;
+    net.family = DetIpFamily::DET_IP_NONE;
     if (!det_ip_parse(addr, &net))
         return false;
 
-    uint8_t width = (net.family == DET_IP_V4) ? 32 : 128;
+    uint8_t width = (net.family == DetIpFamily::DET_IP_V4) ? 32 : 128;
     uint8_t prefix = width; // bare address -> host route
     if (slash)
     {
@@ -252,7 +253,7 @@ bool listener_ip_allowed(const DetIp *ip)
 void listener_ip_allowlist_reset(void)
 {
     for (int i = 0; i < DETWS_IP_ALLOWLIST_SLOTS; i++)
-        s_allow.rules[i].network.family = DET_IP_NONE;
+        s_allow.rules[i].network.family = DetIpFamily::DET_IP_NONE;
     s_allow.count = 0;
 }
 
@@ -348,7 +349,7 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     // there is no real lwIP pcb, so it stays unspecified and the gates pass it
     // through; the host unit tests drive those gates directly with synthetic DetIp.
     DetIp remote;
-    remote.family = DET_IP_NONE;
+    remote.family = DetIpFamily::DET_IP_NONE;
 #ifdef ARDUINO
     det_lwip_to_detip(&newpcb->remote_ip, &remote);
 #endif

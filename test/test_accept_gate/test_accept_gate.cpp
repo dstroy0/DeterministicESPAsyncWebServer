@@ -27,7 +27,7 @@ static DetIp v4(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 static DetIp v6(const char *s)
 {
     DetIp ip;
-    ip.family = DET_IP_NONE;
+    ip.family = DetIpFamily::DET_IP_NONE;
     det_ip_parse(s, &ip);
     return ip;
 }
@@ -107,7 +107,7 @@ void test_per_ip_unspecified_defers()
 {
     listener_per_ip_throttle_reset();
     DetIp none;
-    none.family = DET_IP_NONE;
+    none.family = DetIpFamily::DET_IP_NONE;
     for (uint32_t i = 0; i < 10; i++)
         TEST_ASSERT_TRUE(listener_accept_allowed_ip(&none, i));
 }

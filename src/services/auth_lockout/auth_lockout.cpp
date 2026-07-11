@@ -21,7 +21,7 @@ namespace
 
 struct LockoutBucket
 {
-    DetIp addr;             ///< source address (family DET_IP_NONE marks an empty bucket).
+    DetIp addr;             ///< source address (family DetIpFamily::DET_IP_NONE marks an empty bucket).
     uint32_t lock_start_ms; ///< millis() when the current lockout began.
     uint32_t lock_ms;       ///< current lockout duration (0 = not locked).
     uint32_t last_ms;       ///< millis() of the last recorded failure (LRU eviction).
@@ -40,7 +40,7 @@ LockoutCtx s_lock;
 LockoutBucket *find_bucket(LockoutCtx &c, const DetIp *ip)
 {
     for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
-        if (c.buckets[i].addr.family != DET_IP_NONE && det_ip_equal(&c.buckets[i].addr, ip))
+        if (c.buckets[i].addr.family != DetIpFamily::DET_IP_NONE && det_ip_equal(&c.buckets[i].addr, ip))
             return &c.buckets[i];
     return nullptr;
 }
@@ -81,7 +81,7 @@ void auth_lockout_fail(const DetIp *ip, uint32_t now_ms)
         int slot = -1, lru = 0;
         for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
         {
-            if (s_lock.buckets[i].addr.family == DET_IP_NONE)
+            if (s_lock.buckets[i].addr.family == DetIpFamily::DET_IP_NONE)
             {
                 slot = i;
                 break;
@@ -136,7 +136,7 @@ void auth_lockout_succeed(const DetIp *ip)
     LockoutBucket *b = find_bucket(s_lock, ip);
     if (b)
     {
-        b->addr.family = DET_IP_NONE;
+        b->addr.family = DetIpFamily::DET_IP_NONE;
         b->fails = 0;
         b->lock_ms = 0;
         b->lock_start_ms = 0;
@@ -148,7 +148,7 @@ void auth_lockout_reset(void)
 {
     for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
     {
-        s_lock.buckets[i].addr.family = DET_IP_NONE;
+        s_lock.buckets[i].addr.family = DetIpFamily::DET_IP_NONE;
         s_lock.buckets[i].lock_start_ms = 0;
         s_lock.buckets[i].lock_ms = 0;
         s_lock.buckets[i].last_ms = 0;

@@ -79,7 +79,7 @@ bool net_global_ipv6(DetIp *out)
         const ip6_addr_t *a6 = netif_ip6_addr(netif_default, i);
         if (!ip6_addr_isglobal(a6))
             continue;
-        out->family = DET_IP_V6;
+        out->family = DetIpFamily::DET_IP_V6;
         memcpy(out->bytes, a6->addr, 16); // lwIP holds the 16 bytes in network order
         return true;
     }

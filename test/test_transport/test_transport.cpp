@@ -451,7 +451,7 @@ void test_per_ip_throttle_zero_ip_always_allowed()
 {
     listener_per_ip_throttle_reset();
     DetIp none;
-    none.family = DET_IP_NONE;
+    none.family = DetIpFamily::DET_IP_NONE;
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_MAX + 5; i++)
         TEST_ASSERT_TRUE(listener_accept_allowed_ip(&none, 0));
 }
@@ -462,9 +462,9 @@ void test_per_ip_throttle_v6_distinct()
 {
     listener_per_ip_throttle_reset();
     DetIp a;
-    a.family = DET_IP_NONE;
+    a.family = DetIpFamily::DET_IP_NONE;
     DetIp b;
-    b.family = DET_IP_NONE;
+    b.family = DetIpFamily::DET_IP_NONE;
     TEST_ASSERT_TRUE(det_ip_parse("2001:db8::1", &a));
     TEST_ASSERT_TRUE(det_ip_parse("2001:db8::2", &b));
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_MAX; i++)
@@ -494,7 +494,7 @@ void test_ip_allowlist_empty_allows_all()
     listener_ip_allowlist_reset();
     DetIp a = v4w(0xC0A8010Au), b = v4w(0x08080808u); // 192.168.1.10, 8.8.8.8
     DetIp none;
-    none.family = DET_IP_NONE;
+    none.family = DetIpFamily::DET_IP_NONE;
     TEST_ASSERT_TRUE(listener_ip_allowed(&a));
     TEST_ASSERT_TRUE(listener_ip_allowed(&b));
     TEST_ASSERT_TRUE(listener_ip_allowed(&none));
@@ -566,9 +566,9 @@ void test_ip_allowlist_v6_cidr()
     listener_ip_allowlist_reset();
     TEST_ASSERT_TRUE(listener_ip_allow_add_cidr("2001:db8::/32"));
     DetIp in;
-    in.family = DET_IP_NONE;
+    in.family = DetIpFamily::DET_IP_NONE;
     DetIp out;
-    out.family = DET_IP_NONE;
+    out.family = DetIpFamily::DET_IP_NONE;
     TEST_ASSERT_TRUE(det_ip_parse("2001:db8:0:0:1234::abcd", &in));
     TEST_ASSERT_TRUE(det_ip_parse("2001:db9::1", &out));
     TEST_ASSERT_TRUE(listener_ip_allowed(&in));

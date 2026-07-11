@@ -15,22 +15,22 @@ namespace
 // Effective family for interleave: an IPv4-mapped IPv6 address is treated as IPv4.
 bool eff_is_v6(const DetIp *ip)
 {
-    return ip->family == DET_IP_V6 && !det_ip_is_v4_mapped(ip);
+    return ip->family == DetIpFamily::DET_IP_V6 && !det_ip_is_v4_mapped(ip);
 }
 
 int scope_rank(const DetIp *ip)
 {
     switch (det_ip_classify(ip))
     {
-    case DET_IP_SCOPE_GLOBAL:
+    case DetIpScope::DET_IP_SCOPE_GLOBAL:
         return 5;
-    case DET_IP_SCOPE_PRIVATE:
+    case DetIpScope::DET_IP_SCOPE_PRIVATE:
         return 4;
-    case DET_IP_SCOPE_LINK_LOCAL:
+    case DetIpScope::DET_IP_SCOPE_LINK_LOCAL:
         return 3;
-    case DET_IP_SCOPE_LOOPBACK:
+    case DetIpScope::DET_IP_SCOPE_LOOPBACK:
         return 2;
-    case DET_IP_SCOPE_MULTICAST:
+    case DetIpScope::DET_IP_SCOPE_MULTICAST:
         return 1;
     default:
         return 0; // unspecified
@@ -40,7 +40,7 @@ int scope_rank(const DetIp *ip)
 
 int detws_he_pref(const DetIp *ip)
 {
-    if (!ip || ip->family == DET_IP_NONE)
+    if (!ip || ip->family == DetIpFamily::DET_IP_NONE)
         return -1;
     // Scope dominates; within a scope a native IPv6 outranks IPv4 (RFC 6724 default policy).
     return scope_rank(ip) * 2 + (eff_is_v6(ip) ? 1 : 0);

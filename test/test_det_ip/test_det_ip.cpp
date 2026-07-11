@@ -66,45 +66,45 @@ void test_classify_v4()
 {
     DetIp ip;
     det_ip_parse("0.0.0.0", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&ip));
     det_ip_parse("127.0.0.1", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip));
     det_ip_parse("169.254.3.4", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_LINK_LOCAL, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_LINK_LOCAL, det_ip_classify(&ip));
     det_ip_parse("10.1.2.3", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip));
     det_ip_parse("172.16.0.1", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip));
     det_ip_parse("172.32.0.1", &ip); // just outside 172.16/12
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip));
     det_ip_parse("192.168.5.5", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip));
     det_ip_parse("224.0.0.1", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_MULTICAST, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_MULTICAST, det_ip_classify(&ip));
     det_ip_parse("8.8.8.8", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip));
 }
 
 void test_classify_v6()
 {
     DetIp ip;
     det_ip_parse("::", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&ip));
     det_ip_parse("::1", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip));
     det_ip_parse("fe80::1", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_LINK_LOCAL, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_LINK_LOCAL, det_ip_classify(&ip));
     det_ip_parse("fc00::1", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip)); // ULA
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip)); // ULA
     det_ip_parse("fd12:3456::1", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip));
     det_ip_parse("ff02::1", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_MULTICAST, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_MULTICAST, det_ip_classify(&ip));
     det_ip_parse("2001:db8::1", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip));
     // v4-mapped classifies as its v4 scope.
     det_ip_parse("::ffff:127.0.0.1", &ip);
-    TEST_ASSERT_EQUAL(DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip));
+    TEST_ASSERT_EQUAL(DetIpScope::DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip));
 }
 
 void test_reject_malformed()
@@ -148,7 +148,7 @@ void test_from_v6_bytes()
     // 2001:db8::1 as raw network-order bytes -> DetIp -> canonical text.
     const uint8_t raw[16] = {0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
     DetIp ip = det_ip_from_v6_bytes(raw);
-    TEST_ASSERT_EQUAL_UINT8(DET_IP_V6, ip.family);
+    TEST_ASSERT_EQUAL_UINT8(DetIpFamily::DET_IP_V6, ip.family);
     char s[DET_IP_STR_MAX];
     det_ip_format(&ip, s, sizeof(s));
     TEST_ASSERT_EQUAL_STRING("2001:db8::1", s);
@@ -161,7 +161,7 @@ void test_from_v6_bytes()
 void test_is_unspecified()
 {
     DetIp none;
-    none.family = DET_IP_NONE;
+    none.family = DetIpFamily::DET_IP_NONE;
     TEST_ASSERT_TRUE(det_ip_is_unspecified(&none));
     TEST_ASSERT_TRUE(det_ip_is_unspecified(nullptr));
 
@@ -216,12 +216,12 @@ void test_prefix_match()
 
 void test_ip_classify_equal_cidr_and_parse_edges()
 {
-    // classify: null and a DET_IP_NONE address are UNSPECIFIED.
-    TEST_ASSERT_EQUAL_INT(DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(nullptr));
+    // classify: null and a DetIpFamily::DET_IP_NONE address are UNSPECIFIED.
+    TEST_ASSERT_EQUAL_INT(DetIpScope::DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(nullptr));
     DetIp none = {};
     DetIp none2 = {};
-    TEST_ASSERT_EQUAL_INT(DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&none));
-    // equal: two DET_IP_NONE addresses compare equal (same non-address family).
+    TEST_ASSERT_EQUAL_INT(DetIpScope::DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&none));
+    // equal: two DetIpFamily::DET_IP_NONE addresses compare equal (same non-address family).
     TEST_ASSERT_TRUE(det_ip_equal(&none, &none2));
     // CIDR with a non-byte-aligned prefix: the partial high bits of the boundary byte must match.
     DetIp net = det_ip_from_v4_octets(192, 168, 0, 0);
@@ -249,7 +249,7 @@ void test_ip_classify_equal_cidr_and_parse_edges()
     // format guards: null ptr, non-v6/v4 family, and buffers too small for v4/v6/mapped.
     char buf[64];
     TEST_ASSERT_EQUAL_UINT(0, det_ip_format(nullptr, buf, sizeof(buf)));
-    TEST_ASSERT_EQUAL_UINT(0, det_ip_format(&none, buf, sizeof(buf))); // DET_IP_NONE family
+    TEST_ASSERT_EQUAL_UINT(0, det_ip_format(&none, buf, sizeof(buf))); // DetIpFamily::DET_IP_NONE family
     DetIp v4 = det_ip_from_v4_octets(255, 255, 255, 255);
     TEST_ASSERT_EQUAL_UINT(0, det_ip_format(&v4, buf, 4)); // "255.255.255.255" needs 16
     DetIp v6;

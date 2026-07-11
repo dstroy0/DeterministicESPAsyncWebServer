@@ -14,7 +14,7 @@
  * DETWS_AUTH_LOCKOUT_MAX_MS; a successful auth clears the address. Compiled only
  * when DETWS_ENABLE_AUTH_LOCKOUT is set (the host unit tests enable it and drive
  * it with a synthetic millisecond clock). An unspecified address (family
- * DET_IP_NONE or all-zero) is untrackable and is never locked.
+ * DetIpFamily::DET_IP_NONE or all-zero) is untrackable and is never locked.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026

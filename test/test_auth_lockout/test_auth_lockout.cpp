@@ -117,9 +117,9 @@ void test_v6_distinct_from_v4_and_each_other()
 {
     auth_lockout_reset();
     DetIp v6a;
-    v6a.family = DET_IP_NONE;
+    v6a.family = DetIpFamily::DET_IP_NONE;
     DetIp v6b;
-    v6b.family = DET_IP_NONE;
+    v6b.family = DetIpFamily::DET_IP_NONE;
     TEST_ASSERT_TRUE(det_ip_parse("2001:db8::1", &v6a));
     TEST_ASSERT_TRUE(det_ip_parse("2001:db8::2", &v6b));
     for (int i = 0; i < DETWS_AUTH_LOCKOUT_THRESHOLD; i++)
@@ -137,7 +137,7 @@ void test_zero_ip_never_locked()
 {
     auth_lockout_reset();
     DetIp none;
-    none.family = DET_IP_NONE;
+    none.family = DetIpFamily::DET_IP_NONE;
     for (int i = 0; i < DETWS_AUTH_LOCKOUT_THRESHOLD + 10; i++)
         auth_lockout_fail(&none, 0);
     TEST_ASSERT_EQUAL_UINT32(0, auth_lockout_remaining_ms(&none, 0));
@@ -180,7 +180,7 @@ void test_active_lockout_survives_eviction()
 void test_succeed_unspecified_and_table_full_eviction()
 {
     auth_lockout_reset();
-    DetIp none = {};             // unspecified (family DET_IP_NONE)
+    DetIp none = {};             // unspecified (family DetIpFamily::DET_IP_NONE)
     auth_lockout_succeed(&none); // no-op guard on an unspecified address
     // Fill every bucket with an active lockout.
     for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)

@@ -69,7 +69,7 @@ bool init_ipv6_physical(void);
 
 /**
  * @brief The interface's global (routable) IPv6 address, if it has one.
- * @param[out] out receives the address (family DET_IP_V6) when true is returned.
+ * @param[out] out receives the address (family DetIpFamily::DET_IP_V6) when true is returned.
  * @return true if a valid global IPv6 address is assigned; false otherwise (incl. host builds).
  */
 bool net_global_ipv6(DetIp *out);

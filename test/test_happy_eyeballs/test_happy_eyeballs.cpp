@@ -42,9 +42,9 @@ void test_order_and_interleave(void)
     DetIp list[3] = {v4(93, 184, 216, 34), v6("2606:4700::1"), v6("2606:4700::2")};
     detws_he_order(list, 3);
     // First is a v6 (highest pref); second must be the v4 (family alternation); third the other v6.
-    TEST_ASSERT_EQUAL_INT(DET_IP_V6, list[0].family);
-    TEST_ASSERT_EQUAL_INT(DET_IP_V4, list[1].family);
-    TEST_ASSERT_EQUAL_INT(DET_IP_V6, list[2].family);
+    TEST_ASSERT_EQUAL_INT(DetIpFamily::DET_IP_V6, list[0].family);
+    TEST_ASSERT_EQUAL_INT(DetIpFamily::DET_IP_V4, list[1].family);
+    TEST_ASSERT_EQUAL_INT(DetIpFamily::DET_IP_V6, list[2].family);
 }
 
 void test_order_single_family(void)
