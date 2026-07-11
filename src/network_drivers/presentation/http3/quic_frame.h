@@ -29,38 +29,39 @@
 #include <stdint.h>
 
 /** @brief Frame types (RFC 9000 sec 19 / Table 3). STREAM is the range 0x08..0x0f. */
-enum
+struct QuicFrameType
 {
-    QUIC_FT_PADDING = 0x00,
-    QUIC_FT_PING = 0x01,
-    QUIC_FT_ACK = 0x02, ///< 0x02 (no ECN) .. 0x03 (with ECN counts)
-    QUIC_FT_ACK_ECN = 0x03,
-    QUIC_FT_CRYPTO = 0x06,
-    QUIC_FT_STREAM = 0x08, ///< 0x08..0x0f; low 3 bits are OFF (0x04) / LEN (0x02) / FIN (0x01)
-    QUIC_FT_MAX_DATA = 0x10,
-    QUIC_FT_CONNECTION_CLOSE = 0x1c,     ///< transport-level close (carries the triggering frame type)
-    QUIC_FT_CONNECTION_CLOSE_APP = 0x1d, ///< application-level close
-    QUIC_FT_HANDSHAKE_DONE = 0x1e,
+    static constexpr uint8_t QUIC_FT_PADDING = 0x00;
+    static constexpr uint8_t QUIC_FT_PING = 0x01;
+    static constexpr uint8_t QUIC_FT_ACK = 0x02; ///< 0x02 (no ECN) .. 0x03 (with ECN counts)
+    static constexpr uint8_t QUIC_FT_ACK_ECN = 0x03;
+    static constexpr uint8_t QUIC_FT_CRYPTO = 0x06;
+    static constexpr uint8_t QUIC_FT_STREAM = 0x08; ///< 0x08..0x0f; low 3 bits are OFF (0x04) / LEN (0x02) / FIN (0x01)
+    static constexpr uint8_t QUIC_FT_MAX_DATA = 0x10;
+    static constexpr uint8_t QUIC_FT_CONNECTION_CLOSE =
+        0x1c; ///< transport-level close (carries the triggering frame type)
+    static constexpr uint8_t QUIC_FT_CONNECTION_CLOSE_APP = 0x1d; ///< application-level close
+    static constexpr uint8_t QUIC_FT_HANDSHAKE_DONE = 0x1e;
 };
 
 /** @brief STREAM frame type bits. */
-enum
+struct QuicStreamFlag
 {
-    QUIC_STREAM_FIN = 0x01,
-    QUIC_STREAM_LEN = 0x02,
-    QUIC_STREAM_OFF = 0x04,
+    static constexpr uint8_t QUIC_STREAM_FIN = 0x01;
+    static constexpr uint8_t QUIC_STREAM_LEN = 0x02;
+    static constexpr uint8_t QUIC_STREAM_OFF = 0x04;
 };
 
 /** @brief Transport error codes for CONNECTION_CLOSE (RFC 9000 sec 20.1). */
-enum
+struct QuicErr
 {
-    QUIC_ERR_NO_ERROR = 0x00,
-    QUIC_ERR_INTERNAL = 0x01,
-    QUIC_ERR_FLOW_CONTROL = 0x03,
-    QUIC_ERR_STREAM_LIMIT = 0x04,
-    QUIC_ERR_FRAME_ENCODING = 0x07,     ///< a frame could not be decoded
-    QUIC_ERR_PROTOCOL_VIOLATION = 0x0a, ///< a frame/packet violated the protocol
-    QUIC_ERR_CRYPTO_BASE = 0x0100,      ///< 0x0100 + the TLS alert code (RFC 9001 sec 4.8)
+    static constexpr uint16_t QUIC_ERR_NO_ERROR = 0x00;
+    static constexpr uint16_t QUIC_ERR_INTERNAL = 0x01;
+    static constexpr uint16_t QUIC_ERR_FLOW_CONTROL = 0x03;
+    static constexpr uint16_t QUIC_ERR_STREAM_LIMIT = 0x04;
+    static constexpr uint16_t QUIC_ERR_FRAME_ENCODING = 0x07;     ///< a frame could not be decoded
+    static constexpr uint16_t QUIC_ERR_PROTOCOL_VIOLATION = 0x0a; ///< a frame/packet violated the protocol
+    static constexpr uint16_t QUIC_ERR_CRYPTO_BASE = 0x0100;      ///< 0x0100 + the TLS alert code (RFC 9001 sec 4.8)
 };
 
 /** @brief One parsed frame. Pointer fields alias the input buffer (not copied). */

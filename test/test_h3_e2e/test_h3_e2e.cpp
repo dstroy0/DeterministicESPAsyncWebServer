@@ -126,7 +126,7 @@ static size_t extract_crypto(const uint8_t *p, size_t len, uint8_t *out)
     size_t off = 0, got = 0;
     while (off < len)
     {
-        if (p[off] == QUIC_FT_PADDING)
+        if (p[off] == QuicFrameType::QUIC_FT_PADDING)
         {
             off++;
             continue;
@@ -136,7 +136,7 @@ static size_t extract_crypto(const uint8_t *p, size_t len, uint8_t *out)
         if (!n)
             break;
         off += n;
-        if (f.type == QUIC_FT_CRYPTO)
+        if (f.type == QuicFrameType::QUIC_FT_CRYPTO)
         {
             memcpy(out + got, f.crypto.data, (size_t)f.crypto.length);
             got += (size_t)f.crypto.length;
@@ -336,7 +336,7 @@ void test_http3_get_end_to_end()
             size_t fo = 0;
             while (fo < p2)
             {
-                if (plain[fo] == QUIC_FT_PADDING)
+                if (plain[fo] == QuicFrameType::QUIC_FT_PADDING)
                 {
                     fo++;
                     continue;
@@ -346,7 +346,8 @@ void test_http3_get_end_to_end()
                 if (!n)
                     break;
                 fo += n;
-                if (f.type >= QUIC_FT_STREAM && f.type <= QUIC_FT_STREAM + 7 && f.stream.id == 0)
+                if (f.type >= QuicFrameType::QUIC_FT_STREAM && f.type <= QuicFrameType::QUIC_FT_STREAM + 7 &&
+                    f.stream.id == 0)
                 {
                     const uint8_t *sp = f.stream.data;
                     size_t so = 0, sn = (size_t)f.stream.length;

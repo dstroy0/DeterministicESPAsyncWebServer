@@ -197,7 +197,7 @@ static size_t extract_crypto(const uint8_t *p, size_t len, uint8_t *out)
     size_t off = 0, got = 0;
     while (off < len)
     {
-        if (p[off] == QUIC_FT_PADDING)
+        if (p[off] == QuicFrameType::QUIC_FT_PADDING)
         {
             off++;
             continue;
@@ -207,7 +207,7 @@ static size_t extract_crypto(const uint8_t *p, size_t len, uint8_t *out)
         if (!n)
             break;
         off += n;
-        if (f.type == QUIC_FT_CRYPTO)
+        if (f.type == QuicFrameType::QUIC_FT_CRYPTO)
         {
             memcpy(out + got, f.crypto.data, (size_t)f.crypto.length);
             got += (size_t)f.crypto.length;
@@ -221,7 +221,7 @@ static bool has_frame(const uint8_t *p, size_t len, uint64_t want)
     size_t off = 0;
     while (off < len)
     {
-        if (p[off] == QUIC_FT_PADDING)
+        if (p[off] == QuicFrameType::QUIC_FT_PADDING)
         {
             off++;
             continue;
@@ -374,7 +374,7 @@ void test_full_handshake_and_stream()
         {
             size_t p2 = open_short(sdg + off, sl - off, sizeof(SERVER_SCID), &ap_server_keys, plain);
             TEST_ASSERT_NOT_EQUAL(SIZE_MAX, p2);
-            if (has_frame(plain, p2, QUIC_FT_HANDSHAKE_DONE))
+            if (has_frame(plain, p2, QuicFrameType::QUIC_FT_HANDSHAKE_DONE))
                 saw_hs_done = true;
             break;
         }
@@ -414,7 +414,7 @@ void test_full_handshake_and_stream()
         size_t fo = 0;
         while (fo < p2)
         {
-            if (plain[fo] == QUIC_FT_PADDING)
+            if (plain[fo] == QuicFrameType::QUIC_FT_PADDING)
             {
                 fo++;
                 continue;
@@ -424,7 +424,7 @@ void test_full_handshake_and_stream()
             if (!n)
                 break;
             fo += n;
-            if (f.type >= QUIC_FT_STREAM && f.type <= QUIC_FT_STREAM + 7)
+            if (f.type >= QuicFrameType::QUIC_FT_STREAM && f.type <= QuicFrameType::QUIC_FT_STREAM + 7)
             {
                 TEST_ASSERT_EQUAL_UINT(2, (size_t)f.stream.length);
                 TEST_ASSERT_EQUAL_UINT8_ARRAY("OK", f.stream.data, 2);
@@ -457,7 +457,7 @@ void test_full_handshake_and_stream()
         size_t fo = 0;
         while (fo < p2)
         {
-            if (plain[fo] == QUIC_FT_PADDING)
+            if (plain[fo] == QuicFrameType::QUIC_FT_PADDING)
             {
                 fo++;
                 continue;
@@ -467,8 +467,8 @@ void test_full_handshake_and_stream()
             if (!n)
                 break;
             fo += n;
-            if (f.type >= QUIC_FT_STREAM && f.type <= QUIC_FT_STREAM + 7 && f.stream.id == 0 && f.stream.length == 2 &&
-                memcmp(f.stream.data, "OK", 2) == 0)
+            if (f.type >= QuicFrameType::QUIC_FT_STREAM && f.type <= QuicFrameType::QUIC_FT_STREAM + 7 &&
+                f.stream.id == 0 && f.stream.length == 2 && memcmp(f.stream.data, "OK", 2) == 0)
                 resent = true;
         }
         break;
@@ -579,7 +579,7 @@ void test_connection_close_api()
     size_t ch_len = 0;
     feed_client_initial(&qc, &cb, &init, ch, &ch_len);
 
-    quic_conn_close(&qc, QUIC_ERR_NO_ERROR);
+    quic_conn_close(&qc, QuicErr::QUIC_ERR_NO_ERROR);
     uint8_t cdg[512];
     TEST_ASSERT_TRUE(quic_conn_send(&qc, cdg, sizeof(cdg)) > 0);
     TEST_ASSERT_TRUE(quic_conn_is_closed(&qc));
@@ -625,7 +625,7 @@ void test_connection_close_on_malformed_frame()
 
     // Client -> server: a Handshake packet whose only frame is a malformed CRYPTO (its declared length
     // dwarfs the packet), which the server cannot decode.
-    uint8_t bad[4] = {QUIC_FT_CRYPTO, 0x00, 0x7f, 0xff}; // CRYPTO off=0 len=16383, no data present
+    uint8_t bad[4] = {QuicFrameType::QUIC_FT_CRYPTO, 0x00, 0x7f, 0xff}; // CRYPTO off=0 len=16383, no data present
     uint8_t bdg[256];
     size_t bl = build_long(bdg, sizeof(bdg), QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID),
                            0, &hs_client_keys, bad, sizeof(bad));
@@ -643,7 +643,7 @@ void test_connection_close_on_malformed_frame()
     size_t fo = 0;
     while (fo < cpt)
     {
-        if (plain[fo] == QUIC_FT_PADDING)
+        if (plain[fo] == QuicFrameType::QUIC_FT_PADDING)
         {
             fo++;
             continue;
@@ -653,10 +653,10 @@ void test_connection_close_on_malformed_frame()
         if (!n)
             break;
         fo += n;
-        if (f.type == QUIC_FT_CONNECTION_CLOSE)
+        if (f.type == QuicFrameType::QUIC_FT_CONNECTION_CLOSE)
         {
             saw = true;
-            TEST_ASSERT_EQUAL_UINT64(QUIC_ERR_FRAME_ENCODING, f.close.error_code);
+            TEST_ASSERT_EQUAL_UINT64(QuicErr::QUIC_ERR_FRAME_ENCODING, f.close.error_code);
         }
     }
     TEST_ASSERT_TRUE(saw);
@@ -685,7 +685,7 @@ void test_quic_recv_connection_close()
     quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
 
     uint8_t fr[32];
-    size_t fl = quic_build_connection_close(fr, sizeof(fr), QUIC_ERR_NO_ERROR, 0, nullptr, 0);
+    size_t fl = quic_build_connection_close(fr, sizeof(fr), QuicErr::QUIC_ERR_NO_ERROR, 0, nullptr, 0);
     uint8_t dg[256];
     size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
                            &init.client, fr, fl);
@@ -725,7 +725,7 @@ void test_quic_recv_bad_version()
     init_conn(&qc, &cb);
     QuicInitialSecrets init;
     quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
-    uint8_t fr[8] = {QUIC_FT_PING};
+    uint8_t fr[8] = {QuicFrameType::QUIC_FT_PING};
     uint8_t dg[256];
     size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
                            &init.client, fr, 1);
@@ -742,7 +742,7 @@ void test_quic_recv_unsupported_long_type()
     init_conn(&qc, &cb);
     QuicInitialSecrets init;
     quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
-    uint8_t fr[8] = {QUIC_FT_PING};
+    uint8_t fr[8] = {QuicFrameType::QUIC_FT_PING};
     uint8_t dg[256];
     size_t dl = build_long(dg, sizeof(dg), QUIC_LP_0RTT, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
                            &init.client, fr, 1);
@@ -758,7 +758,7 @@ void test_quic_recv_short_before_app_keys()
     init_conn(&qc, &cb);
     QuicInitialSecrets init;
     quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
-    uint8_t fr[8] = {QUIC_FT_PING};
+    uint8_t fr[8] = {QuicFrameType::QUIC_FT_PING};
     uint8_t dg[256];
     size_t dl = build_short(dg, sizeof(dg), SERVER_SCID, sizeof(SERVER_SCID), 0, &init.client, fr, 1);
     TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, dl)); // open_keys(APP) is null -> dropped
@@ -784,7 +784,7 @@ void test_quic_recv_unprotect_failure()
     init_conn(&qc, &cb);
     QuicInitialSecrets init;
     quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
-    uint8_t fr[8] = {QUIC_FT_PING};
+    uint8_t fr[8] = {QuicFrameType::QUIC_FT_PING};
     uint8_t dg[256];
     size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
                            &init.client, fr, 1);
@@ -858,7 +858,7 @@ void test_quic_timeout_when_closed()
     QuicInitialSecrets init;
     quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
     uint8_t fr[32];
-    size_t fl = quic_build_connection_close(fr, sizeof(fr), QUIC_ERR_NO_ERROR, 0, nullptr, 0);
+    size_t fl = quic_build_connection_close(fr, sizeof(fr), QuicErr::QUIC_ERR_NO_ERROR, 0, nullptr, 0);
     uint8_t dg[256];
     size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
                            &init.client, fr, fl);
@@ -1043,7 +1043,7 @@ void test_quic_conn_no_keys_build()
     init_conn(&qc, &cb);
     QuicInitialSecrets init;
     quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
-    uint8_t fr[32] = {QUIC_FT_PING}; // ack-eliciting (+ trailing PADDING for a full-length packet)
+    uint8_t fr[32] = {QuicFrameType::QUIC_FT_PING}; // ack-eliciting (+ trailing PADDING for a full-length packet)
     uint8_t dg[256];
     size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, sizeof fr);
     TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));

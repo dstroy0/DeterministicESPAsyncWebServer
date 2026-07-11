@@ -129,7 +129,7 @@ void handle_crypto(QuicConn *qc, int level, const QuicFrame *f)
     // to the client with the TLS alert in the low byte (RFC 9001 sec 4.8) instead of stalling.
     if (qc->tls.state == QTLS_FAILED)
     {
-        queue_close(qc, QUIC_ERR_CRYPTO_BASE + qc->tls.alert, QUIC_FT_CRYPTO, level);
+        queue_close(qc, QuicErr::QUIC_ERR_CRYPTO_BASE + qc->tls.alert, QuicFrameType::QUIC_FT_CRYPTO, level);
         return;
     }
     // Completing the handshake opens 1-RTT and lets us send HANDSHAKE_DONE. We keep the Handshake
@@ -181,7 +181,7 @@ bool process_frames(QuicConn *qc, int level, const uint8_t *p, size_t len, bool 
     size_t off = 0;
     while (off < len)
     {
-        if (p[off] == QUIC_FT_PADDING)
+        if (p[off] == QuicFrameType::QUIC_FT_PADDING)
         {
             off++;
             continue;
@@ -191,22 +191,22 @@ bool process_frames(QuicConn *qc, int level, const uint8_t *p, size_t len, bool 
         if (!n)
         {
             // Undecodable frame: a transport FRAME_ENCODING_ERROR (RFC 9000 sec 20.1). Report it.
-            queue_close(qc, QUIC_ERR_FRAME_ENCODING, 0, level);
+            queue_close(qc, QuicErr::QUIC_ERR_FRAME_ENCODING, 0, level);
             return false;
         }
         off += n;
 
-        if (f.type != QUIC_FT_ACK && f.type != QUIC_FT_ACK_ECN && f.type != QUIC_FT_CONNECTION_CLOSE &&
-            f.type != QUIC_FT_CONNECTION_CLOSE_APP)
+        if (f.type != QuicFrameType::QUIC_FT_ACK && f.type != QuicFrameType::QUIC_FT_ACK_ECN &&
+            f.type != QuicFrameType::QUIC_FT_CONNECTION_CLOSE && f.type != QuicFrameType::QUIC_FT_CONNECTION_CLOSE_APP)
             *ack_eliciting = true;
 
         switch (f.type)
         {
-        case QUIC_FT_CRYPTO:
+        case QuicFrameType::QUIC_FT_CRYPTO:
             handle_crypto(qc, level, &f);
             break;
-        case QUIC_FT_ACK:
-        case QUIC_FT_ACK_ECN:
+        case QuicFrameType::QUIC_FT_ACK:
+        case QuicFrameType::QUIC_FT_ACK_ECN:
             if ((int64_t)f.ack.largest > qc->space[level].largest_acked)
             {
                 qc->space[level].largest_acked = (int64_t)f.ack.largest;
@@ -215,18 +215,18 @@ bool process_frames(QuicConn *qc, int level, const uint8_t *p, size_t len, bool 
                 qc->pto_armed = false;
             }
             break;
-        case QUIC_FT_CONNECTION_CLOSE:
-        case QUIC_FT_CONNECTION_CLOSE_APP:
+        case QuicFrameType::QUIC_FT_CONNECTION_CLOSE:
+        case QuicFrameType::QUIC_FT_CONNECTION_CLOSE_APP:
             qc->draining = true;
             qc->closed = true;
             break;
-        case QUIC_FT_HANDSHAKE_DONE:
+        case QuicFrameType::QUIC_FT_HANDSHAKE_DONE:
             break; // server-only frame; ignore if a peer sends it
-        case QUIC_FT_MAX_DATA:
-        case QUIC_FT_PING:
+        case QuicFrameType::QUIC_FT_MAX_DATA:
+        case QuicFrameType::QUIC_FT_PING:
             break; // no per-frame state to keep for a minimal server
         default:
-            if (f.type >= QUIC_FT_STREAM && f.type <= QUIC_FT_STREAM + 7)
+            if (f.type >= QuicFrameType::QUIC_FT_STREAM && f.type <= QuicFrameType::QUIC_FT_STREAM + 7)
                 handle_stream(qc, &f);
             break;
         }

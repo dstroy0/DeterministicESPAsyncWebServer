@@ -24,16 +24,16 @@ void test_simple_frames()
     QuicFrame f;
     TEST_ASSERT_EQUAL_INT(1, (int)quic_build_ping(b, sizeof b));
     TEST_ASSERT_EQUAL_INT(1, (int)quic_frame_parse(b, 1, &f));
-    TEST_ASSERT_EQUAL_UINT(QUIC_FT_PING, (unsigned)f.type);
+    TEST_ASSERT_EQUAL_UINT(QuicFrameType::QUIC_FT_PING, (unsigned)f.type);
 
     TEST_ASSERT_EQUAL_INT(1, (int)quic_build_handshake_done(b, sizeof b));
     TEST_ASSERT_EQUAL_INT(1, (int)quic_frame_parse(b, 1, &f));
-    TEST_ASSERT_EQUAL_UINT(QUIC_FT_HANDSHAKE_DONE, (unsigned)f.type);
+    TEST_ASSERT_EQUAL_UINT(QuicFrameType::QUIC_FT_HANDSHAKE_DONE, (unsigned)f.type);
 
     // A PADDING byte (0x00) parses as one PADDING frame consuming one byte.
     const uint8_t pad[1] = {0x00};
     TEST_ASSERT_EQUAL_INT(1, (int)quic_frame_parse(pad, 1, &f));
-    TEST_ASSERT_EQUAL_UINT(QUIC_FT_PADDING, (unsigned)f.type);
+    TEST_ASSERT_EQUAL_UINT(QuicFrameType::QUIC_FT_PADDING, (unsigned)f.type);
 }
 
 void test_ack()
@@ -43,7 +43,7 @@ void test_ack()
     TEST_ASSERT_TRUE(n > 0);
     QuicFrame f;
     TEST_ASSERT_EQUAL_INT((int)n, (int)quic_frame_parse(b, n, &f));
-    TEST_ASSERT_EQUAL_UINT(QUIC_FT_ACK, (unsigned)f.type);
+    TEST_ASSERT_EQUAL_UINT(QuicFrameType::QUIC_FT_ACK, (unsigned)f.type);
     TEST_ASSERT_TRUE(f.ack.largest == 1000 && f.ack.delay == 42);
     TEST_ASSERT_TRUE(f.ack.range_count == 0 && f.ack.first_range == 3);
 
@@ -61,7 +61,7 @@ void test_crypto()
     TEST_ASSERT_TRUE(n > 0);
     QuicFrame f;
     TEST_ASSERT_EQUAL_INT((int)n, (int)quic_frame_parse(b, n, &f));
-    TEST_ASSERT_EQUAL_UINT(QUIC_FT_CRYPTO, (unsigned)f.type);
+    TEST_ASSERT_EQUAL_UINT(QuicFrameType::QUIC_FT_CRYPTO, (unsigned)f.type);
     TEST_ASSERT_TRUE(f.crypto.offset == 7 && f.crypto.length == 5);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(data, f.crypto.data, 5);
 }
@@ -74,13 +74,13 @@ void test_stream()
     size_t n = quic_build_stream(b, sizeof b, 4, 100, data, 3, true);
     QuicFrame f;
     TEST_ASSERT_EQUAL_INT((int)n, (int)quic_frame_parse(b, n, &f));
-    TEST_ASSERT_TRUE((f.type & 0xf8) == QUIC_FT_STREAM);
+    TEST_ASSERT_TRUE((f.type & 0xf8) == QuicFrameType::QUIC_FT_STREAM);
     TEST_ASSERT_TRUE(f.stream.id == 4 && f.stream.offset == 100 && f.stream.length == 3 && f.stream.fin == 1);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(data, f.stream.data, 3);
 
     // No offset, no FIN.
     n = quic_build_stream(b, sizeof b, 0, 0, data, 3, false);
-    TEST_ASSERT_FALSE(b[0] & QUIC_STREAM_OFF);
+    TEST_ASSERT_FALSE(b[0] & QuicStreamFlag::QUIC_STREAM_OFF);
     TEST_ASSERT_EQUAL_INT((int)n, (int)quic_frame_parse(b, n, &f));
     TEST_ASSERT_TRUE(f.stream.id == 0 && f.stream.offset == 0 && f.stream.fin == 0);
 
@@ -98,12 +98,13 @@ void test_max_data_and_close()
     size_t n = quic_build_max_data(b, sizeof b, 65536);
     QuicFrame f;
     TEST_ASSERT_EQUAL_INT((int)n, (int)quic_frame_parse(b, n, &f));
-    TEST_ASSERT_TRUE(f.type == QUIC_FT_MAX_DATA && f.max_data.max == 65536);
+    TEST_ASSERT_TRUE(f.type == QuicFrameType::QUIC_FT_MAX_DATA && f.max_data.max == 65536);
 
-    n = quic_build_connection_close(b, sizeof b, 0x0a, QUIC_FT_STREAM, "bad", 3);
+    n = quic_build_connection_close(b, sizeof b, 0x0a, QuicFrameType::QUIC_FT_STREAM, "bad", 3);
     TEST_ASSERT_EQUAL_INT((int)n, (int)quic_frame_parse(b, n, &f));
-    TEST_ASSERT_TRUE(f.type == QUIC_FT_CONNECTION_CLOSE && f.close.error_code == 0x0a);
-    TEST_ASSERT_TRUE(f.close.frame_type == QUIC_FT_STREAM && f.close.reason_len == 3 && f.close.app == 0);
+    TEST_ASSERT_TRUE(f.type == QuicFrameType::QUIC_FT_CONNECTION_CLOSE && f.close.error_code == 0x0a);
+    TEST_ASSERT_TRUE(f.close.frame_type == QuicFrameType::QUIC_FT_STREAM && f.close.reason_len == 3 &&
+                     f.close.app == 0);
     TEST_ASSERT_EQUAL_UINT8_ARRAY("bad", f.close.reason, 3);
 
     // Application-level close (0x1d) has no triggering frame type.
@@ -117,26 +118,26 @@ void test_sequence_and_truncation()
     // A packet payload: PADDING, PING, then a CRYPTO frame - parse them in order.
     uint8_t buf[32];
     size_t o = 0;
-    buf[o++] = QUIC_FT_PADDING;
-    buf[o++] = QUIC_FT_PING;
+    buf[o++] = QuicFrameType::QUIC_FT_PADDING;
+    buf[o++] = QuicFrameType::QUIC_FT_PING;
     const uint8_t data[2] = {0xDE, 0xAD};
     o += quic_build_crypto(buf + o, sizeof buf - o, 0, data, 2);
 
     size_t pos = 0;
     QuicFrame f;
     size_t c = quic_frame_parse(buf + pos, o - pos, &f);
-    TEST_ASSERT_TRUE(c == 1 && f.type == QUIC_FT_PADDING);
+    TEST_ASSERT_TRUE(c == 1 && f.type == QuicFrameType::QUIC_FT_PADDING);
     pos += c;
     c = quic_frame_parse(buf + pos, o - pos, &f);
-    TEST_ASSERT_TRUE(c == 1 && f.type == QUIC_FT_PING);
+    TEST_ASSERT_TRUE(c == 1 && f.type == QuicFrameType::QUIC_FT_PING);
     pos += c;
     c = quic_frame_parse(buf + pos, o - pos, &f);
-    TEST_ASSERT_TRUE(c > 0 && f.type == QUIC_FT_CRYPTO && f.crypto.length == 2);
+    TEST_ASSERT_TRUE(c > 0 && f.type == QuicFrameType::QUIC_FT_CRYPTO && f.crypto.length == 2);
     pos += c;
     TEST_ASSERT_EQUAL_UINT((unsigned)o, (unsigned)pos);
 
     // A CRYPTO frame whose Length exceeds the buffer must be rejected.
-    const uint8_t bad[3] = {QUIC_FT_CRYPTO, 0x00, 0x10}; // offset 0, length 16, but no data
+    const uint8_t bad[3] = {QuicFrameType::QUIC_FT_CRYPTO, 0x00, 0x10}; // offset 0, length 16, but no data
     TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(bad, sizeof bad, &f));
 }
 
@@ -164,14 +165,14 @@ void test_parse_errors()
     QuicFrame f;
     TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse((const uint8_t *)"", 0, &f)); // no type byte
 
-    const uint8_t ack_trunc[1] = {QUIC_FT_ACK}; // no Largest/Delay/...
+    const uint8_t ack_trunc[1] = {QuicFrameType::QUIC_FT_ACK}; // no Largest/Delay/...
     TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(ack_trunc, 1, &f));
     const uint8_t ack_ranges_trunc[5] = {0x02, 60, 5, 1, 3}; // range_count 1 but no Gap/Length
     TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(ack_ranges_trunc, 5, &f));
     const uint8_t ack_ecn_trunc[7] = {0x03, 60, 5, 0, 3, 1, 2}; // ECN needs 3 counts, only 2
     TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(ack_ecn_trunc, 7, &f));
 
-    const uint8_t crypto_trunc[2] = {QUIC_FT_CRYPTO, 0x00}; // offset ok, no length
+    const uint8_t crypto_trunc[2] = {QuicFrameType::QUIC_FT_CRYPTO, 0x00}; // offset ok, no length
     TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(crypto_trunc, 2, &f));
 
     const uint8_t stream_noid[1] = {0x08}; // STREAM, no Stream ID
@@ -181,10 +182,10 @@ void test_parse_errors()
     const uint8_t stream_len_over[3] = {0x0a, 0x00, 0x08}; // LEN set, length 8 > remaining
     TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(stream_len_over, 3, &f));
 
-    const uint8_t max_trunc[1] = {QUIC_FT_MAX_DATA};
+    const uint8_t max_trunc[1] = {QuicFrameType::QUIC_FT_MAX_DATA};
     TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(max_trunc, 1, &f));
 
-    const uint8_t close_trunc[1] = {QUIC_FT_CONNECTION_CLOSE};
+    const uint8_t close_trunc[1] = {QuicFrameType::QUIC_FT_CONNECTION_CLOSE};
     TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(close_trunc, 1, &f));
     const uint8_t close_reason_over[4] = {0x1c, 0x00, 0x00, 0x08}; // reason len 8 > remaining
     TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(close_reason_over, 4, &f));
