@@ -492,12 +492,29 @@ from the rig `/bench` `stomp_parse_frame` op.
 | `stomp_parse_frame` |      136.3 |     755.5 |            2314 |           9641 |
 
 - `stomp_parse_frame` decodes one frame per call at **~9.6 us** on the device (scan the command + header
-  lines, then take the body by `content-length` - which is bounded against the buffer: `cur + content_length
-    > = len`returns "need more" and a length that does not land on the terminating NUL is rejected, so a
-content-length lie can never over-read; header count is capped at`DETWS_STOMP_MAX_HEADERS`). Building a
-frame escapes the header octets. HW-verified device-as-STOMP-client against an independent STOMP 1.2 broker
-(7/7 interop: CONNECT/SUBSCRIBE/SEND and the SEND captured server-side); the `stomp_malicious_broker` attack
-    > held all 10 malformed-frame personalities.
+  lines, then take the body by `content-length`, which is bounded against the buffer - a declared length past
+  the buffered bytes returns "need more" and a length that does not land on the terminating NUL is rejected,
+  so a content-length lie can never over-read; the header count is capped at `DETWS_STOMP_MAX_HEADERS`).
+  Building a frame escapes the header octets. HW-verified device-as-STOMP-client against an independent STOMP
+  1.2 broker (7/7 interop: CONNECT/SUBSCRIBE/SEND and the SEND captured server-side); the
+  `stomp_malicious_broker` attack held all 10 malformed-frame personalities.
+
+### StatsD metrics client (DETWS_ENABLE_STATSD)
+
+The StatsD line client the device uses to push metrics: `statsd_format` builds one `name:value|type[|@rate]
+[|#tags]` line and the emit helpers `det_udp_sendto` it (fire-and-forget UDP). `statsd_format` is the pure
+per-metric hot op. Host from [`perf/bench_statsd.cpp`](../perf/bench_statsd.cpp); device from the rig
+`/bench` `statsd_format` op.
+
+| Operation                        | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| -------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `statsd_format` (counter + tags) |       47.4 |     971.4 |            1052 |           4383 |
+
+- A **~4.4 us** metric on the device (hand-rolled integer/rate rendering, then a bounded assemble - no
+  `printf`). The line is capped at `DETWS_STATSD_LINE_MAX` (256 B): an oversized name/value/tags makes
+  `statsd_format` return 0 and the metric is dropped (no overflow, no giant datagram - validated by the
+  `statsd_injection` attack, which held the bound at a 51 B datagram for a 2 KB name). HW-verified
+  device-as-StatsD-client against a UDP collector (5/5 interop; name/value/type validated).
 
 ## 3. Request-path benchmarks
 

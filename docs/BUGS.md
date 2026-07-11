@@ -49,6 +49,12 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 - **Optional hardening (deferred, not done):** `syslog_format` _could_ replace control bytes in MSG with a
   safe char for defense-in-depth (many production syslog clients do). Left as caller responsibility per the
   library's "the app owns the log content" model; revisit if a user wants built-in sanitization.
+- **Sequel (2026-07-11, statsd tick):** the **same class** applies to the StatsD client - `statsd_format`
+  copies the metric name verbatim, and StatsD packs multiple `\n`-separated metrics per UDP packet, so a
+  newline in the name forges extra metrics at a _compliant_ collector (and a `:` / `|` corrupts the
+  `name:value|type` split). Recorded INFO by the `statsd_injection` attack; same verdict - the caller sanitizes
+  the metric name. The fixed `DETWS_STATSD_LINE_MAX` (256 B) bound holds (a 2 KB name is dropped, largest
+  observed datagram 51 B), so there is no over-read - only the app-level forging concern.
 
 ---
 
