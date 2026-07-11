@@ -39,6 +39,7 @@ from peers import (
     smtp_peer,
     snmp_peer,
     sse_peer,
+    stomp_peer,
     syslog_peer,
     webdav_peer,
     ws_peer,
@@ -63,6 +64,7 @@ _MODULES = [
     ntp_peer,
     dns_peer,
     nats_peer,
+    stomp_peer,
 ]
 
 

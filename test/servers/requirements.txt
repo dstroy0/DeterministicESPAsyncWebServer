@@ -11,6 +11,8 @@
 #                   RFC 5424 parser - and needs no pip package (rsyslog is the production reference receiver)
 #   nats         -> nats-server (device-as-client)       apt install nats-server; run nats-server -a 0.0.0.0 -p 4222
 #                   (the nats peer itself is stdlib - raw NATS text protocol over a socket - no pip package)
+#   stomp        -> none (device-as-client)              the stomp peer is stdlib - a spec STOMP 1.2 broker in a
+#                   background thread - and needs no pip package (coilmq / RabbitMQ-STOMP are production references)
 #
 # http uses only the Python standard library (no entry here).
 
