@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a6749fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6749fb1404cd2f7f34d51686aa3df58371413fd))
 - update CHANGELOG.md [skip ci] ([`ede07f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ede07f22fd81201569c169c50cf2ec54b449bc5d))
 - update CHANGELOG.md [skip ci] ([`3b2667b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b2667bc787d47feb0da63f2a0e351c67379ba50))
 
@@ -20,6 +21,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Documentation
 
 - log the QUIC frame-parser interop blocker; handshake now runs on PSRAM ([`353cfe9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/353cfe9278c098621cb958ff413f5af1480d05a9))
+
+### Testing
+
+- real QUIC/HTTP-3 interop peer (aioquic) - device-as-server ALPN h3 ([`c2dcdd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c2dcdd6d5c65a69f9846a0d3b452e7771ab9ea71))
 
 ## [5.95.11] - 2026-07-11
 
