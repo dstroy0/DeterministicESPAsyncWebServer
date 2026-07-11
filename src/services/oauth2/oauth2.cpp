@@ -172,8 +172,9 @@ int post_and_parse(Oauth2Ctx &c, const char *token_url, int body_len, DetwsOAuth
         memcpy(c.resp, r.body, k);
     c.resp[k] = '\0';
     if (!detws_oauth2_parse_token_response(c.resp, out))
-        return st >= 400 ? st
-                         : DetwsOAuth2Result::DETWS_OAUTH2_ERR_RESPONSE; // surface the provider's 4xx, else generic
+        return st >= 400
+                   ? st
+                   : (int)DetwsOAuth2Result::DETWS_OAUTH2_ERR_RESPONSE; // surface the provider's 4xx, else generic
     return st;
 }
 } // namespace

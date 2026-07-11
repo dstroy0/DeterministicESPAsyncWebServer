@@ -93,11 +93,11 @@ void send_program()
     cfg.crlf = true;                  // many controllers expect CR before the LF End-of-Block
     cfg.leader_len = 16;              // a short NUL runout before/after the program
 
-    int rc = dnc_stream(&cfg, PROGRAM, strlen(PROGRAM), cl_send, cl_recv, &cid);
+    DncStreamResult rc = dnc_stream(&cfg, PROGRAM, strlen(PROGRAM), cl_send, cl_recv, &cid);
     if (rc == DncStreamResult::DNC_STREAM_OK)
         Serial.println("program sent - the controller has the full drip-feed");
     else
-        Serial.printf("drip-feed failed (DncStreamResult %d) - see the README troubleshooting table\n", rc);
+        Serial.printf("drip-feed failed (DncStreamResult %d) - see the README troubleshooting table\n", (int)rc);
 
     det_client_close(cid);
 }

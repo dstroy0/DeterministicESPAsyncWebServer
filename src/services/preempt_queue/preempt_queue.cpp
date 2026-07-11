@@ -104,7 +104,7 @@ void note_depth(detws_pq_lane lane, UBaseType_t waiting)
 // item in order. It blocks forever between items (zero idle wakeups).
 void pq_task(void *arg)
 {
-    detws_pq_lane lane = static_cast<detws_pq_lane>(uintptr_t) arg;
+    detws_pq_lane lane = static_cast<detws_pq_lane>(reinterpret_cast<uintptr_t>(arg));
     uint8_t item[DETWS_PQ_ITEM_SIZE];
     for (;;)
     {

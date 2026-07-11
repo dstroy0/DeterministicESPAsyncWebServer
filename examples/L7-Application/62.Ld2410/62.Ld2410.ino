@@ -33,11 +33,11 @@ static const char *state_name(uint8_t s)
 {
     switch (s)
     {
-    case LD2410_STATE_MOVING:
+    case Ld2410State::LD2410_STATE_MOVING:
         return "moving";
-    case LD2410_STATE_STATIC:
+    case Ld2410State::LD2410_STATE_STATIC:
         return "stationary";
-    case LD2410_STATE_BOTH:
+    case Ld2410State::LD2410_STATE_BOTH:
         return "moving+stationary";
     default:
         return "clear";

@@ -563,7 +563,7 @@ static void rxqos2_del(uint16_t pid)
 // Handle one fully-received packet sitting in s_mqtt.pkt (length plen).
 static void handle_packet(uint8_t type, uint8_t flags, const uint8_t *body, uint32_t rl)
 {
-    switch (type)
+    switch ((MqttType)type) // wire byte -> typed control-packet dispatch
     {
     case MqttType::MQTT_CONNACK:
         s_mqtt.connack_code = mqtt_parse_connack(body, rl, nullptr);

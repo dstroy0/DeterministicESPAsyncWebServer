@@ -69,11 +69,11 @@ void setup()
         uint32_t now = 1700000100; // production: read from NTP
 
         DetwsOidcClaims claims;
-        int rc = detws_oidc_verify(token, strlen(token), JWKS, ISSUER, AUDIENCE, now, &claims);
+        DetwsOidcResult rc = detws_oidc_verify(token, strlen(token), JWKS, ISSUER, AUDIENCE, now, &claims);
         if (rc != DetwsOidcResult::DETWS_OIDC_OK)
         {
             char b[40];
-            snprintf(b, sizeof(b), "{\"error\":%d}", rc);
+            snprintf(b, sizeof(b), "{\"error\":%d}", (int)rc);
             server.add_response_header(id, "WWW-Authenticate", "Bearer");
             server.send(id, 401, "application/json", b);
             return;
