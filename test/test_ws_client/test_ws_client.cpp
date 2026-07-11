@@ -62,8 +62,7 @@ void test_build_frame_masked()
 {
     uint8_t buf[32];
     uint8_t mask[4] = {0x01, 0x02, 0x03, 0x04};
-    size_t n =
-        ws_client_build_frame(buf, sizeof(buf), (uint8_t)WsClientOpcode::WSC_OP_TEXT, (const uint8_t *)"Hi", 2, mask);
+    size_t n = ws_client_build_frame(buf, sizeof(buf), WsClientOpcode::WSC_OP_TEXT, (const uint8_t *)"Hi", 2, mask);
     TEST_ASSERT_EQUAL_size_t(8, n);             // 2 hdr + 4 mask + 2 payload
     TEST_ASSERT_EQUAL_HEX8(0x81, buf[0]);       // FIN + text
     TEST_ASSERT_EQUAL_HEX8(0x82, buf[1]);       // mask bit + len 2
@@ -78,8 +77,7 @@ void test_build_frame_extended_len()
     uint8_t payload[200];
     memset(payload, 'a', sizeof(payload));
     uint8_t mask[4] = {0, 0, 0, 0}; // zero mask -> payload copied verbatim
-    size_t n =
-        ws_client_build_frame(buf, sizeof(buf), (uint8_t)WsClientOpcode::WSC_OP_BINARY, payload, sizeof(payload), mask);
+    size_t n = ws_client_build_frame(buf, sizeof(buf), WsClientOpcode::WSC_OP_BINARY, payload, sizeof(payload), mask);
     TEST_ASSERT_EQUAL_size_t(2 + 2 + 4 + 200, n);
     TEST_ASSERT_EQUAL_HEX8(0x82, buf[0]);       // FIN + binary
     TEST_ASSERT_EQUAL_HEX8(0x80 | 126, buf[1]); // mask + 16-bit length follows
@@ -192,12 +190,16 @@ void test_build_frame_guards_and_64bit()
 {
     uint8_t mask[4] = {1, 2, 3, 4};
     uint8_t out[16];
-    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_frame(nullptr, sizeof(out), 0x1, (const uint8_t *)"x", 1, mask));
-    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_frame(out, sizeof(out), 0x1, (const uint8_t *)"x", 1, nullptr));
-    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_frame(out, 4, 0x1, (const uint8_t *)"hello", 5, mask)); // too small
+    TEST_ASSERT_EQUAL_UINT(
+        0, ws_client_build_frame(nullptr, sizeof(out), WsClientOpcode::WSC_OP_TEXT, (const uint8_t *)"x", 1, mask));
+    TEST_ASSERT_EQUAL_UINT(
+        0, ws_client_build_frame(out, sizeof(out), WsClientOpcode::WSC_OP_TEXT, (const uint8_t *)"x", 1, nullptr));
+    TEST_ASSERT_EQUAL_UINT(
+        0, ws_client_build_frame(out, 4, WsClientOpcode::WSC_OP_TEXT, (const uint8_t *)"hello", 5, mask)); // too small
 
     memset(s_big_pl, 'z', sizeof(s_big_pl));
-    size_t n = ws_client_build_frame(s_big_out, sizeof(s_big_out), 0x02, s_big_pl, sizeof(s_big_pl), mask);
+    size_t n = ws_client_build_frame(s_big_out, sizeof(s_big_out), WsClientOpcode::WSC_OP_BINARY, s_big_pl,
+                                     sizeof(s_big_pl), mask);
     TEST_ASSERT_TRUE(n > sizeof(s_big_pl));
     TEST_ASSERT_EQUAL_HEX8(0x80 | 127, s_big_out[1]); // 64-bit length marker
 }

@@ -23,7 +23,7 @@ struct UpMsg
     uint16_t len;
     int16_t rssi;
     uint8_t port_id;
-    uint8_t kind;
+    det_gw_kind kind;
 };
 static std::vector<UpMsg> g_up;
 static bool g_up_accept = true;
@@ -39,7 +39,7 @@ static bool cap_uplink(const det_gw_msg *m, void *)
     u.len = m->len;
     u.rssi = m->rssi;
     u.port_id = m->port_id;
-    u.kind = (uint8_t)m->kind;
+    u.kind = m->kind;
     g_up.push_back(u);
     return true;
 }

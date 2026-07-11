@@ -71,7 +71,7 @@ bool ws_client_check_response(const uint8_t *buf, size_t len, const char *expect
  * @param mask  4-byte masking key (random per frame on the wire).
  * @return total frame length, or 0 if it would not fit @p cap.
  */
-size_t ws_client_build_frame(uint8_t *out, size_t cap, uint8_t opcode, const uint8_t *payload, size_t len,
+size_t ws_client_build_frame(uint8_t *out, size_t cap, WsClientOpcode opcode, const uint8_t *payload, size_t len,
                              const uint8_t mask[4]);
 
 /**

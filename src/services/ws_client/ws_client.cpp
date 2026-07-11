@@ -112,7 +112,7 @@ bool ws_client_check_response(const uint8_t *buf, size_t len, const char *expect
     return vlen == strlen(expected_accept) && memcmp(acc, expected_accept, vlen) == 0;
 }
 
-size_t ws_client_build_frame(uint8_t *out, size_t cap, uint8_t opcode, const uint8_t *payload, size_t len,
+size_t ws_client_build_frame(uint8_t *out, size_t cap, WsClientOpcode opcode, const uint8_t *payload, size_t len,
                              const uint8_t mask[4])
 {
     if (!out || !mask)
@@ -126,7 +126,7 @@ size_t ws_client_build_frame(uint8_t *out, size_t cap, uint8_t opcode, const uin
         return 0;
 
     size_t i = 0;
-    out[i++] = (uint8_t)(0x80 | (opcode & 0x0F)); // FIN + opcode
+    out[i++] = (uint8_t)(0x80 | static_cast<uint8_t>(opcode)); // FIN + opcode (all opcodes <= 0x0A)
     if (len < 126)
         out[i++] = (uint8_t)(0x80 | len);
     else if (len < 65536)
@@ -338,7 +338,7 @@ static bool ws_tx(const uint8_t *data, size_t len)
 }
 
 // Frame and send a message with a fresh random masking key (RFC 6455 client rule).
-static bool ws_send_frame(uint8_t opcode, const uint8_t *payload, size_t len)
+static bool ws_send_frame(WsClientOpcode opcode, const uint8_t *payload, size_t len)
 {
     if (!s_wsc.ws_up)
         return false;
@@ -397,10 +397,10 @@ static void handle_frame(uint8_t op, bool fin, const uint8_t *payload, size_t le
         }
         break;
     case WsClientOpcode::WSC_OP_PING:
-        ws_send_frame((uint8_t)WsClientOpcode::WSC_OP_PONG, payload, len); // echo the application data
+        ws_send_frame(WsClientOpcode::WSC_OP_PONG, payload, len); // echo the application data
         break;
     case WsClientOpcode::WSC_OP_CLOSE:
-        ws_send_frame((uint8_t)WsClientOpcode::WSC_OP_CLOSE, nullptr, 0);
+        ws_send_frame(WsClientOpcode::WSC_OP_CLOSE, nullptr, 0);
         s_wsc.closed = true;
         break;
     case WsClientOpcode::WSC_OP_PONG:
@@ -546,11 +546,11 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
 
 bool ws_client_send_text(const char *text)
 {
-    return ws_send_frame((uint8_t)WsClientOpcode::WSC_OP_TEXT, (const uint8_t *)text, text ? strlen(text) : 0);
+    return ws_send_frame(WsClientOpcode::WSC_OP_TEXT, (const uint8_t *)text, text ? strlen(text) : 0);
 }
 bool ws_client_send_binary(const uint8_t *data, size_t len)
 {
-    return ws_send_frame((uint8_t)WsClientOpcode::WSC_OP_BINARY, data, len);
+    return ws_send_frame(WsClientOpcode::WSC_OP_BINARY, data, len);
 }
 
 bool ws_client_loop()
@@ -574,7 +574,7 @@ bool ws_client_connected()
 void ws_client_close()
 {
     if (s_wsc.ws_up)
-        ws_send_frame((uint8_t)WsClientOpcode::WSC_OP_CLOSE, nullptr, 0);
+        ws_send_frame(WsClientOpcode::WSC_OP_CLOSE, nullptr, 0);
     ws_close_tcp();
 }
 
