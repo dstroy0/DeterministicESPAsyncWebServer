@@ -49,7 +49,8 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "per-IP throttled"); });
+    server.on("/", HttpMethod::HTTP_GET,
+              [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "per-IP throttled"); });
     server.begin(80); // per-IP throttle is active automatically when the flag is built in
 }
 

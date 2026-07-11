@@ -39,7 +39,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/resolve", HTTP_GET, [](uint8_t id, HttpReq *req) {
+    server.on("/resolve", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *req) {
         const char *host = http_get_query(req, "host");
         if (!host)
         {

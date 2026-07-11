@@ -63,7 +63,7 @@ static void feed_and_handle(uint8_t slot, const char *req_str)
 
 void test_method_mismatch_returns_405()
 {
-    server.on("/res", HTTP_POST, handle_ok);
+    server.on("/res", HttpMethod::HTTP_POST, handle_ok);
     feed_and_handle(0, "GET /res HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(handler_called);
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "405 Method Not Allowed"));
@@ -71,15 +71,15 @@ void test_method_mismatch_returns_405()
 
 void test_405_includes_allow_header()
 {
-    server.on("/res", HTTP_POST, handle_ok);
+    server.on("/res", HttpMethod::HTTP_POST, handle_ok);
     feed_and_handle(0, "DELETE /res HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Allow: POST"));
 }
 
 void test_405_allow_lists_all_methods_for_path()
 {
-    server.on("/res", HTTP_POST, handle_ok);
-    server.on("/res", HTTP_DELETE, handle_ok);
+    server.on("/res", HttpMethod::HTTP_POST, handle_ok);
+    server.on("/res", HttpMethod::HTTP_DELETE, handle_ok);
     feed_and_handle(0, "GET /res HTTP/1.1\r\n\r\n");
     const char *resp = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(resp, "405"));
@@ -89,7 +89,7 @@ void test_405_allow_lists_all_methods_for_path()
 
 void test_unknown_path_still_404_not_405()
 {
-    server.on("/res", HTTP_POST, handle_ok);
+    server.on("/res", HttpMethod::HTTP_POST, handle_ok);
     feed_and_handle(0, "GET /nope HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "404"));
 }
@@ -98,7 +98,7 @@ void test_unknown_path_still_404_not_405()
 
 void test_unknown_method_returns_501()
 {
-    server.on("/res", HTTP_GET, handle_ok);
+    server.on("/res", HttpMethod::HTTP_GET, handle_ok);
     feed_and_handle(0, "FOO /res HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(handler_called);
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "501 Not Implemented"));
@@ -107,7 +107,7 @@ void test_unknown_method_returns_501()
 void test_unknown_method_not_treated_as_get()
 {
     // A bogus method must NOT run the GET handler (security: no method spoofing).
-    server.on("/res", HTTP_GET, handle_ok);
+    server.on("/res", HttpMethod::HTTP_GET, handle_ok);
     feed_and_handle(0, "XGET /res HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(handler_called);
 }
@@ -116,7 +116,7 @@ void test_unknown_method_not_treated_as_get()
 
 void test_head_runs_get_handler_without_body()
 {
-    server.on("/res", HTTP_GET, handle_ok);
+    server.on("/res", HttpMethod::HTTP_GET, handle_ok);
     feed_and_handle(0, "HEAD /res HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(handler_called); // GET handler serves HEAD
     const char *resp = tcp_captured();
@@ -131,7 +131,7 @@ void test_head_runs_get_handler_without_body()
 
 void test_get_route_advertises_head_in_allow()
 {
-    server.on("/res", HTTP_GET, handle_ok);
+    server.on("/res", HttpMethod::HTTP_GET, handle_ok);
     feed_and_handle(0, "POST /res HTTP/1.1\r\n\r\n");
     const char *resp = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(resp, "405"));
@@ -141,7 +141,7 @@ void test_get_route_advertises_head_in_allow()
 
 void test_head_on_post_only_route_405()
 {
-    server.on("/res", HTTP_POST, handle_ok);
+    server.on("/res", HttpMethod::HTTP_POST, handle_ok);
     feed_and_handle(0, "HEAD /res HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(handler_called);
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "405"));
@@ -181,7 +181,7 @@ void test_http_parse_skips_ws_upgraded_slot()
 
 void test_correct_method_still_dispatches()
 {
-    server.on("/res", HTTP_GET, handle_ok);
+    server.on("/res", HttpMethod::HTTP_GET, handle_ok);
     feed_and_handle(0, "GET /res HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(handler_called);
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));

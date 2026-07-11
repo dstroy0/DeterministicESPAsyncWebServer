@@ -65,7 +65,7 @@ void setup()
     detws_time_source_add("ntp", 0, src_ntp); // preferred
     detws_time_source_add("rtc", 1, src_rtc); // fallback
 
-    server.on("/time", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/time", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         char body[96];
         uint32_t epoch = detws_time_now();
         const char *src = detws_time_source_active();

@@ -195,12 +195,12 @@ void setup()
     Serial.print("\nIP: ");
     Serial.println(WiFi.localIP());
 
-    server.on("/config", HTTP_GET, handle_config);
-    server.on("/echo", HTTP_POST, handle_echo);
-    server.on("/search", HTTP_GET, handle_search);
+    server.on("/config", HttpMethod::HTTP_GET, handle_config);
+    server.on("/echo", HttpMethod::HTTP_POST, handle_echo);
+    server.on("/search", HttpMethod::HTTP_GET, handle_search);
 
     // Diagnostic route (DETWS_ENABLE_DIAG=1): remove or protect in production.
-    server.on("/diag", HTTP_GET, [](uint8_t id, HttpReq *) { server.diag(id); });
+    server.on("/diag", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.diag(id); });
 
     // Pass a runtime config to override the idle timeout without a rebuild.
     WebServerConfig cfg = {.conn_timeout_ms = CONN_TIMEOUT_MS};

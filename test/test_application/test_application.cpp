@@ -96,7 +96,7 @@ void tearDown()
 
 void test_fn_on_registers_and_dispatches()
 {
-    g_server->on("/ping", HTTP_GET, record_handler);
+    g_server->on("/ping", HttpMethod::HTTP_GET, record_handler);
     arm_slot(0, "GET /ping HTTP/1.1\r\n\r\n");
     g_server->handle();
     TEST_ASSERT_TRUE(handler_called);
@@ -110,7 +110,7 @@ void test_fn_on_path_copied_null_terminated()
     for (int i = 1; i < MAX_PATH_LEN - 1; i++)
         path[i] = 'a';
     path[MAX_PATH_LEN - 1] = '\0';
-    g_server->on(path, HTTP_GET, record_handler);
+    g_server->on(path, HttpMethod::HTTP_GET, record_handler);
     arm_slot(0, "GET /a HTTP/1.1\r\n\r\n"); // won't match long path - just must not crash
     g_server->handle();
     TEST_PASS();
@@ -120,7 +120,7 @@ void test_fn_on_table_full_extra_routes_dropped()
 {
     // Fill the table; on() beyond MAX_ROUTES must silently drop
     for (int i = 0; i < MAX_ROUTES + 5; i++)
-        g_server->on("/x", HTTP_GET, record_handler);
+        g_server->on("/x", HttpMethod::HTTP_GET, record_handler);
     arm_slot(0, "GET /x HTTP/1.1\r\n\r\n");
     g_server->handle();
     TEST_ASSERT_TRUE(handler_called);
@@ -130,8 +130,8 @@ void test_fn_on_same_path_different_methods_are_distinct()
 {
     static bool get_called = false;
     static bool post_called = false;
-    g_server->on("/r", HTTP_GET, [](uint8_t, HttpReq *) { get_called = true; });
-    g_server->on("/r", HTTP_POST, [](uint8_t, HttpReq *) { post_called = true; });
+    g_server->on("/r", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { get_called = true; });
+    g_server->on("/r", HttpMethod::HTTP_POST, [](uint8_t, HttpReq *) { post_called = true; });
 
     arm_slot(0, "GET /r HTTP/1.1\r\n\r\n");
     g_server->handle();
@@ -158,7 +158,7 @@ void test_fn_on_not_found_called_when_no_match()
 void test_fn_on_not_found_not_called_when_match_exists()
 {
     static bool nf = false;
-    g_server->on("/here", HTTP_GET, record_handler);
+    g_server->on("/here", HttpMethod::HTTP_GET, record_handler);
     g_server->on_not_found([](uint8_t, HttpReq *) { nf = true; });
     arm_slot(0, "GET /here HTTP/1.1\r\n\r\n");
     g_server->handle();
@@ -182,7 +182,7 @@ void test_fn_set_cors_empty_string_disables()
 {
     g_server->set_cors("*");
     g_server->set_cors(""); // disable
-    g_server->on("/x", HTTP_OPTIONS, record_handler);
+    g_server->on("/x", HttpMethod::HTTP_OPTIONS, record_handler);
     arm_slot(0, "OPTIONS /x HTTP/1.1\r\n\r\n");
     g_server->handle();
     TEST_ASSERT_TRUE(handler_called); // routed normally, not intercepted as preflight
@@ -194,7 +194,7 @@ void test_fn_set_cors_empty_string_disables()
 
 void test_wrong_method_does_not_match()
 {
-    g_server->on("/r", HTTP_POST, record_handler);
+    g_server->on("/r", HttpMethod::HTTP_POST, record_handler);
     arm_slot(0, "GET /r HTTP/1.1\r\n\r\n");
     g_server->handle();
     TEST_ASSERT_FALSE(handler_called);
@@ -202,7 +202,7 @@ void test_wrong_method_does_not_match()
 
 void test_wrong_path_does_not_match()
 {
-    g_server->on("/right", HTTP_GET, record_handler);
+    g_server->on("/right", HttpMethod::HTTP_GET, record_handler);
     arm_slot(0, "GET /wrong HTTP/1.1\r\n\r\n");
     g_server->handle();
     TEST_ASSERT_FALSE(handler_called);
@@ -211,13 +211,13 @@ void test_wrong_path_does_not_match()
 void test_all_http_methods_dispatched()
 {
     static int counts[7] = {};
-    g_server->on("/get", HTTP_GET, [](uint8_t, HttpReq *) { counts[0]++; });
-    g_server->on("/post", HTTP_POST, [](uint8_t, HttpReq *) { counts[1]++; });
-    g_server->on("/put", HTTP_PUT, [](uint8_t, HttpReq *) { counts[2]++; });
-    g_server->on("/delete", HTTP_DELETE, [](uint8_t, HttpReq *) { counts[3]++; });
-    g_server->on("/patch", HTTP_PATCH, [](uint8_t, HttpReq *) { counts[4]++; });
-    g_server->on("/head", HTTP_HEAD, [](uint8_t, HttpReq *) { counts[5]++; });
-    g_server->on("/options", HTTP_OPTIONS, [](uint8_t, HttpReq *) { counts[6]++; });
+    g_server->on("/get", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { counts[0]++; });
+    g_server->on("/post", HttpMethod::HTTP_POST, [](uint8_t, HttpReq *) { counts[1]++; });
+    g_server->on("/put", HttpMethod::HTTP_PUT, [](uint8_t, HttpReq *) { counts[2]++; });
+    g_server->on("/delete", HttpMethod::HTTP_DELETE, [](uint8_t, HttpReq *) { counts[3]++; });
+    g_server->on("/patch", HttpMethod::HTTP_PATCH, [](uint8_t, HttpReq *) { counts[4]++; });
+    g_server->on("/head", HttpMethod::HTTP_HEAD, [](uint8_t, HttpReq *) { counts[5]++; });
+    g_server->on("/options", HttpMethod::HTTP_OPTIONS, [](uint8_t, HttpReq *) { counts[6]++; });
 
     arm_slot(0, "GET /get HTTP/1.1\r\n\r\n");
     g_server->handle();
@@ -240,7 +240,7 @@ void test_all_http_methods_dispatched()
 
 void test_root_path_matches_exactly()
 {
-    g_server->on("/", HTTP_GET, record_handler);
+    g_server->on("/", HttpMethod::HTTP_GET, record_handler);
     arm_slot(0, "GET / HTTP/1.1\r\n\r\n");
     g_server->handle();
     TEST_ASSERT_TRUE(handler_called);
@@ -248,7 +248,7 @@ void test_root_path_matches_exactly()
 
 void test_root_path_does_not_match_subpath()
 {
-    g_server->on("/", HTTP_GET, record_handler);
+    g_server->on("/", HttpMethod::HTTP_GET, record_handler);
     arm_slot(0, "GET /other HTTP/1.1\r\n\r\n");
     g_server->handle();
     TEST_ASSERT_FALSE(handler_called);
@@ -256,7 +256,7 @@ void test_root_path_does_not_match_subpath()
 
 void test_wildcard_matches_any_suffix()
 {
-    g_server->on("/api/*", HTTP_GET, record_handler);
+    g_server->on("/api/*", HttpMethod::HTTP_GET, record_handler);
     arm_slot(0, "GET /api/users/42 HTTP/1.1\r\n\r\n");
     g_server->handle();
     TEST_ASSERT_TRUE(handler_called);
@@ -264,7 +264,7 @@ void test_wildcard_matches_any_suffix()
 
 void test_wildcard_does_not_match_unrelated_prefix()
 {
-    g_server->on("/api/*", HTTP_GET, record_handler);
+    g_server->on("/api/*", HttpMethod::HTTP_GET, record_handler);
     arm_slot(0, "GET /other/path HTTP/1.1\r\n\r\n");
     g_server->handle();
     TEST_ASSERT_FALSE(handler_called);
@@ -273,8 +273,8 @@ void test_wildcard_does_not_match_unrelated_prefix()
 void test_exact_route_wins_when_registered_first()
 {
     static bool exact_called = false;
-    g_server->on("/api/status", HTTP_GET, [](uint8_t, HttpReq *) { exact_called = true; });
-    g_server->on("/api/*", HTTP_GET, record_handler);
+    g_server->on("/api/status", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { exact_called = true; });
+    g_server->on("/api/*", HttpMethod::HTTP_GET, record_handler);
     arm_slot(0, "GET /api/status HTTP/1.1\r\n\r\n");
     g_server->handle();
     TEST_ASSERT_TRUE(exact_called);
@@ -283,7 +283,7 @@ void test_exact_route_wins_when_registered_first()
 
 void test_slot_not_stuck_in_complete_after_handle()
 {
-    g_server->on("/free", HTTP_GET, record_handler);
+    g_server->on("/free", HttpMethod::HTTP_GET, record_handler);
     arm_slot(0, "GET /free HTTP/1.1\r\n\r\n");
     g_server->handle();
     TEST_ASSERT_NOT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
@@ -303,7 +303,7 @@ void test_parse_error_slot_auto_reset()
 void test_handler_reads_body()
 {
     static char body_seen[32] = {};
-    g_server->on("/body", HTTP_POST,
+    g_server->on("/body", HttpMethod::HTTP_POST,
                  [](uint8_t, HttpReq *req) { strncpy(body_seen, (const char *)req->body, sizeof(body_seen) - 1); });
     arm_slot(0, "POST /body HTTP/1.1\r\nContent-Length: 5\r\n\r\nhello");
     g_server->handle();
@@ -316,7 +316,7 @@ void test_handler_reads_body()
 void test_handler_reads_query_param()
 {
     static char q_seen[48] = {};
-    g_server->on("/q", HTTP_GET, [](uint8_t, HttpReq *req) {
+    g_server->on("/q", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *req) {
         const char *v = http_get_query(req, "id");
         if (v)
             strncpy(q_seen, v, sizeof(q_seen) - 1);
@@ -331,7 +331,7 @@ void test_handler_reads_query_param()
 void test_handler_reads_header()
 {
     static char h_seen[48] = {};
-    g_server->on("/h", HTTP_GET, [](uint8_t, HttpReq *req) {
+    g_server->on("/h", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *req) {
         const char *v = http_get_header(req, "X-Token");
         if (v)
             strncpy(h_seen, v, sizeof(h_seen) - 1);
@@ -347,8 +347,8 @@ void test_wildcard_before_exact_wildcard_wins()
 {
     static bool wildcard_called = false;
     static bool exact_called = false;
-    g_server->on("/api/*", HTTP_GET, [](uint8_t, HttpReq *) { wildcard_called = true; });
-    g_server->on("/api/status", HTTP_GET, [](uint8_t, HttpReq *) { exact_called = true; });
+    g_server->on("/api/*", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { wildcard_called = true; });
+    g_server->on("/api/status", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { exact_called = true; });
     arm_slot(0, "GET /api/status HTTP/1.1\r\n\r\n");
     g_server->handle();
     TEST_ASSERT_TRUE(wildcard_called);
@@ -368,9 +368,9 @@ void stress_last_route_dispatched_in_full_table()
     {
         char path[16];
         snprintf(path, sizeof(path), "/r%d", i);
-        g_server->on(path, HTTP_GET, [](uint8_t, HttpReq *) {});
+        g_server->on(path, HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) {});
     }
-    g_server->on("/last", HTTP_GET, [](uint8_t, HttpReq *) { last_count++; });
+    g_server->on("/last", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { last_count++; });
 
     arm_slot(0, "GET /last HTTP/1.1\r\n\r\n");
     g_server->handle();
@@ -382,7 +382,7 @@ void stress_last_route_dispatched_in_full_table()
 void stress_sequential_requests_no_state_leak()
 {
     static int seq_count = 0;
-    g_server->on("/seq", HTTP_GET, [](uint8_t, HttpReq *) { seq_count++; });
+    g_server->on("/seq", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { seq_count++; });
 
     for (int i = 0; i < 50; i++)
     {
@@ -396,10 +396,10 @@ void stress_sequential_requests_no_state_leak()
 void stress_all_slots_dispatched_simultaneously()
 {
     static int counts[4] = {};
-    g_server->on("/s0", HTTP_GET, [](uint8_t, HttpReq *) { counts[0]++; });
-    g_server->on("/s1", HTTP_GET, [](uint8_t, HttpReq *) { counts[1]++; });
-    g_server->on("/s2", HTTP_GET, [](uint8_t, HttpReq *) { counts[2]++; });
-    g_server->on("/s3", HTTP_GET, [](uint8_t, HttpReq *) { counts[3]++; });
+    g_server->on("/s0", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { counts[0]++; });
+    g_server->on("/s1", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { counts[1]++; });
+    g_server->on("/s2", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { counts[2]++; });
+    g_server->on("/s3", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { counts[3]++; });
 
     arm_slot(0, "GET /s0 HTTP/1.1\r\n\r\n");
     arm_slot(1, "GET /s1 HTTP/1.1\r\n\r\n");
@@ -416,7 +416,7 @@ void stress_all_slots_dispatched_simultaneously()
 void stress_wildcard_matches_many_paths()
 {
     static int wc_count = 0;
-    g_server->on("/api/*", HTTP_GET, [](uint8_t, HttpReq *) { wc_count++; });
+    g_server->on("/api/*", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { wc_count++; });
 
     const char *paths[] = {
         "GET /api/users HTTP/1.1\r\n\r\n",
@@ -441,7 +441,7 @@ void stress_wildcard_matches_many_paths()
 // 20 sequential handle() calls with NO complete parse slots - must be idle no-ops.
 void stress_handle_with_no_complete_slots_is_nop()
 {
-    g_server->on("/x", HTTP_GET, record_handler);
+    g_server->on("/x", HttpMethod::HTTP_GET, record_handler);
     // All slots in ParseState::PARSE_METHOD (setUp resets them) - nothing to dispatch
     for (int i = 0; i < 20; i++)
         g_server->handle();
@@ -458,7 +458,7 @@ void stress_handle_with_no_complete_slots_is_nop()
 void race_slot_complete_between_handle_calls()
 {
     static bool dispatched = false;
-    g_server->on("/late", HTTP_GET, [](uint8_t, HttpReq *) { dispatched = true; });
+    g_server->on("/late", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { dispatched = true; });
 
     g_server->handle(); // no complete slots yet
     TEST_ASSERT_FALSE(dispatched);
@@ -473,7 +473,7 @@ void race_slot_complete_between_handle_calls()
 // send() must detect pcb==nullptr/ConnState::CONN_FREE and call http_reset() cleanly.
 void race_conn_freed_after_parse_complete()
 {
-    g_server->on("/r", HTTP_GET, record_handler);
+    g_server->on("/r", HttpMethod::HTTP_GET, record_handler);
 
     arm_slot(0, "GET /r HTTP/1.1\r\n\r\n");
     TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
@@ -491,7 +491,7 @@ void race_conn_freed_after_parse_complete()
 void race_double_handle_no_double_dispatch()
 {
     static int dispatch_count = 0;
-    g_server->on("/dd", HTTP_GET, [](uint8_t, HttpReq *) { dispatch_count++; });
+    g_server->on("/dd", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { dispatch_count++; });
 
     arm_slot(0, "GET /dd HTTP/1.1\r\n\r\n");
     g_server->handle(); // dispatches once, resets slot
@@ -505,7 +505,7 @@ void race_double_handle_no_double_dispatch()
 void race_error_and_valid_slot_in_same_handle()
 {
     static bool valid_dispatched = false;
-    g_server->on("/ok", HTTP_GET, [](uint8_t, HttpReq *) { valid_dispatched = true; });
+    g_server->on("/ok", HttpMethod::HTTP_GET, [](uint8_t, HttpReq *) { valid_dispatched = true; });
 
     // Slot 0: inject a parse error
     push_bytes(0, "TOOLONGMETHODNAME /path HTTP/1.1\r\n\r\n");
@@ -527,7 +527,7 @@ void race_error_and_valid_slot_in_same_handle()
 void race_callback_manually_resets_slot()
 {
     static bool manual_reset_called = false;
-    g_server->on("/mr", HTTP_GET, [](uint8_t slot_id, HttpReq *) {
+    g_server->on("/mr", HttpMethod::HTTP_GET, [](uint8_t slot_id, HttpReq *) {
         manual_reset_called = true;
         http_reset(slot_id); // reset without sending a response
     });
@@ -573,7 +573,7 @@ void test_transfer_encoding_chunked_is_501()
 {
     // A request advertising Transfer-Encoding must be rejected with 501
     arm_slot(0, "POST /data HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n");
-    g_server->on("/data", HTTP_POST, [](uint8_t, HttpReq *) {
+    g_server->on("/data", HttpMethod::HTTP_POST, [](uint8_t, HttpReq *) {
         TEST_FAIL_MESSAGE("handler must not be called for Transfer-Encoding request");
     });
     g_server->handle(); // must send 501, not dispatch the route
@@ -760,7 +760,7 @@ void test_response_header_cookie_guards()
     g_server->set_cookie(0, nullptr, "1", nullptr);     // null name
     g_server->clear_response_headers(MAX_CONNS);        // out-of-range slot
 
-    g_server->on("/hdrtest", HTTP_GET, hdr_guard_handler);
+    g_server->on("/hdrtest", HttpMethod::HTTP_GET, hdr_guard_handler);
     arm_slot(0, "GET /hdrtest HTTP/1.1\r\nHost: x\r\n\r\n");
     conn_pool[0].pcb = &_mock_pcb;
     tcp_capture_reset();
@@ -1116,7 +1116,8 @@ void test_request_log_hook_fires()
 {
     g_log_calls = 0;
     g_server->on_request_log(capture_log);
-    g_server->on("/hi", HTTP_GET, [](uint8_t id, HttpReq *) { g_server->send(id, 200, "text/plain", "hello"); });
+    g_server->on("/hi", HttpMethod::HTTP_GET,
+                 [](uint8_t id, HttpReq *) { g_server->send(id, 200, "text/plain", "hello"); });
     arm_slot(0, "GET /hi HTTP/1.1\r\nHost: x\r\n\r\n");
     conn_pool[0].pcb = &_mock_pcb;
     g_server->handle();
@@ -1130,7 +1131,7 @@ void test_request_log_hook_fires()
 
 void test_stats_endpoint_emits_json()
 {
-    g_server->on("/stats", HTTP_GET, [](uint8_t id, HttpReq *) { g_server->stats(id); });
+    g_server->on("/stats", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { g_server->stats(id); });
     arm_slot(0, "GET /stats HTTP/1.1\r\nHost: x\r\n\r\n");
     conn_pool[0].pcb = &_mock_pcb;
     tcp_capture_reset();
@@ -1342,11 +1343,11 @@ void test_status_text_reason_phrases()
 // request it with an unregistered method.
 void test_allow_header_lists_methods()
 {
-    g_server->on("/m", HTTP_PATCH, record_handler);
-    g_server->on("/m", HTTP_OPTIONS, record_handler);
-    g_server->on("/m", HTTP_HEAD, record_handler);
-    g_server->on("/m", HTTP_PUT, record_handler);
-    g_server->on("/m", HTTP_METHOD_UNKNOWN, record_handler); // -> method_name() default ""
+    g_server->on("/m", HttpMethod::HTTP_PATCH, record_handler);
+    g_server->on("/m", HttpMethod::HTTP_OPTIONS, record_handler);
+    g_server->on("/m", HttpMethod::HTTP_HEAD, record_handler);
+    g_server->on("/m", HttpMethod::HTTP_PUT, record_handler);
+    g_server->on("/m", HttpMethod::HTTP_METHOD_UNKNOWN, record_handler); // -> method_name() default ""
     arm_slot(0, "DELETE /m HTTP/1.1\r\n\r\n");
     conn_pool[0].pcb = &_mock_pcb; // arm_slot leaves pcb null; the 405 must emit
     tcp_capture_reset();
@@ -1369,16 +1370,16 @@ void test_listen_and_begin()
     DetWebServer srv;
 
     // begin() before any listen() -> no-listeners error, no side effects.
-    TEST_ASSERT_EQUAL_INT32(DETWS_ERR_NO_LISTENERS, srv.begin());
+    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_NO_LISTENERS, srv.begin());
 
     // Fill the listener table, then the next listen() is rejected. listen() returns each
     // listener's id (its index), so the i-th call returns i.
     for (int i = 0; i < MAX_LISTENERS; i++)
         TEST_ASSERT_EQUAL_INT32(i, srv.listen((uint16_t)(9100 + i)));
-    TEST_ASSERT_EQUAL_INT32(DETWS_ERR_LISTENER_FULL, srv.listen(9999));
+    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_LISTENER_FULL, srv.listen(9999));
 
     // begin() now brings the registered listeners up.
-    TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.begin());
+    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.begin());
     listener_stop_all(); // release the global listener slots for later tests
 }
 
@@ -1388,13 +1389,13 @@ void test_listen_and_begin()
 void test_begin_port_convenience()
 {
     DetWebServer srv;
-    TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.begin((uint16_t)8080));
+    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.begin((uint16_t)8080));
     listener_stop_all();
 
     DetWebServer full;
     for (int i = 0; i < MAX_LISTENERS; i++)
         full.listen((uint16_t)(9300 + i));
-    TEST_ASSERT_EQUAL_INT32(DETWS_ERR_LISTENER_FULL, full.begin((uint16_t)9999));
+    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_LISTENER_FULL, full.begin((uint16_t)9999));
 }
 
 // restart() = stop() + begin(): it forwards the no-listeners error before any listen(), and
@@ -1403,12 +1404,12 @@ void test_restart_and_stop()
 {
     DetWebServer srv;
     // Before any listener, restart() forwards the no-listeners error (no stop()/begin()).
-    TEST_ASSERT_EQUAL_INT32(DETWS_ERR_NO_LISTENERS, srv.restart());
+    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_NO_LISTENERS, srv.restart());
 
     // Bring a listener up, then restart() tears down and re-binds it. The first listen() returns id 0.
     TEST_ASSERT_EQUAL_INT32(0, srv.listen((uint16_t)9500));
-    TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.begin());
-    TEST_ASSERT_EQUAL_INT32(DETWS_OK, srv.restart());
+    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.begin());
+    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.restart());
 
     // stop() tears everything down; a second stop() with nothing active is a safe no-op.
     srv.stop();
@@ -1422,12 +1423,12 @@ void test_route_registration_variants_table_full()
 {
     DetWebServer srv;
     for (int i = 0; i < MAX_ROUTES; i++)
-        srv.on("/x", HTTP_GET, record_handler);
+        srv.on("/x", HttpMethod::HTTP_GET, record_handler);
 
-    srv.on("/i", HTTP_GET, record_handler, DetIface::DETIFACE_STA); // on(..., iface)
-    srv.on_regex("/re.*", HTTP_GET, record_handler);
+    srv.on("/i", HttpMethod::HTTP_GET, record_handler, DetIface::DETIFACE_STA); // on(..., iface)
+    srv.on_regex("/re.*", HttpMethod::HTTP_GET, record_handler);
 #if DETWS_ENABLE_AUTH
-    srv.on("/a", HTTP_GET, record_handler, "realm", "u", "p", false);
+    srv.on("/a", HttpMethod::HTTP_GET, record_handler, "realm", "u", "p", false);
 #endif
 #if DETWS_ENABLE_WEBSOCKET
     srv.on_ws("/ws", nullptr, nullptr, nullptr);
@@ -1484,7 +1485,7 @@ void test_redirect_response_and_code_normalization()
 
 void test_request_error_paths_te_method_ws()
 {
-    g_server->on("/only-get", HTTP_GET, record_handler);
+    g_server->on("/only-get", HttpMethod::HTTP_GET, record_handler);
 #if DETWS_ENABLE_WEBSOCKET
     g_server->on_ws("/ws", nullptr, nullptr, nullptr);
 #endif

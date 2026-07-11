@@ -63,7 +63,7 @@ void setup()
     syslog_init(SYSLOG_SERVER, SYSLOG_PORT, "esp32-detws", "detws", SYSLOG_FAC_LOCAL0);
     syslog_log(SYSLOG_NOTICE, "device booted");
 
-    server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "ok"); });
+    server.on("/", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "ok"); });
     server.on_request_log(access_log); // every response is logged to syslog
 
     int32_t result = server.begin(80);

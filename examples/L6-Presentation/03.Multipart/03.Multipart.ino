@@ -55,8 +55,8 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/html", FORM); });
-    server.on("/upload", HTTP_POST, handle_upload);
+    server.on("/", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/html", FORM); });
+    server.on("/upload", HttpMethod::HTTP_POST, handle_upload);
     server.begin(80);
 }
 

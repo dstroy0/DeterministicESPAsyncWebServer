@@ -101,7 +101,7 @@ static void feed_and_handle(uint8_t slot, const char *req_str)
 
 void test_single_param_captured()
 {
-    server.on("/users/:id", HTTP_GET, h_one);
+    server.on("/users/:id", HttpMethod::HTTP_GET, h_one);
     feed_and_handle(0, "GET /users/42 HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_TRUE(g_found_a);
@@ -110,7 +110,7 @@ void test_single_param_captured()
 
 void test_multiple_params_captured()
 {
-    server.on("/users/:uid/posts/:pid", HTTP_GET, h_two);
+    server.on("/users/:uid/posts/:pid", HttpMethod::HTTP_GET, h_two);
     feed_and_handle(0, "GET /users/7/posts/99 HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_EQUAL_STRING("7", g_a);
@@ -119,14 +119,14 @@ void test_multiple_params_captured()
 
 void test_missing_param_returns_null()
 {
-    server.on("/users/:id", HTTP_GET, h_one);
+    server.on("/users/:id", HttpMethod::HTTP_GET, h_one);
     feed_and_handle(0, "GET /users/42 HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(g_found_missing);
 }
 
 void test_literal_segment_mismatch_404()
 {
-    server.on("/users/:id", HTTP_GET, h_one);
+    server.on("/users/:id", HttpMethod::HTTP_GET, h_one);
     feed_and_handle(0, "GET /accounts/42 HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "404"));
@@ -134,7 +134,7 @@ void test_literal_segment_mismatch_404()
 
 void test_extra_segment_does_not_match()
 {
-    server.on("/users/:id", HTTP_GET, h_one);
+    server.on("/users/:id", HttpMethod::HTTP_GET, h_one);
     feed_and_handle(0, "GET /users/42/extra HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "404"));
@@ -142,7 +142,7 @@ void test_extra_segment_does_not_match()
 
 void test_empty_param_value_does_not_match()
 {
-    server.on("/users/:id", HTTP_GET, h_one);
+    server.on("/users/:id", HttpMethod::HTTP_GET, h_one);
     feed_and_handle(0, "GET /users/ HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "404"));
@@ -150,7 +150,7 @@ void test_empty_param_value_does_not_match()
 
 void test_exact_route_still_matches()
 {
-    server.on("/health", HTTP_GET, h_exact);
+    server.on("/health", HttpMethod::HTTP_GET, h_exact);
     feed_and_handle(0, "GET /health HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "exact"));
@@ -158,7 +158,7 @@ void test_exact_route_still_matches()
 
 void test_param_route_wrong_method_405()
 {
-    server.on("/users/:id", HTTP_GET, h_one);
+    server.on("/users/:id", HttpMethod::HTTP_GET, h_one);
     feed_and_handle(0, "POST /users/42 HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
     TEST_ASSERT_FALSE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "405"));

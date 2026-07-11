@@ -139,7 +139,7 @@ static void feed_and_handle(uint8_t slot, const char *req_str)
 
 void test_single_custom_header_present()
 {
-    server.on("/h", HTTP_GET, h_one_header);
+    server.on("/h", HttpMethod::HTTP_GET, h_one_header);
     feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-Custom: hello\r\n"));
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
@@ -147,7 +147,7 @@ void test_single_custom_header_present()
 
 void test_multiple_custom_headers_present()
 {
-    server.on("/h", HTTP_GET, h_two_headers);
+    server.on("/h", HttpMethod::HTTP_GET, h_two_headers);
     feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-One: 1\r\n"));
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-Two: 2\r\n"));
@@ -155,21 +155,21 @@ void test_multiple_custom_headers_present()
 
 void test_set_cookie_basic()
 {
-    server.on("/h", HTTP_GET, h_cookie);
+    server.on("/h", HttpMethod::HTTP_GET, h_cookie);
     feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Set-Cookie: session=abc123\r\n"));
 }
 
 void test_set_cookie_with_attrs()
 {
-    server.on("/h", HTTP_GET, h_cookie_attrs);
+    server.on("/h", HttpMethod::HTTP_GET, h_cookie_attrs);
     feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Set-Cookie: session=abc123; Path=/; HttpOnly; Max-Age=3600\r\n"));
 }
 
 void test_custom_header_on_send_empty()
 {
-    server.on("/h", HTTP_GET, h_header_empty);
+    server.on("/h", HttpMethod::HTTP_GET, h_header_empty);
     feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "204"));
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-Empty: yes\r\n"));
@@ -177,7 +177,7 @@ void test_custom_header_on_send_empty()
 
 void test_custom_header_on_redirect()
 {
-    server.on("/h", HTTP_GET, h_header_redirect);
+    server.on("/h", HttpMethod::HTTP_GET, h_header_redirect);
     feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Location: /elsewhere\r\n"));
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-Redir: yes\r\n"));
@@ -185,8 +185,8 @@ void test_custom_header_on_redirect()
 
 void test_headers_do_not_leak_across_requests()
 {
-    server.on("/h", HTTP_GET, h_one_header);
-    server.on("/p", HTTP_GET, h_plain);
+    server.on("/h", HttpMethod::HTTP_GET, h_one_header);
+    server.on("/p", HttpMethod::HTTP_GET, h_plain);
 
     // First request queues X-Custom on slot 0.
     feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
@@ -208,7 +208,7 @@ void test_headers_do_not_leak_across_requests()
 
 void test_clear_response_headers()
 {
-    server.on("/h", HTTP_GET, h_clear);
+    server.on("/h", HttpMethod::HTTP_GET, h_clear);
     feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NULL(strstr(tcp_captured(), "X-Gone"));
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
@@ -216,7 +216,7 @@ void test_clear_response_headers()
 
 void test_oversized_header_dropped_whole()
 {
-    server.on("/h", HTTP_GET, h_oversized);
+    server.on("/h", HttpMethod::HTTP_GET, h_oversized);
     feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
     // The oversized header name must not appear...
     TEST_ASSERT_NULL(strstr(tcp_captured(), "X-Big"));
@@ -229,7 +229,7 @@ void test_oversized_header_dropped_whole()
 void test_date_header_emitted_when_time_set()
 {
     detws_ntp_set_test_epoch(784111777); // Sun, 06 Nov 1994 08:49:37 GMT
-    server.on("/h", HTTP_GET, h_plain);
+    server.on("/h", HttpMethod::HTTP_GET, h_plain);
     feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Date: Sun, 06 Nov 1994 08:49:37 GMT\r\n"));
 }
@@ -239,7 +239,7 @@ void test_date_header_emitted_when_time_set()
 void test_date_header_omitted_when_clockless()
 {
     detws_ntp_set_test_epoch(0);
-    server.on("/h", HTTP_GET, h_plain);
+    server.on("/h", HttpMethod::HTTP_GET, h_plain);
     feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
     TEST_ASSERT_NULL(strstr(tcp_captured(), "Date:"));

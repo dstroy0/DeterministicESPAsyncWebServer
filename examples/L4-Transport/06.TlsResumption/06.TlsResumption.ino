@@ -72,7 +72,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/", HTTP_GET,
+    server.on("/", HttpMethod::HTTP_GET,
               [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "hello over resumable TLS\n"); });
 
     int32_t r =

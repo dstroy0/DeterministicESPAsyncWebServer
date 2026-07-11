@@ -6,8 +6,8 @@
  * @brief Composable middleware chain + the built-in rate limiter.
  *
  * use() registers a Middleware that runs - in registration order - before every
- * request reaches its route handler. A middleware returns MW_NEXT to fall
- * through, or MW_HALT to short-circuit (after sending its own response). Common
+ * request reaches its route handler. A middleware returns MwResult::MW_NEXT to fall
+ * through, or MwResult::MW_HALT to short-circuit (after sending its own response). Common
  * uses: request logging, header stamping, custom gating.
  *
  * enable_rate_limit(max, window_ms) installs a fixed-window limiter that runs
@@ -38,7 +38,7 @@ static MwResult mw_log(uint8_t slot_id, HttpReq *req)
     (void)slot_id;
     request_count++;
     Serial.printf("[req %lu] %s %s\n", request_count, req->method, req->path);
-    return MW_NEXT;
+    return MwResult::MW_NEXT;
 }
 
 // Header-stamp middleware: queue a header onto every response.
@@ -46,18 +46,18 @@ static MwResult mw_brand(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
     server.add_response_header(slot_id, "X-Powered-By", "DeterministicESPAsyncWebServer");
-    return MW_NEXT;
+    return MwResult::MW_NEXT;
 }
 
-// Gate middleware: block a path outright, demonstrating MW_HALT.
+// Gate middleware: block a path outright, demonstrating MwResult::MW_HALT.
 static MwResult mw_block_admin(uint8_t slot_id, HttpReq *req)
 {
     if (strcmp(req->path, "/admin") == 0)
     {
         server.send(slot_id, 403, "text/plain", "blocked by middleware");
-        return MW_HALT; // handler is never reached
+        return MwResult::MW_HALT; // handler is never reached
     }
-    return MW_NEXT;
+    return MwResult::MW_NEXT;
 }
 
 void handle_root(uint8_t slot_id, HttpReq *req)
@@ -100,9 +100,9 @@ void setup()
     server.use(mw_block_admin);
     server.enable_rate_limit(5, 10000); // 5 requests / 10 s window
 
-    server.on("/", HTTP_GET, handle_root);
-    server.on("/ping", HTTP_GET, handle_ping);
-    server.on("/admin", HTTP_GET, handle_admin);
+    server.on("/", HttpMethod::HTTP_GET, handle_root);
+    server.on("/ping", HttpMethod::HTTP_GET, handle_ping);
+    server.on("/admin", HttpMethod::HTTP_GET, handle_admin);
 
     int32_t result = server.begin(80);
     if (result < 0)

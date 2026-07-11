@@ -44,7 +44,7 @@ static void serve_data_conn_gone(uint8_t slot_id, HttpReq *req)
 void setUp()
 {
     server = DetWebServer();
-    server.on("/data", HTTP_GET, serve_data);
+    server.on("/data", HttpMethod::HTTP_GET, serve_data);
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i] = {};
@@ -315,7 +315,7 @@ void test_range_suffix_on_empty_file()
 // nothing (no partial/garbage response to a gone peer).
 void test_serve_file_connection_gone()
 {
-    server.on("/gone", HTTP_GET, serve_data_conn_gone);
+    server.on("/gone", HttpMethod::HTTP_GET, serve_data_conn_gone);
     push_str(0, "GET /gone HTTP/1.1\r\n\r\n");
     http_parse(0);
     server.handle();

@@ -53,7 +53,7 @@ void setup()
     WiFi.setSleep(false);
 
     // on(path, method, handler, realm, user, pass, digest=true)
-    server.on("/secret", HTTP_GET, handle_secret, "demo", "admin", "s3cret", true);
+    server.on("/secret", HttpMethod::HTTP_GET, handle_secret, "demo", "admin", "s3cret", true);
 
     int32_t result = server.begin(80);
     if (result < 0)

@@ -86,8 +86,8 @@ void setup()
 
     WiFi.setSleep(false);
 
-    server.on("/", HTTP_GET, handle_root);
-    server.on("/status", HTTP_GET, handle_status);
+    server.on("/", HttpMethod::HTTP_GET, handle_root);
+    server.on("/status", HttpMethod::HTTP_GET, handle_status);
 
     // Load cert/key into the static-pool TLS engine and listen on 443.
     int32_t result =

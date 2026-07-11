@@ -93,7 +93,7 @@ static void feed_and_handle(uint8_t slot, const char *req_str)
 
 void test_basic_substitution()
 {
-    server.on("/t", HTTP_GET, h_basic);
+    server.on("/t", HttpMethod::HTTP_GET, h_basic);
     feed_and_handle(0, "GET /t HTTP/1.1\r\n\r\n");
     const char *r = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(r, "Hello World!"));
@@ -102,7 +102,7 @@ void test_basic_substitution()
 
 void test_multiple_placeholders()
 {
-    server.on("/t", HTTP_GET, h_multi);
+    server.on("/t", HttpMethod::HTTP_GET, h_multi);
     feed_and_handle(0, "GET /t HTTP/1.1\r\n\r\n");
     const char *r = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(r, "1+2"));
@@ -111,7 +111,7 @@ void test_multiple_placeholders()
 
 void test_unknown_placeholder_is_empty()
 {
-    server.on("/t", HTTP_GET, h_unknown);
+    server.on("/t", HttpMethod::HTTP_GET, h_unknown);
     feed_and_handle(0, "GET /t HTTP/1.1\r\n\r\n");
     const char *r = tcp_captured();
     // body is "ab"; ensure the placeholder text is gone
@@ -122,7 +122,7 @@ void test_unknown_placeholder_is_empty()
 
 void test_unterminated_placeholder_is_literal()
 {
-    server.on("/t", HTTP_GET, h_unterm);
+    server.on("/t", HttpMethod::HTTP_GET, h_unterm);
     feed_and_handle(0, "GET /t HTTP/1.1\r\n\r\n");
     const char *r = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(r, "a {{ b"));
@@ -131,7 +131,7 @@ void test_unterminated_placeholder_is_literal()
 
 void test_null_resolver_empties_all()
 {
-    server.on("/t", HTTP_GET, h_null);
+    server.on("/t", HttpMethod::HTTP_GET, h_null);
     feed_and_handle(0, "GET /t HTTP/1.1\r\n\r\n");
     const char *r = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(r, "\r\n\r\nxy"));
@@ -140,7 +140,7 @@ void test_null_resolver_empties_all()
 
 void test_head_suppresses_body_keeps_length()
 {
-    server.on("/t", HTTP_GET, h_basic);
+    server.on("/t", HttpMethod::HTTP_GET, h_basic);
     feed_and_handle(0, "HEAD /t HTTP/1.1\r\n\r\n");
     const char *r = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(r, "Content-Length: 12"));

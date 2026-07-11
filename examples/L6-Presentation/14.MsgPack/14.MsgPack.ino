@@ -102,7 +102,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/telemetry.msgpack", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/telemetry.msgpack", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         static MpCtx ctx; // static: must outlive send_chunked
         MsgpackWriter w;
         msgpack_init(&w, ctx.buf, sizeof(ctx.buf));
@@ -117,7 +117,7 @@ void setup()
         ctx.off = 0;
         server.send_chunked(id, 200, "application/msgpack", msgpack_source, &ctx);
     });
-    server.on("/decode", HTTP_POST, on_decode);
+    server.on("/decode", HttpMethod::HTTP_POST, on_decode);
     server.begin(80);
 }
 

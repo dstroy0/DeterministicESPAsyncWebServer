@@ -46,7 +46,7 @@ void setup()
         Serial.print("\nIP: ");
         Serial.println(WiFi.localIP());
 
-        server.on("/", HTTP_GET, handle_root);
+        server.on("/", HttpMethod::HTTP_GET, handle_root);
         server.begin(80);
         Serial.println("Station mode; serving on port 80");
     }

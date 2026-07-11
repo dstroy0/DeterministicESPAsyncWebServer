@@ -65,7 +65,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/telemetry.cbor", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/telemetry.cbor", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         static CborCtx ctx; // static: must outlive send_chunked
         CborWriter w;
         cbor_init(&w, ctx.buf, sizeof(ctx.buf));

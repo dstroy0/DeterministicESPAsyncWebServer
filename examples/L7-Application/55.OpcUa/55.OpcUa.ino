@@ -112,7 +112,8 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "OPC UA on :4840"); });
+    server.on("/", HttpMethod::HTTP_GET,
+              [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "OPC UA on :4840"); });
     opcua_set_read_handler(opcua_read);          // serve Reads for ns=1;i=1..3,10
     opcua_set_write_handler(opcua_write);        // accept Writes to ns=1;i=10 (the setpoint)
     opcua_set_browse_handler(opcua_browse);      // list those under the Objects folder

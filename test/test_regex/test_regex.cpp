@@ -77,7 +77,7 @@ static bool hit(const char *method, const char *path)
 
 void test_numeric_class_plus()
 {
-    server.on_regex("/sensor/[0-9]+", HTTP_GET, h_ok);
+    server.on_regex("/sensor/[0-9]+", HttpMethod::HTTP_GET, h_ok);
     TEST_ASSERT_TRUE(hit("GET", "/sensor/42"));
     TEST_ASSERT_TRUE(hit("GET", "/sensor/7"));
     TEST_ASSERT_FALSE(hit("GET", "/sensor/abc")); // non-digit
@@ -87,7 +87,7 @@ void test_numeric_class_plus()
 
 void test_dot_star_matches_rest()
 {
-    server.on_regex("/files/.*", HTTP_GET, h_ok);
+    server.on_regex("/files/.*", HttpMethod::HTTP_GET, h_ok);
     TEST_ASSERT_TRUE(hit("GET", "/files/")); // .* matches empty
     TEST_ASSERT_TRUE(hit("GET", "/files/a"));
     TEST_ASSERT_TRUE(hit("GET", "/files/deep/a/b")); // '.' matches '/'
@@ -96,7 +96,7 @@ void test_dot_star_matches_rest()
 
 void test_escaped_dot_extension()
 {
-    server.on_regex("/img/.+\\.png", HTTP_GET, h_ok);
+    server.on_regex("/img/.+\\.png", HttpMethod::HTTP_GET, h_ok);
     TEST_ASSERT_TRUE(hit("GET", "/img/cat.png"));
     TEST_ASSERT_FALSE(hit("GET", "/img/cat.jpg"));
     TEST_ASSERT_FALSE(hit("GET", "/img/.png")); // .+ needs >=1 char before ".png"
@@ -104,7 +104,7 @@ void test_escaped_dot_extension()
 
 void test_optional_quantifier()
 {
-    server.on_regex("/colou?r", HTTP_GET, h_ok);
+    server.on_regex("/colou?r", HttpMethod::HTTP_GET, h_ok);
     TEST_ASSERT_TRUE(hit("GET", "/color"));
     TEST_ASSERT_TRUE(hit("GET", "/colour"));
     TEST_ASSERT_FALSE(hit("GET", "/colouur"));
@@ -112,7 +112,7 @@ void test_optional_quantifier()
 
 void test_range_class_only()
 {
-    server.on_regex("/[a-z]+", HTTP_GET, h_ok);
+    server.on_regex("/[a-z]+", HttpMethod::HTTP_GET, h_ok);
     TEST_ASSERT_TRUE(hit("GET", "/abc"));
     TEST_ASSERT_FALSE(hit("GET", "/ABC"));
     TEST_ASSERT_FALSE(hit("GET", "/a1"));
@@ -120,14 +120,14 @@ void test_range_class_only()
 
 void test_negated_class()
 {
-    server.on_regex("/x[^/]+", HTTP_GET, h_ok);
+    server.on_regex("/x[^/]+", HttpMethod::HTTP_GET, h_ok);
     TEST_ASSERT_TRUE(hit("GET", "/xabc"));
     TEST_ASSERT_FALSE(hit("GET", "/x/")); // '/' excluded
 }
 
 void test_anchored_full_match()
 {
-    server.on_regex("/api/v[12]", HTTP_GET, h_ok);
+    server.on_regex("/api/v[12]", HttpMethod::HTTP_GET, h_ok);
     TEST_ASSERT_TRUE(hit("GET", "/api/v1"));
     TEST_ASSERT_TRUE(hit("GET", "/api/v2"));
     TEST_ASSERT_FALSE(hit("GET", "/api/v3"));
@@ -137,7 +137,7 @@ void test_anchored_full_match()
 
 void test_method_still_enforced()
 {
-    server.on_regex("/sensor/[0-9]+", HTTP_GET, h_ok);
+    server.on_regex("/sensor/[0-9]+", HttpMethod::HTTP_GET, h_ok);
     // Path matches but method differs -> 405, handler not called.
     TEST_ASSERT_FALSE(hit("POST", "/sensor/42"));
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "405"));
@@ -147,15 +147,15 @@ void test_pathological_pattern_terminates_no_match()
 {
     // Catastrophic-looking pattern with no possible match: must return (not hang)
     // and report no match, thanks to the RE_MAX_STEPS budget.
-    server.on_regex("/a*a*a*a*a*b", HTTP_GET, h_ok);
+    server.on_regex("/a*a*a*a*a*b", HttpMethod::HTTP_GET, h_ok);
     TEST_ASSERT_FALSE(hit("GET", "/aaaaaaaaaaaaaaaaaaaaaaaac"));
 }
 
 // Perl-style escape classes \d and \D (digit / non-digit).
 void test_escape_class_digit()
 {
-    server.on_regex("/d/\\d+", HTTP_GET, h_ok);
-    server.on_regex("/D/\\D+", HTTP_GET, h_ok);
+    server.on_regex("/d/\\d+", HttpMethod::HTTP_GET, h_ok);
+    server.on_regex("/D/\\D+", HttpMethod::HTTP_GET, h_ok);
     TEST_ASSERT_TRUE(hit("GET", "/d/42"));   // \d matches digits
     TEST_ASSERT_FALSE(hit("GET", "/d/x"));   // non-digit -> no match
     TEST_ASSERT_TRUE(hit("GET", "/D/abc"));  // \D matches non-digits
@@ -165,8 +165,8 @@ void test_escape_class_digit()
 // Escape classes \w and \W (word / non-word).
 void test_escape_class_word()
 {
-    server.on_regex("/w/\\w+", HTTP_GET, h_ok);
-    server.on_regex("/W/\\W+", HTTP_GET, h_ok);
+    server.on_regex("/w/\\w+", HttpMethod::HTTP_GET, h_ok);
+    server.on_regex("/W/\\W+", HttpMethod::HTTP_GET, h_ok);
     TEST_ASSERT_TRUE(hit("GET", "/w/ab_9")); // letters/digits/underscore
     TEST_ASSERT_FALSE(hit("GET", "/w/--"));  // '-' is not a word char
     TEST_ASSERT_TRUE(hit("GET", "/W/---"));  // \W matches non-word chars
@@ -177,8 +177,8 @@ void test_escape_class_word()
 // \s is exercised as a (non-matching) atom evaluation; \S matches non-space.
 void test_escape_class_space()
 {
-    server.on_regex("/s/\\S+", HTTP_GET, h_ok);
-    server.on_regex("/z/\\sx", HTTP_GET, h_ok);
+    server.on_regex("/s/\\S+", HttpMethod::HTTP_GET, h_ok);
+    server.on_regex("/z/\\sx", HttpMethod::HTTP_GET, h_ok);
     TEST_ASSERT_TRUE(hit("GET", "/s/abc")); // \S matches non-space
     TEST_ASSERT_FALSE(hit("GET", "/z/qx")); // \s vs 'q' -> false (case executes)
 }
@@ -187,8 +187,8 @@ void test_escape_class_space()
 // escaped range bound [0-\9].
 void test_class_escaped_members()
 {
-    server.on_regex("/c/[\\.]+", HTTP_GET, h_ok);
-    server.on_regex("/r/[0-\\9]+", HTTP_GET, h_ok);
+    server.on_regex("/c/[\\.]+", HttpMethod::HTTP_GET, h_ok);
+    server.on_regex("/r/[0-\\9]+", HttpMethod::HTTP_GET, h_ok);
     TEST_ASSERT_TRUE(hit("GET", "/c/...")); // escaped '.' member
     TEST_ASSERT_FALSE(hit("GET", "/c/x"));  // outside the class
     TEST_ASSERT_TRUE(hit("GET", "/r/507")); // escaped range bound 0-9

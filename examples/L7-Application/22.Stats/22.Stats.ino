@@ -43,7 +43,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/stats", HTTP_GET, [](uint8_t id, HttpReq *) { server.stats(id); });
+    server.on("/stats", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.stats(id); });
     server.begin(80);
 }
 

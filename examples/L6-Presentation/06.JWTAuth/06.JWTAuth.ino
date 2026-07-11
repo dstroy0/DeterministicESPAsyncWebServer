@@ -84,8 +84,8 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/protected", HTTP_GET, protected_handler);
-    server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "public"); });
+    server.on("/protected", HttpMethod::HTTP_GET, protected_handler);
+    server.on("/", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "public"); });
 
     int32_t result = server.begin(80);
     if (result < 0)

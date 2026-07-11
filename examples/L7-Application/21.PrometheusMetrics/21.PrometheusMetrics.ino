@@ -49,11 +49,12 @@ void setup()
     WiFi.setSleep(false);
 
     // A couple of normal routes so the counters have something to report.
-    server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "hello"); });
-    server.on("/work", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "did work"); });
+    server.on("/", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "hello"); });
+    server.on("/work", HttpMethod::HTTP_GET,
+              [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "did work"); });
 
     // The Prometheus scrape endpoint.
-    server.on("/metrics", HTTP_GET, [](uint8_t id, HttpReq *) { server.metrics(id); });
+    server.on("/metrics", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.metrics(id); });
 
     int32_t result = server.begin(80);
     if (result < 0)

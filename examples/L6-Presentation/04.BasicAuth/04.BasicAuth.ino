@@ -41,12 +41,14 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "public page"); });
+    server.on("/", HttpMethod::HTTP_GET,
+              [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "public page"); });
 
     // Basic auth (digest defaults to false): realm, username, password.
     server.on(
-        "/secret", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "authenticated!"); },
-        "Restricted", "admin", "s3cret");
+        "/secret", HttpMethod::HTTP_GET,
+        [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "authenticated!"); }, "Restricted", "admin",
+        "s3cret");
 
     server.begin(80);
 }

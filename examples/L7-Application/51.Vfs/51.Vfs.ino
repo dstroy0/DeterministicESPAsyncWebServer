@@ -59,7 +59,7 @@ void setup()
     LittleFS.begin(true); // format on first use
     detws_vfs_mount(detws_vfs_fs(&LittleFS));
 
-    server.on("/save", HTTP_GET, [](uint8_t id, HttpReq *req) {
+    server.on("/save", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *req) {
         char path[DETWS_VFS_NAME_MAX];
         const char *data = http_get_query(req, "data");
         if (!path_of(req, path, sizeof(path)) || !data)
@@ -71,7 +71,7 @@ void setup()
         server.send(id, ok ? 200 : 500, "application/json", ok ? "{\"ok\":true}" : "{\"ok\":false}");
     });
 
-    server.on("/load", HTTP_GET, [](uint8_t id, HttpReq *req) {
+    server.on("/load", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *req) {
         char path[DETWS_VFS_NAME_MAX];
         if (!path_of(req, path, sizeof(path)))
         {
@@ -89,7 +89,7 @@ void setup()
         server.send(id, 200, "text/plain", buf);
     });
 
-    server.on("/size", HTTP_GET, [](uint8_t id, HttpReq *req) {
+    server.on("/size", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *req) {
         char path[DETWS_VFS_NAME_MAX];
         long n = path_of(req, path, sizeof(path)) ? detws_vfs_size(path) : -1;
         char b[24];
@@ -97,7 +97,7 @@ void setup()
         server.send(id, 200, "text/plain", b);
     });
 
-    server.on("/rm", HTTP_GET, [](uint8_t id, HttpReq *req) {
+    server.on("/rm", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *req) {
         char path[DETWS_VFS_NAME_MAX];
         bool ok = path_of(req, path, sizeof(path)) && detws_vfs_remove(path);
         server.send(id, ok ? 200 : 404, "application/json", ok ? "{\"ok\":true}" : "{\"ok\":false}");

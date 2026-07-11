@@ -75,7 +75,7 @@ void detws_web_terminal_begin(DetWebServer &server, const char *path)
         path = "/terminal";
     snprintf(s_term.ws_path, sizeof(s_term.ws_path), "%s/ws", path);
 
-    server.on(path, HTTP_GET, term_page_handler);
+    server.on(path, HttpMethod::HTTP_GET, term_page_handler);
     server.on_ws(s_term.ws_path, term_ws_connect, term_ws_message, term_ws_close);
 }
 

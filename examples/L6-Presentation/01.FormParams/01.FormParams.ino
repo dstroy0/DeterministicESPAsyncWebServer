@@ -72,7 +72,7 @@ void setup()
 
     WiFi.setSleep(false);
 
-    server.on("/form", HTTP_POST, handle_form);
+    server.on("/form", HttpMethod::HTTP_POST, handle_form);
 
     int32_t result = server.begin(80);
     if (result < 0)

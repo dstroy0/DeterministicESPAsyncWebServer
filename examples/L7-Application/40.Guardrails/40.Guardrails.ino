@@ -48,7 +48,7 @@ void setup()
 
     detws_guardrails_begin(on_breach);
 
-    server.on("/health", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/health", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         DetwsHealth h;
         detws_guardrails_sample(&h);
         char buf[128];

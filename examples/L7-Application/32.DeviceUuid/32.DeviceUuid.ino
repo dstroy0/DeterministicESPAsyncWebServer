@@ -42,7 +42,7 @@ void setup()
     detws_device_uuid(g_uuid); // stable per-chip UUID
     Serial.printf("device UUID: %s\n", g_uuid);
 
-    server.on("/id", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/id", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         char body[64];
         snprintf(body, sizeof(body), "{\"uuid\":\"%s\"}", g_uuid);
         server.send(id, 200, "application/json", body);

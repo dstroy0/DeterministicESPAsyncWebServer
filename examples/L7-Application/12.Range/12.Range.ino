@@ -76,7 +76,7 @@ void setup()
     WiFi.setSleep(false);
 
     // serve_file() honors Range automatically when DETWS_ENABLE_RANGE is set.
-    server.on("/data.bin", HTTP_GET,
+    server.on("/data.bin", HttpMethod::HTTP_GET,
               [](uint8_t id, HttpReq *) { server.serve_file(id, LittleFS, "/data.bin", "application/octet-stream"); });
 
     int32_t result = server.begin(80);

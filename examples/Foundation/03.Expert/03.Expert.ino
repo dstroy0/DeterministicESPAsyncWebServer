@@ -213,8 +213,8 @@ void setup()
 
     last_refill_time_ms = millis();
 
-    server.on("/api/diagnostics", HTTP_GET, handle_diagnostics);
-    server.on("/api/compute", HTTP_GET, handle_compute);
+    server.on("/api/diagnostics", HttpMethod::HTTP_GET, handle_diagnostics);
+    server.on("/api/compute", HttpMethod::HTTP_GET, handle_compute);
     server.on_not_found(handle_expert_not_found);
 
     int32_t result = server.begin(80);

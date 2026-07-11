@@ -124,7 +124,7 @@ void detws_ota_begin(DetWebServer &server, const char *path, const char *user, c
     s_ota.pass[sizeof(s_ota.pass) - 1] = '\0';
 
     http_parser_set_stream_hooks(ota_stream_begin, ota_stream_data);
-    server.on(path, HTTP_POST, ota_handle);
+    server.on(path, HttpMethod::HTTP_POST, ota_handle);
 }
 
 #else

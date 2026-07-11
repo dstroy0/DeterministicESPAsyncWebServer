@@ -59,8 +59,8 @@ void setup()
     WiFi.setSleep(false);
 
     // Register the more specific route first; routes match in registration order.
-    server.on("/users/:id/posts/:slug", HTTP_GET, handle_user_post);
-    server.on("/users/:id", HTTP_GET, handle_user);
+    server.on("/users/:id/posts/:slug", HttpMethod::HTTP_GET, handle_user_post);
+    server.on("/users/:id", HttpMethod::HTTP_GET, handle_user);
 
     int32_t result = server.begin(80);
     if (result < 0)

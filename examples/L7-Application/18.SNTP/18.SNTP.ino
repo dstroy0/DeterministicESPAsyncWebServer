@@ -56,7 +56,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/time", HTTP_GET, handle_time);
+    server.on("/time", HttpMethod::HTTP_GET, handle_time);
     server.begin(80);
 
     detws_ntp_begin("UTC0"); // POSIX TZ string; set your zone for local time

@@ -55,7 +55,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/whoami", HTTP_GET, [](uint8_t id, HttpReq *req) {
+    server.on("/whoami", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *req) {
         // req->authorization holds the FULL Authorization header (ID tokens exceed
         // the normal header value cap). Step past the "Bearer " scheme.
         const char *hdr = req->authorization;

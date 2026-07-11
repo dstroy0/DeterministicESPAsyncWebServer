@@ -52,7 +52,7 @@ void setup()
     detws_rate_init(&g_rate);
     detws_totalizer_init(&g_total);
 
-    server.on("/telemetry", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/telemetry", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         char body[192];
         snprintf(body, sizeof(body),
                  "{\"samples\":%u,\"mean\":%.3f,\"stddev\":%.3f,\"min\":%.3f,\"max\":%.3f,"

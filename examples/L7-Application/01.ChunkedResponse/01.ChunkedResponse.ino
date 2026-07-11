@@ -95,8 +95,8 @@ void setup()
 
     WiFi.setSleep(false);
 
-    server.on("/stream", HTTP_GET, handle_stream);
-    server.on("/count", HTTP_GET, handle_count);
+    server.on("/stream", HttpMethod::HTTP_GET, handle_stream);
+    server.on("/count", HttpMethod::HTTP_GET, handle_count);
 
     int32_t result = server.begin(80);
     if (result < 0)

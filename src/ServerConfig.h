@@ -4269,7 +4269,7 @@
  * When enabled, DETWS_DIAG_JSON is a compile-time string constant you can
  * serve from any route handler:
  * @code
- *   server.on("/diag", HTTP_GET, [](uint8_t id, HttpReq *) {
+ *   server.on("/diag", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
  *       server.diag(id);        // convenience wrapper
  *       // or:
  *       server.send(id, 200, "application/json", DETWS_DIAG_JSON);

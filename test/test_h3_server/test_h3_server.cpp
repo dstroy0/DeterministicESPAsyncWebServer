@@ -298,9 +298,9 @@ void test_h3_request_served_by_route()
     fill();
 
     // Bring up an HTTP/3-only DetWebServer with one route.
-    server.on("/hello", HTTP_GET, h_hello);
+    server.on("/hello", HttpMethod::HTTP_GET, h_hello);
     TEST_ASSERT_TRUE(server.h3_cert(CERT, sizeof(CERT), SERVER_SEED, 443));
-    TEST_ASSERT_EQUAL_INT32(DETWS_OK, server.begin());
+    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, server.begin());
     quic_server_set_out_sink(out_sink, nullptr);
 
     QuicInitialSecrets init;

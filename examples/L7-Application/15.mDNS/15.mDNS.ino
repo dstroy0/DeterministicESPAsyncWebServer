@@ -45,7 +45,8 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "hello via mDNS"); });
+    server.on("/", HttpMethod::HTTP_GET,
+              [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "hello via mDNS"); });
     server.begin(80);
 
     if (detws_mdns_begin(HOSTNAME, 80))

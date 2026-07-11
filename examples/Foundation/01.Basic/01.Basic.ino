@@ -142,10 +142,10 @@ void setup()
     // origin in production).
     server.set_cors("*");
 
-    server.on("/", HTTP_GET, handle_root);
-    server.on("/api/status", HTTP_GET, handle_status);
-    server.on("/api/echo", HTTP_POST, handle_echo);
-    server.on("/files/*", HTTP_GET, handle_files);
+    server.on("/", HttpMethod::HTTP_GET, handle_root);
+    server.on("/api/status", HttpMethod::HTTP_GET, handle_status);
+    server.on("/api/echo", HttpMethod::HTTP_POST, handle_echo);
+    server.on("/files/*", HttpMethod::HTTP_GET, handle_files);
     server.on_not_found(handle_not_found);
 
     // begin() returns 1 on success and a negative value on failure (listener

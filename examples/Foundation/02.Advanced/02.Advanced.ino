@@ -336,11 +336,11 @@ void setup()
 
     server.set_cors("*");
 
-    server.on("/api/sensors", HTTP_GET, handle_get_sensors);
-    server.on("/api/sensors/*", HTTP_GET, handle_get_sensor_by_id);
-    server.on("/api/sensors", HTTP_POST, handle_create_sensor);
-    server.on("/api/sensors/*", HTTP_PATCH, handle_patch_sensor);
-    server.on("/api/sensors/*", HTTP_DELETE, handle_delete_sensor);
+    server.on("/api/sensors", HttpMethod::HTTP_GET, handle_get_sensors);
+    server.on("/api/sensors/*", HttpMethod::HTTP_GET, handle_get_sensor_by_id);
+    server.on("/api/sensors", HttpMethod::HTTP_POST, handle_create_sensor);
+    server.on("/api/sensors/*", HttpMethod::HTTP_PATCH, handle_patch_sensor);
+    server.on("/api/sensors/*", HttpMethod::HTTP_DELETE, handle_delete_sensor);
 
     int32_t result = server.begin(80);
     if (result < 0)

@@ -46,7 +46,7 @@ void setup()
     detws_log_set_trap(DETWS_LOG_WARN, on_trap); // trap on WARN and ERROR
     detws_log(DETWS_LOG_INFO, "boot complete");
 
-    server.on("/logs", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/logs", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         char buf[DETWS_LOG_LINES * DETWS_LOG_LINE_LEN];
         detws_log_dump(buf, sizeof(buf));
         server.send(id, 200, "text/plain", buf);

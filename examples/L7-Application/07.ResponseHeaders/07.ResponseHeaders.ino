@@ -67,8 +67,8 @@ void setup()
     // first packet after an idle gap).
     WiFi.setSleep(false);
 
-    server.on("/headers", HTTP_GET, handle_headers);
-    server.on("/cleared", HTTP_GET, handle_cleared);
+    server.on("/headers", HttpMethod::HTTP_GET, handle_headers);
+    server.on("/cleared", HttpMethod::HTTP_GET, handle_cleared);
 
     int32_t result = server.begin(80);
     if (result < 0)

@@ -98,7 +98,7 @@ static void feed_and_handle(uint8_t slot, const char *req_str)
 
 void test_missing_file_returns_404()
 {
-    server.on("/page", HTTP_GET, handle_missing);
+    server.on("/page", HttpMethod::HTTP_GET, handle_missing);
     fs::mock_fs_clear(); // no file set
     feed_and_handle(0, "GET /page HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(handler_called);
@@ -107,7 +107,7 @@ void test_missing_file_returns_404()
 
 void test_existing_file_returns_200()
 {
-    server.on("/page", HTTP_GET, handle_html);
+    server.on("/page", HttpMethod::HTTP_GET, handle_html);
     fs::mock_fs_set("<html><body>Hello</body></html>");
     feed_and_handle(0, "GET /page HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(handler_called);
@@ -116,7 +116,7 @@ void test_existing_file_returns_200()
 
 void test_response_includes_content_type_html()
 {
-    server.on("/page", HTTP_GET, handle_html);
+    server.on("/page", HttpMethod::HTTP_GET, handle_html);
     fs::mock_fs_set("<html></html>");
     feed_and_handle(0, "GET /page HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Content-Type: text/html"));
@@ -124,7 +124,7 @@ void test_response_includes_content_type_html()
 
 void test_response_includes_content_type_js()
 {
-    server.on("/app", HTTP_GET, handle_js);
+    server.on("/app", HttpMethod::HTTP_GET, handle_js);
     fs::mock_fs_set("console.log('hello');");
     feed_and_handle(0, "GET /app HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(handler_called);
@@ -133,7 +133,7 @@ void test_response_includes_content_type_js()
 
 void test_content_length_matches_file_size()
 {
-    server.on("/page", HTTP_GET, handle_html);
+    server.on("/page", HttpMethod::HTTP_GET, handle_html);
     const char *body = "Hello, World!";
     fs::mock_fs_set(body);
     size_t expected_len = strlen(body);
@@ -147,7 +147,7 @@ void test_content_length_matches_file_size()
 
 void test_file_body_is_sent()
 {
-    server.on("/page", HTTP_GET, handle_html);
+    server.on("/page", HttpMethod::HTTP_GET, handle_html);
     const char *body = "<h1>Test Page</h1>";
     fs::mock_fs_set(body);
     feed_and_handle(0, "GET /page HTTP/1.1\r\n\r\n");
@@ -156,7 +156,7 @@ void test_file_body_is_sent()
 
 void test_empty_file_returns_200_with_zero_length()
 {
-    server.on("/empty", HTTP_GET, [](uint8_t slot_id, HttpReq *req) {
+    server.on("/empty", HttpMethod::HTTP_GET, [](uint8_t slot_id, HttpReq *req) {
         (void)req;
         fs::FS fs;
         server.serve_file(slot_id, fs, "/empty.txt", "text/plain");
@@ -180,7 +180,7 @@ void test_large_file_body_fully_sent()
     for (size_t i = 0; i < N; i++)
         big[i] = (uint8_t)('A' + (i % 26)); // printable, no NUL, position-dependent
 
-    server.on("/big", HTTP_GET, [](uint8_t slot_id, HttpReq *req) {
+    server.on("/big", HttpMethod::HTTP_GET, [](uint8_t slot_id, HttpReq *req) {
         (void)req;
         fs::FS fs;
         server.serve_file(slot_id, fs, "/big.bin", "application/octet-stream");
@@ -208,12 +208,12 @@ void test_large_file_body_fully_sent()
 void test_serve_file_does_not_affect_other_routes()
 {
     static bool other_called = false;
-    server.on("/other", HTTP_GET, [](uint8_t slot_id, HttpReq *req) {
+    server.on("/other", HttpMethod::HTTP_GET, [](uint8_t slot_id, HttpReq *req) {
         (void)req;
         other_called = true;
         server.send(slot_id, 200, "text/plain", "other");
     });
-    server.on("/file", HTTP_GET, handle_html);
+    server.on("/file", HttpMethod::HTTP_GET, handle_html);
 
     fs::mock_fs_set("<html/>");
     feed_and_handle(0, "GET /other HTTP/1.1\r\n\r\n");
@@ -252,7 +252,7 @@ void test_multiple_content_types()
         http_reset(0);
         tcp_capture_reset();
 
-        server.on(cur_path, HTTP_GET, [](uint8_t slot_id, HttpReq *req) {
+        server.on(cur_path, HttpMethod::HTTP_GET, [](uint8_t slot_id, HttpReq *req) {
             (void)req;
             fs::FS fs;
             server.serve_file(slot_id, fs, cur_path, cur_ctype);
@@ -276,7 +276,7 @@ void stress_serve_file_50_requests()
 {
     const char *body = "stress body";
     fs::mock_fs_set(body);
-    server.on("/f", HTTP_GET, handle_html);
+    server.on("/f", HttpMethod::HTTP_GET, handle_html);
 
     for (int i = 0; i < 50; i++)
     {
@@ -302,7 +302,7 @@ void stress_serve_file_50_requests()
 
 void stress_alternate_missing_and_found()
 {
-    server.on("/f", HTTP_GET, [](uint8_t slot_id, HttpReq *req) {
+    server.on("/f", HttpMethod::HTTP_GET, [](uint8_t slot_id, HttpReq *req) {
         (void)req;
         fs::FS fs;
         server.serve_file(slot_id, fs, "/f.txt", "text/plain");

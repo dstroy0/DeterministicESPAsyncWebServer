@@ -112,7 +112,7 @@ void setup()
     WiFi.setSleep(false);
 
     // Identify the verified client to the handler.
-    server.on("/whoami", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/whoami", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         char subject[DETWS_MTLS_SUBJECT_MAX];
         if (server.tls_client_subject(id, subject, sizeof(subject)) > 0)
             server.send(id, 200, "text/plain", subject);

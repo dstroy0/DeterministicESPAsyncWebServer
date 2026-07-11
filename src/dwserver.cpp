@@ -234,20 +234,20 @@ static const char *status_text(int code)
 static HttpMethod parse_method(const char *m)
 {
     if (strcmp(m, "GET") == 0)
-        return HTTP_GET;
+        return HttpMethod::HTTP_GET;
     if (strcmp(m, "POST") == 0)
-        return HTTP_POST;
+        return HttpMethod::HTTP_POST;
     if (strcmp(m, "PUT") == 0)
-        return HTTP_PUT;
+        return HttpMethod::HTTP_PUT;
     if (strcmp(m, "DELETE") == 0)
-        return HTTP_DELETE;
+        return HttpMethod::HTTP_DELETE;
     if (strcmp(m, "PATCH") == 0)
-        return HTTP_PATCH;
+        return HttpMethod::HTTP_PATCH;
     if (strcmp(m, "HEAD") == 0)
-        return HTTP_HEAD;
+        return HttpMethod::HTTP_HEAD;
     if (strcmp(m, "OPTIONS") == 0)
-        return HTTP_OPTIONS;
-    return HTTP_METHOD_UNKNOWN;
+        return HttpMethod::HTTP_OPTIONS;
+    return HttpMethod::HTTP_METHOD_UNKNOWN;
 }
 
 /**
@@ -257,19 +257,19 @@ static const char *method_name(HttpMethod m)
 {
     switch (m)
     {
-    case HTTP_GET:
+    case HttpMethod::HTTP_GET:
         return "GET";
-    case HTTP_POST:
+    case HttpMethod::HTTP_POST:
         return "POST";
-    case HTTP_PUT:
+    case HttpMethod::HTTP_PUT:
         return "PUT";
-    case HTTP_DELETE:
+    case HttpMethod::HTTP_DELETE:
         return "DELETE";
-    case HTTP_PATCH:
+    case HttpMethod::HTTP_PATCH:
         return "PATCH";
-    case HTTP_HEAD:
+    case HttpMethod::HTTP_HEAD:
         return "HEAD";
-    case HTTP_OPTIONS:
+    case HttpMethod::HTTP_OPTIONS:
         return "OPTIONS";
     default:
         return "";
@@ -461,13 +461,13 @@ void DetWebServer::use(Middleware mw)
     _middleware[_middleware_count++] = mw;
 }
 
-// Run the chain in registration order. The first middleware to return MW_HALT
+// Run the chain in registration order. The first middleware to return MwResult::MW_HALT
 // stops dispatch; it is responsible for having sent a response.
 bool DetWebServer::run_middleware(uint8_t slot_id, HttpReq *req)
 {
     for (uint8_t i = 0; i < _middleware_count; i++)
     {
-        if (_middleware[i] && _middleware[i](slot_id, req) == MW_HALT)
+        if (_middleware[i] && _middleware[i](slot_id, req) == MwResult::MW_HALT)
             return true;
     }
     return false;
@@ -512,12 +512,12 @@ bool DetWebServer::rate_limit_check(uint8_t slot_id)
 int32_t DetWebServer::listen(uint16_t port, ConnProto proto)
 {
     if (_listener_count >= MAX_LISTENERS)
-        return DETWS_ERR_LISTENER_FULL;
+        return (int32_t)DetWebServerResult::DETWS_ERR_LISTENER_FULL;
     _listen_ports[_listener_count] = port;
     _listen_protos[_listener_count] = proto;
     _listen_tls[_listener_count] = false;
     _listener_count++;
-    // Return the listener id (its index), not DETWS_OK: begin() binds listener_pool[i] from
+    // Return the listener id (its index), not DetWebServerResult::DETWS_OK: begin() binds listener_pool[i] from
     // _listen_ports[i] and the accept path stamps that same index onto the slot, so this id is what
     // det_relay_publish() / ssh_forward_begin() must match against. (Errors are negative.)
     return (int32_t)(_listener_count - 1);
@@ -600,7 +600,7 @@ int32_t DetWebServer::begin(const WebServerConfig *cfg)
         && !_h3_enabled // an HTTP/3-only server binds UDP, not a TCP listener
 #endif
     )
-        return DETWS_ERR_NO_LISTENERS;
+        return (int32_t)DetWebServerResult::DETWS_ERR_NO_LISTENERS;
     DeterministicAsyncTCP::pool_init(cfg);
 #if DETWS_ENABLE_AUTH
     regen_digest_secret(); // fresh server keying secret per begin()
@@ -634,7 +634,7 @@ int32_t DetWebServer::begin(const WebServerConfig *cfg)
     for (uint8_t i = 0; i < _listener_count; i++)
     {
         if (listener_add(i, _listen_ports[i], _listen_protos[i], _listen_tls[i]) < 0)
-            return DETWS_ERR_LISTEN_FAILED;
+            return (int32_t)DetWebServerResult::DETWS_ERR_LISTEN_FAILED;
     }
 #if DETWS_ENABLE_HTTP3
     // Bind the HTTP/3 QUIC server (UDP on device; on host it is fed via quic_server_ingest). Requests
@@ -656,7 +656,7 @@ int32_t DetWebServer::begin(const WebServerConfig *cfg)
     s_inst.worker_server = this;
     detws_workers_start(detws_pump_trampoline);
 #endif
-    return DETWS_OK;
+    return (int32_t)DetWebServerResult::DETWS_OK;
 }
 
 int32_t DetWebServer::begin(uint16_t port, const WebServerConfig *cfg)
@@ -773,19 +773,19 @@ bool DetWebServer::tls_cert(const uint8_t *cert, size_t cert_len, const uint8_t 
 int32_t DetWebServer::listen_tls(uint16_t port)
 {
     if (_listener_count >= MAX_LISTENERS)
-        return DETWS_ERR_LISTENER_FULL;
+        return (int32_t)DetWebServerResult::DETWS_ERR_LISTENER_FULL;
     _listen_ports[_listener_count] = port;
     _listen_protos[_listener_count] = ConnProto::PROTO_HTTP;
     _listen_tls[_listener_count] = true;
     _listener_count++;
-    return DETWS_OK;
+    return (int32_t)DetWebServerResult::DETWS_OK;
 }
 
 int32_t DetWebServer::begin_tls(uint16_t port, const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len,
                                 const WebServerConfig *cfg)
 {
     if (!tls_cert(cert, cert_len, key, key_len))
-        return DETWS_ERR_LISTEN_FAILED;
+        return (int32_t)DetWebServerResult::DETWS_ERR_LISTEN_FAILED;
     int32_t rc = listen_tls(port);
     if (rc < 0)
         return rc;
@@ -808,7 +808,7 @@ int DetWebServer::tls_client_subject(uint8_t slot_id, char *out, size_t out_len)
 int32_t DetWebServer::restart(const WebServerConfig *cfg)
 {
     if (_listener_count == 0)
-        return DETWS_ERR_NO_LISTENERS;
+        return (int32_t)DetWebServerResult::DETWS_ERR_NO_LISTENERS;
     stop();
     return begin(cfg);
 }
@@ -863,7 +863,7 @@ void DetWebServer::on(const char *path, HttpMethod method, Handler callback)
         return;
     Route *r = &_routes[_route_count++];
     fill_route_base(r, path);
-    r->type = ROUTE_HTTP;
+    r->type = RouteType::ROUTE_HTTP;
     r->method = method;
     r->callback = callback;
 }
@@ -874,7 +874,7 @@ void DetWebServer::on(const char *path, HttpMethod method, Handler callback, Det
         return;
     Route *r = &_routes[_route_count++];
     fill_route_base(r, path);
-    r->type = ROUTE_HTTP;
+    r->type = RouteType::ROUTE_HTTP;
     r->method = method;
     r->callback = callback;
     r->iface_filter = iface;
@@ -891,7 +891,7 @@ void DetWebServer::on_regex(const char *pattern, HttpMethod method, Handler call
         return;
     Route *r = &_routes[_route_count++];
     fill_route_base(r, pattern);
-    r->type = ROUTE_HTTP;
+    r->type = RouteType::ROUTE_HTTP;
     r->method = method;
     r->callback = callback;
     r->is_regex = true;
@@ -905,7 +905,7 @@ void DetWebServer::on(const char *path, HttpMethod method, Handler callback, con
         return;
     Route *r = &_routes[_route_count++];
     fill_route_base(r, path);
-    r->type = ROUTE_HTTP;
+    r->type = RouteType::ROUTE_HTTP;
     r->method = method;
     r->callback = callback;
     r->auth_required = true;
@@ -927,7 +927,7 @@ void DetWebServer::on_ws(const char *path, WsConnectHandler on_connect, WsMessag
         return;
     Route *r = &_routes[_route_count++];
     fill_route_base(r, path);
-    r->type = ROUTE_WS;
+    r->type = RouteType::ROUTE_WS;
     r->ws_connect = on_connect;
     r->ws_message = on_message;
     r->ws_close = on_close;
@@ -941,7 +941,7 @@ void DetWebServer::on_sse(const char *path, SseConnectHandler on_connect)
         return;
     Route *r = &_routes[_route_count++];
     fill_route_base(r, path);
-    r->type = ROUTE_SSE;
+    r->type = RouteType::ROUTE_SSE;
     r->sse_connect = on_connect;
 }
 #endif // DETWS_ENABLE_SSE
@@ -1261,7 +1261,7 @@ static bool match_path_params(const char *route, const char *path, HttpReq *req)
 void DetWebServer::ws_dispatch_message(WsConn *ws)
 {
     for (uint8_t r = 0; r < _route_count; r++)
-        if (_routes[r].type == ROUTE_WS && _routes[r].ws_message)
+        if (_routes[r].type == RouteType::ROUTE_WS && _routes[r].ws_message)
         {
             _routes[r].ws_message(ws->ws_id);
             break;
@@ -1271,7 +1271,7 @@ void DetWebServer::ws_dispatch_message(WsConn *ws)
 void DetWebServer::ws_dispatch_close(WsConn *ws)
 {
     for (uint8_t r = 0; r < _route_count; r++)
-        if (_routes[r].type == ROUTE_WS && _routes[r].ws_close)
+        if (_routes[r].type == RouteType::ROUTE_WS && _routes[r].ws_close)
         {
             _routes[r].ws_close(ws->ws_id);
             break;
@@ -1770,7 +1770,7 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
 #endif
 
     // CORS preflight
-    if (method == HTTP_OPTIONS && _cors_enabled)
+    if (method == HttpMethod::HTTP_OPTIONS && _cors_enabled)
     {
         send_empty(slot_id, 204);
         return;
@@ -1779,7 +1779,7 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
 #if DETWS_ENABLE_CSRF
     // Built-in token endpoint: GET /csrf issues a signed token (also set as the
     // csrf cookie) for clients to echo in X-CSRF-Token on state-changing requests.
-    if (method == HTTP_GET && strcmp(req->path, "/csrf") == 0)
+    if (method == HttpMethod::HTTP_GET && strcmp(req->path, "/csrf") == 0)
     {
         char tok[CSRF_TOKEN_BUF];
         if (csrf_issue(tok, sizeof(tok)) > 0)
@@ -1798,7 +1798,8 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
 
     // Enforce CSRF on every state-changing method: require a valid signed
     // X-CSRF-Token header (GET / HEAD / OPTIONS are exempt - not state-changing).
-    if (method == HTTP_POST || method == HTTP_PUT || method == HTTP_PATCH || method == HTTP_DELETE)
+    if (method == HttpMethod::HTTP_POST || method == HttpMethod::HTTP_PUT || method == HttpMethod::HTTP_PATCH ||
+        method == HttpMethod::HTTP_DELETE)
     {
         const char *tok = http_get_header(req, "X-CSRF-Token");
         if (!tok || !csrf_verify(tok))
@@ -1817,7 +1818,7 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
     }
 
     // RFC 7231 §6.5.2: a method the server does not implement → 501.
-    if (method == HTTP_METHOD_UNKNOWN)
+    if (method == HttpMethod::HTTP_METHOD_UNKNOWN)
     {
         send(slot_id, 501, DET_MIME_TEXT_PLAIN, "Not Implemented");
         return;
@@ -1827,7 +1828,8 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
     const char *upgrade_hdr = http_get_header(req, "Upgrade");
     // RFC 6455 4.2.1: a valid handshake needs Upgrade: websocket AND a Connection
     // header that includes the "Upgrade" token.
-    bool is_ws_upgrade = (method == HTTP_GET) && upgrade_hdr && (strcasecmp(upgrade_hdr, "websocket") == 0) &&
+    bool is_ws_upgrade = (method == HttpMethod::HTTP_GET) && upgrade_hdr &&
+                         (strcasecmp(upgrade_hdr, "websocket") == 0) &&
                          conn_has_token(http_get_header(req, "Connection"), "upgrade");
 #endif
 
@@ -1854,7 +1856,7 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
             continue;
 
 #if DETWS_ENABLE_WEBSOCKET
-        if (r->type == ROUTE_WS)
+        if (r->type == RouteType::ROUTE_WS)
         {
             if (!is_ws_upgrade)
             {
@@ -1877,7 +1879,7 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
 #endif // DETWS_ENABLE_WEBSOCKET
 
 #if DETWS_ENABLE_SSE
-        if (r->type == ROUTE_SSE)
+        if (r->type == RouteType::ROUTE_SSE)
         {
             if (!sse_do_upgrade(slot_id, req, r->sse_connect))
                 send(slot_id, 503, DET_MIME_TEXT_PLAIN, "Service Unavailable");
@@ -1886,10 +1888,10 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
 #endif // DETWS_ENABLE_SSE
 
 #if DETWS_ENABLE_FILE_SERVING
-        if (r->type == ROUTE_STATIC)
+        if (r->type == RouteType::ROUTE_STATIC)
         {
             // Static mounts answer GET (and HEAD via GET); other methods → 405.
-            if (method != HTTP_GET && method != HTTP_HEAD)
+            if (method != HttpMethod::HTTP_GET && method != HttpMethod::HTTP_HEAD)
             {
                 path_matched = true;
                 allow_append(allow_buf, sizeof(allow_buf), "GET");
@@ -1901,16 +1903,17 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         }
 #endif // DETWS_ENABLE_FILE_SERVING
 
-        // ROUTE_HTTP - a HEAD request is served by the GET handler with the
+        // RouteType::ROUTE_HTTP - a HEAD request is served by the GET handler with the
         // response body suppressed (RFC 7231 §4.3.2).
-        bool method_ok = (r->method == method) || (method == HTTP_HEAD && r->method == HTTP_GET);
+        bool method_ok =
+            (r->method == method) || (method == HttpMethod::HTTP_HEAD && r->method == HttpMethod::HTTP_GET);
         if (!method_ok)
         {
             // Path matches but method differs - record it for a 405 + Allow.
             path_matched = true;
             allow_append(allow_buf, sizeof(allow_buf), method_name(r->method));
             // A GET route also answers HEAD, so advertise it in Allow.
-            if (r->method == HTTP_GET)
+            if (r->method == HttpMethod::HTTP_GET)
                 allow_append(allow_buf, sizeof(allow_buf), "HEAD");
             continue;
         }
@@ -3354,8 +3357,8 @@ void DetWebServer::serve_static(const char *url_prefix, fs::FS &file_sys, const 
     else
         snprintf(pat, sizeof(pat), "%s*", url_prefix); // append the wildcard
     fill_route_base(r, pat);
-    r->type = ROUTE_STATIC;
-    r->method = HTTP_GET;
+    r->type = RouteType::ROUTE_STATIC;
+    r->method = HttpMethod::HTTP_GET;
     r->static_fs = &file_sys;
     r->static_root = fs_root;
 }
@@ -3645,13 +3648,14 @@ bool DetWebServer::dav_stream_put_begin(HttpReq *req)
     for (uint8_t i = 0; i < _route_count; i++)
     {
         Route *r = &_routes[i];
-        if (!r->is_active || r->type != ROUTE_DAV)
+        if (!r->is_active || r->type != RouteType::ROUTE_DAV)
             continue;
         if (!path_matches(r->path, r->is_wildcard, req->path))
             continue;
         if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != conn_pool[slot].iface)
             continue;
-        // GCOVR_EXCL_START  a ROUTE_DAV route always carries static_fs (set in dav()); this null-guard cannot fire
+        // GCOVR_EXCL_START  a RouteType::ROUTE_DAV route always carries static_fs (set in dav()); this null-guard
+        // cannot fire
         if (!r->static_fs)
             return false;
         // GCOVR_EXCL_STOP
@@ -3704,8 +3708,8 @@ void DetWebServer::dav(const char *url_prefix, fs::FS &file_sys, const char *fs_
     else
         snprintf(pat, sizeof(pat), "%s*", url_prefix);
     fill_route_base(r, pat);
-    r->type = ROUTE_DAV;
-    r->method = HTTP_GET; // unused: WebDAV dispatch keys off the raw method token
+    r->type = RouteType::ROUTE_DAV;
+    r->method = HttpMethod::HTTP_GET; // unused: WebDAV dispatch keys off the raw method token
     r->static_fs = &file_sys;
     r->static_root = fs_root;
 
@@ -3738,7 +3742,7 @@ bool DetWebServer::try_serve_dav(uint8_t slot_id, HttpReq *req)
     for (uint8_t i = 0; i < _route_count; i++)
     {
         Route *r = &_routes[i];
-        if (!r->is_active || r->type != ROUTE_DAV)
+        if (!r->is_active || r->type != RouteType::ROUTE_DAV)
             continue;
         if (!path_matches(r->path, r->is_wildcard, req->path))
             continue;
@@ -3752,7 +3756,8 @@ bool DetWebServer::try_serve_dav(uint8_t slot_id, HttpReq *req)
 
 void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
 {
-    // GCOVR_EXCL_START  a ROUTE_DAV route always carries static_fs (set in dav()); this null-guard cannot fire
+    // GCOVR_EXCL_START  a RouteType::ROUTE_DAV route always carries static_fs (set in dav()); this null-guard cannot
+    // fire
     if (!r->static_fs)
     {
         dav_send_status(slot_id, 404, "");

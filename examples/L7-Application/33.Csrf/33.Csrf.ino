@@ -48,13 +48,14 @@ void setup()
     WiFi.setSleep(false);
 
     // Safe method: never requires a token. GET /csrf (built-in) hands one out.
-    server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         server.send(id, 200, "text/plain", "GET /csrf for a token, then POST /submit");
     });
 
     // State-changing route: the library rejects it with 403 unless the request
     // carries a valid X-CSRF-Token (no per-route code needed - it is global).
-    server.on("/submit", HTTP_POST, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "accepted"); });
+    server.on("/submit", HttpMethod::HTTP_POST,
+              [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "accepted"); });
 
     server.begin(80);
 }

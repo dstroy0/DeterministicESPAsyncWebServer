@@ -54,7 +54,7 @@ void setup()
 
     Serial.printf("egress interface: %s\n", iface_name(det_net_egress()));
 
-    server.on("/net", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/net", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         uint32_t ip = det_net_egress_ip(); // network byte order
         char body[96];
         snprintf(body, sizeof(body), "{\"egress\":\"%s\",\"ip\":\"%u.%u.%u.%u\"}", iface_name(det_net_egress()),

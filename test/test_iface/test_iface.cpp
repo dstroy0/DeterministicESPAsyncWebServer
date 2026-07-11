@@ -93,7 +93,7 @@ static const char *do_req(DetIface iface, const char *req_str)
 
 void test_ap_only_matches_on_ap()
 {
-    server.on("/cfg", HTTP_GET, h_ok, DetIface::DETIFACE_AP);
+    server.on("/cfg", HttpMethod::HTTP_GET, h_ok, DetIface::DETIFACE_AP);
     const char *r = do_req(DetIface::DETIFACE_AP, "GET /cfg HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r, "200 OK"));
@@ -101,7 +101,7 @@ void test_ap_only_matches_on_ap()
 
 void test_ap_only_hidden_on_sta()
 {
-    server.on("/cfg", HTTP_GET, h_ok, DetIface::DETIFACE_AP);
+    server.on("/cfg", HttpMethod::HTTP_GET, h_ok, DetIface::DETIFACE_AP);
     const char *r = do_req(DetIface::DETIFACE_STA, "GET /cfg HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(g_called); // route invisible on STA
     TEST_ASSERT_NOT_NULL(strstr(r, "404 Not Found"));
@@ -109,7 +109,7 @@ void test_ap_only_hidden_on_sta()
 
 void test_sta_only_matches_on_sta()
 {
-    server.on("/api", HTTP_GET, h_ok, DetIface::DETIFACE_STA);
+    server.on("/api", HttpMethod::HTTP_GET, h_ok, DetIface::DETIFACE_STA);
     const char *r = do_req(DetIface::DETIFACE_STA, "GET /api HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r, "200 OK"));
@@ -117,7 +117,7 @@ void test_sta_only_matches_on_sta()
 
 void test_sta_only_hidden_on_ap()
 {
-    server.on("/api", HTTP_GET, h_ok, DetIface::DETIFACE_STA);
+    server.on("/api", HttpMethod::HTTP_GET, h_ok, DetIface::DETIFACE_STA);
     const char *r = do_req(DetIface::DETIFACE_AP, "GET /api HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r, "404 Not Found"));
@@ -125,7 +125,7 @@ void test_sta_only_hidden_on_ap()
 
 void test_unfiltered_route_matches_any_interface()
 {
-    server.on("/x", HTTP_GET, h_ok); // DetIface::DETIFACE_ANY
+    server.on("/x", HttpMethod::HTTP_GET, h_ok); // DetIface::DETIFACE_ANY
     const char *r1 = do_req(DetIface::DETIFACE_AP, "GET /x HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r1, "200 OK"));
@@ -140,8 +140,8 @@ void test_same_path_two_interfaces_picks_correct()
 {
     // Same path bound to different interfaces; the request's interface decides.
     g_ap_hit = g_sta_hit = false;
-    server.on("/p", HTTP_GET, h_ap, DetIface::DETIFACE_AP);
-    server.on("/p", HTTP_GET, h_sta, DetIface::DETIFACE_STA);
+    server.on("/p", HttpMethod::HTTP_GET, h_ap, DetIface::DETIFACE_AP);
+    server.on("/p", HttpMethod::HTTP_GET, h_sta, DetIface::DETIFACE_STA);
 
     const char *r = do_req(DetIface::DETIFACE_STA, "GET /p HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_sta_hit);

@@ -83,7 +83,7 @@ static const char *kPost = "POST /f HTTP/1.1\r\nHost: x\r\n"
 
 void test_form_fields_parsed()
 {
-    server.on("/f", HTTP_POST, h_form);
+    server.on("/f", HttpMethod::HTTP_POST, h_form);
     feed_and_handle(0, kPost);
     TEST_ASSERT_TRUE(g_found_a);
     TEST_ASSERT_EQUAL_STRING("bob", g_a);
@@ -93,7 +93,7 @@ void test_form_fields_parsed()
 
 void test_form_missing_key_returns_false()
 {
-    server.on("/f", HTTP_POST, h_form);
+    server.on("/f", HttpMethod::HTTP_POST, h_form);
     feed_and_handle(0, kPost);
     TEST_ASSERT_FALSE(g_found_missing);
     TEST_ASSERT_EQUAL_STRING("", g_missing);
@@ -101,7 +101,7 @@ void test_form_missing_key_returns_false()
 
 void test_form_empty_value()
 {
-    server.on("/f", HTTP_POST, h_form);
+    server.on("/f", HttpMethod::HTTP_POST, h_form);
     feed_and_handle(0, "POST /f HTTP/1.1\r\nHost: x\r\n"
                        "Content-Type: application/x-www-form-urlencoded\r\n"
                        "Content-Length: 4\r\n\r\na=&b"); // a= (empty), b (no =)
@@ -111,7 +111,7 @@ void test_form_empty_value()
 
 void test_form_wrong_content_type_ignored()
 {
-    server.on("/f", HTTP_POST, h_form);
+    server.on("/f", HttpMethod::HTTP_POST, h_form);
     feed_and_handle(0, "POST /f HTTP/1.1\r\nHost: x\r\n"
                        "Content-Type: text/plain\r\n"
                        "Content-Length: 9\r\n\r\na=bob&b=1");
@@ -120,7 +120,7 @@ void test_form_wrong_content_type_ignored()
 
 void test_form_value_truncated_to_buffer()
 {
-    server.on("/f", HTTP_POST, h_form_trunc);
+    server.on("/f", HttpMethod::HTTP_POST, h_form_trunc);
     feed_and_handle(0, "POST /f HTTP/1.1\r\nHost: x\r\n"
                        "Content-Type: application/x-www-form-urlencoded\r\n"
                        "Content-Length: 11\r\n\r\na=abcdefghij");

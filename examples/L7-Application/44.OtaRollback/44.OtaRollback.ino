@@ -46,7 +46,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/ota-state", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/ota-state", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         char b[48];
         snprintf(b, sizeof(b), "{\"img_state\":%u}", detws_ota_img_state());
         server.send(id, 200, "application/json", b);

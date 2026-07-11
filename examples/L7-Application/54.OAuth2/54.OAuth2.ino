@@ -50,7 +50,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/callback", HTTP_GET, [](uint8_t id, HttpReq *req) {
+    server.on("/callback", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *req) {
         const char *code = http_get_query(req, "code");
         if (!code)
         {

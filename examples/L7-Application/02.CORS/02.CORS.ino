@@ -38,7 +38,7 @@ void setup()
     WiFi.setSleep(false);
 
     server.set_cors("*"); // allow any origin (tighten to your web app's origin in production)
-    server.on("/api", HTTP_GET,
+    server.on("/api", HttpMethod::HTTP_GET,
               [](uint8_t id, HttpReq *) { server.send(id, 200, "application/json", "{\"ok\":true}"); });
     server.begin(80);
 }

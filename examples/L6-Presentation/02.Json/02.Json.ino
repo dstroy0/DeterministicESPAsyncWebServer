@@ -83,8 +83,8 @@ void setup()
 
     WiFi.setSleep(false);
 
-    server.on("/api/info", HTTP_GET, handle_info);
-    server.on("/api/echo", HTTP_POST, handle_echo);
+    server.on("/api/info", HttpMethod::HTTP_GET, handle_info);
+    server.on("/api/echo", HttpMethod::HTTP_POST, handle_echo);
 
     int32_t result = server.begin(80);
     if (result < 0)

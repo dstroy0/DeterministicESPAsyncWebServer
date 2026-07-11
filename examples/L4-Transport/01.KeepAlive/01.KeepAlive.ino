@@ -60,10 +60,10 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/html", PAGE); });
+    server.on("/", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/html", PAGE); });
 
     // A tiny endpoint a client can poll repeatedly over the same socket.
-    server.on("/time", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/time", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         char buf[32];
         snprintf(buf, sizeof(buf), "uptime_ms=%lu", (unsigned long)millis());
         server.send(id, 200, "text/plain", buf);

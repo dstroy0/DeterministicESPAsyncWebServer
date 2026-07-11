@@ -66,8 +66,8 @@ void detws_gpio_map_begin(DetWebServer &server, const char *path, DetwsGpioPin *
     s_gpior.count = count;
     detws_gpio_begin_pins(pins, count);
     const char *p = (path && path[0]) ? path : "/gpio";
-    server.on(p, HTTP_GET, gpio_get_handler);
-    server.on(p, HTTP_POST, gpio_post_handler);
+    server.on(p, HttpMethod::HTTP_GET, gpio_get_handler);
+    server.on(p, HttpMethod::HTTP_POST, gpio_post_handler);
 }
 
 #endif // DETWS_ENABLE_GPIO_MAP

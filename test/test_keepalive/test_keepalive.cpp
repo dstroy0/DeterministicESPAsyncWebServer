@@ -34,7 +34,7 @@ static void handle_ok(uint8_t slot_id, HttpReq *req)
 void setUp()
 {
     server = DetWebServer();
-    server.on("/res", HTTP_GET, handle_ok);
+    server.on("/res", HttpMethod::HTTP_GET, handle_ok);
     handler_calls = 0;
     for (int i = 0; i < MAX_CONNS; i++)
     {

@@ -44,7 +44,7 @@ void setup()
     Serial.print("IP: ");
     Serial.println(WiFi.localIP());
 
-    server.on("/", HTTP_GET, handle_root);
+    server.on("/", HttpMethod::HTTP_GET, handle_root);
     if (server.begin(80) < 0)
     {
         Serial.println("begin() failed");

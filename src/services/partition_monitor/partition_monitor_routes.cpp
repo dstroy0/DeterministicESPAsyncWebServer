@@ -38,7 +38,7 @@ static void partition_handler(uint8_t slot_id, HttpReq *req)
 void detws_partition_monitor_begin(DetWebServer &server, const char *path)
 {
     s_partr.srv = &server;
-    server.on((path && path[0]) ? path : "/partitions", HTTP_GET, partition_handler);
+    server.on((path && path[0]) ? path : "/partitions", HttpMethod::HTTP_GET, partition_handler);
 }
 
 #endif // DETWS_ENABLE_PARTITION_MONITOR

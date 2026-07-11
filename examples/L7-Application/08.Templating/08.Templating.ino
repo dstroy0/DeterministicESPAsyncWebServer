@@ -82,7 +82,7 @@ void setup()
 
     WiFi.setSleep(false);
 
-    server.on("/", HTTP_GET, handle_root);
+    server.on("/", HttpMethod::HTTP_GET, handle_root);
 
     int32_t result = server.begin(80);
     if (result < 0)

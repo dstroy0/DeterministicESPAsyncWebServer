@@ -52,7 +52,7 @@ void setup()
     listener_ip_allow_add_cidr("10.0.0.5");       // one trusted host (bare address -> /32)
     listener_ip_allow_add_cidr("2001:db8::/32");  // an IPv6 prefix
 
-    server.on("/", HTTP_GET,
+    server.on("/", HttpMethod::HTTP_GET,
               [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "hello from an allowed address"); });
     server.begin(80);
 }

@@ -52,8 +52,8 @@ void setup()
     Serial.print("\nIP: ");
     Serial.println(ETH.localIP());
 
-    server.on("/", HTTP_GET, handle_root);
-    server.on("/api/status", HTTP_GET, handle_status);
+    server.on("/", HttpMethod::HTTP_GET, handle_root);
+    server.on("/api/status", HttpMethod::HTTP_GET, handle_status);
 
     int32_t result = server.begin(80);
     if (result < 0)

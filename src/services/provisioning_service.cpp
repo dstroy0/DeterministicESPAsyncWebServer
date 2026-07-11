@@ -213,8 +213,8 @@ void detws_provisioning_begin(DetWebServer &server, const char *ap_ssid)
     // Catch-all DNS on UDP/53 via the transport-layer UDP service (callback-driven).
     det_udp_listen(53, prov_dns_recv, nullptr);
 
-    server.on("/save", HTTP_POST, prov_save_handler);
-    server.on("/*", HTTP_GET, prov_form_handler); // any other path -> the form
+    server.on("/save", HttpMethod::HTTP_POST, prov_save_handler);
+    server.on("/*", HttpMethod::HTTP_GET, prov_form_handler); // any other path -> the form
 }
 
 #else // disabled / non-Arduino: stubs (form-field parser above stays available)

@@ -62,7 +62,7 @@ void setup()
     detws_upload_begin(server, "/upload", LittleFS, DEST);
 
     // GET /file -> serve the stored file back.
-    server.on("/file", HTTP_GET,
+    server.on("/file", HttpMethod::HTTP_GET,
               [](uint8_t id, HttpReq *) { server.serve_file(id, LittleFS, DEST, "application/octet-stream"); });
 
     int32_t result = server.begin(80);

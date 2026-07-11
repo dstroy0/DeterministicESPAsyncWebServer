@@ -54,7 +54,7 @@ void tearDown()
 // compile-time build-info document (lib name + features + config objects).
 void test_diag_serves_build_info_json()
 {
-    server.on("/diag", HTTP_GET, diag_handler);
+    server.on("/diag", HttpMethod::HTTP_GET, diag_handler);
     push_str(0, "GET /diag HTTP/1.1\r\nHost: x\r\n\r\n");
     http_parse(0);
     server.handle();

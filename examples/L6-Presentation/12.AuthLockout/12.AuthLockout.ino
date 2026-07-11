@@ -46,14 +46,16 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "public page"); });
+    server.on("/", HttpMethod::HTTP_GET,
+              [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "public page"); });
 
     // Protected route. Repeated wrong passwords from one IP trip the lockout
     // (429) with exponential backoff; the tuning lives in ServerConfig.h
     // (DETWS_AUTH_LOCKOUT_THRESHOLD / _BASE_MS / _MAX_MS).
     server.on(
-        "/secret", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "authenticated!"); },
-        "Restricted", "admin", "s3cret");
+        "/secret", HttpMethod::HTTP_GET,
+        [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "authenticated!"); }, "Restricted", "admin",
+        "s3cret");
 
     server.begin(80);
 }

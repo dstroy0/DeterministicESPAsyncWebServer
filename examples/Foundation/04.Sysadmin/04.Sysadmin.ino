@@ -354,9 +354,9 @@ void setup()
 
     server.set_cors("*");
 
-    server.on("/", HTTP_GET, handle_serve_dashboard);
-    server.on("/api/sysinfo", HTTP_GET, handle_get_sysinfo);
-    server.on("/api/restart", HTTP_POST, handle_post_restart);
+    server.on("/", HttpMethod::HTTP_GET, handle_serve_dashboard);
+    server.on("/api/sysinfo", HttpMethod::HTTP_GET, handle_get_sysinfo);
+    server.on("/api/restart", HttpMethod::HTTP_POST, handle_post_restart);
 
     int32_t result = server.begin(80);
     if (result < 0)

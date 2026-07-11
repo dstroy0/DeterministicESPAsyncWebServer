@@ -102,7 +102,7 @@ void detws_upload_begin(DetWebServer &server, const char *path, fs::FS &fs, cons
     s_upl.dest = dest_path;
 
     http_parser_set_stream_hooks(upload_stream_begin, upload_stream_data);
-    server.on(path, HTTP_POST, upload_handle);
+    server.on(path, HttpMethod::HTTP_POST, upload_handle);
 }
 
 #endif // DETWS_ENABLE_UPLOAD

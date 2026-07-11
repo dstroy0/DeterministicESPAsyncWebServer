@@ -56,8 +56,8 @@ void setup()
 
     WiFi.setSleep(false);
 
-    server.on_regex("/sensor/[0-9]+", HTTP_GET, handle_sensor); // only numeric ids
-    server.on_regex("/img/.+\\.png", HTTP_GET, handle_png);     // only *.png paths
+    server.on_regex("/sensor/[0-9]+", HttpMethod::HTTP_GET, handle_sensor); // only numeric ids
+    server.on_regex("/img/.+\\.png", HttpMethod::HTTP_GET, handle_png);     // only *.png paths
 
     int32_t result = server.begin(80);
     if (result < 0)

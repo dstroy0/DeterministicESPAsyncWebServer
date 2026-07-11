@@ -73,7 +73,7 @@
  * specific method.  PATCH, HEAD, and OPTIONS were added in v1.0 alongside
  * CORS preflight support.
  */
-enum HttpMethod
+enum class HttpMethod : uint8_t
 {
     HTTP_GET,           ///< Safe, idempotent read
     HTTP_POST,          ///< Non-idempotent create / action
@@ -128,13 +128,13 @@ typedef void (*RequestLogCb)(const char *method, const char *path, int status, i
 /**
  * @brief Outcome of a middleware function (see @ref Middleware).
  *
- * Returning MW_NEXT passes the request to the next middleware in the chain and,
+ * Returning MwResult::MW_NEXT passes the request to the next middleware in the chain and,
  * once the chain is exhausted, on to the matching route handler. Returning
- * MW_HALT stops the chain: the route handler is NOT invoked, so a middleware
+ * MwResult::MW_HALT stops the chain: the route handler is NOT invoked, so a middleware
  * that halts must have already written a response (the dispatcher treats the
  * request as fully handled).
  */
-enum MwResult
+enum class MwResult : uint8_t
 {
     MW_NEXT = 0, ///< Continue to the next middleware / the route handler.
     MW_HALT = 1  ///< Stop dispatch; the middleware already sent a response.
@@ -147,13 +147,13 @@ enum MwResult
  * before route matching, receiving the same `(slot_id, request)` pair a handler
  * does. A middleware may inspect the request, queue response headers
  * (DetWebServer::add_response_header()), short-circuit by sending a response and
- * returning MW_HALT, or fall through with MW_NEXT. Middlewares reference the
+ * returning MwResult::MW_HALT, or fall through with MwResult::MW_NEXT. Middlewares reference the
  * application's server instance the same way handlers do (the global object), so
  * they can call send() / send_empty() to short-circuit.
  *
  * @param slot_id  Connection slot index (0 … MAX_CONNS-1).
  * @param request  Parsed request; valid only during the call (do not cache).
- * @return MW_NEXT to continue, MW_HALT to stop (response already sent).
+ * @return MwResult::MW_NEXT to continue, MwResult::MW_HALT to stop (response already sent).
  */
 typedef MwResult (*Middleware)(uint8_t slot_id, HttpReq *request);
 
@@ -199,7 +199,7 @@ typedef void (*SseConnectHandler)(uint8_t sse_id);
 // ---------------------------------------------------------------------------
 
 /** @brief Discriminates between HTTP, WebSocket, and SSE route entries. */
-enum RouteType
+enum class RouteType : uint8_t
 {
     ROUTE_HTTP, ///< Standard HTTP request/response.
 #if DETWS_ENABLE_WEBSOCKET
@@ -223,10 +223,10 @@ enum RouteType
 /**
  * @brief Result codes for listen(), begin(), and restart().
  *
- * Success is a positive value (DETWS_OK). Failures are distinct negative codes
+ * Success is a positive value (DetWebServerResult::DETWS_OK). Failures are distinct negative codes
  * so a caller can tell why startup failed.
  */
-enum DetWebServerResult : int32_t
+enum class DetWebServerResult : int32_t
 {
     DETWS_OK = 1,                 ///< Success.
     DETWS_ERR_NO_LISTENERS = -1,  ///< begin() called before any listen() / begin(port).
@@ -244,8 +244,8 @@ struct Route
 {
     char path[MAX_PATH_LEN]; ///< Null-terminated path pattern.
     RouteType type;          ///< HTTP, WS, or SSE.
-    HttpMethod method;       ///< HTTP method (ROUTE_HTTP only).
-    Handler callback;        ///< HTTP handler (ROUTE_HTTP only).
+    HttpMethod method;       ///< HTTP method (RouteType::ROUTE_HTTP only).
+    Handler callback;        ///< HTTP handler (RouteType::ROUTE_HTTP only).
 
 #if DETWS_ENABLE_WEBSOCKET
     WsConnectHandler ws_connect; ///< Fired on upgrade success.
@@ -258,8 +258,8 @@ struct Route
 #endif
 
 #if DETWS_ENABLE_FILE_SERVING
-    fs::FS *static_fs;       ///< Filesystem for ROUTE_STATIC (else nullptr).
-    const char *static_root; ///< FS root prefix for ROUTE_STATIC (must be a persistent string).
+    fs::FS *static_fs;       ///< Filesystem for RouteType::ROUTE_STATIC (else nullptr).
+    const char *static_root; ///< FS root prefix for RouteType::ROUTE_STATIC (must be a persistent string).
 #endif
 
 #if DETWS_ENABLE_AUTH
@@ -327,7 +327,7 @@ typedef size_t (*ChunkSource)(uint8_t *buf, size_t cap, void *ctx);
  *
  * void setup() {
  *     WiFi.begin("SSID", "PASSWORD");
- *     server.on("/api/*", HTTP_GET, handle_api);
+ *     server.on("/api/*", HttpMethod::HTTP_GET, handle_api);
  *     server.set_cors("*");
  *     int32_t result = server.begin(80);
  *     if (result < 0) { } // DetWebServerResult code: startup failed
@@ -403,7 +403,7 @@ class DetWebServer
     /**
      * @brief Global middleware chain, run in registration order before dispatch.
      *
-     * Populated by use(); a middleware returning MW_HALT short-circuits the
+     * Populated by use(); a middleware returning MwResult::MW_HALT short-circuits the
      * request. An empty chain (the default) adds no per-request work.
      */
     Middleware _middleware[MAX_MIDDLEWARE];
@@ -417,7 +417,7 @@ class DetWebServer
 
     /**
      * @brief Run the global middleware chain for a request.
-     * @return true if a middleware returned MW_HALT (a response was sent and
+     * @return true if a middleware returned MwResult::MW_HALT (a response was sent and
      *         dispatch must stop); false to continue to route matching.
      */
     bool run_middleware(uint8_t slot_id, HttpReq *req);
@@ -510,7 +510,7 @@ class DetWebServer
 #endif
 
 #if DETWS_ENABLE_FILE_SERVING
-    /// @brief Dispatch a ROUTE_STATIC match: resolve the FS path and serve it (MIME/index/gzip).
+    /// @brief Dispatch a RouteType::ROUTE_STATIC match: resolve the FS path and serve it (MIME/index/gzip).
     void serve_static_request(uint8_t slot_id, HttpReq *req, const Route *r);
     /// @brief Open @p fs_path and stream it as 200 with the given type and optional Content-Encoding.
     void serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, const char *fs_path,
@@ -520,7 +520,7 @@ class DetWebServer
 #endif
 
 #if DETWS_ENABLE_WEBDAV
-    /// @brief If @p req matches a ROUTE_DAV mount, handle it as WebDAV and return true.
+    /// @brief If @p req matches a RouteType::ROUTE_DAV mount, handle it as WebDAV and return true.
     bool try_serve_dav(uint8_t slot_id, HttpReq *req);
     /// @brief Dispatch a WebDAV request against the mount @p r (resolves the FS path, then the method).
     void serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r);
@@ -586,7 +586,8 @@ class DetWebServer
      * @param port  TCP port to open.
      * @param proto Application protocol; defaults to ConnProto::PROTO_HTTP.
      * @return the listener id (a non-negative index) on success - pass it to
-     *         det_relay_publish() / ssh_forward_begin(); DETWS_ERR_LISTENER_FULL if the pool is full.
+     *         det_relay_publish() / ssh_forward_begin(); DetWebServerResult::DETWS_ERR_LISTENER_FULL if the pool is
+     * full.
      */
     int32_t listen(uint16_t port, ConnProto proto = ConnProto::PROTO_HTTP);
 
@@ -599,8 +600,8 @@ class DetWebServer
      * case use begin(port, cfg) instead.
      *
      * @param cfg  Optional runtime configuration.  Pass nullptr for defaults.
-     * @return DETWS_OK on success; DETWS_ERR_NO_LISTENERS if no ports were
-     *         registered; DETWS_ERR_LISTEN_FAILED if a listener could not open.
+     * @return DetWebServerResult::DETWS_OK on success; DetWebServerResult::DETWS_ERR_NO_LISTENERS if no ports were
+     *         registered; DetWebServerResult::DETWS_ERR_LISTEN_FAILED if a listener could not open.
      */
     int32_t begin(const WebServerConfig *cfg = nullptr);
 
@@ -612,7 +613,7 @@ class DetWebServer
      *
      * @param port TCP port to listen on (typically 80).
      * @param cfg  Optional runtime configuration.  Pass nullptr for defaults.
-     * @return DETWS_OK on success; a negative DetWebServerResult on failure.
+     * @return DetWebServerResult::DETWS_OK on success; a negative DetWebServerResult on failure.
      */
     int32_t begin(uint16_t port, const WebServerConfig *cfg = nullptr);
 
@@ -632,7 +633,7 @@ class DetWebServer
      * @brief Register a TLS (HTTPS) HTTP listener on @p port (typically 443).
      *
      * Like listen() but connections accepted here run a TLS handshake first.
-     * Call tls_cert() first, then begin(). @return DETWS_OK or an error code.
+     * Call tls_cert() first, then begin(). @return DetWebServerResult::DETWS_OK or an error code.
      */
     int32_t listen_tls(uint16_t port);
 
@@ -647,8 +648,8 @@ class DetWebServer
      * @param key      Server private key.
      * @param key_len  Length incl. trailing NUL for PEM.
      * @param cfg      Optional runtime config.
-     * @return DETWS_OK on success; a negative code, or DETWS_ERR_LISTEN_FAILED if
-     *         the TLS engine could not initialize.
+     * @return DetWebServerResult::DETWS_OK on success; a negative code, or DetWebServerResult::DETWS_ERR_LISTEN_FAILED
+     * if the TLS engine could not initialize.
      */
     int32_t begin_tls(uint16_t port, const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len,
                       const WebServerConfig *cfg = nullptr);
@@ -776,8 +777,8 @@ class DetWebServer
      * Matching is bounded by RE_MAX_STEPS and fails closed past that budget.
      *
      * @code
-     *   server.on_regex("/sensor/[0-9]+", HTTP_GET, handle_sensor);
-     *   server.on_regex("/img/.+\\.png", HTTP_GET, handle_png);
+     *   server.on_regex("/sensor/[0-9]+", HttpMethod::HTTP_GET, handle_sensor);
+     *   server.on_regex("/img/.+\\.png", HttpMethod::HTTP_GET, handle_png);
      * @endcode
      *
      * @param pattern  Regex the full path must match (stored, <= MAX_PATH_LEN-1).
@@ -919,7 +920,7 @@ class DetWebServer
      * @code
      *   static MwResult log_mw(uint8_t slot, HttpReq *req) {
      *       Serial.printf("%s %s\n", req->method, req->path);
-     *       return MW_NEXT;                  // fall through to the handler
+     *       return MwResult::MW_NEXT;                  // fall through to the handler
      *   }
      *   server.use(log_mw);
      * @endcode
@@ -952,7 +953,7 @@ class DetWebServer
      * Body: uptime_ms, total requests, 2xx/4xx/5xx counts, active connection-pool
      * slots, and (on ESP32) free heap. Wire it to a route:
      * @code
-     *   server.on("/stats", HTTP_GET, [](uint8_t id, HttpReq *) { server.stats(id); });
+     *   server.on("/stats", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.stats(id); });
      * @endcode
      *
      * @param slot_id Connection slot to respond on.
@@ -968,7 +969,7 @@ class DetWebServer
      * gauges/counters (Content-Type `text/plain; version=0.0.4`) so a Prometheus
      * server can scrape the device.
      * @code
-     *   server.on("/metrics", HTTP_GET, [](uint8_t id, HttpReq *) { server.metrics(id); });
+     *   server.on("/metrics", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.metrics(id); });
      * @endcode
      *
      * @param slot_id Connection slot to respond on.

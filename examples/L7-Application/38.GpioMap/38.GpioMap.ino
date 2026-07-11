@@ -79,7 +79,7 @@ void setup()
     // GET /gpio (JSON) + POST /gpio (drive an output); pinMode is applied here.
     detws_gpio_map_begin(server, "/gpio", gpio_pins, gpio_count);
 
-    server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/html", DIAG_PAGE); });
+    server.on("/", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/html", DIAG_PAGE); });
     server.begin(80);
 }
 

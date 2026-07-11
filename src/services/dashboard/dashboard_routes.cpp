@@ -88,8 +88,8 @@ void detws_dashboard_begin(DetWebServer &server, const char *path, const DetwsWi
     snprintf(layout_path, sizeof(layout_path), "%s/layout", path);
     snprintf(s_dashr.stream_path, sizeof(s_dashr.stream_path), "%s/stream", path);
 
-    server.on(path, HTTP_GET, dash_page_handler);
-    server.on(layout_path, HTTP_GET, dash_layout_handler);
+    server.on(path, HttpMethod::HTTP_GET, dash_page_handler);
+    server.on(layout_path, HttpMethod::HTTP_GET, dash_layout_handler);
     server.on_sse(s_dashr.stream_path, dash_sse_connect);
 #if DETWS_ENABLE_WEBSOCKET
     snprintf(s_dashr.ws_path, sizeof(s_dashr.ws_path), "%s/ws", path);

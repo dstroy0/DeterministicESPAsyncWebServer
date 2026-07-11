@@ -86,7 +86,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.on("/graphql", HTTP_POST, [](uint8_t id, HttpReq *req) {
+    server.on("/graphql", HttpMethod::HTTP_POST, [](uint8_t id, HttpReq *req) {
         char body[512];
         DetwsGqlResult rc = detws_graphql_execute((const char *)req->body, req->body_len, resolver, body, sizeof(body));
         // The engine writes {"data":...} on success or {"errors":...} on a parse

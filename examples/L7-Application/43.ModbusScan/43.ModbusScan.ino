@@ -49,7 +49,7 @@ void setup()
     server.listen(502, ConnProto::PROTO_MODBUS); // real Modbus TCP slave on :502
 
     // /scan: read holding registers 0..3 via the master codec (self-scan).
-    server.on("/scan", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/scan", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         uint8_t req[16], resp[MODBUS_ADU_MAX];
         size_t rn =
             modbus_build_read((uint8_t)ModbusFunction::MODBUS_FC_READ_HOLDING_REGS, 1, 1, 0, 3, req, sizeof(req));

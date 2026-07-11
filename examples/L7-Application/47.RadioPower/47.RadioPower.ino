@@ -41,7 +41,7 @@ void setup()
     detws_radio_power_apply();
     Serial.printf("radio modem-sleep: %s\n", detws_radio_ps_name(detws_radio_ps_get()));
 
-    server.on("/radio", HTTP_GET, [](uint8_t id, HttpReq *) {
+    server.on("/radio", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         char b[48];
         snprintf(b, sizeof(b), "{\"modem_sleep\":\"%s\"}", detws_radio_ps_name(detws_radio_ps_get()));
         server.send(id, 200, "application/json", b);
