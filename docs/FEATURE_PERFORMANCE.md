@@ -160,11 +160,12 @@ measured in-firmware by the pentest rig's `/bench` endpoint ([`pentesting/rig_fi
 N=20000 warm iterations; three runs agree to within 0.3%, so the figures are stable). These are the real
 device costs of hot pure primitives on the auth and ETag/Digest paths - no network in the measurement.
 
-| Operation                              | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| -------------------------------------- | --------------: | -------------: |
-| `det_hex_encode` (16 B -> 32 hex)      |             462 |           1925 |
-| `det_hex_decode` (32 hex -> 16 B)      |             689 |           2870 |
-| `base64_decode` ("admin:admin", 16 ch) |            5040 |          21000 |
+| Operation                               | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| --------------------------------------- | --------------: | -------------: |
+| `det_hex_encode` (16 B -> 32 hex)       |             462 |           1925 |
+| `det_hex_decode` (32 hex -> 16 B)       |             689 |           2870 |
+| `base64_decode` ("admin:admin", 16 ch)  |            5040 |          21000 |
+| `mime_type` (extension -> content-type) |             470 |           1958 |
 
 - The hex codecs are the in-house table-lookup path: ~1.9 us to hex-encode a 16-byte value (an ETag or a
   Digest-nonce MAC), ~2.9 us to decode. Cheap enough that the conditional-GET / Digest machinery is never
@@ -173,7 +174,11 @@ device costs of hot pure primitives on the auth and ETag/Digest paths - no netwo
   the ESP32 the decoder is mbedTLS's **constant-time** base64 (branchless per-character masks so timing does
   not leak the credential; see the base64 note in section 2). At once per authenticated request that is
   invisible, and constant-time is the right trade for a secret. This is the same measurement path that would
-  catch a regression if that ever changed to a fast-but-leaky table lookup.
+  catch a regression if that ever changed to a fast-but-leaky table lookup. A constant-time speedup is
+  possible via SWAR (decode 4-8 chars per word with parallel branchless masks) - see the ROADMAP perf item;
+  a plain byte-indexed LUT would be faster but is NOT constant-time (data-dependent cache access).
+- `mime_type` (path extension -> content-type, run on every file-serving response) is ~1.96 us - cheap; the
+  content-type lookup is never the request-path bottleneck.
 
 ## 3. Request-path benchmarks
 

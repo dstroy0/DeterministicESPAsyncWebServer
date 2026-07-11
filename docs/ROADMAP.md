@@ -1233,3 +1233,14 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       carry the slot (the RAWSEND / TLS BIO path), unroll the fixed `CONN_POOL_SLOTS` scan into a
       branchless OR of compares (the compiler already does this at -O2; make it explicit + measured).
       Benchmark before/after via the JTAG CCOUNT harness on the S3 rig so the win is real, not assumed.
+
+- [ ] **SWAR / bit-sliced constant-time base64 decode** (M) - the ESP32 base64 _decode_ is mbedTLS's
+      constant-time codec (branchless per-character range masks) so it does not leak the credential via
+      timing; the CCOUNT bench measured ~5040 cyc / 21 us to decode a Basic-auth credential (~11x the hex
+      decode). A plain byte-indexed lookup table would be faster but is NOT constant-time (the touched cache
+      line is data-dependent -> a timing side-channel). The constant-time way to go faster is SWAR: pack 4
+      chars into a `uint32` (8 into a `uint64`) and apply the range comparisons to all lanes in parallel with
+      word-wide branchless masks, running the classification once per word instead of once per char (~4-8x
+      fewer ops), still data-independent. Decode is once-per-request (not a hot byte loop) so the win is
+      modest - do it only with (a) RFC 4648 test vectors both directions, and (b) a **timing-invariance
+      check** on the S3 rig (CCOUNT must not vary with the input bytes), measured through `/bench`.
