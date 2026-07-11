@@ -21310,7 +21310,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (sl &gt; 0)</code>
       * <code>Assert true (cl &gt; 0)</code>
       * <code>Assert not equal (SIZE_MAX, cpt)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT64(QUIC_ERR_FRAME_ENCODING, f.close.error_code);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(QuicErr::QUIC_ERR_FRAME_ENCODING, f.close.error_code);</code>
       * <code>Assert true (saw)</code>
       * <code>Assert true (quic_conn_is_closed(&qc))</code>
       * <code>Assert equal uint (0, quic_conn_send(&qc, cdg, sizeof(cdg)))</code>
@@ -21633,12 +21633,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (1, (int)quic_build_ping(b, sizeof b))</code>
       * <code>Assert equal int (1, (int)quic_frame_parse(b, 1, &f))</code>
-      * <code>Assert equal uint (QUIC_FT_PING, (unsigned)f.type)</code>
+      * <code>Assert equal uint (QuicFrameType::QUIC_FT_PING, (unsigned)f.type)</code>
       * <code>Assert equal int (1, (int)quic_build_handshake_done(b, sizeof b))</code>
       * <code>Assert equal int (1, (int)quic_frame_parse(b, 1, &f))</code>
-      * <code>Assert equal uint (QUIC_FT_HANDSHAKE_DONE, (unsigned)f.type)</code>
+      * <code>Assert equal uint (QuicFrameType::QUIC_FT_HANDSHAKE_DONE, (unsigned)f.type)</code>
       * <code>Assert equal int (1, (int)quic_frame_parse(pad, 1, &f))</code>
-      * <code>Assert equal uint (QUIC_FT_PADDING, (unsigned)f.type)</code>
+      * <code>Assert equal uint (QuicFrameType::QUIC_FT_PADDING, (unsigned)f.type)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -21648,7 +21648,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert equal int ((int)n, (int)quic_frame_parse(b, n, &f))</code>
-      * <code>Assert equal uint (QUIC_FT_ACK, (unsigned)f.type)</code>
+      * <code>Assert equal uint (QuicFrameType::QUIC_FT_ACK, (unsigned)f.type)</code>
       * <code>Assert true (f.ack.largest == 1000 && f.ack.delay == 42)</code>
       * <code>Assert true (f.ack.range_count == 0 && f.ack.first_range == 3)</code>
       * <code>Assert equal int (10, (int)quic_frame_parse(ecn, sizeof ecn, &f))</code>
@@ -21662,7 +21662,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert equal int ((int)n, (int)quic_frame_parse(b, n, &f))</code>
-      * <code>Assert equal uint (QUIC_FT_CRYPTO, (unsigned)f.type)</code>
+      * <code>Assert equal uint (QuicFrameType::QUIC_FT_CRYPTO, (unsigned)f.type)</code>
       * <code>Assert true (f.crypto.offset == 7 && f.crypto.length == 5)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(data, f.crypto.data, 5);</code>
   </details>
@@ -21673,10 +21673,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: With offset + FIN.
     * **Assertions**:
       * <code>Assert equal int ((int)n, (int)quic_frame_parse(b, n, &f))</code>
-      * <code>Assert true ((f.type & 0xf8) == QUIC_FT_STREAM)</code>
+      * <code>Assert true ((f.type & 0xf8) == QuicFrameType::QUIC_FT_STREAM)</code>
       * <code>Assert true (f.stream.id == 4 && f.stream.offset == 100 && f.stream.length == 3 && f.stream.fin == 1)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(data, f.stream.data, 3);</code>
-      * <code>Assert false (b[0] & QUIC_STREAM_OFF)</code>
+      * <code>Assert false (b[0] & QuicStreamFlag::QUIC_STREAM_OFF)</code>
       * <code>Assert equal int ((int)n, (int)quic_frame_parse(b, n, &f))</code>
       * <code>Assert true (f.stream.id == 0 && f.stream.offset == 0 && f.stream.fin == 0)</code>
       * <code>Assert equal int (5, (int)quic_frame_parse(to_end, sizeof to_end, &f))</code>
@@ -21691,10 +21691,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Application-level close (0x1d) has no triggering frame type.
     * **Assertions**:
       * <code>Assert equal int ((int)n, (int)quic_frame_parse(b, n, &f))</code>
-      * <code>Assert true (f.type == QUIC_FT_MAX_DATA && f.max_data.max == 65536)</code>
+      * <code>Assert true (f.type == QuicFrameType::QUIC_FT_MAX_DATA && f.max_data.max == 65536)</code>
       * <code>Assert equal int ((int)n, (int)quic_frame_parse(b, n, &f))</code>
-      * <code>Assert true (f.type == QUIC_FT_CONNECTION_CLOSE && f.close.error_code == 0x0a)</code>
-      * <code>Assert true (f.close.frame_type == QUIC_FT_STREAM && f.close.reason_len == 3 && f.close.app == 0)</code>
+      * <code>Assert true (f.type == QuicFrameType::QUIC_FT_CONNECTION_CLOSE && f.close.error_code == 0x0a)</code>
+      * <code>TEST_ASSERT_TRUE(f.close.frame_type == QuicFrameType::QUIC_FT_STREAM && f.close.reason_len == 3 &&</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY("bad", f.close.reason, 3);</code>
       * <code>Assert equal int (4, (int)quic_frame_parse(appclose, sizeof appclose, &f))</code>
       * <code>Assert true (f.close.app == 1 && f.close.error_code == 5 && f.close.frame_type == 0 && f.close.reason_len == 1)</code>
@@ -21705,9 +21705,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A packet payload: PADDING, PING, then a CRYPTO frame - parse them in order.
     * **Assertions**:
-      * <code>Assert true (c == 1 && f.type == QUIC_FT_PADDING)</code>
-      * <code>Assert true (c == 1 && f.type == QUIC_FT_PING)</code>
-      * <code>Assert true (c &gt; 0 && f.type == QUIC_FT_CRYPTO && f.crypto.length == 2)</code>
+      * <code>Assert true (c == 1 && f.type == QuicFrameType::QUIC_FT_PADDING)</code>
+      * <code>Assert true (c == 1 && f.type == QuicFrameType::QUIC_FT_PING)</code>
+      * <code>Assert true (c &gt; 0 && f.type == QuicFrameType::QUIC_FT_CRYPTO && f.crypto.length == 2)</code>
       * <code>Assert equal uint ((unsigned)o, (unsigned)pos)</code>
       * <code>Assert equal int (0, (int)quic_frame_parse(bad, sizeof bad, &f))</code>
   </details>
