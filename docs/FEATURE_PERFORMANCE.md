@@ -198,6 +198,28 @@ the pure, transport-free hot op behind every `sse_send()` / `sse_broadcast()`. H
   (noted in the ROADMAP perf items). The data-only shape (the common broadcast case) is ~3x cheaper on the
   host, so the device cost scales down similarly.
 
+### WebDAV 207 Multi-Status builder (DETWS_ENABLE_WEBDAV)
+
+`webdav_ms_entry()` builds one `<response>` element (RFC 4918 Multi-Status) for a resource; it runs
+once per directory child on every PROPFIND, and internally XML-escapes the href. Pure (no filesystem),
+so it benches standalone. Host figures from [`perf/bench_webdav.cpp`](../perf/bench_webdav.cpp); the
+device figure is the rig `/bench` CCOUNT op (N=20000 warm).
+
+| Operation                             | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `webdav_ms_entry` (one file response) |      128.4 |    3161.2 |            4598 |          19158 |
+| PROPFIND Depth-1 body (8 children)    |     1223.2 |    2992.3 |               - |              - |
+| `webdav_xml_escape` (5 escapables)    |       67.0 |     582.3 |               - |              - |
+
+- One `<response>` costs ~19.2 us on the S3 - the heaviest of the presentation-layer builders (it
+  escapes the href and does a hand-rolled itoa for the content length into a 512 B temp), but PROPFIND
+  runs it only once per directory child, so a Depth-1 listing of a small directory is a handful of these
+  plus the flush. The host shows the whole Depth-1 body (prolog + 8 children + epilog) at ~1.2 us; on
+  device that scales to roughly `8 x 19 us` plus the filesystem `readdir` + `stat` per child, so for a
+  large directory the **filesystem walk, not the XML build, is the cost** - the builder is not the bottleneck.
+- The real device PROPFIND latency is dominated by LittleFS directory enumeration; the XML build is cheap
+  by comparison. A directory-listing cache (invalidated on PUT/DELETE/MKCOL/MOVE) would help a hot share.
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
