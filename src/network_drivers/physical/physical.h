@@ -45,7 +45,7 @@ bool wifi_ready();
  * A thin wrapper over the Arduino ETH library (`ETH.begin()`); the RMII PHY pins / type /
  * clock come from the standard `ETH_PHY_*` build flags for your board. Returns immediately
  * (bring-up is asynchronous); poll eth_ready(). The egress reporting already classifies a
- * wired route as DETIFACE_ETH, so the server accepts on the link once it has an IP.
+ * wired route as DetIface::DETIFACE_ETH, so the server accepts on the link once it has an IP.
  *
  * @return true if ETH.begin() started the driver; false if Ethernet is disabled at build
  *         time or the driver failed to start (and always false on host builds).
@@ -82,8 +82,8 @@ bool ipv6_ready(void);
  *
  * Reads the live lwIP default route, so it reflects the current state after any
  * failover the stack performed - no polling, no cached state. Returns
- * DETIFACE_ETH / DETIFACE_STA / DETIFACE_AP, or DETIFACE_ANY when no route is up
- * (and on host builds).
+ * DetIface::DETIFACE_ETH / DetIface::DETIFACE_STA / DetIface::DETIFACE_AP, or DetIface::DETIFACE_ANY when no route is
+ * up (and on host builds).
  */
 DetIface det_net_egress(void);
 

@@ -87,7 +87,7 @@ struct TcpConn
     ConnProto proto;     ///< Application protocol for this connection.
     uint8_t
         proto_slot; ///< Per-protocol session/pool index (0xFF = none): the SSH session, an MQTT/Modbus session, etc.
-    uint8_t iface;  ///< DetIface this connection arrived on; set at accept time.
+    DetIface iface; ///< Interface this connection arrived on; set at accept time.
     uint8_t tls;    ///< Non-zero when this connection is TLS (set at accept time).
 #if DETWS_ENABLE_HTTP2 || DETWS_ENABLE_HTTP3
     /// Self-framing protocol response sink (Layer 5 TX seam): HTTP/2 installs it at ALPN, HTTP/3 at
@@ -114,8 +114,8 @@ struct TcpConn
  * @brief softAP IPv4 address (network byte order) for STA/AP interface tagging.
  *
  * Zero when no softAP is configured. Set via DetWebServer::set_ap_ip(); the
- * accept callback tags each connection DETIFACE_AP when its local IP equals
- * this, else DETIFACE_STA. Used by per-route interface filters.
+ * accept callback tags each connection DetIface::DETIFACE_AP when its local IP equals
+ * this, else DetIface::DETIFACE_STA. Used by per-route interface filters.
  */
 extern uint32_t detws_ap_ip;
 

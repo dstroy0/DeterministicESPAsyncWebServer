@@ -6,7 +6,7 @@
  * @brief SSH server example: host key from NVS, auth callbacks, channel echo.
  *
  * Demonstrates the SSH server stack (RFC 4253/4252/4254):
- *   - Enabling SSH (DETWS_ENABLE_SSH) and listening on PROTO_SSH
+ *   - Enabling SSH (DETWS_ENABLE_SSH) and listening on ConnProto::PROTO_SSH
  *   - Loading the RSA-2048 host key from NVS (see docs/SSH.md "Host key
  *     provisioning" - you must store a DER key under namespace "ssh_host_key",
  *     key "priv_der" once per device before this runs)
@@ -119,7 +119,7 @@ void setup()
     ssh_channel_set_data_cb(ssh_on_data);
 
     // Listen for SSH on port 22 (and, optionally, HTTP on 80 alongside it).
-    server.listen(22, PROTO_SSH);
+    server.listen(22, ConnProto::PROTO_SSH);
     int32_t result = server.begin();
     if (result < 0)
     {
@@ -145,7 +145,7 @@ void setup()
 
 void loop()
 {
-    // Drives accept/rx for every listener, including the PROTO_SSH handshake,
+    // Drives accept/rx for every listener, including the ConnProto::PROTO_SSH handshake,
     // user-auth, and channel data pumping.
     server.handle();
 }

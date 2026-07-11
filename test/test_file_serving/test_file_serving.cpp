@@ -65,7 +65,7 @@ void setUp()
         conn_pool[i] = {};
         conn_pool[i].id = (uint8_t)i;
         conn_pool[i].state = CONN_ACTIVE;
-        conn_pool[i].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+        conn_pool[i].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
         conn_pool[i].pcb = &_mock_pcb;
         http_reset(i);
     }
@@ -247,7 +247,7 @@ void test_multiple_content_types()
         conn_pool[0] = {};
         conn_pool[0].id = 0;
         conn_pool[0].state = CONN_ACTIVE;
-        conn_pool[0].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+        conn_pool[0].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
         conn_pool[0].pcb = &_mock_pcb;
         http_reset(0);
         tcp_capture_reset();
@@ -284,7 +284,7 @@ void stress_serve_file_50_requests()
         conn_pool[slot] = {};
         conn_pool[slot].id = slot;
         conn_pool[slot].state = CONN_ACTIVE;
-        conn_pool[slot].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+        conn_pool[slot].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
         conn_pool[slot].pcb = &_mock_pcb;
         http_reset(slot);
         tcp_capture_reset();
@@ -314,7 +314,7 @@ void stress_alternate_missing_and_found()
         conn_pool[slot] = {};
         conn_pool[slot].id = slot;
         conn_pool[slot].state = CONN_ACTIVE;
-        conn_pool[slot].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+        conn_pool[slot].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
         conn_pool[slot].pcb = &_mock_pcb;
         http_reset(slot);
         tcp_capture_reset();

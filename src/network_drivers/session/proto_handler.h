@@ -51,7 +51,7 @@ void proto_register_builtins(void);
 
 /**
  * @brief Look up the handler for @p proto.
- * @return the registered handler, or nullptr if @p proto is PROTO_NONE or has
+ * @return the registered handler, or nullptr if @p proto is ConnProto::PROTO_NONE or has
  *         no registered handler (no implicit fallback; the event is dropped).
  */
 const ProtoHandler *proto_get(ConnProto proto);

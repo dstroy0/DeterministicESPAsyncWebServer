@@ -30,7 +30,7 @@ void setUp()
 {
     set_millis(0);
     DeterministicAsyncTCP::pool_init();
-    listener_add(0, 80, PROTO_HTTP);
+    listener_add(0, 80, ConnProto::PROTO_HTTP);
     det_conn_on_event(on_event);
     det_conn_counters_reset();
     g_calls = 0;

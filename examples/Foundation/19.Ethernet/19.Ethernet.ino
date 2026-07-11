@@ -5,7 +5,7 @@
 // alongside init_wifi_physical() - a thin wrapper over the Arduino ETH library for an RMII
 // PHY (LAN8720 / TLK110 / RTL8201 / DP83848). Once the link has an IP the server accepts on
 // it with no other change: the egress reporting already classifies a wired route as
-// DETIFACE_ETH, so per-route interface filters and everything else just work.
+// DetIface::DETIFACE_ETH, so per-route interface filters and everything else just work.
 //
 // The PHY pins / type / clock come from the standard ETH_PHY_* build flags (below) - set
 // them for your board. Needs an ESP32 with an Ethernet PHY to run.

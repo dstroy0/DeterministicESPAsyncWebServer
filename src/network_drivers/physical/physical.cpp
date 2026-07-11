@@ -116,7 +116,7 @@ DetIface det_net_egress(void)
 {
     uint32_t egress = det_net_egress_ip();
     if (egress == 0)
-        return DETIFACE_ANY;
+        return DetIface::DETIFACE_ANY;
     uint32_t sta = WiFi.isConnected() ? (uint32_t)WiFi.localIP() : 0;
     uint32_t ap = (WiFi.getMode() & WIFI_AP) ? (uint32_t)WiFi.softAPIP() : 0;
     return det_net_classify_ip(egress, sta, ap);
@@ -158,7 +158,7 @@ uint32_t det_net_egress_ip(void)
 }
 DetIface det_net_egress(void)
 {
-    return DETIFACE_ANY;
+    return DetIface::DETIFACE_ANY;
 }
 
 #endif // ARDUINO
@@ -167,10 +167,10 @@ DetIface det_net_egress(void)
 DetIface det_net_classify_ip(uint32_t egress_ip, uint32_t sta_ip, uint32_t ap_ip)
 {
     if (egress_ip == 0)
-        return DETIFACE_ANY;
+        return DetIface::DETIFACE_ANY;
     if (sta_ip != 0 && egress_ip == sta_ip)
-        return DETIFACE_STA;
+        return DetIface::DETIFACE_STA;
     if (ap_ip != 0 && egress_ip == ap_ip)
-        return DETIFACE_AP;
-    return DETIFACE_ETH; // a live route that is neither WiFi IP -> wired
+        return DetIface::DETIFACE_AP;
+    return DetIface::DETIFACE_ETH; // a live route that is neither WiFi IP -> wired
 }

@@ -46,7 +46,7 @@ void setup()
     modbus_set_holding_reg(0, 1234);
     modbus_set_holding_reg(1, 5678);
     modbus_set_holding_reg(2, 4095);
-    server.listen(502, PROTO_MODBUS); // real Modbus TCP slave on :502
+    server.listen(502, ConnProto::PROTO_MODBUS); // real Modbus TCP slave on :502
 
     // /scan: read holding registers 0..3 via the master codec (self-scan).
     server.on("/scan", HTTP_GET, [](uint8_t id, HttpReq *) {

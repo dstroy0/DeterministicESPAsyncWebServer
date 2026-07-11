@@ -61,7 +61,7 @@ void setup()
     modbus_set_input_reg(0, 0);        // application-published (read-only to client)
     modbus_on_write(on_write);
 
-    server.listen(502, PROTO_MODBUS);
+    server.listen(502, ConnProto::PROTO_MODBUS);
     server.begin();
     Serial.println("Modbus TCP slave on :502");
 }

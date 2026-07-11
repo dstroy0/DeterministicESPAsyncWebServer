@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Telnet server test: drives a PROTO_TELNET connection through the real
+// Telnet server test: drives a ConnProto::PROTO_TELNET connection through the real
 // conn_pool ring buffer and checks the IAC negotiation, line echo/editing, and
 // command dispatch via the tcp_write capture mock.
 
@@ -39,7 +39,7 @@ void setUp()
         conn_pool[i].id = (uint8_t)i;
         conn_pool[i].state = CONN_ACTIVE;
         conn_pool[i].pcb = &_mock_pcb;
-        conn_pool[i].proto = PROTO_TELNET;
+        conn_pool[i].proto = ConnProto::PROTO_TELNET;
     }
     g_last_cmd[0] = '\0';
     g_cmd_count = 0;

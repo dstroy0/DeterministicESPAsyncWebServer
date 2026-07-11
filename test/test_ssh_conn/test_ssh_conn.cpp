@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// SSH transport-glue test: drives a PROTO_SSH connection through the real
+// SSH transport-glue test: drives a ConnProto::PROTO_SSH connection through the real
 // conn_pool ring buffer + packet layer (banner exchange → KEXINIT) and checks
 // the bytes written back to the socket via the tcp_write capture mock.
 
@@ -30,7 +30,7 @@ void setUp()
         conn_pool[i].id = (uint8_t)i;
         conn_pool[i].state = CONN_ACTIVE;
         conn_pool[i].pcb = &_mock_pcb;
-        conn_pool[i].proto = PROTO_SSH;
+        conn_pool[i].proto = ConnProto::PROTO_SSH;
         conn_pool[i].proto_slot = DETWS_PROTO_SLOT_NONE;
     }
     ssh_conn_setup();

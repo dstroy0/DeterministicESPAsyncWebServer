@@ -270,11 +270,11 @@ struct Route
     char auth_pass[MAX_AUTH_LEN];  ///< Required password.
 #endif
 
-    bool is_active;       ///< `false` for unused table slots.
-    bool is_wildcard;     ///< `true` when path ends with `*`.
-    bool is_param;        ///< `true` when the path contains a `:name` segment.
-    bool is_regex;        ///< `true` when the path is a regex (see on_regex()).
-    uint8_t iface_filter; ///< DetIface gate; DETIFACE_ANY (0) = match any interface.
+    bool is_active;        ///< `false` for unused table slots.
+    bool is_wildcard;      ///< `true` when path ends with `*`.
+    bool is_param;         ///< `true` when the path contains a `:name` segment.
+    bool is_regex;         ///< `true` when the path is a regex (see on_regex()).
+    DetIface iface_filter; ///< Interface gate; DetIface::DETIFACE_ANY (0) = match any interface.
 };
 
 // ---------------------------------------------------------------------------
@@ -578,17 +578,17 @@ class DetWebServer
      * need multiple ports (e.g., HTTP on 80 and Telnet on 23).
      *
      * @code
-     * server.listen(80, PROTO_HTTP);
-     * server.listen(23, PROTO_TELNET);
+     * server.listen(80, ConnProto::PROTO_HTTP);
+     * server.listen(23, ConnProto::PROTO_TELNET);
      * server.begin();
      * @endcode
      *
      * @param port  TCP port to open.
-     * @param proto Application protocol; defaults to PROTO_HTTP.
+     * @param proto Application protocol; defaults to ConnProto::PROTO_HTTP.
      * @return the listener id (a non-negative index) on success - pass it to
      *         det_relay_publish() / ssh_forward_begin(); DETWS_ERR_LISTENER_FULL if the pool is full.
      */
-    int32_t listen(uint16_t port, ConnProto proto = PROTO_HTTP);
+    int32_t listen(uint16_t port, ConnProto proto = ConnProto::PROTO_HTTP);
 
     /**
      * @brief Initialize all connection slots and open all registered listeners.
@@ -750,7 +750,7 @@ class DetWebServer
      * @brief Register a route that only matches on a specific network interface.
      *
      * Identical to on(path, method, callback) but the route is invisible unless
-     * the request arrived on @p iface (DETIFACE_STA or DETIFACE_AP). A
+     * the request arrived on @p iface (DetIface::DETIFACE_STA or DetIface::DETIFACE_AP). A
      * non-matching interface falls through to other routes / 404, so you can,
      * e.g., expose a provisioning UI only on the softAP and the app API only on
      * the station link. Requires set_ap_ip() to have been called so connections
@@ -759,7 +759,7 @@ class DetWebServer
      * @param path     URL path pattern.
      * @param method   HTTP method.
      * @param callback Handler invoked on a match.
-     * @param iface    DETIFACE_STA or DETIFACE_AP (DETIFACE_ANY = no filter).
+     * @param iface    DetIface::DETIFACE_STA or DetIface::DETIFACE_AP (DetIface::DETIFACE_ANY = no filter).
      */
     void on(const char *path, HttpMethod method, Handler callback, DetIface iface);
 
@@ -789,10 +789,10 @@ class DetWebServer
     /**
      * @brief Tell the server the softAP IPv4 address for STA/AP route filtering.
      *
-     * Each accepted connection is tagged DETIFACE_AP when its local IP equals
-     * @p ap_ip, else DETIFACE_STA. Call once after starting the softAP, e.g.
+     * Each accepted connection is tagged DetIface::DETIFACE_AP when its local IP equals
+     * @p ap_ip, else DetIface::DETIFACE_STA. Call once after starting the softAP, e.g.
      * `server.set_ap_ip(WiFi.softAPIP())` (IPAddress converts to uint32_t).
-     * Without it, every connection is treated as DETIFACE_STA.
+     * Without it, every connection is treated as DetIface::DETIFACE_STA.
      *
      * @param ap_ip softAP IPv4 address in network byte order (0 to clear).
      */

@@ -70,9 +70,9 @@ void setup()
     // Required for STA/AP classification (IPAddress converts to uint32_t).
     server.set_ap_ip(WiFi.softAPIP());
 
-    server.on("/setup", HTTP_GET, handle_setup, DETIFACE_AP);   // softAP only
-    server.on("/api/data", HTTP_GET, handle_api, DETIFACE_STA); // station only
-    server.on("/", HTTP_GET, handle_root);                      // any interface
+    server.on("/setup", HTTP_GET, handle_setup, DetIface::DETIFACE_AP);   // softAP only
+    server.on("/api/data", HTTP_GET, handle_api, DetIface::DETIFACE_STA); // station only
+    server.on("/", HTTP_GET, handle_root);                                // any interface
 
     int32_t result = server.begin(80);
     if (result < 0)

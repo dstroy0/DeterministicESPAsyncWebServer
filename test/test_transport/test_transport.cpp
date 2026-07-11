@@ -24,7 +24,7 @@ void setUp()
 {
     set_millis(0);
     DeterministicAsyncTCP::pool_init();
-    listener_add(0, 80, PROTO_HTTP);
+    listener_add(0, 80, ConnProto::PROTO_HTTP);
 }
 
 void tearDown()
@@ -176,7 +176,7 @@ void test_timeout_fires_only_on_stale_slots()
 void test_init_succeeds_on_native()
 {
     DeterministicAsyncTCP::pool_init();
-    int32_t ok = listener_add(0, 80, PROTO_HTTP);
+    int32_t ok = listener_add(0, 80, ConnProto::PROTO_HTTP);
     TEST_ASSERT_EQUAL(1, ok);
 }
 

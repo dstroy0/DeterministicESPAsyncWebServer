@@ -5,10 +5,10 @@
  * @file ssh_conn.h
  * @brief Glue between the TCP transport (conn_pool) and the SSH protocol stack.
  *
- * Binds a PROTO_SSH TcpConn slot to an SSH session slot, pumps ring-buffer
+ * Binds a ConnProto::PROTO_SSH TcpConn slot to an SSH session slot, pumps ring-buffer
  * bytes through the banner exchange and binary-packet layer, and writes the
  * dispatcher's outbound packets back to the socket. This is the integration
- * layer the session loop calls for PROTO_SSH connections.
+ * layer the session loop calls for ConnProto::PROTO_SSH connections.
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_CONN_H
@@ -27,7 +27,7 @@ struct ProtoHandler;
 const struct ProtoHandler *ssh_proto_handler(void);
 
 /**
- * @brief Handle a new PROTO_SSH connection on @p conn_slot.
+ * @brief Handle a new ConnProto::PROTO_SSH connection on @p conn_slot.
  *
  * Allocates an SSH session slot, initializes the transport/packet/channel
  * state, and sends the server identification banner. If no SSH slot is free

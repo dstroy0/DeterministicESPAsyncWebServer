@@ -6,7 +6,7 @@
  * @brief Layer 6/7 - minimal RFC 854 Telnet server (DETWS_ENABLE_TELNET).
  *
  * A zero-heap line-oriented Telnet console dispatched from the session layer's
- * PROTO_TELNET arms (the same way SSH is dispatched to ssh_conn). On connect it
+ * ConnProto::PROTO_TELNET arms (the same way SSH is dispatched to ssh_conn). On connect it
  * negotiates server-side echo + suppress-go-ahead (so the client runs in
  * character mode and the server draws the line), accumulates a line, echoes
  * keystrokes (with backspace handling), and hands each completed line to a
@@ -17,7 +17,7 @@
  *
  * Usage:
  * @code
- *   server.listen(23, PROTO_TELNET);     // open the Telnet port
+ *   server.listen(23, ConnProto::PROTO_TELNET);     // open the Telnet port
  *   telnet_on_command(my_cmd_handler);   // void(const char *line, uint8_t id)
  * @endcode
  */
@@ -51,7 +51,7 @@ void telnet_printf(const char *fmt, ...);
 /** @brief Number of connected Telnet clients. */
 uint8_t telnet_client_count();
 
-// ---- Connection layer (called by the session layer for PROTO_TELNET slots) -
+// ---- Connection layer (called by the session layer for ConnProto::PROTO_TELNET slots) -
 
 /** @brief A Telnet connection was accepted on TCP slot @p slot. */
 void telnet_accept(uint8_t slot);

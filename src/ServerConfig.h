@@ -595,7 +595,7 @@
 // server runs over Ethernet instead of (or alongside) Wi-Fi. init_eth_physical() is a thin
 // wrapper over the Arduino ETH library; the PHY pins / type / clock come from the standard
 // ETH_PHY_* build flags for your board (see example 19.Ethernet). The egress reporting
-// (det_net_egress -> DETIFACE_ETH) and the per-route interface classifier already handle a
+// (det_net_egress -> DetIface::DETIFACE_ETH) and the per-route interface classifier already handle a
 // wired route, so once the link has an IP the server accepts on it with no other change.
 // Default off (zero cost / the ETH library is not linked). ESP32-only.
 
@@ -1181,7 +1181,7 @@
 /**
  * @brief Modbus TCP slave/server (Modbus Application Protocol v1.1b3) on TCP/502.
  *
- * Default off. When set, listen(502, PROTO_MODBUS) serves a fixed data model
+ * Default off. When set, listen(502, ConnProto::PROTO_MODBUS) serves a fixed data model
  * (coils, discrete inputs, holding + input registers, all in BSS) over Modbus
  * TCP: Read/Write Coils (FC 1/5/15), Read Discrete Inputs (FC 2), Read/Write
  * Holding Registers (FC 3/6/16), and Read Input Registers (FC 4). The codec
@@ -3810,8 +3810,8 @@
  * None), the Session (CreateSession + ActivateSession), GetEndpoints, the Read, Write
  * and Browse services (registered resolvers map a NodeId to a value / accept a written
  * value / list child references), plus CloseSession + CloseSecureChannel and a
- * ServiceFault for unsupported services, served on TCP via PROTO_OPCUA
- * (`listen(4840, PROTO_OPCUA)`). The MSG framing is spec-faithful (incl.
+ * ServiceFault for unsupported services, served on TCP via ConnProto::PROTO_OPCUA
+ * (`listen(4840, ConnProto::PROTO_OPCUA)`). The MSG framing is spec-faithful (incl.
  * SecureChannelId), so standard clients interoperate (verified with python asyncua:
  * connect + browse + read + write/read-back). All pure and host-tested. No heap, no stdlib.
  */
@@ -4964,7 +4964,7 @@ struct WebServerConfig
  * part of the listener API.  Feature flags gate the implementation, not the
  * identifier.
  */
-enum ConnProto
+enum class ConnProto : uint8_t
 {
     PROTO_NONE = 0,     ///< Unassigned slot.
     PROTO_HTTP = 1,     ///< HTTP/1.1 with optional WS and SSE upgrades.
@@ -4983,7 +4983,7 @@ enum ConnProto
  * IP to the softAP IP (see DetWebServer::set_ap_ip()). Used to gate routes to
  * the station or softAP interface only (DetWebServer::on(..., DetIface)).
  */
-enum DetIface : uint8_t
+enum class DetIface : uint8_t
 {
     DETIFACE_ANY = 0, ///< Unknown / no filter (matches any interface).
     DETIFACE_STA = 1, ///< Station interface (joined to an AP / your LAN).

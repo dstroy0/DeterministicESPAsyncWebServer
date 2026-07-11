@@ -13,7 +13,7 @@
  * completes the handshake, opens a secure channel, activates a session, browses the
  * Objects folder, and reads node values, all via registered resolvers.
  *
- *   listen(4840, PROTO_OPCUA)  -> HEL/ACK, OPN, CreateSession, ActivateSession, Read, Browse, Close
+ *   listen(4840, ConnProto::PROTO_OPCUA)  -> HEL/ACK, OPN, CreateSession, ActivateSession, Read, Browse, Close
  *
  * The HTTP server on :80 runs alongside, sharing the same connection pool and
  * event loop - OPC UA is just another protocol on its own port.
@@ -113,10 +113,10 @@ void setup()
     WiFi.setSleep(false);
 
     server.on("/", HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "OPC UA on :4840"); });
-    opcua_set_read_handler(opcua_read);     // serve Reads for ns=1;i=1..3,10
-    opcua_set_write_handler(opcua_write);   // accept Writes to ns=1;i=10 (the setpoint)
-    opcua_set_browse_handler(opcua_browse); // list those under the Objects folder
-    server.listen(4840, PROTO_OPCUA);       // OPC UA Binary endpoint - before begin() (it activates listeners)
+    opcua_set_read_handler(opcua_read);          // serve Reads for ns=1;i=1..3,10
+    opcua_set_write_handler(opcua_write);        // accept Writes to ns=1;i=10 (the setpoint)
+    opcua_set_browse_handler(opcua_browse);      // list those under the Objects folder
+    server.listen(4840, ConnProto::PROTO_OPCUA); // OPC UA Binary endpoint - before begin() (it activates listeners)
     server.begin(80);
     Serial.println("OPC UA endpoint: opc.tcp://<ip>:4840 (handshake + SecureChannel + Session + Read/Write + Browse)");
 }

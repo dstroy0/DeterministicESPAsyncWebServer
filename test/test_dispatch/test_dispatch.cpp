@@ -38,7 +38,7 @@ void setUp()
         conn_pool[i] = {};
         conn_pool[i].id = (uint8_t)i;
         conn_pool[i].state = CONN_ACTIVE;
-        conn_pool[i].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+        conn_pool[i].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
         conn_pool[i].pcb = &_mock_pcb;
         http_reset(i);
     }

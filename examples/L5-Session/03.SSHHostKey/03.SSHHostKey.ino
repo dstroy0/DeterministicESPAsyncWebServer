@@ -131,7 +131,7 @@ void setup()
     ssh_auth_set_password_cb(ssh_password_auth);
     ssh_channel_set_data_cb(ssh_on_data);
 
-    server.listen(22, PROTO_SSH);
+    server.listen(22, ConnProto::PROTO_SSH);
     int32_t result = server.begin();
     if (result < 0)
     {

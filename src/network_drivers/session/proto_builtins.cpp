@@ -13,7 +13,7 @@
  * Adding a protocol means writing its module and adding one guarded line here - never editing
  * the dispatcher.
  *
- * (The SSH remote-forward listener, PROTO_SSH_RFWD, is intentionally NOT here: it is a
+ * (The SSH remote-forward listener, ConnProto::PROTO_SSH_RFWD, is intentionally NOT here: it is a
  * runtime opt-in that self-registers from ssh_forward_begin().)
  */
 
@@ -43,17 +43,17 @@ static inline void register_if(ConnProto proto, const ProtoHandler *h)
 
 void proto_register_builtins(void)
 {
-    register_if(PROTO_HTTP, http_proto_handler()); // always present (the core request/response protocol)
+    register_if(ConnProto::PROTO_HTTP, http_proto_handler()); // always present (the core request/response protocol)
 #if DETWS_ENABLE_TELNET
-    register_if(PROTO_TELNET, telnet_proto_handler());
+    register_if(ConnProto::PROTO_TELNET, telnet_proto_handler());
 #endif
 #if DETWS_ENABLE_SSH
-    register_if(PROTO_SSH, ssh_proto_handler());
+    register_if(ConnProto::PROTO_SSH, ssh_proto_handler());
 #endif
 #if DETWS_ENABLE_MODBUS
-    register_if(PROTO_MODBUS, modbus_proto_handler());
+    register_if(ConnProto::PROTO_MODBUS, modbus_proto_handler());
 #endif
 #if DETWS_ENABLE_OPCUA
-    register_if(PROTO_OPCUA, opcua_proto_handler());
+    register_if(ConnProto::PROTO_OPCUA, opcua_proto_handler());
 #endif
 }

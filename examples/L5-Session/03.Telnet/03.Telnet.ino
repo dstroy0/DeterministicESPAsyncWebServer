@@ -5,7 +5,7 @@
  * @file 03.Telnet.ino
  * @brief Line-oriented Telnet console (RFC 854) on port 23 (DETWS_ENABLE_TELNET).
  *
- * Opens a Telnet listener via server.listen(23, PROTO_TELNET). The server
+ * Opens a Telnet listener via server.listen(23, ConnProto::PROTO_TELNET). The server
  * negotiates echo + character mode, edits the line for you (backspace works),
  * and delivers each completed line to the command callback; respond with
  * telnet_print/println/printf.
@@ -61,7 +61,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    server.listen(23, PROTO_TELNET); // open the Telnet port
+    server.listen(23, ConnProto::PROTO_TELNET); // open the Telnet port
     telnet_on_command(on_command);
 
     server.begin(80); // also start HTTP (begin() activates all listeners)

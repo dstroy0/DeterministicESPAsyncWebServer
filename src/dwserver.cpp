@@ -750,7 +750,7 @@ void DetWebServer::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, con
     c->h3_conn_id = conn_id;
     c->h3_stream = stream_id;
     c->resp_sink = h3_resp_sink;
-    c->iface = DETIFACE_STA;
+    c->iface = DetIface::DETIFACE_STA;
     c->state = CONN_ACTIVE;
     c->pcb = nullptr;
 
@@ -775,7 +775,7 @@ int32_t DetWebServer::listen_tls(uint16_t port)
     if (_listener_count >= MAX_LISTENERS)
         return DETWS_ERR_LISTENER_FULL;
     _listen_ports[_listener_count] = port;
-    _listen_protos[_listener_count] = PROTO_HTTP;
+    _listen_protos[_listener_count] = ConnProto::PROTO_HTTP;
     _listen_tls[_listener_count] = true;
     _listener_count++;
     return DETWS_OK;
@@ -854,7 +854,7 @@ static void fill_route_base(Route *r, const char *path)
     r->is_wildcard = (len > 0 && r->path[len - 1] == '*');
     r->is_param = (strstr(r->path, "/:") != nullptr);
     r->is_regex = false;
-    r->iface_filter = DETIFACE_ANY;
+    r->iface_filter = DetIface::DETIFACE_ANY;
 }
 
 void DetWebServer::on(const char *path, HttpMethod method, Handler callback)
@@ -877,7 +877,7 @@ void DetWebServer::on(const char *path, HttpMethod method, Handler callback, Det
     r->type = ROUTE_HTTP;
     r->method = method;
     r->callback = callback;
-    r->iface_filter = (uint8_t)iface;
+    r->iface_filter = iface;
 }
 
 void DetWebServer::set_ap_ip(uint32_t ap_ip)
@@ -1850,7 +1850,7 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
 
         // Per-route interface gate: a route bound to STA/AP is invisible on the
         // other interface (falls through to other routes / 404).
-        if (r->iface_filter != DETIFACE_ANY && r->iface_filter != conn_pool[slot_id].iface)
+        if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != conn_pool[slot_id].iface)
             continue;
 
 #if DETWS_ENABLE_WEBSOCKET
@@ -3649,7 +3649,7 @@ bool DetWebServer::dav_stream_put_begin(HttpReq *req)
             continue;
         if (!path_matches(r->path, r->is_wildcard, req->path))
             continue;
-        if (r->iface_filter != DETIFACE_ANY && r->iface_filter != conn_pool[slot].iface)
+        if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != conn_pool[slot].iface)
             continue;
         // GCOVR_EXCL_START  a ROUTE_DAV route always carries static_fs (set in dav()); this null-guard cannot fire
         if (!r->static_fs)
@@ -3742,7 +3742,7 @@ bool DetWebServer::try_serve_dav(uint8_t slot_id, HttpReq *req)
             continue;
         if (!path_matches(r->path, r->is_wildcard, req->path))
             continue;
-        if (r->iface_filter != DETIFACE_ANY && r->iface_filter != conn_pool[slot_id].iface)
+        if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != conn_pool[slot_id].iface)
             continue;
         serve_dav_request(slot_id, req, r);
         return true;

@@ -10,7 +10,7 @@
  * is DNAT / reverse port forwarding - e.g. expose a machine on a locked-down segment through the
  * device that bridges the two networks.
  *
- * Wiring is two calls: `server.listen(FRONT_PORT, PROTO_RELAY)` opens the front port, and
+ * Wiring is two calls: `server.listen(FRONT_PORT, ConnProto::PROTO_RELAY)` opens the front port, and
  * `det_relay_publish()` binds it to the origin. The server's own poll loop pumps the bytes.
  *
  * Edit the lines marked "CHANGE ME" below, flash, and open Serial @ 115200. Then, from another
@@ -58,7 +58,7 @@ void setup()
     WiFi.setSleep(false);
 
     // Open the front port for the relay, then bind it to the origin.
-    int32_t li = server.listen(FRONT_PORT, PROTO_RELAY);
+    int32_t li = server.listen(FRONT_PORT, ConnProto::PROTO_RELAY);
     if (li < 0 || !det_relay_publish((uint8_t)li, ORIGIN_HOST, ORIGIN_PORT))
     {
         Serial.println("relay publish failed - check the front port and origin");

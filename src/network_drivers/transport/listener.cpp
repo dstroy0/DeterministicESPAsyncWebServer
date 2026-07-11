@@ -419,10 +419,10 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
 #ifdef ARDUINO
     {
         uint32_t lip = ip4_addr_get_u32(ip_2_ip4(&newpcb->local_ip));
-        slot->iface = (detws_ap_ip != 0 && lip == detws_ap_ip) ? DETIFACE_AP : DETIFACE_STA;
+        slot->iface = (detws_ap_ip != 0 && lip == detws_ap_ip) ? DetIface::DETIFACE_AP : DetIface::DETIFACE_STA;
     }
 #else
-    slot->iface = DETIFACE_ANY;
+    slot->iface = DetIface::DETIFACE_ANY;
 #endif
 
     tcp_arg(newpcb, slot);

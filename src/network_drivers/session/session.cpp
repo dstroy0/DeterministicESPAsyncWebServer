@@ -11,7 +11,7 @@
  *
  * Events are routed to the correct protocol handler via TcpConn::proto.
  * A slot must carry an explicit protocol (assigned from its listener on
- * accept); PROTO_NONE and any unregistered protocol resolve to no handler
+ * accept); ConnProto::PROTO_NONE and any unregistered protocol resolve to no handler
  * and the event is dropped.
  */
 
@@ -38,20 +38,20 @@ static SessionCtx s_session;
 void proto_register(ConnProto proto, const ProtoHandler *h)
 {
     if ((unsigned)proto < DETWS_PROTO_MAX)
-        s_session.proto_handlers[proto] = h;
+        s_session.proto_handlers[(unsigned)proto] = h;
 }
 
 const ProtoHandler *proto_get(ConnProto proto)
 {
     // Install the built-ins on first lookup so dispatch works before begin() (the native test
     // harness drives server_tick() directly). The list itself lives in proto_builtins.cpp -
-    // this dispatcher names no protocol; it just knows PROTO_HTTP is always registered, and
+    // this dispatcher names no protocol; it just knows ConnProto::PROTO_HTTP is always registered, and
     // uses that as the "already bootstrapped" sentinel.
-    if (!s_session.proto_handlers[PROTO_HTTP])
+    if (!s_session.proto_handlers[(unsigned)ConnProto::PROTO_HTTP])
         proto_register_builtins();
     // No implicit fallback: a slot must carry an explicit, registered protocol.
-    // PROTO_NONE and any unregistered protocol resolve to nullptr (event dropped).
-    return ((unsigned)proto < DETWS_PROTO_MAX) ? s_session.proto_handlers[proto] : nullptr;
+    // ConnProto::PROTO_NONE and any unregistered protocol resolve to nullptr (event dropped).
+    return ((unsigned)proto < DETWS_PROTO_MAX) ? s_session.proto_handlers[(unsigned)proto] : nullptr;
 }
 
 // Dispatch one drained event to its slot's protocol handler. Shared by the
@@ -64,7 +64,7 @@ static inline void dispatch_event(const TcpEvt &evt)
     // release from accumulating across events.
     scratch_reset();
 
-    // Route to the slot's protocol handler. PROTO_NONE and any unregistered
+    // Route to the slot's protocol handler. ConnProto::PROTO_NONE and any unregistered
     // protocol have no handler, so the event is dropped.
     const ProtoHandler *h = proto_get(conn_pool[evt.slot_id].proto);
     if (!h)

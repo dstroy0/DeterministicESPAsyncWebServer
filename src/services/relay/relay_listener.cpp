@@ -3,7 +3,7 @@
 
 /**
  * @file relay_listener.cpp
- * @brief Server-side TCP relay / DNAT listener (see relay_listener.h). Bridges a PROTO_RELAY
+ * @brief Server-side TCP relay / DNAT listener (see relay_listener.h). Bridges a ConnProto::PROTO_RELAY
  *        connection to an origin det_client connection via the pure relay engine.
  */
 
@@ -228,7 +228,7 @@ bool det_relay_publish(uint8_t listener_id, const char *origin_host, uint16_t or
     s_ctx.binds[idx].port = origin_port;
     if (!s_ctx.registered)
     {
-        proto_register(PROTO_RELAY, &s_relay_handler);
+        proto_register(ConnProto::PROTO_RELAY, &s_relay_handler);
         s_ctx.registered = true;
     }
     return true;

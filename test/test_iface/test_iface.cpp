@@ -54,7 +54,7 @@ void setUp()
         conn_pool[i] = {};
         conn_pool[i].id = (uint8_t)i;
         conn_pool[i].state = CONN_ACTIVE;
-        conn_pool[i].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+        conn_pool[i].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
         conn_pool[i].pcb = &_mock_pcb;
         http_reset(i);
     }
@@ -71,12 +71,12 @@ void tearDown()
 }
 
 // Arm slot 0 with a given ingress interface, then dispatch one request.
-static const char *do_req(uint8_t iface, const char *req_str)
+static const char *do_req(DetIface iface, const char *req_str)
 {
     conn_pool[0] = {};
     conn_pool[0].id = 0;
     conn_pool[0].state = CONN_ACTIVE;
-    conn_pool[0].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+    conn_pool[0].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     conn_pool[0].iface = iface;
     http_reset(0);
@@ -93,45 +93,45 @@ static const char *do_req(uint8_t iface, const char *req_str)
 
 void test_ap_only_matches_on_ap()
 {
-    server.on("/cfg", HTTP_GET, h_ok, DETIFACE_AP);
-    const char *r = do_req(DETIFACE_AP, "GET /cfg HTTP/1.1\r\n\r\n");
+    server.on("/cfg", HTTP_GET, h_ok, DetIface::DETIFACE_AP);
+    const char *r = do_req(DetIface::DETIFACE_AP, "GET /cfg HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r, "200 OK"));
 }
 
 void test_ap_only_hidden_on_sta()
 {
-    server.on("/cfg", HTTP_GET, h_ok, DETIFACE_AP);
-    const char *r = do_req(DETIFACE_STA, "GET /cfg HTTP/1.1\r\n\r\n");
+    server.on("/cfg", HTTP_GET, h_ok, DetIface::DETIFACE_AP);
+    const char *r = do_req(DetIface::DETIFACE_STA, "GET /cfg HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(g_called); // route invisible on STA
     TEST_ASSERT_NOT_NULL(strstr(r, "404 Not Found"));
 }
 
 void test_sta_only_matches_on_sta()
 {
-    server.on("/api", HTTP_GET, h_ok, DETIFACE_STA);
-    const char *r = do_req(DETIFACE_STA, "GET /api HTTP/1.1\r\n\r\n");
+    server.on("/api", HTTP_GET, h_ok, DetIface::DETIFACE_STA);
+    const char *r = do_req(DetIface::DETIFACE_STA, "GET /api HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r, "200 OK"));
 }
 
 void test_sta_only_hidden_on_ap()
 {
-    server.on("/api", HTTP_GET, h_ok, DETIFACE_STA);
-    const char *r = do_req(DETIFACE_AP, "GET /api HTTP/1.1\r\n\r\n");
+    server.on("/api", HTTP_GET, h_ok, DetIface::DETIFACE_STA);
+    const char *r = do_req(DetIface::DETIFACE_AP, "GET /api HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r, "404 Not Found"));
 }
 
 void test_unfiltered_route_matches_any_interface()
 {
-    server.on("/x", HTTP_GET, h_ok); // DETIFACE_ANY
-    const char *r1 = do_req(DETIFACE_AP, "GET /x HTTP/1.1\r\n\r\n");
+    server.on("/x", HTTP_GET, h_ok); // DetIface::DETIFACE_ANY
+    const char *r1 = do_req(DetIface::DETIFACE_AP, "GET /x HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r1, "200 OK"));
 
     g_called = false;
-    const char *r2 = do_req(DETIFACE_STA, "GET /x HTTP/1.1\r\n\r\n");
+    const char *r2 = do_req(DetIface::DETIFACE_STA, "GET /x HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r2, "200 OK"));
 }
@@ -140,10 +140,10 @@ void test_same_path_two_interfaces_picks_correct()
 {
     // Same path bound to different interfaces; the request's interface decides.
     g_ap_hit = g_sta_hit = false;
-    server.on("/p", HTTP_GET, h_ap, DETIFACE_AP);
-    server.on("/p", HTTP_GET, h_sta, DETIFACE_STA);
+    server.on("/p", HTTP_GET, h_ap, DetIface::DETIFACE_AP);
+    server.on("/p", HTTP_GET, h_sta, DetIface::DETIFACE_STA);
 
-    const char *r = do_req(DETIFACE_STA, "GET /p HTTP/1.1\r\n\r\n");
+    const char *r = do_req(DetIface::DETIFACE_STA, "GET /p HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_sta_hit);
     TEST_ASSERT_FALSE(g_ap_hit);
     TEST_ASSERT_NOT_NULL(strstr(r, "sta"));

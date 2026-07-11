@@ -33,7 +33,7 @@ static void arm_slot(uint8_t slot, const char *raw)
     conn_pool[slot] = {};
     conn_pool[slot].id = slot;
     conn_pool[slot].state = CONN_ACTIVE;
-    conn_pool[slot].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+    conn_pool[slot].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[slot].pcb = nullptr;
 
     TcpConn *s = &conn_pool[slot];
@@ -70,7 +70,7 @@ void setUp()
         conn_pool[i] = {};
         conn_pool[i].id = i;
         conn_pool[i].state = CONN_ACTIVE;
-        conn_pool[i].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+        conn_pool[i].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
         http_reset(i);
     }
     handler_called = false;
@@ -595,7 +595,7 @@ void test_transfer_encoding_identity_is_501()
 void test_redirect_emits_location_and_status()
 {
     conn_pool[0].state = CONN_ACTIVE;
-    conn_pool[0].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+    conn_pool[0].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     tcp_capture_reset();
     g_server->redirect(0, 301, "/index.html");
@@ -610,7 +610,7 @@ void test_redirect_emits_location_and_status()
 void test_redirect_invalid_code_defaults_to_302()
 {
     conn_pool[0].state = CONN_ACTIVE;
-    conn_pool[0].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+    conn_pool[0].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     tcp_capture_reset();
     g_server->redirect(0, 200, "/elsewhere"); // 200 is not a redirect code
@@ -1152,7 +1152,7 @@ void test_metrics_emits_prometheus()
     conn_pool[0] = {};
     conn_pool[0].id = 0;
     conn_pool[0].state = CONN_ACTIVE;
-    conn_pool[0].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+    conn_pool[0].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     http_reset(0);
     tcp_capture_reset();
@@ -1178,7 +1178,7 @@ void test_sse_broadcast_after_upgrade_matches_path()
     conn_pool[0] = {};
     conn_pool[0].id = 0;
     conn_pool[0].state = CONN_ACTIVE;
-    conn_pool[0].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+    conn_pool[0].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     push_bytes(0, "GET /events HTTP/1.1\r\n\r\n");
     http_reset(0);
@@ -1204,7 +1204,7 @@ void test_ws_send_api()
     conn_pool[0] = {};
     conn_pool[0].id = 0;
     conn_pool[0].state = CONN_ACTIVE;
-    conn_pool[0].proto = PROTO_HTTP;
+    conn_pool[0].proto = ConnProto::PROTO_HTTP;
     conn_pool[0].pcb = &_mock_pcb;
     WsConn *ws = ws_alloc(0);
     TEST_ASSERT_NOT_NULL(ws);
@@ -1257,7 +1257,7 @@ void test_sse_send_api()
     conn_pool[0] = {};
     conn_pool[0].id = 0;
     conn_pool[0].state = CONN_ACTIVE;
-    conn_pool[0].proto = PROTO_HTTP;
+    conn_pool[0].proto = ConnProto::PROTO_HTTP;
     conn_pool[0].pcb = &_mock_pcb;
     SseConn *sse = sse_alloc(0, "/events");
     TEST_ASSERT_NOT_NULL(sse);
@@ -1325,7 +1325,7 @@ void test_status_text_reason_phrases()
         conn_pool[0] = {};
         conn_pool[0].id = 0;
         conn_pool[0].state = CONN_ACTIVE;
-        conn_pool[0].proto = PROTO_HTTP;
+        conn_pool[0].proto = ConnProto::PROTO_HTTP;
         conn_pool[0].pcb = &_mock_pcb;
         http_reset(0);
         tcp_capture_reset();
@@ -1424,7 +1424,7 @@ void test_route_registration_variants_table_full()
     for (int i = 0; i < MAX_ROUTES; i++)
         srv.on("/x", HTTP_GET, record_handler);
 
-    srv.on("/i", HTTP_GET, record_handler, DETIFACE_STA); // on(..., iface)
+    srv.on("/i", HTTP_GET, record_handler, DetIface::DETIFACE_STA); // on(..., iface)
     srv.on_regex("/re.*", HTTP_GET, record_handler);
 #if DETWS_ENABLE_AUTH
     srv.on("/a", HTTP_GET, record_handler, "realm", "u", "p", false);
@@ -1464,7 +1464,7 @@ void test_redirect_response_and_code_normalization()
     conn_pool[0] = {};
     conn_pool[0].id = 0;
     conn_pool[0].state = CONN_ACTIVE;
-    conn_pool[0].proto = PROTO_HTTP;
+    conn_pool[0].proto = ConnProto::PROTO_HTTP;
     conn_pool[0].pcb = &_mock_pcb;
     http_reset(0);
     tcp_capture_reset();

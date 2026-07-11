@@ -27,11 +27,11 @@ static const char *iface_name(DetIface i)
 {
     switch (i)
     {
-    case DETIFACE_ETH:
+    case DetIface::DETIFACE_ETH:
         return "ethernet";
-    case DETIFACE_AP:
+    case DetIface::DETIFACE_AP:
         return "softap";
-    case DETIFACE_STA:
+    case DetIface::DETIFACE_STA:
         return "wifi-sta";
     default:
         return "none";

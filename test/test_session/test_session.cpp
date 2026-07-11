@@ -33,11 +33,11 @@ void setUp()
     set_millis(0);
     queue_stage_reset(); // clear any staged events from previous test
     DeterministicAsyncTCP::pool_init();
-    listener_add(0, 80, PROTO_HTTP);
+    listener_add(0, 80, ConnProto::PROTO_HTTP);
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i].state = CONN_ACTIVE;
-        conn_pool[i].proto = PROTO_HTTP; // dispatch requires an explicit protocol
+        conn_pool[i].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
         http_reset(i);
     }
 }

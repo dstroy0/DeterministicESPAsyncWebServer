@@ -11,11 +11,11 @@
  *  - modbus_process_adu() takes a complete Modbus TCP ADU (MBAP header + PDU) and
  *    produces the response ADU in a caller buffer - no sockets, no heap. It is
  *    unit-tested on the host (env:native_modbus).
- *  - modbus_rx() is the PROTO_MODBUS data handler dispatched by the session layer;
+ *  - modbus_rx() is the ConnProto::PROTO_MODBUS data handler dispatched by the session layer;
  *    it frames ADUs out of the rx ring and feeds them through
  *    modbus_process_adu(). The slave keeps no per-connection state (a partial
  *    frame waits in the rx ring), so no accept/close hooks are needed. Open the
- *    port with listen(502, PROTO_MODBUS).
+ *    port with listen(502, ConnProto::PROTO_MODBUS).
  *
  * The data model is four fixed BSS tables (coils, discrete inputs, holding
  * registers, input registers). The application reads and writes them with the
@@ -124,7 +124,7 @@ size_t modbus_rtu_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp,
 #endif
 
 // ---------------------------------------------------------------------------
-// TCP transport (PROTO_MODBUS data handler; ESP32-only)
+// TCP transport (ConnProto::PROTO_MODBUS data handler; ESP32-only)
 // ---------------------------------------------------------------------------
 
 /** @brief Frame and process received Modbus ADUs for the connection on @p slot. */
