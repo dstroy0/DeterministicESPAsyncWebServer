@@ -13,3 +13,6 @@ test/README.md
 # Generated data: the compiler dependency graph is written by tools/gen_dep_graph.py (compact
 # json.dump) and regenerated verbatim by CI; Prettier would reformat it and cause churn.
 test/dep_graph.json
+# Likewise the SonarQube compile-commands baseline (tools/sonar/merge_compiledb.py json.dump,
+# @ROOT@-tokenized); affected runs overlay it verbatim, so keep Prettier off it.
+test/compile_commands.json

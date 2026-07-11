@@ -128,11 +128,17 @@ jobs:
           echo "envs=$ENVS" >> "$GITHUB_OUTPUT"
 
       # The SonarCloud C/C++ analysis needs a compile database (native platform, all envs merged). Skip
-      # it when nothing testable changed. compiledb captures compile commands (no test execution) and is
-      # ccache-warm, so it stays cheap even on affected runs.
+      # it when nothing testable changed. On an affected run, only the changed envs' compile commands
+      # are regenerated and overlaid onto the committed baseline test/compile_commands.json (the rest
+      # kept), exactly like the coverage/report baselines; a full run rebuilds the whole database.
       - name: Generate merged compile_commands.json
         if: ${{ env.SONAR_TOKEN != '' && steps.sel.outputs.mode != 'none' }}
-        run: bash tools/sonar/gen_compiledb.sh
+        run: |
+          if [ "${{ steps.sel.outputs.mode }}" = "affected" ]; then
+            bash tools/sonar/gen_compiledb.sh ${{ steps.sel.outputs.envs }}
+          else
+            bash tools/sonar/gen_compiledb.sh
+          fi
 
       # FULL: regenerate test/TEST_REPORT.md + test/coverage.xml from the whole matrix.
       - name: Run the whole suite (report + coverage)
@@ -208,7 +214,7 @@ jobs:
             git config user.signingkey ~/.ssh/ci_signing_key
             git config commit.gpgsign true
           fi
-          git add test/TEST_REPORT.md test/coverage.xml test/dep_graph.json
+          git add test/TEST_REPORT.md test/coverage.xml test/dep_graph.json test/compile_commands.json
           if ! git diff --cached --quiet; then
             git commit -m "ci: update test report + coverage [skip ci]"
             # Rebase-and-retry: other auto-committing workflows advance main during this multi-minute run.
