@@ -31,13 +31,13 @@ SouthboundCtx s_sb;
 int detws_southbound_register(const SouthboundDriver *drv)
 {
     if (!drv || !drv->name)
-        return SB_ERR_ARG;
+        return Sb::SB_ERR_ARG;
     if (detws_southbound_find(drv->name))
-        return SB_ERR_DUP;
+        return Sb::SB_ERR_DUP;
     if (s_sb.count >= DETWS_SOUTHBOUND_MAX_DRIVERS)
-        return SB_ERR_FULL;
+        return Sb::SB_ERR_FULL;
     s_sb.drivers[s_sb.count++] = drv;
-    return SB_OK;
+    return Sb::SB_OK;
 }
 
 void detws_southbound_clear(void)
@@ -65,12 +65,12 @@ const SouthboundDriver *detws_southbound_find(const char *name)
 int detws_southbound_read(const char *name, uint32_t point, int32_t *value_out)
 {
     if (!value_out)
-        return SB_ERR_ARG;
+        return Sb::SB_ERR_ARG;
     const SouthboundDriver *d = detws_southbound_find(name);
     if (!d)
-        return SB_ERR_NOT_FOUND;
+        return Sb::SB_ERR_NOT_FOUND;
     if (!d->read)
-        return SB_ERR_UNSUPPORTED;
+        return Sb::SB_ERR_UNSUPPORTED;
     return d->read(d->ctx, point, value_out);
 }
 
@@ -78,33 +78,33 @@ int detws_southbound_write(const char *name, uint32_t point, int32_t value)
 {
     const SouthboundDriver *d = detws_southbound_find(name);
     if (!d)
-        return SB_ERR_NOT_FOUND;
+        return Sb::SB_ERR_NOT_FOUND;
     if (!d->write)
-        return SB_ERR_UNSUPPORTED;
+        return Sb::SB_ERR_UNSUPPORTED;
     return d->write(d->ctx, point, value);
 }
 
 int detws_southbound_read_block(const char *name, uint32_t first, int32_t *out, size_t n)
 {
     if (!out || n == 0)
-        return SB_ERR_ARG;
+        return Sb::SB_ERR_ARG;
     const SouthboundDriver *d = detws_southbound_find(name);
     if (!d)
-        return SB_ERR_NOT_FOUND;
+        return Sb::SB_ERR_NOT_FOUND;
     if (!d->read_block)
-        return SB_ERR_UNSUPPORTED;
+        return Sb::SB_ERR_UNSUPPORTED;
     return d->read_block(d->ctx, first, out, n);
 }
 
 int detws_southbound_write_block(const char *name, uint32_t first, const int32_t *in, size_t n)
 {
     if (!in || n == 0)
-        return SB_ERR_ARG;
+        return Sb::SB_ERR_ARG;
     const SouthboundDriver *d = detws_southbound_find(name);
     if (!d)
-        return SB_ERR_NOT_FOUND;
+        return Sb::SB_ERR_NOT_FOUND;
     if (!d->write_block)
-        return SB_ERR_UNSUPPORTED;
+        return Sb::SB_ERR_UNSUPPORTED;
     return d->write_block(d->ctx, first, in, n);
 }
 

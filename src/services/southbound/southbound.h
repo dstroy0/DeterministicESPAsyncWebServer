@@ -31,14 +31,17 @@
 #if DETWS_ENABLE_SOUTHBOUND
 
 /** @brief Result codes. A driver may also return its own negative transport error, passed through. */
-enum
+// Southbound result codes. The API returns int (SB_OK / a count on success, or a negative code), so
+// the return stays int and these are integer constants in a namespacing struct - callers keep their
+// `< 0` and `== SB_OK` checks cast-free.
+struct Sb
 {
-    SB_OK = 0,               ///< success.
-    SB_ERR_NOT_FOUND = -1,   ///< no registered driver by that name.
-    SB_ERR_UNSUPPORTED = -2, ///< the driver does not implement that operation.
-    SB_ERR_ARG = -3,         ///< a null / out-of-range argument.
-    SB_ERR_FULL = -4,        ///< the registry is full (registration only).
-    SB_ERR_DUP = -5          ///< a driver with that name is already registered.
+    static constexpr int SB_OK = 0;               ///< success.
+    static constexpr int SB_ERR_NOT_FOUND = -1;   ///< no registered driver by that name.
+    static constexpr int SB_ERR_UNSUPPORTED = -2; ///< the driver does not implement that operation.
+    static constexpr int SB_ERR_ARG = -3;         ///< a null / out-of-range argument.
+    static constexpr int SB_ERR_FULL = -4;        ///< the registry is full (registration only).
+    static constexpr int SB_ERR_DUP = -5;         ///< a driver with that name is already registered.
 };
 
 /**

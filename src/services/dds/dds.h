@@ -30,22 +30,24 @@
 #if DETWS_ENABLE_DDS
 
 /** @brief RTPS submessage kinds (DDSI-RTPS 8.3.7) + the flag bit for little-endian. */
-enum
+// RTPS submessage kinds + the little-endian flag bit + fixed lengths: wire values (the flag is OR'd),
+// so integer constants in a namespacing struct.
+struct Rtps
 {
-    RTPS_SM_PAD = 0x01,
-    RTPS_SM_ACKNACK = 0x06,
-    RTPS_SM_HEARTBEAT = 0x07,
-    RTPS_SM_GAP = 0x08,
-    RTPS_SM_INFO_TS = 0x09,
-    RTPS_SM_INFO_SRC = 0x0c,
-    RTPS_SM_INFO_REPLY_IP4 = 0x0d,
-    RTPS_SM_INFO_DST = 0x0e,
-    RTPS_SM_INFO_REPLY = 0x0f,
-    RTPS_SM_DATA = 0x15,
-    RTPS_SM_DATA_FRAG = 0x16,
-    RTPS_FLAG_ENDIAN = 0x01, ///< E flag: submessage (and header) fields are little-endian.
-    RTPS_HEADER_LEN = 20,
-    RTPS_GUIDPREFIX_LEN = 12
+    static constexpr uint8_t RTPS_SM_PAD = 0x01;
+    static constexpr uint8_t RTPS_SM_ACKNACK = 0x06;
+    static constexpr uint8_t RTPS_SM_HEARTBEAT = 0x07;
+    static constexpr uint8_t RTPS_SM_GAP = 0x08;
+    static constexpr uint8_t RTPS_SM_INFO_TS = 0x09;
+    static constexpr uint8_t RTPS_SM_INFO_SRC = 0x0c;
+    static constexpr uint8_t RTPS_SM_INFO_REPLY_IP4 = 0x0d;
+    static constexpr uint8_t RTPS_SM_INFO_DST = 0x0e;
+    static constexpr uint8_t RTPS_SM_INFO_REPLY = 0x0f;
+    static constexpr uint8_t RTPS_SM_DATA = 0x15;
+    static constexpr uint8_t RTPS_SM_DATA_FRAG = 0x16;
+    static constexpr uint8_t RTPS_FLAG_ENDIAN = 0x01; ///< E flag: submessage (and header) fields are little-endian.
+    static constexpr uint8_t RTPS_HEADER_LEN = 20;
+    static constexpr uint8_t RTPS_GUIDPREFIX_LEN = 12;
 };
 
 /** @brief RTPS protocol version carried in the header (major, minor). */

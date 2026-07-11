@@ -33,12 +33,12 @@ void test_submessage_endianness(void)
     uint8_t body[8] = {0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
     uint8_t out[16];
     // Little-endian (E flag set): octetsToNextHeader = 0x0008 -> 08 00.
-    size_t n = detws_rtps_submessage(RTPS_SM_INFO_TS, RTPS_FLAG_ENDIAN, body, 8, out, sizeof(out));
+    size_t n = detws_rtps_submessage(Rtps::RTPS_SM_INFO_TS, Rtps::RTPS_FLAG_ENDIAN, body, 8, out, sizeof(out));
     const uint8_t le[] = {0x09, 0x01, 0x08, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88};
     TEST_ASSERT_EQUAL_size_t(sizeof(le), n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(le, out, n);
     // Big-endian (E flag clear): 00 08.
-    n = detws_rtps_submessage(RTPS_SM_DATA, 0x00, body, 8, out, sizeof(out));
+    n = detws_rtps_submessage(Rtps::RTPS_SM_DATA, 0x00, body, 8, out, sizeof(out));
     TEST_ASSERT_EQUAL_HEX8(0x00, out[2]);
     TEST_ASSERT_EQUAL_HEX8(0x08, out[3]);
 }
@@ -67,16 +67,16 @@ void test_parse_message(void)
     uint8_t msg[64];
     size_t n = detws_rtps_header(GUID, VENDOR, msg, sizeof(msg));
     uint8_t ts[8] = {0};
-    n += detws_rtps_submessage(RTPS_SM_INFO_TS, RTPS_FLAG_ENDIAN, ts, 8, msg + n, sizeof(msg) - n);
+    n += detws_rtps_submessage(Rtps::RTPS_SM_INFO_TS, Rtps::RTPS_FLAG_ENDIAN, ts, 8, msg + n, sizeof(msg) - n);
     uint8_t data[4] = {0xDE, 0xAD, 0xBE, 0xEF};
-    n += detws_rtps_submessage(RTPS_SM_DATA, RTPS_FLAG_ENDIAN, data, 4, msg + n, sizeof(msg) - n);
+    n += detws_rtps_submessage(Rtps::RTPS_SM_DATA, Rtps::RTPS_FLAG_ENDIAN, data, 4, msg + n, sizeof(msg) - n);
 
     Seen s = {0, {0}, {0}};
     TEST_ASSERT_TRUE(detws_rtps_parse(msg, n, collect, &s));
     TEST_ASSERT_EQUAL_INT(2, s.count);
-    TEST_ASSERT_EQUAL_HEX8(RTPS_SM_INFO_TS, s.ids[0]);
+    TEST_ASSERT_EQUAL_HEX8(Rtps::RTPS_SM_INFO_TS, s.ids[0]);
     TEST_ASSERT_EQUAL_size_t(8, s.lens[0]);
-    TEST_ASSERT_EQUAL_HEX8(RTPS_SM_DATA, s.ids[1]);
+    TEST_ASSERT_EQUAL_HEX8(Rtps::RTPS_SM_DATA, s.ids[1]);
     TEST_ASSERT_EQUAL_size_t(4, s.lens[1]);
 }
 
