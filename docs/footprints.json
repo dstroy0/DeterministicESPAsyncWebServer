@@ -346,8 +346,8 @@
     "example": "L7-Application/55.OpcUa",
     "flags": "-DDETWS_ENABLE_OPCUA=1",
     "board": "esp32dev",
-    "flash_bytes": 759117,
-    "ram_bytes": 76640
+    "flash_bytes": 759113,
+    "ram_bytes": 76616
   },
   "OPCUA+OPCUA_CLIENT": {
     "example": "L7-Application/56.OpcUaClient",
