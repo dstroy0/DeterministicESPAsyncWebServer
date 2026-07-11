@@ -2,6 +2,16 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`53f5b69`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53f5b696eb468cb4b5f4c2742f4f1ce57e743d65))
+
+### Testing
+
+- advanced HTTP/2 abuse attack (rapid-reset / CONTINUATION-flood / HPACK-bomb / PING-flood) ([`818d6b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/818d6b4e28ff4468a0d5b118cb2033f8605bc153))
+
 ## [5.95.10] - 2026-07-11
 
 <details>
