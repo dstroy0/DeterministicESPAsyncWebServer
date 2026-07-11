@@ -33,7 +33,8 @@
 #include <stdint.h>
 
 /** @brief Per-stream state (RFC 9113 sec 5.1, server side of a client-initiated stream). */
-enum
+// Per-stream lifecycle state (a mutually-exclusive internal state, not a wire value).
+enum class H2StreamState : uint8_t
 {
     H2_ST_IDLE = 0,
     H2_ST_OPEN,        ///< receiving (headers seen, no END_STREAM yet)
@@ -44,7 +45,7 @@ enum
 struct H2Stream
 {
     uint32_t id;         ///< stream identifier (0 = free slot)
-    uint8_t state;       ///< one of H2_ST_*
+    H2StreamState state; ///< lifecycle state
     int32_t send_window; ///< our remaining DATA flow window for this stream
 };
 

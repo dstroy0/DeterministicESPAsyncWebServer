@@ -30,18 +30,20 @@
 #define H2_FRAME_HEADER_LEN 9
 
 /** @brief Frame types (RFC 9113 sec 6). */
-enum
+// Frame type octet (RFC 9113 sec 6): wire values compared against a parsed type byte, so integer
+// constants in a namespacing struct.
+struct H2FrameType
 {
-    H2_DATA = 0x0,
-    H2_HEADERS = 0x1,
-    H2_PRIORITY = 0x2,
-    H2_RST_STREAM = 0x3,
-    H2_SETTINGS = 0x4,
-    H2_PUSH_PROMISE = 0x5,
-    H2_PING = 0x6,
-    H2_GOAWAY = 0x7,
-    H2_WINDOW_UPDATE = 0x8,
-    H2_CONTINUATION = 0x9,
+    static constexpr uint8_t H2_DATA = 0x0;
+    static constexpr uint8_t H2_HEADERS = 0x1;
+    static constexpr uint8_t H2_PRIORITY = 0x2;
+    static constexpr uint8_t H2_RST_STREAM = 0x3;
+    static constexpr uint8_t H2_SETTINGS = 0x4;
+    static constexpr uint8_t H2_PUSH_PROMISE = 0x5;
+    static constexpr uint8_t H2_PING = 0x6;
+    static constexpr uint8_t H2_GOAWAY = 0x7;
+    static constexpr uint8_t H2_WINDOW_UPDATE = 0x8;
+    static constexpr uint8_t H2_CONTINUATION = 0x9;
 };
 
 /** @brief Frame flags (meaning is per-type; RFC 9113 sec 6). */
@@ -51,34 +53,34 @@ enum
 #define H2_FLAG_PADDED 0x08      ///< DATA / HEADERS / PUSH_PROMISE
 #define H2_FLAG_PRIORITY 0x20    ///< HEADERS
 
-/** @brief SETTINGS parameter identifiers (RFC 9113 sec 6.5.2). */
-enum
+/** @brief SETTINGS parameter identifiers (RFC 9113 sec 6.5.2; the 16-bit wire id). */
+struct H2Setting
 {
-    H2_SETTINGS_HEADER_TABLE_SIZE = 0x1,
-    H2_SETTINGS_ENABLE_PUSH = 0x2,
-    H2_SETTINGS_MAX_CONCURRENT_STREAMS = 0x3,
-    H2_SETTINGS_INITIAL_WINDOW_SIZE = 0x4,
-    H2_SETTINGS_MAX_FRAME_SIZE = 0x5,
-    H2_SETTINGS_MAX_HEADER_LIST_SIZE = 0x6,
+    static constexpr uint16_t H2_SETTINGS_HEADER_TABLE_SIZE = 0x1;
+    static constexpr uint16_t H2_SETTINGS_ENABLE_PUSH = 0x2;
+    static constexpr uint16_t H2_SETTINGS_MAX_CONCURRENT_STREAMS = 0x3;
+    static constexpr uint16_t H2_SETTINGS_INITIAL_WINDOW_SIZE = 0x4;
+    static constexpr uint16_t H2_SETTINGS_MAX_FRAME_SIZE = 0x5;
+    static constexpr uint16_t H2_SETTINGS_MAX_HEADER_LIST_SIZE = 0x6;
 };
 
-/** @brief Error codes (RFC 9113 sec 7). */
-enum
+/** @brief Error codes (RFC 9113 sec 7; the 32-bit wire code). */
+struct H2Error
 {
-    H2_NO_ERROR = 0x0,
-    H2_PROTOCOL_ERROR = 0x1,
-    H2_INTERNAL_ERROR = 0x2,
-    H2_FLOW_CONTROL_ERROR = 0x3,
-    H2_SETTINGS_TIMEOUT = 0x4,
-    H2_STREAM_CLOSED = 0x5,
-    H2_FRAME_SIZE_ERROR = 0x6,
-    H2_REFUSED_STREAM = 0x7,
-    H2_CANCEL = 0x8,
-    H2_COMPRESSION_ERROR = 0x9,
-    H2_CONNECT_ERROR = 0xa,
-    H2_ENHANCE_YOUR_CALM = 0xb,
-    H2_INADEQUATE_SECURITY = 0xc,
-    H2_HTTP_1_1_REQUIRED = 0xd,
+    static constexpr uint32_t H2_NO_ERROR = 0x0;
+    static constexpr uint32_t H2_PROTOCOL_ERROR = 0x1;
+    static constexpr uint32_t H2_INTERNAL_ERROR = 0x2;
+    static constexpr uint32_t H2_FLOW_CONTROL_ERROR = 0x3;
+    static constexpr uint32_t H2_SETTINGS_TIMEOUT = 0x4;
+    static constexpr uint32_t H2_STREAM_CLOSED = 0x5;
+    static constexpr uint32_t H2_FRAME_SIZE_ERROR = 0x6;
+    static constexpr uint32_t H2_REFUSED_STREAM = 0x7;
+    static constexpr uint32_t H2_CANCEL = 0x8;
+    static constexpr uint32_t H2_COMPRESSION_ERROR = 0x9;
+    static constexpr uint32_t H2_CONNECT_ERROR = 0xa;
+    static constexpr uint32_t H2_ENHANCE_YOUR_CALM = 0xb;
+    static constexpr uint32_t H2_INADEQUATE_SECURITY = 0xc;
+    static constexpr uint32_t H2_HTTP_1_1_REQUIRED = 0xd;
 };
 
 /** @brief A parsed frame header. */

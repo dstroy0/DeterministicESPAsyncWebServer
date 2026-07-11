@@ -20,13 +20,13 @@ void tearDown()
 void test_header_roundtrip()
 {
     uint8_t b[16];
-    TEST_ASSERT_EQUAL_INT(9, (int)h2_write_header(b, sizeof b, 0x123456, H2_HEADERS, 0x05, 0x7FFFFFFF));
+    TEST_ASSERT_EQUAL_INT(9, (int)h2_write_header(b, sizeof b, 0x123456, H2FrameType::H2_HEADERS, 0x05, 0x7FFFFFFF));
     const uint8_t exp[9] = {0x12, 0x34, 0x56, 0x01, 0x05, 0x7F, 0xFF, 0xFF, 0xFF};
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, b, 9);
     H2FrameHeader h;
     TEST_ASSERT_TRUE(h2_parse_header(b, 9, &h));
     TEST_ASSERT_EQUAL_UINT32(0x123456, h.length);
-    TEST_ASSERT_EQUAL_UINT8(H2_HEADERS, h.type);
+    TEST_ASSERT_EQUAL_UINT8(H2FrameType::H2_HEADERS, h.type);
     TEST_ASSERT_EQUAL_UINT8(0x05, h.flags);
     TEST_ASSERT_EQUAL_UINT32(0x7FFFFFFF, h.stream_id);
 
@@ -36,12 +36,12 @@ void test_header_roundtrip()
     TEST_ASSERT_EQUAL_UINT32(0x7FFFFFFF, h.stream_id);
 
     // Length larger than 24 bits is refused.
-    TEST_ASSERT_EQUAL_INT(0, (int)h2_write_header(b, sizeof b, 0x1000000, H2_DATA, 0, 1));
+    TEST_ASSERT_EQUAL_INT(0, (int)h2_write_header(b, sizeof b, 0x1000000, H2FrameType::H2_DATA, 0, 1));
 }
 
 void test_settings_build_parse()
 {
-    const uint16_t ids[2] = {H2_SETTINGS_HEADER_TABLE_SIZE, H2_SETTINGS_INITIAL_WINDOW_SIZE};
+    const uint16_t ids[2] = {H2Setting::H2_SETTINGS_HEADER_TABLE_SIZE, H2Setting::H2_SETTINGS_INITIAL_WINDOW_SIZE};
     const uint32_t vals[2] = {4096, 65535};
     uint8_t f[64];
     size_t n = h2_build_settings(f, sizeof f, ids, vals, 2);
@@ -87,12 +87,12 @@ void test_control_frames()
     TEST_ASSERT_EQUAL_UINT8_ARRAY(wu, b, 13);
 
     // RST_STREAM stream 3, CANCEL(8)
-    TEST_ASSERT_EQUAL_INT(13, (int)h2_build_rst_stream(b, sizeof b, 3, H2_CANCEL));
+    TEST_ASSERT_EQUAL_INT(13, (int)h2_build_rst_stream(b, sizeof b, 3, H2Error::H2_CANCEL));
     const uint8_t rst[13] = {0, 0, 4, 0x03, 0, 0, 0, 0, 3, 0, 0, 0, 0x08};
     TEST_ASSERT_EQUAL_UINT8_ARRAY(rst, b, 13);
 
     // GOAWAY last=5, NO_ERROR
-    TEST_ASSERT_EQUAL_INT(17, (int)h2_build_goaway(b, sizeof b, 5, H2_NO_ERROR));
+    TEST_ASSERT_EQUAL_INT(17, (int)h2_build_goaway(b, sizeof b, 5, H2Error::H2_NO_ERROR));
     const uint8_t ga[17] = {0, 0, 8, 0x07, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0};
     TEST_ASSERT_EQUAL_UINT8_ARRAY(ga, b, 17);
 
@@ -130,9 +130,9 @@ void test_settings_all_ids_and_build_guards()
     H2Settings s;
     h2_settings_defaults(&s);
     // Every recognized setting id with a valid value, plus an unknown id (ignored).
-    const uint16_t ids[6] = {H2_SETTINGS_ENABLE_PUSH,          H2_SETTINGS_MAX_CONCURRENT_STREAMS,
-                             H2_SETTINGS_INITIAL_WINDOW_SIZE,  H2_SETTINGS_MAX_FRAME_SIZE,
-                             H2_SETTINGS_MAX_HEADER_LIST_SIZE, 0x99};
+    const uint16_t ids[6] = {H2Setting::H2_SETTINGS_ENABLE_PUSH,          H2Setting::H2_SETTINGS_MAX_CONCURRENT_STREAMS,
+                             H2Setting::H2_SETTINGS_INITIAL_WINDOW_SIZE,  H2Setting::H2_SETTINGS_MAX_FRAME_SIZE,
+                             H2Setting::H2_SETTINGS_MAX_HEADER_LIST_SIZE, 0x99};
     const uint32_t vals[6] = {1, 100, 65535, 16384, 8192, 0};
     uint8_t f[128];
     size_t n = h2_build_settings(f, sizeof f, ids, vals, 6);
