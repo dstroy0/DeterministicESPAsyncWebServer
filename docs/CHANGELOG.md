@@ -6,8 +6,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`6adc51e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6adc51e9805f9283957e77c89066c18c169bcd01))
 - update CHANGELOG.md [skip ci] ([`9842c30`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9842c30c29ddcae896d27d443f90bf8171d14ec0))
 - update CHANGELOG.md [skip ci] ([`53f5b69`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53f5b696eb468cb4b5f4c2742f4f1ce57e743d65))
+
+### Documentation
+
+- device HTTP/2 throughput bench - HTTP/2 now OK/OK/OK ([`d82e6cb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d82e6cbd3d7919cb31947bffe4d6e333ff484728))
 
 ### Testing
 
