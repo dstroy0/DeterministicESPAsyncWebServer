@@ -4827,9 +4827,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (detws_rtps_parse(msg, n, collect, &s))</code>
       * <code>Assert equal int (2, s.count)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(RTPS_SM_INFO_TS, s.ids[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Rtps::RTPS_SM_INFO_TS, s.ids[0]);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(8, s.lens[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(RTPS_SM_DATA, s.ids[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Rtps::RTPS_SM_DATA, s.ids[1]);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(4, s.lens[1]);</code>
   </details>
 
@@ -25862,13 +25862,13 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Duplicate name rejected.
     * **Assertions**:
-      * <code>Assert equal int (SB_OK, detws_southbound_register(&g_full))</code>
+      * <code>Assert equal int (Sb::SB_OK, detws_southbound_register(&g_full))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, detws_southbound_count());</code>
       * <code>Assert equal ptr (&g_full, detws_southbound_find("fake"))</code>
       * <code>Assert null (detws_southbound_find("nope"))</code>
-      * <code>Assert equal int (SB_ERR_DUP, detws_southbound_register(&g_full))</code>
-      * <code>Assert equal int (SB_ERR_ARG, detws_southbound_register(nullptr))</code>
-      * <code>Assert equal int (SB_ERR_ARG, detws_southbound_register(&noname))</code>
+      * <code>Assert equal int (Sb::SB_ERR_DUP, detws_southbound_register(&g_full))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, detws_southbound_register(nullptr))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, detws_southbound_register(&noname))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25876,14 +25876,14 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Unknown driver.
     * **Assertions**:
-      * <code>Assert equal int (SB_OK, detws_southbound_read("fake", 3, &v))</code>
+      * <code>Assert equal int (Sb::SB_OK, detws_southbound_read("fake", 3, &v))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(30, v);</code>
-      * <code>Assert equal int (SB_OK, detws_southbound_write("fake", 3, 999))</code>
-      * <code>Assert equal int (SB_OK, detws_southbound_read("fake", 3, &v))</code>
+      * <code>Assert equal int (Sb::SB_OK, detws_southbound_write("fake", 3, 999))</code>
+      * <code>Assert equal int (Sb::SB_OK, detws_southbound_read("fake", 3, &v))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(999, v);</code>
-      * <code>Assert equal int (SB_ERR_NOT_FOUND, detws_southbound_read("x", 0, &v))</code>
-      * <code>Assert equal int (SB_ERR_NOT_FOUND, detws_southbound_write("x", 0, 0))</code>
-      * <code>Assert equal int (SB_ERR_ARG, detws_southbound_read("fake", 0, nullptr))</code>
+      * <code>Assert equal int (Sb::SB_ERR_NOT_FOUND, detws_southbound_read("x", 0, &v))</code>
+      * <code>Assert equal int (Sb::SB_ERR_NOT_FOUND, detws_southbound_write("x", 0, 0))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, detws_southbound_read("fake", 0, nullptr))</code>
       * <code>Assert equal int (-42, detws_southbound_read("fake", 0, &v))</code>
   </details>
 
@@ -25897,8 +25897,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_INT32(50, out[3]);</code>
       * <code>Assert equal int (3, detws_southbound_write_block("fake", 5, in, 3))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(8, v);</code>
-      * <code>Assert equal int (SB_ERR_ARG, detws_southbound_read_block("fake", 0, out, 0))</code>
-      * <code>Assert equal int (SB_ERR_ARG, detws_southbound_write_block("fake", 0, nullptr, 3))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, detws_southbound_read_block("fake", 0, out, 0))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, detws_southbound_write_block("fake", 0, nullptr, 3))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25906,10 +25906,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A driver that only implements single-point read.
     * **Assertions**:
-      * <code>Assert equal int (SB_OK, detws_southbound_read("ro", 0, &v))</code>
-      * <code>Assert equal int (SB_ERR_UNSUPPORTED, detws_southbound_write("ro", 0, 1))</code>
-      * <code>Assert equal int (SB_ERR_UNSUPPORTED, detws_southbound_read_block("ro", 0, out, 2))</code>
-      * <code>Assert equal int (SB_ERR_UNSUPPORTED, detws_southbound_write_block("ro", 0, out, 2))</code>
+      * <code>Assert equal int (Sb::SB_OK, detws_southbound_read("ro", 0, &v))</code>
+      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, detws_southbound_write("ro", 0, 1))</code>
+      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, detws_southbound_read_block("ro", 0, out, 2))</code>
+      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, detws_southbound_write_block("ro", 0, out, 2))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25917,7 +25917,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Fill the registry with distinct-named drivers, then overflow.
     * **Assertions**:
-      * <code>Assert equal int (SB_ERR_FULL, detws_southbound_register(&drv[i]))</code>
+      * <code>Assert equal int (Sb::SB_ERR_FULL, detws_southbound_register(&drv[i]))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(8, detws_southbound_count());</code>
       * <code>Assert equal int (8, registered)</code>
   </details>
@@ -25928,8 +25928,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Dispatch not found guards
     * **Assertions**:
       * <code>Assert null (detws_southbound_find("nope"))</code>
-      * <code>Assert equal int (SB_ERR_NOT_FOUND, detws_southbound_read("nope", 0, &v))</code>
-      * <code>Assert equal int (SB_ERR_NOT_FOUND, detws_southbound_write("nope", 0, 42))</code>
+      * <code>Assert equal int (Sb::SB_ERR_NOT_FOUND, detws_southbound_read("nope", 0, &v))</code>
+      * <code>Assert equal int (Sb::SB_ERR_NOT_FOUND, detws_southbound_write("nope", 0, 42))</code>
   </details>
 
 </details>
