@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.1] - 2026-07-11
+
+<details>
+<summary><b>Show Changelog for version 5.95.1 - 2026-07-11</b></summary>
 
 ### Bug Fixes
 
@@ -11,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`d7c603e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7c603e9a32f9bf7eac66c75a15dc1f18ef5cf1b))
 - update CHANGELOG.md [skip ci] ([`33fd2a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33fd2a8ebea3314397a699d79c27f60f8ec44fc3))
 - update CHANGELOG.md [skip ci] ([`d7bc20f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7bc20f59960c304e230eba5a242e76bf86e1949))
 - update CHANGELOG.md [skip ci] ([`ac3b3ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac3b3ce08798297bf1acbe56757de239e07cb4bc))
@@ -19,8 +23,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update CHANGELOG.md [skip ci] ([`0687884`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06878849e3c9758febd096bb7baeb0dc221771ca))
 - update CHANGELOG.md [skip ci] ([`a3366aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3366aaea64be2c86116b65bc16c6a6b80756e2c))
 
+### Changes
+
+- Bump version: 5.95.0 → 5.95.1 ([`7ead995`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ead99521b7993695f1d56e71e77c1e21803ea0c))
+
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`6c7a905`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c7a905be7fd0d9aaa612f9b19d159978826c373))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`db1f69e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db1f69e617b16b548ed7e586f9d0d3af06417f18))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`46fc06b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/46fc06b92d0c7fba70eea4ba459f2c6a6ec1b69c))
 - update ESP32 build footprints [skip ci] ([`e51517d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e51517d619a2f89a77aa292a90de8a59eb18c3de))
@@ -39,6 +48,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - scoped enum (enum class 3/N) ([`33a21a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33a21a26c3f60003763bd542b5a1b1aaaa8b0c40))
 - scoped enums + migration tool (enum class 2/N) ([`0897efa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0897efa8d6944b42c852af88a4d4b46f51fc987d))
 - scoped enums (enum class migration 1/N) ([`ed44ead`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed44eadae714d3695864ac29cc890155f305445c))
+
+</details>
 
 ## [5.95.0] - 2026-07-10
 
