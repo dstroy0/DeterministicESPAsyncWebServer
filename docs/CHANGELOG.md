@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`b8d9671`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b8d9671773a8ae79e792deb6eaab35af44085383))
 - update CHANGELOG.md [skip ci] ([`de81d4f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/de81d4f3ae6a134bdb048edd9b4d6f237d0584f7))
 
 ### Changes
@@ -14,6 +15,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- mark HTTP/2 + HTTP/3 PSRAM path unblocked (arena verified on HW) ([`1ebd523`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ebd5235a1315b87b435104aeb770d4cec4abb23))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4c33038`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c330381caaad0f7727bf7d3dca3a1198bb88a82))
 - update ESP32 build footprints [skip ci] ([`4049955`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4049955d4f0a1b9dc48b05fb5555045ac32264a6))
 
 ## [5.95.8] - 2026-07-11
