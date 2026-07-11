@@ -2,16 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.7] - 2026-07-11
+
+<details>
+<summary><b>Show Changelog for version 5.95.7 - 2026-07-11</b></summary>
+
+### Bug Fixes
+
+- free WS/SSE slot binding on teardown (permanent-DoS slot leak) ([`fe07ecd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe07ecd237f78a1db1a34b7755b15ce328c3f192))
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`6d97c5c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d97c5ca96f250aced06b3f654d23376d8896784))
+- update CHANGELOG.md [skip ci] ([`40190a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/40190a1963aa3cee22b108ecf5dade865709c0f5))
 - update CHANGELOG.md [skip ci] ([`c81b61c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c81b61c845401be4851ca3ebeab88c2228ad60a4))
 - update CHANGELOG.md [skip ci] ([`b9e5048`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b9e5048c9fa208fd1d6ed3ea54f29c7613a647d0))
 - update CHANGELOG.md [skip ci] ([`1ab979e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ab979e1b9ab38d81c954d13d23f458439f6b202))
 
+### Changes
+
+- Bump version: 5.95.6 → 5.95.7 ([`0158268`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/015826869d12884f65166d839944fa9e0b93379e))
+
 ### Documentation
 
+- SSE done on all three dimensions (interop/bench/attack) ([`47189f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47189f9e68f341144217b37860b192814d5b96ef))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`929374a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/929374a876415c5818a24f7ee56f50a2e440eb4c))
 - add COVERAGE_GAP.md - the interop/bench/attack gap-analysis backlog ([`d0d41af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0d41af9f8095378e05d702004e9bee7543fd856))
 - update ESP32 build footprints [skip ci] ([`364b8ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/364b8ab789e7f9bb3c4286cd93db32a92bf16bce))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`849ee26`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/849ee26ff5b75fca62a9e692b0bb75925f84f31d))
@@ -20,6 +35,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 - add mime_type to the CCOUNT bench + roadmap SWAR constant-time base64 decode ([`cc0f0d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc0f0d0aced861e7712fa83f11e3fbb0472ff4c4))
 - cycle-accurate CCOUNT device microbench (/bench) + recorded auth/ETag primitive costs ([`a24aefe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a24aefe0ebde93c6199af0cfdcef624ebf802d09))
+
+### Testing
+
+- SSE exhaustion + churn attacks; settle-recheck liveness oracle ([`29a5b68`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/29a5b685ea0a9484abf17cfd137dd2d98030ccde))
+- SSE peer - WHATWG EventSource parser vs the device ([`d597c7d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d597c7d4d5a9fe68f8e8b810336471fa41bd4336))
+
+</details>
 
 ## [5.95.6] - 2026-07-11
 
