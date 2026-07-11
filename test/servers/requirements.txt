@@ -29,3 +29,4 @@ pyftpdlib>=1.5        # ftp peer (RFC 959 reference server; device-as-client STO
 aiosmtpd>=1.4         # smtp peer (RFC 5321 reference server; device-as-client alert-email round trip)
 ntplib>=0.4          # ntp peer (RFC 5905 client; queries the device's NTP server on UDP/123)
 dnspython>=2.4       # dns peer (RFC 1035 client; queries the device's authoritative DNS server on UDP/53)
+PyJWT>=2.8           # jwt peer (mints HS256 tokens to validate the device's bearer-auth verifier)

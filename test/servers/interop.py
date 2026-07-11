@@ -29,6 +29,7 @@ from peers import (
     dns_peer,
     ftp_peer,
     http_peer,
+    jwt_peer,
     modbus_peer,
     mqtt_peer,
     mtconnect_peer,
@@ -67,6 +68,7 @@ _MODULES = [
     nats_peer,
     stomp_peer,
     statsd_peer,
+    jwt_peer,
 ]
 
 
