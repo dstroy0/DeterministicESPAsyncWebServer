@@ -127,7 +127,7 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
             const uint8_t sc[8] = {1, 2, 3, 4, 5, 6, 7, 8};
             size_t chal_n = ntlmssp_challenge(chal, sc);
             size_t sc_n = spnego_wrap_authenticate(chal, chal_n, sctok, sizeof(sctok)); // NegTokenResp shape
-            w32(resp + 8, SMB2_STATUS_MORE_PROCESSING_REQUIRED);
+            w32(resp + 8, Smb2Status::SMB2_STATUS_MORE_PROCESSING_REQUIRED);
             w16(b + 4, 72); // SecurityBufferOffset
             w16(b + 6, (uint16_t)sc_n);
             memcpy(resp + 72, sctok, sc_n);
@@ -145,7 +145,7 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
                           m->session_id);
         w32(resp + 8, m->tc_status);
         w16(b + 0, 16); // StructureSize
-        b[2] = SMB2_SHARE_TYPE_DISK;
+        b[2] = Smb2ShareType::SMB2_SHARE_TYPE_DISK;
         rlen = 64 + 16;
         break;
     case Smb2Command::SMB2_CREATE:
@@ -164,7 +164,7 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
         smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_READ, 1, h.message_id, m->tree_id, m->session_id);
         if (off >= m->file_data_len)
         {
-            w32(resp + 8, SMB2_STATUS_END_OF_FILE);
+            w32(resp + 8, Smb2Status::SMB2_STATUS_END_OF_FILE);
             w16(b + 0, 17); // StructureSize, no data
             rlen = 64 + 16;
         }
@@ -205,7 +205,7 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     default:
         return -1;
     }
-    resp[16] |= 0x01; // SMB2_FLAGS_SERVER_TO_REDIR
+    resp[16] |= 0x01; // Smb2HeaderFlags::SMB2_FLAGS_SERVER_TO_REDIR
     if (!(m->cut_after_negotiate && h.command != Smb2Command::SMB2_NEGOTIATE))
         append_frame(m, resp, rlen);
     return (int)n;
@@ -232,9 +232,9 @@ static Mock make_mock()
     for (int i = 0; i < 16; i++)
         m.file_id[i] = (uint8_t)(0xE0 + i);
     m.file_size = 4096;
-    m.auth_status = SMB2_STATUS_SUCCESS;
-    m.tc_status = SMB2_STATUS_SUCCESS;
-    m.create_status = SMB2_STATUS_SUCCESS;
+    m.auth_status = Smb2Status::SMB2_STATUS_SUCCESS;
+    m.tc_status = Smb2Status::SMB2_STATUS_SUCCESS;
+    m.create_status = Smb2Status::SMB2_STATUS_SUCCESS;
     return m;
 }
 
@@ -248,8 +248,8 @@ static SmbConfig make_cfg()
     c.workstation = "ESP32";
     c.share = "\\\\nc01\\programs";
     c.path = "A.NC";
-    c.desired_access = SMB2_FILE_GENERIC_READ;
-    c.disposition = SMB2_FILE_OPEN;
+    c.desired_access = Smb2Access::SMB2_FILE_GENERIC_READ;
+    c.disposition = Smb2Disposition::SMB2_FILE_OPEN;
     return c;
 }
 
@@ -373,8 +373,8 @@ void test_write_file()
     m.file_data_len = 0;
     m.file_size = 0;
     SmbConfig cfg = make_cfg();
-    cfg.desired_access = SMB2_FILE_GENERIC_WRITE;
-    cfg.disposition = SMB2_FILE_OVERWRITE_IF;
+    cfg.desired_access = Smb2Access::SMB2_FILE_GENERIC_WRITE;
+    cfg.disposition = Smb2Disposition::SMB2_FILE_OVERWRITE_IF;
     SmbHandle h;
     TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, open_ok(&m, &cfg, &h));
 

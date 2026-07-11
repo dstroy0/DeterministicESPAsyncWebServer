@@ -58,8 +58,8 @@ struct SmbConfig
     const char *workstation; ///< client name to announce (null => none)
     const char *share;       ///< the tree path, UNC `\\server\share`
     const char *path;        ///< file name relative to the share root (e.g. `PROGRAMS\A.NC`)
-    uint32_t desired_access; ///< SMB2_FILE_GENERIC_READ and/or _WRITE
-    uint32_t disposition;    ///< SMB2_FILE_OPEN / _OPEN_IF / _OVERWRITE_IF / _CREATE
+    uint32_t desired_access; ///< Smb2Access::SMB2_FILE_GENERIC_READ and/or _WRITE
+    uint32_t disposition;    ///< Smb2Disposition::SMB2_FILE_OPEN / _OPEN_IF / _OVERWRITE_IF / _CREATE
 };
 
 /** @brief An open file on an authenticated session; the ids thread the follow-up requests. */

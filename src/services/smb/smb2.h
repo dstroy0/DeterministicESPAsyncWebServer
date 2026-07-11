@@ -60,73 +60,85 @@ enum class Smb2Dialect : uint16_t
     SMB2_DIALECT_0311 = 0x0311, ///< SMB 3.1.1
 };
 
-enum
+// These are SMB2 wire constants: flag words that get OR'd/AND'd and field values compared against the
+// uint8/16/32 wire fields of a parsed header. They live in namespacing structs of static constexpr
+// members - not enum class, which would force a cast at every bitwise op and every wire compare.
+
+/** @brief Fixed SMB2 sync header size (MS-SMB2 §2.2.1). */
+static constexpr uint32_t SMB2_HEADER_SIZE = 64;
+
+/** @brief NEGOTIATE / SESSION_SETUP SecurityMode flags (MS-SMB2 §2.2.3). */
+struct Smb2SecurityMode
 {
-    SMB2_NEGOTIATE_SIGNING_ENABLED = 0x0001,
-    SMB2_NEGOTIATE_SIGNING_REQUIRED = 0x0002,
-    SMB2_FLAGS_SERVER_TO_REDIR = 0x00000001, ///< set on a response (server -> client)
-    SMB2_HEADER_SIZE = 64,
+    static constexpr uint16_t SMB2_NEGOTIATE_SIGNING_ENABLED = 0x0001;
+    static constexpr uint16_t SMB2_NEGOTIATE_SIGNING_REQUIRED = 0x0002;
+};
+
+/** @brief SMB2 header Flags field (MS-SMB2 §2.2.1.2). */
+struct Smb2HeaderFlags
+{
+    static constexpr uint32_t SMB2_FLAGS_SERVER_TO_REDIR = 0x00000001; ///< set on a response (server -> client)
 };
 
 /** @brief SESSION_SETUP response SessionFlags (MS-SMB2 §2.2.6). */
-enum
+struct Smb2SessionFlags
 {
-    SMB2_SESSION_FLAG_IS_GUEST = 0x0001,
-    SMB2_SESSION_FLAG_IS_NULL = 0x0002,
-    SMB2_SESSION_FLAG_ENCRYPT_DATA = 0x0004,
+    static constexpr uint16_t SMB2_SESSION_FLAG_IS_GUEST = 0x0001;
+    static constexpr uint16_t SMB2_SESSION_FLAG_IS_NULL = 0x0002;
+    static constexpr uint16_t SMB2_SESSION_FLAG_ENCRYPT_DATA = 0x0004;
 };
 
 /** @brief NT status values seen in the SMB2 header during the SESSION_SETUP exchange. */
-enum
+struct Smb2Status
 {
-    SMB2_STATUS_SUCCESS = 0x00000000,
-    SMB2_STATUS_MORE_PROCESSING_REQUIRED = 0xC0000016, ///< server wants the next SESSION_SETUP round
-    SMB2_STATUS_END_OF_FILE = 0xC0000011,              ///< a READ at/past the end of the file
+    static constexpr uint32_t SMB2_STATUS_SUCCESS = 0x00000000;
+    static constexpr uint32_t SMB2_STATUS_MORE_PROCESSING_REQUIRED = 0xC0000016; ///< server wants the next round
+    static constexpr uint32_t SMB2_STATUS_END_OF_FILE = 0xC0000011;              ///< a READ at/past end of file
 };
 
 /** @brief TREE_CONNECT response ShareType (MS-SMB2 §2.2.10). */
-enum
+struct Smb2ShareType
 {
-    SMB2_SHARE_TYPE_DISK = 0x01,
-    SMB2_SHARE_TYPE_PIPE = 0x02,
-    SMB2_SHARE_TYPE_PRINT = 0x03,
+    static constexpr uint8_t SMB2_SHARE_TYPE_DISK = 0x01;
+    static constexpr uint8_t SMB2_SHARE_TYPE_PIPE = 0x02;
+    static constexpr uint8_t SMB2_SHARE_TYPE_PRINT = 0x03;
 };
 
 /** @brief CREATE DesiredAccess masks (MS-DTYP ACCESS_MASK; the common file rights). */
-enum
+struct Smb2Access
 {
-    SMB2_FILE_READ_DATA = 0x00000001,
-    SMB2_FILE_WRITE_DATA = 0x00000002,
-    SMB2_FILE_APPEND_DATA = 0x00000004,
-    SMB2_FILE_READ_ATTRIBUTES = 0x00000080,
-    SMB2_FILE_GENERIC_READ = 0x00120089,  ///< READ_CONTROL|SYNCHRONIZE|READ_ATTRIBUTES|READ_EA|READ_DATA
-    SMB2_FILE_GENERIC_WRITE = 0x00120116, ///< READ_CONTROL|SYNCHRONIZE|WRITE_ATTRIBUTES|WRITE_EA|APPEND|WRITE_DATA
+    static constexpr uint32_t SMB2_FILE_READ_DATA = 0x00000001;
+    static constexpr uint32_t SMB2_FILE_WRITE_DATA = 0x00000002;
+    static constexpr uint32_t SMB2_FILE_APPEND_DATA = 0x00000004;
+    static constexpr uint32_t SMB2_FILE_READ_ATTRIBUTES = 0x00000080;
+    static constexpr uint32_t SMB2_FILE_GENERIC_READ = 0x00120089;  ///< RC|SYNC|READ_ATTR|READ_EA|READ_DATA
+    static constexpr uint32_t SMB2_FILE_GENERIC_WRITE = 0x00120116; ///< RC|SYNC|WRITE_ATTR|WRITE_EA|APPEND|WRITE
 };
 
 /** @brief CREATE ShareAccess (MS-SMB2 §2.2.13). */
-enum
+struct Smb2ShareAccess
 {
-    SMB2_FILE_SHARE_READ = 0x01,
-    SMB2_FILE_SHARE_WRITE = 0x02,
-    SMB2_FILE_SHARE_DELETE = 0x04,
+    static constexpr uint32_t SMB2_FILE_SHARE_READ = 0x01;
+    static constexpr uint32_t SMB2_FILE_SHARE_WRITE = 0x02;
+    static constexpr uint32_t SMB2_FILE_SHARE_DELETE = 0x04;
 };
 
 /** @brief CREATE CreateDisposition (MS-SMB2 §2.2.13). */
-enum
+struct Smb2Disposition
 {
-    SMB2_FILE_SUPERSEDE = 0,
-    SMB2_FILE_OPEN = 1,      ///< open an existing file, fail if absent
-    SMB2_FILE_CREATE = 2,    ///< create, fail if it exists
-    SMB2_FILE_OPEN_IF = 3,   ///< open, create if absent
-    SMB2_FILE_OVERWRITE = 4, ///< open + truncate, fail if absent
-    SMB2_FILE_OVERWRITE_IF = 5,
+    static constexpr uint32_t SMB2_FILE_SUPERSEDE = 0;
+    static constexpr uint32_t SMB2_FILE_OPEN = 1;      ///< open an existing file, fail if absent
+    static constexpr uint32_t SMB2_FILE_CREATE = 2;    ///< create, fail if it exists
+    static constexpr uint32_t SMB2_FILE_OPEN_IF = 3;   ///< open, create if absent
+    static constexpr uint32_t SMB2_FILE_OVERWRITE = 4; ///< open + truncate, fail if absent
+    static constexpr uint32_t SMB2_FILE_OVERWRITE_IF = 5;
 };
 
 /** @brief CREATE CreateOptions (MS-SMB2 §2.2.13; the two we set). */
-enum
+struct Smb2CreateOptions
 {
-    SMB2_FILE_DIRECTORY_FILE = 0x00000001,
-    SMB2_FILE_NON_DIRECTORY_FILE = 0x00000040,
+    static constexpr uint32_t SMB2_FILE_DIRECTORY_FILE = 0x00000001;
+    static constexpr uint32_t SMB2_FILE_NON_DIRECTORY_FILE = 0x00000040;
 };
 
 /** @brief Parsed SMB2 sync header. */
