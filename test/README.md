@@ -15897,9 +15897,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Full sample-cursor header.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT64(1, detws_mtc_sample_buffer_add(&b, DETWS_MTC_SAMPLE, "Position", "xpos", "T1", "1.0"));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT64(2, detws_mtc_sample_buffer_add(&b, DETWS_MTC_SAMPLE, "Position", "xpos", "T2", "2.0"));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT64(3, detws_mtc_sample_buffer_add(&b, DETWS_MTC_EVENT, "Execution", "exec", "T3", "ACTIVE"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(strlen(buf), n);</code>
       * <code>Assert true (contains(buf, "instanceId=\\"1500\\" version=\\"1.4\\" bufferSize=\\""))</code>
@@ -18804,8 +18804,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A normally-booted (valid/undefined) image never rolls back.
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OTA_WAIT, detws_ota_decide(DETWS_OTA_IMG_VALID, false, 999999, 30000))</code>
-      * <code>Assert equal int (DETWS_OTA_WAIT, detws_ota_decide(DETWS_OTA_IMG_UNDEFINED, false, 999999, 30000))</code>
+      * <code>Assert equal int (DetwsOtaAction::DETWS_OTA_WAIT, detws_ota_decide(DETWS_OTA_IMG_VALID, false, 999999, 30000))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_WAIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18813,7 +18813,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Pending self test ok commits
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OTA_COMMIT, detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, true, 1000, 30000))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_COMMIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18821,7 +18821,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Pending within window waits
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OTA_WAIT, detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, false, 5000, 30000))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_WAIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18829,8 +18829,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Pending window elapsed rolls back
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OTA_ROLLBACK, detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, false, 30000, 30000))</code>
-      * <code>Assert equal int (DETWS_OTA_ROLLBACK, detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, false, 40000, 30000))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_ROLLBACK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_ROLLBACK,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18838,7 +18838,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A passing self-test commits even past the window.
     * **Assertions**:
-      * <code>Assert equal int (DETWS_OTA_COMMIT, detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, true, 99999, 30000))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_COMMIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18847,8 +18847,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: On a host build there are no OTA partitions: img_state reports UNDEFINED and the
     * **Assertions**:
       * <code>Assert equal int (DETWS_OTA_IMG_UNDEFINED, detws_ota_img_state())</code>
-      * <code>Assert equal int (DETWS_OTA_WAIT, detws_ota_rollback_tick(true))</code>
-      * <code>Assert equal int (DETWS_OTA_WAIT, detws_ota_rollback_tick(false))</code>
+      * <code>Assert equal int (DetwsOtaAction::DETWS_OTA_WAIT, detws_ota_rollback_tick(true))</code>
+      * <code>Assert equal int (DetwsOtaAction::DETWS_OTA_WAIT, detws_ota_rollback_tick(false))</code>
   </details>
 
 </details>
@@ -24100,7 +24100,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Parse response ok
     * **Assertions**:
-      * <code>Assert equal int (SIGFOX_OK, sigfox_parse_response("OK\\r\\n", 4))</code>
+      * <code>Assert equal int (sigfox_result::SIGFOX_OK, sigfox_parse_response("OK\\r\\n", 4))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24108,7 +24108,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Parse response error
     * **Assertions**:
-      * <code>Assert equal int (SIGFOX_ERROR, sigfox_parse_response("ERROR\\r\\n", 7))</code>
+      * <code>Assert equal int (sigfox_result::SIGFOX_ERROR, sigfox_parse_response("ERROR\\r\\n", 7))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24116,8 +24116,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Parse response pending
     * **Assertions**:
-      * <code>Assert equal int (SIGFOX_PENDING, sigfox_parse_response("AT$SF=AB12\\r\\n", 12))</code>
-      * <code>Assert equal int (SIGFOX_PENDING, sigfox_parse_response("", 0))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(sigfox_result::SIGFOX_PENDING,</code>
+      * <code>Assert equal int (sigfox_result::SIGFOX_PENDING, sigfox_parse_response("", 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24125,7 +24125,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: If a buffer holds both (e.g. an echoed "OK" token then an ERROR), ERROR is reported.
     * **Assertions**:
-      * <code>Assert equal int (SIGFOX_ERROR, sigfox_parse_response(both, (uint16_t)strlen(both)))</code>
+      * <code>Assert equal int (sigfox_result::SIGFOX_ERROR, sigfox_parse_response(both, (uint16_t)strlen(both)))</code>
   </details>
 
 </details>
@@ -28603,7 +28603,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Format types
     * **Assertions**:
-      * <code>Assert true (statsd_format(out, sizeof(out), "api.hits", "1", STATSD_COUNTER, 1.0f, nullptr))</code>
+      * <code>Assert true (statsd_format(out, sizeof(out), "api.hits", "1", StatsdType::STATSD_COUNTER, 1.0f, nullptr))</code>
       * <code>Assert equal string ("api.hits:1|c", out)</code>
       * <code>Assert equal string ("temp:42|g", out)</code>
       * <code>Assert equal string ("req.latency:120|ms", out)</code>
@@ -28635,11 +28635,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Format guards
     * **Assertions**:
-      * <code>Assert equal uint (0, statsd_format(out, sizeof(out), "x", "1", 'z', 1.0f, nullptr))</code>
-      * <code>Assert equal uint (0, statsd_format(out, sizeof(out), nullptr, "1", STATSD_COUNTER, 1.0f, nullptr))</code>
-      * <code>Assert equal uint (0, statsd_format(out, sizeof(out), "", "1", STATSD_COUNTER, 1.0f, nullptr))</code>
-      * <code>Assert equal uint (0, statsd_format(out, sizeof(out), "x", nullptr, STATSD_COUNTER, 1.0f, nullptr))</code>
-      * <code>Assert equal uint (0, statsd_format(out, 5, "toolongname", "1", STATSD_COUNTER, 1.0f, nullptr))</code>
+      * <code>Assert equal uint (0, statsd_format(out, sizeof(out), "x", "1", (StatsdType)'z', 1.0f, nullptr))</code>
+      * <code>Assert equal uint (0, statsd_format(out, sizeof(out), nullptr, "1", StatsdType::STATSD_COUNTER, 1.0f, nullptr))</code>
+      * <code>Assert equal uint (0, statsd_format(out, sizeof(out), "", "1", StatsdType::STATSD_COUNTER, 1.0f, nullptr))</code>
+      * <code>Assert equal uint (0, statsd_format(out, sizeof(out), "x", nullptr, StatsdType::STATSD_COUNTER, 1.0f, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28692,12 +28692,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A rate rounding below one thousandth clamps up to 1; a rate near 1 clamps down to 999.
     * **Assertions**:
-      * <code>Assert true (statsd_format(out, sizeof(out), "m", "1", STATSD_COUNTER, 0.0001f, nullptr) &gt; 0)</code>
-      * <code>Assert true (statsd_format(out, sizeof(out), "m", "1", STATSD_COUNTER, 0.9999f, nullptr) &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 2, "metric", "1", STATSD_COUNTER, 1.0f, nullptr));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 4, "m", "1", STATSD_TIMING, 1.0f, nullptr));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 6, "m", "1", STATSD_COUNTER, 0.5f, nullptr));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 7, "m", "1", STATSD_COUNTER, 1.0f, "#tag:x"));</code>
+      * <code>Assert true (statsd_format(out, sizeof(out), "m", "1", StatsdType::STATSD_COUNTER, 0.0001f, nullptr) &gt; 0)</code>
+      * <code>Assert true (statsd_format(out, sizeof(out), "m", "1", StatsdType::STATSD_COUNTER, 0.9999f, nullptr) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 2, "metric", "1", StatsdType::STATSD_COUNTER, 1.0f, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 4, "m", "1", StatsdType::STATSD_TIMING, 1.0f, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 6, "m", "1", StatsdType::STATSD_COUNTER, 0.5f, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, statsd_format(out, 7, "m", "1", StatsdType::STATSD_COUNTER, 1.0f, "#tag:x"));</code>
   </details>
 
 </details>
@@ -33075,7 +33075,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Server (unmasked) text frame "hello".
     * **Assertions**:
       * <code>Assert true (ws_client_parse_frame(f, sizeof(f), &op, &fin, &off, &plen, &consumed))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(WSC_OP_TEXT, op);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(WsClientOpcode::WSC_OP_TEXT, op);</code>
       * <code>Assert true (fin)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, off);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(5, plen);</code>
