@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`4c4635f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c4635f96478875652e7517d8266dc79180b374c))
+- update CHANGELOG.md [skip ci] ([`2ef5dd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ef5dd6c41cc7ef6c399871e464b9d7c829f4480))
 - update test report + coverage [skip ci] ([`9f8bd25`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f8bd255169481bf759ae1c37808263bbece299b))
 - update CHANGELOG.md [skip ci] ([`416c701`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/416c7015f7a1b10a6a5c68d7eb6a73b28c7ad231))
 - update test report + coverage [skip ci] ([`6e24125`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6e2412529affce46fafb76ae4d6676388b8f4d88))
@@ -25,11 +27,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- syslog_injection - log-forging + oversized bound at a UDP collector ([`b25ef87`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b25ef874c2e0926147125a7b28314e1b520c4919))
 - smtp_malicious_server + generalize the evil-probe server ([`abc1965`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/abc1965dd982b62b517752380c58103a2b2155d6))
 - ftp_malicious_server - abuse the client's reply/PASV parsers ([`864dac5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/864dac54663519442eff63ec1f47a0359b0f2f81))
 
 ### Documentation
 
+- syslog interop/bench/attack coverage + MAX_ROUTES regression + CRLF note ([`4f54c8d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f54c8dab4b53b37316b0956447e40580b5399e2))
 - SMTP interop/bench/attack coverage + generalize the warmup non-bug ([`d0e9f0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0e9f0ea6f0abc1fab2a0b7460d76a72aaf0ef8a))
 - FTP interop/bench/attack coverage + warmup non-bug note ([`8f73cf8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f73cf8083e479775dd5791985852eae719d4ff8))
 - Redis done all 3 dims (interop 11/~50); note TLS DRAM ceiling ([`a09277b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a09277b95220b1aec7e9eced6c67438e3e9e52ee))
@@ -48,6 +52,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- host microbench for the RFC 5424 syslog formatter ([`e760aa2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e760aa27b3d871c083e7e8ee3f301e7ddb2ca247))
 - host microbench for the SMTP client dialogue ([`19bd593`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19bd5934aa64f0170a5b19c5f081a021fa7f371e))
 - host microbench for the FTP client wire codec ([`d7bddbd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7bddbd93a5e4f2d3515bf79cd6a1837dcce9fa9))
 - RESP2/3 codec bench (host + device) ([`9914b6f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9914b6f934c16526480cea5877e6e44956ecb2ed))
@@ -61,6 +66,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- syslog device-as-client peer (stdlib RFC 5424 UDP collector) ([`f717acd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f717acddbc702c407934eef980fd2167fa2a9658))
+- device-as-syslog-client /syslog/probe route + syslog_format bench + MAX_ROUTES fix ([`a942e19`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a942e196e5b5c85aadb376a1b7c8b2558fe55e6e))
 - SMTP device-as-client peer vs a real aiosmtpd server ([`d1f5f43`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1f5f43d64464ccdc203e27379a387c943617c4e))
 - device-as-SMTP-client /smtp/probe route + smtp_run /bench op ([`eb13a2c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb13a2c96023f992eb3d26a4c367a3ffffa71824))
 - FTP device-as-client peer vs a real pyftpdlib server ([`b3b8758`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b3b8758a35231f184c7b2468b044c3065ff03c6e))
