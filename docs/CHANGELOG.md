@@ -6,10 +6,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- cast scoped SNMP enums in 14.SNMP/26.SnmpTrap (ESP32 CI build) ([`149dd01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/149dd014ee3caadbb19fc09da24905900d150bdc))
 - two SonarCloud reliability bugs (graphql unsigned negate, redis NaN) ([`39d73c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39d73c2e283fab4599e0586e6743f97a73e5b13d))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`7577765`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75777659beb9f337f77b8ca34bb2b37bf452e5cd))
 - update test report + coverage [skip ci] ([`5736cf9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5736cf9c1991b012403c4a54771ba2cd00c16d0c))
 - update CHANGELOG.md [skip ci] ([`c3716bd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3716bdb7720a614be554faadfa1809373128128))
 - update test report + coverage [skip ci] ([`f4835a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4835a08ea5f1a960093041ed578ba7960337c18))
@@ -33,6 +35,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3763525`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37635258fb187c977fec252053582f7887edb00b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2c79438`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c79438e6cf7f219342461e587dd7bc75c884fd7))
 - update ESP32 build footprints [skip ci] ([`917ab55`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/917ab55a92f943551aa87b4ce2a5a809b4aa8487))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`82a06a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/82a06a568d6caa0dbe57ffd2ab9102c4f5f9f6c3))
