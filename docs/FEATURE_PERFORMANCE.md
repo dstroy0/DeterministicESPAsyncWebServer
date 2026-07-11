@@ -153,6 +153,28 @@ Notes:
 - MTConnect builds a ~2.5 KB XML document (header + 20 observations) end to end in ~278 us on the device
   (~8.9 MB/s of document assembly) - the zero-heap writer holds up well on hardware.
 
+### On-device CCOUNT microbench (auth / conditional-GET primitives)
+
+Cycle-accurate on the ESP32-S3 @ 240 MHz via the CPU cycle counter (`ESP.getCycleCount()` = CCOUNT),
+measured in-firmware by the pentest rig's `/bench` endpoint ([`pentesting/rig_firmware`](../pentesting/rig_firmware),
+N=20000 warm iterations; three runs agree to within 0.3%, so the figures are stable). These are the real
+device costs of hot pure primitives on the auth and ETag/Digest paths - no network in the measurement.
+
+| Operation                              | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| -------------------------------------- | --------------: | -------------: |
+| `det_hex_encode` (16 B -> 32 hex)      |             462 |           1925 |
+| `det_hex_decode` (32 hex -> 16 B)      |             689 |           2870 |
+| `base64_decode` ("admin:admin", 16 ch) |            5040 |          21000 |
+
+- The hex codecs are the in-house table-lookup path: ~1.9 us to hex-encode a 16-byte value (an ETag or a
+  Digest-nonce MAC), ~2.9 us to decode. Cheap enough that the conditional-GET / Digest machinery is never
+  the bottleneck.
+- `base64_decode` of an 11-byte Basic-auth credential costs ~21 us - about 11x the hex decode - because on
+  the ESP32 the decoder is mbedTLS's **constant-time** base64 (branchless per-character masks so timing does
+  not leak the credential; see the base64 note in section 2). At once per authenticated request that is
+  invisible, and constant-time is the right trade for a secret. This is the same measurement path that would
+  catch a regression if that ever changed to a fast-but-leaky table lookup.
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
