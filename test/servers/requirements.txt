@@ -15,6 +15,9 @@
 #                   background thread - and needs no pip package (coilmq / RabbitMQ-STOMP are production references)
 #   statsd       -> none (device-as-client)              the statsd peer is stdlib - a raw UDP collector + StatsD
 #                   line parser - and needs no pip package (Graphite/StatsD, Telegraf, Datadog are production peers)
+#   ssh          -> openssh-client + sshpass (device-as-server)   the ssh peer drives the reference OpenSSH
+#                   client (authoritative SSH-2 stack; interops with every cipher/MAC the device offers) and
+#                   needs no pip package.  apt install openssh-client sshpass / brew install openssh sshpass
 #
 # http uses only the Python standard library (no entry here).
 

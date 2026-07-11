@@ -42,6 +42,7 @@ from peers import (
     smtp_peer,
     snmp_peer,
     sse_peer,
+    ssh_peer,
     statsd_peer,
     stomp_peer,
     syslog_peer,
@@ -75,6 +76,7 @@ _MODULES = [
     statsd_peer,
     jwt_peer,
     tls_peer,
+    ssh_peer,
 ]
 
 
