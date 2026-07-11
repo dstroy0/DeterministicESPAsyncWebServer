@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`37f0265`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37f02658dd18a4d9a4701045e8485f7c4ddb6e5e))
+- update CHANGELOG.md [skip ci] ([`79f9d9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79f9d9a71c24aa511d8c4e47da8a8f6a423c1eee))
 - update test report + coverage [skip ci] ([`4fb1d8d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4fb1d8debce8932985673615092089a63c31d581))
 - update CHANGELOG.md [skip ci] ([`903a9ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/903a9ce9d44a013704a29a9a39ffeeb17e683802))
 - update CHANGELOG.md [skip ci] ([`d681cbd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d681cbd0c24811606ab71c6cffb86a3783cccfe2))
@@ -67,6 +69,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- reconcile HTTP/3 status (host-tested end-to-end) + roadmap dwserver split ([`b265ac4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b265ac49026e0c50c8f2019a2b3d64f2b0694db0))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`456277e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/456277ed3b11c0c26c33a7dc3e118c6565d3daf2))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1c8410b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c8410b0ef9c0da24588bf5fb8e6a9059d4acf6d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`36ea60f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36ea60fae157d692c7901d1be4add51598254343))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8f393c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f393c921c3d4ef8a1c5c05a8017897053c34fb0))
