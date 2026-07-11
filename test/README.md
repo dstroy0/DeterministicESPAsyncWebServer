@@ -1548,9 +1548,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Append assigns monotonic seq
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_audit_append(DETWS_AUDIT_AUTH, "login alice"));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_audit_append(DETWS_AUDIT_AUTH_FAIL, "bad password bob"));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(3, detws_audit_append(DETWS_AUDIT_CONFIG, "set http_port=80"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_audit_append(DetwsAuditCat::DETWS_AUDIT_AUTH, "login alice"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_audit_append(DetwsAuditCat::DETWS_AUDIT_AUTH_FAIL, "bad password bob"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, detws_audit_append(DetwsAuditCat::DETWS_AUDIT_CONFIG, "set http_port=80"));</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(3, detws_audit_count());</code>
       * <code>Assert equal string ("login alice", detws_audit_at(0)-&gt;msg)</code>
       * <code>Assert equal string ("set http_port=80", detws_audit_at(2)-&gt;msg)</code>
@@ -1619,7 +1619,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT16(0, detws_audit_count());</code>
       * <code>Assert true (detws_audit_verify(nullptr))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_audit_append(DETWS_AUDIT_SYSTEM, "fresh"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_audit_append(DetwsAuditCat::DETWS_AUDIT_SYSTEM, "fresh"));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29022,7 +29022,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Init and log captured
     * **Assertions**:
-      * <code>Assert true (syslog_log(SYSLOG_INFO, "hello"))</code>
+      * <code>Assert true (syslog_log(SyslogSeverity::SYSLOG_INFO, "hello"))</code>
       * <code>Assert equal uint (strlen(expect), det_udp_captured_len())</code>
       * <code>Assert equal memory (expect, det_udp_captured(), det_udp_captured_len())</code>
   </details>
@@ -29032,18 +29032,17 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Log not ready when no server
     * **Assertions**:
-      * <code>Assert false (syslog_log(SYSLOG_INFO, "x"))</code>
+      * <code>Assert false (syslog_log(SyslogSeverity::SYSLOG_INFO, "x"))</code>
       * <code>Assert equal uint (0, det_udp_captured_len())</code>
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_format_null_and_pri_clamp</b> &mdash; <i>Format null and pri clamp</i></summary>
+    <summary><b>test_format_null_and_pri_clamp</b> &mdash; <i>Guard clauses return 0.</i></summary>
 
-    * **Objective**: Format null and pri clamp
+    * **Objective**: Guard clauses return 0.
     * **Assertions**:
-      * <code>Assert equal uint (0, syslog_format(nullptr, sizeof(buf), 0, 0, "h", "a", "m"))</code>
-      * <code>Assert equal uint (0, syslog_format(buf, 0, 0, 0, "h", "a", "m"))</code>
-      * <code>Assert equal string ("&lt;0&gt;1 - h a - - - m", buf)</code>
+      * <code>Assert equal uint (0, syslog_format(nullptr, sizeof(buf), (SyslogFacility)0, (SyslogSeverity)0, "h", "a", "m"))</code>
+      * <code>Assert equal uint (0, syslog_format(buf, 0, (SyslogFacility)0, (SyslogSeverity)0, "h", "a", "m"))</code>
       * <code>Assert equal string ("&lt;191&gt;1 - h a - - - m", buf)</code>
   </details>
 
@@ -29052,7 +29051,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Init truncates long fields
     * **Assertions**:
-      * <code>Assert true (syslog_log(SYSLOG_INFO, "m"))</code>
+      * <code>Assert true (syslog_log(SyslogSeverity::SYSLOG_INFO, "m"))</code>
       * <code>Assert equal uint ((size_t)(DETWS_SYSLOG_FIELD_MAX - 1), hcount)</code>
   </details>
 
@@ -30575,7 +30574,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (detws_vfs_exists("/nope"))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-1, detws_vfs_size("/nope"));</code>
-      * <code>Assert true (detws_vfs_open("/nope", DETWS_VFS_READ) &lt; 0)</code>
+      * <code>Assert true (detws_vfs_open("/nope", DetwsVfsMode::DETWS_VFS_READ) &lt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-1, detws_vfs_read_file("/nope", buf, sizeof(buf)));</code>
       * <code>Assert false (detws_vfs_remove("/nope"))</code>
       * <code>Assert false (detws_vfs_rename("/nope", "/x"))</code>
@@ -30614,8 +30613,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Handle pool exhaustion
     * **Assertions**:
       * <code>Assert true (handles[i] &gt;= 0)</code>
-      * <code>Assert true (detws_vfs_open("/h", DETWS_VFS_READ) &lt; 0)</code>
-      * <code>Assert true (detws_vfs_open("/h", DETWS_VFS_READ) &gt;= 0)</code>
+      * <code>Assert true (detws_vfs_open("/h", DetwsVfsMode::DETWS_VFS_READ) &lt; 0)</code>
+      * <code>Assert true (detws_vfs_open("/h", DetwsVfsMode::DETWS_VFS_READ) &gt;= 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30623,7 +30622,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Unmounted fails closed
     * **Assertions**:
-      * <code>Assert true (detws_vfs_open("/a", DETWS_VFS_READ) &lt; 0)</code>
+      * <code>Assert true (detws_vfs_open("/a", DetwsVfsMode::DETWS_VFS_READ) &lt; 0)</code>
       * <code>Assert false (detws_vfs_exists("/a"))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-1, detws_vfs_size("/a"));</code>
       * <code>Assert false (detws_vfs_write_file("/a", "x", 1))</code>
@@ -30634,8 +30633,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Null path and an over-long name both fail closed on open.
     * **Assertions**:
-      * <code>Assert equal int (-1, detws_vfs_open(nullptr, DETWS_VFS_WRITE))</code>
-      * <code>Assert equal int (-1, detws_vfs_open(longname, DETWS_VFS_WRITE))</code>
+      * <code>Assert equal int (-1, detws_vfs_open(nullptr, DetwsVfsMode::DETWS_VFS_WRITE))</code>
+      * <code>Assert equal int (-1, detws_vfs_open(longname, DetwsVfsMode::DETWS_VFS_WRITE))</code>
       * <code>Assert equal int (-1, detws_vfs_read(999, b, sizeof(b)))</code>
       * <code>Assert equal int (-1, detws_vfs_write(999, b, sizeof(b)))</code>
       * <code>Assert true (detws_vfs_read_file("/nope", b, sizeof(b)) &lt; 0)</code>
