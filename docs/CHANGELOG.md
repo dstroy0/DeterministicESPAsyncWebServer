@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ff78e38`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff78e38fb537060e18c2a8f9f3b5b8fbb850e2e1))
 - update CHANGELOG.md [skip ci] ([`bfbd635`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfbd6358305a84f7e4a0325f11dca2b33d1fa3d4))
 - update CHANGELOG.md [skip ci] ([`45529c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45529c3a272471668573c84a728dba19f832741e))
 - update CHANGELOG.md [skip ci] ([`824819c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/824819ca02f231fd8a13197ddadce3532cf26769))
@@ -30,6 +31,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- stomp_malicious_broker - abuse the client's frame parser ([`a8f3091`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a8f3091180334eabfd7bfeeeec5f1fcbc2e8d806))
 - nats_malicious_server - abuse the client's INFO/MSG parser ([`fc5f7fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc5f7fbc33e322baf63264e75dd1bf1173fa54a1))
 - dns_server_abuse - amplification / open-resolver / compression-pointer DoS ([`9ea06f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ea06f7c4eb27354b2f2474112deea982b7cb48d))
 - ntp_server_abuse - reflection/amplification + mode/version fuzz ([`1894739`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1894739f00ac45228c754e904c9e70181715d829))
@@ -39,6 +41,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- STOMP interop/bench/attack coverage (2nd of the messaging family) ([`1d65926`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d65926002ab10ebf27c79676db69df2a1f2243e))
 - NATS interop/bench/attack coverage (first of the messaging family) ([`94ecb2d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/94ecb2da6b798ec90f49cc6da3a558ad7f43f7f0))
 - DNS server interop/bench/attack coverage (no amplification, no open resolver) ([`6f771a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6f771a9da3c207fc46a93e89578005dcea29ffaf))
 - NTP server interop/bench/attack coverage + UDP-listener cap note ([`c93bec8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c93bec85eeb25e077c9e5db31ab8e10c8c7ae406))
@@ -61,6 +64,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- host microbench for the STOMP 1.2 frame codec ([`c496c5e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c496c5e8c686df3a81b1aedf1d68e6bbd18b0a12))
 - host microbench for the NATS client codec ([`93c5586`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93c5586eae0de7361a57b75ac6640c6e2140735b))
 - host microbench for the authoritative DNS response builder ([`4279ceb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4279ceb4a2b98f00aaab1f9b11fe25b3ae6834e0))
 - host microbench for the NTP server response builder ([`97df2e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/97df2e20910cba971463dd7b721b9c8c6f6a86e5))
@@ -78,6 +82,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- STOMP device-as-client peer (stdlib spec STOMP 1.2 broker) ([`1212cf2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1212cf2566323d591b2ae79f10a055a537010394))
+- device-as-STOMP-client /stomp/probe route + stomp_parse_frame bench ([`f4c458b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4c458b748418f1735961aeb8d8270fcb17ffac3))
 - NATS device-as-client peer vs a real nats-server ([`fa55cca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa55cca058dac55a41a277b07c89554a975d5657))
 - device-as-NATS-client /nats/probe route + nats_parse bench ([`afaec81`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/afaec81113b44784b4a195cd8aca3fa7f8ba79bb))
 - DNS server peer via the real dnspython client ([`56e96b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/56e96b6b24b16d454621edc34300123555c85af3))
