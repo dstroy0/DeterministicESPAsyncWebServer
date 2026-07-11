@@ -322,6 +322,23 @@ op (inflate of a ~70 B JSON message).
   **refused it without allocating the expanded payload** - a WebSocket zip bomb cannot exhaust memory.
   The output cap is structural (a fixed message buffer), so the defense holds regardless of the ratio.
 
+### MQTT 3.1.1 client codec (DETWS_ENABLE_MQTT)
+
+The device is an MQTT client; these are its pure packet build/parse hot ops - `mqtt_build_connect` /
+`mqtt_build_publish` (TX) and `mqtt_parse_publish` (the inbound-message decode). Host figures from
+[`perf/bench_mqtt.cpp`](../perf/bench_mqtt.cpp); the device figure is the rig `/bench` CCOUNT op
+(`mqtt_build_publish`, QoS 1 to a telemetry topic).
+
+| Operation                    | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ---------------------------- | ---------: | --------: | --------------: | -------------: |
+| `mqtt_build_connect`         |       24.6 |    1055.1 |               - |              - |
+| `mqtt_build_publish` (QoS 1) |       44.9 |    1446.9 |            1008 |           4200 |
+| `mqtt_parse_publish`         |       60.6 |    1073.4 |               - |              - |
+
+- Building a PUBLISH is ~4.2 us on the S3 (a length-prefixed topic + the variable-length Remaining Length
+  field + the payload copy) - cheap; an MQTT client can publish at a high rate without the encode being
+  the limit. The network round trip and the broker, not the codec, set the publish throughput ceiling.
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
