@@ -80,7 +80,7 @@ void test_connect_minimal()
     uint32_t rl;
     size_t hl;
     TEST_ASSERT_TRUE(mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl));
-    TEST_ASSERT_EQUAL(MQTT_CONNECT, type);
+    TEST_ASSERT_EQUAL(MqttType::MQTT_CONNECT, type);
     const uint8_t *b = buf + hl;
     TEST_ASSERT_EQUAL_UINT8(0, b[0]);
     TEST_ASSERT_EQUAL_UINT8(4, b[1]);
@@ -130,7 +130,7 @@ void test_publish_qos0_roundtrip()
     uint32_t rl;
     size_t hl;
     TEST_ASSERT_TRUE(mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl));
-    TEST_ASSERT_EQUAL(MQTT_PUBLISH, type);
+    TEST_ASSERT_EQUAL(MqttType::MQTT_PUBLISH, type);
     char topic[32];
     size_t tlen, plen;
     const uint8_t *payload;
@@ -263,11 +263,11 @@ void test_unsubscribe()
 void test_ack_packets()
 {
     uint8_t buf[8];
-    TEST_ASSERT_EQUAL_size_t(4, mqtt_build_ack(buf, sizeof(buf), MQTT_PUBACK, 0x2222));
+    TEST_ASSERT_EQUAL_size_t(4, mqtt_build_ack(buf, sizeof(buf), MqttType::MQTT_PUBACK, 0x2222));
     TEST_ASSERT_EQUAL_HEX8(0x40, buf[0]);
     TEST_ASSERT_EQUAL_UINT16(0x2222, mqtt_parse_ack(buf + 2, 2));
 
-    TEST_ASSERT_EQUAL_size_t(4, mqtt_build_ack(buf, sizeof(buf), MQTT_PUBREL, 0x3333));
+    TEST_ASSERT_EQUAL_size_t(4, mqtt_build_ack(buf, sizeof(buf), MqttType::MQTT_PUBREL, 0x3333));
     TEST_ASSERT_EQUAL_HEX8(0x62, buf[0]); // PUBREL requires flags 0010
 }
 
@@ -352,8 +352,8 @@ void test_build_guards_and_overflow()
     TEST_ASSERT_EQUAL_UINT(0, mqtt_build_unsubscribe(nullptr, sizeof(out), 1, "t"));
     TEST_ASSERT_EQUAL_UINT(0, mqtt_build_unsubscribe(out, sizeof(out), 1, big_topic)); // body overflow
 
-    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_ack(nullptr, 4, 4, 1));
-    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_ack(out, 3, 4, 1)); // cap < 4
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_ack(nullptr, 4, (MqttType)4, 1));
+    TEST_ASSERT_EQUAL_UINT(0, mqtt_build_ack(out, 3, (MqttType)4, 1)); // cap < 4
     TEST_ASSERT_EQUAL_UINT(0, mqtt_build_pingreq(nullptr, 2));
     TEST_ASSERT_EQUAL_UINT(0, mqtt_build_pingreq(out, 1)); // cap < 2
     TEST_ASSERT_EQUAL_UINT(0, mqtt_build_disconnect(nullptr, 2));

@@ -34,7 +34,7 @@
 #if DETWS_ENABLE_MQTT
 
 /** @brief MQTT control packet types (high nibble of byte 0), MQTT 3.1.1 §2.2.1. */
-enum MqttType
+enum class MqttType : uint8_t
 {
     MQTT_CONNECT = 1,
     MQTT_CONNACK = 2,
@@ -110,7 +110,7 @@ size_t mqtt_build_unsubscribe(uint8_t *out, size_t cap, uint16_t packet_id, cons
  * @brief Build a 4-byte acknowledgement packet (PUBACK / PUBREC / PUBREL / PUBCOMP)
  *        carrying @p packet_id. (PUBREL sets the required flags 0x62.)
  */
-size_t mqtt_build_ack(uint8_t *out, size_t cap, uint8_t type, uint16_t packet_id);
+size_t mqtt_build_ack(uint8_t *out, size_t cap, MqttType type, uint16_t packet_id);
 
 /** @brief Build a 2-byte PINGREQ. */
 size_t mqtt_build_pingreq(uint8_t *out, size_t cap);
