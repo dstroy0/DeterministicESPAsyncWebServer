@@ -6,11 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`c81b61c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c81b61c845401be4851ca3ebeab88c2228ad60a4))
 - update CHANGELOG.md [skip ci] ([`b9e5048`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b9e5048c9fa208fd1d6ed3ea54f29c7613a647d0))
 - update CHANGELOG.md [skip ci] ([`1ab979e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ab979e1b9ab38d81c954d13d23f458439f6b202))
 
 ### Documentation
 
+- add COVERAGE_GAP.md - the interop/bench/attack gap-analysis backlog ([`d0d41af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0d41af9f8095378e05d702004e9bee7543fd856))
+- update ESP32 build footprints [skip ci] ([`364b8ab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/364b8ab789e7f9bb3c4286cd93db32a92bf16bce))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`849ee26`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/849ee26ff5b75fca62a9e692b0bb75925f84f31d))
 
 ### Performance
