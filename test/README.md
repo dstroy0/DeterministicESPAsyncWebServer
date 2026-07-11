@@ -1183,7 +1183,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert not null (strstr(out, "HTTP/1.1 301 Moved Permanently"))</code>
       * <code>Assert not null (strstr(out, "Location: /index.html\\r\\n"))</code>
       * <code>Assert not null (strstr(out, "Content-Length: 0\\r\\n"))</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4054,7 +4054,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: The slot ends FREE; the observer must not have crashed/torn (TSan checks the
     * **Assertions**:
-      * <code>Assert equal int (CONN_FREE, (ConnState)g_slot.state)</code>
+      * <code>Assert equal int (ConnState::CONN_FREE, (ConnState)g_slot.state)</code>
   </details>
 
 </details>
@@ -13194,7 +13194,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert not null (strstr(tcp_captured(), "Connection: close"))</code>
       * <code>Assert not null (strstr(tcp_captured(), "Connection: keep-alive"))</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[1].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[1].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13205,7 +13205,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert not null (strstr(resp, "200 OK"))</code>
       * <code>Assert not null (strstr(resp, "Connection: keep-alive"))</code>
       * <code>Assert null (strstr(resp, "Connection: close"))</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert not null (conn_pool[0].pcb)</code>
       * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
   </details>
@@ -13217,7 +13217,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert not null (strstr(resp, "Connection: close"))</code>
       * <code>Assert null (strstr(resp, "keep-alive"))</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert null (conn_pool[0].pcb)</code>
   </details>
 
@@ -13227,7 +13227,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Http10 default closes
     * **Assertions**:
       * <code>Assert not null (strstr(resp, "Connection: close"))</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13236,7 +13236,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Http10 explicit keepalive
     * **Assertions**:
       * <code>Assert not null (strstr(resp, "Connection: keep-alive"))</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13245,7 +13245,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: "close" appearing in a token list must still be honored.
     * **Assertions**:
       * <code>Assert not null (strstr(resp, "Connection: close"))</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13254,10 +13254,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Two sequential requests same slot
     * **Assertions**:
       * <code>Assert equal (1, handler_calls)</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert equal (2, handler_calls)</code>
       * <code>Assert not null (strstr(tcp_captured(), "200 OK"))</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13266,7 +13266,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Two requests delivered in one shot: the proactive drain in handle() must
     * **Assertions**:
       * <code>Assert equal (2, handler_calls)</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13276,7 +13276,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert not null (strstr(resp, "404"))</code>
       * <code>Assert not null (strstr(resp, "Connection: keep-alive"))</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13284,10 +13284,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: DETWS_KEEPALIVE_MAX_REQUESTS=3: the 3rd response closes the connection.
     * **Assertions**:
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert not null (strstr(tcp_captured(), "Connection: close"))</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert equal (3, handler_calls)</code>
   </details>
 
@@ -13296,9 +13296,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Run a slot up to the cap, then re-open it (new connection) and confirm the
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert not null (strstr(tcp_captured(), "Connection: keep-alive"))</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
   </details>
 
 </details>
@@ -17238,9 +17238,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal (1, g_calls)</code>
       * <code>Assert equal (2, g_slot)</code>
-      * <code>Assert equal (CONN_FREE, g_old)</code>
-      * <code>Assert equal (CONN_ACTIVE, g_new)</code>
-      * <code>Assert equal (DET_CONN_R_ACCEPT, g_reason)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, g_old)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, g_new)</code>
+      * <code>Assert equal (DetConnReason::DET_CONN_R_ACCEPT, g_reason)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17295,7 +17295,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Recv fin counts remote close
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closes_remote);</code>
-      * <code>Assert equal (DET_CONN_R_CLOSE_REMOTE, g_reason)</code>
+      * <code>Assert equal (DetConnReason::DET_CONN_R_CLOSE_REMOTE, g_reason)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17304,7 +17304,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Err cb counts error close
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closes_error);</code>
-      * <code>Assert equal (DET_CONN_R_ERROR, g_reason)</code>
+      * <code>Assert equal (DetConnReason::DET_CONN_R_ERROR, g_reason)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17312,9 +17312,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Timeout sweep counts timeout
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closes_timeout);</code>
-      * <code>Assert equal (DET_CONN_R_TIMEOUT, g_reason)</code>
+      * <code>Assert equal (DetConnReason::DET_CONN_R_TIMEOUT, g_reason)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17323,8 +17323,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: det_conn_close(slot) reads the slot's pcb, frees the slot, and counts a
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closes_local);</code>
-      * <code>Assert equal (DET_CONN_R_CLOSE_LOCAL, g_reason)</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (DetConnReason::DET_CONN_R_CLOSE_LOCAL, g_reason)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert null (conn_pool[0].pcb)</code>
   </details>
 
@@ -17334,8 +17334,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Abort slot counts abort and frees
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closes_abort);</code>
-      * <code>Assert equal (DET_CONN_R_ABORT, g_reason)</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (DetConnReason::DET_CONN_R_ABORT, g_reason)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert null (conn_pool[0].pcb)</code>
   </details>
 
@@ -17355,7 +17355,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal (ERR_MEM, rc)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().backpressure);</code>
-      * <code>Assert equal (DET_CONN_R_BACKPRESSURE, g_reason)</code>
+      * <code>Assert equal (DetConnReason::DET_CONN_R_BACKPRESSURE, g_reason)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17363,13 +17363,13 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Peer ACKs the whole response -> the sent callback finalizes the close.
     * **Assertions**:
-      * <code>Assert equal (CONN_CLOSING, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, c.closes_local);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, c.closing_gauge);</code>
-      * <code>Assert equal (DET_CONN_R_CLOSE_LOCAL, g_reason)</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (DetConnReason::DET_CONN_R_CLOSE_LOCAL, g_reason)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, c.closing_gauge);</code>
-      * <code>Assert equal (DET_CONN_R_DRAINED, g_reason)</code>
+      * <code>Assert equal (DetConnReason::DET_CONN_R_DRAINED, g_reason)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17377,7 +17377,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Begin close finalizes immediately when already drained
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, c.closes_local);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, c.closing_gauge);</code>
   </details>
@@ -17396,9 +17396,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Before the bound: not reaped.
     * **Assertions**:
-      * <code>Assert equal (CONN_CLOSING, conn_pool[0].state)</code>
-      * <code>Assert equal (CONN_CLOSING, conn_pool[0].state)</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, det_conn_counters().closing_gauge);</code>
   </details>
 
@@ -17407,9 +17407,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Late inbound data while closing: acked + dropped, slot stays CLOSING.
     * **Assertions**:
-      * <code>Assert equal (CONN_CLOSING, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
       * <code>Assert equal (ERR_OK, rc)</code>
-      * <code>Assert equal (CONN_CLOSING, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
   </details>
 
 </details>
@@ -20336,8 +20336,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Simulate a new accept: re-arm the slot
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20345,7 +20345,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Race - Double free is nop
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23861,7 +23861,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Tick fires check timeouts stale slot freed
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23869,7 +23869,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Tick does not free fresh connection
     * **Assertions**:
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23877,8 +23877,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: http_reset was NOT called by server_tick directly (only check_timeouts),
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[1].state)</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[1].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[1].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[1].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23886,10 +23886,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Fn tick only active slots expire
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[1].state)</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[2].state)</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[3].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[1].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[2].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[3].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23897,7 +23897,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Stress - 1000 idle ticks stable
     * **Assertions**:
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[i].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[i].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23905,7 +23905,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Stress - Timeout all slots 10 cycles
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[i].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[i].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23913,10 +23913,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Stress - Mixed fresh stale slots many ticks
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[1].state)</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[2].state)</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[3].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[1].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[2].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[3].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23956,9 +23956,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_multiple_events_drained_in_one_tick</b> &mdash; <i>Slot 0: dirty state → EVT_CONNECT → reset</i></summary>
+    <summary><b>test_multiple_events_drained_in_one_tick</b> &mdash; <i>Slot 0: dirty state → EvtType::EVT_CONNECT → reset</i></summary>
 
-    * **Objective**: Slot 0: dirty state → EVT_CONNECT → reset
+    * **Objective**: Slot 0: dirty state → EvtType::EVT_CONNECT → reset
     * **Assertions**:
       * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
       * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[1].parse_state)</code>
@@ -23970,8 +23970,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: First tick: slot expires inside check_timeouts
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23979,8 +23979,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Simulate recv callback updating activity
     * **Assertions**:
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23988,8 +23988,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Race - All expire then idle tick
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[i].state)</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[i].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[i].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[i].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23997,7 +23997,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: last_activity close to UINT32_MAX, now just past wrap
     * **Assertions**:
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
   </details>
 
 </details>
@@ -27673,7 +27673,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Poll ignores inactive conn
     * **Assertions**:
-      * <code>Assert equal (CONN_CLOSING, conn_pool[2].state)</code>
+      * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[2].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29952,7 +29952,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: All slots free after init
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[i].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[i].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30016,10 +30016,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Event types are distinct
     * **Assertions**:
-      * <code>Assert not equal ((int)EVT_CONNECT, (int)EVT_DATA)</code>
-      * <code>Assert not equal ((int)EVT_DATA, (int)EVT_DISCONNECT)</code>
-      * <code>Assert not equal ((int)EVT_DISCONNECT, (int)EVT_ERROR)</code>
-      * <code>Assert not equal ((int)EVT_CONNECT, (int)EVT_ERROR)</code>
+      * <code>Assert not equal ((int)EvtType::EVT_CONNECT, (int)EvtType::EVT_DATA)</code>
+      * <code>Assert not equal ((int)EvtType::EVT_DATA, (int)EvtType::EVT_DISCONNECT)</code>
+      * <code>Assert not equal ((int)EvtType::EVT_DISCONNECT, (int)EvtType::EVT_ERROR)</code>
+      * <code>Assert not equal ((int)EvtType::EVT_CONNECT, (int)EvtType::EVT_ERROR)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30027,7 +30027,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Timeout does not fire on free slot
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30035,7 +30035,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Timeout does not fire before deadline
     * **Assertions**:
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30043,7 +30043,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Timeout fires at deadline
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert null (conn_pool[0].pcb)</code>
   </details>
 
@@ -30052,8 +30052,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Timeout fires only on stale slots
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[1].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[1].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30105,7 +30105,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Stress - All slots timeout simultaneously
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[i].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[i].state)</code>
       * <code>Assert null (conn_pool[i].pcb)</code>
       * <code>Assert equal (i, conn_pool[i].id)</code>
   </details>
@@ -30115,7 +30115,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Stress - Timeout arm recover cycle
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[i].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[i].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30123,10 +30123,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Stress - Check timeouts high call rate
     * **Assertions**:
-      * <code>Assert equal (CONN_FREE, conn_pool[0].state)</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[1].state)</code>
-      * <code>Assert equal (CONN_ACTIVE, conn_pool[2].state)</code>
-      * <code>Assert equal (CONN_FREE, conn_pool[3].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[1].state)</code>
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[2].state)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[3].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32879,9 +32879,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Worker 0 sweeps: only its own slot is reaped; worker 1's slot is untouched.
     * **Assertions**:
-      * <code>Assert equal int (CONN_FREE, (ConnState)conn_pool[0].state)</code>
-      * <code>Assert equal int (CONN_ACTIVE, (ConnState)conn_pool[1].state)</code>
-      * <code>Assert equal int (CONN_FREE, (ConnState)conn_pool[1].state)</code>
+      * <code>Assert equal int (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
+      * <code>Assert equal int (ConnState::CONN_ACTIVE, (ConnState)conn_pool[1].state)</code>
+      * <code>Assert equal int (ConnState::CONN_FREE, (ConnState)conn_pool[1].state)</code>
   </details>
 
   <details style="margin-left: 20px;">
