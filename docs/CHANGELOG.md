@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`d051c56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d051c56731447c0b056a2606f8a919c21f2b5118))
 - update CHANGELOG.md [skip ci] ([`bdc4c90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdc4c9001b6601365316ead7d0e85b3bdd05a29a))
 - update CHANGELOG.md [skip ci] ([`9db579d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9db579d70cee971236caf8a49dc88113bf8f30aa))
 - update CHANGELOG.md [skip ci] ([`5f35f04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f35f04ace1b4b21cad89ccad67f23378f4010f8))
@@ -14,6 +15,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- Modbus done on all three dimensions (+10 attack families) ([`c29c527`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c29c527a1738931ae11c6ff0d0d8c6aee1fd4611))
 - OPC-UA done on all three dimensions (+9 attack families) ([`43d4f25`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/43d4f25cd3a143c6852ed6b7e11bc98a0502ea9f))
 - SNMP done on all three dimensions (+8 attack families) ([`3973154`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3973154447599ad92c0d78446e0b42934fa829fd))
 - CoAP done on all three dimensions (interop 9/~50, +7 attack families) ([`cc74050`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc740500f99fe53bce98d484835adb9df592000a))
@@ -24,6 +26,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- Modbus TCP slave codec bench (host + device) ([`fcdfcb8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcdfcb81660488788cca626883047cccaa532e65))
 - OPC UA Binary codec bench (host + device) ([`dab3255`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dab32556e3ed401941d5e7f647c885b8e060d9cd))
 - SNMP v1/v2c agent codec bench (host + device) ([`6a1ab11`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a1ab11804dcba16ab28b97665f55502dc951fc8))
 - CoAP server codec bench (host + device) ([`06c1b66`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06c1b660dffe4c2a7b356714d321a21889030fa2))
@@ -31,6 +34,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- advanced Modbus attacks (illegal requests, MBAP abuse) ([`f0164e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0164e1d1b6db6394f9b54d83f6354202881a23e))
+- Modbus TCP slave (:502) + /bench modbus_process op ([`efa7f67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/efa7f6741fc1c604159712044417c5dc34fe5fd9))
 - advanced OPC UA attacks (Hello buffer abuse, UACP abuse, chunk flood) ([`ecf8bb3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ecf8bb31e8fa661d6a03c081ac30a9e5c3364ded))
 - OPC UA Binary server (TCP/4840) + /bench handshake op ([`0d4ebd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d4ebd658f3a1378cd22fa5d9b384f74c43d20c4))
 - advanced SNMP attacks (GETBULK amplification, BER abuse, varbind flood) ([`73c8c87`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73c8c8799643cc14bbecbf28440814ea46cb6964))
