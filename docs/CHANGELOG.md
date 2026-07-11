@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`6effbf7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6effbf765ad9cbd4e55f5a65f83efec746b86fd7))
 - update test report + coverage [skip ci] ([`4d40840`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4d40840f67777954295df522bc5c08ced4c852f2))
 - update CHANGELOG.md [skip ci] ([`48e732d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48e732d48394f0cdb3ebff7e315ab042d8e90a3c))
 - update CHANGELOG.md [skip ci] ([`b073564`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b0735649c6bfce2d161ece72701e2826f01e647f))
@@ -31,6 +32,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`64ad2c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64ad2c382f69e9b94f957e06c35b05e6d211bc22))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0b7341e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b7341e94f4158ec3f4f8318e128dd5496e73655))
 - update ESP32 build footprints [skip ci] ([`73c1cbf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73c1cbf48db282b8b9aa5f4bc29f7cd645e591e4))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cd51a73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cd51a73d920462d6b565af11d2a7001f6478e00a))
@@ -47,6 +49,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- scoped enums for the transport layer (enum class 45/N) ([`a0b527b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0b527b9e03f71198e7bcb9d58d51d636807ece3))
 - scoped enums ParseState/HttpVersion (enum class 40/N) ([`767cbc0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/767cbc0e5365e6beef1352aa6b2f6c145885df5d))
 - scoped enums DetIpFamily/DetIpScope (enum class 38/N) ([`8f558e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f558e856f228cbb13267636fda94cde9f1c499e))
 - scoped enums ConnProto/DetIface (enum class 36/N) ([`2ada4f4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ada4f49b9c3f7ffd187618d847687be8cb56ba3))
