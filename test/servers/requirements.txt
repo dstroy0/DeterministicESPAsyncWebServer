@@ -13,6 +13,8 @@
 #                   (the nats peer itself is stdlib - raw NATS text protocol over a socket - no pip package)
 #   stomp        -> none (device-as-client)              the stomp peer is stdlib - a spec STOMP 1.2 broker in a
 #                   background thread - and needs no pip package (coilmq / RabbitMQ-STOMP are production references)
+#   statsd       -> none (device-as-client)              the statsd peer is stdlib - a raw UDP collector + StatsD
+#                   line parser - and needs no pip package (Graphite/StatsD, Telegraf, Datadog are production peers)
 #
 # http uses only the Python standard library (no entry here).
 
