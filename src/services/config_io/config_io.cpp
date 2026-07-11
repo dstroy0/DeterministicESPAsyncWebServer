@@ -23,13 +23,16 @@ namespace
 constexpr size_t VAL_MAX = 128; // export/import value field cap
 constexpr size_t KEY_MAX = 16;  // NVS key cap (15 + null)
 
-// Look up a key in the schema; returns its DetwsCfgType or -1 if absent.
-int field_type(const DetwsCfgField *fields, size_t n, const char *key)
+// Look up a key in the schema; write its DetwsCfgType to *out and return true, or return false if absent.
+bool field_type(const DetwsCfgField *fields, size_t n, const char *key, DetwsCfgType *out)
 {
     for (size_t i = 0; i < n; i++)
         if (fields[i].key && strcmp(fields[i].key, key) == 0)
-            return (int)fields[i].type;
-    return -1;
+        {
+            *out = fields[i].type;
+            return true;
+        }
+    return false;
 }
 
 // Append "<key>=<val>\n" to out at *pos, overflow-safe. Returns false on overflow.
@@ -108,16 +111,19 @@ int detws_config_import(const char *ns, const DetwsCfgField *fields, size_t n, c
                 memcpy(val, text + eq + 1, vlen);
                 val[vlen] = '\0';
 
-                int t = field_type(fields, n, key);
-                if (t == (int)DetwsCfgType::DETWS_CFG_U32)
+                DetwsCfgType t;
+                if (field_type(fields, n, key, &t))
                 {
-                    if (detws_config_set_u32(key, (uint32_t)det_strtoul(val, nullptr)))
-                        count++;
-                }
-                else if (t == (int)DetwsCfgType::DETWS_CFG_STR)
-                {
-                    if (detws_config_set_str(key, val))
-                        count++;
+                    if (t == DetwsCfgType::DETWS_CFG_U32)
+                    {
+                        if (detws_config_set_u32(key, (uint32_t)det_strtoul(val, nullptr)))
+                            count++;
+                    }
+                    else if (t == DetwsCfgType::DETWS_CFG_STR)
+                    {
+                        if (detws_config_set_str(key, val))
+                            count++;
+                    }
                 }
             }
         }
