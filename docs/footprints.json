@@ -546,11 +546,11 @@
     "ram_bytes": 22616
   },
   "TLS": {
-    "example": "L4-Transport/03.HTTPS",
+    "example": "L6-Presentation/07.SecureWebSocket",
     "flags": "-DDETWS_ENABLE_TLS=1",
     "board": "esp32dev",
-    "flash_bytes": 855261,
-    "ram_bytes": 116892
+    "flash_bytes": 855097,
+    "ram_bytes": 116900
   },
   "TLS+MTLS": {
     "example": "L4-Transport/04.mTLS",
