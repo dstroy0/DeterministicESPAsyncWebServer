@@ -28,6 +28,7 @@ from peers import (
     coap_peer,
     dns_peer,
     ftp_peer,
+    h2_peer,
     http_peer,
     jwt_peer,
     modbus_peer,
@@ -51,6 +52,7 @@ from peers import (
 # Module list; each contributes one or more peers (module-level or via PEERS).
 _MODULES = [
     http_peer,
+    h2_peer,
     ws_peer,
     sse_peer,
     webdav_peer,
