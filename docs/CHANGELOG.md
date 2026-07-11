@@ -13,6 +13,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`3283fbb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3283fbb5456e05a3aaddd315797d0aee276cf1b7))
 - update CHANGELOG.md [skip ci] ([`273ee5d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/273ee5d0c6bf2df222cf20638d53b1a19a7fd047))
 - update CHANGELOG.md [skip ci] ([`40d438b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/40d438bba1bf0f658f4440f871adc9de323a4580))
 - update CHANGELOG.md [skip ci] ([`fe23bc8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe23bc803af5a8bd2cdbc57d988d68839a52eb9b))
@@ -111,6 +112,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1c976e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c976e3970d0d37c1ce68f8388823217f17e5764))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8274278`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8274278dc2d6dbba4cecfcaca3d08e3b56521851))
 - update ESP32 build footprints [skip ci] ([`fdec991`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fdec9918b0dbe343c25629d0f77807b6d610b839))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`02c3bca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/02c3bca4bb35d0b20f15986beb1cbfb6978518a6))
@@ -185,6 +187,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- extract the regex route matcher from dwserver.cpp into src/server/regex.cpp ([`fcc1959`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fcc19598f8f9173582465d0df8494b215f7205ad))
 - extract WebSocket + SSE from dwserver.cpp into src/server/websocket_sse.cpp ([`5dba7d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5dba7d1566f3ce4551add08eff79ae51b53b9795))
 - extract response building from dwserver.cpp into src/server/response.cpp ([`7357e05`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7357e05df4c2b30b613281b41abaf1561bc60915))
 - extract HTTP auth from dwserver.cpp into src/server/auth.cpp ([`a310fa8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a310fa8a89fc2ed9a48624e8a86be8ed77215cb6))
