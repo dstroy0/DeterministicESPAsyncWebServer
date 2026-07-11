@@ -972,7 +972,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Fn set cors options preflight clears slot
     * **Assertions**:
-      * <code>Assert not equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1053,7 +1053,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Slot not stuck in complete after handle
     * **Assertions**:
-      * <code>Assert not equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1061,8 +1061,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Parse error slot auto reset
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
-      * <code>Assert not equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1098,9 +1098,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>stress_handle_with_no_complete_slots_is_nop</b> &mdash; <i>All slots in PARSE_METHOD (setUp resets them) - nothing to dispatch</i></summary>
+    <summary><b>stress_handle_with_no_complete_slots_is_nop</b> &mdash; <i>All slots in ParseState::PARSE_METHOD (setUp resets them) - nothing to dispatch</i></summary>
 
-    * **Objective**: All slots in PARSE_METHOD (setUp resets them) - nothing to dispatch
+    * **Objective**: All slots in ParseState::PARSE_METHOD (setUp resets them) - nothing to dispatch
     * **Assertions**:
       * <code>Assert false (handler_called)</code>
   </details>
@@ -1119,8 +1119,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Simulate connection drop between parse and dispatch
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
-      * <code>Assert not equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1136,8 +1136,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Slot 0: inject a parse error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
-      * <code>Assert not equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
       * <code>Assert true (valid_dispatched)</code>
   </details>
 
@@ -1147,7 +1147,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Race - Callback manually resets slot
     * **Assertions**:
       * <code>Assert true (manual_reset_called)</code>
-      * <code>Assert equal (PARSE_METHOD, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1155,8 +1155,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Overflow the path buffer - handle() should send 414 and free the slot
     * **Assertions**:
-      * <code>Assert equal (PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
-      * <code>Assert not equal (PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1164,7 +1164,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A request advertising Transfer-Encoding must be rejected with 501
     * **Assertions**:
-      * <code>Assert not equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1172,7 +1172,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Even "identity" is rejected - we advertise no TE support at all
     * **Assertions**:
-      * <code>Assert not equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3917,7 +3917,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Http11 missing host rejected
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3925,7 +3925,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Http11 with host ok
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3933,7 +3933,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Host is not required for HTTP/1.0.
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3941,7 +3941,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Duplicate host rejected
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3949,7 +3949,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: More than one Host is invalid regardless of version.
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3957,7 +3957,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A valid Host that appears after MAX_HEADERS other fields is still counted
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3965,7 +3965,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: First Host is stored; a second Host pushed past MAX_HEADERS must still be
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3973,7 +3973,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Content length non digit rejected
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3981,7 +3981,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Content length empty rejected
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3989,7 +3989,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Content length conflicting duplicate rejected
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3997,7 +3997,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Two identical Content-Length values are not a conflict.
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (3, (int)http_pool[0].content_length)</code>
   </details>
 
@@ -4006,7 +4006,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Content length valid body
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (5, (int)http_pool[0].body_len)</code>
       * <code>Assert equal memory ("hello", http_pool[0].body, 5)</code>
   </details>
@@ -4016,7 +4016,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Transfer encoding chunked rejected
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4024,7 +4024,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: CL + TE present: the classic CL.TE smuggling desync - must be rejected.
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4032,7 +4032,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Header-name match must be case-insensitive (RFC 7230 §3.2).
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
 </details>
@@ -10588,7 +10588,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Large body streams to completion
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, r.parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, r.parse_state)</code>
       * <code>Assert true (r.body_streaming)</code>
       * <code>Assert equal uint (N, (unsigned)g_total)</code>
       * <code>Assert greater than (1, g_chunks)</code>
@@ -10600,7 +10600,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: No hooks large body is 413
     * **Assertions**:
-      * <code>Assert equal (PARSE_ENTITY_TOO_LARGE, r.parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ENTITY_TOO_LARGE, r.parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10608,7 +10608,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Nonmatching path not streamed
     * **Assertions**:
-      * <code>Assert equal (PARSE_ENTITY_TOO_LARGE, r.parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ENTITY_TOO_LARGE, r.parse_state)</code>
       * <code>Assert equal uint (0, (unsigned)g_total)</code>
   </details>
 
@@ -10667,7 +10667,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Reset sets parse method state
     * **Assertions**:
-      * <code>Assert equal (PARSE_METHOD, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10724,8 +10724,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Feed after complete does not change state
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10733,7 +10733,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Feed after error does not change state
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10741,7 +10741,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Feed after entity too large does not change state
     * **Assertions**:
-      * <code>Assert equal (PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10749,7 +10749,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Method get
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("GET", http_pool[0].method)</code>
   </details>
 
@@ -10758,7 +10758,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Method post
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("POST", http_pool[0].method)</code>
   </details>
 
@@ -10767,7 +10767,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Method put
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("PUT", http_pool[0].method)</code>
   </details>
 
@@ -10776,7 +10776,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Method delete
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("DELETE", http_pool[0].method)</code>
   </details>
 
@@ -10785,7 +10785,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Method patch
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("PATCH", http_pool[0].method)</code>
   </details>
 
@@ -10794,7 +10794,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Method head
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("HEAD", http_pool[0].method)</code>
   </details>
 
@@ -10803,16 +10803,16 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Method options
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("OPTIONS", http_pool[0].method)</code>
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_method_overflow_is_error</b> &mdash; <i>More than 7 chars (sizeof method - 1) before a space → PARSE_ERROR</i></summary>
+    <summary><b>test_method_overflow_is_error</b> &mdash; <i>More than 7 chars (sizeof method - 1) before a space → ParseState::PARSE_ERROR</i></summary>
 
-    * **Objective**: More than 7 chars (sizeof method - 1) before a space → PARSE_ERROR
+    * **Objective**: More than 7 chars (sizeof method - 1) before a space → ParseState::PARSE_ERROR
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10844,7 +10844,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Build a path longer than MAX_PATH_LEN
     * **Assertions**:
-      * <code>Assert equal (PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10852,7 +10852,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Single query param
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (1, (int)http_pool[0].query_count)</code>
       * <code>Assert not null (v)</code>
       * <code>Assert equal string ("42", v)</code>
@@ -11045,7 +11045,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Get no body completes
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (0, (int)http_pool[0].body_len)</code>
       * <code>Assert equal ('\\0', (char)http_pool[0].body[0])</code>
   </details>
@@ -11055,7 +11055,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Post with body
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (5, (int)http_pool[0].body_len)</code>
       * <code>Assert equal string ("hello", (const char *)http_pool[0].body)</code>
   </details>
@@ -11065,7 +11065,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Put with body
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (7, (int)http_pool[0].body_len)</code>
       * <code>Assert equal string ("updated", (const char *)http_pool[0].body)</code>
   </details>
@@ -11075,7 +11075,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Body starting with newline
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (5, (int)http_pool[0].body_len)</code>
       * <code>Assert equal ('\\n', (char)http_pool[0].body[0])</code>
       * <code>Assert equal string ("\\nabcd", (const char *)http_pool[0].body)</code>
@@ -11086,7 +11086,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Post content length zero
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (0, (int)http_pool[0].body_len)</code>
   </details>
 
@@ -11095,7 +11095,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Body of exactly BODY_BUF_SIZE bytes - should succeed
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (BODY_BUF_SIZE, (int)http_pool[0].body_len)</code>
   </details>
 
@@ -11108,11 +11108,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_body_one_over_limit_is_413</b> &mdash; <i>Content-Length == BODY_BUF_SIZE + 1 → PARSE_ENTITY_TOO_LARGE</i></summary>
+    <summary><b>test_body_one_over_limit_is_413</b> &mdash; <i>Content-Length == BODY_BUF_SIZE + 1 → ParseState::PARSE_ENTITY_TOO_LARGE</i></summary>
 
-    * **Objective**: Content-Length == BODY_BUF_SIZE + 1 → PARSE_ENTITY_TOO_LARGE
+    * **Objective**: Content-Length == BODY_BUF_SIZE + 1 → ParseState::PARSE_ENTITY_TOO_LARGE
     * **Assertions**:
-      * <code>Assert equal (PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11120,7 +11120,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Body far over limit is 413
     * **Assertions**:
-      * <code>Assert equal (PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11136,7 +11136,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Headers before the blank line must be accessible even when 413
     * **Assertions**:
-      * <code>Assert equal (PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("test", http_get_header(&http_pool[0], "X-Tag"))</code>
   </details>
 
@@ -11145,7 +11145,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: BODY_BUF_SIZE is the max that fits - should NOT trigger 413
     * **Assertions**:
-      * <code>Assert not equal (PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11153,8 +11153,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Bytes fed after URI_TOO_LONG are ignored - state must not change
     * **Assertions**:
-      * <code>Assert equal (PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
-      * <code>Assert equal (PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11162,7 +11162,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Buffer fills to MAX_PATH_LEN-1 chars before overflow is detected
     * **Assertions**:
-      * <code>Assert equal (PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
       * <code>Assert equal ('/', http_pool[0].path[0])</code>
       * <code>Assert equal ('a', http_pool[0].path[1])</code>
       * <code>Assert equal (MAX_PATH_LEN - 1, (int)strlen(http_pool[0].path))</code>
@@ -11173,7 +11173,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Method nul byte is error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11181,7 +11181,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Method control char is error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11189,7 +11189,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Method del byte is error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11197,7 +11197,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: '(' is VCHAR but not tchar
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11205,7 +11205,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: '-' is a valid tchar; a custom method like "X-CMD" is valid per RFC 7230
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("X-CMD", http_pool[0].method)</code>
   </details>
 
@@ -11214,7 +11214,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Path nul byte is error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11222,7 +11222,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Path control char is error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11230,7 +11230,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Path del byte is error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11238,7 +11238,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Query nul byte is error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11246,7 +11246,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Query control char is error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11254,7 +11254,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Space in a field-name is not a valid tchar
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11262,7 +11262,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Header key nul byte is error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11270,15 +11270,15 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Header key control char is error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_header_key_mid_cr_is_error</b> &mdash; <i>CR in the middle of a key name must be PARSE_ERROR, not blank-line detection</i></summary>
+    <summary><b>test_header_key_mid_cr_is_error</b> &mdash; <i>CR in the middle of a key name must be ParseState::PARSE_ERROR, not blank-line detection</i></summary>
 
-    * **Objective**: CR in the middle of a key name must be PARSE_ERROR, not blank-line detection
+    * **Objective**: CR in the middle of a key name must be ParseState::PARSE_ERROR, not blank-line detection
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11286,7 +11286,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Empty key name (colon immediately after CRLF): transition to val with empty key
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11294,7 +11294,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Regression: "Sec-WebSocket-Extensions" (24 chars) is a standard header that
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>TEST_ASSERT_EQUAL_STRING("permessage-deflate; client_max_window_bits",</code>
   </details>
 
@@ -11303,7 +11303,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A header name longer than MAX_KEY_LEN is capped (capacity), not rejected:
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("kept", http_get_header(&http_pool[0], "X-Real"))</code>
   </details>
 
@@ -11312,7 +11312,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Header val nul byte is error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11320,7 +11320,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Header val control char is error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11328,7 +11328,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Header val del byte is error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11336,7 +11336,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: HTAB is valid mid-value (RFC 7230 §3.2)
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert not null (v)</code>
       * <code>Assert equal ('f', v[0])</code>
   </details>
@@ -11346,7 +11346,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Leading HTAB (OWS) is stripped just like leading SP
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert not null (v)</code>
       * <code>Assert equal string ("value", v)</code>
   </details>
@@ -11356,7 +11356,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: obs-text bytes (%x80-FF) are allowed for legacy compatibility (RFC 7230 §3.2.6)
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11364,8 +11364,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Version http11 recognized
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
-      * <code>Assert equal (HTTP_11, http_pool[0].version)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (HttpVersion::HTTP_11, http_pool[0].version)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11373,8 +11373,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Version http10 recognized
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
-      * <code>Assert equal (HTTP_10, http_pool[0].version)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (HttpVersion::HTTP_10, http_pool[0].version)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11382,8 +11382,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Version unknown is http unknown
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
-      * <code>Assert equal (HTTP_UNKNOWN, http_pool[0].version)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (HttpVersion::HTTP_UNKNOWN, http_pool[0].version)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11391,8 +11391,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Version reset to unknown
     * **Assertions**:
-      * <code>Assert equal (HTTP_11, http_pool[0].version)</code>
-      * <code>Assert equal (HTTP_UNKNOWN, http_pool[0].version)</code>
+      * <code>Assert equal (HttpVersion::HTTP_11, http_pool[0].version)</code>
+      * <code>Assert equal (HttpVersion::HTTP_UNKNOWN, http_pool[0].version)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11400,7 +11400,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: CRLF in version line replaced by CR + X (no LF)
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11408,7 +11408,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Header block ends with CR + non-LF in the blank line
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11428,7 +11428,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Incremental byte by byte
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("/inc", http_pool[0].path)</code>
   </details>
 
@@ -11437,8 +11437,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Incremental two chunks
     * **Assertions**:
-      * <code>Assert not equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("body", (const char *)http_pool[0].body)</code>
   </details>
 
@@ -11447,7 +11447,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Stress - Many requests same slot
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11455,7 +11455,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Build a request with MAX_HEADERS header lines
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (MAX_HEADERS, (int)http_pool[0].header_count)</code>
   </details>
 
@@ -11464,7 +11464,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Build a query string with MAX_QUERY_PARAMS parameters
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (MAX_QUERY_PARAMS, (int)http_pool[0].query_count)</code>
   </details>
 
@@ -13207,7 +13207,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert null (strstr(resp, "Connection: close"))</code>
       * <code>Assert equal (CONN_ACTIVE, conn_pool[0].state)</code>
       * <code>Assert not null (conn_pool[0].pcb)</code>
-      * <code>Assert equal (PARSE_METHOD, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19071,7 +19071,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Http oversized path
     * **Assertions**:
-      * <code>Assert equal int (PARSE_URI_TOO_LONG, g_req.parse_state)</code>
+      * <code>Assert equal int (ParseState::PARSE_URI_TOO_LONG, g_req.parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19079,7 +19079,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Http content length too large
     * **Assertions**:
-      * <code>Assert equal int (PARSE_ENTITY_TOO_LARGE, g_req.parse_state)</code>
+      * <code>Assert equal int (ParseState::PARSE_ENTITY_TOO_LARGE, g_req.parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19818,7 +19818,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Fn reset sets parse state to method
     * **Assertions**:
-      * <code>Assert equal (PARSE_METHOD, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19889,7 +19889,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Fn reset is idempotent
     * **Assertions**:
-      * <code>Assert equal (PARSE_METHOD, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
       * <code>Assert equal (0, http_pool[0].header_count)</code>
       * <code>Assert equal (0, (int)http_pool[0].body_len)</code>
   </details>
@@ -20042,7 +20042,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal string ("GET", http_pool[0].method)</code>
       * <code>Assert equal string ("/api/status", http_pool[0].path)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20050,7 +20050,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Post body stored
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[1].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[1].parse_state)</code>
       * <code>Assert equal string ("hello", (const char *)http_pool[1].body)</code>
       * <code>Assert equal (5, (int)http_pool[1].body_len)</code>
   </details>
@@ -20061,7 +20061,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Put parses complete
     * **Assertions**:
       * <code>Assert equal string ("PUT", http_pool[0].method)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20070,7 +20070,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Delete parses complete
     * **Assertions**:
       * <code>Assert equal string ("DELETE", http_pool[0].method)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20079,7 +20079,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Patch parses complete
     * **Assertions**:
       * <code>Assert equal string ("PATCH", http_pool[0].method)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20088,7 +20088,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Head parses complete
     * **Assertions**:
       * <code>Assert equal string ("HEAD", http_pool[0].method)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20118,11 +20118,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_body_over_buf_size_is_413</b> &mdash; <i>Content-Length > BODY_BUF_SIZE → PARSE_ENTITY_TOO_LARGE before any body is read.</i></summary>
+    <summary><b>test_body_over_buf_size_is_413</b> &mdash; <i>Content-Length > BODY_BUF_SIZE → ParseState::PARSE_ENTITY_TOO_LARGE before any body is read.</i></summary>
 
-    * **Objective**: Content-Length > BODY_BUF_SIZE → PARSE_ENTITY_TOO_LARGE before any body is read.
+    * **Objective**: Content-Length > BODY_BUF_SIZE → ParseState::PARSE_ENTITY_TOO_LARGE before any body is read.
     * **Assertions**:
-      * <code>Assert equal (PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state)</code>
       * <code>Assert equal (0, (int)http_pool[0].body_len)</code>
   </details>
 
@@ -20131,7 +20131,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Overflow method sets error
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[3].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[3].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20139,7 +20139,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Overflow path sets 414
     * **Assertions**:
-      * <code>Assert equal (PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_URI_TOO_LONG, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20147,7 +20147,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Null byte would terminate the C-string in push(), so use a visible non-LF byte.
     * **Assertions**:
-      * <code>Assert equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20171,8 +20171,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Incremental two pushes completes
     * **Assertions**:
-      * <code>Assert not equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20180,7 +20180,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Body starting with newline stored
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (5, (int)http_pool[0].body_len)</code>
       * <code>Assert equal ('\\n', (char)http_pool[0].body[0])</code>
       * <code>Assert equal string ("\\nabcd", (const char *)http_pool[0].body)</code>
@@ -20191,7 +20191,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Put body stored
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("PUT", http_pool[0].method)</code>
       * <code>Assert equal (7, (int)http_pool[0].body_len)</code>
       * <code>Assert equal string ("updated", (const char *)http_pool[0].body)</code>
@@ -20202,7 +20202,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Content length header stored in headers array
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (3, (int)http_pool[0].content_length)</code>
       * <code>Assert not null (cl)</code>
       * <code>Assert equal string ("3", cl)</code>
@@ -20213,8 +20213,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Stress - Parse reset 100 cycles
     * **Assertions**:
-      * <code>Assert equal message (PARSE_COMPLETE, http_pool[0].parse_state, "unexpected parse state mid-cycle")</code>
-      * <code>Assert equal message (PARSE_METHOD, http_pool[0].parse_state, "state not reset")</code>
+      * <code>TEST_ASSERT_EQUAL_MESSAGE(ParseState::PARSE_COMPLETE, http_pool[0].parse_state,</code>
+      * <code>Assert equal message (ParseState::PARSE_METHOD, http_pool[0].parse_state, "state not reset")</code>
       * <code>Assert equal message (0, http_pool[0].header_count, "headers not reset")</code>
       * <code>Assert equal message ('\\0', http_pool[0].method[0], "method not reset")</code>
   </details>
@@ -20224,15 +20224,15 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Stress - All slots parse simultaneously
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("GET", http_pool[0].method)</code>
       * <code>Assert equal string ("/zero", http_pool[0].path)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[1].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[1].parse_state)</code>
       * <code>Assert equal string ("POST", http_pool[1].method)</code>
       * <code>Assert equal string ("abc", (const char *)http_pool[1].body)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[2].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[2].parse_state)</code>
       * <code>Assert equal string ("PUT", http_pool[2].method)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[3].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[3].parse_state)</code>
       * <code>Assert equal string ("DELETE", http_pool[3].method)</code>
       * <code>Assert equal string ("/three", http_pool[3].path)</code>
   </details>
@@ -20243,7 +20243,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Stress - Method at max 7 chars no error
     * **Assertions**:
       * <code>Assert equal string ("OPTIONS", http_pool[0].method)</code>
-      * <code>Assert not equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20251,7 +20251,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: req now contains "GET /" followed by (MAX_PATH_LEN-2) 'a's = MAX_PATH_LEN-1 total path chars
     * **Assertions**:
-      * <code>Assert not equal (PARSE_ERROR, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_ERROR, http_pool[0].parse_state)</code>
       * <code>Assert equal (MAX_PATH_LEN - 1, (int)strlen(http_pool[0].path))</code>
   </details>
 
@@ -20260,7 +20260,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Spot-check: first, 26th, and 27th body bytes
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal (BODY_BUF_SIZE, (int)http_pool[0].body_len)</code>
       * <code>Assert equal ('\\0', http_pool[0].body[BODY_BUF_SIZE])</code>
       * <code>Assert equal ('A', http_pool[0].body[0])</code>
@@ -20274,7 +20274,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Stress - Exactly max headers all stored
     * **Assertions**:
       * <code>Assert equal (MAX_HEADERS, http_pool[0].header_count)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("H8", http_pool[0].headers[7].key)</code>
       * <code>Assert equal string ("v8", http_pool[0].headers[7].val)</code>
   </details>
@@ -20285,7 +20285,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Stress - Exactly max query params all stored
     * **Assertions**:
       * <code>Assert equal (MAX_QUERY_PARAMS, http_pool[0].query_count)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("h", http_pool[0].query_params[MAX_QUERY_PARAMS - 1].key)</code>
       * <code>Assert equal string ("8", http_pool[0].query_params[MAX_QUERY_PARAMS - 1].val)</code>
   </details>
@@ -20295,8 +20295,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Stress - Incremental byte by byte no error
     * **Assertions**:
-      * <code>TEST_ASSERT_NOT_EQUAL_MESSAGE(PARSE_ERROR, http_pool[0].parse_state,</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>TEST_ASSERT_NOT_EQUAL_MESSAGE(ParseState::PARSE_ERROR, http_pool[0].parse_state,</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20304,10 +20304,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Stress - Sequential requests no state leak
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("GET", http_pool[0].method)</code>
       * <code>Assert equal (0, http_pool[0].header_count)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("POST", http_pool[0].method)</code>
       * <code>Assert equal string ("hi", (const char *)http_pool[0].body)</code>
   </details>
@@ -20353,10 +20353,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Slot 0: push a full request
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
-      * <code>Assert not equal (PARSE_COMPLETE, http_pool[1].parse_state)</code>
-      * <code>Assert not equal (PARSE_ERROR, http_pool[1].parse_state)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[1].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_COMPLETE, http_pool[1].parse_state)</code>
+      * <code>Assert not equal (ParseState::PARSE_ERROR, http_pool[1].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[1].parse_state)</code>
       * <code>Assert equal string ("POST", http_pool[1].method)</code>
   </details>
 
@@ -20365,8 +20365,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Race - Reset during parse header val
     * **Assertions**:
-      * <code>Assert equal (PARSE_HEADER_VAL, http_pool[0].parse_state)</code>
-      * <code>Assert equal (PARSE_METHOD, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_HEADER_VAL, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
       * <code>Assert equal (0, http_pool[0].header_count)</code>
       * <code>Assert equal ('\\0', http_pool[0].method[0])</code>
   </details>
@@ -20376,8 +20376,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Race - Reset during parse query
     * **Assertions**:
-      * <code>Assert equal (PARSE_QUERY, http_pool[0].parse_state)</code>
-      * <code>Assert equal (PARSE_METHOD, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_QUERY, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
       * <code>Assert equal (0, (int)http_pool[0].query_idx)</code>
       * <code>Assert equal (0, http_pool[0].query_count)</code>
   </details>
@@ -20387,8 +20387,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Race - Reset during parse body
     * **Assertions**:
-      * <code>Assert equal (PARSE_BODY, http_pool[0].parse_state)</code>
-      * <code>Assert equal (PARSE_METHOD, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_BODY, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
       * <code>Assert equal (0, (int)http_pool[0].body_len)</code>
       * <code>Assert equal (0, (int)http_pool[0].body_bytes_read)</code>
       * <code>Assert equal ('\\0', http_pool[0].body[0])</code>
@@ -20399,8 +20399,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Push extra bytes (simulates garbage/next request arriving)
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("GET", http_pool[0].method)</code>
   </details>
 
@@ -23844,7 +23844,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Pool initializes to parse method
     * **Assertions**:
-      * <code>Assert equal (PARSE_METHOD, http_pool[i].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[i].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23852,7 +23852,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Reset clears mid parse state
     * **Assertions**:
-      * <code>Assert equal (PARSE_METHOD, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
       * <code>Assert equal (0, http_pool[0].header_count)</code>
   </details>
 
@@ -23924,7 +23924,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Evt connect calls http reset
     * **Assertions**:
-      * <code>Assert equal (PARSE_METHOD, http_pool[1].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[1].parse_state)</code>
       * <code>Assert equal (0, http_pool[1].header_count)</code>
   </details>
 
@@ -23933,7 +23933,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Evt disconnect calls http reset
     * **Assertions**:
-      * <code>Assert equal (PARSE_METHOD, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
       * <code>Assert equal (0, http_pool[0].header_count)</code>
   </details>
 
@@ -23942,7 +23942,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Evt error calls http reset
     * **Assertions**:
-      * <code>Assert equal (PARSE_METHOD, http_pool[2].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[2].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23950,7 +23950,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Evt data calls http parse
     * **Assertions**:
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[0].parse_state)</code>
       * <code>Assert equal string ("GET", http_pool[0].method)</code>
       * <code>Assert equal string ("/evt", http_pool[0].path)</code>
   </details>
@@ -23960,9 +23960,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Slot 0: dirty state → EVT_CONNECT → reset
     * **Assertions**:
-      * <code>Assert equal (PARSE_METHOD, http_pool[0].parse_state)</code>
-      * <code>Assert equal (PARSE_COMPLETE, http_pool[1].parse_state)</code>
-      * <code>Assert equal (PARSE_METHOD, http_pool[2].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[0].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_COMPLETE, http_pool[1].parse_state)</code>
+      * <code>Assert equal (ParseState::PARSE_METHOD, http_pool[2].parse_state)</code>
   </details>
 
   <details style="margin-left: 20px;">
