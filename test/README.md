@@ -14997,8 +14997,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert equal uint (0, mqtt_build_subscribe(out, sizeof(out), 1, big_topic, 0))</code>
       * <code>Assert equal uint (0, mqtt_build_unsubscribe(nullptr, sizeof(out), 1, "t"))</code>
       * <code>Assert equal uint (0, mqtt_build_unsubscribe(out, sizeof(out), 1, big_topic))</code>
-      * <code>Assert equal uint (0, mqtt_build_ack(nullptr, 4, 4, 1))</code>
-      * <code>Assert equal uint (0, mqtt_build_ack(out, 3, 4, 1))</code>
+      * <code>Assert equal uint (0, mqtt_build_ack(nullptr, 4, (MqttType)4, 1))</code>
+      * <code>Assert equal uint (0, mqtt_build_ack(out, 3, (MqttType)4, 1))</code>
       * <code>Assert equal uint (0, mqtt_build_pingreq(nullptr, 2))</code>
       * <code>Assert equal uint (0, mqtt_build_pingreq(out, 1))</code>
       * <code>Assert equal uint (0, mqtt_build_disconnect(nullptr, 2))</code>
@@ -15070,7 +15070,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert greater than (0, len)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x10, buf[0]); // CONNECT, flags 0</code>
       * <code>Assert true (mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
-      * <code>Assert equal (MQTT_CONNECT, type)</code>
+      * <code>Assert equal (MqttType::MQTT_CONNECT, type)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, b[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(4, b[1]);</code>
       * <code>Assert equal memory ("MQTT", b + 2, 4)</code>
@@ -15098,7 +15098,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert greater than (0, len)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x30, buf[0]); // PUBLISH, qos0</code>
       * <code>Assert true (mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
-      * <code>Assert equal (MQTT_PUBLISH, type)</code>
+      * <code>Assert equal (MqttType::MQTT_PUBLISH, type)</code>
       * <code>Assert true (mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
       * <code>Assert equal string ("a/b", topic)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, plen);</code>
@@ -15183,10 +15183,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Ack packets
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(4, mqtt_build_ack(buf, sizeof(buf), MQTT_PUBACK, 0x2222));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, mqtt_build_ack(buf, sizeof(buf), MqttType::MQTT_PUBACK, 0x2222));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x40, buf[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x2222, mqtt_parse_ack(buf + 2, 2));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(4, mqtt_build_ack(buf, sizeof(buf), MQTT_PUBREL, 0x3333));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, mqtt_build_ack(buf, sizeof(buf), MqttType::MQTT_PUBREL, 0x3333));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x62, buf[0]); // PUBREL requires flags 0010</code>
   </details>
 
