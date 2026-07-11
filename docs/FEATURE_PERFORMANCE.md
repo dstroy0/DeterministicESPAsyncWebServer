@@ -322,6 +322,33 @@ op (inflate of a ~70 B JSON message).
   **refused it without allocating the expanded payload** - a WebSocket zip bomb cannot exhaust memory.
   The output cap is structural (a fixed message buffer), so the defense holds regardless of the ratio.
 
+### SSH server crypto (DETWS_ENABLE_SSH)
+
+The SSH-2 server's hot cryptographic ops: the curve25519 KEX (an X25519 scalar multiplication for the
+ephemeral key and again for the shared secret), the ssh-ed25519 host-key signature over the exchange
+hash (a fixed-base scalar multiplication), and the chacha20-poly1305@openssh.com record layer (the
+per-packet steady-state op). Host figures from [`perf/bench_ssh.cpp`](../perf/bench_ssh.cpp); the device
+figures are an on-device CCOUNT microbench (`ESP.getCycleCount()` @ 240 MHz, N warm iterations, run on
+a high-priority core-1 task in the `rig_s3_ssh` firmware; the two X25519 measurements agree to 0.03%).
+
+| Operation                               | Host ns/op | Host MB/s | ESP32-S3 us/op | ESP32-S3 MB/s |
+| --------------------------------------- | ---------: | --------: | -------------: | ------------: |
+| `ssh_x25519` scalarmult (KEX)           |  1,588,291 |         - |        150,845 |             - |
+| `ssh_ed25519_sign` (host-key signature) |  5,448,039 |         - |        547,885 |             - |
+| `ssh_chachapoly_encrypt` (1 KiB packet) |      6,103 |     167.8 |            705 |           1.5 |
+
+- **The SSH handshake is expensive on the device: ~0.85 s of pure crypto** (two X25519 at ~151 ms each +
+  one ed25519 sign at ~548 ms), because the curve25519 / ed25519 **field arithmetic is software** (radix-2^16
+  `int64` limbs; xtensa has no `__int128`); only the modular inversion is offloaded to the ESP32 MPI/RSA
+  accelerator. That is a fixed ~1 s connection setup cost - fine for an admin/config channel or a long-lived
+  tunnel, the wrong tool for high-churn short connections. The host is ~95-115x faster across every op (a
+  uniform ratio that cross-validates the device CCOUNT figures).
+- The **chacha20-poly1305 record layer runs at ~1.5 MB/s** on the S3 (705 us to encrypt+authenticate a 1 KiB
+  packet: two ChaCha20 keystreams + a Poly1305 tag, all software). That is the steady-state throughput
+  ceiling once the session is up - ample for a shell / control channel or metered telemetry, a bottleneck
+  for bulk file transfer (`scp` of large files). AES-256-CTR is offered as a fallback (HW-accelerated AES),
+  but chacha is negotiated first and is the security-preferred choice.
+
 ### MQTT 3.1.1 client codec (DETWS_ENABLE_MQTT)
 
 The device is an MQTT client; these are its pure packet build/parse hot ops - `mqtt_build_connect` /
