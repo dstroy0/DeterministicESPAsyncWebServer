@@ -601,6 +601,7 @@ src/
 │   ├── cc1101/  (cc1101.h, cc1101.cpp)
 │   ├── cclink/  (cclink.h, cclink.cpp)
 │   ├── cip/  (cip.h, cip.cpp)
+│   ├── cloudevents/  (cloudevents.h, cloudevents.cpp)
 │   ├── coap/  (coap.h, coap.cpp)
 │   ├── config_io/  (config_io.h, config_io.cpp)
 │   ├── config_store/  (config_store.h, config_store.cpp)
@@ -672,6 +673,7 @@ src/
 │   ├── mbplus/  (mbplus.h, mbplus.cpp)
 │   ├── mbus/  (mbus.h, mbus.cpp)
 │   ├── mdns_adaptive/  (mdns_adaptive.h, mdns_adaptive.cpp)
+│   ├── mdns_service/  (mdns_service.h, mdns_service.cpp)
 │   ├── melsec/  (melsec.h, melsec.cpp)
 │   ├── mms/  (mms.h, mms.cpp)
 │   ├── modbus/
@@ -694,6 +696,7 @@ src/
 │   ├── nrf24/  (nrf24.h, nrf24.cpp)
 │   ├── ntcip/  (ntcip.h, ntcip.cpp)
 │   ├── ntp_server/  (ntp_server.h, ntp_server.cpp)
+│   ├── ntp_service/  (ntp_service.h, ntp_service.cpp)
 │   ├── nts/  (nts.h, nts.cpp)
 │   ├── oauth2/  (oauth2.h, oauth2.cpp)
 │   ├── ocit/  (ocit.h, ocit.cpp)
@@ -702,6 +705,7 @@ src/
 │   ├── opcua_client/  (opcua_client.h, opcua_client.cpp)
 │   ├── openadr/  (openadr.h, openadr.cpp)
 │   ├── ota_rollback/  (ota_rollback.h, ota_rollback.cpp)
+│   ├── ota_service/  (ota_service.h, ota_service.cpp)
 │   ├── partition_monitor/
 │   │   ├── partition_monitor.cpp
 │   │   ├── partition_monitor.h
@@ -714,11 +718,13 @@ src/
 │   ├── profinet/  (profinet.h, profinet.cpp)
 │   ├── promisc/  (promisc.h, promisc.cpp)
 │   ├── protobuf/  (protobuf.h, protobuf.cpp)
+│   ├── provisioning_service/  (provisioning_service.h, provisioning_service.cpp)
 │   ├── proxy_protocol/  (proxy_protocol.h, proxy_protocol.cpp)
 │   ├── psram_pool/  (psram_pool.h, psram_pool.cpp)
 │   ├── radio_power/  (radio_power.h, radio_power.cpp)
 │   ├── radio_sniff/  (radio_sniff.h, radio_sniff.cpp)
 │   ├── rawl2/  (rawl2.h, rawl2.cpp)
+│   ├── redis_resp/  (redis_resp.h, redis_resp.cpp)
 │   ├── relay/
 │   │   ├── relay.cpp
 │   │   ├── relay.h
@@ -765,6 +771,7 @@ src/
 │   ├── sparkplug/  (sparkplug.h, sparkplug.cpp)
 │   ├── sqlite/  (sqlite_format.h, sqlite_format.cpp)
 │   ├── statsd/  (statsd.h, statsd.cpp)
+│   ├── stomp/  (stomp.h, stomp.cpp)
 │   ├── sunspec/  (sunspec.h, sunspec.cpp)
 │   ├── syslog/  (syslog.h, syslog.cpp)
 │   ├── telemetry/  (telemetry.h, telemetry.cpp)
@@ -773,6 +780,7 @@ src/
 │   ├── tls_policy/  (tls_policy.h, tls_policy.cpp)
 │   ├── totp/  (totp.h, totp.cpp)
 │   ├── udp_telemetry/  (udp_telemetry.h, udp_telemetry.cpp)
+│   ├── upload_service/  (upload_service.h, upload_service.cpp)
 │   ├── utmc/  (utmc.h, utmc.cpp)
 │   ├── vfs/  (vfs.h, vfs.cpp)
 │   ├── vl53l0x/  (vl53l0x.h, vl53l0x.cpp)
@@ -785,6 +793,7 @@ src/
 │   ├── wamp/  (wamp.h, wamp.cpp)
 │   ├── wave/  (wave.h, wave.cpp)
 │   ├── wearlevel/  (wearlevel.h, wearlevel.cpp)
+│   ├── web_terminal/  (web_terminal.h, web_terminal.cpp)
 │   ├── webdav/  (webdav.h, webdav.cpp)
 │   ├── webhook/  (webhook.h, webhook.cpp)
 │   ├── wifi_sniffer/  (wifi_sniffer.h, wifi_sniffer.cpp)
@@ -794,25 +803,7 @@ src/
 │   ├── zigbee/  (zigbee.h, zigbee.cpp)
 │   ├── zwave/  (zwave.h, zwave.cpp)
 │   ├── clock.h
-│   ├── cloudevents.cpp
-│   ├── cloudevents.h
-│   ├── i2c.h
-│   ├── mdns_service.cpp
-│   ├── mdns_service.h
-│   ├── ntp_service.cpp
-│   ├── ntp_service.h
-│   ├── ota_service.cpp
-│   ├── ota_service.h
-│   ├── provisioning_service.cpp
-│   ├── provisioning_service.h
-│   ├── redis_resp.cpp
-│   ├── redis_resp.h
-│   ├── stomp.cpp
-│   ├── stomp.h
-│   ├── upload_service.cpp
-│   ├── upload_service.h
-│   ├── web_terminal.cpp
-│   └── web_terminal.h
+│   └── i2c.h
 ├── shared_primitives/
 │   ├── aes_sbox.h
 │   ├── bytes.h
