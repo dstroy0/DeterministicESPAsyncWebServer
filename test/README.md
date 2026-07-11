@@ -21248,9 +21248,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (quic_conn_recv(&qc, dg, dl))</code>
       * <code>Assert true (sl &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QUIC_LP_INITIAL, type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_INITIAL, type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(TLS_HS_SERVER_HELLO, sh[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QUIC_LP_HANDSHAKE, hstype);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_HANDSHAKE, hstype);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(TLS_HS_ENCRYPTED_EXTENSIONS, hsflight[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qc.tls.hs_server.key, hs_server_keys.key, 16);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qc.tls.ap_server.key, ap_server_keys.key, 16);</code>
@@ -21285,7 +21285,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert equal uint (0, quic_conn_send(&qc, sdg, sizeof(sdg)))</code>
       * <code>Assert equal uint (0, quic_conn_send(&qc, sdg, sizeof(sdg))); // still nothing (not fired)</code>
       * <code>Assert true (sl2 &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QUIC_LP_INITIAL, type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_INITIAL, type);</code>
       * <code>Assert true (sh_len &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(TLS_HS_SERVER_HELLO, sh[0]); // the ServerHello was retransmitted</code>
       * <code>Assert false (qc.pto_armed)</code>
@@ -21765,7 +21765,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (quic_is_long_header(out[0]))</code>
       * <code>Assert true (quic_parse_long_header(out, n, &h))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(QUIC_VERSION_1, h.version);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(QUIC_LP_INITIAL, h.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_INITIAL, h.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(5, h.dcid_len);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(2, h.scid_len);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(dcid, h.dcid, 5);</code>
@@ -21837,10 +21837,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Packet-number encode into a buffer too small, and the 4-byte length ceiling.
     * **Assertions**:
-      * <code>Assert equal int (0, (int)quic_build_long_header(out, sizeof out, QUIC_LP_INITIAL, 1, cid, 2, cid, 2, 0))</code>
-      * <code>Assert equal int (0, (int)quic_build_long_header(out, sizeof out, QUIC_LP_INITIAL, 1, cid, 2, cid, 2, 5))</code>
-      * <code>Assert equal int (0, (int)quic_build_long_header(out, sizeof out, QUIC_LP_INITIAL, 1, cid, 21, cid, 2, 1))</code>
-      * <code>Assert equal int (0, (int)quic_build_long_header(out, 6, QUIC_LP_INITIAL, 1, cid, 2, cid, 2, 1))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
+      * <code>TEST_ASSERT_EQUAL_INT(</code>
       * <code>Assert equal int (0, (int)quic_build_version_negotiation(out, 4, cid, 2, cid, 2, 0, 0))</code>
       * <code>TEST_ASSERT_EQUAL_INT(0,</code>
       * <code>Assert equal int (0, (int)quic_pn_encode(pn, 1, 0x123456, -1))</code>
