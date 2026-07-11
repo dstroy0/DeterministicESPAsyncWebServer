@@ -1494,6 +1494,24 @@
 "native_statsd",
 "native_syslog"
 ],
+"src/server/dwserver_internal.h": [
+"native_app",
+"native_diag",
+"native_h3_server",
+"native_keepalive",
+"native_range",
+"native_upload",
+"native_webdav_handler"
+],
+"src/server/webdav.cpp": [
+"native_app",
+"native_diag",
+"native_h3_server",
+"native_keepalive",
+"native_range",
+"native_upload",
+"native_webdav_handler"
+],
 "src/services/ads1115/ads1115.cpp": [
 "native_ads1115"
 ],
@@ -2619,6 +2637,12 @@
 "native_webdav_handler"
 ],
 "src/services/webdav/webdav.h": [
+"native_app",
+"native_diag",
+"native_h3_server",
+"native_keepalive",
+"native_range",
+"native_upload",
 "native_webdav",
 "native_webdav_handler"
 ],
