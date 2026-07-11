@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- suppress two design-conflict rules + fix trivial smells ([`1d8d711`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d8d711da3f5d15526beaa0c5ed933fadaf0dc77))
+- update CHANGELOG.md [skip ci] ([`4ec5c25`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4ec5c25422bfb472f00ec01767f83a2f3f541e7f))
 - idempotent PlatformIO publish (already-published is a no-op) ([`82cb24e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/82cb24e170bf36cf63e4a7d54e76dddc3a97f613))
 - update CHANGELOG.md [skip ci] ([`af9df4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af9df4a074ae73f9bacd61c225c867a1f05f6fef))
 - make dependency-graph refresh non-fatal ([`595d04a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/595d04a91e2c214a65f6669b1ffc6bec60dd2623))
