@@ -6,11 +6,17 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a4d816e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4d816ef9276676eb2192267757d285826ec8dd7))
 - update CHANGELOG.md [skip ci] ([`b06168c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b06168c06ac71b18d1150532cff3b12c44fc6816))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`64600e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64600e200aefafacc9ca6d7fb538e3c6429da913))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cb76528`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb765284f74e8ce8ecfb9029ad0195efe41a3f4f))
+
+### Performance
+
+- add the SSH crypto throughput bench (host + S3 CCOUNT) ([`47644e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47644e1846ceed49ac3a38795df53bcdaf0b0b71))
 
 ### Testing
 
