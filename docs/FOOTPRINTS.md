@@ -14,7 +14,7 @@ from each example's `pio ci` size report and aggregated into
 | `AUTH_LOCKOUT`                           | L6-Presentation/12.AuthLockout          | 734.7 KB (57.4%) | 65.0 KB (20.3%)  |
 | `BUS_CAPTURE+FORWARD+ETHERNET`           | Foundation/22.CanCapture                | 753.1 KB (58.8%) | 44.4 KB (13.9%)  |
 | `CBOR`                                   | L6-Presentation/13.Cbor                 | 735.9 KB (57.5%) | 64.5 KB (20.2%)  |
-| `COAP`                                   | L7-Application/13.CoAP                  | 739.1 KB (57.7%) | 66.9 KB (20.9%)  |
+| `COAP`                                   | L7-Application/13.CoAP                  | 739.2 KB (57.7%) | 66.9 KB (20.9%)  |
 | `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD`       | L7-Application/28.CoapBlock             | 710.5 KB (55.5%) | 47.2 KB (14.8%)  |
 | `COAP+COAP_OBSERVE`                      | L7-Application/27.CoapObserve           | 712.3 KB (55.6%) | 45.0 KB (14.1%)  |
 | `CONFIG_STORE+CONFIG_IO`                 | L7-Application/42.ConfigExport          | 738.5 KB (57.7%) | 64.5 KB (20.2%)  |
@@ -39,7 +39,7 @@ from each example's `pio ci` size report and aggregated into
 | `HTTP_CLIENT+WEBHOOK`                    | L7-Application/46.Webhook               | 743.9 KB (58.1%) | 83.7 KB (26.2%)  |
 | `INA219`                                 | L7-Application/67.Ina219                | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
 | `IPV6`                                   | Foundation/20.IPv6                      | 736.0 KB (57.5%) | 64.4 KB (20.1%)  |
-| `IP_ALLOWLIST`                           | L4-Transport/07.IpAllowlist             | 734.9 KB (57.4%) | 64.4 KB (20.1%)  |
+| `IP_ALLOWLIST`                           | L4-Transport/07.IpAllowlist             | 735.0 KB (57.4%) | 64.4 KB (20.1%)  |
 | `JWT`                                    | L6-Presentation/06.JWTAuth              | 735.8 KB (57.5%) | 65.0 KB (20.3%)  |
 | `KEEPALIVE`                              | L4-Transport/01.KeepAlive               | 734.3 KB (57.4%) | 64.4 KB (20.1%)  |
 | `LD2410`                                 | L7-Application/62.Ld2410                | 264.3 KB (20.7%) | 21.1 KB (6.6%)   |
