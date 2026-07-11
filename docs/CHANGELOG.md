@@ -42,6 +42,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- scoped enums DetIpFamily/DetIpScope (enum class 38/N) ([`8f558e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f558e856f228cbb13267636fda94cde9f1c499e))
 - scoped enums ConnProto/DetIface (enum class 36/N) ([`2ada4f4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ada4f49b9c3f7ffd187618d847687be8cb56ba3))
 - scoped enums for opcua/dshot/preempt_queue/dma (enum class 35/N) ([`bad0aa9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bad0aa92af40c2ca1993c8cfe8c9580505c3d59b))
 - retro - config_io field_type returns bool + DetwsCfgType out ([`4a83659`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a8365901cf65a85f04daf7f40225b8e5d1453a9))
