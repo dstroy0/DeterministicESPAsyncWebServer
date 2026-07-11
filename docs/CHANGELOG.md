@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`d281f1f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d281f1fb950930be9ba5b2736caeaef07fc768ca))
+- update CHANGELOG.md [skip ci] ([`2099ac9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2099ac92e324ffd8b54ca73ec99207a8d431a0ab))
 - update CHANGELOG.md [skip ci] ([`b884b47`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b884b479f9b6264a3f32fd781597b42da55da070))
 - update CHANGELOG.md [skip ci] ([`0233220`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0233220847d5af0c2291714399490a2ecefadda2))
 - update test report + coverage [skip ci] ([`6d786a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d786a7ad8f956458e2da6c315eeef1d77cf5945))
@@ -70,6 +72,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- radio_power/ota_rollback/logbuf anon enums -> namespacing structs ([`236dd2b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/236dd2b08b465776b59fb5a049f1157cb7bfc72e))
 - coap/telnet anon wire-const enums -> struct; telnet state -> enum class ([`03e40be`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03e40be15150255b8fa24aa8d453bf6c10051d59))
 - scoped enums for the open-domain services (enum class 53/N) ([`c48ff89`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c48ff89e4045dff20a2862607a7b8828e71d6b1e))
 - SMB2 wire constants -> namespacing structs, not anon enums ([`5989051`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/59890511865415860d1740b26f7f47913f6235e2))
