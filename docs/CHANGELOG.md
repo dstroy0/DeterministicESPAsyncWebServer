@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1aa971c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1aa971ccfe411c2af7667724cef610e50128a283))
 - update test report + coverage [skip ci] ([`84ae6a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/84ae6a0ebe570495376eb213c35d3c12ed581f0d))
 - update CHANGELOG.md [skip ci] ([`76fc3fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/76fc3fe9ef554b26790a7c11ebc7904c74bd953f))
 - update CHANGELOG.md [skip ci] ([`61d452f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61d452f8b3a8e67392958b9a90a3cc7a9e019baf))
@@ -96,6 +97,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`678e1ce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/678e1ce8c7f4139af317a7c8350afa1e0b13c2a2))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`955e939`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/955e9392b1f53cdec1fcbf5624b6c0c09dc3ece4))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ad0d918`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad0d918a6d067fe86af9484fddc012b02e881588))
 - update ESP32 build footprints [skip ci] ([`3efa5b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3efa5b97734a3b10a3c9229b9af9542880875a07))
@@ -159,6 +161,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- extract WebDAV handler from dwserver.cpp into src/server/webdav.cpp ([`485c6ac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/485c6ace52f7ed1227de6c1f270d2e6d77c6e7e6))
 - one folder per implemented service (9 root-level .h+.cpp -> own dir) ([`d26e867`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d26e867a6796322ece9148b592fabb54f59ef863))
 - one declaration per line - final 18 services (S1659) ([`361783c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/361783cec87978acebfe1fc102634747dad6682b))
 - one declaration per line - df1/dnp3/exc_decoder/device_id/coap/auth_lockout/inflate/listener (S1659) ([`547dde9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/547dde963ee83d657243977976d10f71c4c8a98d))
