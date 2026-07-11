@@ -5647,7 +5647,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Round trip bcc
     * **Assertions**:
-      * <code>Assert true (df1_parse_frame(buf, n, DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
+      * <code>Assert true (df1_parse_frame(buf, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(data), out_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(data, out, out_len);</code>
   </details>
@@ -5657,7 +5657,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Round trip crc
     * **Assertions**:
-      * <code>Assert true (df1_parse_frame(buf, n, DF1_CHECK_CRC, out, sizeof(out), &out_len))</code>
+      * <code>Assert true (df1_parse_frame(buf, n, Df1Check::DF1_CHECK_CRC, out, sizeof(out), &out_len))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(data), out_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(data, out, out_len);</code>
   </details>
@@ -5669,7 +5669,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
-      * <code>Assert true (df1_parse_frame(buf, n, DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
+      * <code>Assert true (df1_parse_frame(buf, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, out_len);</code>
   </details>
 
@@ -5678,10 +5678,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Corrupt a data byte -> BCC mismatch.
     * **Assertions**:
-      * <code>Assert false (df1_parse_frame(corrupt, n, DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
-      * <code>Assert false (df1_parse_frame(corrupt, n, DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
-      * <code>Assert false (df1_parse_frame(buf, n - 1, DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
-      * <code>Assert false (df1_parse_frame(buf, n, DF1_CHECK_BCC, out, 1, &out_len))</code>
+      * <code>Assert false (df1_parse_frame(corrupt, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
+      * <code>Assert false (df1_parse_frame(corrupt, n, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
+      * <code>Assert false (df1_parse_frame(buf, n - 1, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
+      * <code>Assert false (df1_parse_frame(buf, n, Df1Check::DF1_CHECK_BCC, out, 1, &out_len))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5689,7 +5689,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Build overflow fails closed
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, df1_build_frame(small, sizeof(small), data, sizeof(data), DF1_CHECK_BCC));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, df1_build_frame(small, sizeof(small), data, sizeof(data), Df1Check::DF1_CHECK_BCC));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5697,17 +5697,17 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: build guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, df1_build_frame(nullptr, sizeof(bbuf), d, 2, DF1_CHECK_BCC));    // null buf</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, df1_build_frame(bbuf, sizeof(bbuf), nullptr, 2, DF1_CHECK_BCC)); // len but null data</code>
-      * <code>Assert false (df1_parse_frame(nullptr, 8, DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
-      * <code>Assert false (df1_parse_frame(ok5, sizeof(ok5), DF1_CHECK_BCC, nullptr, 0, &out_len))</code>
-      * <code>Assert false (df1_parse_frame(two, sizeof(two), DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
-      * <code>Assert false (df1_parse_frame(dle_end, sizeof(dle_end), DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
-      * <code>Assert false (df1_parse_frame(dframe, dn, DF1_CHECK_BCC, out, 0, &out_len))</code>
-      * <code>Assert false (df1_parse_frame(bad_ctrl, sizeof(bad_ctrl), DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
-      * <code>Assert false (df1_parse_frame(no_end, sizeof(no_end), DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
-      * <code>Assert false (df1_parse_frame(crc_trunc, sizeof(crc_trunc), DF1_CHECK_CRC, out, sizeof(out), &out_len))</code>
-      * <code>Assert false (df1_parse_frame(cbuf, cn, DF1_CHECK_CRC, out, sizeof(out), &out_len))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, df1_build_frame(nullptr, sizeof(bbuf), d, 2, Df1Check::DF1_CHECK_BCC)); // null buf</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>Assert false (df1_parse_frame(nullptr, 8, Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
+      * <code>Assert false (df1_parse_frame(ok5, sizeof(ok5), Df1Check::DF1_CHECK_BCC, nullptr, 0, &out_len))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>Assert false (df1_parse_frame(dle_end, sizeof(dle_end), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
+      * <code>Assert false (df1_parse_frame(dframe, dn, Df1Check::DF1_CHECK_BCC, out, 0, &out_len))</code>
+      * <code>Assert false (df1_parse_frame(bad_ctrl, sizeof(bad_ctrl), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
+      * <code>Assert false (df1_parse_frame(no_end, sizeof(no_end), Df1Check::DF1_CHECK_BCC, out, sizeof(out), &out_len))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>Assert false (df1_parse_frame(cbuf, cn, Df1Check::DF1_CHECK_CRC, out, sizeof(out), &out_len))</code>
   </details>
 
 </details>
