@@ -419,6 +419,26 @@ op.
   at an 80 B datagram for a 2 KB input). HW-verified device-as-syslog-client against a UDP collector (7/7
   interop; PRI/VERSION/HOSTNAME/APP-NAME/MSG validated as RFC 5424).
 
+### NTP server (DETWS_ENABLE_NTP_SERVER)
+
+The device answers NTP requests on UDP/123 from its own clock (RFC 5905 server mode).
+`ntp_server_build_response` is the per-query hot op: it validates the 48-octet request, echoes the client's
+version + transmit stamp into the origin field, and stamps the reference/receive/transmit timestamps. Pure
+(no clock, no socket). Host from [`perf/bench_ntp.cpp`](../perf/bench_ntp.cpp); device from the rig `/bench`
+op.
+
+| Operation                        | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| -------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `ntp_server_build_response` (48) |       10.5 |    9108.3 |             328 |           1366 |
+
+- The **cheapest server op benched** - a fixed 48-octet build at **~1.4 us** on the device (memset + a few
+  field writes; no parse loop). More important than the speed is the **shape**: the reply is always exactly
+  48 octets and a request shorter than 48 gets none, so **reply size never exceeds request size** - the
+  server has **no amplification factor** (unlike an ntpd MONLIST reflector). The `ntp_server_abuse` attack
+  confirmed max reply/request = **1.00x** across 1..2048-octet requests, plus all 64 mode/version combos and
+  malformed/oversized packets handled without a crash. HW-verified against the real `ntplib` client (6/6
+  interop: mode 4, stratum, origin echo, LOCL ref-id, a plausible epoch).
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON

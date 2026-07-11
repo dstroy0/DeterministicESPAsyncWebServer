@@ -25,6 +25,11 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
   design), but `server.on()`'s return value is worth checking in apps that register many routes. Whenever a
   new rig route 404s while a fresh `/bench` field proves the new firmware is live, suspect the route table is
   full before anything else. Watch the count as more device-as-client probes accumulate.
+- **Sequel (2026-07-11, NTP tick):** the **same class** bit the UDP side - `DETWS_MAX_UDP_LISTENERS` defaults
+  to **2** (CoAP 5683 + SNMP 161 filled it), so `ntp_server_begin()`'s `det_udp_listen(123)` returned false
+  and the rig serial printed `NTP=bind-failed`. Fixed with `-DDETWS_MAX_UDP_LISTENERS=4`. Same rule: fixed
+  pools that fail closed need their cap raised as the rig accretes protocols - check UDP listeners too, not
+  just the HTTP route table.
 
 ---
 
