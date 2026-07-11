@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`0f425f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f425f9ebc90c4d22d46534056332b9ad118507b))
 - update test report + coverage [skip ci] ([`d880311`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d88031172d08b0873dd2cfadb2720a774a9dfc21))
 - update CHANGELOG.md [skip ci] ([`cb1d47d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb1d47d3e9c9e379b479968a115e26d6c9c7a83d))
 - update CHANGELOG.md [skip ci] ([`c90fbee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c90fbeec0e5620185473272d832f872d6e98f132))
@@ -63,6 +64,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1c8410b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1c8410b0ef9c0da24588bf5fb8e6a9059d4acf6d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`36ea60f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/36ea60fae157d692c7901d1be4add51598254343))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8f393c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f393c921c3d4ef8a1c5c05a8017897053c34fb0))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6a96d4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a96d4e7096e5fdec6ddb82462931d1c92d9622c))
@@ -105,6 +107,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- lora.cpp anon register/mode/irq enums -> namespacing structs ([`e3ed013`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3ed013af8392cc51aa6e432a1a8d2d72d888cf1))
 - dds/southbound anon enums -> namespacing structs ([`7961536`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7961536a08a37e6f1ed4b183e4409827499ea316))
 - ocit/rawl2/wave anon wire-const enums -> namespacing structs ([`67eccc2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/67eccc29743683c0c23be97a96bc09c2e33389e0))
 - iccp/utmc/nema_ts2 anon wire-const enums -> namespacing structs ([`a8c4baa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a8c4baa4587501506ce0dabd10e5cd637cfec1b4))
