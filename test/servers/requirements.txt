@@ -7,6 +7,8 @@
 #   mqtt-broker  -> mosquitto                            apt install mosquitto / choco install mosquitto
 #   redis        -> redis-server (device-as-client)      apt install redis-server; run --bind 0.0.0.0 --protected-mode no
 #                   (the redis peer itself is stdlib - raw RESP over a socket - and needs no pip package)
+#   syslog       -> none (device-as-client)              the syslog peer is stdlib - a raw UDP collector +
+#                   RFC 5424 parser - and needs no pip package (rsyslog is the production reference receiver)
 #
 # http uses only the Python standard library (no entry here).
 

@@ -36,6 +36,7 @@ from peers import (
     smtp_peer,
     snmp_peer,
     sse_peer,
+    syslog_peer,
     webdav_peer,
     ws_peer,
 )
@@ -55,6 +56,7 @@ _MODULES = [
     redis_peer,
     ftp_peer,
     smtp_peer,
+    syslog_peer,
 ]
 
 
