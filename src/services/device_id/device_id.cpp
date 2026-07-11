@@ -43,7 +43,8 @@ void detws_uuid_from_mac(const uint8_t mac[6], char out[DETWS_UUID_STR_LEN])
 
     // Format as 8-4-4-4-12 (16 bytes -> 32 hex + 4 dashes).
     static const int groups[5] = {4, 2, 2, 2, 6};
-    int hi = 0, oi = 0;
+    int hi = 0;
+    int oi = 0;
     for (int g = 0; g < 5; g++)
     {
         if (g)

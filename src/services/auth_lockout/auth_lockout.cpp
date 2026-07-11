@@ -78,7 +78,8 @@ void auth_lockout_fail(const DetIp *ip, uint32_t now_ms)
         // address that is NOT currently locked; only if every bucket is locked do
         // we evict the overall LRU (so an active attacker cannot evict their own
         // lockout by flooding from other addresses).
-        int slot = -1, lru = 0;
+        int slot = -1;
+        int lru = 0;
         for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
         {
             if (s_lock.buckets[i].addr.family == DetIpFamily::DET_IP_NONE)

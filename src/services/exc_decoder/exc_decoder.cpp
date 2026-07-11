@@ -192,7 +192,8 @@ bool detws_exc_parse(const char *text, ExcInfo *out)
         while (out->frame_count < DETWS_EXC_MAX_FRAMES)
         {
             p = skip_ws(p);
-            uint32_t pc = 0, sp = 0;
+            uint32_t pc = 0;
+            uint32_t sp = 0;
             const char *q = parse_hex(p, &pc);
             if (!q || *q != ':')
                 break;

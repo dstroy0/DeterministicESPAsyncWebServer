@@ -97,7 +97,9 @@ bool listener_accept_allowed_ip(const DetIp *ip, uint32_t now_ms)
     if (det_ip_is_unspecified(ip))
         return true; // untrackable source - defer to the global accept throttle
 
-    int empty = -1, expired = -1, lru = 0;
+    int empty = -1;
+    int expired = -1;
+    int lru = 0;
     for (int i = 0; i < DETWS_PER_IP_THROTTLE_SLOTS; i++)
     {
         IpThrottleBucket *b = &s_iptt.buckets[i];

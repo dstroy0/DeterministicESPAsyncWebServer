@@ -83,7 +83,8 @@ bool df1_parse_frame(const uint8_t *buf, size_t len, Df1Check check, uint8_t *ou
     if (buf[0] != DF1_DLE || buf[1] != DF1_STX)
         return false;
 
-    size_t i = 2, o = 0;
+    size_t i = 2;
+    size_t o = 0;
     bool ended = false;
     while (i < len)
     {

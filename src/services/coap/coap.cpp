@@ -293,7 +293,8 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
 #endif
 
     // Decode options, reconstructing Uri-Path / Uri-Query and reading Content-Format.
-    size_t path_len = 0, query_len = 0;
+    size_t path_len = 0;
+    size_t query_len = 0;
     s_coap.path[0] = '\0';
     s_coap.query[0] = '\0';
     CoapContentFormat req_cf = CoapContentFormat::COAP_CF_NONE;

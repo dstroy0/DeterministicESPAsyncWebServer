@@ -95,7 +95,8 @@ bool dnp3_parse_frame(const uint8_t *buf, size_t len, Dnp3Frame *out, uint8_t *o
     if (user_len && (!out_user || user_len > out_cap))
         return false;
 
-    size_t p = DNP3_HEADER_BLOCK_LEN, off = 0;
+    size_t p = DNP3_HEADER_BLOCK_LEN;
+    size_t off = 0;
     while (off < user_len)
     {
         size_t blk = user_len - off;

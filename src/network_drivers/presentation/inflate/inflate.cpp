@@ -91,7 +91,9 @@ int bits(State *s, int need)
 // on end-of-input / an invalid code.
 int decode(State *s, const Huffman *h)
 {
-    int code = 0, first = 0, index = 0;
+    int code = 0;
+    int first = 0;
+    int index = 0;
     for (int len = 1; len <= MAXBITS; len++)
     {
         code |= bits(s, 1);
