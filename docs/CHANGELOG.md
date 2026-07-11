@@ -6,6 +6,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- map changed headers to envs via compiler dep graph; stop report churn ([`8dc6e47`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8dc6e4796e51de109ace253fb330d5d9d8f1f073))
+- update test report + coverage [skip ci] ([`23bc503`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/23bc503dd8a6bc980ccfb89f407f7e85c381f5d2))
+- update CHANGELOG.md [skip ci] ([`2147599`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2147599a7d1cdefb7b01a1ea9cb040ec8afc7a08))
 - update CHANGELOG.md [skip ci] ([`09af196`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09af196166b0ca82bdba159a300a167f9d2641ab))
 - update CHANGELOG.md [skip ci] ([`00f580e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/00f580e91a252ed0f9c5871d26a626757411bcb7))
 - update CHANGELOG.md [skip ci] ([`83f805c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83f805c3afe68100e5121eda7783123e0c22d295))
@@ -13,6 +16,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`c375c48`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c375c48e810a58d5aff4655486795677d41fc527))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9b08d1c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9b08d1cbf06fc77cf15e64be7cba6f8b8529c99e))
+- update ESP32 build footprints [skip ci] ([`7218c91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7218c91b5424e88bbef4f9a728ae3c535f9ff17b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ae00891`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae008917e30183c1d76e08d0c26605c7931a7233))
 - update ESP32 build footprints [skip ci] ([`43c554f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/43c554f3cce91ce66815aaeaa83432ddfad7bb99))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d3216a4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3216a4995f40f1dc30e895ba16272425d4af81d))
