@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`61d452f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61d452f8b3a8e67392958b9a90a3cc7a9e019baf))
 - update CHANGELOG.md [skip ci] ([`fe2ab98`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe2ab98ebfb461a044fc37dec3c5126e145d0b33))
 - update CHANGELOG.md [skip ci] ([`acec0f4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/acec0f4f73496289df19c7bb1b878e8ba4fbff29))
 - update CHANGELOG.md [skip ci] ([`6a1472d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a1472d9842cb2b97f62b1f7b095f3b329d153d5))
@@ -156,6 +157,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- one declaration per line - final 18 services (S1659) ([`361783c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/361783cec87978acebfe1fc102634747dad6682b))
 - one declaration per line - df1/dnp3/exc_decoder/device_id/coap/auth_lockout/inflate/listener (S1659) ([`547dde9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/547dde963ee83d657243977976d10f71c4c8a98d))
 - one declaration per line - ssh + quic tls/tp (S1659) ([`8fd4057`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8fd4057bde13e70deae9c5f14a252c9da3c688f4))
 - one declaration per line - opcua/mqtt/dns/promisc/sqlite (S1659) ([`eb0c8b7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb0c8b7afe943d2a9596d8e5a9ae6491efd6ae85))
