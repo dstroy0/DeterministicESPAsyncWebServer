@@ -1205,3 +1205,16 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       each with a clear internal header. Pure move-and-split - no behavior change - so the native + dual-core
       builds and the full test suite stay green throughout; keep the owned-context / no-stdlib / single-owner
       rules. Makes the core easier to debug, extend, and maintain.
+
+### One folder per implemented service
+
+> Convention: a service that has both a `.h` and a `.cpp` lives in its own `src/services/<name>/`
+> directory; only header-only services (a `.h` with no `.cpp`) are allowed to sit at the
+> `src/services/` root. Today nine root-level services break this.
+
+- [ ] **Move each `.h`+`.cpp` service at the `src/services/` root into its own folder** (M) - cloudevents,
+      mdns_service, ntp_service, ota_service, provisioning_service, redis_resp, stomp, upload_service, and
+      web_terminal currently live as loose `src/services/<name>.{h,cpp}` pairs. Move each into
+      `src/services/<name>/<name>.{h,cpp}`, update the `#include` paths, the `build_src_filter` globs in
+      `platformio.ini`, the compile-DB / dep-graph tooling, and any docs references. Header-only services
+      (e.g. `clock.h`, `i2c.h`) stay at the root. Pure relocation - all builds + tests stay green.
