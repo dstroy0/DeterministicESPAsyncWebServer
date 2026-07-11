@@ -111,14 +111,14 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     uint8_t *b = resp + 64;
     switch (h.command)
     {
-    case SMB2_NEGOTIATE:
-        smb2_build_header(resp, sizeof(resp), SMB2_NEGOTIATE, 1, h.message_id, 0, 0);
-        w16(b + 0, 65);                // StructureSize
-        w16(b + 4, SMB2_DIALECT_0210); // DialectRevision
-        rlen = 128;                    // header + 64-byte fixed body, empty security buffer
+    case Smb2Command::SMB2_NEGOTIATE:
+        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_NEGOTIATE, 1, h.message_id, 0, 0);
+        w16(b + 0, 65);                                       // StructureSize
+        w16(b + 4, (uint16_t)Smb2Dialect::SMB2_DIALECT_0210); // DialectRevision
+        rlen = 128;                                           // header + 64-byte fixed body, empty security buffer
         break;
-    case SMB2_SESSION_SETUP: {
-        smb2_build_header(resp, sizeof(resp), SMB2_SESSION_SETUP, 1, h.message_id, 0, m->session_id);
+    case Smb2Command::SMB2_SESSION_SETUP: {
+        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_SESSION_SETUP, 1, h.message_id, 0, m->session_id);
         w16(b + 0, 9); // StructureSize
         if (m->ss_round++ == 0)
         {
@@ -139,15 +139,16 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
         }
         break;
     }
-    case SMB2_TREE_CONNECT:
-        smb2_build_header(resp, sizeof(resp), SMB2_TREE_CONNECT, 1, h.message_id, m->tree_id, m->session_id);
+    case Smb2Command::SMB2_TREE_CONNECT:
+        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_TREE_CONNECT, 1, h.message_id, m->tree_id,
+                          m->session_id);
         w32(resp + 8, m->tc_status);
         w16(b + 0, 16); // StructureSize
         b[2] = SMB2_SHARE_TYPE_DISK;
         rlen = 64 + 16;
         break;
-    case SMB2_CREATE:
-        smb2_build_header(resp, sizeof(resp), SMB2_CREATE, 1, h.message_id, m->tree_id, m->session_id);
+    case Smb2Command::SMB2_CREATE:
+        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_CREATE, 1, h.message_id, m->tree_id, m->session_id);
         w32(resp + 8, m->create_status);
         w16(b + 0, 89); // StructureSize
         w32(b + 4, 1);  // CreateAction = FILE_OPENED
@@ -155,11 +156,11 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
         memcpy(b + 64, m->file_id, 16);
         rlen = 64 + 88;
         break;
-    case SMB2_READ: {
+    case Smb2Command::SMB2_READ: {
         const uint8_t *rq = msg + 64; // READ request body
         uint32_t length = rd32(rq + 4);
         uint64_t off = rd64(rq + 8);
-        smb2_build_header(resp, sizeof(resp), SMB2_READ, 1, h.message_id, m->tree_id, m->session_id);
+        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_READ, 1, h.message_id, m->tree_id, m->session_id);
         if (off >= m->file_data_len)
         {
             w32(resp + 8, SMB2_STATUS_END_OF_FILE);
@@ -178,7 +179,7 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
         }
         break;
     }
-    case SMB2_WRITE: {
+    case Smb2Command::SMB2_WRITE: {
         const uint8_t *wq = msg + 64; // WRITE request body
         uint16_t data_off = rd16(wq + 2);
         uint32_t length = rd32(wq + 4);
@@ -189,14 +190,14 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
             if (off + length > m->file_data_len)
                 m->file_data_len = (size_t)(off + length);
         }
-        smb2_build_header(resp, sizeof(resp), SMB2_WRITE, 1, h.message_id, m->tree_id, m->session_id);
+        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_WRITE, 1, h.message_id, m->tree_id, m->session_id);
         w16(b + 0, 17);     // StructureSize
         w32(b + 4, length); // Count
         rlen = 64 + 16;
         break;
     }
-    case SMB2_CLOSE:
-        smb2_build_header(resp, sizeof(resp), SMB2_CLOSE, 1, h.message_id, m->tree_id, m->session_id);
+    case Smb2Command::SMB2_CLOSE:
+        smb2_build_header(resp, sizeof(resp), Smb2Command::SMB2_CLOSE, 1, h.message_id, m->tree_id, m->session_id);
         w16(b + 0, 60); // StructureSize
         rlen = 64 + 60;
         break;
@@ -204,7 +205,7 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
         return -1;
     }
     resp[16] |= 0x01; // SMB2_FLAGS_SERVER_TO_REDIR
-    if (!(m->cut_after_negotiate && h.command != SMB2_NEGOTIATE))
+    if (!(m->cut_after_negotiate && h.command != Smb2Command::SMB2_NEGOTIATE))
         append_frame(m, resp, rlen);
     return (int)n;
 }
@@ -258,7 +259,7 @@ void test_open_close_success()
     SmbHandle h;
     memset(&h, 0, sizeof(h));
 
-    TEST_ASSERT_EQUAL_INT(SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m));
     TEST_ASSERT_EQUAL_HEX64(m.session_id, h.session_id);
     TEST_ASSERT_EQUAL_HEX32(m.tree_id, h.tree_id);
     TEST_ASSERT_EQUAL_MEMORY(m.file_id, h.file_id, 16);
@@ -267,7 +268,7 @@ void test_open_close_success()
     // NEGOTIATE + 2x SESSION_SETUP + TREE_CONNECT + CREATE = 5 requests
     TEST_ASSERT_EQUAL_INT(5, m.req_count);
 
-    TEST_ASSERT_EQUAL_INT(SMB_OK, smb_close(&h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_close(&h, mock_send, mock_recv, &m));
     TEST_ASSERT_EQUAL_UINT64(6, h.next_message_id);
     TEST_ASSERT_EQUAL_INT(6, m.req_count);
 }
@@ -278,7 +279,7 @@ void test_auth_failure()
     m.auth_status = 0xC000006D; // STATUS_LOGON_FAILURE
     SmbConfig cfg = make_cfg();
     SmbHandle h;
-    TEST_ASSERT_EQUAL_INT(SMB_ERR_AUTH, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_AUTH, smb_open(&cfg, &h, mock_send, mock_recv, &m));
 }
 
 void test_bad_share()
@@ -287,7 +288,7 @@ void test_bad_share()
     m.tc_status = 0xC00000CC; // STATUS_BAD_NETWORK_NAME
     SmbConfig cfg = make_cfg();
     SmbHandle h;
-    TEST_ASSERT_EQUAL_INT(SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m));
 }
 
 void test_create_not_found()
@@ -296,7 +297,7 @@ void test_create_not_found()
     m.create_status = 0xC0000034; // STATUS_OBJECT_NAME_NOT_FOUND
     SmbConfig cfg = make_cfg();
     SmbHandle h;
-    TEST_ASSERT_EQUAL_INT(SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m));
 }
 
 void test_io_error()
@@ -305,7 +306,7 @@ void test_io_error()
     m.cut_after_negotiate = true; // server stops responding after NEGOTIATE
     SmbConfig cfg = make_cfg();
     SmbHandle h;
-    TEST_ASSERT_EQUAL_INT(SMB_ERR_IO, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_IO, smb_open(&cfg, &h, mock_send, mock_recv, &m));
 }
 
 void test_arg_validation()
@@ -314,13 +315,13 @@ void test_arg_validation()
     SmbConfig cfg = make_cfg();
     SmbHandle h;
     cfg.user = nullptr;
-    TEST_ASSERT_EQUAL_INT(SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m));
     cfg = make_cfg();
     cfg.path = nullptr;
-    TEST_ASSERT_EQUAL_INT(SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG, smb_open(&cfg, &h, mock_send, mock_recv, &m));
 }
 
-static int open_ok(Mock *m, SmbConfig *cfg, SmbHandle *h)
+static SmbResult open_ok(Mock *m, SmbConfig *cfg, SmbHandle *h)
 {
     memset(h, 0, sizeof(*h));
     return smb_open(cfg, h, mock_send, mock_recv, m);
@@ -336,11 +337,11 @@ void test_read_file()
     m.file_size = 2000;
     SmbConfig cfg = make_cfg();
     SmbHandle h;
-    TEST_ASSERT_EQUAL_INT(SMB_OK, open_ok(&m, &cfg, &h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, open_ok(&m, &cfg, &h));
 
     uint8_t buf[2048];
     size_t got = 0;
-    TEST_ASSERT_EQUAL_INT(SMB_OK, smb_read(&h, 0, buf, 2000, &got, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_read(&h, 0, buf, 2000, &got, mock_send, mock_recv, &m));
     TEST_ASSERT_EQUAL_UINT32(2000, got);
     TEST_ASSERT_EQUAL_MEMORY(m.file_data, buf, 2000);
 }
@@ -355,11 +356,11 @@ void test_read_past_eof()
     m.file_size = 100;
     SmbConfig cfg = make_cfg();
     SmbHandle h;
-    TEST_ASSERT_EQUAL_INT(SMB_OK, open_ok(&m, &cfg, &h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, open_ok(&m, &cfg, &h));
 
     uint8_t buf[512];
     size_t got = 999;
-    TEST_ASSERT_EQUAL_INT(SMB_OK, smb_read(&h, 0, buf, sizeof(buf), &got, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_read(&h, 0, buf, sizeof(buf), &got, mock_send, mock_recv, &m));
     TEST_ASSERT_EQUAL_UINT32(100, got);
     TEST_ASSERT_EQUAL_MEMORY(m.file_data, buf, 100);
 }
@@ -374,13 +375,13 @@ void test_write_file()
     cfg.desired_access = SMB2_FILE_GENERIC_WRITE;
     cfg.disposition = SMB2_FILE_OVERWRITE_IF;
     SmbHandle h;
-    TEST_ASSERT_EQUAL_INT(SMB_OK, open_ok(&m, &cfg, &h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, open_ok(&m, &cfg, &h));
 
     uint8_t data[2000];
     for (int i = 0; i < 2000; i++)
         data[i] = (uint8_t)(i * 13 + 3);
     size_t wrote = 0;
-    TEST_ASSERT_EQUAL_INT(SMB_OK, smb_write(&h, 0, data, sizeof(data), &wrote, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_write(&h, 0, data, sizeof(data), &wrote, mock_send, mock_recv, &m));
     TEST_ASSERT_EQUAL_UINT32(2000, wrote);
     TEST_ASSERT_EQUAL_size_t(2000, m.file_data_len);
     TEST_ASSERT_EQUAL_MEMORY(data, m.file_data, 2000);
@@ -395,15 +396,15 @@ void test_write_then_read_roundtrip()
     m.file_size = 0;
     SmbConfig cfg = make_cfg();
     SmbHandle h;
-    TEST_ASSERT_EQUAL_INT(SMB_OK, open_ok(&m, &cfg, &h));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, open_ok(&m, &cfg, &h));
 
     uint8_t data[1500];
     for (int i = 0; i < 1500; i++)
         data[i] = (uint8_t)(i ^ 0x5A);
     size_t wrote = 0, got = 0;
-    TEST_ASSERT_EQUAL_INT(SMB_OK, smb_write(&h, 0, data, sizeof(data), &wrote, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_write(&h, 0, data, sizeof(data), &wrote, mock_send, mock_recv, &m));
     uint8_t back[1500];
-    TEST_ASSERT_EQUAL_INT(SMB_OK, smb_read(&h, 0, back, sizeof(back), &got, mock_send, mock_recv, &m));
+    TEST_ASSERT_EQUAL_INT(SmbResult::SMB_OK, smb_read(&h, 0, back, sizeof(back), &got, mock_send, mock_recv, &m));
     TEST_ASSERT_EQUAL_UINT32(1500, got);
     TEST_ASSERT_EQUAL_MEMORY(data, back, 1500);
 }

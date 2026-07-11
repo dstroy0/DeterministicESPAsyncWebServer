@@ -37,7 +37,7 @@
 #include <stdint.h>
 
 /** @brief SMB2 command codes (MS-SMB2 §2.2.1.2). */
-enum Smb2Command
+enum class Smb2Command : uint16_t
 {
     SMB2_NEGOTIATE = 0x0000,
     SMB2_SESSION_SETUP = 0x0001,
@@ -51,7 +51,7 @@ enum Smb2Command
 };
 
 /** @brief SMB2 dialect revision numbers (MS-SMB2 §2.2.4). */
-enum Smb2Dialect
+enum class Smb2Dialect : uint16_t
 {
     SMB2_DIALECT_0202 = 0x0202, ///< SMB 2.0.2
     SMB2_DIALECT_0210 = 0x0210, ///< SMB 2.1
@@ -132,7 +132,7 @@ enum
 /** @brief Parsed SMB2 sync header. */
 struct Smb2Header
 {
-    uint16_t command;
+    Smb2Command command;
     uint32_t status; ///< NT status (response); 0 = STATUS_SUCCESS
     uint32_t flags;
     uint64_t message_id;
@@ -173,7 +173,7 @@ uint32_t smb2_transport_len(const uint8_t *buf, size_t len);
  * @brief Build a 64-byte SMB2 sync header into @p buf.
  * @return SMB2_HEADER_SIZE, or 0 if @p cap < 64.
  */
-size_t smb2_build_header(uint8_t *buf, size_t cap, uint16_t command, uint16_t credit_request, uint64_t message_id,
+size_t smb2_build_header(uint8_t *buf, size_t cap, Smb2Command command, uint16_t credit_request, uint64_t message_id,
                          uint32_t tree_id, uint64_t session_id);
 
 /**

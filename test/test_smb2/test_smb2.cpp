@@ -71,17 +71,17 @@ void test_transport_frame()
 void test_build_and_parse_header()
 {
     uint8_t buf[64];
-    TEST_ASSERT_EQUAL_size_t(64, smb2_build_header(buf, sizeof(buf), SMB2_TREE_CONNECT, 8, 0x1122334455667788ULL,
-                                                   0xABCD, 0x99AABBCCDDEEFF00ULL));
+    TEST_ASSERT_EQUAL_size_t(64, smb2_build_header(buf, sizeof(buf), Smb2Command::SMB2_TREE_CONNECT, 8,
+                                                   0x1122334455667788ULL, 0xABCD, 0x99AABBCCDDEEFF00ULL));
     // ProtocolId + StructureSize + Command at their offsets
     const uint8_t pid[4] = {0xFE, 'S', 'M', 'B'};
     TEST_ASSERT_EQUAL_MEMORY(pid, buf, 4);
     TEST_ASSERT_EQUAL_UINT16(64, r16(buf + 4));
-    TEST_ASSERT_EQUAL_UINT16(SMB2_TREE_CONNECT, r16(buf + 12));
+    TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_TREE_CONNECT, r16(buf + 12));
 
     Smb2Header h;
     TEST_ASSERT_TRUE(smb2_parse_header(buf, sizeof(buf), &h));
-    TEST_ASSERT_EQUAL_UINT16(SMB2_TREE_CONNECT, h.command);
+    TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_TREE_CONNECT, h.command);
     TEST_ASSERT_EQUAL_HEX64(0x1122334455667788ULL, h.message_id);
     TEST_ASSERT_EQUAL_HEX32(0xABCD, h.tree_id);
     TEST_ASSERT_EQUAL_HEX64(0x99AABBCCDDEEFF00ULL, h.session_id);
@@ -90,7 +90,7 @@ void test_build_and_parse_header()
 void test_parse_header_rejects()
 {
     uint8_t buf[64];
-    smb2_build_header(buf, sizeof(buf), SMB2_NEGOTIATE, 1, 0, 0, 0);
+    smb2_build_header(buf, sizeof(buf), Smb2Command::SMB2_NEGOTIATE, 1, 0, 0, 0);
     Smb2Header h;
     TEST_ASSERT_FALSE(smb2_parse_header(buf, 63, &h)); // too short
     uint8_t b2[64];
@@ -113,31 +113,31 @@ void test_build_negotiate()
 
     Smb2Header h;
     TEST_ASSERT_TRUE(smb2_parse_header(buf, n, &h));
-    TEST_ASSERT_EQUAL_UINT16(SMB2_NEGOTIATE, h.command);
+    TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_NEGOTIATE, h.command);
 
     const uint8_t *b = buf + 64;              // NEGOTIATE request body
     TEST_ASSERT_EQUAL_UINT16(36, r16(b + 0)); // StructureSize
     TEST_ASSERT_EQUAL_UINT16(4, r16(b + 2));  // DialectCount
     TEST_ASSERT_EQUAL_UINT16(SMB2_NEGOTIATE_SIGNING_ENABLED, r16(b + 4));
     TEST_ASSERT_EQUAL_MEMORY(gid, b + 12, 16); // ClientGuid
-    TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0202, r16(b + 36));
-    TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0210, r16(b + 38));
-    TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0300, r16(b + 40));
-    TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0302, r16(b + 42));
+    TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0202, r16(b + 36));
+    TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0210, r16(b + 38));
+    TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0300, r16(b + 40));
+    TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0302, r16(b + 42));
     // overflow fails closed
     TEST_ASSERT_EQUAL_size_t(0, smb2_build_negotiate(buf, 100, gid, 0));
 }
 
 // Build a well-formed NEGOTIATE response message into m; returns its length.
-static size_t build_neg_resp(uint8_t *m, uint16_t dialect, const uint8_t *sec, uint16_t sec_len)
+static size_t build_neg_resp(uint8_t *m, Smb2Dialect dialect, const uint8_t *sec, uint16_t sec_len)
 {
-    smb2_build_header(m, 256, SMB2_NEGOTIATE, 1, 5, 0, 0);
+    smb2_build_header(m, 256, Smb2Command::SMB2_NEGOTIATE, 1, 5, 0, 0);
     m[16] |= 0x01; // SMB2_FLAGS_SERVER_TO_REDIR
     uint8_t *b = m + 64;
     memset(b, 0, 64);
     w16(b + 0, 65);                              // StructureSize
     w16(b + 2, SMB2_NEGOTIATE_SIGNING_REQUIRED); // SecurityMode
-    w16(b + 4, dialect);                         // DialectRevision
+    w16(b + 4, (uint16_t)dialect);               // DialectRevision
     for (int i = 0; i < 16; i++)
         b[8 + i] = (uint8_t)(0xA0 + i); // ServerGuid
     w32(b + 24, 0);                     // Capabilities
@@ -161,11 +161,11 @@ void test_parse_negotiate_response()
 {
     const uint8_t token[] = {0x60, 0x28, 0x06, 0x06, 'S', 'P', 'N', 'E'}; // a fake SPNEGO-ish blob
     uint8_t m[256];
-    size_t n = build_neg_resp(m, SMB2_DIALECT_0300, token, sizeof(token));
+    size_t n = build_neg_resp(m, Smb2Dialect::SMB2_DIALECT_0300, token, sizeof(token));
 
     Smb2NegotiateResp r;
     TEST_ASSERT_TRUE(smb2_parse_negotiate_response(m, n, &r));
-    TEST_ASSERT_EQUAL_UINT16(SMB2_DIALECT_0300, r.dialect);
+    TEST_ASSERT_EQUAL_UINT16(Smb2Dialect::SMB2_DIALECT_0300, r.dialect);
     TEST_ASSERT_EQUAL_UINT16(SMB2_NEGOTIATE_SIGNING_REQUIRED, r.security_mode);
     TEST_ASSERT_EQUAL_UINT32(0x00080000, r.max_read);
     TEST_ASSERT_EQUAL_UINT32(0x00040000, r.max_write);
@@ -174,7 +174,7 @@ void test_parse_negotiate_response()
     TEST_ASSERT_EQUAL_MEMORY(token, r.sec_buf, sizeof(token));
 
     // an empty security buffer -> nullptr, still valid
-    n = build_neg_resp(m, SMB2_DIALECT_0210, nullptr, 0);
+    n = build_neg_resp(m, Smb2Dialect::SMB2_DIALECT_0210, nullptr, 0);
     TEST_ASSERT_TRUE(smb2_parse_negotiate_response(m, n, &r));
     TEST_ASSERT_NULL(r.sec_buf);
     TEST_ASSERT_EQUAL_UINT16(0, r.sec_buf_len);
@@ -184,7 +184,7 @@ void test_parse_negotiate_response_rejects()
 {
     const uint8_t token[] = {1, 2, 3, 4};
     uint8_t m[256];
-    size_t n = build_neg_resp(m, SMB2_DIALECT_0202, token, sizeof(token));
+    size_t n = build_neg_resp(m, Smb2Dialect::SMB2_DIALECT_0202, token, sizeof(token));
     Smb2NegotiateResp r;
 
     uint8_t bad[256];
@@ -193,7 +193,7 @@ void test_parse_negotiate_response_rejects()
     TEST_ASSERT_FALSE(smb2_parse_negotiate_response(bad, n, &r));
 
     memcpy(bad, m, n);
-    w16(bad + 12, SMB2_READ); // wrong command
+    w16(bad + 12, (uint16_t)Smb2Command::SMB2_READ); // wrong command
     TEST_ASSERT_FALSE(smb2_parse_negotiate_response(bad, n, &r));
 
     memcpy(bad, m, n);
@@ -215,7 +215,7 @@ void test_build_session_setup()
 
     Smb2Header h;
     TEST_ASSERT_TRUE(smb2_parse_header(buf, n, &h));
-    TEST_ASSERT_EQUAL_UINT16(SMB2_SESSION_SETUP, h.command);
+    TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_SESSION_SETUP, h.command);
     TEST_ASSERT_EQUAL_HEX64(0xDEADBEEFULL, h.session_id); // echoes the server SessionId
     TEST_ASSERT_EQUAL_HEX64(7, h.message_id);
 
@@ -234,7 +234,7 @@ void test_build_session_setup()
 static size_t build_ss_resp(uint8_t *m, uint64_t session_id, uint32_t status, uint16_t flags, const uint8_t *sec,
                             uint16_t sec_len)
 {
-    smb2_build_header(m, 512, SMB2_SESSION_SETUP, 1, 6, 0, session_id);
+    smb2_build_header(m, 512, Smb2Command::SMB2_SESSION_SETUP, 1, 6, 0, session_id);
     w32(m + 8, status); // Status (STATUS_MORE_PROCESSING_REQUIRED then SUCCESS)
     m[16] |= 0x01;      // SMB2_FLAGS_SERVER_TO_REDIR
     uint8_t *b = m + 64;
@@ -291,7 +291,7 @@ void test_session_setup_rejects()
     w16(bad + 64, 8); // wrong StructureSize (must be 9)
     TEST_ASSERT_FALSE(smb2_parse_session_setup_response(bad, n, &r));
     memcpy(bad, m, n);
-    w16(bad + 12, SMB2_READ); // wrong command
+    w16(bad + 12, (uint16_t)Smb2Command::SMB2_READ); // wrong command
     TEST_ASSERT_FALSE(smb2_parse_session_setup_response(bad, n, &r));
     memcpy(bad, m, n);
     w16(bad + 64 + 6, 5000); // SecurityBufferLength past the message
@@ -357,7 +357,7 @@ void test_build_tree_connect()
 
     Smb2Header h;
     TEST_ASSERT_TRUE(smb2_parse_header(buf, n, &h));
-    TEST_ASSERT_EQUAL_UINT16(SMB2_TREE_CONNECT, h.command);
+    TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_TREE_CONNECT, h.command);
     TEST_ASSERT_EQUAL_HEX64(0xABCDULL, h.session_id);
 
     const uint8_t *b = buf + 64;
@@ -371,7 +371,7 @@ void test_build_tree_connect()
 
 static size_t build_tc_resp(uint8_t *m, uint32_t tree_id, uint8_t share_type, uint32_t maximal_access)
 {
-    smb2_build_header(m, 128, SMB2_TREE_CONNECT, 1, 2, tree_id, 0xABCD);
+    smb2_build_header(m, 128, Smb2Command::SMB2_TREE_CONNECT, 1, 2, tree_id, 0xABCD);
     m[16] |= 0x01; // SERVER_TO_REDIR
     uint8_t *b = m + 64;
     memset(b, 0, 16);
@@ -411,7 +411,7 @@ void test_build_create()
 
     Smb2Header h;
     TEST_ASSERT_TRUE(smb2_parse_header(buf, n, &h));
-    TEST_ASSERT_EQUAL_UINT16(SMB2_CREATE, h.command);
+    TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_CREATE, h.command);
     TEST_ASSERT_EQUAL_HEX32(0x777, h.tree_id);
 
     const uint8_t *b = buf + 64;
@@ -430,7 +430,7 @@ void test_build_create()
 
 static size_t build_create_resp(uint8_t *m, const uint8_t fid[16], uint64_t eof, uint32_t action)
 {
-    smb2_build_header(m, 256, SMB2_CREATE, 1, 3, 0x777, 0xAAAA);
+    smb2_build_header(m, 256, Smb2Command::SMB2_CREATE, 1, 3, 0x777, 0xAAAA);
     m[16] |= 0x01;
     uint8_t *b = m + 64;
     memset(b, 0, 88);
@@ -475,14 +475,14 @@ void test_close_roundtrip()
 
     Smb2Header h;
     TEST_ASSERT_TRUE(smb2_parse_header(buf, n, &h));
-    TEST_ASSERT_EQUAL_UINT16(SMB2_CLOSE, h.command);
+    TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_CLOSE, h.command);
     const uint8_t *b = buf + 64;
     TEST_ASSERT_EQUAL_UINT16(24, r16(b + 0));                             // StructureSize
     TEST_ASSERT_EQUAL_MEMORY(fid, b + 8, 16);                             // FileId
     TEST_ASSERT_EQUAL_size_t(0, smb2_build_close(buf, 80, 4, 0, 0, fid)); // overflow
 
     uint8_t m[128];
-    smb2_build_header(m, 128, SMB2_CLOSE, 1, 4, 0x777, 0xAAAA);
+    smb2_build_header(m, 128, Smb2Command::SMB2_CLOSE, 1, 4, 0x777, 0xAAAA);
     m[16] |= 0x01;
     uint8_t *rb = m + 64;
     memset(rb, 0, 60);
@@ -510,7 +510,7 @@ void test_build_read()
 
     Smb2Header h;
     TEST_ASSERT_TRUE(smb2_parse_header(buf, n, &h));
-    TEST_ASSERT_EQUAL_UINT16(SMB2_READ, h.command);
+    TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_READ, h.command);
     TEST_ASSERT_EQUAL_HEX32(0x777, h.tree_id);
 
     const uint8_t *b = buf + 64;
@@ -525,7 +525,7 @@ void test_build_read()
 
 static size_t build_read_resp(uint8_t *m, const uint8_t *data, uint32_t data_len)
 {
-    smb2_build_header(m, 512, SMB2_READ, 1, 5, 0x777, 0xAAAA);
+    smb2_build_header(m, 512, Smb2Command::SMB2_READ, 1, 5, 0x777, 0xAAAA);
     m[16] |= 0x01;
     uint8_t *b = m + 64;
     memset(b, 0, 16);
@@ -582,7 +582,7 @@ void test_build_write()
 
     Smb2Header h;
     TEST_ASSERT_TRUE(smb2_parse_header(buf, n, &h));
-    TEST_ASSERT_EQUAL_UINT16(SMB2_WRITE, h.command);
+    TEST_ASSERT_EQUAL_UINT16(Smb2Command::SMB2_WRITE, h.command);
 
     const uint8_t *b = buf + 64;
     TEST_ASSERT_EQUAL_UINT16(49, r16(b + 0));           // StructureSize
@@ -598,7 +598,7 @@ void test_build_write()
 void test_parse_write_response()
 {
     uint8_t m[128];
-    smb2_build_header(m, 128, SMB2_WRITE, 1, 6, 0x777, 0xAAAA);
+    smb2_build_header(m, 128, Smb2Command::SMB2_WRITE, 1, 6, 0x777, 0xAAAA);
     m[16] |= 0x01;
     uint8_t *b = m + 64;
     memset(b, 0, 16);

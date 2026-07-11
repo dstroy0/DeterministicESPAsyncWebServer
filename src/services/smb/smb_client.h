@@ -30,7 +30,7 @@
 #include <stdint.h>
 
 /** @brief Result of an SMB client operation. 0 is success; each failure is a distinct code. */
-enum SmbResult
+enum class SmbResult : int32_t
 {
     SMB_OK = 0,
     SMB_ERR_ARG = -1,      ///< a required field was null/empty
@@ -74,33 +74,33 @@ struct SmbHandle
 
 /**
  * @brief Run NEGOTIATE -> NTLMv2 SESSION_SETUP -> TREE_CONNECT -> CREATE and fill @p h.
- * @return SMB_OK with @p h populated, or an ::SmbResult error.
+ * @return SmbResult::SMB_OK with @p h populated, or an ::SmbResult error.
  */
-int smb_open(const SmbConfig *cfg, SmbHandle *h, SmbSendFn send, SmbRecvFn recv, void *ctx);
+SmbResult smb_open(const SmbConfig *cfg, SmbHandle *h, SmbSendFn send, SmbRecvFn recv, void *ctx);
 
 /**
  * @brief CLOSE the open handle (releases the server-side FileId).
- * @return SMB_OK, or an ::SmbResult error.
+ * @return SmbResult::SMB_OK, or an ::SmbResult error.
  */
-int smb_close(SmbHandle *h, SmbSendFn send, SmbRecvFn recv, void *ctx);
+SmbResult smb_close(SmbHandle *h, SmbSendFn send, SmbRecvFn recv, void *ctx);
 
 /**
  * @brief Read up to @p cap bytes from @p offset of the open handle, looping READ requests until the
  *        buffer is full or the server signals end of file.
  * @param out_len receives the number of bytes actually read (may be < @p cap at EOF).
- * @return SMB_OK, or an ::SmbResult error. Reads at most DETWS_SMB_BUF-sized chunks per round trip.
+ * @return SmbResult::SMB_OK, or an ::SmbResult error. Reads at most DETWS_SMB_BUF-sized chunks per round trip.
  */
-int smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size_t *out_len, SmbSendFn send, SmbRecvFn recv,
-             void *ctx);
+SmbResult smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size_t *out_len, SmbSendFn send,
+                   SmbRecvFn recv, void *ctx);
 
 /**
  * @brief Write @p len bytes at @p offset of the open handle, looping WRITE requests until all bytes
  *        are acknowledged. Grows the handle's cached file_size if the write extends the file.
  * @param written receives the number of bytes written (equals @p len on success).
- * @return SMB_OK, or an ::SmbResult error.
+ * @return SmbResult::SMB_OK, or an ::SmbResult error.
  */
-int smb_write(SmbHandle *h, uint64_t offset, const uint8_t *data, size_t len, size_t *written, SmbSendFn send,
-              SmbRecvFn recv, void *ctx);
+SmbResult smb_write(SmbHandle *h, uint64_t offset, const uint8_t *data, size_t len, size_t *written, SmbSendFn send,
+                    SmbRecvFn recv, void *ctx);
 
 #endif // DETWS_ENABLE_SMB
 
