@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`b06168c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b06168c06ac71b18d1150532cff3b12c44fc6816))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cb76528`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb765284f74e8ce8ecfb9029ad0195efe41a3f4f))
+
+### Testing
+
+- add an OpenSSH interop peer (device-as-server, 6/6 on the rig) ([`e4bd920`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4bd920c1efaa3bf980b949fb667f3aef1040251))
+
 ## [5.95.13] - 2026-07-11
 
 <details>
