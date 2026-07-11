@@ -6,16 +6,20 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`0b3799a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0b3799a3c7bb7908c2a280b0d65ba2fe8430fbfe))
 - update CHANGELOG.md [skip ci] ([`0687884`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06878849e3c9758febd096bb7baeb0dc221771ca))
 - update CHANGELOG.md [skip ci] ([`a3366aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a3366aaea64be2c86116b65bc16c6a6b80756e2c))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`ae4ed8e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae4ed8e796d689bb336d0935dc9777567ef20ebe))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ca498ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ca498ae0c4ecb7d5c04c52ef0b82e61d3dfac5cb))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2ff240c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ff240c1a5bb88c293bb18e8e125e3b1ecc545cb))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`edc8804`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/edc88044ea73ef84d6c94b90d165f5f7cd16591a))
 
 ### Refactor
 
+- scoped enum (enum class 3/N) ([`33a21a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33a21a26c3f60003763bd542b5a1b1aaaa8b0c40))
 - scoped enums + migration tool (enum class 2/N) ([`0897efa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0897efa8d6944b42c852af88a4d4b46f51fc987d))
 - scoped enums (enum class migration 1/N) ([`ed44ead`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed44eadae714d3695864ac29cc890155f305445c))
 
