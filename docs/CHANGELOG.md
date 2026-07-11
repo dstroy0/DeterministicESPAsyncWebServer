@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.95.5] - 2026-07-11
+
+<details>
+<summary><b>Show Changelog for version 5.95.5 - 2026-07-11</b></summary>
+
+### Bug Fixes
+
+- idle-timeout on accepted-data progress, not raw recv (Slowloris DoS) ([`5bd96b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5bd96b21682bfa63ecd03900a228dfd07b393673))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`0d94753`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d94753d652cc18083369e62bd7433ec19336914))
+- update CHANGELOG.md [skip ci] ([`daf6259`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/daf6259aacd05d9332e66f2f771887445e45e587))
+
+### Changes
+
+- Bump version: 5.95.4 → 5.95.5 ([`6362716`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/636271654941a6a840ef5f41d700ddacf53e1096))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`b9ca6b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b9ca6b914ac83a9d7cdd3ba8c1a039a5d449f2ca))
+
+</details>
+
 ## [5.95.4] - 2026-07-11
 
 <details>
