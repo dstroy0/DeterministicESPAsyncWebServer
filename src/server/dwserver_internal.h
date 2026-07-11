@@ -30,6 +30,10 @@ void http_rfc1123(time_t t, char *out, size_t cap);
 /** @brief True if the request in slot @p slot_id used the HEAD method (send headers, no body). */
 bool req_is_head(uint8_t slot_id);
 
+/** @brief Whole-path regex match (anchored both ends; bounded by RE_MAX_STEPS, fails closed).
+ *  Defined in server/regex.cpp, called by the route dispatcher for `on_regex()` routes. */
+bool regex_match(const char *pattern, const char *path);
+
 // ---------------------------------------------------------------------------
 // Outbound-transfer continuations (owned by dwserver.cpp, shared with the split handlers)
 // ---------------------------------------------------------------------------

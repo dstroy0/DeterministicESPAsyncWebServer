@@ -384,6 +384,7 @@
         "+<server/auth.cpp>",
         "+<server/response.cpp>",
         "+<server/websocket_sse.cpp>",
+        "+<server/regex.cpp>",
         "+<server/webdav.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/application/web_assets.cpp>",
@@ -441,6 +442,7 @@
         "+<server/auth.cpp>",
         "+<server/response.cpp>",
         "+<server/websocket_sse.cpp>",
+        "+<server/regex.cpp>",
         "+<server/webdav.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/application/web_assets.cpp>",
@@ -1023,6 +1025,7 @@
         "+<server/auth.cpp>",
         "+<server/response.cpp>",
         "+<server/websocket_sse.cpp>",
+        "+<server/regex.cpp>",
         "+<server/webdav.cpp>"
       ],
       "tests": ["test_keepalive"]
@@ -1051,6 +1054,7 @@
         "+<server/auth.cpp>",
         "+<server/response.cpp>",
         "+<server/websocket_sse.cpp>",
+        "+<server/regex.cpp>",
         "+<server/webdav.cpp>"
       ],
       "tests": ["test_range"]
@@ -1233,6 +1237,7 @@
         "+<server/auth.cpp>",
         "+<server/response.cpp>",
         "+<server/websocket_sse.cpp>",
+        "+<server/regex.cpp>",
         "+<server/webdav.cpp>",
         "+<services/upload_service/upload_service.cpp>"
       ],
