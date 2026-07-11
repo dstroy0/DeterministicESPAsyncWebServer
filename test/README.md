@@ -10485,13 +10485,13 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: max-age=60, swr=30.
     * **Assertions**:
-      * <code>Assert equal int (DELIVERY_FRESH, detws_delivery_swr(0, 60, 30))</code>
-      * <code>Assert equal int (DELIVERY_FRESH, detws_delivery_swr(60, 60, 30))</code>
-      * <code>Assert equal int (DELIVERY_STALE_REVALIDATE, detws_delivery_swr(61, 60, 30))</code>
-      * <code>Assert equal int (DELIVERY_STALE_REVALIDATE, detws_delivery_swr(90, 60, 30))</code>
-      * <code>Assert equal int (DELIVERY_EXPIRED, detws_delivery_swr(91, 60, 30))</code>
-      * <code>Assert equal int (DELIVERY_EXPIRED, detws_delivery_swr(61, 60, 0))</code>
-      * <code>Assert equal int (DELIVERY_STALE_REVALIDATE, detws_delivery_swr(0xFFFFFFF8u, 0xFFFFFFF0u, 0x20u))</code>
+      * <code>Assert equal int (DeliveryVerdict::DELIVERY_FRESH, detws_delivery_swr(0, 60, 30))</code>
+      * <code>Assert equal int (DeliveryVerdict::DELIVERY_FRESH, detws_delivery_swr(60, 60, 30))</code>
+      * <code>Assert equal int (DeliveryVerdict::DELIVERY_STALE_REVALIDATE, detws_delivery_swr(61, 60, 30))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DeliveryVerdict::DELIVERY_STALE_REVALIDATE,</code>
+      * <code>Assert equal int (DeliveryVerdict::DELIVERY_EXPIRED, detws_delivery_swr(91, 60, 30))</code>
+      * <code>Assert equal int (DeliveryVerdict::DELIVERY_EXPIRED, detws_delivery_swr(61, 60, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DeliveryVerdict::DELIVERY_STALE_REVALIDATE,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -26151,7 +26151,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Page 1's b-tree header follows the 100-byte database header.
     * **Assertions**:
       * <code>Assert true (sqlite_parse_btree_header(PAGE1, sizeof(PAGE1), 100, &b))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(SQLITE_BTREE_LEAF_TABLE, b.type); // 13 - the sqlite_schema table</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SqliteBtree::SQLITE_BTREE_LEAF_TABLE, b.type); // 13 - the sqlite_schema table</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, b.first_freeblock);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(1, b.cell_count); // one schema row (the CREATE TABLE)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(463, b.cell_content_start);</code>
@@ -26285,7 +26285,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: The table's root page (page 2) is an interior table page, so this exercises the descent stack.
     * **Assertions**:
       * <code>TEST_ASSERT_TRUE(</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(SQLITE_BTREE_INTERIOR_TABLE, bh.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SqliteBtree::SQLITE_BTREE_INTERIOR_TABLE, bh.type);</code>
       * <code>Assert true (sqlite_table_cursor_begin(&c, mem_read, &db, DB_MP_PAGE_SIZE, 0, 2, leaf, work))</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(n, rowid); // rowids 1..40, in order, across pages</code>
       * <code>Assert true (sqlite_record_next(&row, &st, &v, &vl)); // column a (INTEGER)</code>
