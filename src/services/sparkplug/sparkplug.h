@@ -46,7 +46,7 @@
 #define SPB_DT_STRING 12
 
 /** @brief Which value the metric carries (selects the Tahu Metric value-oneof field). */
-enum SpbMetricKind
+enum class SpbMetricKind : uint8_t
 {
     SPB_M_INT,    ///< int_value (field 10, uint32)
     SPB_M_LONG,   ///< long_value (field 11, uint64)

@@ -49,7 +49,7 @@ int esp3_parse(const uint8_t *raw, uint16_t len, esp3_packet *out)
         return -1; // data CRC mismatch
     if (out)
     {
-        out->type = type;
+        out->type = (esp3_type)type;
         out->data = &raw[6];
         out->data_len = data_len;
         out->opt = &raw[6 + data_len];
@@ -58,7 +58,7 @@ int esp3_parse(const uint8_t *raw, uint16_t len, esp3_packet *out)
     return (int)total;
 }
 
-uint16_t esp3_build(uint8_t type, const uint8_t *data, uint16_t data_len, const uint8_t *opt, uint8_t opt_len,
+uint16_t esp3_build(esp3_type type, const uint8_t *data, uint16_t data_len, const uint8_t *opt, uint8_t opt_len,
                     uint8_t *out, uint16_t cap)
 {
     if (!out || data_len > DETWS_ENOCEAN_MAX_DATA)
@@ -70,7 +70,7 @@ uint16_t esp3_build(uint8_t type, const uint8_t *data, uint16_t data_len, const 
     out[1] = (uint8_t)(data_len >> 8);
     out[2] = (uint8_t)(data_len & 0xFF);
     out[3] = opt_len;
-    out[4] = type;
+    out[4] = (uint8_t)type;
     out[5] = esp3_crc8(&out[1], 4);
     for (uint16_t i = 0; i < data_len; i++)
         out[6 + i] = data[i];

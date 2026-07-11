@@ -67,7 +67,7 @@
 #define DEVICENET_FRAG_COUNT_MASK 0x3Fu
 
 /** @brief DeviceNet message groups. */
-enum DeviceNetGroup
+enum class DeviceNetGroup : uint8_t
 {
     DEVICENET_GROUP_1 = 1,
     DEVICENET_GROUP_2 = 2,
@@ -84,7 +84,7 @@ struct DeviceNetId
 };
 
 /** @brief Result of feeding a frame to the fragmentation reassembler. */
-enum DeviceNetFragResult
+enum class DeviceNetFragResult : uint8_t
 {
     DEVICENET_FRAG_IGNORED = 0,
     DEVICENET_FRAG_STARTED,

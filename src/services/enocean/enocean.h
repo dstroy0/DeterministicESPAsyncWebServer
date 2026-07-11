@@ -36,7 +36,7 @@
 #define ESP3_SYNC 0x55
 
 /** @brief ESP3 packet types (the common ones). */
-enum esp3_type
+enum class esp3_type : uint8_t
 {
     ESP3_RADIO_ERP1 = 0x01,
     ESP3_RESPONSE = 0x02,
@@ -55,7 +55,7 @@ struct esp3_packet
     const uint8_t *opt;  ///< optional-data field
     uint16_t data_len;   ///< data length
     uint8_t opt_len;     ///< optional-data length
-    uint8_t type;        ///< packet type (esp3_type)
+    esp3_type type;      ///< packet type (esp3_type)
 };
 
 /** @brief CRC-8 used by ESP3 (polynomial 0x07, MSB-first, init 0x00). */
@@ -75,7 +75,7 @@ int esp3_parse(const uint8_t *raw, uint16_t len, esp3_packet *out);
  * @return the total telegram length, or 0 if it would not fit @p cap or @p data_len exceeds
  *         DETWS_ENOCEAN_MAX_DATA.
  */
-uint16_t esp3_build(uint8_t type, const uint8_t *data, uint16_t data_len, const uint8_t *opt, uint8_t opt_len,
+uint16_t esp3_build(esp3_type type, const uint8_t *data, uint16_t data_len, const uint8_t *opt, uint8_t opt_len,
                     uint8_t *out, uint16_t cap);
 
 #endif // DETWS_ENABLE_ENOCEAN

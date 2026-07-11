@@ -82,22 +82,22 @@ size_t spb_build_metric(uint8_t *buf, size_t cap, const SpbMetric *m)
     pb_uint64(&w, SPB_MET_DATATYPE, m->datatype); // datatype is a uint32; the varint covers it
     switch (m->kind)
     {
-    case SPB_M_INT:
+    case SpbMetricKind::SPB_M_INT:
         pb_uint64(&w, SPB_MET_INT, m->int_value);
         break;
-    case SPB_M_LONG:
+    case SpbMetricKind::SPB_M_LONG:
         pb_uint64(&w, SPB_MET_LONG, m->long_value);
         break;
-    case SPB_M_FLOAT:
+    case SpbMetricKind::SPB_M_FLOAT:
         pb_float(&w, SPB_MET_FLOAT, m->float_value);
         break;
-    case SPB_M_DOUBLE:
+    case SpbMetricKind::SPB_M_DOUBLE:
         pb_double(&w, SPB_MET_DOUBLE, m->double_value);
         break;
-    case SPB_M_BOOL:
+    case SpbMetricKind::SPB_M_BOOL:
         pb_bool(&w, SPB_MET_BOOL, m->bool_value);
         break;
-    case SPB_M_STRING:
+    case SpbMetricKind::SPB_M_STRING:
         if (m->string_value)
             pb_string(&w, SPB_MET_STRING, m->string_value);
         break;

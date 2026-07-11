@@ -59,7 +59,7 @@ void setup()
     det_gw_set_topic_prefix("zwave");
 
     uint8_t frame[8];
-    uint16_t n = zwave_build_frame(ZWAVE_REQ, 0x15, nullptr, 0, frame, sizeof(frame)); // GetVersion
+    uint16_t n = zwave_build_frame(zwave_type::ZWAVE_REQ, 0x15, nullptr, 0, frame, sizeof(frame)); // GetVersion
     Serial2.write(frame, n);
     Serial.println("Z-Wave gateway: Serial API -> codec -> publish (zwave/0/<node>)");
 }

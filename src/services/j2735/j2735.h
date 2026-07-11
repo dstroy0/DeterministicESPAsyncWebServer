@@ -92,7 +92,7 @@ size_t detws_j2735_bsm_core_encode(const J2735BsmCore *c, uint8_t *out, size_t c
 bool detws_j2735_bsm_core_decode(const uint8_t *in, size_t len, J2735BsmCore *c);
 
 /** @brief J2735 MovementPhaseState (the signal-group state in a SPaT MovementState). */
-enum J2735PhaseState
+enum class J2735PhaseState : uint8_t
 {
     J2735_PHASE_DARK = 0,                        ///< unavailable / dark.
     J2735_PHASE_STOP_THEN_PROCEED = 1,           ///< flashing red.

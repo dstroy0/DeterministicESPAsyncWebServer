@@ -37,7 +37,7 @@
 #include <stdint.h>
 
 /** @brief 802.11 frame type (frame-control bits 2-3). */
-enum WifiFrameType
+enum class WifiFrameType : uint8_t
 {
     WIFI_FT_MGMT = 0,
     WIFI_FT_CTRL = 1,
@@ -48,8 +48,8 @@ enum WifiFrameType
 /** @brief Decoded 802.11 MAC header. src / dst / bssid point into the frame (6 bytes) or null. */
 struct WifiFrameInfo
 {
-    uint8_t type;    ///< WifiFrameType
-    uint8_t subtype; ///< 0..15
+    WifiFrameType type; ///< WifiFrameType
+    uint8_t subtype;    ///< 0..15
     bool to_ds;
     bool from_ds;
     bool protected_frame; ///< the Protected-Frame (WEP/CCMP) bit

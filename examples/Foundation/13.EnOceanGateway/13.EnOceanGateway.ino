@@ -71,7 +71,7 @@ void loop()
             continue;
         }
         // A RADIO_ERP1 telegram ends with a 4-byte sender id + 1 status byte.
-        if (pkt.type == ESP3_RADIO_ERP1 && pkt.data_len >= 6)
+        if (pkt.type == esp3_type::ESP3_RADIO_ERP1 && pkt.data_len >= 6)
         {
             const uint8_t *sender = pkt.data + pkt.data_len - 5;
             uint16_t src = (uint16_t)((sender[2] << 8) | sender[3]); // low 16 bits of the id

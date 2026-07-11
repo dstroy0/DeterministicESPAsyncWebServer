@@ -25,7 +25,8 @@ uint8_t checksum(const uint8_t *from_len, uint16_t n)
 }
 } // namespace
 
-uint16_t zwave_build_frame(uint8_t type, uint8_t cmd, const uint8_t *data, uint8_t data_len, uint8_t *out, uint16_t cap)
+uint16_t zwave_build_frame(zwave_type type, uint8_t cmd, const uint8_t *data, uint8_t data_len, uint8_t *out,
+                           uint16_t cap)
 {
     if (!out || data_len > DETWS_ZWAVE_MAX_DATA || (data == nullptr && data_len > 0))
         return 0;
@@ -35,7 +36,7 @@ uint16_t zwave_build_frame(uint8_t type, uint8_t cmd, const uint8_t *data, uint8
         return 0;
     out[0] = ZWAVE_SOF;
     out[1] = frame_len;
-    out[2] = type;
+    out[2] = (uint8_t)type;
     out[3] = cmd;
     for (uint8_t i = 0; i < data_len; i++)
         out[4 + i] = data[i];

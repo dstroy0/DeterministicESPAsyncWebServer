@@ -24,7 +24,7 @@ void test_build_getversion_kat()
     // frame is 01 03 00 15 E9 (checksum = 0xFF ^ 0x03 ^ 0x00 ^ 0x15 = 0xE9).
     const uint8_t expect[5] = {0x01, 0x03, 0x00, 0x15, 0xE9};
     uint8_t out[16];
-    uint16_t n = zwave_build_frame(ZWAVE_REQ, 0x15, nullptr, 0, out, sizeof(out));
+    uint16_t n = zwave_build_frame(zwave_type::ZWAVE_REQ, 0x15, nullptr, 0, out, sizeof(out));
     TEST_ASSERT_EQUAL_UINT16(5, n);
     TEST_ASSERT_EQUAL_MEMORY(expect, out, 5);
 }
@@ -33,13 +33,13 @@ void test_build_then_parse_round_trip()
 {
     const uint8_t data[3] = {0x01, 0x0A, 0xAB};
     uint8_t buf[24];
-    uint16_t n = zwave_build_frame(ZWAVE_RES, 0x04, data, 3, buf, sizeof(buf));
+    uint16_t n = zwave_build_frame(zwave_type::ZWAVE_RES, 0x04, data, 3, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_UINT16(8, n); // SOF + LEN + type + cmd + 3 data + checksum
 
     uint8_t type = 0, cmd = 0, pdlen = 0;
     const uint8_t *pd = nullptr;
     TEST_ASSERT_EQUAL_INT(8, zwave_parse_frame(buf, n, &type, &cmd, &pd, &pdlen));
-    TEST_ASSERT_EQUAL_UINT8(ZWAVE_RES, type);
+    TEST_ASSERT_EQUAL_UINT8(zwave_type::ZWAVE_RES, type);
     TEST_ASSERT_EQUAL_UINT8(0x04, cmd);
     TEST_ASSERT_EQUAL_UINT8(3, pdlen);
     TEST_ASSERT_EQUAL_MEMORY(data, pd, 3);
@@ -50,7 +50,7 @@ void test_parse_getversion_kat()
     const uint8_t frame[5] = {0x01, 0x03, 0x00, 0x15, 0xE9};
     uint8_t type = 0, cmd = 0, pdlen = 0xFF;
     TEST_ASSERT_EQUAL_INT(5, zwave_parse_frame(frame, sizeof(frame), &type, &cmd, nullptr, &pdlen));
-    TEST_ASSERT_EQUAL_UINT8(ZWAVE_REQ, type);
+    TEST_ASSERT_EQUAL_UINT8(zwave_type::ZWAVE_REQ, type);
     TEST_ASSERT_EQUAL_UINT8(0x15, cmd);
     TEST_ASSERT_EQUAL_UINT8(0, pdlen);
 }
@@ -98,9 +98,10 @@ void test_build_bounds()
 {
     uint8_t data[8] = {0};
     uint8_t small[6];
-    TEST_ASSERT_EQUAL_UINT16(0, zwave_build_frame(ZWAVE_REQ, 0x13, data, 4, small, sizeof(small))); // 9 > 6
+    TEST_ASSERT_EQUAL_UINT16(0, zwave_build_frame(zwave_type::ZWAVE_REQ, 0x13, data, 4, small, sizeof(small))); // 9 > 6
     uint8_t big[64];
-    TEST_ASSERT_EQUAL_UINT16(0, zwave_build_frame(ZWAVE_REQ, 0x13, big, 17, big, sizeof(big))); // 17 > MAX_DATA 16
+    TEST_ASSERT_EQUAL_UINT16(
+        0, zwave_build_frame(zwave_type::ZWAVE_REQ, 0x13, big, 17, big, sizeof(big))); // 17 > MAX_DATA 16
 }
 
 int main()

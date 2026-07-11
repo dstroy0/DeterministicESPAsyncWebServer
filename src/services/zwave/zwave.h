@@ -46,7 +46,7 @@ enum
 };
 
 /** @brief Data-frame type. */
-enum zwave_type
+enum class zwave_type : uint8_t
 {
     ZWAVE_REQ = 0x00, ///< request
     ZWAVE_RES = 0x01, ///< response
@@ -57,7 +57,7 @@ enum zwave_type
  * @return the total frame length, or 0 if it would not fit @p cap or @p data_len exceeds
  *         DETWS_ZWAVE_MAX_DATA.
  */
-uint16_t zwave_build_frame(uint8_t type, uint8_t cmd, const uint8_t *data, uint8_t data_len, uint8_t *out,
+uint16_t zwave_build_frame(zwave_type type, uint8_t cmd, const uint8_t *data, uint8_t data_len, uint8_t *out,
                            uint16_t cap);
 
 /**

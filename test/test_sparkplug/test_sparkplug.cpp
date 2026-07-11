@@ -35,7 +35,7 @@ void test_metric_bytes()
     SpbMetric m = {};
     m.name = "temperature";
     m.datatype = SPB_DT_DOUBLE;
-    m.kind = SPB_M_DOUBLE;
+    m.kind = SpbMetricKind::SPB_M_DOUBLE;
     m.double_value = 23.5;
     uint8_t buf[64];
     size_t n = spb_build_metric(buf, sizeof(buf), &m);
@@ -54,7 +54,7 @@ void test_payload_round_trip()
     SpbMetric m = {};
     m.name = "temperature";
     m.datatype = SPB_DT_DOUBLE;
-    m.kind = SPB_M_DOUBLE;
+    m.kind = SpbMetricKind::SPB_M_DOUBLE;
     m.double_value = 23.5;
     uint8_t buf[128];
     size_t n = spb_build_payload(buf, sizeof(buf), 1000, 5, &m, 1);
@@ -96,7 +96,7 @@ void test_metric_int_and_string()
     SpbMetric mi = {};
     mi.name = "count";
     mi.datatype = SPB_DT_INT32;
-    mi.kind = SPB_M_INT;
+    mi.kind = SpbMetricKind::SPB_M_INT;
     mi.int_value = 42;
     uint8_t buf[64];
     size_t n = spb_build_metric(buf, sizeof(buf), &mi);
@@ -112,7 +112,7 @@ void test_metric_int_and_string()
     SpbMetric ms = {};
     ms.name = "status";
     ms.datatype = SPB_DT_STRING;
-    ms.kind = SPB_M_STRING;
+    ms.kind = SpbMetricKind::SPB_M_STRING;
     ms.string_value = "ok";
     n = spb_build_metric(buf, sizeof(buf), &ms);
     pos = 0;
@@ -130,7 +130,7 @@ void test_metric_alias()
     m.has_alias = true;
     m.alias = 7;
     m.datatype = SPB_DT_BOOLEAN;
-    m.kind = SPB_M_BOOL;
+    m.kind = SpbMetricKind::SPB_M_BOOL;
     m.bool_value = true;
     uint8_t buf[32];
     size_t n = spb_build_metric(buf, sizeof(buf), &m);
@@ -146,7 +146,7 @@ void test_overflow_fails_closed()
     SpbMetric m = {};
     m.name = "temperature";
     m.datatype = SPB_DT_DOUBLE;
-    m.kind = SPB_M_DOUBLE;
+    m.kind = SpbMetricKind::SPB_M_DOUBLE;
     m.double_value = 23.5;
     uint8_t small[8];
     TEST_ASSERT_EQUAL_size_t(0, spb_build_metric(small, sizeof(small), &m));
@@ -171,14 +171,14 @@ void test_spb_error_and_kind_paths()
     ml.has_timestamp = true;
     ml.timestamp = 123;
     ml.datatype = SPB_DT_INT32;
-    ml.kind = SPB_M_LONG;
+    ml.kind = SpbMetricKind::SPB_M_LONG;
     ml.long_value = 0x1122334455ull;
     TEST_ASSERT_TRUE(spb_build_metric(buf, sizeof(buf), &ml) > 0); // timestamp + Long
 
     SpbMetric mf = {};
     mf.name = "flt";
     mf.datatype = SPB_DT_DOUBLE;
-    mf.kind = SPB_M_FLOAT;
+    mf.kind = SpbMetricKind::SPB_M_FLOAT;
     mf.float_value = 2.5f;
     TEST_ASSERT_TRUE(spb_build_metric(buf, sizeof(buf), &mf) > 0); // Float
 
@@ -190,7 +190,7 @@ void test_spb_error_and_kind_paths()
     SpbMetric ms = {};
     ms.name = "s";
     ms.datatype = SPB_DT_STRING;
-    ms.kind = SPB_M_STRING;
+    ms.kind = SpbMetricKind::SPB_M_STRING;
     ms.string_value = big;
     TEST_ASSERT_EQUAL_UINT(0, spb_build_payload(buf, sizeof(buf), 1, 0, &ms, 1)); // per-metric overflow
 }

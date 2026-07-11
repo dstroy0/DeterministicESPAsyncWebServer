@@ -20,13 +20,13 @@ bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out)
     memset(out, 0, sizeof(*out));
 
     const uint8_t fc0 = frame[0], fc1 = frame[1];
-    out->type = (uint8_t)((fc0 >> 2) & 0x3);
+    out->type = (WifiFrameType)((fc0 >> 2) & 0x3);
     out->subtype = (uint8_t)((fc0 >> 4) & 0xF);
     out->to_ds = (fc1 & 0x01) != 0;
     out->from_ds = (fc1 & 0x02) != 0;
     out->protected_frame = (fc1 & 0x40) != 0;
 
-    if (out->type == WIFI_FT_CTRL)
+    if (out->type == WifiFrameType::WIFI_FT_CTRL)
     {
         // Control frames carry only Addr1 (the receiver); the rest vary by subtype.
         out->dst = frame + 4;
@@ -38,7 +38,7 @@ bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out)
     if (len < 24)
         return false;
     out->seq = (uint16_t)(((uint16_t)frame[22] | ((uint16_t)frame[23] << 8)) >> 4);
-    out->is_qos = (out->type == WIFI_FT_DATA) && (out->subtype & 0x08) != 0;
+    out->is_qos = (out->type == WifiFrameType::WIFI_FT_DATA) && (out->subtype & 0x08) != 0;
 
     const bool has_addr4 = out->to_ds && out->from_ds; // WDS
     uint16_t hlen = 24;

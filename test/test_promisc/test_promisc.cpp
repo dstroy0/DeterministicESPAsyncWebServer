@@ -43,7 +43,7 @@ void test_beacon_mgmt()
     hdr3(f, 0x80, 0x00, A_DST, A_AP, A_AP, 1);
     WifiFrameInfo fi;
     TEST_ASSERT_TRUE(wifi_frame_parse(f, sizeof(f), &fi));
-    TEST_ASSERT_EQUAL_UINT8(WIFI_FT_MGMT, fi.type);
+    TEST_ASSERT_EQUAL_UINT8(WifiFrameType::WIFI_FT_MGMT, fi.type);
     TEST_ASSERT_EQUAL_UINT8(8, fi.subtype);
     TEST_ASSERT_FALSE(fi.to_ds);
     TEST_ASSERT_FALSE(fi.from_ds);
@@ -62,7 +62,7 @@ void test_data_from_ds()
     hdr3(f, 0x08, 0x02, A_CLI, A_AP, A_SRC, 7);
     WifiFrameInfo fi;
     TEST_ASSERT_TRUE(wifi_frame_parse(f, sizeof(f), &fi));
-    TEST_ASSERT_EQUAL_UINT8(WIFI_FT_DATA, fi.type);
+    TEST_ASSERT_EQUAL_UINT8(WifiFrameType::WIFI_FT_DATA, fi.type);
     TEST_ASSERT_FALSE(fi.to_ds);
     TEST_ASSERT_TRUE(fi.from_ds);
     TEST_ASSERT_EQUAL_MEMORY(A_CLI, fi.dst, 6);
@@ -117,7 +117,7 @@ void test_control_frame()
     uint8_t f[10] = {0xD4, 0x00, 0x00, 0x00, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb};
     WifiFrameInfo fi;
     TEST_ASSERT_TRUE(wifi_frame_parse(f, sizeof(f), &fi));
-    TEST_ASSERT_EQUAL_UINT8(WIFI_FT_CTRL, fi.type);
+    TEST_ASSERT_EQUAL_UINT8(WifiFrameType::WIFI_FT_CTRL, fi.type);
     TEST_ASSERT_EQUAL_UINT16(10, fi.hdr_len);
     TEST_ASSERT_EQUAL_MEMORY(A_CLI, fi.dst, 6);
     TEST_ASSERT_NULL(fi.src);
