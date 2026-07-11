@@ -1503,6 +1503,15 @@
 "native_upload",
 "native_webdav_handler"
 ],
+"src/server/file_serving.cpp": [
+"native_app",
+"native_diag",
+"native_h3_server",
+"native_keepalive",
+"native_range",
+"native_upload",
+"native_webdav_handler"
+],
 "src/server/webdav.cpp": [
 "native_app",
 "native_diag",
