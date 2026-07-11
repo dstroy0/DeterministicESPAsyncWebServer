@@ -7,6 +7,15 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 <details>
 <summary><b>Show Changelog for version 5.95.1 - 2026-07-11</b></summary>
 
+### Refactor
+
+- scoped enums (enum class 6/N) ([`d851200`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d851200f8f4c439cb252868bbf4f2de5cc8a1328))
+
+## [5.95.1] - 2026-07-11
+
+<details>
+<summary><b>Show Changelog for version 5.95.1 - 2026-07-11</b></summary>
+
 ### Bug Fixes
 
 - overflow-safe bounds in command emitters (SonarCloud) ([`4d177b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4d177b4594ba2eb81d36acea13bc652b932df302))
