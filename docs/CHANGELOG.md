@@ -11,6 +11,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- make whole-tree clang-format arg-safe (xargs, no 894-file argv) ([`c9ce949`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c9ce949644c4bc6f3ea396e009cf7fd01b60316a))
+- clang-format the whole tree in pre-commit + fix snmp_agent.h drift ([`578d413`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/578d4138fae3b14911c156914493f73257601907))
+- update test report + coverage [skip ci] ([`24b485c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24b485ccf27a46205e560babc0cb0863090ccfdd))
+- update CHANGELOG.md [skip ci] ([`6b3c7b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6b3c7b5b51c894df617eb4927b0f77a5c9153fb1))
 - update CHANGELOG.md [skip ci] ([`e4d2c66`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4d2c66d3c380311c92e695c05bdf2dc5828eb6c))
 - update CHANGELOG.md [skip ci] ([`7577765`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/75777659beb9f337f77b8ca34bb2b37bf452e5cd))
 - update test report + coverage [skip ci] ([`5736cf9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5736cf9c1991b012403c4a54771ba2cd00c16d0c))
@@ -36,6 +40,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a6ff2e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6ff2e0be8d7fac1cf1e10c3881b385732d6dc50))
+- update ESP32 build footprints [skip ci] ([`a316a36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a316a3602a778f8d7a54421953d6c4b8e9b5bd48))
 - update ESP32 build footprints [skip ci] ([`1891e60`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1891e60f32fa73c27223baccc1046bc4f8271aa0))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3763525`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37635258fb187c977fec252053582f7887edb00b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2c79438`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c79438e6cf7f219342461e587dd7bc75c884fd7))
