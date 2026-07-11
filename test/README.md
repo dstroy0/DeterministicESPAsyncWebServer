@@ -7989,7 +7989,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Allow forwards
     * **Assertions**:
-      * <code>Assert true (det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0))</code>
+      * <code>Assert true (det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "abc"));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, g_cap[1].frames.size()); // source not touched</code>
@@ -8057,7 +8057,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (add_if(1))</code>
       * <code>Assert false (add_if(1))</code>
-      * <code>Assert false (det_forward_add_if(9, DET_IF_OTHER, nullptr, nullptr))</code>
+      * <code>Assert false (det_forward_add_if(9, det_if_kind::DET_IF_OTHER, nullptr, nullptr))</code>
       * <code>Assert true (add_if(2))</code>
       * <code>Assert true (add_if(3))</code>
       * <code>Assert true (add_if(4))</code>
@@ -8069,8 +8069,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Add rule table full
     * **Assertions**:
-      * <code>Assert true (det_forward_add_rule(1, 2, DET_FWD_ALLOW, 0))</code>
-      * <code>Assert false (det_forward_add_rule(1, 3, DET_FWD_ALLOW, 0))</code>
+      * <code>Assert true (det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0))</code>
+      * <code>Assert false (det_forward_add_rule(1, 3, det_fwd_action::DET_FWD_ALLOW, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8078,7 +8078,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Unregistered destination is inert
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "x"));  // nothing to forward to</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, ingress(1, "x"));                  // nothing to forward to</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8086,7 +8086,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Acl deny by byte pattern
     * **Assertions**:
-      * <code>Assert true (det_forward_acl_add(1, 0, pat, msk, 1, DET_FWD_DENY))</code>
+      * <code>Assert true (det_forward_acl_add(1, 0, pat, msk, 1, det_fwd_action::DET_FWD_DENY))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, in1(ok, 3));  // no ACE match -&gt; default allow -&gt; forwarded</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, in1(bad, 3)); // ACE denies at ingress</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());</code>
@@ -8126,7 +8126,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Acl short frame skips entry
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, in1(shortf, 3));           // default allow -&gt; forwarded</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, in1(shortf, 3));                           // default allow -&gt; forwarded</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8134,9 +8134,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Acl add validation and table full
     * **Assertions**:
-      * <code>Assert false (det_forward_acl_add(1, 0, big, bm, DETWS_FWD_ACL_PATLEN + 1, DET_FWD_DENY))</code>
-      * <code>Assert true (det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_ALLOW))</code>
-      * <code>Assert false (det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, DET_FWD_ALLOW))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
+      * <code>Assert true (det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, det_fwd_action::DET_FWD_ALLOW))</code>
+      * <code>TEST_ASSERT_FALSE(</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8447,12 +8447,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Uplink envelopes and publishes
     * **Assertions**:
-      * <code>Assert true (add_port(0, DET_GW_LORA, 0, false))</code>
+      * <code>Assert true (add_port(0, det_gw_kind::DET_GW_LORA, 0, false))</code>
       * <code>Assert true (det_gw_uplink(0, 0x42, hi, 2, -50))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_up.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x42, g_up[0].src_addr);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, g_up[0].port_id);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(DET_GW_LORA, g_up[0].kind);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(det_gw_kind::DET_GW_LORA, g_up[0].kind);</code>
       * <code>TEST_ASSERT_EQUAL_INT16(-50, g_up[0].rssi);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, g_up[0].seq);</code>
       * <code>Assert equal memory (hi, g_up[0].payload.data(), 2)</code>
@@ -8553,12 +8553,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Add port validation and table full
     * **Assertions**:
       * <code>Assert false (det_gw_add_port(nullptr))</code>
-      * <code>Assert true (add_port(0, DET_GW_LORA, 0, false))</code>
-      * <code>Assert false (add_port(0, DET_GW_LORA, 0, false))</code>
-      * <code>Assert true (add_port(1, DET_GW_NRF24, 0, false))</code>
-      * <code>Assert true (add_port(2, DET_GW_ZIGBEE, 0, false))</code>
-      * <code>Assert true (add_port(3, DET_GW_BLE, 0, false))</code>
-      * <code>Assert false (add_port(4, DET_GW_LORA, 0, false)); // table full (DETWS_GW_MAX_PORTS = 4)</code>
+      * <code>Assert true (add_port(0, det_gw_kind::DET_GW_LORA, 0, false))</code>
+      * <code>Assert false (add_port(0, det_gw_kind::DET_GW_LORA, 0, false))</code>
+      * <code>Assert true (add_port(1, det_gw_kind::DET_GW_NRF24, 0, false))</code>
+      * <code>Assert true (add_port(2, det_gw_kind::DET_GW_ZIGBEE, 0, false))</code>
+      * <code>Assert true (add_port(3, det_gw_kind::DET_GW_BLE, 0, false))</code>
+      * <code>Assert false (add_port(4, det_gw_kind::DET_GW_LORA, 0, false)); // table full (DETWS_GW_MAX_PORTS = 4)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -31307,19 +31307,19 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Method classification
     * **Assertions**:
-      * <code>Assert equal int (DAV_M_OPTIONS, webdav_method("OPTIONS"))</code>
-      * <code>Assert equal int (DAV_M_PROPFIND, webdav_method("PROPFIND"))</code>
-      * <code>Assert equal int (DAV_M_PROPPATCH, webdav_method("PROPPATCH"))</code>
-      * <code>Assert equal int (DAV_M_MKCOL, webdav_method("MKCOL"))</code>
-      * <code>Assert equal int (DAV_M_COPY, webdav_method("COPY"))</code>
-      * <code>Assert equal int (DAV_M_MOVE, webdav_method("MOVE"))</code>
-      * <code>Assert equal int (DAV_M_LOCK, webdav_method("LOCK"))</code>
-      * <code>Assert equal int (DAV_M_UNLOCK, webdav_method("UNLOCK"))</code>
-      * <code>Assert equal int (DAV_M_PUT, webdav_method("PUT"))</code>
-      * <code>Assert equal int (DAV_M_GET, webdav_method("GET"))</code>
-      * <code>Assert equal int (DAV_M_DELETE, webdav_method("DELETE"))</code>
-      * <code>Assert equal int (DAV_M_UNSUPPORTED, webdav_method("BREW"))</code>
-      * <code>Assert equal int (DAV_M_UNSUPPORTED, webdav_method(nullptr))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_OPTIONS, webdav_method("OPTIONS"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_PROPFIND, webdav_method("PROPFIND"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_PROPPATCH, webdav_method("PROPPATCH"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_MKCOL, webdav_method("MKCOL"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_COPY, webdav_method("COPY"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_MOVE, webdav_method("MOVE"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_LOCK, webdav_method("LOCK"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNLOCK, webdav_method("UNLOCK"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_PUT, webdav_method("PUT"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_GET, webdav_method("GET"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_DELETE, webdav_method("DELETE"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, webdav_method("BREW"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, webdav_method(nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -31514,15 +31514,15 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Method all including head
     * **Assertions**:
-      * <code>Assert equal int (DAV_M_HEAD, webdav_method("HEAD"))</code>
-      * <code>Assert equal int (DAV_M_OPTIONS, webdav_method("OPTIONS"))</code>
-      * <code>Assert equal int (DAV_M_MKCOL, webdav_method("MKCOL"))</code>
-      * <code>Assert equal int (DAV_M_COPY, webdav_method("COPY"))</code>
-      * <code>Assert equal int (DAV_M_MOVE, webdav_method("MOVE"))</code>
-      * <code>Assert equal int (DAV_M_LOCK, webdav_method("LOCK"))</code>
-      * <code>Assert equal int (DAV_M_UNLOCK, webdav_method("UNLOCK"))</code>
-      * <code>Assert equal int (DAV_M_UNSUPPORTED, webdav_method("BOGUS"))</code>
-      * <code>Assert equal int (DAV_M_UNSUPPORTED, webdav_method(nullptr))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_HEAD, webdav_method("HEAD"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_OPTIONS, webdav_method("OPTIONS"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_MKCOL, webdav_method("MKCOL"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_COPY, webdav_method("COPY"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_MOVE, webdav_method("MOVE"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_LOCK, webdav_method("LOCK"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNLOCK, webdav_method("UNLOCK"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, webdav_method("BOGUS"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, webdav_method(nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
