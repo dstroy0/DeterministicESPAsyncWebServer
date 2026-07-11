@@ -1,9 +1,9 @@
 [
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/network/ip.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/network/ip.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_telnet/src/network_drivers/network/ip.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_TELNET=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/network/ip.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/network/ip.cpp",
-    "output": ".pio/build/native/src/network_drivers/network/ip.o"
+    "output": ".pio/build/native_telnet/src/network_drivers/network/ip.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/base64/base64.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/base64/base64.cpp",
@@ -72,16 +72,16 @@
     "output": ".pio/build/native/src/network_drivers/session/worker.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/transport/listener.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/listener.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_telnet/src/network_drivers/transport/listener.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_TELNET=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/listener.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/transport/listener.cpp",
-    "output": ".pio/build/native/src/network_drivers/transport/listener.o"
+    "output": ".pio/build/native_telnet/src/network_drivers/transport/listener.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/transport/tcp.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/tcp.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_telnet/src/network_drivers/transport/tcp.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_TELNET=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/tcp.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/transport/tcp.cpp",
-    "output": ".pio/build/native/src/network_drivers/transport/tcp.o"
+    "output": ".pio/build/native_telnet/src/network_drivers/transport/tcp.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_ads1115/src/services/ads1115/ads1115.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_ADS1115=1 -Itest/mocks -Itest/support -Isrc src/services/ads1115/ads1115.cpp",
