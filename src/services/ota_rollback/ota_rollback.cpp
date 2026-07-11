@@ -13,12 +13,12 @@
 DetwsOtaAction detws_ota_decide(uint8_t img_state, bool self_test_ok, uint32_t ms_since_boot, uint32_t window_ms)
 {
     if (img_state != DETWS_OTA_IMG_PENDING_VERIFY)
-        return DETWS_OTA_WAIT; // not a freshly-updated image: nothing to do
+        return DetwsOtaAction::DETWS_OTA_WAIT; // not a freshly-updated image: nothing to do
     if (self_test_ok)
-        return DETWS_OTA_COMMIT;
+        return DetwsOtaAction::DETWS_OTA_COMMIT;
     if (ms_since_boot >= window_ms)
-        return DETWS_OTA_ROLLBACK; // never confirmed in time -> self-heal
-    return DETWS_OTA_WAIT;
+        return DetwsOtaAction::DETWS_OTA_ROLLBACK; // never confirmed in time -> self-heal
+    return DetwsOtaAction::DETWS_OTA_WAIT;
 }
 
 #ifdef ARDUINO
@@ -49,9 +49,9 @@ DetwsOtaAction detws_ota_rollback_tick(bool self_test_ok)
 {
     DetwsOtaAction a =
         detws_ota_decide(detws_ota_img_state(), self_test_ok, detws_millis(), DETWS_OTA_CONFIRM_WINDOW_MS);
-    if (a == DETWS_OTA_COMMIT)
+    if (a == DetwsOtaAction::DETWS_OTA_COMMIT)
         detws_ota_commit();
-    else if (a == DETWS_OTA_ROLLBACK)
+    else if (a == DetwsOtaAction::DETWS_OTA_ROLLBACK)
         detws_ota_rollback();
     return a;
 }
@@ -70,7 +70,7 @@ void detws_ota_rollback(void)
 }
 DetwsOtaAction detws_ota_rollback_tick(bool)
 {
-    return DETWS_OTA_WAIT;
+    return DetwsOtaAction::DETWS_OTA_WAIT;
 }
 
 #endif // ARDUINO

@@ -34,7 +34,7 @@
 #if DETWS_ENABLE_MTCONNECT
 
 /** @brief The MTConnect DataItem category (which stream element wraps the value). */
-enum DetwsMtcCategory
+enum class DetwsMtcCategory : uint8_t
 {
     DETWS_MTC_SAMPLE,   ///< a measured value (<Samples>).
     DETWS_MTC_EVENT,    ///< a discrete state (<Events>).

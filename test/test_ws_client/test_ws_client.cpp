@@ -62,7 +62,8 @@ void test_build_frame_masked()
 {
     uint8_t buf[32];
     uint8_t mask[4] = {0x01, 0x02, 0x03, 0x04};
-    size_t n = ws_client_build_frame(buf, sizeof(buf), WSC_OP_TEXT, (const uint8_t *)"Hi", 2, mask);
+    size_t n =
+        ws_client_build_frame(buf, sizeof(buf), (uint8_t)WsClientOpcode::WSC_OP_TEXT, (const uint8_t *)"Hi", 2, mask);
     TEST_ASSERT_EQUAL_size_t(8, n);             // 2 hdr + 4 mask + 2 payload
     TEST_ASSERT_EQUAL_HEX8(0x81, buf[0]);       // FIN + text
     TEST_ASSERT_EQUAL_HEX8(0x82, buf[1]);       // mask bit + len 2
@@ -77,7 +78,8 @@ void test_build_frame_extended_len()
     uint8_t payload[200];
     memset(payload, 'a', sizeof(payload));
     uint8_t mask[4] = {0, 0, 0, 0}; // zero mask -> payload copied verbatim
-    size_t n = ws_client_build_frame(buf, sizeof(buf), WSC_OP_BINARY, payload, sizeof(payload), mask);
+    size_t n =
+        ws_client_build_frame(buf, sizeof(buf), (uint8_t)WsClientOpcode::WSC_OP_BINARY, payload, sizeof(payload), mask);
     TEST_ASSERT_EQUAL_size_t(2 + 2 + 4 + 200, n);
     TEST_ASSERT_EQUAL_HEX8(0x82, buf[0]);       // FIN + binary
     TEST_ASSERT_EQUAL_HEX8(0x80 | 126, buf[1]); // mask + 16-bit length follows
@@ -92,7 +94,7 @@ void test_parse_frame_server_text()
     bool fin;
     size_t off, plen, consumed;
     TEST_ASSERT_TRUE(ws_client_parse_frame(f, sizeof(f), &op, &fin, &off, &plen, &consumed));
-    TEST_ASSERT_EQUAL_UINT8(WSC_OP_TEXT, op);
+    TEST_ASSERT_EQUAL_UINT8(WsClientOpcode::WSC_OP_TEXT, op);
     TEST_ASSERT_TRUE(fin);
     TEST_ASSERT_EQUAL_size_t(2, off);
     TEST_ASSERT_EQUAL_size_t(5, plen);

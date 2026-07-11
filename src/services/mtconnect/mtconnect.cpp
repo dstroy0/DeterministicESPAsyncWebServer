@@ -85,9 +85,9 @@ void put_u64(DetwsMtcStreams *s, uint64_t v)
 
 const char *mtc_cat_str(DetwsMtcCategory cat)
 {
-    if (cat == DETWS_MTC_SAMPLE)
+    if (cat == DetwsMtcCategory::DETWS_MTC_SAMPLE)
         return "SAMPLE";
-    if (cat == DETWS_MTC_EVENT)
+    if (cat == DetwsMtcCategory::DETWS_MTC_EVENT)
         return "EVENT";
     return "CONDITION";
 }
@@ -124,14 +124,14 @@ void detws_mtc_streams_add(DetwsMtcStreams *s, DetwsMtcCategory cat, const char 
         s->in_comp = true;
     }
     const char *wrap = "Condition";
-    if (cat == DETWS_MTC_SAMPLE)
+    if (cat == DetwsMtcCategory::DETWS_MTC_SAMPLE)
         wrap = "Samples";
-    else if (cat == DETWS_MTC_EVENT)
+    else if (cat == DetwsMtcCategory::DETWS_MTC_EVENT)
         wrap = "Events";
     put(s, "<");
     put(s, wrap);
     put(s, ">");
-    if (cat == DETWS_MTC_CONDITION)
+    if (cat == DetwsMtcCategory::DETWS_MTC_CONDITION)
     {
         // <Condition><Normal type="TYPE" dataItemId="ID" sequence="SEQ" timestamp="TS"/></Condition>
         const char *sub = value ? value : "Normal"; // Normal / Warning / Fault / Unavailable

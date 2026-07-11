@@ -47,25 +47,26 @@ void test_build_uplink_bounds()
 
 void test_parse_response_ok()
 {
-    TEST_ASSERT_EQUAL_INT(SIGFOX_OK, sigfox_parse_response("OK\r\n", 4));
+    TEST_ASSERT_EQUAL_INT(sigfox_result::SIGFOX_OK, sigfox_parse_response("OK\r\n", 4));
 }
 
 void test_parse_response_error()
 {
-    TEST_ASSERT_EQUAL_INT(SIGFOX_ERROR, sigfox_parse_response("ERROR\r\n", 7));
+    TEST_ASSERT_EQUAL_INT(sigfox_result::SIGFOX_ERROR, sigfox_parse_response("ERROR\r\n", 7));
 }
 
 void test_parse_response_pending()
 {
-    TEST_ASSERT_EQUAL_INT(SIGFOX_PENDING, sigfox_parse_response("AT$SF=AB12\r\n", 12)); // echo, no verdict yet
-    TEST_ASSERT_EQUAL_INT(SIGFOX_PENDING, sigfox_parse_response("", 0));
+    TEST_ASSERT_EQUAL_INT(sigfox_result::SIGFOX_PENDING,
+                          sigfox_parse_response("AT$SF=AB12\r\n", 12)); // echo, no verdict yet
+    TEST_ASSERT_EQUAL_INT(sigfox_result::SIGFOX_PENDING, sigfox_parse_response("", 0));
 }
 
 void test_parse_response_error_wins()
 {
     // If a buffer holds both (e.g. an echoed "OK" token then an ERROR), ERROR is reported.
     const char *both = "sending OK... ERROR";
-    TEST_ASSERT_EQUAL_INT(SIGFOX_ERROR, sigfox_parse_response(both, (uint16_t)strlen(both)));
+    TEST_ASSERT_EQUAL_INT(sigfox_result::SIGFOX_ERROR, sigfox_parse_response(both, (uint16_t)strlen(both)));
 }
 
 int main()

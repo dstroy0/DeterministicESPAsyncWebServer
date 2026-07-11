@@ -28,7 +28,7 @@
 #include <stdint.h>
 
 /** @brief Classification of a Sigfox modem response line. */
-enum sigfox_result
+enum class sigfox_result : uint8_t
 {
     SIGFOX_PENDING = 0, ///< nothing conclusive yet (echo / partial); keep reading
     SIGFOX_OK = 1,      ///< the modem accepted / completed the command
@@ -45,7 +45,8 @@ uint16_t sigfox_build_uplink(const uint8_t *payload, uint8_t len, char *out, uin
 
 /**
  * @brief Classify a modem reply (scans @p buf for "OK" / "ERROR").
- * @return SIGFOX_OK, SIGFOX_ERROR, or SIGFOX_PENDING if neither is present yet.
+ * @return sigfox_result::SIGFOX_OK, sigfox_result::SIGFOX_ERROR, or sigfox_result::SIGFOX_PENDING if neither is present
+ * yet.
  */
 sigfox_result sigfox_parse_response(const char *buf, uint16_t len);
 

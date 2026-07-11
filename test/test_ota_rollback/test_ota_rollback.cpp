@@ -17,30 +17,36 @@ void tearDown()
 void test_not_pending_waits()
 {
     // A normally-booted (valid/undefined) image never rolls back.
-    TEST_ASSERT_EQUAL_INT(DETWS_OTA_WAIT, detws_ota_decide(DETWS_OTA_IMG_VALID, false, 999999, 30000));
-    TEST_ASSERT_EQUAL_INT(DETWS_OTA_WAIT, detws_ota_decide(DETWS_OTA_IMG_UNDEFINED, false, 999999, 30000));
+    TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_WAIT, detws_ota_decide(DETWS_OTA_IMG_VALID, false, 999999, 30000));
+    TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_WAIT,
+                          detws_ota_decide(DETWS_OTA_IMG_UNDEFINED, false, 999999, 30000));
 }
 
 void test_pending_self_test_ok_commits()
 {
-    TEST_ASSERT_EQUAL_INT(DETWS_OTA_COMMIT, detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, true, 1000, 30000));
+    TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_COMMIT,
+                          detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, true, 1000, 30000));
 }
 
 void test_pending_within_window_waits()
 {
-    TEST_ASSERT_EQUAL_INT(DETWS_OTA_WAIT, detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, false, 5000, 30000));
+    TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_WAIT,
+                          detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, false, 5000, 30000));
 }
 
 void test_pending_window_elapsed_rolls_back()
 {
-    TEST_ASSERT_EQUAL_INT(DETWS_OTA_ROLLBACK, detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, false, 30000, 30000));
-    TEST_ASSERT_EQUAL_INT(DETWS_OTA_ROLLBACK, detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, false, 40000, 30000));
+    TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_ROLLBACK,
+                          detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, false, 30000, 30000));
+    TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_ROLLBACK,
+                          detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, false, 40000, 30000));
 }
 
 void test_self_test_ok_beats_window()
 {
     // A passing self-test commits even past the window.
-    TEST_ASSERT_EQUAL_INT(DETWS_OTA_COMMIT, detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, true, 99999, 30000));
+    TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_COMMIT,
+                          detws_ota_decide(DETWS_OTA_IMG_PENDING_VERIFY, true, 99999, 30000));
 }
 
 void test_host_platform_hooks_are_safe_noops()
@@ -51,8 +57,8 @@ void test_host_platform_hooks_are_safe_noops()
     TEST_ASSERT_EQUAL_INT(DETWS_OTA_IMG_UNDEFINED, detws_ota_img_state());
     detws_ota_commit();
     detws_ota_rollback();
-    TEST_ASSERT_EQUAL_INT(DETWS_OTA_WAIT, detws_ota_rollback_tick(true));
-    TEST_ASSERT_EQUAL_INT(DETWS_OTA_WAIT, detws_ota_rollback_tick(false));
+    TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_WAIT, detws_ota_rollback_tick(true));
+    TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_WAIT, detws_ota_rollback_tick(false));
 }
 
 int main()

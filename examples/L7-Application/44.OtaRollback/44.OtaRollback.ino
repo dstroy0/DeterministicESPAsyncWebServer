@@ -62,7 +62,7 @@ void loop()
     if (!done)
     {
         DetwsOtaAction a = detws_ota_rollback_tick(self_test());
-        if (a == DETWS_OTA_COMMIT)
+        if (a == DetwsOtaAction::DETWS_OTA_COMMIT)
         {
             Serial.println("[ota] image committed");
             done = true;

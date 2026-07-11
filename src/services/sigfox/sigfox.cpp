@@ -66,12 +66,12 @@ uint16_t sigfox_build_uplink(const uint8_t *payload, uint8_t len, char *out, uin
 sigfox_result sigfox_parse_response(const char *buf, uint16_t len)
 {
     if (!buf || len == 0)
-        return SIGFOX_PENDING;
+        return sigfox_result::SIGFOX_PENDING;
     if (contains(buf, len, "ERROR"))
-        return SIGFOX_ERROR;
+        return sigfox_result::SIGFOX_ERROR;
     if (contains(buf, len, "OK"))
-        return SIGFOX_OK;
-    return SIGFOX_PENDING;
+        return sigfox_result::SIGFOX_OK;
+    return sigfox_result::SIGFOX_PENDING;
 }
 
 #endif // DETWS_ENABLE_SIGFOX

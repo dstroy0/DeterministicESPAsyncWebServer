@@ -36,7 +36,7 @@ enum
 };
 
 /** @brief What the rollback tick should do. */
-enum DetwsOtaAction
+enum class DetwsOtaAction : uint8_t
 {
     DETWS_OTA_WAIT = 0,     ///< still pending, within the window: keep waiting.
     DETWS_OTA_COMMIT = 1,   ///< self-test passed: mark the image valid.
@@ -53,7 +53,7 @@ enum DetwsOtaAction
  * @param self_test_ok  application self-test result.
  * @param ms_since_boot uptime in ms.
  * @param window_ms     confirm window.
- * @return DETWS_OTA_WAIT / _COMMIT / _ROLLBACK. Only a PENDING_VERIFY image acts;
+ * @return DetwsOtaAction::DETWS_OTA_WAIT / _COMMIT / _ROLLBACK. Only a PENDING_VERIFY image acts;
  *         any other state returns WAIT (nothing to do).
  */
 DetwsOtaAction detws_ota_decide(uint8_t img_state, bool self_test_ok, uint32_t ms_since_boot, uint32_t window_ms);

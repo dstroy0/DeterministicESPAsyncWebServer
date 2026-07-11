@@ -31,7 +31,7 @@
 #if DETWS_ENABLE_WS_CLIENT
 
 /** @brief WebSocket opcodes (RFC 6455 §5.2). */
-enum WsClientOpcode
+enum class WsClientOpcode : uint8_t
 {
     WSC_OP_CONT = 0x0,
     WSC_OP_TEXT = 0x1,
@@ -88,7 +88,7 @@ bool ws_client_parse_frame(const uint8_t *buf, size_t avail, uint8_t *opcode, bo
 // Transport (ESP32 only; no-ops / false on a host build)
 // ---------------------------------------------------------------------------
 
-/** @brief Callback for an inbound text/binary message (opcode is WSC_OP_TEXT/BINARY). */
+/** @brief Callback for an inbound text/binary message (opcode is WsClientOpcode::WSC_OP_TEXT/BINARY). */
 typedef void (*WsClientMessageCb)(uint8_t opcode, const uint8_t *payload, size_t len);
 
 /** @brief Register the inbound-message callback (call before ws_client_connect). */

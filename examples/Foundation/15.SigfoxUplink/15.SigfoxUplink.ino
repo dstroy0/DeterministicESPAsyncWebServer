@@ -31,11 +31,11 @@ static sigfox_result read_reply(uint32_t timeout_ms)
         while (Serial2.available() && n < sizeof(buf) - 1)
             buf[n++] = (char)Serial2.read();
         sigfox_result r = sigfox_parse_response(buf, n);
-        if (r != SIGFOX_PENDING)
+        if (r != sigfox_result::SIGFOX_PENDING)
             return r;
         delay(5);
     }
-    return SIGFOX_PENDING;
+    return sigfox_result::SIGFOX_PENDING;
 }
 
 void setup()
@@ -60,7 +60,10 @@ void loop()
     {
         Serial2.write((const uint8_t *)cmd, n); // "AT$SF=xxxxxxxx\r\n"
         sigfox_result r = read_reply(10000);    // an uplink takes ~6 s
-        Serial.printf("uplink #%u: %s\n", g_seq, r == SIGFOX_OK ? "OK" : r == SIGFOX_ERROR ? "ERROR" : "timeout");
+        Serial.printf("uplink #%u: %s\n", g_seq,
+                      r == sigfox_result::SIGFOX_OK      ? "OK"
+                      : r == sigfox_result::SIGFOX_ERROR ? "ERROR"
+                                                         : "timeout");
         g_seq++;
     }
 

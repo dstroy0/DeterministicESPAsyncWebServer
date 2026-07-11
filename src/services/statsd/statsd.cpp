@@ -94,20 +94,21 @@ bool app(char *out, size_t cap, size_t *pos, const char *s, size_t n)
 }
 } // namespace
 
-size_t statsd_format(char *out, size_t cap, const char *name, const char *value, char type, float rate,
+size_t statsd_format(char *out, size_t cap, const char *name, const char *value, StatsdType type, float rate,
                      const char *tags)
 {
     if (!out || cap == 0 || !name || !name[0] || !value)
         return 0;
-    if (type != STATSD_COUNTER && type != STATSD_GAUGE && type != STATSD_TIMING && type != STATSD_SET)
+    if (type != StatsdType::STATSD_COUNTER && type != StatsdType::STATSD_GAUGE && type != StatsdType::STATSD_TIMING &&
+        type != StatsdType::STATSD_SET)
         return 0;
 
     size_t pos = 0;
-    char t = type;
+    char t = (char)type;
     if (!app(out, cap, &pos, name, strlen(name)) || !app(out, cap, &pos, ":", 1) ||
         !app(out, cap, &pos, value, strlen(value)) || !app(out, cap, &pos, "|", 1))
         return 0;
-    if (type == STATSD_TIMING)
+    if (type == StatsdType::STATSD_TIMING)
     {
         if (!app(out, cap, &pos, "ms", 2))
             return 0;
@@ -144,7 +145,7 @@ struct StatsdCtx
 };
 StatsdCtx s_statsd;
 
-void emit(const StatsdCtx &c, const char *name, const char *value, char type, float rate)
+void emit(const StatsdCtx &c, const char *name, const char *value, StatsdType type, float rate)
 {
     if (!c.ready)
         return;
@@ -179,40 +180,40 @@ void statsd_count(const char *name, int64_t delta)
 {
     char v[24];
     v[i64_str(v, delta)] = '\0';
-    emit(s_statsd, name, v, STATSD_COUNTER, 1.0f);
+    emit(s_statsd, name, v, StatsdType::STATSD_COUNTER, 1.0f);
 }
 
 void statsd_count_sampled(const char *name, int64_t delta, float rate)
 {
     char v[24];
     v[i64_str(v, delta)] = '\0';
-    emit(s_statsd, name, v, STATSD_COUNTER, rate);
+    emit(s_statsd, name, v, StatsdType::STATSD_COUNTER, rate);
 }
 
 void statsd_gauge(const char *name, int64_t value)
 {
     char v[24];
     v[i64_str(v, value)] = '\0';
-    emit(s_statsd, name, v, STATSD_GAUGE, 1.0f);
+    emit(s_statsd, name, v, StatsdType::STATSD_GAUGE, 1.0f);
 }
 
 void statsd_gauge_delta(const char *name, int64_t delta)
 {
     char v[24];
     v[i64_delta_str(v, delta)] = '\0';
-    emit(s_statsd, name, v, STATSD_GAUGE, 1.0f);
+    emit(s_statsd, name, v, StatsdType::STATSD_GAUGE, 1.0f);
 }
 
 void statsd_timing(const char *name, uint32_t ms)
 {
     char v[16];
     v[u64_str(v, ms)] = '\0';
-    emit(s_statsd, name, v, STATSD_TIMING, 1.0f);
+    emit(s_statsd, name, v, StatsdType::STATSD_TIMING, 1.0f);
 }
 
 void statsd_set(const char *name, const char *member)
 {
-    emit(s_statsd, name, member ? member : "", STATSD_SET, 1.0f);
+    emit(s_statsd, name, member ? member : "", StatsdType::STATSD_SET, 1.0f);
 }
 
 #endif // DETWS_ENABLE_STATSD

@@ -29,7 +29,7 @@
 #include <stdint.h>
 
 /** @brief StatsD metric type codes (the token after the `|`). */
-enum StatsdType
+enum class StatsdType : uint8_t
 {
     STATSD_COUNTER = 'c',
     STATSD_GAUGE = 'g',
@@ -49,7 +49,7 @@ enum StatsdType
  * @param tags   DogStatsD tag string "k:v,k2:v2" (no leading `#`), or nullptr for none.
  * @return       line length (excluding the NUL), or 0 on a bad argument or overflow.
  */
-size_t statsd_format(char *out, size_t cap, const char *name, const char *value, char type, float rate,
+size_t statsd_format(char *out, size_t cap, const char *name, const char *value, StatsdType type, float rate,
                      const char *tags);
 
 /**

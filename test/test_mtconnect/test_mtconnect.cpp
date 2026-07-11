@@ -25,9 +25,12 @@ void test_streams_document(void)
     char buf[1024];
     DetwsMtcStreams s;
     detws_mtc_streams_begin(&s, buf, sizeof(buf), 1500, 42, "cnc1");
-    detws_mtc_streams_add(&s, DETWS_MTC_EVENT, "Availability", "avail", 40, "2026-07-06T00:00:00Z", "AVAILABLE");
-    detws_mtc_streams_add(&s, DETWS_MTC_SAMPLE, "Position", "xpos", 41, "2026-07-06T00:00:01Z", "12.5");
-    detws_mtc_streams_add(&s, DETWS_MTC_CONDITION, "SystemCondition", "sys", 42, "2026-07-06T00:00:02Z", "Fault");
+    detws_mtc_streams_add(&s, DetwsMtcCategory::DETWS_MTC_EVENT, "Availability", "avail", 40, "2026-07-06T00:00:00Z",
+                          "AVAILABLE");
+    detws_mtc_streams_add(&s, DetwsMtcCategory::DETWS_MTC_SAMPLE, "Position", "xpos", 41, "2026-07-06T00:00:01Z",
+                          "12.5");
+    detws_mtc_streams_add(&s, DetwsMtcCategory::DETWS_MTC_CONDITION, "SystemCondition", "sys", 42,
+                          "2026-07-06T00:00:02Z", "Fault");
     size_t n = detws_mtc_streams_end(&s);
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
@@ -50,7 +53,7 @@ void test_streams_escapes_value(void)
     char buf[512];
     DetwsMtcStreams s;
     detws_mtc_streams_begin(&s, buf, sizeof(buf), 1, 1, "d");
-    detws_mtc_streams_add(&s, DETWS_MTC_EVENT, "Message", "msg", 1, "T", "a<b&c");
+    detws_mtc_streams_add(&s, DetwsMtcCategory::DETWS_MTC_EVENT, "Message", "msg", 1, "T", "a<b&c");
     detws_mtc_streams_end(&s);
     TEST_ASSERT_TRUE(contains(buf, ">a&lt;b&amp;c</Message>"));
 }
@@ -70,7 +73,7 @@ void test_overflow_returns_zero(void)
     char buf[40];
     DetwsMtcStreams s;
     detws_mtc_streams_begin(&s, buf, sizeof(buf), 1, 1, "device");
-    detws_mtc_streams_add(&s, DETWS_MTC_SAMPLE, "Position", "x", 1, "T", "1.0");
+    detws_mtc_streams_add(&s, DetwsMtcCategory::DETWS_MTC_SAMPLE, "Position", "x", 1, "T", "1.0");
     TEST_ASSERT_EQUAL_size_t(0, detws_mtc_streams_end(&s)); // did not fit
 }
 
@@ -79,7 +82,7 @@ void test_escape_gt_quote_and_overflow()
     char buf[512];
     DetwsMtcStreams s;
     detws_mtc_streams_begin(&s, buf, sizeof(buf), 1, 1, "d");
-    detws_mtc_streams_add(&s, DETWS_MTC_EVENT, "Message", "msg", 1, "T", "a>b\"c");
+    detws_mtc_streams_add(&s, DetwsMtcCategory::DETWS_MTC_EVENT, "Message", "msg", 1, "T", "a>b\"c");
     detws_mtc_streams_end(&s);
     TEST_ASSERT_NOT_NULL(strstr(buf, "&gt;"));
     TEST_ASSERT_NOT_NULL(strstr(buf, "&quot;"));
@@ -87,7 +90,8 @@ void test_escape_gt_quote_and_overflow()
     char tiny[64];
     DetwsMtcStreams s2;
     detws_mtc_streams_begin(&s2, tiny, sizeof(tiny), 1, 1, "device-with-a-very-long-name");
-    detws_mtc_streams_add(&s2, DETWS_MTC_SAMPLE, "Position", "xpos", 1, "2026-07-06T00:00:01Z", "12.5");
+    detws_mtc_streams_add(&s2, DetwsMtcCategory::DETWS_MTC_SAMPLE, "Position", "xpos", 1, "2026-07-06T00:00:01Z",
+                          "12.5");
     TEST_ASSERT_EQUAL_size_t(0, detws_mtc_streams_end(&s2));
     char t2[8];
     TEST_ASSERT_EQUAL_size_t(0, detws_mtc_error(1, "X", "y", t2, sizeof(t2)));
@@ -98,9 +102,9 @@ void test_devices_probe_document(void)
     char buf[1024];
     DetwsMtcStreams s;
     detws_mtc_devices_begin(&s, buf, sizeof(buf), 1500, "dev1", "cnc1", "uuid-abc");
-    detws_mtc_devices_add_item(&s, DETWS_MTC_EVENT, "avail", "Availability", nullptr, nullptr);
-    detws_mtc_devices_add_item(&s, DETWS_MTC_SAMPLE, "xpos", "Position", "Xabs", "MILLIMETER");
-    detws_mtc_devices_add_item(&s, DETWS_MTC_CONDITION, "sys", "SystemCondition", nullptr, nullptr);
+    detws_mtc_devices_add_item(&s, DetwsMtcCategory::DETWS_MTC_EVENT, "avail", "Availability", nullptr, nullptr);
+    detws_mtc_devices_add_item(&s, DetwsMtcCategory::DETWS_MTC_SAMPLE, "xpos", "Position", "Xabs", "MILLIMETER");
+    detws_mtc_devices_add_item(&s, DetwsMtcCategory::DETWS_MTC_CONDITION, "sys", "SystemCondition", nullptr, nullptr);
     size_t n = detws_mtc_devices_end(&s);
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
@@ -121,7 +125,7 @@ void test_devices_escape_and_overflow(void)
     char buf[1024];
     DetwsMtcStreams s;
     detws_mtc_devices_begin(&s, buf, sizeof(buf), 1, "d<1", "n&m", "u");
-    detws_mtc_devices_add_item(&s, DETWS_MTC_EVENT, "i\"d", "T>y", nullptr, nullptr);
+    detws_mtc_devices_add_item(&s, DetwsMtcCategory::DETWS_MTC_EVENT, "i\"d", "T>y", nullptr, nullptr);
     TEST_ASSERT_TRUE(detws_mtc_devices_end(&s) > 0);
     TEST_ASSERT_TRUE(contains(buf, "id=\"d&lt;1\" name=\"n&amp;m\""));
     TEST_ASSERT_TRUE(contains(buf, "id=\"i&quot;d\" type=\"T&gt;y\""));
@@ -129,7 +133,7 @@ void test_devices_escape_and_overflow(void)
     char tiny[40];
     DetwsMtcStreams s2;
     detws_mtc_devices_begin(&s2, tiny, sizeof(tiny), 1, "dev", "device-with-a-very-long-name", "uuid");
-    detws_mtc_devices_add_item(&s2, DETWS_MTC_SAMPLE, "xpos", "Position", "Xabs", "MILLIMETER");
+    detws_mtc_devices_add_item(&s2, DetwsMtcCategory::DETWS_MTC_SAMPLE, "xpos", "Position", "Xabs", "MILLIMETER");
     TEST_ASSERT_EQUAL_size_t(0, detws_mtc_devices_end(&s2));
 }
 
@@ -186,9 +190,12 @@ void test_sample_buffer_and_query(void)
 {
     DetwsMtcSampleBuffer b;
     detws_mtc_sample_buffer_init(&b, 1);
-    TEST_ASSERT_EQUAL_UINT64(1, detws_mtc_sample_buffer_add(&b, DETWS_MTC_SAMPLE, "Position", "xpos", "T1", "1.0"));
-    TEST_ASSERT_EQUAL_UINT64(2, detws_mtc_sample_buffer_add(&b, DETWS_MTC_SAMPLE, "Position", "xpos", "T2", "2.0"));
-    TEST_ASSERT_EQUAL_UINT64(3, detws_mtc_sample_buffer_add(&b, DETWS_MTC_EVENT, "Execution", "exec", "T3", "ACTIVE"));
+    TEST_ASSERT_EQUAL_UINT64(
+        1, detws_mtc_sample_buffer_add(&b, DetwsMtcCategory::DETWS_MTC_SAMPLE, "Position", "xpos", "T1", "1.0"));
+    TEST_ASSERT_EQUAL_UINT64(
+        2, detws_mtc_sample_buffer_add(&b, DetwsMtcCategory::DETWS_MTC_SAMPLE, "Position", "xpos", "T2", "2.0"));
+    TEST_ASSERT_EQUAL_UINT64(
+        3, detws_mtc_sample_buffer_add(&b, DetwsMtcCategory::DETWS_MTC_EVENT, "Execution", "exec", "T3", "ACTIVE"));
 
     char buf[1024];
     size_t n = detws_mtc_sample_query(&b, buf, sizeof(buf), 1500, "cnc1", 1, 10);
@@ -232,7 +239,7 @@ void test_sample_buffer_eviction(void)
         while (q > 0)
             ts[p++] = d[--q];
         ts[p] = '\0';
-        detws_mtc_sample_buffer_add(&b, DETWS_MTC_SAMPLE, "Position", "xpos", ts, "9.9");
+        detws_mtc_sample_buffer_add(&b, DetwsMtcCategory::DETWS_MTC_SAMPLE, "Position", "xpos", ts, "9.9");
     }
     // Retained window is [total-BUFFER+1, total]; first advanced by 8.
     char buf[8192];
@@ -253,7 +260,7 @@ void test_sample_query_future_and_empty(void)
 {
     DetwsMtcSampleBuffer b;
     detws_mtc_sample_buffer_init(&b, 5);
-    detws_mtc_sample_buffer_add(&b, DETWS_MTC_SAMPLE, "Position", "xpos", "T", "1.0"); // seq 5
+    detws_mtc_sample_buffer_add(&b, DetwsMtcCategory::DETWS_MTC_SAMPLE, "Position", "xpos", "T", "1.0"); // seq 5
 
     char buf[512];
     // A `from` past the newest yields no observations and nextSequence = the buffer's next (6).
