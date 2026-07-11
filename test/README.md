@@ -3457,10 +3457,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Add resource limits
     * **Assertions**:
-      * <code>Assert false (coap_server_add_resource(nullptr, COAP_ALLOW_GET, h_resource))</code>
-      * <code>Assert false (coap_server_add_resource("/x", COAP_ALLOW_GET, nullptr))</code>
+      * <code>Assert false (coap_server_add_resource(nullptr, (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
+      * <code>Assert false (coap_server_add_resource("/x", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, nullptr))</code>
       * <code>Assert less than (64, added)</code>
-      * <code>Assert false (coap_server_add_resource("/nope", COAP_ALLOW_GET, h_resource))</code>
+      * <code>Assert false (coap_server_add_resource("/nope", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3470,7 +3470,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal uint (0, coap_server_process(too_short, 3, resp, sizeof(resp)))</code>
       * <code>Assert equal uint (4, n)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(COAP_TYPE_RST, (resp[0] &gt;&gt; 4) & 0x03);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)CoapType::COAP_TYPE_RST, (resp[0] &gt;&gt; 4) & 0x03);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, resp[1]);</code>
   </details>
 
@@ -3480,7 +3480,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Malformed options bad request
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
-      * <code>Assert equal uint message (COAP_RSP_BAD_REQUEST, resp[1], cases[i].name)</code>
+      * <code>Assert equal uint message ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1], cases[i].name)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3489,9 +3489,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Extended delta and length ignored
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
-      * <code>Assert equal uint (COAP_RSP_CONTENT, resp[1])</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1])</code>
       * <code>Assert true (n &gt; 0)</code>
-      * <code>Assert equal uint (COAP_RSP_CONTENT, resp[1])</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1])</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3500,9 +3500,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Oversized path and query
     * **Assertions**:
       * <code>Assert true (coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
-      * <code>Assert equal uint (COAP_RSP_BAD_REQUEST, resp[1])</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1])</code>
       * <code>Assert true (coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
-      * <code>Assert equal uint (COAP_RSP_BAD_REQUEST, resp[1])</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1])</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3511,9 +3511,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Block option too wide
     * **Assertions**:
       * <code>Assert true (coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
-      * <code>Assert equal uint (COAP_RSP_BAD_REQUEST, resp[1])</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1])</code>
       * <code>Assert true (coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
-      * <code>Assert equal uint (COAP_RSP_BAD_REQUEST, resp[1])</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1])</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3522,7 +3522,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Block1 reserved szx
     * **Assertions**:
       * <code>Assert true (coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
-      * <code>Assert equal uint (COAP_RSP_BAD_OPTION, resp[1])</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, resp[1])</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3538,9 +3538,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Response payload clamped
     * **Assertions**:
-      * <code>Assert true (coap_server_add_resource("/of", COAP_ALLOW_GET, h_overflow))</code>
+      * <code>Assert true (coap_server_add_resource("/of", (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_overflow))</code>
       * <code>Assert true (n &gt; 0)</code>
-      * <code>Assert equal uint (COAP_RSP_CONTENT, resp[1])</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1])</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3556,9 +3556,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Well known core truncates
     * **Assertions**:
-      * <code>Assert true (coap_server_add_resource(g_longpaths[i], COAP_ALLOW_GET, h_resource))</code>
+      * <code>Assert true (coap_server_add_resource(g_longpaths[i], (uint8_t)CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
       * <code>Assert true (n &gt; 0)</code>
-      * <code>Assert equal uint (COAP_RSP_CONTENT, resp[1])</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1])</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3577,7 +3577,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert greater than uint (0, n)</code>
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_CONTENT, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code)</code>
       * <code>Assert true (d.block2 &gt;= 0)</code>
       * <code>Assert equal uint (num, BLK_NUM(d.block2))</code>
       * <code>Assert equal uint (2, BLK_SZX(d.block2))</code>
@@ -3625,7 +3625,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Block2 out of range
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_BAD_REQUEST, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, d.code)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3634,7 +3634,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Block2 reserved szx
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_BAD_OPTION, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, d.code)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3643,13 +3643,13 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Block 0 (More=1): expect 2.31 Continue, no handler dispatch yet.
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_CONTINUE, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, d.code)</code>
       * <code>Assert true (d.block1 &gt;= 0)</code>
       * <code>Assert equal uint (0, BLK_NUM(d.block1))</code>
       * <code>Assert equal uint (1, BLK_M(d.block1))</code>
       * <code>Assert false (g_called)</code>
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_CREATED, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CREATED, d.code)</code>
       * <code>Assert true (d.block1 &gt;= 0)</code>
       * <code>Assert equal uint (1, BLK_NUM(d.block1))</code>
       * <code>Assert equal uint (0, BLK_M(d.block1))</code>
@@ -3665,7 +3665,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Block1 out of order
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_REQUEST_INCOMPLETE, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_REQUEST_INCOMPLETE, d.code)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3674,8 +3674,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Block1 too large
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_CONTINUE, d.code)</code>
-      * <code>Assert equal uint (COAP_RSP_REQUEST_TOO_LARGE, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_REQUEST_TOO_LARGE, d.code)</code>
       * <code>Assert false (g_called)</code>
   </details>
 
@@ -3686,9 +3686,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert greater than uint (0, n)</code>
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_TYPE_ACK, d.type)</code>
+      * <code>Assert equal uint ((uint8_t)CoapType::COAP_TYPE_ACK, d.type)</code>
       * <code>Assert equal int (5, d.observe)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(COAP_CF_TEXT, d.content_format); // still ordered/decoded after Observe</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16((uint16_t)CoapContentFormat::COAP_CF_TEXT,</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, d.payload_len);</code>
   </details>
 
@@ -3698,7 +3698,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: resp holds the 4-byte header + 2-byte token (=6) but not the Content-Format option.
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(COAP_CF_NONE, d.content_format); // option dropped, response still well-formed</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16((uint16_t)CoapContentFormat::COAP_CF_NONE,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3718,16 +3718,16 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert greater than uint (0, n)</code>
       * <code>Assert true (dec(resp, n, &d))</code>
       * <code>Assert equal uint (1, d.ver)</code>
-      * <code>Assert equal uint (COAP_TYPE_ACK, d.type)</code>
-      * <code>Assert equal uint (COAP_RSP_CONTENT, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapType::COAP_TYPE_ACK, d.type)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code)</code>
       * <code>Assert equal uint (0x1234, d.mid)</code>
       * <code>Assert equal uint (4, d.tkl)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(tok, d.token, 4);</code>
-      * <code>Assert equal uint (COAP_CF_TEXT, d.content_format)</code>
+      * <code>Assert equal uint ((uint16_t)CoapContentFormat::COAP_CF_TEXT, d.content_format)</code>
       * <code>Assert equal uint (2, d.payload_len)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY("hi", d.payload, 2);</code>
       * <code>Assert true (g_called)</code>
-      * <code>Assert equal uint (COAP_GET, g_method)</code>
+      * <code>Assert equal uint ((uint8_t)CoapMethod::COAP_GET, g_method)</code>
       * <code>Assert equal string ("/temp", g_path)</code>
   </details>
 
@@ -3737,8 +3737,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Not found
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_NOT_FOUND, d.code)</code>
-      * <code>Assert equal uint (COAP_TYPE_ACK, d.type)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_NOT_FOUND, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapType::COAP_TYPE_ACK, d.type)</code>
       * <code>Assert false (g_called)</code>
   </details>
 
@@ -3748,7 +3748,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Method not allowed
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_METHOD_NOT_ALLOWED, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, d.code)</code>
       * <code>Assert false (g_called)</code>
   </details>
 
@@ -3758,8 +3758,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Non request type
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_TYPE_NON, d.type)</code>
-      * <code>Assert equal uint (COAP_RSP_CONTENT, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapType::COAP_TYPE_NON, d.type)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3768,12 +3768,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Put with payload
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_CHANGED, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CHANGED, d.code)</code>
       * <code>Assert true (g_called)</code>
-      * <code>Assert equal uint (COAP_PUT, g_method)</code>
+      * <code>Assert equal uint ((uint8_t)CoapMethod::COAP_PUT, g_method)</code>
       * <code>Assert equal uint (2, g_payload_len)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(body, g_payload, 2);</code>
-      * <code>Assert equal uint (COAP_CF_TEXT, g_cf)</code>
+      * <code>Assert equal uint ((uint16_t)CoapContentFormat::COAP_CF_TEXT, g_cf)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3782,7 +3782,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Multi segment path
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_CONTENT, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code)</code>
       * <code>Assert equal string ("/a/b", g_path)</code>
   </details>
 
@@ -3792,7 +3792,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Uri query
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_CONTENT, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code)</code>
       * <code>Assert equal string ("x=1&y=2", g_query)</code>
   </details>
 
@@ -3802,7 +3802,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Empty con ping rst
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_TYPE_RST, d.type)</code>
+      * <code>Assert equal uint ((uint8_t)CoapType::COAP_TYPE_RST, d.type)</code>
       * <code>Assert equal uint (0, d.code)</code>
       * <code>Assert equal uint (0x4242, d.mid)</code>
       * <code>Assert equal uint (0, d.tkl)</code>
@@ -3814,7 +3814,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Bad version rst
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_TYPE_RST, d.type)</code>
+      * <code>Assert equal uint ((uint8_t)CoapType::COAP_TYPE_RST, d.type)</code>
       * <code>Assert equal uint (0x1234, d.mid)</code>
   </details>
 
@@ -3824,8 +3824,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Delete
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_DELETED, d.code)</code>
-      * <code>Assert equal uint (COAP_DELETE, g_method)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_DELETED, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapMethod::COAP_DELETE, g_method)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3844,7 +3844,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Extended option length
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_CONTENT, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code)</code>
       * <code>Assert equal string ("/longresourcename12345", g_path)</code>
   </details>
 
@@ -3862,7 +3862,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Root path
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_CONTENT, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code)</code>
       * <code>Assert equal string ("/", g_path)</code>
   </details>
 
@@ -3872,7 +3872,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Code 0.05 (FETCH) is a valid class-0 code we don't implement. RFC 7252 5.8:
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_METHOD_NOT_ALLOWED, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, d.code)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3881,7 +3881,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Hand-build: ver1/CON/TKL0, GET, MID, Uri-Path "temp", then Accept(17) - a
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_BAD_OPTION, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, d.code)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3890,8 +3890,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: The body must list the registered resources in Link Format.
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_CONTENT, d.code)</code>
-      * <code>Assert equal uint (COAP_CF_LINK, d.content_format)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code)</code>
+      * <code>Assert equal uint ((uint16_t)CoapContentFormat::COAP_CF_LINK, d.content_format)</code>
       * <code>Assert false (g_called)</code>
       * <code>Assert true (body.find("&lt;/temp&gt;") != std::string::npos)</code>
       * <code>Assert true (body.find("&lt;/ro&gt;") != std::string::npos)</code>
@@ -3904,7 +3904,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Well known core rejects post
     * **Assertions**:
       * <code>Assert true (dec(resp, n, &d))</code>
-      * <code>Assert equal uint (COAP_RSP_METHOD_NOT_ALLOWED, d.code)</code>
+      * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, d.code)</code>
   </details>
 
 </details>
