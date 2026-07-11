@@ -27,4 +27,56 @@ void fill_route_base(Route *r, const char *path);
 /** @brief Format @p t as an RFC 1123 GMT date into @p out (cap bytes); @p out is emptied for t <= 0. */
 void http_rfc1123(time_t t, char *out, size_t cap);
 
+/** @brief True if the request in slot @p slot_id used the HEAD method (send headers, no body). */
+bool req_is_head(uint8_t slot_id);
+
+// ---------------------------------------------------------------------------
+// Outbound-transfer continuations (owned by dwserver.cpp, shared with the split handlers)
+// ---------------------------------------------------------------------------
+
+#if DETWS_ENABLE_FILE_SERVING
+// Cross-loop file-send continuation. A file response larger than the TCP send
+// buffer cannot be blasted out in one dispatch (tcp_write returns ERR_MEM once the
+// window fills and the rest would be dropped). Instead serve_file_internal sends
+// the headers, opens the file, and hands it to this per-slot state; file_send_pump
+// pages out at most det_conn_sndbuf() bytes per worker loop and resumes on the next
+// loop (woken promptly by the sent callback) as the window drains - no truncation,
+// no blocking the worker. One transfer per slot at a time.
+struct FileSend
+{
+    fs::File file;    ///< open source file (held across loops).
+    size_t off;       ///< absolute file offset of the next byte to send.
+    size_t remaining; ///< body bytes still to send.
+    int status;       ///< response status (200 / 206) for note_response.
+    int total;        ///< total body length, for the access log.
+    bool keep;        ///< keep-alive vs close at completion.
+    bool active;      ///< a transfer is in progress on this slot.
+};
+#endif
+
+// Per-slot chunked-send continuation. Mirrors FileSend but pulls body pieces from
+// a ChunkSource generator and adds the HTTP chunk framing; paged across loops.
+struct ChunkSend
+{
+    ChunkSource source; ///< body generator (active==false means none).
+    void *ctx;          ///< caller state passed to source (must outlive the send).
+    int status;         ///< response status, for note_response.
+    int total;          ///< body bytes emitted so far (excludes framing).
+    bool keep;          ///< keep-alive vs close at completion.
+    bool active;        ///< a chunked response is in progress on this slot.
+    bool raw;           ///< HTTP/1.0 client: stream the body unframed, close-delimited (no chunk wrapping).
+};
+
+// All per-slot outbound-transfer continuations, owned by one instance: the cross-loop file-send
+// state (when file serving is enabled) and the chunked-send state. Grouped so it is one named
+// owner. Defined once in dwserver.cpp; the file_serving / chunked handler TUs reference it.
+struct SendCtx
+{
+#if DETWS_ENABLE_FILE_SERVING
+    FileSend file[MAX_CONNS];
+#endif
+    ChunkSend chunk[MAX_CONNS];
+};
+extern SendCtx s_send;
+
 #endif // DETERMINISTICESPASYNCWEBSERVER_SERVER_INTERNAL_H
