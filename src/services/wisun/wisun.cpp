@@ -20,9 +20,12 @@ bool emit_option(uint8_t *out, size_t *o, size_t cap, uint16_t delta, const uint
     size_t start = *o;
     if (start + 1 > cap)
         return false;
-    uint8_t dn, ln;
-    uint8_t dext[2], lext[2];
-    int dexn = 0, lexn = 0;
+    uint8_t dn;
+    uint8_t ln;
+    uint8_t dext[2];
+    uint8_t lext[2];
+    int dexn = 0;
+    int lexn = 0;
     if (delta < 13)
         dn = (uint8_t)delta;
     // GCOVR_EXCL_START  delta is always 11 (first Uri-Path option) or 0 (later ones) from the sole caller

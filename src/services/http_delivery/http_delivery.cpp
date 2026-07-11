@@ -134,8 +134,10 @@ int detws_delivery_range(const char *range_header, uint32_t total, uint32_t *sta
     if (strchr(p, ',')) // multi-range: unsupported
         return 0;
 
-    bool have_start = false, have_end = false;
-    uint32_t s = 0, e = 0;
+    bool have_start = false;
+    bool have_end = false;
+    uint32_t s = 0;
+    uint32_t e = 0;
     if (*p >= '0' && *p <= '9')
     {
         if (!read_u32(&p, &s))
@@ -156,7 +158,8 @@ int detws_delivery_range(const char *range_header, uint32_t total, uint32_t *sta
     if (*p != '\0' && *p != '\r' && *p != '\n')
         return 0;
 
-    uint32_t rs = 0, re = 0;
+    uint32_t rs = 0;
+    uint32_t re = 0;
     if (!have_start)
     {
         if (!have_end || e == 0) // "bytes=-" or "bytes=-0" are unsatisfiable

@@ -72,10 +72,13 @@ void detws_he_order(DetIp *list, size_t n)
     // preference order within each family; start with the family of the top-preference address.
     DetIp out[DETWS_HE_MAX];
     size_t o = 0;
-    size_t iv6 = 0, iv4 = 0;
+    size_t iv6 = 0;
+    size_t iv4 = 0;
     // Collect indices per family in preference order.
-    size_t v6[DETWS_HE_MAX], v4[DETWS_HE_MAX];
-    size_t nv6 = 0, nv4 = 0;
+    size_t v6[DETWS_HE_MAX];
+    size_t v4[DETWS_HE_MAX];
+    size_t nv6 = 0;
+    size_t nv4 = 0;
     for (size_t i = 0; i < n; i++)
     {
         if (eff_is_v6(&list[i]))
