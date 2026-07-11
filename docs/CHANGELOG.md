@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a78ad4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a78ad4acba7db5dffddc97dd7328862b0f4e58cf))
 - update CHANGELOG.md [skip ci] ([`e359c03`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e359c03dd6f74388210ef6fa26559c55c692e7e7))
 - update CHANGELOG.md [skip ci] ([`2edeeb1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2edeeb1cdcb59b83005ee534f3612c5462757fda))
 - update CHANGELOG.md [skip ci] ([`028d619`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/028d61938411deb6b9b62854772d3cd31e1e0bde))
@@ -20,6 +21,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- Redis done all 3 dims (interop 11/~50); note TLS DRAM ceiling ([`a09277b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a09277b95220b1aec7e9eced6c67438e3e9e52ee))
 - Redis RESP bench+attack done (interop = device-as-client follow-up) ([`32b61a0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32b61a025a42d9d8afc99c421fad1efeed4509fc))
 - MTConnect done on all three dimensions (interop 10/~50) ([`34c4546`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34c4546a798fa4ebae9ee4016b05fe6e7ea27f2c))
 - MQTT done on all three dimensions (device-as-client attack) ([`755db61`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/755db61b312f2ba1c4de9f15a500b64f286d8ab9))
@@ -46,6 +48,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- Redis peer (device-as-client vs a real redis-server) ([`33209dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33209dc13005cb2a3de07a9b2f9fcfe730d26717))
+- /redis/probe device-as-Redis-client (interop trigger) ([`01dca76`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01dca76d85a5d35898c3a5caeff0a9d1289b1905))
 - Redis RESP reply-parser fuzz (redis_resp_fuzz) ([`793ef9d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/793ef9df71e49a2494b4b7b73d483719ca4305d3))
 - /redis/parse RESP fuzz surface + /bench resp_parse op ([`9d3aeb2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9d3aeb2894116f1fb98676e6bb0e98da8ddb65cd))
 - MTConnect /sample param-abuse attack ([`c566996`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c5669961cdb4d1361700b1f3af515eff5e7ee3df))
