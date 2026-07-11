@@ -32,7 +32,7 @@
 #include "network_drivers/physical/physical.h"
 #include "services/nmea0183/nmea0183.h"
 #include "services/ntp_server/ntp_server.h"
-#include "services/ntp_service.h"
+#include "services/ntp_service/ntp_service.h"
 #include "services/time_source/time_source.h"
 #include <WiFi.h>
 

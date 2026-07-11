@@ -6,7 +6,7 @@
  * @brief Redis RESP2 command encoder + reply parser (pure, host-tested).
  */
 
-#include "services/redis_resp.h"
+#include "services/redis_resp/redis_resp.h"
 
 #if DETWS_ENABLE_REDIS
 

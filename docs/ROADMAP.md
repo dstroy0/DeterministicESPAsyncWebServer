@@ -1212,7 +1212,7 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
 > directory; only header-only services (a `.h` with no `.cpp`) are allowed to sit at the
 > `src/services/` root. Today nine root-level services break this.
 
-- [ ] **Move each `.h`+`.cpp` service at the `src/services/` root into its own folder** (M) - cloudevents,
+- [x] **Move each `.h`+`.cpp` service at the `src/services/` root into its own folder** (M) _(shipped)_ - cloudevents,
       mdns_service, ntp_service, ota_service, provisioning_service, redis_resp, stomp, upload_service, and
       web_terminal currently live as loose `src/services/<name>.{h,cpp}` pairs. Move each into
       `src/services/<name>/<name>.{h,cpp}`, update the `#include` paths, the `build_src_filter` globs in

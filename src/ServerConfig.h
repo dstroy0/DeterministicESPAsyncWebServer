@@ -3836,7 +3836,7 @@
 /**
  * @brief Streaming file upload: POST a body straight to a file on the filesystem.
  *
- * Default off. When set, src/services/upload_service.h registers a POST route
+ * Default off. When set, src/services/upload_service/upload_service.h registers a POST route
  * that streams the request body directly into an Arduino FS file (LittleFS /
  * SPIFFS / SD) - the upload never has to fit in RAM. Reuses the same parser
  * streaming-body hook as OTA.

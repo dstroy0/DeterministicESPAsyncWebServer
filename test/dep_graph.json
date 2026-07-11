@@ -1604,10 +1604,10 @@
 "native_workers",
 "native_ws_deflate"
 ],
-"src/services/cloudevents.cpp": [
+"src/services/cloudevents/cloudevents.cpp": [
 "native_cloudevents"
 ],
-"src/services/cloudevents.h": [
+"src/services/cloudevents/cloudevents.h": [
 "native_cloudevents"
 ],
 "src/services/coap/coap.cpp": [
@@ -2122,12 +2122,12 @@
 "src/services/ntp_server/ntp_server.h": [
 "native_ntp_server"
 ],
-"src/services/ntp_service.cpp": [
+"src/services/ntp_service/ntp_service.cpp": [
 "native_app",
 "native_diag",
 "native_h3_server"
 ],
-"src/services/ntp_service.h": [
+"src/services/ntp_service/ntp_service.h": [
 "native_app",
 "native_diag",
 "native_h3_server"
@@ -2240,10 +2240,10 @@
 "native_protobuf",
 "native_sparkplug"
 ],
-"src/services/provisioning_service.cpp": [
+"src/services/provisioning_service/provisioning_service.cpp": [
 "native_prov"
 ],
-"src/services/provisioning_service.h": [
+"src/services/provisioning_service/provisioning_service.h": [
 "native_prov"
 ],
 "src/services/proxy_protocol/proxy_protocol.cpp": [
@@ -2276,11 +2276,11 @@
 "src/services/rawl2/rawl2.h": [
 "native_rawl2"
 ],
-"src/services/redis_resp.cpp": [
+"src/services/redis_resp/redis_resp.cpp": [
 "native_pentest",
 "native_redis"
 ],
-"src/services/redis_resp.h": [
+"src/services/redis_resp/redis_resp.h": [
 "native_pentest",
 "native_redis"
 ],
@@ -2482,11 +2482,11 @@
 "src/services/statsd/statsd.h": [
 "native_statsd"
 ],
-"src/services/stomp.cpp": [
+"src/services/stomp/stomp.cpp": [
 "native_pentest",
 "native_stomp"
 ],
-"src/services/stomp.h": [
+"src/services/stomp/stomp.h": [
 "native_pentest",
 "native_stomp"
 ],
@@ -2540,10 +2540,10 @@
 "src/services/udp_telemetry/udp_telemetry.h": [
 "native_udp_telemetry"
 ],
-"src/services/upload_service.cpp": [
+"src/services/upload_service/upload_service.cpp": [
 "native_upload"
 ],
-"src/services/upload_service.h": [
+"src/services/upload_service/upload_service.h": [
 "native_upload"
 ],
 "src/services/utmc/utmc.cpp": [
@@ -2602,13 +2602,13 @@
 "src/services/wearlevel/wearlevel.h": [
 "native_wearlevel"
 ],
-"src/services/web_terminal.cpp": [
+"src/services/web_terminal/web_terminal.cpp": [
 "native_app",
 "native_diag",
 "native_h3_server",
 "native_webdav_handler"
 ],
-"src/services/web_terminal.h": [
+"src/services/web_terminal/web_terminal.h": [
 "native_app",
 "native_diag",
 "native_h3_server",

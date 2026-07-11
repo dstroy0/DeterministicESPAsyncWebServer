@@ -8,7 +8,7 @@
 
 #include "FS.h"
 #include "dwserver.h"
-#include "services/upload_service.h"
+#include "services/upload_service/upload_service.h"
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>

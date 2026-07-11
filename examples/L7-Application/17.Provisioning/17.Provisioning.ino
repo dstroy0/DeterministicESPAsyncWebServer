@@ -18,7 +18,7 @@
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include "services/provisioning_service.h"
+#include "services/provisioning_service/provisioning_service.h"
 #include <WiFi.h>
 
 DetWebServer server;

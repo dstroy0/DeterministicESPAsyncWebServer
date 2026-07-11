@@ -5,7 +5,7 @@
 // structured-JSON builder and the binary-mode ce-* header reader. Pure host tests.
 
 #include "network_drivers/presentation/http_parser/http_parser.h"
-#include "services/cloudevents.h"
+#include "services/cloudevents/cloudevents.h"
 #include <string.h>
 #include <unity.h>
 

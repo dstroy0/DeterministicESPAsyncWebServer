@@ -20,7 +20,7 @@
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include "services/ota_service.h"
+#include "services/ota_service/ota_service.h"
 #include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";

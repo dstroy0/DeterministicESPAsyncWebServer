@@ -4,7 +4,7 @@
 // Unit tests for the Redis RESP2 codec (services/redis_resp): the command encoder
 // and the cursor reply parser. Pure host tests.
 
-#include "services/redis_resp.h"
+#include "services/redis_resp/redis_resp.h"
 #include <math.h>
 #include <string.h>
 #include <unity.h>

@@ -6,7 +6,7 @@
  * @brief CloudEvents v1.0 structured-JSON build + binary-header read.
  */
 
-#include "services/cloudevents.h"
+#include "services/cloudevents/cloudevents.h"
 
 #if DETWS_ENABLE_CLOUDEVENTS
 

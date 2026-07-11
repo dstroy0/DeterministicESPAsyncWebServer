@@ -27,7 +27,7 @@
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include "services/web_terminal.h"
+#include "services/web_terminal/web_terminal.h"
 #include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";

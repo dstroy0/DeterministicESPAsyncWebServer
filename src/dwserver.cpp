@@ -82,7 +82,7 @@
 #if DETWS_ENABLE_TIME_SOURCE
 #include "services/time_source/time_source.h" // detws_time_http_date() - any NTP/GPS/RTC/... source
 #else
-#include "services/ntp_service.h" // detws_ntp_http_date() - direct NTP (or the host test seam)
+#include "services/ntp_service/ntp_service.h" // detws_ntp_http_date() - direct NTP (or the host test seam)
 #endif
 #endif
 #include <stdarg.h>

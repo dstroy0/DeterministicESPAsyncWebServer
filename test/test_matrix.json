@@ -246,7 +246,7 @@
     },
     "native_prov": {
       "desc": "Provisioning form-field parser - the only host-testable part of the captive\nportal (softAP / lwIP UDP / NVS are ESP32-only and compiled out here).",
-      "src": ["+<services/provisioning_service.cpp>"],
+      "src": ["+<services/provisioning_service/provisioning_service.cpp>"],
       "tests": ["test_provisioning"]
     },
     "native_ssh": {
@@ -382,8 +382,8 @@
         "+<dwserver.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/application/web_assets.cpp>",
-        "+<services/web_terminal.cpp>",
-        "+<services/ntp_service.cpp>"
+        "+<services/web_terminal/web_terminal.cpp>",
+        "+<services/ntp_service/ntp_service.cpp>"
       ],
       "tests": [
         "test_auth",
@@ -434,7 +434,7 @@
         "+<dwserver.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/application/web_assets.cpp>",
-        "+<services/web_terminal.cpp>",
+        "+<services/web_terminal/web_terminal.cpp>",
         "+<services/webdav/webdav.cpp>"
       ],
       "tests": ["test_webdav_handler"]
@@ -532,7 +532,7 @@
       "flags": ["-DDETWS_ENABLE_CLOUDEVENTS=1"],
       "src": [
         "+<network_drivers/network/ip.cpp>",
-        "+<services/cloudevents.cpp>",
+        "+<services/cloudevents/cloudevents.cpp>",
         "+<network_drivers/presentation/json/json.cpp>",
         "+<network_drivers/presentation/http_parser/http_parser.cpp>"
       ],
@@ -541,7 +541,7 @@
     "native_redis": {
       "desc": "Redis RESP2/RESP3 codec (services/redis_resp): the zero-heap command encoder + the\ncursor reply parser (RESP2 simple/error/integer/bulk/array/nil plus RESP3 null/boolean/double/big\nnumber/bulk error/verbatim/map/set/push). Pure host tests against Redis spec vectors.",
       "flags": ["-DDETWS_ENABLE_REDIS=1"],
-      "src": ["+<services/redis_resp.cpp>"],
+      "src": ["+<services/redis_resp/redis_resp.cpp>"],
       "tests": ["test_redis_resp"]
     },
     "native_sqlite": {
@@ -553,7 +553,7 @@
     "native_stomp": {
       "desc": "STOMP 1.2 frame codec (services/stomp): the zero-heap frame builder (command +\nescaped headers + NUL body) + the non-mutating parser (command/header slices/body,\nhonoring content-length) + escape/unescape. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_STOMP=1"],
-      "src": ["+<services/stomp.cpp>"],
+      "src": ["+<services/stomp/stomp.cpp>"],
       "tests": ["test_stomp"]
     },
     "native_mqtt_sn": {
@@ -953,12 +953,12 @@
         "+<network_drivers/transport/udp.cpp>",
         "+<network_drivers/presentation/sha1/sha1.cpp>",
         "+<services/sqlite/sqlite_format.cpp>",
-        "+<services/redis_resp.cpp>",
+        "+<services/redis_resp/redis_resp.cpp>",
         "+<services/opcua/opcua.cpp>",
         "+<services/graphql/graphql.cpp>",
         "+<services/dns_server/dns_server.cpp>",
         "+<services/dnp3/dnp3.cpp>",
-        "+<services/stomp.cpp>",
+        "+<services/stomp/stomp.cpp>",
         "+<services/smb/smb2.cpp>",
         "+<services/smb/spnego.cpp>",
         "+<services/smb/ntlmssp.cpp>",
@@ -1209,7 +1209,7 @@
         "+<network_drivers/presentation/multipart/multipart.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<dwserver.cpp>",
-        "+<services/upload_service.cpp>"
+        "+<services/upload_service/upload_service.cpp>"
       ],
       "tests": ["test_upload"]
     },

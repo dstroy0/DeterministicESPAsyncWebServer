@@ -29,7 +29,7 @@
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include "services/upload_service.h"
+#include "services/upload_service/upload_service.h"
 #include <LittleFS.h>
 #include <WiFi.h>
 

@@ -5,7 +5,7 @@
 // non-mutating parser, header lookup, content-length bodies, and escape/unescape.
 // Pure host tests.
 
-#include "services/stomp.h"
+#include "services/stomp/stomp.h"
 #include <string.h>
 #include <unity.h>
 

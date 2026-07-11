@@ -6,7 +6,7 @@
  * @brief Browser web-serial terminal over WebSocket (DETWS_ENABLE_WEB_TERMINAL).
  */
 
-#include "services/web_terminal.h"
+#include "services/web_terminal/web_terminal.h"
 
 #if DETWS_ENABLE_WEB_TERMINAL
 

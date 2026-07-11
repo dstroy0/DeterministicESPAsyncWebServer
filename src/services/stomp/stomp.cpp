@@ -6,7 +6,7 @@
  * @brief STOMP 1.2 frame builder + parser (pure, host-tested).
  */
 
-#include "services/stomp.h"
+#include "services/stomp/stomp.h"
 
 #if DETWS_ENABLE_STOMP
 

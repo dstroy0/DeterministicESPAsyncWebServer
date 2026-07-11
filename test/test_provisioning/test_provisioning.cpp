@@ -5,7 +5,7 @@
 // extractor + URL-decoder used by the WiFi provisioning captive portal. The
 // rest of the provisioning module is ESP32-only (softAP / lwIP UDP / NVS).
 
-#include "services/provisioning_service.h"
+#include "services/provisioning_service/provisioning_service.h"
 #include <string.h>
 #include <unity.h>
 

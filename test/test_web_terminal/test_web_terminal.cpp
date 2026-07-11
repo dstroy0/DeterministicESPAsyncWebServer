@@ -5,7 +5,7 @@
 // page serving, the WS upgrade + connect tracking, browser->device commands, and
 // device->browser broadcast.
 
-#include "services/web_terminal.h"
+#include "services/web_terminal/web_terminal.h"
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>
