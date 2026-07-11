@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`3ddbee9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ddbee9215d0df20d383e105d080b8e018c6c3ec))
 - update CHANGELOG.md [skip ci] ([`7f34bbc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f34bbc660d821fd5e8a7b1f8364714eb0e1a05c))
 - update CHANGELOG.md [skip ci] ([`2629e08`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2629e085f487c47ca4f90c2ff7cb5a87f8cefe59))
 - update CHANGELOG.md [skip ci] ([`900e386`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/900e3866b73f771344e424fe224ed9870d9b990c))
@@ -29,6 +30,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- add a PlatformIO SSH rig; SSH resets at KEX on BOTH lwIP models (not core-locking) ([`b210fb8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b210fb81abea37178924c43ee52128d799bb19ab))
 - advanced QUIC/HTTP-3 abuse attack (Initial flood + anti-amplification + malformed fuzz) ([`5b88186`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b88186ba36ae73dd314a50fa56937eedd80b60f))
 - real QUIC/HTTP-3 interop peer (aioquic) - device-as-server ALPN h3 ([`c2dcdd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c2dcdd6d5c65a69f9846a0d3b452e7771ab9ea71))
 
