@@ -4,9 +4,18 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- parse the full QUIC frame grammar so a real client's request is not rejected ([`3c153a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c153a647eec6f31d6b3b5f9a01b7d17766c8e8d))
+
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ede07f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ede07f22fd81201569c169c50cf2ec54b449bc5d))
 - update CHANGELOG.md [skip ci] ([`3b2667b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b2667bc787d47feb0da63f2a0e351c67379ba50))
+
+### Changes
+
+- Bump version: 5.95.11 → 5.95.12 ([`ba930dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba930dcb30a092452c781e46c23edce1c173ddb5))
 
 ### Documentation
 
