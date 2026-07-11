@@ -196,12 +196,25 @@ struct TransportCtx
 };
 static TransportCtx s_tp;
 
-// True when the caller is running in tcpip_thread (a marshaled det_tcp_do or any raw lwIP callback),
-// so it must run lwIP ops directly rather than marshal. Null until the first det_tcp_do (boot / first
-// send), which precedes every raw-callback teardown path, so the compare is always populated by then.
+// True when the caller may run a raw lwIP op directly instead of marshaling. lwIP has two threading
+// models and the answer differs, so branch on which one the framework built:
 static inline bool on_tcpip_thread()
 {
+#if defined(LWIP_TCPIP_CORE_LOCKING) && LWIP_TCPIP_CORE_LOCKING
+    // Core-locking (arduino-esp32 3.x / IDF 5.x): tcpip_api_call takes the core lock and runs the op
+    // INLINE on the calling task - there is no dedicated tcpip thread to marshal to - so a direct lwIP
+    // call is safe exactly when we already hold the core lock. Use lwIP's own holder query (the one
+    // LWIP_ASSERT_CORE_LOCKED checks). A task-handle compare is meaningless here (every caller runs its
+    // own tcpip_api_call inline, so the captured "tcpip task" is just whoever ran the first op), and a
+    // false positive calls tcp_write unlocked -> the "Required to lock TCPIP core functionality!" assert
+    // (found running TLS on the PSRAM/IDF-5.5 core: the handshake's record flush crashed the device).
+    return sys_thread_tcpip(LWIP_CORE_LOCK_QUERY_HOLDER);
+#else
+    // Mailbox (arduino-esp32 2.x / IDF 4.x): tcpip_api_call marshals to the single dedicated tcpip
+    // thread, so a direct call is safe exactly when we run on that thread. Captured on the first
+    // det_tcp_do (boot / first send), which precedes every raw-callback teardown path.
     return s_tp.tcpip_task != nullptr && xTaskGetCurrentTaskHandle() == s_tp.tcpip_task;
+#endif
 }
 
 struct DetTcpCall

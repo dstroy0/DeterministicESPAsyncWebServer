@@ -8,6 +8,38 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## TLS: handshake crashes on a core-locking lwIP core (arduino 3.x / PSRAM) - `tcp_write` called without the core lock
+
+- **Status:** FIXED (library, found on hardware 2026-07-11 running HTTP/2-over-TLS on the rebuilt PSRAM
+  core, IDF 5.5; the TLS handshake rebooted the board on every connection).
+- **Symptom:** the TLS server starts, but the first record flush during the handshake panics/reboots:
+  `assert failed: tcp_write ... "Required to lock TCPIP core functionality!"`. On the stock PlatformIO
+  arduino-2.x core the same firmware handshakes fine.
+- **Root cause:** lwIP has two threading models and the framework picks one. **Mailbox** (arduino 2.x /
+  IDF 4.x, `CONFIG_LWIP_TCPIP_CORE_LOCKING` off): `tcpip_api_call` marshals the op to one dedicated
+  `tcpip` thread. **Core-locking** (arduino 3.x / IDF 5.x, the PSRAM core, flag on): `tcpip_api_call`
+  instead takes the core lock and runs the op **inline on the calling task**. `det_tcp_marshal`'s
+  "am I already in a safe context, so run inline instead of marshaling" test was `on_tcpip_thread()` =
+  a **task-handle compare** (captured on the first `det_tcp_do`). That is correct for the mailbox model,
+  but under core-locking the captured "tcpip task" is just whichever task ran the first op, so the test
+  false-positives for a normal caller (the handshake pump) and runs `det_tcp_do` -> `tcp_write` **without
+  holding the core lock** -> the assert. (This path never worked on core-locking cores; it is why CI only
+  _compiles_ arduino 3.x. It surfaced now because the PSRAM core is the first core-locking build actually
+  HW-run with TLS.)
+- **Fix:** `tcp.cpp` `on_tcpip_thread()` now branches on `LWIP_TCPIP_CORE_LOCKING`. Core-locking: use
+  lwIP's own holder query `sys_thread_tcpip(LWIP_CORE_LOCK_QUERY_HOLDER)` (the exact predicate
+  `LWIP_ASSERT_CORE_LOCKED` uses) - a direct lwIP call is safe iff we hold the lock. Mailbox: the
+  original task-handle compare, **byte-identical**, so the shipped 2.x path cannot regress.
+- **Verified:** on the PSRAM/IDF-5.5 core the TLS handshake now completes and **HTTP/2 (ALPN `h2`) is
+  served**: `curl -k` -> `HTTP 200 ver=2`, `openssl -alpn h2` -> `ALPN protocol: h2` (TLS 1.2),
+  `curl --http2` -> `200`. Both static pools live in PSRAM (`s_h2`@0x3c0e0000, `s_pool`@0x3c0fcf30),
+  internal DRAM 18%. This also fixes TLS on the stock arduino-esp32 3.x core (same core-locking model).
+- **Lesson:** "am I in a context where a direct lwIP call is safe" is a **per-threading-model** question -
+  detect the model, don't assume a dedicated tcpip thread exists. [[no-spaghetti-piping]]
+  [[hw-testing-finds-integration-bugs]]
+
+---
+
 ## TLS: device HARD-HANGS on a TLS 1.3-leading ClientHello (tcpip_thread self-deadlock in the close path)
 
 - **Status:** FIXED (library, found on hardware 2026-07-11 bringing up the TLS device-as-server interop peer
