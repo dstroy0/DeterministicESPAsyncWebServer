@@ -8,6 +8,57 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## TLS: device HARD-HANGS on a TLS 1.3-leading ClientHello (tcpip_thread self-deadlock in the close path)
+
+- **Status:** FIXED (library, found on hardware 2026-07-11 bringing up the TLS device-as-server interop peer
+  against an ESP32-S3; a real 1.3-leading client from `curl`/OpenSSL/Python wedged the whole board).
+- **Symptom:** a forced-TLS-1.2 client handshakes and serves `200 OK` fine, but a default client (which leads
+  with TLS 1.3) leaves the device **completely dead** - no ping, all ports closed, **no panic and no watchdog
+  reboot** (a silent hard hang, not a crash). A single attempt could wedge it.
+- **Root cause (caught live over JTAG/GDB):** the lwIP `tcpip_thread` self-deadlocks. A raw lwIP `sent`
+  callback (`lowlevel_sent_cb`, which runs **in** `tcpip_thread`) finalizes a closing slot ->
+  `det_tls_conn_end()` -> `mbedtls_ssl_close_notify()` -> `server_bio_send()` -> `det_conn_raw_send()` ->
+  `det_tcp_marshal(RAWSEND)` -> `tcpip_api_call()` -> `sys_arch_sem_wait()` **forever**: it marshals a raw
+  write onto `tcpip_thread` and blocks on the mailbox semaphore that only `tcpip_thread` can post - but the
+  caller _is_ `tcpip_thread`. The reentrancy guard `TransportCtx::in_tcpip_thread` was set only inside
+  `det_tcp_do()`, so raw lwIP callbacks (which never enter through `det_tcp_do`) read it as `false` and
+  wrongly re-marshal. (UDP got this right - its flag is set in the recv trampoline; TCP missed the raw
+  callbacks.) Every task that then touches lwIP (the worker's `det_conn_detach`) also blocks on the dead
+  `tcpip_thread`, so the whole stack dies.
+- **Fix:** `tcp.cpp` - replace the "inside `det_tcp_do`" boolean with the **actual `tcpip_thread` task
+  handle** (captured the first time `det_tcp_do` runs) and compare `xTaskGetCurrentTaskHandle()` against it in
+  `on_tcpip_thread()`. `det_tcp_marshal()` now owns the context decision for **every** op: run `det_tcp_do`
+  inline when already in `tcpip_thread` (any raw callback), else `tcpip_api_call`. This is correct for raw
+  callbacks that `in_tcpip_thread` never covered and kills the whole deadlock class, not just close_notify.
+- **Lesson:** a reentrancy flag that only some entry points set is a latent self-deadlock; detect the thread
+  by identity (task handle), not by "did I come through my own dispatcher." Mock-seam host tests can't see
+  this - it only appears with a real TLS client on hardware. [[no-spaghetti-piping]] [[hw-testing-finds-integration-bugs]]
+
+---
+
+## TLS: a modern (TLS 1.3) ClientHello is refused because it exceeds the 1024 B RX ring
+
+- **Status:** FIXED (library, found on hardware 2026-07-11, same bring-up; distinct from the deadlock above).
+- **Symptom (after the deadlock fix):** the board no longer hangs but still **RSTs** any 1.3-leading
+  ClientHello (`curl` -> `HTTP 000`, OpenSSL default -> handshake fails, read 0 bytes) while a `-no_tls1_3` /
+  max-1.2 client succeeds. OpenSSL reported writing a **1533-byte** ClientHello.
+- **Root cause:** a modern TLS 1.3 ClientHello (key shares + cipher/sig-alg lists + RFC 7685 padding) is
+  ~1.5 KB and arrives in one TCP segment **larger than the whole `RX_BUF_SIZE` (1024 B) ring**. The recv
+  callback refuses a segment that will not fit the ring (`ERR_MEM`, lossless backpressure), so a ClientHello
+  bigger than the ring is refused **forever** and the handshake stalls until the idle-timeout reaper RSTs it.
+  A 1.2-only ClientHello is small enough to fit, which is why it squeaked through. The ring was smaller than
+  a single MSS segment - a latent limit a big handshake exposes (SSH's ~1.5 KB KEXINIT already had the same
+  auto-upsize).
+- **Fix:** `ServerConfig.h` - when `DETWS_ENABLE_TLS` and `RX_BUF_SIZE` was left at its default, upsize it to
+  **2048** (mirrors the existing SSH KEXINIT upsize). An explicit `RX_BUF_SIZE` build flag is honored. After
+  both fixes: `curl` -> `200`, interop peer 7/7 (TLS 1.2 ECDHE-ECDSA-AES256-GCM-SHA384), 20/20 default
+  handshakes negotiate 1.2 with the board staying alive, 10/10 rapid curls `200`.
+- **Lesson:** the RX ring must hold at least one full MSS segment; a handshake whose first flight is one big
+  segment (TLS ClientHello, SSH KEXINIT) will otherwise be refused-forever by all-or-nothing segment
+  backpressure. [[stress-test-before-ship]]
+
+---
+
 ## Rig route table overflowed MAX_ROUTES (16) - silently dropped /ws, /events, /secure, /syslog/probe
 
 - **Status:** FIXED (rig-firmware config, found on hardware 2026-07-11 while adding the syslog `/syslog/probe`

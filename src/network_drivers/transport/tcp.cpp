@@ -28,6 +28,7 @@
 #include "tcp.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "freertos/task.h" // xTaskGetCurrentTaskHandle() - tcpip_thread self-detection for det_tcp_marshal
 #include "lwip/tcp.h"
 #include "services/clock.h" // detws_millis() pluggable monotonic clock
 
@@ -182,15 +183,26 @@ enum class DetTcpOp : uint8_t
     DET_OP_RECVED       // in tcpip_thread: tcp_recved() to reopen the window (ack-on-consume)
 };
 
-// TCP transport reentrancy state, owned by one instance (internal linkage): true while
-// det_tcp_do() is executing, i.e. while we are running inside the lwIP thread. Lets
-// det_conn_raw_send() pick a direct vs. marshaled tcp_write so the TLS BIO is safe from either
-// context without re-marshaling (which would deadlock). One named owner, unreachable cross-TU.
+// TCP transport context, owned by one instance (internal linkage): the tcpip_thread FreeRTOS task
+// handle, captured the first time det_tcp_do() runs (that op is always marshaled onto tcpip_thread).
+// det_tcp_marshal() compares the running task against it, so a raw lwIP callback - which runs in
+// tcpip_thread but does NOT enter through det_tcp_do, so a plain "inside det_tcp_do" flag reads false
+// there - performs its op inline instead of re-marshaling, which would block on the very mailbox the
+// callback's thread services (self-deadlock: a close from the sent callback that sends a TLS
+// close_notify, found on hardware with a real TLS 1.3 client). One named owner, unreachable cross-TU.
 struct TransportCtx
 {
-    volatile bool in_tcpip_thread = false;
+    TaskHandle_t tcpip_task = nullptr;
 };
 static TransportCtx s_tp;
+
+// True when the caller is running in tcpip_thread (a marshaled det_tcp_do or any raw lwIP callback),
+// so it must run lwIP ops directly rather than marshal. Null until the first det_tcp_do (boot / first
+// send), which precedes every raw-callback teardown path, so the compare is always populated by then.
+static inline bool on_tcpip_thread()
+{
+    return s_tp.tcpip_task != nullptr && xTaskGetCurrentTaskHandle() == s_tp.tcpip_task;
+}
 
 struct DetTcpCall
 {
@@ -228,7 +240,8 @@ static err_t det_tcp_do(struct tcpip_api_call_data *c)
 {
     DetTcpCall *k = (DetTcpCall *)c;
     k->result = ERR_OK;
-    s_tp.in_tcpip_thread = true; // any tcp_write reached from here is already in-thread
+    if (!s_tp.tcpip_task) // capture the tcpip_thread task once; det_tcp_do only ever runs in that thread
+        s_tp.tcpip_task = xTaskGetCurrentTaskHandle();
     switch (k->op)
     {
     case DetTcpOp::DET_OP_RAWSEND:
@@ -290,7 +303,6 @@ static err_t det_tcp_do(struct tcpip_api_call_data *c)
         tcp_recved(k->pcb, k->len); // reopen the receive window by the consumed bytes
         break;
     }
-    s_tp.in_tcpip_thread = false;
     return ERR_OK;
 }
 
@@ -303,7 +315,13 @@ static inline err_t det_tcp_marshal(DetTcpOp op, uint8_t slot, struct tcp_pcb *p
     k.pcb = pcb;
     k.data = data;
     k.len = len;
-    tcpip_api_call(det_tcp_do, &k.base);
+    // On tcpip_thread already (a raw lwIP callback's teardown reaching a send/close): run the op inline.
+    // Re-marshaling here would call tcpip_api_call from the thread that services its mailbox and block
+    // forever (the TLS close_notify-from-sent-callback self-deadlock). Off-thread (worker): marshal.
+    if (on_tcpip_thread())
+        det_tcp_do(&k.base);
+    else
+        tcpip_api_call(det_tcp_do, &k.base);
     return k.result;
 }
 #endif // ARDUINO
@@ -395,17 +413,10 @@ bool det_conn_raw_send(struct tcp_pcb *pcb, const void *data, u16_t len)
     if (!pcb)
         return false;
 #if defined(ARDUINO)
-    if (s_tp.in_tcpip_thread)
-    {
-        // Already inside the lwIP thread (the marshaled app-data send path): write
-        // directly - re-marshaling here would deadlock on the tcpip mailbox.
-        err_t e = tcp_write(pcb, data, len, TCP_WRITE_FLAG_COPY);
-        if (e == ERR_OK)
-            tcp_output(pcb);
-        return e == ERR_OK;
-    }
-    // Main-loop task (TLS handshake / read pump): marshal a raw write so the
-    // tcp_write runs in the lwIP thread, not racing it.
+    // det_tcp_marshal owns the context choice: it runs the raw write inline when already in
+    // tcpip_thread (a TLS close_notify/alert emitted from inside a raw lwIP callback) and marshals it
+    // from the worker task (the handshake / read pump), so the tcp_write neither races the lwIP thread
+    // nor self-deadlocks on the tcpip mailbox. The RAWSEND op also re-checks the pcb is still bound.
     return det_tcp_marshal(DetTcpOp::DET_OP_RAWSEND, 0, pcb, data, len) == ERR_OK;
 #else
     err_t e = tcp_write(pcb, data, len, TCP_WRITE_FLAG_COPY);

@@ -3889,6 +3889,19 @@
 #define RX_BUF_SIZE 2048
 #endif
 
+// A modern TLS ClientHello (TLS 1.3 key shares + cipher/sig-alg lists + the RFC 7685 padding real
+// clients send) is ~1.5 KB and arrives as one TCP segment - larger than the 1024 default ring. The
+// recv callback refuses a whole segment that will not fit the ring (ERR_MEM, lossless backpressure),
+// so a ClientHello bigger than the ring is refused forever and the handshake stalls to an idle-timeout
+// RST: every 1.3-leading client (curl, browsers, Python) then fails to connect while a 1.2-only client
+// squeaks in. The ring must hold a full segment, so when TLS is enabled and RX_BUF_SIZE was left at its
+// default, upsize it to fit a full ClientHello. An explicit RX_BUF_SIZE (build flag) is respected
+// unchanged - keep it >= 2 KB.
+#if DETWS_ENABLE_TLS && defined(DETWS_RX_BUF_SIZE_DEFAULTED) && RX_BUF_SIZE < 2048
+#undef RX_BUF_SIZE
+#define RX_BUF_SIZE 2048
+#endif
+
 /** @brief First-boot WiFi provisioning: softAP + captive-portal credentials form. */
 #ifndef DETWS_ENABLE_PROVISIONING
 #define DETWS_ENABLE_PROVISIONING 0
