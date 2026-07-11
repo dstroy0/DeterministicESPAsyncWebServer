@@ -56,14 +56,14 @@ static void coap_info(const CoapRequest *req, CoapResponse *resp)
     if (n < 0)
         n = 0;
     resp->payload_len = (size_t)n;
-    resp->content_format = (uint16_t)CoapContentFormat::COAP_CF_JSON;
+    resp->content_format = CoapContentFormat::COAP_CF_JSON;
     resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
 }
 
 // GET/PUT /led -> read or drive the on-board LED.
 static void coap_led(const CoapRequest *req, CoapResponse *resp)
 {
-    if (req->method == (uint8_t)CoapMethod::COAP_PUT)
+    if (req->method == CoapMethod::COAP_PUT)
     {
         // Treat any payload beginning with a non-'0' character as "on".
         g_led_state = (req->payload_len && req->payload[0] != '0') ? 1 : 0;
@@ -74,7 +74,7 @@ static void coap_led(const CoapRequest *req, CoapResponse *resp)
     }
     resp->payload[0] = g_led_state ? '1' : '0';
     resp->payload_len = 1;
-    resp->content_format = (uint16_t)CoapContentFormat::COAP_CF_TEXT;
+    resp->content_format = CoapContentFormat::COAP_CF_TEXT;
     resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
 }
 
@@ -88,7 +88,7 @@ static void coap_hello(const CoapRequest *req, CoapResponse *resp)
         n = resp->payload_cap;
     memcpy(resp->payload, msg, n);
     resp->payload_len = n;
-    resp->content_format = (uint16_t)CoapContentFormat::COAP_CF_TEXT;
+    resp->content_format = CoapContentFormat::COAP_CF_TEXT;
     resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
 }
 

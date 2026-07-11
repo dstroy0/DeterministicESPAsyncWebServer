@@ -15,10 +15,10 @@
 // Captured request state (what the handler saw on the last call)
 // ---------------------------------------------------------------------------
 
-static uint8_t g_method;
+static CoapMethod g_method;
 static char g_path[128];
 static char g_query[128];
-static uint16_t g_cf;
+static CoapContentFormat g_cf;
 static uint8_t g_payload[128];
 static size_t g_payload_len;
 static bool g_called;
@@ -43,21 +43,21 @@ static void h_resource(const CoapRequest *req, CoapResponse *resp)
     record(req);
     switch (req->method)
     {
-    case (uint8_t)CoapMethod::COAP_GET:
+    case CoapMethod::COAP_GET:
         resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
         memcpy(resp->payload, "hi", 2);
         resp->payload_len = 2;
-        resp->content_format = (uint16_t)CoapContentFormat::COAP_CF_TEXT;
+        resp->content_format = CoapContentFormat::COAP_CF_TEXT;
         break;
-    case (uint8_t)CoapMethod::COAP_POST:
+    case CoapMethod::COAP_POST:
         resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CREATED;
         resp->payload_len = 0;
         break;
-    case (uint8_t)CoapMethod::COAP_PUT:
+    case CoapMethod::COAP_PUT:
         resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CHANGED;
         resp->payload_len = 0;
         break;
-    case (uint8_t)CoapMethod::COAP_DELETE:
+    case CoapMethod::COAP_DELETE:
         resp->code = (uint8_t)CoapResponseCode::COAP_RSP_DELETED;
         resp->payload_len = 0;
         break;
@@ -75,7 +75,7 @@ static void h_big(const CoapRequest *req, CoapResponse *resp)
 {
     record(req);
     resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
-    resp->content_format = (uint16_t)CoapContentFormat::COAP_CF_TEXT;
+    resp->content_format = CoapContentFormat::COAP_CF_TEXT;
     resp->payload_len = BIG_LEN;
     for (size_t i = 0; i < BIG_LEN; i++)
         resp->payload[i] = big_expected(i);
@@ -84,10 +84,10 @@ static void h_big(const CoapRequest *req, CoapResponse *resp)
 void setUp()
 {
     g_called = false;
-    g_method = 0;
+    g_method = (CoapMethod)0;
     g_path[0] = '\0';
     g_query[0] = '\0';
-    g_cf = (uint16_t)CoapContentFormat::COAP_CF_NONE;
+    g_cf = CoapContentFormat::COAP_CF_NONE;
     g_payload_len = 0;
 
     coap_server_init();
@@ -224,7 +224,7 @@ struct CoapDec
     uint8_t ver, type, tkl, code;
     uint16_t mid;
     const uint8_t *token;
-    uint16_t content_format;
+    CoapContentFormat content_format;
     int observe; // Observe option value (RFC 7641), or -1 if absent
     int block1;  // Block1 option value (RFC 7959), or -1 if absent
     int block2;  // Block2 option value, or -1 if absent
@@ -247,7 +247,7 @@ static bool dec(const uint8_t *buf, size_t len, CoapDec *d)
     d->code = buf[1];
     d->mid = (uint16_t)((buf[2] << 8) | buf[3]);
     d->token = buf + 4;
-    d->content_format = (uint16_t)CoapContentFormat::COAP_CF_NONE;
+    d->content_format = CoapContentFormat::COAP_CF_NONE;
     d->observe = -1;
     d->block1 = -1;
     d->block2 = -1;
@@ -286,7 +286,7 @@ static bool dec(const uint8_t *buf, size_t len, CoapDec *d)
             for (uint32_t k = 0; k < l; k++)
                 v = (v << 8) | buf[p + k];
             if (opt == 12)
-                d->content_format = (uint16_t)v;
+                d->content_format = (CoapContentFormat)v;
             else if (opt == 6)
                 d->observe = (int)v;
             else if (opt == 23)
@@ -865,7 +865,7 @@ static void h_overflow(const CoapRequest *req, CoapResponse *resp)
 {
     (void)req;
     resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
-    resp->content_format = (uint16_t)CoapContentFormat::COAP_CF_TEXT;
+    resp->content_format = CoapContentFormat::COAP_CF_TEXT;
     resp->payload_len = resp->payload_cap + 1000; // absurd; the server must clamp
 }
 

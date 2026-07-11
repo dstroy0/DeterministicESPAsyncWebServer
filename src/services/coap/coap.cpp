@@ -148,12 +148,12 @@ static const CoapResource *find_resource(const CoapCtx &c, const char *path)
 
 // Emit a bare message: 4-byte header + token, no options/payload. Used for RST and
 // for error responses (4.04 / 4.05 / 5.01) that carry no diagnostic payload.
-static size_t emit_header(uint8_t *out, size_t cap, uint8_t type, uint8_t code, uint16_t mid, const uint8_t *token,
+static size_t emit_header(uint8_t *out, size_t cap, CoapType type, uint8_t code, uint16_t mid, const uint8_t *token,
                           uint8_t tkl)
 {
     if (cap < (size_t)(4 + tkl))
         return 0;
-    out[0] = (uint8_t)((1 << 6) | (type << 4) | tkl); // Ver=1
+    out[0] = (uint8_t)((1 << 6) | ((uint8_t)type << 4) | tkl); // Ver=1
     out[1] = code;
     out[2] = (uint8_t)(mid >> 8);
     out[3] = (uint8_t)(mid & 0xFF);
@@ -205,7 +205,7 @@ static size_t append_opt(uint8_t *resp, size_t cap, size_t n, uint32_t *last_opt
 // is the raw RFC 7959 option uint, (NUM<<4)|(M<<3)|SZX). Stops (shipping what fits)
 // rather than overflowing @p cap. Returns the new length.
 static size_t emit_options_payload(uint8_t *resp, size_t cap, size_t n, uint8_t code, int32_t observe_seq,
-                                   uint16_t content_format, int32_t block2_val, int32_t block1_val,
+                                   CoapContentFormat content_format, int32_t block2_val, int32_t block1_val,
                                    const uint8_t *payload, size_t payload_len)
 {
     uint32_t last_opt = 0;
@@ -215,8 +215,9 @@ static size_t emit_options_payload(uint8_t *resp, size_t cap, size_t n, uint8_t 
         n = append_opt(resp, cap, n, &last_opt, COAP_OPT_OBSERVE, v,
                        enc_uint_minimal((uint32_t)observe_seq & 0xFFFFFF, v));
 
-    if (content_format != (uint16_t)CoapContentFormat::COAP_CF_NONE)
-        n = append_opt(resp, cap, n, &last_opt, COAP_OPT_CONTENT_FORMAT, v, enc_uint_minimal(content_format, v));
+    if (content_format != CoapContentFormat::COAP_CF_NONE)
+        n = append_opt(resp, cap, n, &last_opt, COAP_OPT_CONTENT_FORMAT, v,
+                       enc_uint_minimal((uint16_t)content_format, v));
 
 #if DETWS_ENABLE_COAP_BLOCK
     if (block2_val >= 0)
@@ -249,38 +250,37 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
         return 0; // too short for a header
 
     uint8_t ver = (req[0] >> 6) & 0x03;
-    uint8_t type = (req[0] >> 4) & 0x03;
+    CoapType type = (CoapType)((req[0] >> 4) & 0x03);
     uint8_t tkl = req[0] & 0x0F;
     uint8_t code = req[1];
     uint16_t mid = (uint16_t)((req[2] << 8) | req[3]);
 
     // Reply type for a request: piggybacked ACK for CON, NON for NON. ACK/RST we
     // receive are not requests - ignore them.
-    if (type != (uint8_t)CoapType::COAP_TYPE_CON && type != (uint8_t)CoapType::COAP_TYPE_NON)
+    if (type != CoapType::COAP_TYPE_CON && type != CoapType::COAP_TYPE_NON)
         return 0;
-    uint8_t rsp_type = (type == (uint8_t)CoapType::COAP_TYPE_CON) ? (uint8_t)CoapType::COAP_TYPE_ACK
-                                                                  : (uint8_t)CoapType::COAP_TYPE_NON;
+    CoapType rsp_type = (type == CoapType::COAP_TYPE_CON) ? CoapType::COAP_TYPE_ACK : CoapType::COAP_TYPE_NON;
 
     // A malformed message: bad version or reserved TKL (9..15). RFC 7252 §4.2:
     // reject a CON with an RST; stay silent for a NON.
     if (ver != 1 || tkl > COAP_MAX_TOKEN)
-        return (type == (uint8_t)CoapType::COAP_TYPE_CON)
-                   ? emit_header(resp, resp_cap, (uint8_t)CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
+        return (type == CoapType::COAP_TYPE_CON)
+                   ? emit_header(resp, resp_cap, CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
                    : 0;
 
     const uint8_t *p = req + 4;
     const uint8_t *end = req + req_len;
     if (p + tkl > end)
-        return (type == (uint8_t)CoapType::COAP_TYPE_CON)
-                   ? emit_header(resp, resp_cap, (uint8_t)CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
+        return (type == CoapType::COAP_TYPE_CON)
+                   ? emit_header(resp, resp_cap, CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
                    : 0;
     const uint8_t *token = p;
     p += tkl;
 
     // An empty message (Code 0.00): CON is a ping -> RST; anything else -> ignore.
     if (code == 0)
-        return (type == (uint8_t)CoapType::COAP_TYPE_CON)
-                   ? emit_header(resp, resp_cap, (uint8_t)CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
+        return (type == CoapType::COAP_TYPE_CON)
+                   ? emit_header(resp, resp_cap, CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
                    : 0;
 
 #if DETWS_ENABLE_COAP_OBSERVE
@@ -295,7 +295,7 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
     size_t path_len = 0, query_len = 0;
     s_coap.path[0] = '\0';
     s_coap.query[0] = '\0';
-    uint16_t req_cf = (uint16_t)CoapContentFormat::COAP_CF_NONE;
+    CoapContentFormat req_cf = CoapContentFormat::COAP_CF_NONE;
     const uint8_t *payload = nullptr;
     size_t payload_len = 0;
     uint32_t opt_num = 0;
@@ -381,7 +381,7 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
                 bad = true;
             break;
         case COAP_OPT_CONTENT_FORMAT:
-            req_cf = (uint16_t)opt_uint(val, olen);
+            req_cf = (CoapContentFormat)opt_uint(val, olen);
             break;
 #if DETWS_ENABLE_COAP_OBSERVE
         case COAP_OPT_OBSERVE:
@@ -437,7 +437,7 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
     // either by the .well-known/core discovery listing or by a resource handler.
     CoapResponse cresp;
     cresp.code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
-    cresp.content_format = (uint16_t)CoapContentFormat::COAP_CF_NONE;
+    cresp.content_format = CoapContentFormat::COAP_CF_NONE;
     cresp.payload = s_coap.pl;
     cresp.payload_cap = sizeof(s_coap.pl);
     cresp.payload_len = 0;
@@ -465,7 +465,7 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
             pl += plen;
             s_coap.pl[pl++] = '>';
         }
-        cresp.content_format = (uint16_t)CoapContentFormat::COAP_CF_LINK;
+        cresp.content_format = CoapContentFormat::COAP_CF_LINK;
         cresp.payload_len = pl;
     }
     else
@@ -525,7 +525,7 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
                 if (cn == 0)
                     return 0;
                 return emit_options_payload(resp, resp_cap, cn, (uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, -1,
-                                            (uint16_t)CoapContentFormat::COAP_CF_NONE, -1,
+                                            CoapContentFormat::COAP_CF_NONE, -1,
                                             (int32_t)((num << 4) | (1u << 3) | szx), nullptr, 0);
             }
             // Final block: hand the whole reassembled payload to the handler.
@@ -536,7 +536,7 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
 #endif
 
         CoapRequest creq;
-        creq.method = code;
+        creq.method = (CoapMethod)code;
         creq.path = s_coap.path;
         creq.query = s_coap.query;
         creq.payload = eff_payload;
@@ -679,15 +679,15 @@ void coap_notify(const char *path)
             continue;
         // Re-render the resource via its GET handler.
         CoapRequest creq;
-        creq.method = (uint8_t)CoapMethod::COAP_GET;
+        creq.method = CoapMethod::COAP_GET;
         creq.path = s_coap.res[ridx].path;
         creq.query = "";
         creq.payload = nullptr;
         creq.payload_len = 0;
-        creq.content_format = (uint16_t)CoapContentFormat::COAP_CF_NONE;
+        creq.content_format = CoapContentFormat::COAP_CF_NONE;
         CoapResponse cresp;
         cresp.code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
-        cresp.content_format = (uint16_t)CoapContentFormat::COAP_CF_NONE;
+        cresp.content_format = CoapContentFormat::COAP_CF_NONE;
         cresp.payload = s_coap.pl;
         cresp.payload_cap = sizeof(s_coap.pl);
         cresp.payload_len = 0;
@@ -698,7 +698,7 @@ void coap_notify(const char *path)
         // Build a NON notification: header + token + Observe(seq) + body.
         uint16_t mid = (uint16_t)detws_millis();
         s_coap.obs[i].seq = (s_coap.obs[i].seq + 1) & 0xFFFFFF;
-        size_t n = emit_header(s_coap.tx, sizeof(s_coap.tx), (uint8_t)CoapType::COAP_TYPE_NON, cresp.code, mid,
+        size_t n = emit_header(s_coap.tx, sizeof(s_coap.tx), CoapType::COAP_TYPE_NON, cresp.code, mid,
                                s_coap.obs[i].token, s_coap.obs[i].tkl);
         if (n)
             n = emit_options_payload(s_coap.tx, sizeof(s_coap.tx), n, cresp.code, (int32_t)s_coap.obs[i].seq,

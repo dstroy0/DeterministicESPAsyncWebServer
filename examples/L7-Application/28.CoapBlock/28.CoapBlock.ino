@@ -45,7 +45,7 @@ void h_big(const CoapRequest *req, CoapResponse *resp)
     for (size_t i = 0; i < n && i < resp->payload_cap; i++)
         resp->payload[i] = (uint8_t)('0' + (int)(i % 10)); // "0123456789012..."
     resp->payload_len = (n < resp->payload_cap) ? n : resp->payload_cap;
-    resp->content_format = (uint16_t)CoapContentFormat::COAP_CF_TEXT;
+    resp->content_format = CoapContentFormat::COAP_CF_TEXT;
     resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
 }
 

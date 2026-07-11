@@ -37,7 +37,7 @@ void h_count(const CoapRequest *req, CoapResponse *resp)
     (void)req;
     int n = snprintf((char *)resp->payload, resp->payload_cap, "%lu", (unsigned long)g_count);
     resp->payload_len = (n > 0) ? (size_t)n : 0;
-    resp->content_format = (uint16_t)CoapContentFormat::COAP_CF_TEXT;
+    resp->content_format = CoapContentFormat::COAP_CF_TEXT;
     resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
 }
 

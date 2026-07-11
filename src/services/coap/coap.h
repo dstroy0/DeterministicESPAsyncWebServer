@@ -109,12 +109,12 @@ enum class CoapContentFormat : uint16_t
  */
 struct CoapRequest
 {
-    uint8_t method; ///< CoapMethod::COAP_GET / CoapMethod::COAP_POST / CoapMethod::COAP_PUT / CoapMethod::COAP_DELETE.
-    const char *path;        ///< reconstructed Uri-Path, e.g. "/temp" (always begins with '/').
-    const char *query;       ///< reconstructed Uri-Query (segments joined by '&'), or "" if none.
-    const uint8_t *payload;  ///< request payload bytes (may be nullptr if payload_len == 0).
-    size_t payload_len;      ///< request payload length in bytes.
-    uint16_t content_format; ///< request Content-Format, or CoapContentFormat::COAP_CF_NONE if absent.
+    CoapMethod method;                ///< COAP_GET / COAP_POST / COAP_PUT / COAP_DELETE.
+    const char *path;                 ///< reconstructed Uri-Path, e.g. "/temp" (always begins with '/').
+    const char *query;                ///< reconstructed Uri-Query (segments joined by '&'), or "" if none.
+    const uint8_t *payload;           ///< request payload bytes (may be nullptr if payload_len == 0).
+    size_t payload_len;               ///< request payload length in bytes.
+    CoapContentFormat content_format; ///< request Content-Format, or COAP_CF_NONE if absent.
 };
 
 /**
@@ -128,10 +128,10 @@ struct CoapRequest
 struct CoapResponse
 {
     uint8_t code; ///< response Code byte (see CoapResponseCode); defaults to CoapResponseCode::COAP_RSP_CONTENT.
-    uint16_t content_format; ///< COAP_CF_* describing the body, or CoapContentFormat::COAP_CF_NONE.
-    uint8_t *payload;        ///< caller-provided buffer to write the response body into.
-    size_t payload_cap;      ///< capacity of @p payload in bytes.
-    size_t payload_len;      ///< bytes written by the handler (0 = empty body).
+    CoapContentFormat content_format; ///< COAP_CF_* describing the body, or COAP_CF_NONE.
+    uint8_t *payload;                 ///< caller-provided buffer to write the response body into.
+    size_t payload_cap;               ///< capacity of @p payload in bytes.
+    size_t payload_len;               ///< bytes written by the handler (0 = empty body).
 };
 
 /** @brief Resource handler: read @p req, fill @p resp. */
