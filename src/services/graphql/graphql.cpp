@@ -274,7 +274,9 @@ bool parse_value(Lex &L, DetwsGqlValue *v)
         else
         {
             v->type = DetwsGqlType::DETWS_GQL_INT;
-            v->i = neg ? -ipart : ipart;
+            // Negate in signed space: ipart is unsigned (to dodge signed-overflow UB while
+            // accumulating), so -ipart would be a modular unsigned negation, not arithmetic negation.
+            v->i = neg ? -(long long)ipart : (long long)ipart;
         }
         return true;
     }

@@ -132,8 +132,8 @@ static bool parse_double(const uint8_t *buf, size_t from, size_t end, double *ou
     }
     if (slice_ieq(buf, from, end, "nan"))
     {
-        double z = 0.0;
-        *out = z / z;
+        double inf = 1e308 * 10.0; // +infinity by overflow (this file avoids <math.h>, cf. -inf above)
+        *out = inf * 0.0;          // infinity * 0 = NaN, without an identical-operand division
         return true;
     }
     size_t i = from;
