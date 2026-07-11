@@ -22,12 +22,13 @@
 
 #if DETWS_ENABLE_RADIO_POWER
 
-/** @brief Modem-sleep modes (match DETWS_RADIO_WIFI_PS). */
-enum
+/** @brief Modem-sleep modes (match DETWS_RADIO_WIFI_PS). Config/compare values that map to esp_wifi's
+ *  wifi_ps_type_t, so integer constants in a namespacing struct (cast-free at ==/switch/the ESP-IDF map). */
+struct DetwsRadioPs
 {
-    DETWS_PS_NONE = 0,      ///< no modem sleep (max performance).
-    DETWS_PS_MIN_MODEM = 1, ///< wake at every DTIM (balanced).
-    DETWS_PS_MAX_MODEM = 2, ///< wake at a listen interval (lowest power, higher latency).
+    static constexpr uint8_t DETWS_PS_NONE = 0;      ///< no modem sleep (max performance).
+    static constexpr uint8_t DETWS_PS_MIN_MODEM = 1; ///< wake at every DTIM (balanced).
+    static constexpr uint8_t DETWS_PS_MAX_MODEM = 2; ///< wake at a listen interval (lowest power, higher latency).
 };
 
 /** @brief Name for a modem-sleep mode ("none" / "min_modem" / "max_modem"). */

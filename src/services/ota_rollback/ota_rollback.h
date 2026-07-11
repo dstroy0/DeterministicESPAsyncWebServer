@@ -24,15 +24,16 @@
 
 #if DETWS_ENABLE_OTA_ROLLBACK
 
-/** @brief OTA image states (mirror esp_ota_img_states_t so the core is host-pure). */
-enum
+/** @brief OTA image states (mirror esp_ota_img_states_t so the core is host-pure). These arrive from
+ *  ESP-IDF as a uint8_t and are compared, so integer constants in a namespacing struct - cast-free. */
+struct DetwsOtaImg
 {
-    DETWS_OTA_IMG_NEW = 0,
-    DETWS_OTA_IMG_PENDING_VERIFY = 1,
-    DETWS_OTA_IMG_VALID = 2,
-    DETWS_OTA_IMG_INVALID = 3,
-    DETWS_OTA_IMG_ABORTED = 4,
-    DETWS_OTA_IMG_UNDEFINED = 0xFF,
+    static constexpr uint8_t DETWS_OTA_IMG_NEW = 0;
+    static constexpr uint8_t DETWS_OTA_IMG_PENDING_VERIFY = 1;
+    static constexpr uint8_t DETWS_OTA_IMG_VALID = 2;
+    static constexpr uint8_t DETWS_OTA_IMG_INVALID = 3;
+    static constexpr uint8_t DETWS_OTA_IMG_ABORTED = 4;
+    static constexpr uint8_t DETWS_OTA_IMG_UNDEFINED = 0xFF;
 };
 
 /** @brief What the rollback tick should do. */
@@ -62,7 +63,7 @@ DetwsOtaAction detws_ota_decide(uint8_t img_state, bool self_test_ok, uint32_t m
 // ESP32 actions (no-op / stubs on host)
 // ---------------------------------------------------------------------------
 
-/** @brief Current running image's OTA state (DETWS_OTA_IMG_UNDEFINED on host). */
+/** @brief Current running image's OTA state (DetwsOtaImg::DETWS_OTA_IMG_UNDEFINED on host). */
 uint8_t detws_ota_img_state(void);
 
 /** @brief Commit the running image (cancel rollback). */

@@ -25,13 +25,14 @@
 
 #if DETWS_ENABLE_LOGBUF
 
-/** @brief Severity levels (ordered low -> high). */
-enum
+/** @brief Severity levels (ordered low -> high). Compared (level >= threshold) and passed through the
+ *  uint8_t trap-callback ABI, so integer constants in a namespacing struct - cast-free. */
+struct DetwsLogLevel
 {
-    DETWS_LOG_DEBUG = 0,
-    DETWS_LOG_INFO = 1,
-    DETWS_LOG_WARN = 2,
-    DETWS_LOG_ERROR = 3,
+    static constexpr uint8_t DETWS_LOG_DEBUG = 0;
+    static constexpr uint8_t DETWS_LOG_INFO = 1;
+    static constexpr uint8_t DETWS_LOG_WARN = 2;
+    static constexpr uint8_t DETWS_LOG_ERROR = 3;
 };
 
 /** @brief Trap callback: fired for a line logged at level >= the threshold. */

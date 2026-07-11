@@ -12,7 +12,7 @@
 
 DetwsOtaAction detws_ota_decide(uint8_t img_state, bool self_test_ok, uint32_t ms_since_boot, uint32_t window_ms)
 {
-    if (img_state != DETWS_OTA_IMG_PENDING_VERIFY)
+    if (img_state != DetwsOtaImg::DETWS_OTA_IMG_PENDING_VERIFY)
         return DetwsOtaAction::DETWS_OTA_WAIT; // not a freshly-updated image: nothing to do
     if (self_test_ok)
         return DetwsOtaAction::DETWS_OTA_COMMIT;
@@ -31,7 +31,7 @@ uint8_t detws_ota_img_state(void)
     const esp_partition_t *running = esp_ota_get_running_partition();
     esp_ota_img_states_t st = ESP_OTA_IMG_UNDEFINED;
     if (!running || esp_ota_get_state_partition(running, &st) != ESP_OK)
-        return DETWS_OTA_IMG_UNDEFINED;
+        return DetwsOtaImg::DETWS_OTA_IMG_UNDEFINED;
     return (uint8_t)st;
 }
 
@@ -60,7 +60,7 @@ DetwsOtaAction detws_ota_rollback_tick(bool self_test_ok)
 
 uint8_t detws_ota_img_state(void)
 {
-    return DETWS_OTA_IMG_UNDEFINED;
+    return DetwsOtaImg::DETWS_OTA_IMG_UNDEFINED;
 }
 void detws_ota_commit(void)
 {

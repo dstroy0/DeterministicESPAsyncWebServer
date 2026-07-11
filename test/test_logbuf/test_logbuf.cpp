@@ -20,8 +20,8 @@ void tearDown()
 
 void test_append_and_order()
 {
-    detws_log(DETWS_LOG_INFO, "first");
-    detws_log(DETWS_LOG_WARN, "second");
+    detws_log(DetwsLogLevel::DETWS_LOG_INFO, "first");
+    detws_log(DetwsLogLevel::DETWS_LOG_WARN, "second");
     TEST_ASSERT_EQUAL_UINT16(2, detws_log_count());
     TEST_ASSERT_EQUAL_STRING("I first", detws_log_at(0));
     TEST_ASSERT_EQUAL_STRING("W second", detws_log_at(1));
@@ -30,8 +30,8 @@ void test_append_and_order()
 
 void test_dump()
 {
-    detws_log(DETWS_LOG_ERROR, "boom");
-    detws_log(DETWS_LOG_DEBUG, "trace");
+    detws_log(DetwsLogLevel::DETWS_LOG_ERROR, "boom");
+    detws_log(DetwsLogLevel::DETWS_LOG_DEBUG, "trace");
     char buf[128];
     int n = detws_log_dump(buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
@@ -44,7 +44,7 @@ void test_rotation_drops_oldest()
     for (int i = 0; i < DETWS_LOG_LINES + 3; i++) // overflow by 3
     {
         snprintf(msg, sizeof(msg), "n%d", i);
-        detws_log(DETWS_LOG_INFO, msg);
+        detws_log(DetwsLogLevel::DETWS_LOG_INFO, msg);
     }
     TEST_ASSERT_EQUAL_UINT16(DETWS_LOG_LINES, detws_log_count());
     // The 3 oldest (n0,n1,n2) were pruned; oldest now is n3, newest is the last.
@@ -65,14 +65,14 @@ static void trap(uint8_t level, const char *)
 void test_trap_threshold()
 {
     g_traps = 0;
-    detws_log_set_trap(DETWS_LOG_WARN, trap);
-    detws_log(DETWS_LOG_INFO, "ignored"); // below threshold
-    detws_log(DETWS_LOG_DEBUG, "ignored");
+    detws_log_set_trap(DetwsLogLevel::DETWS_LOG_WARN, trap);
+    detws_log(DetwsLogLevel::DETWS_LOG_INFO, "ignored"); // below threshold
+    detws_log(DetwsLogLevel::DETWS_LOG_DEBUG, "ignored");
     TEST_ASSERT_EQUAL_INT(0, g_traps);
-    detws_log(DETWS_LOG_WARN, "warned"); // at threshold
-    detws_log(DETWS_LOG_ERROR, "errored");
+    detws_log(DetwsLogLevel::DETWS_LOG_WARN, "warned"); // at threshold
+    detws_log(DetwsLogLevel::DETWS_LOG_ERROR, "errored");
     TEST_ASSERT_EQUAL_INT(2, g_traps);
-    TEST_ASSERT_EQUAL_UINT8(DETWS_LOG_ERROR, g_last_level);
+    TEST_ASSERT_EQUAL_UINT8(DetwsLogLevel::DETWS_LOG_ERROR, g_last_level);
 }
 
 void test_dump_guards()

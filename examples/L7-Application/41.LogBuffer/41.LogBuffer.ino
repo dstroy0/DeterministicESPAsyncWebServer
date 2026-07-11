@@ -43,8 +43,8 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    detws_log_set_trap(DETWS_LOG_WARN, on_trap); // trap on WARN and ERROR
-    detws_log(DETWS_LOG_INFO, "boot complete");
+    detws_log_set_trap(DetwsLogLevel::DETWS_LOG_WARN, on_trap); // trap on WARN and ERROR
+    detws_log(DetwsLogLevel::DETWS_LOG_INFO, "boot complete");
 
     server.on("/logs", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         char buf[DETWS_LOG_LINES * DETWS_LOG_LINE_LEN];
@@ -63,7 +63,7 @@ void loop()
         char msg[64];
         uint32_t heap = ESP.getFreeHeap();
         snprintf(msg, sizeof(msg), "heap=%u uptime=%lus", (unsigned)heap, millis() / 1000);
-        detws_log(heap < 20000 ? DETWS_LOG_WARN : DETWS_LOG_INFO, msg);
+        detws_log(heap < 20000 ? DetwsLogLevel::DETWS_LOG_WARN : DetwsLogLevel::DETWS_LOG_INFO, msg);
     }
     server.handle();
 }
