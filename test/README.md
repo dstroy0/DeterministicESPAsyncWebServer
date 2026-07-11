@@ -16393,7 +16393,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (detws_nema_ts2_parse(buf, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x05, f.address);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x10, f.control);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(NEMA_TS2_FT_CMD_LOADSWITCH, f.frame_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(NemaTs2::NEMA_TS2_FT_CMD_LOADSWITCH, f.frame_type);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, f.data_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(data, f.data, 3);</code>
   </details>
