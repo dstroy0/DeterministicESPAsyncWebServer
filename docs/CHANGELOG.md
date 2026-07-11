@@ -6,12 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`9db579d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9db579d70cee971236caf8a49dc88113bf8f30aa))
 - update CHANGELOG.md [skip ci] ([`5f35f04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f35f04ace1b4b21cad89ccad67f23378f4010f8))
 - update test report + coverage [skip ci] ([`199b9e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/199b9e843605c6dce7f9a7102c5200f20bd3e149))
 - update CHANGELOG.md [skip ci] ([`b1a5cde`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1a5cde4f69ec73d8f404fa64873cda3eadf99e7))
 
 ### Documentation
 
+- SNMP done on all three dimensions (+8 attack families) ([`3973154`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3973154447599ad92c0d78446e0b42934fa829fd))
 - CoAP done on all three dimensions (interop 9/~50, +7 attack families) ([`cc74050`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc740500f99fe53bce98d484835adb9df592000a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0c195ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c195ee8280c342cdb9b5d556576369f28a0f38f))
 - WebDAV done on all three dimensions (interop 9/~50) ([`a75d76e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a75d76e88e2f5a47121392a4582df80229679537))
@@ -20,11 +22,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- SNMP v1/v2c agent codec bench (host + device) ([`6a1ab11`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a1ab11804dcba16ab28b97665f55502dc951fc8))
 - CoAP server codec bench (host + device) ([`06c1b66`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06c1b660dffe4c2a7b356714d321a21889030fa2))
 - 207 Multi-Status builder bench (host + device) ([`f0e9d3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0e9d3c723f3b466398907270eda5a7466db986b))
 
 ### Testing
 
+- advanced SNMP attacks (GETBULK amplification, BER abuse, varbind flood) ([`73c8c87`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73c8c8799643cc14bbecbf28440814ea46cb6964))
+- SNMP v1/v2c agent (UDP/161) + /bench snmp_process op ([`10595fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/10595fe789295844cfe07e742da4b6ce3e0a926b))
 - advanced CoAP attacks (option abuse, block bomb, observe flood) ([`7ba931a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ba931aa927e560832dfb942dbc2f416052cefea))
 - CoAP server (RFC 7252) on UDP/5683 + /bench coap_process op ([`8c55510`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c555108cb252660553907a299340559b306122f))
 - WebDAV advanced attacks (RFC 4918) ([`85ff855`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/85ff855751d1a0c81433cd07d471c71297464337))
