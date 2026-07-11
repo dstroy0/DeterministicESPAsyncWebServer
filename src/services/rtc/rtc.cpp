@@ -86,7 +86,9 @@ void rtc_epoch_to_regs(uint32_t epoch, uint8_t r[RTC_REG_COUNT])
 {
     long days = (long)(epoch / 86400u);
     int rem = (int)(epoch % 86400u);
-    int y = 0, m = 0, d = 0;
+    int y = 0;
+    int m = 0;
+    int d = 0;
     civil_from_days(days, &y, &m, &d);
     r[0] = int2bcd(rem % 60);
     r[1] = int2bcd((rem % 3600) / 60);

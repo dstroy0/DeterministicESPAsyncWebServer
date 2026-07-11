@@ -41,7 +41,8 @@ static void gpio_post_handler(uint8_t slot_id, HttpReq *req)
 {
     if (!s_gpior.srv)
         return;
-    uint8_t pin, level;
+    uint8_t pin;
+    uint8_t level;
     if (!detws_gpio_parse_set((const char *)req->body, req->body_len, &pin, &level))
     {
         s_gpior.srv->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "bad request");

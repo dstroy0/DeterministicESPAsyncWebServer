@@ -74,7 +74,8 @@ bool jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *secret
     if (!token || token_len < 5 || token_len > DETWS_JWT_MAX_LEN)
         return false;
 
-    size_t signing_len, sig_len;
+    size_t signing_len;
+    size_t sig_len;
     const char *sig;
     if (!jwt_split(token, token_len, &signing_len, &sig, &sig_len))
         return false;

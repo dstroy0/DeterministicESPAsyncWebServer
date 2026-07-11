@@ -430,7 +430,9 @@ static void process_rx()
             hdr[i] = ring_peek(i);
         uint8_t op;
         bool fin;
-        size_t off, plen, consumed;
+        size_t off;
+        size_t plen;
+        size_t consumed;
         if (!ws_client_parse_frame(hdr, avail, &op, &fin, &off, &plen, &consumed))
             return; // header incomplete or full frame not yet arrived
         if (consumed > sizeof(s_wsc.pkt))

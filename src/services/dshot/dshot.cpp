@@ -69,7 +69,8 @@ uint32_t detws_dshot_bit_ns(uint16_t rate_kbit, bool bit)
 
 uint32_t detws_esc_pwm_ns(uint16_t throttle_1000, DetwsEscPwm mode)
 {
-    uint32_t lo, hi; // pulse width range in ns
+    uint32_t lo;
+    uint32_t hi; // pulse width range in ns
     switch (mode)
     {
     case DetwsEscPwm::DETWS_ESC_ONESHOT125:

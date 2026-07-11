@@ -127,7 +127,10 @@ static void aes128_encrypt_block(const uint8_t rk[176], const uint8_t in[16], ui
             for (int c = 0; c < 4; c++)
             {
                 uint8_t *col = s + 4 * c;
-                uint8_t a0 = col[0], a1 = col[1], a2 = col[2], a3 = col[3];
+                uint8_t a0 = col[0];
+                uint8_t a1 = col[1];
+                uint8_t a2 = col[2];
+                uint8_t a3 = col[3];
                 col[0] = (uint8_t)(xtime(a0) ^ (xtime(a1) ^ a1) ^ a2 ^ a3);
                 col[1] = (uint8_t)(a0 ^ xtime(a1) ^ (xtime(a2) ^ a2) ^ a3);
                 col[2] = (uint8_t)(a0 ^ a1 ^ xtime(a2) ^ (xtime(a3) ^ a3));

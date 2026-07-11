@@ -45,7 +45,8 @@ size_t detws_nts_ke_request(uint8_t *out, size_t cap)
     uint8_t aead[2];
     put_u16(aead, Nts::NTS_AEAD_AES_SIV_CMAC_256);
 
-    size_t n = 0, r;
+    size_t n = 0;
+    size_t r;
     r = detws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, proto, 2, out + n, cap - n);
     if (!r)
         return 0;

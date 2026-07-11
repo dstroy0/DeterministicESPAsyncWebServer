@@ -95,7 +95,9 @@ static bool parse_v1(const uint8_t *buf, size_t len, ProxyInfo *out, size_t *con
     const char *s = (const char *)buf;
     // Tokenize the line by single spaces.
     const char *tok[6];
-    size_t tlen[6], ntok = 0, i = 0;
+    size_t tlen[6];
+    size_t ntok = 0;
+    size_t i = 0;
     while (i < crlf && ntok < 6)
     {
         while (i < crlf && s[i] == ' ')

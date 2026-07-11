@@ -111,7 +111,8 @@ int spinel_command_parse(const uint8_t *payload, uint16_t len, uint8_t *header, 
         return -1;
     uint16_t p = 0;
     uint8_t h = payload[p++];
-    uint32_t c = 0, pr = 0;
+    uint32_t c = 0;
+    uint32_t pr = 0;
     int n = spinel_unpack_uint(payload + p, (uint8_t)((len - p) > 255 ? 255 : (len - p)), &c);
     if (n <= 0)
         return -1;

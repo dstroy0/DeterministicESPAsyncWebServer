@@ -204,7 +204,8 @@ bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed
     size_t crlf = find_crlf(buf, len, 1);
     if (crlf == len)
         return false; // header line incomplete
-    size_t header_from = 1, header_to = crlf;
+    size_t header_from = 1;
+    size_t header_to = crlf;
     size_t after_header = crlf + 2; // past \r\n
 
     out->str = nullptr;

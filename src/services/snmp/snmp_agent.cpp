@@ -390,7 +390,9 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
     if (!ber_read_header(&d, &pdu_tag, &pdu_clen))
         return 0;
 
-    long request_id, field2, field3;
+    long request_id;
+    long field2;
+    long field3;
     if (!ber_read_integer(&d, &request_id) || !ber_read_integer(&d, &field2) || !ber_read_integer(&d, &field3))
         return 0;
 

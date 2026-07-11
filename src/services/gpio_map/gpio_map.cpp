@@ -99,7 +99,8 @@ bool detws_gpio_parse_set(const char *body, size_t len, uint8_t *pin, uint8_t *l
 {
     if (!body || !pin || !level)
         return false;
-    unsigned p, l;
+    unsigned p;
+    unsigned l;
     if (!form_field_uint(body, len, "pin", &p) || !form_field_uint(body, len, "level", &l))
         return false;
     *pin = (uint8_t)p;

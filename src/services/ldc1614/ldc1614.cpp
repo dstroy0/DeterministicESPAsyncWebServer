@@ -110,7 +110,8 @@ bool ldc1614_read_ch0(uint32_t *out)
 {
     if (!out)
         return false;
-    uint16_t msb = 0, lsb = 0;
+    uint16_t msb = 0;
+    uint16_t lsb = 0;
     if (!read16(LDC1614_REG_DATA_CH0_MSB, &msb) || !read16(LDC1614_REG_DATA_CH0_LSB, &lsb))
         return false;
     *out = ldc1614_data(msb, lsb);

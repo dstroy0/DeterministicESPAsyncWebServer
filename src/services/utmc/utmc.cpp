@@ -69,7 +69,8 @@ size_t detws_utmc_parse_request(const char *xml, size_t len, char *out, size_t c
     {
         if (memcmp(xml + i, key, kl) == 0)
         {
-            size_t j = i + kl, k = 0;
+            size_t j = i + kl;
+            size_t k = 0;
             while (j < len && xml[j] != '"')
             {
                 if (k + 1 >= cap)

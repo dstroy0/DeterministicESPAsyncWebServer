@@ -20,7 +20,8 @@ namespace
 struct Buf
 {
     char *o;
-    size_t cap, n;
+    size_t cap;
+    size_t n;
     bool ok;
 };
 

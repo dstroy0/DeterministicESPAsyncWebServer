@@ -15,7 +15,8 @@
 // Append one octet's escaped form to buf[pos..cap); advance pos. Returns false on overflow.
 static bool emit_escaped(char *buf, size_t cap, size_t *pos, char c)
 {
-    char e0 = '\\', e1;
+    char e0 = '\\';
+    char e1;
     switch (c)
     {
     case '\r':

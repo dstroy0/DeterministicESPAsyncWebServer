@@ -116,7 +116,12 @@ bool wal_store_mount(WalStore *s, const WalDev *dev)
     s->data_off = WAL_DATA_OFFSET;
     s->data_cap = dev->size - WAL_DATA_OFFSET;
 
-    uint64_t genA = 0, headA = 0, seqA = 0, genB = 0, headB = 0, seqB = 0;
+    uint64_t genA = 0;
+    uint64_t headA = 0;
+    uint64_t seqA = 0;
+    uint64_t genB = 0;
+    uint64_t headB = 0;
+    uint64_t seqB = 0;
     bool okA = read_super(s, 0, genA, headA, seqA);
     bool okB = read_super(s, 1, genB, headB, seqB);
     if (!okA && !okB)
