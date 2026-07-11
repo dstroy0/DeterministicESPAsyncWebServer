@@ -490,10 +490,10 @@
     "ram_bytes": 44928
   },
   "SSH": {
-    "example": "L5-Session/03.SSHHostKey",
+    "example": "L5-Session/01.SSH",
     "flags": "-DDETWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 820949,
+    "flash_bytes": 821629,
     "ram_bytes": 88308
   },
   "STATS": {
@@ -546,11 +546,11 @@
     "ram_bytes": 22616
   },
   "TLS": {
-    "example": "L6-Presentation/07.SecureWebSocket",
+    "example": "L4-Transport/03.HTTPS",
     "flags": "-DDETWS_ENABLE_TLS=1",
     "board": "esp32dev",
-    "flash_bytes": 855097,
-    "ram_bytes": 116900
+    "flash_bytes": 855261,
+    "ram_bytes": 116892
   },
   "TLS+MTLS": {
     "example": "L4-Transport/04.mTLS",
