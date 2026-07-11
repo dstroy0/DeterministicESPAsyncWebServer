@@ -11,6 +11,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- rebuild only the examples a diff touches (ESP32 + Arduino) ([`4f4ca24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f4ca24695c5b6d635f4d7adb03325d569422685))
+- update CHANGELOG.md [skip ci] ([`52fb75f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/52fb75fd5e6c727a9d14d00604ddcd71aaeb7a30))
 - make whole-tree clang-format arg-safe (xargs, no 894-file argv) ([`c9ce949`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c9ce949644c4bc6f3ea396e009cf7fd01b60316a))
 - clang-format the whole tree in pre-commit + fix snmp_agent.h drift ([`578d413`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/578d4138fae3b14911c156914493f73257601907))
 - update test report + coverage [skip ci] ([`24b485c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24b485ccf27a46205e560babc0cb0863090ccfdd))
@@ -40,6 +42,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7b77adf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7b77adfd5e7bdf6c721d37f39230a4650973d78f))
+- update ESP32 build footprints [skip ci] ([`a7dd48e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7dd48e7c786d670227ce2829d2e5c78b94d1db2))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a6ff2e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6ff2e0be8d7fac1cf1e10c3881b385732d6dc50))
 - update ESP32 build footprints [skip ci] ([`a316a36`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a316a3602a778f8d7a54421953d6c4b8e9b5bd48))
 - update ESP32 build footprints [skip ci] ([`1891e60`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1891e60f32fa73c27223baccc1046bc4f8271aa0))
