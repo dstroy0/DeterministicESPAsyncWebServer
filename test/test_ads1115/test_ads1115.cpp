@@ -20,11 +20,14 @@ void tearDown()
 void test_config_word()
 {
     // ch0, +/-4.096V, 128 SPS: OS|MUX_AIN0|PGA1|MODE_SINGLE|DR128|COMP_DISABLE.
-    TEST_ASSERT_EQUAL_HEX16(0xC383, ads1115_config_single(0, ADS1115_GAIN_1, ADS1115_DR_128));
+    TEST_ASSERT_EQUAL_HEX16(0xC383,
+                            ads1115_config_single(0, Ads1115Gain::ADS1115_GAIN_1, Ads1115DataRate::ADS1115_DR_128));
     // ch3, +/-6.144V, 860 SPS.
-    TEST_ASSERT_EQUAL_HEX16(0xF1E3, ads1115_config_single(3, ADS1115_GAIN_TWOTHIRDS, ADS1115_DR_860));
+    TEST_ASSERT_EQUAL_HEX16(
+        0xF1E3, ads1115_config_single(3, Ads1115Gain::ADS1115_GAIN_TWOTHIRDS, Ads1115DataRate::ADS1115_DR_860));
     // ch1, +/-0.256V (gain 16), 8 SPS: OS|MUX_AIN1(0x5000)|PGA16(0x0A00)|MODE|DR8(0)|COMP.
-    TEST_ASSERT_EQUAL_HEX16(0xDB03, ads1115_config_single(1, ADS1115_GAIN_16, ADS1115_DR_8));
+    TEST_ASSERT_EQUAL_HEX16(0xDB03,
+                            ads1115_config_single(1, Ads1115Gain::ADS1115_GAIN_16, Ads1115DataRate::ADS1115_DR_8));
 }
 
 void test_config_fallbacks()
@@ -36,20 +39,20 @@ void test_config_fallbacks()
 void test_raw_to_uv()
 {
     // gain 1 (+/-4.096 V) -> 125 uV/LSB.
-    TEST_ASSERT_EQUAL_INT32(4095875, ads1115_raw_to_uv(32767, ADS1115_GAIN_1));   // near +full-scale
-    TEST_ASSERT_EQUAL_INT32(-4096000, ads1115_raw_to_uv(-32768, ADS1115_GAIN_1)); // -full-scale
-    TEST_ASSERT_EQUAL_INT32(0, ads1115_raw_to_uv(0, ADS1115_GAIN_1));
+    TEST_ASSERT_EQUAL_INT32(4095875, ads1115_raw_to_uv(32767, Ads1115Gain::ADS1115_GAIN_1));   // near +full-scale
+    TEST_ASSERT_EQUAL_INT32(-4096000, ads1115_raw_to_uv(-32768, Ads1115Gain::ADS1115_GAIN_1)); // -full-scale
+    TEST_ASSERT_EQUAL_INT32(0, ads1115_raw_to_uv(0, Ads1115Gain::ADS1115_GAIN_1));
     // gain 2 (+/-2.048 V): half-scale count -> 1.024 V.
-    TEST_ASSERT_EQUAL_INT32(1024000, ads1115_raw_to_uv(16384, ADS1115_GAIN_2));
+    TEST_ASSERT_EQUAL_INT32(1024000, ads1115_raw_to_uv(16384, Ads1115Gain::ADS1115_GAIN_2));
     // gain 2/3 (+/-6.144 V): 187.5 uV/LSB, negative sample.
-    TEST_ASSERT_EQUAL_INT32(-1536000, ads1115_raw_to_uv(-8192, ADS1115_GAIN_TWOTHIRDS));
+    TEST_ASSERT_EQUAL_INT32(-1536000, ads1115_raw_to_uv(-8192, Ads1115Gain::ADS1115_GAIN_TWOTHIRDS));
 }
 
 void test_raw_to_uv_gain_clamp()
 {
     // An out-of-range gain code clamps to GAIN_2 (its FSR), so the conversion never indexes past the
     // FSR table.
-    TEST_ASSERT_EQUAL_INT32(ads1115_raw_to_uv(16384, ADS1115_GAIN_2), ads1115_raw_to_uv(16384, 99));
+    TEST_ASSERT_EQUAL_INT32(ads1115_raw_to_uv(16384, Ads1115Gain::ADS1115_GAIN_2), ads1115_raw_to_uv(16384, 99));
 }
 
 void test_host_i2c_stubs_fail_closed()
@@ -57,9 +60,9 @@ void test_host_i2c_stubs_fail_closed()
     // On a host build there is no I2C: begin and both reads fail closed (false).
     TEST_ASSERT_FALSE(ads1115_begin(0x48));
     int16_t raw = 0;
-    TEST_ASSERT_FALSE(ads1115_read_raw(0, ADS1115_GAIN_2, &raw));
+    TEST_ASSERT_FALSE(ads1115_read_raw(0, Ads1115Gain::ADS1115_GAIN_2, &raw));
     int32_t uv = 0;
-    TEST_ASSERT_FALSE(ads1115_read_uv(0, ADS1115_GAIN_2, &uv));
+    TEST_ASSERT_FALSE(ads1115_read_uv(0, Ads1115Gain::ADS1115_GAIN_2, &uv));
 }
 
 int main()

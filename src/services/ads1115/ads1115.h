@@ -31,28 +31,29 @@
 #define ADS1115_REG_CONVERSION 0x00 ///< conversion result register
 #define ADS1115_REG_CONFIG 0x01     ///< configuration register
 
-/** @brief Programmable-gain settings (full-scale +/- range). */
-enum
+/** @brief Programmable-gain settings (PGA register codes; full-scale +/- range). Config field values
+ *  shifted into the config word, so integer constants in a namespacing struct - cast-free. */
+struct Ads1115Gain
 {
-    ADS1115_GAIN_TWOTHIRDS = 0, ///< +/- 6.144 V
-    ADS1115_GAIN_1,             ///< +/- 4.096 V
-    ADS1115_GAIN_2,             ///< +/- 2.048 V (default)
-    ADS1115_GAIN_4,             ///< +/- 1.024 V
-    ADS1115_GAIN_8,             ///< +/- 0.512 V
-    ADS1115_GAIN_16,            ///< +/- 0.256 V
+    static constexpr uint8_t ADS1115_GAIN_TWOTHIRDS = 0; ///< +/- 6.144 V
+    static constexpr uint8_t ADS1115_GAIN_1 = 1;         ///< +/- 4.096 V
+    static constexpr uint8_t ADS1115_GAIN_2 = 2;         ///< +/- 2.048 V (default)
+    static constexpr uint8_t ADS1115_GAIN_4 = 3;         ///< +/- 1.024 V
+    static constexpr uint8_t ADS1115_GAIN_8 = 4;         ///< +/- 0.512 V
+    static constexpr uint8_t ADS1115_GAIN_16 = 5;        ///< +/- 0.256 V
 };
 
-/** @brief Data-rate settings (samples per second). */
-enum
+/** @brief Data-rate settings (DR register codes; samples per second). */
+struct Ads1115DataRate
 {
-    ADS1115_DR_8 = 0, ///< 8 SPS
-    ADS1115_DR_16,    ///< 16 SPS
-    ADS1115_DR_32,    ///< 32 SPS
-    ADS1115_DR_64,    ///< 64 SPS
-    ADS1115_DR_128,   ///< 128 SPS (default)
-    ADS1115_DR_250,   ///< 250 SPS
-    ADS1115_DR_475,   ///< 475 SPS
-    ADS1115_DR_860,   ///< 860 SPS
+    static constexpr uint8_t ADS1115_DR_8 = 0;   ///< 8 SPS
+    static constexpr uint8_t ADS1115_DR_16 = 1;  ///< 16 SPS
+    static constexpr uint8_t ADS1115_DR_32 = 2;  ///< 32 SPS
+    static constexpr uint8_t ADS1115_DR_64 = 3;  ///< 64 SPS
+    static constexpr uint8_t ADS1115_DR_128 = 4; ///< 128 SPS (default)
+    static constexpr uint8_t ADS1115_DR_250 = 5; ///< 250 SPS
+    static constexpr uint8_t ADS1115_DR_475 = 6; ///< 475 SPS
+    static constexpr uint8_t ADS1115_DR_860 = 7; ///< 860 SPS
 };
 
 /**
