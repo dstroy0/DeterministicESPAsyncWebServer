@@ -224,7 +224,7 @@ bool parse_value(Lex &L, DetwsGqlValue *v)
         double fval = 0.0;
         while (L.p < L.e && *L.p >= '0' && *L.p <= '9')
         {
-            ipart = ipart * 10ull + (unsigned)(*L.p - '0');
+            ipart = ipart * 10ULL + (unsigned)(*L.p - '0');
             L.p++;
             any = true;
         }

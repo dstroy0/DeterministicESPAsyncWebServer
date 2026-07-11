@@ -93,7 +93,7 @@ static bool parse_int(const uint8_t *buf, size_t from, size_t end, int64_t *out)
             return false;
         v = v * 10u + (uint64_t)(buf[i] - '0');
     }
-    *out = neg ? (int64_t)(0ull - v) : (int64_t)v; // two's-complement reinterpret, no negation UB
+    *out = neg ? (int64_t)(0ULL - v) : (int64_t)v; // two's-complement reinterpret, no negation UB
     return true;
 }
 

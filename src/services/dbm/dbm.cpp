@@ -41,11 +41,11 @@ uint32_t get_u32(const uint8_t *p)
 // FNV-1a 64-bit over the key.
 uint64_t key_hash(const char *key, uint16_t len)
 {
-    uint64_t h = 0xcbf29ce484222325ull;
+    uint64_t h = 0xcbf29ce484222325ULL;
     for (uint16_t i = 0; i < len; i++)
     {
         h ^= (uint8_t)key[i];
-        h *= 0x100000001b3ull;
+        h *= 0x100000001b3ULL;
     }
     return h;
 }

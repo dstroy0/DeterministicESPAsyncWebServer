@@ -286,8 +286,8 @@ int64_t sqlite_column_int(uint64_t serial_type, const uint8_t *val, uint32_t val
     for (size_t i = 0; i < nbytes; i++)
         u = (u << 8) | val[i];
     size_t bits = nbytes * 8;
-    if (bits < 64 && (u & (1ull << (bits - 1))))
-        u |= ~((1ull << bits) - 1); // sign-extend from the stored width
+    if (bits < 64 && (u & (1ULL << (bits - 1))))
+        u |= ~((1ULL << bits) - 1); // sign-extend from the stored width
     return (int64_t)u;
 }
 

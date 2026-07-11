@@ -91,9 +91,12 @@ uint8_t detws_radio_ps_get(void)
 }
 void detws_radio_busy_hold(void)
 {
+    // no-op on the host build: there is no radio to keep awake (the ESP32 branch above holds the
+    // modem-sleep refcount).
 }
 void detws_radio_busy_release(void)
 {
+    // no-op on the host build (see detws_radio_busy_hold).
 }
 
 #endif // ARDUINO
