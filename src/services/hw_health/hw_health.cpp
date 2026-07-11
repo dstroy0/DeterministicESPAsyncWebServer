@@ -24,23 +24,23 @@ void detws_hwhealth_rail_init(HwRailMonitor *m, uint32_t nominal_mv, uint32_t wa
     m->brownout_events = 0;
 }
 
-int detws_hwhealth_rail_sample(HwRailMonitor *m, uint32_t mv)
+HwRailVerdict detws_hwhealth_rail_sample(HwRailMonitor *m, uint32_t mv)
 {
     if (!m)
-        return HW_RAIL_OK;
+        return HwRailVerdict::HW_RAIL_OK;
     if (mv < m->min_mv)
         m->min_mv = mv;
     if (mv < m->crit_mv)
     {
         m->brownout_events++;
-        return HW_RAIL_BROWNOUT;
+        return HwRailVerdict::HW_RAIL_BROWNOUT;
     }
     if (mv < m->warn_mv)
     {
         m->sag_events++;
-        return HW_RAIL_SAG;
+        return HwRailVerdict::HW_RAIL_SAG;
     }
-    return HW_RAIL_OK;
+    return HwRailVerdict::HW_RAIL_OK;
 }
 
 namespace
@@ -154,28 +154,28 @@ uint32_t detws_hwhealth_spi_result(HwSpiBackoff *s, bool crc_ok)
     return s->hz;
 }
 
-int detws_hwhealth_gpio_short(bool driven_high, bool read_high)
+HwGpioVerdict detws_hwhealth_gpio_short(bool driven_high, bool read_high)
 {
     if (driven_high && !read_high)
-        return HW_GPIO_SHORT_GND;
+        return HwGpioVerdict::HW_GPIO_SHORT_GND;
     if (!driven_high && read_high)
-        return HW_GPIO_SHORT_VCC;
-    return HW_GPIO_OK;
+        return HwGpioVerdict::HW_GPIO_SHORT_VCC;
+    return HwGpioVerdict::HW_GPIO_OK;
 }
 
-int detws_hwhealth_cap_leak(uint32_t measured_ms, uint32_t expected_ms, uint8_t tol_pct)
+HwCapVerdict detws_hwhealth_cap_leak(uint32_t measured_ms, uint32_t expected_ms, uint8_t tol_pct)
 {
     if (expected_ms == 0)
-        return HW_CAP_OK;
+        return HwCapVerdict::HW_CAP_OK;
     // Tolerance band around expected, computed in 64-bit to avoid overflow.
     uint64_t band = (uint64_t)expected_ms * tol_pct / 100;
     uint64_t lo = (uint64_t)expected_ms > band ? (uint64_t)expected_ms - band : 0;
     uint64_t hi = (uint64_t)expected_ms + band;
     if (measured_ms < lo)
-        return HW_CAP_LEAK; // discharges too fast
+        return HwCapVerdict::HW_CAP_LEAK; // discharges too fast
     if (measured_ms > hi)
-        return HW_CAP_HIGH_ESR; // discharges too slow
-    return HW_CAP_OK;
+        return HwCapVerdict::HW_CAP_HIGH_ESR; // discharges too slow
+    return HwCapVerdict::HW_CAP_OK;
 }
 
 #endif // DETWS_ENABLE_HW_HEALTH
