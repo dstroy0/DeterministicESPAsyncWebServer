@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`bdc4c90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdc4c9001b6601365316ead7d0e85b3bdd05a29a))
 - update CHANGELOG.md [skip ci] ([`9db579d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9db579d70cee971236caf8a49dc88113bf8f30aa))
 - update CHANGELOG.md [skip ci] ([`5f35f04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f35f04ace1b4b21cad89ccad67f23378f4010f8))
 - update test report + coverage [skip ci] ([`199b9e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/199b9e843605c6dce7f9a7102c5200f20bd3e149))
@@ -13,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- OPC-UA done on all three dimensions (+9 attack families) ([`43d4f25`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/43d4f25cd3a143c6852ed6b7e11bc98a0502ea9f))
 - SNMP done on all three dimensions (+8 attack families) ([`3973154`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3973154447599ad92c0d78446e0b42934fa829fd))
 - CoAP done on all three dimensions (interop 9/~50, +7 attack families) ([`cc74050`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc740500f99fe53bce98d484835adb9df592000a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0c195ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c195ee8280c342cdb9b5d556576369f28a0f38f))
@@ -22,12 +24,15 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- OPC UA Binary codec bench (host + device) ([`dab3255`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dab32556e3ed401941d5e7f647c885b8e060d9cd))
 - SNMP v1/v2c agent codec bench (host + device) ([`6a1ab11`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a1ab11804dcba16ab28b97665f55502dc951fc8))
 - CoAP server codec bench (host + device) ([`06c1b66`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/06c1b660dffe4c2a7b356714d321a21889030fa2))
 - 207 Multi-Status builder bench (host + device) ([`f0e9d3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0e9d3c723f3b466398907270eda5a7466db986b))
 
 ### Testing
 
+- advanced OPC UA attacks (Hello buffer abuse, UACP abuse, chunk flood) ([`ecf8bb3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ecf8bb31e8fa661d6a03c081ac30a9e5c3364ded))
+- OPC UA Binary server (TCP/4840) + /bench handshake op ([`0d4ebd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d4ebd658f3a1378cd22fa5d9b384f74c43d20c4))
 - advanced SNMP attacks (GETBULK amplification, BER abuse, varbind flood) ([`73c8c87`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/73c8c8799643cc14bbecbf28440814ea46cb6964))
 - SNMP v1/v2c agent (UDP/161) + /bench snmp_process op ([`10595fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/10595fe789295844cfe07e742da4b6ce3e0a926b))
 - advanced CoAP attacks (option abuse, block bomb, observe flood) ([`7ba931a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ba931aa927e560832dfb942dbc2f416052cefea))
