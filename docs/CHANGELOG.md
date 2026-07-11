@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`8754361`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8754361a7b3ecba32f55ee91476f0c989e0e911c))
 - update CHANGELOG.md [skip ci] ([`6a8e6c7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a8e6c74ccc4e75b8525dc4d2a3d9649a6796ae5))
 - update CHANGELOG.md [skip ci] ([`ff78e38`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff78e38fb537060e18c2a8f9f3b5b8fbb850e2e1))
 - update CHANGELOG.md [skip ci] ([`bfbd635`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfbd6358305a84f7e4a0325f11dca2b33d1fa3d4))
@@ -32,6 +33,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- jwt_forgery - alg-confusion / forgery immunity proof ([`6c9553c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c9553c68bb8c07a6ff7863fecf37653072270a5))
 - statsd_injection - metric-forging + oversized bound at a UDP collector ([`7fbec50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7fbec50264e90a03cc23d362bbce4e911b89bab0))
 - stomp_malicious_broker - abuse the client's frame parser ([`a8f3091`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a8f3091180334eabfd7bfeeeec5f1fcbc2e8d806))
 - nats_malicious_server - abuse the client's INFO/MSG parser ([`fc5f7fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc5f7fbc33e322baf63264e75dd1bf1173fa54a1))
@@ -43,6 +45,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- JWT interop/bench/attack coverage + PSRAM boards now available ([`21c2aa6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/21c2aa633462af50e50b7daa94001407fe444e5c))
 - StatsD interop/bench/attack coverage + metric-forging note ([`2e532af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2e532af5704a866af85508ea6ad57b71cb297c60))
 - STOMP interop/bench/attack coverage (2nd of the messaging family) ([`1d65926`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1d65926002ab10ebf27c79676db69df2a1f2243e))
 - NATS interop/bench/attack coverage (first of the messaging family) ([`94ecb2d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/94ecb2da6b798ec90f49cc6da3a558ad7f43f7f0))
@@ -67,6 +70,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- host microbench for JWT HS256 verification ([`18fcee5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/18fcee51eabef7632163aa0d10766fcfb7f1c50a))
 - host microbench for the StatsD metrics formatter ([`739f0be`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/739f0be31474d541bed33960755f76fe59ae9225))
 - host microbench for the STOMP 1.2 frame codec ([`c496c5e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c496c5e8c686df3a81b1aedf1d68e6bbd18b0a12))
 - host microbench for the NATS client codec ([`93c5586`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93c5586eae0de7361a57b75ac6640c6e2140735b))
@@ -86,6 +90,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- JWT verifier peer via the real PyJWT library ([`0e16af9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e16af9eadc52f4bf37c19816cc49d84ad49ccda))
+- device-as-server JWT HS256 /jwt/verify route + jwt_verify bench ([`3202158`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32021583be2736b1cc504139215e635be7114b61))
 - StatsD device-as-client peer (stdlib UDP collector) ([`131238b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/131238b9c3662dc84474dbeeca85c16788eb4b7f))
 - device-as-StatsD-client /statsd/probe route + statsd_format bench ([`4068f41`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4068f419983d5ebb5099a57e3ddaaca0b158510c))
 - STOMP device-as-client peer (stdlib spec STOMP 1.2 broker) ([`1212cf2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1212cf2566323d591b2ae79f10a055a537010394))
