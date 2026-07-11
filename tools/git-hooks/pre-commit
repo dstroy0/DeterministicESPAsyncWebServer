@@ -26,12 +26,11 @@ staged() { git diff --cached --name-only --diff-filter=ACM -- "$@" 2>/dev/null |
 # failing CI on unrelated commits. Formatting the whole set here and staging only the files
 # clang-format actually modified keeps a clean tree focused while guaranteeing CI stays green.
 if command -v clang-format >/dev/null 2>&1; then
-    mapfile -t CF < <(git ls-files '*.cpp' '*.h' '*.hpp' '*.cc' '*.ino' | grep -v '/build_opt\.h$')
-    if [ "${#CF[@]}" -gt 0 ]; then
-        printf '%s\0' "${CF[@]}" | xargs -0 -P4 -n40 clang-format -i --style=file
-        mapfile -t CFCHG < <(git diff --name-only -- "${CF[@]}")
-        [ "${#CFCHG[@]}" -gt 0 ] && git add -- "${CFCHG[@]}"
-    fi
+    git ls-files '*.cpp' '*.h' '*.hpp' '*.cc' '*.ino' | grep -v '/build_opt\.h$' |
+        xargs -d '\n' -P4 -n40 clang-format -i --style=file
+    # Stage only the C/C++/.ino files clang-format actually changed (no giant arg list -> git).
+    git diff --name-only --diff-filter=ACM | grep -E '\.(cpp|h|hpp|cc|ino)$' | grep -v '/build_opt\.h$' |
+        xargs -d '\n' -r git add --
 fi
 
 # 2) black (the default Python formatter; line-length from pyproject.toml)
