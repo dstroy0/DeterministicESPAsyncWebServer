@@ -479,6 +479,26 @@ The text pub/sub codec a device uses to talk to a NATS server: `nats_build_pub` 
   PUB delivered to an independent subscriber through the broker); the `nats_malicious_server` attack held all
   10 malformed-frame personalities.
 
+### STOMP 1.2 frame codec (DETWS_ENABLE_STOMP)
+
+The STOMP 1.2 frame codec a device uses to talk to a message broker: `stomp_build_frame` (emit a
+SEND/SUBSCRIBE) and `stomp_parse_frame` (decode one inbound frame - command + headers + content-length body,
+the untrusted-input hot op). Both pure. Host from [`perf/bench_stomp.cpp`](../perf/bench_stomp.cpp); device
+from the rig `/bench` `stomp_parse_frame` op.
+
+| Operation           | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------------- | ---------: | --------: | --------------: | -------------: |
+| `stomp_build_frame` |      117.1 |     597.8 |               - |              - |
+| `stomp_parse_frame` |      136.3 |     755.5 |            2314 |           9641 |
+
+- `stomp_parse_frame` decodes one frame per call at **~9.6 us** on the device (scan the command + header
+  lines, then take the body by `content-length` - which is bounded against the buffer: `cur + content_length
+    > = len`returns "need more" and a length that does not land on the terminating NUL is rejected, so a
+content-length lie can never over-read; header count is capped at`DETWS_STOMP_MAX_HEADERS`). Building a
+frame escapes the header octets. HW-verified device-as-STOMP-client against an independent STOMP 1.2 broker
+(7/7 interop: CONNECT/SUBSCRIBE/SEND and the SEND captured server-side); the `stomp_malicious_broker` attack
+    > held all 10 malformed-frame personalities.
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON
