@@ -21,9 +21,9 @@ H3Stream *h3_stream_get(H3Conn *h3, uint64_t id, bool create)
     H3Stream *free_slot = nullptr;
     for (size_t i = 0; i < DETWS_H3_MAX_STREAMS; i++)
     {
-        if (h3->streams[i].role != H3_ROLE_FREE && h3->streams[i].id == id)
+        if (h3->streams[i].role != H3StreamRole::H3_ROLE_FREE && h3->streams[i].id == id)
             return &h3->streams[i];
-        if (!free_slot && h3->streams[i].role == H3_ROLE_FREE)
+        if (!free_slot && h3->streams[i].role == H3StreamRole::H3_ROLE_FREE)
             free_slot = &h3->streams[i];
     }
     if (!create || !free_slot)
@@ -76,13 +76,13 @@ void dispatch_request(H3Conn *h3, H3Stream *st)
         if (payload + fr.length > st->buf_len)
             break; // incomplete frame
         const uint8_t *fp = st->buf + payload;
-        if (fr.type == H3_HEADERS)
+        if (fr.type == H3FrameType::H3_HEADERS)
         {
             ReqEmit e = {st};
             qpack_decode(fp, (size_t)fr.length, scratch, sizeof(scratch), req_emit, &e);
             st->have_headers = true;
         }
-        else if (fr.type == H3_DATA)
+        else if (fr.type == H3FrameType::H3_DATA)
         {
             // Copy only while there is room left in body. Nesting under body_len < sizeof(body) makes the
             // bound explicit: room = sizeof(body) - body_len is a positive value (no underflow), and take
@@ -120,13 +120,13 @@ void on_stream_data(void *app, QuicConn *, uint64_t stream_id, const uint8_t *da
     if (!st)
         return;
 
-    if (st->role == H3_ROLE_FREE)
-        st->role = (stream_id & 0x03) == 0x00 ? H3_ROLE_REQUEST : H3_ROLE_OTHER_UNI;
+    if (st->role == H3StreamRole::H3_ROLE_FREE)
+        st->role = (stream_id & 0x03) == 0x00 ? H3StreamRole::H3_ROLE_REQUEST : H3StreamRole::H3_ROLE_OTHER_UNI;
 
     append(st, data, len);
 
     // A unidirectional stream begins with a stream-type varint; classify it once.
-    if (st->role != H3_ROLE_REQUEST && !st->type_read && st->buf_len >= 1)
+    if (st->role != H3StreamRole::H3_ROLE_REQUEST && !st->type_read && st->buf_len >= 1)
     {
         uint64_t type = 0;
         size_t c = 0;
@@ -134,18 +134,18 @@ void on_stream_data(void *app, QuicConn *, uint64_t stream_id, const uint8_t *da
             return; // need more bytes for the varint
         st->type_read = true;
         if (type == 0x00)
-            st->role = H3_ROLE_CONTROL;
+            st->role = H3StreamRole::H3_ROLE_CONTROL;
         else if (type == 0x02)
-            st->role = H3_ROLE_QPACK_ENC;
+            st->role = H3StreamRole::H3_ROLE_QPACK_ENC;
         else if (type == 0x03)
-            st->role = H3_ROLE_QPACK_DEC;
+            st->role = H3StreamRole::H3_ROLE_QPACK_DEC;
         else
-            st->role = H3_ROLE_OTHER_UNI;
+            st->role = H3StreamRole::H3_ROLE_OTHER_UNI;
         memmove(st->buf, st->buf + c, st->buf_len - c);
         st->buf_len -= c;
     }
 
-    if (st->role == H3_ROLE_CONTROL)
+    if (st->role == H3StreamRole::H3_ROLE_CONTROL)
     {
         // The control stream carries SETTINGS first; parse whatever complete frames we have.
         size_t off = 0;
@@ -156,7 +156,7 @@ void on_stream_data(void *app, QuicConn *, uint64_t stream_id, const uint8_t *da
                 break;
             if (off + fr.header_len + fr.length > st->buf_len)
                 break;
-            if (fr.type == H3_SETTINGS)
+            if (fr.type == H3FrameType::H3_SETTINGS)
             {
                 h3_settings_defaults(&h3->peer_settings);
                 h3_parse_settings(st->buf + off + fr.header_len, (size_t)fr.length, &h3->peer_settings);
@@ -167,7 +167,7 @@ void on_stream_data(void *app, QuicConn *, uint64_t stream_id, const uint8_t *da
         st->buf_len -= off;
         return;
     }
-    if (st->role != H3_ROLE_REQUEST)
+    if (st->role != H3StreamRole::H3_ROLE_REQUEST)
     {
         st->buf_len = 0; // QPACK/other uni streams: nothing to do (static-table only)
         return;
@@ -187,7 +187,8 @@ void on_handshake_done(void *app, QuicConn *qc)
     // Server control stream (id 3): stream type 0x00 + SETTINGS.
     uint8_t buf[64];
     size_t p = quic_varint_encode(buf, sizeof(buf), 0x00);
-    const uint64_t ids[] = {H3_SETTINGS_QPACK_MAX_TABLE_CAPACITY, H3_SETTINGS_QPACK_BLOCKED_STREAMS};
+    const uint64_t ids[] = {H3Setting::H3_SETTINGS_QPACK_MAX_TABLE_CAPACITY,
+                            H3Setting::H3_SETTINGS_QPACK_BLOCKED_STREAMS};
     const uint64_t vals[] = {0, 0};
     p += h3_build_settings(buf + p, sizeof(buf) - p, ids, vals, 2);
     quic_conn_stream_send(qc, 3, buf, p, false);

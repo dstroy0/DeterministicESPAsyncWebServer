@@ -62,7 +62,7 @@ static QuicStream *find_stream(QuicConn *qc, uint64_t id)
 static H3Stream *find_h3(H3Conn *h3, uint64_t id)
 {
     for (size_t i = 0; i < DETWS_H3_MAX_STREAMS; i++)
-        if (h3->streams[i].role != H3_ROLE_FREE && h3->streams[i].id == id)
+        if (h3->streams[i].role != H3StreamRole::H3_ROLE_FREE && h3->streams[i].id == id)
             return &h3->streams[i];
     return nullptr;
 }
@@ -124,12 +124,12 @@ void test_request_dispatch_and_response()
         H3Frame fr;
         TEST_ASSERT_TRUE(h3_frame_parse(st->tx + off, st->tx_have - off, &fr));
         const uint8_t *fp = st->tx + off + fr.header_len;
-        if (fr.type == H3_HEADERS)
+        if (fr.type == H3FrameType::H3_HEADERS)
         {
             qpack_decode(fp, (size_t)fr.length, scratch, sizeof(scratch), resp_emit, nullptr);
             saw_headers = true;
         }
-        else if (fr.type == H3_DATA)
+        else if (fr.type == H3FrameType::H3_DATA)
         {
             TEST_ASSERT_EQUAL_UINT(5, (size_t)fr.length);
             TEST_ASSERT_EQUAL_UINT8_ARRAY("hello", fp, 5);
@@ -185,7 +185,7 @@ void test_control_stream_settings_sent()
     TEST_ASSERT_EQUAL_UINT64(0x00, type);
     H3Frame fr;
     TEST_ASSERT_TRUE(h3_frame_parse(ctrl->tx + c, ctrl->tx_have - c, &fr));
-    TEST_ASSERT_EQUAL_UINT64(H3_SETTINGS, fr.type);
+    TEST_ASSERT_EQUAL_UINT64(H3FrameType::H3_SETTINGS, fr.type);
     // QPACK encoder (7) and decoder (11) streams exist with their type bytes.
     TEST_ASSERT_NOT_NULL(find_stream(&qc, 7));
     TEST_ASSERT_NOT_NULL(find_stream(&qc, 11));
@@ -202,14 +202,14 @@ void test_client_control_stream_settings()
 
     uint8_t s[64];
     size_t sp = quic_varint_encode(s, sizeof(s), 0x00); // control stream type
-    const uint64_t ids[] = {H3_SETTINGS_MAX_FIELD_SECTION_SIZE};
+    const uint64_t ids[] = {H3Setting::H3_SETTINGS_MAX_FIELD_SECTION_SIZE};
     const uint64_t vals[] = {12345};
     sp += h3_build_settings(s + sp, sizeof(s) - sp, ids, vals, 1);
     qc.cb.on_stream_data(qc.cb.app, &qc, 2, s, sp, false); // client-initiated uni stream (id 2)
 
     H3Stream *st = find_h3(&h3, 2);
     TEST_ASSERT_NOT_NULL(st);
-    TEST_ASSERT_EQUAL_UINT8(H3_ROLE_CONTROL, st->role);
+    TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_CONTROL, st->role);
     TEST_ASSERT_EQUAL_UINT64(12345, h3.peer_settings.max_field_section_size);
 }
 
@@ -230,9 +230,9 @@ void test_client_uni_stream_types()
     n = quic_varint_encode(&t, 1, 0x1f); // an unknown stream type
     qc.cb.on_stream_data(qc.cb.app, &qc, 14, &t, n, false);
 
-    TEST_ASSERT_EQUAL_UINT8(H3_ROLE_QPACK_ENC, find_h3(&h3, 6)->role);
-    TEST_ASSERT_EQUAL_UINT8(H3_ROLE_QPACK_DEC, find_h3(&h3, 10)->role);
-    TEST_ASSERT_EQUAL_UINT8(H3_ROLE_OTHER_UNI, find_h3(&h3, 14)->role);
+    TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_QPACK_ENC, find_h3(&h3, 6)->role);
+    TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_QPACK_DEC, find_h3(&h3, 10)->role);
+    TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_OTHER_UNI, find_h3(&h3, 14)->role);
 }
 
 // on_handshake_done opens the control + QPACK streams exactly once; a repeat call is a no-op.
@@ -262,7 +262,7 @@ void test_malformed_request_frame()
 
     // A HEADERS frame that declares length 9999 but has no payload -> incomplete -> not dispatched.
     uint8_t hdr[8];
-    size_t hp = h3_frame_write_header(hdr, sizeof(hdr), H3_HEADERS, 9999);
+    size_t hp = h3_frame_write_header(hdr, sizeof(hdr), H3FrameType::H3_HEADERS, 9999);
     qc.cb.on_stream_data(qc.cb.app, &qc, 0, hdr, hp, true);
     TEST_ASSERT_EQUAL_INT(0, g_requests);
 
@@ -323,7 +323,7 @@ void test_uni_stream_partial_type()
     uint8_t b1 = 0x00;                             // completes the varint 0x4000 -> value 0 -> control stream
     qc.cb.on_stream_data(qc.cb.app, &qc, 2, &b1, 1, false);
     TEST_ASSERT_TRUE(find_h3(&h3, 2)->type_read);
-    TEST_ASSERT_EQUAL_UINT8(H3_ROLE_CONTROL, find_h3(&h3, 2)->role);
+    TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_CONTROL, find_h3(&h3, 2)->role);
 }
 
 // A pseudo-header longer than its capture buffer is truncated, not overrun.

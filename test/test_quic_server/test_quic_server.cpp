@@ -268,7 +268,7 @@ static bool response_ok(const QuicPacketKeys *ap_s)
                 if (!h3_frame_parse(sp + so, sn - so, &hf))
                     break;
                 const uint8_t *hp = sp + so + hf.header_len;
-                if (hf.type == H3_HEADERS)
+                if (hf.type == H3FrameType::H3_HEADERS)
                 {
                     char sc[128];
                     struct E
@@ -287,7 +287,7 @@ static bool response_ok(const QuicPacketKeys *ap_s)
                         },
                         &e);
                 }
-                else if (hf.type == H3_DATA)
+                else if (hf.type == H3FrameType::H3_DATA)
                 {
                     if (hf.length == 8 && memcmp(hp, "hello h3", 8) == 0)
                         data_ok = true;

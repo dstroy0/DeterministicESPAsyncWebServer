@@ -55,8 +55,8 @@ struct H3Conn;
 typedef void (*H3RequestFn)(void *app, H3Conn *h3, uint64_t stream_id, const char *method, const char *path,
                             const char *authority, const uint8_t *body, size_t body_len);
 
-/** @brief HTTP/3 stream roles. */
-enum
+/** @brief HTTP/3 stream roles (a mutually-exclusive internal role, not a wire value). */
+enum class H3StreamRole : uint8_t
 {
     H3_ROLE_FREE = 0,
     H3_ROLE_REQUEST,   ///< client-initiated bidirectional request stream
@@ -69,10 +69,10 @@ enum
 /** @brief Per-stream HTTP/3 state. */
 struct H3Stream
 {
-    uint64_t id;    ///< stream id (UINT64_MAX = free)
-    uint8_t role;   ///< one of H3_ROLE_*
-    bool type_read; ///< a unidirectional stream's type varint has been consumed
-    bool responded; ///< a response has been sent on this request stream
+    uint64_t id;       ///< stream id (UINT64_MAX = free)
+    H3StreamRole role; ///< stream role
+    bool type_read;    ///< a unidirectional stream's type varint has been consumed
+    bool responded;    ///< a response has been sent on this request stream
     uint8_t buf[DETWS_H3_STREAM_BUF];
     size_t buf_len;
     char method[DETWS_H3_METHOD_LEN];

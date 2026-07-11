@@ -66,13 +66,13 @@ bool h3_parse_settings(const uint8_t *payload, size_t len, H3Settings *s)
         off += c2;
         switch (id)
         {
-        case H3_SETTINGS_QPACK_MAX_TABLE_CAPACITY:
+        case H3Setting::H3_SETTINGS_QPACK_MAX_TABLE_CAPACITY:
             s->qpack_max_table_capacity = val;
             break;
-        case H3_SETTINGS_MAX_FIELD_SECTION_SIZE:
+        case H3Setting::H3_SETTINGS_MAX_FIELD_SECTION_SIZE:
             s->max_field_section_size = val;
             break;
-        case H3_SETTINGS_QPACK_BLOCKED_STREAMS:
+        case H3Setting::H3_SETTINGS_QPACK_BLOCKED_STREAMS:
             s->qpack_blocked_streams = val;
             break;
         case 0x02:
@@ -89,7 +89,7 @@ bool h3_parse_settings(const uint8_t *payload, size_t len, H3Settings *s)
 
 size_t h3_build_data(uint8_t *out, size_t cap, const uint8_t *data, size_t len)
 {
-    size_t hn = h3_frame_write_header(out, cap, H3_DATA, len);
+    size_t hn = h3_frame_write_header(out, cap, H3FrameType::H3_DATA, len);
     if (!hn || hn + len > cap)
         return 0;
     if (len)
@@ -99,7 +99,7 @@ size_t h3_build_data(uint8_t *out, size_t cap, const uint8_t *data, size_t len)
 
 size_t h3_build_headers(uint8_t *out, size_t cap, const uint8_t *block, size_t len)
 {
-    size_t hn = h3_frame_write_header(out, cap, H3_HEADERS, len);
+    size_t hn = h3_frame_write_header(out, cap, H3FrameType::H3_HEADERS, len);
     if (!hn || hn + len > cap)
         return 0;
     if (len)
@@ -112,7 +112,7 @@ size_t h3_build_settings(uint8_t *out, size_t cap, const uint64_t *ids, const ui
     size_t plen = 0;
     for (size_t i = 0; i < n; i++)
         plen += quic_varint_len(ids[i]) + quic_varint_len(vals[i]);
-    size_t o = h3_frame_write_header(out, cap, H3_SETTINGS, plen);
+    size_t o = h3_frame_write_header(out, cap, H3FrameType::H3_SETTINGS, plen);
     if (!o)
         return 0;
     for (size_t i = 0; i < n; i++)
@@ -132,7 +132,7 @@ size_t h3_build_settings(uint8_t *out, size_t cap, const uint64_t *ids, const ui
 size_t h3_build_goaway(uint8_t *out, size_t cap, uint64_t stream_id)
 {
     size_t plen = quic_varint_len(stream_id);
-    size_t o = h3_frame_write_header(out, cap, H3_GOAWAY, plen);
+    size_t o = h3_frame_write_header(out, cap, H3FrameType::H3_GOAWAY, plen);
     if (!o)
         return 0;
     size_t a = quic_varint_encode(out + o, cap - o, stream_id);

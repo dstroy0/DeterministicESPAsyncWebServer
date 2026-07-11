@@ -21,19 +21,19 @@ void test_header_roundtrip()
 {
     uint8_t b[8];
     // SETTINGS(4), length 0 -> two 1-byte varints.
-    TEST_ASSERT_EQUAL_INT(2, (int)h3_frame_write_header(b, sizeof b, H3_SETTINGS, 0));
+    TEST_ASSERT_EQUAL_INT(2, (int)h3_frame_write_header(b, sizeof b, H3FrameType::H3_SETTINGS, 0));
     const uint8_t exp[2] = {0x04, 0x00};
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, b, 2);
     H3Frame f;
     TEST_ASSERT_TRUE(h3_frame_parse(b, 2, &f));
-    TEST_ASSERT_TRUE(f.type == H3_SETTINGS && f.length == 0 && f.header_len == 2);
+    TEST_ASSERT_TRUE(f.type == H3FrameType::H3_SETTINGS && f.length == 0 && f.header_len == 2);
 
     // HEADERS(1), length 1000 -> a 2-byte length varint (0x43E8).
-    TEST_ASSERT_EQUAL_INT(3, (int)h3_frame_write_header(b, sizeof b, H3_HEADERS, 1000));
+    TEST_ASSERT_EQUAL_INT(3, (int)h3_frame_write_header(b, sizeof b, H3FrameType::H3_HEADERS, 1000));
     const uint8_t exp2[3] = {0x01, 0x43, 0xE8};
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp2, b, 3);
     TEST_ASSERT_TRUE(h3_frame_parse(b, 3, &f));
-    TEST_ASSERT_TRUE(f.type == H3_HEADERS && f.length == 1000 && f.header_len == 3);
+    TEST_ASSERT_TRUE(f.type == H3FrameType::H3_HEADERS && f.length == 1000 && f.header_len == 3);
 }
 
 void test_build_data_and_goaway()
@@ -50,7 +50,8 @@ void test_build_data_and_goaway()
 
 void test_settings_roundtrip()
 {
-    const uint64_t ids[2] = {H3_SETTINGS_QPACK_MAX_TABLE_CAPACITY, H3_SETTINGS_MAX_FIELD_SECTION_SIZE};
+    const uint64_t ids[2] = {H3Setting::H3_SETTINGS_QPACK_MAX_TABLE_CAPACITY,
+                             H3Setting::H3_SETTINGS_MAX_FIELD_SECTION_SIZE};
     const uint64_t vals[2] = {4096, 1048576};
     uint8_t b[32];
     size_t n = h3_build_settings(b, sizeof b, ids, vals, 2);
@@ -61,7 +62,7 @@ void test_settings_roundtrip()
 
     H3Frame f;
     TEST_ASSERT_TRUE(h3_frame_parse(b, n, &f));
-    TEST_ASSERT_TRUE(f.type == H3_SETTINGS && f.length == 8);
+    TEST_ASSERT_TRUE(f.type == H3FrameType::H3_SETTINGS && f.length == 8);
     H3Settings s;
     h3_settings_defaults(&s);
     TEST_ASSERT_TRUE(h3_parse_settings(b + f.header_len, (size_t)f.length, &s));
@@ -76,9 +77,9 @@ void test_reserved()
     TEST_ASSERT_TRUE(h3_frame_type_reserved(0x06));
     TEST_ASSERT_TRUE(h3_frame_type_reserved(0x08));
     TEST_ASSERT_TRUE(h3_frame_type_reserved(0x09));
-    TEST_ASSERT_FALSE(h3_frame_type_reserved(H3_DATA));
-    TEST_ASSERT_FALSE(h3_frame_type_reserved(H3_HEADERS));
-    TEST_ASSERT_FALSE(h3_frame_type_reserved(H3_SETTINGS));
+    TEST_ASSERT_FALSE(h3_frame_type_reserved(H3FrameType::H3_DATA));
+    TEST_ASSERT_FALSE(h3_frame_type_reserved(H3FrameType::H3_HEADERS));
+    TEST_ASSERT_FALSE(h3_frame_type_reserved(H3FrameType::H3_SETTINGS));
 
     // A SETTINGS payload using a reserved HTTP/2 settings id (0x02) must be rejected.
     H3Settings s;
@@ -98,7 +99,7 @@ void test_build_headers()
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, b, 4);
     H3Frame f;
     TEST_ASSERT_TRUE(h3_frame_parse(b, n, &f));
-    TEST_ASSERT_TRUE(f.type == H3_HEADERS && f.length == 2);
+    TEST_ASSERT_TRUE(f.type == H3FrameType::H3_HEADERS && f.length == 2);
 }
 
 // Every builder returns 0 when the buffer is too small, and the header writer honors cap.
@@ -106,9 +107,9 @@ void test_builder_overflow()
 {
     uint8_t b[2];
     const uint8_t data[5] = {1, 2, 3, 4, 5};
-    const uint64_t ids[1] = {H3_SETTINGS_QPACK_BLOCKED_STREAMS};
+    const uint64_t ids[1] = {H3Setting::H3_SETTINGS_QPACK_BLOCKED_STREAMS};
     const uint64_t vals[1] = {16};
-    TEST_ASSERT_EQUAL_INT(0, (int)h3_frame_write_header(b, 0, H3_DATA, 0));
+    TEST_ASSERT_EQUAL_INT(0, (int)h3_frame_write_header(b, 0, H3FrameType::H3_DATA, 0));
     TEST_ASSERT_EQUAL_INT(0, (int)h3_build_data(b, 2, data, 5)); // header fits, payload does not
     TEST_ASSERT_EQUAL_INT(0, (int)h3_build_headers(b, 2, data, 5));
     TEST_ASSERT_EQUAL_INT(0, (int)h3_build_settings(b, 1, ids, vals, 1));

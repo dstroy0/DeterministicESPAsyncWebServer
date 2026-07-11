@@ -25,23 +25,23 @@
 #include <stdint.h>
 
 /** @brief HTTP/3 frame types (RFC 9114 sec 7.2 / 11.2.1). */
-enum
+struct H3FrameType
 {
-    H3_DATA = 0x00,
-    H3_HEADERS = 0x01,
-    H3_CANCEL_PUSH = 0x03,
-    H3_SETTINGS = 0x04,
-    H3_PUSH_PROMISE = 0x05,
-    H3_GOAWAY = 0x07,
-    H3_MAX_PUSH_ID = 0x0d,
+    static constexpr uint8_t H3_DATA = 0x00;
+    static constexpr uint8_t H3_HEADERS = 0x01;
+    static constexpr uint8_t H3_CANCEL_PUSH = 0x03;
+    static constexpr uint8_t H3_SETTINGS = 0x04;
+    static constexpr uint8_t H3_PUSH_PROMISE = 0x05;
+    static constexpr uint8_t H3_GOAWAY = 0x07;
+    static constexpr uint8_t H3_MAX_PUSH_ID = 0x0d;
 };
 
 /** @brief SETTINGS parameter identifiers (RFC 9114 sec 7.2.4.1 + RFC 9204). */
-enum
+struct H3Setting
 {
-    H3_SETTINGS_QPACK_MAX_TABLE_CAPACITY = 0x01,
-    H3_SETTINGS_MAX_FIELD_SECTION_SIZE = 0x06,
-    H3_SETTINGS_QPACK_BLOCKED_STREAMS = 0x07,
+    static constexpr uint8_t H3_SETTINGS_QPACK_MAX_TABLE_CAPACITY = 0x01;
+    static constexpr uint8_t H3_SETTINGS_MAX_FIELD_SECTION_SIZE = 0x06;
+    static constexpr uint8_t H3_SETTINGS_QPACK_BLOCKED_STREAMS = 0x07;
 };
 
 /** @brief A parsed frame header (payload begins at buf + header_len). */
