@@ -45,26 +45,26 @@ void test_wsmp_roundtrip(void)
 {
     uint8_t payload[4] = {0xDE, 0xAD, 0xBE, 0xEF};
     uint8_t out[16];
-    size_t n = detws_wsmp_build(WAVE_PSID_BSM, payload, 4, out, sizeof(out));
-    TEST_ASSERT_EQUAL_HEX8(WSMP_VERSION, out[0]);
+    size_t n = detws_wsmp_build(Wave::WAVE_PSID_BSM, payload, 4, out, sizeof(out));
+    TEST_ASSERT_EQUAL_HEX8(Wave::WSMP_VERSION, out[0]);
     WsmpFrame f;
     TEST_ASSERT_TRUE(detws_wsmp_parse(out, n, &f));
-    TEST_ASSERT_EQUAL_UINT32(WAVE_PSID_BSM, f.psid);
+    TEST_ASSERT_EQUAL_UINT32(Wave::WAVE_PSID_BSM, f.psid);
     TEST_ASSERT_EQUAL_size_t(4, f.payload_len);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, f.payload, 4);
 
     // A multi-octet PSID (SPaT).
-    n = detws_wsmp_build(WAVE_PSID_SPAT, payload, 2, out, sizeof(out));
+    n = detws_wsmp_build(Wave::WAVE_PSID_SPAT, payload, 2, out, sizeof(out));
     TEST_ASSERT_TRUE(detws_wsmp_parse(out, n, &f));
-    TEST_ASSERT_EQUAL_UINT32(WAVE_PSID_SPAT, f.psid);
+    TEST_ASSERT_EQUAL_UINT32(Wave::WAVE_PSID_SPAT, f.psid);
 }
 
 void test_1609dot2_wrap(void)
 {
     uint8_t inner[3] = {0x01, 0x02, 0x03};
     uint8_t out[8];
-    size_t n = detws_wave_1609dot2_wrap(WAVE_16092_SIGNED, inner, 3, out, sizeof(out));
-    const uint8_t expect[] = {WAVE_16092_VERSION, WAVE_16092_SIGNED, 0x01, 0x02, 0x03};
+    size_t n = detws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, inner, 3, out, sizeof(out));
+    const uint8_t expect[] = {Wave::WAVE_16092_VERSION, Wave::WAVE_16092_SIGNED, 0x01, 0x02, 0x03};
     TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, n);
 }
@@ -73,8 +73,8 @@ void test_wsmp_parse_rejects(void)
 {
     WsmpFrame f;
     uint8_t bad_ver[3] = {0x00, 0x20, 0x00};
-    TEST_ASSERT_FALSE(detws_wsmp_parse(bad_ver, 3, &f));     // wrong version
-    uint8_t truncated[4] = {WSMP_VERSION, 0x20, 0x05, 0x11}; // len says 5, only 1 present
+    TEST_ASSERT_FALSE(detws_wsmp_parse(bad_ver, 3, &f));           // wrong version
+    uint8_t truncated[4] = {Wave::WSMP_VERSION, 0x20, 0x05, 0x11}; // len says 5, only 1 present
     TEST_ASSERT_FALSE(detws_wsmp_parse(truncated, 4, &f));
 }
 
@@ -125,12 +125,12 @@ void test_wsmp_build_guards(void)
 void test_wsmp_parse_more_guards(void)
 {
     WsmpFrame f;
-    uint8_t two[2] = {WSMP_VERSION, 0x20};
-    TEST_ASSERT_FALSE(detws_wsmp_parse(two, 2, &f));     // len < 3
-    TEST_ASSERT_FALSE(detws_wsmp_parse(nullptr, 3, &f)); // null frame
-    uint8_t bad_psid[3] = {WSMP_VERSION, 0xC1, 0x00};    // 3-octet PSID prefix, only 2 bytes present
+    uint8_t two[2] = {Wave::WSMP_VERSION, 0x20};
+    TEST_ASSERT_FALSE(detws_wsmp_parse(two, 2, &f));        // len < 3
+    TEST_ASSERT_FALSE(detws_wsmp_parse(nullptr, 3, &f));    // null frame
+    uint8_t bad_psid[3] = {Wave::WSMP_VERSION, 0xC1, 0x00}; // 3-octet PSID prefix, only 2 bytes present
     TEST_ASSERT_FALSE(detws_wsmp_parse(bad_psid, 3, &f));
-    uint8_t no_wlen[3] = {WSMP_VERSION, 0x81, 0x00}; // valid 2-octet PSID, no room for the length byte
+    uint8_t no_wlen[3] = {Wave::WSMP_VERSION, 0x81, 0x00}; // valid 2-octet PSID, no room for the length byte
     TEST_ASSERT_FALSE(detws_wsmp_parse(no_wlen, 3, &f));
 }
 
@@ -139,9 +139,9 @@ void test_1609dot2_wrap_guards(void)
 {
     uint8_t out[8];
     uint8_t pl[3] = {1, 2, 3};
-    TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(WAVE_16092_SIGNED, pl, 3, nullptr, sizeof(out)));
-    TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(WAVE_16092_SIGNED, nullptr, 3, out, sizeof(out)));
-    TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(WAVE_16092_SIGNED, pl, 3, out, 4)); // needs 5
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, pl, 3, nullptr, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, nullptr, 3, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, pl, 3, out, 4)); // needs 5
 }
 
 int main(void)

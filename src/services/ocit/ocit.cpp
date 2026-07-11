@@ -34,7 +34,8 @@ size_t detws_ocit_build(uint8_t msg_type, uint16_t object_type, uint16_t instanc
 size_t detws_ocit_set_u16(uint16_t object_type, uint16_t instance, uint16_t value, uint8_t *out, size_t cap)
 {
     uint8_t v[2] = {(uint8_t)(value >> 8), (uint8_t)value};
-    return detws_ocit_build(OCIT_MSG_SET, object_type, instance, OCIT_TYPE_UINT16, v, 2, out, cap);
+    return detws_ocit_build(OcitMsgType::OCIT_MSG_SET, object_type, instance, OcitType::OCIT_TYPE_UINT16, v, 2, out,
+                            cap);
 }
 
 bool detws_ocit_parse(const uint8_t *msg, size_t len, OcitMsg *out)
@@ -52,7 +53,7 @@ bool detws_ocit_parse(const uint8_t *msg, size_t len, OcitMsg *out)
 
 uint16_t detws_ocit_value_u16(const OcitMsg *m)
 {
-    if (!m || m->data_type != OCIT_TYPE_UINT16 || m->value_len < 2 || !m->value)
+    if (!m || m->data_type != OcitType::OCIT_TYPE_UINT16 || m->value_len < 2 || !m->value)
         return 0;
     return (uint16_t)((m->value[0] << 8) | m->value[1]);
 }

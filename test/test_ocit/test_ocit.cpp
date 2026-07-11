@@ -18,7 +18,8 @@ void test_build_and_parse(void)
 {
     uint8_t value[4] = {0x00, 0x00, 0x12, 0x34};
     uint8_t out[16];
-    size_t n = detws_ocit_build(OCIT_MSG_SET, 0x0102, 0x0003, OCIT_TYPE_UINT32, value, 4, out, sizeof(out));
+    size_t n = detws_ocit_build(OcitMsgType::OCIT_MSG_SET, 0x0102, 0x0003, OcitType::OCIT_TYPE_UINT32, value, 4, out,
+                                sizeof(out));
     // [02][01 02][00 03][04][00 00 12 34] = 10 bytes.
     const uint8_t expect[] = {0x02, 0x01, 0x02, 0x00, 0x03, 0x04, 0x00, 0x00, 0x12, 0x34};
     TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);
@@ -26,10 +27,10 @@ void test_build_and_parse(void)
 
     OcitMsg m;
     TEST_ASSERT_TRUE(detws_ocit_parse(out, n, &m));
-    TEST_ASSERT_EQUAL_HEX8(OCIT_MSG_SET, m.msg_type);
+    TEST_ASSERT_EQUAL_HEX8(OcitMsgType::OCIT_MSG_SET, m.msg_type);
     TEST_ASSERT_EQUAL_HEX16(0x0102, m.object_type);
     TEST_ASSERT_EQUAL_HEX16(0x0003, m.instance);
-    TEST_ASSERT_EQUAL_HEX8(OCIT_TYPE_UINT32, m.data_type);
+    TEST_ASSERT_EQUAL_HEX8(OcitType::OCIT_TYPE_UINT32, m.data_type);
     TEST_ASSERT_EQUAL_size_t(4, m.value_len);
 }
 
@@ -40,15 +41,16 @@ void test_set_u16_helper(void)
     TEST_ASSERT_EQUAL_size_t(8, n);
     OcitMsg m;
     TEST_ASSERT_TRUE(detws_ocit_parse(out, n, &m));
-    TEST_ASSERT_EQUAL_HEX8(OCIT_MSG_SET, m.msg_type);
-    TEST_ASSERT_EQUAL_HEX8(OCIT_TYPE_UINT16, m.data_type);
+    TEST_ASSERT_EQUAL_HEX8(OcitMsgType::OCIT_MSG_SET, m.msg_type);
+    TEST_ASSERT_EQUAL_HEX8(OcitType::OCIT_TYPE_UINT16, m.data_type);
     TEST_ASSERT_EQUAL_HEX16(0xBEEF, detws_ocit_value_u16(&m));
 }
 
 void test_get_no_value(void)
 {
     uint8_t out[8];
-    size_t n = detws_ocit_build(OCIT_MSG_GET, 0x0102, 0x0003, OCIT_TYPE_UINT16, nullptr, 0, out, sizeof(out));
+    size_t n = detws_ocit_build(OcitMsgType::OCIT_MSG_GET, 0x0102, 0x0003, OcitType::OCIT_TYPE_UINT16, nullptr, 0, out,
+                                sizeof(out));
     TEST_ASSERT_EQUAL_size_t(6, n);
     OcitMsg m;
     TEST_ASSERT_TRUE(detws_ocit_parse(out, n, &m));

@@ -27,17 +27,18 @@
 
 #if DETWS_ENABLE_RAWL2
 
-enum
+// Ethernet II framing sizes + ethertypes: wire values, so integer constants in a namespacing struct.
+struct RawL2
 {
-    ETH_ALEN = 6,            ///< MAC address length.
-    ETH_HDR_LEN = 14,        ///< dst + src + ethertype.
-    ETH_VLAN_HDR_LEN = 18,   ///< with the 4-octet 802.1Q tag.
-    ETH_TPID_8021Q = 0x8100, ///< 802.1Q tag protocol id.
-    ETHERTYPE_IPV4 = 0x0800,
-    ETHERTYPE_ARP = 0x0806,
-    ETHERTYPE_PROFINET = 0x8892, ///< PROFINET RT / DCP.
-    ETHERTYPE_GOOSE = 0x88B8,    ///< IEC 61850 GOOSE.
-    ETHERTYPE_POWERLINK = 0x88AB
+    static constexpr uint16_t ETH_ALEN = 6;            ///< MAC address length.
+    static constexpr uint16_t ETH_HDR_LEN = 14;        ///< dst + src + ethertype.
+    static constexpr uint16_t ETH_VLAN_HDR_LEN = 18;   ///< with the 4-octet 802.1Q tag.
+    static constexpr uint16_t ETH_TPID_8021Q = 0x8100; ///< 802.1Q tag protocol id.
+    static constexpr uint16_t ETHERTYPE_IPV4 = 0x0800;
+    static constexpr uint16_t ETHERTYPE_ARP = 0x0806;
+    static constexpr uint16_t ETHERTYPE_PROFINET = 0x8892; ///< PROFINET RT / DCP.
+    static constexpr uint16_t ETHERTYPE_GOOSE = 0x88B8;    ///< IEC 61850 GOOSE.
+    static constexpr uint16_t ETHERTYPE_POWERLINK = 0x88AB;
 };
 
 /**

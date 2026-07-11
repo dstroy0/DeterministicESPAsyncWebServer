@@ -27,16 +27,17 @@
 
 #if DETWS_ENABLE_WAVE
 
-enum
+// WSMP / 1609.2 versions + content types + PSIDs: wire values, so integer constants in a struct.
+struct Wave
 {
-    WSMP_VERSION = 0x03,         ///< WSMP version (in the low nibble of byte 0).
-    WAVE_16092_VERSION = 0x03,   ///< 1609.2 protocolVersion.
-    WAVE_16092_UNSECURED = 0x00, ///< content type: unsecuredData.
-    WAVE_16092_SIGNED = 0x01,    ///< content type: signedData.
+    static constexpr uint16_t WSMP_VERSION = 0x03;         ///< WSMP version (in the low nibble of byte 0).
+    static constexpr uint16_t WAVE_16092_VERSION = 0x03;   ///< 1609.2 protocolVersion.
+    static constexpr uint16_t WAVE_16092_UNSECURED = 0x00; ///< content type: unsecuredData.
+    static constexpr uint16_t WAVE_16092_SIGNED = 0x01;    ///< content type: signedData.
     // Common PSIDs (Provider Service Identifiers).
-    WAVE_PSID_BSM = 0x20,    ///< vehicle safety (BSM), PSID 0x20.
-    WAVE_PSID_SPAT = 0x8002, ///< signal phase and timing.
-    WAVE_PSID_MAP = 0x8003   ///< map data.
+    static constexpr uint16_t WAVE_PSID_BSM = 0x20;    ///< vehicle safety (BSM), PSID 0x20.
+    static constexpr uint16_t WAVE_PSID_SPAT = 0x8002; ///< signal phase and timing.
+    static constexpr uint16_t WAVE_PSID_MAP = 0x8003;  ///< map data.
 };
 
 /**

@@ -27,23 +27,25 @@
 
 #if DETWS_ENABLE_OCIT
 
-/** @brief OCIT message types. */
-enum
+// OCIT message types: wire bytes compared/emitted, so integer constants in a namespacing struct.
+// (OcitMsg is the parsed-message struct below; these codes live in OcitMsgType.)
+struct OcitMsgType
 {
-    OCIT_MSG_GET = 0x01,    ///< read an object value.
-    OCIT_MSG_SET = 0x02,    ///< write an object value.
-    OCIT_MSG_REPORT = 0x03, ///< an unsolicited value report.
-    OCIT_MSG_ERROR = 0x0F   ///< error response.
+    static constexpr uint8_t OCIT_MSG_GET = 0x01;    ///< read an object value.
+    static constexpr uint8_t OCIT_MSG_SET = 0x02;    ///< write an object value.
+    static constexpr uint8_t OCIT_MSG_REPORT = 0x03; ///< an unsolicited value report.
+    static constexpr uint8_t OCIT_MSG_ERROR = 0x0F;  ///< error response.
 };
 
 /** @brief OCIT value data types. */
-enum
+// OCIT value data types: wire bytes, so integer constants in a namespacing struct.
+struct OcitType
 {
-    OCIT_TYPE_BOOL = 0x01,   ///< 1 byte (0/1).
-    OCIT_TYPE_BYTE = 0x02,   ///< 1 byte.
-    OCIT_TYPE_UINT16 = 0x03, ///< 2 bytes, big-endian.
-    OCIT_TYPE_UINT32 = 0x04, ///< 4 bytes, big-endian.
-    OCIT_TYPE_OCTETS = 0x05  ///< raw octet string (length is the remaining message).
+    static constexpr uint8_t OCIT_TYPE_BOOL = 0x01;   ///< 1 byte (0/1).
+    static constexpr uint8_t OCIT_TYPE_BYTE = 0x02;   ///< 1 byte.
+    static constexpr uint8_t OCIT_TYPE_UINT16 = 0x03; ///< 2 bytes, big-endian.
+    static constexpr uint8_t OCIT_TYPE_UINT32 = 0x04; ///< 4 bytes, big-endian.
+    static constexpr uint8_t OCIT_TYPE_OCTETS = 0x05; ///< raw octet string (length is the remaining message).
 };
 
 /**

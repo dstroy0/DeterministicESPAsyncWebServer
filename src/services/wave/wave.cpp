@@ -89,7 +89,7 @@ size_t detws_wsmp_build(uint32_t psid, const uint8_t *payload, size_t payload_le
     if (cap < 1)
         return 0;
     size_t i = 0;
-    out[i++] = WSMP_VERSION; // version/subtype (low nibble = version)
+    out[i++] = Wave::WSMP_VERSION; // version/subtype (low nibble = version)
     size_t p = detws_wave_encode_psid(psid, out + i, cap - i);
     if (!p)
         return 0;
@@ -109,7 +109,7 @@ bool detws_wsmp_parse(const uint8_t *frame, size_t len, WsmpFrame *out)
 {
     if (!frame || !out || len < 3)
         return false;
-    if ((frame[0] & 0x0F) != WSMP_VERSION)
+    if ((frame[0] & 0x0F) != Wave::WSMP_VERSION)
         return false;
     uint32_t psid = 0;
     size_t p = detws_wave_decode_psid(frame + 1, len - 1, &psid);
@@ -135,7 +135,7 @@ size_t detws_wave_1609dot2_wrap(uint8_t content_type, const uint8_t *payload, si
     size_t n = 2 + payload_len;
     if (n > cap)
         return 0;
-    out[0] = WAVE_16092_VERSION;
+    out[0] = Wave::WAVE_16092_VERSION;
     out[1] = content_type;
     if (payload_len)
         memcpy(out + 2, payload, payload_len);

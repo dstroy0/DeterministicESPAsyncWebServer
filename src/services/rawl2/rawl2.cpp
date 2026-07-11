@@ -17,15 +17,15 @@ size_t detws_eth_build(const uint8_t *dst, const uint8_t *src, uint16_t ethertyp
 {
     if (!dst || !src || !out || (payload_len && !payload))
         return 0;
-    size_t n = ETH_HDR_LEN + payload_len;
+    size_t n = RawL2::ETH_HDR_LEN + payload_len;
     if (n > cap)
         return 0;
-    memcpy(out, dst, ETH_ALEN);
-    memcpy(out + ETH_ALEN, src, ETH_ALEN);
+    memcpy(out, dst, RawL2::ETH_ALEN);
+    memcpy(out + RawL2::ETH_ALEN, src, RawL2::ETH_ALEN);
     out[12] = (uint8_t)(ethertype >> 8);
     out[13] = (uint8_t)ethertype;
     if (payload_len)
-        memcpy(out + ETH_HDR_LEN, payload, payload_len);
+        memcpy(out + RawL2::ETH_HDR_LEN, payload, payload_len);
     return n;
 }
 
@@ -34,41 +34,41 @@ size_t detws_eth_build_vlan(const uint8_t *dst, const uint8_t *src, uint8_t pcp,
 {
     if (!dst || !src || !out || (payload_len && !payload))
         return 0;
-    size_t n = ETH_VLAN_HDR_LEN + payload_len;
+    size_t n = RawL2::ETH_VLAN_HDR_LEN + payload_len;
     if (n > cap)
         return 0;
-    memcpy(out, dst, ETH_ALEN);
-    memcpy(out + ETH_ALEN, src, ETH_ALEN);
-    out[12] = (uint8_t)(ETH_TPID_8021Q >> 8);
-    out[13] = (uint8_t)ETH_TPID_8021Q;
+    memcpy(out, dst, RawL2::ETH_ALEN);
+    memcpy(out + RawL2::ETH_ALEN, src, RawL2::ETH_ALEN);
+    out[12] = (uint8_t)(RawL2::ETH_TPID_8021Q >> 8);
+    out[13] = (uint8_t)RawL2::ETH_TPID_8021Q;
     uint16_t tci = (uint16_t)(((pcp & 0x7) << 13) | ((dei ? 1 : 0) << 12) | (vid & 0x0FFF));
     out[14] = (uint8_t)(tci >> 8);
     out[15] = (uint8_t)tci;
     out[16] = (uint8_t)(ethertype >> 8);
     out[17] = (uint8_t)ethertype;
     if (payload_len)
-        memcpy(out + ETH_VLAN_HDR_LEN, payload, payload_len);
+        memcpy(out + RawL2::ETH_VLAN_HDR_LEN, payload, payload_len);
     return n;
 }
 
 bool detws_eth_parse(const uint8_t *frame, size_t len, EthFrame *out)
 {
-    if (!frame || !out || len < ETH_HDR_LEN)
+    if (!frame || !out || len < RawL2::ETH_HDR_LEN)
         return false;
     out->dst = frame;
-    out->src = frame + ETH_ALEN;
+    out->src = frame + RawL2::ETH_ALEN;
     uint16_t et = (uint16_t)((frame[12] << 8) | frame[13]);
-    if (et == ETH_TPID_8021Q)
+    if (et == RawL2::ETH_TPID_8021Q)
     {
-        if (len < ETH_VLAN_HDR_LEN)
+        if (len < RawL2::ETH_VLAN_HDR_LEN)
             return false;
         uint16_t tci = (uint16_t)((frame[14] << 8) | frame[15]);
         out->vlan = true;
         out->pcp = (uint8_t)((tci >> 13) & 0x7);
         out->vid = (uint16_t)(tci & 0x0FFF);
         out->ethertype = (uint16_t)((frame[16] << 8) | frame[17]);
-        out->payload = frame + ETH_VLAN_HDR_LEN;
-        out->payload_len = len - ETH_VLAN_HDR_LEN;
+        out->payload = frame + RawL2::ETH_VLAN_HDR_LEN;
+        out->payload_len = len - RawL2::ETH_VLAN_HDR_LEN;
     }
     else
     {
@@ -76,8 +76,8 @@ bool detws_eth_parse(const uint8_t *frame, size_t len, EthFrame *out)
         out->pcp = 0;
         out->vid = 0;
         out->ethertype = et;
-        out->payload = frame + ETH_HDR_LEN;
-        out->payload_len = len - ETH_HDR_LEN;
+        out->payload = frame + RawL2::ETH_HDR_LEN;
+        out->payload_len = len - RawL2::ETH_HDR_LEN;
     }
     return true;
 }
