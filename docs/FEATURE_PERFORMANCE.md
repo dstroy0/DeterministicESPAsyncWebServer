@@ -378,6 +378,28 @@ address). All pure (the two sockets are the application's). Host figures from
   channel, not the codec. HW-verified device-as-FTP-client against a real `pyftpdlib` server (11/11 interop
   checks, the STOR confirmed server-side).
 
+### SMTP client dialogue (DETWS_ENABLE_SMTP)
+
+The outbound SMTP client that sends a device alert email (RFC 5321): `smtp_run` drives the whole
+exchange - read the greeting, `EHLO`, optional `AUTH LOGIN`, `MAIL FROM` / `RCPT TO` / `DATA`, build the
+message (CRLF-normalize + RFC 5321 sec 4.5.2 dot-stuffing) and stream it, then `QUIT`. It is pure (a
+send/recv seam), so the whole dialogue is benched end to end over a **scripted in-memory transport** (canned
+server replies, sink send) - the reply parser (`reply_complete`, over a fixed 512 B buffer) plus the message
+builder together, one alert email's worth of work. Host from [`perf/bench_smtp.cpp`](../perf/bench_smtp.cpp);
+device from the rig `/bench` `smtp_run` op.
+
+| Operation                          | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 us/op |
+| ---------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `smtp_run` (full 7-reply dialogue) |      936.2 |      42.7 |           13564 |           56.5 |
+
+- The full dialogue - seven reply parses, the `EHLO`/`MAIL`/`RCPT` command builds, and the message
+  build with dot-stuffing - costs **~56 us** on the device (pure compute; the real send-alert latency is the
+  ~7 network round trips). This is the heaviest single "client op" benched so far because it is an entire
+  protocol exchange, not one codec call, yet it is still trivial next to the network. Every buffer is a
+  compile-time size (`DETWS_SMTP_REPLY_MAX` 512, `DETWS_SMTP_MSG_MAX` 2048), so a malicious server cannot
+  grow the client's footprint (validated by the `smtp_malicious_server` attack). HW-verified
+  device-as-SMTP-client against a real `aiosmtpd` server (6/6 interop, the message confirmed server-side).
+
 ## 3. Request-path benchmarks
 
 The CPU cost of a request's hot path: the standalone HTTP/1.1 request parser and the zero-heap JSON

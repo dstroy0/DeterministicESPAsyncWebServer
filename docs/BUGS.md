@@ -8,23 +8,29 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
-## FTP client first-connect heap drop - INVESTIGATED, NOT A BUG (one-time warmup)
+## Outbound-client-path first-touch heap drop (FTP + SMTP) - INVESTIGATED, NOT A BUG (one-time warmup)
 
-- **Status:** NOT A BUG (investigated on hardware 2026-07-11 while adding the `ftp_malicious_server` attack).
-- **Found:** the first-ever run of `ftp_malicious_server` against a freshly-booted S3 rig flagged the heap-drift
-  oracle: free heap fell 1344-1792 B (131836 -> 130044) and **stayed down** past the 6 s settle, which the
-  oracle reports as a determinism-promise violation ("no heap allocation after begin()").
+- **Status:** NOT A BUG (investigated on hardware 2026-07-11 while adding the `ftp_malicious_server` and
+  `smtp_malicious_server` attacks - both showed the identical signature).
+- **Found:** the first-ever run of each device-as-client attack against a freshly-booted S3 rig flagged the
+  heap-drift oracle: free heap fell ~1344-2016 B (e.g. FTP 131836 -> 130044; SMTP 131356 -> 130012) and
+  **stayed down** past the 6 s settle, which the oracle reports as a determinism-promise violation ("no heap
+  allocation after begin()").
 - **Why it is not a leak:** the drop is a **one-time lazy warmup** of the outbound-client TCP path
   (`det_client_*` -> lwIP), which `begin()` never exercises - the server listener path is warm at boot, but the
-  first _outbound_ connect+send grows lwIP's TX pbuf / working-set backing once. Proof it is bounded, not
-  monotonic: (1) 8 more failed-open `/ftp/probe` + 8 more `/redis/probe` connections dropped **nothing**
-  further (plateaued at 130044); (2) a **second identical 9-dialog attack run was clean - 0 findings, heap
-  130044 -> 130044**. A real per-connection leak would fall by another ~1.8 KB on the second run. The library's
-  own code allocates nothing after `begin()`; the one-time growth is inside esp-idf/lwIP pools and is capped.
+  first _outbound_ connect+send (and, for SMTP, the first rapid connect+error+close churn) grows lwIP's TX pbuf
+  / working-set backing once. Proof it is bounded, not monotonic: (1) for FTP, 8 more failed-open `/ftp/probe`
+    - 8 more `/redis/probe` connections dropped **nothing** further (plateaued at 130044); (2) the **second and
+      third identical attack runs were clean - 0 findings**, heap steady within a ~4 B jitter (FTP 130044 ->
+      130044; SMTP 130012 -> 130008 -> 130012). A real per-connection leak would fall by another ~1.5 KB each run.
+      The library's own code allocates nothing after `begin()`; the one-time growth is inside esp-idf/lwIP pools
+      and is capped.
 - **Lesson:** the heap-drift oracle's first-touch false-positive fires the first time _any_ never-before-used
   code path runs after begin() (here the outbound-client path). Distinguish warmup from a leak by re-running:
   warmup plateaus immediately and the second run is clean; a leak is monotonic. The MQTT/Redis device-as-client
   probes were judged clean earlier only because their path was already warm by the time the oracle sampled.
+  (SMTP's warmup fired even after the interop happy-path had run, because the attack's error/close churn hits a
+  slightly different lwIP allocation - so re-run per _attack_, not just per code path.)
 
 ---
 
