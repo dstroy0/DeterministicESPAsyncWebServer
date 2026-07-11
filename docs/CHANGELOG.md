@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`45529c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45529c3a272471668573c84a728dba19f832741e))
 - update CHANGELOG.md [skip ci] ([`824819c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/824819ca02f231fd8a13197ddadce3532cf26769))
 - update test report + coverage [skip ci] ([`4c4635f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c4635f96478875652e7517d8266dc79180b374c))
 - update CHANGELOG.md [skip ci] ([`2ef5dd6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ef5dd6c41cc7ef6c399871e464b9d7c829f4480))
@@ -28,6 +29,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- dns_server_abuse - amplification / open-resolver / compression-pointer DoS ([`9ea06f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ea06f7c4eb27354b2f2474112deea982b7cb48d))
 - ntp_server_abuse - reflection/amplification + mode/version fuzz ([`1894739`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1894739f00ac45228c754e904c9e70181715d829))
 - syslog_injection - log-forging + oversized bound at a UDP collector ([`b25ef87`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b25ef874c2e0926147125a7b28314e1b520c4919))
 - smtp_malicious_server + generalize the evil-probe server ([`abc1965`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/abc1965dd982b62b517752380c58103a2b2155d6))
@@ -35,6 +37,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- DNS server interop/bench/attack coverage (no amplification, no open resolver) ([`6f771a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6f771a9da3c207fc46a93e89578005dcea29ffaf))
 - NTP server interop/bench/attack coverage + UDP-listener cap note ([`c93bec8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c93bec85eeb25e077c9e5db31ab8e10c8c7ae406))
 - syslog interop/bench/attack coverage + MAX_ROUTES regression + CRLF note ([`4f54c8d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f54c8dab4b53b37316b0956447e40580b5399e2))
 - SMTP interop/bench/attack coverage + generalize the warmup non-bug ([`d0e9f0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0e9f0ea6f0abc1fab2a0b7460d76a72aaf0ef8a))
@@ -55,6 +58,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- host microbench for the authoritative DNS response builder ([`4279ceb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4279ceb4a2b98f00aaab1f9b11fe25b3ae6834e0))
 - host microbench for the NTP server response builder ([`97df2e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/97df2e20910cba971463dd7b721b9c8c6f6a86e5))
 - host microbench for the RFC 5424 syslog formatter ([`e760aa2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e760aa27b3d871c083e7e8ee3f301e7ddb2ca247))
 - host microbench for the SMTP client dialogue ([`19bd593`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19bd5934aa64f0170a5b19c5f081a021fa7f371e))
@@ -70,6 +74,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- DNS server peer via the real dnspython client ([`56e96b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/56e96b6b24b16d454621edc34300123555c85af3))
+- authoritative DNS server (UDP/53) + dns_build_response bench ([`1e51a10`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e51a10d2c0ffc27300da57040893ac31c9a1d03))
 - NTP server peer via the real ntplib client ([`a05ff17`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a05ff1702a003fd924bca7159813320ef423d9f0))
 - NTP server (UDP/123) + synthetic time source + ntp_build_response bench ([`8e470d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8e470d8a988299a65556accde4dfcde6d10bca7e))
 - syslog device-as-client peer (stdlib RFC 5424 UDP collector) ([`f717acd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f717acddbc702c407934eef980fd2167fa2a9658))
