@@ -119,8 +119,9 @@ bool sqlite_parse_btree_header(const uint8_t *page, size_t page_len, size_t offs
         return false;
     const uint8_t *p = page + offset;
     uint8_t type = p[0];
-    bool interior = (type == SQLITE_BTREE_INTERIOR_INDEX || type == SQLITE_BTREE_INTERIOR_TABLE);
-    bool leaf = (type == SQLITE_BTREE_LEAF_INDEX || type == SQLITE_BTREE_LEAF_TABLE);
+    bool interior =
+        (type == SqliteBtree::SQLITE_BTREE_INTERIOR_INDEX || type == SqliteBtree::SQLITE_BTREE_INTERIOR_TABLE);
+    bool leaf = (type == SqliteBtree::SQLITE_BTREE_LEAF_INDEX || type == SqliteBtree::SQLITE_BTREE_LEAF_TABLE);
     if (!interior && !leaf)
         return false;
     uint8_t hdr = interior ? 12 : 8;
@@ -334,7 +335,7 @@ bool cursor_descend(SqliteTableCursor *c, uint32_t pgno)
         SqliteBtreeHeader h;
         if (!sqlite_parse_btree_header(c->work, c->page_size, off, &h))
             return false;
-        if (h.type == SQLITE_BTREE_LEAF_TABLE)
+        if (h.type == SqliteBtree::SQLITE_BTREE_LEAF_TABLE)
         {
             memcpy(c->leaf, c->work, c->page_size);
             c->leaf_hdr = h;
@@ -344,7 +345,7 @@ bool cursor_descend(SqliteTableCursor *c, uint32_t pgno)
             c->leaf_cell = 0;
             return true;
         }
-        if (h.type != SQLITE_BTREE_INTERIOR_TABLE)
+        if (h.type != SqliteBtree::SQLITE_BTREE_INTERIOR_TABLE)
             return false; // an index b-tree or garbage - not a table scan
         if (c->depth >= SQLITE_BTREE_MAX_DEPTH)
             return false;
@@ -620,7 +621,7 @@ bool write_leaf_page(uint8_t *page, uint32_t page_size, uint32_t hdr_off, const 
 
     // b-tree leaf-table header.
     uint8_t *h = page + hdr_off;
-    h[0] = (uint8_t)SQLITE_BTREE_LEAF_TABLE;
+    h[0] = (uint8_t)SqliteBtree::SQLITE_BTREE_LEAF_TABLE;
     wr_be16(h + 1, 0);               // first freeblock
     wr_be16(h + 3, (uint16_t)nrows); // cell count
     wr_be16(h + 5, (uint16_t)(content_start == 65536 ? 0 : content_start));

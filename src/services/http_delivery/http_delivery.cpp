@@ -93,14 +93,14 @@ void put_json_str(Buf *b, const char *s)
 }
 } // namespace
 
-int detws_delivery_swr(uint32_t age_s, uint32_t max_age_s, uint32_t swr_s)
+DeliveryVerdict detws_delivery_swr(uint32_t age_s, uint32_t max_age_s, uint32_t swr_s)
 {
     if (age_s <= max_age_s)
-        return DELIVERY_FRESH;
+        return DeliveryVerdict::DELIVERY_FRESH;
     uint64_t window = (uint64_t)max_age_s + swr_s;
     if ((uint64_t)age_s <= window)
-        return DELIVERY_STALE_REVALIDATE;
-    return DELIVERY_EXPIRED;
+        return DeliveryVerdict::DELIVERY_STALE_REVALIDATE;
+    return DeliveryVerdict::DELIVERY_EXPIRED;
 }
 
 size_t detws_delivery_cache_control(uint32_t max_age_s, uint32_t swr_s, char *out, size_t cap)

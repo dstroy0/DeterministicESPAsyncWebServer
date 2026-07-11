@@ -18,16 +18,18 @@ void tearDown(void)
 void test_swr_decision(void)
 {
     // max-age=60, swr=30.
-    TEST_ASSERT_EQUAL_INT(DELIVERY_FRESH, detws_delivery_swr(0, 60, 30));
-    TEST_ASSERT_EQUAL_INT(DELIVERY_FRESH, detws_delivery_swr(60, 60, 30)); // boundary: <= max-age
-    TEST_ASSERT_EQUAL_INT(DELIVERY_STALE_REVALIDATE, detws_delivery_swr(61, 60, 30));
-    TEST_ASSERT_EQUAL_INT(DELIVERY_STALE_REVALIDATE, detws_delivery_swr(90, 60, 30)); // boundary: max+swr
-    TEST_ASSERT_EQUAL_INT(DELIVERY_EXPIRED, detws_delivery_swr(91, 60, 30));
+    TEST_ASSERT_EQUAL_INT(DeliveryVerdict::DELIVERY_FRESH, detws_delivery_swr(0, 60, 30));
+    TEST_ASSERT_EQUAL_INT(DeliveryVerdict::DELIVERY_FRESH, detws_delivery_swr(60, 60, 30)); // boundary: <= max-age
+    TEST_ASSERT_EQUAL_INT(DeliveryVerdict::DELIVERY_STALE_REVALIDATE, detws_delivery_swr(61, 60, 30));
+    TEST_ASSERT_EQUAL_INT(DeliveryVerdict::DELIVERY_STALE_REVALIDATE,
+                          detws_delivery_swr(90, 60, 30)); // boundary: max+swr
+    TEST_ASSERT_EQUAL_INT(DeliveryVerdict::DELIVERY_EXPIRED, detws_delivery_swr(91, 60, 30));
     // No swr window.
-    TEST_ASSERT_EQUAL_INT(DELIVERY_EXPIRED, detws_delivery_swr(61, 60, 0));
+    TEST_ASSERT_EQUAL_INT(DeliveryVerdict::DELIVERY_EXPIRED, detws_delivery_swr(61, 60, 0));
     // Overflow guard: age > max-age, but max-age + swr wraps uint32 (0xFFFFFFF0 + 0x20 = 0x100000010).
     // A 32-bit add would wrap to 0x10 and wrongly report EXPIRED; the uint64 window keeps it STALE.
-    TEST_ASSERT_EQUAL_INT(DELIVERY_STALE_REVALIDATE, detws_delivery_swr(0xFFFFFFF8u, 0xFFFFFFF0u, 0x20u));
+    TEST_ASSERT_EQUAL_INT(DeliveryVerdict::DELIVERY_STALE_REVALIDATE,
+                          detws_delivery_swr(0xFFFFFFF8u, 0xFFFFFFF0u, 0x20u));
 }
 
 void test_cache_control(void)

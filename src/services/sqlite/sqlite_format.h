@@ -67,12 +67,14 @@ struct SqliteDbHeader
 bool sqlite_parse_db_header(const uint8_t *buf, size_t len, SqliteDbHeader *out);
 
 /** @brief B-tree page types (the first byte of a b-tree page header). */
-enum
+// SQLite b-tree page types (the page-header first byte): wire/format values compared, so integer
+// constants in a namespacing struct.
+struct SqliteBtree
 {
-    SQLITE_BTREE_INTERIOR_INDEX = 2,
-    SQLITE_BTREE_INTERIOR_TABLE = 5,
-    SQLITE_BTREE_LEAF_INDEX = 10,
-    SQLITE_BTREE_LEAF_TABLE = 13,
+    static constexpr uint8_t SQLITE_BTREE_INTERIOR_INDEX = 2;
+    static constexpr uint8_t SQLITE_BTREE_INTERIOR_TABLE = 5;
+    static constexpr uint8_t SQLITE_BTREE_LEAF_INDEX = 10;
+    static constexpr uint8_t SQLITE_BTREE_LEAF_TABLE = 13;
 };
 
 /** @brief Parsed b-tree page header (8 bytes for a leaf, 12 for an interior page). */

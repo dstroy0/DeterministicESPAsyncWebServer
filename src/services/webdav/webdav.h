@@ -48,10 +48,8 @@ enum class WebDavMethod : uint8_t
 };
 
 /** @brief "infinity" Depth value (RFC 4918 §10.2). */
-enum
-{
-    DAV_DEPTH_INFINITY = 0x7fffffff
-};
+/** @brief Depth: infinity sentinel (a lone constant). */
+static constexpr int32_t DAV_DEPTH_INFINITY = 0x7fffffff;
 
 /** @brief Classify an HTTP method token (e.g. "PROPFIND") into a WebDavMethod. */
 WebDavMethod webdav_method(const char *m);

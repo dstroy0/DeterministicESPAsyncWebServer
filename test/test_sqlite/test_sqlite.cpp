@@ -91,7 +91,7 @@ void test_btree_header_real_page1(void)
     SqliteBtreeHeader b;
     // Page 1's b-tree header follows the 100-byte database header.
     TEST_ASSERT_TRUE(sqlite_parse_btree_header(PAGE1, sizeof(PAGE1), 100, &b));
-    TEST_ASSERT_EQUAL_UINT8(SQLITE_BTREE_LEAF_TABLE, b.type); // 13 - the sqlite_schema table
+    TEST_ASSERT_EQUAL_UINT8(SqliteBtree::SQLITE_BTREE_LEAF_TABLE, b.type); // 13 - the sqlite_schema table
     TEST_ASSERT_EQUAL_UINT16(0, b.first_freeblock);
     TEST_ASSERT_EQUAL_UINT16(1, b.cell_count); // one schema row (the CREATE TABLE)
     TEST_ASSERT_EQUAL_UINT32(463, b.cell_content_start);
@@ -108,7 +108,7 @@ void test_btree_header_rejects_bad_type(void)
     SqliteBtreeHeader b;
     TEST_ASSERT_FALSE(sqlite_parse_btree_header(page, sizeof(page), 0, &b));
     // A valid leaf type but the header runs past the buffer.
-    page[0] = SQLITE_BTREE_LEAF_TABLE;
+    page[0] = SqliteBtree::SQLITE_BTREE_LEAF_TABLE;
     TEST_ASSERT_FALSE(sqlite_parse_btree_header(page, 4, 0, &b));
 }
 
@@ -280,7 +280,7 @@ void test_table_cursor_multipage(void)
     SqliteBtreeHeader bh;
     TEST_ASSERT_TRUE(
         sqlite_parse_btree_header(DB_MULTIPAGE + DB_MP_PAGE_SIZE, sizeof(DB_MULTIPAGE) - DB_MP_PAGE_SIZE, 0, &bh));
-    TEST_ASSERT_EQUAL_UINT8(SQLITE_BTREE_INTERIOR_TABLE, bh.type);
+    TEST_ASSERT_EQUAL_UINT8(SqliteBtree::SQLITE_BTREE_INTERIOR_TABLE, bh.type);
 
     MemDb db = {DB_MULTIPAGE, sizeof(DB_MULTIPAGE)};
     static uint8_t leaf[512], work[512];
@@ -362,7 +362,8 @@ static bool find_overflow_cell(uint8_t *leaf_out, SqliteTableLeafCell *cell_out)
             continue;
         size_t off = (pg == 1) ? 100 : 0;
         SqliteBtreeHeader bh;
-        if (!sqlite_parse_btree_header(page, OVF_PAGE_SIZE, off, &bh) || bh.type != SQLITE_BTREE_LEAF_TABLE)
+        if (!sqlite_parse_btree_header(page, OVF_PAGE_SIZE, off, &bh) ||
+            bh.type != SqliteBtree::SQLITE_BTREE_LEAF_TABLE)
             continue;
         for (uint16_t i = 0; i < bh.cell_count; i++)
         {

@@ -32,7 +32,8 @@
 #if DETWS_ENABLE_HTTP_DELIVERY
 
 /** @brief Freshness verdict for a cached response. */
-enum
+/** @brief Cache-freshness verdict (the sole return of detws_delivery_swr). */
+enum class DeliveryVerdict : uint8_t
 {
     DELIVERY_FRESH = 0,            ///< age <= max-age: serve from cache, no revalidation.
     DELIVERY_STALE_REVALIDATE = 1, ///< within the stale-while-revalidate window: serve stale, refresh in bg.
@@ -46,7 +47,7 @@ enum
  * @param swr_s     the `stale-while-revalidate` window past max-age.
  * @return DELIVERY_FRESH / DELIVERY_STALE_REVALIDATE / DELIVERY_EXPIRED.
  */
-int detws_delivery_swr(uint32_t age_s, uint32_t max_age_s, uint32_t swr_s);
+DeliveryVerdict detws_delivery_swr(uint32_t age_s, uint32_t max_age_s, uint32_t swr_s);
 
 /**
  * @brief Build a `Cache-Control` value: `public, max-age=N[, stale-while-revalidate=M]`.
