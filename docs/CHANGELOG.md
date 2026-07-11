@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`1ab979e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ab979e1b9ab38d81c954d13d23f458439f6b202))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`849ee26`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/849ee26ff5b75fca62a9e692b0bb75925f84f31d))
+
+### Performance
+
+- cycle-accurate CCOUNT device microbench (/bench) + recorded auth/ETag primitive costs ([`a24aefe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a24aefe0ebde93c6199af0cfdcef624ebf802d09))
+
 ## [5.95.6] - 2026-07-11
 
 <details>
