@@ -33,6 +33,7 @@ from peers import (
     mtconnect_peer,
     opcua_peer,
     redis_peer,
+    smtp_peer,
     snmp_peer,
     sse_peer,
     webdav_peer,
@@ -53,6 +54,7 @@ _MODULES = [
     opcua_peer,
     redis_peer,
     ftp_peer,
+    smtp_peer,
 ]
 
 

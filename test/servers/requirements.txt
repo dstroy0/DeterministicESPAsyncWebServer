@@ -18,3 +18,4 @@ asyncua>=1.0          # opcua-client / opcua-server
 pysnmp>=7.0           # snmp peer fallback when net-snmp tools are not on PATH
 amqtt>=0.11           # mqtt-broker fallback when mosquitto is not on PATH
 pyftpdlib>=1.5        # ftp peer (RFC 959 reference server; device-as-client STOR round trip)
+aiosmtpd>=1.4         # smtp peer (RFC 5321 reference server; device-as-client alert-email round trip)
