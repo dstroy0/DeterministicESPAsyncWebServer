@@ -100,8 +100,7 @@ size_t ntlm_v2_response(const uint8_t owf[16], const uint8_t server_challenge[8]
     k += 4;
     memcpy(temp + k, target_info, ti_len);
     k += ti_len;
-    memset(temp + k, 0, 4); // Z(4)
-    k += 4;
+    memset(temp + k, 0, 4); // Z(4) trailer; temp_len (line 83) already accounts for it, so k is done
 
     uint8_t ntproof[16];
     hmac_md5_2(owf, server_challenge, 8, temp, temp_len, ntproof);

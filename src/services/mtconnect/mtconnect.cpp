@@ -442,7 +442,7 @@ size_t detws_mtc_sample_query(DetwsMtcSampleBuffer *b, char *buf, size_t cap, ui
 
     // The oldest retained observation sits `count` slots behind head; observation `first + k` is at
     // (oldest_idx + k) around the ring.
-    uint32_t oldest_idx = (uint32_t)((b->head + DETWS_MTC_SAMPLE_BUFFER - b->count) % DETWS_MTC_SAMPLE_BUFFER);
+    uint32_t oldest_idx = (b->head + DETWS_MTC_SAMPLE_BUFFER - b->count) % DETWS_MTC_SAMPLE_BUFFER;
     for (uint32_t e = 0; e < to_emit; e++)
     {
         uint32_t k = (uint32_t)((start - first) + e);

@@ -147,7 +147,7 @@ bool rate_gate(uint32_t &window_start, uint16_t &count, uint16_t rate_cap)
     if (rate_cap == 0)
         return false; // unlimited
     uint32_t now = fwd_now();
-    if ((uint32_t)(now - window_start) >= 1000)
+    if ((now - window_start) >= 1000)
     {
         window_start = now;
         count = 0;
