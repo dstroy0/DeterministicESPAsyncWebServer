@@ -16428,7 +16428,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Classify sta
     * **Assertions**:
-      * <code>Assert equal int (DETIFACE_STA, det_net_classify_ip(0x0A000005u, 0x0A000005u, 0xC0A80401u))</code>
+      * <code>Assert equal int (DetIface::DETIFACE_STA, det_net_classify_ip(0x0A000005u, 0x0A000005u, 0xC0A80401u))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16436,7 +16436,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Classify ap
     * **Assertions**:
-      * <code>Assert equal int (DETIFACE_AP, det_net_classify_ip(0xC0A80401u, 0x0A000005u, 0xC0A80401u))</code>
+      * <code>Assert equal int (DetIface::DETIFACE_AP, det_net_classify_ip(0xC0A80401u, 0x0A000005u, 0xC0A80401u))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16444,8 +16444,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Classify eth
     * **Assertions**:
-      * <code>Assert equal int (DETIFACE_ETH, det_net_classify_ip(0xC0A80105u, 0x0A000005u, 0))</code>
-      * <code>Assert equal int (DETIFACE_ETH, det_net_classify_ip(0xC0A80105u, 0, 0))</code>
+      * <code>Assert equal int (DetIface::DETIFACE_ETH, det_net_classify_ip(0xC0A80105u, 0x0A000005u, 0))</code>
+      * <code>Assert equal int (DetIface::DETIFACE_ETH, det_net_classify_ip(0xC0A80105u, 0, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16453,7 +16453,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Classify none
     * **Assertions**:
-      * <code>Assert equal int (DETIFACE_ANY, det_net_classify_ip(0, 0x0A000005u, 0xC0A80401u))</code>
+      * <code>Assert equal int (DetIface::DETIFACE_ANY, det_net_classify_ip(0, 0x0A000005u, 0xC0A80401u))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16461,7 +16461,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Egress host stub
     * **Assertions**:
-      * <code>Assert equal int (DETIFACE_ANY, det_net_egress())</code>
+      * <code>Assert equal int (DetIface::DETIFACE_ANY, det_net_egress())</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, det_net_egress_ip());</code>
   </details>
 
