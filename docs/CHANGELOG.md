@@ -2,6 +2,28 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`199b9e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/199b9e843605c6dce7f9a7102c5200f20bd3e149))
+- update CHANGELOG.md [skip ci] ([`b1a5cde`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1a5cde4f69ec73d8f404fa64873cda3eadf99e7))
+
+### Documentation
+
+- WebDAV done on all three dimensions (interop 9/~50) ([`a75d76e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a75d76e88e2f5a47121392a4582df80229679537))
+- update ESP32 build footprints [skip ci] ([`1e3a2c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e3a2c944206a6e241435654a7813cf8519a7b83))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`574d859`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/574d859feaf7cbae9859d5070c72d396ed166380))
+
+### Performance
+
+- 207 Multi-Status builder bench (host + device) ([`f0e9d3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0e9d3c723f3b466398907270eda5a7466db986b))
+
+### Testing
+
+- WebDAV advanced attacks (RFC 4918) ([`85ff855`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/85ff855751d1a0c81433cd07d471c71297464337))
+- WebDAV peer (RFC 4918) + enable WebDAV on the rig ([`57b8021`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/57b802106e1d99daab3a00629024b4952db00615))
+
 ## [5.95.7] - 2026-07-11
 
 <details>
