@@ -31,6 +31,7 @@ from peers import (
     mqtt_peer,
     mtconnect_peer,
     opcua_peer,
+    redis_peer,
     snmp_peer,
     sse_peer,
     webdav_peer,
@@ -49,6 +50,7 @@ _MODULES = [
     coap_peer,
     mqtt_peer,
     opcua_peer,
+    redis_peer,
 ]
 
 
