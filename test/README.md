@@ -9637,7 +9637,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (quic_varint_decode(ctrl-&gt;tx, ctrl-&gt;tx_have, &type, &c))</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(0x00, type);</code>
       * <code>Assert true (h3_frame_parse(ctrl-&gt;tx + c, ctrl-&gt;tx_have - c, &fr))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT64(H3_SETTINGS, fr.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(H3FrameType::H3_SETTINGS, fr.type);</code>
       * <code>Assert not null (find_stream(&qc, 7))</code>
       * <code>Assert not null (find_stream(&qc, 11))</code>
   </details>
@@ -9648,7 +9648,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Client control stream settings
     * **Assertions**:
       * <code>Assert not null (st)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(H3_ROLE_CONTROL, st-&gt;role);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_CONTROL, st-&gt;role);</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(12345, h3.peer_settings.max_field_section_size);</code>
   </details>
 
@@ -9657,9 +9657,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Client uni stream types
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(H3_ROLE_QPACK_ENC, find_h3(&h3, 6)-&gt;role);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(H3_ROLE_QPACK_DEC, find_h3(&h3, 10)-&gt;role);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(H3_ROLE_OTHER_UNI, find_h3(&h3, 14)-&gt;role);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_QPACK_ENC, find_h3(&h3, 6)-&gt;role);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_QPACK_DEC, find_h3(&h3, 10)-&gt;role);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_OTHER_UNI, find_h3(&h3, 14)-&gt;role);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9703,7 +9703,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (find_h3(&h3, 2)-&gt;type_read)</code>
       * <code>Assert true (find_h3(&h3, 2)-&gt;type_read)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(H3_ROLE_CONTROL, find_h3(&h3, 2)-&gt;role);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(H3StreamRole::H3_ROLE_CONTROL, find_h3(&h3, 2)-&gt;role);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9741,14 +9741,14 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: SETTINGS(4), length 0 -> two 1-byte varints.
     * **Assertions**:
-      * <code>Assert equal int (2, (int)h3_frame_write_header(b, sizeof b, H3_SETTINGS, 0))</code>
+      * <code>Assert equal int (2, (int)h3_frame_write_header(b, sizeof b, H3FrameType::H3_SETTINGS, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, b, 2);</code>
       * <code>Assert true (h3_frame_parse(b, 2, &f))</code>
-      * <code>Assert true (f.type == H3_SETTINGS && f.length == 0 && f.header_len == 2)</code>
-      * <code>Assert equal int (3, (int)h3_frame_write_header(b, sizeof b, H3_HEADERS, 1000))</code>
+      * <code>Assert true (f.type == H3FrameType::H3_SETTINGS && f.length == 0 && f.header_len == 2)</code>
+      * <code>Assert equal int (3, (int)h3_frame_write_header(b, sizeof b, H3FrameType::H3_HEADERS, 1000))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(exp2, b, 3);</code>
       * <code>Assert true (h3_frame_parse(b, 3, &f))</code>
-      * <code>Assert true (f.type == H3_HEADERS && f.length == 1000 && f.header_len == 3)</code>
+      * <code>Assert true (f.type == H3FrameType::H3_HEADERS && f.length == 1000 && f.header_len == 3)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9770,7 +9770,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert equal int (10, (int)n)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, b, 10);</code>
       * <code>Assert true (h3_frame_parse(b, n, &f))</code>
-      * <code>Assert true (f.type == H3_SETTINGS && f.length == 8)</code>
+      * <code>Assert true (f.type == H3FrameType::H3_SETTINGS && f.length == 8)</code>
       * <code>Assert true (h3_parse_settings(b + f.header_len, (size_t)f.length, &s))</code>
       * <code>Assert true (s.qpack_max_table_capacity == 4096)</code>
       * <code>Assert true (s.max_field_section_size == 1048576)</code>
@@ -9786,9 +9786,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (h3_frame_type_reserved(0x06))</code>
       * <code>Assert true (h3_frame_type_reserved(0x08))</code>
       * <code>Assert true (h3_frame_type_reserved(0x09))</code>
-      * <code>Assert false (h3_frame_type_reserved(H3_DATA))</code>
-      * <code>Assert false (h3_frame_type_reserved(H3_HEADERS))</code>
-      * <code>Assert false (h3_frame_type_reserved(H3_SETTINGS))</code>
+      * <code>Assert false (h3_frame_type_reserved(H3FrameType::H3_DATA))</code>
+      * <code>Assert false (h3_frame_type_reserved(H3FrameType::H3_HEADERS))</code>
+      * <code>Assert false (h3_frame_type_reserved(H3FrameType::H3_SETTINGS))</code>
       * <code>Assert false (h3_parse_settings(bad, 2, &s))</code>
   </details>
 
@@ -9800,7 +9800,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert equal int (4, (int)n)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, b, 4);</code>
       * <code>Assert true (h3_frame_parse(b, n, &f))</code>
-      * <code>Assert true (f.type == H3_HEADERS && f.length == 2)</code>
+      * <code>Assert true (f.type == H3FrameType::H3_HEADERS && f.length == 2)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9808,7 +9808,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Builder overflow
     * **Assertions**:
-      * <code>Assert equal int (0, (int)h3_frame_write_header(b, 0, H3_DATA, 0))</code>
+      * <code>Assert equal int (0, (int)h3_frame_write_header(b, 0, H3FrameType::H3_DATA, 0))</code>
       * <code>Assert equal int (0, (int)h3_build_data(b, 2, data, 5))</code>
       * <code>Assert equal int (0, (int)h3_build_headers(b, 2, data, 5))</code>
       * <code>Assert equal int (0, (int)h3_build_settings(b, 1, ids, vals, 1))</code>
