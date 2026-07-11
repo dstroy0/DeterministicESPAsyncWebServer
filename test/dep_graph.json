@@ -1443,22 +1443,6 @@
 "native_workers",
 "native_ws_deflate"
 ],
-"src/network_drivers/transport/tcp.cpp": [
-"native",
-"native_accept_gate",
-"native_app",
-"native_diag",
-"native_h3_server",
-"native_keepalive",
-"native_observability",
-"native_range",
-"native_ssh_conn",
-"native_telnet",
-"native_upload",
-"native_webdav_handler",
-"native_workers",
-"native_ws_deflate"
-],
 "src/network_drivers/transport/tcp.h": [
 "native",
 "native_accept_gate",

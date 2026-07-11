@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-11 12:45:01
+**Generated:** 2026-07-11 20:12:42
 **Command:** `pio test` over 214 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 3032 passed - 663s
+**Result:** ❌ 2231 passed, 36 failed - 618s
 
 ---
 
@@ -10,254 +10,218 @@
 
 | Suite                    | Environment             | Tests | Status |     Duration |
 | :----------------------- | :---------------------- | ----: | :----: | -----------: |
-| `test_canopen`           | `native_canopen`        |    17 |   ✅   | 00:00:07.658 |
-| `test_dbm`               | `native_dbm`            |    13 |   ✅   | 00:00:00.841 |
-| `test_docstore`          | `native_docstore`       |     5 |   ✅   | 00:00:00.892 |
-| `test_dnc`               | `native_dnc`            |    14 |   ✅   | 00:00:00.787 |
-| `test_dnc_stream`        | `native_dnc`            |     8 |   ✅   | 00:00:00.585 |
-| `test_ftp`               | `native_ftp`            |    16 |   ✅   | 00:00:00.794 |
-| `test_httpcache`         | `native_httpcache`      |    11 |   ✅   | 00:00:00.762 |
-| `test_det_primitives`    | `native_det_primitives` |     5 |   ✅   | 00:00:00.743 |
-| `test_det_ip`            | `native_det_ip`         |    11 |   ✅   | 00:00:00.759 |
-| `test_det_arena`         | `native_det_arena`      |    19 |   ✅   | 00:00:00.760 |
-| `test_ssh_ed25519`       | `native_ssh_ed25519`    |    16 |   ✅   | 00:00:04.824 |
-| `test_crypto_kat`        | `native_crypto_kat`     |     9 |   ✅   | 00:00:02.844 |
-| `test_promisc`           | `native_promisc`        |     9 |   ✅   | 00:00:00.762 |
-| `test_bus_capture`       | `native_bus_capture`    |     7 |   ✅   | 00:00:00.751 |
-| `test_j1939`             | `native_j1939`          |    11 |   ✅   | 00:00:00.759 |
-| `test_devicenet`         | `native_devicenet`      |    11 |   ✅   | 00:00:00.750 |
-| `test_nmea2000`          | `native_nmea2000`       |     7 |   ✅   | 00:00:00.785 |
-| `test_mbus`              | `native_mbus`           |    12 |   ✅   | 00:00:00.753 |
-| `test_iec60870`          | `native_iec60870`       |    13 |   ✅   | 00:00:00.776 |
-| `test_sdi12`             | `native_sdi12`          |     7 |   ✅   | 00:00:00.764 |
-| `test_dmx`               | `native_dmx`            |     6 |   ✅   | 00:00:00.753 |
-| `test_nmea0183`          | `native_nmea0183`       |     8 |   ✅   | 00:00:00.778 |
-| `test_iolink`            | `native_iolink`         |     6 |   ✅   | 00:00:00.772 |
-| `test_sse`               | `native`                |    46 |   ✅   | 00:00:01.338 |
-| `test_session`           | `native`                |    19 |   ✅   | 00:00:00.680 |
-| `test_presentation`      | `native`                |    63 |   ✅   | 00:00:00.733 |
-| `test_transport`         | `native`                |    44 |   ✅   | 00:00:00.730 |
-| `test_websocket`         | `native`                |    69 |   ✅   | 00:00:00.779 |
-| `test_http_parser`       | `native`                |    93 |   ✅   | 00:00:00.730 |
-| `test_observability`     | `native_observability`  |    17 |   ✅   | 00:00:00.929 |
-| `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.277 |
-| `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.811 |
-| `test_provisioning`      | `native_prov`           |     7 |   ✅   | 00:00:00.769 |
-| `test_ssh_crypto`        | `native_ssh`            |    53 |   ✅   | 00:00:04.345 |
-| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.762 |
-| `test_ssh_server`        | `native_ssh`            |    26 |   ✅   | 00:00:01.081 |
-| `test_ssh_transport`     | `native_ssh`            |    37 |   ✅   | 00:00:01.652 |
-| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.712 |
-| `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.268 |
-| `test_ssh_conn`          | `native_ssh_conn`       |    15 |   ✅   | 00:00:02.167 |
-| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:01.891 |
-| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.729 |
-| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.739 |
-| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.653 |
-| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.716 |
-| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.724 |
-| `test_json`              | `native_app`            |    28 |   ✅   | 00:00:00.688 |
-| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.724 |
-| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.732 |
-| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.750 |
-| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.723 |
-| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.704 |
-| `test_multipart`         | `native_app`            |    25 |   ✅   | 00:00:00.749 |
-| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.739 |
-| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.749 |
-| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.720 |
-| `test_chunked`           | `native_app`            |    14 |   ✅   | 00:00:00.746 |
-| `test_application`       | `native_app`            |    71 |   ✅   | 00:00:00.919 |
-| `test_webdav_handler`    | `native_webdav_handler` |    29 |   ✅   | 00:00:01.942 |
-| `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:01.883 |
-| `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:00.834 |
-| `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.668 |
-| `test_snmp_v3`           | `native_snmp_v3`        |    22 |   ✅   | 00:00:02.936 |
-| `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:00.972 |
-| `test_coap`              | `native_coap`           |    44 |   ✅   | 00:00:00.915 |
-| `test_coap`              | `native_coap_observe`   |    46 |   ✅   | 00:00:00.944 |
-| `test_webdav`            | `native_webdav`         |    25 |   ✅   | 00:00:00.779 |
-| `test_modbus`            | `native_modbus`         |    23 |   ✅   | 00:00:00.751 |
-| `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.909 |
-| `test_redis_resp`        | `native_redis`          |    14 |   ✅   | 00:00:00.752 |
-| `test_sqlite`            | `native_sqlite`         |    23 |   ✅   | 00:00:00.799 |
-| `test_stomp`             | `native_stomp`          |    14 |   ✅   | 00:00:00.762 |
-| `test_mqtt_sn`           | `native_mqtt_sn`        |    13 |   ✅   | 00:00:00.758 |
-| `test_flow_export`       | `native_flow_export`    |     8 |   ✅   | 00:00:00.755 |
-| `test_protobuf`          | `native_protobuf`       |    13 |   ✅   | 00:00:00.773 |
-| `test_preempt_queue`     | `native_preempt_queue`  |    12 |   ✅   | 00:00:00.833 |
-| `test_dma`               | `native_dma`            |    12 |   ✅   | 00:00:00.931 |
-| `test_forward`           | `native_forward`        |    26 |   ✅   | 00:00:01.027 |
-| `test_gateway`           | `native_gateway`        |    12 |   ✅   | 00:00:00.901 |
-| `test_lora`              | `native_lora`           |    14 |   ✅   | 00:00:00.757 |
-| `test_nrf24`             | `native_nrf24`          |    11 |   ✅   | 00:00:00.756 |
-| `test_enocean`           | `native_enocean`        |    10 |   ✅   | 00:00:00.746 |
-| `test_pn532`             | `native_pn532`          |    11 |   ✅   | 00:00:00.752 |
-| `test_sigfox`            | `native_sigfox`         |     7 |   ✅   | 00:00:00.735 |
-| `test_zwave`             | `native_zwave`          |     9 |   ✅   | 00:00:00.743 |
-| `test_zigbee`            | `native_zigbee`         |    10 |   ✅   | 00:00:00.755 |
-| `test_thread`            | `native_thread`         |    15 |   ✅   | 00:00:00.770 |
-| `test_wamp`              | `native_wamp`           |    15 |   ✅   | 00:00:00.797 |
-| `test_sunspec`           | `native_sunspec`        |     7 |   ✅   | 00:00:00.761 |
-| `test_c37118`            | `native_c37118`         |     6 |   ✅   | 00:00:00.753 |
-| `test_dnp3`              | `native_dnp3`           |     8 |   ✅   | 00:00:00.748 |
-| `test_grpcweb`           | `native_grpcweb`        |     9 |   ✅   | 00:00:00.753 |
-| `test_lwm2m_tlv`         | `native_lwm2m_tlv`      |    14 |   ✅   | 00:00:00.754 |
-| `test_fins`              | `native_fins`           |     6 |   ✅   | 00:00:00.744 |
-| `test_hostlink`          | `native_hostlink`       |     8 |   ✅   | 00:00:00.751 |
-| `test_senml`             | `native_senml`          |     9 |   ✅   | 00:00:00.856 |
-| `test_df1`               | `native_df1`            |    10 |   ✅   | 00:00:00.767 |
-| `test_cotp`              | `native_cotp`           |     7 |   ✅   | 00:00:00.750 |
-| `test_s7comm`            | `native_s7comm`         |     9 |   ✅   | 00:00:00.741 |
-| `test_melsec`            | `native_melsec`         |     7 |   ✅   | 00:00:00.777 |
-| `test_bacnet`            | `native_bacnet`         |     9 |   ✅   | 00:00:00.743 |
-| `test_enip`              | `native_enip`           |     7 |   ✅   | 00:00:00.762 |
-| `test_amqp`              | `native_amqp`           |     8 |   ✅   | 00:00:00.756 |
-| `test_cip`               | `native_cip`            |     9 |   ✅   | 00:00:00.766 |
-| `test_nats`              | `native_nats`           |    14 |   ✅   | 00:00:00.763 |
-| `test_proxy_protocol`    | `native_proxy_protocol` |    10 |   ✅   | 00:00:00.765 |
-| `test_sparkplug`         | `native_sparkplug`      |     7 |   ✅   | 00:00:00.804 |
-| `test_modbus_master`     | `native_modbus_master`  |     5 |   ✅   | 00:00:00.797 |
-| `test_ota_rollback`      | `native_ota_rollback`   |     6 |   ✅   | 00:00:00.734 |
-| `test_totp`              | `native_totp`           |     5 |   ✅   | 00:00:00.782 |
-| `test_webhook`           | `native_webhook`        |     9 |   ✅   | 00:00:00.757 |
-| `test_radio_power`       | `native_radio_power`    |     2 |   ✅   | 00:00:00.738 |
-| `test_dns_resolver`      | `native_dns_resolver`   |     5 |   ✅   | 00:00:00.762 |
-| `test_audit_log`         | `native_audit_log`      |    16 |   ✅   | 00:00:00.806 |
-| `test_oidc`              | `native_oidc`           |    19 |   ✅   | 00:00:14.563 |
-| `test_vfs`               | `native_vfs`            |    12 |   ✅   | 00:00:00.771 |
-| `test_graphql`           | `native_graphql`        |    32 |   ✅   | 00:00:00.788 |
-| `test_espnow`            | `native_espnow`         |     8 |   ✅   | 00:00:00.759 |
-| `test_oauth2`            | `native_oauth2`         |     9 |   ✅   | 00:00:00.816 |
-| `test_opcua`             | `native_opcua`          |    47 |   ✅   | 00:00:00.906 |
-| `test_opcua_client`      | `native_opcua_client`   |    20 |   ✅   | 00:00:00.832 |
-| `test_keepalive`         | `native_keepalive`      |    11 |   ✅   | 00:00:01.756 |
-| `test_range`             | `native_range`          |    20 |   ✅   | 00:00:01.763 |
-| `test_syslog`            | `native_syslog`         |    10 |   ✅   | 00:00:00.788 |
-| `test_ntlm`              | `native_smb`            |     3 |   ✅   | 00:00:00.940 |
-| `test_smb_client`        | `native_smb`            |    10 |   ✅   | 00:00:00.631 |
-| `test_ntlmssp`           | `native_smb`            |     5 |   ✅   | 00:00:00.606 |
-| `test_smb_crypto`        | `native_smb`            |     5 |   ✅   | 00:00:00.578 |
-| `test_smb2`              | `native_smb`            |    19 |   ✅   | 00:00:00.657 |
-| `test_spnego`            | `native_smb`            |     4 |   ✅   | 00:00:00.572 |
-| `test_smtp`              | `native_smtp`           |    22 |   ✅   | 00:00:00.989 |
-| `test_ntp_server`        | `native_ntp_server`     |     8 |   ✅   | 00:00:00.753 |
-| `test_dns_server`        | `native_dns_server`     |    13 |   ✅   | 00:00:00.760 |
-| `test_rtc`               | `native_rtc`            |     9 |   ✅   | 00:00:00.760 |
-| `test_relay`             | `native_relay`          |     6 |   ✅   | 00:00:00.757 |
-| `test_ld2410`            | `native_ld2410`         |     8 |   ✅   | 00:00:00.753 |
-| `test_mpr121`            | `native_mpr121`         |     6 |   ✅   | 00:00:00.764 |
-| `test_sht3x`             | `native_sht3x`          |     6 |   ✅   | 00:00:00.757 |
-| `test_pca9685`           | `native_pca9685`        |     5 |   ✅   | 00:00:00.771 |
-| `test_ads1115`           | `native_ads1115`        |     5 |   ✅   | 00:00:00.756 |
-| `test_ina219`            | `native_ina219`         |     5 |   ✅   | 00:00:00.768 |
-| `test_hpack`             | `native_hpack`          |    15 |   ✅   | 00:00:00.942 |
-| `test_h2_frame`          | `native_h2frame`        |     7 |   ✅   | 00:00:00.764 |
-| `test_h2_conn`           | `native_h2conn`         |    22 |   ✅   | 00:00:01.146 |
-| `test_quic_varint`       | `native_quic_varint`    |     3 |   ✅   | 00:00:00.764 |
-| `test_h3_frame`          | `native_h3frame`        |     7 |   ✅   | 00:00:00.784 |
-| `test_jwt`               | `native_jwt`            |    22 |   ✅   | 00:00:00.840 |
-| `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.785 |
-| `test_http_client`       | `native_http_client`    |    15 |   ✅   | 00:00:00.782 |
-| `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.820 |
-| `test_mqtt`              | `native_mqtt`           |    22 |   ✅   | 00:00:00.771 |
-| `test_ws_client`         | `native_ws_client`      |    16 |   ✅   | 00:00:00.819 |
-| `test_scratch`           | `native_scratch`        |    15 |   ✅   | 00:00:00.803 |
-| `test_snmp_trap`         | `native_snmp_trap`      |     7 |   ✅   | 00:00:00.787 |
-| `test_inflate`           | `native_inflate`        |    14 |   ✅   | 00:00:00.755 |
-| `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.811 |
-| `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.850 |
-| `test_ssh_comp`          | `native_ssh_comp`       |     6 |   ✅   | 00:00:01.373 |
-| `test_websocket`         | `native_ws_deflate`     |    74 |   ✅   | 00:00:01.388 |
-| `test_time_source`       | `native_time_source`    |    10 |   ✅   | 00:00:00.771 |
-| `test_config_store`      | `native_config_store`   |    15 |   ✅   | 00:00:00.744 |
-| `test_device_id`         | `native_device_id`      |     4 |   ✅   | 00:00:00.776 |
-| `test_auth_lockout`      | `native_auth_lockout`   |    12 |   ✅   | 00:00:00.799 |
-| `test_csrf`              | `native_csrf`           |    10 |   ✅   | 00:00:00.803 |
-| `test_telemetry`         | `native_telemetry`      |     8 |   ✅   | 00:00:00.798 |
-| `test_dashboard`         | `native_dashboard`      |    15 |   ✅   | 00:00:00.782 |
-| `test_net_egress`        | `native_net_egress`     |     6 |   ✅   | 00:00:00.746 |
-| `test_partition_monitor` | `native_partition`      |     6 |   ✅   | 00:00:00.775 |
-| `test_cbor`              | `native_cbor`           |    21 |   ✅   | 00:00:00.771 |
-| `test_msgpack`           | `native_msgpack`        |    23 |   ✅   | 00:00:00.773 |
-| `test_gpio_map`          | `native_gpio_map`       |     9 |   ✅   | 00:00:00.754 |
-| `test_udp_telemetry`     | `native_udp_telemetry`  |     8 |   ✅   | 00:00:00.754 |
-| `test_statsd`            | `native_statsd`         |    10 |   ✅   | 00:00:00.812 |
-| `test_guardrails`        | `native_guardrails`     |     9 |   ✅   | 00:00:00.753 |
-| `test_failsafe`          | `native_failsafe`       |     7 |   ✅   | 00:00:00.767 |
-| `test_sleep_sched`       | `native_sleep_sched`    |     8 |   ✅   | 00:00:00.754 |
-| `test_wearlevel`         | `native_wearlevel`      |     5 |   ✅   | 00:00:00.749 |
-| `test_netadapt`          | `native_netadapt`       |     6 |   ✅   | 00:00:00.731 |
-| `test_dshot`             | `native_dshot`          |     8 |   ✅   | 00:00:00.750 |
-| `test_hart`              | `native_hart`           |     7 |   ✅   | 00:00:00.756 |
-| `test_nts`               | `native_nts`            |     5 |   ✅   | 00:00:00.754 |
-| `test_dds`               | `native_dds`            |     5 |   ✅   | 00:00:00.774 |
-| `test_xmpp`              | `native_xmpp`           |    11 |   ✅   | 00:00:00.761 |
-| `test_rawl2`             | `native_rawl2`          |     5 |   ✅   | 00:00:00.751 |
-| `test_spa_router`        | `native_spa_router`     |     2 |   ✅   | 00:00:00.739 |
-| `test_goose`             | `native_goose`          |     4 |   ✅   | 00:00:00.761 |
-| `test_mtconnect`         | `native_mtconnect`      |    12 |   ✅   | 00:00:00.776 |
-| `test_wal`               | `native_wal`            |     6 |   ✅   | 00:00:00.813 |
-| `test_wal_store`         | `native_wal`            |     7 |   ✅   | 00:00:00.611 |
-| `test_j2735`             | `native_j2735`          |    11 |   ✅   | 00:00:00.759 |
-| `test_nema_ts2`          | `native_nema_ts2`       |     4 |   ✅   | 00:00:00.754 |
-| `test_snp`               | `native_snp`            |     5 |   ✅   | 00:00:00.770 |
-| `test_directnet`         | `native_directnet`      |     5 |   ✅   | 00:00:00.752 |
-| `test_sep2`              | `native_sep2`           |     5 |   ✅   | 00:00:00.767 |
-| `test_profinet`          | `native_profinet`       |     5 |   ✅   | 00:00:00.755 |
-| `test_ntcip`             | `native_ntcip`          |     3 |   ✅   | 00:00:00.754 |
-| `test_openadr`           | `native_openadr`        |     5 |   ✅   | 00:00:00.772 |
-| `test_mms`               | `native_mms`            |    11 |   ✅   | 00:00:00.750 |
-| `test_cclink`            | `native_cclink`         |     5 |   ✅   | 00:00:00.750 |
-| `test_powerlink`         | `native_powerlink`      |     4 |   ✅   | 00:00:00.772 |
-| `test_sercos`            | `native_sercos`         |     4 |   ✅   | 00:00:00.758 |
-| `test_profibus`          | `native_profibus`       |     5 |   ✅   | 00:00:00.760 |
-| `test_lonworks`          | `native_lonworks`       |     5 |   ✅   | 00:00:00.751 |
-| `test_mbplus`            | `native_mbplus`         |     6 |   ✅   | 00:00:00.749 |
-| `test_interbus`          | `native_interbus`       |     5 |   ✅   | 00:00:00.746 |
-| `test_iccp`              | `native_iccp`           |     5 |   ✅   | 00:00:00.751 |
-| `test_wave`              | `native_wave`           |     9 |   ✅   | 00:00:00.754 |
-| `test_utmc`              | `native_utmc`           |     6 |   ✅   | 00:00:00.754 |
-| `test_ocit`              | `native_ocit`           |     4 |   ✅   | 00:00:00.745 |
-| `test_atc`               | `native_atc`            |     5 |   ✅   | 00:00:00.751 |
-| `test_southbound`        | `native_southbound`     |     6 |   ✅   | 00:00:00.767 |
-| `test_exc_decoder`       | `native_exc_decoder`    |     7 |   ✅   | 00:00:00.789 |
-| `test_http_delivery`     | `native_http_delivery`  |     8 |   ✅   | 00:00:00.772 |
-| `test_hw_health`         | `native_hw_health`      |     7 |   ✅   | 00:00:00.761 |
-| `test_mdns_adaptive`     | `native_mdns_adaptive`  |     5 |   ✅   | 00:00:00.755 |
-| `test_sockpool`          | `native_sockpool`       |     6 |   ✅   | 00:00:00.756 |
-| `test_psram_pool`        | `native_psram_pool`     |     5 |   ✅   | 00:00:00.750 |
-| `test_happy_eyeballs`    | `native_happy_eyeballs` |     5 |   ✅   | 00:00:00.770 |
-| `test_wifi_sniffer`      | `native_wifi_sniffer`   |     6 |   ✅   | 00:00:00.769 |
-| `test_link_manager`      | `native_link_manager`   |     4 |   ✅   | 00:00:00.735 |
-| `test_cc1101`            | `native_cc1101`         |    11 |   ✅   | 00:00:00.751 |
-| `test_fdc2214`           | `native_fdc2214`        |     4 |   ✅   | 00:00:00.773 |
-| `test_ldc1614`           | `native_ldc1614`        |     4 |   ✅   | 00:00:00.763 |
-| `test_vl53l0x`           | `native_vl53l0x`        |     3 |   ✅   | 00:00:00.730 |
-| `test_radio_sniff`       | `native_radio_sniff`    |     4 |   ✅   | 00:00:00.764 |
-| `test_ble_gatt`          | `native_ble_gatt`       |     7 |   ✅   | 00:00:00.774 |
-| `test_tls_policy`        | `native_tls_policy`     |     4 |   ✅   | 00:00:00.771 |
-| `test_wisun`             | `native_wisun`          |    10 |   ✅   | 00:00:00.796 |
-| `test_logbuf`            | `native_logbuf`         |     5 |   ✅   | 00:00:00.759 |
-| `test_config_io`         | `native_config_io`      |     5 |   ✅   | 00:00:00.788 |
-| `test_workers`           | `native_workers`        |     6 |   ✅   | 00:00:00.912 |
-| `test_clock`             | `native_clock`          |     7 |   ✅   | 00:00:00.745 |
-| `test_concurrency`       | `native_concurrency`    |     2 |   ✅   | 00:00:00.870 |
-| `test_concurrency`       | `native_tsan`           |     2 |   ✅   | 00:00:01.344 |
-| `test_qpack`             | `native_qpack`          |    11 |   ✅   | 00:00:00.899 |
-| `test_quic_packet`       | `native_quic_packet`    |     8 |   ✅   | 00:00:00.755 |
-| `test_quic_frame`        | `native_quic_frame`     |     9 |   ✅   | 00:00:00.784 |
-| `test_quic_crypto`       | `native_quic_crypto`    |     7 |   ✅   | 00:00:00.912 |
-| `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   | 00:00:00.835 |
-| `test_quic_tp`           | `native_quic_tp`        |     8 |   ✅   | 00:00:00.795 |
-| `test_tls13_msg`         | `native_tls13_msg`      |    11 |   ✅   | 00:00:00.898 |
-| `test_quic_tls`          | `native_quic_tls`       |    13 |   ✅   | 00:00:01.312 |
-| `test_quic_conn`         | `native_quic_conn`      |    27 |   ✅   | 00:00:02.499 |
-| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:01.246 |
-| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.269 |
-| `test_quic_server`       | `native_quic_server`    |     4 |   ✅   | 00:00:01.375 |
-| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:02.409 |
-| `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.824 |
+| `test_canopen`           | `native_canopen`        |    17 |   ✅   | 00:00:03.949 |
+| `test_dbm`               | `native_dbm`            |    13 |   ✅   | 00:00:00.882 |
+| `test_docstore`          | `native_docstore`       |     5 |   ✅   | 00:00:00.911 |
+| `test_dnc`               | `native_dnc`            |    14 |   ✅   | 00:00:00.825 |
+| `test_dnc_stream`        | `native_dnc`            |     8 |   ✅   | 00:00:00.622 |
+| `test_ftp`               | `native_ftp`            |    16 |   ✅   | 00:00:00.796 |
+| `test_httpcache`         | `native_httpcache`      |    11 |   ✅   | 00:00:00.798 |
+| `test_det_primitives`    | `native_det_primitives` |     5 |   ✅   | 00:00:00.781 |
+| `test_det_ip`            | `native_det_ip`         |    11 |   ✅   | 00:00:00.789 |
+| `test_det_arena`         | `native_det_arena`      |    19 |   ✅   | 00:00:00.787 |
+| `test_ssh_ed25519`       | `native_ssh_ed25519`    |    16 |   ✅   | 00:00:04.072 |
+| `test_crypto_kat`        | `native_crypto_kat`     |     9 |   ✅   | 00:00:02.465 |
+| `test_promisc`           | `native_promisc`        |     9 |   ✅   | 00:00:00.798 |
+| `test_bus_capture`       | `native_bus_capture`    |     7 |   ✅   | 00:00:00.837 |
+| `test_j1939`             | `native_j1939`          |    11 |   ✅   | 00:00:00.789 |
+| `test_devicenet`         | `native_devicenet`      |    11 |   ✅   | 00:00:00.796 |
+| `test_nmea2000`          | `native_nmea2000`       |     7 |   ✅   | 00:00:00.830 |
+| `test_mbus`              | `native_mbus`           |    12 |   ✅   | 00:00:00.801 |
+| `test_iec60870`          | `native_iec60870`       |    13 |   ✅   | 00:00:00.798 |
+| `test_sdi12`             | `native_sdi12`          |     7 |   ✅   | 00:00:00.818 |
+| `test_dmx`               | `native_dmx`            |     6 |   ✅   | 00:00:00.791 |
+| `test_nmea0183`          | `native_nmea0183`       |     8 |   ✅   | 00:00:00.784 |
+| `test_iolink`            | `native_iolink`         |     6 |   ✅   | 00:00:00.791 |
+| `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.842 |
+| `test_provisioning`      | `native_prov`           |     7 |   ✅   | 00:00:00.812 |
+| `test_ssh_crypto`        | `native_ssh`            |    53 |   ✅   | 00:00:04.341 |
+| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.768 |
+| `test_ssh_server`        | `native_ssh`            |    26 |   ✅   | 00:00:01.128 |
+| `test_ssh_transport`     | `native_ssh`            |    37 |   ✅   | 00:00:01.930 |
+| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.834 |
+| `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.323 |
+| `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:00.885 |
+| `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.694 |
+| `test_snmp_v3`           | `native_snmp_v3`        |    22 |   ✅   | 00:00:03.177 |
+| `test_coap`              | `native_coap`           |    44 |   ✅   | 00:00:00.939 |
+| `test_coap`              | `native_coap_observe`   |    46 |   ✅   | 00:00:00.963 |
+| `test_webdav`            | `native_webdav`         |    25 |   ✅   | 00:00:00.812 |
+| `test_modbus`            | `native_modbus`         |    23 |   ✅   | 00:00:00.816 |
+| `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.949 |
+| `test_redis_resp`        | `native_redis`          |    14 |   ✅   | 00:00:00.803 |
+| `test_sqlite`            | `native_sqlite`         |    23 |   ✅   | 00:00:00.804 |
+| `test_stomp`             | `native_stomp`          |    14 |   ✅   | 00:00:00.795 |
+| `test_mqtt_sn`           | `native_mqtt_sn`        |    13 |   ✅   | 00:00:00.806 |
+| `test_flow_export`       | `native_flow_export`    |     8 |   ✅   | 00:00:00.817 |
+| `test_protobuf`          | `native_protobuf`       |    13 |   ✅   | 00:00:00.800 |
+| `test_preempt_queue`     | `native_preempt_queue`  |    12 |   ✅   | 00:00:00.849 |
+| `test_dma`               | `native_dma`            |    12 |   ✅   | 00:00:00.947 |
+| `test_forward`           | `native_forward`        |    26 |   ✅   | 00:00:01.094 |
+| `test_gateway`           | `native_gateway`        |    12 |   ✅   | 00:00:00.947 |
+| `test_lora`              | `native_lora`           |    14 |   ✅   | 00:00:00.813 |
+| `test_nrf24`             | `native_nrf24`          |    11 |   ✅   | 00:00:00.802 |
+| `test_enocean`           | `native_enocean`        |    10 |   ✅   | 00:00:00.796 |
+| `test_pn532`             | `native_pn532`          |    11 |   ✅   | 00:00:00.791 |
+| `test_sigfox`            | `native_sigfox`         |     7 |   ✅   | 00:00:00.807 |
+| `test_zwave`             | `native_zwave`          |     9 |   ✅   | 00:00:00.799 |
+| `test_zigbee`            | `native_zigbee`         |    10 |   ✅   | 00:00:00.786 |
+| `test_thread`            | `native_thread`         |    15 |   ✅   | 00:00:00.846 |
+| `test_wamp`              | `native_wamp`           |    15 |   ✅   | 00:00:00.869 |
+| `test_sunspec`           | `native_sunspec`        |     7 |   ✅   | 00:00:00.800 |
+| `test_c37118`            | `native_c37118`         |     6 |   ✅   | 00:00:00.821 |
+| `test_dnp3`              | `native_dnp3`           |     8 |   ✅   | 00:00:00.791 |
+| `test_grpcweb`           | `native_grpcweb`        |     9 |   ✅   | 00:00:00.835 |
+| `test_lwm2m_tlv`         | `native_lwm2m_tlv`      |    14 |   ✅   | 00:00:00.803 |
+| `test_fins`              | `native_fins`           |     6 |   ✅   | 00:00:00.825 |
+| `test_hostlink`          | `native_hostlink`       |     8 |   ✅   | 00:00:00.805 |
+| `test_senml`             | `native_senml`          |     9 |   ✅   | 00:00:00.895 |
+| `test_df1`               | `native_df1`            |    10 |   ✅   | 00:00:00.785 |
+| `test_cotp`              | `native_cotp`           |     7 |   ✅   | 00:00:00.806 |
+| `test_s7comm`            | `native_s7comm`         |     9 |   ✅   | 00:00:00.798 |
+| `test_melsec`            | `native_melsec`         |     7 |   ✅   | 00:00:00.778 |
+| `test_bacnet`            | `native_bacnet`         |     9 |   ✅   | 00:00:00.784 |
+| `test_enip`              | `native_enip`           |     7 |   ✅   | 00:00:00.783 |
+| `test_amqp`              | `native_amqp`           |     8 |   ✅   | 00:00:00.788 |
+| `test_cip`               | `native_cip`            |     9 |   ✅   | 00:00:00.791 |
+| `test_nats`              | `native_nats`           |    14 |   ✅   | 00:00:00.793 |
+| `test_proxy_protocol`    | `native_proxy_protocol` |    10 |   ✅   | 00:00:00.797 |
+| `test_sparkplug`         | `native_sparkplug`      |     7 |   ✅   | 00:00:00.823 |
+| `test_modbus_master`     | `native_modbus_master`  |     5 |   ✅   | 00:00:00.848 |
+| `test_ota_rollback`      | `native_ota_rollback`   |     6 |   ✅   | 00:00:00.773 |
+| `test_totp`              | `native_totp`           |     5 |   ✅   | 00:00:00.833 |
+| `test_webhook`           | `native_webhook`        |     9 |   ✅   | 00:00:00.794 |
+| `test_radio_power`       | `native_radio_power`    |     2 |   ✅   | 00:00:00.768 |
+| `test_dns_resolver`      | `native_dns_resolver`   |     5 |   ✅   | 00:00:00.807 |
+| `test_audit_log`         | `native_audit_log`      |    16 |   ✅   | 00:00:00.843 |
+| `test_oidc`              | `native_oidc`           |    19 |   ✅   | 00:00:13.807 |
+| `test_vfs`               | `native_vfs`            |    12 |   ✅   | 00:00:00.807 |
+| `test_graphql`           | `native_graphql`        |    32 |   ✅   | 00:00:00.802 |
+| `test_espnow`            | `native_espnow`         |     8 |   ✅   | 00:00:00.785 |
+| `test_oauth2`            | `native_oauth2`         |     9 |   ✅   | 00:00:00.818 |
+| `test_opcua`             | `native_opcua`          |    47 |   ✅   | 00:00:00.924 |
+| `test_opcua_client`      | `native_opcua_client`   |    20 |   ✅   | 00:00:00.865 |
+| `test_syslog`            | `native_syslog`         |    10 |   ✅   | 00:00:00.818 |
+| `test_ntlm`              | `native_smb`            |     3 |   ✅   | 00:00:00.951 |
+| `test_smb_client`        | `native_smb`            |    10 |   ✅   | 00:00:00.630 |
+| `test_ntlmssp`           | `native_smb`            |     5 |   ✅   | 00:00:00.618 |
+| `test_smb_crypto`        | `native_smb`            |     5 |   ✅   | 00:00:00.607 |
+| `test_smb2`              | `native_smb`            |    19 |   ✅   | 00:00:00.678 |
+| `test_spnego`            | `native_smb`            |     4 |   ✅   | 00:00:00.607 |
+| `test_smtp`              | `native_smtp`           |    22 |   ✅   | 00:00:01.034 |
+| `test_ntp_server`        | `native_ntp_server`     |     8 |   ✅   | 00:00:00.785 |
+| `test_dns_server`        | `native_dns_server`     |    13 |   ✅   | 00:00:00.840 |
+| `test_rtc`               | `native_rtc`            |     9 |   ✅   | 00:00:00.794 |
+| `test_relay`             | `native_relay`          |     6 |   ✅   | 00:00:00.808 |
+| `test_ld2410`            | `native_ld2410`         |     8 |   ✅   | 00:00:00.790 |
+| `test_mpr121`            | `native_mpr121`         |     6 |   ✅   | 00:00:00.793 |
+| `test_sht3x`             | `native_sht3x`          |     6 |   ✅   | 00:00:00.829 |
+| `test_pca9685`           | `native_pca9685`        |     5 |   ✅   | 00:00:00.791 |
+| `test_ads1115`           | `native_ads1115`        |     5 |   ✅   | 00:00:00.783 |
+| `test_ina219`            | `native_ina219`         |     5 |   ✅   | 00:00:00.788 |
+| `test_hpack`             | `native_hpack`          |    15 |   ✅   | 00:00:00.980 |
+| `test_h2_frame`          | `native_h2frame`        |     7 |   ✅   | 00:00:00.791 |
+| `test_h2_conn`           | `native_h2conn`         |    22 |   ✅   | 00:00:01.222 |
+| `test_quic_varint`       | `native_quic_varint`    |     3 |   ✅   | 00:00:00.802 |
+| `test_h3_frame`          | `native_h3frame`        |     7 |   ✅   | 00:00:00.823 |
+| `test_jwt`               | `native_jwt`            |    22 |   ✅   | 00:00:00.903 |
+| `test_http_client`       | `native_http_client`    |    15 |   ✅   | 00:00:00.812 |
+| `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.858 |
+| `test_mqtt`              | `native_mqtt`           |    22 |   ✅   | 00:00:00.800 |
+| `test_ws_client`         | `native_ws_client`      |    16 |   ✅   | 00:00:00.868 |
+| `test_scratch`           | `native_scratch`        |    15 |   ✅   | 00:00:00.824 |
+| `test_snmp_trap`         | `native_snmp_trap`      |     7 |   ✅   | 00:00:00.838 |
+| `test_inflate`           | `native_inflate`        |    14 |   ✅   | 00:00:00.786 |
+| `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.852 |
+| `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.922 |
+| `test_ssh_comp`          | `native_ssh_comp`       |     6 |   ✅   | 00:00:01.431 |
+| `test_time_source`       | `native_time_source`    |    10 |   ✅   | 00:00:00.815 |
+| `test_config_store`      | `native_config_store`   |    15 |   ✅   | 00:00:00.814 |
+| `test_device_id`         | `native_device_id`      |     4 |   ✅   | 00:00:00.838 |
+| `test_auth_lockout`      | `native_auth_lockout`   |    12 |   ✅   | 00:00:00.852 |
+| `test_csrf`              | `native_csrf`           |    10 |   ✅   | 00:00:00.862 |
+| `test_telemetry`         | `native_telemetry`      |     8 |   ✅   | 00:00:00.837 |
+| `test_dashboard`         | `native_dashboard`      |    15 |   ✅   | 00:00:00.834 |
+| `test_net_egress`        | `native_net_egress`     |     6 |   ✅   | 00:00:00.789 |
+| `test_partition_monitor` | `native_partition`      |     6 |   ✅   | 00:00:00.802 |
+| `test_cbor`              | `native_cbor`           |    21 |   ✅   | 00:00:00.821 |
+| `test_msgpack`           | `native_msgpack`        |    23 |   ✅   | 00:00:00.813 |
+| `test_gpio_map`          | `native_gpio_map`       |     9 |   ✅   | 00:00:00.797 |
+| `test_udp_telemetry`     | `native_udp_telemetry`  |     8 |   ✅   | 00:00:00.794 |
+| `test_statsd`            | `native_statsd`         |    10 |   ✅   | 00:00:00.820 |
+| `test_guardrails`        | `native_guardrails`     |     9 |   ✅   | 00:00:00.809 |
+| `test_failsafe`          | `native_failsafe`       |     7 |   ✅   | 00:00:00.815 |
+| `test_sleep_sched`       | `native_sleep_sched`    |     8 |   ✅   | 00:00:00.782 |
+| `test_wearlevel`         | `native_wearlevel`      |     5 |   ✅   | 00:00:00.792 |
+| `test_netadapt`          | `native_netadapt`       |     6 |   ✅   | 00:00:00.803 |
+| `test_dshot`             | `native_dshot`          |     8 |   ✅   | 00:00:00.788 |
+| `test_hart`              | `native_hart`           |     7 |   ✅   | 00:00:00.810 |
+| `test_nts`               | `native_nts`            |     5 |   ✅   | 00:00:00.804 |
+| `test_dds`               | `native_dds`            |     5 |   ✅   | 00:00:00.783 |
+| `test_xmpp`              | `native_xmpp`           |    11 |   ✅   | 00:00:00.800 |
+| `test_rawl2`             | `native_rawl2`          |     5 |   ✅   | 00:00:00.803 |
+| `test_spa_router`        | `native_spa_router`     |     2 |   ✅   | 00:00:00.784 |
+| `test_goose`             | `native_goose`          |     4 |   ✅   | 00:00:00.781 |
+| `test_mtconnect`         | `native_mtconnect`      |    12 |   ✅   | 00:00:00.844 |
+| `test_wal`               | `native_wal`            |     6 |   ✅   | 00:00:00.840 |
+| `test_wal_store`         | `native_wal`            |     7 |   ✅   | 00:00:00.631 |
+| `test_j2735`             | `native_j2735`          |    11 |   ✅   | 00:00:00.817 |
+| `test_nema_ts2`          | `native_nema_ts2`       |     4 |   ✅   | 00:00:00.793 |
+| `test_snp`               | `native_snp`            |     5 |   ✅   | 00:00:00.798 |
+| `test_directnet`         | `native_directnet`      |     5 |   ✅   | 00:00:00.791 |
+| `test_sep2`              | `native_sep2`           |     5 |   ✅   | 00:00:00.793 |
+| `test_profinet`          | `native_profinet`       |     5 |   ✅   | 00:00:00.800 |
+| `test_ntcip`             | `native_ntcip`          |     3 |   ✅   | 00:00:00.814 |
+| `test_openadr`           | `native_openadr`        |     5 |   ✅   | 00:00:00.798 |
+| `test_mms`               | `native_mms`            |    11 |   ✅   | 00:00:00.784 |
+| `test_cclink`            | `native_cclink`         |     5 |   ✅   | 00:00:00.799 |
+| `test_powerlink`         | `native_powerlink`      |     4 |   ✅   | 00:00:00.797 |
+| `test_sercos`            | `native_sercos`         |     4 |   ✅   | 00:00:00.776 |
+| `test_profibus`          | `native_profibus`       |     5 |   ✅   | 00:00:00.785 |
+| `test_lonworks`          | `native_lonworks`       |     5 |   ✅   | 00:00:00.801 |
+| `test_mbplus`            | `native_mbplus`         |     6 |   ✅   | 00:00:00.790 |
+| `test_interbus`          | `native_interbus`       |     5 |   ✅   | 00:00:00.811 |
+| `test_iccp`              | `native_iccp`           |     5 |   ✅   | 00:00:00.786 |
+| `test_wave`              | `native_wave`           |     9 |   ✅   | 00:00:00.803 |
+| `test_utmc`              | `native_utmc`           |     6 |   ✅   | 00:00:00.801 |
+| `test_ocit`              | `native_ocit`           |     4 |   ✅   | 00:00:00.782 |
+| `test_atc`               | `native_atc`            |     5 |   ✅   | 00:00:00.791 |
+| `test_southbound`        | `native_southbound`     |     6 |   ✅   | 00:00:00.812 |
+| `test_exc_decoder`       | `native_exc_decoder`    |     7 |   ✅   | 00:00:00.801 |
+| `test_http_delivery`     | `native_http_delivery`  |     8 |   ✅   | 00:00:00.817 |
+| `test_hw_health`         | `native_hw_health`      |     7 |   ✅   | 00:00:00.800 |
+| `test_mdns_adaptive`     | `native_mdns_adaptive`  |     5 |   ✅   | 00:00:00.792 |
+| `test_sockpool`          | `native_sockpool`       |     6 |   ✅   | 00:00:00.797 |
+| `test_psram_pool`        | `native_psram_pool`     |     5 |   ✅   | 00:00:00.801 |
+| `test_happy_eyeballs`    | `native_happy_eyeballs` |     5 |   ✅   | 00:00:00.823 |
+| `test_wifi_sniffer`      | `native_wifi_sniffer`   |     6 |   ✅   | 00:00:00.794 |
+| `test_link_manager`      | `native_link_manager`   |     4 |   ✅   | 00:00:00.792 |
+| `test_cc1101`            | `native_cc1101`         |    11 |   ✅   | 00:00:00.792 |
+| `test_fdc2214`           | `native_fdc2214`        |     4 |   ✅   | 00:00:00.782 |
+| `test_ldc1614`           | `native_ldc1614`        |     4 |   ✅   | 00:00:00.784 |
+| `test_vl53l0x`           | `native_vl53l0x`        |     3 |   ✅   | 00:00:00.767 |
+| `test_radio_sniff`       | `native_radio_sniff`    |     4 |   ✅   | 00:00:00.785 |
+| `test_ble_gatt`          | `native_ble_gatt`       |     7 |   ✅   | 00:00:00.788 |
+| `test_tls_policy`        | `native_tls_policy`     |     4 |   ✅   | 00:00:00.782 |
+| `test_wisun`             | `native_wisun`          |    10 |   ✅   | 00:00:00.869 |
+| `test_logbuf`            | `native_logbuf`         |     5 |   ✅   | 00:00:00.816 |
+| `test_config_io`         | `native_config_io`      |     5 |   ✅   | 00:00:00.828 |
+| `test_clock`             | `native_clock`          |     7 |   ✅   | 00:00:00.774 |
+| `test_concurrency`       | `native_concurrency`    |     2 |   ✅   | 00:00:00.921 |
+| `test_concurrency`       | `native_tsan`           |     2 |   ✅   | 00:00:01.468 |
+| `test_qpack`             | `native_qpack`          |    11 |   ✅   | 00:00:00.931 |
+| `test_quic_packet`       | `native_quic_packet`    |     8 |   ✅   | 00:00:00.812 |
+| `test_quic_frame`        | `native_quic_frame`     |     9 |   ✅   | 00:00:00.827 |
+| `test_quic_crypto`       | `native_quic_crypto`    |     7 |   ✅   | 00:00:00.942 |
+| `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   | 00:00:00.885 |
+| `test_quic_tp`           | `native_quic_tp`        |     8 |   ✅   | 00:00:00.839 |
+| `test_tls13_msg`         | `native_tls13_msg`      |    11 |   ✅   | 00:00:00.932 |
+| `test_quic_tls`          | `native_quic_tls`       |    13 |   ✅   | 00:00:01.305 |
+| `test_quic_conn`         | `native_quic_conn`      |    27 |   ✅   | 00:00:02.300 |
+| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:01.277 |
+| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.282 |
+| `test_quic_server`       | `native_quic_server`    |     4 |   ✅   | 00:00:01.417 |
+| `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.848 |
 
 ---
 
@@ -824,482 +788,6 @@ _Unit tests for the IO-Link (SDCI) data-link message codec (services/iolink): th
 
 ---
 
-## test_sse - native - ✅ 46 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit and stress tests for the Server-Sent Events connection pool (sse.h/cpp)._
-
-|   # | Test                                                | Status | Description                                                                |
-| --: | :-------------------------------------------------- | :----: | :------------------------------------------------------------------------- |
-|   1 | `test_sse_pool_size`                                |   ✅   | Sse pool size                                                              |
-|   2 | `test_sse_ids_match_indices_after_init`             |   ✅   | Sse ids match indices after init                                           |
-|   3 | `test_sse_all_inactive_after_init`                  |   ✅   | Sse all inactive after init                                                |
-|   4 | `test_sse_path_empty_after_init`                    |   ✅   | Sse path empty after init                                                  |
-|   5 | `test_sse_alloc_returns_non_null`                   |   ✅   | Sse alloc returns non null                                                 |
-|   6 | `test_sse_alloc_sets_active`                        |   ✅   | Sse alloc sets active                                                      |
-|   7 | `test_sse_alloc_sets_slot_id`                       |   ✅   | Sse alloc sets slot id                                                     |
-|   8 | `test_sse_alloc_stores_path`                        |   ✅   | Sse alloc stores path                                                      |
-|   9 | `test_sse_alloc_stores_different_paths_per_slot`    |   ✅   | Sse alloc stores different paths per slot                                  |
-|  10 | `test_sse_alloc_path_truncated_to_max`              |   ✅   | Build a path longer than MAX_PATH_LEN                                      |
-|  11 | `test_sse_alloc_pool_full_returns_null`             |   ✅   | Sse alloc pool full returns null                                           |
-|  12 | `test_sse_alloc_sse_id_is_pool_index`               |   ✅   | First free slot is 0 → sse_id should be 0                                  |
-|  13 | `test_sse_find_returns_correct_conn`                |   ✅   | Sse find returns correct conn                                              |
-|  14 | `test_sse_find_returns_null_when_empty`             |   ✅   | Sse find returns null when empty                                           |
-|  15 | `test_sse_find_returns_null_for_different_slot`     |   ✅   | Sse find returns null for different slot                                   |
-|  16 | `test_sse_find_after_both_slots_allocated`          |   ✅   | Sse find after both slots allocated                                        |
-|  17 | `test_sse_find_checks_slot_id_not_sse_id`           |   ✅   | sse_pool[0] → slot 3; sse_find(3) must return it, not sse_find(0)          |
-|  18 | `test_sse_free_deactivates_slot`                    |   ✅   | Sse free deactivates slot                                                  |
-|  19 | `test_sse_free_restores_sse_id`                     |   ✅   | Sse free restores sse id                                                   |
-|  20 | `test_sse_free_makes_slot_findable_as_null`         |   ✅   | Sse free makes slot findable as null                                       |
-|  21 | `test_sse_free_clears_path`                         |   ✅   | Sse free clears path                                                       |
-|  22 | `test_sse_free_nop_on_unallocated`                  |   ✅   | Sse free nop on unallocated                                                |
-|  23 | `test_sse_alloc_after_free_succeeds`                |   ✅   | Sse alloc after free succeeds                                              |
-|  24 | `test_sse_free_only_frees_matching_slot`            |   ✅   | Sse free only frees matching slot                                          |
-|  25 | `test_sse_write_null_data_returns_false`            |   ✅   | Sse write null data returns false                                          |
-|  26 | `test_sse_write_returns_false_when_conn_not_active` |   ✅   | Sse write returns false when conn not active                               |
-|  27 | `test_sse_write_returns_false_when_pcb_null`        |   ✅   | Sse write returns false when pcb null                                      |
-|  28 | `test_sse_write_data_only_returns_true`             |   ✅   | Sse write data only returns true                                           |
-|  29 | `test_sse_write_with_event_returns_true`            |   ✅   | Sse write with event returns true                                          |
-|  30 | `test_sse_write_with_id_returns_true`               |   ✅   | Sse write with id returns true                                             |
-|  31 | `test_sse_write_with_all_fields_returns_true`       |   ✅   | Sse write with all fields returns true                                     |
-|  32 | `test_sse_write_does_not_affect_other_slots`        |   ✅   | Write to slot 0 -- slot 1 state must be unchanged                          |
-|  33 | `test_http_conn_open_releases_stale_sse_binding`    |   ✅   | Http conn open releases stale sse binding                                  |
-|  34 | `test_http_conn_open_leaves_other_slot_sse_binding` |   ✅   | Http conn open leaves other slot sse binding                               |
-|  35 | `test_sse_format_data_only`                         |   ✅   | Sse format data only                                                       |
-|  36 | `test_sse_format_event_and_data`                    |   ✅   | Sse format event and data                                                  |
-|  37 | `test_sse_format_id_and_data`                       |   ✅   | Sse format id and data                                                     |
-|  38 | `test_sse_format_all_fields_ordering`               |   ✅   | Field order per WHATWG: event, then id, then data (blank line terminates). |
-|  39 | `test_sse_format_null_data_returns_zero`            |   ✅   | Sse format null data returns zero                                          |
-|  40 | `test_sse_format_overflow_returns_zero`             |   ✅   | A record that cannot fit must report 0, never a partial (truncated) frame. |
-|  41 | `test_sse_format_zero_size_returns_zero`            |   ✅   | Sse format zero size returns zero                                          |
-|  42 | `stress_sse_alloc_free_100_cycles`                  |   ✅   | Stress - Sse alloc free 100 cycles                                         |
-|  43 | `stress_sse_alloc_free_both_slots_alternating`      |   ✅   | Stress - Sse alloc free both slots alternating                             |
-|  44 | `stress_sse_write_100_calls`                        |   ✅   | Stress - Sse write 100 calls                                               |
-|  45 | `stress_sse_find_with_full_pool`                    |   ✅   | Stress - Sse find with full pool                                           |
-|  46 | `stress_sse_write_slot_isolation`                   |   ✅   | Stress - Sse write slot isolation                                          |
-
-</details>
-
----
-
-## test_session - native - ✅ 19 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit, stress, and race-condition tests for Layer 5 (Session)._
-
-|   # | Test                                               | Status | Description                                           |
-| --: | :------------------------------------------------- | :----: | :---------------------------------------------------- |
-|   1 | `test_empty_queue_does_not_crash`                  |   ✅   | Empty queue does not crash                            |
-|   2 | `test_pool_initializes_to_parse_method`            |   ✅   | Pool initializes to parse method                      |
-|   3 | `test_reset_clears_mid_parse_state`                |   ✅   | Reset clears mid parse state                          |
-|   4 | `test_tick_fires_check_timeouts_stale_slot_freed`  |   ✅   | Tick fires check timeouts stale slot freed            |
-|   5 | `test_tick_does_not_free_fresh_connection`         |   ✅   | Tick does not free fresh connection                   |
-|   6 | `test_fn_tick_timeout_before_event_drain_ordering` |   ✅   | Fn tick timeout before event drain ordering           |
-|   7 | `test_fn_tick_only_active_slots_expire`            |   ✅   | Fn tick only active slots expire                      |
-|   8 | `stress_1000_idle_ticks_stable`                    |   ✅   | Stress - 1000 idle ticks stable                       |
-|   9 | `stress_timeout_all_slots_10_cycles`               |   ✅   | Stress - Timeout all slots 10 cycles                  |
-|  10 | `stress_mixed_fresh_stale_slots_many_ticks`        |   ✅   | Stress - Mixed fresh stale slots many ticks           |
-|  11 | `test_evt_connect_calls_http_reset`                |   ✅   | Evt connect calls http reset                          |
-|  12 | `test_evt_disconnect_calls_http_reset`             |   ✅   | Evt disconnect calls http reset                       |
-|  13 | `test_evt_error_calls_http_reset`                  |   ✅   | Evt error calls http reset                            |
-|  14 | `test_evt_data_calls_http_parse`                   |   ✅   | Evt data calls http parse                             |
-|  15 | `test_multiple_events_drained_in_one_tick`         |   ✅   | Slot 0: dirty state → EvtType::EVT_CONNECT → reset    |
-|  16 | `race_external_free_between_ticks`                 |   ✅   | First tick: slot expires inside check_timeouts        |
-|  17 | `race_activity_update_saves_slot_from_timeout`     |   ✅   | Race - Activity update saves slot from timeout        |
-|  18 | `race_all_expire_then_idle_tick`                   |   ✅   | Race - All expire then idle tick                      |
-|  19 | `race_millis_wraparound_no_spurious_timeout`       |   ✅   | last_activity close to UINT32_MAX, now just past wrap |
-
-</details>
-
----
-
-## test_presentation - native - ✅ 63 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit, stress, and race-condition tests for Layer 6 (Presentation)._
-
-|   # | Test                                                 | Status | Description                                                                                  |
-| --: | :--------------------------------------------------- | :----: | :------------------------------------------------------------------------------------------- |
-|   1 | `test_fn_reset_sets_parse_state_to_method`           |   ✅   | Fn reset sets parse state to method                                                          |
-|   2 | `test_fn_reset_sets_slot_id`                         |   ✅   | Fn reset sets slot id                                                                        |
-|   3 | `test_fn_reset_clears_method`                        |   ✅   | Fn reset clears method                                                                       |
-|   4 | `test_fn_reset_clears_path_and_idx`                  |   ✅   | Fn reset clears path and idx                                                                 |
-|   5 | `test_fn_reset_clears_query_raw_and_params`          |   ✅   | Fn reset clears query raw and params                                                         |
-|   6 | `test_fn_reset_clears_all_header_slots`              |   ✅   | Fn reset clears all header slots                                                             |
-|   7 | `test_fn_reset_clears_body_fields`                   |   ✅   | Fn reset clears body fields                                                                  |
-|   8 | `test_fn_reset_out_of_range_is_nop`                  |   ✅   | Fn reset out of range is nop                                                                 |
-|   9 | `test_fn_reset_is_idempotent`                        |   ✅   | Fn reset is idempotent                                                                       |
-|  10 | `test_fn_get_header_null_when_no_headers`            |   ✅   | setUp already reset all slots - header_count is 0                                            |
-|  11 | `test_fn_get_header_finds_single_header`             |   ✅   | Fn get header finds single header                                                            |
-|  12 | `test_fn_get_header_finds_first_of_many`             |   ✅   | Fn get header finds first of many                                                            |
-|  13 | `test_fn_get_header_finds_middle_of_many`            |   ✅   | Fn get header finds middle of many                                                           |
-|  14 | `test_fn_get_header_finds_last_of_many`              |   ✅   | Fn get header finds last of many                                                             |
-|  15 | `test_fn_get_header_case_insensitive_lowercase`      |   ✅   | Fn get header case insensitive lowercase                                                     |
-|  16 | `test_fn_get_header_case_insensitive_uppercase`      |   ✅   | Fn get header case insensitive uppercase                                                     |
-|  17 | `test_fn_get_header_returns_null_for_absent_key`     |   ✅   | Fn get header returns null for absent key                                                    |
-|  18 | `test_fn_get_header_does_not_bleed_across_slots`     |   ✅   | Fn get header does not bleed across slots                                                    |
-|  19 | `test_fn_get_query_null_when_no_params`              |   ✅   | Fn get query null when no params                                                             |
-|  20 | `test_fn_get_query_finds_single_param`               |   ✅   | Fn get query finds single param                                                              |
-|  21 | `test_fn_get_query_finds_first_param`                |   ✅   | Fn get query finds first param                                                               |
-|  22 | `test_fn_get_query_finds_middle_param`               |   ✅   | Fn get query finds middle param                                                              |
-|  23 | `test_fn_get_query_finds_last_param`                 |   ✅   | Fn get query finds last param                                                                |
-|  24 | `test_fn_get_query_returns_null_for_absent_key`      |   ✅   | Fn get query returns null for absent key                                                     |
-|  25 | `test_fn_get_query_empty_value`                      |   ✅   | Fn get query empty value                                                                     |
-|  26 | `test_fn_get_query_does_not_bleed_across_slots`      |   ✅   | Fn get query does not bleed across slots                                                     |
-|  27 | `test_get_parses_complete`                           |   ✅   | Get parses complete                                                                          |
-|  28 | `test_post_body_stored`                              |   ✅   | Post body stored                                                                             |
-|  29 | `test_put_parses_complete`                           |   ✅   | Put parses complete                                                                          |
-|  30 | `test_delete_parses_complete`                        |   ✅   | Delete parses complete                                                                       |
-|  31 | `test_patch_parses_complete`                         |   ✅   | Patch parses complete                                                                        |
-|  32 | `test_head_parses_complete`                          |   ✅   | Head parses complete                                                                         |
-|  33 | `test_query_single_param`                            |   ✅   | Query single param                                                                           |
-|  34 | `test_query_multiple_params`                         |   ✅   | Query multiple params                                                                        |
-|  35 | `test_body_null_terminated`                          |   ✅   | Body null terminated                                                                         |
-|  36 | `test_body_over_buf_size_is_413`                     |   ✅   | Content-Length > BODY_BUF_SIZE → ParseState::PARSE_ENTITY_TOO_LARGE before any body is read. |
-|  37 | `test_overflow_method_sets_error`                    |   ✅   | Overflow method sets error                                                                   |
-|  38 | `test_overflow_path_sets_414`                        |   ✅   | Overflow path sets 414                                                                       |
-|  39 | `test_bad_lf_after_cr_sets_error`                    |   ✅   | Null byte would terminate the C-string in push(), so use a visible non-LF byte.              |
-|  40 | `test_headers_beyond_max_are_dropped`                |   ✅   | Headers beyond max are dropped                                                               |
-|  41 | `test_query_params_beyond_max_are_dropped`           |   ✅   | Query params beyond max are dropped                                                          |
-|  42 | `test_incremental_two_pushes_completes`              |   ✅   | Incremental two pushes completes                                                             |
-|  43 | `test_body_starting_with_newline_stored`             |   ✅   | Body starting with newline stored                                                            |
-|  44 | `test_put_body_stored`                               |   ✅   | Put body stored                                                                              |
-|  45 | `test_content_length_header_stored_in_headers_array` |   ✅   | Content length header stored in headers array                                                |
-|  46 | `stress_parse_reset_100_cycles`                      |   ✅   | Stress - Parse reset 100 cycles                                                              |
-|  47 | `stress_all_slots_parse_simultaneously`              |   ✅   | Stress - All slots parse simultaneously                                                      |
-|  48 | `stress_method_at_max_7_chars_no_error`              |   ✅   | Stress - Method at max 7 chars no error                                                      |
-|  49 | `stress_path_at_exact_limit_no_error`                |   ✅   | Stress - Path at exact limit no error                                                        |
-|  50 | `stress_body_exactly_buf_size_all_stored`            |   ✅   | Stress - Body exactly buf size all stored                                                    |
-|  51 | `stress_exactly_max_headers_all_stored`              |   ✅   | Stress - Exactly max headers all stored                                                      |
-|  52 | `stress_exactly_max_query_params_all_stored`         |   ✅   | Stress - Exactly max query params all stored                                                 |
-|  53 | `stress_incremental_byte_by_byte_no_error`           |   ✅   | Stress - Incremental byte by byte no error                                                   |
-|  54 | `stress_sequential_requests_no_state_leak`           |   ✅   | Stress - Sequential requests no state leak                                                   |
-|  55 | `race_interleaved_producer_consumer_ring_buffer`     |   ✅   | Producer writes first 100 bytes                                                              |
-|  56 | `race_ring_buffer_full_prevents_write`               |   ✅   | Race - Ring buffer full prevents write                                                       |
-|  57 | `race_aba_slot_reuse_fresh_timestamp`                |   ✅   | Race - Aba slot reuse fresh timestamp                                                        |
-|  58 | `race_double_free_is_nop`                            |   ✅   | Race - Double free is nop                                                                    |
-|  59 | `race_concurrent_slot_parse_isolation`               |   ✅   | Slot 0: push a full request                                                                  |
-|  60 | `race_reset_during_parse_header_val`                 |   ✅   | Race - Reset during parse header val                                                         |
-|  61 | `race_reset_during_parse_query`                      |   ✅   | Race - Reset during parse query                                                              |
-|  62 | `race_reset_during_parse_body`                       |   ✅   | Race - Reset during parse body                                                               |
-|  63 | `race_parse_after_complete_is_nop`                   |   ✅   | Race - Parse after complete is nop                                                           |
-
-</details>
-
----
-
-## test_transport - native - ✅ 44 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit and stress tests for Layer 4 (Transport) - constants, pool invariants,_
-
-|   # | Test                                             | Status | Description                                      |
-| --: | :----------------------------------------------- | :----: | :----------------------------------------------- |
-|   1 | `test_pool_capacity_is_four`                     |   ✅   | Pool capacity is four                            |
-|   2 | `test_rx_buffer_size_is_one_kb`                  |   ✅   | Rx buffer size is one kb                         |
-|   3 | `test_timeout_constant_is_5000ms`                |   ✅   | Timeout constant is 5000ms                       |
-|   4 | `test_all_slots_free_after_init`                 |   ✅   | All slots free after init                        |
-|   5 | `test_all_pcbs_null_after_init`                  |   ✅   | All pcbs null after init                         |
-|   6 | `test_all_ring_buffers_empty_after_init`         |   ✅   | All ring buffers empty after init                |
-|   7 | `test_slot_ids_match_indices`                    |   ✅   | Slot ids match indices                           |
-|   8 | `test_ring_empty_when_head_equals_tail`          |   ✅   | Ring empty when head equals tail                 |
-|   9 | `test_ring_wrap_at_boundary`                     |   ✅   | Ring wrap at boundary                            |
-|  10 | `test_ring_full_sentinel_one_slot_reserved`      |   ✅   | Ring full sentinel one slot reserved             |
-|  11 | `test_ring_can_store_size_minus_one_bytes`       |   ✅   | Ring can store size minus one bytes              |
-|  12 | `test_event_types_are_distinct`                  |   ✅   | Event types are distinct                         |
-|  13 | `test_timeout_does_not_fire_on_free_slot`        |   ✅   | Timeout does not fire on free slot               |
-|  14 | `test_timeout_does_not_fire_before_deadline`     |   ✅   | Timeout does not fire before deadline            |
-|  15 | `test_timeout_fires_at_deadline`                 |   ✅   | Timeout fires at deadline                        |
-|  16 | `test_timeout_fires_only_on_stale_slots`         |   ✅   | Timeout fires only on stale slots                |
-|  17 | `test_init_succeeds_on_native`                   |   ✅   | Init succeeds on native                          |
-|  18 | `test_all_last_activity_ms_zero_after_init`      |   ✅   | All last activity ms zero after init             |
-|  19 | `test_queue_not_null_after_init`                 |   ✅   | Queue not null after init                        |
-|  20 | `stress_ring_buffer_fill_drain_integrity`        |   ✅   | Write known pattern                              |
-|  21 | `stress_ring_buffer_multi_cycle_no_corruption`   |   ✅   | Stress - Ring buffer multi cycle no corruption   |
-|  22 | `stress_all_slots_timeout_simultaneously`        |   ✅   | Stress - All slots timeout simultaneously        |
-|  23 | `stress_timeout_arm_recover_cycle`               |   ✅   | Stress - Timeout arm recover cycle               |
-|  24 | `stress_check_timeouts_high_call_rate`           |   ✅   | Stress - Check timeouts high call rate           |
-|  25 | `stress_ring_buffer_byte_by_byte_fill_and_drain` |   ✅   | Stress - Ring buffer byte by byte fill and drain |
-|  26 | `test_accept_throttle_blocks_over_budget`        |   ✅   | Accept throttle blocks over budget               |
-|  27 | `test_accept_throttle_window_refills`            |   ✅   | Accept throttle window refills                   |
-|  28 | `test_accept_throttle_handles_rollover`          |   ✅   | Accept throttle handles rollover                 |
-|  29 | `test_per_ip_throttle_blocks_over_budget`        |   ✅   | Per ip throttle blocks over budget               |
-|  30 | `test_per_ip_throttle_isolates_addresses`        |   ✅   | Per ip throttle isolates addresses               |
-|  31 | `test_per_ip_throttle_window_refills`            |   ✅   | Per ip throttle window refills                   |
-|  32 | `test_per_ip_throttle_evicts_when_full`          |   ✅   | Per ip throttle evicts when full                 |
-|  33 | `test_per_ip_throttle_zero_ip_always_allowed`    |   ✅   | Per ip throttle zero ip always allowed           |
-|  34 | `test_per_ip_throttle_v6_distinct`               |   ✅   | Per ip throttle v6 distinct                      |
-|  35 | `test_per_ip_throttle_handles_rollover`          |   ✅   | Per ip throttle handles rollover                 |
-|  36 | `test_ip_allowlist_empty_allows_all`             |   ✅   | Ip allowlist empty allows all                    |
-|  37 | `test_ip_allowlist_host_match`                   |   ✅   | Ip allowlist host match                          |
-|  38 | `test_ip_allowlist_cidr_match`                   |   ✅   | Ip allowlist cidr match                          |
-|  39 | `test_ip_allowlist_masks_host_bits`              |   ✅   | Ip allowlist masks host bits                     |
-|  40 | `test_ip_allowlist_multiple_rules`               |   ✅   | Ip allowlist multiple rules                      |
-|  41 | `test_ip_allowlist_zero_prefix_matches_all`      |   ✅   | Ip allowlist zero prefix matches all             |
-|  42 | `test_ip_allowlist_v6_cidr`                      |   ✅   | Ip allowlist v6 cidr                             |
-|  43 | `test_ip_allowlist_rejects_bad_prefix`           |   ✅   | Ip allowlist rejects bad prefix                  |
-|  44 | `test_ip_allowlist_table_full`                   |   ✅   | Ip allowlist table full                          |
-
-</details>
-
----
-
-## test_websocket - native - ✅ 69 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit and stress tests for SHA-1, Base64, and the WebSocket frame parser._
-
-|   # | Test                                                   | Status | Description                                                               |
-| --: | :----------------------------------------------------- | :----: | :------------------------------------------------------------------------ |
-|   1 | `test_sha1_empty_string`                               |   ✅   | Sha1 empty string                                                         |
-|   2 | `test_sha1_abc`                                        |   ✅   | Sha1 abc                                                                  |
-|   3 | `test_sha1_rfc6455_handshake_key`                      |   ✅   | Client sends: Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==                 |
-|   4 | `test_sha1_different_inputs_different_digests`         |   ✅   | Sha1 different inputs different digests                                   |
-|   5 | `test_base64_encode_one_byte`                          |   ✅   | Base64 encode one byte                                                    |
-|   6 | `test_base64_encode_two_bytes`                         |   ✅   | Base64 encode two bytes                                                   |
-|   7 | `test_base64_encode_three_bytes`                       |   ✅   | Base64 encode three bytes                                                 |
-|   8 | `test_base64_encode_ws_accept_key`                     |   ✅   | Base64 encode ws accept key                                               |
-|   9 | `test_base64_decode_one_byte`                          |   ✅   | Base64 decode one byte                                                    |
-|  10 | `test_base64_decode_two_bytes`                         |   ✅   | Base64 decode two bytes                                                   |
-|  11 | `test_base64_decode_three_bytes`                       |   ✅   | Base64 decode three bytes                                                 |
-|  12 | `test_base64_decode_ws_accept_key`                     |   ✅   | Base64 decode ws accept key                                               |
-|  13 | `test_base64_decode_rejects_misplaced_padding`         |   ✅   | Base64 decode rejects misplaced padding                                   |
-|  14 | `test_base64_decode_respects_capacity`                 |   ✅   | "TWFu" decodes to 3 bytes ("Man"); a 2-byte buffer is too small.          |
-|  15 | `test_base64_round_trip`                               |   ✅   | Base64 round trip                                                         |
-|  16 | `test_ws_pool_size`                                    |   ✅   | Ws pool size                                                              |
-|  17 | `test_ws_ids_match_indices_after_init`                 |   ✅   | Ws ids match indices after init                                           |
-|  18 | `test_ws_all_inactive_after_init`                      |   ✅   | Ws all inactive after init                                                |
-|  19 | `test_ws_alloc_returns_non_null`                       |   ✅   | Ws alloc returns non null                                                 |
-|  20 | `test_ws_alloc_sets_active`                            |   ✅   | Ws alloc sets active                                                      |
-|  21 | `test_ws_alloc_sets_slot_id`                           |   ✅   | Ws alloc sets slot id                                                     |
-|  22 | `test_ws_alloc_sets_parse_state_header1`               |   ✅   | Ws alloc sets parse state header1                                         |
-|  23 | `test_ws_alloc_pool_full_returns_null`                 |   ✅   | Ws alloc pool full returns null                                           |
-|  24 | `test_ws_find_returns_correct_conn`                    |   ✅   | Ws find returns correct conn                                              |
-|  25 | `test_ws_find_returns_null_when_empty`                 |   ✅   | Ws find returns null when empty                                           |
-|  26 | `test_ws_find_returns_null_for_different_slot`         |   ✅   | Ws find returns null for different slot                                   |
-|  27 | `test_ws_find_after_both_slots_allocated`              |   ✅   | Ws find after both slots allocated                                        |
-|  28 | `test_ws_free_deactivates_slot`                        |   ✅   | Ws free deactivates slot                                                  |
-|  29 | `test_ws_free_restores_ws_id`                          |   ✅   | Ws free restores ws id                                                    |
-|  30 | `test_ws_free_makes_slot_findable_as_null`             |   ✅   | Ws free makes slot findable as null                                       |
-|  31 | `test_ws_free_nop_on_unallocated`                      |   ✅   | Ws free nop on unallocated                                                |
-|  32 | `test_ws_alloc_after_free_succeeds`                    |   ✅   | Ws alloc after free succeeds                                              |
-|  33 | `test_ws_parse_text_frame_sets_ready`                  |   ✅   | Ws parse text frame sets ready                                            |
-|  34 | `test_ws_parse_payload_stored_correctly`               |   ✅   | Ws parse payload stored correctly                                         |
-|  35 | `test_ws_parse_binary_frame_sets_ready`                |   ✅   | Ws parse binary frame sets ready                                          |
-|  36 | `test_ws_parse_zero_length_unmasked_frame`             |   ✅   | Unmasked zero-length frame: 0x81 0x00.                                    |
-|  37 | `test_ws_parse_zero_length_masked_frame`               |   ✅   | Masked zero-length text frame: FIN                                        | TEXT, MASK                                                 | 0, 4-byte mask key. |
-|  38 | `test_ws_reject_unmasked_data_frame`                   |   ✅   | FIN                                                                       | TEXT, unmasked, length 3 - RFC 6455 §5.1 requires masking. |
-|  39 | `test_ws_reject_reserved_opcode`                       |   ✅   | Opcode 0x3 is reserved (RFC 6455 §5.2) - must fail the connection.        |
-|  40 | `test_ws_reject_fragmented_control_frame`              |   ✅   | PING with FIN=0 - control frames MUST NOT be fragmented (RFC 6455 §5.5).  |
-|  41 | `test_ws_reject_oversized_control_frame`               |   ✅   | PING (masked) with payload length 126 - control frames MUST be <= 125     |
-|  42 | `test_ws_parse_16bit_length_frame`                     |   ✅   | Build a 130-byte payload (> 125, requires 16-bit length field)            |
-|  43 | `test_ws_parse_rsv1_set_closes_protocol`               |   ✅   | FIN=1, RSV1=0x40, TEXT: byte0 = 0x80                                      | 0x40                                                       | 0x01 = 0xC1         |
-|  44 | `test_ws_parse_rsv2_set_closes_protocol`               |   ✅   | FIN=1, RSV2=0x20, TEXT: byte0 = 0x80                                      | 0x20                                                       | 0x01 = 0xA1         |
-|  45 | `test_ws_parse_rsv3_set_closes_protocol`               |   ✅   | FIN=1, RSV3=0x10, TEXT: byte0 = 0x80                                      | 0x10                                                       | 0x01 = 0x91         |
-|  46 | `test_ws_parse_64bit_length_closes_too_big`            |   ✅   | FIN=1, TEXT, MASK=1, len7=127 (64-bit length), then 8 length bytes        |
-|  47 | `test_ws_parse_oversized_16bit_length_closes_too_big`  |   ✅   | Ws parse oversized 16bit length closes too big                            |
-|  48 | `test_ws_fragment_start_waits_for_continuation`        |   ✅   | FIN=0, TEXT, "Hi" - start of a fragmented message; not deliverable yet.   |
-|  49 | `test_ws_fragmented_message_reassembled`               |   ✅   | Ws fragmented message reassembled                                         |
-|  50 | `test_ws_control_frame_interleaved_in_fragments`       |   ✅   | A PING arrives between the two data fragments; it must be handled without |
-|  51 | `test_ws_fragment_accumulation_overflow_rejected`      |   ✅   | Ws fragment accumulation overflow rejected                                |
-|  52 | `test_ws_continuation_without_start_rejected`          |   ✅   | CONTINUATION with no message in progress (RFC 6455 §5.4) → 1002.          |
-|  53 | `test_ws_new_data_frame_during_fragmentation_rejected` |   ✅   | A second TEXT (new message) before finishing the first is illegal.        |
-|  54 | `test_ws_parse_ping_auto_pong_resets_frame`            |   ✅   | FIN=1, PING=0x09: byte0 = 0x89                                            |
-|  55 | `test_ws_parse_pong_silently_ignored`                  |   ✅   | FIN=1, PONG=0x0A: byte0 = 0x8A                                            |
-|  56 | `test_ws_parse_close_marks_ws_closed`                  |   ✅   | FIN=1, CLOSE=0x08: byte0 = 0x88                                           |
-|  57 | `test_ws_parse_stops_at_frame_ready`                   |   ✅   | Push two complete frames -- parser should stop after the first            |
-|  58 | `test_ws_reset_frame_clears_fields`                    |   ✅   | Ws reset frame clears fields                                              |
-|  59 | `test_ws_parse_mask_applied_correctly`                 |   ✅   | Frame with mask key {0x37, 0xFA, 0x21, 0x3D}, payload 'H' XOR 0x37 = 0x7F |
-|  60 | `test_ws_text_invalid_utf8_rejected`                   |   ✅   | Ws text invalid utf8 rejected                                             |
-|  61 | `test_ws_text_valid_utf8_accepted`                     |   ✅   | Ws text valid utf8 accepted                                               |
-|  62 | `test_ws_binary_arbitrary_bytes_accepted`              |   ✅   | Ws binary arbitrary bytes accepted                                        |
-|  63 | `test_ws_outbound_fragmentation`                       |   ✅   | Ws outbound fragmentation                                                 |
-|  64 | `stress_ws_parse_reset_100_cycles`                     |   ✅   | Stress - Ws parse reset 100 cycles                                        |
-|  65 | `stress_ws_alloc_free_pool_cycle`                      |   ✅   | Stress - Ws alloc free pool cycle                                         |
-|  66 | `stress_ws_parse_incremental_byte_by_byte`             |   ✅   | Stress - Ws parse incremental byte by byte                                |
-|  67 | `stress_ws_parse_max_payload`                          |   ✅   | Stress - Ws parse max payload                                             |
-|  68 | `stress_ws_parse_two_consecutive_frames`               |   ✅   | First frame                                                               |
-|  69 | `test_ws_send_frame_paths_and_parse_guard`             |   ✅   | Ws send frame paths and parse guard                                       |
-
-</details>
-
----
-
-## test_http_parser - native - ✅ 93 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Comprehensive unit tests for the standalone HTTP/1.1 parser._
-
-|   # | Test                                                     | Status | Description                                                                              |
-| --: | :------------------------------------------------------- | :----: | :--------------------------------------------------------------------------------------- |
-|   1 | `test_accessor_null_guards`                              |   ✅   | Accessor null guards                                                                     |
-|   2 | `test_cookie_parse_edges`                                |   ✅   | Cookie parse edges                                                                       |
-|   3 | `test_forwarded_ip_whitespace_and_invalid`               |   ✅   | Forwarded ip whitespace and invalid                                                      |
-|   4 | `test_reset_sets_parse_method_state`                     |   ✅   | Reset sets parse method state                                                            |
-|   5 | `test_reset_preserves_slot_id`                           |   ✅   | Reset preserves slot id                                                                  |
-|   6 | `test_reset_clears_method`                               |   ✅   | Reset clears method                                                                      |
-|   7 | `test_reset_clears_path`                                 |   ✅   | Reset clears path                                                                        |
-|   8 | `test_reset_clears_header_count`                         |   ✅   | Reset clears header count                                                                |
-|   9 | `test_reset_clears_body`                                 |   ✅   | Reset clears body                                                                        |
-|  10 | `test_reset_clears_query_count`                          |   ✅   | Reset clears query count                                                                 |
-|  11 | `test_feed_after_complete_does_not_change_state`         |   ✅   | Feed after complete does not change state                                                |
-|  12 | `test_feed_after_error_does_not_change_state`            |   ✅   | Feed after error does not change state                                                   |
-|  13 | `test_feed_after_entity_too_large_does_not_change_state` |   ✅   | Feed after entity too large does not change state                                        |
-|  14 | `test_method_get`                                        |   ✅   | Method get                                                                               |
-|  15 | `test_method_post`                                       |   ✅   | Method post                                                                              |
-|  16 | `test_method_put`                                        |   ✅   | Method put                                                                               |
-|  17 | `test_method_delete`                                     |   ✅   | Method delete                                                                            |
-|  18 | `test_method_patch`                                      |   ✅   | Method patch                                                                             |
-|  19 | `test_method_head`                                       |   ✅   | Method head                                                                              |
-|  20 | `test_method_options`                                    |   ✅   | Method options                                                                           |
-|  21 | `test_method_overflow_is_error`                          |   ✅   | More than 7 chars (sizeof method - 1) before a space → ParseState::PARSE_ERROR           |
-|  22 | `test_path_root`                                         |   ✅   | Path root                                                                                |
-|  23 | `test_path_segments`                                     |   ✅   | Path segments                                                                            |
-|  24 | `test_path_without_query`                                |   ✅   | Path without query                                                                       |
-|  25 | `test_path_overflow_is_414`                              |   ✅   | Build a path longer than MAX_PATH_LEN                                                    |
-|  26 | `test_single_query_param`                                |   ✅   | Single query param                                                                       |
-|  27 | `test_two_query_params`                                  |   ✅   | Two query params                                                                         |
-|  28 | `test_query_key_not_found_returns_null`                  |   ✅   | Query key not found returns null                                                         |
-|  29 | `test_query_empty_value`                                 |   ✅   | Query empty value                                                                        |
-|  30 | `test_single_header_stored`                              |   ✅   | Single header stored                                                                     |
-|  31 | `test_header_lookup_case_insensitive`                    |   ✅   | Header lookup case insensitive                                                           |
-|  32 | `test_cookie_basic_and_positions`                        |   ✅   | Cookie basic and positions                                                               |
-|  33 | `test_cookie_missing_and_no_header`                      |   ✅   | Cookie missing and no header                                                             |
-|  34 | `test_cookie_exact_name_not_substring`                   |   ✅   | Cookie exact name not substring                                                          |
-|  35 | `test_cookie_quoted_and_value_with_equals`               |   ✅   | Cookie quoted and value with equals                                                      |
-|  36 | `test_forwarded_rfc7239`                                 |   ✅   | Forwarded rfc7239                                                                        |
-|  37 | `test_forwarded_leftmost_client`                         |   ✅   | Both header forms list the original client leftmost.                                     |
-|  38 | `test_forwarded_strips_quotes_and_port`                  |   ✅   | Forwarded strips quotes and port                                                         |
-|  39 | `test_forwarded_ipv6_recovered_unknown_rejected`         |   ✅   | RFC 7239 §6: an IPv6 for= value is DQUOTE-wrapped + bracketed, optional :port.           |
-|  40 | `test_header_leading_space_stripped`                     |   ✅   | Header leading space stripped                                                            |
-|  41 | `test_content_length_header_parsed`                      |   ✅   | Content length header parsed                                                             |
-|  42 | `test_content_length_in_headers_array`                   |   ✅   | Content length in headers array                                                          |
-|  43 | `test_multiple_headers_stored`                           |   ✅   | Multiple headers stored                                                                  |
-|  44 | `test_missing_header_returns_null`                       |   ✅   | Missing header returns null                                                              |
-|  45 | `test_get_no_body_completes`                             |   ✅   | Get no body completes                                                                    |
-|  46 | `test_post_with_body`                                    |   ✅   | Post with body                                                                           |
-|  47 | `test_put_with_body`                                     |   ✅   | Put with body                                                                            |
-|  48 | `test_body_starting_with_newline`                        |   ✅   | Body starting with newline                                                               |
-|  49 | `test_post_content_length_zero`                          |   ✅   | Post content length zero                                                                 |
-|  50 | `test_body_exactly_at_buffer_limit`                      |   ✅   | Body of exactly BODY_BUF_SIZE bytes - should succeed                                     |
-|  51 | `test_body_null_terminated_after_complete`               |   ✅   | Body null terminated after complete                                                      |
-|  52 | `test_body_one_over_limit_is_413`                        |   ✅   | Content-Length == BODY_BUF_SIZE + 1 → ParseState::PARSE_ENTITY_TOO_LARGE                 |
-|  53 | `test_body_far_over_limit_is_413`                        |   ✅   | Body far over limit is 413                                                               |
-|  54 | `test_413_no_body_bytes_fed`                             |   ✅   | Even though we detected 413, no body bytes should have been stored                       |
-|  55 | `test_413_header_still_stored`                           |   ✅   | Headers before the blank line must be accessible even when 413                           |
-|  56 | `test_body_exactly_at_limit_is_not_413`                  |   ✅   | BODY_BUF_SIZE is the max that fits - should NOT trigger 413                              |
-|  57 | `test_path_overflow_stops_feeding`                       |   ✅   | Bytes fed after URI_TOO_LONG are ignored - state must not change                         |
-|  58 | `test_414_path_filled_to_capacity`                       |   ✅   | Buffer fills to MAX_PATH_LEN-1 chars before overflow is detected                         |
-|  59 | `test_method_nul_byte_is_error`                          |   ✅   | Method nul byte is error                                                                 |
-|  60 | `test_method_control_char_is_error`                      |   ✅   | Method control char is error                                                             |
-|  61 | `test_method_del_byte_is_error`                          |   ✅   | Method del byte is error                                                                 |
-|  62 | `test_method_non_tchar_symbol_is_error`                  |   ✅   | '(' is VCHAR but not tchar                                                               |
-|  63 | `test_method_tchar_symbols_accepted`                     |   ✅   | '-' is a valid tchar; a custom method like "X-CMD" is valid per RFC 7230                 |
-|  64 | `test_path_nul_byte_is_error`                            |   ✅   | Path nul byte is error                                                                   |
-|  65 | `test_path_control_char_is_error`                        |   ✅   | Path control char is error                                                               |
-|  66 | `test_path_del_byte_is_error`                            |   ✅   | Path del byte is error                                                                   |
-|  67 | `test_query_nul_byte_is_error`                           |   ✅   | Query nul byte is error                                                                  |
-|  68 | `test_query_control_char_is_error`                       |   ✅   | Query control char is error                                                              |
-|  69 | `test_header_key_space_is_error`                         |   ✅   | Space in a field-name is not a valid tchar                                               |
-|  70 | `test_header_key_nul_byte_is_error`                      |   ✅   | Header key nul byte is error                                                             |
-|  71 | `test_header_key_control_char_is_error`                  |   ✅   | Header key control char is error                                                         |
-|  72 | `test_header_key_mid_cr_is_error`                        |   ✅   | CR in the middle of a key name must be ParseState::PARSE_ERROR, not blank-line detection |
-|  73 | `test_header_key_colon_at_start_skips_header`            |   ✅   | Empty key name (colon immediately after CRLF): transition to val with empty key          |
-|  74 | `test_long_standard_header_key_accepted`                 |   ✅   | Regression: "Sec-WebSocket-Extensions" (24 chars) is a standard header that              |
-|  75 | `test_overlong_header_key_truncated_not_error`           |   ✅   | A header name longer than MAX_KEY_LEN is capped (capacity), not rejected:                |
-|  76 | `test_header_val_nul_byte_is_error`                      |   ✅   | Header val nul byte is error                                                             |
-|  77 | `test_header_val_control_char_is_error`                  |   ✅   | Header val control char is error                                                         |
-|  78 | `test_header_val_del_byte_is_error`                      |   ✅   | Header val del byte is error                                                             |
-|  79 | `test_header_val_htab_mid_value_allowed`                 |   ✅   | HTAB is valid mid-value (RFC 7230 §3.2)                                                  |
-|  80 | `test_header_val_leading_htab_stripped`                  |   ✅   | Leading HTAB (OWS) is stripped just like leading SP                                      |
-|  81 | `test_header_val_obs_text_allowed`                       |   ✅   | obs-text bytes (%x80-FF) are allowed for legacy compatibility (RFC 7230 §3.2.6)          |
-|  82 | `test_version_http11_recognized`                         |   ✅   | Version http11 recognized                                                                |
-|  83 | `test_version_http10_recognized`                         |   ✅   | Version http10 recognized                                                                |
-|  84 | `test_version_unknown_is_http_unknown`                   |   ✅   | Version unknown is http unknown                                                          |
-|  85 | `test_version_reset_to_unknown`                          |   ✅   | Version reset to unknown                                                                 |
-|  86 | `test_bad_expect_lf_is_error`                            |   ✅   | CRLF in version line replaced by CR + X (no LF)                                          |
-|  87 | `test_blank_line_non_lf_is_error`                        |   ✅   | Header block ends with CR + non-LF in the blank line                                     |
-|  88 | `test_slots_are_independent`                             |   ✅   | Slots are independent                                                                    |
-|  89 | `test_incremental_byte_by_byte`                          |   ✅   | Incremental byte by byte                                                                 |
-|  90 | `test_incremental_two_chunks`                            |   ✅   | Incremental two chunks                                                                   |
-|  91 | `stress_many_requests_same_slot`                         |   ✅   | Stress - Many requests same slot                                                         |
-|  92 | `stress_max_headers`                                     |   ✅   | Build a request with MAX_HEADERS header lines                                            |
-|  93 | `stress_max_query_params`                                |   ✅   | Build a query string with MAX_QUERY_PARAMS parameters                                    |
-
-</details>
-
----
-
-## test_observability - native_observability - ✅ 17 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Transport observability (DETWS_ENABLE_OBSERVABILITY): the det_conn_on_event_
-
-|   # | Test                                                          | Status | Description                                                             |
-| --: | :------------------------------------------------------------ | :----: | :---------------------------------------------------------------------- |
-|   1 | `test_transition_fires_hook_with_args`                        |   ✅   | Transition fires hook with args                                         |
-|   2 | `test_each_reason_bumps_its_counter`                          |   ✅   | Each reason bumps its counter                                           |
-|   3 | `test_closing_gauge_is_derived_from_pool`                     |   ✅   | Closing gauge is derived from pool                                      |
-|   4 | `test_reset_clears_cumulative_not_derived_gauge`              |   ✅   | Reset clears cumulative not derived gauge                               |
-|   5 | `test_no_hook_after_unregister`                               |   ✅   | No hook after unregister                                                |
-|   6 | `test_recv_fin_counts_remote_close`                           |   ✅   | Recv fin counts remote close                                            |
-|   7 | `test_err_cb_counts_error_close`                              |   ✅   | Err cb counts error close                                               |
-|   8 | `test_timeout_sweep_counts_timeout`                           |   ✅   | Timeout sweep counts timeout                                            |
-|   9 | `test_local_close_counts_local`                               |   ✅   | det_conn_close(slot) reads the slot's pcb, frees the slot, and counts a |
-|  10 | `test_abort_slot_counts_abort_and_frees`                      |   ✅   | Abort slot counts abort and frees                                       |
-|  11 | `test_abort_slot_noop_on_free_slot`                           |   ✅   | Abort slot noop on free slot                                            |
-|  12 | `test_backpressure_counts_when_ring_full`                     |   ✅   | Backpressure counts when ring full                                      |
-|  13 | `test_begin_close_dwells_then_drains_on_ack`                  |   ✅   | Begin close dwells then drains on ack                                   |
-|  14 | `test_begin_close_finalizes_immediately_when_already_drained` |   ✅   | Begin close finalizes immediately when already drained                  |
-|  15 | `test_begin_close_noop_if_not_active`                         |   ✅   | Begin close noop if not active                                          |
-|  16 | `test_closing_timeout_reaps_stuck_slot`                       |   ✅   | Closing timeout reaps stuck slot                                        |
-|  17 | `test_recv_during_closing_is_drained_not_processed`           |   ✅   | Recv during closing is drained not processed                            |
-
-</details>
-
----
-
-## test_accept_gate - native_accept_gate - ✅ 13 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for the accept-time connection gates (network_drivers/transport/listener):_
-
-|   # | Test                                     | Status | Description                       |
-| --: | :--------------------------------------- | :----: | :-------------------------------- |
-|   1 | `test_accept_throttle_window`            |   ✅   | Accept throttle window            |
-|   2 | `test_accept_throttle_rollover`          |   ✅   | Accept throttle rollover          |
-|   3 | `test_per_ip_independent_budgets`        |   ✅   | Per ip independent budgets        |
-|   4 | `test_per_ip_v6_distinct_buckets`        |   ✅   | Per ip v6 distinct buckets        |
-|   5 | `test_per_ip_window_rollover`            |   ✅   | Per ip window rollover            |
-|   6 | `test_per_ip_unspecified_defers`         |   ✅   | Per ip unspecified defers         |
-|   7 | `test_per_ip_eviction_bounded`           |   ✅   | Per ip eviction bounded           |
-|   8 | `test_ip_allowlist_empty_allows_all`     |   ✅   | Ip allowlist empty allows all     |
-|   9 | `test_ip_allowlist_cidr`                 |   ✅   | Ip allowlist cidr                 |
-|  10 | `test_ip_allowlist_cidr_string`          |   ✅   | Ip allowlist cidr string          |
-|  11 | `test_ip_allowlist_family_isolation`     |   ✅   | Ip allowlist family isolation     |
-|  12 | `test_ip_allowlist_host_and_zero_prefix` |   ✅   | Ip allowlist host and zero prefix |
-|  13 | `test_ip_allowlist_rejects_bad_and_full` |   ✅   | Ip allowlist rejects bad and full |
-
-</details>
-
----
-
 ## test_http_ota - native_ota - ✅ 3 passed
 
 <details>
@@ -1596,607 +1084,6 @@ _Built with DETWS_SSH_ALLOW_PASSWORD=0: verifies password authentication is_
 
 ---
 
-## test_ssh_conn - native_ssh_conn - ✅ 15 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_SSH transport-glue test: drives a ConnProto::PROTO_SSH connection through the real_
-
-|   # | Test                                            | Status | Description                              |
-| --: | :---------------------------------------------- | :----: | :--------------------------------------- |
-|   1 | `test_conn_outbound_arena_exhausted`            |   ✅   | Conn outbound arena exhausted            |
-|   2 | `test_conn_outbound_pkt_send_fails`             |   ✅   | Conn outbound pkt send fails             |
-|   3 | `test_poll_rekey_emit_fails`                    |   ✅   | Poll rekey emit fails                    |
-|   4 | `test_accept_sends_server_banner`               |   ✅   | Accept sends server banner               |
-|   5 | `test_banner_then_kexinit_advances_and_replies` |   ✅   | Banner then kexinit advances and replies |
-|   6 | `test_poll_triggers_server_rekey`               |   ✅   | Poll triggers server rekey               |
-|   7 | `test_proto_handler_accessor`                   |   ✅   | Proto handler accessor                   |
-|   8 | `test_send_entrypoints_reject`                  |   ✅   | Send entrypoints reject                  |
-|   9 | `test_poll_rx_banner_guards`                    |   ✅   | Poll rx banner guards                    |
-|  10 | `test_conn_send_close_open_channel`             |   ✅   | Conn send close open channel             |
-|  11 | `test_send_channel_reject_paths`                |   ✅   | Send channel reject paths                |
-|  12 | `test_accept_no_ssh_capacity`                   |   ✅   | Accept no ssh capacity                   |
-|  13 | `test_poll_ignores_inactive_conn`               |   ✅   | Poll ignores inactive conn               |
-|  14 | `test_rx_disconnect_tears_down`                 |   ✅   | Rx disconnect tears down                 |
-|  15 | `test_rx_overlong_banner_closes`                |   ✅   | Rx overlong banner closes                |
-
-</details>
-
----
-
-## test_regex - native_app - ✅ 13 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for bounded regex routes (DetWebServer::on_regex())._
-
-|   # | Test                                            | Status | Description                                                                 |
-| --: | :---------------------------------------------- | :----: | :-------------------------------------------------------------------------- |
-|   1 | `test_numeric_class_plus`                       |   ✅   | Numeric class plus                                                          |
-|   2 | `test_dot_star_matches_rest`                    |   ✅   | Dot star matches rest                                                       |
-|   3 | `test_escaped_dot_extension`                    |   ✅   | Escaped dot extension                                                       |
-|   4 | `test_optional_quantifier`                      |   ✅   | Optional quantifier                                                         |
-|   5 | `test_range_class_only`                         |   ✅   | Range class only                                                            |
-|   6 | `test_negated_class`                            |   ✅   | Negated class                                                               |
-|   7 | `test_anchored_full_match`                      |   ✅   | Anchored full match                                                         |
-|   8 | `test_method_still_enforced`                    |   ✅   | Path matches but method differs -> 405, handler not called.                 |
-|   9 | `test_pathological_pattern_terminates_no_match` |   ✅   | Catastrophic-looking pattern with no possible match: must return (not hang) |
-|  10 | `test_escape_class_digit`                       |   ✅   | Escape class digit                                                          |
-|  11 | `test_escape_class_word`                        |   ✅   | Escape class word                                                           |
-|  12 | `test_escape_class_space`                       |   ✅   | Escape class space                                                          |
-|  13 | `test_class_escaped_members`                    |   ✅   | Class escaped members                                                       |
-
-</details>
-
----
-
-## test_template - native_app - ✅ 6 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for send_template() {{name}} placeholder substitution._
-
-|   # | Test                                       | Status | Description                         |
-| --: | :----------------------------------------- | :----: | :---------------------------------- |
-|   1 | `test_basic_substitution`                  |   ✅   | Basic substitution                  |
-|   2 | `test_multiple_placeholders`               |   ✅   | Multiple placeholders               |
-|   3 | `test_unknown_placeholder_is_empty`        |   ✅   | Unknown placeholder is empty        |
-|   4 | `test_unterminated_placeholder_is_literal` |   ✅   | Unterminated placeholder is literal |
-|   5 | `test_null_resolver_empties_all`           |   ✅   | Null resolver empties all           |
-|   6 | `test_head_suppresses_body_keeps_length`   |   ✅   | Head suppresses body keeps length   |
-
-</details>
-
----
-
-## test_path_params - native_app - ✅ 8 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for `:name` path parameters and http_get_param()._
-
-|   # | Test                                    | Status | Description                      |
-| --: | :-------------------------------------- | :----: | :------------------------------- |
-|   1 | `test_single_param_captured`            |   ✅   | Single param captured            |
-|   2 | `test_multiple_params_captured`         |   ✅   | Multiple params captured         |
-|   3 | `test_missing_param_returns_null`       |   ✅   | Missing param returns null       |
-|   4 | `test_literal_segment_mismatch_404`     |   ✅   | Literal segment mismatch 404     |
-|   5 | `test_extra_segment_does_not_match`     |   ✅   | Extra segment does not match     |
-|   6 | `test_empty_param_value_does_not_match` |   ✅   | Empty param value does not match |
-|   7 | `test_exact_route_still_matches`        |   ✅   | Exact route still matches        |
-|   8 | `test_param_route_wrong_method_405`     |   ✅   | Param route wrong method 405     |
-
-</details>
-
----
-
-## test_digest_vectors - native_app - ✅ 4 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Independent-oracle regression test for the Digest-auth math (RFC 7616,_
-
-|   # | Test                            | Status | Description              |
-| --: | :------------------------------ | :----: | :----------------------- |
-|   1 | `test_sha256_fips_kats`         |   ✅   | Sha256 fips kats         |
-|   2 | `test_ha1_matches_openssl`      |   ✅   | Ha1 matches openssl      |
-|   3 | `test_ha2_matches_openssl`      |   ✅   | Ha2 matches openssl      |
-|   4 | `test_response_matches_openssl` |   ✅   | Response matches openssl |
-
-</details>
-
----
-
-## test_form_params - native_app - ✅ 5 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for http_get_form(): application/x-www-form-urlencoded body_
-
-|   # | Test                                   | Status | Description                     |
-| --: | :------------------------------------- | :----: | :------------------------------ |
-|   1 | `test_form_fields_parsed`              |   ✅   | Form fields parsed              |
-|   2 | `test_form_missing_key_returns_false`  |   ✅   | Form missing key returns false  |
-|   3 | `test_form_empty_value`                |   ✅   | Form empty value                |
-|   4 | `test_form_wrong_content_type_ignored` |   ✅   | Form wrong content type ignored |
-|   5 | `test_form_value_truncated_to_buffer`  |   ✅   | Form value truncated to buffer  |
-
-</details>
-
----
-
-## test_iface - native_app - ✅ 7 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for per-route STA/AP interface filters (DetWebServer::on(..., DetIface))._
-
-|   # | Test                                          | Status | Description                                                               |
-| --: | :-------------------------------------------- | :----: | :------------------------------------------------------------------------ |
-|   1 | `test_ap_only_matches_on_ap`                  |   ✅   | Ap only matches on ap                                                     |
-|   2 | `test_ap_only_hidden_on_sta`                  |   ✅   | Ap only hidden on sta                                                     |
-|   3 | `test_sta_only_matches_on_sta`                |   ✅   | Sta only matches on sta                                                   |
-|   4 | `test_sta_only_hidden_on_ap`                  |   ✅   | Sta only hidden on ap                                                     |
-|   5 | `test_unfiltered_route_matches_any_interface` |   ✅   | Unfiltered route matches any interface                                    |
-|   6 | `test_same_path_two_interfaces_picks_correct` |   ✅   | Same path bound to different interfaces; the request's interface decides. |
-|   7 | `test_set_ap_ip_updates_global`               |   ✅   | Set ap ip updates global                                                  |
-
-</details>
-
----
-
-## test_json - native_app - ✅ 28 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for the zero-heap JSON helper: JsonWriter (serialization) and the_
-
-|   # | Test                                                    | Status | Description                                                          |
-| --: | :------------------------------------------------------ | :----: | :------------------------------------------------------------------- |
-|   1 | `test_reader_non_object_and_bad_member`                 |   ✅   | Reader non object and bad member                                     |
-|   2 | `test_reader_int_rejects_string_and_nondigits`          |   ✅   | Reader int rejects string and nondigits                              |
-|   3 | `test_reader_unicode_escape_invalid_and_wide`           |   ✅   | Reader unicode escape invalid and wide                               |
-|   4 | `test_writer_simple_object`                             |   ✅   | Writer simple object                                                 |
-|   5 | `test_writer_nested_and_array`                          |   ✅   | Writer nested and array                                              |
-|   6 | `test_writer_value_types`                               |   ✅   | Writer value types                                                   |
-|   7 | `test_writer_escapes_strings`                           |   ✅   | Writer escapes strings                                               |
-|   8 | `test_writer_control_char_unicode_escape`               |   ✅   | Writer control char unicode escape                                   |
-|   9 | `test_writer_overflow_sets_not_ok_and_stays_terminated` |   ✅   | Writer overflow sets not ok and stays terminated                     |
-|  10 | `test_writer_depth_overflow_sets_not_ok`                |   ✅   | Writer depth overflow sets not ok                                    |
-|  11 | `test_reader_get_string`                                |   ✅   | Reader get string                                                    |
-|  12 | `test_reader_get_int`                                   |   ✅   | Reader get int                                                       |
-|  13 | `test_reader_get_bool`                                  |   ✅   | Reader get bool                                                      |
-|  14 | `test_reader_only_matches_top_level_key`                |   ✅   | "x" exists both nested and at top level; the top-level one must win. |
-|  15 | `test_reader_missing_key`                               |   ✅   | Reader missing key                                                   |
-|  16 | `test_reader_type_mismatch`                             |   ✅   | "name" is a string, not an int or bool.                              |
-|  17 | `test_reader_unescapes_value`                           |   ✅   | Reader unescapes value                                               |
-|  18 | `test_reader_unicode_escape_to_byte`                    |   ✅   | Reader unicode escape to byte                                        |
-|  19 | `test_reader_truncates_to_capacity`                     |   ✅   | Reader truncates to capacity                                         |
-|  20 | `test_reader_negative_int`                              |   ✅   | Reader negative int                                                  |
-|  21 | `test_writer_null_and_remaining_escapes`                |   ✅   | Writer null and remaining escapes                                    |
-|  22 | `test_reader_null_guards`                               |   ✅   | Reader null guards                                                   |
-|  23 | `test_reader_all_escapes`                               |   ✅   | Reader all escapes                                                   |
-|  24 | `test_reader_unicode_hex_case`                          |   ✅   | Reader unicode hex case                                              |
-|  25 | `test_reader_unicode_utf8_multibyte`                    |   ✅   | U+20AC EURO SIGN -> 3-byte UTF-8 E2 82 AC.                           |
-|  26 | `test_reader_unicode_surrogate_edges`                   |   ✅   | Reader unicode surrogate edges                                       |
-|  27 | `test_reader_false_bool`                                |   ✅   | Reader false bool                                                    |
-|  28 | `test_reader_malformed`                                 |   ✅   | Reader malformed                                                     |
-
-</details>
-
----
-
-## test_response_headers - native_app - ✅ 12 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for custom response headers and cookies:_
-
-|   # | Test                                       | Status | Description                                                                                  |
-| --: | :----------------------------------------- | :----: | :------------------------------------------------------------------------------------------- |
-|   1 | `test_ntp_host_seam_accessors`             |   ✅   | Host build: begin() is a no-op returning false; synced()/epoch() reflect the injected epoch. |
-|   2 | `test_date_header_emitted_when_time_set`   |   ✅   | Date header emitted when time set                                                            |
-|   3 | `test_date_header_omitted_when_clockless`  |   ✅   | Date header omitted when clockless                                                           |
-|   4 | `test_single_custom_header_present`        |   ✅   | Single custom header present                                                                 |
-|   5 | `test_multiple_custom_headers_present`     |   ✅   | Multiple custom headers present                                                              |
-|   6 | `test_set_cookie_basic`                    |   ✅   | Set cookie basic                                                                             |
-|   7 | `test_set_cookie_with_attrs`               |   ✅   | Set cookie with attrs                                                                        |
-|   8 | `test_custom_header_on_send_empty`         |   ✅   | Custom header on send empty                                                                  |
-|   9 | `test_custom_header_on_redirect`           |   ✅   | Custom header on redirect                                                                    |
-|  10 | `test_headers_do_not_leak_across_requests` |   ✅   | First request queues X-Custom on slot 0.                                                     |
-|  11 | `test_clear_response_headers`              |   ✅   | Clear response headers                                                                       |
-|  12 | `test_oversized_header_dropped_whole`      |   ✅   | Oversized header dropped whole                                                               |
-
-</details>
-
----
-
-## test_middleware - native_app - ✅ 9 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for the middleware chain (use()) and the built-in rate limiter_
-
-|   # | Test                                          | Status | Description                                                                |
-| --: | :-------------------------------------------- | :----: | :------------------------------------------------------------------------- |
-|   1 | `test_middleware_runs_then_handler`           |   ✅   | Middleware runs then handler                                               |
-|   2 | `test_middleware_runs_for_unmatched_route`    |   ✅   | No route registered -> 404, but the middleware still observes the request. |
-|   3 | `test_middleware_can_inject_response_header`  |   ✅   | Middleware can inject response header                                      |
-|   4 | `test_middleware_halt_short_circuits_handler` |   ✅   | Middleware halt short circuits handler                                     |
-|   5 | `test_middleware_runs_in_registration_order`  |   ✅   | Middleware runs in registration order                                      |
-|   6 | `test_use_respects_capacity_cap`              |   ✅   | Register more than MAX_MIDDLEWARE; extras are dropped, none crash.         |
-|   7 | `test_rate_limit_allows_then_rejects`         |   ✅   | Rate limit allows then rejects                                             |
-|   8 | `test_rate_limit_window_resets`               |   ✅   | Rate limit window resets                                                   |
-|   9 | `test_rate_limit_disabled_by_default`         |   ✅   | Rate limit disabled by default                                             |
-
-</details>
-
----
-
-## test_digest_auth - native_app - ✅ 11 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for HTTP Digest authentication (RFC 7616, SHA-256, qop=auth)._
-
-|   # | Test                                          | Status | Description                                                                     |
-| --: | :-------------------------------------------- | :----: | :------------------------------------------------------------------------------ |
-|   1 | `test_challenge_is_digest_sha256`             |   ✅   | Challenge is digest sha256                                                      |
-|   2 | `test_valid_digest_authenticates`             |   ✅   | Valid digest authenticates                                                      |
-|   3 | `test_wrong_password_rejected`                |   ✅   | Wrong password rejected                                                         |
-|   4 | `test_bad_nonce_rejected`                     |   ✅   | Bad nonce rejected                                                              |
-|   5 | `test_wrong_username_rejected`                |   ✅   | Wrong username rejected                                                         |
-|   6 | `test_wrong_qop_rejected`                     |   ✅   | Wrong qop rejected                                                              |
-|   7 | `test_missing_response_field_rejected`        |   ✅   | Missing response field rejected                                                 |
-|   8 | `test_basic_scheme_on_digest_route_rejected`  |   ✅   | A Basic Authorization header on a Digest-protected route must not authenticate. |
-|   9 | `test_uri_mismatch_rejected`                  |   ✅   | Uri mismatch rejected                                                           |
-|  10 | `test_nonce_is_stateless_timestamped`         |   ✅   | Nonce is stateless timestamped                                                  |
-|  11 | `test_stale_nonce_triggers_transparent_retry` |   ✅   | Stale nonce triggers transparent retry                                          |
-
-</details>
-
----
-
-## test_web_terminal - native_app - ✅ 9 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for the WebSocket web-serial terminal (DETWS_ENABLE_WEB_TERMINAL):_
-
-|   # | Test                                        | Status | Description                                                  |
-| --: | :------------------------------------------ | :----: | :----------------------------------------------------------- |
-|   1 | `test_serves_terminal_page`                 |   ✅   | Serves terminal page                                         |
-|   2 | `test_ws_upgrade_tracks_client`             |   ✅   | Ws upgrade tracks client                                     |
-|   3 | `test_ws_upgrade_requires_connection_token` |   ✅   | Ws upgrade requires connection token                         |
-|   4 | `test_ws_upgrade_rejects_bad_key_length`    |   ✅   | Ws upgrade rejects bad key length                            |
-|   5 | `test_command_delivered_to_callback`        |   ✅   | Command delivered to callback                                |
-|   6 | `test_broadcast_reaches_client`             |   ✅   | Broadcast reaches client                                     |
-|   7 | `test_printf_broadcast`                     |   ✅   | Printf broadcast                                             |
-|   8 | `test_no_broadcast_without_clients`         |   ✅   | No handshake -> no terminal clients -> print writes nothing. |
-|   9 | `test_close_clears_client`                  |   ✅   | Close clears client                                          |
-
-</details>
-
----
-
-## test_defer - native_app - ✅ 3 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Phase 3a: the thread-safe app->worker deferred-callback path. On host there is_
-
-|   # | Test                                | Status | Description                                                    |
-| --: | :---------------------------------- | :----: | :------------------------------------------------------------- |
-|   1 | `test_defer_runs_inline_on_host`    |   ✅   | Defer runs inline on host                                      |
-|   2 | `test_server_defer_routes_by_owner` |   ✅   | Server defer routes by owner                                   |
-|   3 | `test_defer_null_fn_fails`          |   ✅   | A null callback fails closed on every build (host and target). |
-
-</details>
-
----
-
-## test_multipart - native_app - ✅ 25 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for multipart/form-data parser (multipart.cpp)._
-
-|   # | Test                                             | Status | Description                                                           |
-| --: | :----------------------------------------------- | :----: | :-------------------------------------------------------------------- |
-|   1 | `test_no_content_type_returns_false`             |   ✅   | No content type returns false                                         |
-|   2 | `test_no_boundary_in_content_type_returns_false` |   ✅   | No boundary in content type returns false                             |
-|   3 | `test_body_missing_delimiter_returns_false`      |   ✅   | Body missing delimiter returns false                                  |
-|   4 | `test_single_text_field_parsed`                  |   ✅   | Single text field parsed                                              |
-|   5 | `test_two_text_fields_parsed`                    |   ✅   | Two text fields parsed                                                |
-|   6 | `test_three_text_fields_parsed`                  |   ✅   | Three text fields parsed                                              |
-|   7 | `test_file_upload_part`                          |   ✅   | File upload part                                                      |
-|   8 | `test_file_upload_with_text_field`               |   ✅   | File upload with text field                                           |
-|   9 | `test_get_field_found`                           |   ✅   | Get field found                                                       |
-|  10 | `test_get_field_not_found_returns_null`          |   ✅   | Get field not found returns null                                      |
-|  11 | `test_get_field_multiple_fields`                 |   ✅   | Get field multiple fields                                             |
-|  12 | `test_data_len_is_correct`                       |   ✅   | Data len is correct                                                   |
-|  13 | `test_max_parts_captured`                        |   ✅   | Build exactly MAX_MULTIPART_PARTS + 1 parts; only MAX_MULTIPART_PARTS |
-|  14 | `test_empty_field_value`                         |   ✅   | Empty field value                                                     |
-|  15 | `test_part_without_filename_has_null_filename`   |   ✅   | Part without filename has null filename                               |
-|  16 | `test_part_without_content_type_has_null_type`   |   ✅   | Part without content type has null type                               |
-|  17 | `test_long_boundary_string`                      |   ✅   | MAX_VAL_LEN=48 limits the stored Content-Type value.                  |
-|  18 | `stress_parse_100_requests`                      |   ✅   | Stress - Parse 100 requests                                           |
-|  19 | `stress_get_field_100_lookups`                   |   ✅   | Stress - Get field 100 lookups                                        |
-|  20 | `test_binary_part_not_truncated`                 |   ✅   | Binary part not truncated                                             |
-|  21 | `test_quoted_boundary`                           |   ✅   | Quoted boundary                                                       |
-|  22 | `test_empty_boundary_returns_false`              |   ✅   | Empty boundary returns false                                          |
-|  23 | `test_malformed_disposition_values`              |   ✅   | unquoted name= value                                                  |
-|  24 | `test_body_shorter_than_delimiter`               |   ✅   | Body shorter than delimiter                                           |
-|  25 | `test_truncated_part_fails_closed`               |   ✅   | Truncated part fails closed                                           |
-
-</details>
-
----
-
-## test_auth - native_app - ✅ 13 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for HTTP Basic Authentication (per-route)._
-
-|   # | Test                                                   | Status | Description                                                           |
-| --: | :----------------------------------------------------- | :----: | :-------------------------------------------------------------------- |
-|   1 | `test_unprotected_route_fires_handler`                 |   ✅   | Unprotected route fires handler                                       |
-|   2 | `test_protected_route_no_header_returns_401`           |   ✅   | Protected route no header returns 401                                 |
-|   3 | `test_protected_route_wrong_password_returns_401`      |   ✅   | base64("user:wrong") = "dXNlcjp3cm9uZw=="                             |
-|   4 | `test_protected_route_wrong_username_returns_401`      |   ✅   | base64("admin:pass") = "YWRtaW46cGFzcw=="                             |
-|   5 | `test_protected_route_valid_credentials_fires_handler` |   ✅   | base64("user:pass") = "dXNlcjpwYXNz"                                  |
-|   6 | `test_401_includes_www_authenticate_header`            |   ✅   | 401 includes www authenticate header                                  |
-|   7 | `test_non_basic_scheme_returns_401`                    |   ✅   | Non basic scheme returns 401                                          |
-|   8 | `test_credentials_without_colon_returns_401`           |   ✅   | base64("nocolon") = "bm9jb2xvbg=="                                    |
-|   9 | `test_protected_and_unprotected_routes_coexist`        |   ✅   | Hit public route -- handler fires                                     |
-|  10 | `test_auth_route_returns_404_for_wrong_path`           |   ✅   | Auth route returns 404 for wrong path                                 |
-|  11 | `test_auth_checked_per_method`                         |   ✅   | Route only handles POST; a GET to that path is 405 Method Not Allowed |
-|  12 | `stress_auth_50_valid_requests`                        |   ✅   | base64("u:p") = "dTpw"                                                |
-|  13 | `stress_auth_50_invalid_requests`                      |   ✅   | Stress - Auth 50 invalid requests                                     |
-
-</details>
-
----
-
-## test_file_serving - native_app - ✅ 12 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for serve_file()._
-
-|   # | Test                                           | Status | Description                                                                  |
-| --: | :--------------------------------------------- | :----: | :--------------------------------------------------------------------------- |
-|   1 | `test_missing_file_returns_404`                |   ✅   | Missing file returns 404                                                     |
-|   2 | `test_existing_file_returns_200`               |   ✅   | Existing file returns 200                                                    |
-|   3 | `test_response_includes_content_type_html`     |   ✅   | Response includes content type html                                          |
-|   4 | `test_response_includes_content_type_js`       |   ✅   | Response includes content type js                                            |
-|   5 | `test_content_length_matches_file_size`        |   ✅   | Content length matches file size                                             |
-|   6 | `test_file_body_is_sent`                       |   ✅   | File body is sent                                                            |
-|   7 | `test_empty_file_returns_200_with_zero_length` |   ✅   | Empty file returns 200 with zero length                                      |
-|   8 | `test_large_file_body_fully_sent`              |   ✅   | A body far larger than one send-buffer window: the cross-loop file pump must |
-|   9 | `test_serve_file_does_not_affect_other_routes` |   ✅   | Serve file does not affect other routes                                      |
-|  10 | `test_multiple_content_types`                  |   ✅   | Multiple content types                                                       |
-|  11 | `stress_serve_file_50_requests`                |   ✅   | Stress - Serve file 50 requests                                              |
-|  12 | `stress_alternate_missing_and_found`           |   ✅   | Stress - Alternate missing and found                                         |
-
-</details>
-
----
-
-## test_dispatch - native_app - ✅ 11 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Dispatch-level RFC 7231 compliance:_
-
-|   # | Test                                        | Status | Description                                                                 |
-| --: | :------------------------------------------ | :----: | :-------------------------------------------------------------------------- |
-|   1 | `test_method_mismatch_returns_405`          |   ✅   | Method mismatch returns 405                                                 |
-|   2 | `test_405_includes_allow_header`            |   ✅   | 405 includes allow header                                                   |
-|   3 | `test_405_allow_lists_all_methods_for_path` |   ✅   | 405 allow lists all methods for path                                        |
-|   4 | `test_unknown_path_still_404_not_405`       |   ✅   | Unknown path still 404 not 405                                              |
-|   5 | `test_unknown_method_returns_501`           |   ✅   | Unknown method returns 501                                                  |
-|   6 | `test_unknown_method_not_treated_as_get`    |   ✅   | A bogus method must NOT run the GET handler (security: no method spoofing). |
-|   7 | `test_head_runs_get_handler_without_body`   |   ✅   | Head runs get handler without body                                          |
-|   8 | `test_get_route_advertises_head_in_allow`   |   ✅   | Get route advertises head in allow                                          |
-|   9 | `test_head_on_post_only_route_405`          |   ✅   | Head on post only route 405                                                 |
-|  10 | `test_http_parse_skips_ws_upgraded_slot`    |   ✅   | Http parse skips ws upgraded slot                                           |
-|  11 | `test_correct_method_still_dispatches`      |   ✅   | Correct method still dispatches                                             |
-
-</details>
-
----
-
-## test_chunked - native_app - ✅ 14 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit tests for send_chunked() / ChunkedResponse streaming responses._
-
-|   # | Test                                              | Status | Description                                |
-| --: | :------------------------------------------------ | :----: | :----------------------------------------- |
-|   1 | `test_chunked_source_overreport_clamped`          |   ✅   | Chunked source overreport clamped          |
-|   2 | `test_chunked_backpressure_resumes_across_polls`  |   ✅   | Chunked backpressure resumes across polls  |
-|   3 | `test_headers_announce_chunked_no_content_length` |   ✅   | Headers announce chunked no content length |
-|   4 | `test_single_chunk_framing`                       |   ✅   | Single chunk framing                       |
-|   5 | `test_multiple_chunks_in_order`                   |   ✅   | Multiple chunks in order                   |
-|   6 | `test_printf_chunk`                               |   ✅   | Printf chunk                               |
-|   7 | `test_single_piece_then_terminator`               |   ✅   | Single piece then terminator               |
-|   8 | `test_empty_body_is_just_terminator`              |   ✅   | Empty body is just terminator              |
-|   9 | `test_large_chunked_body_not_truncated`           |   ✅   | Large chunked body not truncated           |
-|  10 | `test_head_sends_headers_only`                    |   ✅   | Head sends headers only                    |
-|  11 | `test_custom_header_injected_into_chunked`        |   ✅   | Custom header injected into chunked        |
-|  12 | `test_log_hook_reports_total_body_length`         |   ✅   | Log hook reports total body length         |
-|  13 | `test_http10_falls_back_to_close_delimited`       |   ✅   | Http10 falls back to close delimited       |
-|  14 | `test_http10_large_body_not_truncated`            |   ✅   | Http10 large body not truncated            |
-
-</details>
-
----
-
-## test_application - native_app - ✅ 71 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit, stress, and race-condition tests for Layer 7 (Application)._
-
-|   # | Test                                                  | Status | Description                                                                                      |
-| --: | :---------------------------------------------------- | :----: | :----------------------------------------------------------------------------------------------- |
-|   1 | `test_response_trailer_truncation_clamps`             |   ✅   | (a) The status line alone overflows the header buffer -> hlen >= cap -> clamp.                   |
-|   2 | `test_restart_and_stop`                               |   ✅   | Before any listener, restart() forwards the no-listeners error (no stop()/begin()).              |
-|   3 | `test_route_registration_variants_table_full`         |   ✅   | Route registration variants table full                                                           |
-|   4 | `test_send_family_slot_and_conn_gone_guards`          |   ✅   | Send family slot and conn gone guards                                                            |
-|   5 | `test_redirect_response_and_code_normalization`       |   ✅   | Redirect response and code normalization                                                         |
-|   6 | `test_request_error_paths_te_method_ws`               |   ✅   | Wrong method to a GET-only route -> 405 with an Allow header.                                    |
-|   7 | `test_ws_sse_upgrade_failure_paths`                   |   ✅   | (a) A Sec-WebSocket-Key that does not base64-decode to 16 bytes -> ws_accept_key rejects -> 400. |
-|   8 | `test_sse_upgrade_pool_exhausted`                     |   ✅   | Sse upgrade pool exhausted                                                                       |
-|   9 | `test_handler_reads_body`                             |   ✅   | Handler reads body                                                                               |
-|  10 | `test_handler_reads_query_param`                      |   ✅   | Handler reads query param                                                                        |
-|  11 | `test_handler_reads_header`                           |   ✅   | Handler reads header                                                                             |
-|  12 | `test_wildcard_before_exact_wildcard_wins`            |   ✅   | Wildcard before exact wildcard wins                                                              |
-|  13 | `test_fn_on_registers_and_dispatches`                 |   ✅   | Fn on registers and dispatches                                                                   |
-|  14 | `test_fn_on_path_copied_null_terminated`              |   ✅   | A path of exactly MAX_PATH_LEN-1 chars must not overflow the route buffer.                       |
-|  15 | `test_fn_on_table_full_extra_routes_dropped`          |   ✅   | Fill the table; on() beyond MAX_ROUTES must silently drop                                        |
-|  16 | `test_fn_on_same_path_different_methods_are_distinct` |   ✅   | Fn on same path different methods are distinct                                                   |
-|  17 | `test_fn_on_not_found_called_when_no_match`           |   ✅   | Fn on not found called when no match                                                             |
-|  18 | `test_fn_on_not_found_not_called_when_match_exists`   |   ✅   | Fn on not found not called when match exists                                                     |
-|  19 | `test_fn_set_cors_options_preflight_clears_slot`      |   ✅   | Fn set cors options preflight clears slot                                                        |
-|  20 | `test_fn_set_cors_empty_string_disables`              |   ✅   | Fn set cors empty string disables                                                                |
-|  21 | `test_wrong_method_does_not_match`                    |   ✅   | Wrong method does not match                                                                      |
-|  22 | `test_wrong_path_does_not_match`                      |   ✅   | Wrong path does not match                                                                        |
-|  23 | `test_all_http_methods_dispatched`                    |   ✅   | All http methods dispatched                                                                      |
-|  24 | `test_root_path_matches_exactly`                      |   ✅   | Root path matches exactly                                                                        |
-|  25 | `test_root_path_does_not_match_subpath`               |   ✅   | Root path does not match subpath                                                                 |
-|  26 | `test_wildcard_matches_any_suffix`                    |   ✅   | Wildcard matches any suffix                                                                      |
-|  27 | `test_wildcard_does_not_match_unrelated_prefix`       |   ✅   | Wildcard does not match unrelated prefix                                                         |
-|  28 | `test_exact_route_wins_when_registered_first`         |   ✅   | Exact route wins when registered first                                                           |
-|  29 | `test_slot_not_stuck_in_complete_after_handle`        |   ✅   | Slot not stuck in complete after handle                                                          |
-|  30 | `test_parse_error_slot_auto_reset`                    |   ✅   | Parse error slot auto reset                                                                      |
-|  31 | `stress_last_route_dispatched_in_full_table`          |   ✅   | Stress - Last route dispatched in full table                                                     |
-|  32 | `stress_sequential_requests_no_state_leak`            |   ✅   | Stress - Sequential requests no state leak                                                       |
-|  33 | `stress_all_slots_dispatched_simultaneously`          |   ✅   | Stress - All slots dispatched simultaneously                                                     |
-|  34 | `stress_wildcard_matches_many_paths`                  |   ✅   | Stress - Wildcard matches many paths                                                             |
-|  35 | `stress_handle_with_no_complete_slots_is_nop`         |   ✅   | All slots in ParseState::PARSE_METHOD (setUp resets them) - nothing to dispatch                  |
-|  36 | `race_slot_complete_between_handle_calls`             |   ✅   | Race - Slot complete between handle calls                                                        |
-|  37 | `race_conn_freed_after_parse_complete`                |   ✅   | Race - Conn freed after parse complete                                                           |
-|  38 | `race_double_handle_no_double_dispatch`               |   ✅   | Race - Double handle no double dispatch                                                          |
-|  39 | `race_error_and_valid_slot_in_same_handle`            |   ✅   | Slot 0: inject a parse error                                                                     |
-|  40 | `race_callback_manually_resets_slot`                  |   ✅   | Race - Callback manually resets slot                                                             |
-|  41 | `test_uri_too_long_auto_resets_slot`                  |   ✅   | Overflow the path buffer - handle() should send 414 and free the slot                            |
-|  42 | `test_transfer_encoding_chunked_is_501`               |   ✅   | A request advertising Transfer-Encoding must be rejected with 501                                |
-|  43 | `test_transfer_encoding_identity_is_501`              |   ✅   | Even "identity" is rejected - we advertise no TE support at all                                  |
-|  44 | `test_redirect_emits_location_and_status`             |   ✅   | Redirect emits location and status                                                               |
-|  45 | `test_redirect_invalid_code_defaults_to_302`          |   ✅   | Redirect invalid code defaults to 302                                                            |
-|  46 | `test_mime_type_detection`                            |   ✅   | Mime type detection                                                                              |
-|  47 | `test_serve_static_file_and_mime`                     |   ✅   | Serve static file and mime                                                                       |
-|  48 | `test_serve_static_wildcard_and_route_full`           |   ✅   | Serve static wildcard and route full                                                             |
-|  49 | `test_response_header_cookie_guards`                  |   ✅   | Response header cookie guards                                                                    |
-|  50 | `test_serve_static_index_fallback`                    |   ✅   | Serve static index fallback                                                                      |
-|  51 | `test_serve_static_gzip_when_accepted`                |   ✅   | Serve static gzip when accepted                                                                  |
-|  52 | `test_serve_static_no_gzip_when_not_accepted`         |   ✅   | Serve static no gzip when not accepted                                                           |
-|  53 | `test_serve_static_traversal_not_leaked`              |   ✅   | Serve static traversal not leaked                                                                |
-|  54 | `test_serve_static_missing_is_404`                    |   ✅   | Serve static missing is 404                                                                      |
-|  55 | `test_serve_static_etag_conditional_get`              |   ✅   | First GET: 200 with an ETag header.                                                              |
-|  56 | `test_serve_static_inm_star_list_weak`                |   ✅   | First GET to capture the strong ETag (with quotes).                                              |
-|  57 | `test_serve_static_last_modified_conditional_get`     |   ✅   | (1) plain GET: 200 carries the Last-Modified header.                                             |
-|  58 | `test_serve_static_ims_field_comparisons`             |   ✅   | Serve static ims field comparisons                                                               |
-|  59 | `test_serve_static_unrepresentable_mtime`             |   ✅   | (a) plain GET: 200 with no Last-Modified line (http_rfc1123 bailed).                             |
-|  60 | `test_serve_static_if_modified_since_malformed`       |   ✅   | Serve static if modified since malformed                                                         |
-|  61 | `test_serve_static_cache_control`                     |   ✅   | Serve static cache control                                                                       |
-|  62 | `test_request_log_hook_fires`                         |   ✅   | Request log hook fires                                                                           |
-|  63 | `test_stats_endpoint_emits_json`                      |   ✅   | Stats endpoint emits json                                                                        |
-|  64 | `test_status_text_reason_phrases`                     |   ✅   | Status text reason phrases                                                                       |
-|  65 | `test_allow_header_lists_methods`                     |   ✅   | Allow header lists methods                                                                       |
-|  66 | `test_listen_and_begin`                               |   ✅   | begin() before any listen() -> no-listeners error, no side effects.                              |
-|  67 | `test_begin_port_convenience`                         |   ✅   | Begin port convenience                                                                           |
-|  68 | `test_ws_send_api`                                    |   ✅   | Ws send api                                                                                      |
-|  69 | `test_sse_broadcast_after_upgrade_matches_path`       |   ✅   | Sse broadcast after upgrade matches path                                                         |
-|  70 | `test_sse_send_api`                                   |   ✅   | Sse send api                                                                                     |
-|  71 | `test_metrics_emits_prometheus`                       |   ✅   | Metrics emits prometheus                                                                         |
-
-</details>
-
----
-
-## test_webdav_handler - native_webdav_handler - ✅ 29 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Host tests for the WebDAV request handler's recursive filesystem operations_
-
-|   # | Test                                       | Status | Description                                                                        |
-| --: | :----------------------------------------- | :----: | :--------------------------------------------------------------------------------- |
-|   1 | `test_webdav_get_put_dest_edges`           |   ✅   | Webdav get put dest edges                                                          |
-|   2 | `test_webdav_copy_dest_path_too_long_414`  |   ✅   | 240-char fs root: a short source ("/s") still joins under 256, but root + any      |
-|   3 | `test_webdav_recursive_open_failure`       |   ✅   | DELETE: the resource exists but its open() fails -> dav_rm_recursive bails -> 403. |
-|   4 | `test_webdav_source_path_too_long_414`     |   ✅   | Webdav source path too long 414                                                    |
-|   5 | `test_webdav_dav_wildcard_and_route_full`  |   ✅   | (a) A wildcard-terminated prefix is stored as-is; a request under it still routes. |
-|   6 | `test_webdav_error_paths`                  |   ✅   | Webdav error paths                                                                 |
-|   7 | `test_webdav_deep_tree_rejected`           |   ✅   | Webdav deep tree rejected                                                          |
-|   8 | `test_webdav_propfind_limit_and_proppatch` |   ✅   | Webdav propfind limit and proppatch                                                |
-|   9 | `test_webdav_copy_fs_table_full`           |   ✅   | Webdav copy fs table full                                                          |
-|  10 | `test_copy_collection_recursive`           |   ✅   | Copy collection recursive                                                          |
-|  11 | `test_copy_collection_depth0_shallow`      |   ✅   | Copy collection depth0 shallow                                                     |
-|  12 | `test_copy_overwrite_semantics`            |   ✅   | Copy overwrite semantics                                                           |
-|  13 | `test_move_collection_recursive`           |   ✅   | Move collection recursive                                                          |
-|  14 | `test_delete_collection_recursive`         |   ✅   | Delete collection recursive                                                        |
-|  15 | `test_propfind_depth0_collection_only`     |   ✅   | Propfind depth0 collection only                                                    |
-|  16 | `test_propfind_depth1_lists_members`       |   ✅   | Propfind depth1 lists members                                                      |
-|  17 | `test_mkcol_create_and_conflict`           |   ✅   | Mkcol create and conflict                                                          |
-|  18 | `test_delete_single_file`                  |   ✅   | Delete single file                                                                 |
-|  19 | `test_options_advertises_dav`              |   ✅   | Options advertises dav                                                             |
-|  20 | `test_get_file_through_mount`              |   ✅   | Get file through mount                                                             |
-|  21 | `test_put_stream_create`                   |   ✅   | Put stream create                                                                  |
-|  22 | `test_put_stream_overwrite`                |   ✅   | Put stream overwrite                                                               |
-|  23 | `test_put_empty_buffered`                  |   ✅   | Put empty buffered                                                                 |
-|  24 | `test_put_stream_write_fails_507`          |   ✅   | Put stream write fails 507                                                         |
-|  25 | `test_put_stream_open_fails_409`           |   ✅   | Put stream open fails 409                                                          |
-|  26 | `test_put_stream_traversal_403`            |   ✅   | Put stream traversal 403                                                           |
-|  27 | `test_put_stream_begin_declines`           |   ✅   | Non-PUT with a body: begin sees method != PUT and declines.                        |
-|  28 | `test_put_stream_abort`                    |   ✅   | Headers + a partial body: Content-Length promises 10, only 4 arrive.               |
-|  29 | `test_lock_unlock_advisory`                |   ✅   | Lock unlock advisory                                                               |
-
-</details>
-
----
-
-## test_diag - native_diag - ✅ 2 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Exercises the runtime build-flag reporter (server.diag() / DETWS_ENABLE_DIAG):_
-
-|   # | Test                               | Status | Description                 |
-| --: | :--------------------------------- | :----: | :-------------------------- |
-|   1 | `test_diag_serves_build_info_json` |   ✅   | Diag serves build info json |
-|   2 | `test_diag_json_braces_balanced`   |   ✅   | Diag json braces balanced   |
-
-</details>
-
----
-
 ## test_snmp_ber - native_snmp - ✅ 21 passed
 
 <details>
@@ -2305,35 +1192,6 @@ _Unit tests for the SNMPv3 USM layer. The test acts as a full SNMP manager:_
 |  20 | `test_unknown_user_reports`                     |   ✅   | Unknown user reports                                                            |
 |  21 | `test_not_in_time_window_reports`               |   ✅   | Not in time window reports                                                      |
 |  22 | `test_inform_v3_builds_informrequest`           |   ✅   | Inform v3 builds informrequest                                                  |
-
-</details>
-
----
-
-## test_telnet - native_telnet - ✅ 15 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Telnet server test: drives a ConnProto::PROTO_TELNET connection through the real_
-
-|   # | Test                                  | Status | Description                    |
-| --: | :------------------------------------ | :----: | :----------------------------- |
-|   1 | `test_accept_negotiates_echo_and_sga` |   ✅   | Accept negotiates echo and sga |
-|   2 | `test_line_echoed_and_dispatched`     |   ✅   | Line echoed and dispatched     |
-|   3 | `test_backspace_first_line`           |   ✅   | Backspace first line           |
-|   4 | `test_iac_will_gets_dont`             |   ✅   | Iac will gets dont             |
-|   5 | `test_iac_do_unsupported_gets_wont`   |   ✅   | Iac do unsupported gets wont   |
-|   6 | `test_iac_do_echo_is_silent`          |   ✅   | Iac do echo is silent          |
-|   7 | `test_iac_stripped_from_data`         |   ✅   | Iac stripped from data         |
-|   8 | `test_print_broadcast`                |   ✅   | Print broadcast                |
-|   9 | `test_unknown_slot_is_noop`           |   ✅   | Unknown slot is noop           |
-|  10 | `test_cr_and_control_ignored`         |   ✅   | Cr and control ignored         |
-|  11 | `test_iac_escaped_literal`            |   ✅   | Iac escaped literal            |
-|  12 | `test_subnegotiation_consumed`        |   ✅   | Subnegotiation consumed        |
-|  13 | `test_accept_no_capacity`             |   ✅   | Accept no capacity             |
-|  14 | `test_output_escaping_and_printf`     |   ✅   | Output escaping and printf     |
-|  15 | `test_inactive_conn_sends_nothing`    |   ✅   | Inactive conn sends nothing    |
 
 </details>
 
@@ -3891,65 +2749,6 @@ _Round-trip tests for the OPC UA client (services/opcua_client): the client buil
 
 ---
 
-## test_keepalive - native_keepalive - ✅ 11 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_HTTP/1.1 keep-alive (DETWS_ENABLE_KEEPALIVE). Each test drives one or more_
-
-|   # | Test                                     | Status | Description                                                                |
-| --: | :--------------------------------------- | :----: | :------------------------------------------------------------------------- |
-|   1 | `test_conn_token_ws_and_bare_keepalive`  |   ✅   | Conn token ws and bare keepalive                                           |
-|   2 | `test_http11_default_keeps_alive`        |   ✅   | Http11 default keeps alive                                                 |
-|   3 | `test_http11_explicit_close`             |   ✅   | Http11 explicit close                                                      |
-|   4 | `test_http10_default_closes`             |   ✅   | Http10 default closes                                                      |
-|   5 | `test_http10_explicit_keepalive`         |   ✅   | Http10 explicit keepalive                                                  |
-|   6 | `test_connection_token_list_close`       |   ✅   | "close" appearing in a token list must still be honored.                   |
-|   7 | `test_two_sequential_requests_same_slot` |   ✅   | Two sequential requests same slot                                          |
-|   8 | `test_pipelined_requests`                |   ✅   | Two requests delivered in one shot: the proactive drain in handle() must   |
-|   9 | `test_404_still_keeps_alive`             |   ✅   | A well-formed request to an unknown path is a normal response, not an      |
-|  10 | `test_max_requests_cap_closes`           |   ✅   | DETWS_KEEPALIVE_MAX_REQUESTS=3: the 3rd response closes the connection.    |
-|  11 | `test_fresh_connection_resets_count`     |   ✅   | Run a slot up to the cap, then re-open it (new connection) and confirm the |
-
-</details>
-
----
-
-## test_range - native_range - ✅ 20 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_HTTP Range requests / 206 Partial Content (DETWS_ENABLE_RANGE). Each test_
-
-|   # | Test                                               | Status | Description                                 |
-| --: | :------------------------------------------------- | :----: | :------------------------------------------ |
-|   1 | `test_file_send_backpressure_resumes_across_polls` |   ✅   | File send backpressure resumes across polls |
-|   2 | `test_file_send_write_fails_then_retries`          |   ✅   | File send write fails then retries          |
-|   3 | `test_file_send_short_read_stops`                  |   ✅   | File send short read stops                  |
-|   4 | `test_range_trailing_garbage_ignored`              |   ✅   | Range trailing garbage ignored              |
-|   5 | `test_range_start_after_end_unsatisfiable`         |   ✅   | Range start after end unsatisfiable         |
-|   6 | `test_range_suffix_on_empty_file`                  |   ✅   | Range suffix on empty file                  |
-|   7 | `test_serve_file_connection_gone`                  |   ✅   | Serve file connection gone                  |
-|   8 | `test_no_range_full_200`                           |   ✅   | No range full 200                           |
-|   9 | `test_range_prefix`                                |   ✅   | Range prefix                                |
-|  10 | `test_range_open_ended`                            |   ✅   | Range open ended                            |
-|  11 | `test_range_suffix`                                |   ✅   | Range suffix                                |
-|  12 | `test_range_single_byte`                           |   ✅   | Range single byte                           |
-|  13 | `test_range_clamped_to_eof`                        |   ✅   | Range clamped to eof                        |
-|  14 | `test_range_unsatisfiable_416`                     |   ✅   | Range unsatisfiable 416                     |
-|  15 | `test_malformed_range_ignored`                     |   ✅   | Malformed range ignored                     |
-|  16 | `test_range_overflow_start_unsatisfiable`          |   ✅   | Range overflow start unsatisfiable          |
-|  17 | `test_range_overflow_end_clamps`                   |   ✅   | Range overflow end clamps                   |
-|  18 | `test_range_suffix_zero_unsatisfiable`             |   ✅   | Range suffix zero unsatisfiable             |
-|  19 | `test_multirange_falls_back_to_200`                |   ✅   | Multirange falls back to 200                |
-|  20 | `test_head_with_range_no_body`                     |   ✅   | Head with range no body                     |
-
-</details>
-
----
-
 ## test_syslog - native_syslog - ✅ 10 passed
 
 <details>
@@ -4511,23 +3310,6 @@ _Unit tests for the JWT HS256 verifier. The reference token below was produced_
 
 ---
 
-## test_upload - native_upload - ✅ 3 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Streaming file upload (DETWS_ENABLE_UPLOAD): a POST body is streamed straight_
-
-|   # | Test                               | Status | Description                 |
-| --: | :--------------------------------- | :----: | :-------------------------- |
-|   1 | `test_upload_streams_body_to_file` |   ✅   | Upload streams body to file |
-|   2 | `test_small_body_single_chunk`     |   ✅   | Small body single chunk     |
-|   3 | `test_empty_body_not_streamed`     |   ✅   | Empty body not streamed     |
-
-</details>
-
----
-
 ## test_http_client - native_http_client - ✅ 15 passed
 
 <details>
@@ -4792,94 +3574,6 @@ _Integration test for SSH server-to-client compression WIRING (network_drivers/p
 |   4 | `test_packet_layer_stream_roundtrip`     |   ✅   | Packet layer stream roundtrip     |
 |   5 | `test_packet_layer_window_slide`         |   ✅   | Packet layer window slide         |
 |   6 | `test_packet_compress_scratch_exhausted` |   ✅   | Packet compress scratch exhausted |
-
-</details>
-
----
-
-## test_websocket - native_ws_deflate - ✅ 74 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Unit and stress tests for SHA-1, Base64, and the WebSocket frame parser._
-
-|   # | Test                                                   | Status | Description                                                               |
-| --: | :----------------------------------------------------- | :----: | :------------------------------------------------------------------------ |
-|   1 | `test_sha1_empty_string`                               |   ✅   | Sha1 empty string                                                         |
-|   2 | `test_sha1_abc`                                        |   ✅   | Sha1 abc                                                                  |
-|   3 | `test_sha1_rfc6455_handshake_key`                      |   ✅   | Client sends: Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==                 |
-|   4 | `test_sha1_different_inputs_different_digests`         |   ✅   | Sha1 different inputs different digests                                   |
-|   5 | `test_base64_encode_one_byte`                          |   ✅   | Base64 encode one byte                                                    |
-|   6 | `test_base64_encode_two_bytes`                         |   ✅   | Base64 encode two bytes                                                   |
-|   7 | `test_base64_encode_three_bytes`                       |   ✅   | Base64 encode three bytes                                                 |
-|   8 | `test_base64_encode_ws_accept_key`                     |   ✅   | Base64 encode ws accept key                                               |
-|   9 | `test_base64_decode_one_byte`                          |   ✅   | Base64 decode one byte                                                    |
-|  10 | `test_base64_decode_two_bytes`                         |   ✅   | Base64 decode two bytes                                                   |
-|  11 | `test_base64_decode_three_bytes`                       |   ✅   | Base64 decode three bytes                                                 |
-|  12 | `test_base64_decode_ws_accept_key`                     |   ✅   | Base64 decode ws accept key                                               |
-|  13 | `test_base64_decode_rejects_misplaced_padding`         |   ✅   | Base64 decode rejects misplaced padding                                   |
-|  14 | `test_base64_decode_respects_capacity`                 |   ✅   | "TWFu" decodes to 3 bytes ("Man"); a 2-byte buffer is too small.          |
-|  15 | `test_base64_round_trip`                               |   ✅   | Base64 round trip                                                         |
-|  16 | `test_ws_pool_size`                                    |   ✅   | Ws pool size                                                              |
-|  17 | `test_ws_ids_match_indices_after_init`                 |   ✅   | Ws ids match indices after init                                           |
-|  18 | `test_ws_all_inactive_after_init`                      |   ✅   | Ws all inactive after init                                                |
-|  19 | `test_ws_alloc_returns_non_null`                       |   ✅   | Ws alloc returns non null                                                 |
-|  20 | `test_ws_alloc_sets_active`                            |   ✅   | Ws alloc sets active                                                      |
-|  21 | `test_ws_alloc_sets_slot_id`                           |   ✅   | Ws alloc sets slot id                                                     |
-|  22 | `test_ws_alloc_sets_parse_state_header1`               |   ✅   | Ws alloc sets parse state header1                                         |
-|  23 | `test_ws_alloc_pool_full_returns_null`                 |   ✅   | Ws alloc pool full returns null                                           |
-|  24 | `test_ws_find_returns_correct_conn`                    |   ✅   | Ws find returns correct conn                                              |
-|  25 | `test_ws_find_returns_null_when_empty`                 |   ✅   | Ws find returns null when empty                                           |
-|  26 | `test_ws_find_returns_null_for_different_slot`         |   ✅   | Ws find returns null for different slot                                   |
-|  27 | `test_ws_find_after_both_slots_allocated`              |   ✅   | Ws find after both slots allocated                                        |
-|  28 | `test_ws_free_deactivates_slot`                        |   ✅   | Ws free deactivates slot                                                  |
-|  29 | `test_ws_free_restores_ws_id`                          |   ✅   | Ws free restores ws id                                                    |
-|  30 | `test_ws_free_makes_slot_findable_as_null`             |   ✅   | Ws free makes slot findable as null                                       |
-|  31 | `test_ws_free_nop_on_unallocated`                      |   ✅   | Ws free nop on unallocated                                                |
-|  32 | `test_ws_alloc_after_free_succeeds`                    |   ✅   | Ws alloc after free succeeds                                              |
-|  33 | `test_ws_parse_text_frame_sets_ready`                  |   ✅   | Ws parse text frame sets ready                                            |
-|  34 | `test_ws_parse_payload_stored_correctly`               |   ✅   | Ws parse payload stored correctly                                         |
-|  35 | `test_ws_parse_binary_frame_sets_ready`                |   ✅   | Ws parse binary frame sets ready                                          |
-|  36 | `test_ws_parse_zero_length_unmasked_frame`             |   ✅   | Unmasked zero-length frame: 0x81 0x00.                                    |
-|  37 | `test_ws_parse_zero_length_masked_frame`               |   ✅   | Masked zero-length text frame: FIN                                        | TEXT, MASK                                                 | 0, 4-byte mask key. |
-|  38 | `test_ws_reject_unmasked_data_frame`                   |   ✅   | FIN                                                                       | TEXT, unmasked, length 3 - RFC 6455 §5.1 requires masking. |
-|  39 | `test_ws_reject_reserved_opcode`                       |   ✅   | Opcode 0x3 is reserved (RFC 6455 §5.2) - must fail the connection.        |
-|  40 | `test_ws_reject_fragmented_control_frame`              |   ✅   | PING with FIN=0 - control frames MUST NOT be fragmented (RFC 6455 §5.5).  |
-|  41 | `test_ws_reject_oversized_control_frame`               |   ✅   | PING (masked) with payload length 126 - control frames MUST be <= 125     |
-|  42 | `test_ws_parse_16bit_length_frame`                     |   ✅   | Build a 130-byte payload (> 125, requires 16-bit length field)            |
-|  43 | `test_ws_parse_rsv1_set_closes_protocol`               |   ✅   | FIN=1, RSV1=0x40, TEXT: byte0 = 0x80                                      | 0x40                                                       | 0x01 = 0xC1         |
-|  44 | `test_ws_parse_rsv2_set_closes_protocol`               |   ✅   | FIN=1, RSV2=0x20, TEXT: byte0 = 0x80                                      | 0x20                                                       | 0x01 = 0xA1         |
-|  45 | `test_ws_parse_rsv3_set_closes_protocol`               |   ✅   | FIN=1, RSV3=0x10, TEXT: byte0 = 0x80                                      | 0x10                                                       | 0x01 = 0x91         |
-|  46 | `test_ws_parse_64bit_length_closes_too_big`            |   ✅   | FIN=1, TEXT, MASK=1, len7=127 (64-bit length), then 8 length bytes        |
-|  47 | `test_ws_parse_oversized_16bit_length_closes_too_big`  |   ✅   | Ws parse oversized 16bit length closes too big                            |
-|  48 | `test_ws_fragment_start_waits_for_continuation`        |   ✅   | FIN=0, TEXT, "Hi" - start of a fragmented message; not deliverable yet.   |
-|  49 | `test_ws_fragmented_message_reassembled`               |   ✅   | Ws fragmented message reassembled                                         |
-|  50 | `test_ws_control_frame_interleaved_in_fragments`       |   ✅   | A PING arrives between the two data fragments; it must be handled without |
-|  51 | `test_ws_fragment_accumulation_overflow_rejected`      |   ✅   | Ws fragment accumulation overflow rejected                                |
-|  52 | `test_ws_continuation_without_start_rejected`          |   ✅   | CONTINUATION with no message in progress (RFC 6455 §5.4) → 1002.          |
-|  53 | `test_ws_new_data_frame_during_fragmentation_rejected` |   ✅   | A second TEXT (new message) before finishing the first is illegal.        |
-|  54 | `test_ws_parse_ping_auto_pong_resets_frame`            |   ✅   | FIN=1, PING=0x09: byte0 = 0x89                                            |
-|  55 | `test_ws_parse_pong_silently_ignored`                  |   ✅   | FIN=1, PONG=0x0A: byte0 = 0x8A                                            |
-|  56 | `test_ws_parse_close_marks_ws_closed`                  |   ✅   | FIN=1, CLOSE=0x08: byte0 = 0x88                                           |
-|  57 | `test_ws_parse_stops_at_frame_ready`                   |   ✅   | Push two complete frames -- parser should stop after the first            |
-|  58 | `test_ws_reset_frame_clears_fields`                    |   ✅   | Ws reset frame clears fields                                              |
-|  59 | `test_ws_parse_mask_applied_correctly`                 |   ✅   | Frame with mask key {0x37, 0xFA, 0x21, 0x3D}, payload 'H' XOR 0x37 = 0x7F |
-|  60 | `test_ws_text_invalid_utf8_rejected`                   |   ✅   | Ws text invalid utf8 rejected                                             |
-|  61 | `test_ws_text_valid_utf8_accepted`                     |   ✅   | Ws text valid utf8 accepted                                               |
-|  62 | `test_ws_binary_arbitrary_bytes_accepted`              |   ✅   | Ws binary arbitrary bytes accepted                                        |
-|  63 | `test_ws_permessage_deflate_inbound`                   |   ✅   | "Hello, World!" as permessage-deflate (SYNC_FLUSH, marker stripped) - the |
-|  64 | `test_ws_rsv1_without_negotiation_closes`              |   ✅   | Ws rsv1 without negotiation closes                                        |
-|  65 | `test_ws_permessage_deflate_outbound`                  |   ✅   | Ws permessage deflate outbound                                            |
-|  66 | `test_ws_deflate_inflate_error_closes`                 |   ✅   | Ws deflate inflate error closes                                           |
-|  67 | `test_ws_outbound_incompressible_not_flagged`          |   ✅   | Ws outbound incompressible not flagged                                    |
-|  68 | `test_ws_outbound_fragmentation`                       |   ✅   | Ws outbound fragmentation                                                 |
-|  69 | `stress_ws_parse_reset_100_cycles`                     |   ✅   | Stress - Ws parse reset 100 cycles                                        |
-|  70 | `stress_ws_alloc_free_pool_cycle`                      |   ✅   | Stress - Ws alloc free pool cycle                                         |
-|  71 | `stress_ws_parse_incremental_byte_by_byte`             |   ✅   | Stress - Ws parse incremental byte by byte                                |
-|  72 | `stress_ws_parse_max_payload`                          |   ✅   | Stress - Ws parse max payload                                             |
-|  73 | `stress_ws_parse_two_consecutive_frames`               |   ✅   | First frame                                                               |
-|  74 | `test_ws_send_frame_paths_and_parse_guard`             |   ✅   | Ws send frame paths and parse guard                                       |
 
 </details>
 
@@ -6376,26 +5070,6 @@ _Unit tests for schema-driven config export/restore (services/config_io) over_
 
 ---
 
-## test_workers - native_workers - ✅ 6 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_Phase 2 core-partitioning invariant (built with DETWS_WORKER_COUNT=2): a worker_
-
-|   # | Test                                           | Status | Description                                                                                   |
-| --: | :--------------------------------------------- | :----: | :-------------------------------------------------------------------------------------------- |
-|   1 | `test_worker_count_is_two`                     |   ✅   | Worker count is two                                                                           |
-|   2 | `test_check_timeouts_reaps_only_owned_slots`   |   ✅   | Check timeouts reaps only owned slots                                                         |
-|   3 | `test_pool_init_defaults_owner_zero`           |   ✅   | Pool init defaults owner zero                                                                 |
-|   4 | `test_worker_self_id_roundtrip`                |   ✅   | detws_worker_set_self binds the calling context's worker id; detws_worker_self reads it back. |
-|   5 | `test_host_worker_lifecycle_is_noops`          |   ✅   | On host there is no worker task: start/stop/wake are no-ops and running() stays false.        |
-|   6 | `test_host_defer_runs_inline_and_rejects_null` |   ✅   | On host the caller and pipeline are the same thread, so detws_defer runs the callback inline  |
-
-</details>
-
----
-
 ## test_clock - native_clock - ✅ 7 passed
 
 <details>
@@ -6727,21 +5401,6 @@ _HTTP/3 server-glue test: the same end-to-end flow as test_h3_e2e (a QUIC client
 |   2 | `test_idle_connection_reaped`   |   ✅   | Idle connection reaped   |
 |   3 | `test_quic_server_input_guards` |   ✅   | Quic server input guards |
 |   4 | `test_quic_server_pool_full`    |   ✅   | Quic server pool full    |
-
-</details>
-
----
-
-## test_h3_server - native_h3_server - ✅ 1 passed
-
-<details>
-<summary><b>Expand Suite Details</b></summary>
-
-_HTTP/3 dispatch-bridge test: proves an HTTP/3 request served by a *real DetWebServer route*. A_
-
-|   # | Test                              | Status | Description                |
-| --: | :-------------------------------- | :----: | :------------------------- |
-|   1 | `test_h3_request_served_by_route` |   ✅   | H3 request served by route |
 
 </details>
 
