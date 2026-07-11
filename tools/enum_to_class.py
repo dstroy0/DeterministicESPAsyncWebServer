@@ -114,6 +114,14 @@ def main():
     _, _, body = enum_body(d, name)
     assert body is not None, f"enum {name} not found in {deffile}"
     members, mn, mx, had_expr = parse_members(body)
+
+    # An existing explicit underlying type (`enum X : uint16_t`) is authoritative: keep it so we never
+    # silently shrink a wire enum's width. Only derive from the member range when neither --width nor an
+    # existing type is present.
+    m_ut = re.search(r"\benum\s+" + re.escape(name) + r"\b\s*:\s*([A-Za-z_]\w*(?:\s+\w+)*)", d)
+    existing_ut = m_ut.group(1).strip() if m_ut else None
+    if width is None:
+        width = existing_ut
     if width is None:
         if had_expr:
             sys.exit(
@@ -130,9 +138,15 @@ def main():
             )
         )
 
-    # 1) definition -> enum class (idempotent)
+    # 1) definition -> enum class (idempotent). The optional group absorbs any existing `: <type>` so a
+    # pre-typed enum does not end up with a doubled `: uint8_t : uint8_t` specifier.
     if not re.search(r"\benum\s+class\s+" + re.escape(name) + r"\b", d):
-        d2 = re.sub(r"\benum\s+" + re.escape(name) + r"\b(?!\s*::)", f"enum class {name} : {width}", d, count=1)
+        d2 = re.sub(
+            r"\benum\s+" + re.escape(name) + r"\b(?!\s*::)(\s*:\s*[A-Za-z_]\w*(?:\s+\w+)*)?",
+            f"enum class {name} : {width}",
+            d,
+            count=1,
+        )
         assert d2 != d, f"def line not found for {name}"
         io.open(deffile, "w", encoding="utf-8", newline="\n").write(d2)
 
