@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`986359f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/986359f20016060bbec8669f72cfd4fb5349034b))
+- update CHANGELOG.md [skip ci] ([`32e60eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32e60eba9bbfa178346b0a6b13cbf80b31cff7a9))
 - update test report + coverage [skip ci] ([`6bdf13a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6bdf13a708d9d38b46332fe2b79f7376f0d0d92f))
 - update CHANGELOG.md [skip ci] ([`7bf7467`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7bf7467a13a51e6ad23868e3e92899b3e359d847))
 - update CHANGELOG.md [skip ci] ([`ed7bb49`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ed7bb49dac7610a409d72fecfccf9440c468db35))
@@ -16,12 +18,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`a757a9c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a757a9cf9f51fb6187860440071a50cf572db4bd))
+- update ESP32 build footprints [skip ci] ([`e951871`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e951871a31026e9620b872060f39a15c40b6be73))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`bf53b44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf53b447697b772aeca8ec24d73805dbed01a777))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ce47a01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ce47a015e9e7e40a52a43916189053809f02ece9))
 - update ESP32 build footprints [skip ci] ([`b13092d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b13092da85c65877b4460c6434acf542db145c3c))
 - roadmap - expand the interop harness to the entire feature set ([`cda9f0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cda9f0e9d3cfed455cc6d4ddef015e0f040b7c7d))
 
 ### Refactor
 
+- retro - type CoAP public request/response fields ([`ffe6d19`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ffe6d192698380cffd684eba7338b1d81fdca32f))
 - retro - type opcode/kind params, drop silencing casts ([`8a65e92`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a65e927d727fd7dfe953291ec6f4bc01c90aafa))
 - scoped enums, type-safe negotiator (enum class 34/N) ([`b7bbd01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7bbd0133969c24a269d9df9db12d34c2e5f9785))
 
