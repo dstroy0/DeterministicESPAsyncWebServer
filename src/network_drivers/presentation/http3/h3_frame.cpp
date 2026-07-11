@@ -15,8 +15,10 @@
 
 bool h3_frame_parse(const uint8_t *buf, size_t len, H3Frame *out)
 {
-    size_t c1 = 0, c2 = 0;
-    uint64_t type = 0, length = 0;
+    size_t c1 = 0;
+    size_t c2 = 0;
+    uint64_t type = 0;
+    uint64_t length = 0;
     if (!quic_varint_decode(buf, len, &type, &c1))
         return false;
     if (!quic_varint_decode(buf + c1, len - c1, &length, &c2))
@@ -56,8 +58,10 @@ bool h3_parse_settings(const uint8_t *payload, size_t len, H3Settings *s)
     size_t off = 0;
     while (off < len)
     {
-        size_t c1 = 0, c2 = 0;
-        uint64_t id = 0, val = 0;
+        size_t c1 = 0;
+        size_t c2 = 0;
+        uint64_t id = 0;
+        uint64_t val = 0;
         if (!quic_varint_decode(payload + off, len - off, &id, &c1))
             return false;
         off += c1;

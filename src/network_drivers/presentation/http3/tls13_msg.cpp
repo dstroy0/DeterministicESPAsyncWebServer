@@ -190,7 +190,8 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
         size_t ll = (body[0] << 8) | body[1];
         if (ll + 2 > blen)
             return;
-        size_t i = 2, end = 2 + ll;
+        size_t i = 2;
+        size_t end = 2 + ll;
         while (i + 4 <= end)
         {
             uint16_t group = (uint16_t)((body[i] << 8) | body[i + 1]);
@@ -214,7 +215,8 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
         size_t ll = (body[0] << 8) | body[1];
         if (ll + 2 > blen)
             return;
-        size_t i = 2, end = 2 + ll;
+        size_t i = 2;
+        size_t end = 2 + ll;
         while (i + 1 <= end)
         {
             size_t nl = body[i++];
@@ -237,7 +239,8 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
         size_t ll = (body[0] << 8) | body[1];
         if (ll + 2 > blen)
             return;
-        size_t i = 2, end = 2 + ll;
+        size_t i = 2;
+        size_t end = 2 + ll;
         if (i + 3 > end)
             return;
         uint8_t nt = body[i++];
@@ -301,7 +304,8 @@ bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *
         return false;
     while (r.pos < ext_end)
     {
-        uint16_t etype = 0, elen = 0;
+        uint16_t etype = 0;
+        uint16_t elen = 0;
         const uint8_t *ebody = nullptr;
         if (!r_u16(&r, &etype) || !r_u16(&r, &elen) || !r_take(&r, elen, &ebody))
             return false;

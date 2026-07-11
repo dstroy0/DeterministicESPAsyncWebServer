@@ -107,7 +107,10 @@ void aes128_encrypt_block(const uint32_t rk[44], const uint8_t in[16], uint8_t o
 
         for (int c = 0; c < 4; c++)
         {
-            uint8_t a = s[c * 4], b = s[c * 4 + 1], cc = s[c * 4 + 2], d = s[c * 4 + 3];
+            uint8_t a = s[c * 4];
+            uint8_t b = s[c * 4 + 1];
+            uint8_t cc = s[c * 4 + 2];
+            uint8_t d = s[c * 4 + 3];
             uint8_t e = a ^ b ^ cc ^ d;
             s[c * 4] = a ^ e ^ xtime(a ^ b);
             s[c * 4 + 1] = b ^ e ^ xtime(b ^ cc);
@@ -303,7 +306,8 @@ void quic_aes128_gcm_seal(const uint8_t key[16], const uint8_t nonce[12], const 
     inc32(ctr);
     gctr(&aes, ctr, pt, pt_len, out);
 
-    uint8_t j0b[16], tag[16];
+    uint8_t j0b[16];
+    uint8_t tag[16];
     gcm_core(&aes, nonce, aad, aad_len, out, pt_len, j0b, tag);
     memcpy(out + pt_len, tag, QUIC_AEAD_TAG_LEN);
 
@@ -321,7 +325,8 @@ bool quic_aes128_gcm_open(const uint8_t key[16], const uint8_t nonce[12], const 
     quic_aes128_init(&aes, key);
 
     // Authenticate over the received ciphertext before producing any plaintext.
-    uint8_t j0[16], tag[16];
+    uint8_t j0[16];
+    uint8_t tag[16];
     gcm_core(&aes, nonce, aad, aad_len, ct, pt_len, j0, tag);
 
     uint8_t diff = 0;
