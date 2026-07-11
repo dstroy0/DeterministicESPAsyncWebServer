@@ -203,6 +203,24 @@ struct DetTcpCall
     err_t result; ///< outcome of the op (DetTcpOp::DET_OP_SEND: whether the write was queued)
 };
 
+// True if @p pcb is still bound to a live connection slot. A marshalled send/output captures the
+// pcb on the worker thread (from conn_pool[slot].pcb); by the time the op runs here the connection
+// can have been torn down - teardown nulls conn_pool[slot].pcb on the worker and then frees the pcb
+// on tcpip_thread (DET_OP_CLOSE/ABORT), and a remote RST frees it via the error callback. A
+// tcp_write/tcp_output on that freed pcb trips lwIP's `tcp_output: invalid pcb` assert and panics
+// the device (found by the pentest rig: oversized request line / connection saturation). Re-check
+// against the pool here - we are in tcpip_thread, where teardown also runs, so the compare is
+// race-free. The scan (not conn_pool[slot]) is correct for DET_OP_RAWSEND too, whose slot is 0.
+static bool pcb_still_bound(const struct tcp_pcb *pcb)
+{
+    if (!pcb)
+        return false;
+    for (uint8_t i = 0; i < CONN_POOL_SLOTS; i++)
+        if (conn_pool[i].pcb == pcb)
+            return true;
+    return false;
+}
+
 // Runs in tcpip_thread (via tcpip_api_call). Performs the requested raw lwIP op
 // in the one context where it is safe; TLS record I/O (which also reaches
 // tcp_write through the BIO) is done here too.
@@ -214,11 +232,26 @@ static err_t det_tcp_do(struct tcpip_api_call_data *c)
     switch (k->op)
     {
     case DetTcpOp::DET_OP_RAWSEND:
+        // RAWSEND (TLS BIO) carries only the pcb, not its slot, so liveness needs a pool lookup. This
+        // is the cool TLS handshake / read-pump path (not per-packet app data), and CONN_POOL_SLOTS is
+        // small + compile-time so -O2 unrolls the scan (see docs/ROADMAP: unroll loops to bitmask).
+        if (!pcb_still_bound(k->pcb)) // stale pcb (connection torn down between capture and now)
+        {
+            k->result = ERR_CLSD;
+            break;
+        }
         k->result = tcp_write(k->pcb, k->data, k->len, TCP_WRITE_FLAG_COPY);
         if (k->result == ERR_OK)
             tcp_output(k->pcb);
         break;
     case DetTcpOp::DET_OP_SEND:
+        // Hot path: SEND carries the real slot, so a stale pcb is just k->pcb != the slot's live pcb.
+        // O(1), no scan - the send/flush pair runs on every HTTP response.
+        if (k->pcb != conn_pool[k->slot].pcb)
+        {
+            k->result = ERR_CLSD; // connection torn down between capture and now; skip, do not assert
+            break;
+        }
 #if DETWS_ENABLE_TLS
         if (conn_pool[k->slot].tls)
         {
@@ -229,7 +262,12 @@ static err_t det_tcp_do(struct tcpip_api_call_data *c)
         k->result = tcp_write(k->pcb, k->data, k->len, TCP_WRITE_FLAG_COPY);
         break;
     case DetTcpOp::DET_OP_OUTPUT:
-        tcp_output(k->pcb);
+        // Hot path (O(1)): flush only if the slot still owns this pcb; else it was torn down - skip
+        // rather than tcp_output on freed memory (lwIP's "invalid pcb" assert -> panic).
+        if (k->pcb == conn_pool[k->slot].pcb)
+            tcp_output(k->pcb);
+        else
+            k->result = ERR_CLSD;
         break;
     case DetTcpOp::DET_OP_CLOSE:
 #if DETWS_ENABLE_TLS

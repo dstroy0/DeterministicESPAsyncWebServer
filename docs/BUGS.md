@@ -8,6 +8,53 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Connection pool wedges (no recovery) under a saturation + RST-race flood - was masked by the crash
+
+- **Status:** OPEN (observed on hardware 2026-07-11; root cause not yet isolated).
+- **Found:** re-attacking the S3 rig after the stale-pcb crash fix below. `http_conn_saturation` + a burst of
+  oversized requests closed with SO_LINGER=0 (RST) leaves the device **pingable but not serving HTTP**
+  (curl -> `000`), and it does **not** recover on its own past `CONN_TIMEOUT_MS` (5 s) - only a reset brings
+  the server back. A fresh boot serves normally (`/health` -> 200), so the fix does not break normal HTTP.
+- **Why it surfaced now:** the stale-pcb crash used to **reboot and self-heal** this exact wedge; fixing the
+  crash removed that accidental recovery, exposing that the 4-slot pool's slots do not free under abnormal
+  (RST-race / half-open saturation) teardown. Fixing one bug uncovered the one it was hiding.
+- **Root cause:** (to investigate) suspected connection-slot leak - a slot left in a non-`CONN_FREE` state
+  that the timeout sweep does not reclaim when the peer RSTs mid-request or holds the slot half-open. Needs
+  JTAG inspection of `conn_pool[]` states after the flood.
+- **Fix:** pending. Likely: the timeout sweep and/or the error/abort teardown must guarantee a slot returns
+  to `CONN_FREE` for every abnormal close (RST, half-open timeout), independent of the response path.
+- **Lesson:** a crash that reboots can _mask_ a resource-leak DoS; only after removing the crash does the
+  leak become observable. Fix crashes, then re-attack to find what the reboot was hiding.
+
+---
+
+## Oversized request line / connection saturation reboots the device (tcp_output on a stale pcb)
+
+- **Status:** OPEN (found on hardware 2026-07-11 by the pentest rig).
+- **Found:** `pentesting/detws_pentest.py --host <rig> --diag` (attacks `http_oversized_request_line` +
+  `http_conn_saturation`) against the ESP32-S3 rig firmware (`pentesting/rig_firmware`, pinned
+  `espressif32@6.13.0`, MAX_CONNS=4). Reproduced standalone with ~15 oversized-request-line connections.
+- **Symptom:** the device **panics and reboots**. Serial:
+  `assert failed: tcp_output .../lwip/src/core/tcp_out.c:1249 (tcp_output: invalid pcb)` + backtrace +
+  `rst:0xc (RTC_SW_CPU_RST)`. The determinism oracle also saw free heap drift down (251904 -> 245136)
+  before the crash, and legitimate requests hang while the pool is saturated.
+- **Root cause:** `src/network_drivers/transport/tcp.cpp:232`, `det_tcp_do()` (the `tcpip_api_call`
+  marshalled raw-lwIP op) calls `tcp_output(k->pcb)` - and `tcp_write(k->pcb, ...)` for SEND/RAWSEND -
+  **without re-validating that `k->pcb` is still live**. The worker captures the pcb, then marshals the
+  op to `tcpip_thread`; in between, the connection can be torn down (RST / lwIP error callback / close
+  nulls `conn_pool[slot].pcb`), leaving `k->pcb` stale. `tcp_output` on the freed/closed pcb trips lwIP's
+  assertion and panics. Symbolized via `addr2line` on the `-g` rig `firmware.elf`:
+  `0x420074c6 = det_tcp_do (tcp.cpp:232) -> tcp_output (tcp_out.c:1251) -> __assert_func`.
+- **Fix:** (pending) re-validate the pcb at execution time inside `det_tcp_do` for the SEND / RAWSEND /
+  OUTPUT ops - e.g. skip with `ERR_CLSD` when `k->pcb != conn_pool[k->slot].pcb` (both reads are on
+  `tcpip_thread`, where teardown also runs, so the compare is race-free). To be confirmed over JTAG
+  (breakpoint at the op, inspect `k->pcb` vs the slot pcb) and re-attacked to prove the crash is gone.
+- **Lesson:** a marshalled/deferred raw-lwIP op MUST re-validate its pcb at execution time - the pcb it
+  captured on another thread may have been freed by teardown before the op runs. Capturing a raw pointer
+  across the worker -> tcpip_thread hop without a liveness re-check is a use-after-free waiting to happen.
+
+---
+
 ## FTP command emitters used additive length checks that could wrap (buffer-overflow risk)
 
 - **Status:** FIXED (native_ftp: 16 cases pass, byte-identical output; the change is behavior-preserving

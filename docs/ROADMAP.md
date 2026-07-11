@@ -1218,3 +1218,18 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       `src/services/<name>/<name>.{h,cpp}`, update the `#include` paths, the `build_src_filter` globs in
       `platformio.ini`, the compile-DB / dep-graph tooling, and any docs references. Header-only services
       (e.g. `clock.h`, `i2c.h`) stay at the root. Pure relocation - all builds + tests stay green.
+
+### Perf: unroll small pool scans to bitflag + bitmask compares
+
+> Hot-path validity/membership checks that loop over a small fixed pool (conn_pool, ws_pool, sse_pool,
+> the SSH per-conn tables) should be O(1) bitflag+mask ops or fully-unrolled branchless compares, not
+> `for` scans. The stale-pcb guard in `det_tcp_do` (`pcb_still_bound`) is the motivating case: SEND/OUTPUT
+> already reduce to the O(1) `k->pcb == conn_pool[k->slot].pcb` slot compare; only RAWSEND (TLS BIO, slot
+> unknown) still scans.
+
+- [ ] **Replace small fixed-pool scans with a live-slot bitmask** (M) - maintain a `uint32_t` active-slot
+      mask (bit i = slot i has a live pcb/conn), updated at the single set/clear-`pcb` sites, so membership
+      and "any active?" become one `& (1u << slot)` / `!= 0` test. For pointer->slot lookups that cannot
+      carry the slot (the RAWSEND / TLS BIO path), unroll the fixed `CONN_POOL_SLOTS` scan into a
+      branchless OR of compares (the compiler already does this at -O2; make it explicit + measured).
+      Benchmark before/after via the JTAG CCOUNT harness on the S3 rig so the win is real, not assumed.
