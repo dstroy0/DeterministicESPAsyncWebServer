@@ -23,15 +23,15 @@ void test_nv_pdu_roundtrip(void)
 {
     uint8_t value[2] = {0xAB, 0xCD};
     uint8_t out[8];
-    size_t n = detws_lon_build_nv(LON_MSG_NV_UPDATE, 0x1234, value, 2, out, sizeof(out));
+    size_t n = detws_lon_build_nv(Lon::LON_MSG_NV_UPDATE, 0x1234, value, 2, out, sizeof(out));
     // selector 0x1234 is 14-bit -> stored 0x12 0x34.
-    const uint8_t expect[] = {LON_MSG_NV_UPDATE, 0x12, 0x34, 0xAB, 0xCD};
+    const uint8_t expect[] = {Lon::LON_MSG_NV_UPDATE, 0x12, 0x34, 0xAB, 0xCD};
     TEST_ASSERT_EQUAL_size_t(5, n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, n);
 
     LonNv nv;
     TEST_ASSERT_TRUE(detws_lon_parse_nv(out, n, &nv));
-    TEST_ASSERT_EQUAL_HEX8(LON_MSG_NV_UPDATE, nv.msg_code);
+    TEST_ASSERT_EQUAL_HEX8(Lon::LON_MSG_NV_UPDATE, nv.msg_code);
     TEST_ASSERT_EQUAL_UINT16(0x1234, nv.selector);
     TEST_ASSERT_EQUAL_size_t(2, nv.value_len);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(value, nv.value, 2);
@@ -41,14 +41,14 @@ void test_nv_selector_masked_to_14_bits(void)
 {
     // The top two bits of the selector byte are not part of the 14-bit value.
     uint8_t out[8];
-    detws_lon_build_nv(LON_MSG_NV_POLL, 0x3FFF, nullptr, 0, out, sizeof(out));
+    detws_lon_build_nv(Lon::LON_MSG_NV_POLL, 0x3FFF, nullptr, 0, out, sizeof(out));
     LonNv nv;
     // Simulate a peer that set reserved high bits.
     out[1] |= 0xC0;
     TEST_ASSERT_TRUE(detws_lon_parse_nv(out, 3, &nv));
     TEST_ASSERT_EQUAL_UINT16(0x3FFF, nv.selector);
     // Reject a selector > 14 bits at build.
-    TEST_ASSERT_EQUAL_size_t(0, detws_lon_build_nv(LON_MSG_NV_UPDATE, 0x4000, nullptr, 0, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, detws_lon_build_nv(Lon::LON_MSG_NV_UPDATE, 0x4000, nullptr, 0, out, sizeof(out)));
 }
 
 void test_snvt_temp(void)

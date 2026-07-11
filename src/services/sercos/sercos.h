@@ -28,11 +28,12 @@
 
 #if DETWS_ENABLE_SERCOS
 
-enum
+// SERCOS telegram types + header length: wire values, so integer constants in a struct.
+struct Sercos
 {
-    SERCOS_TEL_MDT = 0x00, ///< Master Data Telegram (master -> drives).
-    SERCOS_TEL_AT = 0x01,  ///< Acknowledge Telegram (drive -> master).
-    SERCOS_HDR_LEN = 4
+    static constexpr uint8_t SERCOS_TEL_MDT = 0x00; ///< Master Data Telegram (master -> drives).
+    static constexpr uint8_t SERCOS_TEL_AT = 0x01;  ///< Acknowledge Telegram (drive -> master).
+    static constexpr uint8_t SERCOS_HDR_LEN = 4;
 };
 
 /**

@@ -15,7 +15,7 @@
 size_t detws_lon_build_nv(uint8_t msg_code, uint16_t selector, const uint8_t *value, size_t value_len, uint8_t *out,
                           size_t cap)
 {
-    if (!out || (value_len && !value) || selector > LON_NV_SELECTOR_MAX)
+    if (!out || (value_len && !value) || selector > Lon::LON_NV_SELECTOR_MAX)
         return 0;
     size_t n = 3 + value_len;
     if (n > cap)

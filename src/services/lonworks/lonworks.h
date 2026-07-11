@@ -28,11 +28,12 @@
 
 #if DETWS_ENABLE_LONWORKS
 
-enum
+// LonTalk NV message codes + selector limit: wire values, so integer constants in a struct.
+struct Lon
 {
-    LON_MSG_NV_UPDATE = 0x80,    ///< network-variable update message code (base).
-    LON_MSG_NV_POLL = 0x81,      ///< network-variable poll (request).
-    LON_NV_SELECTOR_MAX = 0x3FFF ///< the NV selector is 14 bits.
+    static constexpr uint16_t LON_MSG_NV_UPDATE = 0x80;     ///< network-variable update message code (base).
+    static constexpr uint16_t LON_MSG_NV_POLL = 0x81;       ///< network-variable poll (request).
+    static constexpr uint16_t LON_NV_SELECTOR_MAX = 0x3FFF; ///< the NV selector is 14 bits.
 };
 
 /**

@@ -24,13 +24,13 @@ size_t detws_pb_build_sd1(uint8_t da, uint8_t sa, uint8_t fc, uint8_t *out, size
 {
     if (!out || cap < 6)
         return 0;
-    out[0] = PB_SD1;
+    out[0] = Profibus::PB_SD1;
     out[1] = da;
     out[2] = sa;
     out[3] = fc;
     uint8_t body[3] = {da, sa, fc};
     out[4] = detws_pb_fcs(body, 3);
-    out[5] = PB_ED;
+    out[5] = Profibus::PB_ED;
     return 6;
 }
 
@@ -45,10 +45,10 @@ size_t detws_pb_build_sd2(uint8_t da, uint8_t sa, uint8_t fc, const uint8_t *dat
         return 0;
     uint8_t le = (uint8_t)(3 + data_len); // length of DA+SA+FC+data
     size_t i = 0;
-    out[i++] = PB_SD2;
+    out[i++] = Profibus::PB_SD2;
     out[i++] = le;
     out[i++] = le; // LEr (redundant length)
-    out[i++] = PB_SD2;
+    out[i++] = Profibus::PB_SD2;
     out[i++] = da;
     out[i++] = sa;
     out[i++] = fc;
@@ -59,7 +59,7 @@ size_t detws_pb_build_sd2(uint8_t da, uint8_t sa, uint8_t fc, const uint8_t *dat
     }
     // FCS over DA+SA+FC+data (out[4 .. 4+le-1]).
     out[i++] = detws_pb_fcs(out + 4, le);
-    out[i++] = PB_ED;
+    out[i++] = Profibus::PB_ED;
     return i;
 }
 
@@ -68,15 +68,15 @@ bool detws_pb_parse(const uint8_t *frame, size_t len, PbTelegram *out)
     if (!frame || !out || len < 6)
         return false;
 
-    if (frame[0] == PB_SD1)
+    if (frame[0] == Profibus::PB_SD1)
     {
         // SD1 DA SA FC FCS ED
         if (len < 6)
             return false;
         uint8_t body[3] = {frame[1], frame[2], frame[3]};
-        if (detws_pb_fcs(body, 3) != frame[4] || frame[5] != PB_ED)
+        if (detws_pb_fcs(body, 3) != frame[4] || frame[5] != Profibus::PB_ED)
             return false;
-        out->sd = PB_SD1;
+        out->sd = Profibus::PB_SD1;
         out->da = frame[1];
         out->sa = frame[2];
         out->fc = frame[3];
@@ -84,22 +84,22 @@ bool detws_pb_parse(const uint8_t *frame, size_t len, PbTelegram *out)
         out->data_len = 0;
         return true;
     }
-    if (frame[0] == PB_SD2)
+    if (frame[0] == Profibus::PB_SD2)
     {
         // SD2 LE LEr SD2 DA SA FC [data] FCS ED
         if (len < 9)
             return false;
         uint8_t le = frame[1];
-        if (frame[2] != le || frame[3] != PB_SD2)
+        if (frame[2] != le || frame[3] != Profibus::PB_SD2)
             return false;
         if (le < 3)
             return false;
         size_t total = 4 + le + 2; // header(4) + le body + FCS + ED
         if (len < total)
             return false;
-        if (detws_pb_fcs(frame + 4, le) != frame[4 + le] || frame[4 + le + 1] != PB_ED)
+        if (detws_pb_fcs(frame + 4, le) != frame[4 + le] || frame[4 + le + 1] != Profibus::PB_ED)
             return false;
-        out->sd = PB_SD2;
+        out->sd = Profibus::PB_SD2;
         out->da = frame[4];
         out->sa = frame[5];
         out->fc = frame[6];

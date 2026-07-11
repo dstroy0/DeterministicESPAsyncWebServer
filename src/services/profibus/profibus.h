@@ -28,17 +28,18 @@
 
 #if DETWS_ENABLE_PROFIBUS
 
-enum
+// PROFIBUS telegram delimiters + Frame Control values: wire bytes, so integer constants in a struct.
+struct Profibus
 {
-    PB_SD1 = 0x10, ///< start delimiter: no data.
-    PB_SD2 = 0x68, ///< start delimiter: variable data.
-    PB_SD3 = 0xA2, ///< start delimiter: fixed 8 data.
-    PB_SD4 = 0xDC, ///< token telegram.
-    PB_ED = 0x16,  ///< end delimiter.
+    static constexpr uint8_t PB_SD1 = 0x10; ///< start delimiter: no data.
+    static constexpr uint8_t PB_SD2 = 0x68; ///< start delimiter: variable data.
+    static constexpr uint8_t PB_SD3 = 0xA2; ///< start delimiter: fixed 8 data.
+    static constexpr uint8_t PB_SD4 = 0xDC; ///< token telegram.
+    static constexpr uint8_t PB_ED = 0x16;  ///< end delimiter.
     // Frame Control (FC) common values.
-    PB_FC_REQUEST_FDL_STATUS = 0x49, ///< request FDL status (with FCB/FCV).
-    PB_FC_SRD_LOW = 0x6C,            ///< Send and Request Data, low priority.
-    PB_FC_SRD_HIGH = 0x7C            ///< Send and Request Data, high priority.
+    static constexpr uint8_t PB_FC_REQUEST_FDL_STATUS = 0x49; ///< request FDL status (with FCB/FCV).
+    static constexpr uint8_t PB_FC_SRD_LOW = 0x6C;            ///< Send and Request Data, low priority.
+    static constexpr uint8_t PB_FC_SRD_HIGH = 0x7C;           ///< Send and Request Data, high priority.
 };
 
 /** @brief PROFIBUS FCS: arithmetic sum (mod 256) of @p len bytes (DA + SA + FC + data). */
