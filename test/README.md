@@ -5464,11 +5464,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Id group1
     * **Assertions**:
-      * <code>Assert true (devicenet_encode_id(&id, DEVICENET_GROUP_1, 0x0A, 0x05))</code>
+      * <code>Assert true (devicenet_encode_id(&id, DeviceNetGroup::DEVICENET_GROUP_1, 0x0A, 0x05))</code>
       * <code>TEST_ASSERT_EQUAL_HEX32((0x0Au &lt;&lt; 6) | 0x05u, id);</code>
       * <code>Assert true (id &lt; 0x400u)</code>
       * <code>Assert true (devicenet_decode_id(id, &d))</code>
-      * <code>Assert equal int (DEVICENET_GROUP_1, d.group)</code>
+      * <code>Assert equal int (DeviceNetGroup::DEVICENET_GROUP_1, d.group)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x0A, d.msg_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x05, d.mac_id);</code>
   </details>
@@ -5478,10 +5478,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Group 2: 10 MAC(6) MsgID(3). mac 0x21, unconnected explicit request.
     * **Assertions**:
-      * <code>Assert true (devicenet_encode_id(&id, DEVICENET_GROUP_2, DEVICENET_G2_UNCONNECTED_EXPLICIT_REQ, 0x21))</code>
+      * <code>TEST_ASSERT_TRUE(</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x400u | (0x21u &lt;&lt; 3) | 4u, id);</code>
       * <code>Assert true (devicenet_decode_id(id, &d))</code>
-      * <code>Assert equal int (DEVICENET_GROUP_2, d.group)</code>
+      * <code>Assert equal int (DeviceNetGroup::DEVICENET_GROUP_2, d.group)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x21, d.mac_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(4, d.msg_id);</code>
   </details>
@@ -5491,21 +5491,21 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: 0x7F0..0x7FF are invalid identifiers.
     * **Assertions**:
-      * <code>Assert true (devicenet_encode_id(&id, DEVICENET_GROUP_3, 5, 0x09)); // 11 MsgID(3) MAC(6)</code>
+      * <code>Assert true (devicenet_encode_id(&id, DeviceNetGroup::DEVICENET_GROUP_3, 5, 0x09)); // 11 MsgID(3) MAC(6)</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x600u | (5u &lt;&lt; 6) | 0x09u, id);</code>
       * <code>Assert true (devicenet_decode_id(id, &d))</code>
-      * <code>Assert equal int (DEVICENET_GROUP_3, d.group)</code>
+      * <code>Assert equal int (DeviceNetGroup::DEVICENET_GROUP_3, d.group)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(5, d.msg_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x09, d.mac_id);</code>
-      * <code>Assert true (devicenet_encode_id(&id, DEVICENET_GROUP_4, 0x2A, 0)); // 11111 MsgID(6)</code>
+      * <code>Assert true (devicenet_encode_id(&id, DeviceNetGroup::DEVICENET_GROUP_4, 0x2A, 0)); // 11111 MsgID(6)</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x7C0u | 0x2Au, id);</code>
       * <code>Assert true (devicenet_decode_id(id, &d))</code>
-      * <code>Assert equal int (DEVICENET_GROUP_4, d.group)</code>
+      * <code>Assert equal int (DeviceNetGroup::DEVICENET_GROUP_4, d.group)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x2A, d.msg_id);</code>
       * <code>Assert false (devicenet_decode_id(0x7F5, &d))</code>
-      * <code>Assert false (devicenet_encode_id(&id, DEVICENET_GROUP_1, 16, 0))</code>
-      * <code>Assert false (devicenet_encode_id(&id, DEVICENET_GROUP_2, 0, 64))</code>
-      * <code>Assert false (devicenet_encode_id(&id, DEVICENET_GROUP_4, 0x30, 0))</code>
+      * <code>Assert false (devicenet_encode_id(&id, DeviceNetGroup::DEVICENET_GROUP_1, 16, 0))</code>
+      * <code>Assert false (devicenet_encode_id(&id, DeviceNetGroup::DEVICENET_GROUP_2, 0, 64))</code>
+      * <code>Assert false (devicenet_encode_id(&id, DeviceNetGroup::DEVICENET_GROUP_4, 0x30, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5525,12 +5525,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: a body that does not fit in one frame is rejected (use fragmentation instead).
     * **Assertions**:
-      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>TEST_ASSERT_TRUE(devicenet_build_explicit(&f, DeviceNetGroup::DEVICENET_GROUP_2,</code>
       * <code>Assert false (f.extended)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(4, f.dlc);       // 1 header + 3 body</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x21, f.data[0]); // header, not fragmented, mac 0x21</code>
       * <code>Assert equal memory (cip, f.data + 1, 3)</code>
-      * <code>Assert false (devicenet_build_explicit(&f, DEVICENET_GROUP_2, 4, 0x21, big, 8))</code>
+      * <code>Assert false (devicenet_build_explicit(&f, DeviceNetGroup::DEVICENET_GROUP_2, 4, 0x21, big, 8))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5538,7 +5538,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: header octet with FRAG clear -> the body is complete in one frame.
     * **Assertions**:
-      * <code>Assert equal int (DEVICENET_FRAG_COMPLETE, devicenet_frag_feed(&rx, body, 4))</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_COMPLETE, devicenet_frag_feed(&rx, body, 4))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(3, rx.len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xAA, rx.buf[0]);</code>
   </details>
@@ -5548,9 +5548,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: First fragment (count 0): header(FRAG\|mac) + frag(FIRST,0) + 6 data.
     * **Assertions**:
-      * <code>Assert equal int (DEVICENET_FRAG_STARTED, devicenet_frag_feed(&rx, f0, 8))</code>
-      * <code>Assert equal int (DEVICENET_FRAG_PROGRESS, devicenet_frag_feed(&rx, f1, 8))</code>
-      * <code>Assert equal int (DEVICENET_FRAG_COMPLETE, devicenet_frag_feed(&rx, f2, 4))</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_STARTED, devicenet_frag_feed(&rx, f0, 8))</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_PROGRESS, devicenet_frag_feed(&rx, f1, 8))</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_COMPLETE, devicenet_frag_feed(&rx, f2, 4))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(14, rx.len);</code>
       * <code>Assert equal memory (expect, rx.buf, 14)</code>
   </details>
@@ -5560,8 +5560,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: jump straight to a middle count 2 (expected 1) -> error, session reset.
     * **Assertions**:
-      * <code>Assert equal int (DEVICENET_FRAG_STARTED, devicenet_frag_feed(&rx, f0, 3))</code>
-      * <code>Assert equal int (DEVICENET_FRAG_ERR, devicenet_frag_feed(&rx, bad, 3))</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_STARTED, devicenet_frag_feed(&rx, f0, 3))</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_ERR, devicenet_frag_feed(&rx, bad, 3))</code>
       * <code>Assert false (rx.active)</code>
   </details>
 
@@ -5570,11 +5570,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Id error paths
     * **Assertions**:
-      * <code>Assert false (devicenet_encode_id(&id, DEVICENET_GROUP_2, 8, 0))</code>
-      * <code>Assert false (devicenet_encode_id(&id, DEVICENET_GROUP_3, 8, 0))</code>
+      * <code>Assert false (devicenet_encode_id(&id, DeviceNetGroup::DEVICENET_GROUP_2, 8, 0))</code>
+      * <code>Assert false (devicenet_encode_id(&id, DeviceNetGroup::DEVICENET_GROUP_3, 8, 0))</code>
       * <code>Assert false (devicenet_encode_id(&id, (DeviceNetGroup)99, 0, 0))</code>
       * <code>Assert false (devicenet_decode_id(0x100, nullptr))</code>
-      * <code>Assert false (devicenet_build_explicit(&f, DEVICENET_GROUP_2, 8, 0, one, 1))</code>
+      * <code>Assert false (devicenet_build_explicit(&f, DeviceNetGroup::DEVICENET_GROUP_2, 8, 0, one, 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5582,12 +5582,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: A LAST fragment with no active session -> error.
     * **Assertions**:
-      * <code>Assert equal int (DEVICENET_FRAG_IGNORED, devicenet_frag_feed(nullptr, body, 3))</code>
-      * <code>Assert equal int (DEVICENET_FRAG_IGNORED, devicenet_frag_feed(&rx, nullptr, 3))</code>
-      * <code>Assert equal int (DEVICENET_FRAG_IGNORED, devicenet_frag_feed(&rx, body, 0))</code>
-      * <code>Assert equal int (DEVICENET_FRAG_ERR, devicenet_frag_feed(&rx, hdr_only, 1))</code>
-      * <code>Assert equal int (DEVICENET_FRAG_ERR, devicenet_frag_feed(&rx, last_no_first, sizeof(last_no_first)))</code>
-      * <code>Assert equal int (DEVICENET_FRAG_IGNORED, devicenet_frag_feed(&rx, ack, sizeof(ack)))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_IGNORED,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_IGNORED,</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_IGNORED, devicenet_frag_feed(&rx, body, 0))</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_ERR, devicenet_frag_feed(&rx, hdr_only, 1))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_ERR,</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_IGNORED, devicenet_frag_feed(&rx, ack, sizeof(ack)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5595,11 +5595,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Frag overflow
     * **Assertions**:
-      * <code>Assert equal int (DEVICENET_FRAG_STARTED, devicenet_frag_feed(&rx, frag, sizeof(frag)))</code>
-      * <code>Assert equal int (DEVICENET_FRAG_ERR, devicenet_frag_feed(&rx, frag, sizeof(frag)))</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_STARTED, devicenet_frag_feed(&rx, frag, sizeof(frag)))</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_ERR, devicenet_frag_feed(&rx, frag, sizeof(frag)))</code>
       * <code>Assert false (rx.active)</code>
-      * <code>Assert equal int (DEVICENET_FRAG_STARTED, devicenet_frag_feed(&rx, frag, sizeof(frag)))</code>
-      * <code>Assert equal int (DEVICENET_FRAG_ERR, devicenet_frag_feed(&rx, frag, sizeof(frag)))</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_STARTED, devicenet_frag_feed(&rx, frag, sizeof(frag)))</code>
+      * <code>Assert equal int (DeviceNetFragResult::DEVICENET_FRAG_ERR, devicenet_frag_feed(&rx, frag, sizeof(frag)))</code>
   </details>
 
 </details>
@@ -7181,7 +7181,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT16(17, n); // 6 header/crc + 7 data + 3 opt + 1 crc</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(ESP3_SYNC, buf[0]);</code>
       * <code>Assert equal int (17, c)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(ESP3_RADIO_ERP1, p.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(esp3_type::ESP3_RADIO_ERP1, p.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(7, p.data_len);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(3, p.opt_len);</code>
       * <code>Assert equal memory (data, p.data, 7)</code>
@@ -7244,8 +7244,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Build bounds
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, esp3_build(ESP3_RADIO_ERP1, data, 8, nullptr, 0, small, sizeof(small))); // 15 &gt; 10</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, esp3_build(ESP3_RADIO_ERP1, big, 17, nullptr, 0, big, sizeof(big))); // 17 &gt; MAX_DATA 16</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -12545,7 +12545,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>Assert true (detws_j2735_spat_decode(buf, n, out, 8, &count))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, count);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, out[0].signal_group);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(J2735_PHASE_PROTECTED_MOVEMENT_ALLOWED, out[0].phase);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(J2735PhaseState::J2735_PHASE_PROTECTED_MOVEMENT_ALLOWED, out[0].phase);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(100, out[0].min_end_time);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(250, out[0].max_end_time);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(17, out[2].signal_group);</code>
@@ -20550,7 +20550,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Mgmt (type 0), Beacon (subtype 8): fc0 = (8<<4)\|(0<<2) = 0x80; no DS bits.
     * **Assertions**:
       * <code>Assert true (wifi_frame_parse(f, sizeof(f), &fi))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(WIFI_FT_MGMT, fi.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(WifiFrameType::WIFI_FT_MGMT, fi.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(8, fi.subtype);</code>
       * <code>Assert false (fi.to_ds)</code>
       * <code>Assert false (fi.from_ds)</code>
@@ -20567,7 +20567,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Data (type 2), from the AP: fc0 = (0<<4)\|(2<<2) = 0x08; from_ds = 0x02.
     * **Assertions**:
       * <code>Assert true (wifi_frame_parse(f, sizeof(f), &fi))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(WIFI_FT_DATA, fi.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(WifiFrameType::WIFI_FT_DATA, fi.type);</code>
       * <code>Assert false (fi.to_ds)</code>
       * <code>Assert true (fi.from_ds)</code>
       * <code>Assert equal memory (A_CLI, fi.dst, 6)</code>
@@ -20618,7 +20618,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: ACK (type 1, subtype 13): fc0 = (13<<4)\|(1<<2) = 0xD4. Only Addr1 (RA), 10-byte header.
     * **Assertions**:
       * <code>Assert true (wifi_frame_parse(f, sizeof(f), &fi))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(WIFI_FT_CTRL, fi.type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(WifiFrameType::WIFI_FT_CTRL, fi.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(10, fi.hdr_len);</code>
       * <code>Assert equal memory (A_CLI, fi.dst, 6)</code>
       * <code>Assert null (fi.src)</code>
@@ -33358,7 +33358,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT16(8, n); // SOF + LEN + type + cmd + 3 data + checksum</code>
       * <code>Assert equal int (8, zwave_parse_frame(buf, n, &type, &cmd, &pd, &pdlen))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(ZWAVE_RES, type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(zwave_type::ZWAVE_RES, type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x04, cmd);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(3, pdlen);</code>
       * <code>Assert equal memory (data, pd, 3)</code>
@@ -33370,7 +33370,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Parse getversion kat
     * **Assertions**:
       * <code>Assert equal int (5, zwave_parse_frame(frame, sizeof(frame), &type, &cmd, nullptr, &pdlen))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(ZWAVE_REQ, type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(zwave_type::ZWAVE_REQ, type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x15, cmd);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, pdlen);</code>
   </details>
@@ -33427,8 +33427,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Build bounds
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, zwave_build_frame(ZWAVE_REQ, 0x13, data, 4, small, sizeof(small))); // 9 &gt; 6</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, zwave_build_frame(ZWAVE_REQ, 0x13, big, 17, big, sizeof(big))); // 17 &gt; MAX_DATA 16</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, zwave_build_frame(zwave_type::ZWAVE_REQ, 0x13, data, 4, small, sizeof(small))); // 9 &gt; 6</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(</code>
   </details>
 
 </details>

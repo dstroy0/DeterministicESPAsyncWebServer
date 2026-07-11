@@ -977,7 +977,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `SSH` | `L5-Session/03.SSHHostKey` | 821,037 | 88,676 |
 | `ETAG` | `L7-Application/09.ETag` | 827,341 | 67,632 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,580 |
-| `TLS` | `L4-Transport/03.HTTPS` | 855,469 | 117,244 |
+| `TLS` | `L6-Presentation/07.SecureWebSocket` | 855,349 | 117,252 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/06.TlsResumption` | 856,177 | 117,412 |
 | `TLS+MTLS` | `L4-Transport/04.mTLS` | 856,297 | 117,588 |
 
