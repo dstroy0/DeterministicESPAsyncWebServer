@@ -70,7 +70,7 @@ static size_t build_long(uint8_t *out, size_t cap, uint8_t type, const uint8_t *
 {
     uint8_t pn_len = quic_pn_length(pn, -1);
     size_t p = quic_build_long_header(out, cap, type, QUIC_VERSION_1, dcid, dcl, scid, scl, pn_len);
-    if (type == QUIC_LP_INITIAL)
+    if (type == QuicLongPacket::QUIC_LP_INITIAL)
         p += quic_varint_encode(out + p, cap - p, 0);
     p += quic_varint_encode(out + p, cap - p, (uint64_t)pn_len + frame_len + 16);
     size_t pn_off = p;
@@ -97,7 +97,7 @@ static size_t open_long(const uint8_t *dg, size_t len, const QuicPacketKeys *key
     TEST_ASSERT_TRUE(quic_parse_long_header(dg, len, &h));
     *type = h.type;
     size_t off = h.hdr_len;
-    if (h.type == QUIC_LP_INITIAL)
+    if (h.type == QuicLongPacket::QUIC_LP_INITIAL)
     {
         uint64_t tl = 0;
         size_t c = 0;
@@ -237,8 +237,8 @@ void test_http3_get_end_to_end()
     memset(frames + fl, 0, 1100 - fl);
     fl = 1100;
     uint8_t dg[1500];
-    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
-                           &init.client, frames, fl);
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, frames, fl);
     quic_conn_recv(&qc, dg, dl);
 
     // Server flight -> derive client-side keys.
@@ -280,15 +280,15 @@ void test_http3_get_end_to_end()
     uint8_t ifr[64];
     size_t ifl = quic_build_ack(ifr, sizeof(ifr), 0, 0, 0);
     uint8_t idg[256];
-    size_t idl = build_long(idg, sizeof(idg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID),
-                            1, &init.client, ifr, ifl);
+    size_t idl = build_long(idg, sizeof(idg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                            sizeof(CLIENT_SCID), 1, &init.client, ifr, ifl);
     uint8_t cfin[36] = {TLS_HS_FINISHED, 0x00, 0x00, 0x20};
     tls13_finished_mac(cks.client_hs_traffic, chsf, cfin + 4);
     uint8_t hfr[64];
     size_t hfl = quic_build_ack(hfr, sizeof(hfr), 0, 0, 0);
     hfl += quic_build_crypto(hfr + hfl, sizeof(hfr) - hfl, 0, cfin, sizeof(cfin));
-    size_t hdl = build_long(idg + idl, sizeof(idg) - idl, QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID), CLIENT_SCID,
-                            sizeof(CLIENT_SCID), 0, &hs_c, hfr, hfl);
+    size_t hdl = build_long(idg + idl, sizeof(idg) - idl, QuicLongPacket::QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID),
+                            CLIENT_SCID, sizeof(CLIENT_SCID), 0, &hs_c, hfr, hfl);
     quic_conn_recv(&qc, idg, idl + hdl);
     TEST_ASSERT_TRUE(quic_conn_established(&qc));
     // Drain the server's HANDSHAKE_DONE + control-stream datagram(s).

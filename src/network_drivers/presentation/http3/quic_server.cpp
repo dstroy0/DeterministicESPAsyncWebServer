@@ -247,7 +247,7 @@ QuicSlot *route(const uint8_t *dg, size_t len, bool *is_initial, QuicLongHeader 
                 cid_eq(lh_out->dcid, lh_out->dcid_len, s->qc.odcid, s->qc.odcid_len))
                 return s;
         }
-        if (lh_out->version == QUIC_VERSION_1 && lh_out->type == QUIC_LP_INITIAL)
+        if (lh_out->version == QUIC_VERSION_1 && lh_out->type == QuicLongPacket::QUIC_LP_INITIAL)
             *is_initial = true;
         return nullptr;
     }

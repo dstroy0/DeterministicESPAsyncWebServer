@@ -32,12 +32,12 @@
 #define QUIC_MAX_CID_LEN 20        ///< maximum connection-ID length in QUIC version 1
 
 /** @brief Long-header packet types (RFC 9000 sec 17.2, Table 5). */
-enum
+struct QuicLongPacket
 {
-    QUIC_LP_INITIAL = 0x00,
-    QUIC_LP_0RTT = 0x01,
-    QUIC_LP_HANDSHAKE = 0x02,
-    QUIC_LP_RETRY = 0x03,
+    static constexpr uint8_t QUIC_LP_INITIAL = 0x00;
+    static constexpr uint8_t QUIC_LP_0RTT = 0x01;
+    static constexpr uint8_t QUIC_LP_HANDSHAKE = 0x02;
+    static constexpr uint8_t QUIC_LP_RETRY = 0x03;
 };
 
 /** @brief A parsed long header (invariant fields). A Version of 0 marks a Version Negotiation. */

@@ -31,24 +31,24 @@
 #include <stdint.h>
 
 /** @brief Transport parameter identifiers (RFC 9000 sec 18.2 / Table 7). */
-enum
+struct QuicTp
 {
-    QUIC_TP_ORIGINAL_DCID = 0x00,              ///< server: DCID of the client's first Initial
-    QUIC_TP_MAX_IDLE_TIMEOUT = 0x01,           ///< varint, milliseconds (0 = disabled)
-    QUIC_TP_STATELESS_RESET_TOKEN = 0x02,      ///< 16 bytes (server only)
-    QUIC_TP_MAX_UDP_PAYLOAD_SIZE = 0x03,       ///< varint, default 65527, min 1200
-    QUIC_TP_INITIAL_MAX_DATA = 0x04,           ///< varint, connection flow-control window
-    QUIC_TP_INITIAL_MAX_SD_BIDI_LOCAL = 0x05,  ///< varint
-    QUIC_TP_INITIAL_MAX_SD_BIDI_REMOTE = 0x06, ///< varint
-    QUIC_TP_INITIAL_MAX_SD_UNI = 0x07,         ///< varint
-    QUIC_TP_INITIAL_MAX_STREAMS_BIDI = 0x08,   ///< varint
-    QUIC_TP_INITIAL_MAX_STREAMS_UNI = 0x09,    ///< varint
-    QUIC_TP_ACK_DELAY_EXPONENT = 0x0a,         ///< varint, default 3, max 20
-    QUIC_TP_MAX_ACK_DELAY = 0x0b,              ///< varint, default 25, < 2^14
-    QUIC_TP_DISABLE_ACTIVE_MIGRATION = 0x0c,   ///< zero-length flag
-    QUIC_TP_ACTIVE_CID_LIMIT = 0x0e,           ///< varint, default 2, min 2
-    QUIC_TP_INITIAL_SCID = 0x0f,               ///< SCID of this endpoint's first Initial
-    QUIC_TP_RETRY_SCID = 0x10,                 ///< server: SCID of a Retry it sent
+    static constexpr uint8_t QUIC_TP_ORIGINAL_DCID = 0x00;              ///< server: DCID of the client's first Initial
+    static constexpr uint8_t QUIC_TP_MAX_IDLE_TIMEOUT = 0x01;           ///< varint, milliseconds (0 = disabled)
+    static constexpr uint8_t QUIC_TP_STATELESS_RESET_TOKEN = 0x02;      ///< 16 bytes (server only)
+    static constexpr uint8_t QUIC_TP_MAX_UDP_PAYLOAD_SIZE = 0x03;       ///< varint, default 65527, min 1200
+    static constexpr uint8_t QUIC_TP_INITIAL_MAX_DATA = 0x04;           ///< varint, connection flow-control window
+    static constexpr uint8_t QUIC_TP_INITIAL_MAX_SD_BIDI_LOCAL = 0x05;  ///< varint
+    static constexpr uint8_t QUIC_TP_INITIAL_MAX_SD_BIDI_REMOTE = 0x06; ///< varint
+    static constexpr uint8_t QUIC_TP_INITIAL_MAX_SD_UNI = 0x07;         ///< varint
+    static constexpr uint8_t QUIC_TP_INITIAL_MAX_STREAMS_BIDI = 0x08;   ///< varint
+    static constexpr uint8_t QUIC_TP_INITIAL_MAX_STREAMS_UNI = 0x09;    ///< varint
+    static constexpr uint8_t QUIC_TP_ACK_DELAY_EXPONENT = 0x0a;         ///< varint, default 3, max 20
+    static constexpr uint8_t QUIC_TP_MAX_ACK_DELAY = 0x0b;              ///< varint, default 25, < 2^14
+    static constexpr uint8_t QUIC_TP_DISABLE_ACTIVE_MIGRATION = 0x0c;   ///< zero-length flag
+    static constexpr uint8_t QUIC_TP_ACTIVE_CID_LIMIT = 0x0e;           ///< varint, default 2, min 2
+    static constexpr uint8_t QUIC_TP_INITIAL_SCID = 0x0f;               ///< SCID of this endpoint's first Initial
+    static constexpr uint8_t QUIC_TP_RETRY_SCID = 0x10;                 ///< server: SCID of a Retry it sent
 };
 
 /** @brief The transport parameters we encode / decode, with RFC 9000 sec 18.2 defaults applied. */

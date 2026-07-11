@@ -110,7 +110,7 @@ void test_reject_oversized_cid()
 {
     // original_destination_connection_id with a 21-byte value (max is 20).
     uint8_t enc[2 + 21];
-    enc[0] = QUIC_TP_ORIGINAL_DCID;
+    enc[0] = QuicTp::QUIC_TP_ORIGINAL_DCID;
     enc[1] = 21;
     memset(enc + 2, 0xff, 21);
     QuicTransportParams tp;
@@ -137,7 +137,7 @@ void test_reject_bad_values()
     TEST_ASSERT_FALSE(quic_tp_parse(e, sizeof(e), &tp));
     // retry_source_connection_id (0x10) with a 21-byte value (max is 20).
     uint8_t f[2 + 21];
-    f[0] = QUIC_TP_RETRY_SCID;
+    f[0] = QuicTp::QUIC_TP_RETRY_SCID;
     f[1] = 21;
     memset(f + 2, 0x11, 21);
     TEST_ASSERT_FALSE(quic_tp_parse(f, sizeof(f), &tp));
@@ -186,7 +186,7 @@ void test_quic_tp_more_paths()
 
     // Parse: an oversized initial_source_connection_id (0x0f).
     uint8_t bigscid[2 + 21];
-    bigscid[0] = QUIC_TP_INITIAL_SCID;
+    bigscid[0] = QuicTp::QUIC_TP_INITIAL_SCID;
     bigscid[1] = 21;
     memset(bigscid + 2, 0x22, 21);
     TEST_ASSERT_FALSE(quic_tp_parse(bigscid, sizeof(bigscid), &out));

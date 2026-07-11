@@ -134,7 +134,7 @@ static size_t build_long(uint8_t *out, size_t cap, uint8_t type, const uint8_t *
 {
     uint8_t pn_len = quic_pn_length(pn, -1);
     size_t p = quic_build_long_header(out, cap, type, QUIC_VERSION_1, dcid, dcl, scid, scl, pn_len);
-    if (type == QUIC_LP_INITIAL)
+    if (type == QuicLongPacket::QUIC_LP_INITIAL)
         p += quic_varint_encode(out + p, cap - p, 0);
     uint64_t length = (uint64_t)pn_len + frame_len + 16;
     p += quic_varint_encode(out + p, cap - p, length);
@@ -165,7 +165,7 @@ static size_t open_long(const uint8_t *dg, size_t len, const QuicPacketKeys *key
     TEST_ASSERT_TRUE(quic_parse_long_header(dg, len, &h));
     *type_out = h.type;
     size_t off = h.hdr_len;
-    if (h.type == QUIC_LP_INITIAL)
+    if (h.type == QuicLongPacket::QUIC_LP_INITIAL)
     {
         uint64_t tl = 0;
         size_t c = 0;
@@ -282,8 +282,8 @@ void test_full_handshake_and_stream()
     memset(frames + fl, 0, 1100 - fl); // PADDING to give the server a comfortable amp budget
     fl = 1100;
     uint8_t dg[1500];
-    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
-                           &init.client, frames, fl);
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, frames, fl);
     TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
 
     // --- Server -> client: Initial(SH) + Handshake(EE..Finished) ---
@@ -295,7 +295,7 @@ void test_full_handshake_and_stream()
     size_t wire = 0;
     uint8_t type = 0;
     size_t pt = open_long(sdg, sl, &init.server, plain, &wire, &type);
-    TEST_ASSERT_EQUAL_UINT8(QUIC_LP_INITIAL, type);
+    TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_INITIAL, type);
     size_t sh_len = extract_crypto(plain, pt, sh);
     TEST_ASSERT_EQUAL_UINT8(TLS_HS_SERVER_HELLO, sh[0]);
 
@@ -322,7 +322,7 @@ void test_full_handshake_and_stream()
     size_t hswire = 0;
     uint8_t hstype = 0;
     size_t hpt = open_long(sdg + wire, sl - wire, &hs_server_keys, plain, &hswire, &hstype);
-    TEST_ASSERT_EQUAL_UINT8(QUIC_LP_HANDSHAKE, hstype);
+    TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_HANDSHAKE, hstype);
     size_t hsflen = extract_crypto(plain, hpt, hsflight);
     TEST_ASSERT_EQUAL_UINT8(TLS_HS_ENCRYPTED_EXTENSIONS, hsflight[0]);
 
@@ -341,16 +341,16 @@ void test_full_handshake_and_stream()
     uint8_t ifr[64];
     size_t ifl = quic_build_ack(ifr, sizeof(ifr), 0, 0, 0);
     uint8_t idg[256];
-    size_t idl = build_long(idg, sizeof(idg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID),
-                            1, &init.client, ifr, ifl);
+    size_t idl = build_long(idg, sizeof(idg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                            sizeof(CLIENT_SCID), 1, &init.client, ifr, ifl);
 
     uint8_t cfin[36] = {TLS_HS_FINISHED, 0x00, 0x00, 0x20};
     tls13_finished_mac(cks.client_hs_traffic, ch_sf, cfin + 4);
     uint8_t hfr[64];
     size_t hfl = quic_build_ack(hfr, sizeof(hfr), 0, 0, 0);
     hfl += quic_build_crypto(hfr + hfl, sizeof(hfr) - hfl, 0, cfin, sizeof(cfin));
-    size_t hdl = build_long(idg + idl, sizeof(idg) - idl, QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID), CLIENT_SCID,
-                            sizeof(CLIENT_SCID), 0, &hs_client_keys, hfr, hfl);
+    size_t hdl = build_long(idg + idl, sizeof(idg) - idl, QuicLongPacket::QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID),
+                            CLIENT_SCID, sizeof(CLIENT_SCID), 0, &hs_client_keys, hfr, hfl);
     TEST_ASSERT_TRUE(quic_conn_recv(&qc, idg, idl + hdl));
 
     TEST_ASSERT_TRUE(quic_conn_established(&qc));
@@ -504,8 +504,8 @@ void test_pto_retransmits_flight()
     memset(frames + fl, 0, 1100 - fl);
     fl = 1100;
     uint8_t dg[1500];
-    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
-                           &init.client, frames, fl);
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, frames, fl);
     TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
 
     // Server's first flight (pretend it is lost: capture it and never ACK it).
@@ -526,7 +526,7 @@ void test_pto_retransmits_flight()
     size_t wire = 0;
     uint8_t type = 0;
     size_t pt = open_long(sdg2, sl2, &init.server, plain, &wire, &type);
-    TEST_ASSERT_EQUAL_UINT8(QUIC_LP_INITIAL, type);
+    TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_INITIAL, type);
     size_t sh_len = extract_crypto(plain, pt, sh);
     TEST_ASSERT_TRUE(sh_len > 0);
     TEST_ASSERT_EQUAL_UINT8(TLS_HS_SERVER_HELLO, sh[0]); // the ServerHello was retransmitted
@@ -562,8 +562,8 @@ static void feed_client_initial(QuicConn *qc, QuicConnCallbacks *cb, QuicInitial
     memset(frames + fl, 0, 1100 - fl);
     fl = 1100;
     uint8_t dg[1500];
-    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
-                           &init->client, frames, fl);
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init->client, frames, fl);
     TEST_ASSERT_TRUE(quic_conn_recv(qc, dg, dl));
 }
 
@@ -627,8 +627,8 @@ void test_connection_close_on_malformed_frame()
     // dwarfs the packet), which the server cannot decode.
     uint8_t bad[4] = {QuicFrameType::QUIC_FT_CRYPTO, 0x00, 0x7f, 0xff}; // CRYPTO off=0 len=16383, no data present
     uint8_t bdg[256];
-    size_t bl = build_long(bdg, sizeof(bdg), QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID),
-                           0, &hs_client_keys, bad, sizeof(bad));
+    size_t bl = build_long(bdg, sizeof(bdg), QuicLongPacket::QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &hs_client_keys, bad, sizeof(bad));
     quic_conn_recv(&qc, bdg, bl); // fatal -> queues the close
 
     // The next server datagram is a CONNECTION_CLOSE (FRAME_ENCODING) at the Handshake level.
@@ -687,8 +687,8 @@ void test_quic_recv_connection_close()
     uint8_t fr[32];
     size_t fl = quic_build_connection_close(fr, sizeof(fr), QuicErr::QUIC_ERR_NO_ERROR, 0, nullptr, 0);
     uint8_t dg[256];
-    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
-                           &init.client, fr, fl);
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, fr, fl);
     quic_conn_recv(&qc, dg, dl);
     TEST_ASSERT_TRUE(quic_conn_is_closed(&qc));
     // A datagram arriving after the connection is closed is rejected outright.
@@ -709,8 +709,8 @@ void test_quic_recv_ping_and_max_data()
     size_t fl = quic_build_ping(fr, sizeof(fr));
     fl += quic_build_max_data(fr + fl, sizeof(fr) - fl, 1000000);
     uint8_t dg[256];
-    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
-                           &init.client, fr, fl);
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, fr, fl);
     TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
     TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
 }
@@ -727,8 +727,8 @@ void test_quic_recv_bad_version()
     quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
     uint8_t fr[8] = {QuicFrameType::QUIC_FT_PING};
     uint8_t dg[256];
-    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
-                           &init.client, fr, 1);
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, fr, 1);
     dg[1] = dg[2] = dg[3] = dg[4] = 0xAA; // clobber the version (not header-protected)
     TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, dl));
 }
@@ -744,8 +744,8 @@ void test_quic_recv_unsupported_long_type()
     quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
     uint8_t fr[8] = {QuicFrameType::QUIC_FT_PING};
     uint8_t dg[256];
-    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_0RTT, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
-                           &init.client, fr, 1);
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_0RTT, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, fr, 1);
     TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, dl));
 }
 
@@ -786,8 +786,8 @@ void test_quic_recv_unprotect_failure()
     quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
     uint8_t fr[8] = {QuicFrameType::QUIC_FT_PING};
     uint8_t dg[256];
-    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
-                           &init.client, fr, 1);
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, fr, 1);
     dg[dl - 1] ^= 0xFF; // corrupt the auth tag
     quic_conn_recv(&qc, dg, dl);
     TEST_ASSERT_FALSE(quic_conn_is_closed(&qc)); // dropped, no effect
@@ -832,19 +832,19 @@ void test_quic_crypto_out_of_order_and_dup()
 
     // Out of order: CRYPTO at offset 100 while want==0 -> dropped.
     size_t fl = quic_build_crypto(fr, sizeof(fr), 100, data, sizeof(data));
-    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
-                           &init.client, fr, fl);
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, fr, fl);
     TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
     TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
 
     // In-window then an identical copy: the second is a full duplicate.
     fl = quic_build_crypto(fr, sizeof(fr), 0, data, sizeof(data));
-    dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 1,
-                    &init.client, fr, fl);
+    dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                    sizeof(CLIENT_SCID), 1, &init.client, fr, fl);
     TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
     uint8_t dg2[256];
-    size_t dl2 = build_long(dg2, sizeof(dg2), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID),
-                            2, &init.client, fr, fl);
+    size_t dl2 = build_long(dg2, sizeof(dg2), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                            sizeof(CLIENT_SCID), 2, &init.client, fr, fl);
     TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg2, dl2)); // duplicate path
 }
 
@@ -860,8 +860,8 @@ void test_quic_timeout_when_closed()
     uint8_t fr[32];
     size_t fl = quic_build_connection_close(fr, sizeof(fr), QuicErr::QUIC_ERR_NO_ERROR, 0, nullptr, 0);
     uint8_t dg[256];
-    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
-                           &init.client, fr, fl);
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, fr, fl);
     quic_conn_recv(&qc, dg, dl);
     TEST_ASSERT_TRUE(quic_conn_is_closed(&qc));
     quic_conn_on_timeout(&qc, 1000); // closed -> immediate return, no effect
@@ -889,8 +889,8 @@ void test_quic_recv_malformed_initial_headers()
     uint8_t dg[1500];
 
     // 269: a truncated token-length varint (0xC0 announces 8 octets, none follow).
-    size_t hn = quic_build_long_header(dg, sizeof dg, QUIC_LP_INITIAL, QUIC_VERSION_1, ODCID, sizeof(ODCID),
-                                       CLIENT_SCID, sizeof(CLIENT_SCID), 1);
+    size_t hn = quic_build_long_header(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, QUIC_VERSION_1, ODCID,
+                                       sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 1);
     dg[hn] = 0xC0;
     TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, hn + 1));
 
@@ -931,8 +931,8 @@ void test_quic_recv_handshake_done_frame()
     memset(hd + hdl, 0, 20); // PADDING so the packet is long enough for header-protection sampling
     hdl += 20;
     uint8_t dg[256];
-    size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
-                           &init.client, hd, hdl);
+    size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init.client, hd, hdl);
     TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
     TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
 }
@@ -953,7 +953,8 @@ void test_quic_conn_stream_frames()
         uint8_t data[4] = {1, 2, 3, 4};
         uint8_t fr[32];
         size_t fl = quic_build_stream(fr, sizeof fr, 0, 100 /*offset > rx_off*/, data, 4, false);
-        size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, fl);
+        size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0,
+                               &init.client, fr, fl);
         g_stream_len = 0;
         quic_conn_recv(&qc, dg, dl);
         TEST_ASSERT_EQUAL_UINT(0, g_stream_len);
@@ -966,7 +967,8 @@ void test_quic_conn_stream_frames()
         uint8_t d0 = 0;
         uint8_t fr[16];
         size_t fl = quic_build_stream(fr, sizeof fr, 0, 0, &d0, 0, true);
-        size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, fl);
+        size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0,
+                               &init.client, fr, fl);
         g_stream_fin = false;
         quic_conn_recv(&qc, dg, dl);
         TEST_ASSERT_TRUE(g_stream_fin);
@@ -981,7 +983,8 @@ void test_quic_conn_stream_frames()
         size_t fl = 0;
         for (int i = 0; i <= DETWS_QUIC_MAX_STREAMS; i++)
             fl += quic_build_stream(fr + fl, sizeof(fr) - fl, (uint64_t)(i * 4), 0, &d1, 1, false);
-        size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, fl);
+        size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0,
+                               &init.client, fr, fl);
         TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
     }
 }
@@ -1004,11 +1007,12 @@ void test_quic_conn_crypto_window_clamp()
     memset(chunk + 4, 0, sizeof(chunk) - 4);
     uint8_t fr[1300];
     size_t fl = quic_build_crypto(fr, sizeof fr, 0, chunk, sizeof chunk);
-    size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, fl);
+    size_t dl =
+        build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, fl);
     TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
     TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
     fl = quic_build_crypto(fr, sizeof fr, 1200, chunk, sizeof chunk); // offset 1200 -> 2400 > 2048 -> clamp
-    dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 1, &init.client, fr, fl);
+    dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 1, &init.client, fr, fl);
     quic_conn_recv(&qc, dg, dl);
     TEST_ASSERT_FALSE(quic_conn_is_closed(&qc));
 }
@@ -1026,7 +1030,8 @@ void test_quic_conn_crypto_error_close()
     uint8_t fr[32];
     size_t fl = quic_build_crypto(fr, sizeof fr, 0, bad_ch, sizeof bad_ch);
     uint8_t dg[256];
-    size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, fl);
+    size_t dl =
+        build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, fl);
     quic_conn_recv(&qc, dg, dl);
     // A second close request is now a no-op (a close is already queued).
     quic_conn_close(&qc, 0);
@@ -1045,7 +1050,8 @@ void test_quic_conn_no_keys_build()
     quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
     uint8_t fr[32] = {QuicFrameType::QUIC_FT_PING}; // ack-eliciting (+ trailing PADDING for a full-length packet)
     uint8_t dg[256];
-    size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client, fr, sizeof fr);
+    size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0, &init.client,
+                           fr, sizeof fr);
     TEST_ASSERT_TRUE(quic_conn_recv(&qc, dg, dl));
     uint8_t out[256];
     // Initial builds the ACK; Handshake and 1-RTT have no keys -> build_packet returns 0 for them.
@@ -1113,8 +1119,8 @@ static void complete_handshake(QuicConn *qc, QuicConnCallbacks *cb, QuicInitialS
     memset(frames + fl, 0, 1100 - fl);
     fl = 1100;
     uint8_t dg[1500];
-    size_t dl = build_long(dg, sizeof(dg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 0,
-                           &init->client, frames, fl);
+    size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 0, &init->client, frames, fl);
     quic_conn_recv(qc, dg, dl);
 
     uint8_t sdg[1500];
@@ -1156,15 +1162,15 @@ static void complete_handshake(QuicConn *qc, QuicConnCallbacks *cb, QuicInitialS
     uint8_t ifr[64];
     size_t ifl = quic_build_ack(ifr, sizeof(ifr), 0, 0, 0);
     uint8_t idg[256];
-    size_t idl = build_long(idg, sizeof(idg), QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID),
-                            1, &init->client, ifr, ifl);
+    size_t idl = build_long(idg, sizeof(idg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                            sizeof(CLIENT_SCID), 1, &init->client, ifr, ifl);
     uint8_t cfin[36] = {TLS_HS_FINISHED, 0x00, 0x00, 0x20};
     tls13_finished_mac(cks.client_hs_traffic, ch_sf, cfin + 4);
     uint8_t hfr[64];
     size_t hfl = quic_build_ack(hfr, sizeof(hfr), 0, 0, 0);
     hfl += quic_build_crypto(hfr + hfl, sizeof(hfr) - hfl, 0, cfin, sizeof(cfin));
-    size_t hdl = build_long(idg + idl, sizeof(idg) - idl, QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID), CLIENT_SCID,
-                            sizeof(CLIENT_SCID), 0, &hs_client_keys, hfr, hfl);
+    size_t hdl = build_long(idg + idl, sizeof(idg) - idl, QuicLongPacket::QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID),
+                            CLIENT_SCID, sizeof(CLIENT_SCID), 0, &hs_client_keys, hfr, hfl);
     quic_conn_recv(qc, idg, idl + hdl);
     quic_conn_send(qc, sdg, sizeof(sdg)); // drain HANDSHAKE_DONE so the 1-RTT send queue is clear
 }
@@ -1213,8 +1219,8 @@ void test_quic_conn_close_level_fallback()
     // the Initial level; the send path must then fall back to a level whose keys are still live.
     uint8_t bad[20] = {0x06, 0x00, 0x44, 0x00}; // CRYPTO frame declaring 1024 octets that are not present
     uint8_t dg[256];
-    size_t dl = build_long(dg, sizeof dg, QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID, sizeof(CLIENT_SCID), 5,
-                           &init.client, bad, sizeof bad);
+    size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
+                           sizeof(CLIENT_SCID), 5, &init.client, bad, sizeof bad);
     quic_conn_recv(&qc, dg, dl);
     uint8_t out[256];
     TEST_ASSERT_TRUE(quic_conn_send(&qc, out, sizeof out) > 0); // close emitted at the fallback level

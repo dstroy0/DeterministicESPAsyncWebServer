@@ -253,9 +253,9 @@ size_t recv_packet(QuicConn *qc, const uint8_t *dg, size_t len)
             return 0;
         if (h.version == 0 || h.version != QUIC_VERSION_1)
             return 0; // Version Negotiation is a client concern; unknown versions are dropped
-        if (h.type == QUIC_LP_INITIAL)
+        if (h.type == QuicLongPacket::QUIC_LP_INITIAL)
             level = QUIC_ENC_INITIAL;
-        else if (h.type == QUIC_LP_HANDSHAKE)
+        else if (h.type == QuicLongPacket::QUIC_LP_HANDSHAKE)
             level = QUIC_ENC_HANDSHAKE;
         else
             return 0; // 0-RTT / Retry not supported
@@ -444,7 +444,7 @@ size_t build_frames(QuicConn *qc, int level, uint8_t *buf, size_t cap, bool *ae)
 // Long-header packet type for an encryption level.
 uint8_t level_lp_type(int level)
 {
-    return level == QUIC_ENC_INITIAL ? QUIC_LP_INITIAL : QUIC_LP_HANDSHAKE;
+    return level == QUIC_ENC_INITIAL ? QuicLongPacket::QUIC_LP_INITIAL : QuicLongPacket::QUIC_LP_HANDSHAKE;
 }
 
 // Build one protected packet for a level into out; returns its length (0 = nothing to send).
