@@ -37,11 +37,11 @@ void test_trap_v2c_structure()
     static const uint32_t vboid[] = {1, 3, 6, 1, 4, 1, 9999, 3, 0};
     vb.oid = vboid;
     vb.oid_len = sizeof(vboid) / sizeof(uint32_t);
-    vb.type = SNMP_VB_GAUGE32;
+    vb.type = (uint8_t)SnmpVbType::SNMP_VB_GAUGE32;
     vb.ival = 42;
 
     uint8_t buf[256];
-    size_t len = snmp_notify_build_v2c(buf, sizeof(buf), "public", SNMP_PDU_TRAPV2, 7, TRAP_OID,
+    size_t len = snmp_notify_build_v2c(buf, sizeof(buf), "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 7, TRAP_OID,
                                        sizeof(TRAP_OID) / sizeof(uint32_t), 12345, &vb, 1);
     TEST_ASSERT_GREATER_THAN(0, len);
     TEST_ASSERT_EQUAL_HEX8(0x30, buf[0]);
@@ -60,7 +60,7 @@ void test_trap_v2c_structure()
     TEST_ASSERT_EQUAL_MEMORY("public", buf + d.pos, 6);
     ber_skip(&d, l);
     TEST_ASSERT_TRUE(ber_read_header(&d, &tag, &l)); // PDU
-    TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_TRAPV2, tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_TRAPV2, tag);
     TEST_ASSERT_TRUE(ber_read_integer(&d, &v)); // request-id
     TEST_ASSERT_EQUAL(7, v);
     TEST_ASSERT_TRUE(ber_read_integer(&d, &v)); // error-status
@@ -75,7 +75,7 @@ void test_trap_v2c_structure()
     TEST_ASSERT_EQUAL_HEX8(0x30, tag);
     assert_oid(&d, SYSUPTIME0, sizeof(SYSUPTIME0) / sizeof(uint32_t));
     TEST_ASSERT_TRUE(ber_read_header(&d, &tag, &l));
-    TEST_ASSERT_EQUAL_HEX8(SNMP_TIMETICKS, tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_TIMETICKS, tag);
     ber_skip(&d, l);
 
     // vb2: snmpTrapOID.0 = OID(trap_oid)
@@ -89,7 +89,7 @@ void test_trap_v2c_structure()
     TEST_ASSERT_EQUAL_HEX8(0x30, tag);
     assert_oid(&d, vboid, sizeof(vboid) / sizeof(uint32_t));
     TEST_ASSERT_TRUE(ber_read_header(&d, &tag, &l));
-    TEST_ASSERT_EQUAL_HEX8(SNMP_GAUGE32, tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_GAUGE32, tag);
 }
 
 void test_inform_tag()
@@ -114,7 +114,7 @@ void test_inform_tag()
 void test_buffer_too_small()
 {
     uint8_t buf[8];
-    size_t len = snmp_notify_build_v2c(buf, sizeof(buf), "public", SNMP_PDU_TRAPV2, 1, TRAP_OID,
+    size_t len = snmp_notify_build_v2c(buf, sizeof(buf), "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1, TRAP_OID,
                                        sizeof(TRAP_OID) / sizeof(uint32_t), 1, nullptr, 0);
     TEST_ASSERT_EQUAL_size_t(0, len);
 }
@@ -132,24 +132,24 @@ void test_all_varbind_types()
         vbs[i].oid = voi;
         vbs[i].oid_len = sizeof(voi) / sizeof(uint32_t);
     }
-    vbs[0].type = SNMP_VB_INT;
+    vbs[0].type = (uint8_t)SnmpVbType::SNMP_VB_INT;
     vbs[0].ival = -5;
-    vbs[1].type = SNMP_VB_STRING;
+    vbs[1].type = (uint8_t)SnmpVbType::SNMP_VB_STRING;
     vbs[1].bytes = (const uint8_t *)"hi";
     vbs[1].blen = 2;
-    vbs[2].type = SNMP_VB_OID;
+    vbs[2].type = (uint8_t)SnmpVbType::SNMP_VB_OID;
     vbs[2].oid_val = oidval;
     vbs[2].oid_val_len = sizeof(oidval) / sizeof(uint32_t);
-    vbs[3].type = SNMP_VB_COUNTER32;
+    vbs[3].type = (uint8_t)SnmpVbType::SNMP_VB_COUNTER32;
     vbs[3].ival = 100;
-    vbs[4].type = SNMP_VB_TIMETICKS;
+    vbs[4].type = (uint8_t)SnmpVbType::SNMP_VB_TIMETICKS;
     vbs[4].ival = 200;
-    vbs[5].type = SNMP_VB_IPADDR;
+    vbs[5].type = (uint8_t)SnmpVbType::SNMP_VB_IPADDR;
     vbs[5].bytes = ip;
     vbs[5].blen = 4;
 
     uint8_t buf[512];
-    size_t len = snmp_notify_build_v2c(buf, sizeof(buf), "public", SNMP_PDU_TRAPV2, 1, TRAP_OID,
+    size_t len = snmp_notify_build_v2c(buf, sizeof(buf), "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1, TRAP_OID,
                                        sizeof(TRAP_OID) / sizeof(uint32_t), 1, vbs, 6);
     TEST_ASSERT_GREATER_THAN(0, len);
 
@@ -172,7 +172,12 @@ void test_all_varbind_types()
         ber_read_header(&d, &tag, &l);
         ber_skip(&d, l);
     }
-    const uint8_t expect[6] = {0x02, 0x04, 0x06, SNMP_COUNTER32, SNMP_TIMETICKS, SNMP_IPADDRESS};
+    const uint8_t expect[6] = {0x02,
+                               0x04,
+                               0x06,
+                               (uint8_t)SnmpTag::SNMP_COUNTER32,
+                               (uint8_t)SnmpTag::SNMP_TIMETICKS,
+                               (uint8_t)SnmpTag::SNMP_IPADDRESS};
     for (int i = 0; i < 6; i++)
     {
         TEST_ASSERT_TRUE(ber_read_header(&d, &tag, &l)); // varbind SEQUENCE
@@ -196,20 +201,20 @@ void test_invalid_varbind_type()
     vb.oid_len = 4;
     vb.type = 99; // not a defined type
     uint8_t buf[128];
-    TEST_ASSERT_EQUAL_size_t(0, snmp_notify_build_v2c(buf, sizeof(buf), "public", SNMP_PDU_TRAPV2, 1, TRAP_OID,
-                                                      sizeof(TRAP_OID) / sizeof(uint32_t), 1, &vb, 1));
+    TEST_ASSERT_EQUAL_size_t(0, snmp_notify_build_v2c(buf, sizeof(buf), "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1,
+                                                      TRAP_OID, sizeof(TRAP_OID) / sizeof(uint32_t), 1, &vb, 1));
 }
 
 void test_build_v2c_null_args()
 {
     uint8_t buf[128];
     const size_t tn = sizeof(TRAP_OID) / sizeof(uint32_t);
-    TEST_ASSERT_EQUAL_size_t(
-        0, snmp_notify_build_v2c(nullptr, 128, "public", SNMP_PDU_TRAPV2, 1, TRAP_OID, tn, 1, nullptr, 0));
-    TEST_ASSERT_EQUAL_size_t(
-        0, snmp_notify_build_v2c(buf, sizeof(buf), nullptr, SNMP_PDU_TRAPV2, 1, TRAP_OID, tn, 1, nullptr, 0));
-    TEST_ASSERT_EQUAL_size_t(
-        0, snmp_notify_build_v2c(buf, sizeof(buf), "public", SNMP_PDU_TRAPV2, 1, nullptr, 0, 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, snmp_notify_build_v2c(nullptr, 128, "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1,
+                                                      TRAP_OID, tn, 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, snmp_notify_build_v2c(buf, sizeof(buf), nullptr, (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1,
+                                                      TRAP_OID, tn, 1, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, snmp_notify_build_v2c(buf, sizeof(buf), "public", (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 1,
+                                                      nullptr, 0, 1, nullptr, 0));
 }
 
 // On the host build the UDP transport is a stub that reports failure.

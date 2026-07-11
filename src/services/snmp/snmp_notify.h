@@ -27,7 +27,7 @@
 #if DETWS_ENABLE_SNMP_TRAP
 
 /** @brief Variable-binding value types accepted in a notification. */
-enum SnmpVbType
+enum class SnmpVbType : uint8_t
 {
     SNMP_VB_INT = 0,       ///< INTEGER (ival)
     SNMP_VB_STRING = 1,    ///< OCTET STRING (bytes/blen)
@@ -62,7 +62,7 @@ struct SnmpVarbind
  * varbinds } }` where the varbinds begin with `sysUpTime.0` = @p uptime_ticks and
  * `snmpTrapOID.0` = @p trap_oid, followed by the @p n caller @p vbs.
  *
- * @param pdu_tag  SNMP_PDU_TRAPV2 (0xA7) for a trap, 0xA6 for an InformRequest.
+ * @param pdu_tag  SnmpTag::SNMP_PDU_TRAPV2 (0xA7) for a trap, 0xA6 for an InformRequest.
  * @return total message length, or 0 if it would not fit @p cap.
  */
 size_t snmp_notify_build_v2c(uint8_t *out, size_t cap, const char *community, uint8_t pdu_tag, uint32_t request_id,

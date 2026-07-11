@@ -23,7 +23,7 @@
 #if DETWS_ENABLE_SNMP
 
 // ASN.1 / SNMP tags
-enum SnmpTag
+enum class SnmpTag : uint8_t
 {
     BER_INTEGER = 0x02,
     BER_OCTET_STRING = 0x04,

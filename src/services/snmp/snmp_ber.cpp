@@ -91,7 +91,7 @@ bool ber_put_integer(BerEnc *e, long v)
         val >>= 8;
     } while (!((val == 0 && !(tmp[k - 1] & 0x80)) || (val == -1 && (tmp[k - 1] & 0x80))) && k < (int)sizeof(tmp));
 
-    enc_byte(e, BER_INTEGER);
+    enc_byte(e, (uint8_t)SnmpTag::BER_INTEGER);
     enc_len(e, (size_t)k);
     for (int i = k - 1; i >= 0; i--)
         enc_byte(e, tmp[i]);
@@ -127,7 +127,7 @@ bool ber_put_octet_string(BerEnc *e, uint8_t tag, const uint8_t *d, size_t n)
 
 bool ber_put_null(BerEnc *e)
 {
-    enc_byte(e, BER_NULL);
+    enc_byte(e, (uint8_t)SnmpTag::BER_NULL);
     enc_byte(e, 0x00);
     return e->ok;
 }
@@ -166,7 +166,7 @@ bool ber_put_oid(BerEnc *e, const uint32_t *arcs, size_t n)
     emit(first);
     for (size_t i = 2; i < n; i++)
         emit(arcs[i]);
-    return ber_put_tlv(e, BER_OID, tmp, t);
+    return ber_put_tlv(e, (uint8_t)SnmpTag::BER_OID, tmp, t);
 }
 
 size_t ber_seq_begin(BerEnc *e, uint8_t tag)
@@ -255,7 +255,7 @@ bool ber_read_integer(BerDec *d, long *out)
 {
     uint8_t tag;
     size_t len;
-    if (!ber_read_header(d, &tag, &len) || tag != BER_INTEGER || len == 0 || len > 8)
+    if (!ber_read_header(d, &tag, &len) || tag != (uint8_t)SnmpTag::BER_INTEGER || len == 0 || len > 8)
     {
         d->ok = false;
         return false;
@@ -274,7 +274,7 @@ bool ber_read_oid(BerDec *d, uint32_t *arcs, size_t max, size_t *n)
 {
     uint8_t tag;
     size_t len;
-    if (!ber_read_header(d, &tag, &len) || tag != BER_OID || len == 0 || max < 2)
+    if (!ber_read_header(d, &tag, &len) || tag != (uint8_t)SnmpTag::BER_OID || len == 0 || max < 2)
     {
         d->ok = false;
         return false;

@@ -172,7 +172,7 @@ bool snmp_agent_add_string(const uint32_t *oid, size_t oid_len, const char *valu
     SnmpMibEntry *e = mib_alloc(s_agent, oid, oid_len);
     if (!e)
         return false;
-    e->val.type = BER_OCTET_STRING;
+    e->val.type = (uint8_t)SnmpTag::BER_OCTET_STRING;
     e->val.str = value;
     e->val.str_len = value ? strlen(value) : 0;
     e->setter = setter;
@@ -184,7 +184,7 @@ bool snmp_agent_add_integer(const uint32_t *oid, size_t oid_len, long value, Snm
     SnmpMibEntry *e = mib_alloc(s_agent, oid, oid_len);
     if (!e)
         return false;
-    e->val.type = BER_INTEGER;
+    e->val.type = (uint8_t)SnmpTag::BER_INTEGER;
     e->val.ival = value;
     e->setter = setter;
     return true;
@@ -202,7 +202,7 @@ bool snmp_agent_add_dynamic(const uint32_t *oid, size_t oid_len, uint8_t type, S
 
 static bool sys_uptime_get(SnmpValue *out)
 {
-    out->type = SNMP_TIMETICKS;
+    out->type = (uint8_t)SnmpTag::SNMP_TIMETICKS;
     out->uval = snmp_uptime_cs();
     return true;
 }
@@ -223,12 +223,12 @@ void snmp_agent_set_system(const char *descr, const char *contact, const char *n
     SnmpMibEntry *e = mib_alloc(s_agent, o_oid, 9);
     if (e)
     {
-        e->val.type = BER_OID;
+        e->val.type = (uint8_t)SnmpTag::BER_OID;
         e->val.oid = g_sys_object_id;
         e->val.oid_len = sizeof(g_sys_object_id) / sizeof(g_sys_object_id[0]);
     }
 
-    snmp_agent_add_dynamic(o_uptime, 9, SNMP_TIMETICKS, sys_uptime_get);
+    snmp_agent_add_dynamic(o_uptime, 9, (uint8_t)SnmpTag::SNMP_TIMETICKS, sys_uptime_get);
     snmp_agent_add_string(o_contact, 9, contact);
     snmp_agent_add_string(o_name, 9, name);
     snmp_agent_add_string(o_loc, 9, location);
@@ -243,28 +243,28 @@ static void enc_value(BerEnc *e, const SnmpValue *v)
 {
     switch (v->type)
     {
-    case BER_INTEGER:
+    case (uint8_t)SnmpTag::BER_INTEGER:
         ber_put_integer(e, v->ival);
         break;
-    case BER_OCTET_STRING:
-    case SNMP_OPAQUE:
+    case (uint8_t)SnmpTag::BER_OCTET_STRING:
+    case (uint8_t)SnmpTag::SNMP_OPAQUE:
         ber_put_octet_string(e, v->type, (const uint8_t *)v->str, v->str_len);
         break;
-    case BER_OID:
+    case (uint8_t)SnmpTag::BER_OID:
         ber_put_oid(e, v->oid, v->oid_len);
         break;
-    case SNMP_TIMETICKS:
-    case SNMP_COUNTER32:
-    case SNMP_GAUGE32:
+    case (uint8_t)SnmpTag::SNMP_TIMETICKS:
+    case (uint8_t)SnmpTag::SNMP_COUNTER32:
+    case (uint8_t)SnmpTag::SNMP_GAUGE32:
         ber_put_uint(e, v->type, v->uval);
         break;
-    case SNMP_IPADDRESS: {
+    case (uint8_t)SnmpTag::SNMP_IPADDRESS: {
         uint8_t ip[4] = {(uint8_t)(v->uval >> 24), (uint8_t)(v->uval >> 16), (uint8_t)(v->uval >> 8),
                          (uint8_t)(v->uval)};
-        ber_put_octet_string(e, SNMP_IPADDRESS, ip, 4);
+        ber_put_octet_string(e, (uint8_t)SnmpTag::SNMP_IPADDRESS, ip, 4);
         break;
     }
-    case BER_NULL:
+    case (uint8_t)SnmpTag::BER_NULL:
         ber_put_null(e);
         break;
     default:
@@ -288,13 +288,13 @@ static bool dec_value(BerDec *d, SnmpValue *v, uint32_t *oidbuf)
     v->type = tag;
     switch (tag)
     {
-    case BER_INTEGER:
+    case (uint8_t)SnmpTag::BER_INTEGER:
         d->pos = save;
         return ber_read_integer(d, &v->ival);
-    case SNMP_TIMETICKS:
-    case SNMP_COUNTER32:
-    case SNMP_GAUGE32:
-    case SNMP_IPADDRESS: {
+    case (uint8_t)SnmpTag::SNMP_TIMETICKS:
+    case (uint8_t)SnmpTag::SNMP_COUNTER32:
+    case (uint8_t)SnmpTag::SNMP_GAUGE32:
+    case (uint8_t)SnmpTag::SNMP_IPADDRESS: {
         uint32_t acc = 0;
         for (size_t i = 0; i < len; i++)
             acc = (acc << 8) | d->buf[d->pos + i];
@@ -302,13 +302,13 @@ static bool dec_value(BerDec *d, SnmpValue *v, uint32_t *oidbuf)
         d->pos += len;
         return true;
     }
-    case BER_OCTET_STRING:
-    case SNMP_OPAQUE:
+    case (uint8_t)SnmpTag::BER_OCTET_STRING:
+    case (uint8_t)SnmpTag::SNMP_OPAQUE:
         v->str = (const char *)(d->buf + d->pos);
         v->str_len = len;
         d->pos += len;
         return true;
-    case BER_OID:
+    case (uint8_t)SnmpTag::BER_OID:
         d->pos = save;
         if (!ber_read_oid(d, oidbuf, SNMP_MAX_OID_LEN, &v->oid_len))
             return false;
@@ -359,14 +359,14 @@ static size_t encode_pdu(long request_id, long err_status, long err_index, const
 {
     BerEnc e;
     ber_enc_init(&e, buf, cap);
-    size_t pdu = ber_seq_begin(&e, SNMP_PDU_RESPONSE);
+    size_t pdu = ber_seq_begin(&e, (uint8_t)SnmpTag::SNMP_PDU_RESPONSE);
     ber_put_integer(&e, request_id);
     ber_put_integer(&e, err_status);
     ber_put_integer(&e, err_index);
-    size_t vbl = ber_seq_begin(&e, BER_SEQUENCE);
+    size_t vbl = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
     for (size_t i = 0; i < nout; i++)
     {
-        size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+        size_t vb = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
         ber_put_oid(&e, out[i].oid, out[i].oid_len);
         enc_value(&e, &out[i].val);
         ber_seq_end(&e, vb);
@@ -396,7 +396,7 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
 
     uint8_t vbl_tag;
     size_t vbl_len;
-    if (!ber_read_header(&d, &vbl_tag, &vbl_len) || vbl_tag != BER_SEQUENCE)
+    if (!ber_read_header(&d, &vbl_tag, &vbl_len) || vbl_tag != (uint8_t)SnmpTag::BER_SEQUENCE)
         return 0;
     size_t vbl_end = d.pos + vbl_len;
 
@@ -408,7 +408,7 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
             return 0;
         uint8_t vt;
         size_t vlen;
-        if (!ber_read_header(&d, &vt, &vlen) || vt != BER_SEQUENCE)
+        if (!ber_read_header(&d, &vt, &vlen) || vt != (uint8_t)SnmpTag::BER_SEQUENCE)
             return 0;
         if (!ber_read_oid(&d, s_req.in[nvb].oid, SNMP_MAX_OID_LEN, &s_req.in[nvb].oid_len))
             return 0;
@@ -419,15 +419,15 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
     if (!d.ok)    // GCOVR_EXCL_LINE  every failing read in the loop already returns 0 via its own guard,
         return 0; // GCOVR_EXCL_LINE  so d.ok is always true here (defense in depth)
 
-    long err_status = SNMP_ERR_NO_ERROR;
+    long err_status = (int)SnmpErr::SNMP_ERR_NO_ERROR;
     long err_index = 0;
     size_t nout = 0;
 
-    if (pdu_tag == SNMP_PDU_GET || pdu_tag == SNMP_PDU_GETNEXT)
+    if (pdu_tag == (uint8_t)SnmpTag::SNMP_PDU_GET || pdu_tag == (uint8_t)SnmpTag::SNMP_PDU_GETNEXT)
     {
         for (size_t i = 0; i < nvb; i++)
         {
-            const SnmpMibEntry *en = (pdu_tag == SNMP_PDU_GET)
+            const SnmpMibEntry *en = (pdu_tag == (uint8_t)SnmpTag::SNMP_PDU_GET)
                                          ? mib_find_exact(s_agent, s_req.in[i].oid, s_req.in[i].oid_len)
                                          : mib_find_next(s_agent, s_req.in[i].oid, s_req.in[i].oid_len);
             SnmpValue val;
@@ -437,7 +437,7 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
                 if (!v2c)
                 {
                     // Classic error reporting: echo the request varbinds.
-                    err_status = SNMP_ERR_NO_SUCH_NAME;
+                    err_status = (int)SnmpErr::SNMP_ERR_NO_SUCH_NAME;
                     err_index = (long)(i + 1);
                     nout = nvb;
                     for (size_t k = 0; k < nvb; k++)
@@ -452,26 +452,27 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
                 // instance of a known object (en found but its getter declined, or
                 // the object's type-prefix is registered) from an unknown object;
                 // GetNext past the end of the MIB is always endOfMibView.
-                if (pdu_tag == SNMP_PDU_GET)
+                if (pdu_tag == (uint8_t)SnmpTag::SNMP_PDU_GET)
                 {
                     bool inst = en || mib_object_exists(s_agent, s_req.in[i].oid, s_req.in[i].oid_len);
-                    val.type = inst ? (uint8_t)SNMP_NO_SUCH_INSTANCE : (uint8_t)SNMP_NO_SUCH_OBJECT;
+                    val.type = inst ? (uint8_t)SnmpTag::SNMP_NO_SUCH_INSTANCE : (uint8_t)SnmpTag::SNMP_NO_SUCH_OBJECT;
                 }
                 else
-                    val.type = (uint8_t)SNMP_END_OF_MIB_VIEW;
+                    val.type = (uint8_t)SnmpTag::SNMP_END_OF_MIB_VIEW;
                 s_req.out[nout].oid = en ? en->oid : s_req.in[i].oid;
                 s_req.out[nout].oid_len = en ? en->oid_len : s_req.in[i].oid_len;
                 s_req.out[nout].val = val;
                 nout++;
                 continue;
             }
-            s_req.out[nout].oid = (pdu_tag == SNMP_PDU_GETNEXT) ? en->oid : s_req.in[i].oid;
-            s_req.out[nout].oid_len = (pdu_tag == SNMP_PDU_GETNEXT) ? en->oid_len : s_req.in[i].oid_len;
+            s_req.out[nout].oid = (pdu_tag == (uint8_t)SnmpTag::SNMP_PDU_GETNEXT) ? en->oid : s_req.in[i].oid;
+            s_req.out[nout].oid_len =
+                (pdu_tag == (uint8_t)SnmpTag::SNMP_PDU_GETNEXT) ? en->oid_len : s_req.in[i].oid_len;
             s_req.out[nout].val = val;
             nout++;
         }
     }
-    else if (pdu_tag == SNMP_PDU_GETBULK)
+    else if (pdu_tag == (uint8_t)SnmpTag::SNMP_PDU_GETBULK)
     {
         if (!v2c) // GetBulk is v2c+
             return 0;
@@ -494,7 +495,7 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
             {
                 s_req.out[nout].oid = s_req.in[i].oid;
                 s_req.out[nout].oid_len = s_req.in[i].oid_len;
-                s_req.out[nout].val.type = SNMP_END_OF_MIB_VIEW;
+                s_req.out[nout].val.type = (uint8_t)SnmpTag::SNMP_END_OF_MIB_VIEW;
             }
             nout++;
         }
@@ -518,7 +519,7 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
                 {
                     s_req.out[nout].oid = cur_oid[r];
                     s_req.out[nout].oid_len = cur_len[r];
-                    s_req.out[nout].val.type = SNMP_END_OF_MIB_VIEW;
+                    s_req.out[nout].val.type = (uint8_t)SnmpTag::SNMP_END_OF_MIB_VIEW;
                     nout++;
                     continue;
                 }
@@ -535,14 +536,14 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
                 {
                     s_req.out[nout].oid = cur_oid[r];
                     s_req.out[nout].oid_len = cur_len[r];
-                    s_req.out[nout].val.type = SNMP_END_OF_MIB_VIEW;
+                    s_req.out[nout].val.type = (uint8_t)SnmpTag::SNMP_END_OF_MIB_VIEW;
                     ended[r] = true;
                 }
                 nout++;
             }
         }
     }
-    else if (pdu_tag == SNMP_PDU_SET)
+    else if (pdu_tag == (uint8_t)SnmpTag::SNMP_PDU_SET)
     {
         // SET uses error-status/error-index in both v1 and v2c; echo the varbinds.
         nout = nvb;
@@ -554,7 +555,7 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
         }
         if (!allow_write)
         {
-            err_status = (!v2c) ? SNMP_ERR_NO_SUCH_NAME : SNMP_ERR_NO_ACCESS;
+            err_status = (!v2c) ? (int)SnmpErr::SNMP_ERR_NO_SUCH_NAME : (int)SnmpErr::SNMP_ERR_NO_ACCESS;
             err_index = 1;
         }
         else
@@ -564,19 +565,19 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
                 const SnmpMibEntry *en = mib_find_exact(s_agent, s_req.in[i].oid, s_req.in[i].oid_len);
                 if (!en)
                 {
-                    err_status = SNMP_ERR_NO_SUCH_NAME;
+                    err_status = (int)SnmpErr::SNMP_ERR_NO_SUCH_NAME;
                     err_index = (long)(i + 1);
                     break;
                 }
                 if (!en->setter)
                 {
-                    err_status = (!v2c) ? SNMP_ERR_READ_ONLY : SNMP_ERR_NOT_WRITABLE;
+                    err_status = (!v2c) ? (int)SnmpErr::SNMP_ERR_READ_ONLY : (int)SnmpErr::SNMP_ERR_NOT_WRITABLE;
                     err_index = (long)(i + 1);
                     break;
                 }
                 if (!en->setter(&s_req.in[i].val))
                 {
-                    err_status = (!v2c) ? SNMP_ERR_BAD_VALUE : SNMP_ERR_WRONG_TYPE;
+                    err_status = (!v2c) ? (int)SnmpErr::SNMP_ERR_BAD_VALUE : (int)SnmpErr::SNMP_ERR_WRONG_TYPE;
                     err_index = (long)(i + 1);
                     break;
                 }
@@ -592,7 +593,7 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
     if (n == 0 && nout > 0)
     {
         // Response didn't fit: report tooBig with an empty varbind list.
-        n = encode_pdu(request_id, SNMP_ERR_TOO_BIG, 0, s_req.out, 0, out, out_cap);
+        n = encode_pdu(request_id, (int)SnmpErr::SNMP_ERR_TOO_BIG, 0, s_req.out, 0, out, out_cap);
     }
     return n;
 }
@@ -608,14 +609,14 @@ size_t snmp_agent_process(const uint8_t *req, size_t req_len, uint8_t *resp, siz
 
     uint8_t tag;
     size_t len;
-    if (!ber_read_header(&d, &tag, &len) || tag != BER_SEQUENCE) // message wrapper
+    if (!ber_read_header(&d, &tag, &len) || tag != (uint8_t)SnmpTag::BER_SEQUENCE) // message wrapper
         return 0;
 
     long version;
     if (!ber_read_integer(&d, &version))
         return 0;
 
-    if (version == SNMP_V3)
+    if (version == (int)SnmpVersion::SNMP_V3)
     {
 #if DETWS_ENABLE_SNMP_V3
         return snmp_v3_process(req, req_len, resp, resp_cap);
@@ -623,12 +624,12 @@ size_t snmp_agent_process(const uint8_t *req, size_t req_len, uint8_t *resp, siz
         return 0; // v3 needs the gated USM layer (DETWS_ENABLE_SNMP_V3)
 #endif
     }
-    if (version != SNMP_V1 && version != SNMP_V2C)
+    if (version != (int)SnmpVersion::SNMP_V1 && version != (int)SnmpVersion::SNMP_V2C)
         return 0;
 
     uint8_t ctag;
     size_t clen;
-    if (!ber_read_header(&d, &ctag, &clen) || ctag != BER_OCTET_STRING)
+    if (!ber_read_header(&d, &ctag, &clen) || ctag != (uint8_t)SnmpTag::BER_OCTET_STRING)
         return 0;
     const char *community = (const char *)(d.buf + d.pos);
     size_t community_len = clen;
@@ -641,15 +642,16 @@ size_t snmp_agent_process(const uint8_t *req, size_t req_len, uint8_t *resp, siz
 
     // The PDU is the remaining bytes of the datagram; dispatch and re-wrap.
     static uint8_t pdubuf[SNMP_MSG_BUF_SIZE];
-    size_t pn = snmp_dispatch_pdu(req + d.pos, req_len - d.pos, is_rw, version == SNMP_V2C, pdubuf, sizeof(pdubuf));
+    size_t pn = snmp_dispatch_pdu(req + d.pos, req_len - d.pos, is_rw, version == (int)SnmpVersion::SNMP_V2C, pdubuf,
+                                  sizeof(pdubuf));
     if (pn == 0)
         return 0;
 
     BerEnc e;
     ber_enc_init(&e, resp, resp_cap);
-    size_t msg = ber_seq_begin(&e, BER_SEQUENCE);
+    size_t msg = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
     ber_put_integer(&e, version);
-    ber_put_octet_string(&e, BER_OCTET_STRING, (const uint8_t *)community, community_len);
+    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)community, community_len);
     ber_put_raw(&e, pdubuf, pn);
     ber_seq_end(&e, msg);
     return e.ok ? e.len : 0;

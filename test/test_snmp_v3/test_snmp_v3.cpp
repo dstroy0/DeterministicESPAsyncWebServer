@@ -131,12 +131,12 @@ static size_t build_get(uint8_t *out, size_t cap, bool auth, bool priv, const ui
     uint8_t pdu[256];
     BerEnc pe;
     ber_enc_init(&pe, pdu, sizeof(pdu));
-    size_t pp = ber_seq_begin(&pe, SNMP_PDU_GET);
+    size_t pp = ber_seq_begin(&pe, (uint8_t)SnmpTag::SNMP_PDU_GET);
     ber_put_integer(&pe, req_id);
     ber_put_integer(&pe, 0);
     ber_put_integer(&pe, 0);
-    size_t vbl = ber_seq_begin(&pe, BER_SEQUENCE);
-    size_t vb = ber_seq_begin(&pe, BER_SEQUENCE);
+    size_t vbl = ber_seq_begin(&pe, (uint8_t)SnmpTag::BER_SEQUENCE);
+    size_t vb = ber_seq_begin(&pe, (uint8_t)SnmpTag::BER_SEQUENCE);
     ber_put_oid(&pe, oid, oid_len);
     ber_put_null(&pe);
     ber_seq_end(&pe, vb);
@@ -147,9 +147,9 @@ static size_t build_get(uint8_t *out, size_t cap, bool auth, bool priv, const ui
     uint8_t scoped[320];
     BerEnc se;
     ber_enc_init(&se, scoped, sizeof(scoped));
-    size_t ss = ber_seq_begin(&se, BER_SEQUENCE);
-    ber_put_octet_string(&se, BER_OCTET_STRING, eid, eid_len);
-    ber_put_octet_string(&se, BER_OCTET_STRING, nullptr, 0);
+    size_t ss = ber_seq_begin(&se, (uint8_t)SnmpTag::BER_SEQUENCE);
+    ber_put_octet_string(&se, (uint8_t)SnmpTag::BER_OCTET_STRING, eid, eid_len);
+    ber_put_octet_string(&se, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
     ber_put_raw(&se, pdu, pe.len);
     ber_seq_end(&se, ss);
 
@@ -172,42 +172,42 @@ static size_t build_get(uint8_t *out, size_t cap, bool auth, bool priv, const ui
     uint8_t secp[128];
     BerEnc se2;
     ber_enc_init(&se2, secp, sizeof(secp));
-    size_t s2 = ber_seq_begin(&se2, BER_SEQUENCE);
-    ber_put_octet_string(&se2, BER_OCTET_STRING, eid, eid_len);
+    size_t s2 = ber_seq_begin(&se2, (uint8_t)SnmpTag::BER_SEQUENCE);
+    ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, eid, eid_len);
     ber_put_integer(&se2, boots);
     ber_put_integer(&se2, time);
-    ber_put_octet_string(&se2, BER_OCTET_STRING, (const uint8_t *)user, strlen(user));
+    ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)user, strlen(user));
     size_t auth_off = 0;
     if (auth)
     {
         auth_off = se2.len + 2;
         uint8_t z[SNMP_V3_AUTH_PARAM_LEN] = {0};
-        ber_put_octet_string(&se2, BER_OCTET_STRING, z, SNMP_V3_AUTH_PARAM_LEN);
+        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, z, SNMP_V3_AUTH_PARAM_LEN);
     }
     else
-        ber_put_octet_string(&se2, BER_OCTET_STRING, nullptr, 0);
+        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
     if (priv)
-        ber_put_octet_string(&se2, BER_OCTET_STRING, salt, 8);
+        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, salt, 8);
     else
-        ber_put_octet_string(&se2, BER_OCTET_STRING, nullptr, 0);
+        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
     ber_seq_end(&se2, s2);
 
     // message
     BerEnc e;
     ber_enc_init(&e, out, cap);
-    size_t msg = ber_seq_begin(&e, BER_SEQUENCE);
-    ber_put_integer(&e, SNMP_V3);
-    size_t hdr = ber_seq_begin(&e, BER_SEQUENCE);
+    size_t msg = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    ber_put_integer(&e, (int)SnmpVersion::SNMP_V3);
+    size_t hdr = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
     ber_put_integer(&e, msg_id);
     ber_put_integer(&e, 65507);
     uint8_t fl = (uint8_t)((auth ? 1 : 0) | (priv ? 2 : 0) | (auth ? 0 : 4)); // reportable on discovery
-    ber_put_octet_string(&e, BER_OCTET_STRING, &fl, 1);
+    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, &fl, 1);
     ber_put_integer(&e, 3);
     ber_seq_end(&e, hdr);
-    ber_put_octet_string(&e, BER_OCTET_STRING, secp, se2.len);
+    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, secp, se2.len);
     size_t sec_value_pos = e.len - se2.len;
     if (priv)
-        ber_put_octet_string(&e, BER_OCTET_STRING, data, data_len);
+        ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, data, data_len);
     else
         ber_put_raw(&e, data, data_len);
     ber_seq_end(&e, msg);
@@ -228,18 +228,18 @@ static bool parse_v3(const uint8_t *buf, size_t len, const uint8_t *privkey, V3V
     ber_dec_init(&d, buf, len);
     uint8_t tag;
     size_t l;
-    if (!ber_read_header(&d, &tag, &l) || tag != BER_SEQUENCE)
+    if (!ber_read_header(&d, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE)
         return false;
     long version;
     if (!ber_read_integer(&d, &version))
         return false;
-    if (!ber_read_header(&d, &tag, &l) || tag != BER_SEQUENCE) // global data
+    if (!ber_read_header(&d, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE) // global data
         return false;
     long msgid, maxsize, secmodel;
     if (!ber_read_integer(&d, &msgid) || !ber_read_integer(&d, &maxsize))
         return false;
     size_t fl;
-    if (!ber_read_header(&d, &tag, &fl) || tag != BER_OCTET_STRING)
+    if (!ber_read_header(&d, &tag, &fl) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING)
         return false;
     v->flags = d.buf[d.pos];
     d.pos += fl;
@@ -247,15 +247,15 @@ static bool parse_v3(const uint8_t *buf, size_t len, const uint8_t *privkey, V3V
         return false;
     // secparams
     size_t seclen;
-    if (!ber_read_header(&d, &tag, &seclen) || tag != BER_OCTET_STRING)
+    if (!ber_read_header(&d, &tag, &seclen) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING)
         return false;
     BerDec sd;
     ber_dec_init(&sd, d.buf + d.pos, seclen);
     d.pos += seclen;
-    if (!ber_read_header(&sd, &tag, &l) || tag != BER_SEQUENCE)
+    if (!ber_read_header(&sd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE)
         return false;
     size_t eidl;
-    if (!ber_read_header(&sd, &tag, &eidl) || tag != BER_OCTET_STRING)
+    if (!ber_read_header(&sd, &tag, &eidl) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING)
         return false;
     memcpy(v->engine_id, sd.buf + sd.pos, eidl < sizeof(v->engine_id) ? eidl : sizeof(v->engine_id));
     v->engine_id_len = eidl;
@@ -263,15 +263,15 @@ static bool parse_v3(const uint8_t *buf, size_t len, const uint8_t *privkey, V3V
     if (!ber_read_integer(&sd, &v->boots) || !ber_read_integer(&sd, &v->time))
         return false;
     size_t ul;
-    if (!ber_read_header(&sd, &tag, &ul) || tag != BER_OCTET_STRING) // user
+    if (!ber_read_header(&sd, &tag, &ul) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // user
         return false;
     sd.pos += ul;
     size_t al;
-    if (!ber_read_header(&sd, &tag, &al) || tag != BER_OCTET_STRING) // authparams
+    if (!ber_read_header(&sd, &tag, &al) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // authparams
         return false;
     sd.pos += al;
     size_t pl;
-    if (!ber_read_header(&sd, &tag, &pl) || tag != BER_OCTET_STRING) // privparams
+    if (!ber_read_header(&sd, &tag, &pl) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // privparams
         return false;
     const uint8_t *privparm = sd.buf + sd.pos;
 
@@ -280,7 +280,7 @@ static bool parse_v3(const uint8_t *buf, size_t len, const uint8_t *privkey, V3V
     if (v->flags & 0x02)
     {
         size_t ctl;
-        if (!ber_read_header(&d, &tag, &ctl) || tag != BER_OCTET_STRING)
+        if (!ber_read_header(&d, &tag, &ctl) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING)
             return false;
         uint8_t iv[16];
         put_be32(iv, (uint32_t)v->boots);
@@ -299,12 +299,12 @@ static bool parse_v3(const uint8_t *buf, size_t len, const uint8_t *privkey, V3V
     // scopedPDU -> inner PDU
     BerDec cd;
     ber_dec_init(&cd, scoped, scoped_len);
-    if (!ber_read_header(&cd, &tag, &l) || tag != BER_SEQUENCE)
+    if (!ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE)
         return false;
-    if (!ber_read_header(&cd, &tag, &l) || tag != BER_OCTET_STRING) // ctxEngineID
+    if (!ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // ctxEngineID
         return false;
     cd.pos += l;
-    if (!ber_read_header(&cd, &tag, &l) || tag != BER_OCTET_STRING) // ctxName
+    if (!ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_OCTET_STRING) // ctxName
         return false;
     cd.pos += l;
     if (!ber_read_header(&cd, &v->pdu_tag, &l)) // PDU
@@ -314,18 +314,18 @@ static bool parse_v3(const uint8_t *buf, size_t len, const uint8_t *privkey, V3V
     long erridx;
     if (!ber_read_integer(&cd, &erridx))
         return false;
-    if (!ber_read_header(&cd, &tag, &l) || tag != BER_SEQUENCE) // varbind list
+    if (!ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE) // varbind list
         return false;
     if (cd.pos < cd.len)
     {
-        if (!ber_read_header(&cd, &tag, &l) || tag != BER_SEQUENCE) // first varbind
+        if (!ber_read_header(&cd, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE) // first varbind
             return false;
         if (!ber_read_oid(&cd, v->oid, SNMP_MAX_OID_LEN, &v->oid_len))
             return false;
         size_t vl;
         if (!ber_read_header(&cd, &v->val_tag, &vl))
             return false;
-        if (v->val_tag == BER_OCTET_STRING)
+        if (v->val_tag == (uint8_t)SnmpTag::BER_OCTET_STRING)
         {
             size_t c = vl < sizeof(v->str) - 1 ? vl : sizeof(v->str) - 1;
             memcpy(v->str, cd.buf + cd.pos, c);
@@ -353,7 +353,7 @@ void test_discovery_reports_engine_id()
 {
     V3View v;
     discover(&v);
-    TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, v.pdu_tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, v.pdu_tag);
     TEST_ASSERT_TRUE(v.engine_id_len >= 5); // a real authoritative engine ID
     // usmStatsUnknownEngineIDs = 1.3.6.1.6.3.15.1.1.4.0
     TEST_ASSERT_EQUAL_UINT(11, v.oid_len);
@@ -376,10 +376,10 @@ void test_authnopriv_get()
 
     V3View v;
     TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &v));
-    TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_RESPONSE, v.pdu_tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_RESPONSE, v.pdu_tag);
     TEST_ASSERT_EQUAL_INT(42, v.request_id);
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ERROR, v.err_status);
-    TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, v.val_tag);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ERROR, v.err_status);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, v.val_tag);
     TEST_ASSERT_EQUAL_STRING(SYSDESCR_VAL, v.str);
     TEST_ASSERT_EQUAL_UINT8(0x01, v.flags & 0x03); // response is authNoPriv
 }
@@ -400,7 +400,7 @@ void test_authpriv_get()
 
     V3View v;
     TEST_ASSERT_TRUE(parse_v3(resp, n, privkey, &v));
-    TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_RESPONSE, v.pdu_tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_RESPONSE, v.pdu_tag);
     TEST_ASSERT_EQUAL_INT(77, v.request_id);
     TEST_ASSERT_EQUAL_STRING(SYSDESCR_VAL, v.str);
     TEST_ASSERT_EQUAL_UINT8(0x03, v.flags & 0x03); // response is authPriv
@@ -421,7 +421,7 @@ void test_wrong_auth_password_reports_wrong_digest()
 
     V3View v;
     TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &v));
-    TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, v.pdu_tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, v.pdu_tag);
     // usmStatsWrongDigests = ...15.1.1.5.0
     TEST_ASSERT_EQUAL_UINT32(5u, v.oid[9]);
 }
@@ -441,7 +441,7 @@ void test_unknown_user_reports()
 
     V3View v;
     TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &v));
-    TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, v.pdu_tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, v.pdu_tag);
     TEST_ASSERT_EQUAL_UINT32(3u, v.oid[9]); // usmStatsUnknownUserNames
 }
 
@@ -461,7 +461,7 @@ void test_not_in_time_window_reports()
 
     V3View v;
     TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &v));
-    TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, v.pdu_tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, v.pdu_tag);
     TEST_ASSERT_EQUAL_UINT32(2u, v.oid[9]);        // usmStatsNotInTimeWindows
     TEST_ASSERT_EQUAL_UINT8(0x01, v.flags & 0x03); // time reports are authenticated
 }
@@ -598,7 +598,7 @@ void test_v3_priv_not_configured()
     TEST_ASSERT_TRUE(n > 0);
     V3View r;
     TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &r));
-    TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, r.pdu_tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);
     snmp_v3_set_user("myuser", "authpass12", "privpass12"); // restore
 }
 
@@ -629,38 +629,38 @@ static size_t build_v3_raw_scoped(uint8_t *out, size_t cap, bool auth, const uin
     uint8_t secp[128];
     BerEnc se2;
     ber_enc_init(&se2, secp, sizeof(secp));
-    size_t s2 = ber_seq_begin(&se2, BER_SEQUENCE);
-    ber_put_octet_string(&se2, BER_OCTET_STRING, eid, eid_len);
+    size_t s2 = ber_seq_begin(&se2, (uint8_t)SnmpTag::BER_SEQUENCE);
+    ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, eid, eid_len);
     ber_put_integer(&se2, boots);
     ber_put_integer(&se2, time);
-    ber_put_octet_string(&se2, BER_OCTET_STRING, (const uint8_t *)user, strlen(user));
+    ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)user, strlen(user));
     size_t auth_off = 0;
     if (auth)
     {
         auth_off = se2.len + 2;
         uint8_t z[SNMP_V3_AUTH_PARAM_LEN] = {0};
-        ber_put_octet_string(&se2, BER_OCTET_STRING, z, auth_plen);
+        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, z, auth_plen);
     }
     else
-        ber_put_octet_string(&se2, BER_OCTET_STRING, nullptr, 0);
+        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
     if (priv)
-        ber_put_octet_string(&se2, BER_OCTET_STRING, salt, sizeof(salt));
+        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, salt, sizeof(salt));
     else
-        ber_put_octet_string(&se2, BER_OCTET_STRING, nullptr, 0);
+        ber_put_octet_string(&se2, (uint8_t)SnmpTag::BER_OCTET_STRING, nullptr, 0);
     ber_seq_end(&se2, s2);
 
     BerEnc e;
     ber_enc_init(&e, out, cap);
-    size_t msg = ber_seq_begin(&e, BER_SEQUENCE);
-    ber_put_integer(&e, SNMP_V3);
-    size_t hdr = ber_seq_begin(&e, BER_SEQUENCE);
+    size_t msg = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    ber_put_integer(&e, (int)SnmpVersion::SNMP_V3);
+    size_t hdr = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
     ber_put_integer(&e, msg_id);
     ber_put_integer(&e, 65507);
     uint8_t fl = (uint8_t)((auth ? 0x01 : 0) | (priv ? 0x02 : 0) | (auth ? 0 : 0x04)); // reportable on discovery
-    ber_put_octet_string(&e, BER_OCTET_STRING, &fl, 1);
+    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, &fl, 1);
     ber_put_integer(&e, 3);
     ber_seq_end(&e, hdr);
-    ber_put_octet_string(&e, BER_OCTET_STRING, secp, se2.len);
+    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, secp, se2.len);
     size_t sec_value_pos = e.len - se2.len;
     ber_put_raw(&e, scoped, scoped_len); // scopedPDU / msgData carried verbatim (may be deliberately malformed)
     ber_seq_end(&e, msg);
@@ -827,7 +827,7 @@ void test_v3_auth_edge_rejections(void)
     TEST_ASSERT_TRUE(n > 0);
     V3View r;
     TEST_ASSERT_TRUE(parse_v3(resp, n, nullptr, &r));
-    TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_REPORT, r.pdu_tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_REPORT, r.pdu_tag);
     TEST_ASSERT_EQUAL_UINT32(5u, r.oid[9]); // usmStatsWrongDigests
 
     // authPriv with a valid digest but msgData that is not an OCTET STRING -> dropped (0).
@@ -853,7 +853,7 @@ void test_v3_notify_overflow_guards()
     SnmpVarbind vb;
     vb.oid = vb_oid;
     vb.oid_len = 9;
-    vb.type = SNMP_VB_STRING;
+    vb.type = (uint8_t)SnmpVbType::SNMP_VB_STRING;
     vb.ival = 0;
     vb.bytes = big;
     vb.oid_val = nullptr;
@@ -881,7 +881,7 @@ static size_t g_big_len = 0;
 static uint8_t g_big[1600];
 static bool big_getter(SnmpValue *out)
 {
-    out->type = BER_OCTET_STRING;
+    out->type = (uint8_t)SnmpTag::BER_OCTET_STRING;
     out->str = (const char *)g_big;
     out->str_len = g_big_len;
     return true;
@@ -891,7 +891,7 @@ void test_v3_response_scopedpdu_overflow()
 {
     memset(g_big, 0x42, sizeof(g_big));
     static const uint32_t big_oid[] = {1, 3, 6, 1, 4, 1, 49374, 7, 0};
-    TEST_ASSERT_TRUE(snmp_agent_add_dynamic(big_oid, 9, BER_OCTET_STRING, big_getter));
+    TEST_ASSERT_TRUE(snmp_agent_add_dynamic(big_oid, 9, (uint8_t)SnmpTag::BER_OCTET_STRING, big_getter));
 
     V3View disc;
     discover(&disc);

@@ -32,7 +32,7 @@
  *   SSE          -> DASHBOARD
  *   STATS        -> METRICS
  *   AUTH         -> AUTH_LOCKOUT
- *   SNMP         -> SNMP_V3, SNMP_TRAP
+ *   SNMP         -> SnmpVersion::SNMP_V3, SNMP_TRAP
  *   COAP         -> COAP_OBSERVE, COAP_BLOCK
  *   OPCUA        -> OPCUA_CLIENT
  *   CONFIG_STORE -> CONFIG_IO

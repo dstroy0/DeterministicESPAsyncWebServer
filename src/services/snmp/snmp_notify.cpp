@@ -21,30 +21,30 @@ static const uint32_t OID_SNMPTRAPOID_0[] = {1, 3, 6, 1, 6, 3, 1, 1, 4, 1, 0};
 // Encode one caller varbind: SEQUENCE { OID, typed-value }.
 static void put_varbind(BerEnc *e, const SnmpVarbind *vb)
 {
-    size_t t = ber_seq_begin(e, BER_SEQUENCE);
+    size_t t = ber_seq_begin(e, (uint8_t)SnmpTag::BER_SEQUENCE);
     ber_put_oid(e, vb->oid, vb->oid_len);
     switch (vb->type)
     {
-    case SNMP_VB_INT:
+    case (uint8_t)SnmpVbType::SNMP_VB_INT:
         ber_put_integer(e, vb->ival);
         break;
-    case SNMP_VB_STRING:
-        ber_put_octet_string(e, BER_OCTET_STRING, vb->bytes, vb->blen);
+    case (uint8_t)SnmpVbType::SNMP_VB_STRING:
+        ber_put_octet_string(e, (uint8_t)SnmpTag::BER_OCTET_STRING, vb->bytes, vb->blen);
         break;
-    case SNMP_VB_OID:
+    case (uint8_t)SnmpVbType::SNMP_VB_OID:
         ber_put_oid(e, vb->oid_val, vb->oid_val_len);
         break;
-    case SNMP_VB_COUNTER32:
-        ber_put_uint(e, SNMP_COUNTER32, (uint32_t)vb->ival);
+    case (uint8_t)SnmpVbType::SNMP_VB_COUNTER32:
+        ber_put_uint(e, (uint8_t)SnmpTag::SNMP_COUNTER32, (uint32_t)vb->ival);
         break;
-    case SNMP_VB_GAUGE32:
-        ber_put_uint(e, SNMP_GAUGE32, (uint32_t)vb->ival);
+    case (uint8_t)SnmpVbType::SNMP_VB_GAUGE32:
+        ber_put_uint(e, (uint8_t)SnmpTag::SNMP_GAUGE32, (uint32_t)vb->ival);
         break;
-    case SNMP_VB_TIMETICKS:
-        ber_put_uint(e, SNMP_TIMETICKS, (uint32_t)vb->ival);
+    case (uint8_t)SnmpVbType::SNMP_VB_TIMETICKS:
+        ber_put_uint(e, (uint8_t)SnmpTag::SNMP_TIMETICKS, (uint32_t)vb->ival);
         break;
-    case SNMP_VB_IPADDR:
-        ber_put_octet_string(e, SNMP_IPADDRESS, vb->bytes, vb->blen);
+    case (uint8_t)SnmpVbType::SNMP_VB_IPADDR:
+        ber_put_octet_string(e, (uint8_t)SnmpTag::SNMP_IPADDRESS, vb->bytes, vb->blen);
         break;
     default:
         e->ok = false;
@@ -63,17 +63,17 @@ size_t snmp_notify_build_pdu(BerEnc *e, uint8_t pdu_tag, uint32_t request_id, co
     ber_put_integer(e, (long)request_id); // request-id
     ber_put_integer(e, 0);                // error-status
     ber_put_integer(e, 0);                // error-index
-    size_t vbl = ber_seq_begin(e, BER_SEQUENCE);
+    size_t vbl = ber_seq_begin(e, (uint8_t)SnmpTag::BER_SEQUENCE);
     // sysUpTime.0 = TimeTicks
     {
-        size_t t = ber_seq_begin(e, BER_SEQUENCE);
+        size_t t = ber_seq_begin(e, (uint8_t)SnmpTag::BER_SEQUENCE);
         ber_put_oid(e, OID_SYSUPTIME_0, sizeof(OID_SYSUPTIME_0) / sizeof(uint32_t));
-        ber_put_uint(e, SNMP_TIMETICKS, uptime_ticks);
+        ber_put_uint(e, (uint8_t)SnmpTag::SNMP_TIMETICKS, uptime_ticks);
         ber_seq_end(e, t);
     }
     // snmpTrapOID.0 = OID
     {
-        size_t t = ber_seq_begin(e, BER_SEQUENCE);
+        size_t t = ber_seq_begin(e, (uint8_t)SnmpTag::BER_SEQUENCE);
         ber_put_oid(e, OID_SNMPTRAPOID_0, sizeof(OID_SNMPTRAPOID_0) / sizeof(uint32_t));
         ber_put_oid(e, trap_oid, trap_oid_len);
         ber_seq_end(e, t);
@@ -93,9 +93,9 @@ size_t snmp_notify_build_v2c(uint8_t *out, size_t cap, const char *community, ui
         return 0;
     BerEnc e;
     ber_enc_init(&e, out, cap);
-    size_t msg = ber_seq_begin(&e, BER_SEQUENCE);
+    size_t msg = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
     ber_put_integer(&e, 1); // version: SNMPv2c
-    ber_put_octet_string(&e, BER_OCTET_STRING, (const uint8_t *)community, strlen(community));
+    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)community, strlen(community));
     snmp_notify_build_pdu(&e, pdu_tag, request_id, trap_oid, trap_oid_len, uptime_ticks, vbs, n);
     ber_seq_end(&e, msg);
     return e.ok ? e.len : 0;
@@ -125,8 +125,8 @@ bool snmp_trap_v2c(const char *dst_ip, uint16_t port, const char *community, con
 {
     uint8_t buf[DETWS_SNMP_TRAP_BUF_SIZE];
     uint32_t up = (uint32_t)(millis() / 10); // TimeTicks = hundredths of a second
-    size_t len = snmp_notify_build_v2c(buf, sizeof(buf), community, SNMP_PDU_TRAPV2, s_notify.trap_reqid++, trap_oid,
-                                       trap_oid_len, up, vbs, n);
+    size_t len = snmp_notify_build_v2c(buf, sizeof(buf), community, (uint8_t)SnmpTag::SNMP_PDU_TRAPV2,
+                                       s_notify.trap_reqid++, trap_oid, trap_oid_len, up, vbs, n);
     return len && det_udp_sendto(dst_ip, port, buf, len);
 }
 

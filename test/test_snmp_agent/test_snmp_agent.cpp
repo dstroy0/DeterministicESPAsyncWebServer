@@ -34,7 +34,7 @@ static long g_set_value = 0;
 static bool rw_setter(const SnmpValue *in)
 {
     g_set_called = true;
-    if (in->type != BER_INTEGER)
+    if (in->type != (uint8_t)SnmpTag::BER_INTEGER)
         return false;
     g_set_value = in->ival;
     return true;
@@ -42,7 +42,7 @@ static bool rw_setter(const SnmpValue *in)
 
 static bool ctr_getter(SnmpValue *out)
 {
-    out->type = SNMP_COUNTER32;
+    out->type = (uint8_t)SnmpTag::SNMP_COUNTER32;
     out->uval = 12345u;
     return true;
 }
@@ -54,7 +54,7 @@ void setUp()
     snmp_agent_set_system(SYSDESCR_VAL, "admin", "esp32", "lab", 72);
     snmp_agent_add_integer(OID_RW, 9, 42, rw_setter);
     snmp_agent_add_integer(OID_RO, 9, 7); // read-only (no setter)
-    snmp_agent_add_dynamic(OID_CTR, 9, SNMP_COUNTER32, ctr_getter);
+    snmp_agent_add_dynamic(OID_CTR, 9, (uint8_t)SnmpTag::SNMP_COUNTER32, ctr_getter);
     g_set_called = false;
     g_set_value = 0;
 }
@@ -72,20 +72,20 @@ static size_t build_req(uint8_t *buf, size_t cap, long version, const char *comm
 {
     BerEnc e;
     ber_enc_init(&e, buf, cap);
-    size_t msg = ber_seq_begin(&e, BER_SEQUENCE);
+    size_t msg = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
     ber_put_integer(&e, version);
-    ber_put_octet_string(&e, BER_OCTET_STRING, (const uint8_t *)comm, strlen(comm));
+    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)comm, strlen(comm));
     size_t pdus = ber_seq_begin(&e, pdu);
     ber_put_integer(&e, reqid);
     ber_put_integer(&e, f2);
     ber_put_integer(&e, f3);
-    size_t vbl = ber_seq_begin(&e, BER_SEQUENCE);
-    size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+    size_t vbl = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    size_t vb = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
     ber_put_oid(&e, oid, oidn);
-    if (setval && setval->type == BER_INTEGER)
+    if (setval && setval->type == (uint8_t)SnmpTag::BER_INTEGER)
         ber_put_integer(&e, setval->ival);
-    else if (setval && setval->type == BER_OCTET_STRING)
-        ber_put_octet_string(&e, BER_OCTET_STRING, (const uint8_t *)setval->str, setval->str_len);
+    else if (setval && setval->type == (uint8_t)SnmpTag::BER_OCTET_STRING)
+        ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)setval->str, setval->str_len);
     else
         ber_put_null(&e);
     ber_seq_end(&e, vb);
@@ -112,22 +112,23 @@ static size_t build_pdu(uint8_t *buf, size_t cap, int knob)
 {
     BerEnc e;
     ber_enc_init(&e, buf, cap);
-    size_t pdus = ber_seq_begin(&e, SNMP_PDU_GET);
+    size_t pdus = ber_seq_begin(&e, (uint8_t)SnmpTag::SNMP_PDU_GET);
     ber_put_integer(&e, 42); // request-id
     ber_put_integer(&e, 0);
     ber_put_integer(&e, 0);
     if (knob == VB_BAD_VBL_TAG)
     {
-        ber_put_octet_string(&e, BER_OCTET_STRING, (const uint8_t *)"x", 1); // varbind list not a SEQUENCE
+        ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)"x",
+                             1); // varbind list not a SEQUENCE
     }
     else
     {
-        size_t vbl = ber_seq_begin(&e, BER_SEQUENCE);
+        size_t vbl = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
         if (knob == VB_TOO_MANY)
         {
             for (int i = 0; i <= SNMP_MAX_VARBINDS; i++) // one more than the table holds
             {
-                size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+                size_t vb = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
                 ber_put_oid(&e, OID_SYSDESCR, 9);
                 ber_put_null(&e);
                 ber_seq_end(&e, vb);
@@ -135,41 +136,44 @@ static size_t build_pdu(uint8_t *buf, size_t cap, int knob)
         }
         else if (knob == VB_BAD_VB_TAG)
         {
-            ber_put_octet_string(&e, BER_OCTET_STRING, (const uint8_t *)"x", 1); // a varbind that is not a SEQUENCE
+            ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)"x",
+                                 1); // a varbind that is not a SEQUENCE
         }
         else if (knob == VB_BAD_OID)
         {
-            size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+            size_t vb = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
             ber_put_integer(&e, 5); // first field is not an OID
             ber_put_null(&e);
             ber_seq_end(&e, vb);
         }
         else if (knob == VB_BAD_VALUE)
         {
-            size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+            size_t vb = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
             ber_put_oid(&e, OID_SYSDESCR, 9);
-            uint8_t badv[2] = {BER_OCTET_STRING, 0x7F}; // declares 127 value octets that are not present
+            uint8_t badv[2] = {(uint8_t)SnmpTag::BER_OCTET_STRING,
+                               0x7F}; // declares 127 value octets that are not present
             ber_put_raw(&e, badv, sizeof(badv));
             ber_seq_end(&e, vb);
         }
-        else if (knob == VB_OID_VALUE) // a varbind whose value is a valid OID (dec_value BER_OID success)
+        else if (knob ==
+                 VB_OID_VALUE) // a varbind whose value is a valid OID (dec_value (uint8_t)SnmpTag::BER_OID success)
         {
-            size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+            size_t vb = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
             ber_put_oid(&e, OID_SYSDESCR, 9);
             ber_put_oid(&e, OID_SYSUPTIME, 9);
             ber_seq_end(&e, vb);
         }
         else if (knob == VB_BAD_OID_VALUE) // an OID-typed value that fails to decode (empty OID)
         {
-            size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+            size_t vb = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
             ber_put_oid(&e, OID_SYSDESCR, 9);
-            uint8_t empty_oid[2] = {BER_OID, 0x00}; // OID tag, zero length -> ber_read_oid rejects
+            uint8_t empty_oid[2] = {(uint8_t)SnmpTag::BER_OID, 0x00}; // OID tag, zero length -> ber_read_oid rejects
             ber_put_raw(&e, empty_oid, sizeof(empty_oid));
             ber_seq_end(&e, vb);
         }
         else // VB_VALID: a well-formed GET varbind (name + NULL value)
         {
-            size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+            size_t vb = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
             ber_put_oid(&e, OID_SYSDESCR, 9);
             ber_put_null(&e);
             ber_seq_end(&e, vb);
@@ -205,7 +209,7 @@ static bool parse_resp(const uint8_t *buf, size_t len, RespView *rv)
     ber_dec_init(&d, buf, len);
     uint8_t tag;
     size_t l;
-    if (!ber_read_header(&d, &tag, &l) || tag != BER_SEQUENCE)
+    if (!ber_read_header(&d, &tag, &l) || tag != (uint8_t)SnmpTag::BER_SEQUENCE)
         return false;
     if (!ber_read_integer(&d, &rv->version))
         return false;
@@ -221,7 +225,7 @@ static bool parse_resp(const uint8_t *buf, size_t len, RespView *rv)
         return false;
     uint8_t vt;
     size_t vl;
-    if (!ber_read_header(&d, &vt, &vl) || vt != BER_SEQUENCE)
+    if (!ber_read_header(&d, &vt, &vl) || vt != (uint8_t)SnmpTag::BER_SEQUENCE)
         return false;
     size_t vend = d.pos + vl;
     bool first = true;
@@ -229,7 +233,7 @@ static bool parse_resp(const uint8_t *buf, size_t len, RespView *rv)
     {
         uint8_t st;
         size_t sl;
-        if (!ber_read_header(&d, &st, &sl) || st != BER_SEQUENCE)
+        if (!ber_read_header(&d, &st, &sl) || st != (uint8_t)SnmpTag::BER_SEQUENCE)
             return false;
         size_t vbend = d.pos + sl;
         uint32_t oid[SNMP_MAX_OID_LEN];
@@ -246,19 +250,21 @@ static bool parse_resp(const uint8_t *buf, size_t len, RespView *rv)
             memcpy(rv->oid, oid, on * sizeof(uint32_t));
             rv->oid_len = on;
             rv->val_tag = valtag;
-            if (valtag == BER_INTEGER)
+            if (valtag == (uint8_t)SnmpTag::BER_INTEGER)
             {
                 d.pos = save;
                 ber_read_integer(&d, &rv->ival);
             }
-            else if (valtag == BER_OCTET_STRING || valtag == SNMP_IPADDRESS || valtag == SNMP_OPAQUE)
+            else if (valtag == (uint8_t)SnmpTag::BER_OCTET_STRING || valtag == (uint8_t)SnmpTag::SNMP_IPADDRESS ||
+                     valtag == (uint8_t)SnmpTag::SNMP_OPAQUE)
             {
                 size_t cpy = vallen < sizeof(rv->str) - 1 ? vallen : sizeof(rv->str) - 1;
                 memcpy(rv->str, d.buf + d.pos, cpy);
                 rv->str[cpy] = '\0';
                 rv->str_len = vallen;
             }
-            else if (valtag == SNMP_TIMETICKS || valtag == SNMP_COUNTER32 || valtag == SNMP_GAUGE32)
+            else if (valtag == (uint8_t)SnmpTag::SNMP_TIMETICKS || valtag == (uint8_t)SnmpTag::SNMP_COUNTER32 ||
+                     valtag == (uint8_t)SnmpTag::SNMP_GAUGE32)
             {
                 uint32_t a = 0;
                 for (size_t i = 0; i < vallen; i++)
@@ -280,28 +286,30 @@ static bool parse_resp(const uint8_t *buf, size_t len, RespView *rv)
 void test_get_string_v2c()
 {
     uint8_t req[256], resp[256];
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 111, 0, 0, OID_SYSDESCR, 9, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 111,
+                          0, 0, OID_SYSDESCR, 9, nullptr);
     TEST_ASSERT_TRUE(rl > 0);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_TRUE(n > 0);
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_HEX8(SNMP_PDU_RESPONSE, rv.pdu_tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_PDU_RESPONSE, rv.pdu_tag);
     TEST_ASSERT_EQUAL_INT(111, rv.request_id);
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ERROR, rv.err_status);
-    TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, rv.val_tag);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, rv.val_tag);
     TEST_ASSERT_EQUAL_STRING(SYSDESCR_VAL, rv.str);
 }
 
 void test_get_unknown_v2c_exception()
 {
     uint8_t req[256], resp[256];
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 7, 0, 0, OID_UNKNOWN, 8, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 7, 0,
+                          0, OID_UNKNOWN, 8, nullptr);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ERROR, rv.err_status);
-    TEST_ASSERT_EQUAL_HEX8(SNMP_NO_SUCH_OBJECT, rv.val_tag);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_NO_SUCH_OBJECT, rv.val_tag);
 }
 
 // RFC 3416 4.2.1: a known object (sysDescr) but a nonexistent instance (.5) must
@@ -309,35 +317,37 @@ void test_get_unknown_v2c_exception()
 void test_get_bad_instance_v2c_nosuchinstance()
 {
     uint8_t req[256], resp[256];
-    size_t rl =
-        build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 8, 0, 0, OID_SYSDESCR_BADINST, 9, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 8, 0,
+                          0, OID_SYSDESCR_BADINST, 9, nullptr);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ERROR, rv.err_status);
-    TEST_ASSERT_EQUAL_HEX8(SNMP_NO_SUCH_INSTANCE, rv.val_tag);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_NO_SUCH_INSTANCE, rv.val_tag);
 }
 
 void test_get_unknown_v1_error()
 {
     uint8_t req[256], resp[256];
-    size_t rl = build_req(req, sizeof(req), SNMP_V1, "public", SNMP_PDU_GET, 7, 0, 0, OID_UNKNOWN, 8, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V1, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 7, 0,
+                          0, OID_UNKNOWN, 8, nullptr);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_SUCH_NAME, rv.err_status);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_SUCH_NAME, rv.err_status);
     TEST_ASSERT_EQUAL_INT(1, rv.err_index);
 }
 
 void test_getnext_walks_to_first()
 {
     uint8_t req[256], resp[256];
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GETNEXT, 5, 0, 0, OID_SYSPREFIX, 7, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GETNEXT, 5,
+                          0, 0, OID_SYSPREFIX, 7, nullptr);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ERROR, rv.err_status);
-    TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, rv.val_tag);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, rv.val_tag);
     TEST_ASSERT_EQUAL_UINT(9, rv.oid_len);
     TEST_ASSERT_EQUAL_UINT32(1u, rv.oid[7]); // sysDescr index .1
     TEST_ASSERT_EQUAL_STRING(SYSDESCR_VAL, rv.str);
@@ -346,12 +356,13 @@ void test_getnext_walks_to_first()
 void test_getnext_past_end_endofmibview()
 {
     uint8_t req[256], resp[256];
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GETNEXT, 9, 0, 0, OID_PAST_END, 9, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GETNEXT, 9,
+                          0, 0, OID_PAST_END, 9, nullptr);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ERROR, rv.err_status);
-    TEST_ASSERT_EQUAL_HEX8(SNMP_END_OF_MIB_VIEW, rv.val_tag);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_END_OF_MIB_VIEW, rv.val_tag);
 }
 
 void test_set_without_rw_community_denied()
@@ -359,13 +370,14 @@ void test_set_without_rw_community_denied()
     uint8_t req[256], resp[256];
     SnmpValue sv;
     memset(&sv, 0, sizeof(sv));
-    sv.type = BER_INTEGER;
+    sv.type = (uint8_t)SnmpTag::BER_INTEGER;
     sv.ival = 99;
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_SET, 3, 0, 0, OID_RW, 9, &sv);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_SET, 3, 0,
+                          0, OID_RW, 9, &sv);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ACCESS, rv.err_status);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ACCESS, rv.err_status);
     TEST_ASSERT_FALSE(g_set_called);
 }
 
@@ -374,13 +386,14 @@ void test_set_with_rw_community_invokes_setter()
     uint8_t req[256], resp[256];
     SnmpValue sv;
     memset(&sv, 0, sizeof(sv));
-    sv.type = BER_INTEGER;
+    sv.type = (uint8_t)SnmpTag::BER_INTEGER;
     sv.ival = 99;
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "private", SNMP_PDU_SET, 3, 0, 0, OID_RW, 9, &sv);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "private", (uint8_t)SnmpTag::SNMP_PDU_SET, 3, 0,
+                          0, OID_RW, 9, &sv);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ERROR, rv.err_status);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status);
     TEST_ASSERT_TRUE(g_set_called);
     TEST_ASSERT_EQUAL_INT(99, g_set_value);
 }
@@ -390,53 +403,58 @@ void test_set_readonly_not_writable()
     uint8_t req[256], resp[256];
     SnmpValue sv;
     memset(&sv, 0, sizeof(sv));
-    sv.type = BER_INTEGER;
+    sv.type = (uint8_t)SnmpTag::BER_INTEGER;
     sv.ival = 1;
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "private", SNMP_PDU_SET, 3, 0, 0, OID_RO, 9, &sv);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "private", (uint8_t)SnmpTag::SNMP_PDU_SET, 3, 0,
+                          0, OID_RO, 9, &sv);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NOT_WRITABLE, rv.err_status);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NOT_WRITABLE, rv.err_status);
 }
 
 void test_getbulk_returns_multiple()
 {
     uint8_t req[512], resp[512];
     // non-repeaters=0, max-repetitions=3, one repeater starting at the system prefix.
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GETBULK, 1, 0, 3, OID_SYSPREFIX, 7, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GETBULK, 1,
+                          0, 3, OID_SYSPREFIX, 7, nullptr);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ERROR, rv.err_status);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status);
     TEST_ASSERT_EQUAL_UINT(3, rv.nvb);
-    TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, rv.val_tag); // first = sysDescr
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, rv.val_tag); // first = sysDescr
 }
 
 void test_dynamic_counter_value()
 {
     uint8_t req[256], resp[256];
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 2, 0, 0, OID_CTR, 9, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 2, 0,
+                          0, OID_CTR, 9, nullptr);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_HEX8(SNMP_COUNTER32, rv.val_tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_COUNTER32, rv.val_tag);
     TEST_ASSERT_EQUAL_UINT32(12345u, rv.uval);
 }
 
 void test_uptime_is_timeticks()
 {
     uint8_t req[256], resp[256];
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 2, 0, 0, OID_SYSUPTIME, 9, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 2, 0,
+                          0, OID_SYSUPTIME, 9, nullptr);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_HEX8(SNMP_TIMETICKS, rv.val_tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_TIMETICKS, rv.val_tag);
 }
 
 void test_unknown_community_no_response()
 {
     uint8_t req[256], resp[256];
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "wrongcomm", SNMP_PDU_GET, 1, 0, 0, OID_SYSDESCR, 9, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "wrongcomm", (uint8_t)SnmpTag::SNMP_PDU_GET, 1,
+                          0, 0, OID_SYSDESCR, 9, nullptr);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_UINT(0, n);
 }
@@ -446,8 +464,8 @@ void test_v3_message_dropped()
     uint8_t req[64];
     BerEnc e;
     ber_enc_init(&e, req, sizeof(req));
-    size_t msg = ber_seq_begin(&e, BER_SEQUENCE);
-    ber_put_integer(&e, SNMP_V3);
+    size_t msg = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    ber_put_integer(&e, (int)SnmpVersion::SNMP_V3);
     ber_seq_end(&e, msg);
     uint8_t resp[64];
     size_t n = snmp_agent_process(req, e.len, resp, sizeof(resp));
@@ -457,7 +475,7 @@ void test_v3_message_dropped()
 static const uint32_t OID_IP[] = {1, 3, 6, 1, 4, 1, 49374, 4, 0};
 static bool ip_getter(SnmpValue *out)
 {
-    out->type = SNMP_IPADDRESS;
+    out->type = (uint8_t)SnmpTag::SNMP_IPADDRESS;
     out->uval = 0xC0A80101u; // 192.168.1.1
     return true;
 }
@@ -468,7 +486,7 @@ void test_registration_and_rw_edges()
     const uint32_t shortoid[] = {1};
     TEST_ASSERT_FALSE(snmp_agent_add_string(shortoid, 1, "x", nullptr));
     TEST_ASSERT_FALSE(snmp_agent_add_integer(shortoid, 1, 5, nullptr));
-    TEST_ASSERT_FALSE(snmp_agent_add_dynamic(shortoid, 1, BER_INTEGER, nullptr));
+    TEST_ASSERT_FALSE(snmp_agent_add_dynamic(shortoid, 1, (uint8_t)SnmpTag::BER_INTEGER, nullptr));
 
     // With the rw community cleared, a Set arriving on the ro community is answered
     // (community is still known) but denied write access.
@@ -476,26 +494,28 @@ void test_registration_and_rw_edges()
     uint8_t req[256], resp[256];
     SnmpValue sv;
     memset(&sv, 0, sizeof(sv));
-    sv.type = BER_INTEGER;
+    sv.type = (uint8_t)SnmpTag::BER_INTEGER;
     sv.ival = 1;
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_SET, 3, 0, 0, OID_RW, 9, &sv);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_SET, 3, 0,
+                          0, OID_RW, 9, &sv);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ACCESS, rv.err_status);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ACCESS, rv.err_status);
 }
 
-// An IpAddress-typed dynamic value encodes with the SNMP_IPADDRESS tag.
+// An IpAddress-typed dynamic value encodes with the (uint8_t)SnmpTag::SNMP_IPADDRESS tag.
 void test_ipaddress_value_encodes()
 {
-    TEST_ASSERT_TRUE(snmp_agent_add_dynamic(OID_IP, 9, SNMP_IPADDRESS, ip_getter));
+    TEST_ASSERT_TRUE(snmp_agent_add_dynamic(OID_IP, 9, (uint8_t)SnmpTag::SNMP_IPADDRESS, ip_getter));
     uint8_t req[256], resp[256];
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 1, 0, 0, OID_IP, 9, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 1, 0,
+                          0, OID_IP, 9, nullptr);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
     // Encoded as a 4-byte IpAddress-tagged string (RFC 2578 IpAddress = network-order octets).
-    TEST_ASSERT_EQUAL_HEX8(SNMP_IPADDRESS, rv.val_tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_IPADDRESS, rv.val_tag);
     TEST_ASSERT_EQUAL_size_t(4, rv.str_len);
     const uint8_t want[4] = {0xC0, 0xA8, 0x01, 0x01};
     TEST_ASSERT_EQUAL_MEMORY(want, rv.str, 4);
@@ -509,22 +529,24 @@ void test_set_wrong_type_and_unknown()
     RespView rv;
     SnmpValue s;
     memset(&s, 0, sizeof(s));
-    s.type = BER_OCTET_STRING;
+    s.type = (uint8_t)SnmpTag::BER_OCTET_STRING;
     s.str = "hi";
     s.str_len = 2;
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "private", SNMP_PDU_SET, 3, 0, 0, OID_RW, 9, &s);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "private", (uint8_t)SnmpTag::SNMP_PDU_SET, 3, 0,
+                          0, OID_RW, 9, &s);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_WRONG_TYPE, rv.err_status);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_WRONG_TYPE, rv.err_status);
 
     SnmpValue iv;
     memset(&iv, 0, sizeof(iv));
-    iv.type = BER_INTEGER;
+    iv.type = (uint8_t)SnmpTag::BER_INTEGER;
     iv.ival = 1;
-    rl = build_req(req, sizeof(req), SNMP_V2C, "private", SNMP_PDU_SET, 3, 0, 0, OID_UNKNOWN, 8, &iv);
+    rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "private", (uint8_t)SnmpTag::SNMP_PDU_SET, 3, 0, 0,
+                   OID_UNKNOWN, 8, &iv);
     n = snmp_agent_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_SUCH_NAME, rv.err_status);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_SUCH_NAME, rv.err_status);
 }
 
 // GetBulk with a non-repeater; a v1 GetBulk is not allowed; a repeater past the end
@@ -534,21 +556,24 @@ void test_getbulk_variants()
     uint8_t req[512], resp[512];
     RespView rv;
     // non-repeaters = 1, max-repetitions = 2, one varbind at the system prefix.
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GETBULK, 1, 1, 2, OID_SYSPREFIX, 7, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GETBULK, 1,
+                          1, 2, OID_SYSPREFIX, 7, nullptr);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_INT(SNMP_ERR_NO_ERROR, rv.err_status);
+    TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_NO_ERROR, rv.err_status);
     TEST_ASSERT_GREATER_THAN(0, (int)rv.nvb);
 
     // GetBulk is v2c+: a v1 GetBulk is dropped.
-    rl = build_req(req, sizeof(req), SNMP_V1, "public", SNMP_PDU_GETBULK, 1, 0, 2, OID_SYSPREFIX, 7, nullptr);
+    rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V1, "public", (uint8_t)SnmpTag::SNMP_PDU_GETBULK, 1, 0, 2,
+                   OID_SYSPREFIX, 7, nullptr);
     TEST_ASSERT_EQUAL_UINT(0, snmp_agent_process(req, rl, resp, sizeof(resp)));
 
     // A repeater starting past the last object: every repetition is endOfMibView.
-    rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GETBULK, 1, 0, 3, OID_PAST_END, 9, nullptr);
+    rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GETBULK, 1, 0, 3,
+                   OID_PAST_END, 9, nullptr);
     n = snmp_agent_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-    TEST_ASSERT_EQUAL_HEX8(SNMP_END_OF_MIB_VIEW, rv.val_tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::SNMP_END_OF_MIB_VIEW, rv.val_tag);
 }
 
 // Build a GET-shaped PDU whose one varbind carries a value TLV of @p value_kind, to
@@ -561,11 +586,11 @@ static size_t build_pdu_with_value(uint8_t *buf, size_t cap, uint8_t pdu_tag, in
     ber_put_integer(&e, 1);
     ber_put_integer(&e, 0);
     ber_put_integer(&e, 0);
-    size_t vbl = ber_seq_begin(&e, BER_SEQUENCE);
-    size_t vb = ber_seq_begin(&e, BER_SEQUENCE);
+    size_t vbl = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
+    size_t vb = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
     ber_put_oid(&e, OID_SYSDESCR, 9);
     if (value_kind == 1)
-        ber_put_uint(&e, SNMP_GAUGE32, 500); // application uint value
+        ber_put_uint(&e, (uint8_t)SnmpTag::SNMP_GAUGE32, 500); // application uint value
     else if (value_kind == 2)
         ber_put_oid(&e, OID_SYSUPTIME, 9); // OID value
     else
@@ -582,17 +607,17 @@ void test_dispatch_value_types_and_malformed()
 {
     uint8_t pdu[128], out[256];
     // uint-typed and OID-typed varbind values decode without error.
-    size_t g = build_pdu_with_value(pdu, sizeof(pdu), SNMP_PDU_GET, 1);
+    size_t g = build_pdu_with_value(pdu, sizeof(pdu), (uint8_t)SnmpTag::SNMP_PDU_GET, 1);
     TEST_ASSERT_TRUE(snmp_dispatch_pdu(pdu, g, false, true, out, sizeof(out)) > 0);
-    size_t o = build_pdu_with_value(pdu, sizeof(pdu), SNMP_PDU_GET, 2);
+    size_t o = build_pdu_with_value(pdu, sizeof(pdu), (uint8_t)SnmpTag::SNMP_PDU_GET, 2);
     TEST_ASSERT_TRUE(snmp_dispatch_pdu(pdu, o, false, true, out, sizeof(out)) > 0);
 
     // An unsupported PDU tag (a trap) is dropped.
-    size_t t = build_pdu_with_value(pdu, sizeof(pdu), SNMP_PDU_TRAPV2, 0);
+    size_t t = build_pdu_with_value(pdu, sizeof(pdu), (uint8_t)SnmpTag::SNMP_PDU_TRAPV2, 0);
     TEST_ASSERT_EQUAL_UINT(0, snmp_dispatch_pdu(pdu, t, false, true, out, sizeof(out)));
 
     // Every truncated prefix of a valid GET PDU fails closed.
-    size_t full = build_pdu_with_value(pdu, sizeof(pdu), SNMP_PDU_GET, 0);
+    size_t full = build_pdu_with_value(pdu, sizeof(pdu), (uint8_t)SnmpTag::SNMP_PDU_GET, 0);
     TEST_ASSERT_TRUE(snmp_dispatch_pdu(pdu, full, false, true, out, sizeof(out)) > 0);
     for (size_t l = 0; l < full; l++)
         TEST_ASSERT_EQUAL_UINT(0, snmp_dispatch_pdu(pdu, l, false, true, out, sizeof(out)));
@@ -602,14 +627,16 @@ void test_getbulk_repeaters_and_end()
 {
     uint8_t req[256], resp[512];
     // Pure repeaters (non_rep=0, max_rep=3) walk successive OIDs from the sys prefix.
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GETBULK, 20, 0, 3, OID_SYSPREFIX, 7, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GETBULK,
+                          20, 0, 3, OID_SYSPREFIX, 7, nullptr);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     RespView rv;
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
     TEST_ASSERT_TRUE(rv.nvb >= 1);
     // A non-repeater whose OID is past the end yields endOfMibView.
-    rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GETBULK, 21, 1, 2, OID_PAST_END, 9, nullptr);
+    rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GETBULK, 21, 1, 2,
+                   OID_PAST_END, 9, nullptr);
     TEST_ASSERT_TRUE(snmp_agent_process(req, rl, resp, sizeof(resp)) > 0);
 }
 
@@ -617,23 +644,26 @@ void test_getbulk_nonrep_clamp_and_v1_reject()
 {
     uint8_t req[256], resp[512];
     // non_rep (5) exceeds the single varbind -> clamped to the varbind count.
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GETBULK, 22, 5, 2, OID_SYSPREFIX, 7, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GETBULK,
+                          22, 5, 2, OID_SYSPREFIX, 7, nullptr);
     TEST_ASSERT_TRUE(snmp_agent_process(req, rl, resp, sizeof(resp)) > 0);
     // GetBulk is v2c+; a v1 GetBulk is rejected.
-    rl = build_req(req, sizeof(req), SNMP_V1, "public", SNMP_PDU_GETBULK, 23, 0, 3, OID_SYSPREFIX, 7, nullptr);
+    rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V1, "public", (uint8_t)SnmpTag::SNMP_PDU_GETBULK, 23, 0, 3,
+                   OID_SYSPREFIX, 7, nullptr);
     TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(req, rl, resp, sizeof(resp)));
 }
 
 void test_response_too_big_reencodes()
 {
     uint8_t req[256], resp[28]; // too small for the full sysDescr response
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 40, 0, 0, OID_SYSDESCR, 9, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 40, 0,
+                          0, OID_SYSDESCR, 9, nullptr);
     size_t n = snmp_agent_process(req, rl, resp, sizeof(resp));
     if (n > 0)
     {
         RespView rv;
         TEST_ASSERT_TRUE(parse_resp(resp, n, &rv));
-        TEST_ASSERT_EQUAL_INT(SNMP_ERR_TOO_BIG, rv.err_status);
+        TEST_ASSERT_EQUAL_INT((int)SnmpErr::SNMP_ERR_TOO_BIG, rv.err_status);
     }
 }
 
@@ -641,13 +671,15 @@ void test_version_and_community_guards()
 {
     uint8_t req[256], resp[512];
     // v3 with the USM layer not built here -> 0.
-    size_t rl = build_req(req, sizeof(req), SNMP_V3, "public", SNMP_PDU_GET, 1, 0, 0, OID_SYSDESCR, 9, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V3, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 1, 0,
+                          0, OID_SYSDESCR, 9, nullptr);
     TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(req, rl, resp, sizeof(resp)));
     // An unknown version number is rejected.
-    rl = build_req(req, sizeof(req), 5, "public", SNMP_PDU_GET, 1, 0, 0, OID_SYSDESCR, 9, nullptr);
+    rl = build_req(req, sizeof(req), 5, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 1, 0, 0, OID_SYSDESCR, 9, nullptr);
     TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(req, rl, resp, sizeof(resp)));
     // An unknown community is silently dropped.
-    rl = build_req(req, sizeof(req), SNMP_V2C, "wrongcomm", SNMP_PDU_GET, 1, 0, 0, OID_SYSDESCR, 9, nullptr);
+    rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "wrongcomm", (uint8_t)SnmpTag::SNMP_PDU_GET, 1, 0, 0,
+                   OID_SYSDESCR, 9, nullptr);
     TEST_ASSERT_EQUAL_size_t(0, snmp_agent_process(req, rl, resp, sizeof(resp)));
 }
 
@@ -669,7 +701,8 @@ void test_udp_handler_via_inject()
     det_udp_capture_reset();
     snmp_agent_begin_udp(161);
     uint8_t req[256];
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 50, 0, 0, OID_SYSDESCR, 9, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 50, 0,
+                          0, OID_SYSDESCR, 9, nullptr);
     det_udp_inject(161, "192.0.2.1", 40000, req, rl);
     // The bound handler processed the datagram and sent a reply (captured).
     TEST_ASSERT_TRUE(det_udp_captured_len() > 0);
@@ -688,7 +721,7 @@ void test_malformed_message_guards()
 }
 
 // Each malformed varbind list is rejected by the dispatcher's per-varbind guards; an OID-typed value
-// is decoded (dec_value's BER_OID branch) then handled as a normal GET.
+// is decoded (dec_value's (uint8_t)SnmpTag::BER_OID branch) then handled as a normal GET.
 void test_snmp_dispatch_varbind_guards()
 {
     uint8_t pdu[512], resp[256];
@@ -713,7 +746,8 @@ void test_snmp_oid_cmp_request_longer()
 {
     uint8_t req[256], resp[256];
     static const uint32_t OID_LONGER[] = {1, 3, 6, 1, 2, 1, 1, 1, 0, 7}; // sysDescr.0 + an extra arc
-    size_t rl = build_req(req, sizeof(req), SNMP_V2C, "public", SNMP_PDU_GET, 1, 0, 0, OID_LONGER, 10, nullptr);
+    size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 1, 0,
+                          0, OID_LONGER, 10, nullptr);
     TEST_ASSERT_TRUE(rl > 0);
     TEST_ASSERT_TRUE(snmp_agent_process(req, rl, resp, sizeof(resp)) > 0);
 }

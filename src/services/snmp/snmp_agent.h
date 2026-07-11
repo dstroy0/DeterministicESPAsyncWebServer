@@ -38,7 +38,7 @@
 #if DETWS_ENABLE_SNMP
 
 // SNMP message versions (the on-wire INTEGER value).
-enum SnmpVersion
+enum class SnmpVersion : uint8_t
 {
     SNMP_V1 = 0,
     SNMP_V2C = 1,
@@ -46,7 +46,7 @@ enum SnmpVersion
 };
 
 // PDU error-status values (RFC 1157 / RFC 3416).
-enum SnmpErr
+enum class SnmpErr : uint8_t
 {
     SNMP_ERR_NO_ERROR = 0,
     SNMP_ERR_TOO_BIG = 1,
@@ -67,13 +67,15 @@ enum SnmpErr
  */
 struct SnmpValue
 {
-    uint8_t type;        ///< BER tag: BER_INTEGER / BER_OCTET_STRING / BER_OID / SNMP_TIMETICKS / SNMP_COUNTER32 /
-                         ///< SNMP_GAUGE32 / SNMP_IPADDRESS, or an exception tag.
-    long ival;           ///< value for BER_INTEGER
-    uint32_t uval;       ///< value for SNMP_TIMETICKS / SNMP_COUNTER32 / SNMP_GAUGE32 / SNMP_IPADDRESS
-    const char *str;     ///< bytes for BER_OCTET_STRING (not owned)
+    uint8_t type; ///< BER tag: SnmpTag::BER_INTEGER / SnmpTag::BER_OCTET_STRING / SnmpTag::BER_OID /
+                  ///< SnmpTag::SNMP_TIMETICKS / SnmpTag::SNMP_COUNTER32 / SnmpTag::SNMP_GAUGE32 /
+                  ///< SnmpTag::SNMP_IPADDRESS, or an exception tag.
+    long ival;           ///< value for SnmpTag::BER_INTEGER
+    uint32_t uval;       ///< value for SnmpTag::SNMP_TIMETICKS / SnmpTag::SNMP_COUNTER32 / SnmpTag::SNMP_GAUGE32 /
+                         ///< SnmpTag::SNMP_IPADDRESS
+    const char *str;     ///< bytes for SnmpTag::BER_OCTET_STRING (not owned)
     size_t str_len;      ///< length of @ref str
-    const uint32_t *oid; ///< arcs for BER_OID (not owned)
+    const uint32_t *oid; ///< arcs for SnmpTag::BER_OID (not owned)
     size_t oid_len;      ///< number of arcs in @ref oid
 };
 

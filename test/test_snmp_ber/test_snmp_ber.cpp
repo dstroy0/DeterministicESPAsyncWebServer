@@ -75,7 +75,7 @@ void test_octet_string_and_null()
     uint8_t buf[16];
     BerEnc e;
     ber_enc_init(&e, buf, sizeof(buf));
-    ber_put_octet_string(&e, BER_OCTET_STRING, (const uint8_t *)"public", 6);
+    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)"public", 6);
     const uint8_t exp[] = {0x04, 0x06, 'p', 'u', 'b', 'l', 'i', 'c'};
     TEST_ASSERT_TRUE(e.ok);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(exp, buf, sizeof(exp));
@@ -93,7 +93,7 @@ void test_counter32_keeps_unsigned()
     uint8_t buf[16];
     BerEnc e;
     ber_enc_init(&e, buf, sizeof(buf));
-    ber_put_uint(&e, SNMP_COUNTER32, 0x80000000u);
+    ber_put_uint(&e, (uint8_t)SnmpTag::SNMP_COUNTER32, 0x80000000u);
     const uint8_t exp[] = {0x41, 0x05, 0x00, 0x80, 0x00, 0x00, 0x00};
     TEST_ASSERT_TRUE(e.ok);
     TEST_ASSERT_EQUAL_UINT(sizeof(exp), e.len);
@@ -107,9 +107,9 @@ void test_sequence_roundtrip()
     uint8_t buf[64];
     BerEnc e;
     ber_enc_init(&e, buf, sizeof(buf));
-    size_t seq = ber_seq_begin(&e, BER_SEQUENCE);
+    size_t seq = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
     ber_put_integer(&e, 1); // e.g. SNMP version (v2c=1)
-    ber_put_octet_string(&e, BER_OCTET_STRING, (const uint8_t *)"public", 6);
+    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)"public", 6);
     ber_seq_end(&e, seq);
     TEST_ASSERT_TRUE(e.ok);
 
@@ -119,14 +119,14 @@ void test_sequence_roundtrip()
     uint8_t tag;
     size_t len;
     TEST_ASSERT_TRUE(ber_read_header(&d, &tag, &len));
-    TEST_ASSERT_EQUAL_HEX8(BER_SEQUENCE, tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_SEQUENCE, tag);
 
     long ver = -99;
     TEST_ASSERT_TRUE(ber_read_integer(&d, &ver));
     TEST_ASSERT_EQUAL_INT(1, ver);
 
     TEST_ASSERT_TRUE(ber_read_header(&d, &tag, &len));
-    TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, tag);
     TEST_ASSERT_EQUAL_UINT(6, len);
     TEST_ASSERT_EQUAL_MEMORY("public", d.buf + d.pos, 6);
 }
@@ -199,7 +199,7 @@ void test_encoder_overflow_sets_not_ok()
     uint8_t buf[3];
     BerEnc e;
     ber_enc_init(&e, buf, sizeof(buf));
-    ber_put_octet_string(&e, BER_OCTET_STRING, (const uint8_t *)"too long", 8);
+    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)"too long", 8);
     TEST_ASSERT_FALSE(e.ok);
 }
 
@@ -301,7 +301,7 @@ void test_enc_len_long_form()
     uint8_t val[200];
     for (int i = 0; i < 200; i++)
         val[i] = (uint8_t)i;
-    TEST_ASSERT_TRUE(ber_put_octet_string(&e, BER_OCTET_STRING, val, sizeof(val)));
+    TEST_ASSERT_TRUE(ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, val, sizeof(val)));
     TEST_ASSERT_EQUAL_size_t(203, e.len); // tag(1) + 0x81 0xC8 (2) + 200
     TEST_ASSERT_EQUAL_HEX8(0x81, buf[1]); // long form, one length octet
     TEST_ASSERT_EQUAL_HEX8(0xC8, buf[2]); // 200
@@ -310,7 +310,7 @@ void test_enc_len_long_form()
     uint8_t tag;
     size_t len;
     TEST_ASSERT_TRUE(ber_read_header(&d, &tag, &len));
-    TEST_ASSERT_EQUAL_HEX8(BER_OCTET_STRING, tag);
+    TEST_ASSERT_EQUAL_HEX8((uint8_t)SnmpTag::BER_OCTET_STRING, tag);
     TEST_ASSERT_EQUAL_size_t(200, len);
 }
 
@@ -337,7 +337,7 @@ void test_seq_end_overflow()
     uint8_t buf[16];
     BerEnc e;
     ber_enc_init(&e, buf, sizeof(buf));
-    size_t tok = ber_seq_begin(&e, BER_SEQUENCE);
+    size_t tok = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
     e.len = tok + 3 + 0x10000; // pretend > 64 KiB of content was written
     ber_seq_end(&e, tok);
     TEST_ASSERT_FALSE(e.ok);
@@ -346,7 +346,7 @@ void test_seq_end_overflow()
 void test_read_oid_rejects()
 {
     // ber_read_oid on a non-OID TLV.
-    const uint8_t intv[] = {BER_INTEGER, 0x01, 0x05};
+    const uint8_t intv[] = {(uint8_t)SnmpTag::BER_INTEGER, 0x01, 0x05};
     BerDec d;
     ber_dec_init(&d, intv, sizeof(intv));
     uint32_t arcs[8];

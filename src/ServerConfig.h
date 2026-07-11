@@ -1008,7 +1008,7 @@
 //   AUTH
 //     `-- AUTH_LOCKOUT
 //   SNMP
-//     |-- SNMP_V3
+//     |-- SnmpVersion::SNMP_V3
 //     `-- SNMP_TRAP
 //   COAP
 //     |-- COAP_OBSERVE
