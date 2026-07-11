@@ -2,14 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.11] - 2026-07-11
+
+<details>
+<summary><b>Show Changelog for version 5.95.11 - 2026-07-11</b></summary>
+
+### Bug Fixes
+
+- raise the worker-task stack floor for QUIC Ed25519 signing ([`cf2df2a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf2df2a57551f67c1fb29f690204b65f16259ed7))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`c233beb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c233beb30dae0351fc15b299270cf4d00b723172))
 - update CHANGELOG.md [skip ci] ([`23a1583`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/23a158363c23e395018790e018e56cbc00b33446))
 - update CHANGELOG.md [skip ci] ([`6adc51e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6adc51e9805f9283957e77c89066c18c169bcd01))
 - update CHANGELOG.md [skip ci] ([`9842c30`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9842c30c29ddcae896d27d443f90bf8171d14ec0))
 - update CHANGELOG.md [skip ci] ([`53f5b69`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53f5b696eb468cb4b5f4c2742f4f1ce57e743d65))
+
+### Changes
+
+- Bump version: 5.95.10 → 5.95.11 ([`59f2ae6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/59f2ae69d5471697504e198b2fa91bf065c02a1b))
 
 ### Documentation
 
@@ -20,6 +32,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 - real HTTP/2 interop peer (httpx / h2 library) - device-as-server ALPN h2 ([`fb65608`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb6560805239cbd7363ef993a0f7057b731592e8))
 - advanced HTTP/2 abuse attack (rapid-reset / CONTINUATION-flood / HPACK-bomb / PING-flood) ([`818d6b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/818d6b4e28ff4468a0d5b118cb2033f8605bc153))
+
+</details>
 
 ## [5.95.10] - 2026-07-11
 
