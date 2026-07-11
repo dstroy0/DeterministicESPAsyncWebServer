@@ -8,6 +8,52 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SSH: server drops every framed packet after the banner - the dispatcher's emit callback is never wired
+
+- **Status:** FIXED (library, 2026-07-11; root-caused + fixed with a real OpenSSH 10.0 client, tcpdump, and
+  on-device counters over JTAG on an ESP32-S3).
+- **Symptom:** a real SSH client connects, both sides exchange identification banners, the client sends its
+  KEXINIT - then the connection is `reset by peer` ~5 s later and the server's KEXINIT never arrives (`ssh -v`).
+  tcpdump: the device **ACKs** the 672-byte client KEXINIT (lwIP received it), then sends nothing for exactly
+  5 s (`CONN_TIMEOUT_MS`) before the RST. No panic, no reboot - the device is healthy, it just never replies.
+- **Root cause:** `ssh_conn_setup()` - which installs the SSH dispatcher's binary-packet emit callback via
+  `ssh_server_set_emit_cb(ssh_emit)` - had **no production caller**. It was declared, defined, and documented
+  ("call from begin()"), but nothing ever called it, so `s_srv.emit_cb` stayed null. The server-identification
+  banner is written directly by `ssh_conn_accept()` (not through the callback), so it still went out; but every
+  _framed_ SSH packet - KEXINIT, KEXDH_REPLY, NEWKEYS, channel data - is emitted through the null callback and
+  silently dropped, so the handshake stalls forever and the client is reset on the idle timeout. On-device
+  counters confirmed the receive path was perfect (`rx_enter=2 bytes=713 disp=1 msg=20`, KEXINIT parsed + reply
+  built `n=422`) while `SSHEMIT enter=0`: `ssh_emit` was never reached because the callback was null.
+- **Why host tests missed it:** every SSH test wires the emit callback itself (`ssh_server_set_emit_cb(rec_emit)`
+  in test_ssh_server; `ssh_conn_setup()` in test_ssh_conn's `setUp`) and then drives `ssh_server_dispatch` /
+  `ssh_conn_rx` directly. The mechanism was covered; the **production wiring** was not - a mock-seam blind spot.
+- **Fix:** `ssh_proto_handler()` (the one accessor every consumer goes through to install SSH) now calls
+  `ssh_conn_setup()` before returning, so registering the handler always wires the emit callback - it can never
+  be forgotten again. Regression guard `test_proto_handler_wires_emit` clears the callback, calls
+  `ssh_proto_handler()`, drives a banner+KEXINIT, and asserts the server's reply reaches the socket (fails
+  without the fix; verified). HW-verified end to end on an ESP32-S3 vs OpenSSH 10.0: curve25519-sha256 KEX,
+  ssh-ed25519 host key, NEWKEYS, `Authenticated ... using "password"`, and a byte-exact channel echo over
+  chacha20-poly1305.
+- **Lesson:** a unit test that installs the production callback itself proves the mechanism but not that the
+  mechanism is wired in production. Wire such one-time hookups at the single install seam (the handler
+  accessor), not as a separate step a caller must remember.
+
+---
+
+## Native build: transport unit envs fail to compile - freertos/task.h has no host mock
+
+- **Status:** FIXED (test infra, 2026-07-11).
+- **Symptom:** `pio test -e native_ssh_conn` (and every native env that compiles `tcp.cpp`) fails at the build
+  stage: `src/network_drivers/transport/tcp.cpp:31:10: fatal error: freertos/task.h: No such file or directory`.
+- **Root cause:** the TLS tcpip-thread self-detection fix (babf01f4) added `#include "freertos/task.h"` (for
+  `xTaskGetCurrentTaskHandle()`) to `tcp.cpp` unconditionally, but the host build resolves `freertos/*` through
+  `test/mocks/freertos/` and only `FreeRTOS.h` + `queue.h` were mocked - `task.h` was missing. Its symbols are
+  used only inside `#if defined(ARDUINO)` code, so on the host the include just needs to resolve.
+- **Fix:** added `test/mocks/freertos/task.h` (typedef `TaskHandle_t` + an `xTaskGetCurrentTaskHandle()` stub),
+  matching the existing host-mock pattern. All native transport/session/SSH envs build again.
+
+---
+
 ## HTTP/3: QUIC frame parser rejects standard post-handshake frames - real clients get FRAME_ENCODING_ERROR
 
 - **Status:** FIXED (library, 2026-07-11; found + fixed same day with an aioquic client on the PSRAM board).

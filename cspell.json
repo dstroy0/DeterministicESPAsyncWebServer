@@ -975,6 +975,7 @@
     "ssh_rsa_sign",
     "ssh_wipe",
     "SshDhState",
+    "SSHEMIT",
     "SshKeyMat",
     "SshPacketState",
     "SshRsaPrivKey",

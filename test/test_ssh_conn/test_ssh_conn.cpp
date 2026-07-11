@@ -8,6 +8,7 @@
 #include "lwip/tcp.h"
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h"
 #include "network_drivers/presentation/ssh/connection/ssh_conn.h"
+#include "network_drivers/presentation/ssh/connection/ssh_server.h" // ssh_server_set_emit_cb (emit-wiring regression)
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
@@ -179,6 +180,30 @@ void test_poll_triggers_server_rekey()
 void test_proto_handler_accessor()
 {
     TEST_ASSERT_NOT_NULL(ssh_proto_handler());
+}
+
+// Regression (SSH KEX stall, HW-found 2026-07-11): installing the SSH handler must also wire the
+// dispatcher's binary-packet emit callback. Before the fix, ssh_conn_setup() had no production caller,
+// so the server parsed the client KEXINIT but silently dropped its reply (emit callback null) and the
+// handshake died on the idle timeout. ssh_proto_handler() is the single install seam, so requesting it
+// must leave the emit path live even if the callback had been cleared.
+void test_proto_handler_wires_emit()
+{
+    ssh_server_set_emit_cb(nullptr); // simulate a dispatcher with no emit callback wired
+    (void)ssh_proto_handler();       // the one install seam must (re)wire it
+
+    ssh_conn_accept(0);
+    const char *banner = "SSH-2.0-TestClient\r\n";
+    push_bytes(0, (const uint8_t *)banner, strlen(banner));
+    uint8_t payload[700];
+    size_t plen = build_kexinit_payload(payload);
+    uint8_t pkt[768];
+    size_t pktlen = frame_packet(pkt, payload, plen);
+    push_bytes(0, pkt, pktlen);
+    tcp_capture_reset();
+    ssh_conn_rx(0);
+    // The server's KEXINIT reply reached the socket: proves ssh_proto_handler() wired ssh_emit.
+    TEST_ASSERT_TRUE(tcp_captured_len() > 0);
 }
 
 // The channel-send entry points fail closed on an out-of-range slot and on a mapped
@@ -390,6 +415,7 @@ int main()
     RUN_TEST(test_banner_then_kexinit_advances_and_replies);
     RUN_TEST(test_poll_triggers_server_rekey);
     RUN_TEST(test_proto_handler_accessor);
+    RUN_TEST(test_proto_handler_wires_emit);
     RUN_TEST(test_send_entrypoints_reject);
     RUN_TEST(test_poll_rx_banner_guards);
     RUN_TEST(test_conn_send_close_open_channel);

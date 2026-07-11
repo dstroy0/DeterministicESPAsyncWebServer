@@ -85,6 +85,12 @@ void ssh_conn_setup()
 static const ProtoHandler s_ssh_handler = {ssh_conn_accept, ssh_conn_rx, ssh_conn_close, ssh_conn_poll};
 const ProtoHandler *ssh_proto_handler(void)
 {
+    // Wire the dispatcher's binary-packet emit callback here, at the one seam every consumer must go
+    // through to install SSH: a consumer that registers this handler can then never be left with the
+    // emit callback unset. Without it the server sends its identification banner (emitted directly by
+    // ssh_conn_accept) but every framed SSH packet after it - KEXINIT, KEXDH_REPLY, everything - is
+    // silently dropped, so the handshake stalls and the client is reset on the idle timeout. Idempotent.
+    ssh_conn_setup();
     return &s_ssh_handler;
 }
 

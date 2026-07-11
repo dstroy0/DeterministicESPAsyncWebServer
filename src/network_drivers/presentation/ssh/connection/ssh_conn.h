@@ -18,7 +18,12 @@
 #include <stdint.h>
 
 /**
- * @brief One-time setup: install the dispatcher emit callback. Call from begin().
+ * @brief One-time setup: install the dispatcher's binary-packet emit callback.
+ *
+ * Called from ssh_proto_handler() (the accessor every consumer uses to install SSH),
+ * so registering the handler always wires the emit callback - it can never be
+ * forgotten. Idempotent. Until it runs, the dispatcher's emit callback is null and
+ * every framed SSH packet after the plaintext banner is silently dropped.
  */
 void ssh_conn_setup();
 
