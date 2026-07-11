@@ -11,6 +11,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`627fa04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/627fa0492ab9f67d1cb96fa559168dafdd080c4c))
 - update CHANGELOG.md [skip ci] ([`cdea882`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cdea8829c9270dddf4258623ed164ddbd62a52fc))
 - update CHANGELOG.md [skip ci] ([`3cdb589`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3cdb589c51795690b56f31bd5499b0a3eedddba6))
 - update CHANGELOG.md [skip ci] ([`d0a6899`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0a6899cb8f4b30559e49786e0ac881c78806c42))
@@ -51,6 +52,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9359925`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9359925f167880c84572aee7f3e4685652244f67))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`646a1db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/646a1db27ac793426454907c003b4c8bfebe5353))
 - update ESP32 build footprints [skip ci] ([`6267180`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/626718029c2c4b605a9368970023150641937064))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`79a275e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79a275e167a3cc75205b26c11674ba4141effdd8))
@@ -85,6 +87,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- sockpool/psram_pool result enums -> enum class (return type end-to-end) ([`acea88a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/acea88a917b33f9558c2288c4cff5f8a2549f107))
 - ads1115 gain/data-rate anon enums -> namespacing structs ([`5b46f51`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b46f512aca0fea6f9edb9623234b81bab01b2e3))
 - directnet/link_manager anon enums -> namespacing structs ([`638fb33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/638fb33b3002f4a741276c56cb56d7471cfc4731))
 - hart anon wire-const enums -> namespacing structs ([`f655788`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f65578860369fb48c2f1adf5c92e9c2f2feeb69b))
