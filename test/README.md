@@ -506,7 +506,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2903 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2904 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -27627,7 +27627,7 @@ A thorough directory of all **2903 test cases** across **244 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_conn (15 tests)</b></summary>
+<summary><b>test_ssh_conn (16 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_conn_outbound_arena_exhausted</b> &mdash; <i>Conn outbound arena exhausted</i></summary>
@@ -27691,6 +27691,14 @@ A thorough directory of all **2903 test cases** across **244 suites**. Expand a 
     * **Objective**: Proto handler accessor
     * **Assertions**:
       * <code>Assert not null (ssh_proto_handler())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_proto_handler_wires_emit</b> &mdash; <i>The server's KEXINIT reply reached the socket: proves ssh_proto_handler() wired ssh_emit.</i></summary>
+
+    * **Objective**: The server's KEXINIT reply reached the socket: proves ssh_proto_handler() wired ssh_emit.
+    * **Assertions**:
+      * <code>Assert true (tcp_captured_len() &gt; 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
