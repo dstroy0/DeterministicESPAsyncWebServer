@@ -7,6 +7,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 <details>
 <summary><b>Show Changelog for version 5.95.2 - 2026-07-11</b></summary>
 
+### CI / Build
+
+- affected-only compile-commands with a committed baseline ([`a80a781`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a80a781af2f737f9009935d872a91f6d3f258920))
+- update CHANGELOG.md [skip ci] ([`3ffdae2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ffdae282d14217b23b0fd01005e14795a82d62b))
+
+## [5.95.2] - 2026-07-11
+
+<details>
+<summary><b>Show Changelog for version 5.95.2 - 2026-07-11</b></summary>
+
 ### Bug Fixes
 
 - cast scoped SNMP enums in 14.SNMP/26.SnmpTrap (ESP32 CI build) ([`149dd01`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/149dd014ee3caadbb19fc09da24905900d150bdc))
