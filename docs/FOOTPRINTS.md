@@ -19,7 +19,7 @@ from each example's `pio ci` size report and aggregated into
 | `COAP+COAP_OBSERVE`                      | L7-Application/27.CoapObserve           | 712.3 KB (55.6%) | 45.0 KB (14.1%)  |
 | `CONFIG_STORE+CONFIG_IO`                 | L7-Application/42.ConfigExport          | 738.4 KB (57.7%) | 64.9 KB (20.3%)  |
 | `CSRF`                                   | L7-Application/33.Csrf                  | 734.9 KB (57.4%) | 64.8 KB (20.3%)  |
-| `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.9 KB (58.9%) | 65.2 KB (20.4%)  |
+| `DASHBOARD`                              | L7-Application/35.Dashboard             | 753.8 KB (58.9%) | 65.1 KB (20.4%)  |
 | `DEVICE_ID`                              | L7-Application/32.DeviceUuid            | 733.9 KB (57.3%) | 64.8 KB (20.3%)  |
 | `DIAG`                                   | Foundation/05.Configuration             | 735.2 KB (57.4%) | 61.6 KB (19.3%)  |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE`         | Foundation/07.DmaIngest                 | 263.1 KB (20.6%) | 27.9 KB (8.7%)   |

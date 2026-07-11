@@ -80,8 +80,8 @@
     "example": "L7-Application/35.Dashboard",
     "flags": "-DDETWS_ENABLE_DASHBOARD=1",
     "board": "esp32dev",
-    "flash_bytes": 771957,
-    "ram_bytes": 66728
+    "flash_bytes": 771941,
+    "ram_bytes": 66704
   },
   "DEVICE_ID": {
     "example": "L7-Application/32.DeviceUuid",
@@ -129,8 +129,8 @@
     "example": "L7-Application/48.DnsResolver",
     "flags": "-DDETWS_ENABLE_DNS_RESOLVER=1",
     "board": "esp32dev",
-    "flash_bytes": 757137,
-    "ram_bytes": 67632
+    "flash_bytes": 757133,
+    "ram_bytes": 67608
   },
   "DNS_SERVER": {
     "example": "L7-Application/60.DnsServer",
@@ -374,8 +374,8 @@
     "example": "L7-Application/37.PartitionMonitor",
     "flags": "-DDETWS_ENABLE_PARTITION_MONITOR=1",
     "board": "esp32dev",
-    "flash_bytes": 751889,
-    "ram_bytes": 66352
+    "flash_bytes": 751885,
+    "ram_bytes": 66328
   },
   "PCA9685": {
     "example": "L7-Application/65.Pca9685",
