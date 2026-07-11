@@ -14453,7 +14453,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: invokeID 42 -> 02 01 2A present near the front.
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MMS_PDU_CONFIRMED_REQUEST, out[0]); // 0xA0</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_PDU_CONFIRMED_REQUEST, out[0]); // 0xA0</code>
       * <code>Assert true (find(out, n, iid, 3) &gt;= 0)</code>
       * <code>Assert true (find(out, n, svc, 1) &gt;= 0)</code>
       * <code>Assert true (find(out, n, name, sizeof(name)) &gt;= 0)</code>
@@ -14465,9 +14465,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Read request parse
     * **Assertions**:
       * <code>Assert true (detws_mms_parse(buf, n, &p))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MMS_PDU_CONFIRMED_REQUEST, p.pdu_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_PDU_CONFIRMED_REQUEST, p.pdu_tag);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x1234, p.invoke_id);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MMS_SERVICE_READ, p.service_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_SERVICE_READ, p.service_tag);</code>
       * <code>Assert not null (p.service_body)</code>
   </details>
 
@@ -14477,10 +14477,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: A caller-encoded Data value: boolean-ish [3] BOOLEAN true -> 83 01 FF (context Data).
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MMS_PDU_CONFIRMED_RESPONSE, buf[0]); // 0xA1</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_PDU_CONFIRMED_RESPONSE, buf[0]); // 0xA1</code>
       * <code>Assert true (detws_mms_parse(buf, n, &p))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(7, p.invoke_id);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MMS_SERVICE_READ, p.service_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_SERVICE_READ, p.service_tag);</code>
       * <code>Assert true (find(p.service_body, p.service_len, data, sizeof(data)) &gt;= 0)</code>
   </details>
 
@@ -14525,7 +14525,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x81, out[1]); // outer length is long-form (one following octet)</code>
       * <code>Assert true (detws_mms_parse(out, n, &p))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x1234, p.invoke_id);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(MMS_SERVICE_READ, p.service_tag);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_SERVICE_READ, p.service_tag);</code>
       * <code>Assert not null (p.service_body)</code>
       * <code>Assert true (p.service_len &gt;= 128)</code>
   </details>
@@ -19632,14 +19632,14 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(7, n);</code>
       * <code>Assert true (detws_epl_parse(out, n, &f))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(EPL_MSG_PREQ, f.msg_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_MSG_PREQ, f.msg_type);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(5, f.dest);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(EPL_NODE_MN, f.source);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_NODE_MN, f.source);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(4, f.payload_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(pdo, f.payload, 4);</code>
       * <code>Assert true (detws_epl_parse(out, n, &f))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(EPL_MSG_PRES, f.msg_type);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(EPL_NODE_BROADCAST, f.dest);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_MSG_PRES, f.msg_type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_NODE_BROADCAST, f.dest);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(5, f.source);</code>
   </details>
 
@@ -25745,7 +25745,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
       * <code>Assert true (detws_snp_parse(buf, n, &f))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SNP_SOH, f.control);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Snp::SNP_SOH, f.control);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, f.data_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(data, f.data, 3);</code>
   </details>
