@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`3c8ec50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c8ec5062b61b27130356feab96abfcaad1fc341))
+- update CHANGELOG.md [skip ci] ([`8a5f1d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a5f1d29e5d2905e243e6fa7516b300fd7bbe3d3))
 - update test report + coverage [skip ci] ([`e252c8a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e252c8a85eb8746f1d0f658facb73418ee03ece2))
 - update CHANGELOG.md [skip ci] ([`f0ef6c4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f0ef6c4c65f62c0eb8b1f5f3a6f2b7ab75337478))
 - update CHANGELOG.md [skip ci] ([`ba9c2fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba9c2fdc6605e26d808b36680a639c0e8be3f935))
@@ -140,6 +142,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- one declaration per line - relay + ssh_transport (S1659) ([`6922bb7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6922bb777f2677e1a3ed53066e84aaff4e0879b9))
 - zwave/wisun/wifi_sniffer/ld2410/dshot anon enums -> namespacing structs ([`c14bfab`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c14bfab91bd8c9668ef87da3dc4e35dea2e9e0fd))
 - thread/zigbee/profinet anon wire-const enums -> namespacing structs ([`de3fda3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/de3fda3639401a4ee12a5be56e5b7ad65b8dba65))
 - ble_gatt/nts anon wire-const enums -> namespacing structs ([`c0b0b9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c0b0b9f6a7230e354438a3b805e1e6ef4c825145))
