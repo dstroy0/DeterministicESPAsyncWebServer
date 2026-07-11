@@ -13589,7 +13589,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(5, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, n);</code>
       * <code>Assert true (detws_lon_parse_nv(out, n, &nv))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(LON_MSG_NV_UPDATE, nv.msg_code);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Lon::LON_MSG_NV_UPDATE, nv.msg_code);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x1234, nv.selector);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, nv.value_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(value, nv.value, 2);</code>
@@ -13602,7 +13602,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (detws_lon_parse_nv(out, 3, &nv))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x3FFF, nv.selector);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_lon_build_nv(LON_MSG_NV_UPDATE, 0x4000, nullptr, 0, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_lon_build_nv(Lon::LON_MSG_NV_UPDATE, 0x4000, nullptr, 0, out, sizeof(out)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20425,7 +20425,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, n);</code>
       * <code>Assert true (detws_pb_parse(out, n, &t))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(PB_SD1, t.sd);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Profibus::PB_SD1, t.sd);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x03, t.da);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x02, t.sa);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x49, t.fc);</code>
@@ -20438,14 +20438,14 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: le = 3 + 3 = 6; total = 4 + 6 + 2 = 12.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(12, n);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(PB_SD2, out[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Profibus::PB_SD2, out[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(6, out[1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(6, out[2]); // LEr</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(PB_SD2, out[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Profibus::PB_SD2, out[3]);</code>
       * <code>Assert true (detws_pb_parse(out, n, &t))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(PB_SD2, t.sd);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Profibus::PB_SD2, t.sd);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x05, t.da);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(PB_FC_SRD_HIGH, t.fc);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Profibus::PB_FC_SRD_HIGH, t.fc);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, t.data_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(data, t.data, 3);</code>
   </details>
@@ -20457,7 +20457,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (detws_pb_parse(out, n, &t))</code>
       * <code>Assert false (detws_pb_parse(out, n, &t))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd2(0x05, 0x02, PB_FC_SRD_LOW, data, 300, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd2(0x05, 0x02, Profibus::PB_FC_SRD_LOW, data, 300, out, sizeof(out)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23797,7 +23797,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_hdr, out, 4);</code>
       * <code>Assert true (detws_sercos_parse(out, n, &t))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SERCOS_TEL_MDT, t.type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Sercos::SERCOS_TEL_MDT, t.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(4, t.phase);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x1234, t.cycle);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(4, t.data_len);</code>
@@ -23811,7 +23811,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(4, n);</code>
       * <code>Assert true (detws_sercos_parse(out, n, &t))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(SERCOS_TEL_AT, t.type);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Sercos::SERCOS_TEL_AT, t.type);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, t.data_len);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sercos_build(0x05, 0, 0, nullptr, 0, out, sizeof(out)));</code>
       * <code>Assert false (detws_sercos_parse(out, 3, &t))</code>
@@ -23824,8 +23824,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: Sercos build guards
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sercos_build(0xEE, 0, 0, data, sizeof(data), out, sizeof(out))); // bad type</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sercos_build(SERCOS_TEL_MDT, 0, 0, data, sizeof(data), out, 2)); // cap too small</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sercos_build(SERCOS_TEL_MDT, 0, 0, nullptr, 4, out, sizeof(out))); // null data</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
   </details>
 
 </details>
