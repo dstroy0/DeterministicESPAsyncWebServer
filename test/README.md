@@ -20487,8 +20487,8 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(10, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, 10);</code>
       * <code>Assert true (detws_pn_dcp_parse_header(out, n, &h))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX16(PN_FRAMEID_DCP_IDENT_REQ, h.frame_id);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(PN_DCP_SERVICE_IDENTIFY, h.service_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(Pn::PN_FRAMEID_DCP_IDENT_REQ, h.frame_id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Pn::PN_DCP_SERVICE_IDENTIFY, h.service_id);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x11223344, h.xid);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(8, h.data_length);</code>
   </details>
@@ -20510,10 +20510,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (detws_pn_dcp_walk(buf, n, collect, &s))</code>
       * <code>Assert equal int (2, s.count)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(PN_DCP_OPT_DEVICE, s.opt[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(PN_DCP_SUB_DEV_NAME_OF_STATION, s.sub[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Pn::PN_DCP_OPT_DEVICE, s.opt[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Pn::PN_DCP_SUB_DEV_NAME_OF_STATION, s.sub[0]);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, s.len[0]); // pad not counted</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(PN_DCP_OPT_IP, s.opt[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(Pn::PN_DCP_OPT_IP, s.opt[1]);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(4, s.len[1]);</code>
   </details>
 
@@ -29363,7 +29363,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
     * **Objective**: A tiny spinel frame: header (flag\|iid\|tid) + command (PROP_VALUE_GET) + property.
     * **Assertions**:
       * <code>TEST_ASSERT_GREATER_THAN_UINT16(0, n);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(HDLC_FLAG, frame[n - 1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(ThreadHdlc::HDLC_FLAG, frame[n - 1]);</code>
       * <code>Assert equal int ((int)n, c)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(3, plen);</code>
       * <code>Assert equal memory (payload, pay, 3)</code>
@@ -29468,7 +29468,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_GREATER_THAN_UINT16(0, n);</code>
       * <code>Assert greater than int (0, off)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x81, header);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(SPINEL_CMD_PROP_VALUE_SET, cmd);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SpinelCmd::SPINEL_CMD_PROP_VALUE_SET, cmd);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1337, prop);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(4, vlen);</code>
       * <code>Assert equal memory (val, v, 4)</code>
@@ -29482,7 +29482,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_GREATER_THAN_UINT16(0, fn);</code>
       * <code>Assert equal int ((int)fn, spinel_frame_decode(frame, fn, got, sizeof(got), &glen))</code>
       * <code>Assert greater than int (0, spinel_command_parse(got, glen, &header, &cmd, &prop, &v, &vlen))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(SPINEL_CMD_PROP_VALUE_GET, cmd);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SpinelCmd::SPINEL_CMD_PROP_VALUE_GET, cmd);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2, prop);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, vlen);</code>
   </details>
