@@ -11,6 +11,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`5360666`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5360666b164bad7ae7a7bd447e56377414a4bb7b))
 - update CHANGELOG.md [skip ci] ([`14238d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14238d347449a5883bba5757e4339083d07972c3))
 - update CHANGELOG.md [skip ci] ([`3587571`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3587571abbe0a5ef8854e9f6c4ae9bb90b14b217))
 - update CHANGELOG.md [skip ci] ([`627fa04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/627fa0492ab9f67d1cb96fa559168dafdd080c4c))
@@ -54,6 +55,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`470731a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/470731a9e39baaaa6aab9e573d426864a03f0805))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8bbf97d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8bbf97d8e47c81d8566f647fadd0d6e4a4fec1dd))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3193664`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/319366407349bf0aa38bc6488e6e6574c556305c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9359925`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9359925f167880c84572aee7f3e4685652244f67))
@@ -91,6 +93,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- profibus/lonworks/sercos anon wire-const enums -> namespacing structs ([`1f7669e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f7669ea44f69cb1dcd39dfd221008ec1ff9f8d2))
 - cclink/interbus/mbplus anon wire-const enums -> structs / constexpr ([`bea92ad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bea92ad2e77ac391af8159dda4113f3c70e701a6))
 - hw_health verdict enums -> enum class (return type end-to-end) ([`fbf05e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fbf05e2f4204f9f9d844abf54b47f0762908f889))
 - sockpool/psram_pool result enums -> enum class (return type end-to-end) ([`acea88a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/acea88a917b33f9558c2288c4cff5f8a2549f107))
