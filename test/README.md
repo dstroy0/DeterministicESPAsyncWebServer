@@ -11625,7 +11625,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: init clamps the start clock into [min_hz, max_hz]; read it back via a non-tripping
     * **Assertions**:
-      * <code>Assert equal int (HW_RAIL_OK, detws_hwhealth_rail_sample(nullptr, 1000))</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_OK, detws_hwhealth_rail_sample(nullptr, 1000))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(nullptr, buf, sizeof(buf))); // null monitor</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(&m, nullptr, sizeof(buf))); // null out</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(&m, buf, 0));               // zero cap</code>
@@ -11639,11 +11639,11 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Overflow path returns 0.
     * **Assertions**:
-      * <code>Assert equal int (HW_RAIL_OK, detws_hwhealth_rail_sample(&m, 3300))</code>
-      * <code>Assert equal int (HW_RAIL_OK, detws_hwhealth_rail_sample(&m, 3100))</code>
-      * <code>Assert equal int (HW_RAIL_SAG, detws_hwhealth_rail_sample(&m, 3050))</code>
-      * <code>Assert equal int (HW_RAIL_SAG, detws_hwhealth_rail_sample(&m, 2900))</code>
-      * <code>Assert equal int (HW_RAIL_BROWNOUT, detws_hwhealth_rail_sample(&m, 2800))</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_OK, detws_hwhealth_rail_sample(&m, 3300))</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_OK, detws_hwhealth_rail_sample(&m, 3100))</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_SAG, detws_hwhealth_rail_sample(&m, 3050))</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_SAG, detws_hwhealth_rail_sample(&m, 2900))</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_BROWNOUT, detws_hwhealth_rail_sample(&m, 2800))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2800, m.min_mv);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2, m.sag_events);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, m.brownout_events);</code>
@@ -11683,10 +11683,10 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Gpio short
     * **Assertions**:
-      * <code>Assert equal int (HW_GPIO_OK, detws_hwhealth_gpio_short(true, true))</code>
-      * <code>Assert equal int (HW_GPIO_OK, detws_hwhealth_gpio_short(false, false))</code>
-      * <code>Assert equal int (HW_GPIO_SHORT_GND, detws_hwhealth_gpio_short(true, false))</code>
-      * <code>Assert equal int (HW_GPIO_SHORT_VCC, detws_hwhealth_gpio_short(false, true))</code>
+      * <code>Assert equal int (HwGpioVerdict::HW_GPIO_OK, detws_hwhealth_gpio_short(true, true))</code>
+      * <code>Assert equal int (HwGpioVerdict::HW_GPIO_OK, detws_hwhealth_gpio_short(false, false))</code>
+      * <code>Assert equal int (HwGpioVerdict::HW_GPIO_SHORT_GND, detws_hwhealth_gpio_short(true, false))</code>
+      * <code>Assert equal int (HwGpioVerdict::HW_GPIO_SHORT_VCC, detws_hwhealth_gpio_short(false, true))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11694,12 +11694,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Expected 100ms decay, 10% tolerance -> [90, 110].
     * **Assertions**:
-      * <code>Assert equal int (HW_CAP_OK, detws_hwhealth_cap_leak(100, 100, 10))</code>
-      * <code>Assert equal int (HW_CAP_OK, detws_hwhealth_cap_leak(90, 100, 10))</code>
-      * <code>Assert equal int (HW_CAP_OK, detws_hwhealth_cap_leak(110, 100, 10))</code>
-      * <code>Assert equal int (HW_CAP_LEAK, detws_hwhealth_cap_leak(80, 100, 10))</code>
-      * <code>Assert equal int (HW_CAP_HIGH_ESR, detws_hwhealth_cap_leak(130, 100, 10))</code>
-      * <code>Assert equal int (HW_CAP_OK, detws_hwhealth_cap_leak(50, 0, 10))</code>
+      * <code>Assert equal int (HwCapVerdict::HW_CAP_OK, detws_hwhealth_cap_leak(100, 100, 10))</code>
+      * <code>Assert equal int (HwCapVerdict::HW_CAP_OK, detws_hwhealth_cap_leak(90, 100, 10))</code>
+      * <code>Assert equal int (HwCapVerdict::HW_CAP_OK, detws_hwhealth_cap_leak(110, 100, 10))</code>
+      * <code>Assert equal int (HwCapVerdict::HW_CAP_LEAK, detws_hwhealth_cap_leak(80, 100, 10))</code>
+      * <code>Assert equal int (HwCapVerdict::HW_CAP_HIGH_ESR, detws_hwhealth_cap_leak(130, 100, 10))</code>
+      * <code>Assert equal int (HwCapVerdict::HW_CAP_OK, detws_hwhealth_cap_leak(50, 0, 10))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11707,7 +11707,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Rail ok spi clamps probes
     * **Assertions**:
-      * <code>Assert equal int (HW_RAIL_OK, detws_hwhealth_rail_sample(&m, 3300))</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_OK, detws_hwhealth_rail_sample(&m, 3300))</code>
   </details>
 
 </details>
