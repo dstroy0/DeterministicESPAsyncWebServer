@@ -134,7 +134,7 @@ SmbResult smb_open(const SmbConfig *cfg, SmbHandle *h, SmbSendFn send, SmbRecvFn
 
     // 2. SESSION_SETUP round 1: NTLMSSP NEGOTIATE wrapped in SPNEGO
     uint8_t ntneg[64], sp1[128];
-    size_t ntneg_n = ntlmssp_build_negotiate(ntneg, sizeof(ntneg), NTLMSSP_CLIENT_DEFAULT_FLAGS);
+    size_t ntneg_n = ntlmssp_build_negotiate(ntneg, sizeof(ntneg), NtlmsspFlags::NTLMSSP_CLIENT_DEFAULT_FLAGS);
     size_t sp1_n = spnego_wrap_negotiate(ntneg, ntneg_n, sp1, sizeof(sp1));
     mlen =
         smb2_build_session_setup(s_smb.tx + 4, sizeof(s_smb.tx) - 4, 1, 0, SMB2_NEGOTIATE_SIGNING_ENABLED, sp1, sp1_n);

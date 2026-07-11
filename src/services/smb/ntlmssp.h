@@ -26,20 +26,24 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/** @brief NTLMSSP NegotiateFlags (MS-NLMP §2.2.2.5), the subset a basic NTLMv2 client uses. */
-enum
+/** @brief NTLMSSP NegotiateFlags (MS-NLMP §2.2.2.5), the subset a basic NTLMv2 client uses.
+ *
+ * A flags word is OR'd/AND'd, so these are integer constants in a namespacing struct, not an enum
+ * class (which would force a cast at every | / &). */
+struct NtlmsspFlags
 {
-    NTLMSSP_NEGOTIATE_UNICODE = 0x00000001,
-    NTLMSSP_REQUEST_TARGET = 0x00000004,
-    NTLMSSP_NEGOTIATE_NTLM = 0x00000200,
-    NTLMSSP_NEGOTIATE_ALWAYS_SIGN = 0x00008000,
-    NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY = 0x00080000,
-    NTLMSSP_NEGOTIATE_TARGET_INFO = 0x00800000,
-    NTLMSSP_NEGOTIATE_128 = 0x20000000,
-    NTLMSSP_NEGOTIATE_56 = 0x80000000,
+    static constexpr uint32_t NTLMSSP_NEGOTIATE_UNICODE = 0x00000001;
+    static constexpr uint32_t NTLMSSP_REQUEST_TARGET = 0x00000004;
+    static constexpr uint32_t NTLMSSP_NEGOTIATE_NTLM = 0x00000200;
+    static constexpr uint32_t NTLMSSP_NEGOTIATE_ALWAYS_SIGN = 0x00008000;
+    static constexpr uint32_t NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY = 0x00080000;
+    static constexpr uint32_t NTLMSSP_NEGOTIATE_TARGET_INFO = 0x00800000;
+    static constexpr uint32_t NTLMSSP_NEGOTIATE_128 = 0x20000000;
+    static constexpr uint32_t NTLMSSP_NEGOTIATE_56 = 0x80000000;
     // the default NEGOTIATE flag set for an NTLMv2 client
-    NTLMSSP_CLIENT_DEFAULT_FLAGS = NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_REQUEST_TARGET | NTLMSSP_NEGOTIATE_NTLM |
-                                   NTLMSSP_NEGOTIATE_ALWAYS_SIGN | NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY,
+    static constexpr uint32_t NTLMSSP_CLIENT_DEFAULT_FLAGS = NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_REQUEST_TARGET |
+                                                             NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
+                                                             NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY;
 };
 
 /** @brief Parsed CHALLENGE_MESSAGE (type 2). @ref target_info points INTO the source message. */

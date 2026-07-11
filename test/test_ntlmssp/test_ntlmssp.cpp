@@ -52,11 +52,11 @@ static const uint8_t SIG[8] = {'N', 'T', 'L', 'M', 'S', 'S', 'P', 0};
 void test_build_negotiate()
 {
     uint8_t buf[64];
-    size_t n = ntlmssp_build_negotiate(buf, sizeof(buf), NTLMSSP_CLIENT_DEFAULT_FLAGS);
+    size_t n = ntlmssp_build_negotiate(buf, sizeof(buf), NtlmsspFlags::NTLMSSP_CLIENT_DEFAULT_FLAGS);
     TEST_ASSERT_EQUAL_size_t(32, n);
     TEST_ASSERT_EQUAL_MEMORY(SIG, buf, 8);
     TEST_ASSERT_EQUAL_UINT32(1, r32(buf + 8)); // MessageType NEGOTIATE
-    TEST_ASSERT_EQUAL_UINT32(NTLMSSP_CLIENT_DEFAULT_FLAGS, r32(buf + 12));
+    TEST_ASSERT_EQUAL_UINT32(NtlmsspFlags::NTLMSSP_CLIENT_DEFAULT_FLAGS, r32(buf + 12));
     TEST_ASSERT_EQUAL_size_t(0, ntlmssp_build_negotiate(buf, 16, 0)); // overflow
 }
 
@@ -66,7 +66,8 @@ static size_t build_challenge(uint8_t *m, const uint8_t sc[8], const uint8_t *ti
     memset(m, 0, 48);
     memcpy(m, SIG, 8);
     w32(m + 8, 2); // MessageType CHALLENGE
-    w32(m + 20, NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_TARGET_INFO);
+    w32(m + 20, NtlmsspFlags::NTLMSSP_NEGOTIATE_UNICODE | NtlmsspFlags::NTLMSSP_NEGOTIATE_NTLM |
+                    NtlmsspFlags::NTLMSSP_NEGOTIATE_TARGET_INFO);
     memcpy(m + 24, sc, 8);
     w16(m + 40, ti_len); // TargetInfoLen
     w16(m + 42, ti_len);
@@ -89,7 +90,7 @@ void test_parse_challenge()
     TEST_ASSERT_EQUAL_MEMORY(sc, ch.server_challenge, 8);
     TEST_ASSERT_EQUAL_UINT16(ti_len, ch.target_info_len);
     TEST_ASSERT_EQUAL_MEMORY(ti, ch.target_info, ti_len);
-    TEST_ASSERT_TRUE((ch.flags & NTLMSSP_NEGOTIATE_TARGET_INFO) != 0);
+    TEST_ASSERT_TRUE((ch.flags & NtlmsspFlags::NTLMSSP_NEGOTIATE_TARGET_INFO) != 0);
 }
 
 void test_parse_challenge_rejects()

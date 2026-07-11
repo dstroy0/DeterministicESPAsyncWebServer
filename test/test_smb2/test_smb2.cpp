@@ -307,7 +307,8 @@ static size_t build_ntlmssp_challenge(uint8_t *m, const uint8_t sc[8])
     const uint8_t sig[8] = {'N', 'T', 'L', 'M', 'S', 'S', 'P', 0};
     memcpy(m, sig, 8);
     w32(m + 8, 2); // MessageType CHALLENGE
-    w32(m + 20, NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_TARGET_INFO);
+    w32(m + 20, NtlmsspFlags::NTLMSSP_NEGOTIATE_UNICODE | NtlmsspFlags::NTLMSSP_NEGOTIATE_NTLM |
+                    NtlmsspFlags::NTLMSSP_NEGOTIATE_TARGET_INFO);
     memcpy(m + 24, sc, 8); // ServerChallenge
     w16(m + 40, 4);        // TargetInfoLen (a lone MsvAvEOL pair)
     w16(m + 42, 4);
@@ -322,7 +323,7 @@ static size_t build_ntlmssp_challenge(uint8_t *m, const uint8_t sc[8])
 void test_session_setup_spnego_flow()
 {
     uint8_t neg[64];
-    size_t neg_n = ntlmssp_build_negotiate(neg, sizeof(neg), NTLMSSP_CLIENT_DEFAULT_FLAGS);
+    size_t neg_n = ntlmssp_build_negotiate(neg, sizeof(neg), NtlmsspFlags::NTLMSSP_CLIENT_DEFAULT_FLAGS);
     uint8_t spnego[128];
     size_t sp_n = spnego_wrap_negotiate(neg, neg_n, spnego, sizeof(spnego));
     uint8_t req[256];

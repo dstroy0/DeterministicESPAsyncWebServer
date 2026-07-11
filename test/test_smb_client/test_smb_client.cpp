@@ -55,7 +55,8 @@ static size_t ntlmssp_challenge(uint8_t *m, const uint8_t sc[8])
     const uint8_t sig[8] = {'N', 'T', 'L', 'M', 'S', 'S', 'P', 0};
     memcpy(m, sig, 8);
     w32(m + 8, 2); // CHALLENGE
-    w32(m + 20, NTLMSSP_NEGOTIATE_UNICODE | NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_TARGET_INFO);
+    w32(m + 20, NtlmsspFlags::NTLMSSP_NEGOTIATE_UNICODE | NtlmsspFlags::NTLMSSP_NEGOTIATE_NTLM |
+                    NtlmsspFlags::NTLMSSP_NEGOTIATE_TARGET_INFO);
     memcpy(m + 24, sc, 8);
     // target info at 48: MsvAvTimestamp(7, 8 bytes) + MsvAvEOL
     uint8_t *ti = m + 48;
