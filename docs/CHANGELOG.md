@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`b9e5048`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b9e5048c9fa208fd1d6ed3ea54f29c7613a647d0))
 - update CHANGELOG.md [skip ci] ([`1ab979e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ab979e1b9ab38d81c954d13d23f458439f6b202))
 
 ### Documentation
@@ -14,6 +15,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- add mime_type to the CCOUNT bench + roadmap SWAR constant-time base64 decode ([`cc0f0d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc0f0d0aced861e7712fa83f11e3fbb0472ff4c4))
 - cycle-accurate CCOUNT device microbench (/bench) + recorded auth/ETag primitive costs ([`a24aefe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a24aefe0ebde93c6199af0cfdcef624ebf802d09))
 
 ## [5.95.6] - 2026-07-11
