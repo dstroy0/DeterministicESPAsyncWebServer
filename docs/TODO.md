@@ -50,6 +50,10 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
   a teacher switch to disable the sandbox; live theme preview.
 - **Ongoing quality** - extend the pentest fuzz corpus; extend test coverage; raise branch coverage
   (ftp 87% / httpcache 90% branches noted); remediate any Sonar/CodeQL (currently 0 bugs / 0 vulns).
+- **Interop harness -> entire feature set** - the HW interop harness currently proves 7 protocol
+  families against real third-party peers; expand it to exercise EVERY shipped feature/protocol against
+  a real reference implementation (per-feature interop driver + a real peer/broker), so every codec is
+  proven on the wire, not just host-mocked. Detail under **Test coverage**.
 
 ### PARTIAL (`[~]` - shipped, remainder noted)
 
@@ -102,6 +106,7 @@ Ideas and intentions captured from the [Working Thread discussion](https://githu
 
 - [ ] Keep extending test coverage. Provably-dead lines get `GCOVR_EXCL` with rationale inline; be conservative with exclusions (even a pointless test teaches) - guarded dead branches / unreachable guards are the main exclusion targets.
 - [ ] Raise condition (branch) coverage - line coverage is good, conditional lags. Test both sides of each condition.
+- [ ] **Expand the interop harness to the entire feature set.** The HW interop harness proves 7 protocol families byte-for-byte against real third-party peers (COM3 device + host peer / public broker; see the interop test-setup notes). Extend it so EVERY shipped feature/protocol has an interop driver that round-trips against a real reference implementation (e.g. each MQTT/CoAP/SNMP/Modbus/SMB/SSH/HTTP-client/industrial-bus codec talks to its canonical server/client), not just the host mock-seam tests - host tests miss whole-firmware integration bugs (the SMB/DNC/port-forward HW runs each found real ones). Build out: a per-feature peer (real daemon or a public broker), a harness driver that drives the device against it, and a pass/fail byte-compare; wire into the interop workflow so new features must ship an interop case.
 
 ### Codecs / drivers / features
 
