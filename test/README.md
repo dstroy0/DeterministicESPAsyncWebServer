@@ -5184,7 +5184,7 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: 2001:db8::1 as raw network-order bytes -> DetIp -> canonical text.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DET_IP_V6, ip.family);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetIpFamily::DET_IP_V6, ip.family);</code>
       * <code>Assert equal string ("2001:db8::1", s)</code>
       * <code>Assert true (det_ip_parse("2001:db8::1", &parsed))</code>
       * <code>Assert true (det_ip_equal(&ip, &parsed))</code>
@@ -5256,15 +5256,15 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Classify v4
     * **Assertions**:
-      * <code>Assert equal (DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_LINK_LOCAL, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_MULTICAST, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_LINK_LOCAL, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_MULTICAST, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5272,14 +5272,14 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: v4-mapped classifies as its v4 scope.
     * **Assertions**:
-      * <code>Assert equal (DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_LINK_LOCAL, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_MULTICAST, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_LINK_LOCAL, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_MULTICAST, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5317,12 +5317,12 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_ip_classify_equal_cidr_and_parse_edges</b> &mdash; <i>classify: null and a DET_IP_NONE address are UNSPECIFIED.</i></summary>
+    <summary><b>test_ip_classify_equal_cidr_and_parse_edges</b> &mdash; <i>classify: null and a DetIpFamily::DET_IP_NONE address are UNSPECIFIED.</i></summary>
 
-    * **Objective**: classify: null and a DET_IP_NONE address are UNSPECIFIED.
+    * **Objective**: classify: null and a DetIpFamily::DET_IP_NONE address are UNSPECIFIED.
     * **Assertions**:
-      * <code>Assert equal int (DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(nullptr))</code>
-      * <code>Assert equal int (DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&none))</code>
+      * <code>Assert equal int (DetIpScope::DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(nullptr))</code>
+      * <code>Assert equal int (DetIpScope::DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&none))</code>
       * <code>Assert true (det_ip_equal(&none, &none2))</code>
       * <code>Assert true (det_ip_prefix_match(&in, &net, 20))</code>
       * <code>Assert false (det_ip_prefix_match(&out, &net, 20))</code>
@@ -9870,9 +9870,9 @@ A thorough directory of all **2894 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Two global v6 + one global v4, given v4-first: sort puts v6 ahead, interleave alternates.
     * **Assertions**:
-      * <code>Assert equal int (DET_IP_V6, list[0].family)</code>
-      * <code>Assert equal int (DET_IP_V4, list[1].family)</code>
-      * <code>Assert equal int (DET_IP_V6, list[2].family)</code>
+      * <code>Assert equal int (DetIpFamily::DET_IP_V6, list[0].family)</code>
+      * <code>Assert equal int (DetIpFamily::DET_IP_V4, list[1].family)</code>
+      * <code>Assert equal int (DetIpFamily::DET_IP_V6, list[2].family)</code>
   </details>
 
   <details style="margin-left: 20px;">
