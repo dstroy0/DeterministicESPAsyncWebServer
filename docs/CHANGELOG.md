@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.2] - 2026-07-11
+
+<details>
+<summary><b>Show Changelog for version 5.95.2 - 2026-07-11</b></summary>
 
 ### Bug Fixes
 
@@ -46,6 +49,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update CHANGELOG.md [skip ci] ([`83f805c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/83f805c3afe68100e5121eda7783123e0c22d295))
 - update CHANGELOG.md [skip ci] ([`f1bf9e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1bf9e8f5374f357ab6e2fded1d2121ba1be0490))
 
+### Changes
+
+- Bump version: 5.95.1 → 5.95.2 ([`2ac53c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ac53c56b8c20ec2e7c9c11ebb559869466a0062))
+
 ### Documentation
 
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`99f60aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99f60aa49bfd054dabc1bfaab69e626c9c1c0b41))
@@ -88,6 +95,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - scoped result enums (enum class 8/N) ([`81320fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/81320fa54b8c59b764d784774ac4dc13cc1173b6))
 - scoped type-tag enums (enum class 7/N) ([`ab2cf59`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab2cf595afc8438671af3cc7be7e4cf14a46d34e))
 - scoped enums (enum class 6/N) ([`d851200`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d851200f8f4c439cb252868bbf4f2de5cc8a1328))
+
+</details>
 
 ## [5.95.1] - 2026-07-11
 
