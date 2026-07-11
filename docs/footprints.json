@@ -66,7 +66,7 @@
     "example": "L7-Application/42.ConfigExport",
     "flags": "-DDETWS_ENABLE_CONFIG_STORE=1 -DDETWS_ENABLE_CONFIG_IO=1",
     "board": "esp32dev",
-    "flash_bytes": 756113,
+    "flash_bytes": 756117,
     "ram_bytes": 66388
   },
   "CSRF": {
