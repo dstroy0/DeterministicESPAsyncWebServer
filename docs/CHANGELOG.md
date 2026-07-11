@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- guard det_tcp_do against a stale pcb (remote crash / DoS) ([`a31a413`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a31a413f0861ccbf7b3b5b1cab758e4507758568))
 - mark the ftp_emit memcpy S3519 as a verified false positive (NOSONAR) ([`c22b2cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c22b2cdba165f69f26e14d506687b360dc76333e))
 - repair enum-migration ripple that broke the Arduino-ESP32 3.x build ([`ce85f3d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ce85f3d65afe9dcb604258e306fd765f43a626cd))
 - remediate SonarCloud BLOCKER + CodeQL high/warning findings ([`c9385a4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c9385a43daff059510139112792e33e6aa76309f))
@@ -14,6 +15,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`524d6a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/524d6a2743849825f28d16efc4daf1398496cd6f))
+- update CHANGELOG.md [skip ci] ([`57d10dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/57d10dd6d74b3527c7c85f58b848829edaabde51))
 - update test report + coverage [skip ci] ([`295f1e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/295f1e187df1a9eaf742c618e5d0dd3f8b30472d))
 - update CHANGELOG.md [skip ci] ([`5609ad8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5609ad81eb28425e6a533f212f0288dec7f3754d))
 - update test report + coverage [skip ci] ([`8092d5c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8092d5cc6dd95ec1d23773967fdbc91a8f218218))
