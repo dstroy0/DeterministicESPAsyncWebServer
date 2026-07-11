@@ -319,7 +319,7 @@ bool listener_enqueue(uint8_t listener_id, const TcpEvt *evt)
  *
  * @p arg carries the listener index cast to a pointer via
  * `tcp_arg(listen_pcb, (void*)(uintptr_t)idx)`.  Finds a free TcpConn slot,
- * sets its protocol, wires the per-connection callbacks, and posts EVT_CONNECT
+ * sets its protocol, wires the per-connection callbacks, and posts EvtType::EVT_CONNECT
  * to the owning listener's queue.  Rejects the connection with ERR_ABRT when
  * the pool is full - ERR_ABRT tells lwIP the PCB is already gone from our side.
  */
@@ -380,7 +380,7 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     int free_slot = -1;
     for (int i = 0; i < MAX_CONNS; i++)
     {
-        if (conn_pool[i].state == CONN_FREE)
+        if (conn_pool[i].state == ConnState::CONN_FREE)
         {
             free_slot = i;
             break;
@@ -397,7 +397,7 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
 #if DETWS_WORKER_COUNT > 1
     // Round-robin the new connection across workers. Runs only in tcpip_thread,
     // so the counter needs no lock. Set BEFORE the state release store so a worker
-    // that observes CONN_ACTIVE also sees the owner, and so the EVT_CONNECT below
+    // that observes ConnState::CONN_ACTIVE also sees the owner, and so the EvtType::EVT_CONNECT below
     // routes to the owner's queue.
     static uint8_t s_next_owner = 0;
     slot->owner = s_next_owner;
@@ -405,7 +405,7 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
 #else
     slot->owner = 0;
 #endif
-    slot->state = CONN_ACTIVE;
+    slot->state = ConnState::CONN_ACTIVE;
     slot->pcb = newpcb;
     slot->last_activity_ms = detws_millis();
     slot->rx_head = 0;
@@ -440,11 +440,12 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
     tcp_sent(newpcb, lowlevel_sent_cb);
     tcp_err(newpcb, lowlevel_err_cb);
 
-    DETWS_OBS_TRANSITION((uint8_t)free_slot, CONN_FREE, CONN_ACTIVE, DET_CONN_R_ACCEPT);
+    DETWS_OBS_TRANSITION((uint8_t)free_slot, ConnState::CONN_FREE, ConnState::CONN_ACTIVE,
+                         DetConnReason::DET_CONN_R_ACCEPT);
 
-    TcpEvt evt = {EVT_CONNECT, (uint8_t)free_slot, 0};
+    TcpEvt evt = {EvtType::EVT_CONNECT, (uint8_t)free_slot, 0};
     if (!listener_enqueue(idx, &evt))
-        DETWS_OBS_NOTICE((uint8_t)free_slot, CONN_ACTIVE, DET_CONN_R_DEFER_DROP);
+        DETWS_OBS_NOTICE((uint8_t)free_slot, ConnState::CONN_ACTIVE, DetConnReason::DET_CONN_R_DEFER_DROP);
 
     return ERR_OK;
 }

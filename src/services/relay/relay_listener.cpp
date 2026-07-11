@@ -190,7 +190,7 @@ void relay_on_data(uint8_t slot)
 
 void relay_on_poll(uint8_t slot)
 {
-    if (conn_pool[slot].state != CONN_ACTIVE)
+    if (conn_pool[slot].state != ConnState::CONN_ACTIVE)
         return;
     service(slot);
 }

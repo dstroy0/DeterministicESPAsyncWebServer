@@ -17,7 +17,7 @@ typedef uint16_t u16_t;
 struct tcp_pcb
 {
     // Outstanding TX segments not yet acked. The real lwIP pcb has this; the
-    // transport's CONN_CLOSING dwell reads it to know when our response has
+    // transport's ConnState::CONN_CLOSING dwell reads it to know when our response has
     // drained. Defaults to 0 so a host close finalizes immediately unless a test
     // sets it to simulate data still in flight.
     uint16_t snd_queuelen = 0;

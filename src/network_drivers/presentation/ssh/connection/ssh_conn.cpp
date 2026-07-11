@@ -51,7 +51,7 @@ static void ssh_emit(uint8_t i, const uint8_t *payload, size_t len)
     if (i >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[i] == 0xFF)
         return; // GCOVR_EXCL_LINE  defensive: ssh_emit is only invoked by dispatch/poll with a live, mapped slot
     TcpConn *conn = &conn_pool[s_sshc.conn_for_ssh[i]];
-    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
         return; // GCOVR_EXCL_LINE  defensive: the invoking dispatch/poll already verified the conn is ACTIVE with a pcb
 
     // Borrow the wire buffer from the shared scratch arena (released on return).
@@ -93,7 +93,7 @@ int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_
     if (ssh_slot >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[ssh_slot] == 0xFF)
         return -1;
     TcpConn *conn = &conn_pool[s_sshc.conn_for_ssh[ssh_slot]];
-    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
         return -1;
 
     // Frame the application bytes as SSH_MSG_CHANNEL_DATA (bounded by the peer
@@ -122,7 +122,7 @@ int ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel)
     if (ssh_slot >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[ssh_slot] == 0xFF)
         return -1;
     TcpConn *conn = &conn_pool[s_sshc.conn_for_ssh[ssh_slot]];
-    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
         return -1;
 
     uint8_t close_msgs[10];
@@ -155,7 +155,7 @@ int ssh_conn_open_forwarded(uint8_t ssh_slot, const char *conn_addr, uint16_t co
     if (ssh_slot >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[ssh_slot] == 0xFF)
         return -1;
     TcpConn *conn = &conn_pool[s_sshc.conn_for_ssh[ssh_slot]];
-    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
         return -1;
 
     // Borrow the payload + wire buffers from the shared scratch arena (released on
@@ -184,7 +184,7 @@ void ssh_conn_poll(uint8_t conn_slot)
     // The dispatch loop calls on_poll for every slot uniformly (no per-protocol gate); it used to poll
     // only ACTIVE slots, so keep that here to preserve behavior.
     TcpConn *conn = &conn_pool[conn_slot];
-    if (conn->state != CONN_ACTIVE)
+    if (conn->state != ConnState::CONN_ACTIVE)
         return;
     uint8_t j = conn->proto_slot;
     if (j >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[j] != conn_slot)

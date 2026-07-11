@@ -31,23 +31,23 @@ void test_check_timeouts_reaps_only_owned_slots()
     set_millis(100000); // far past CONN_TIMEOUT_MS so both slots are stale
 
     conn_pool[0].owner = 0;
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].pcb = nullptr; // no pcb -> sweep frees the slot without a tcp_abort
     conn_pool[0].last_activity_ms = 0;
 
     conn_pool[1].owner = 1;
-    conn_pool[1].state = CONN_ACTIVE;
+    conn_pool[1].state = ConnState::CONN_ACTIVE;
     conn_pool[1].pcb = nullptr;
     conn_pool[1].last_activity_ms = 0;
 
     // Worker 0 sweeps: only its own slot is reaped; worker 1's slot is untouched.
     DeterministicAsyncTCP::check_timeouts(0);
-    TEST_ASSERT_EQUAL_INT(CONN_FREE, (ConnState)conn_pool[0].state);
-    TEST_ASSERT_EQUAL_INT(CONN_ACTIVE, (ConnState)conn_pool[1].state);
+    TEST_ASSERT_EQUAL_INT(ConnState::CONN_FREE, (ConnState)conn_pool[0].state);
+    TEST_ASSERT_EQUAL_INT(ConnState::CONN_ACTIVE, (ConnState)conn_pool[1].state);
 
     // Worker 1 sweeps: now its own slot is reaped.
     DeterministicAsyncTCP::check_timeouts(1);
-    TEST_ASSERT_EQUAL_INT(CONN_FREE, (ConnState)conn_pool[1].state);
+    TEST_ASSERT_EQUAL_INT(ConnState::CONN_FREE, (ConnState)conn_pool[1].state);
 }
 
 void test_pool_init_defaults_owner_zero()

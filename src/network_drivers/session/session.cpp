@@ -72,16 +72,16 @@ static inline void dispatch_event(const TcpEvt &evt)
 
     switch (evt.type)
     {
-    case EVT_CONNECT:
+    case EvtType::EVT_CONNECT:
         if (h->on_accept)
             h->on_accept(evt.slot_id);
         break;
-    case EVT_DATA:
+    case EvtType::EVT_DATA:
         if (h->on_data)
             h->on_data(evt.slot_id);
         break;
-    case EVT_DISCONNECT:
-    case EVT_ERROR:
+    case EvtType::EVT_DISCONNECT:
+    case EvtType::EVT_ERROR:
         if (h->on_close)
             h->on_close(evt.slot_id);
         break;
@@ -92,8 +92,8 @@ void server_tick(int worker_id)
 {
     /*
      * Check timeouts BEFORE draining events.  This ensures that a slot
-     * freed by a timeout is already in CONN_FREE state if a coincident
-     * EVT_DISCONNECT or EVT_ERROR is dequeued in the same tick - the
+     * freed by a timeout is already in ConnState::CONN_FREE state if a coincident
+     * EvtType::EVT_DISCONNECT or EvtType::EVT_ERROR is dequeued in the same tick - the
      * http_reset() call for that event is then a clean no-op. Each worker
      * sweeps only the slots it owns.
      */

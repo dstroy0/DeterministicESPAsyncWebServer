@@ -4,7 +4,7 @@
 // HTTP/1.1 keep-alive (DETWS_ENABLE_KEEPALIVE). Each test drives one or more
 // requests through the real transport ring buffer + tcp_write capture mock and
 // checks (a) the Connection header emitted and (b) the slot lifecycle: a
-// kept-alive response leaves the slot CONN_ACTIVE with its PCB attached; a close
+// kept-alive response leaves the slot ConnState::CONN_ACTIVE with its PCB attached; a close
 // response frees it. Built with DETWS_KEEPALIVE_MAX_REQUESTS=3 (see env).
 
 #include "dwserver.h"
@@ -40,7 +40,7 @@ void setUp()
     {
         conn_pool[i] = {};
         conn_pool[i].id = (uint8_t)i;
-        conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].state = ConnState::CONN_ACTIVE;
         conn_pool[i].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
         conn_pool[i].pcb = &_mock_pcb;
         http_conn_open(i); // resets parser + keep-alive request tally
@@ -72,7 +72,7 @@ void test_http11_default_keeps_alive()
     TEST_ASSERT_NOT_NULL(strstr(resp, "Connection: keep-alive"));
     TEST_ASSERT_NULL(strstr(resp, "Connection: close"));
     // Slot recycled, not freed.
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state);
     TEST_ASSERT_NOT_NULL(conn_pool[0].pcb);
     TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[0].parse_state);
 }
@@ -83,7 +83,7 @@ void test_http11_explicit_close()
     const char *resp = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(resp, "Connection: close"));
     TEST_ASSERT_NULL(strstr(resp, "keep-alive"));
-    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[0].state);
     TEST_ASSERT_NULL(conn_pool[0].pcb);
 }
 
@@ -92,7 +92,7 @@ void test_http10_default_closes()
     feed_and_handle(0, "GET /res HTTP/1.0\r\n\r\n");
     const char *resp = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(resp, "Connection: close"));
-    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[0].state);
 }
 
 void test_http10_explicit_keepalive()
@@ -100,7 +100,7 @@ void test_http10_explicit_keepalive()
     feed_and_handle(0, "GET /res HTTP/1.0\r\nConnection: keep-alive\r\n\r\n");
     const char *resp = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(resp, "Connection: keep-alive"));
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state);
 }
 
 void test_connection_token_list_close()
@@ -109,32 +109,32 @@ void test_connection_token_list_close()
     feed_and_handle(0, "GET /res HTTP/1.1\r\nConnection: keep-alive, close\r\n\r\n");
     const char *resp = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(resp, "Connection: close"));
-    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[0].state);
 }
 
 void test_two_sequential_requests_same_slot()
 {
     feed_and_handle(0, "GET /res HTTP/1.1\r\n\r\n");
     TEST_ASSERT_EQUAL(1, handler_calls);
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state);
 
     tcp_capture_reset();
     feed_and_handle(0, "GET /res HTTP/1.1\r\n\r\n");
     TEST_ASSERT_EQUAL(2, handler_calls);
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state);
 }
 
 void test_pipelined_requests()
 {
     // Two requests delivered in one shot: the proactive drain in handle() must
-    // dispatch the second without waiting for a fresh EVT_DATA.
+    // dispatch the second without waiting for a fresh EvtType::EVT_DATA.
     push_str(0, "GET /res HTTP/1.1\r\n\r\nGET /res HTTP/1.1\r\n\r\n");
     http_parse(0);
     for (int i = 0; i < 4; i++)
         server.handle();
     TEST_ASSERT_EQUAL(2, handler_calls);
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state);
 }
 
 void test_404_still_keeps_alive()
@@ -145,23 +145,23 @@ void test_404_still_keeps_alive()
     const char *resp = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(resp, "404"));
     TEST_ASSERT_NOT_NULL(strstr(resp, "Connection: keep-alive"));
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state);
 }
 
 void test_max_requests_cap_closes()
 {
     // DETWS_KEEPALIVE_MAX_REQUESTS=3: the 3rd response closes the connection.
     feed_and_handle(0, "GET /res HTTP/1.1\r\n\r\n");
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[0].state); // #1 keep
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state); // #1 keep
 
     tcp_capture_reset();
     feed_and_handle(0, "GET /res HTTP/1.1\r\n\r\n");
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[0].state); // #2 keep
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state); // #2 keep
 
     tcp_capture_reset();
     feed_and_handle(0, "GET /res HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Connection: close")); // #3 close
-    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[0].state);
     TEST_ASSERT_EQUAL(3, handler_calls);
 }
 
@@ -174,10 +174,10 @@ void test_fresh_connection_resets_count()
         tcp_capture_reset();
         feed_and_handle(0, "GET /res HTTP/1.1\r\n\r\n");
     }
-    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[0].state);
 
     // Simulate a new connection landing in the same slot.
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     http_conn_open(0);
@@ -185,7 +185,7 @@ void test_fresh_connection_resets_count()
     tcp_capture_reset();
     feed_and_handle(0, "GET /res HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Connection: keep-alive"));
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state);
 }
 
 // Connection-header token edge cases: whitespace trimmed before the comma, and a bare keep-alive
@@ -198,7 +198,7 @@ void test_conn_token_ws_and_bare_keepalive()
     tcp_capture_reset();
     feed_and_handle(1, "GET /res HTTP/1.1\r\nConnection: keep-alive\r\n\r\n"); // only token is keep-alive
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Connection: keep-alive"));
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[1].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[1].state);
 }
 
 int main()

@@ -32,7 +32,7 @@ static void arm_slot(uint8_t slot, const char *raw)
 {
     conn_pool[slot] = {};
     conn_pool[slot].id = slot;
-    conn_pool[slot].state = CONN_ACTIVE;
+    conn_pool[slot].state = ConnState::CONN_ACTIVE;
     conn_pool[slot].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[slot].pcb = nullptr;
 
@@ -69,7 +69,7 @@ void setUp()
     {
         conn_pool[i] = {};
         conn_pool[i].id = i;
-        conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].state = ConnState::CONN_ACTIVE;
         conn_pool[i].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
         http_reset(i);
     }
@@ -468,9 +468,9 @@ void race_slot_complete_between_handle_calls()
     TEST_ASSERT_TRUE(dispatched);
 }
 
-// A slot is in ParseState::PARSE_COMPLETE but its conn state is CONN_FREE (connection
+// A slot is in ParseState::PARSE_COMPLETE but its conn state is ConnState::CONN_FREE (connection
 // already dropped by a timeout between parse completion and handle()).
-// send() must detect pcb==nullptr/CONN_FREE and call http_reset() cleanly.
+// send() must detect pcb==nullptr/ConnState::CONN_FREE and call http_reset() cleanly.
 void race_conn_freed_after_parse_complete()
 {
     g_server->on("/r", HTTP_GET, record_handler);
@@ -479,7 +479,7 @@ void race_conn_freed_after_parse_complete()
     TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
 
     // Simulate connection drop between parse and dispatch
-    conn_pool[0].state = CONN_FREE;
+    conn_pool[0].state = ConnState::CONN_FREE;
     conn_pool[0].pcb = nullptr;
 
     g_server->handle(); // must not crash; slot must be cleaned up
@@ -594,7 +594,7 @@ void test_transfer_encoding_identity_is_501()
 
 void test_redirect_emits_location_and_status()
 {
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     tcp_capture_reset();
@@ -604,12 +604,12 @@ void test_redirect_emits_location_and_status()
     TEST_ASSERT_NOT_NULL(strstr(out, "Location: /index.html\r\n"));
     TEST_ASSERT_NOT_NULL(strstr(out, "Content-Length: 0\r\n"));
     tcp_capture_disable();
-    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state); // slot released
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[0].state); // slot released
 }
 
 void test_redirect_invalid_code_defaults_to_302()
 {
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     tcp_capture_reset();
@@ -1151,7 +1151,7 @@ void test_metrics_emits_prometheus()
 {
     conn_pool[0] = {};
     conn_pool[0].id = 0;
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     http_reset(0);
@@ -1177,7 +1177,7 @@ void test_sse_broadcast_after_upgrade_matches_path()
 
     conn_pool[0] = {};
     conn_pool[0].id = 0;
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[0].pcb = &_mock_pcb;
     push_bytes(0, "GET /events HTTP/1.1\r\n\r\n");
@@ -1203,7 +1203,7 @@ void test_ws_send_api()
     ws_init();
     conn_pool[0] = {};
     conn_pool[0].id = 0;
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].proto = ConnProto::PROTO_HTTP;
     conn_pool[0].pcb = &_mock_pcb;
     WsConn *ws = ws_alloc(0);
@@ -1256,7 +1256,7 @@ void test_sse_send_api()
     sse_init();
     conn_pool[0] = {};
     conn_pool[0].id = 0;
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].proto = ConnProto::PROTO_HTTP;
     conn_pool[0].pcb = &_mock_pcb;
     SseConn *sse = sse_alloc(0, "/events");
@@ -1324,7 +1324,7 @@ void test_status_text_reason_phrases()
     {
         conn_pool[0] = {};
         conn_pool[0].id = 0;
-        conn_pool[0].state = CONN_ACTIVE;
+        conn_pool[0].state = ConnState::CONN_ACTIVE;
         conn_pool[0].proto = ConnProto::PROTO_HTTP;
         conn_pool[0].pcb = &_mock_pcb;
         http_reset(0);
@@ -1451,7 +1451,7 @@ void test_send_family_slot_and_conn_gone_guards()
     g_server->send_template(MAX_CONNS, 200, "text/html", "hi", nullptr);
     g_server->send_chunked(MAX_CONNS, 200, "text/plain", nullptr, nullptr);
 
-    conn_pool[0].state = CONN_FREE; // connection gone
+    conn_pool[0].state = ConnState::CONN_FREE; // connection gone
     conn_pool[0].pcb = nullptr;
     g_server->redirect(0, 302, "/x");
     g_server->send_template(0, 200, "text/html", "hi", nullptr);
@@ -1463,7 +1463,7 @@ void test_redirect_response_and_code_normalization()
 {
     conn_pool[0] = {};
     conn_pool[0].id = 0;
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].proto = ConnProto::PROTO_HTTP;
     conn_pool[0].pcb = &_mock_pcb;
     http_reset(0);
@@ -1473,7 +1473,7 @@ void test_redirect_response_and_code_normalization()
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Location: /new"));
 
     // An out-of-range redirect code normalizes to 302.
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].pcb = &_mock_pcb;
     http_reset(0);
     tcp_capture_reset();

@@ -8,7 +8,7 @@
  * Each active listener owns one lwIP listening PCB and one statically-
  * allocated FreeRTOS queue.  When a new client connects, `listener_accept_cb`
  * claims a slot from the shared `conn_pool`, wires the standard per-connection
- * callbacks, and posts `EVT_CONNECT` to the owning listener's queue.
+ * callbacks, and posts `EvtType::EVT_CONNECT` to the owning listener's queue.
  *
  * The session layer drains all active listener queues each `server_tick()`,
  * routing events to the correct protocol handler via `TcpConn::proto`.

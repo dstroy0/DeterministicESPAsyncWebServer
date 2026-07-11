@@ -49,7 +49,7 @@
 #include <atomic>
 
 // All connection-observability state, owned by one instance (internal linkage): the event
-// callback and the cumulative per-reason counters (indexed 0..7). The live CONN_CLOSING gauge
+// callback and the cumulative per-reason counters (indexed 0..7). The live ConnState::CONN_CLOSING gauge
 // is not a counter - it is derived on read by scanning the pool, so it can never drift out of
 // sync with the actual slot states. One named owner, unreachable from any other TU.
 struct ObsCtx
@@ -78,7 +78,7 @@ DetConnCounters det_conn_counters()
     // Derive the live gauge from the actual pool so it cannot drift.
     c.closing_gauge = 0;
     for (int i = 0; i < MAX_CONNS; i++)
-        if (conn_pool[i].state == CONN_CLOSING)
+        if (conn_pool[i].state == ConnState::CONN_CLOSING)
             c.closing_gauge++;
     return c;
 }
@@ -94,31 +94,31 @@ static void obs_bump(DetConnReason reason)
     int idx = -1;
     switch (reason)
     {
-    case DET_CONN_R_ACCEPT:
+    case DetConnReason::DET_CONN_R_ACCEPT:
         idx = 0;
         break;
-    case DET_CONN_R_CLOSE_REMOTE:
+    case DetConnReason::DET_CONN_R_CLOSE_REMOTE:
         idx = 1;
         break;
-    case DET_CONN_R_CLOSE_LOCAL:
+    case DetConnReason::DET_CONN_R_CLOSE_LOCAL:
         idx = 2;
         break;
-    case DET_CONN_R_ERROR:
+    case DetConnReason::DET_CONN_R_ERROR:
         idx = 3;
         break;
-    case DET_CONN_R_TIMEOUT:
+    case DetConnReason::DET_CONN_R_TIMEOUT:
         idx = 4;
         break;
-    case DET_CONN_R_ABORT:
+    case DetConnReason::DET_CONN_R_ABORT:
         idx = 5;
         break;
-    case DET_CONN_R_BACKPRESSURE:
+    case DetConnReason::DET_CONN_R_BACKPRESSURE:
         idx = 6;
         break;
-    case DET_CONN_R_DEFER_DROP:
+    case DetConnReason::DET_CONN_R_DEFER_DROP:
         idx = 7;
         break;
-    case DET_CONN_R_DRAINED:
+    case DetConnReason::DET_CONN_R_DRAINED:
         idx = -1; // the entering close reason was already counted; DRAINED is gauge-only
         break;
     }
@@ -127,7 +127,7 @@ static void obs_bump(DetConnReason reason)
 }
 
 // A real state transition: bump the reason counter and fire the callback. The
-// CONN_CLOSING gauge is derived on read (see det_conn_counters), so there is no
+// ConnState::CONN_CLOSING gauge is derived on read (see det_conn_counters), so there is no
 // per-transition gauge bookkeeping to get wrong. Non-static so listener.cpp
 // (accept) can notify through the DETWS_OBS_TRANSITION macro declared in tcp.h.
 void detws_obs_transition(uint8_t slot, ConnState olds, ConnState news, DetConnReason reason)
@@ -162,7 +162,7 @@ void detws_obs_notice(uint8_t slot, ConnState st, DetConnReason reason)
 // every main-loop-originated tcp_*() executes in the one safe context. lwIP's
 // own callbacks already run in that context and must NOT marshal again (they
 // call tcp_*() directly).
-// CONN_CLOSING dwell helpers (defined below, near det_conn_begin_close). Forward
+// ConnState::CONN_CLOSING dwell helpers (defined below, near det_conn_begin_close). Forward
 // declared so the tcpip-thread op dispatch can reach closing_check().
 static void closing_check(uint8_t slot, struct tcp_pcb *pcb);
 
@@ -170,7 +170,7 @@ static void closing_check(uint8_t slot, struct tcp_pcb *pcb);
 #include "lwip/priv/tcpip_priv.h"
 #include <string.h>
 
-enum DetTcpOp
+enum class DetTcpOp : uint8_t
 {
     DET_OP_SEND,
     DET_OP_OUTPUT,
@@ -178,7 +178,7 @@ enum DetTcpOp
     DET_OP_ABORT,
     DET_OP_DETACH,
     DET_OP_RAWSEND,     // raw tcp_write of already-encrypted bytes (TLS BIO), no TLS re-entry
-    DET_OP_CLOSE_CHECK, // in tcpip_thread: finalize a CONN_CLOSING slot if its TX has drained
+    DET_OP_CLOSE_CHECK, // in tcpip_thread: finalize a ConnState::CONN_CLOSING slot if its TX has drained
     DET_OP_RECVED       // in tcpip_thread: tcp_recved() to reopen the window (ack-on-consume)
 };
 
@@ -200,7 +200,7 @@ struct DetTcpCall
     struct tcp_pcb *pcb;
     const void *data;
     u16_t len;
-    err_t result; ///< outcome of the op (DET_OP_SEND: whether the write was queued)
+    err_t result; ///< outcome of the op (DetTcpOp::DET_OP_SEND: whether the write was queued)
 };
 
 // Runs in tcpip_thread (via tcpip_api_call). Performs the requested raw lwIP op
@@ -213,12 +213,12 @@ static err_t det_tcp_do(struct tcpip_api_call_data *c)
     s_tp.in_tcpip_thread = true; // any tcp_write reached from here is already in-thread
     switch (k->op)
     {
-    case DET_OP_RAWSEND:
+    case DetTcpOp::DET_OP_RAWSEND:
         k->result = tcp_write(k->pcb, k->data, k->len, TCP_WRITE_FLAG_COPY);
         if (k->result == ERR_OK)
             tcp_output(k->pcb);
         break;
-    case DET_OP_SEND:
+    case DetTcpOp::DET_OP_SEND:
 #if DETWS_ENABLE_TLS
         if (conn_pool[k->slot].tls)
         {
@@ -228,10 +228,10 @@ static err_t det_tcp_do(struct tcpip_api_call_data *c)
 #endif
         k->result = tcp_write(k->pcb, k->data, k->len, TCP_WRITE_FLAG_COPY);
         break;
-    case DET_OP_OUTPUT:
+    case DetTcpOp::DET_OP_OUTPUT:
         tcp_output(k->pcb);
         break;
-    case DET_OP_CLOSE:
+    case DetTcpOp::DET_OP_CLOSE:
 #if DETWS_ENABLE_TLS
         if (conn_pool[k->slot].tls)
             det_tls_conn_end(k->slot); // close_notify + free the TLS context
@@ -239,16 +239,16 @@ static err_t det_tcp_do(struct tcpip_api_call_data *c)
         if (tcp_close(k->pcb) != ERR_OK)
             tcp_abort(k->pcb);
         break;
-    case DET_OP_ABORT:
+    case DetTcpOp::DET_OP_ABORT:
         tcp_abort(k->pcb);
         break;
-    case DET_OP_DETACH:
+    case DetTcpOp::DET_OP_DETACH:
         tcp_arg(k->pcb, nullptr);
         break;
-    case DET_OP_CLOSE_CHECK:
+    case DetTcpOp::DET_OP_CLOSE_CHECK:
         closing_check(k->slot, k->pcb); // safe pcb access: we are in tcpip_thread
         break;
-    case DET_OP_RECVED:
+    case DetTcpOp::DET_OP_RECVED:
         tcp_recved(k->pcb, k->len); // reopen the receive window by the consumed bytes
         break;
     }
@@ -290,7 +290,8 @@ bool det_conn_send(uint8_t slot, const void *data, u16_t len)
     // The write target is always the slot's own pcb (ingress reads resolve it the
     // same way) - callers no longer thread it through, so it cannot disagree.
 #if defined(ARDUINO)
-    return det_tcp_marshal(DET_OP_SEND, slot, conn_pool[slot].pcb, data, len) == ERR_OK; // write runs in tcpip_thread
+    return det_tcp_marshal(DetTcpOp::DET_OP_SEND, slot, conn_pool[slot].pcb, data, len) ==
+           ERR_OK; // write runs in tcpip_thread
 #else
 #if DETWS_ENABLE_TLS
     if (conn_pool[slot].tls)
@@ -323,7 +324,7 @@ void det_conn_flush(uint8_t slot)
                 // flush must NOT end the session - persistent TLS (wss / TLS SSE) reuses it
 #endif
 #if defined(ARDUINO)
-    det_tcp_marshal(DET_OP_OUTPUT, slot, conn_pool[slot].pcb, nullptr, 0);
+    det_tcp_marshal(DetTcpOp::DET_OP_OUTPUT, slot, conn_pool[slot].pcb, nullptr, 0);
 #else
     tcp_output(conn_pool[slot].pcb);
 #endif
@@ -336,8 +337,8 @@ void det_conn_ack_consumed(uint8_t slot)
     TcpConn *c = &conn_pool[slot];
     // Only the owning worker calls this, so rx_tail/rx_acked are read race-free
     // here; rx_head (producer) is not touched. Ack nothing for a slot that is not
-    // actively receiving (the CONN_CLOSING discard path ACKs its own bytes).
-    if (c->state != CONN_ACTIVE || !c->pcb)
+    // actively receiving (the ConnState::CONN_CLOSING discard path ACKs its own bytes).
+    if (c->state != ConnState::CONN_ACTIVE || !c->pcb)
         return;
     size_t tail = c->rx_tail;
     size_t consumed = (tail + RX_BUF_SIZE - c->rx_acked) % RX_BUF_SIZE;
@@ -345,7 +346,7 @@ void det_conn_ack_consumed(uint8_t slot)
         return;
     c->rx_acked = tail; // advance first: the marshaled tcp_recved is the slow part
 #if defined(ARDUINO)
-    det_tcp_marshal(DET_OP_RECVED, slot, c->pcb, nullptr, (u16_t)consumed);
+    det_tcp_marshal(DetTcpOp::DET_OP_RECVED, slot, c->pcb, nullptr, (u16_t)consumed);
 #else
     tcp_recved(c->pcb, (u16_t)consumed);
 #endif
@@ -367,7 +368,7 @@ bool det_conn_raw_send(struct tcp_pcb *pcb, const void *data, u16_t len)
     }
     // Main-loop task (TLS handshake / read pump): marshal a raw write so the
     // tcp_write runs in the lwIP thread, not racing it.
-    return det_tcp_marshal(DET_OP_RAWSEND, 0, pcb, data, len) == ERR_OK;
+    return det_tcp_marshal(DetTcpOp::DET_OP_RAWSEND, 0, pcb, data, len) == ERR_OK;
 #else
     err_t e = tcp_write(pcb, data, len, TCP_WRITE_FLAG_COPY);
     if (e == ERR_OK)
@@ -386,15 +387,15 @@ void det_conn_close(uint8_t slot)
         return;
     // The application-initiated close path (L4 primitive). Remote FIN, error, and
     // timeout closes are observed at their own sites, so this is uniquely "local".
-    DETWS_OBS_TRANSITION(slot, CONN_ACTIVE, CONN_FREE, DET_CONN_R_CLOSE_LOCAL);
+    DETWS_OBS_TRANSITION(slot, ConnState::CONN_ACTIVE, ConnState::CONN_FREE, DetConnReason::DET_CONN_R_CLOSE_LOCAL);
     // Detach the pcb and free the slot before the close, so a late callback for
     // this pcb finds a null arg and does nothing. The close itself targets the
-    // captured pcb (DET_OP_CLOSE carries it), so nulling the slot first is safe.
+    // captured pcb (DetTcpOp::DET_OP_CLOSE carries it), so nulling the slot first is safe.
     det_conn_detach(pcb);
-    c->state = CONN_FREE;
+    c->state = ConnState::CONN_FREE;
     c->pcb = nullptr;
 #if defined(ARDUINO)
-    det_tcp_marshal(DET_OP_CLOSE, slot, pcb, nullptr, 0); // TLS teardown + FIN in tcpip_thread
+    det_tcp_marshal(DetTcpOp::DET_OP_CLOSE, slot, pcb, nullptr, 0); // TLS teardown + FIN in tcpip_thread
 #else
 #if DETWS_ENABLE_TLS
     if (c->tls)
@@ -413,14 +414,14 @@ void det_conn_abort_slot(uint8_t slot)
     struct tcp_pcb *pcb = c->pcb;
     if (!pcb)
         return;
-    DETWS_OBS_TRANSITION(slot, CONN_ACTIVE, CONN_FREE, DET_CONN_R_ABORT);
+    DETWS_OBS_TRANSITION(slot, ConnState::CONN_ACTIVE, ConnState::CONN_FREE, DetConnReason::DET_CONN_R_ABORT);
 #if DETWS_ENABLE_TLS
     if (c->tls)
         det_tls_conn_free(slot); // abrupt: free the per-conn TLS context, no close_notify
 #endif
     // Detach + free the slot before the RST, so a late callback finds a null arg.
     det_conn_detach(pcb);
-    c->state = CONN_FREE;
+    c->state = ConnState::CONN_FREE;
     c->pcb = nullptr;
     det_conn_abort(pcb);
 }
@@ -430,7 +431,7 @@ void det_conn_detach(struct tcp_pcb *pcb)
     // Disassociate the slot from this pcb's lwIP callbacks before freeing the
     // slot, so any late callback for the pcb finds a null arg and does nothing.
 #if defined(ARDUINO)
-    det_tcp_marshal(DET_OP_DETACH, 0, pcb, nullptr, 0);
+    det_tcp_marshal(DetTcpOp::DET_OP_DETACH, 0, pcb, nullptr, 0);
 #else
     tcp_arg(pcb, nullptr);
 #endif
@@ -440,19 +441,19 @@ void det_conn_abort(struct tcp_pcb *pcb)
 {
     // Hard reset (RST) for a fatal condition - no graceful FIN.
 #if defined(ARDUINO)
-    det_tcp_marshal(DET_OP_ABORT, 0, pcb, nullptr, 0);
+    det_tcp_marshal(DetTcpOp::DET_OP_ABORT, 0, pcb, nullptr, 0);
 #else
     tcp_abort(pcb);
 #endif
 }
 
 // ---------------------------------------------------------------------------
-// CONN_CLOSING dwell: a graceful close that holds the slot until the peer ACKs.
+// ConnState::CONN_CLOSING dwell: a graceful close that holds the slot until the peer ACKs.
 // ---------------------------------------------------------------------------
-// These run in tcpip_thread context (the sent callback, or the DET_OP_CLOSE_CHECK
+// These run in tcpip_thread context (the sent callback, or the DetTcpOp::DET_OP_CLOSE_CHECK
 // marshaled op), so they touch the PCB directly - never marshal from here.
 
-// Finalize a CONN_CLOSING slot: tear down the PCB and free the slot.
+// Finalize a ConnState::CONN_CLOSING slot: tear down the PCB and free the slot.
 static void closing_finalize(uint8_t slot, struct tcp_pcb *pcb)
 {
     TcpConn *c = &conn_pool[slot];
@@ -460,7 +461,7 @@ static void closing_finalize(uint8_t slot, struct tcp_pcb *pcb)
     if (c->tls)
         det_tls_conn_end(slot); // close_notify + free the TLS context (in-thread)
 #endif
-    c->state = CONN_FREE;
+    c->state = ConnState::CONN_FREE;
     c->pcb = nullptr;
     if (pcb)
     {
@@ -468,14 +469,14 @@ static void closing_finalize(uint8_t slot, struct tcp_pcb *pcb)
         if (tcp_close(pcb) != ERR_OK)
             tcp_abort(pcb);
     }
-    DETWS_OBS_TRANSITION(slot, CONN_CLOSING, CONN_FREE, DET_CONN_R_DRAINED);
+    DETWS_OBS_TRANSITION(slot, ConnState::CONN_CLOSING, ConnState::CONN_FREE, DetConnReason::DET_CONN_R_DRAINED);
 }
 
-// If the slot is CONN_CLOSING and its TX queue has drained (peer ACKed the whole
+// If the slot is ConnState::CONN_CLOSING and its TX queue has drained (peer ACKed the whole
 // response), finalize it now. Called only from tcpip_thread context.
 static void closing_check(uint8_t slot, struct tcp_pcb *pcb)
 {
-    if (slot >= MAX_CONNS || conn_pool[slot].state != CONN_CLOSING)
+    if (slot >= MAX_CONNS || conn_pool[slot].state != ConnState::CONN_CLOSING)
         return;
     if (!pcb || pcb->snd_queuelen == 0)
         closing_finalize(slot, pcb);
@@ -486,17 +487,18 @@ void det_conn_begin_close(uint8_t slot_id)
     if (slot_id >= MAX_CONNS)
         return;
     TcpConn *c = &conn_pool[slot_id];
-    if (c->state != CONN_ACTIVE) // an error during the write may have freed it
+    if (c->state != ConnState::CONN_ACTIVE) // an error during the write may have freed it
         return;
     struct tcp_pcb *pcb = c->pcb;
-    c->last_activity_ms = detws_millis(); // start the CONN_CLOSING dwell clock
-    c->state = CONN_CLOSING;              // release store: tcpip-thread callbacks now see CLOSING
-    DETWS_OBS_TRANSITION(slot_id, CONN_ACTIVE, CONN_CLOSING, DET_CONN_R_CLOSE_LOCAL);
+    c->last_activity_ms = detws_millis(); // start the ConnState::CONN_CLOSING dwell clock
+    c->state = ConnState::CONN_CLOSING;   // release store: tcpip-thread callbacks now see CLOSING
+    DETWS_OBS_TRANSITION(slot_id, ConnState::CONN_ACTIVE, ConnState::CONN_CLOSING,
+                         DetConnReason::DET_CONN_R_CLOSE_LOCAL);
     // Finalize immediately if the response already drained, else dwell until the
     // sent callback (or the CLOSING-timeout sweep) reclaims it. The PCB read must
     // happen in tcpip_thread, so marshal the check on device.
 #if defined(ARDUINO)
-    det_tcp_marshal(DET_OP_CLOSE_CHECK, slot_id, pcb, nullptr, 0);
+    det_tcp_marshal(DetTcpOp::DET_OP_CLOSE_CHECK, slot_id, pcb, nullptr, 0);
 #else
     closing_check(slot_id, pcb);
 #endif
@@ -513,7 +515,7 @@ void det_conn_begin_close(uint8_t slot_id)
 static inline void enqueue(TcpConn *slot, const TcpEvt &evt)
 {
     if (!listener_enqueue(slot->listener_id, &evt))
-        DETWS_OBS_NOTICE(slot->id, slot->state, DET_CONN_R_DEFER_DROP);
+        DETWS_OBS_NOTICE(slot->id, slot->state, DetConnReason::DET_CONN_R_DEFER_DROP);
 }
 
 void DeterministicAsyncTCP::pool_init(const WebServerConfig *cfg)
@@ -529,7 +531,7 @@ void DeterministicAsyncTCP::pool_init(const WebServerConfig *cfg)
     {
         conn_pool[i] = blank;
         conn_pool[i].id = i;
-        conn_pool[i].state = CONN_FREE;
+        conn_pool[i].state = ConnState::CONN_FREE;
     }
 }
 
@@ -540,16 +542,16 @@ void DeterministicAsyncTCP::stop()
     for (int i = 0; i < MAX_CONNS; i++)
     {
         ConnState st = conn_pool[i].state;
-        if ((st == CONN_ACTIVE || st == CONN_CLOSING) && conn_pool[i].pcb)
+        if ((st == ConnState::CONN_ACTIVE || st == ConnState::CONN_CLOSING) && conn_pool[i].pcb)
         {
             struct tcp_pcb *pcb = conn_pool[i].pcb;
-            conn_pool[i].state = CONN_FREE;
+            conn_pool[i].state = ConnState::CONN_FREE;
             conn_pool[i].pcb = nullptr;
             det_conn_detach(pcb); // tcpip_thread-marshaled tcp_arg(null) + abort
             det_conn_abort(pcb);
-            DETWS_OBS_TRANSITION((uint8_t)i, st, CONN_FREE, DET_CONN_R_ABORT);
+            DETWS_OBS_TRANSITION((uint8_t)i, st, ConnState::CONN_FREE, DetConnReason::DET_CONN_R_ABORT);
         }
-        conn_pool[i].state = CONN_FREE;
+        conn_pool[i].state = ConnState::CONN_FREE;
         conn_pool[i].pcb = nullptr;
     }
 }
@@ -560,7 +562,7 @@ uint32_t det_conn_remote_ip(uint8_t slot)
     if (slot >= MAX_CONNS)
         return 0;
     TcpConn *conn = &conn_pool[slot];
-    if (conn->state == CONN_ACTIVE && conn->pcb)
+    if (conn->state == ConnState::CONN_ACTIVE && conn->pcb)
         return ip4_addr_get_u32(ip_2_ip4(&conn->pcb->remote_ip));
 #else
     (void)slot;
@@ -598,7 +600,7 @@ bool det_conn_remote_addr(uint8_t slot, DetIp *out)
     if (!out || slot >= MAX_CONNS)
         return false;
     TcpConn *conn = &conn_pool[slot];
-    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
         return false;
     det_lwip_to_detip(&conn->pcb->remote_ip, out);
     return true;
@@ -617,27 +619,28 @@ void DeterministicAsyncTCP::check_timeouts(int worker_id)
         if (slot->owner != worker_id) // each worker reaps only its own slots
             continue;
 
-        // CONN_CLOSING safety net: a graceful close whose peer never ACKs would
+        // ConnState::CONN_CLOSING safety net: a graceful close whose peer never ACKs would
         // dwell forever. After DETWS_CLOSING_TIMEOUT_MS, force it free so the
         // fixed pool cannot leak. (The fast path is the sent callback finalizing
         // on ACK; this only catches a black-holed peer.)
-        if (slot->state == CONN_CLOSING)
+        if (slot->state == ConnState::CONN_CLOSING)
         {
             if ((now - slot->last_activity_ms) < DETWS_CLOSING_TIMEOUT_MS)
                 continue;
             struct tcp_pcb *cpcb = slot->pcb;
-            slot->state = CONN_FREE;
+            slot->state = ConnState::CONN_FREE;
             slot->pcb = nullptr;
             if (cpcb)
             {
                 det_conn_detach(cpcb);
                 det_conn_abort(cpcb);
             }
-            DETWS_OBS_TRANSITION((uint8_t)i, CONN_CLOSING, CONN_FREE, DET_CONN_R_DRAINED);
+            DETWS_OBS_TRANSITION((uint8_t)i, ConnState::CONN_CLOSING, ConnState::CONN_FREE,
+                                 DetConnReason::DET_CONN_R_DRAINED);
             continue;
         }
 
-        if (slot->state != CONN_ACTIVE)
+        if (slot->state != ConnState::CONN_ACTIVE)
             continue;
         if ((now - slot->last_activity_ms) < conn_timeout_ms)
             continue;
@@ -645,18 +648,19 @@ void DeterministicAsyncTCP::check_timeouts(int worker_id)
         struct tcp_pcb *pcb = slot->pcb;
         /*
          * Clear state BEFORE calling tcp_abort so that any lwIP callback
-         * firing on the same PCB during or after abort sees state==CONN_FREE
+         * firing on the same PCB during or after abort sees state==ConnState::CONN_FREE
          * and exits immediately without accessing freed memory.
          */
-        slot->state = CONN_FREE;
+        slot->state = ConnState::CONN_FREE;
         slot->pcb = nullptr;
         if (pcb)
         {
             det_conn_detach(pcb); // tcpip_thread-marshaled tcp_arg(null) + abort
             det_conn_abort(pcb);
         }
-        DETWS_OBS_TRANSITION((uint8_t)i, CONN_ACTIVE, CONN_FREE, DET_CONN_R_TIMEOUT);
-        TcpEvt evt = {EVT_ERROR, (uint8_t)i, 0};
+        DETWS_OBS_TRANSITION((uint8_t)i, ConnState::CONN_ACTIVE, ConnState::CONN_FREE,
+                             DetConnReason::DET_CONN_R_TIMEOUT);
+        TcpEvt evt = {EvtType::EVT_ERROR, (uint8_t)i, 0};
         enqueue(slot, evt);
     }
 }
@@ -680,11 +684,11 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
     if (!slot)
         return ERR_VAL;
 
-    // While dwelling in CONN_CLOSING we have already sent our final response and
+    // While dwelling in ConnState::CONN_CLOSING we have already sent our final response and
     // are waiting for the ACK. Drain (and ACK) anything the peer still sends so
     // the window keeps moving, but do not process it. A peer FIN here just means
     // both sides are done - finalize on the next sent/timeout.
-    if (slot->state == CONN_CLOSING)
+    if (slot->state == ConnState::CONN_CLOSING)
     {
         if (p)
         {
@@ -694,7 +698,7 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
         return ERR_OK;
     }
 
-    if (slot->state != CONN_ACTIVE)
+    if (slot->state != ConnState::CONN_ACTIVE)
         return ERR_VAL;
 
     if (p == nullptr)
@@ -704,13 +708,14 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
          * Clear state and pcb before tcp_close so any stale callbacks
          * are harmless.
          */
-        slot->state = CONN_FREE;
+        slot->state = ConnState::CONN_FREE;
         slot->pcb = nullptr;
         tcp_arg(tpcb, nullptr);
         if (tcp_close(tpcb) != ERR_OK)
             tcp_abort(tpcb);
-        DETWS_OBS_TRANSITION(slot->id, CONN_ACTIVE, CONN_FREE, DET_CONN_R_CLOSE_REMOTE);
-        TcpEvt evt = {EVT_DISCONNECT, slot->id, 0};
+        DETWS_OBS_TRANSITION(slot->id, ConnState::CONN_ACTIVE, ConnState::CONN_FREE,
+                             DetConnReason::DET_CONN_R_CLOSE_REMOTE);
+        TcpEvt evt = {EvtType::EVT_DISCONNECT, slot->id, 0};
         enqueue(slot, evt);
         return ERR_OK;
     }
@@ -729,8 +734,8 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
      */
     if (p->tot_len > det_ring_free(slot->rx_head, slot->rx_tail, RX_BUF_SIZE))
     {
-        DETWS_OBS_NOTICE(slot->id, CONN_ACTIVE, DET_CONN_R_BACKPRESSURE);
-        TcpEvt evt = {EVT_DATA, slot->id, 0}; // wake the loop so it drains the ring
+        DETWS_OBS_NOTICE(slot->id, ConnState::CONN_ACTIVE, DetConnReason::DET_CONN_R_BACKPRESSURE);
+        TcpEvt evt = {EvtType::EVT_DATA, slot->id, 0}; // wake the loop so it drains the ring
         enqueue(slot, evt);
         return ERR_MEM; // do NOT pbuf_free(p): lwIP keeps it and redelivers
     }
@@ -754,7 +759,7 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
 
     if (bytes_copied > 0)
     {
-        TcpEvt evt = {EVT_DATA, slot->id, bytes_copied};
+        TcpEvt evt = {EvtType::EVT_DATA, slot->id, bytes_copied};
         enqueue(slot, evt);
     }
 
@@ -765,7 +770,7 @@ err_t lowlevel_recv_cb(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t er
  * @brief lwIP sent callback - fires after the stack acknowledges sent bytes.
  *
  * Refreshes the idle-timeout timestamp so an active sender is not reaped while its
- * responses are in flight, and - for a slot dwelling in CONN_CLOSING - finalizes
+ * responses are in flight, and - for a slot dwelling in ConnState::CONN_CLOSING - finalizes
  * the close once the response has fully drained (the peer ACKed everything).
  */
 err_t lowlevel_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
@@ -774,7 +779,7 @@ err_t lowlevel_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
     if (slot)
     {
         slot->last_activity_ms = detws_millis();
-        if (slot->state == CONN_CLOSING)
+        if (slot->state == ConnState::CONN_CLOSING)
             closing_check(slot->id, tpcb); // drained? -> tear down + free the slot
 #ifdef ARDUINO
         // The send window just freed: wake the owning worker so a paced response
@@ -792,7 +797,7 @@ err_t lowlevel_sent_cb(void *arg, struct tcp_pcb *tpcb, u16_t len)
  *
  * By the time this fires the PCB is already gone internally, so we must NOT
  * call tcp_close() or tcp_abort().  Null out the slot's pcb pointer and post
- * EVT_ERROR so the session layer resets the protocol state.
+ * EvtType::EVT_ERROR so the session layer resets the protocol state.
  */
 void lowlevel_err_cb(void *arg, err_t err)
 {
@@ -806,21 +811,22 @@ void lowlevel_err_cb(void *arg, err_t err)
      * out our pointer to prevent any future access.
      */
     ConnState old = slot->state;
-    slot->state = CONN_FREE;
+    slot->state = ConnState::CONN_FREE;
     slot->pcb = nullptr;
 
-    // A slot that errored while dwelling in CONN_CLOSING is already done from the
+    // A slot that errored while dwelling in ConnState::CONN_CLOSING is already done from the
     // session's view (its response was sent and the protocol state reset). Just
     // release the slot + the CLOSING gauge; do not re-post a close event.
-    if (old == CONN_CLOSING)
+    if (old == ConnState::CONN_CLOSING)
     {
-        DETWS_OBS_TRANSITION(slot->id, CONN_CLOSING, CONN_FREE, DET_CONN_R_DRAINED);
+        DETWS_OBS_TRANSITION(slot->id, ConnState::CONN_CLOSING, ConnState::CONN_FREE,
+                             DetConnReason::DET_CONN_R_DRAINED);
         (void)err;
         return;
     }
 
-    DETWS_OBS_TRANSITION(slot->id, CONN_ACTIVE, CONN_FREE, DET_CONN_R_ERROR);
-    TcpEvt evt = {EVT_ERROR, slot->id, 0};
+    DETWS_OBS_TRANSITION(slot->id, ConnState::CONN_ACTIVE, ConnState::CONN_FREE, DetConnReason::DET_CONN_R_ERROR);
+    TcpEvt evt = {EvtType::EVT_ERROR, slot->id, 0};
     enqueue(slot, evt);
     (void)err;
 }

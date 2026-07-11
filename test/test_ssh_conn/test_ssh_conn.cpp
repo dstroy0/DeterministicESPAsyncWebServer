@@ -28,7 +28,7 @@ void setUp()
     {
         conn_pool[i] = {};
         conn_pool[i].id = (uint8_t)i;
-        conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].state = ConnState::CONN_ACTIVE;
         conn_pool[i].pcb = &_mock_pcb;
         conn_pool[i].proto = ConnProto::PROTO_SSH;
         conn_pool[i].proto_slot = DETWS_PROTO_SLOT_NONE;
@@ -277,9 +277,9 @@ void test_accept_no_ssh_capacity()
 // poll on a non-ACTIVE connection returns at the state guard.
 void test_poll_ignores_inactive_conn()
 {
-    conn_pool[2].state = CONN_CLOSING;
+    conn_pool[2].state = ConnState::CONN_CLOSING;
     ssh_conn_poll(2);
-    TEST_ASSERT_EQUAL(CONN_CLOSING, conn_pool[2].state); // untouched
+    TEST_ASSERT_EQUAL(ConnState::CONN_CLOSING, (ConnState)conn_pool[2].state); // untouched
 }
 
 // A DISCONNECT after the banner is fatal: ssh_server_dispatch returns <0, so

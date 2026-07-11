@@ -52,7 +52,7 @@ void setUp()
     {
         conn_pool[i] = {};
         conn_pool[i].id = (uint8_t)i;
-        conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].state = ConnState::CONN_ACTIVE;
         conn_pool[i].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
         conn_pool[i].pcb = &_mock_pcb;
         http_reset(i);
@@ -162,7 +162,7 @@ void test_protected_and_unprotected_routes_coexist()
     feed_and_handle(0, "GET /public HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(handler_called);
     handler_called = false;
-    conn_pool[1].state = CONN_ACTIVE;
+    conn_pool[1].state = ConnState::CONN_ACTIVE;
     conn_pool[1].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
     conn_pool[1].pcb = &_mock_pcb;
     http_reset(1);
@@ -211,7 +211,7 @@ void stress_auth_50_valid_requests()
         uint8_t slot = (uint8_t)(i % MAX_CONNS);
         conn_pool[slot] = {};
         conn_pool[slot].id = slot;
-        conn_pool[slot].state = CONN_ACTIVE;
+        conn_pool[slot].state = ConnState::CONN_ACTIVE;
         conn_pool[slot].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
         conn_pool[slot].pcb = &_mock_pcb;
         http_reset(slot);
@@ -235,7 +235,7 @@ void stress_auth_50_invalid_requests()
         uint8_t slot = (uint8_t)(i % MAX_CONNS);
         conn_pool[slot] = {};
         conn_pool[slot].id = slot;
-        conn_pool[slot].state = CONN_ACTIVE;
+        conn_pool[slot].state = ConnState::CONN_ACTIVE;
         conn_pool[slot].proto = ConnProto::PROTO_HTTP; // dispatch requires an explicit protocol
         conn_pool[slot].pcb = &_mock_pcb;
         http_reset(slot);

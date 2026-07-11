@@ -1077,7 +1077,7 @@ void ring_consume(TcpConn *c, size_t n)
 void raw_send(uint8_t slot, const void *data, size_t n)
 {
     TcpConn *c = &conn_pool[slot];
-    if (c->state != CONN_ACTIVE || !c->pcb || n == 0)
+    if (c->state != ConnState::CONN_ACTIVE || !c->pcb || n == 0)
         return;
     det_conn_send(c->id, data, (u16_t)n);
     det_conn_flush(c->id);
@@ -1092,7 +1092,7 @@ void close_conn(uint8_t slot)
 void opcua_rx(uint8_t slot)
 {
     TcpConn *c = &conn_pool[slot];
-    if (c->state != CONN_ACTIVE)
+    if (c->state != ConnState::CONN_ACTIVE)
         return;
 
     // Drain every complete UACP message currently in the rx ring (a client may

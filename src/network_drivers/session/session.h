@@ -34,8 +34,8 @@
  *
  * 2. **Event drain** - dequeues all pending TcpEvt records from the
  *    FreeRTOS queue.  Each event is dispatched:
- *    - `EVT_CONNECT / EVT_DISCONNECT / EVT_ERROR` → http_reset()
- *    - `EVT_DATA` → http_parse()
+ *    - `EvtType::EVT_CONNECT / EvtType::EVT_DISCONNECT / EvtType::EVT_ERROR` → http_reset()
+ *    - `EvtType::EVT_DATA` → http_parse()
  *
  * 3. **Returns** - upper layers may then inspect http_pool[] for
  *    ParseState::PARSE_COMPLETE slots and send responses.

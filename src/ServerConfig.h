@@ -63,10 +63,10 @@
 #endif
 
 /**
- * @brief Upper bound (ms) a slot may dwell in CONN_CLOSING after a graceful close
+ * @brief Upper bound (ms) a slot may dwell in ConnState::CONN_CLOSING after a graceful close
  *        before the idle sweep force-aborts it.
  *
- * On a graceful (local) close the slot stays in CONN_CLOSING - keeping its PCB and
+ * On a graceful (local) close the slot stays in ConnState::CONN_CLOSING - keeping its PCB and
  * callbacks - until the peer ACKs the response (then it frees itself in the sent
  * callback). If the peer never ACKs (dead/black-holed), this bound lets the
  * timeout sweep reclaim the slot so the fixed pool cannot leak.
@@ -4202,7 +4202,7 @@
  * When set, the transport (L4) fires an application callback on every connection
  * state transition - det_conn_on_event(slot, old_state, new_state, reason) - and
  * maintains lock-free counters (accepts, closes by reason, idle timeouts, RX
- * backpressure events, dropped deferred events, and a live CONN_CLOSING gauge)
+ * backpressure events, dropped deferred events, and a live ConnState::CONN_CLOSING gauge)
  * readable via det_conn_counters(). This is the only state-transition trace the
  * L4/L5 core exposes; pair it with DETWS_ENABLE_STATS for request-level metrics.
  */

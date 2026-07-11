@@ -205,7 +205,7 @@ static void http_evt_close(uint8_t slot)
 {
 #if DETWS_ENABLE_TLS
     if (conn_pool[slot].tls)
-        det_tls_conn_free(slot); // also covers timeouts (EVT_ERROR)
+        det_tls_conn_free(slot); // also covers timeouts (EvtType::EVT_ERROR)
 #endif
     http_reset(slot);
 }

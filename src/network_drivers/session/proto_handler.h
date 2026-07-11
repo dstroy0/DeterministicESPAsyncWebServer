@@ -28,9 +28,9 @@
  */
 struct ProtoHandler
 {
-    void (*on_accept)(uint8_t slot); ///< EVT_CONNECT: a new connection was accepted.
-    void (*on_data)(uint8_t slot);   ///< EVT_DATA: bytes are available in the slot's rx ring.
-    void (*on_close)(uint8_t slot);  ///< EVT_DISCONNECT / EVT_ERROR: tear down slot state.
+    void (*on_accept)(uint8_t slot); ///< EvtType::EVT_CONNECT: a new connection was accepted.
+    void (*on_data)(uint8_t slot);   ///< EvtType::EVT_DATA: bytes are available in the slot's rx ring.
+    void (*on_close)(uint8_t slot);  ///< EvtType::EVT_DISCONNECT / EvtType::EVT_ERROR: tear down slot state.
     void (*on_poll)(uint8_t slot);   ///< Called for an active slot each handle() loop (nullable).
 };
 

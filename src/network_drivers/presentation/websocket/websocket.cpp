@@ -149,7 +149,7 @@ static bool ws_emit_one(TcpConn *conn, uint8_t b0, const uint8_t *payload, uint1
 bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t len)
 {
     TcpConn *conn = &conn_pool[ws->slot_id];
-    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
         return false;
 
     uint8_t rsv1 = 0; // permessage-deflate per-message "compressed" flag (RFC 7692)
@@ -336,7 +336,7 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
 void ws_parse(WsConn *ws)
 {
     TcpConn *conn = &conn_pool[ws->slot_id];
-    if (conn->state != CONN_ACTIVE)
+    if (conn->state != ConnState::CONN_ACTIVE)
         return;
 
     while (det_conn_available(ws->slot_id) > 0)

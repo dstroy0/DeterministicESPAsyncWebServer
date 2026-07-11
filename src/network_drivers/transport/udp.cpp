@@ -88,7 +88,7 @@ static void udp_trampoline(void *arg, struct udp_pcb *pcb, struct pbuf *p, const
 // IDF 5.x) a udp_new/bind/recv/sendto from any other task asserts ("Required to lock
 // TCPIP core functionality"), and without it, it races the stack. det_udp_* therefore
 // marshal these ops via tcpip_api_call(), the same as the TCP transport.
-enum DetUdpOp
+enum class DetUdpOp : uint8_t
 {
     UDP_OP_LISTEN,  // udp_new + bind + arm recv on s_udp.listeners[slot]
     UDP_OP_SEND,    // send to addr:port on an existing pcb
@@ -117,7 +117,7 @@ static err_t udp_do(struct tcpip_api_call_data *c)
     k->result = false;
     switch (k->op)
     {
-    case UDP_OP_LISTEN: {
+    case DetUdpOp::UDP_OP_LISTEN: {
         struct udp_pcb *pcb = udp_new();
         if (pcb)
         {
@@ -134,10 +134,10 @@ static err_t udp_do(struct tcpip_api_call_data *c)
         }
         break;
     }
-    case UDP_OP_SEND:
+    case DetUdpOp::UDP_OP_SEND:
         k->result = udp_pbuf_send(k->pcb, &k->addr, k->port, k->data, k->len);
         break;
-    case UDP_OP_SEND_OUT:
+    case DetUdpOp::UDP_OP_SEND_OUT:
         if (!s_udp.out)
             s_udp.out = udp_new();
         if (s_udp.out)
@@ -160,7 +160,7 @@ bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx)
         s_udp.listeners[i].pcb = nullptr;
         DetUdpCall k;
         memset(&k, 0, sizeof(k));
-        k.op = UDP_OP_LISTEN;
+        k.op = DetUdpOp::UDP_OP_LISTEN;
         k.slot = i;
         k.port = port;
         tcpip_api_call(udp_do, &k.base); // always called off tcpip_thread (service begin())
@@ -183,7 +183,7 @@ bool det_udp_send(struct DetUdpPeer *peer, const uint8_t *data, size_t len)
         return udp_pbuf_send(peer->pcb, peer->addr, peer->port, data, len);
     DetUdpCall k;
     memset(&k, 0, sizeof(k));
-    k.op = UDP_OP_SEND;
+    k.op = DetUdpOp::UDP_OP_SEND;
     k.pcb = peer->pcb;
     k.addr = *peer->addr;
     k.port = peer->port;
@@ -212,7 +212,7 @@ bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, 
     }
     DetUdpCall k;
     memset(&k, 0, sizeof(k));
-    k.op = UDP_OP_SEND_OUT;
+    k.op = DetUdpOp::UDP_OP_SEND_OUT;
     k.addr = dst;
     k.port = dst_port;
     k.data = data;
@@ -254,7 +254,7 @@ bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t 
         return udp_pbuf_send(pcb, &dst, dst_port, data, len);
     DetUdpCall k;
     memset(&k, 0, sizeof(k));
-    k.op = UDP_OP_SEND;
+    k.op = DetUdpOp::UDP_OP_SEND;
     k.pcb = pcb;
     k.addr = dst;
     k.port = dst_port;

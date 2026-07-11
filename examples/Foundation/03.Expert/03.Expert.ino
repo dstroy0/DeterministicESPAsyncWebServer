@@ -76,24 +76,25 @@ void print_connection_pool_stats()
         const char *state_str = "UNKNOWN";
         switch (conn->state)
         {
-        case CONN_FREE:
+        case ConnState::CONN_FREE:
             state_str = "FREE";
             break;
-        case CONN_ACTIVE:
+        case ConnState::CONN_ACTIVE:
             state_str = "ACTIVE";
             break;
-        case CONN_CLOSING:
+        case ConnState::CONN_CLOSING:
             state_str = "CLOSING";
             break;
         }
 
         size_t rx_unread = 0;
-        if (conn->state == CONN_ACTIVE)
+        if (conn->state == ConnState::CONN_ACTIVE)
             rx_unread = (conn->rx_head >= conn->rx_tail) ? (conn->rx_head - conn->rx_tail)
                                                          : (RX_BUF_SIZE - (conn->rx_tail - conn->rx_head));
 
         Serial.printf("Slot [%d]: State=%-7s | UnreadBytes=%4zu | LastActivity=%6lu ms ago | PCB=%p\n", i, state_str,
-                      rx_unread, (conn->state == CONN_ACTIVE) ? (millis() - conn->last_activity_ms) : 0, conn->pcb);
+                      rx_unread, (conn->state == ConnState::CONN_ACTIVE) ? (millis() - conn->last_activity_ms) : 0,
+                      conn->pcb);
     }
     Serial.println("---------------------------------");
 }

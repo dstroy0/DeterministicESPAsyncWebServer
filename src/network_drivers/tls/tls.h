@@ -20,7 +20,7 @@
  * Lifecycle per connection:
  * @code
  *   det_tls_conn_begin(slot);                 // at accept on the TLS port
- *   // each EVT_DATA, until established:
+ *   // each EvtType::EVT_DATA, until established:
  *   int h = det_tls_handshake(slot);          // 1 done, 0 pending, <0 fatal
  *   // once established, app data:
  *   int n = det_tls_read(slot, buf, sizeof buf);   // >0 plaintext, 0 again, <0 closed

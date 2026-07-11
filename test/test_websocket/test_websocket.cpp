@@ -83,7 +83,7 @@ void setUp()
     {
         conn_pool[i] = {};
         conn_pool[i].id = (uint8_t)i;
-        conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].state = ConnState::CONN_ACTIVE;
         conn_pool[i].pcb = &_mock_pcb;
     }
 }
@@ -1099,10 +1099,10 @@ void test_ws_send_frame_paths_and_parse_guard()
     tcp_capture_disable();
     ws_set_frag_size(0);
     // ws_send_frame + ws_parse on an inactive connection both fail closed / return immediately.
-    conn_pool[0].state = CONN_CLOSING;
+    conn_pool[0].state = ConnState::CONN_CLOSING;
     TEST_ASSERT_FALSE(ws_send_frame(ws, WsOpcode::WS_OP_TEXT, payload, 10));
     ws_parse(ws);
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
 }
 
 int main()

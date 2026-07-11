@@ -19,7 +19,7 @@ void setUp()
     {
         conn_pool[i] = {};
         conn_pool[i].id = (uint8_t)i;
-        conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].state = ConnState::CONN_ACTIVE;
         conn_pool[i].pcb = &_mock_pcb;
     }
 }
@@ -236,7 +236,7 @@ void test_sse_write_null_data_returns_false()
 void test_sse_write_returns_false_when_conn_not_active()
 {
     SseConn *sse = sse_alloc(0, "/events");
-    conn_pool[0].state = CONN_FREE; // slot not active
+    conn_pool[0].state = ConnState::CONN_FREE; // slot not active
     TEST_ASSERT_FALSE(sse_write(sse, "hello", nullptr, nullptr));
 }
 

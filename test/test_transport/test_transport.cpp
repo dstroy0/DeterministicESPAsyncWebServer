@@ -55,7 +55,7 @@ void test_timeout_constant_is_5000ms()
 void test_all_slots_free_after_init()
 {
     for (int i = 0; i < MAX_CONNS; i++)
-        TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[i].state);
+        TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[i].state);
 }
 
 void test_all_pcbs_null_after_init()
@@ -119,58 +119,58 @@ void test_ring_can_store_size_minus_one_bytes()
 
 void test_event_types_are_distinct()
 {
-    TEST_ASSERT_NOT_EQUAL((int)EVT_CONNECT, (int)EVT_DATA);
-    TEST_ASSERT_NOT_EQUAL((int)EVT_DATA, (int)EVT_DISCONNECT);
-    TEST_ASSERT_NOT_EQUAL((int)EVT_DISCONNECT, (int)EVT_ERROR);
-    TEST_ASSERT_NOT_EQUAL((int)EVT_CONNECT, (int)EVT_ERROR);
+    TEST_ASSERT_NOT_EQUAL((int)EvtType::EVT_CONNECT, (int)EvtType::EVT_DATA);
+    TEST_ASSERT_NOT_EQUAL((int)EvtType::EVT_DATA, (int)EvtType::EVT_DISCONNECT);
+    TEST_ASSERT_NOT_EQUAL((int)EvtType::EVT_DISCONNECT, (int)EvtType::EVT_ERROR);
+    TEST_ASSERT_NOT_EQUAL((int)EvtType::EVT_CONNECT, (int)EvtType::EVT_ERROR);
 }
 
 // ---- Timeout logic -------------------------------------------------
 
 void test_timeout_does_not_fire_on_free_slot()
 {
-    conn_pool[0].state = CONN_FREE;
+    conn_pool[0].state = ConnState::CONN_FREE;
     set_millis(CONN_TIMEOUT_MS + 1);
     DeterministicAsyncTCP::check_timeouts();
-    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[0].state);
 }
 
 void test_timeout_does_not_fire_before_deadline()
 {
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].pcb = nullptr;
     conn_pool[0].last_activity_ms = 0;
     set_millis(CONN_TIMEOUT_MS - 1);
     DeterministicAsyncTCP::check_timeouts();
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state);
 }
 
 void test_timeout_fires_at_deadline()
 {
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].pcb = nullptr;
     conn_pool[0].last_activity_ms = 0;
     set_millis(CONN_TIMEOUT_MS);
     DeterministicAsyncTCP::check_timeouts();
-    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[0].state);
     TEST_ASSERT_NULL(conn_pool[0].pcb);
 }
 
 void test_timeout_fires_only_on_stale_slots()
 {
-    conn_pool[0].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
     conn_pool[0].pcb = nullptr;
     conn_pool[0].last_activity_ms = 0;
 
-    conn_pool[1].state = CONN_ACTIVE;
+    conn_pool[1].state = ConnState::CONN_ACTIVE;
     conn_pool[1].pcb = nullptr;
     conn_pool[1].last_activity_ms = CONN_TIMEOUT_MS; // fresh
 
     set_millis(CONN_TIMEOUT_MS);
     DeterministicAsyncTCP::check_timeouts();
 
-    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[1].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[1].state);
 }
 
 void test_init_succeeds_on_native()
@@ -270,7 +270,7 @@ void stress_all_slots_timeout_simultaneously()
 {
     for (int i = 0; i < MAX_CONNS; i++)
     {
-        conn_pool[i].state = CONN_ACTIVE;
+        conn_pool[i].state = ConnState::CONN_ACTIVE;
         conn_pool[i].pcb = nullptr;
         conn_pool[i].last_activity_ms = 0;
     }
@@ -280,7 +280,7 @@ void stress_all_slots_timeout_simultaneously()
 
     for (int i = 0; i < MAX_CONNS; i++)
     {
-        TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[i].state);
+        TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[i].state);
         TEST_ASSERT_NULL(conn_pool[i].pcb);
         TEST_ASSERT_EQUAL(i, conn_pool[i].id); // id must not be smashed
     }
@@ -294,7 +294,7 @@ void stress_timeout_arm_recover_cycle()
     {
         for (int i = 0; i < MAX_CONNS; i++)
         {
-            conn_pool[i].state = CONN_ACTIVE;
+            conn_pool[i].state = ConnState::CONN_ACTIVE;
             conn_pool[i].pcb = nullptr;
             conn_pool[i].last_activity_ms = 0;
         }
@@ -303,7 +303,7 @@ void stress_timeout_arm_recover_cycle()
         DeterministicAsyncTCP::check_timeouts();
 
         for (int i = 0; i < MAX_CONNS; i++)
-            TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[i].state);
+            TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[i].state);
     }
 }
 
@@ -311,24 +311,24 @@ void stress_timeout_arm_recover_cycle()
 // and active-stale slots - verifies no crash and final state is correct.
 void stress_check_timeouts_high_call_rate()
 {
-    conn_pool[0].state = CONN_FREE;
-    conn_pool[1].state = CONN_ACTIVE;
+    conn_pool[0].state = ConnState::CONN_FREE;
+    conn_pool[1].state = ConnState::CONN_ACTIVE;
     conn_pool[1].pcb = nullptr;
     conn_pool[1].last_activity_ms = 0;
-    conn_pool[2].state = CONN_ACTIVE;
+    conn_pool[2].state = ConnState::CONN_ACTIVE;
     conn_pool[2].pcb = nullptr;
     conn_pool[2].last_activity_ms = CONN_TIMEOUT_MS; // diff = (now - TIMEOUT_MS) = 0 < TIMEOUT_MS
-    conn_pool[3].state = CONN_FREE;
+    conn_pool[3].state = ConnState::CONN_FREE;
 
     set_millis(CONN_TIMEOUT_MS); // slot 1 will expire, slot 2 won't
 
     for (int i = 0; i < 2000; i++)
         DeterministicAsyncTCP::check_timeouts();
 
-    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[0].state);
-    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[1].state);   // expired
-    TEST_ASSERT_EQUAL(CONN_ACTIVE, conn_pool[2].state); // still fresh
-    TEST_ASSERT_EQUAL(CONN_FREE, conn_pool[3].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[0].state);
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[1].state);   // expired
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[2].state); // still fresh
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[3].state);
 }
 
 // Fills ring buffer with ascending bytes one byte at a time, checking

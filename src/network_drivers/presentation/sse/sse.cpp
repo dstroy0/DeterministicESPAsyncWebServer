@@ -69,7 +69,7 @@ bool sse_write(SseConn *sse, const char *data, const char *event, const char *id
         return false;
 
     TcpConn *conn = &conn_pool[sse->slot_id];
-    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
         return false;
 
     char buf[SSE_BUF_SIZE];

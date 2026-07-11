@@ -55,7 +55,7 @@ extern uint16_t http_req_count[MAX_CONNS];
  *
  * Resets the HTTP parser (like http_reset()) and, when keep-alive is enabled,
  * zeroes the slot's persistent request counter. The session layer calls this on
- * EVT_CONNECT; http_reset() is used for the lighter inter-request reset that must
+ * EvtType::EVT_CONNECT; http_reset() is used for the lighter inter-request reset that must
  * not clear the counter. With keep-alive off this is identical to http_reset().
  *
  * @param slot_id Index into conn_pool / http_pool (0 … MAX_CONNS-1).

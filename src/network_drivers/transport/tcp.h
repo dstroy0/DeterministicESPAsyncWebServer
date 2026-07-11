@@ -50,11 +50,11 @@
  * @brief Lifecycle state of a connection pool slot.
  *
  * Transitions:
- * - `CONN_FREE → CONN_ACTIVE` : accept callback fires.
- * - `CONN_ACTIVE → CONN_FREE` : graceful close, error, or timeout.
- * - `CONN_ACTIVE → CONN_CLOSING` : (reserved for future half-close support).
+ * - `ConnState::CONN_FREE → ConnState::CONN_ACTIVE` : accept callback fires.
+ * - `ConnState::CONN_ACTIVE → ConnState::CONN_FREE` : graceful close, error, or timeout.
+ * - `ConnState::CONN_ACTIVE → ConnState::CONN_CLOSING` : (reserved for future half-close support).
  */
-enum ConnState
+enum class ConnState : uint8_t
 {
     CONN_FREE,   ///< Slot is available; no PCB is attached.
     CONN_ACTIVE, ///< Live connection; PCB is valid.
@@ -131,7 +131,7 @@ extern TcpConn conn_pool[CONN_POOL_SLOTS];
 /**
  * @brief Type of connection event posted to a listener's FreeRTOS queue.
  */
-enum EvtType
+enum class EvtType : uint8_t
 {
     EVT_CONNECT,    ///< New connection accepted.
     EVT_DATA,       ///< Data received; bytes are already in the ring buffer.
@@ -149,7 +149,7 @@ struct TcpEvt
 {
     EvtType type;    ///< What happened.
     uint8_t slot_id; ///< Which connection slot is affected.
-    size_t data_len; ///< Bytes copied (EVT_DATA only); 0 for other types.
+    size_t data_len; ///< Bytes copied (EvtType::EVT_DATA only); 0 for other types.
 };
 
 // ---------------------------------------------------------------------------
@@ -181,7 +181,7 @@ class DeterministicAsyncTCP
     static void pool_init(const WebServerConfig *cfg = nullptr);
 
     /**
-     * @brief Abort all active connections and reset the pool to CONN_FREE.
+     * @brief Abort all active connections and reset the pool to ConnState::CONN_FREE.
      *
      * Does not touch listener PCBs or listener queues - call listener_stop_all()
      * before this if you also want to close the listening sockets.
@@ -196,9 +196,9 @@ class DeterministicAsyncTCP
      * is drained.  Uses `tcp_abort()` (not `tcp_close()`) because the
      * connection has already timed out and a graceful FIN is not warranted.
      *
-     * A timed-out slot has its state set to `CONN_FREE` and `pcb` cleared
+     * A timed-out slot has its state set to `ConnState::CONN_FREE` and `pcb` cleared
      * *before* `tcp_abort()` is called, so any in-flight lwIP callback for
-     * that PCB will see `slot->state != CONN_ACTIVE` and exit without
+     * that PCB will see `slot->state != ConnState::CONN_ACTIVE` and exit without
      * touching the slot.
      *
      * Only sweeps slots owned by @p worker_id, so each worker reaps just its own
@@ -335,14 +335,14 @@ bool det_conn_raw_send(struct tcp_pcb *pcb, const void *data, u16_t len);
 void det_conn_close(uint8_t slot);
 
 /**
- * @brief Begin a graceful close that dwells in CONN_CLOSING until the peer ACKs.
+ * @brief Begin a graceful close that dwells in ConnState::CONN_CLOSING until the peer ACKs.
  *
  * Unlike det_conn_close() (immediate teardown), this leaves the slot's PCB and
- * callbacks live and moves it ACTIVE -> CONN_CLOSING. The slot finalizes (PCB
+ * callbacks live and moves it ACTIVE -> ConnState::CONN_CLOSING. The slot finalizes (PCB
  * closed, slot freed) from the sent callback once the response has fully drained,
  * or from the idle sweep after DETWS_CLOSING_TIMEOUT_MS if the peer never ACKs.
  * The caller must already have queued (det_conn_send) + flushed the response.
- * A no-op if the slot is not CONN_ACTIVE (e.g. an error freed it mid-write).
+ * A no-op if the slot is not ConnState::CONN_ACTIVE (e.g. an error freed it mid-write).
  */
 void det_conn_begin_close(uint8_t slot_id);
 
@@ -398,15 +398,15 @@ void det_lwip_to_detip(const ip_addr_t *ra, DetIp *out);
 #if DETWS_ENABLE_OBSERVABILITY
 
 /** @brief Why a connection event fired (the reason for a transition or notice). */
-enum DetConnReason
+enum class DetConnReason : uint8_t
 {
-    DET_CONN_R_ACCEPT,       ///< New connection accepted (CONN_FREE -> CONN_ACTIVE).
+    DET_CONN_R_ACCEPT,       ///< New connection accepted (ConnState::CONN_FREE -> ConnState::CONN_ACTIVE).
     DET_CONN_R_CLOSE_REMOTE, ///< Peer closed gracefully (FIN received).
     DET_CONN_R_CLOSE_LOCAL,  ///< Application initiated the close.
     DET_CONN_R_ERROR,        ///< lwIP reported a fatal error on the connection.
     DET_CONN_R_TIMEOUT,      ///< Idle-timeout sweep reaped the slot.
     DET_CONN_R_ABORT,        ///< Forced abort (server stop / pool reset).
-    DET_CONN_R_DRAINED,      ///< CONN_CLOSING slot finished draining -> closed.
+    DET_CONN_R_DRAINED,      ///< ConnState::CONN_CLOSING slot finished draining -> closed.
     DET_CONN_R_BACKPRESSURE, ///< RX segment refused (ring full); no state change.
     DET_CONN_R_DEFER_DROP    ///< Event queue full; an event was dropped (no state change).
 };
@@ -422,7 +422,7 @@ struct DetConnCounters
     uint32_t closes_abort;   ///< Force-aborted (stop / reset).
     uint32_t backpressure;   ///< RX segments refused for lack of ring space.
     uint32_t defer_drops;    ///< Deferred events dropped because the queue was full.
-    uint32_t closing_gauge;  ///< Slots currently in CONN_CLOSING (live, not cumulative).
+    uint32_t closing_gauge;  ///< Slots currently in ConnState::CONN_CLOSING (live, not cumulative).
 };
 
 /**
@@ -441,7 +441,7 @@ void det_conn_on_event(DetConnEventCb cb);
 /** @brief Read a consistent snapshot of the transport counters. */
 DetConnCounters det_conn_counters();
 
-/** @brief Zero the cumulative counters (the live CONN_CLOSING gauge is untouched). */
+/** @brief Zero the cumulative counters (the live ConnState::CONN_CLOSING gauge is untouched). */
 void det_conn_counters_reset();
 
 // Internal notify points (tcp.cpp), reached via the macros below so both
@@ -490,7 +490,7 @@ void lowlevel_err_cb(void *arg, err_t err);
  * Forward declaration of listener_enqueue() to break the circular include.
  * See listener.h for the full documentation of this function.
  * Returns true if the event was queued, false if it was dropped (queue full or
- * inactive listener) - the transport observes drops as DET_CONN_R_DEFER_DROP.
+ * inactive listener) - the transport observes drops as DetConnReason::DET_CONN_R_DEFER_DROP.
  */
 bool listener_enqueue(uint8_t listener_id, const TcpEvt *evt);
 

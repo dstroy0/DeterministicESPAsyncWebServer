@@ -27,7 +27,7 @@
  * (det_conn_send / det_conn_flush / det_conn_begin_close / det_conn_close /
  * det_conn_abort_slot), so this layer never calls lwIP or touches the raw
  * `tcp_pcb` directly. The transport owns the teardown order for every close:
- * it detaches the pcb from its lwIP callbacks and sets the slot `CONN_FREE`
+ * it detaches the pcb from its lwIP callbacks and sets the slot `ConnState::CONN_FREE`
  * (pcb nulled) BEFORE the FIN/RST, on the captured pcb pointer. This means any
  * lwIP error callback that fires mid-teardown sees the slot as already free and
  * takes no action - preventing a double-free. L7 passes only the slot index:
@@ -378,12 +378,12 @@ bool DetWebServer::keepalive_eval(uint8_t slot_id)
 }
 #endif // DETWS_ENABLE_KEEPALIVE
 
-// Finish a response: flush, then either begin the graceful CONN_CLOSING dwell
+// Finish a response: flush, then either begin the graceful ConnState::CONN_CLOSING dwell
 // (close path) or leave the slot active for reuse (keep-alive). The HTTP parser
 // is reset either way, returning a kept-alive slot to ParseState::PARSE_METHOD ready for the
-// next request. The slot stays CONN_ACTIVE through the write for BOTH paths
+// next request. The slot stays ConnState::CONN_ACTIVE through the write for BOTH paths
 // (callbacks live - the model keep-alive has always used); the close path then
-// dwells in CONN_CLOSING from here, so the slot is reclaimed only once the peer
+// dwells in ConnState::CONN_CLOSING from here, so the slot is reclaimed only once the peer
 // ACKs the response (or the CLOSING timeout fires), not before it is delivered.
 // Every response path now addresses the connection by slot alone - the transport
 // resolves the pcb internally, the same way the RX read path does (no pcb is
@@ -392,7 +392,7 @@ void DetWebServer::resp_end(uint8_t slot_id, int code, int body_len, bool keep)
 {
     det_conn_flush(slot_id);
     if (!keep)
-        det_conn_begin_close(slot_id); // ACTIVE -> CONN_CLOSING; finalizes on ACK
+        det_conn_begin_close(slot_id); // ACTIVE -> ConnState::CONN_CLOSING; finalizes on ACK
     note_response(slot_id, code, body_len);
     http_reset(slot_id);
 }
@@ -751,7 +751,7 @@ void DetWebServer::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, con
     c->h3_stream = stream_id;
     c->resp_sink = h3_resp_sink;
     c->iface = DetIface::DETIFACE_STA;
-    c->state = CONN_ACTIVE;
+    c->state = ConnState::CONN_ACTIVE;
     c->pcb = nullptr;
 
     match_and_execute(slot); // -> handler -> send() -> resp_sink -> quic_server_respond()
@@ -759,7 +759,7 @@ void DetWebServer::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, con
     // Release the dispatch slot for the next request (a no-response handler simply leaves the stream open).
     c->h3 = 0;
     c->resp_sink = nullptr;
-    c->state = CONN_FREE;
+    c->state = ConnState::CONN_FREE;
     http_reset(slot);
 }
 #endif // DETWS_ENABLE_HTTP3
@@ -1321,7 +1321,7 @@ void DetWebServer::service_once(int worker_id)
         // Every protocol - HTTP included - is pumped through the one uniform ProtoHandler::on_poll
         // seam (no per-protocol branch here). HTTP's poll is instance-bound (it dispatches into this
         // server's routes), installed at begin() via http_proto_set_poll() -> http_poll_slot(); the
-        // singleton pollers (SSH etc.) gate on CONN_ACTIVE inside their own on_poll.
+        // singleton pollers (SSH etc.) gate on ConnState::CONN_ACTIVE inside their own on_poll.
         const ProtoHandler *ph = proto_get(conn_pool[i].proto);
         if (ph && ph->on_poll)
             ph->on_poll(i);
@@ -1405,7 +1405,7 @@ void DetWebServer::http_poll_slot(uint8_t i)
             ws_dispatch_close(ws);
             ws_free(i);
             // RFC 6455 5.5.1: close the underlying TCP connection after the close
-            // handshake. begin_close moves the slot out of CONN_ACTIVE so the
+            // handshake. begin_close moves the slot out of ConnState::CONN_ACTIVE so the
             // post-close bytes are NOT re-parsed as a new HTTP request (the
             // close-frame the WS layer queued still flushes during the dwell).
             det_conn_begin_close(i);
@@ -1423,10 +1423,10 @@ void DetWebServer::http_poll_slot(uint8_t i)
 
 #if DETWS_ENABLE_KEEPALIVE
     // Keep-alive: a slot recycled after a response may already hold the next
-    // (pipelined) request in its ring buffer with no new EVT_DATA to trigger a
+    // (pipelined) request in its ring buffer with no new EvtType::EVT_DATA to trigger a
     // parse. Drain it here each tick so it gets dispatched. TLS slots are
     // skipped - their ring holds ciphertext, decrypted in the session layer.
-    if (conn_pool[i].state == CONN_ACTIVE && http_pool[i].parse_state != ParseState::PARSE_COMPLETE
+    if (conn_pool[i].state == ConnState::CONN_ACTIVE && http_pool[i].parse_state != ParseState::PARSE_COMPLETE
 #if DETWS_ENABLE_TLS
         && !conn_pool[i].tls
 #endif
@@ -1531,7 +1531,7 @@ static bool ws_accept_key(const char *client_key, char *out)
 static void ws_send_version_required(uint8_t slot_id)
 {
     TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    if (conn->state != ConnState::CONN_ACTIVE || conn->pcb == nullptr)
     {
         http_reset(slot_id);
         return;
@@ -1544,7 +1544,7 @@ static void ws_send_version_required(uint8_t slot_id)
 
     det_conn_send(slot_id, resp, (u16_t)(sizeof(resp) - 1));
     det_conn_flush(slot_id);
-    det_conn_begin_close(slot_id); // dwell in CONN_CLOSING until the response drains
+    det_conn_begin_close(slot_id); // dwell in ConnState::CONN_CLOSING until the response drains
 
     http_reset(slot_id);
 }
@@ -1560,7 +1560,7 @@ static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_con
         return false;
 
     TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
         return false;
 
     char hdr[WS_HDR_BUF_SIZE];
@@ -1626,7 +1626,7 @@ static bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_con
 static bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect)
 {
     TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
         return false;
 
     static const char SSE_HDR[] = "HTTP/1.1 200 OK\r\n"
@@ -1685,12 +1685,12 @@ static void allow_append(char *buf, size_t cap, const char *m)
 // Send a terminal text/plain error response that closes the connection: the
 // status reason (e.g. "405 Method Not Allowed"), one optional pre-formatted extra
 // header (CRLF-terminated, e.g. "Allow: GET\r\n"), then Content-Type/Length and
-// "Connection: close". Begins the CONN_CLOSING dwell so the bytes drain before
+// "Connection: close". Begins the ConnState::CONN_CLOSING dwell so the bytes drain before
 // teardown; HEAD omits the body. One owner for the error-and-close path.
 static void send_error_close(uint8_t slot_id, const char *status, const char *extra_hdr, const char *body)
 {
     TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    if (conn->state != ConnState::CONN_ACTIVE || conn->pcb == nullptr)
     {
         http_reset(slot_id);
         return;
@@ -1710,7 +1710,7 @@ static void send_error_close(uint8_t slot_id, const char *status, const char *ex
     if (blen > 0 && !req_is_head(slot_id))
         det_conn_send(slot_id, body, (u16_t)blen);
     det_conn_flush(slot_id);
-    det_conn_begin_close(slot_id); // dwell in CONN_CLOSING until the response drains
+    det_conn_begin_close(slot_id); // dwell in ConnState::CONN_CLOSING until the response drains
     http_reset(slot_id);
 }
 
@@ -1966,7 +1966,7 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
  * Build and transmit an HTTP response with a body.
  *
  * Uses a 512-byte stack buffer for headers.  CORS headers are appended when
- * `_cors_enabled`.  The slot is freed (state → CONN_FREE, pcb → nullptr)
+ * `_cors_enabled`.  The slot is freed (state → ConnState::CONN_FREE, pcb → nullptr)
  * *before* the tcp_write + tcp_close sequence to ensure any error callback
  * that lwIP fires during the write sees the slot as already released.
  *
@@ -1994,7 +1994,7 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
         return;
     }
 #endif
-    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    if (conn->state != ConnState::CONN_ACTIVE || conn->pcb == nullptr)
     {
         http_reset(slot_id);
         return;
@@ -2013,8 +2013,8 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
                         code, status_text(code), content_type, payload_len);
     hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
-    // The slot stays CONN_ACTIVE through the write for both paths; resp_end then
-    // begins the CONN_CLOSING dwell on the close path (finalized once ACKed).
+    // The slot stays ConnState::CONN_ACTIVE through the write for both paths; resp_end then
+    // begins the ConnState::CONN_CLOSING dwell on the close path (finalized once ACKed).
 
     bool head = req_is_head(slot_id);
 
@@ -2058,7 +2058,7 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
         return;
     }
 #endif
-    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    if (conn->state != ConnState::CONN_ACTIVE || conn->pcb == nullptr)
     {
         http_reset(slot_id);
         return;
@@ -2084,7 +2084,7 @@ void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
     if (slot_id >= MAX_CONNS)
         return;
     TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    if (conn->state != ConnState::CONN_ACTIVE || conn->pcb == nullptr)
     {
         http_reset(slot_id);
         return;
@@ -2182,7 +2182,7 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
     if (slot_id >= MAX_CONNS)
         return;
     TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    if (conn->state != ConnState::CONN_ACTIVE || conn->pcb == nullptr)
     {
         http_reset(slot_id);
         return;
@@ -2229,7 +2229,7 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
     if (slot_id >= MAX_CONNS)
         return;
     TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    if (conn->state != ConnState::CONN_ACTIVE || conn->pcb == nullptr)
     {
         http_reset(slot_id);
         return;
@@ -2292,7 +2292,7 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
         return;
 
     TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
     {
         s.active = false; // connection gone mid-stream
         return;
@@ -2494,7 +2494,7 @@ void DetWebServer::stats(uint8_t slot_id)
 {
     int active = 0;
     for (int i = 0; i < MAX_CONNS; i++)
-        if (conn_pool[i].state == CONN_ACTIVE)
+        if (conn_pool[i].state == ConnState::CONN_ACTIVE)
             active++;
 
     unsigned long up = millis();
@@ -2569,7 +2569,7 @@ void DetWebServer::metrics(uint8_t slot_id)
 {
     int active = 0;
     for (int i = 0; i < MAX_CONNS; i++)
-        if (conn_pool[i].state == CONN_ACTIVE)
+        if (conn_pool[i].state == ConnState::CONN_ACTIVE)
             active++;
 
     unsigned long up = millis();
@@ -2820,7 +2820,7 @@ bool DetWebServer::verify_digest_nonce(const char *nonce, bool *expired)
 void DetWebServer::send_unauth(uint8_t slot_id, const Route *r, bool stale)
 {
     TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
     {
         http_reset(slot_id);
         return;
@@ -3153,7 +3153,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     }
 
     TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
     {
         f.close();
         http_reset(slot_id);
@@ -3292,7 +3292,7 @@ void DetWebServer::file_send_pump(uint8_t slot_id)
         return;
 
     TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != CONN_ACTIVE || !conn->pcb)
+    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
     {
         // Connection went away mid-transfer: drop the source and the continuation.
         s.file.close();
@@ -3719,7 +3719,7 @@ void DetWebServer::dav(const char *url_prefix, fs::FS &file_sys, const char *fs_
 void DetWebServer::dav_send_status(uint8_t slot_id, int code, const char *extra_headers)
 {
     TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != CONN_ACTIVE || conn->pcb == nullptr)
+    if (conn->state != ConnState::CONN_ACTIVE || conn->pcb == nullptr)
     {
         http_reset(slot_id);
         return;
