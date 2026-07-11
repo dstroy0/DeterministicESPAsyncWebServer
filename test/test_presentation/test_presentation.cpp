@@ -47,9 +47,9 @@ void tearDown()
 
 void test_fn_reset_sets_parse_state_to_method()
 {
-    http_pool[0].parse_state = PARSE_COMPLETE;
+    http_pool[0].parse_state = ParseState::PARSE_COMPLETE;
     http_reset(0);
-    TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[0].parse_state);
 }
 
 void test_fn_reset_sets_slot_id()
@@ -125,7 +125,7 @@ void test_fn_reset_is_idempotent()
     http_parse(0);
     http_reset(0);
     http_reset(0);
-    TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL(0, http_pool[0].header_count);
     TEST_ASSERT_EQUAL(0, (int)http_pool[0].body_len);
 }
@@ -278,14 +278,14 @@ void test_get_parses_complete()
     http_parse(0);
     TEST_ASSERT_EQUAL_STRING("GET", http_pool[0].method);
     TEST_ASSERT_EQUAL_STRING("/api/status", http_pool[0].path);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
 }
 
 void test_post_body_stored()
 {
     push(1, "POST /data HTTP/1.1\r\nContent-Length: 5\r\n\r\nhello");
     http_parse(1);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[1].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[1].parse_state);
     TEST_ASSERT_EQUAL_STRING("hello", (const char *)http_pool[1].body);
     TEST_ASSERT_EQUAL(5, (int)http_pool[1].body_len);
 }
@@ -295,7 +295,7 @@ void test_put_parses_complete()
     push(0, "PUT /res/1 HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
     http_parse(0);
     TEST_ASSERT_EQUAL_STRING("PUT", http_pool[0].method);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
 }
 
 void test_delete_parses_complete()
@@ -303,7 +303,7 @@ void test_delete_parses_complete()
     push(0, "DELETE /res/1 HTTP/1.1\r\n\r\n");
     http_parse(0);
     TEST_ASSERT_EQUAL_STRING("DELETE", http_pool[0].method);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
 }
 
 void test_patch_parses_complete()
@@ -311,7 +311,7 @@ void test_patch_parses_complete()
     push(0, "PATCH /res/1 HTTP/1.1\r\nContent-Length: 0\r\n\r\n");
     http_parse(0);
     TEST_ASSERT_EQUAL_STRING("PATCH", http_pool[0].method);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
 }
 
 void test_head_parses_complete()
@@ -319,7 +319,7 @@ void test_head_parses_complete()
     push(0, "HEAD /ping HTTP/1.1\r\n\r\n");
     http_parse(0);
     TEST_ASSERT_EQUAL_STRING("HEAD", http_pool[0].method);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
 }
 
 void test_query_single_param()
@@ -347,13 +347,13 @@ void test_body_null_terminated()
 
 void test_body_over_buf_size_is_413()
 {
-    // Content-Length > BODY_BUF_SIZE → PARSE_ENTITY_TOO_LARGE before any body is read.
+    // Content-Length > BODY_BUF_SIZE → ParseState::PARSE_ENTITY_TOO_LARGE before any body is read.
     char req[RX_BUF_SIZE];
     int big = BODY_BUF_SIZE + 10;
     snprintf(req, sizeof(req), "POST /big HTTP/1.1\r\nContent-Length: %d\r\n\r\n", big);
     push(0, req);
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_ENTITY_TOO_LARGE, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL(0, (int)http_pool[0].body_len);
 }
 
@@ -361,7 +361,7 @@ void test_overflow_method_sets_error()
 {
     push(3, "TOOLONGMETHODNAME /path HTTP/1.1\r\n\r\n");
     http_parse(3);
-    TEST_ASSERT_EQUAL(PARSE_ERROR, http_pool[3].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_ERROR, http_pool[3].parse_state);
 }
 
 void test_overflow_path_sets_414()
@@ -373,17 +373,17 @@ void test_overflow_path_sets_414()
     strcat(req, " HTTP/1.1\r\n\r\n");
     push(0, req);
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_URI_TOO_LONG, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_URI_TOO_LONG, http_pool[0].parse_state);
 }
 
 void test_bad_lf_after_cr_sets_error()
 {
     // Null byte would terminate the C-string in push(), so use a visible non-LF byte.
-    // The parser is in PARSE_EXPECT_LF after the \r; seeing 'X' instead of '\n'
-    // must produce PARSE_ERROR.
+    // The parser is in ParseState::PARSE_EXPECT_LF after the \r; seeing 'X' instead of '\n'
+    // must produce ParseState::PARSE_ERROR.
     push(0, "GET / HTTP/1.1\rX\r\n\r\n");
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_ERROR, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_ERROR, http_pool[0].parse_state);
 }
 
 void test_headers_beyond_max_are_dropped()
@@ -407,20 +407,20 @@ void test_incremental_two_pushes_completes()
 {
     push(0, "GET /inc HTTP/1.1\r\n");
     http_parse(0);
-    TEST_ASSERT_NOT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_NOT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
     push(0, "\r\n");
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
 }
 
-// Regression: PARSE_EXPECT_BODY_LF was added to prevent the old PARSE_BODY
+// Regression: ParseState::PARSE_EXPECT_BODY_LF was added to prevent the old ParseState::PARSE_BODY
 // LF-skip from discarding a first body byte that happens to be '\n'.
 // A body of "\nabcd" (Content-Length: 5) must be stored verbatim.
 void test_body_starting_with_newline_stored()
 {
     push(0, "POST /nl HTTP/1.1\r\nContent-Length: 5\r\n\r\n\nabcd");
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL(5, (int)http_pool[0].body_len);
     TEST_ASSERT_EQUAL('\n', (char)http_pool[0].body[0]);
     TEST_ASSERT_EQUAL_STRING("\nabcd", (const char *)http_pool[0].body);
@@ -431,7 +431,7 @@ void test_put_body_stored()
 {
     push(0, "PUT /r/1 HTTP/1.1\r\nContent-Length: 7\r\n\r\nupdated");
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL_STRING("PUT", http_pool[0].method);
     TEST_ASSERT_EQUAL(7, (int)http_pool[0].body_len);
     TEST_ASSERT_EQUAL_STRING("updated", (const char *)http_pool[0].body);
@@ -443,7 +443,7 @@ void test_content_length_header_stored_in_headers_array()
 {
     push(0, "POST /x HTTP/1.1\r\nContent-Length: 3\r\n\r\nabc");
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL(3, (int)http_pool[0].content_length);
     const char *cl = http_get_header(&http_pool[0], "Content-Length");
     TEST_ASSERT_NOT_NULL(cl);
@@ -461,9 +461,10 @@ void stress_parse_reset_100_cycles()
     {
         push(0, "GET /test HTTP/1.1\r\nHost: x\r\n\r\n");
         http_parse(0);
-        TEST_ASSERT_EQUAL_MESSAGE(PARSE_COMPLETE, http_pool[0].parse_state, "unexpected parse state mid-cycle");
+        TEST_ASSERT_EQUAL_MESSAGE(ParseState::PARSE_COMPLETE, http_pool[0].parse_state,
+                                  "unexpected parse state mid-cycle");
         http_reset(0);
-        TEST_ASSERT_EQUAL_MESSAGE(PARSE_METHOD, http_pool[0].parse_state, "state not reset");
+        TEST_ASSERT_EQUAL_MESSAGE(ParseState::PARSE_METHOD, http_pool[0].parse_state, "state not reset");
         TEST_ASSERT_EQUAL_MESSAGE(0, http_pool[0].header_count, "headers not reset");
         TEST_ASSERT_EQUAL_MESSAGE('\0', http_pool[0].method[0], "method not reset");
     }
@@ -483,18 +484,18 @@ void stress_all_slots_parse_simultaneously()
     http_parse(2);
     http_parse(3);
 
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL_STRING("GET", http_pool[0].method);
     TEST_ASSERT_EQUAL_STRING("/zero", http_pool[0].path);
 
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[1].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[1].parse_state);
     TEST_ASSERT_EQUAL_STRING("POST", http_pool[1].method);
     TEST_ASSERT_EQUAL_STRING("abc", (const char *)http_pool[1].body);
 
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[2].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[2].parse_state);
     TEST_ASSERT_EQUAL_STRING("PUT", http_pool[2].method);
 
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[3].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[3].parse_state);
     TEST_ASSERT_EQUAL_STRING("DELETE", http_pool[3].method);
     TEST_ASSERT_EQUAL_STRING("/three", http_pool[3].path);
 }
@@ -506,7 +507,7 @@ void stress_method_at_max_7_chars_no_error()
     push(0, "OPTIONS /x HTTP/1.1\r\n\r\n");
     http_parse(0);
     TEST_ASSERT_EQUAL_STRING("OPTIONS", http_pool[0].method);
-    TEST_ASSERT_NOT_EQUAL(PARSE_ERROR, http_pool[0].parse_state);
+    TEST_ASSERT_NOT_EQUAL(ParseState::PARSE_ERROR, http_pool[0].parse_state);
 }
 
 // Path exactly MAX_PATH_LEN-1 characters - must parse without error.
@@ -542,7 +543,7 @@ void stress_path_at_exact_limit_no_error()
     req[end + 13] = '\0';
     push(0, req);
     http_parse(0);
-    TEST_ASSERT_NOT_EQUAL(PARSE_ERROR, http_pool[0].parse_state);
+    TEST_ASSERT_NOT_EQUAL(ParseState::PARSE_ERROR, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL(MAX_PATH_LEN - 1, (int)strlen(http_pool[0].path));
 }
 
@@ -560,7 +561,7 @@ void stress_body_exactly_buf_size_all_stored()
         s->rx_head = next;
     }
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL(BODY_BUF_SIZE, (int)http_pool[0].body_len);
     TEST_ASSERT_EQUAL('\0', http_pool[0].body[BODY_BUF_SIZE]);
     // Spot-check: first, 26th, and 27th body bytes
@@ -578,7 +579,7 @@ void stress_exactly_max_headers_all_stored()
             "\r\n");
     http_parse(0);
     TEST_ASSERT_EQUAL(MAX_HEADERS, http_pool[0].header_count);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL_STRING("H8", http_pool[0].headers[7].key);
     TEST_ASSERT_EQUAL_STRING("v8", http_pool[0].headers[7].val);
 }
@@ -589,13 +590,13 @@ void stress_exactly_max_query_params_all_stored()
     push(0, "GET /?a=1&b=2&c=3&d=4&e=5&f=6&g=7&h=8 HTTP/1.1\r\n\r\n");
     http_parse(0);
     TEST_ASSERT_EQUAL(MAX_QUERY_PARAMS, http_pool[0].query_count);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL_STRING("h", http_pool[0].query_params[MAX_QUERY_PARAMS - 1].key);
     TEST_ASSERT_EQUAL_STRING("8", http_pool[0].query_params[MAX_QUERY_PARAMS - 1].val);
 }
 
 // Byte-by-byte incremental parse - worst-case for a streaming environment.
-// Each byte is pushed individually; the parser must never enter PARSE_ERROR
+// Each byte is pushed individually; the parser must never enter ParseState::PARSE_ERROR
 // while consuming a valid request.
 void stress_incremental_byte_by_byte_no_error()
 {
@@ -608,10 +609,10 @@ void stress_incremental_byte_by_byte_no_error()
         s->rx_buffer[s->rx_head] = (uint8_t)req[i];
         s->rx_head = next;
         http_parse(0);
-        TEST_ASSERT_NOT_EQUAL_MESSAGE(PARSE_ERROR, http_pool[0].parse_state,
+        TEST_ASSERT_NOT_EQUAL_MESSAGE(ParseState::PARSE_ERROR, http_pool[0].parse_state,
                                       "unexpected error during incremental parse");
     }
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
 }
 
 // 50 sequential requests, alternating GET/POST - verify slot is clean after each.
@@ -623,7 +624,7 @@ void stress_sequential_requests_no_state_leak()
         {
             push(0, "GET /ping HTTP/1.1\r\n\r\n");
             http_parse(0);
-            TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+            TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
             TEST_ASSERT_EQUAL_STRING("GET", http_pool[0].method);
             TEST_ASSERT_EQUAL(0, http_pool[0].header_count);
         }
@@ -631,7 +632,7 @@ void stress_sequential_requests_no_state_leak()
         {
             push(0, "POST /data HTTP/1.1\r\nContent-Length: 2\r\n\r\nhi");
             http_parse(0);
-            TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+            TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
             TEST_ASSERT_EQUAL_STRING("POST", http_pool[0].method);
             TEST_ASSERT_EQUAL_STRING("hi", (const char *)http_pool[0].body);
         }
@@ -762,15 +763,15 @@ void race_concurrent_slot_parse_isolation()
     http_parse(0);
     http_parse(1);
 
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
     // Slot 1 is not complete - it's still awaiting headers/blank line
-    TEST_ASSERT_NOT_EQUAL(PARSE_COMPLETE, http_pool[1].parse_state);
-    TEST_ASSERT_NOT_EQUAL(PARSE_ERROR, http_pool[1].parse_state);
+    TEST_ASSERT_NOT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[1].parse_state);
+    TEST_ASSERT_NOT_EQUAL(ParseState::PARSE_ERROR, http_pool[1].parse_state);
 
     // Finish slot 1 with the blank line
     push(1, "Content-Length: 0\r\n\r\n");
     http_parse(1);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[1].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[1].parse_state);
     TEST_ASSERT_EQUAL_STRING("POST", http_pool[1].method);
 }
 
@@ -781,11 +782,11 @@ void race_reset_during_parse_header_val()
 {
     push(0, "GET / HTTP/1.1\r\nContent-Type: appli"); // truncated value
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_HEADER_VAL, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_HEADER_VAL, http_pool[0].parse_state);
 
     http_reset(0); // disconnect arrives mid-parse
 
-    TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL(0, http_pool[0].header_count);
     TEST_ASSERT_EQUAL('\0', http_pool[0].method[0]);
 }
@@ -796,11 +797,11 @@ void race_reset_during_parse_query()
 {
     push(0, "GET /s?key=val&partia"); // truncated query
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_QUERY, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_QUERY, http_pool[0].parse_state);
 
     http_reset(0);
 
-    TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL(0, (int)http_pool[0].query_idx);
     TEST_ASSERT_EQUAL(0, http_pool[0].query_count);
 }
@@ -810,29 +811,29 @@ void race_reset_during_parse_body()
 {
     push(0, "POST /x HTTP/1.1\r\nContent-Length: 10\r\n\r\nhalf");
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_BODY, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_BODY, http_pool[0].parse_state);
 
     http_reset(0);
 
-    TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL(0, (int)http_pool[0].body_len);
     TEST_ASSERT_EQUAL(0, (int)http_pool[0].body_bytes_read);
     TEST_ASSERT_EQUAL('\0', http_pool[0].body[0]);
 }
 
-// After http_parse hits PARSE_COMPLETE, calling it again must be a no-op
+// After http_parse hits ParseState::PARSE_COMPLETE, calling it again must be a no-op
 // - bytes pushed after completion must stay in the buffer unconsumed.
 void race_parse_after_complete_is_nop()
 {
     push(0, "GET / HTTP/1.1\r\n\r\n");
     http_parse(0);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
 
     // Push extra bytes (simulates garbage/next request arriving)
     push(0, "EXTRA");
     http_parse(0); // must not alter any field
 
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL_STRING("GET", http_pool[0].method);
 }
 

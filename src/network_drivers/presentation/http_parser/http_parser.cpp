@@ -172,16 +172,16 @@ void http_parser_reset(HttpReq *req)
 {
     uint8_t id = req->slot_id;
 #if DETWS_ENABLE_STREAM_BODY
-    // A streamed body that never reached PARSE_COMPLETE is being torn down (peer
+    // A streamed body that never reached ParseState::PARSE_COMPLETE is being torn down (peer
     // reset / timeout / error): let the sink release its resource before we wipe
-    // the state. The normal-completion reset runs while parse_state==PARSE_COMPLETE
+    // the state. The normal-completion reset runs while parse_state==ParseState::PARSE_COMPLETE
     // (the handler already finished the sink), so this fires only on abort.
-    if (req->body_streaming && req->parse_state != PARSE_COMPLETE && s_hp.stream_abort)
+    if (req->body_streaming && req->parse_state != ParseState::PARSE_COMPLETE && s_hp.stream_abort)
         s_hp.stream_abort(req);
 #endif
     *req = {};         // zero all fields
     req->slot_id = id; // restore slot identity
-    req->parse_state = PARSE_METHOD;
+    req->parse_state = ParseState::PARSE_METHOD;
     req->_version_hash = FNV_OFFSET; // seed the FNV-1a accumulator
 }
 
@@ -190,10 +190,10 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
     // Terminal states - do nothing
     switch (p->parse_state)
     {
-    case PARSE_COMPLETE:
-    case PARSE_ERROR:
-    case PARSE_ENTITY_TOO_LARGE:
-    case PARSE_URI_TOO_LONG:
+    case ParseState::PARSE_COMPLETE:
+    case ParseState::PARSE_ERROR:
+    case ParseState::PARSE_ENTITY_TOO_LARGE:
+    case ParseState::PARSE_URI_TOO_LONG:
         return;
     default:
         break;
@@ -204,16 +204,16 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
     switch (p->parse_state)
     {
 
-    case PARSE_METHOD:
+    case ParseState::PARSE_METHOD:
         if (c == ' ')
         {
-            p->parse_state = PARSE_PATH;
+            p->parse_state = ParseState::PARSE_PATH;
             p->current_token_idx = 0;
         }
         else if (!is_tchar(byte))
         {
             // RFC 7230 §3.1.1: method = token; any non-tchar is malformed
-            p->parse_state = PARSE_ERROR;
+            p->parse_state = ParseState::PARSE_ERROR;
         }
         else if (p->current_token_idx < sizeof(p->method) - 1)
         {
@@ -221,23 +221,23 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         }
         else
         {
-            p->parse_state = PARSE_ERROR;
+            p->parse_state = ParseState::PARSE_ERROR;
         }
         break;
 
-    case PARSE_PATH:
+    case ParseState::PARSE_PATH:
         if (c == ' ')
         {
-            p->parse_state = PARSE_VERSION;
+            p->parse_state = ParseState::PARSE_VERSION;
         }
         else if (c == '?')
         {
-            p->parse_state = PARSE_QUERY;
+            p->parse_state = ParseState::PARSE_QUERY;
         }
         else if (!is_vchar(byte))
         {
             // RFC 3986 §3.3: path chars must be visible ASCII (or pct-encoded)
-            p->parse_state = PARSE_ERROR;
+            p->parse_state = ParseState::PARSE_ERROR;
         }
         else if (p->path_idx < MAX_PATH_LEN - 1)
         {
@@ -245,20 +245,20 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         }
         else
         {
-            p->parse_state = PARSE_URI_TOO_LONG;
+            p->parse_state = ParseState::PARSE_URI_TOO_LONG;
         }
         break;
 
-    case PARSE_QUERY:
+    case ParseState::PARSE_QUERY:
         if (c == ' ')
         {
             parse_query_params(p);
-            p->parse_state = PARSE_VERSION;
+            p->parse_state = ParseState::PARSE_VERSION;
         }
         else if (!is_vchar(byte))
         {
             // Control chars and NUL are not valid query-string bytes
-            p->parse_state = PARSE_ERROR;
+            p->parse_state = ParseState::PARSE_ERROR;
         }
         else if (p->query_idx < MAX_QUERY_LEN - 1)
         {
@@ -267,16 +267,16 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         // Silently truncate - query overflow is a capacity limit, not a protocol error
         break;
 
-    case PARSE_VERSION:
+    case ParseState::PARSE_VERSION:
         if (c == '\r')
         {
             if (p->_version_hash == HASH_HTTP11)
-                p->version = HTTP_11;
+                p->version = HttpVersion::HTTP_11;
             else if (p->_version_hash == HASH_HTTP10)
-                p->version = HTTP_10;
+                p->version = HttpVersion::HTTP_10;
             else
-                p->version = HTTP_UNKNOWN;
-            p->parse_state = PARSE_EXPECT_LF;
+                p->version = HttpVersion::HTTP_UNKNOWN;
+            p->parse_state = ParseState::PARSE_EXPECT_LF;
         }
         else
         {
@@ -284,30 +284,30 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         }
         break;
 
-    case PARSE_EXPECT_LF:
+    case ParseState::PARSE_EXPECT_LF:
         if (c == '\n')
         {
-            p->parse_state = PARSE_HEADER_KEY;
+            p->parse_state = ParseState::PARSE_HEADER_KEY;
             p->current_token_idx = 0;
         }
         else
         {
-            p->parse_state = PARSE_ERROR;
+            p->parse_state = ParseState::PARSE_ERROR;
         }
         break;
 
-    case PARSE_HEADER_KEY:
+    case ParseState::PARSE_HEADER_KEY:
         if (c == '\r')
         {
             if (p->current_token_idx == 0)
             {
                 // Blank line - end of headers
-                p->parse_state = PARSE_EXPECT_BODY_LF;
+                p->parse_state = ParseState::PARSE_EXPECT_BODY_LF;
             }
             else
             {
                 // CR mid-key: malformed (RFC 7230 §3.2 requires CRLF after value)
-                p->parse_state = PARSE_ERROR;
+                p->parse_state = ParseState::PARSE_ERROR;
             }
         }
         else if (c == ':')
@@ -316,7 +316,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             // regardless of whether this header is stored (header_count < MAX).
             size_t k = p->current_token_idx < MAX_KEY_LEN ? p->current_token_idx : MAX_KEY_LEN - 1;
             p->cur_key[k] = '\0';
-            p->parse_state = PARSE_HEADER_VAL;
+            p->parse_state = ParseState::PARSE_HEADER_VAL;
             p->current_token_idx = 0;
 #if DETWS_CAPTURE_AUTH_HEADER
             // The Authorization value (Digest / JWT bearer) exceeds MAX_VAL_LEN,
@@ -329,7 +329,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         else if (!is_tchar(byte))
         {
             // RFC 7230 §3.2: field-name = token; any non-tchar is malformed
-            p->parse_state = PARSE_ERROR;
+            p->parse_state = ParseState::PARSE_ERROR;
         }
         else
         {
@@ -351,7 +351,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         }
         break;
 
-    case PARSE_HEADER_VAL:
+    case ParseState::PARSE_HEADER_VAL:
         // Strip leading OWS (SP or HTAB) after the colon - RFC 9110 §5.6.3
         if ((c == ' ' || c == '\t') && p->current_token_idx == 0)
             break;
@@ -395,7 +395,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
                 // smuggling vector) → 400.
                 if (!valid || (p->content_length_count > 0 && cl != p->content_length))
                 {
-                    p->parse_state = PARSE_ERROR;
+                    p->parse_state = ParseState::PARSE_ERROR;
                     break;
                 }
                 p->content_length = cl;
@@ -409,20 +409,20 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             // Transfer-Encoding (fail closed).
             if (strcasecmp(p->cur_key, "Transfer-Encoding") == 0)
             {
-                p->parse_state = PARSE_ERROR;
+                p->parse_state = ParseState::PARSE_ERROR;
                 break;
             }
 
             if (h < MAX_HEADERS)
                 p->header_count++;
 
-            p->parse_state = PARSE_EXPECT_LF;
+            p->parse_state = ParseState::PARSE_EXPECT_LF;
             p->current_token_idx = 0;
         }
         else if (!is_field_value_char(byte))
         {
             // RFC 7230 §3.2: control chars and NUL are not valid in field values
-            p->parse_state = PARSE_ERROR;
+            p->parse_state = ParseState::PARSE_ERROR;
         }
         else
         {
@@ -445,13 +445,13 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         }
         break;
 
-    case PARSE_EXPECT_BODY_LF:
+    case ParseState::PARSE_EXPECT_BODY_LF:
         /*
          * Consumes the LF of the blank-line CRLF that ends the header block.
          * Decides the next state based on Content-Length:
          *   > BODY_BUF_SIZE → 413 Payload Too Large
-         *   == 0            → PARSE_COMPLETE (no body)
-         *   else            → PARSE_BODY
+         *   == 0            → ParseState::PARSE_COMPLETE (no body)
+         *   else            → ParseState::PARSE_BODY
          */
         if (c == '\n')
         {
@@ -460,11 +460,11 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             // header (enforced only when DETWS_ENFORCE_HOST_HEADER is set).
             bool host_violation = (p->host_count > 1);
 #if DETWS_ENFORCE_HOST_HEADER
-            if (p->version == HTTP_11 && p->host_count == 0)
+            if (p->version == HttpVersion::HTTP_11 && p->host_count == 0)
                 host_violation = true;
 #endif
             if (host_violation)
-                p->parse_state = PARSE_ERROR;
+                p->parse_state = ParseState::PARSE_ERROR;
 #if DETWS_ENABLE_STREAM_BODY
             // Streaming sink (OTA / upload): all headers are parsed here, so the
             // hook can match method/path/Authorization and begin a sink (Update
@@ -473,28 +473,28 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             else if (p->content_length > 0 && s_hp.stream_begin && s_hp.stream_begin(p))
             {
                 p->body_streaming = true;
-                p->parse_state = PARSE_BODY;
+                p->parse_state = ParseState::PARSE_BODY;
             }
 #endif
             else if (p->content_length > BODY_BUF_SIZE)
-                p->parse_state = PARSE_ENTITY_TOO_LARGE;
+                p->parse_state = ParseState::PARSE_ENTITY_TOO_LARGE;
             else if (p->content_length == 0)
             {
                 p->body[0] = '\0';
-                p->parse_state = PARSE_COMPLETE;
+                p->parse_state = ParseState::PARSE_COMPLETE;
             }
             else
             {
-                p->parse_state = PARSE_BODY;
+                p->parse_state = ParseState::PARSE_BODY;
             }
         }
         else
         {
-            p->parse_state = PARSE_ERROR;
+            p->parse_state = ParseState::PARSE_ERROR;
         }
         break;
 
-    case PARSE_BODY:
+    case ParseState::PARSE_BODY:
         // Body is opaque data - no character validation.
 #if DETWS_ENABLE_STREAM_BODY
         if (p->body_streaming)
@@ -516,7 +516,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
                     s_hp.stream_data(p, p->body, p->body_len); // flush the tail
                 p->body_len = 0;
                 p->body[0] = '\0';
-                p->parse_state = PARSE_COMPLETE;
+                p->parse_state = ParseState::PARSE_COMPLETE;
             }
             break;
         }
@@ -527,7 +527,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         if (p->body_bytes_read >= p->content_length)
         {
             p->body[p->body_len] = '\0';
-            p->parse_state = PARSE_COMPLETE;
+            p->parse_state = ParseState::PARSE_COMPLETE;
         }
         break;
 

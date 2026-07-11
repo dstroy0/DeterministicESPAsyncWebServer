@@ -12,21 +12,21 @@
  *
  * **State machine**
  * ```
- * PARSE_METHOD       ──space──────► PARSE_PATH
- * PARSE_PATH         ──space──────► PARSE_VERSION
- * PARSE_PATH         ──'?'────────► PARSE_QUERY
- * PARSE_QUERY        ──space──────► PARSE_VERSION  (calls parse_query_params)
- * PARSE_VERSION      ──CR─────────► PARSE_EXPECT_LF
- * PARSE_EXPECT_LF    ──LF─────────► PARSE_HEADER_KEY
- * PARSE_HEADER_KEY   ──':'────────► PARSE_HEADER_VAL
- * PARSE_HEADER_KEY   ──CR─────────► PARSE_EXPECT_BODY_LF  (blank line)
- * PARSE_HEADER_VAL   ──CR─────────► PARSE_EXPECT_LF  (stores header)
- * PARSE_EXPECT_BODY_LF ──LF (CL=0)──► PARSE_COMPLETE
- * PARSE_EXPECT_BODY_LF ──LF (CL>BUF)► PARSE_ENTITY_TOO_LARGE  (→ 413)
- * PARSE_EXPECT_BODY_LF ──LF (else)──► PARSE_BODY
- * PARSE_BODY         ──(all read)──► PARSE_COMPLETE
- * PARSE_PATH (overflow) ───────────► PARSE_URI_TOO_LONG       (→ 414)
- * Any state + protocol error ──────► PARSE_ERROR             (→ 400)
+ * ParseState::PARSE_METHOD       ──space──────► ParseState::PARSE_PATH
+ * ParseState::PARSE_PATH         ──space──────► ParseState::PARSE_VERSION
+ * ParseState::PARSE_PATH         ──'?'────────► ParseState::PARSE_QUERY
+ * ParseState::PARSE_QUERY        ──space──────► ParseState::PARSE_VERSION  (calls parse_query_params)
+ * ParseState::PARSE_VERSION      ──CR─────────► ParseState::PARSE_EXPECT_LF
+ * ParseState::PARSE_EXPECT_LF    ──LF─────────► ParseState::PARSE_HEADER_KEY
+ * ParseState::PARSE_HEADER_KEY   ──':'────────► ParseState::PARSE_HEADER_VAL
+ * ParseState::PARSE_HEADER_KEY   ──CR─────────► ParseState::PARSE_EXPECT_BODY_LF  (blank line)
+ * ParseState::PARSE_HEADER_VAL   ──CR─────────► ParseState::PARSE_EXPECT_LF  (stores header)
+ * ParseState::PARSE_EXPECT_BODY_LF ──LF (CL=0)──► ParseState::PARSE_COMPLETE
+ * ParseState::PARSE_EXPECT_BODY_LF ──LF (CL>BUF)► ParseState::PARSE_ENTITY_TOO_LARGE  (→ 413)
+ * ParseState::PARSE_EXPECT_BODY_LF ──LF (else)──► ParseState::PARSE_BODY
+ * ParseState::PARSE_BODY         ──(all read)──► ParseState::PARSE_COMPLETE
+ * ParseState::PARSE_PATH (overflow) ───────────► ParseState::PARSE_URI_TOO_LONG       (→ 414)
+ * Any state + protocol error ──────► ParseState::PARSE_ERROR             (→ 400)
  * ```
  *
  * @author  Douglas Quigg (dstroy0)
@@ -49,7 +49,7 @@
  * Advance via http_parser_feed().  The application layer inspects this
  * after each feed call or after draining a complete chunk.
  */
-enum ParseState
+enum class ParseState : uint8_t
 {
     PARSE_METHOD,           ///< Reading the HTTP method (GET, POST, …).
     PARSE_PATH,             ///< Reading the URL path component.
@@ -70,11 +70,11 @@ enum ParseState
  * @brief Parsed HTTP protocol version.
  *
  * Populated from the request line (`HTTP/1.0` or `HTTP/1.1`) using an FNV-1a
- * hash accumulated during `PARSE_VERSION`.  The application layer may use
+ * hash accumulated during `ParseState::PARSE_VERSION`.  The application layer may use
  * this to drive keep-alive semantics: HTTP/1.1 defaults to persistent
  * connections; HTTP/1.0 defaults to close.
  */
-enum HttpVersion
+enum class HttpVersion : uint8_t
 {
     HTTP_UNKNOWN = 0, ///< Version string did not match any known token.
     HTTP_10,          ///< HTTP/1.0 - close semantics by default.
@@ -103,7 +103,7 @@ struct QueryParam
  * @brief Fully-parsed HTTP/1.1 request.
  *
  * Populated incrementally by http_parser_feed().  Valid for dispatch
- * only when `parse_state == PARSE_COMPLETE`.
+ * only when `parse_state == ParseState::PARSE_COMPLETE`.
  *
  * Call http_parser_reset() to recycle this struct for the next request.
  */
@@ -168,7 +168,7 @@ extern HttpReq http_pool[CONN_POOL_SLOTS];
 // in BODY_BUF_SIZE chunks instead of being buffered into body[] (and the
 // BODY_BUF_SIZE / 413 cap is bypassed), enabling multi-MB uploads such as a
 // firmware image fed to the ESP32 Update API or a file written to LittleFS. The
-// matching route handler still runs at PARSE_COMPLETE to send the response.
+// matching route handler still runs at ParseState::PARSE_COMPLETE to send the response.
 // ---------------------------------------------------------------------------
 
 /** @brief Decide whether to stream this request's body; begin the sink if so. */
@@ -176,7 +176,7 @@ typedef bool (*HttpStreamBeginCb)(HttpReq *req);
 /** @brief Receive one body chunk for a streamed request (@p req identifies the connection). */
 typedef void (*HttpStreamDataCb)(HttpReq *req, const uint8_t *data, size_t len);
 /**
- * @brief A streamed request was torn down before PARSE_COMPLETE (peer reset,
+ * @brief A streamed request was torn down before ParseState::PARSE_COMPLETE (peer reset,
  * timeout, parse error). Lets the sink release its resource (close the file,
  * abort the Update) so a half-sent upload never leaks a handle.
  */
@@ -191,9 +191,9 @@ void http_parser_set_stream_hooks(HttpStreamBeginCb begin, HttpStreamDataCb data
 // ---------------------------------------------------------------------------
 
 /**
- * @brief Reset a parser context to the initial (PARSE_METHOD) state.
+ * @brief Reset a parser context to the initial (ParseState::PARSE_METHOD) state.
  *
- * Zeroes all fields and sets `parse_state = PARSE_METHOD`.  Call before the
+ * Zeroes all fields and sets `parse_state = ParseState::PARSE_METHOD`.  Call before the
  * first use, after each completed or failed request, and on connection events.
  *
  * @param req  Parser context to reset.  Must not be null.
@@ -204,7 +204,8 @@ void http_parser_reset(HttpReq *req);
  * @brief Feed one byte to the parser state machine.
  *
  * Returns immediately without modifying state when `parse_state` is already
- * `PARSE_COMPLETE`, `PARSE_ERROR`, `PARSE_ENTITY_TOO_LARGE`, or `PARSE_URI_TOO_LONG`.
+ * `ParseState::PARSE_COMPLETE`, `ParseState::PARSE_ERROR`, `ParseState::PARSE_ENTITY_TOO_LARGE`, or
+ * `ParseState::PARSE_URI_TOO_LONG`.
  *
  * @param req  Parser context for this request.
  * @param byte Next byte from the HTTP stream.

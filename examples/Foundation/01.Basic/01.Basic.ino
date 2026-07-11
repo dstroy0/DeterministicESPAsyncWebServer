@@ -63,10 +63,10 @@ void handle_status(uint8_t slot_id, HttpReq *req)
     const char *version_str;
     switch (req->version)
     {
-    case HTTP_11:
+    case HttpVersion::HTTP_11:
         version_str = "1.1";
         break;
-    case HTTP_10:
+    case HttpVersion::HTTP_10:
         version_str = "1.0";
         break;
     default:

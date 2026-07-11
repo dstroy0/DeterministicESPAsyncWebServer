@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // Tests the parser's streaming-body hook (DETWS_ENABLE_OTA): a body larger than
-// BODY_BUF_SIZE is streamed to a sink in chunks and reaches PARSE_COMPLETE
+// BODY_BUF_SIZE is streamed to a sink in chunks and reaches ParseState::PARSE_COMPLETE
 // (bypassing the 413 cap), while the default 413 behavior is preserved when no
 // hook matches. Uses a mock sink (no ESP32 Update dependency).
 
@@ -59,7 +59,7 @@ void test_large_body_streams_to_completion()
     for (size_t i = 0; i < N; i++)
         http_parser_feed(&r, (uint8_t)('A' + (i % 26)));
 
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, r.parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, r.parse_state);
     TEST_ASSERT_TRUE(r.body_streaming);
     TEST_ASSERT_EQUAL_UINT(N, (unsigned)g_total); // every byte delivered
     TEST_ASSERT_GREATER_THAN(1, g_chunks);        // multiple chunks → cap bypassed
@@ -74,7 +74,7 @@ void test_no_hooks_large_body_is_413()
     r.slot_id = 0;
     http_parser_reset(&r);
     feed(&r, "POST /update HTTP/1.1\r\nHost: x\r\nContent-Length: 4096\r\n\r\n");
-    TEST_ASSERT_EQUAL(PARSE_ENTITY_TOO_LARGE, r.parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_ENTITY_TOO_LARGE, r.parse_state);
 }
 
 // A non-matching path is not streamed, so the large body still 413s.
@@ -85,7 +85,7 @@ void test_nonmatching_path_not_streamed()
     r.slot_id = 0;
     http_parser_reset(&r);
     feed(&r, "POST /other HTTP/1.1\r\nHost: x\r\nContent-Length: 4096\r\n\r\n");
-    TEST_ASSERT_EQUAL(PARSE_ENTITY_TOO_LARGE, r.parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_ENTITY_TOO_LARGE, r.parse_state);
     TEST_ASSERT_EQUAL_UINT(0, (unsigned)g_total);
 }
 

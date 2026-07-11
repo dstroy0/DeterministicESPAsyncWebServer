@@ -38,7 +38,7 @@
  *    - `EVT_DATA` → http_parse()
  *
  * 3. **Returns** - upper layers may then inspect http_pool[] for
- *    PARSE_COMPLETE slots and send responses.
+ *    ParseState::PARSE_COMPLETE slots and send responses.
  *
  * @note The event-drain loop is bounded by the queue depth (16 entries).
  *       Even in the absolute worst case this function executes in O(1).

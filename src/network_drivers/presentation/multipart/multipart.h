@@ -71,7 +71,7 @@ struct Multipart
  * Reads the boundary from the `Content-Type` header, then scans
  * `req->body` in-place, null-terminating each part's headers and data.
  *
- * @param req  Fully-parsed HTTP request (must be in PARSE_COMPLETE state).
+ * @param req  Fully-parsed HTTP request (must be in ParseState::PARSE_COMPLETE state).
  * @param mp   Output structure; filled on success.
  * @return true if at least one part was found, false on parse error.
  */

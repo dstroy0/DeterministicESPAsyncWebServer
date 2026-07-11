@@ -77,10 +77,10 @@ void http_parse(uint8_t slot_id)
     {
         switch (req->parse_state)
         {
-        case PARSE_COMPLETE:
-        case PARSE_ERROR:
-        case PARSE_ENTITY_TOO_LARGE:
-        case PARSE_URI_TOO_LONG:
+        case ParseState::PARSE_COMPLETE:
+        case ParseState::PARSE_ERROR:
+        case ParseState::PARSE_ENTITY_TOO_LARGE:
+        case ParseState::PARSE_URI_TOO_LONG:
             return; // terminal state - drain nothing further
         default:
             break;
@@ -167,8 +167,9 @@ static void tls_data(uint8_t slot)
         HttpReq *req = &http_pool[slot];
         for (int i = 0; i < n; i++)
         {
-            if (req->parse_state == PARSE_COMPLETE || req->parse_state == PARSE_ERROR ||
-                req->parse_state == PARSE_ENTITY_TOO_LARGE || req->parse_state == PARSE_URI_TOO_LONG)
+            if (req->parse_state == ParseState::PARSE_COMPLETE || req->parse_state == ParseState::PARSE_ERROR ||
+                req->parse_state == ParseState::PARSE_ENTITY_TOO_LARGE ||
+                req->parse_state == ParseState::PARSE_URI_TOO_LONG)
                 break; // terminal state - let handle() dispatch before reading more
             http_parser_feed(req, buf[i]);
         }

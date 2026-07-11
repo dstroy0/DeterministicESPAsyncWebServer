@@ -10,10 +10,10 @@
  * handle()
  *   └─ server_tick()                 ← drain FreeRTOS event queue
  *   └─ for each slot:
- *        PARSE_COMPLETE          → match_and_execute()
- *        PARSE_ERROR             → send(400)
- *        PARSE_ENTITY_TOO_LARGE  → send(413)
- *        PARSE_URI_TOO_LONG      → send(414)
+ *        ParseState::PARSE_COMPLETE          → match_and_execute()
+ *        ParseState::PARSE_ERROR             → send(400)
+ *        ParseState::PARSE_ENTITY_TOO_LARGE  → send(413)
+ *        ParseState::PARSE_URI_TOO_LONG      → send(414)
  * ```
  *
  * **Route table**
@@ -224,12 +224,12 @@ static const char *status_text(int code)
 /**
  * @brief Map a method string (from the parsed request line) to an HttpMethod enum.
  *
- * Returns HTTP_UNKNOWN for any method the server does not implement, so the
+ * Returns HttpVersion::HTTP_UNKNOWN for any method the server does not implement, so the
  * dispatcher can answer 501 Not Implemented (RFC 7231 §6.5.2) instead of
  * silently treating it as GET.
  *
  * @param m Null-terminated method string, e.g. "POST".
- * @return Matching HttpMethod enum value, or HTTP_UNKNOWN.
+ * @return Matching HttpMethod enum value, or HttpVersion::HTTP_UNKNOWN.
  */
 static HttpMethod parse_method(const char *m)
 {
@@ -359,12 +359,12 @@ bool DetWebServer::keepalive_eval(uint8_t slot_id)
 {
     HttpReq *req = &http_pool[slot_id];
     // Only a cleanly-parsed request has a known message boundary; errors close.
-    if (req->parse_state != PARSE_COMPLETE)
+    if (req->parse_state != ParseState::PARSE_COMPLETE)
         return false;
 
     const char *c = http_get_header(req, "Connection");
     bool keep;
-    if (req->version == HTTP_11)
+    if (req->version == HttpVersion::HTTP_11)
         keep = !conn_has_token(c, "close"); // 1.1 default: persistent
     else
         keep = conn_has_token(c, "keep-alive"); // 1.0/unknown default: close
@@ -380,7 +380,7 @@ bool DetWebServer::keepalive_eval(uint8_t slot_id)
 
 // Finish a response: flush, then either begin the graceful CONN_CLOSING dwell
 // (close path) or leave the slot active for reuse (keep-alive). The HTTP parser
-// is reset either way, returning a kept-alive slot to PARSE_METHOD ready for the
+// is reset either way, returning a kept-alive slot to ParseState::PARSE_METHOD ready for the
 // next request. The slot stays CONN_ACTIVE through the write for BOTH paths
 // (callbacks live - the model keep-alive has always used); the close path then
 // dwells in CONN_CLOSING from here, so the slot is reclaimed only once the peer
@@ -741,7 +741,7 @@ void DetWebServer::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, con
         r->body_bytes_read = body_len;
         r->content_length = body_len;
     }
-    r->parse_state = PARSE_COMPLETE;
+    r->parse_state = ParseState::PARSE_COMPLETE;
 
     // Mark the reserved slot as HTTP/3 and install the response sink so send() / send_empty() route the
     // response back onto this stream (no TCP pcb here - the sink owns the QUIC framing).
@@ -1250,12 +1250,12 @@ static bool match_path_params(const char *route, const char *path, HttpReq *req)
  *
  * Call this repeatedly from loop().  Each call:
  *   1. Calls server_tick() which runs timeout sweeps + drains the event queue.
- *   2. Walks all slots; any in PARSE_COMPLETE is dispatched via match_and_execute().
- *   3. Any slot left in PARSE_COMPLETE after dispatch (i.e., callback did not
+ *   2. Walks all slots; any in ParseState::PARSE_COMPLETE is dispatched via match_and_execute().
+ *   3. Any slot left in ParseState::PARSE_COMPLETE after dispatch (i.e., callback did not
  *      send a response) is reset so it doesn't block the slot.
- *   4. Any slot in PARSE_ERROR receives an automatic 400 response.
- *   5. Any slot in PARSE_ENTITY_TOO_LARGE receives an automatic 413 response.
- *   6. Any slot in PARSE_URI_TOO_LONG receives an automatic 414 response.
+ *   4. Any slot in ParseState::PARSE_ERROR receives an automatic 400 response.
+ *   5. Any slot in ParseState::PARSE_ENTITY_TOO_LARGE receives an automatic 413 response.
+ *   6. Any slot in ParseState::PARSE_URI_TOO_LONG receives an automatic 414 response.
  */
 #if DETWS_ENABLE_WEBSOCKET
 void DetWebServer::ws_dispatch_message(WsConn *ws)
@@ -1426,7 +1426,7 @@ void DetWebServer::http_poll_slot(uint8_t i)
     // (pipelined) request in its ring buffer with no new EVT_DATA to trigger a
     // parse. Drain it here each tick so it gets dispatched. TLS slots are
     // skipped - their ring holds ciphertext, decrypted in the session layer.
-    if (conn_pool[i].state == CONN_ACTIVE && http_pool[i].parse_state != PARSE_COMPLETE
+    if (conn_pool[i].state == CONN_ACTIVE && http_pool[i].parse_state != ParseState::PARSE_COMPLETE
 #if DETWS_ENABLE_TLS
         && !conn_pool[i].tls
 #endif
@@ -1435,21 +1435,21 @@ void DetWebServer::http_poll_slot(uint8_t i)
 #endif
 
     // HTTP slot
-    if (http_pool[i].parse_state == PARSE_COMPLETE)
+    if (http_pool[i].parse_state == ParseState::PARSE_COMPLETE)
     {
         match_and_execute(i);
-        if (http_pool[i].parse_state == PARSE_COMPLETE)
+        if (http_pool[i].parse_state == ParseState::PARSE_COMPLETE)
             http_reset(i);
     }
-    else if (http_pool[i].parse_state == PARSE_ERROR)
+    else if (http_pool[i].parse_state == ParseState::PARSE_ERROR)
     {
         send(i, 400, DET_MIME_TEXT_PLAIN, "Bad Request");
     }
-    else if (http_pool[i].parse_state == PARSE_ENTITY_TOO_LARGE)
+    else if (http_pool[i].parse_state == ParseState::PARSE_ENTITY_TOO_LARGE)
     {
         send(i, 413, DET_MIME_TEXT_PLAIN, "Payload Too Large");
     }
-    else if (http_pool[i].parse_state == PARSE_URI_TOO_LONG)
+    else if (http_pool[i].parse_state == ParseState::PARSE_URI_TOO_LONG)
     {
         send(i, 414, DET_MIME_TEXT_PLAIN, "URI Too Long");
     }
@@ -2242,7 +2242,7 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
     // to an HTTP/1.0 (or unknown-version) client. Fall back to a close-delimited
     // body: omit Transfer-Encoding, force Connection: close, stream the body
     // unframed, and signal its end by closing the connection (RFC 7230 3.3.3).
-    bool raw = (http_pool[slot_id].version != HTTP_11);
+    bool raw = (http_pool[slot_id].version != HttpVersion::HTTP_11);
 
     char header[RESP_HDR_BUF_SIZE];
     int hlen;

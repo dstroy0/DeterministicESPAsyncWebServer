@@ -125,7 +125,7 @@ void cb_headers_end(void *app, uint32_t sid, bool)
 {
     uint8_t slot = (uint8_t)(uintptr_t)app;
     conn_pool[slot].h2_stream = sid;
-    http_pool[slot].parse_state = PARSE_COMPLETE; // the worker's handle() loop dispatches it
+    http_pool[slot].parse_state = ParseState::PARSE_COMPLETE; // the worker's handle() loop dispatches it
 }
 
 void cb_data(void *app, uint32_t, const uint8_t *data, size_t len, bool)

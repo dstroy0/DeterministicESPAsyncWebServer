@@ -449,7 +449,7 @@ class DetWebServer
     /**
      * @brief Decide whether the current response should keep the connection alive.
      *
-     * Only a cleanly-parsed request (PARSE_COMPLETE) is eligible: HTTP/1.1 keeps
+     * Only a cleanly-parsed request (ParseState::PARSE_COMPLETE) is eligible: HTTP/1.1 keeps
      * alive unless the client sent `Connection: close`; HTTP/1.0 keeps alive only
      * with `Connection: keep-alive`. On a true return the slot's request tally is
      * incremented; the DETWS_KEEPALIVE_MAX_REQUESTS-th request returns false so
@@ -1013,11 +1013,11 @@ class DetWebServer
      * 1. Calls `DeterministicAsyncTCP::check_timeouts()` to kill stale
      *    connections.
      * 2. Drains the event queue (connections, data, disconnects, errors).
-     * 3. Scans all connection slots for `PARSE_COMPLETE` requests and
+     * 3. Scans all connection slots for `ParseState::PARSE_COMPLETE` requests and
      *    dispatches them to the matching route handler.
-     * 4. Auto-sends 400 for any slot stuck in `PARSE_ERROR`.
-     * 5. Auto-sends 413 for any slot stuck in `PARSE_ENTITY_TOO_LARGE`.
-     * 6. Auto-sends 414 for any slot stuck in `PARSE_URI_TOO_LONG`.
+     * 4. Auto-sends 400 for any slot stuck in `ParseState::PARSE_ERROR`.
+     * 5. Auto-sends 413 for any slot stuck in `ParseState::PARSE_ENTITY_TOO_LARGE`.
+     * 6. Auto-sends 414 for any slot stuck in `ParseState::PARSE_URI_TOO_LONG`.
      *
      * Threading note: with the worker task running, route/WS/SSE handlers execute
      * in the worker task. Do server I/O from handlers; pushing from `loop()` (e.g.

@@ -59,15 +59,15 @@ void test_empty_queue_does_not_crash()
 void test_pool_initializes_to_parse_method()
 {
     for (int i = 0; i < MAX_CONNS; i++)
-        TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[i].parse_state);
+        TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[i].parse_state);
 }
 
 void test_reset_clears_mid_parse_state()
 {
-    http_pool[0].parse_state = PARSE_HEADER_KEY;
+    http_pool[0].parse_state = ParseState::PARSE_HEADER_KEY;
     http_pool[0].header_count = 3;
     http_reset(0);
-    TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL(0, http_pool[0].header_count);
 }
 
@@ -192,41 +192,41 @@ void stress_mixed_fresh_stale_slots_many_ticks()
 // EVT_CONNECT → http_reset(slot_id)
 void test_evt_connect_calls_http_reset()
 {
-    http_pool[1].parse_state = PARSE_HEADER_KEY;
+    http_pool[1].parse_state = ParseState::PARSE_HEADER_KEY;
     http_pool[1].header_count = 3;
 
     TcpEvt evt = {EVT_CONNECT, 1, 0};
     queue_stage_raw(&evt, sizeof(evt));
     server_tick();
 
-    TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[1].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[1].parse_state);
     TEST_ASSERT_EQUAL(0, http_pool[1].header_count);
 }
 
 // EVT_DISCONNECT → http_reset(slot_id)
 void test_evt_disconnect_calls_http_reset()
 {
-    http_pool[0].parse_state = PARSE_COMPLETE;
+    http_pool[0].parse_state = ParseState::PARSE_COMPLETE;
     http_pool[0].header_count = 2;
 
     TcpEvt evt = {EVT_DISCONNECT, 0, 0};
     queue_stage_raw(&evt, sizeof(evt));
     server_tick();
 
-    TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL(0, http_pool[0].header_count);
 }
 
 // EVT_ERROR → http_reset(slot_id)
 void test_evt_error_calls_http_reset()
 {
-    http_pool[2].parse_state = PARSE_ERROR;
+    http_pool[2].parse_state = ParseState::PARSE_ERROR;
 
     TcpEvt evt = {EVT_ERROR, 2, 0};
     queue_stage_raw(&evt, sizeof(evt));
     server_tick();
 
-    TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[2].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[2].parse_state);
 }
 
 // EVT_DATA → http_parse(slot_id) - ring buffer is drained and parse completes
@@ -238,7 +238,7 @@ void test_evt_data_calls_http_parse()
     queue_stage_raw(&evt, sizeof(evt));
     server_tick();
 
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[0].parse_state);
     TEST_ASSERT_EQUAL_STRING("GET", http_pool[0].method);
     TEST_ASSERT_EQUAL_STRING("/evt", http_pool[0].path);
 }
@@ -247,25 +247,25 @@ void test_evt_data_calls_http_parse()
 void test_multiple_events_drained_in_one_tick()
 {
     // Slot 0: dirty state → EVT_CONNECT → reset
-    http_pool[0].parse_state = PARSE_COMPLETE;
+    http_pool[0].parse_state = ParseState::PARSE_COMPLETE;
     TcpEvt e0 = {EVT_CONNECT, 0, 0};
     queue_stage_raw(&e0, sizeof(e0));
 
-    // Slot 1: ring buffer with a GET → EVT_DATA → PARSE_COMPLETE
+    // Slot 1: ring buffer with a GET → EVT_DATA → ParseState::PARSE_COMPLETE
     push_to_slot(1, "GET / HTTP/1.1\r\n\r\n");
     TcpEvt e1 = {EVT_DATA, 1, 0};
     queue_stage_raw(&e1, sizeof(e1));
 
     // Slot 2: dirty header state → EVT_DISCONNECT → reset
-    http_pool[2].parse_state = PARSE_HEADER_VAL;
+    http_pool[2].parse_state = ParseState::PARSE_HEADER_VAL;
     TcpEvt e2 = {EVT_DISCONNECT, 2, 0};
     queue_stage_raw(&e2, sizeof(e2));
 
     server_tick();
 
-    TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[0].parse_state);
-    TEST_ASSERT_EQUAL(PARSE_COMPLETE, http_pool[1].parse_state);
-    TEST_ASSERT_EQUAL(PARSE_METHOD, http_pool[2].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[0].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_COMPLETE, http_pool[1].parse_state);
+    TEST_ASSERT_EQUAL(ParseState::PARSE_METHOD, http_pool[2].parse_state);
 }
 
 // ====================================================================

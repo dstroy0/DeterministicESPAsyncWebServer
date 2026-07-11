@@ -4289,7 +4289,7 @@
  * is recycled for the next request on the same socket: HTTP/1.1 keeps the
  * connection open unless the client sends `Connection: close`; HTTP/1.0 closes
  * unless the client sends `Connection: keep-alive`. Error responses (400/413/414
- * and any non-PARSE_COMPLETE path) always close, since the next request boundary
+ * and any non-ParseState::PARSE_COMPLETE path) always close, since the next request boundary
  * is unknown. Idle keep-alive connections are still reclaimed by the existing
  * conn_timeout sweep, and each connection serves at most
  * DETWS_KEEPALIVE_MAX_REQUESTS requests before a deliberate close.

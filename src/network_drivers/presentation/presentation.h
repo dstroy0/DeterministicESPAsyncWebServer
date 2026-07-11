@@ -67,8 +67,8 @@ void http_conn_open(uint8_t slot_id);
  *
  * Reads all available bytes from the slot's transport ring buffer and feeds
  * each byte to `http_parser_feed()`.  Stops early if the parser reaches a
- * terminal state (PARSE_COMPLETE, PARSE_ERROR, PARSE_ENTITY_TOO_LARGE,
- * PARSE_URI_TOO_LONG).
+ * terminal state (ParseState::PARSE_COMPLETE, ParseState::PARSE_ERROR, ParseState::PARSE_ENTITY_TOO_LARGE,
+ * ParseState::PARSE_URI_TOO_LONG).
  *
  * Silently ignores out-of-range slot IDs.
  *
