@@ -1170,3 +1170,23 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       `docs/sphinx/conf.py` (light/dark brand css-variables) + `docs/sphinx/_static/squirty.css` (the mascot
       logo, phosphor glow, a faint scanline wash, monospace headings, terminal-styled Breathe signatures),
       light/dark aware.
+
+### Bare-bones default build + per-service flash cost
+
+> Today a fresh build enables far more than a minimal HTTP server needs (`src/ServerConfig.h`
+> defaults `DETWS_ENABLE_WEBSOCKET`, `DETWS_ENABLE_SSE`, `DETWS_ENABLE_FILE_SERVING`,
+> `DETWS_ENABLE_AUTH`, ... to `1`). The default should be a single-purpose HTTP server and
+> everything else strictly opt-in, so the baseline footprint is as small as possible and the
+> cost of each feature is explicit.
+
+- [ ] **Slim the default config to a single-purpose HTTP server** (M) - flip the `src/ServerConfig.h`
+      `DETWS_ENABLE_*` defaults so only the core request/response path is on out of the box; every other
+      service (WebSocket, SSE, auth, file serving, WebDAV, the L6/L7 protocols, the industrial/IoT buses,
+      crypto, storage, ...) defaults **off** and is turned on per build via its own flag. Bare-bones by
+      default shrinks the baseline flash/RAM and makes each feature a conscious opt-in. Update the examples
+      that rely on a default-on feature to set its flag explicitly, and re-check the configurator + FEATURES
+      grid.
+- [ ] **Per-base-service flash-cost table** (M) - measure and document the incremental flash (and static
+      RAM) each base service adds on top of the bare-bones baseline, so a user can budget a build. Extend the
+      footprint tooling (`tools/ci/example_footprints.py`) to emit a "cost of enabling service X alone" delta
+      against the minimal build and land it as a table in `docs/FOOTPRINTS.md`.
