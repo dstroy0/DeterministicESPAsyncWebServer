@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.4] - 2026-07-11
+
+<details>
+<summary><b>Show Changelog for version 5.95.4 - 2026-07-11</b></summary>
 
 ### Bug Fixes
 
@@ -119,6 +122,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 5.95.3 → 5.95.4 ([`0ef1c60`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ef1c6013aabe2e7bafee3b3439a071ca80bdec5))
 - Bump version: 5.95.2 → 5.95.3 ([`007e805`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/007e8059deff849fd5bf50515bff0a607917a811))
 
 ### Documentation
@@ -269,6 +273,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Testing
 
 - reproducible ESP32-S3 pentest/perf target firmware (pentesting/rig_firmware) ([`7087318`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/708731886265e7836d9abc88f45c0b59e2d22a28))
+
+</details>
 
 ## [5.95.2] - 2026-07-11
 
