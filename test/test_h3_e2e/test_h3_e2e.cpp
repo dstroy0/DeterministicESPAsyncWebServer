@@ -147,7 +147,7 @@ static size_t extract_crypto(const uint8_t *p, size_t len, uint8_t *out)
 static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32], const uint8_t *tp, size_t tp_len)
 {
     size_t p = 0;
-    out[p++] = TLS_HS_CLIENT_HELLO;
+    out[p++] = TlsHs::TLS_HS_CLIENT_HELLO;
     size_t hs = p;
     p += 3;
     out[p++] = 0x03;
@@ -282,7 +282,7 @@ void test_http3_get_end_to_end()
     uint8_t idg[256];
     size_t idl = build_long(idg, sizeof(idg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
                             sizeof(CLIENT_SCID), 1, &init.client, ifr, ifl);
-    uint8_t cfin[36] = {TLS_HS_FINISHED, 0x00, 0x00, 0x20};
+    uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
     tls13_finished_mac(cks.client_hs_traffic, chsf, cfin + 4);
     uint8_t hfr[64];
     size_t hfl = quic_build_ack(hfr, sizeof(hfr), 0, 0, 0);

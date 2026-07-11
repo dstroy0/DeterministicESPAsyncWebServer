@@ -14,14 +14,14 @@
 #include <string.h>
 
 // TLS extension types used here (RFC 8446 sec 4.2 + RFC 9001).
-enum
+struct TlsExt
 {
-    TLS_EXT_SERVER_NAME = 0x0000,
-    TLS_EXT_SUPPORTED_GROUPS = 0x000a,
-    TLS_EXT_SIGNATURE_ALGORITHMS = 0x000d,
-    TLS_EXT_ALPN = 0x0010,
-    TLS_EXT_SUPPORTED_VERSIONS = 0x002b,
-    TLS_EXT_KEY_SHARE = 0x0033,
+    static constexpr uint16_t TLS_EXT_SERVER_NAME = 0x0000;
+    static constexpr uint16_t TLS_EXT_SUPPORTED_GROUPS = 0x000a;
+    static constexpr uint16_t TLS_EXT_SIGNATURE_ALGORITHMS = 0x000d;
+    static constexpr uint16_t TLS_EXT_ALPN = 0x0010;
+    static constexpr uint16_t TLS_EXT_SUPPORTED_VERSIONS = 0x002b;
+    static constexpr uint16_t TLS_EXT_KEY_SHARE = 0x0033;
 };
 
 // ---------------------------------------------------------------------------
@@ -161,7 +161,7 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
 {
     switch (type)
     {
-    case TLS_EXT_SUPPORTED_VERSIONS: {
+    case TlsExt::TLS_EXT_SUPPORTED_VERSIONS: {
         // 1-byte list length, then 2-byte versions.
         if (blen < 1)
             return;
@@ -169,21 +169,21 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
         out->offers_tls13 = list16_contains(body + 1, blen - 1, ll, TLS_VERSION_1_3);
         break;
     }
-    case TLS_EXT_SUPPORTED_GROUPS: {
+    case TlsExt::TLS_EXT_SUPPORTED_GROUPS: {
         if (blen < 2)
             return;
         size_t ll = (body[0] << 8) | body[1];
         out->offers_x25519 = list16_contains(body + 2, blen - 2, ll, TLS_GROUP_X25519);
         break;
     }
-    case TLS_EXT_SIGNATURE_ALGORITHMS: {
+    case TlsExt::TLS_EXT_SIGNATURE_ALGORITHMS: {
         if (blen < 2)
             return;
         size_t ll = (body[0] << 8) | body[1];
         out->offers_ed25519 = list16_contains(body + 2, blen - 2, ll, TLS_SIG_ED25519);
         break;
     }
-    case TLS_EXT_KEY_SHARE: {
+    case TlsExt::TLS_EXT_KEY_SHARE: {
         // 2-byte client_shares length, then KeyShareEntry { group(2), key_exchange<2> }.
         if (blen < 2)
             return;
@@ -207,7 +207,7 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
         }
         break;
     }
-    case TLS_EXT_ALPN: {
+    case TlsExt::TLS_EXT_ALPN: {
         // 2-byte list length, then entries: 1-byte name length + name.
         if (blen < 2)
             return;
@@ -230,7 +230,7 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
         out->quic_tp = body;
         out->quic_tp_len = blen;
         break;
-    case TLS_EXT_SERVER_NAME: {
+    case TlsExt::TLS_EXT_SERVER_NAME: {
         // ServerNameList: 2-byte length, then entries: type(1), name<2>. Take the first host_name.
         if (blen < 2)
             return;
@@ -263,7 +263,7 @@ bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *
     Reader r = {msg, len, 0};
     uint8_t type = 0;
     uint32_t body_len = 0;
-    if (!r_u8(&r, &type) || type != TLS_HS_CLIENT_HELLO || !r_u24(&r, &body_len))
+    if (!r_u8(&r, &type) || type != TlsHs::TLS_HS_CLIENT_HELLO || !r_u24(&r, &body_len))
         return false;
     // The handshake body must fit; trailing bytes past it are not part of this message.
     if (r.pos + body_len > len)
@@ -317,7 +317,7 @@ size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[3
                                 uint8_t session_id_len, const uint8_t server_x25519[32])
 {
     Writer w = {out, cap, 0, true};
-    w_u8(&w, TLS_HS_SERVER_HELLO);
+    w_u8(&w, TlsHs::TLS_HS_SERVER_HELLO);
     size_t hs_len = w_mark(&w, 3);
 
     w_u16(&w, 0x0303); // legacy_version
@@ -330,13 +330,13 @@ size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[3
     size_t ext_len = w_mark(&w, 2);
     // key_share -> server KeyShareEntry { x25519, 32-byte key }. (Ordered key_share then
     // supported_versions to match the RFC 8448 sec 3 ServerHello; extension order is not significant.)
-    w_u16(&w, TLS_EXT_KEY_SHARE);
+    w_u16(&w, TlsExt::TLS_EXT_KEY_SHARE);
     w_u16(&w, 4 + 32);
     w_u16(&w, TLS_GROUP_X25519);
     w_u16(&w, 32);
     w_bytes(&w, server_x25519, 32);
     // supported_versions -> selected 0x0304.
-    w_u16(&w, TLS_EXT_SUPPORTED_VERSIONS);
+    w_u16(&w, TlsExt::TLS_EXT_SUPPORTED_VERSIONS);
     w_u16(&w, 2);
     w_u16(&w, TLS_VERSION_1_3);
     w_patch16(&w, ext_len);
@@ -348,12 +348,12 @@ size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[3
 size_t tls13_build_encrypted_extensions(uint8_t *out, size_t cap, const uint8_t *quic_tp, size_t quic_tp_len)
 {
     Writer w = {out, cap, 0, true};
-    w_u8(&w, TLS_HS_ENCRYPTED_EXTENSIONS);
+    w_u8(&w, TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS);
     size_t hs_len = w_mark(&w, 3);
 
     size_t ext_len = w_mark(&w, 2);
     // ALPN -> ProtocolNameList [ "h3" ].
-    w_u16(&w, TLS_EXT_ALPN);
+    w_u16(&w, TlsExt::TLS_EXT_ALPN);
     w_u16(&w, 5); // ext body length: 2 (list len) + 1 + 2
     w_u16(&w, 3); // ProtocolNameList length
     w_u8(&w, 2);  // name length
@@ -371,7 +371,7 @@ size_t tls13_build_encrypted_extensions(uint8_t *out, size_t cap, const uint8_t 
 size_t tls13_build_certificate(uint8_t *out, size_t cap, const uint8_t *cert_der, size_t cert_len)
 {
     Writer w = {out, cap, 0, true};
-    w_u8(&w, TLS_HS_CERTIFICATE);
+    w_u8(&w, TlsHs::TLS_HS_CERTIFICATE);
     size_t hs_len = w_mark(&w, 3);
 
     w_u8(&w, 0); // certificate_request_context: empty
@@ -415,7 +415,7 @@ size_t tls13_build_cert_verify(uint8_t *out, size_t cap, const uint8_t transcrip
     ssh_ed25519_sign(sig, content, clen, seed);
 
     Writer w = {out, cap, 0, true};
-    w_u8(&w, TLS_HS_CERTIFICATE_VERIFY);
+    w_u8(&w, TlsHs::TLS_HS_CERTIFICATE_VERIFY);
     size_t hs_len = w_mark(&w, 3);
     w_u16(&w, TLS_SIG_ED25519);
     w_u16(&w, SSH_ED25519_SIG_LEN);
@@ -427,7 +427,7 @@ size_t tls13_build_cert_verify(uint8_t *out, size_t cap, const uint8_t transcrip
 size_t tls13_build_finished(uint8_t *out, size_t cap, const uint8_t verify_data[32])
 {
     Writer w = {out, cap, 0, true};
-    w_u8(&w, TLS_HS_FINISHED);
+    w_u8(&w, TlsHs::TLS_HS_FINISHED);
     size_t hs_len = w_mark(&w, 3);
     w_bytes(&w, verify_data, 32);
     w_patch24(&w, hs_len);

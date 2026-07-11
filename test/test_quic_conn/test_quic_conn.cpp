@@ -73,7 +73,7 @@ static void fill()
 static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32], const uint8_t *tp, size_t tp_len)
 {
     size_t p = 0;
-    out[p++] = TLS_HS_CLIENT_HELLO;
+    out[p++] = TlsHs::TLS_HS_CLIENT_HELLO;
     size_t hs_len_at = p;
     p += 3;
     out[p++] = 0x03;
@@ -297,7 +297,7 @@ void test_full_handshake_and_stream()
     size_t pt = open_long(sdg, sl, &init.server, plain, &wire, &type);
     TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_INITIAL, type);
     size_t sh_len = extract_crypto(plain, pt, sh);
-    TEST_ASSERT_EQUAL_UINT8(TLS_HS_SERVER_HELLO, sh[0]);
+    TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, sh[0]);
 
     // Derive the handshake secrets (client side) and open the Handshake packet.
     uint8_t server_pub[32], ecdhe[32];
@@ -324,7 +324,7 @@ void test_full_handshake_and_stream()
     size_t hpt = open_long(sdg + wire, sl - wire, &hs_server_keys, plain, &hswire, &hstype);
     TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_HANDSHAKE, hstype);
     size_t hsflen = extract_crypto(plain, hpt, hsflight);
-    TEST_ASSERT_EQUAL_UINT8(TLS_HS_ENCRYPTED_EXTENSIONS, hsflight[0]);
+    TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS, hsflight[0]);
 
     // Full transcript -> application keys.
     ssh_sha256_update(&t, hsflight, hsflen);
@@ -344,7 +344,7 @@ void test_full_handshake_and_stream()
     size_t idl = build_long(idg, sizeof(idg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
                             sizeof(CLIENT_SCID), 1, &init.client, ifr, ifl);
 
-    uint8_t cfin[36] = {TLS_HS_FINISHED, 0x00, 0x00, 0x20};
+    uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
     tls13_finished_mac(cks.client_hs_traffic, ch_sf, cfin + 4);
     uint8_t hfr[64];
     size_t hfl = quic_build_ack(hfr, sizeof(hfr), 0, 0, 0);
@@ -529,12 +529,12 @@ void test_pto_retransmits_flight()
     TEST_ASSERT_EQUAL_UINT8(QuicLongPacket::QUIC_LP_INITIAL, type);
     size_t sh_len = extract_crypto(plain, pt, sh);
     TEST_ASSERT_TRUE(sh_len > 0);
-    TEST_ASSERT_EQUAL_UINT8(TLS_HS_SERVER_HELLO, sh[0]); // the ServerHello was retransmitted
+    TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, sh[0]); // the ServerHello was retransmitted
 
     // Once the flight is acknowledged (Initial discarded as the client moves on; Handshake ACKed up
     // to the last packet we sent), the PTO disarms and does not retransmit again.
-    qc.space[QUIC_ENC_INITIAL].discarded = true;
-    qc.space[QUIC_ENC_HANDSHAKE].largest_acked = qc.space[QUIC_ENC_HANDSHAKE].last_ae_pn;
+    qc.space[QuicEnc::QUIC_ENC_INITIAL].discarded = true;
+    qc.space[QuicEnc::QUIC_ENC_HANDSHAKE].largest_acked = qc.space[QuicEnc::QUIC_ENC_HANDSHAKE].last_ae_pn;
     quic_conn_on_timeout(&qc, 1000 + 10 * DETWS_QUIC_PTO_MS);
     TEST_ASSERT_FALSE(qc.pto_armed);
     TEST_ASSERT_EQUAL_UINT(0, quic_conn_send(&qc, sdg2, sizeof(sdg2)));
@@ -1164,7 +1164,7 @@ static void complete_handshake(QuicConn *qc, QuicConnCallbacks *cb, QuicInitialS
     uint8_t idg[256];
     size_t idl = build_long(idg, sizeof(idg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
                             sizeof(CLIENT_SCID), 1, &init->client, ifr, ifl);
-    uint8_t cfin[36] = {TLS_HS_FINISHED, 0x00, 0x00, 0x20};
+    uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
     tls13_finished_mac(cks.client_hs_traffic, ch_sf, cfin + 4);
     uint8_t hfr[64];
     size_t hfl = quic_build_ack(hfr, sizeof(hfr), 0, 0, 0);

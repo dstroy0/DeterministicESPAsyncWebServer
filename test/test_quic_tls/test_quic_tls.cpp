@@ -58,7 +58,7 @@ enum
 static size_t build_ch_ext(uint8_t *out, const uint8_t client_pub[32], const uint8_t *tp, size_t tp_len, unsigned inc)
 {
     size_t p = 0;
-    out[p++] = TLS_HS_CLIENT_HELLO;
+    out[p++] = TlsHs::TLS_HS_CLIENT_HELLO;
     size_t hs_len_at = p;
     p += 3; // handshake length, patched below
     out[p++] = 0x03;
@@ -175,17 +175,17 @@ void test_full_handshake_roundtrip()
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
 
     // 1) Feed the ClientHello. The server should build its flights and derive keys.
-    size_t used = quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
+    size_t used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
     TEST_ASSERT_EQUAL_UINT(ch_len, used);
-    TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);
     TEST_ASSERT_TRUE(qt.hs_keys_ready);
     TEST_ASSERT_TRUE(qt.ap_keys_ready);
 
     size_t si_len = 0, sh_flight_len = 0;
-    const uint8_t *si = quic_tls_flight(&qt, QUIC_ENC_INITIAL, &si_len);
-    const uint8_t *sh_flight = quic_tls_flight(&qt, QUIC_ENC_HANDSHAKE, &sh_flight_len);
-    TEST_ASSERT_EQUAL_UINT8(TLS_HS_SERVER_HELLO, si[0]);                // Initial flight = ServerHello
-    TEST_ASSERT_EQUAL_UINT8(TLS_HS_ENCRYPTED_EXTENSIONS, sh_flight[0]); // then EE..Finished
+    const uint8_t *si = quic_tls_flight(&qt, QuicEnc::QUIC_ENC_INITIAL, &si_len);
+    const uint8_t *sh_flight = quic_tls_flight(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, &sh_flight_len);
+    TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, si[0]);                // Initial flight = ServerHello
+    TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS, sh_flight[0]); // then EE..Finished
 
     // Server parsed our transport params.
     const QuicTransportParams *peer = quic_tls_peer_params(&qt);
@@ -231,16 +231,16 @@ void test_full_handshake_roundtrip()
     TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);
 
     // 3) Client builds its Finished and the server accepts it.
-    uint8_t cfin[36] = {TLS_HS_FINISHED, 0x00, 0x00, 0x20};
+    uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
     tls13_finished_mac(cks.client_hs_traffic, ch_sf, cfin + 4);
-    used = quic_tls_recv_crypto(&qt, QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
+    used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
     TEST_ASSERT_EQUAL_UINT(sizeof(cfin), used);
-    TEST_ASSERT_EQUAL_UINT8(QTLS_DONE, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);
     TEST_ASSERT_TRUE(qt.complete);
 
     // Keys are exposed for both directions at both levels.
-    TEST_ASSERT_NOT_NULL(quic_tls_keys(&qt, QUIC_ENC_HANDSHAKE, true));
-    TEST_ASSERT_NOT_NULL(quic_tls_keys(&qt, QUIC_ENC_APP, false));
+    TEST_ASSERT_NOT_NULL(quic_tls_keys(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, true));
+    TEST_ASSERT_NOT_NULL(quic_tls_keys(&qt, QuicEnc::QUIC_ENC_APP, false));
 }
 
 void test_reject_bad_client_finished()
@@ -259,14 +259,14 @@ void test_reject_bad_client_finished()
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
-    quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
-    TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);
+    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);
 
     // A Finished with the wrong verify_data must be rejected (decrypt_error).
-    uint8_t cfin[36] = {TLS_HS_FINISHED, 0x00, 0x00, 0x20};
+    uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
     memset(cfin + 4, 0x99, 32);
-    quic_tls_recv_crypto(&qt, QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
-    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     TEST_ASSERT_EQUAL_UINT8(51, qt.alert); // decrypt_error
 }
 
@@ -294,8 +294,8 @@ void test_reject_no_h3_alpn()
             ch[i + 1] = '9';
             break;
         }
-    quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
-    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     TEST_ASSERT_EQUAL_UINT8(120, qt.alert); // no_application_protocol
 }
 
@@ -317,17 +317,17 @@ void test_partial_client_hello()
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
 
-    size_t used = quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len - 10);
+    size_t used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len - 10);
     TEST_ASSERT_EQUAL_UINT(0, used);
-    TEST_ASSERT_EQUAL_UINT8(QTLS_START, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_START, qt.state);
     // Delivering the whole message now completes it.
-    used = quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
+    used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
     TEST_ASSERT_EQUAL_UINT(ch_len, used);
-    TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);
 }
 
 // Feed a ClientHello with extensions @p inc (and optional malformed transport params) and return the
-// alert the server failed with. Asserts the handshake ended in QTLS_FAILED.
+// alert the server failed with. Asserts the handshake ended in QtlsState::QTLS_FAILED.
 static uint8_t reject_alert(unsigned inc, const uint8_t *bad_tp, size_t bad_tp_len)
 {
     fill_test_material();
@@ -347,8 +347,8 @@ static uint8_t reject_alert(unsigned inc, const uint8_t *bad_tp, size_t bad_tp_l
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_ch_ext(ch, client_pub, tp, tpl, inc);
-    quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
-    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     return qt.alert;
 }
 
@@ -394,13 +394,13 @@ void test_reject_malformed_client_hello()
     QuicTls qt;
     quic_tls_server_init(&qt, &cfg);
     // ClientHello, handshake length 2, body = legacy_version only (no random / ciphers / extensions).
-    uint8_t bad[] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x02, 0x03, 0x03};
-    quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, bad, sizeof(bad));
-    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    uint8_t bad[] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x02, 0x03, 0x03};
+    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, bad, sizeof(bad));
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     TEST_ASSERT_EQUAL_UINT8(50, qt.alert); // decode_error
 }
 
-// Drive a fresh server to QTLS_WAIT_FINISHED with a well-formed ClientHello.
+// Drive a fresh server to QtlsState::QTLS_WAIT_FINISHED with a well-formed ClientHello.
 static void drive_to_wait_finished(QuicTls *qt, QuicTlsConfig *cfg)
 {
     fill_test_material();
@@ -414,11 +414,11 @@ static void drive_to_wait_finished(QuicTls *qt, QuicTlsConfig *cfg)
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
-    quic_tls_recv_crypto(qt, QUIC_ENC_INITIAL, ch, ch_len);
+    quic_tls_recv_crypto(qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
 }
 
 // Drive a fresh server through a ClientHello with the given config; return the resulting state.
-static uint8_t run_handshake(const QuicTlsConfig *cfg)
+static QtlsState run_handshake(const QuicTlsConfig *cfg)
 {
     QuicTls qt;
     quic_tls_server_init(&qt, cfg);
@@ -430,7 +430,7 @@ static uint8_t run_handshake(const QuicTlsConfig *cfg)
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
-    quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
+    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
     return qt.state;
 }
 
@@ -464,14 +464,14 @@ void test_quic_tls_cert_size_boundary_emit_fails()
     TEST_ASSERT_TRUE(buf > ee + cert_overhead + leave_a);
     cfg.cert_len = buf - ee - cert_overhead - leave_a;
     TEST_ASSERT_TRUE(cfg.cert_len < sizeof(big_cert));
-    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, run_handshake(&cfg));
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, run_handshake(&cfg));
 
     // (b) Certificate + CertificateVerify fit but leave fewer than fin bytes -> Finished emit fails.
     size_t leave_b = cv + (fin - 4); // CertVerify fits; the fin-4 left is too small for Finished
     TEST_ASSERT_TRUE(buf > ee + cert_overhead + leave_b);
     cfg.cert_len = buf - ee - cert_overhead - leave_b;
     TEST_ASSERT_TRUE(cfg.cert_len < sizeof(big_cert));
-    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, run_handshake(&cfg));
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, run_handshake(&cfg));
 }
 
 void test_quic_tls_more_guards()
@@ -481,33 +481,33 @@ void test_quic_tls_more_guards()
 
     // A Finished-typed message of the wrong length -> DECODE_ERROR inside process_client_finished.
     drive_to_wait_finished(&qt, &cfg);
-    TEST_ASSERT_EQUAL_UINT8(QTLS_WAIT_FINISHED, qt.state);
-    uint8_t fin_badlen[8] = {TLS_HS_FINISHED, 0x00, 0x00, 0x04, 1, 2, 3, 4}; // 4-byte verify, not 32
-    quic_tls_recv_crypto(&qt, QUIC_ENC_HANDSHAKE, fin_badlen, sizeof(fin_badlen));
-    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);
+    uint8_t fin_badlen[8] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x04, 1, 2, 3, 4}; // 4-byte verify, not 32
+    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, fin_badlen, sizeof(fin_badlen));
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     TEST_ASSERT_EQUAL_UINT8(50, qt.alert); // decode_error
 
     // A non-Finished message while awaiting the client Finished -> UNEXPECTED_MESSAGE.
     drive_to_wait_finished(&qt, &cfg);
-    uint8_t wrong[36] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x20};
-    quic_tls_recv_crypto(&qt, QUIC_ENC_HANDSHAKE, wrong, sizeof(wrong));
-    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    uint8_t wrong[36] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x20};
+    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, wrong, sizeof(wrong));
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     TEST_ASSERT_EQUAL_UINT8(10, qt.alert); // unexpected_message
 
     // recv_crypto on a FAILED handshake drains (returns the whole length, changes nothing).
     uint8_t more[4] = {0, 0, 0, 0};
-    TEST_ASSERT_EQUAL_UINT(sizeof(more), quic_tls_recv_crypto(&qt, QUIC_ENC_HANDSHAKE, more, sizeof(more)));
+    TEST_ASSERT_EQUAL_UINT(sizeof(more), quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, more, sizeof(more)));
 
     // flight() for a level that is neither Initial nor Handshake -> nullptr / zero length.
     size_t l = 123;
-    TEST_ASSERT_NULL(quic_tls_flight(&qt, QUIC_ENC_APP, &l));
+    TEST_ASSERT_NULL(quic_tls_flight(&qt, QuicEnc::QUIC_ENC_APP, &l));
     TEST_ASSERT_EQUAL_UINT(0, l);
 
     // keys() before the handshake has derived them -> nullptr (both levels + an unknown level).
     QuicTls fresh;
     quic_tls_server_init(&fresh, &cfg);
-    TEST_ASSERT_NULL(quic_tls_keys(&fresh, QUIC_ENC_HANDSHAKE, true));
-    TEST_ASSERT_NULL(quic_tls_keys(&fresh, QUIC_ENC_APP, false));
+    TEST_ASSERT_NULL(quic_tls_keys(&fresh, QuicEnc::QUIC_ENC_HANDSHAKE, true));
+    TEST_ASSERT_NULL(quic_tls_keys(&fresh, QuicEnc::QUIC_ENC_APP, false));
     TEST_ASSERT_NULL(quic_tls_keys(&fresh, 999, true));
 
     // An oversized certificate overruns the handshake flight buffer, so the emit() flight-bound guard
@@ -524,8 +524,8 @@ void test_quic_tls_more_guards()
     ssh_x25519_base(client_pub, CLIENT_PRIV);
     uint8_t ch[512];
     size_t ch_len = build_client_hello(ch, client_pub, ctp_enc, ctp_len);
-    quic_tls_recv_crypto(&qt, QUIC_ENC_INITIAL, ch, ch_len);
-    TEST_ASSERT_EQUAL_UINT8(QTLS_FAILED, qt.state);
+    quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, qt.state);
     TEST_ASSERT_EQUAL_UINT8(80, qt.alert); // internal_error
 }
 

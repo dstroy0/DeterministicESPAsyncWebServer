@@ -35,14 +35,14 @@
 #include <stdint.h>
 
 /** @brief TLS handshake message types (RFC 8446 sec 4). */
-enum
+struct TlsHs
 {
-    TLS_HS_CLIENT_HELLO = 1,
-    TLS_HS_SERVER_HELLO = 2,
-    TLS_HS_ENCRYPTED_EXTENSIONS = 8,
-    TLS_HS_CERTIFICATE = 11,
-    TLS_HS_CERTIFICATE_VERIFY = 15,
-    TLS_HS_FINISHED = 20,
+    static constexpr uint8_t TLS_HS_CLIENT_HELLO = 1;
+    static constexpr uint8_t TLS_HS_SERVER_HELLO = 2;
+    static constexpr uint8_t TLS_HS_ENCRYPTED_EXTENSIONS = 8;
+    static constexpr uint8_t TLS_HS_CERTIFICATE = 11;
+    static constexpr uint8_t TLS_HS_CERTIFICATE_VERIFY = 15;
+    static constexpr uint8_t TLS_HS_FINISHED = 20;
 };
 
 #define TLS_CIPHER_AES_128_GCM_SHA256 0x1301 ///< the one cipher suite we support

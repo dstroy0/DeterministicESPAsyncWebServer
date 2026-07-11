@@ -15,24 +15,24 @@
 #include <string.h>
 
 // TLS alert codes we may raise (RFC 8446 sec 6).
-enum
+struct TlsAlert
 {
-    TLS_ALERT_UNEXPECTED_MESSAGE = 10,
-    TLS_ALERT_HANDSHAKE_FAILURE = 40,
-    TLS_ALERT_ILLEGAL_PARAMETER = 47,
-    TLS_ALERT_DECODE_ERROR = 50,
-    TLS_ALERT_DECRYPT_ERROR = 51,
-    TLS_ALERT_PROTOCOL_VERSION = 70,
-    TLS_ALERT_INTERNAL_ERROR = 80,
-    TLS_ALERT_MISSING_EXTENSION = 109,
-    TLS_ALERT_NO_APPLICATION_PROTOCOL = 120,
+    static constexpr uint8_t TLS_ALERT_UNEXPECTED_MESSAGE = 10;
+    static constexpr uint8_t TLS_ALERT_HANDSHAKE_FAILURE = 40;
+    static constexpr uint8_t TLS_ALERT_ILLEGAL_PARAMETER = 47;
+    static constexpr uint8_t TLS_ALERT_DECODE_ERROR = 50;
+    static constexpr uint8_t TLS_ALERT_DECRYPT_ERROR = 51;
+    static constexpr uint8_t TLS_ALERT_PROTOCOL_VERSION = 70;
+    static constexpr uint8_t TLS_ALERT_INTERNAL_ERROR = 80;
+    static constexpr uint8_t TLS_ALERT_MISSING_EXTENSION = 109;
+    static constexpr uint8_t TLS_ALERT_NO_APPLICATION_PROTOCOL = 120;
 };
 
 namespace
 {
 void fail(QuicTls *qt, uint8_t alert)
 {
-    qt->state = QTLS_FAILED;
+    qt->state = QtlsState::QTLS_FAILED;
     qt->alert = alert;
 }
 
@@ -51,7 +51,7 @@ bool emit(QuicTls *qt, uint8_t *flight, size_t cap, size_t *plen, size_t written
     // this only fires if that contract is ever broken - it keeps flight+*plen in bounds regardless).
     if (!written || written > cap - *plen)
     {
-        fail(qt, TLS_ALERT_INTERNAL_ERROR);
+        fail(qt, TlsAlert::TLS_ALERT_INTERNAL_ERROR);
         return false;
     }
     ssh_sha256_update(&qt->transcript, flight + *plen, written);
@@ -64,32 +64,32 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     Tls13ClientHello ch;
     if (!tls13_parse_client_hello(msg, msg_len, &ch))
     {
-        fail(qt, TLS_ALERT_DECODE_ERROR);
+        fail(qt, TlsAlert::TLS_ALERT_DECODE_ERROR);
         return false;
     }
     if (!ch.offers_tls13)
     {
-        fail(qt, TLS_ALERT_PROTOCOL_VERSION);
+        fail(qt, TlsAlert::TLS_ALERT_PROTOCOL_VERSION);
         return false;
     }
     if (!ch.has_key_share || !ch.offers_x25519 || !ch.offers_ed25519)
     {
-        fail(qt, TLS_ALERT_HANDSHAKE_FAILURE);
+        fail(qt, TlsAlert::TLS_ALERT_HANDSHAKE_FAILURE);
         return false;
     }
     if (!ch.offers_h3_alpn)
     {
-        fail(qt, TLS_ALERT_NO_APPLICATION_PROTOCOL);
+        fail(qt, TlsAlert::TLS_ALERT_NO_APPLICATION_PROTOCOL);
         return false;
     }
     if (!ch.quic_tp)
     {
-        fail(qt, TLS_ALERT_MISSING_EXTENSION);
+        fail(qt, TlsAlert::TLS_ALERT_MISSING_EXTENSION);
         return false;
     }
     if (!quic_tp_parse(ch.quic_tp, ch.quic_tp_len, &qt->peer))
     {
-        fail(qt, TLS_ALERT_ILLEGAL_PARAMETER);
+        fail(qt, TlsAlert::TLS_ALERT_ILLEGAL_PARAMETER);
         return false;
     }
     qt->have_peer = true;
@@ -157,15 +157,15 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     quic_keys_from_secret(qt->ks.server_ap_traffic, &qt->ap_server);
     qt->ap_keys_ready = true;
 
-    qt->state = QTLS_WAIT_FINISHED;
+    qt->state = QtlsState::QTLS_WAIT_FINISHED;
     return true;
 }
 
 bool process_client_finished(QuicTls *qt, const uint8_t *msg, size_t msg_len)
 {
-    if (msg[0] != TLS_HS_FINISHED || msg_len != 4 + 32)
+    if (msg[0] != TlsHs::TLS_HS_FINISHED || msg_len != 4 + 32)
     {
-        fail(qt, TLS_ALERT_DECODE_ERROR);
+        fail(qt, TlsAlert::TLS_ALERT_DECODE_ERROR);
         return false;
     }
     uint8_t expected[32];
@@ -175,22 +175,24 @@ bool process_client_finished(QuicTls *qt, const uint8_t *msg, size_t msg_len)
         diff |= (uint8_t)(expected[i] ^ msg[4 + i]);
     if (diff)
     {
-        fail(qt, TLS_ALERT_DECRYPT_ERROR);
+        fail(qt, TlsAlert::TLS_ALERT_DECRYPT_ERROR);
         return false;
     }
     ssh_sha256_update(&qt->transcript, msg, msg_len);
     qt->complete = true;
-    qt->state = QTLS_DONE;
+    qt->state = QtlsState::QTLS_DONE;
     return true;
 }
 
 bool process_message(QuicTls *qt, int level, const uint8_t *msg, size_t msg_len)
 {
-    if (level == QUIC_ENC_INITIAL && qt->state == QTLS_START && msg[0] == TLS_HS_CLIENT_HELLO)
+    if (level == QuicEnc::QUIC_ENC_INITIAL && qt->state == QtlsState::QTLS_START &&
+        msg[0] == TlsHs::TLS_HS_CLIENT_HELLO)
         return process_client_hello(qt, msg, msg_len);
-    if (level == QUIC_ENC_HANDSHAKE && qt->state == QTLS_WAIT_FINISHED && msg[0] == TLS_HS_FINISHED)
+    if (level == QuicEnc::QUIC_ENC_HANDSHAKE && qt->state == QtlsState::QTLS_WAIT_FINISHED &&
+        msg[0] == TlsHs::TLS_HS_FINISHED)
         return process_client_finished(qt, msg, msg_len);
-    fail(qt, TLS_ALERT_UNEXPECTED_MESSAGE);
+    fail(qt, TlsAlert::TLS_ALERT_UNEXPECTED_MESSAGE);
     return false;
 }
 } // namespace
@@ -200,12 +202,12 @@ void quic_tls_server_init(QuicTls *qt, const QuicTlsConfig *cfg)
     memset(qt, 0, sizeof(*qt));
     qt->cfg = *cfg;
     ssh_sha256_init(&qt->transcript);
-    qt->state = QTLS_START;
+    qt->state = QtlsState::QTLS_START;
 }
 
 size_t quic_tls_recv_crypto(QuicTls *qt, int level, const uint8_t *data, size_t len)
 {
-    if (qt->state == QTLS_FAILED)
+    if (qt->state == QtlsState::QTLS_FAILED)
         return len; // drain; the connection is closing
     size_t off = 0;
     while (off + 4 <= len)
@@ -217,7 +219,7 @@ size_t quic_tls_recv_crypto(QuicTls *qt, int level, const uint8_t *data, size_t 
         if (!process_message(qt, level, data + off, total))
             return off + total; // consumed through the offending message; state is FAILED/handled
         off += total;
-        if (qt->state == QTLS_DONE)
+        if (qt->state == QtlsState::QTLS_DONE)
             break;
     }
     return off;
@@ -225,12 +227,12 @@ size_t quic_tls_recv_crypto(QuicTls *qt, int level, const uint8_t *data, size_t 
 
 const uint8_t *quic_tls_flight(const QuicTls *qt, int level, size_t *len)
 {
-    if (level == QUIC_ENC_INITIAL)
+    if (level == QuicEnc::QUIC_ENC_INITIAL)
     {
         *len = qt->flight_initial_len;
         return qt->flight_initial;
     }
-    if (level == QUIC_ENC_HANDSHAKE)
+    if (level == QuicEnc::QUIC_ENC_HANDSHAKE)
     {
         *len = qt->flight_hs_len;
         return qt->flight_hs;
@@ -241,9 +243,9 @@ const uint8_t *quic_tls_flight(const QuicTls *qt, int level, size_t *len)
 
 const QuicPacketKeys *quic_tls_keys(const QuicTls *qt, int level, bool is_server)
 {
-    if (level == QUIC_ENC_HANDSHAKE && qt->hs_keys_ready)
+    if (level == QuicEnc::QUIC_ENC_HANDSHAKE && qt->hs_keys_ready)
         return is_server ? &qt->hs_server : &qt->hs_client;
-    if (level == QUIC_ENC_APP && qt->ap_keys_ready)
+    if (level == QuicEnc::QUIC_ENC_APP && qt->ap_keys_ready)
         return is_server ? &qt->ap_server : &qt->ap_client;
     return nullptr;
 }

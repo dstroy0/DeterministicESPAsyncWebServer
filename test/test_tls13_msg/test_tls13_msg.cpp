@@ -145,7 +145,7 @@ void test_encrypted_extensions()
     size_t n = tls13_build_encrypted_extensions(out, sizeof(out), tp, sizeof(tp));
     TEST_ASSERT_TRUE(n > 0);
     // Handshake header: type 8, 24-bit length = n - 4.
-    TEST_ASSERT_EQUAL_UINT8(TLS_HS_ENCRYPTED_EXTENSIONS, out[0]);
+    TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS, out[0]);
     TEST_ASSERT_EQUAL_UINT(n - 4, (out[1] << 16) | (out[2] << 8) | out[3]);
     // Extensions block length = n - 6, then ALPN ext: 00 10 00 05 00 03 02 'h' '3'.
     TEST_ASSERT_EQUAL_UINT(n - 6, (out[4] << 8) | out[5]);
@@ -184,7 +184,7 @@ void test_cert_verify_sign_roundtrip()
     uint8_t out[128];
     size_t n = tls13_build_cert_verify(out, sizeof(out), thash, seed);
     // Header: 0f, len = 2 + 2 + 64 = 68; algorithm ed25519; sig length 64.
-    TEST_ASSERT_EQUAL_UINT8(TLS_HS_CERTIFICATE_VERIFY, out[0]);
+    TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_CERTIFICATE_VERIFY, out[0]);
     TEST_ASSERT_EQUAL_UINT(68, (out[1] << 16) | (out[2] << 8) | out[3]);
     TEST_ASSERT_EQUAL_UINT16(TLS_SIG_ED25519, (out[4] << 8) | out[5]);
     TEST_ASSERT_EQUAL_UINT16(64, (out[6] << 8) | out[7]);
@@ -221,7 +221,7 @@ static size_t build_ch(uint8_t *msg, const uint8_t *exts, size_t exts_len)
     memcpy(body + b, exts, exts_len);
     b += exts_len;
     size_t m = 0;
-    msg[m++] = TLS_HS_CLIENT_HELLO;
+    msg[m++] = TlsHs::TLS_HS_CLIENT_HELLO;
     msg[m++] = (uint8_t)(b >> 16);
     msg[m++] = (uint8_t)(b >> 8);
     msg[m++] = (uint8_t)b;
@@ -261,20 +261,20 @@ void test_tls13_parse_guards()
     Tls13ClientHello ch;
     uint8_t bad_type[4] = {0x02, 0, 0, 0};
     TEST_ASSERT_FALSE(tls13_parse_client_hello(bad_type, sizeof(bad_type), &ch)); // wrong hs type
-    uint8_t short_hdr[2] = {TLS_HS_CLIENT_HELLO, 0x00};
+    uint8_t short_hdr[2] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00};
     TEST_ASSERT_FALSE(tls13_parse_client_hello(short_hdr, sizeof(short_hdr), &ch)); // r_u24 body len
-    uint8_t big_body[4] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0xFF};
+    uint8_t big_body[4] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0xFF};
     TEST_ASSERT_FALSE(tls13_parse_client_hello(big_body, sizeof(big_body), &ch)); // body len > msg
-    uint8_t no_ver[5] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x01, 0x03};
+    uint8_t no_ver[5] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x01, 0x03};
     TEST_ASSERT_FALSE(tls13_parse_client_hello(no_ver, sizeof(no_ver), &ch)); // r_u16 legacy_version
 
     // session id length > 32: body_len 35 = version(2)+random(32)+sid_len(1).
-    uint8_t sid_big[39] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x23, 0x03, 0x03};
+    uint8_t sid_big[39] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x23, 0x03, 0x03};
     sid_big[38] = 33;
     TEST_ASSERT_FALSE(tls13_parse_client_hello(sid_big, sizeof(sid_big), &ch)); // sid_len > 32
 
     // session id length 32 but the bytes are not present (r_take fails).
-    uint8_t sid_trunc[39] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x23, 0x03, 0x03};
+    uint8_t sid_trunc[39] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x23, 0x03, 0x03};
     sid_trunc[38] = 32;
     TEST_ASSERT_FALSE(tls13_parse_client_hello(sid_trunc, sizeof(sid_trunc), &ch)); // sid r_take
 
@@ -294,7 +294,7 @@ void test_tls13_parse_guards()
     TEST_ASSERT_FALSE(tls13_parse_client_hello(v, bn, &ch));
 
     // ext_total unreadable: message ends exactly after compression_methods.
-    uint8_t no_ext[44] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x28, 0x03, 0x03};
+    uint8_t no_ext[44] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x28, 0x03, 0x03};
     no_ext[38] = 0x00; // sid len 0
     no_ext[39] = 0x00;
     no_ext[40] = 0x02;
@@ -328,7 +328,7 @@ void test_tls13_extension_and_truncation_coverage()
     Tls13ClientHello ch;
 
     // Body ends right after cipher_suites -> r_u8(compression_methods length) truncates.
-    uint8_t ct[43] = {TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x27, 0x03, 0x03};
+    uint8_t ct[43] = {TlsHs::TLS_HS_CLIENT_HELLO, 0x00, 0x00, 0x27, 0x03, 0x03};
     ct[38] = 0x00; // session_id length 0
     ct[39] = 0x00;
     ct[40] = 0x02;

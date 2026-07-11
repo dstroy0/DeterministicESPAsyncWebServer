@@ -40,11 +40,11 @@
 #include <stdint.h>
 
 /** @brief QUIC encryption levels (RFC 9001 sec 4). 0-RTT is not supported. */
-enum
+struct QuicEnc
 {
-    QUIC_ENC_INITIAL = 0,
-    QUIC_ENC_HANDSHAKE = 1,
-    QUIC_ENC_APP = 2, ///< 1-RTT (application) keys
+    static constexpr uint8_t QUIC_ENC_INITIAL = 0;
+    static constexpr uint8_t QUIC_ENC_HANDSHAKE = 1;
+    static constexpr uint8_t QUIC_ENC_APP = 2; ///< 1-RTT (application) keys
 };
 
 /** @brief Server handshake configuration (certificate, key, transport params, ephemeral inputs). */
@@ -58,8 +58,8 @@ struct QuicTlsConfig
     uint8_t random[32];         ///< ServerHello random
 };
 
-/** @brief Handshake state. */
-enum
+/** @brief Handshake state (a mutually-exclusive internal state, not a wire value). */
+enum class QtlsState : uint8_t
 {
     QTLS_START = 0,     ///< awaiting ClientHello
     QTLS_WAIT_FINISHED, ///< server flight sent; awaiting client Finished
@@ -74,8 +74,8 @@ struct QuicTls
     SshSha256Ctx transcript; ///< running Transcript-Hash over the handshake messages
     Tls13KeySchedule ks;
 
-    uint8_t state;
-    uint8_t alert;      ///< TLS alert code (RFC 8446 sec 6) when state == QTLS_FAILED
+    QtlsState state;
+    uint8_t alert;      ///< TLS alert code (RFC 8446 sec 6) when state == QtlsState::QTLS_FAILED
     bool hs_keys_ready; ///< Handshake-level keys derived (after ServerHello)
     bool ap_keys_ready; ///< 1-RTT keys derived (after the server Finished)
     bool complete;      ///< client Finished verified
@@ -102,23 +102,23 @@ void quic_tls_server_init(QuicTls *qt, const QuicTlsConfig *cfg);
 /**
  * @brief Feed in-order CRYPTO stream bytes for encryption level @p level.
  *
- * Consumes as many complete handshake messages as @p data holds. At QUIC_ENC_INITIAL it expects the
+ * Consumes as many complete handshake messages as @p data holds. At QuicEnc::QUIC_ENC_INITIAL it expects the
  * ClientHello and, on success, builds the whole server flight and derives the Handshake + 1-RTT keys.
- * At QUIC_ENC_HANDSHAKE it expects the client Finished and verifies it. On a fatal error it sets the
- * state to QTLS_FAILED and an alert. @return the number of leading bytes of @p data consumed (a
+ * At QuicEnc::QUIC_ENC_HANDSHAKE it expects the client Finished and verifies it. On a fatal error it sets the
+ * state to QtlsState::QTLS_FAILED and an alert. @return the number of leading bytes of @p data consumed (a
  * partial trailing message is left for the next call).
  */
 size_t quic_tls_recv_crypto(QuicTls *qt, int level, const uint8_t *data, size_t len);
 
 /**
- * @brief The pending outbound CRYPTO flight for @p level (QUIC_ENC_INITIAL / QUIC_ENC_HANDSHAKE).
+ * @brief The pending outbound CRYPTO flight for @p level (QuicEnc::QUIC_ENC_INITIAL / QuicEnc::QUIC_ENC_HANDSHAKE).
  * @return a pointer to the flight bytes and its length via @p len (0 if none). The transport engine
  * fragments these into CRYPTO frames and tracks its own send offset / retransmission.
  */
 const uint8_t *quic_tls_flight(const QuicTls *qt, int level, size_t *len);
 
 /**
- * @brief The packet-protection keys for @p level (QUIC_ENC_HANDSHAKE / QUIC_ENC_APP), @p is_server
+ * @brief The packet-protection keys for @p level (QuicEnc::QUIC_ENC_HANDSHAKE / QuicEnc::QUIC_ENC_APP), @p is_server
  * picking the seal (server) or open (client) direction. @return NULL if those keys are not ready.
  */
 const QuicPacketKeys *quic_tls_keys(const QuicTls *qt, int level, bool is_server);
