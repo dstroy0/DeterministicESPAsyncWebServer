@@ -138,10 +138,10 @@ void test_read_roundtrip()
     OpcUaVariant svals[2];
     uint32_t ssts[2];
     memset(svals, 0, sizeof(svals));
-    svals[0].type = OPCUA_VAR_UINT32;
+    svals[0].type = OpcUaVariantType::OPCUA_VAR_UINT32;
     svals[0].u32 = 4242;
     ssts[0] = OPCUA_STATUS_GOOD;
-    svals[1].type = OPCUA_VAR_DOUBLE;
+    svals[1].type = OpcUaVariantType::OPCUA_VAR_DOUBLE;
     svals[1].f64 = 2.5;
     ssts[1] = OPCUA_STATUS_GOOD;
 
@@ -153,9 +153,9 @@ void test_read_roundtrip()
     uint32_t csts[2];
     int32_t n = opcua_client_on_read(resp, sn, cvals, csts, 2);
     TEST_ASSERT_EQUAL_INT32(2, n);
-    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_UINT32, cvals[0].type);
+    TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_UINT32, cvals[0].type);
     TEST_ASSERT_EQUAL_UINT32(4242, cvals[0].u32);
-    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_DOUBLE, cvals[1].type);
+    TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_DOUBLE, cvals[1].type);
     TEST_ASSERT_TRUE(cvals[1].f64 == 2.5);
     TEST_ASSERT_EQUAL_UINT32(OPCUA_STATUS_GOOD, csts[0]);
 }
@@ -241,7 +241,7 @@ void test_write_roundtrip()
     items[0].id = 10;
     items[0].numeric = true;
     items[0].attribute = OPCUA_ATTR_VALUE;
-    items[0].value.type = OPCUA_VAR_UINT32;
+    items[0].value.type = OpcUaVariantType::OPCUA_VAR_UINT32;
     items[0].value.u32 = 4242;
 
     uint8_t req[128];
@@ -252,7 +252,7 @@ void test_write_roundtrip()
     TEST_ASSERT_TRUE(opcua_parse_write(req, rn, &wr));
     TEST_ASSERT_EQUAL_UINT32(1, wr.count);
     TEST_ASSERT_EQUAL_UINT32(10, wr.items[0].id);
-    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_UINT32, wr.items[0].value.type);
+    TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_UINT32, wr.items[0].value.type);
     TEST_ASSERT_EQUAL_UINT32(4242, wr.items[0].value.u32);
 
     uint32_t res[1] = {OPCUA_STATUS_GOOD};
@@ -319,16 +319,16 @@ void test_on_read_all_variant_types()
     OpcUaVariant sv[5];
     uint32_t ss[5];
     memset(sv, 0, sizeof(sv));
-    sv[0].type = OPCUA_VAR_BOOL;
+    sv[0].type = OpcUaVariantType::OPCUA_VAR_BOOL;
     sv[0].b = true;
-    sv[1].type = OPCUA_VAR_INT32;
+    sv[1].type = OpcUaVariantType::OPCUA_VAR_INT32;
     sv[1].i32 = -5;
-    sv[2].type = OPCUA_VAR_FLOAT;
+    sv[2].type = OpcUaVariantType::OPCUA_VAR_FLOAT;
     sv[2].f32 = 1.5f;
-    sv[3].type = OPCUA_VAR_STRING;
+    sv[3].type = OpcUaVariantType::OPCUA_VAR_STRING;
     sv[3].str = "hi";
     sv[3].str_len = 2;
-    sv[4].type = OPCUA_VAR_INT32;
+    sv[4].type = OpcUaVariantType::OPCUA_VAR_INT32;
     sv[4].i32 = 7;
     ss[0] = ss[1] = ss[2] = ss[3] = OPCUA_STATUS_GOOD;
     ss[4] = OPCUA_STATUS_BAD_SERVICE_UNSUPPORTED; // forces the StatusCode mask bit
@@ -432,7 +432,7 @@ void test_on_read_unknown_variant_rejected()
     OpcUaVariant sv[1];
     uint32_t ss[1];
     memset(sv, 0, sizeof(sv));
-    sv[0].type = OPCUA_VAR_UINT32;
+    sv[0].type = OpcUaVariantType::OPCUA_VAR_UINT32;
     sv[0].u32 = 0xA1B2C3D4; // distinctive little-endian marker D4 C3 B2 A1
     ss[0] = OPCUA_STATUS_GOOD;
     uint8_t resp[128];
@@ -440,8 +440,8 @@ void test_on_read_unknown_variant_rejected()
     TEST_ASSERT_TRUE(sn > 0);
     int type_off = -1;
     for (size_t i = 1; i + 4 < sn; i++)
-        if (resp[i] == OPCUA_VAR_UINT32 && resp[i + 1] == 0xD4 && resp[i + 2] == 0xC3 && resp[i + 3] == 0xB2 &&
-            resp[i + 4] == 0xA1)
+        if (resp[i] == (uint8_t)OpcUaVariantType::OPCUA_VAR_UINT32 && resp[i + 1] == 0xD4 && resp[i + 2] == 0xC3 &&
+            resp[i + 3] == 0xB2 && resp[i + 4] == 0xA1)
         {
             type_off = (int)i;
             break;

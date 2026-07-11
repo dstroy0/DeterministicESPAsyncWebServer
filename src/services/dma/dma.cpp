@@ -98,7 +98,7 @@ struct dma_channel
     uint16_t tx_len;   // bytes pending egress (0 = idle)
     uint16_t seq;      // completion sequence
     uint8_t rx_active; // which ping-pong buffer the engine is filling
-    uint8_t periph;
+    det_dma_periph periph;
     bool loopback;
     bool tx_busy;
     bool open;
@@ -112,7 +112,7 @@ struct DmaCtx
 };
 DmaCtx s_dma;
 
-void emit(dma_channel &c, uint8_t id, uint8_t dir, const uint8_t *data, uint16_t len)
+void emit(dma_channel &c, uint8_t id, det_dma_dir dir, const uint8_t *data, uint16_t len)
 {
     det_dma_event ev;
     ev.data = data;
@@ -141,7 +141,7 @@ void pump(dma_channel &c, uint8_t id)
         uint16_t sent = c.tx_len;
         c.tx_busy = false;
         c.tx_len = 0;
-        emit(c, id, DET_DMA_TX, nullptr, sent);
+        emit(c, id, det_dma_dir::DET_DMA_TX, nullptr, sent);
     }
 
     while (c.ingress.len > 0)
@@ -151,14 +151,14 @@ void pump(dma_channel &c, uint8_t id)
         c.rx_fill += got;
         if (c.rx_fill == DETWS_DMA_BUF_SIZE) // buffer full -> complete + ping-pong flip
         {
-            emit(c, id, DET_DMA_RX, c.rx_buf[c.rx_active], DETWS_DMA_BUF_SIZE);
+            emit(c, id, det_dma_dir::DET_DMA_RX, c.rx_buf[c.rx_active], DETWS_DMA_BUF_SIZE);
             c.rx_active ^= 1;
             c.rx_fill = 0;
         }
     }
     if (c.rx_fill > 0) // idle-line flush of the trailing partial buffer
     {
-        emit(c, id, DET_DMA_RX, c.rx_buf[c.rx_active], c.rx_fill);
+        emit(c, id, det_dma_dir::DET_DMA_RX, c.rx_buf[c.rx_active], c.rx_fill);
         c.rx_active ^= 1;
         c.rx_fill = 0;
     }

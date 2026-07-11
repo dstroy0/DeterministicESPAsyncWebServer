@@ -119,7 +119,7 @@ bool opcua_client_on_activate_session(const uint8_t *msg, size_t len);
 
 /**
  * @brief Parse a ReadResponse into @p vals / @p statuses (one per result, capped at @p max).
- * @note A returned OPCUA_VAR_STRING value points into @p msg (keep it alive while used).
+ * @note A returned OpcUaVariantType::OPCUA_VAR_STRING value points into @p msg (keep it alive while used).
  * @return number of results, or -1 on a malformed/non-Good response.
  */
 int32_t opcua_client_on_read(const uint8_t *msg, size_t len, OpcUaVariant *vals, uint32_t *statuses, uint32_t max);

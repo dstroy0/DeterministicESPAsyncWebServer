@@ -399,26 +399,26 @@ int32_t opcua_client_on_read(const uint8_t *msg, size_t len, OpcUaVariant *vals,
         uint32_t st = OPCUA_STATUS_GOOD;
         if (mask & 0x01) // Value (Variant) present
         {
-            uint8_t vt = ua_r_u8(&r);
+            OpcUaVariantType vt = (OpcUaVariantType)ua_r_u8(&r);
             v.type = vt;
             switch (vt)
             {
-            case OPCUA_VAR_BOOL:
+            case OpcUaVariantType::OPCUA_VAR_BOOL:
                 v.b = ua_r_bool(&r);
                 break;
-            case OPCUA_VAR_INT32:
+            case OpcUaVariantType::OPCUA_VAR_INT32:
                 v.i32 = ua_r_i32(&r);
                 break;
-            case OPCUA_VAR_UINT32:
+            case OpcUaVariantType::OPCUA_VAR_UINT32:
                 v.u32 = ua_r_u32(&r);
                 break;
-            case OPCUA_VAR_FLOAT:
+            case OpcUaVariantType::OPCUA_VAR_FLOAT:
                 v.f32 = ua_r_f32(&r);
                 break;
-            case OPCUA_VAR_DOUBLE:
+            case OpcUaVariantType::OPCUA_VAR_DOUBLE:
                 v.f64 = ua_r_f64(&r);
                 break;
-            case OPCUA_VAR_STRING: {
+            case OpcUaVariantType::OPCUA_VAR_STRING: {
                 int32_t sl = ua_r_i32(&r);
                 v.str_len = sl;
                 if (sl > 0)

@@ -63,14 +63,14 @@ static void on_forward(const void *item, void *)
 // DMA-complete on interface A: copy the frame and post it onto the FORWARD lane.
 static void on_dma_complete(const det_dma_event *ev, void *)
 {
-    if (ev->dir != DET_DMA_RX)
+    if (ev->dir != det_dma_dir::DET_DMA_RX)
         return;
     pq_item it = {};
     it.msg.src = IF_A;
     it.msg.len = ev->len;
     uint16_t n = (ev->len < sizeof(it.msg.bytes)) ? ev->len : sizeof(it.msg.bytes);
     memcpy(it.msg.bytes, ev->data, n);
-    detws_pq_post_lane_from_isr(DETWS_PQ_LANE_FORWARD, &it);
+    detws_pq_post_lane_from_isr(detws_pq_lane::DETWS_PQ_LANE_FORWARD, &it);
 }
 
 void setup()
@@ -84,12 +84,12 @@ void setup()
     fwd.priority = 0; // 0 -> the FORWARD lane default (above the user lane)
     fwd.core = 1;
     fwd.name = "forward";
-    detws_pq_start_lane(DETWS_PQ_LANE_FORWARD, &fwd);
+    detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_FORWARD, &fwd);
 
     // Interface A ingress: a DMA channel fed by the simulator.
     det_dma_config a = {};
     a.channel = IF_A;
-    a.periph = DET_DMA_UART;
+    a.periph = det_dma_periph::DET_DMA_UART;
     a.on_complete = on_dma_complete;
     det_dma_open(&a);
 

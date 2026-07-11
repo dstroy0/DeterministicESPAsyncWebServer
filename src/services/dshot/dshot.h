@@ -78,7 +78,7 @@ bool detws_dshot_decode(uint16_t frame, uint16_t *value11, bool *telemetry, bool
 uint32_t detws_dshot_bit_ns(uint16_t rate_kbit, bool bit);
 
 /** @brief The legacy analog-PWM ESC protocols (pulse width carries the throttle), for detws_esc_pwm_ns. */
-enum DetwsEscPwm
+enum class DetwsEscPwm : uint8_t
 {
     DETWS_ESC_PWM,        ///< standard servo PWM: 1000-2000 us.
     DETWS_ESC_ONESHOT125, ///< OneShot125: 125-250 us.

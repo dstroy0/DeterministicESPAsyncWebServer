@@ -47,19 +47,19 @@ static bool opcua_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVarian
     switch (id)
     {
     case 1:
-        out->type = OPCUA_VAR_UINT32;
+        out->type = OpcUaVariantType::OPCUA_VAR_UINT32;
         out->u32 = millis() / 1000;
         return true;
     case 2:
-        out->type = OPCUA_VAR_UINT32;
+        out->type = OpcUaVariantType::OPCUA_VAR_UINT32;
         out->u32 = ESP.getFreeHeap();
         return true;
     case 3:
-        out->type = OPCUA_VAR_DOUBLE;
+        out->type = OpcUaVariantType::OPCUA_VAR_DOUBLE;
         out->f64 = 23.5;
         return true;
     case 10:
-        out->type = OPCUA_VAR_UINT32;
+        out->type = OpcUaVariantType::OPCUA_VAR_UINT32;
         out->u32 = setpoint;
         return true;
     default:
@@ -71,7 +71,7 @@ static bool opcua_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVarian
 // Good (0) on success, or a Bad code the client surfaces as the write result.
 static uint32_t opcua_write(uint16_t ns, uint32_t id, uint32_t attribute, const OpcUaVariant *value)
 {
-    if (ns == 1 && id == 10 && attribute == OPCUA_ATTR_VALUE && value->type == OPCUA_VAR_UINT32)
+    if (ns == 1 && id == 10 && attribute == OPCUA_ATTR_VALUE && value->type == OpcUaVariantType::OPCUA_VAR_UINT32)
     {
         setpoint = value->u32;
         return 0; // Good

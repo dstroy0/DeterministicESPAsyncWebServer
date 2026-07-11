@@ -72,19 +72,19 @@ uint32_t detws_esc_pwm_ns(uint16_t throttle_1000, DetwsEscPwm mode)
     uint32_t lo, hi; // pulse width range in ns
     switch (mode)
     {
-    case DETWS_ESC_ONESHOT125:
+    case DetwsEscPwm::DETWS_ESC_ONESHOT125:
         lo = 125000;
         hi = 250000;
         break;
-    case DETWS_ESC_ONESHOT42:
+    case DetwsEscPwm::DETWS_ESC_ONESHOT42:
         lo = 42000;
         hi = 84000;
         break;
-    case DETWS_ESC_MULTISHOT:
+    case DetwsEscPwm::DETWS_ESC_MULTISHOT:
         lo = 5000;
         hi = 25000;
         break;
-    case DETWS_ESC_PWM:
+    case DetwsEscPwm::DETWS_ESC_PWM:
     default:
         lo = 1000000;
         hi = 2000000;

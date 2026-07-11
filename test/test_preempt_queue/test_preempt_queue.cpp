@@ -37,7 +37,7 @@ static bool post_u32(uint32_t v)
 
 static void stop_all_lanes()
 {
-    for (int l = 0; l < DETWS_PQ_LANE_COUNT; l++)
+    for (int l = 0; l < (int)detws_pq_lane::DETWS_PQ_LANE_COUNT; l++)
         detws_pq_stop_lane((detws_pq_lane)l);
 }
 
@@ -148,12 +148,12 @@ void test_drain_empties_and_reuses()
 void test_internal_lanes_outrank_user()
 {
     // DMA highest, then forward, then device, all above the user lane.
-    TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(DETWS_PQ_LANE_FORWARD),
-                                   detws_pq_lane_priority(DETWS_PQ_LANE_DMA));
-    TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(DETWS_PQ_LANE_DEVICE),
-                                   detws_pq_lane_priority(DETWS_PQ_LANE_FORWARD));
-    TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(DETWS_PQ_LANE_USER),
-                                   detws_pq_lane_priority(DETWS_PQ_LANE_DEVICE));
+    TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_FORWARD),
+                                   detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_DMA));
+    TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_DEVICE),
+                                   detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_FORWARD));
+    TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_USER),
+                                   detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_DEVICE));
 }
 
 void test_lanes_are_isolated()
@@ -162,14 +162,14 @@ void test_lanes_are_isolated()
     DetwsPqConfig dma = {};
     dma.handler = on_item_dma;
     dma.core = 1;
-    TEST_ASSERT_TRUE(detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma));
+    TEST_ASSERT_TRUE(detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma));
 
     uint32_t u = 11, d = 22;
-    TEST_ASSERT_TRUE(detws_pq_post(&u, 0));                         // -> USER
-    TEST_ASSERT_TRUE(detws_pq_post_lane(DETWS_PQ_LANE_DMA, &d, 0)); // -> DMA
+    TEST_ASSERT_TRUE(detws_pq_post(&u, 0));                                        // -> USER
+    TEST_ASSERT_TRUE(detws_pq_post_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &d, 0)); // -> DMA
 
     // Draining one lane must not touch the other's queue or handler.
-    detws_pq_drain_lane(DETWS_PQ_LANE_DMA);
+    detws_pq_drain_lane(detws_pq_lane::DETWS_PQ_LANE_DMA);
     TEST_ASSERT_EQUAL_size_t(0, g_seen.size());
     TEST_ASSERT_EQUAL_size_t(1, g_seen_dma.size());
     TEST_ASSERT_EQUAL_UINT32(22, g_seen_dma[0]);
@@ -181,30 +181,30 @@ void test_lanes_are_isolated()
 
 void test_lane_start_stop_running_independent()
 {
-    TEST_ASSERT_TRUE(detws_pq_running_lane(DETWS_PQ_LANE_USER)); // setUp started it
-    TEST_ASSERT_FALSE(detws_pq_running_lane(DETWS_PQ_LANE_DMA));
+    TEST_ASSERT_TRUE(detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_USER)); // setUp started it
+    TEST_ASSERT_FALSE(detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_DMA));
 
     DetwsPqConfig dma = {};
     dma.handler = on_item_dma;
-    TEST_ASSERT_TRUE(detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma));
-    TEST_ASSERT_TRUE(detws_pq_running_lane(DETWS_PQ_LANE_DMA));
-    TEST_ASSERT_FALSE(detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma)); // double start is a no-op
+    TEST_ASSERT_TRUE(detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma));
+    TEST_ASSERT_TRUE(detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_DMA));
+    TEST_ASSERT_FALSE(detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma)); // double start is a no-op
 
-    detws_pq_stop_lane(DETWS_PQ_LANE_DMA);
-    TEST_ASSERT_FALSE(detws_pq_running_lane(DETWS_PQ_LANE_DMA));
-    TEST_ASSERT_TRUE(detws_pq_running_lane(DETWS_PQ_LANE_USER)); // USER unaffected
+    detws_pq_stop_lane(detws_pq_lane::DETWS_PQ_LANE_DMA);
+    TEST_ASSERT_FALSE(detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_DMA));
+    TEST_ASSERT_TRUE(detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_USER)); // USER unaffected
 }
 
 void test_lane_high_water_is_per_lane()
 {
     DetwsPqConfig dma = {};
     dma.handler = on_item_dma;
-    TEST_ASSERT_TRUE(detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma));
+    TEST_ASSERT_TRUE(detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma));
     uint32_t v = 5;
-    detws_pq_post_lane(DETWS_PQ_LANE_DMA, &v, 0);
-    detws_pq_post_lane(DETWS_PQ_LANE_DMA, &v, 0);
-    TEST_ASSERT_GREATER_OR_EQUAL_size_t(2, detws_pq_high_water_lane(DETWS_PQ_LANE_DMA));
-    TEST_ASSERT_EQUAL_size_t(0, detws_pq_high_water_lane(DETWS_PQ_LANE_DEVICE)); // untouched lane
+    detws_pq_post_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &v, 0);
+    detws_pq_post_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &v, 0);
+    TEST_ASSERT_GREATER_OR_EQUAL_size_t(2, detws_pq_high_water_lane(detws_pq_lane::DETWS_PQ_LANE_DMA));
+    TEST_ASSERT_EQUAL_size_t(0, detws_pq_high_water_lane(detws_pq_lane::DETWS_PQ_LANE_DEVICE)); // untouched lane
 }
 
 void test_lane_api_urgent_and_drain()
@@ -212,19 +212,19 @@ void test_lane_api_urgent_and_drain()
     stop_all_lanes();
     DetwsPqConfig cfg = {};
     cfg.handler = on_item_dma;
-    TEST_ASSERT_TRUE(detws_pq_start_lane(DETWS_PQ_LANE_DMA, &cfg));
+    TEST_ASSERT_TRUE(detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &cfg));
     uint32_t a = 10, b = 20;
-    TEST_ASSERT_TRUE(detws_pq_post_lane(DETWS_PQ_LANE_DMA, &a, 0));
-    TEST_ASSERT_TRUE(detws_pq_post_lane_urgent(DETWS_PQ_LANE_DMA, &b, 0)); // urgent -> jumps the queue
-    detws_pq_drain_lane(DETWS_PQ_LANE_DMA);
+    TEST_ASSERT_TRUE(detws_pq_post_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &a, 0));
+    TEST_ASSERT_TRUE(detws_pq_post_lane_urgent(detws_pq_lane::DETWS_PQ_LANE_DMA, &b, 0)); // urgent -> jumps the queue
+    detws_pq_drain_lane(detws_pq_lane::DETWS_PQ_LANE_DMA);
     TEST_ASSERT_EQUAL_UINT32(2u, (uint32_t)g_seen_dma.size());
     TEST_ASSERT_EQUAL_UINT32(20u, g_seen_dma[0]); // urgent item first
     TEST_ASSERT_EQUAL_UINT32(10u, g_seen_dma[1]);
     // Guards: urgent-post to a bad lane / with a null item fails closed; drain of a bad lane is a no-op.
-    TEST_ASSERT_FALSE(detws_pq_post_lane_urgent((detws_pq_lane)DETWS_PQ_LANE_COUNT, &a, 0));
-    TEST_ASSERT_FALSE(detws_pq_post_lane_urgent(DETWS_PQ_LANE_DMA, nullptr, 0));
-    detws_pq_drain_lane((detws_pq_lane)DETWS_PQ_LANE_COUNT);
-    detws_pq_stop_lane(DETWS_PQ_LANE_DMA);
+    TEST_ASSERT_FALSE(detws_pq_post_lane_urgent((detws_pq_lane)detws_pq_lane::DETWS_PQ_LANE_COUNT, &a, 0));
+    TEST_ASSERT_FALSE(detws_pq_post_lane_urgent(detws_pq_lane::DETWS_PQ_LANE_DMA, nullptr, 0));
+    detws_pq_drain_lane((detws_pq_lane)detws_pq_lane::DETWS_PQ_LANE_COUNT);
+    detws_pq_stop_lane(detws_pq_lane::DETWS_PQ_LANE_DMA);
 }
 
 int main()

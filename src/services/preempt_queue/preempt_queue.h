@@ -14,9 +14,9 @@
  * and hands each to a user handler.
  *
  * **Named lanes.** There are several queues, addressed by @ref detws_pq_lane:
- *   - `DETWS_PQ_LANE_USER` - the single lane exposed to the application. The no-lane
+ *   - `detws_pq_lane::DETWS_PQ_LANE_USER` - the single lane exposed to the application. The no-lane
  *     `detws_pq_*` API drives it (so existing user code is unchanged). Lowest priority.
- *   - `DETWS_PQ_LANE_DMA` / `_FORWARD` / `_DEVICE` - internal lanes for the library's own
+ *   - `detws_pq_lane::DETWS_PQ_LANE_DMA` / `_FORWARD` / `_DEVICE` - internal lanes for the library's own
  *     real-time work (DMA peripheral transfers, interface forwarding, device access).
  *     They run **above** the user lane (base `DETWS_PQ_INTERNAL_PRIORITY`, DMA highest),
  *     so internal ingest always preempts user work; and below the lwIP tcpip / WiFi tasks
@@ -51,7 +51,7 @@
  *        application; the internal lanes run at a higher priority (DMA highest) so
  *        internal ingest preempts user work.
  */
-enum detws_pq_lane
+enum class detws_pq_lane : uint8_t
 {
     DETWS_PQ_LANE_USER = 0, ///< exposed to the app (no-lane API); lowest priority
     DETWS_PQ_LANE_DMA,      ///< internal: DMA peripheral transfers (highest)
@@ -116,47 +116,47 @@ size_t detws_pq_high_water_lane(detws_pq_lane lane);
  *         DMA highest). Used when a config passes priority 0. */
 uint8_t detws_pq_lane_priority(detws_pq_lane lane);
 
-// --- User-lane API (unchanged; drives DETWS_PQ_LANE_USER) -----------------------------
+// --- User-lane API (unchanged; drives detws_pq_lane::DETWS_PQ_LANE_USER) -----------------------------
 
 /** @brief Start the USER lane. @see detws_pq_start_lane. */
 inline bool detws_pq_start(const DetwsPqConfig *cfg)
 {
-    return detws_pq_start_lane(DETWS_PQ_LANE_USER, cfg);
+    return detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_USER, cfg);
 }
 /** @brief Post to the back of the USER lane. */
 inline bool detws_pq_post(const void *item, uint32_t timeout_ticks)
 {
-    return detws_pq_post_lane(DETWS_PQ_LANE_USER, item, timeout_ticks);
+    return detws_pq_post_lane(detws_pq_lane::DETWS_PQ_LANE_USER, item, timeout_ticks);
 }
 /** @brief Post to the front of the USER lane (urgent). */
 inline bool detws_pq_post_urgent(const void *item, uint32_t timeout_ticks)
 {
-    return detws_pq_post_lane_urgent(DETWS_PQ_LANE_USER, item, timeout_ticks);
+    return detws_pq_post_lane_urgent(detws_pq_lane::DETWS_PQ_LANE_USER, item, timeout_ticks);
 }
 /** @brief Post to the USER lane from an ISR. */
 inline bool detws_pq_post_from_isr(const void *item)
 {
-    return detws_pq_post_lane_from_isr(DETWS_PQ_LANE_USER, item);
+    return detws_pq_post_lane_from_isr(detws_pq_lane::DETWS_PQ_LANE_USER, item);
 }
 /** @brief Drain the USER lane (host / inline drive). */
 inline void detws_pq_drain(void)
 {
-    detws_pq_drain_lane(DETWS_PQ_LANE_USER);
+    detws_pq_drain_lane(detws_pq_lane::DETWS_PQ_LANE_USER);
 }
 /** @brief Stop the USER lane's task. */
 inline void detws_pq_stop(void)
 {
-    detws_pq_stop_lane(DETWS_PQ_LANE_USER);
+    detws_pq_stop_lane(detws_pq_lane::DETWS_PQ_LANE_USER);
 }
 /** @brief True while the USER lane's task is running. */
 inline bool detws_pq_running(void)
 {
-    return detws_pq_running_lane(DETWS_PQ_LANE_USER);
+    return detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_USER);
 }
 /** @brief Peak items ever queued on the USER lane. */
 inline size_t detws_pq_high_water(void)
 {
-    return detws_pq_high_water_lane(DETWS_PQ_LANE_USER);
+    return detws_pq_high_water_lane(detws_pq_lane::DETWS_PQ_LANE_USER);
 }
 
 #endif // DETWS_ENABLE_PREEMPT_QUEUE

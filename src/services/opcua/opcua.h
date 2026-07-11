@@ -281,7 +281,7 @@ size_t opcua_build_activate_session_response(const OpcUaMsg *req, uint32_t seq, 
 #define OPCUA_STATUS_BAD_NODE_ID_UNKNOWN 0x80340000u
 
 /** @brief OPC UA built-in type ids for the scalar Variants the Read service encodes. */
-enum OpcUaVariantType
+enum class OpcUaVariantType : uint8_t
 {
     OPCUA_VAR_NULL = 0,
     OPCUA_VAR_BOOL = 1,
@@ -295,14 +295,14 @@ enum OpcUaVariantType
 /** @brief A scalar OPC UA Variant value (the supported built-in types). */
 struct OpcUaVariant
 {
-    uint8_t type;    ///< OpcUaVariantType (0 = null Variant).
-    bool b;          ///< OPCUA_VAR_BOOL.
-    int32_t i32;     ///< OPCUA_VAR_INT32.
-    uint32_t u32;    ///< OPCUA_VAR_UINT32.
-    float f32;       ///< OPCUA_VAR_FLOAT.
-    double f64;      ///< OPCUA_VAR_DOUBLE.
-    const char *str; ///< OPCUA_VAR_STRING (referenced, not copied).
-    int32_t str_len; ///< string length (-1 = null string).
+    OpcUaVariantType type; ///< 0 = null Variant.
+    bool b;                ///< OpcUaVariantType::OPCUA_VAR_BOOL.
+    int32_t i32;           ///< OpcUaVariantType::OPCUA_VAR_INT32.
+    uint32_t u32;          ///< OpcUaVariantType::OPCUA_VAR_UINT32.
+    float f32;             ///< OpcUaVariantType::OPCUA_VAR_FLOAT.
+    double f64;            ///< OpcUaVariantType::OPCUA_VAR_DOUBLE.
+    const char *str;       ///< OpcUaVariantType::OPCUA_VAR_STRING (referenced, not copied).
+    int32_t str_len;       ///< string length (-1 = null string).
 };
 
 /** @brief Encode a scalar Variant: encoding byte (built-in type id) then the value. */
@@ -312,7 +312,7 @@ void ua_w_variant(UaWriter *w, const OpcUaVariant *v);
 void ua_w_datavalue(UaWriter *w, const OpcUaVariant *v, uint32_t status);
 
 /**
- * @brief Decode a scalar Variant. A decoded OPCUA_VAR_STRING points into the source
+ * @brief Decode a scalar Variant. A decoded OpcUaVariantType::OPCUA_VAR_STRING points into the source
  *        buffer (keep it alive). Non-scalar/array Variants latch @c err.
  */
 bool ua_r_variant(UaReader *r, OpcUaVariant *out);

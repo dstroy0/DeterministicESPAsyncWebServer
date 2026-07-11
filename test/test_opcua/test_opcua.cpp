@@ -469,14 +469,14 @@ void test_datavalue_good_int32()
     UaWriter w = {buf, sizeof(buf), 0, true};
     OpcUaVariant v;
     memset(&v, 0, sizeof(v));
-    v.type = OPCUA_VAR_INT32;
+    v.type = OpcUaVariantType::OPCUA_VAR_INT32;
     v.i32 = -7;
     ua_w_datavalue(&w, &v, OPCUA_STATUS_GOOD);
     TEST_ASSERT_TRUE(w.ok);
 
     UaReader r = {buf, w.n, 0, false};
-    TEST_ASSERT_EQUAL_HEX8(0x01, ua_r_u8(&r));            // mask: value present
-    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_INT32, ua_r_u8(&r)); // Variant encoding byte
+    TEST_ASSERT_EQUAL_HEX8(0x01, ua_r_u8(&r));                              // mask: value present
+    TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_INT32, ua_r_u8(&r)); // Variant encoding byte
     TEST_ASSERT_EQUAL_INT32(-7, ua_r_i32(&r));
     TEST_ASSERT_FALSE(r.err);
 }
@@ -565,10 +565,10 @@ void test_build_read_response()
     OpcUaVariant vals[2];
     uint32_t sts[2];
     memset(vals, 0, sizeof(vals));
-    vals[0].type = OPCUA_VAR_INT32;
+    vals[0].type = OpcUaVariantType::OPCUA_VAR_INT32;
     vals[0].i32 = 4242;
     sts[0] = OPCUA_STATUS_GOOD;
-    vals[1].type = OPCUA_VAR_NULL;
+    vals[1].type = OpcUaVariantType::OPCUA_VAR_NULL;
     sts[1] = OPCUA_STATUS_BAD_NODE_ID_UNKNOWN;
 
     uint8_t resp[256];
@@ -599,7 +599,7 @@ void test_build_read_response()
     TEST_ASSERT_EQUAL_INT32(2, ua_r_i32(&r)); // count
     // result 0: Good Int32 4242
     TEST_ASSERT_EQUAL_HEX8(0x01, ua_r_u8(&r));
-    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_INT32, ua_r_u8(&r));
+    TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_INT32, ua_r_u8(&r));
     TEST_ASSERT_EQUAL_INT32(4242, ua_r_i32(&r));
     // result 1: Bad status, no value
     TEST_ASSERT_EQUAL_HEX8(0x02, ua_r_u8(&r));
@@ -909,7 +909,7 @@ void test_datavalue_roundtrip()
     UaWriter w = {buf, sizeof(buf), 0, true};
     OpcUaVariant v;
     memset(&v, 0, sizeof(v));
-    v.type = OPCUA_VAR_DOUBLE;
+    v.type = OpcUaVariantType::OPCUA_VAR_DOUBLE;
     v.f64 = 3.25;
     ua_w_datavalue(&w, &v, OPCUA_STATUS_GOOD);
 
@@ -917,7 +917,7 @@ void test_datavalue_roundtrip()
     OpcUaVariant got;
     uint32_t st = 0xFFFFFFFFu;
     TEST_ASSERT_TRUE(ua_r_datavalue(&r, &got, &st));
-    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_DOUBLE, got.type);
+    TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_DOUBLE, got.type);
     TEST_ASSERT_TRUE(got.f64 == 3.25);
     TEST_ASSERT_EQUAL_UINT32(OPCUA_STATUS_GOOD, st);
     TEST_ASSERT_FALSE(r.err);
@@ -952,7 +952,7 @@ void test_parse_and_build_write()
     ua_w_string(&w, nullptr, -1);   // IndexRange
     OpcUaVariant v;
     memset(&v, 0, sizeof(v));
-    v.type = OPCUA_VAR_INT32;
+    v.type = OpcUaVariantType::OPCUA_VAR_INT32;
     v.i32 = -1234;
     ua_w_datavalue(&w, &v, OPCUA_STATUS_GOOD); // Value
     buf[4] = (uint8_t)w.n;
@@ -967,7 +967,7 @@ void test_parse_and_build_write()
     TEST_ASSERT_EQUAL_UINT16(1, wr.items[0].ns);
     TEST_ASSERT_EQUAL_UINT32(10, wr.items[0].id);
     TEST_ASSERT_EQUAL_UINT32(OPCUA_ATTR_VALUE, wr.items[0].attribute);
-    TEST_ASSERT_EQUAL_HEX8(OPCUA_VAR_INT32, wr.items[0].value.type);
+    TEST_ASSERT_EQUAL_HEX8(OpcUaVariantType::OPCUA_VAR_INT32, wr.items[0].value.type);
     TEST_ASSERT_EQUAL_INT32(-1234, wr.items[0].value.i32);
 
     // Build + parse the WriteResponse.
@@ -1017,38 +1017,38 @@ void test_variant_scalar_types()
     OpcUaVariant in, out;
     memset(&in, 0, sizeof(in));
 
-    in.type = OPCUA_VAR_NULL;
+    in.type = OpcUaVariantType::OPCUA_VAR_NULL;
     variant_rt(&in, &out);
-    TEST_ASSERT_EQUAL_UINT8(OPCUA_VAR_NULL, out.type);
+    TEST_ASSERT_EQUAL_UINT8(OpcUaVariantType::OPCUA_VAR_NULL, out.type);
 
     uint8_t nb[8];
     UaWriter wn = {nb, sizeof(nb), 0, true};
     ua_w_variant(&wn, nullptr); // null pointer -> Null Variant (encoding byte 0)
     TEST_ASSERT_EQUAL_UINT(1, wn.n);
-    TEST_ASSERT_EQUAL_UINT8(OPCUA_VAR_NULL, nb[0]);
+    TEST_ASSERT_EQUAL_UINT8(OpcUaVariantType::OPCUA_VAR_NULL, nb[0]);
 
-    in.type = OPCUA_VAR_BOOL;
+    in.type = OpcUaVariantType::OPCUA_VAR_BOOL;
     in.b = true;
     variant_rt(&in, &out);
-    TEST_ASSERT_EQUAL_UINT8(OPCUA_VAR_BOOL, out.type);
+    TEST_ASSERT_EQUAL_UINT8(OpcUaVariantType::OPCUA_VAR_BOOL, out.type);
     TEST_ASSERT_TRUE(out.b);
 
-    in.type = OPCUA_VAR_INT32;
+    in.type = OpcUaVariantType::OPCUA_VAR_INT32;
     in.i32 = -77;
     variant_rt(&in, &out);
     TEST_ASSERT_EQUAL_INT32(-77, out.i32);
 
-    in.type = OPCUA_VAR_UINT32;
+    in.type = OpcUaVariantType::OPCUA_VAR_UINT32;
     in.u32 = 0xCAFEBABEu;
     variant_rt(&in, &out);
     TEST_ASSERT_EQUAL_HEX32(0xCAFEBABEu, out.u32);
 
-    in.type = OPCUA_VAR_FLOAT;
+    in.type = OpcUaVariantType::OPCUA_VAR_FLOAT;
     in.f32 = 1.25f;
     variant_rt(&in, &out);
     TEST_ASSERT_EQUAL_FLOAT(1.25f, out.f32);
 
-    in.type = OPCUA_VAR_DOUBLE;
+    in.type = OpcUaVariantType::OPCUA_VAR_DOUBLE;
     in.f64 = 6.5;
     variant_rt(&in, &out);
     TEST_ASSERT_TRUE(out.f64 == 6.5);
@@ -1059,7 +1059,7 @@ void test_variant_scalar_types()
     UaWriter ws = {sbuf, sizeof(sbuf), 0, true};
     OpcUaVariant sv;
     memset(&sv, 0, sizeof(sv));
-    sv.type = OPCUA_VAR_STRING;
+    sv.type = OpcUaVariantType::OPCUA_VAR_STRING;
     sv.str = "ab";
     sv.str_len = 2;
     ua_w_variant(&ws, &sv);
@@ -1076,7 +1076,7 @@ void test_variant_errors()
     uint8_t buf[16];
     OpcUaVariant bad;
     memset(&bad, 0, sizeof(bad));
-    bad.type = 200; // not a supported built-in type
+    bad.type = (OpcUaVariantType)200; // not a supported built-in type
     UaWriter w = {buf, sizeof(buf), 0, true};
     ua_w_variant(&w, &bad);
     TEST_ASSERT_FALSE(w.ok); // fail closed
@@ -1091,7 +1091,7 @@ void test_variant_errors()
     UaReader r2 = {ut, sizeof(ut), 0, false};
     TEST_ASSERT_FALSE(ua_r_variant(&r2, &o));
 
-    uint8_t st[5] = {OPCUA_VAR_STRING, 0x10, 0, 0, 0}; // len=16 but no bytes follow
+    uint8_t st[5] = {(uint8_t)OpcUaVariantType::OPCUA_VAR_STRING, 0x10, 0, 0, 0}; // len=16 but no bytes follow
     UaReader r3 = {st, sizeof(st), 0, false};
     TEST_ASSERT_FALSE(ua_r_variant(&r3, &o));
     TEST_ASSERT_TRUE(r3.err);
@@ -1105,7 +1105,7 @@ void test_datavalue_all_masks()
     ua_w_u8(&w, 0x3F); // value|status|sourceTS|serverTS|sourcePS|serverPS
     OpcUaVariant v;
     memset(&v, 0, sizeof(v));
-    v.type = OPCUA_VAR_INT32;
+    v.type = OpcUaVariantType::OPCUA_VAR_INT32;
     v.i32 = 9;
     ua_w_variant(&w, &v);
     ua_w_u32(&w, 0x80000000u); // StatusCode (Bad)
@@ -1486,7 +1486,7 @@ static size_t build_write(uint8_t *out, size_t cap, int32_t count_field, int32_t
     }
     OpcUaVariant v;
     memset(&v, 0, sizeof(v));
-    v.type = OPCUA_VAR_INT32;
+    v.type = OpcUaVariantType::OPCUA_VAR_INT32;
     v.i32 = 0x11223344; // distinctive marker for the malformed-DataValue test
     ua_w_datavalue(&w, &v, OPCUA_STATUS_GOOD);
     out[4] = (uint8_t)w.n;

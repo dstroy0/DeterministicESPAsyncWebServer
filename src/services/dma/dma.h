@@ -55,7 +55,7 @@
 #include <stdint.h>
 
 /** @brief Peripheral a channel is bound to (informational; selects the real backend). */
-enum det_dma_periph
+enum class det_dma_periph : uint8_t
 {
     DET_DMA_UART = 0,
     DET_DMA_I2C = 1,
@@ -63,7 +63,7 @@ enum det_dma_periph
 };
 
 /** @brief Transfer direction carried on a completion event. */
-enum det_dma_dir
+enum class det_dma_dir : uint8_t
 {
     DET_DMA_RX = 0, ///< ingress: peripheral -> buffer
     DET_DMA_TX = 1, ///< egress:  buffer -> peripheral
@@ -81,13 +81,13 @@ enum det_dma_dir
  */
 struct det_dma_event
 {
-    const uint8_t *data; ///< RX: received bytes (into a ping-pong buffer); TX: nullptr
-    uint32_t t_ms;       ///< detws_millis() at completion (0 on host builds)
-    uint16_t len;        ///< bytes transferred
-    uint16_t seq;        ///< per-channel completion sequence (wraps)
-    uint8_t channel;     ///< channel id [0, DETWS_DMA_CHANNELS)
-    uint8_t periph;      ///< det_dma_periph
-    uint8_t dir;         ///< det_dma_dir
+    const uint8_t *data;   ///< RX: received bytes (into a ping-pong buffer); TX: nullptr
+    uint32_t t_ms;         ///< detws_millis() at completion (0 on host builds)
+    uint16_t len;          ///< bytes transferred
+    uint16_t seq;          ///< per-channel completion sequence (wraps)
+    uint8_t channel;       ///< channel id [0, DETWS_DMA_CHANNELS)
+    det_dma_periph periph; ///< det_dma_periph
+    det_dma_dir dir;       ///< det_dma_dir
     uint8_t _pad;
 };
 
@@ -103,7 +103,7 @@ typedef void (*det_dma_cb)(const det_dma_event *ev, void *ctx);
 struct det_dma_config
 {
     uint8_t channel;        ///< channel id [0, DETWS_DMA_CHANNELS).
-    uint8_t periph;         ///< det_dma_periph the channel drives.
+    det_dma_periph periph;  ///< det_dma_periph the channel drives.
     bool loopback;          ///< simulator: this channel's TX egress feeds its own RX ingress.
     det_dma_cb on_complete; ///< completion callback (required).
     void *ctx;              ///< opaque, forwarded to @ref on_complete.

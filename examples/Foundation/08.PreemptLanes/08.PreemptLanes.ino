@@ -2,9 +2,9 @@
 //
 // The preempting work queue is not one queue but several named LANES, each with its own
 // task at its own priority:
-//   - DETWS_PQ_LANE_USER    - the one lane exposed to your app (the no-arg detws_pq_*
+//   - detws_pq_lane::DETWS_PQ_LANE_USER    - the one lane exposed to your app (the no-arg detws_pq_*
 //                             API drives it). Lowest priority.
-//   - DETWS_PQ_LANE_DMA / _FORWARD / _DEVICE - internal lanes the library uses for its
+//   - detws_pq_lane::DETWS_PQ_LANE_DMA / _FORWARD / _DEVICE - internal lanes the library uses for its
 //                             own real-time work; they run ABOVE the user lane (DMA
 //                             highest), so internal ingest always preempts user work.
 //
@@ -43,7 +43,7 @@ void setup()
     DetwsPqConfig dma = {};
     dma.handler = on_critical;
     dma.core = 1;
-    detws_pq_start_lane(DETWS_PQ_LANE_DMA, &dma);
+    detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma);
 
     // User lane via the no-arg API (unchanged from 06.PreemptQueue).
     DetwsPqConfig user = {};
@@ -53,8 +53,10 @@ void setup()
     detws_pq_start(&user);
 
     Serial.printf("lane priorities  DMA=%u  FORWARD=%u  DEVICE=%u  USER=%u\n",
-                  detws_pq_lane_priority(DETWS_PQ_LANE_DMA), detws_pq_lane_priority(DETWS_PQ_LANE_FORWARD),
-                  detws_pq_lane_priority(DETWS_PQ_LANE_DEVICE), detws_pq_lane_priority(DETWS_PQ_LANE_USER));
+                  detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_DMA),
+                  detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_FORWARD),
+                  detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_DEVICE),
+                  detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_USER));
     Serial.println("internal lanes outrank the user lane -> internal work preempts user work");
 }
 
@@ -66,7 +68,7 @@ void loop()
     // before the user-lane task whenever both are runnable.
     pq_item it = {};
     it.seq = g_seq++;
-    detws_pq_post_lane(DETWS_PQ_LANE_DMA, &it, 0); // critical -> internal lane
-    detws_pq_post(&it, 0);                         // background -> user lane
+    detws_pq_post_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &it, 0); // critical -> internal lane
+    detws_pq_post(&it, 0);                                        // background -> user lane
     delay(1000);
 }

@@ -56,7 +56,7 @@ static void on_dma_frame(const void *item, void *)
 // straight to the processing task the moment we return.
 static void on_dma_complete(const det_dma_event *ev, void *)
 {
-    if (ev->dir != DET_DMA_RX)
+    if (ev->dir != det_dma_dir::DET_DMA_RX)
         return; // TX-complete just frees the channel; nothing to process
     pq_item item = {};
     item.msg.len = ev->len;
@@ -64,7 +64,7 @@ static void on_dma_complete(const det_dma_event *ev, void *)
     item.msg.channel = ev->channel;
     uint16_t n = (ev->len < sizeof(item.msg.bytes)) ? ev->len : sizeof(item.msg.bytes);
     memcpy(item.msg.bytes, ev->data, n);
-    detws_pq_post_lane_from_isr(DETWS_PQ_LANE_DMA, &item);
+    detws_pq_post_lane_from_isr(detws_pq_lane::DETWS_PQ_LANE_DMA, &item);
 }
 
 static uint8_t g_seq = 0;
@@ -78,10 +78,10 @@ void setup()
     // which ranks above the user lane) that processes completed DMA frames.
     DetwsPqConfig pq = {};
     pq.handler = on_dma_frame;
-    pq.priority = 0; // 0 -> DETWS_PQ_LANE_DMA's default priority (internal > user)
+    pq.priority = 0; // 0 -> detws_pq_lane::DETWS_PQ_LANE_DMA's default priority (internal > user)
     pq.core = 1;
     pq.name = "dma_rx";
-    if (!detws_pq_start_lane(DETWS_PQ_LANE_DMA, &pq))
+    if (!detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &pq))
     {
         Serial.println("preempt queue failed to start");
         return;
@@ -91,7 +91,7 @@ void setup()
     // simulator's internal jumper), so submitted frames arrive back as RX completions.
     det_dma_config ch = {};
     ch.channel = 0;
-    ch.periph = DET_DMA_UART;
+    ch.periph = det_dma_periph::DET_DMA_UART;
     ch.loopback = true;
     ch.on_complete = on_dma_complete;
     if (!det_dma_open(&ch))

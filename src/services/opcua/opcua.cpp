@@ -680,30 +680,30 @@ size_t opcua_build_activate_session_response(const OpcUaMsg *req, uint32_t seq, 
 // ---------------------------------------------------------------------------
 void ua_w_variant(UaWriter *w, const OpcUaVariant *v)
 {
-    if (!v || v->type == OPCUA_VAR_NULL)
+    if (!v || v->type == OpcUaVariantType::OPCUA_VAR_NULL)
     {
-        ua_w_u8(w, OPCUA_VAR_NULL); // Null Variant (encoding byte 0)
+        ua_w_u8(w, (uint8_t)OpcUaVariantType::OPCUA_VAR_NULL); // Null Variant (encoding byte 0)
         return;
     }
-    ua_w_u8(w, v->type); // encoding byte = built-in type id (scalar; no array bits)
+    ua_w_u8(w, (uint8_t)v->type); // encoding byte = built-in type id (scalar; no array bits)
     switch (v->type)
     {
-    case OPCUA_VAR_BOOL:
+    case OpcUaVariantType::OPCUA_VAR_BOOL:
         ua_w_bool(w, v->b);
         break;
-    case OPCUA_VAR_INT32:
+    case OpcUaVariantType::OPCUA_VAR_INT32:
         ua_w_i32(w, v->i32);
         break;
-    case OPCUA_VAR_UINT32:
+    case OpcUaVariantType::OPCUA_VAR_UINT32:
         ua_w_u32(w, v->u32);
         break;
-    case OPCUA_VAR_FLOAT:
+    case OpcUaVariantType::OPCUA_VAR_FLOAT:
         ua_w_f32(w, v->f32);
         break;
-    case OPCUA_VAR_DOUBLE:
+    case OpcUaVariantType::OPCUA_VAR_DOUBLE:
         ua_w_f64(w, v->f64);
         break;
-    case OPCUA_VAR_STRING:
+    case OpcUaVariantType::OPCUA_VAR_STRING:
         ua_w_string(w, v->str, v->str_len);
         break;
     default:
@@ -714,7 +714,7 @@ void ua_w_variant(UaWriter *w, const OpcUaVariant *v)
 
 void ua_w_datavalue(UaWriter *w, const OpcUaVariant *v, uint32_t status)
 {
-    bool has_value = v && v->type != OPCUA_VAR_NULL;
+    bool has_value = v && v->type != OpcUaVariantType::OPCUA_VAR_NULL;
     uint8_t mask = 0;
     if (has_value)
         mask |= 0x01; // Value present
@@ -736,27 +736,27 @@ bool ua_r_variant(UaReader *r, OpcUaVariant *out)
         r->err = true;
         return false;
     }
-    out->type = enc & 0x3F; // built-in type id (mask off array dimension flags)
+    out->type = (OpcUaVariantType)(enc & 0x3F); // built-in type id (mask off array dimension flags)
     switch (out->type)
     {
-    case OPCUA_VAR_NULL:
+    case OpcUaVariantType::OPCUA_VAR_NULL:
         break;
-    case OPCUA_VAR_BOOL:
+    case OpcUaVariantType::OPCUA_VAR_BOOL:
         out->b = ua_r_bool(r);
         break;
-    case OPCUA_VAR_INT32:
+    case OpcUaVariantType::OPCUA_VAR_INT32:
         out->i32 = ua_r_i32(r);
         break;
-    case OPCUA_VAR_UINT32:
+    case OpcUaVariantType::OPCUA_VAR_UINT32:
         out->u32 = ua_r_u32(r);
         break;
-    case OPCUA_VAR_FLOAT:
+    case OpcUaVariantType::OPCUA_VAR_FLOAT:
         out->f32 = ua_r_f32(r);
         break;
-    case OPCUA_VAR_DOUBLE:
+    case OpcUaVariantType::OPCUA_VAR_DOUBLE:
         out->f64 = ua_r_f64(r);
         break;
-    case OPCUA_VAR_STRING: {
+    case OpcUaVariantType::OPCUA_VAR_STRING: {
         int32_t sl = ua_r_i32(r);
         out->str_len = sl;
         if (sl > 0)
