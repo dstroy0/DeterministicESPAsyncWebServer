@@ -2,10 +2,19 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.8] - 2026-07-11
+
+<details>
+<summary><b>Show Changelog for version 5.95.8 - 2026-07-11</b></summary>
+
+### Bug Fixes
+
+- resolve tcpip_thread self-deadlock + size RX ring for a TLS 1.3 ClientHello ([`babf01f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/babf01f41f6ef9552cb0329eb9360709395bab8d))
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`5d5ed5a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5d5ed5a7d9c9446923e90533f7b1b19f29703992))
+- update CHANGELOG.md [skip ci] ([`4427bb3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4427bb38c3a2267a050415bbc68f11fcaf0802e8))
 - update CHANGELOG.md [skip ci] ([`8754361`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8754361a7b3ecba32f55ee91476f0c989e0e911c))
 - update CHANGELOG.md [skip ci] ([`6a8e6c7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a8e6c74ccc4e75b8525dc4d2a3d9649a6796ae5))
 - update CHANGELOG.md [skip ci] ([`ff78e38`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff78e38fb537060e18c2a8f9f3b5b8fbb850e2e1))
@@ -33,6 +42,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 5.95.7 → 5.95.8 ([`52b0262`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/52b0262eb93b835f04ebc55ee240f142888d1885))
 - jwt_forgery - alg-confusion / forgery immunity proof ([`6c9553c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c9553c68bb8c07a6ff7863fecf37653072270a5))
 - statsd_injection - metric-forging + oversized bound at a UDP collector ([`7fbec50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7fbec50264e90a03cc23d362bbce4e911b89bab0))
 - stomp_malicious_broker - abuse the client's frame parser ([`a8f3091`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a8f3091180334eabfd7bfeeeec5f1fcbc2e8d806))
@@ -90,6 +100,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- device-as-server interop peer + advanced attack + slim HTTPS rig + bench ([`c7d91de`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c7d91de5ee049cacbd106c6d97f9b4bdf53ad914))
 - JWT verifier peer via the real PyJWT library ([`0e16af9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0e16af9eadc52f4bf37c19816cc49d84ad49ccda))
 - device-as-server JWT HS256 /jwt/verify route + jwt_verify bench ([`3202158`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32021583be2736b1cc504139215e635be7114b61))
 - StatsD device-as-client peer (stdlib UDP collector) ([`131238b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/131238b9c3662dc84474dbeeca85c16788eb4b7f))
@@ -129,6 +140,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - CoAP server (RFC 7252) on UDP/5683 + /bench coap_process op ([`8c55510`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c555108cb252660553907a299340559b306122f))
 - WebDAV advanced attacks (RFC 4918) ([`85ff855`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/85ff855751d1a0c81433cd07d471c71297464337))
 - WebDAV peer (RFC 4918) + enable WebDAV on the rig ([`57b8021`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/57b802106e1d99daab3a00629024b4952db00615))
+
+</details>
 
 ## [5.95.7] - 2026-07-11
 
