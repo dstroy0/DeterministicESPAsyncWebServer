@@ -42,7 +42,7 @@
 #define DETWS_AUDIT_HASH_LEN 32
 
 /** @brief Standard audit event categories (extend with your own values). */
-enum DetwsAuditCat
+enum class DetwsAuditCat : uint8_t
 {
     DETWS_AUDIT_SYSTEM = 0,    ///< Boot, shutdown, time change, generic.
     DETWS_AUDIT_AUTH = 1,      ///< Authentication success (login).
@@ -57,7 +57,7 @@ struct DetwsAuditEntry
 {
     uint32_t seq;                       ///< Monotonic sequence number (1-based).
     uint32_t ts;                        ///< Timestamp from detws_millis() at append.
-    uint8_t category;                   ///< ::DetwsAuditCat (or a user value).
+    DetwsAuditCat category;             ///< audit category (a ::DetwsAuditCat, or a user value cast in).
     char msg[DETWS_AUDIT_MSG_LEN];      ///< Null-terminated message (truncated).
     uint8_t hash[DETWS_AUDIT_HASH_LEN]; ///< SHA-256(prev_hash || fields).
 };
@@ -83,7 +83,7 @@ void detws_audit_set_sink(detws_audit_sink_fn sink);
  * @param msg       Null-terminated message (truncated to DETWS_AUDIT_MSG_LEN-1).
  * @return the assigned monotonic sequence number.
  */
-uint32_t detws_audit_append(uint8_t category, const char *msg);
+uint32_t detws_audit_append(DetwsAuditCat category, const char *msg);
 
 /** @brief Number of records currently retained in the ring (0 .. DETWS_AUDIT_LOG_ENTRIES). */
 uint16_t detws_audit_count(void);
@@ -101,7 +101,7 @@ const DetwsAuditEntry *detws_audit_at(uint16_t i);
 bool detws_audit_verify(uint32_t *first_broken_seq);
 
 /** @brief Human-readable name for a standard ::DetwsAuditCat ("system" for unknown). */
-const char *detws_audit_cat_name(uint8_t category);
+const char *detws_audit_cat_name(DetwsAuditCat category);
 
 /**
  * @brief Render one record as a JSON object (hash as full 64-char hex).

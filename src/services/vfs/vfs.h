@@ -40,7 +40,7 @@
 #if DETWS_ENABLE_VFS
 
 /** @brief Open modes. */
-enum DetwsVfsMode
+enum class DetwsVfsMode : uint8_t
 {
     DETWS_VFS_READ = 0,   ///< Read existing file (fails if absent).
     DETWS_VFS_WRITE = 1,  ///< Create/truncate for writing.
@@ -79,7 +79,7 @@ void detws_vfs_ram_format(void);
 // ---------------------------------------------------------------------------
 
 /** @brief Open @p path with @p mode (DetwsVfsMode). @return a handle (>= 0), or -1 on error. */
-int detws_vfs_open(const char *path, int mode);
+int detws_vfs_open(const char *path, DetwsVfsMode mode);
 /** @brief Read up to @p n bytes from @p handle into @p buf. @return bytes read, or -1. */
 int detws_vfs_read(int handle, void *buf, size_t n);
 /** @brief Write @p n bytes from @p buf to @p handle. @return bytes written, or -1. */

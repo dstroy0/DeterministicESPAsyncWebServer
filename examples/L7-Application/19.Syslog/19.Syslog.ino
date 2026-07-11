@@ -42,7 +42,10 @@ static void access_log(const char *method, const char *path, int status, int len
 {
     char line[96];
     snprintf(line, sizeof(line), "%s %s -> %d (%d bytes)", method, path, status, len);
-    syslog_log(status >= 500 ? SYSLOG_ERR : status >= 400 ? SYSLOG_WARNING : SYSLOG_INFO, line);
+    syslog_log(status >= 500   ? SyslogSeverity::SYSLOG_ERR
+               : status >= 400 ? SyslogSeverity::SYSLOG_WARNING
+                               : SyslogSeverity::SYSLOG_INFO,
+               line);
 }
 
 void setup()
@@ -60,8 +63,8 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    syslog_init(SYSLOG_SERVER, SYSLOG_PORT, "esp32-detws", "detws", SYSLOG_FAC_LOCAL0);
-    syslog_log(SYSLOG_NOTICE, "device booted");
+    syslog_init(SYSLOG_SERVER, SYSLOG_PORT, "esp32-detws", "detws", SyslogFacility::SYSLOG_FAC_LOCAL0);
+    syslog_log(SyslogSeverity::SYSLOG_NOTICE, "device booted");
 
     server.on("/", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "ok"); });
     server.on_request_log(access_log); // every response is logged to syslog
@@ -84,6 +87,6 @@ void loop()
         char hb[48];
         snprintf(hb, sizeof(hb), "heartbeat uptime=%lus heap=%u", (unsigned long)(millis() / 1000),
                  (unsigned)ESP.getFreeHeap());
-        syslog_log(SYSLOG_INFO, hb);
+        syslog_log(SyslogSeverity::SYSLOG_INFO, hb);
     }
 }

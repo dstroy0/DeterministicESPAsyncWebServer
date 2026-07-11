@@ -63,7 +63,7 @@ void setup()
 
     detws_audit_reset();
     detws_audit_set_sink(audit_sink);
-    detws_audit_append(DETWS_AUDIT_SYSTEM, "boot");
+    detws_audit_append(DetwsAuditCat::DETWS_AUDIT_SYSTEM, "boot");
 
     server.on("/login", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *req) {
         const char *user = http_get_query(req, "user");
@@ -71,7 +71,7 @@ void setup()
         char msg[DETWS_AUDIT_MSG_LEN];
         bool ok = pass && strcmp(pass, "secret") == 0;
         snprintf(msg, sizeof(msg), "login %s", user ? user : "?");
-        detws_audit_append(ok ? DETWS_AUDIT_AUTH : DETWS_AUDIT_AUTH_FAIL, msg);
+        detws_audit_append(ok ? DetwsAuditCat::DETWS_AUDIT_AUTH : DetwsAuditCat::DETWS_AUDIT_AUTH_FAIL, msg);
         server.send(id, ok ? 200 : 401, "application/json", ok ? "{\"ok\":true}" : "{\"ok\":false}");
     });
 
@@ -79,7 +79,7 @@ void setup()
         const char *port = http_get_query(req, "http_port");
         char msg[DETWS_AUDIT_MSG_LEN];
         snprintf(msg, sizeof(msg), "set http_port=%s", port ? port : "?");
-        detws_audit_append(DETWS_AUDIT_CONFIG, msg);
+        detws_audit_append(DetwsAuditCat::DETWS_AUDIT_CONFIG, msg);
         server.send(id, 200, "application/json", "{\"ok\":true}");
     });
 

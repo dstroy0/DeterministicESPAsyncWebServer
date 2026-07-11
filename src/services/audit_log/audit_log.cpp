@@ -62,7 +62,7 @@ void chain_hash(const uint8_t prev[DETWS_AUDIT_HASH_LEN], const DetwsAuditEntry 
     ssh_sha256_update(&c, le, 4);
     put_le32(le, e->ts);
     ssh_sha256_update(&c, le, 4);
-    ssh_sha256_update(&c, &e->category, 1);
+    ssh_sha256_update(&c, (const uint8_t *)&e->category, 1); // hash the raw category byte
     uint8_t mlen = (uint8_t)strnlen(e->msg, DETWS_AUDIT_MSG_LEN - 1);
     ssh_sha256_update(&c, &mlen, 1);
     ssh_sha256_update(&c, (const uint8_t *)e->msg, mlen);
@@ -138,7 +138,7 @@ void detws_audit_set_sink(detws_audit_sink_fn sink)
     s_audit.sink = sink;
 }
 
-uint32_t detws_audit_append(uint8_t category, const char *msg)
+uint32_t detws_audit_append(DetwsAuditCat category, const char *msg)
 {
     // prev = hash of the current newest record (anchor if the ring is empty).
     uint8_t prev[DETWS_AUDIT_HASH_LEN];
@@ -209,19 +209,19 @@ bool detws_audit_verify(uint32_t *first_broken_seq)
     return true;
 }
 
-const char *detws_audit_cat_name(uint8_t category)
+const char *detws_audit_cat_name(DetwsAuditCat category)
 {
     switch (category)
     {
-    case DETWS_AUDIT_AUTH:
+    case DetwsAuditCat::DETWS_AUDIT_AUTH:
         return "auth";
-    case DETWS_AUDIT_AUTH_FAIL:
+    case DetwsAuditCat::DETWS_AUDIT_AUTH_FAIL:
         return "auth_fail";
-    case DETWS_AUDIT_ACCESS:
+    case DetwsAuditCat::DETWS_AUDIT_ACCESS:
         return "access";
-    case DETWS_AUDIT_CONFIG:
+    case DetwsAuditCat::DETWS_AUDIT_CONFIG:
         return "config";
-    case DETWS_AUDIT_ADMIN:
+    case DetwsAuditCat::DETWS_AUDIT_ADMIN:
         return "admin";
     default:
         return "system";

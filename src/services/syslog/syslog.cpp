@@ -23,7 +23,7 @@ struct SyslogCtx
     uint16_t port = DETWS_SYSLOG_DEFAULT_PORT;
     char hostname[DETWS_SYSLOG_FIELD_MAX] = {0};
     char appname[DETWS_SYSLOG_FIELD_MAX] = {0};
-    int facility = SYSLOG_FAC_LOCAL0;
+    SyslogFacility facility = SyslogFacility::SYSLOG_FAC_LOCAL0;
     bool ready = false;
     char buf[DETWS_SYSLOG_MSG_MAX];
 };
@@ -40,7 +40,8 @@ static void copy_field(char *dst, size_t cap, const char *src)
     dst[cap - 1] = '\0';
 }
 
-void syslog_init(const char *server_ip, uint16_t port, const char *hostname, const char *appname, int facility)
+void syslog_init(const char *server_ip, uint16_t port, const char *hostname, const char *appname,
+                 SyslogFacility facility)
 {
     copy_field(s_syslog.server_ip, sizeof(s_syslog.server_ip), server_ip);
     s_syslog.port = port;
@@ -50,17 +51,17 @@ void syslog_init(const char *server_ip, uint16_t port, const char *hostname, con
     s_syslog.ready = (s_syslog.server_ip[0] != '\0');
 }
 
-size_t syslog_format(char *out, size_t cap, int facility, int severity, const char *hostname, const char *appname,
-                     const char *msg)
+size_t syslog_format(char *out, size_t cap, SyslogFacility facility, SyslogSeverity severity, const char *hostname,
+                     const char *appname, const char *msg)
 {
     if (!out || cap == 0)
         return 0;
-    // RFC 5424 6.2.1: PRIVAL = facility*8 + severity, range 0..191. Clamp defensively
-    // so an out-of-range caller value can never emit a malformed PRI (e.g. <-8>/<400>).
-    int pri = facility * 8 + severity;
-    if (pri < 0)
-        pri = 0;
-    else if (pri > 191)
+    // RFC 5424 6.2.1: PRIVAL = facility*8 + severity, range 0..191. The numeric priority is the wire
+    // encoding of the level pair, so cast to int here (the boundary). facility/severity are unsigned
+    // enums, so PRI is never negative; clamp only the top so an over-range value cast in by the caller
+    // can never emit a malformed PRI (e.g. <400>).
+    int pri = (int)facility * 8 + (int)severity;
+    if (pri > 191)
         pri = 191;
     const char *h = (hostname && hostname[0]) ? hostname : "-";
     const char *a = (appname && appname[0]) ? appname : "-";
@@ -72,7 +73,7 @@ size_t syslog_format(char *out, size_t cap, int facility, int severity, const ch
     return (size_t)n;
 }
 
-bool syslog_log(int severity, const char *msg)
+bool syslog_log(SyslogSeverity severity, const char *msg)
 {
     if (!s_syslog.ready)
         return false;

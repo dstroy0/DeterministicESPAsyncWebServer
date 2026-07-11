@@ -30,7 +30,7 @@
 #if DETWS_ENABLE_SYSLOG
 
 /** @brief RFC 5424 §6.2.1 severity levels (numerically lower = more severe). */
-enum SyslogSeverity
+enum class SyslogSeverity : uint8_t
 {
     SYSLOG_EMERG = 0,   ///< system is unusable
     SYSLOG_ALERT = 1,   ///< action must be taken immediately
@@ -43,7 +43,7 @@ enum SyslogSeverity
 };
 
 /** @brief Common RFC 5424 §6.2.1 facilities (the default is LOCAL0). */
-enum SyslogFacility
+enum class SyslogFacility : uint8_t
 {
     SYSLOG_FAC_USER = 1,    ///< user-level messages
     SYSLOG_FAC_DAEMON = 3,  ///< system daemons
@@ -62,15 +62,15 @@ enum SyslogFacility
  * @param facility  syslog facility (default LOCAL0).
  */
 void syslog_init(const char *server_ip, uint16_t port, const char *hostname, const char *appname,
-                 int facility = SYSLOG_FAC_LOCAL0);
+                 SyslogFacility facility = SyslogFacility::SYSLOG_FAC_LOCAL0);
 
 /**
  * @brief Format one RFC 5424 line into @p out (host-testable; no sockets/heap).
  *
  * @return number of bytes written (excl. NUL), or 0 if it would not fit @p cap.
  */
-size_t syslog_format(char *out, size_t cap, int facility, int severity, const char *hostname, const char *appname,
-                     const char *msg);
+size_t syslog_format(char *out, size_t cap, SyslogFacility facility, SyslogSeverity severity, const char *hostname,
+                     const char *appname, const char *msg);
 
 /**
  * @brief Format @p msg at @p severity and send it to the configured server.
@@ -78,7 +78,7 @@ size_t syslog_format(char *out, size_t cap, int facility, int severity, const ch
  * @return true if the datagram was queued; false if not yet configured, the line
  *         overflowed DETWS_SYSLOG_MSG_MAX, or the send failed (host build).
  */
-bool syslog_log(int severity, const char *msg);
+bool syslog_log(SyslogSeverity severity, const char *msg);
 
 #endif // DETWS_ENABLE_SYSLOG
 
