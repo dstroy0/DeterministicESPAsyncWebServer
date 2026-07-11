@@ -1146,6 +1146,7 @@
     ".github/workflows/**",
     "**/*.txt",
     "**/*.der",
-    "**/*.gz"
+    "**/*.gz",
+    "test/dep_graph.json"
   ]
 }

@@ -3,9 +3,10 @@ name: Test & Analyze
 # Runs the native Unity suite and gets both outputs from one instrumented pass: test/TEST_REPORT.md
 # (the human report) and test/coverage.xml (for the SonarCloud scan).
 #
-# Affected-only by default: most commits touch one feature's .cpp + its test_x/ dir, so this maps the
-# diff to just the envs that changed (test/select_envs.py) and runs only those, then folds the results
-# back into the committed whole:
+# Affected-only by default: most commits touch one feature's .cpp/.h + its test_x/ dir, so this maps the
+# diff - sources AND headers, via the compiler include graph in test/dep_graph.json - to just the envs
+# that changed (test/select_envs.py) and runs only those, then folds the results back into the committed
+# whole:
 #   * test/TEST_REPORT.md  - the touched (suite, env) rows/sections are replaced (merge_report.py),
 #                            every other suite kept verbatim, header totals recomputed;
 #   * test/coverage.xml    - the changed sources' fresh coverage overlays the committed baseline
@@ -13,7 +14,8 @@ name: Test & Analyze
 #                            SonarCloud still sees full coverage.
 #
 # The whole matrix runs (and both artifacts are regenerated from scratch) when ANY of these hold:
-#   * a shared/core/header/config/tooling file changed (select_envs.py returns FULL - the safe default);
+#   * a change maps to FULL - a shared header the graph attributes to >=90% of envs, a config/tooling
+#     file, or a new file not yet in the graph (select_envs.py's safe default);
 #   * the commit message contains [ci full] (or [full ci]);
 #   * the PR carries the 'full-ci' label;
 #   * the workflow_dispatch 'full' input is true.
@@ -161,6 +163,19 @@ jobs:
         env:
           SONAR_HOST_URL: https://sonarcloud.io
 
+      # Keep test/dep_graph.json (the compiler include graph select_envs.py maps changes through)
+      # current: a full run regenerates it whole; an affected run recomputes just the envs that ran
+      # (--merge), so a later #include change is already reflected next time. Deterministic output, so
+      # it only shows a diff (and gets committed) when the include structure actually changed.
+      - name: Refresh dependency graph
+        if: ${{ github.event_name == 'push' && steps.sel.outputs.mode != 'none' }}
+        run: |
+          if [ "${{ steps.sel.outputs.mode }}" = "full" ]; then
+            python3 tools/gen_dep_graph.py --out test/dep_graph.json
+          else
+            python3 tools/gen_dep_graph.py --merge --out test/dep_graph.json --envs ${{ steps.sel.outputs.envs }}
+          fi
+
       - name: Commit updated report + coverage
         if: ${{ github.event_name == 'push' && steps.sel.outputs.mode != 'none' }}
         env:
@@ -168,6 +183,17 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Discard a report whose ONLY change is per-run timing (Generated timestamp, total seconds,
+          # the Duration column): normalize the committed vs freshly generated report and, if they
+          # match, restore the committed one so the timing noise is never committed.
+          if git cat-file -e HEAD:test/TEST_REPORT.md 2>/dev/null; then
+            git show HEAD:test/TEST_REPORT.md > /tmp/old_report.md
+            python3 test/report_stable.py /tmp/old_report.md > /tmp/old.norm
+            python3 test/report_stable.py test/TEST_REPORT.md > /tmp/new.norm
+            if diff -q /tmp/old.norm /tmp/new.norm >/dev/null 2>&1; then
+              git checkout -- test/TEST_REPORT.md
+            fi
+          fi
           # SSH-sign the bot commit (Verified) when the signing key is available; commit unsigned if
           # the secret is unset so CI never breaks.
           if [ -n "$CI_SIGNING_KEY" ]; then
@@ -178,7 +204,7 @@ jobs:
             git config user.signingkey ~/.ssh/ci_signing_key
             git config commit.gpgsign true
           fi
-          git add test/TEST_REPORT.md test/coverage.xml
+          git add test/TEST_REPORT.md test/coverage.xml test/dep_graph.json
           if ! git diff --cached --quiet; then
             git commit -m "ci: update test report + coverage [skip ci]"
             # Rebase-and-retry: other auto-committing workflows advance main during this multi-minute run.

@@ -13,13 +13,15 @@ and prints exactly one of:
     NONE                    no test env is affected (e.g. a docs-only change)
     native_x native_y ...   the space-separated set of affected envs
 
-The mapping is exact for `.cpp` files: each native env's `build_src_filter` in
-platformio.ini is the complete list of sources it compiles (the envs are strictly
-per-feature isolated), so a changed `src/*.cpp` affects exactly the envs whose filter
-lists it, and a changed `test/test_x/` affects the envs whose `test_filter` names it.
-Anything we cannot map cheaply and safely (any header, any core/shared source not owned
-by a single feature env, or build/test/tooling infrastructure) falls back to FULL - we
-would rather over-run than silently skip an affected suite.
+The mapping is exact. For BOTH sources and headers under src/ it consults the compiler
+dependency graph (test/dep_graph.json, built by tools/gen_dep_graph.py from `g++ -MM`):
+a file maps to exactly the envs whose translation units include it, so a feature header
+like coap.h hits only native_coap / native_coap_observe, not the whole matrix. A changed
+`test/test_x/` maps via the envs whose `test_filter` names it. Only a file absent from the
+graph (a brand-new source/header, or when the graph is missing) falls back to the
+build_src_filter mapping / FULL - we would rather over-run than silently skip a suite. A
+change hitting >=90% of envs (a shared header) is reported FULL so coverage regenerates
+cleanly.
 
 Usage:
     git diff --name-only origin/main...HEAD | python3 test/select_envs.py
@@ -29,6 +31,7 @@ Usage:
 
 import argparse
 import fnmatch
+import json
 import os
 import re
 import sys
@@ -36,6 +39,12 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 INI = os.path.join(ROOT, "platformio.ini")
+DEP_GRAPH = os.path.join(HERE, "dep_graph.json")
+
+# A changed header/source mapping (via the compiler dep graph) to at least this fraction of the
+# testable envs is a shared header - run FULL (regenerate coverage cleanly) rather than an
+# "affected" run that would merge nearly every row and overlay coverage for no changed source.
+FULL_FRACTION = 0.9
 
 # Envs that exist in the ini but are never part of the report suite (special tooling
 # targets); never select them even when "affected".
@@ -83,6 +92,10 @@ IGNORE_EXACT = {
     ".editorconfig",
     "CONTRIBUTING.md",
     "SECURITY.md",
+    # CI-committed outputs / data - changing these must not trigger a suite.
+    "test/TEST_REPORT.md",
+    "test/coverage.xml",
+    "test/dep_graph.json",
 }
 
 
@@ -142,7 +155,20 @@ def _match_glob(rel, glob):
     return fnmatch.fnmatch(rel, glob) or fnmatch.fnmatch(rel, glob.replace("*", "**"))
 
 
-def classify(changed, envs):
+def load_graph():
+    """{repo-relative path -> [envs]} from test/dep_graph.json (compiler -MM output), or {}.
+
+    Empty (missing file) preserves the pre-graph behaviour: src/ changes fall back to the
+    build_src_filter mapping and any header returns FULL.
+    """
+    try:
+        with open(DEP_GRAPH, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return {}
+
+
+def classify(changed, envs, graph, total_testable):
     """Return "FULL", "NONE", or a sorted list of affected env names."""
     affected = set()
     src_globs = [(name, g) for name, e in envs.items() for g in e["src"]]
@@ -161,17 +187,21 @@ def classify(changed, envs):
         if f in IGNORE_EXACT or f.startswith(IGNORE_PREFIX):
             continue
         if f.startswith("src/"):
-            rel = f[len("src/") :]
-            if f.endswith((".h", ".hpp", ".inc")):
-                return "FULL"  # headers are included too widely to map cheaply and safely
-            if f.endswith(".cpp") or f.endswith(".c"):
+            # The compiler dep graph maps a source OR header to exactly the envs whose include
+            # closure contains it - so a feature header hits only its feature's envs, not FULL.
+            if f in graph:
+                affected |= set(graph[f]) - NEVER_SELECT
+                saw_relevant = True
+                continue
+            if f.endswith((".cpp", ".c")):
+                rel = f[len("src/") :]
                 hits = {name for name, g in src_globs if _match_glob(rel, g)}
                 if not hits:
                     return "FULL"  # a compiled source we cannot attribute to a feature env
                 affected |= hits
                 saw_relevant = True
                 continue
-            return "FULL"  # some other src/ artifact
+            return "FULL"  # a header/source absent from the graph (new file, or graph stale)
         if f.startswith("test/"):
             m = re.match(r"^test/(test_[A-Za-z0-9_]+)(/|$)", f)
             if m:
@@ -186,9 +216,13 @@ def classify(changed, envs):
         return "FULL"
 
     affected -= NEVER_SELECT
-    if affected:
-        return sorted(affected)
-    return "NONE" if saw_relevant is False else "NONE"
+    if not affected:
+        return "NONE"
+    # A shared header hits almost every env; run FULL so coverage regenerates from scratch instead
+    # of an "affected" run that merges nearly every row with nothing changed to overlay.
+    if total_testable and len(affected) >= FULL_FRACTION * total_testable:
+        return "FULL"
+    return sorted(affected)
 
 
 def main():
@@ -211,7 +245,9 @@ def main():
         return
 
     envs = parse_envs(args.ini)
-    result = classify(changed, envs)
+    graph = load_graph()
+    total_testable = len(set(envs) - NEVER_SELECT)
+    result = classify(changed, envs, graph, total_testable)
     if isinstance(result, list):
         print(" ".join(result))
     else:

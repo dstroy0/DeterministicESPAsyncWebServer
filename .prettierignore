@@ -9,3 +9,7 @@ docs/SECURITY.md
 docs/SSH.md
 docs/TODO.md
 test/README.md
+
+# Generated data: the compiler dependency graph is written by tools/gen_dep_graph.py (compact
+# json.dump) and regenerated verbatim by CI; Prettier would reformat it and cause churn.
+test/dep_graph.json
