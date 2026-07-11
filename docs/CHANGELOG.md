@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`beedceb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/beedceb52e2e3f2894a7507c221e7d48e94777ba))
+- update CHANGELOG.md [skip ci] ([`8ec66d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8ec66d2432aac3f345fad6f23d005b6e29b79f95))
 - update CHANGELOG.md [skip ci] ([`733426f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/733426fab521fa067d6d271d452f3888bd7f77f1))
 - update test report + coverage [skip ci] ([`f8eb5d0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8eb5d02daa7e4e8f265177ce569085146aac755))
 - update CHANGELOG.md [skip ci] ([`0c6b7b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0c6b7b1e56d3023e20bc272f1aac0f2c68a0b317))
@@ -151,6 +153,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- one declaration per line - happy_eyeballs/http_delivery/wisun/hpack (S1659) ([`a56a001`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a56a0015d436b8391e4e9bc5588b795db4d2f673))
 - one declaration per line - fins/snmp_v3/ssh_transport (S1659) ([`b18408f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b18408f2850c6116a6fc736ec81d0ee8b24af7c3))
 - one declaration per line - http3 (S1659) ([`85964c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/85964c83d996c552ab454d964c01b675510ed824))
 - one declaration per line - ssh crypto (S1659) ([`9e4521c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e4521c9ffefe7e72fba2b1a785687dd1b37ab71))
