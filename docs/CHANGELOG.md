@@ -4,8 +4,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- two SonarCloud reliability bugs (graphql unsigned negate, redis NaN) ([`39d73c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39d73c2e283fab4599e0586e6743f97a73e5b13d))
+
 ### CI / Build
 
+- idempotent PlatformIO publish (already-published is a no-op) ([`82cb24e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/82cb24e170bf36cf63e4a7d54e76dddc3a97f613))
+- update CHANGELOG.md [skip ci] ([`af9df4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af9df4a074ae73f9bacd61c225c867a1f05f6fef))
 - make dependency-graph refresh non-fatal ([`595d04a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/595d04a91e2c214a65f6669b1ffc6bec60dd2623))
 - update CHANGELOG.md [skip ci] ([`3462453`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34624532da9eb910eb0d434902692bdabd342805))
 - update CHANGELOG.md [skip ci] ([`aa183d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aa183d886a184315fea99f45121f37219fe342f5))
