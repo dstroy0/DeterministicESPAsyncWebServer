@@ -2,12 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.17] - 2026-07-12
+
+<details>
+<summary><b>Show Changelog for version 5.95.17 - 2026-07-12</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`af1065f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/af1065fdfcfeb92278dd0a1e1e54b359023a4aa3))
 - update CHANGELOG.md [skip ci] ([`da0c9d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da0c9d86418290366860065e99bbd8923064f1a1))
 - update CHANGELOG.md [skip ci] ([`dab7366`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dab7366b953b44c196d926b00a57c1a0cfe090e6))
+
+### Changes
+
+- Bump version: 5.95.16 → 5.95.17 ([`6831008`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6831008d3c6f000c079c6bca9be0737a203d12f5))
 
 ### Documentation
 
@@ -15,7 +23,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- dedicated vector ssh_gf_sq balances the operand once (X25519 1.30x) ([`db2bd0d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db2bd0dd767519e2198333763e1009095f6b5469))
 - single-asm-block SIMD field multiply on the rig (1.65x, isolates the bottleneck) ([`efb67ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/efb67ead9d8bde3f426c397e73284efcab528b3a))
+
+</details>
 
 ## [5.95.16] - 2026-07-12
 
