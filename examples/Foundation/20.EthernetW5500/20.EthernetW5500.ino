@@ -10,7 +10,7 @@
 // with the arduino-cli / IDF-5.x core.
 //
 // Wiring (ESP32-S3-DevKitC, HSPI) - the DETWS_ETH_W5500_* build flags in build_opt.h:
-//   CS = GPIO5  RST = GPIO6  INT = GPIO7  SCLK = GPIO12  MOSI = GPIO11  MISO = GPIO13  (VCC 3V3, GND)
+//   CS = GPIO7  RST = GPIO5  INT = GPIO6  SCLK = GPIO12  MOSI = GPIO11  MISO = GPIO13  (VCC 3V3, GND)
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
