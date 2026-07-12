@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`0ed7c3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ed7c3cbdd236785b8f8dcfe4b68b52dd2467888))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`28290e6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28290e6cda2709ad6b0986f32d5a8f8a1d54daf3))
+
+### Testing
+
+- device-as-client Sparkplug B NBIRTH interop over a real MQTT broker (9/9 HW) ([`0d5ef53`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d5ef53196cc89a1859a13ea1c197ea447177990))
+
 ## [5.98.0] - 2026-07-12
 
 <details>
