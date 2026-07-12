@@ -607,6 +607,31 @@
 #define DETWS_ENABLE_ETHERNET 0
 #endif
 
+// W5500 SPI Ethernet (arduino-esp32 3.x only). Set DETWS_ETH_W5500=1 to select the SPI PHY over the RMII
+// default; the pins below are the ESP32-S3-DevKitC wiring (HSPI / SPI3). The 2.x ETH library has no W5500,
+// so init_eth_physical() falls back to the RMII ETH.begin() when the core is older.
+#ifndef DETWS_ETH_W5500
+#define DETWS_ETH_W5500 0
+#endif
+#ifndef DETWS_ETH_W5500_CS
+#define DETWS_ETH_W5500_CS 5 ///< chip select
+#endif
+#ifndef DETWS_ETH_W5500_RST
+#define DETWS_ETH_W5500_RST 6 ///< reset
+#endif
+#ifndef DETWS_ETH_W5500_INT
+#define DETWS_ETH_W5500_INT 7 ///< interrupt
+#endif
+#ifndef DETWS_ETH_W5500_SCK
+#define DETWS_ETH_W5500_SCK 12 ///< HSPI clock (S3-DevKitC default)
+#endif
+#ifndef DETWS_ETH_W5500_MISO
+#define DETWS_ETH_W5500_MISO 13 ///< HSPI MISO (S3-DevKitC default)
+#endif
+#ifndef DETWS_ETH_W5500_MOSI
+#define DETWS_ETH_W5500_MOSI 11 ///< HSPI MOSI (S3-DevKitC default)
+#endif
+
 /**
  * @brief Enable IPv6 on the network interface (dual-stack). Default off.
  *
