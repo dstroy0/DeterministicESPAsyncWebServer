@@ -917,6 +917,26 @@ fields - gocbRef / stNum / sqNum / allData / ...). Pure (no socket). Host from
   op (build-into-buffer, no transmit) is the remaining increment; full interop needs a raw-L2 multicast
   subscriber and an Ethernet PHY (hardware the rig does not yet have).
 
+### EtherNet/IP codec (DETWS_ENABLE_ENIP)
+
+EtherNet/IP (CIP encapsulation over TCP/44818): the 24-octet encapsulation header (command / length /
+session-handle / status / sender-context / options) + command data, plus the RegisterSession handshake and
+SendRRData (which carries the CIP message). Pure (no socket). Host from
+[`perf/bench_enip.cpp`](../perf/bench_enip.cpp).
+
+| Operation                  | Host ns/op | Host MB/s |
+| -------------------------- | ---------: | --------: |
+| `eip_build` (encap)        |        7.5 |    4250.7 |
+| `eip_parse` (encap)        |        4.9 |    6493.8 |
+| `register_session` (build) |        2.9 |    9587.6 |
+
+- **Fixed little-endian header, no BER, no CRC** - so it lands in the fast fixed-field class (~5-8 ns, like
+  IEC-104's APCI), ~20x cheaper than the nested-BER MMS/GOOSE builders. `eip_parse` (~4.9 ns) validates the
+  command/length/status and slices the command data - the receive op, and the surface an `enip_frame_fuzz`
+  parser attack targets (a length lie must not over-read past the 24-octet header). Device µs/op via the rig
+  `/bench` op + that attack are the next ENIP increments; interop needs a CIP object model + a peer (e.g.
+  cpppo / an OpENer target) on top of the encapsulation codec.
+
 ### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
 
 The board fronts a port and relays every byte to an internal origin (`server.listen(p, PROTO_RELAY)` +
