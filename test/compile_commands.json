@@ -300,16 +300,16 @@
     "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_chacha20.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_curve25519.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_ed25519/src/network_drivers/presentation/ssh/crypto/ssh_curve25519.o -c -std=c++14 -DPLATFORMIO=60119 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp",
-    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_curve25519.o"
+    "output": ".pio/build/native_ssh_ed25519/src/network_drivers/presentation/ssh/crypto/ssh_curve25519.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_ed25519.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_ed25519/src/network_drivers/presentation/ssh/crypto/ssh_ed25519.o -c -std=c++14 -DPLATFORMIO=60119 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp",
-    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_ed25519.o"
+    "output": ".pio/build/native_ssh_ed25519/src/network_drivers/presentation/ssh/crypto/ssh_ed25519.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp",
@@ -330,10 +330,10 @@
     "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_poly1305.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_ssh_ed25519/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o -c -std=c++14 -DPLATFORMIO=60119 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp",
-    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o"
+    "output": ".pio/build/native_ssh_ed25519/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_csrf/src/services/csrf/csrf.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_CSRF=1 -Itest/mocks -Itest/support -Isrc src/services/csrf/csrf.cpp",

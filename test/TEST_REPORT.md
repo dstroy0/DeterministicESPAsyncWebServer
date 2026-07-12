@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-11 23:53:30
+**Generated:** 2026-07-12 00:40:51
 **Command:** `pio test` over 214 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 3033 passed - 674s
+**Result:** ✅ 3034 passed - 243s
 
 ---
 
@@ -20,7 +20,7 @@
 | `test_det_primitives`    | `native_det_primitives` |     5 |   ✅   | 00:00:00.725 |
 | `test_det_ip`            | `native_det_ip`         |    11 |   ✅   | 00:00:00.766 |
 | `test_det_arena`         | `native_det_arena`      |    19 |   ✅   | 00:00:00.778 |
-| `test_ssh_ed25519`       | `native_ssh_ed25519`    |    16 |   ✅   | 00:00:04.848 |
+| `test_ssh_ed25519`       | `native_ssh_ed25519`    |    17 |   ✅   | 00:00:07.554 |
 | `test_crypto_kat`        | `native_crypto_kat`     |     9 |   ✅   | 00:00:02.859 |
 | `test_promisc`           | `native_promisc`        |     9 |   ✅   | 00:00:00.811 |
 | `test_bus_capture`       | `native_bus_capture`    |     7 |   ✅   | 00:00:00.777 |
@@ -520,7 +520,7 @@ _Unit tests for the unified double-ended arena (network_drivers/session/det_aren
 
 ---
 
-## test_ssh_ed25519 - native_ssh_ed25519 - ✅ 16 passed
+## test_ssh_ed25519 - native_ssh_ed25519 - ✅ 17 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -545,6 +545,7 @@ _Known-answer tests for the modern SSH crypto suite (curve25519-sha256 KEX +_
 |  14 | `test_ed25519_vector_zero_seed`         |   ✅   | Ed25519 vector zero seed         |
 |  15 | `test_ed25519_verify_rejects_tampering` |   ✅   | Ed25519 verify rejects tampering |
 |  16 | `test_ed25519_roundtrip_long`           |   ✅   | Ed25519 roundtrip long           |
+|  17 | `test_gf_mul_s16_model_matches_scalar`  |   ✅   | Gf mul s16 model matches scalar  |
 
 </details>
 
