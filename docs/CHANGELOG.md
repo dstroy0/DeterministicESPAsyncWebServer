@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`96738bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96738bbae74965a6fedb9f1db99bd1740c485805))
 - update CHANGELOG.md [skip ci] ([`8a3fc50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a3fc50293c4f9810197fcefb96449e5d9fc7fa8))
 - update CHANGELOG.md [skip ci] ([`108743d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/108743de1a5574e59ffb2927605dd2af9d0f3e2a))
 - update CHANGELOG.md [skip ci] ([`a18e22e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a18e22e849da34bf350002e56e31e4be9b520665))
@@ -29,6 +30,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- host bench for the Siemens S7 (ISO-on-TCP) codec ([`9711d31`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9711d31a229a76dc4da35938fafc098abb9b9c41))
 - host bench for the BACnet/IP BVLC + NPDU codec (ASHRAE 135) ([`a5404b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a5404b296ba44df9a315950b19c674ddb0a4c921))
 - device us/op for dnp3_parse_frame via the rig /bench op ([`7e43c16`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e43c167bdc52a2bbd521cd37429a385b467c21f))
 - host bench + correct the backlog - 18 "roadmap" protocols are implemented ([`bac0884`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bac088445c9b5f9bc2081bca52e683b76ab16b53))
