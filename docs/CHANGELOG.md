@@ -2,13 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.16] - 2026-07-12
+
+<details>
+<summary><b>Show Changelog for version 5.95.16 - 2026-07-12</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a811722`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a8117221d49270a8b85cc54d080b5311636b0472))
 - update test report + coverage [skip ci] ([`6ee4c24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6ee4c24e3b90e51a9ded192a3b6f4b5f240ec11d))
 - update CHANGELOG.md [skip ci] ([`e4a764e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4a764eeaaa62454b83913d7f36df341da1d0ad0))
 - update CHANGELOG.md [skip ci] ([`851ebbd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/851ebbdae3598eea5a981c11d8e850ef3ec28639))
+
+### Changes
+
+- Bump version: 5.95.15 → 5.95.16 ([`2ee95e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ee95e2b89b79206a1476f43729f0a18ca7b466b))
 
 ### Documentation
 
@@ -18,11 +26,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- ship the ESP32-S3 vector (PIE) curve25519 field multiply (1.55x) ([`e4ab6b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4ab6b41e6fd1e930f621fa2d94351e55bc3c317))
 - device-validated SIMD field multiply (ssh_gf_mul_s3, 1.55x) on the S3 rig ([`c692712`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c692712ec10068e8380a32f00000105662ab25b3))
 
 ### Testing
 
 - validate the s16-balanced field-multiply model (S3 SIMD scaffold) ([`5b5e5b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b5e5b80edb297136b07308803ab6fcb8b3b2836))
+
+</details>
 
 ## [5.95.15] - 2026-07-12
 
