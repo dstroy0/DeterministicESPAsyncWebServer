@@ -875,6 +875,28 @@ from [`perf/bench_iec60870.cpp`](../perf/bench_iec60870.cpp).
   refused by the 256 B body cap; free heap flat across repeat runs after the warm-up first-touch). Interop still
   needs the IEC-60870 **app/role layer** (interrogation + spontaneous reporting) built on the codec.
 
+### IEC 61850 MMS codec (DETWS_ENABLE_MMS)
+
+The client/server core of IEC 61850 (MMS / ISO 9506 over ISO-on-TCP/102): the confirmed-request Read builder
+(a nested BER encoding of the ACSI ObjectName for a Data Object reference), the confirmed-response Read-data
+builder, and the confirmed-PDU header parser. Pure (no socket, no TPKT/COTP). Host from
+[`perf/bench_mms.cpp`](../perf/bench_mms.cpp).
+
+| Operation               | Host ns/op | Host MB/s |
+| ----------------------- | ---------: | --------: |
+| `read_request` (build)  |      101.3 |     404.8 |
+| `read_response` (build) |       52.8 |     246.2 |
+| `parse` (confirmed PDU) |        8.5 |    4807.9 |
+
+- The **parse is trivially cheap (~8.5 ns)** - it only walks the outer confirmed-PDU BER TLVs (tag + `invokeID`
+  INTEGER + service tag) and slices the service body, no recursion. The **request build (~101 ns) is the
+  heaviest** because it lays down the deeply nested `confirmed-request > read > variableAccessSpecification >
+listOfVariable > objectName` BER structure around the ObjectName VisibleString (~7 nested length-prefixed
+  TLVs), computing each length back-to-front. Still a fixed-shape encode, no allocation. Device us/op via the
+  rig `/bench` op and an `mms_frame_fuzz` parser attack are the next MMS increments (same shape as the rest of
+  the SCADA family); interop needs the IEC-61850 **ACSI app layer** (the object model + report control blocks)
+  on top of the codec.
+
 ### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
 
 The board fronts a port and relays every byte to an internal origin (`server.listen(p, PROTO_RELAY)` +
