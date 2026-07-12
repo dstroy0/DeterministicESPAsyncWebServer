@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.15] - 2026-07-12
+
+<details>
+<summary><b>Show Changelog for version 5.95.15 - 2026-07-12</b></summary>
 
 ### Bug Fixes
 
@@ -10,6 +13,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`b7bec99`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7bec993432d8a4a77c73e18a44b4c38a7fdbcfc))
 - update CHANGELOG.md [skip ci] ([`507b6d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/507b6d77b85f53e9c86723b54018ae908423c5a8))
 - update test report + coverage [skip ci] ([`2fb4422`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fb4422f553d77232809a9e7f791867c045a801d))
 - update CHANGELOG.md [skip ci] ([`ab8bd3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab8bd3a8c5497095fb232f420f0051ea73472fb9))
@@ -18,10 +22,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 5.95.14 → 5.95.15 ([`8dc7093`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8dc7093a5b286adb881ceed9bfed1138643a2fd4))
 - Bump version: 5.95.13 → 5.95.14 ([`6556d97`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6556d97fafa8ee1849077d2508f0d0b49d71e4be))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`e0128b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0128b2116d53b3a0b11b234f50f3b38b1d3d962))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`167f7ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/167f7ae3bc2558dcad0255c05d9265b591b9990f))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a18d12d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a18d12dfeac84221bb561a0cf13ba6f29ed77cbc))
 - update ESP32 build footprints [skip ci] ([`64600e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64600e200aefafacc9ca6d7fb538e3c6429da913))
@@ -29,12 +35,15 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- widen the curve25519 field multiply to a hardware 32x32->64 mul ([`3ce5862`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ce58629453522ae904fc83b8c26bb37848342ac))
 - baseline the curve25519 field multiply + record the SIMD target ([`bdea274`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdea2741b3052ea52a6e95f0125153153abe4e14))
 - add the SSH crypto throughput bench (host + S3 CCOUNT) ([`47644e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47644e1846ceed49ac3a38795df53bcdaf0b0b71))
 
 ### Testing
 
 - add an OpenSSH interop peer (device-as-server, 6/6 on the rig) ([`e4bd920`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4bd920c1efaa3bf980b949fb667f3aef1040251))
+
+</details>
 
 ## [5.95.13] - 2026-07-11
 
