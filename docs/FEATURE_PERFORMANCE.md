@@ -937,6 +937,25 @@ SendRRData (which carries the CIP message). Pure (no socket). Host from
   `/bench` op + that attack are the next ENIP increments; interop needs a CIP object model + a peer (e.g.
   cpppo / an OpENer target) on top of the encapsulation codec.
 
+### PROFINET DCP codec (DETWS_ENABLE_PROFINET)
+
+PROFINET DCP (Discovery and Configuration Protocol, the raw-L2 device-discovery/naming layer): the 10-octet
+DCP header (frameID / service / xid / dataLength), the header parser, and the block walker over
+`[option][suboption][blockLength][value]` TLVs. Pure (no socket). Host from
+[`perf/bench_profinet.cpp`](../perf/bench_profinet.cpp).
+
+| Operation          | Host ns/op | Host MB/s |
+| ------------------ | ---------: | --------: |
+| `dcp_header` build |        4.9 |    2056.3 |
+| `dcp_parse_header` |        4.0 |    2518.8 |
+| `dcp_walk` blocks  |        7.5 |    1595.2 |
+
+- Fixed 10-octet header + even-padded TLV blocks, no BER/CRC - the fast fixed-field class (~4-8 ns), same as
+  EtherNet/IP. **`dcp_walk` (~7.5 ns) is the fuzz-target parser**: it iterates the option/suboption/blockLength
+  TLVs, and a block-length lie or a missing even-pad must not walk past the buffer. Device µs/op via the rig
+  `/bench` op + a `profinet_dcp_fuzz` attack are the next increments; full interop needs a raw-L2 DCP peer
+  (e.g. a PROFINET discovery tool) + an Ethernet PHY.
+
 ### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
 
 The board fronts a port and relays every byte to an internal origin (`server.listen(p, PROTO_RELAY)` +
