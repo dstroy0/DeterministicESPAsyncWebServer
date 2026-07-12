@@ -6,9 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`49abedd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49abedd50d00e7277547374471529fe124910b22))
 - update CHANGELOG.md [skip ci] ([`1de21c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1de21c3b1f3cf0d3173177b0cc6ad5c6f444f91d))
 - update CHANGELOG.md [skip ci] ([`50b32eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50b32eb0e0a8a86b42d55be5809226a0773f6f87))
 - update CHANGELOG.md [skip ci] ([`4034cbc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4034cbc75dc60361bf3ad48a83af88f74c598d97))
+
+### Documentation
+
+- refresh the SSH-crypto bench glance line to the post-SIMD numbers ([`47c772b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47c772bf75ccfbcd497ffa7a8c52c9452a1e76d7))
 
 ### Testing
 
