@@ -57,9 +57,16 @@ void ssh_gf_mul(ssh_gf out, const ssh_gf a, const ssh_gf b)
     int64_t t[31];
     for (int i = 0; i < 31; i++)
         t[i] = 0;
+    // Every limb fits in int32 (~16-18 bits after carry / add / sub), but a[i] and b[j] are int64, so a
+    // plain a[i]*b[j] compiles to a full emulated 64x64 multiply on the 32-bit xtensa core. Casting both
+    // operands to int32 makes gcc emit a single widening 32x32->64 multiply (mull+mulsh) instead - the
+    // products (~34 bits) and their sums (~38 bits) still accumulate in the int64 t[].
     for (int i = 0; i < 16; i++)
+    {
+        int32_t ai = (int32_t)a[i];
         for (int j = 0; j < 16; j++)
-            t[i + j] += a[i] * b[j];
+            t[i + j] += (int64_t)ai * (int32_t)b[j];
+    }
     for (int i = 0; i < 15; i++)
         t[i] += 38 * t[i + 16]; // fold the upper half (weight >= 2^256) down
     for (int i = 0; i < 16; i++)
