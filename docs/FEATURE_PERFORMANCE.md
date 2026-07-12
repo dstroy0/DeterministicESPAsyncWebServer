@@ -363,6 +363,22 @@ a high-priority core-1 task in the `rig_s3_ssh` firmware; the two X25519 measure
   `ee.ld.128.usar` is byte-exact but only ~1.4% faster (7,955 vs 8,067 cycles), so it was not shipped. X25519
   gains more than ed25519 because ed25519's Edwards scalar-mult is multiply-dominated (fewer squarings). The
   paragraph below is the pre-SIMD baseline.
+- **RSA/MPI hardware MODMULT beats the SIMD by 5.8x (measured, next lever).** The ESP32-S3 RSA accelerator
+  can do a full **256-bit modular multiply** `Z = X*Y mod p` in hardware. Driven **register-direct with static
+  buffers (zero heap)** - clear `SYSTEM_RSA_MEM_PD`, load `M,X,Y` + `r=R^2 mod p` into the Z block + `M'`,
+  trigger `MOD_MULT`, read `Z` - one modmul measures **1,380 cycles vs the SIMD `gf_mul`'s 7,955** (byte-exact
+  vs a reference for `p = 2^255-19`, rig `SSHBENCH mpi_modmul256`). That is **5.8x faster than the shipped
+  vector multiply, 9.6x faster than scalar**, and the timing is data-independent (constant-time by design). At
+  ~2,600 field ops per X25519 this projects X25519 ~97 ms -> ~20-25 ms and the handshake ~0.58 s -> ~0.15 s
+  (~4x). Shipping it means rewriting the field layer from radix-2^16 `int64[16]` to canonical `uint32[8] mod p`
+  (every mul/sq one MODMULT, add/sub a carry + conditional-subtract, the final inversion via register-direct
+  `MODEXP` to stay off mbedTLS/heap) - a major, security-critical change guarded `#if CONFIG_IDF_TARGET_ESP32S3`
+  with the SIMD/scalar path as the fallback and byte-exact vs RFC 7748/8032. The validated probe lives in
+  `pentesting/rig_firmware/src/main_ssh.cpp` under `DETWS_SSH_BENCH`.
+- **`-O2` does not speed up the crypto (measured).** Rebuilt `rig_s3_ssh` at `-O2`: X25519 **97.3 ms**,
+  ed25519_sign **380 ms** - identical to the shipped `-Og` numbers. The ladder is hand-written vector assembly
+  plus already-`int32` C glue, neither of which the optimizer can improve, so the shipped `-Og` figures **are**
+  the production crypto numbers (unlike the pure-C protocol codecs, which gain ~15-30% at `-O2`).
 - **Where the handshake time goes - and the SIMD acceleration target.** The radix-2^16 field multiply
   `ssh_gf_mul` is **13,308 cycles / 55.4 us** on the S3 in scalar form (a 16x16 schoolbook = 256 multiply-accumulates). At
   ~2,600 field multiplies per X25519 (255 ladder steps x ~10 mul/sq + the reduction) it is essentially the
