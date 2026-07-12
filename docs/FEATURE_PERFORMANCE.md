@@ -842,15 +842,22 @@ The utility telecontrol protocol over TCP: the -104 APCI (`68 LEN` + 4 control o
 the ASDU header (type id / SQ / count / cause-of-transmission / common address). Pure (no socket). Host
 from [`perf/bench_iec60870.cpp`](../perf/bench_iec60870.cpp).
 
-| Operation           | Host ns/op | Host MB/s |
-| ------------------- | ---------: | --------: |
-| `build_i` (I-frame) |        8.3 |    2156.7 |
-| `parse` (APCI)      |        5.8 |    3083.4 |
-| `asdu_parse_header` |        5.0 |    2398.6 |
+| Operation           | Host ns/op | Host MB/s | Device (S3) cyc | Device us/op |
+| ------------------- | ---------: | --------: | --------------: | -----------: |
+| `build_i` (I-frame) |        8.3 |    2156.7 |               - |            - |
+| `parse` (APCI)      |        5.8 |    3083.4 |             112 |         0.47 |
+| `asdu_parse_header` |        5.0 |    2398.6 |               - |            - |
 
 - Fixed-field framing, no CRC on the -104 path (it rides the TCP checksum; only the serial -101 FT1.2 frame
-  carries a sum check) - a few ns to build/parse. Device us/op via the rig `/bench` op and an
-  `iec104_frame_fuzz` parser attack are the next IEC-60870 increments (same shape as DNP3/BACnet/S7comm).
+  carries a sum check) - a few ns to build/parse host, **~0.47 us (112 cyc) on the ESP32-S3** for `iec104_parse`
+  (APCI start/length validate + I/S/U decode + ASDU slice, rig `/bench` op) - sits between BACnet's `npdu_parse`
+  (0.42 us) and S7's `parse_header` (0.54 us): all three are the same fixed-field-bounds-check-and-slice class,
+  ~33x lighter than DNP3's per-block-CRC parse (15.6 us). The `iec104_frame_fuzz` parser attack **HELD on HW**
+  (rig `/iec104/parse`: 14/15 malformed APDUs handled - bad start octet (!=0x68), length under/over-run,
+  truncated APCI, degenerate I/S/U control, a short chained ASDU header, all-0xFF - each rejected or sliced
+  without over-reading, a valid I-frame still parsed to its type-9 ASDU; the 15th, an oversized 2 KB blob, is
+  refused by the 256 B body cap; free heap flat across repeat runs after the warm-up first-touch). Interop still
+  needs the IEC-60870 **app/role layer** (interrogation + spontaneous reporting) built on the codec.
 
 ### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
 
