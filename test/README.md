@@ -506,7 +506,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2906 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2907 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -810,7 +810,7 @@ A thorough directory of all **2906 test cases** across **244 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_application (71 tests)</b></summary>
+<summary><b>test_application (72 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_response_trailer_truncation_clamps</b> &mdash; <i>(a) The status line alone overflows the header buffer -> hlen >= cap -> clamp.</i></summary>
@@ -844,6 +844,19 @@ A thorough directory of all **2906 test cases** across **244 suites**. Expand a 
     <summary><b>test_send_family_slot_and_conn_gone_guards</b> &mdash; <i>Send family slot and conn gone guards</i></summary>
 
     * **Objective**: Send family slot and conn gone guards
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_send_binary_body_with_nul</b> &mdash; <i>Send binary body with nul</i></summary>
+
+    * **Objective**: Send binary body with nul
+    * **Assertions**:
+      * <code>Assert not null (strstr(out, "HTTP/1.1 200 OK"))</code>
+      * <code>Assert not null (strstr(out, "Content-Type: application/grpc-web+proto\\r\\n"))</code>
+      * <code>Assert not null (strstr(out, "Content-Length: 10\\r\\n")); // counts the NUL bytes, not strlen (=0)</code>
+      * <code>Assert true (hdr_end &gt; 0)</code>
+      * <code>Assert equal uint (sizeof(body), (unsigned)(out_len - hdr_end))</code>
+      * <code>Assert equal int (0, memcmp(out + hdr_end, body, sizeof(body)))</code>
   </details>
 
   <details style="margin-left: 20px;">
