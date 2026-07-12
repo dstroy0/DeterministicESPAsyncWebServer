@@ -6,12 +6,19 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`6ee4c24`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6ee4c24e3b90e51a9ded192a3b6f4b5f240ec11d))
+- update CHANGELOG.md [skip ci] ([`e4a764e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4a764eeaaa62454b83913d7f36df341da1d0ad0))
 - update CHANGELOG.md [skip ci] ([`851ebbd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/851ebbdae3598eea5a981c11d8e850ef3ec28639))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fd0a695`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd0a6953d5b26c28459ddea0b037d74f9da6f2fa))
 - update ESP32 build footprints [skip ci] ([`69d1e3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/69d1e3fb6b30cd810658a4d462dab5df248e048f))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6148387`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/614838754db6cca0e76c21ab090978d877129696))
+
+### Performance
+
+- device-validated SIMD field multiply (ssh_gf_mul_s3, 1.55x) on the S3 rig ([`c692712`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c692712ec10068e8380a32f00000105662ab25b3))
 
 ### Testing
 
