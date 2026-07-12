@@ -28,6 +28,7 @@ from peers import (
     coap_peer,
     dns_peer,
     ftp_peer,
+    graphql_peer,
     h2_peer,
     h3_peer,
     http_peer,
@@ -79,6 +80,7 @@ _MODULES = [
     jwt_peer,
     tls_peer,
     ssh_peer,
+    graphql_peer,
 ]
 
 
