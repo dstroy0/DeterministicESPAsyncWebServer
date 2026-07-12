@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a929f9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a929f9a605b45f8c4c31c70084608a3e8befad9f))
 - update CHANGELOG.md [skip ci] ([`376d85f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/376d85fdba091fb862508b2733e6304b1f3ad6da))
 - update CHANGELOG.md [skip ci] ([`65d21c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65d21c0bdc0bdb08ca01a58b2b942b479011f4de))
 - update CHANGELOG.md [skip ci] ([`4b0505c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b0505c42c62810592984a57b059bb8f4e528075))
@@ -14,6 +15,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- mDNS is an esp-idf wrapper - wire coverage n/a, adaptive-beacon unit-tested ([`c16bc21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c16bc2198085680f30d65de20544e054e7da9a64))
 - NTS is codec-only - interop/attack are n/a, coverage complete ([`c1e5958`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c1e595838fc3d25e9ce1be9788361926c0e97853))
 - count NTS in the throughput-bench tally (~32 -> ~33) ([`3e72ece`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e72ece64cd0ff37a499aaebd0660ae4414d6004))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8717a6d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8717a6db513fbc8a7811743cc464217557774459))
