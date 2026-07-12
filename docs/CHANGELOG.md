@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a59320c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a59320cec0eadd0fe0c480a9ccd8f5baabeceb99))
 - update CHANGELOG.md [skip ci] ([`a929f9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a929f9a605b45f8c4c31c70084608a3e8befad9f))
 - update CHANGELOG.md [skip ci] ([`376d85f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/376d85fdba091fb862508b2733e6304b1f3ad6da))
 - update CHANGELOG.md [skip ci] ([`65d21c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65d21c0bdc0bdb08ca01a58b2b942b479011f4de))
@@ -28,6 +29,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- tls_session_abuse - session/record-layer robustness beyond the ClientHello ([`983a870`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/983a8708b792ee4feeb74c12be7ed5f2f4c22bda))
 - digest_nonce_replay attack - RFC 7616 replay + forgery/tamper resistance ([`19a3938`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19a3938d9584db2cf5285869dd047035467caef2))
 
 ## [5.95.19] - 2026-07-12
