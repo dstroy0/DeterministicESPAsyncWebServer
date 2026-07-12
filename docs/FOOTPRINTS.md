@@ -120,4 +120,5 @@ from each example's `pio ci` size report and aggregated into
 | `core/08.Templating`                     | L7-Application/08.Templating            | 735.7 KB (57.5%) | 64.5 KB (20.1%)  |
 | `core/09.WebSocket`                      | L6-Presentation/09.WebSocket            | 734.3 KB (57.4%) | 64.4 KB (20.1%)  |
 | `core/10.FileServing`                    | L7-Application/10.FileServing           | 774.3 KB (60.5%) | 64.5 KB (20.1%)  |
+| `core/20.EthernetW5500`                  | Foundation/20.EthernetW5500             | 458.0 KB (35.8%) | 56.5 KB (17.7%)  |
 | `core/36.NetEgress`                      | L7-Application/36.NetEgress             | 734.6 KB (57.4%) | 64.4 KB (20.1%)  |

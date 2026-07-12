@@ -783,6 +783,13 @@
     "flash_bytes": 792861,
     "ram_bytes": 66016
   },
+  "core/20.EthernetW5500": {
+    "example": "Foundation/20.EthernetW5500",
+    "flags": "",
+    "board": "esp32dev",
+    "flash_bytes": 468973,
+    "ram_bytes": 57880
+  },
   "core/36.NetEgress": {
     "example": "L7-Application/36.NetEgress",
     "flags": "",
