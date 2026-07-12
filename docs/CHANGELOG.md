@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`9f391b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f391b40d578f465072c61e3e818355e641612e8))
 - update CHANGELOG.md [skip ci] ([`4bb9037`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4bb9037cd5f53cc780a80a83c7ca8e52b98d163f))
 - update CHANGELOG.md [skip ci] ([`96738bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96738bbae74965a6fedb9f1db99bd1740c485805))
 - update CHANGELOG.md [skip ci] ([`8a3fc50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a3fc50293c4f9810197fcefb96449e5d9fc7fa8))
@@ -31,6 +32,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- host bench for the IEC 60870-5-104 SCADA codec ([`e50e566`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e50e5662039bcfa2db6b31e3d2b69c2796742a3f))
 - host bench for the Siemens S7 (ISO-on-TCP) codec ([`9711d31`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9711d31a229a76dc4da35938fafc098abb9b9c41))
 - host bench for the BACnet/IP BVLC + NPDU codec (ASHRAE 135) ([`a5404b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a5404b296ba44df9a315950b19c674ddb0a4c921))
 - device us/op for dnp3_parse_frame via the rig /bench op ([`7e43c16`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e43c167bdc52a2bbd521cd37429a385b467c21f))
