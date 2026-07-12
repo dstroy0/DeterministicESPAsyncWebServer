@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`efe3611`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/efe3611613a8dfce086822bfec7d9db420d69c79))
+- update CHANGELOG.md [skip ci] ([`7daacc0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7daacc096a9cf4e6995b3c9bc013565e458085ec))
 - update test report + coverage [skip ci] ([`e3ea621`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3ea621a6b0f73a55d8d3e9b187b9e03d83950e3))
 - update CHANGELOG.md [skip ci] ([`461f1b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/461f1b05771bfa413cb35274d436efeedf06de03))
 - update CHANGELOG.md [skip ci] ([`9f391b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f391b40d578f465072c61e3e818355e641612e8))
@@ -34,6 +36,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- measure RSA/MPI hardware MODMULT for the curve25519 field multiply ([`905affc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/905affcb2bbd9d25b3505a6ae9d39c2e5265fd2b))
 - host bench for the IEC 60870-5-104 SCADA codec ([`e50e566`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e50e5662039bcfa2db6b31e3d2b69c2796742a3f))
 - host bench for the Siemens S7 (ISO-on-TCP) codec ([`9711d31`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9711d31a229a76dc4da35938fafc098abb9b9c41))
 - host bench for the BACnet/IP BVLC + NPDU codec (ASHRAE 135) ([`a5404b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a5404b296ba44df9a315950b19c674ddb0a4c921))
