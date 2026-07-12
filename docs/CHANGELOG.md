@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`bfee094`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfee09468ba2dc3a1c0326874525b06c62b2c87a))
 - update CHANGELOG.md [skip ci] ([`3a1a008`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a1a008f9f524f1fc4cc476c380a09684be35267))
 - update test report + coverage [skip ci] ([`efe3611`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/efe3611613a8dfce086822bfec7d9db420d69c79))
 - update CHANGELOG.md [skip ci] ([`7daacc0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7daacc096a9cf4e6995b3c9bc013565e458085ec))
@@ -37,6 +38,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- host bench for the IEC 61850 GOOSE publisher codec ([`4c1e00e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c1e00e54d9f34853ed8d8869d1420746ad67bc6))
 - host bench for the IEC 61850 MMS codec ([`541a3bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/541a3bb713f565f51e8d04b4232eb243ce0296f5))
 - measure RSA/MPI hardware MODMULT for the curve25519 field multiply ([`905affc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/905affcb2bbd9d25b3505a6ae9d39c2e5265fd2b))
 - host bench for the IEC 60870-5-104 SCADA codec ([`e50e566`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e50e5662039bcfa2db6b31e3d2b69c2796742a3f))
