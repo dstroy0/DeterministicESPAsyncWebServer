@@ -2,6 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`332728b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/332728b52706b7946d67eda88c8009749e2d537e))
+- update CHANGELOG.md [skip ci] ([`d4665b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4665b477dabf6e3e536c3935e22e543cb97127b))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`6e9edb0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6e9edb09818a1678d08ca6e4c3cc1e7ae91485f9))
+
+### Testing
+
+- digest_nonce_replay attack - RFC 7616 replay + forgery/tamper resistance ([`19a3938`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19a3938d9584db2cf5285869dd047035467caef2))
+
 ## [5.95.19] - 2026-07-12
 
 <details>
