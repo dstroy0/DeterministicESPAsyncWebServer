@@ -274,6 +274,76 @@ void test_ed25519_roundtrip_long()
     TEST_ASSERT_TRUE(ssh_ed25519_verify(pub, msg, sizeof(msg), sig));
 }
 
+// ---------------------------------------------------------------------------
+// s16-SIMD field-multiply MODEL. The ESP32-S3 vector unit multiply-accumulates signed-16-bit lanes
+// (ee.vmulas.s16.accx), but radix-2^16 limbs run to ~2^18 and go negative after a subtraction, so they
+// do not fit s16. The fix: balance each limb into signed-16-bit (a value-preserving carry redistribution
+// mod p) before the multiply, then the product is a pure s16xs16 convolution - exactly what the vector
+// MAC does. This model is the C reference the forthcoming S3 asm implements + is validated against; this
+// test proves it byte-exact-equivalent to the scalar ssh_gf_mul. See the ed25519-hwaccel plan.
+static void gf_balance_s16(int16_t o[16], const ssh_gf a)
+{
+    int64_t c[16];
+    for (int i = 0; i < 16; i++)
+        c[i] = a[i];
+    for (int pass = 0; pass < 3; pass++) // round-to-nearest carry; limb-15 overflow wraps *38 into limb 0
+    {
+        int64_t carry = 0;
+        for (int i = 0; i < 16; i++)
+        {
+            int64_t v = c[i] + carry;
+            carry = (v + 0x8000) >> 16;
+            c[i] = v - (carry << 16);
+        }
+        c[0] += 38 * carry; // 2^256 == 38 (mod 2^255-19)
+    }
+    for (int i = 0; i < 16; i++)
+        o[i] = (int16_t)c[i];
+}
+
+static void gf_mul_s16_model(ssh_gf out, const ssh_gf a, const ssh_gf b)
+{
+    int16_t as[16], bs[16];
+    gf_balance_s16(as, a);
+    gf_balance_s16(bs, b);
+    int64_t t[31];
+    for (int i = 0; i < 31; i++)
+        t[i] = 0;
+    for (int i = 0; i < 16; i++) // <-- the convolution that becomes ee.vmulas.s16.accx on the S3
+        for (int j = 0; j < 16; j++)
+            t[i + j] += (int64_t)as[i] * bs[j];
+    for (int i = 0; i < 15; i++)
+        t[i] += 38 * t[i + 16];
+    for (int i = 0; i < 16; i++)
+        out[i] = t[i];
+}
+
+void test_gf_mul_s16_model_matches_scalar()
+{
+    uint64_t s = 0x123456789abcdef0ULL;
+    ssh_gf a, b, r1, r2;
+    uint8_t p1[32], p2[32];
+    for (int t = 0; t < 20000; t++)
+    {
+        for (int i = 0; i < 16; i++) // ladder-like operands: ~16-18 bit, some negative (post-sub)
+        {
+            s ^= s << 13;
+            s ^= s >> 7;
+            s ^= s << 17;
+            a[i] = (int64_t)(s & 0x3FFFF) - 0x10000;
+            s ^= s << 13;
+            s ^= s >> 7;
+            s ^= s << 17;
+            b[i] = (int64_t)(s & 0x3FFFF) - 0x10000;
+        }
+        ssh_gf_mul(r1, a, b);
+        gf_mul_s16_model(r2, a, b);
+        ssh_gf_pack(p1, r1);
+        ssh_gf_pack(p2, r2);
+        TEST_ASSERT_EQUAL_MEMORY(p1, p2, 32);
+    }
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -293,5 +363,6 @@ int main()
     RUN_TEST(test_ed25519_vector_zero_seed);
     RUN_TEST(test_ed25519_verify_rejects_tampering);
     RUN_TEST(test_ed25519_roundtrip_long);
+    RUN_TEST(test_gf_mul_s16_model_matches_scalar);
     return UNITY_END();
 }
