@@ -1001,6 +1001,21 @@
 "native_ssh_hardened",
 "native_tls13_msg"
 ],
+"src/network_drivers/presentation/ssh/crypto/ssh_fe25519.h": [
+"native_crypto_kat",
+"native_h3_conn",
+"native_h3_e2e",
+"native_h3_server",
+"native_quic_conn",
+"native_quic_server",
+"native_quic_tls",
+"native_ssh",
+"native_ssh_comp",
+"native_ssh_conn",
+"native_ssh_ed25519",
+"native_ssh_hardened",
+"native_tls13_msg"
+],
 "src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp": [
 "native_crypto_kat",
 "native_csrf",
