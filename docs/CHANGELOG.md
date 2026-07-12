@@ -4,8 +4,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- correct control-pin mapping to CS7/RST5/INT6 ([`23761c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/23761c3ce27ee9cbba890840d1f87f2c9ba9e194))
+
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a587df3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a587df3d5b11dc1dd99cfb3a13cb60ec97e1c577))
 - update CHANGELOG.md [skip ci] ([`811f2b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/811f2b96b927023bd64fe8f3d6d621321badb6f4))
 - update test report + coverage [skip ci] ([`789e51b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/789e51ba3257d38dce600e04d97b4f5ca1edf07c))
 - update CHANGELOG.md [skip ci] ([`4514d8a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4514d8a2791f6377e5e531eb57c672b2fcee6f90))
@@ -14,6 +19,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`7db4ea6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7db4ea6f42f6d141e613d30dfba7aca5133ba0f5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ec27284`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec27284801409a5929fa80408d661e6e3fdf93a0))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8d4f9cb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d4f9cbbae4be61673ce93116f2a31e0055d45c7))
 - record the W5500 SPI Ethernet pinout (both rigs, ESP32-S3-DevKitC) ([`9bdbee7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9bdbee769ae4c9407711d190bf97b5c390a87f94))
