@@ -6,10 +6,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1bfb14a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1bfb14a5cea5f953fc489d6bee801dcbccbbab04))
 - update CHANGELOG.md [skip ci] ([`0ed7c3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ed7c3cbdd236785b8f8dcfe4b68b52dd2467888))
 
 ### Documentation
 
+- record the W5500 SPI Ethernet pinout (both rigs, ESP32-S3-DevKitC) ([`9bdbee7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9bdbee769ae4c9407711d190bf97b5c390a87f94))
+- update ESP32 build footprints [skip ci] ([`7e7608a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e7608a73a74a6f22c678e3d837a2c9c67c6c35c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`28290e6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28290e6cda2709ad6b0986f32d5a8f8a1d54daf3))
 
 ### Testing
