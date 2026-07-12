@@ -493,7 +493,7 @@
     "example": "L5-Session/03.SSHHostKey",
     "flags": "-DDETWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 821373,
+    "flash_bytes": 821365,
     "ram_bytes": 88316
   },
   "STATS": {
