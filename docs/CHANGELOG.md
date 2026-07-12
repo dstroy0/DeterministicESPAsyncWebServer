@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`8a3fc50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a3fc50293c4f9810197fcefb96449e5d9fc7fa8))
 - update CHANGELOG.md [skip ci] ([`108743d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/108743de1a5574e59ffb2927605dd2af9d0f3e2a))
 - update CHANGELOG.md [skip ci] ([`a18e22e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a18e22e849da34bf350002e56e31e4be9b520665))
 - update CHANGELOG.md [skip ci] ([`c362482`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c362482157eca71ca5fb0fe9373aec4ee5658525))
@@ -36,6 +37,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- device bench + bacnet_frame_fuzz - BVLC/NPDU robustness on HW ([`025a178`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/025a1783c34670f2469677d7c93a16c6e59c5bf8))
 - dnp3_frame_fuzz - data-link parser robustness on HW (bench+attack now) ([`2b4ca85`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b4ca852d9f8d500df47331f462ca73a808c01d1))
 - tls_session_abuse - session/record-layer robustness beyond the ClientHello ([`983a870`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/983a8708b792ee4feeb74c12be7ed5f2f4c22bda))
 - digest_nonce_replay attack - RFC 7616 replay + forgery/tamper resistance ([`19a3938`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19a3938d9584db2cf5285869dd047035467caef2))
