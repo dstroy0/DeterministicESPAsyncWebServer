@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.95.18] - 2026-07-12
+
+<details>
+<summary><b>Show Changelog for version 5.95.18 - 2026-07-12</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`dce1956`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dce1956b9f792153f66d7209c53dfdcf77295169))
+
+### Changes
+
+- Bump version: 5.95.17 → 5.95.18 ([`79529f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79529f22750d808cbbb42b62f5ff2789a48e7395))
+
+### Performance
+
+- gf_balance_s16 in int32 not int64 (X25519 1.55x, ed25519 1.44x) ([`b4ce923`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4ce9239322971b26ddcd686756bd45fda1bd50a))
+
+</details>
+
 ## [5.95.17] - 2026-07-12
 
 <details>
