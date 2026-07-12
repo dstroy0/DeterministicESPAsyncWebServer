@@ -824,15 +824,17 @@ The Siemens S7 application layer (over ISO-on-TCP / RFC 1006, TCP/102): the clie
 Read-Var (S7-ANY pointer) request builders and the response-header parser (protocol id 0x32 / ROSCTR /
 param + data lengths). Pure (no socket). Host from [`perf/bench_s7comm.cpp`](../perf/bench_s7comm.cpp).
 
-| Operation                | Host ns/op | Host MB/s |
-| ------------------------ | ---------: | --------: |
-| `build_setup`            |        4.2 |    5270.0 |
-| `build_read_request` (3) |       16.3 |    2951.6 |
-| `parse_header`           |        5.0 |    9584.9 |
+| Operation                | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------------------ | ---------: | --------: | --------------: | -------------: |
+| `build_setup`            |        4.2 |    5270.0 |               - |              - |
+| `build_read_request` (3) |       16.3 |    2951.6 |               - |              - |
+| `parse_header`           |        5.0 |    9584.9 |             129 |            537 |
 
-- Fixed-field framing, no CRC (S7 rides ISO-on-TCP + the TCP checksum) - a few ns to build/parse. The 3-item
-  Read Var build costs most (writes three 12-octet S7-ANY item pointers). Device us/op via the rig `/bench`
-  op and an `s7comm_frame_fuzz` parser attack are the next S7comm increments (same shape as DNP3/BACnet).
+- Fixed-field framing, no CRC (S7 rides ISO-on-TCP + the TCP checksum) - a few ns to build/parse host,
+  **~0.54 us (129 cyc) on the ESP32-S3** for `parse_header` (rig `/bench` op). The 3-item Read Var build
+  costs most (writes three 12-octet S7-ANY item pointers). The `s7comm_frame_fuzz` parser attack HELD on HW
+  (11 malformed PDUs - bad protocol id / ROSCTR, param/data length lies, truncated + Ack_Data-truncated
+  headers - all rejected, a valid PDU still parses).
 
 ### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
 
