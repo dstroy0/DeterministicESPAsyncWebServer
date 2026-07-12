@@ -6,7 +6,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`da0c9d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da0c9d86418290366860065e99bbd8923064f1a1))
 - update CHANGELOG.md [skip ci] ([`dab7366`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dab7366b953b44c196d926b00a57c1a0cfe090e6))
+
+### Documentation
+
+- correct the SIMD multiply's end-to-end speedup to the measured ~1.18x ([`dcf4b78`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dcf4b782479d6d77a329968bbf3d2ff56ef057f0))
 
 ### Performance
 
