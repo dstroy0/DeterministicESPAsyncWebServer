@@ -506,7 +506,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2905 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2906 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -27781,7 +27781,7 @@ A thorough directory of all **2905 test cases** across **244 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_ed25519 (16 tests)</b></summary>
+<summary><b>test_ssh_ed25519 (17 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_sha512_empty</b> &mdash; <i>Sha512 empty</i></summary>
@@ -27890,6 +27890,14 @@ A thorough directory of all **2905 test cases** across **244 suites**. Expand a 
     * **Objective**: Ed25519 roundtrip long
     * **Assertions**:
       * <code>Assert true (ssh_ed25519_verify(pub, msg, sizeof(msg), sig))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_gf_mul_s16_model_matches_scalar</b> &mdash; <i>Gf mul s16 model matches scalar</i></summary>
+
+    * **Objective**: Gf mul s16 model matches scalar
+    * **Assertions**:
+      * <code>Assert equal memory (p1, p2, 32)</code>
   </details>
 
 </details>
