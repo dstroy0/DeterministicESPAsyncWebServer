@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.97.0] - 2026-07-12
+
+<details>
+<summary><b>Show Changelog for version 5.97.0 - 2026-07-12</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`c75cac7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c75cac73791e0aaa80067bc43a8bd2ea763f973c))
+- update CHANGELOG.md [skip ci] ([`edb26c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/edb26c0fc482963dcf59d03ee8eaec2a515d15a1))
+
+### Changes
+
+- Bump version: 5.96.0 → 5.97.0 ([`b92ca39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b92ca39f33ee72482f5a1ea4e01507117d41139c))
+
+### Performance
+
+- Ed25519 host-key signature on the RSA/MPI field (380 -> 85.6 ms, 4.44x) ([`3d79a00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3d79a00a5c576561e1ec3e2cd5856c121b973ec3))
+
+</details>
+
 ## [5.96.0] - 2026-07-12
 
 <details>
