@@ -2,6 +2,22 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`9da3565`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9da35653db742d6ed2d329063c0d9b0aa3f99b81))
+- update CHANGELOG.md [skip ci] ([`cc77e15`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc77e15a099d8adfd25a233ba3d6d479d48ffc1c))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`8940a34`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8940a343b6b2249ca7b727a0b471779c41a346e8))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f656033`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f656033d92ac1c6f44c564b448d0dab97d33d21e))
+
+### Testing
+
+- device-as-server interop peer vs reference graphql-core (10/10 HW) ([`b46c4f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b46c4f0a2380d6b1712ee58cf038d072c0910aed))
+
 ## [5.97.0] - 2026-07-12
 
 <details>
