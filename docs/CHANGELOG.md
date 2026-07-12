@@ -2,24 +2,38 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.95.19] - 2026-07-12
+
+<details>
+<summary><b>Show Changelog for version 5.95.19 - 2026-07-12</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`632a1a2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/632a1a25ef8624fb096b17dee11266be5c37af31))
 - update CHANGELOG.md [skip ci] ([`49abedd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49abedd50d00e7277547374471529fe124910b22))
 - update CHANGELOG.md [skip ci] ([`1de21c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1de21c3b1f3cf0d3173177b0cc6ad5c6f444f91d))
 - update CHANGELOG.md [skip ci] ([`50b32eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50b32eb0e0a8a86b42d55be5809226a0773f6f87))
 - update CHANGELOG.md [skip ci] ([`4034cbc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4034cbc75dc60361bf3ad48a83af88f74c598d97))
 
+### Changes
+
+- Bump version: 5.95.18 → 5.95.19 ([`4991072`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4991072c202f1b14c2c80ccf47a8b42f5488c997))
+
 ### Documentation
 
 - refresh the SSH-crypto bench glance line to the post-SIMD numbers ([`47c772b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47c772bf75ccfbcd497ffa7a8c52c9452a1e76d7))
+
+### Features
+
+- advertise the protocol feature flags in /diag for tool auto-detection ([`668150a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/668150a14e4bfdde6191ac3ffb2c856fbf2020b1))
 
 ### Testing
 
 - smb2_malicious_server attack - 10/10 held, SMB2 client fully covered ([`42b9b33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/42b9b3325e0a8656a4875565bfc04f42a9a04f26))
 - SMB2 client interop peer - 7/7 HW, byte-verified vs smbclient ([`19516f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19516f9a9544a2ea0270c279f4a2e366655ff683))
 - slim rig_s3_smb rig with a /smb/probe device-as-SMB2-client endpoint ([`80be3ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80be3baa524359888270cb8bfa2f63a46218ca1e))
+
+</details>
 
 ## [5.95.18] - 2026-07-12
 
