@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`e390e46`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e390e466ac8f9a9aa939ace2fa5b61bdea866b04))
 - update CHANGELOG.md [skip ci] ([`a59320c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a59320cec0eadd0fe0c480a9ccd8f5baabeceb99))
 - update CHANGELOG.md [skip ci] ([`a929f9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a929f9a605b45f8c4c31c70084608a3e8befad9f))
 - update CHANGELOG.md [skip ci] ([`376d85f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/376d85fdba091fb862508b2733e6304b1f3ad6da))
@@ -24,6 +25,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- host bench + correct the backlog - 18 "roadmap" protocols are implemented ([`bac0884`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bac088445c9b5f9bc2081bca52e683b76ab16b53))
 - device us/op for nts_ke_parse via the rig /bench op ([`14fd5b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14fd5b3a4bbf9165665c95519d88407301226a38))
 - host throughput bench for the RFC 8915 NTS framing codecs ([`c3c9e21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3c9e2152c7987484bc6271c9fd04b215c7d010f))
 
