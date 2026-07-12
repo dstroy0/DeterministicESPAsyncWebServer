@@ -887,6 +887,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `INA219` | `L7-Application/67.Ina219` | 287,001 | 21,800 |
 | `MPR121` | `L7-Application/63.Mpr121` | 287,609 | 21,800 |
 | `PN532+GATEWAY` | `Foundation/14.NfcGateway` | 288,129 | 21,920 |
+| `core/20.EthernetW5500` | `Foundation/20.EthernetW5500` | 468,973 | 57,880 |
 | `DNS_SERVER` | `L7-Application/60.DnsServer` | 725,677 | 45,976 |
 | `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD` | `L7-Application/28.CoapBlock` | 727,553 | 48,352 |
 | `UDP_TELEMETRY` | `L7-Application/39.UdpTelemetry` | 727,913 | 44,944 |
