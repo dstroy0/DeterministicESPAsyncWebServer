@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`a18e22e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a18e22e849da34bf350002e56e31e4be9b520665))
 - update CHANGELOG.md [skip ci] ([`c362482`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c362482157eca71ca5fb0fe9373aec4ee5658525))
 - update CHANGELOG.md [skip ci] ([`e390e46`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e390e466ac8f9a9aa939ace2fa5b61bdea866b04))
 - update CHANGELOG.md [skip ci] ([`a59320c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a59320cec0eadd0fe0c480a9ccd8f5baabeceb99))
@@ -33,6 +34,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- dnp3_frame_fuzz - data-link parser robustness on HW (bench+attack now) ([`2b4ca85`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b4ca852d9f8d500df47331f462ca73a808c01d1))
 - tls_session_abuse - session/record-layer robustness beyond the ClientHello ([`983a870`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/983a8708b792ee4feeb74c12be7ed5f2f4c22bda))
 - digest_nonce_replay attack - RFC 7616 replay + forgery/tamper resistance ([`19a3938`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19a3938d9584db2cf5285869dd047035467caef2))
 
