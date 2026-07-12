@@ -6,17 +6,20 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`65d21c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65d21c0bdc0bdb08ca01a58b2b942b479011f4de))
 - update CHANGELOG.md [skip ci] ([`4b0505c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b0505c42c62810592984a57b059bb8f4e528075))
 - update test report + coverage [skip ci] ([`332728b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/332728b52706b7946d67eda88c8009749e2d537e))
 - update CHANGELOG.md [skip ci] ([`d4665b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4665b477dabf6e3e536c3935e22e543cb97127b))
 
 ### Documentation
 
+- count NTS in the throughput-bench tally (~32 -> ~33) ([`3e72ece`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e72ece64cd0ff37a499aaebd0660ae4414d6004))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8717a6d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8717a6db513fbc8a7811743cc464217557774459))
 - update ESP32 build footprints [skip ci] ([`6e9edb0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6e9edb09818a1678d08ca6e4c3cc1e7ae91485f9))
 
 ### Performance
 
+- device us/op for nts_ke_parse via the rig /bench op ([`14fd5b3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14fd5b3a4bbf9165665c95519d88407301226a38))
 - host throughput bench for the RFC 8915 NTS framing codecs ([`c3c9e21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3c9e2152c7987484bc6271c9fd04b215c7d010f))
 
 ### Testing
