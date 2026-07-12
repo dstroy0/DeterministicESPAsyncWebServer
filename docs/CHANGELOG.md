@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`424ffe8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/424ffe8596a5b3baef8be188319131da137440f2))
+- update CHANGELOG.md [skip ci] ([`b7546f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7546f3dd5c033877376d862bda0590dda2b0460))
 - update CHANGELOG.md [skip ci] ([`da68f15`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da68f15ab41181b8c21e8313ec41343a5a598630))
 - update CHANGELOG.md [skip ci] ([`04b5f86`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04b5f86b5c90659b4e20d5b9f9ac5086239e82a1))
 - update CHANGELOG.md [skip ci] ([`bfee094`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfee09468ba2dc3a1c0326874525b06c62b2c87a))
@@ -40,6 +42,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- validated fe25519 X25519 prototype - HW MODMULT ladder, 3.55x ([`3753216`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/375321672e8d6262777f579db3874efbe53608cf))
 - host bench for the PROFINET DCP codec ([`e1ad630`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1ad630be5fc25fb6daf399d2a8a39995b48df96))
 - host bench for the EtherNet/IP encapsulation codec ([`674cfb7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/674cfb72eea3733a33ba8df147d3e2717abde34d))
 - host bench for the IEC 61850 GOOSE publisher codec ([`4c1e00e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c1e00e54d9f34853ed8d8869d1420746ad67bc6))
