@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`4bb9037`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4bb9037cd5f53cc780a80a83c7ca8e52b98d163f))
 - update CHANGELOG.md [skip ci] ([`96738bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96738bbae74965a6fedb9f1db99bd1740c485805))
 - update CHANGELOG.md [skip ci] ([`8a3fc50`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a3fc50293c4f9810197fcefb96449e5d9fc7fa8))
 - update CHANGELOG.md [skip ci] ([`108743d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/108743de1a5574e59ffb2927605dd2af9d0f3e2a))
@@ -39,6 +40,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- device bench + s7comm_frame_fuzz - S7 header robustness on HW ([`911402d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/911402d365943b7ec2fb48a950f37ac3d73d544f))
 - device bench + bacnet_frame_fuzz - BVLC/NPDU robustness on HW ([`025a178`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/025a1783c34670f2469677d7c93a16c6e59c5bf8))
 - dnp3_frame_fuzz - data-link parser robustness on HW (bench+attack now) ([`2b4ca85`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b4ca852d9f8d500df47331f462ca73a808c01d1))
 - tls_session_abuse - session/record-layer robustness beyond the ClientHello ([`983a870`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/983a8708b792ee4feeb74c12be7ed5f2f4c22bda))
