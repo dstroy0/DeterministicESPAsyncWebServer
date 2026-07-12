@@ -897,6 +897,26 @@ listOfVariable > objectName` BER structure around the ObjectName VisibleString (
   the SCADA family); interop needs the IEC-61850 **ACSI app layer** (the object model + report control blocks)
   on top of the codec.
 
+### IEC 61850 GOOSE publisher codec (DETWS_ENABLE_GOOSE)
+
+GOOSE (Generic Object Oriented Substation Event) is the fast raw-L2 multicast IEC 61850 uses for protection
+trips: an Ethernet frame (ethertype 0x88B8) + an 8-octet GOOSE header + the BER `IECGoosePdu` (11 control
+fields - gocbRef / stNum / sqNum / allData / ...). Pure (no socket). Host from
+[`perf/bench_goose.cpp`](../perf/bench_goose.cpp).
+
+| Operation             | Host ns/op | Host MB/s |
+| --------------------- | ---------: | --------: |
+| `goose_pdu` (build)   |      131.3 |     761.8 |
+| `goose_frame` (build) |      134.5 |     907.3 |
+
+- The **BER `IECGoosePdu` encode is the whole cost (~131 ns)** - 11 length-prefixed control fields plus the
+  `allData` blob, same nested-TLV-back-to-front class as MMS's request builder. Wrapping it in the Ethernet +
+  GOOSE header (`goose_frame`) adds only **~3 ns** (a 22-octet header memcpy), so a publish is ~135 ns of pure
+  encode. GOOSE is **publish-only** here (no subscriber/parser), so unlike the rest of the SCADA family it has
+  **no parser-fuzz attack surface** - it is a bench-only codec (like NTS). A device µs/op via the rig `/bench`
+  op (build-into-buffer, no transmit) is the remaining increment; full interop needs a raw-L2 multicast
+  subscriber and an Ethernet PHY (hardware the rig does not yet have).
+
 ### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
 
 The board fronts a port and relays every byte to an internal origin (`server.listen(p, PROTO_RELAY)` +
