@@ -6,10 +6,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`50b32eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50b32eb0e0a8a86b42d55be5809226a0773f6f87))
 - update CHANGELOG.md [skip ci] ([`4034cbc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4034cbc75dc60361bf3ad48a83af88f74c598d97))
 
 ### Testing
 
+- SMB2 client interop peer - 7/7 HW, byte-verified vs smbclient ([`19516f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19516f9a9544a2ea0270c279f4a2e366655ff683))
 - slim rig_s3_smb rig with a /smb/probe device-as-SMB2-client endpoint ([`80be3ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80be3baa524359888270cb8bfa2f63a46218ca1e))
 
 ## [5.95.18] - 2026-07-12
