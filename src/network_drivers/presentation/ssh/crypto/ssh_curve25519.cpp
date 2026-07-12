@@ -109,12 +109,10 @@ static inline int64_t gf_accx_dot_win(const int16_t *as, const int16_t *w)
     return ((int64_t)(raw << 24)) >> 24;
 }
 
-void ssh_gf_mul(ssh_gf out, const ssh_gf a, const ssh_gf b)
+// Shared tail: build the reversed-bs window array, run the ACCX convolution, fold + carry. as points at
+// a 16-byte-aligned int16[16]; bs is read scalar-only (no alignment needed).
+static void gf_conv_finish(ssh_gf out, const int16_t *as, const int16_t *bs)
 {
-    __attribute__((aligned(16))) int16_t as[16];
-    int16_t bs[16];
-    gf_balance_s16(as, a);
-    gf_balance_s16(bs, b);
     // bp = [15 zeros][bs reversed: bs15..bs0][zeros]; output k's window starts at bp[30-k].
     __attribute__((aligned(16))) int16_t bp[64];
     for (int i = 0; i < 64; i++)
@@ -130,6 +128,25 @@ void ssh_gf_mul(ssh_gf out, const ssh_gf a, const ssh_gf b)
         out[i] = t[i];
     gf_carry(out);
     gf_carry(out);
+}
+
+void ssh_gf_mul(ssh_gf out, const ssh_gf a, const ssh_gf b)
+{
+    __attribute__((aligned(16))) int16_t as[16];
+    int16_t bs[16];
+    gf_balance_s16(as, a);
+    gf_balance_s16(bs, b);
+    gf_conv_finish(out, as, bs);
+}
+
+// Squaring balances the operand ONCE (a == b, and gf_balance_s16 is deterministic, so the second balance
+// in mul(a,a) is pure waste). ~2/3 of the Montgomery-ladder field ops are squarings, so this matters.
+// Byte-exact with ssh_gf_mul(out, a, a) by construction.
+void ssh_gf_sq(ssh_gf out, const ssh_gf a)
+{
+    __attribute__((aligned(16))) int16_t as[16];
+    gf_balance_s16(as, a);
+    gf_conv_finish(out, as, as);
 }
 #else
 void ssh_gf_mul(ssh_gf out, const ssh_gf a, const ssh_gf b)
@@ -156,10 +173,12 @@ void ssh_gf_mul(ssh_gf out, const ssh_gf a, const ssh_gf b)
 }
 #endif
 
+#if !(defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3)
 void ssh_gf_sq(ssh_gf out, const ssh_gf a)
 {
     ssh_gf_mul(out, a, a);
 }
+#endif
 
 // Software field inversion out = a^-1 = a^(p-2). Fixed addition chain: square 255 times,
 // multiplying in a at every bit except positions 2 and 4 (which are 0 in p-2 = 2^255 - 21).

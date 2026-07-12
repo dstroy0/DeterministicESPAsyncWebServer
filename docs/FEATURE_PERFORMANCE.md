@@ -353,13 +353,14 @@ a high-priority core-1 task in the `rig_s3_ssh` firmware; the two X25519 measure
   (`ee.vmulas.s16.accx`): balance the limbs into signed-16-bit, run the 31-output convolution on the 40-bit
   ACCX, fold in C. The isolated field multiply is **8,583 vs 13,308 cycles = 1.55x** (device-measured,
   byte-exact vs scalar across 3000 operands; guarded `#if CONFIG_IDF_TARGET_ESP32S3`, scalar fallback
-  elsewhere). But **end to end it is only ~1.18x** (device-measured with the vector multiply live in the
-  ladder): **X25519 150.8 -> 128.3 ms, ed25519_sign 547.9 -> 466.2 ms**, so the handshake crypto falls from
-  ~0.85 s to ~0.72 s. The isolated 1.55x dilutes because the per-multiply `balance` + `bp`-setup overhead, the
-  squarings' redundant double-balance (`ssh_gf_sq` balances `a` twice), the non-multiply field ops
-  (add/sub/cswap), and the fixed HW modular inversion do not speed up. Next levers: a dedicated vector
-  `ssh_gf_sq` (balance once), cut the balance/setup overhead, and the in-register sliding window that removes
-  the per-output `ee.ld.128.usar` loads (the field-op bottleneck). The paragraph below is the pre-SIMD baseline.
+  elsewhere). End to end it is less than the isolated figure because the per-multiply `balance` + `bp`-setup overhead,
+  the non-multiply field ops (add/sub/cswap), and the fixed HW modular inversion do not speed up. Measured
+  in the ladder: **X25519 150.8 -> 115.9 ms (1.30x), ed25519_sign 547.9 -> 463.3 ms (1.18x)**. X25519 gains
+  more because a dedicated vector `ssh_gf_sq` balances the operand **once** (squarings are ~2/3 of the
+  Montgomery ladder; `mul(a,a)` would balance twice), while ed25519's Edwards scalar-mult is
+  multiply-dominated so it tracks the raw multiply speedup. Remaining lever: the in-register sliding window
+  that removes the per-output `ee.ld.128.usar` loads (the field-op bottleneck) - lifts every multiply. The
+  paragraph below is the pre-SIMD baseline.
 - **Where the handshake time goes - and the SIMD acceleration target.** The radix-2^16 field multiply
   `ssh_gf_mul` is **13,308 cycles / 55.4 us** on the S3 in scalar form (a 16x16 schoolbook = 256 multiply-accumulates). At
   ~2,600 field multiplies per X25519 (255 ladder steps x ~10 mul/sq + the reduction) it is essentially the
