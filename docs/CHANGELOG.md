@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`811f2b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/811f2b96b927023bd64fe8f3d6d621321badb6f4))
 - update test report + coverage [skip ci] ([`789e51b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/789e51ba3257d38dce600e04d97b4f5ca1edf07c))
 - update CHANGELOG.md [skip ci] ([`4514d8a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4514d8a2791f6377e5e531eb57c672b2fcee6f90))
 - update CHANGELOG.md [skip ci] ([`1bfb14a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1bfb14a5cea5f953fc489d6bee801dcbccbbab04))
@@ -13,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ec27284`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec27284801409a5929fa80408d661e6e3fdf93a0))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8d4f9cb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d4f9cbbae4be61673ce93116f2a31e0055d45c7))
 - record the W5500 SPI Ethernet pinout (both rigs, ESP32-S3-DevKitC) ([`9bdbee7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9bdbee769ae4c9407711d190bf97b5c390a87f94))
 - update ESP32 build footprints [skip ci] ([`7e7608a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7e7608a73a74a6f22c678e3d837a2c9c67c6c35c))
@@ -24,6 +26,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- device-as-server SunSpec Common-model interop vs pysunspec2 over Modbus TCP (6/6 HW) ([`fdd4c39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fdd4c390bcef9269fd80170a3fa8eb280e5c39b3))
 - device-as-client Sparkplug B NBIRTH interop over a real MQTT broker (9/9 HW) ([`0d5ef53`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d5ef53196cc89a1859a13ea1c197ea447177990))
 
 ## [5.98.0] - 2026-07-12
