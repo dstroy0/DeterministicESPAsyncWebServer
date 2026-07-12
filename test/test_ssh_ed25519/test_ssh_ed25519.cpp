@@ -283,15 +283,15 @@ void test_ed25519_roundtrip_long()
 // test proves it byte-exact-equivalent to the scalar ssh_gf_mul. See the ed25519-hwaccel plan.
 static void gf_balance_s16(int16_t o[16], const ssh_gf a)
 {
-    int64_t c[16];
+    int32_t c[16]; // int32 suffices (limbs ~+-2^18, carries ~+-2) and matches the device path
     for (int i = 0; i < 16; i++)
-        c[i] = a[i];
+        c[i] = (int32_t)a[i];
     for (int pass = 0; pass < 3; pass++) // round-to-nearest carry; limb-15 overflow wraps *38 into limb 0
     {
-        int64_t carry = 0;
+        int32_t carry = 0;
         for (int i = 0; i < 16; i++)
         {
-            int64_t v = c[i] + carry;
+            int32_t v = c[i] + carry;
             carry = (v + 0x8000) >> 16;
             c[i] = v - (carry << 16);
         }

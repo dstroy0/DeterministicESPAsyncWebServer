@@ -66,15 +66,17 @@ void ssh_gf_sub(ssh_gf out, const ssh_gf a, const ssh_gf b)
 // overflow wraps *38 into limb 0 since 2^256 == 38; three passes settle the wrap).
 static void gf_balance_s16(int16_t o[16], const ssh_gf a)
 {
-    int64_t c[16];
+    // int32 throughout: limbs stay ~+-2^18 and carries ~+-2, so no value exceeds int32 - which avoids the
+    // emulated 64-bit carry-propagation math (48 steps per operand) that dominated the field multiply.
+    int32_t c[16];
     for (int i = 0; i < 16; i++)
-        c[i] = a[i];
+        c[i] = (int32_t)a[i];
     for (int pass = 0; pass < 3; pass++)
     {
-        int64_t carry = 0;
+        int32_t carry = 0;
         for (int i = 0; i < 16; i++)
         {
-            int64_t v = c[i] + carry;
+            int32_t v = c[i] + carry;
             carry = (v + 0x8000) >> 16;
             c[i] = v - (carry << 16);
         }
