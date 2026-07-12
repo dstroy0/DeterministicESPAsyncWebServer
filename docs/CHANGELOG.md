@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`507b6d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/507b6d77b85f53e9c86723b54018ae908423c5a8))
 - update test report + coverage [skip ci] ([`2fb4422`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fb4422f553d77232809a9e7f791867c045a801d))
 - update CHANGELOG.md [skip ci] ([`ab8bd3a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab8bd3a8c5497095fb232f420f0051ea73472fb9))
 - update CHANGELOG.md [skip ci] ([`a4d816e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a4d816ef9276676eb2192267757d285826ec8dd7))
@@ -21,12 +22,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`167f7ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/167f7ae3bc2558dcad0255c05d9265b591b9990f))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a18d12d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a18d12dfeac84221bb561a0cf13ba6f29ed77cbc))
 - update ESP32 build footprints [skip ci] ([`64600e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/64600e200aefafacc9ca6d7fb538e3c6429da913))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cb76528`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb765284f74e8ce8ecfb9029ad0195efe41a3f4f))
 
 ### Performance
 
+- baseline the curve25519 field multiply + record the SIMD target ([`bdea274`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdea2741b3052ea52a6e95f0125153153abe4e14))
 - add the SSH crypto throughput bench (host + S3 CCOUNT) ([`47644e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47644e1846ceed49ac3a38795df53bcdaf0b0b71))
 
 ### Testing
