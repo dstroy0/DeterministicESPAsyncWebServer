@@ -11,8 +11,8 @@ current automatically by the release bump (`.bumpversion.cfg`).
 
 | Version   | Supported          |
 | --------- | ------------------ |
-| 5.95.14   | :white_check_mark: |
-| < 5.95.14 | :x:                |
+| 5.95.15   | :white_check_mark: |
+| < 5.95.15 | :x:                |
 
 ## Reporting a vulnerability
 
