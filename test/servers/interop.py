@@ -46,6 +46,7 @@ from peers import (
     snmp_peer,
     sparkplug_peer,
     sse_peer,
+    sunspec_peer,
     ssh_peer,
     statsd_peer,
     stomp_peer,
@@ -85,6 +86,7 @@ _MODULES = [
     graphql_peer,
     grpcweb_peer,
     sparkplug_peer,
+    sunspec_peer,
 ]
 
 

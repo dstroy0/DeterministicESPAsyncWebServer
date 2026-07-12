@@ -811,6 +811,7 @@
     "pyftpdlib",
     "pymodbus",
     "pysnmp",
+    "pysunspec",
     "qacc",
     "QCLASS",
     "QDCOUNT",
