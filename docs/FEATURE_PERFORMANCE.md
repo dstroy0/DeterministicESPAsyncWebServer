@@ -818,6 +818,22 @@ validate/slice. Pure (no socket). Host from [`perf/bench_bacnet.cpp`](../perf/be
   attack HELD on HW (12 malformed BVLC/NPDU datagrams - bad type/version, length lies, DLEN/SLEN over-runs,
   truncation - all rejected, a valid one still parses).
 
+### S7comm codec, Siemens S7 / ISO-on-TCP (DETWS_ENABLE_S7COMM)
+
+The Siemens S7 application layer (over ISO-on-TCP / RFC 1006, TCP/102): the client Setup-Communication +
+Read-Var (S7-ANY pointer) request builders and the response-header parser (protocol id 0x32 / ROSCTR /
+param + data lengths). Pure (no socket). Host from [`perf/bench_s7comm.cpp`](../perf/bench_s7comm.cpp).
+
+| Operation                | Host ns/op | Host MB/s |
+| ------------------------ | ---------: | --------: |
+| `build_setup`            |        4.2 |    5270.0 |
+| `build_read_request` (3) |       16.3 |    2951.6 |
+| `parse_header`           |        5.0 |    9584.9 |
+
+- Fixed-field framing, no CRC (S7 rides ISO-on-TCP + the TCP checksum) - a few ns to build/parse. The 3-item
+  Read Var build costs most (writes three 12-octet S7-ANY item pointers). Device us/op via the rig `/bench`
+  op and an `s7comm_frame_fuzz` parser attack are the next S7comm increments (same shape as DNP3/BACnet).
+
 ### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
 
 The board fronts a port and relays every byte to an internal origin (`server.listen(p, PROTO_RELAY)` +
