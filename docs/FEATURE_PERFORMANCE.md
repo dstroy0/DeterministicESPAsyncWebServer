@@ -779,6 +779,25 @@ Each transfer is **byte-verified** (sha256 or FNV-1a compared to the source). HW
 bugs the host mock-seam tests could not (a stubbed client transport, an `smb_open` stack overflow, a
 `listen()` that returned the wrong id, and the relay throughput issue below) - see docs/BUGS.md.
 
+### DNP3 data-link codec, IEEE 1815 (DETWS_ENABLE_DNP3)
+
+The SCADA / utility-outstation link layer: a CRC-16/DNP (poly 0x3D65, reflected) over the header block and
+every 16-octet data block, a zero-heap frame builder, and a CRC-validating de-blocking parser. Pure (no
+socket). Host from [`perf/bench_dnp3.cpp`](../perf/bench_dnp3.cpp).
+
+| Operation                     | Host ns/op | Host MB/s |
+| ----------------------------- | ---------: | --------: |
+| `crc16` (16-octet block)      |      215.4 |      74.3 |
+| `build_frame` (32 B user)     |      548.3 |      83.9 |
+| `parse_frame` (validate CRCs) |      553.1 |      83.2 |
+
+- The **CRC-16/DNP is the hot inner op** (~215 ns/block): build + parse each run one header CRC + one CRC
+  per data block, so a 32-byte frame (header + 2 blocks) is ~3 CRCs and lands at ~550 ns. The bit-reflected
+  CRC without a lookup table is the cost; a 256-entry table would trade flash for speed if DNP3 throughput
+  ever mattered. First of the industrial/SCADA family (dnp3, iec60870, mms, goose, s7comm, enip, profinet,
+  ...) to get a bench - **all are implemented codecs**; their device us/op + interop + attack are the real
+  remaining coverage work.
+
 ### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
 
 The board fronts a port and relays every byte to an internal origin (`server.listen(p, PROTO_RELAY)` +
