@@ -2,6 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`851ebbd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/851ebbdae3598eea5a981c11d8e850ef3ec28639))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`69d1e3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/69d1e3fb6b30cd810658a4d462dab5df248e048f))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6148387`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/614838754db6cca0e76c21ab090978d877129696))
+
+### Testing
+
+- validate the s16-balanced field-multiply model (S3 SIMD scaffold) ([`5b5e5b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b5e5b80edb297136b07308803ab6fcb8b3b2836))
+
 ## [5.95.15] - 2026-07-12
 
 <details>
