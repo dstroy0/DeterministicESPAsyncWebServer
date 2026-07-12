@@ -799,6 +799,23 @@ socket). Host from [`perf/bench_dnp3.cpp`](../perf/bench_dnp3.cpp).
   ...) to get a bench - **all are implemented codecs**; their device us/op + interop + attack are the real
   remaining coverage work.
 
+### BACnet/IP BVLC + NPDU codec, ASHRAE 135 (DETWS_ENABLE_BACNET)
+
+The building-automation network layer over UDP/47808: the BVLC envelope (Annex J - type/function/length) and
+the NPDU (Clause 6 - version/NPCI-control + optional DNET/DLEN/DADR + SNET/SLEN/SADR + hop count), build +
+validate/slice. Pure (no socket). Host from [`perf/bench_bacnet.cpp`](../perf/bench_bacnet.cpp).
+
+| Operation    | Host ns/op | Host MB/s |
+| ------------ | ---------: | --------: |
+| `bvlc_parse` |        4.2 |    4785.6 |
+| `npdu_parse` |        5.8 |    2736.7 |
+| `npdu_build` |       15.8 |    1009.8 |
+
+- Trivially cheap (single-digit ns to unwrap a datagram): BVLC/NPDU are fixed-field framing with no CRC (BACnet
+  relies on the UDP checksum), so parse is a handful of bounds checks + slices - much lighter than DNP3's
+  per-block CRC. `npdu_build` costs more (writes the addressing fields). Device us/op via the rig `/bench` op
+  and a `bacnet_frame_fuzz` parser attack are the next BACnet increments (same shape as DNP3).
+
 ### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
 
 The board fronts a port and relays every byte to an internal origin (`server.listen(p, PROTO_RELAY)` +

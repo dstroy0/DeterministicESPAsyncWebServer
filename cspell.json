@@ -946,6 +946,7 @@
     "smtpd",
     "SMTPS",
     "sndbuf",
+    "SNET",
     "SNMP",
     "snmpbulkwalk",
     "snmpget",
