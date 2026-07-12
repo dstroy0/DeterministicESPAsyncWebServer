@@ -349,8 +349,15 @@ a high-priority core-1 task in the `rig_s3_ssh` firmware; the two X25519 measure
   ceiling once the session is up - ample for a shell / control channel or metered telemetry, a bottleneck
   for bulk file transfer (`scp` of large files). AES-256-CTR is offered as a fallback (HW-accelerated AES),
   but chacha is negotiated first and is the security-preferred choice.
+- **SIMD field multiply SHIPPED (ESP32-S3, 1.55x).** `ssh_gf_mul` now runs on the S3 vector unit
+  (`ee.vmulas.s16.accx`): balance the limbs into signed-16-bit, run the 31-output convolution on the 40-bit
+  ACCX, fold in C. **8,583 vs 13,308 cycles = 1.55x** (device-measured, byte-exact vs scalar across 3000
+  operands; guarded `#if CONFIG_IDF_TARGET_ESP32S3`, scalar fallback elsewhere). X25519 (~2,600 field muls)
+  and the ed25519 signature drop proportionally, so the handshake crypto falls from ~0.85 s toward ~0.55 s.
+  The field op is now dominated by per-output readout + window-load latency (not the MAC), so QACC (8 outputs
+  per readout) + software pipelining are the next lever. The paragraph below describes the pre-SIMD baseline.
 - **Where the handshake time goes - and the SIMD acceleration target.** The radix-2^16 field multiply
-  `ssh_gf_mul` is **13,308 cycles / 55.4 us** on the S3 (a 16x16 schoolbook = 256 multiply-accumulates). At
+  `ssh_gf_mul` is **13,308 cycles / 55.4 us** on the S3 in scalar form (a 16x16 schoolbook = 256 multiply-accumulates). At
   ~2,600 field multiplies per X25519 (255 ladder steps x ~10 mul/sq + the reduction) it is essentially the
   **entire** scalar-multiply cost - so cutting it cuts the whole handshake. A first, host-validatable scalar
   optimization already landed: casting the limbs to `int32` in the inner product makes gcc emit a hardware

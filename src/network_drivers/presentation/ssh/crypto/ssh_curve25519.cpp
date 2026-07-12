@@ -14,6 +14,7 @@
 
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #ifdef ARDUINO
+#include "sdkconfig.h"      // CONFIG_IDF_TARGET_ESP32S3 - selects the vector (PIE) field multiply
 #include <mbedtls/bignum.h> // ESP32: field inversion on the MPI/RSA hardware accelerator
 #endif
 
@@ -52,6 +53,85 @@ void ssh_gf_sub(ssh_gf out, const ssh_gf a, const ssh_gf b)
         out[i] = a[i] - b[i];
 }
 
+#if defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3
+// ---- ESP32-S3 vector (PIE) field multiply --------------------------------------------------------
+// The S3 vector unit multiply-accumulates signed-16-bit lanes into a 40-bit accumulator
+// (ee.vmulas.s16.accx), but radix-2^16 limbs run to ~2^18 and go negative after a subtraction, so they
+// do not fit s16. Fix: balance each limb into signed-16-bit (a value-preserving carry redistribution
+// mod p), after which a*b is a pure s16xs16 convolution - exactly the vector MAC. Device-validated
+// byte-exact vs the scalar path (rig test, and test_gf_mul_s16_model_matches_scalar for the model);
+// ~1.55x the scalar multiply on hardware.
+
+// Balance a[16] into signed-16-bit limbs of the same value mod p (round-to-nearest carry; limb-15
+// overflow wraps *38 into limb 0 since 2^256 == 38; three passes settle the wrap).
+static void gf_balance_s16(int16_t o[16], const ssh_gf a)
+{
+    int64_t c[16];
+    for (int i = 0; i < 16; i++)
+        c[i] = a[i];
+    for (int pass = 0; pass < 3; pass++)
+    {
+        int64_t carry = 0;
+        for (int i = 0; i < 16; i++)
+        {
+            int64_t v = c[i] + carry;
+            carry = (v + 0x8000) >> 16;
+            c[i] = v - (carry << 16);
+        }
+        c[0] += 38 * carry;
+    }
+    for (int i = 0; i < 16; i++)
+        o[i] = (int16_t)c[i];
+}
+
+// One output limb t[k] = as[0..15] . window[0..15] on the ACCX. as is 16-byte aligned; the reversed-b
+// window w may be unaligned (loaded via ee.ld.128.usar + ee.src.q). ACCX is 40-bit: sign-extend bit 39.
+static inline int64_t gf_accx_dot_win(const int16_t *as, const int16_t *w)
+{
+    uint32_t lo, hi;
+    const int16_t *pa = as, *pw = w;
+    asm volatile("ee.zero.accx\n"
+                 "ee.vld.128.ip q3, %[a], 16\n"
+                 "ee.ld.128.usar.ip q0, %[w], 16\n"
+                 "ee.ld.128.usar.ip q1, %[w], 16\n"
+                 "ee.src.q q2, q0, q1\n"
+                 "ee.vmulas.s16.accx q3, q2\n"
+                 "ee.vld.128.ip q3, %[a], 16\n"
+                 "ee.ld.128.usar.ip q0, %[w], 16\n"
+                 "ee.src.q q2, q1, q0\n"
+                 "ee.vmulas.s16.accx q3, q2\n"
+                 "rur.accx_0 %[lo]\n"
+                 "rur.accx_1 %[hi]\n"
+                 : [lo] "=&r"(lo), [hi] "=&r"(hi), [a] "+r"(pa), [w] "+r"(pw)
+                 :
+                 : "memory");
+    uint64_t raw = (uint64_t)lo | ((uint64_t)(uint8_t)hi << 32);
+    return ((int64_t)(raw << 24)) >> 24;
+}
+
+void ssh_gf_mul(ssh_gf out, const ssh_gf a, const ssh_gf b)
+{
+    __attribute__((aligned(16))) int16_t as[16];
+    int16_t bs[16];
+    gf_balance_s16(as, a);
+    gf_balance_s16(bs, b);
+    // bp = [15 zeros][bs reversed: bs15..bs0][zeros]; output k's window starts at bp[30-k].
+    __attribute__((aligned(16))) int16_t bp[64];
+    for (int i = 0; i < 64; i++)
+        bp[i] = 0;
+    for (int m = 0; m < 16; m++)
+        bp[15 + m] = bs[15 - m];
+    int64_t t[31];
+    for (int k = 0; k < 31; k++)
+        t[k] = gf_accx_dot_win(as, bp + (30 - k));
+    for (int i = 0; i < 15; i++)
+        t[i] += 38 * t[i + 16];
+    for (int i = 0; i < 16; i++)
+        out[i] = t[i];
+    gf_carry(out);
+    gf_carry(out);
+}
+#else
 void ssh_gf_mul(ssh_gf out, const ssh_gf a, const ssh_gf b)
 {
     int64_t t[31];
@@ -74,6 +154,7 @@ void ssh_gf_mul(ssh_gf out, const ssh_gf a, const ssh_gf b)
     gf_carry(out);
     gf_carry(out);
 }
+#endif
 
 void ssh_gf_sq(ssh_gf out, const ssh_gf a)
 {
