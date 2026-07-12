@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 117 runnable examples under [examples/](../examples), grouped by
+The library ships 118 runnable examples under [examples/](../examples), grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -59,6 +59,7 @@ Start here: the core tutorial path (01-05), then the v5 hardware-integration exa
 [18.ThreadGateway](../examples/Foundation/18.ThreadGateway) ·
 [19.Ethernet](../examples/Foundation/19.Ethernet) ·
 [20.IPv6](../examples/Foundation/20.IPv6) ·
+[20.EthernetW5500](../examples/Foundation/20.EthernetW5500) ·
 [21.WifiCapture](../examples/Foundation/21.WifiCapture) ·
 [22.CanCapture](../examples/Foundation/22.CanCapture)
 

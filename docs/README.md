@@ -1315,6 +1315,7 @@ guards at compile time.
 | `DETWS_DNS_TIMEOUT_MS` | `5000` | DNS resolve timeout in milliseconds. |
 | `DETWS_ENFORCE_HOST_HEADER` | `1` | Enforce the RFC 7230 §5.4 Host-header requirement (default on). |
 | `DETWS_ENOCEAN_MAX_DATA` | `512` | Reject an ESP3 telegram whose declared data length exceeds this (framing sanity). |
+| `DETWS_ETH_W5500` | `0` |  |
 | `DETWS_FAILSAFE_MAX_LIFELINES` | `8` | Max monitored lifelines in the fail-safe registry (static, zero-heap). |
 | `DETWS_FTP_CMD_MAX` | `256` | Suggested FTP control-command buffer size. |
 | `DETWS_FWD_ACL_PATLEN` | `4` | Bytes an ACL entry can match (its pattern / mask length). |
