@@ -805,16 +805,18 @@ The building-automation network layer over UDP/47808: the BVLC envelope (Annex J
 the NPDU (Clause 6 - version/NPCI-control + optional DNET/DLEN/DADR + SNET/SLEN/SADR + hop count), build +
 validate/slice. Pure (no socket). Host from [`perf/bench_bacnet.cpp`](../perf/bench_bacnet.cpp).
 
-| Operation    | Host ns/op | Host MB/s |
-| ------------ | ---------: | --------: |
-| `bvlc_parse` |        4.2 |    4785.6 |
-| `npdu_parse` |        5.8 |    2736.7 |
-| `npdu_build` |       15.8 |    1009.8 |
+| Operation    | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------ | ---------: | --------: | --------------: | -------------: |
+| `bvlc_parse` |        4.2 |    4785.6 |               - |              - |
+| `npdu_parse` |        5.8 |    2736.7 |             101 |            420 |
+| `npdu_build` |       15.8 |    1009.8 |               - |              - |
 
-- Trivially cheap (single-digit ns to unwrap a datagram): BVLC/NPDU are fixed-field framing with no CRC (BACnet
-  relies on the UDP checksum), so parse is a handful of bounds checks + slices - much lighter than DNP3's
-  per-block CRC. `npdu_build` costs more (writes the addressing fields). Device us/op via the rig `/bench` op
-  and a `bacnet_frame_fuzz` parser attack are the next BACnet increments (same shape as DNP3).
+- Trivially cheap: BVLC/NPDU are fixed-field framing with no CRC (BACnet relies on the UDP checksum), so
+  parse is a handful of bounds checks + slices - **~0.42 us (101 cyc) on the ESP32-S3** for `npdu_parse`
+  (from the rig `/bench` op), ~37x lighter than DNP3's per-block-CRC parse (15.6 us) despite both being
+  ~30-octet frames. `npdu_build` costs more (writes the addressing fields). The `bacnet_frame_fuzz` parser
+  attack HELD on HW (12 malformed BVLC/NPDU datagrams - bad type/version, length lies, DLEN/SLEN over-runs,
+  truncation - all rejected, a valid one still parses).
 
 ### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
 
