@@ -496,6 +496,26 @@ op.
   malformed/oversized packets handled without a crash. HW-verified against the real `ntplib` client (6/6
   interop: mode 4, stratum, origin echo, LOCL ref-id, a plausible epoch).
 
+### NTS framing, RFC 8915 (DETWS_ENABLE_NTS)
+
+Network Time Security wraps NTP with a TLS-1.3 key-establishment exchange (NTS-KE on :4460) and per-packet
+authenticated extension fields. These are the pure framing hot ops - no TLS, no AEAD, no socket - from
+[`perf/bench_nts.cpp`](../perf/bench_nts.cpp): the client builds a KE request and parses the server's record
+stream once per key establishment, and stamps a Unique-Identifier + Cookie EF on every protected NTP
+request. The AES-SIV-CMAC-256 AEAD + the TLS-exporter key derivation sit on top and are not part of these ops.
+
+| Operation                    | Host ns/op | Host MB/s |
+| ---------------------------- | ---------: | --------: |
+| `ke_request` build           |        3.3 |    4779.6 |
+| `ke_parse` (server response) |       18.9 |    2755.6 |
+| `ef_unique_id` build         |        7.9 |    2525.0 |
+| `ef_cookie` build            |        7.9 |    4541.9 |
+
+- Framing is trivially cheap (single-digit ns): the real cost of NTS is the TLS-1.3 handshake + the AES-SIV
+  AEAD, not the record/EF assembly. The `ke_parse` walk (validate each `[critical|type][len][body]` TLV to
+  the End-of-Message record) is the heaviest at ~19 ns for a 4-record response. Device us/op via the rig
+  `/bench` op is a follow-up (needs DETWS_ENABLE_NTS on a rig).
+
 ### DNS server (DETWS_ENABLE_DNS_SERVER)
 
 An authoritative DNS server on UDP/53 answers A/IN queries from a fixed table (NXDOMAIN otherwise).
