@@ -1522,8 +1522,15 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
  */
 void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, const char *payload)
 {
+    // Null-terminated convenience wrapper over the explicit-length send.
+    send(slot_id, code, content_type, (const uint8_t *)payload, payload ? strnlen(payload, 0xFFFF) : 0);
+}
+
+void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, const uint8_t *body, size_t body_len)
+{
     if (slot_id >= CONN_POOL_SLOTS)
         return; // guard the public entry: never index conn_pool out of range
+    const char *payload = (const char *)body;
     TcpConn *conn = &conn_pool[slot_id];
 #if DETWS_ENABLE_HTTP2 || DETWS_ENABLE_HTTP3
     // A self-framing protocol (HTTP/2, HTTP/3) installed its own response sink at negotiation /
@@ -1532,7 +1539,7 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
     // has no pcb by design, and an h2 connection manages its own).
     if (conn->resp_sink)
     {
-        conn->resp_sink(slot_id, code, content_type, payload, strlen(payload));
+        conn->resp_sink(slot_id, code, content_type, payload, body_len);
         return;
     }
 #endif
@@ -1542,7 +1549,7 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
         return;
     }
 
-    int payload_len = (int)strnlen(payload, 0xFFFF);
+    int payload_len = (int)(body_len > 0xFFFF ? 0xFFFF : body_len);
 
     bool keep;
     const char *cl = resp_conn_hdr(slot_id, &keep);

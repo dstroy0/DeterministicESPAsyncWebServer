@@ -1338,6 +1338,37 @@ void test_status_text_reason_phrases()
     tcp_capture_disable();
 }
 
+// The length-aware send() overload carries a binary body (embedded NUL bytes) intact: Content-Length counts
+// every octet and the bytes after the header terminator match the source byte-for-byte. This is what a
+// gRPC-web frame / protobuf / octet-stream response needs (the const char* overload would strnlen-truncate).
+void test_send_binary_body_with_nul()
+{
+    conn_pool[0].id = 0;
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
+    conn_pool[0].proto = ConnProto::PROTO_HTTP;
+    conn_pool[0].pcb = &_mock_pcb;
+    http_reset(0);
+    const uint8_t body[] = {0x00, 0x00, 0x00, 0x00, 0x05, 'h', 'e', 0x00, 'l', 'o'}; // NUL-laden, 10 octets
+    tcp_capture_reset();
+    g_server->send(0, 200, "application/grpc-web+proto", body, sizeof(body));
+    const char *out = tcp_captured();
+    size_t out_len = tcp_captured_len();
+    tcp_capture_disable();
+    TEST_ASSERT_NOT_NULL(strstr(out, "HTTP/1.1 200 OK"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Content-Type: application/grpc-web+proto\r\n"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Content-Length: 10\r\n")); // counts the NUL bytes, not strlen (=0)
+    size_t hdr_end = 0;
+    for (size_t i = 0; i + 4 <= out_len; i++)
+        if (memcmp(out + i, "\r\n\r\n", 4) == 0)
+        {
+            hdr_end = i + 4;
+            break;
+        }
+    TEST_ASSERT_TRUE(hdr_end > 0);
+    TEST_ASSERT_EQUAL_UINT(sizeof(body), (unsigned)(out_len - hdr_end)); // whole body present
+    TEST_ASSERT_EQUAL_INT(0, memcmp(out + hdr_end, body, sizeof(body))); // byte-for-byte, NULs and all
+}
+
 // A 405 lists every method registered for the matched path in the Allow header;
 // method_name() renders each token. Register PATCH/HEAD/OPTIONS on one path and
 // request it with an unregistered method.
@@ -1619,6 +1650,7 @@ int main()
     RUN_TEST(test_restart_and_stop);
     RUN_TEST(test_route_registration_variants_table_full);
     RUN_TEST(test_send_family_slot_and_conn_gone_guards);
+    RUN_TEST(test_send_binary_body_with_nul);
     RUN_TEST(test_redirect_response_and_code_normalization);
     RUN_TEST(test_request_error_paths_te_method_ws);
     RUN_TEST(test_ws_sse_upgrade_failure_paths);

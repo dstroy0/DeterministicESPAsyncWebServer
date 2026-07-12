@@ -1083,6 +1083,21 @@ class DetWebServer
     void send(uint8_t slot_id, int code, const char *content_type, const char *payload);
 
     /**
+     * @brief Send an HTTP response with an explicit-length (possibly binary) body.
+     *
+     * Same as send() above but the body length is given, so the body may contain NUL
+     * bytes (protobuf, gRPC-web frames, octet-stream, images). @p body_len is bounded
+     * by the single-write limit (65535); larger bodies need the chunked/file path.
+     *
+     * @param slot_id      Connection slot index returned by the router.
+     * @param code         HTTP status code.
+     * @param content_type MIME type string, e.g. `"application/grpc-web+proto"`.
+     * @param body         Response body (may contain NULs); not required to be terminated.
+     * @param body_len     Number of body octets.
+     */
+    void send(uint8_t slot_id, int code, const char *content_type, const uint8_t *body, size_t body_len);
+
+    /**
      * @brief Send a headers-only HTTP response and close the connection.
      *
      * Equivalent to send() with an empty body and Content-Length: 0.
