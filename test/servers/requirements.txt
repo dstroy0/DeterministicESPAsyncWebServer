@@ -5,6 +5,9 @@
 #   snmp         -> net-snmp tools (snmpget, snmpwalk)   apt install snmp / choco install net-snmp
 #                   (optional: the snmp peer falls back to the pysnmp package below)
 #   mqtt-broker  -> mosquitto                            apt install mosquitto / choco install mosquitto
+#   sparkplug    -> mosquitto + paho (device-as-client)  the sparkplug peer starts mosquitto (found in PATH or
+#                   /usr/sbin), subscribes spBv1.0/#, triggers the device's NBIRTH publish, and decodes the
+#                   Tahu Payload protobuf with a stdlib decoder (no Sparkplug pip package needed). paho-mqtt < 2.
 #   redis        -> redis-server (device-as-client)      apt install redis-server; run --bind 0.0.0.0 --protected-mode no
 #                   (the redis peer itself is stdlib - raw RESP over a socket - and needs no pip package)
 #   syslog       -> none (device-as-client)              the syslog peer is stdlib - a raw UDP collector +

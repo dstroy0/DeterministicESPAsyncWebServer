@@ -44,6 +44,7 @@ from peers import (
     smb_peer,
     smtp_peer,
     snmp_peer,
+    sparkplug_peer,
     sse_peer,
     ssh_peer,
     statsd_peer,
@@ -83,6 +84,7 @@ _MODULES = [
     ssh_peer,
     graphql_peer,
     grpcweb_peer,
+    sparkplug_peer,
 ]
 
 
