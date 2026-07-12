@@ -2,10 +2,14 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.96.0] - 2026-07-12
+
+<details>
+<summary><b>Show Changelog for version 5.96.0 - 2026-07-12</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`aaaece8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aaaece8ef1f0655c294846ad3f4120bfe3bdd2c3))
 - update test report + coverage [skip ci] ([`424ffe8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/424ffe8596a5b3baef8be188319131da137440f2))
 - update CHANGELOG.md [skip ci] ([`b7546f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b7546f3dd5c033877376d862bda0590dda2b0460))
 - update CHANGELOG.md [skip ci] ([`da68f15`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da68f15ab41181b8c21e8313ec41343a5a598630))
@@ -32,6 +36,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update test report + coverage [skip ci] ([`332728b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/332728b52706b7946d67eda88c8009749e2d537e))
 - update CHANGELOG.md [skip ci] ([`d4665b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4665b477dabf6e3e536c3935e22e543cb97127b))
 
+### Changes
+
+- Bump version: 5.95.19 → 5.96.0 ([`ebb31d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ebb31d885f9233e25fb7618f523ffcd7ec88bbf4))
+
 ### Documentation
 
 - mDNS is an esp-idf wrapper - wire coverage n/a, adaptive-beacon unit-tested ([`c16bc21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c16bc2198085680f30d65de20544e054e7da9a64))
@@ -42,6 +50,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- X25519 KEX on the ESP32-S3 RSA/MPI accelerator (97.5 -> 22.65 ms, 4.31x) ([`9131083`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/91310834e614a31e0e66b6423f87613fd056e04c))
 - validated fe25519 X25519 prototype - HW MODMULT ladder, 3.55x ([`3753216`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/375321672e8d6262777f579db3874efbe53608cf))
 - host bench for the PROFINET DCP codec ([`e1ad630`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1ad630be5fc25fb6daf399d2a8a39995b48df96))
 - host bench for the EtherNet/IP encapsulation codec ([`674cfb7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/674cfb72eea3733a33ba8df147d3e2717abde34d))
@@ -64,6 +73,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - dnp3_frame_fuzz - data-link parser robustness on HW (bench+attack now) ([`2b4ca85`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b4ca852d9f8d500df47331f462ca73a808c01d1))
 - tls_session_abuse - session/record-layer robustness beyond the ClientHello ([`983a870`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/983a8708b792ee4feeb74c12be7ed5f2f4c22bda))
 - digest_nonce_replay attack - RFC 7616 replay + forgery/tamper resistance ([`19a3938`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19a3938d9584db2cf5285869dd047035467caef2))
+
+</details>
 
 ## [5.95.19] - 2026-07-12
 
