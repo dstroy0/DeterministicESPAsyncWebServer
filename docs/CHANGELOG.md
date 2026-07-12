@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`e3ea621`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3ea621a6b0f73a55d8d3e9b187b9e03d83950e3))
+- update CHANGELOG.md [skip ci] ([`461f1b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/461f1b05771bfa413cb35274d436efeedf06de03))
 - update CHANGELOG.md [skip ci] ([`9f391b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f391b40d578f465072c61e3e818355e641612e8))
 - update CHANGELOG.md [skip ci] ([`4bb9037`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4bb9037cd5f53cc780a80a83c7ca8e52b98d163f))
 - update CHANGELOG.md [skip ci] ([`96738bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96738bbae74965a6fedb9f1db99bd1740c485805))
@@ -42,6 +44,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- device bench + iec104_frame_fuzz - S3 APCI/ASDU robustness on HW ([`d3320c6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3320c6cadd2902d633d9473729ee0a4f12d12c9))
 - device bench + s7comm_frame_fuzz - S7 header robustness on HW ([`911402d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/911402d365943b7ec2fb48a950f37ac3d73d544f))
 - device bench + bacnet_frame_fuzz - BVLC/NPDU robustness on HW ([`025a178`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/025a1783c34670f2469677d7c93a16c6e59c5bf8))
 - dnp3_frame_fuzz - data-link parser robustness on HW (bench+attack now) ([`2b4ca85`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b4ca852d9f8d500df47331f462ca73a808c01d1))
