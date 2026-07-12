@@ -2,6 +2,16 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`dab7366`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dab7366b953b44c196d926b00a57c1a0cfe090e6))
+
+### Performance
+
+- single-asm-block SIMD field multiply on the rig (1.65x, isolates the bottleneck) ([`efb67ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/efb67ead9d8bde3f426c397e73284efcab528b3a))
+
 ## [5.95.16] - 2026-07-12
 
 <details>
