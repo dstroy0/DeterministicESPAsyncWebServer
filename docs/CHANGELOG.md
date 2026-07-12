@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`da68f15`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/da68f15ab41181b8c21e8313ec41343a5a598630))
 - update CHANGELOG.md [skip ci] ([`04b5f86`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04b5f86b5c90659b4e20d5b9f9ac5086239e82a1))
 - update CHANGELOG.md [skip ci] ([`bfee094`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfee09468ba2dc3a1c0326874525b06c62b2c87a))
 - update CHANGELOG.md [skip ci] ([`3a1a008`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a1a008f9f524f1fc4cc476c380a09684be35267))
@@ -39,6 +40,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- host bench for the PROFINET DCP codec ([`e1ad630`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1ad630be5fc25fb6daf399d2a8a39995b48df96))
 - host bench for the EtherNet/IP encapsulation codec ([`674cfb7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/674cfb72eea3733a33ba8df147d3e2717abde34d))
 - host bench for the IEC 61850 GOOSE publisher codec ([`4c1e00e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c1e00e54d9f34853ed8d8869d1420746ad67bc6))
 - host bench for the IEC 61850 MMS codec ([`541a3bb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/541a3bb713f565f51e8d04b4232eb243ce0296f5))
