@@ -74,6 +74,30 @@ int main()
         row("ssh", "x25519 (KEX shared secret)", ns, 0);
     }
 
+    // Field arithmetic: the radix-2^16 schoolbook multiply / square (ssh_gf = int64[16]). This is the
+    // innermost hot op of the Montgomery ladder (~9 field mul/sq per ladder step x 255 steps) and thus the
+    // dominant cost of every X25519 / ed25519 scalar multiplication - the target for S3 vector (QACC) SIMD.
+    ssh_gf ga, gb, go;
+    for (int k = 0; k < 16; k++)
+    {
+        ga[k] = 0x5a5a + k;
+        gb[k] = 0x1234 - k;
+    }
+    {
+        double ns = bench_ns(200000, [&] {
+            ssh_gf_mul(go, ga, gb);
+            sink += (uint32_t)go[0];
+        });
+        row("ssh", "gf_mul (field 16x16 mul)", ns, 0);
+    }
+    {
+        double ns = bench_ns(200000, [&] {
+            ssh_gf_sq(go, ga);
+            sink += (uint32_t)go[0];
+        });
+        row("ssh", "gf_sq (field square)", ns, 0);
+    }
+
     // Host key: ssh-ed25519 signature over the 32-byte exchange hash H. One per connection.
     uint8_t seed[32], sig[64], hash[32];
     memset(seed, 0x33, sizeof(seed));

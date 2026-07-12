@@ -336,6 +336,7 @@ a high-priority core-1 task in the `rig_s3_ssh` firmware; the two X25519 measure
 | `ssh_x25519` scalarmult (KEX)           |  1,588,291 |         - |        150,845 |             - |
 | `ssh_ed25519_sign` (host-key signature) |  5,448,039 |         - |        547,885 |             - |
 | `ssh_chachapoly_encrypt` (1 KiB packet) |      6,103 |     167.8 |            705 |           1.5 |
+| `ssh_gf_mul` (radix-2^16 field mul)     |        510 |         - |          57.34 |             - |
 
 - **The SSH handshake is expensive on the device: ~0.85 s of pure crypto** (two X25519 at ~151 ms each +
   one ed25519 sign at ~548 ms), because the curve25519 / ed25519 **field arithmetic is software** (radix-2^16
@@ -348,6 +349,16 @@ a high-priority core-1 task in the `rig_s3_ssh` firmware; the two X25519 measure
   ceiling once the session is up - ample for a shell / control channel or metered telemetry, a bottleneck
   for bulk file transfer (`scp` of large files). AES-256-CTR is offered as a fallback (HW-accelerated AES),
   but chacha is negotiated first and is the security-preferred choice.
+- **Where the handshake time goes - and the SIMD acceleration target.** The radix-2^16 field multiply
+  `ssh_gf_mul` is **13,762 cycles / 57.3 us** on the S3 (a 16x16 `int64` schoolbook = 256 multiply-accumulates,
+  each an emulated 64x64 multiply on the 32-bit xtensa core). At ~2,600 field multiplies per X25519 (255 ladder
+  steps x ~10 mul/sq + the reduction) it is essentially the **entire** scalar-multiply cost - so cutting it cuts
+  the whole handshake. The S3 has 128-bit **integer SIMD** (the "PIE" vector unit; `ee.vmulas.s16.qacc` = eight
+  signed-16-bit MACs into a wide accumulator - the same unit esp-dsp's `dotprod_s16_aes3` kernel uses), which
+  maps directly onto the 16-bit limbs: the 256 scalar MACs become ~32 vector-MAC instructions. That is the
+  acceleration target (a plausible 5-10x handshake win), tracked as the ed25519/curve25519 SIMD work. The FPU is
+  **not** an option here: the S3 FPU is single-precision only (`__FP_FAST_FMAF32`, no double), and a
+  floating-point curve25519 needs ~51-bit limb products, so the integer path is the only viable one.
 
 ### MQTT 3.1.1 client codec (DETWS_ENABLE_MQTT)
 
