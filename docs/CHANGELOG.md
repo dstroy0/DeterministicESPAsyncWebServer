@@ -2,21 +2,36 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.98.0] - 2026-07-12
+
+<details>
+<summary><b>Show Changelog for version 5.98.0 - 2026-07-12</b></summary>
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ff0caac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff0caac469d6d00ffb876877ed3c514c4863e1a3))
 - update test report + coverage [skip ci] ([`9da3565`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9da35653db742d6ed2d329063c0d9b0aa3f99b81))
 - update CHANGELOG.md [skip ci] ([`cc77e15`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc77e15a099d8adfd25a233ba3d6d479d48ffc1c))
 
+### Changes
+
+- Bump version: 5.97.0 → 5.98.0 ([`1328737`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/132873713249b0ae8e7e4bca3c0966a808deef62))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c14ddfe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c14ddfe568ebbadc2d9d156943efd207cc8b44fa))
 - update ESP32 build footprints [skip ci] ([`8940a34`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8940a343b6b2249ca7b727a0b471779c41a346e8))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f656033`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f656033d92ac1c6f44c564b448d0dab97d33d21e))
+
+### Features
+
+- length-aware send() overload for binary bodies + gRPC-web interop peer (5/5 HW) ([`e4fdf86`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e4fdf864df47d68c39df89ce552094566df851b1))
 
 ### Testing
 
 - device-as-server interop peer vs reference graphql-core (10/10 HW) ([`b46c4f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b46c4f0a2380d6b1712ee58cf038d072c0910aed))
+
+</details>
 
 ## [5.97.0] - 2026-07-12
 
