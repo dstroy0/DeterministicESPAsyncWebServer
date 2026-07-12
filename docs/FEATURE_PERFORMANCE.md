@@ -333,17 +333,21 @@ a high-priority core-1 task in the `rig_s3_ssh` firmware; the two X25519 measure
 
 | Operation                               | Host ns/op | Host MB/s | ESP32-S3 us/op | ESP32-S3 MB/s |
 | --------------------------------------- | ---------: | --------: | -------------: | ------------: |
-| `ssh_x25519` scalarmult (KEX)           |  1,588,291 |         - |        150,845 |             - |
-| `ssh_ed25519_sign` (host-key signature) |  5,448,039 |         - |        547,885 |             - |
+| `ssh_x25519` scalarmult (KEX)           |  1,588,291 |         - |     22,653 [1] |             - |
+| `ssh_ed25519_sign` (host-key signature) |  5,448,039 |         - |        380,300 |             - |
 | `ssh_chachapoly_encrypt` (1 KiB packet) |      6,103 |     167.8 |            705 |           1.5 |
 | `ssh_gf_mul` (radix-2^16 field mul)     |        510 |         - |          55.45 |             - |
 
-- **The SSH handshake is expensive on the device: ~0.85 s of pure crypto** (two X25519 at ~151 ms each +
-  one ed25519 sign at ~548 ms), because the curve25519 / ed25519 **field arithmetic is software** (radix-2^16
-  `int64` limbs; xtensa has no `__int128`); only the modular inversion is offloaded to the ESP32 MPI/RSA
-  accelerator. That is a fixed ~1 s connection setup cost - fine for an admin/config channel or a long-lived
-  tunnel, the wrong tool for high-churn short connections. The host is ~95-115x faster across every op (a
-  uniform ratio that cross-validates the device CCOUNT figures).
+[1] X25519 KEX runs on the RSA/MPI hardware accelerator on the S3 (see the MODMULT bullet); the host figure is
+the software radix-2^16 ladder (the native / non-S3 fallback). ed25519_sign is the shipped SIMD ladder.
+
+- **The SSH handshake crypto is ~0.43 s on the device** (two X25519 at ~22.7 ms each + one ed25519 sign at
+  ~380 ms). The X25519 KEX runs on the **RSA/MPI hardware accelerator** (the MODMULT bullet below); the
+  ed25519 host-key signature is still **software** SIMD field arithmetic (radix-2^16 `int64` limbs; xtensa has
+  no `__int128`), so with X25519 accelerated the ed25519 sign now dominates the handshake. That is a fixed
+  sub-second connection setup - fine for an admin/config channel or a long-lived tunnel, the wrong tool for
+  high-churn short connections. On the software ops (ed25519 sign, chacha-poly) the host is ~95-115x faster, a
+  uniform ratio that cross-validates the device CCOUNT figures; X25519 breaks the ratio as the one HW-offloaded op.
 - The **chacha20-poly1305 record layer runs at ~1.5 MB/s** on the S3 (705 us to encrypt+authenticate a 1 KiB
   packet: two ChaCha20 keystreams + a Poly1305 tag, all software). That is the steady-state throughput
   ceiling once the session is up - ample for a shell / control channel or metered telemetry, a bottleneck
@@ -363,22 +367,30 @@ a high-priority core-1 task in the `rig_s3_ssh` firmware; the two X25519 measure
   `ee.ld.128.usar` is byte-exact but only ~1.4% faster (7,955 vs 8,067 cycles), so it was not shipped. X25519
   gains more than ed25519 because ed25519's Edwards scalar-mult is multiply-dominated (fewer squarings). The
   paragraph below is the pre-SIMD baseline.
-- **RSA/MPI hardware MODMULT beats the SIMD by 5.8x (measured, next lever).** The ESP32-S3 RSA accelerator
-  can do a full **256-bit modular multiply** `Z = X*Y mod p` in hardware. Driven **register-direct with static
-  buffers (zero heap)** - clear `SYSTEM_RSA_MEM_PD`, load `M,X,Y` + `r=R^2 mod p` into the Z block + `M'`,
-  trigger `MOD_MULT`, read `Z` - one modmul measures **1,380 cycles vs the SIMD `gf_mul`'s 7,955** (byte-exact
-  vs a reference for `p = 2^255-19`, rig `SSHBENCH mpi_modmul256`). That is **5.8x faster than the shipped
-  vector multiply, 9.6x faster than scalar**, and the timing is data-independent (constant-time by design). At
-  ~2,600 field ops per X25519 this projects X25519 ~97 ms -> ~20-25 ms and the handshake ~0.58 s -> ~0.15 s
-  (~4x). Shipping it means rewriting the field layer from radix-2^16 `int64[16]` to canonical `uint32[8] mod p`
-  (every mul/sq one MODMULT, add/sub a carry + conditional-subtract, the final inversion via register-direct
-  `MODEXP` to stay off mbedTLS/heap) - a major, security-critical change guarded `#if CONFIG_IDF_TARGET_ESP32S3`
-  with the SIMD/scalar path as the fallback and byte-exact vs RFC 7748/8032. The validated probe lives in
-  `pentesting/rig_firmware/src/main_ssh.cpp` under `DETWS_SSH_BENCH`.
-- **`-O2` does not speed up the crypto (measured).** Rebuilt `rig_s3_ssh` at `-O2`: X25519 **97.3 ms**,
-  ed25519_sign **380 ms** - identical to the shipped `-Og` numbers. The ladder is hand-written vector assembly
-  plus already-`int32` C glue, neither of which the optimizer can improve, so the shipped `-Og` figures **are**
-  the production crypto numbers (unlike the pure-C protocol codecs, which gain ~15-30% at `-O2`).
+- **X25519 field layer runs on the RSA/MPI hardware MODMULT (SHIPPED, ESP32-S3): 97.5 -> 22.65 ms (4.31x).**
+  The whole X25519 Montgomery ladder now runs in canonical `uint32[8] mod p` and does each field multiply as
+  one **256-bit modular multiply** `Z = X*Y mod p` on the RSA accelerator, driven **register-direct with static
+  buffers (zero heap)**: load `M,X,Y` + `r=R^2 mod p` into the result block + `M'`, trigger `MOD_MULT`, read `Z`
+  (add/sub are native 32-bit carry + conditional-subtract-p; the inversion is a tweetnacl chain of MODMULTs; no
+  per-op pack/unpack because the whole ladder stays canonical - MODMULT output is provably `< p`, verified 0 /
+  5000). One modmul is **1,386 cycles vs the SIMD `gf_mul`'s 7,955 (5.8x), 9.6x vs scalar**, data-independent
+  (constant-time). End to end **X25519 97.5 -> 22.65 ms (4.31x)** on the device, dropping the handshake crypto
+  to ~0.43 s. It is byte-exact vs the software radix-2^16 ladder (RFC 7748 §5.2 + Wycheproof, native tests) and
+  **HW-verified by a live `curve25519-sha256` KEX + password auth against OpenSSH** on the rig. It shares the
+  accelerator (and its lock) with mbedTLS RSA/DH, so the ladder brackets itself with
+  `esp_mpi_{enable,disable}_hardware_hw_op()` - the same lock+power bring-up mbedTLS uses - and holds the lock
+  for its run (a KEX is infrequent; per-multiply toggling would cost more than it saves). Guarded
+  `#if defined(ARDUINO) && CONFIG_IDF_TARGET_ESP32S3` (`DETWS_X25519_MPI_HW` in `ssh_curve25519.cpp`), with the
+  SIMD/scalar ladder as the fallback. **HTTP/3 shares the same `ssh_x25519`, so the QUIC handshake gets the
+  4.3x too.** ed25519 sign (the Edwards ladder) still uses the SIMD field arithmetic - porting it to the same
+  MODMULT layer is the next lever. The reproducible probe lives in `pentesting/rig_firmware/src/main_ssh.cpp`
+  under `DETWS_SSH_BENCH`.
+- **`-O2` does not speed up the crypto (measured).** Rebuilt `rig_s3_ssh` at `-O2` (pre-MODMULT SIMD build):
+  X25519 **97.3 ms**, ed25519_sign **380 ms** - identical to the `-Og` numbers. The ladder is hand-written
+  vector assembly plus already-`int32` C glue, neither of which the optimizer can improve, so the shipped `-Og`
+  figures **are** the production crypto numbers (unlike the pure-C protocol codecs, which gain ~15-30% at `-O2`).
+  The MODMULT X25519 is likewise hardware-bound (the accelerator, not the C glue, is the floor), so `-O2` is a
+  no-op there too.
 - **Where the handshake time goes - and the SIMD acceleration target.** The radix-2^16 field multiply
   `ssh_gf_mul` is **13,308 cycles / 55.4 us** on the S3 in scalar form (a 16x16 schoolbook = 256 multiply-accumulates). At
   ~2,600 field multiplies per X25519 (255 ladder steps x ~10 mul/sq + the reduction) it is essentially the
@@ -683,14 +695,17 @@ CertificateVerify, AES-128-GCM packet protection, and QPACK, with the QuicConn/H
 PSRAM. Measured device-as-server on the ESP32-S3 from a real QUIC client (Python `aioquic`) against the PSRAM
 h3 rig.
 
-| Operation                                   | ESP32-S3    | Notes                                                     |
-| ------------------------------------------- | ----------- | --------------------------------------------------------- |
-| Cold connect (QUIC handshake + first GET /) | ~940-994 ms | X25519 + **Ed25519 sign** dominate (software field arith) |
-| Request streams served per QUIC connection  | ~2          | static stream budget; no MAX_STREAMS credit renewal       |
+| Operation                                   | ESP32-S3    | Notes                                                      |
+| ------------------------------------------- | ----------- | ---------------------------------------------------------- |
+| Cold connect (QUIC handshake + first GET /) | ~940-994 ms | **Ed25519 sign** dominates; X25519 now HW-accelerated [S3] |
+| Request streams served per QUIC connection  | ~2          | static stream budget; no MAX_STREAMS credit renewal        |
 
 - The **~0.95 s** cold connect is the heaviest of the three transports (TLS 1.2 ~0.9 s, h2 cold ~0.45 s): the
-  QUIC handshake adds an Ed25519 signature over the transcript on top of the X25519 exchange, both in software
-  field arithmetic (the same ssh_ed25519 path, ~10.5 KB of stack). Once up, a connection serves about **two**
+  QUIC handshake adds an Ed25519 signature over the transcript on top of the X25519 exchange (the same
+  `ssh_x25519` / `ssh_ed25519` path, ~10.5 KB of stack). The X25519 key exchange now runs on the RSA/MPI
+  hardware accelerator on the S3 (`DETWS_X25519_MPI_HW`, 97.5 -> 22.65 ms; see the SSH crypto section), so the
+  **Ed25519 CertificateVerify sign (~380 ms software) is now the dominant handshake cost** - re-measuring the
+  cold-connect figure on a rebuilt h3 rig is a follow-up. Once up, a connection serves about **two**
   request streams - the static per-connection stream table's initial budget - and does not renew stream credit
   (it never emits MAX_STREAMS), so a third request stalls; a client that needs more opens a fresh connection.
   This is the bounded-resource, zero-growth trade-off, not high request parallelism. Practicality: HTTP/3 here

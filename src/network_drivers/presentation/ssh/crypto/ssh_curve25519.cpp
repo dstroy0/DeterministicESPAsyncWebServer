@@ -10,17 +10,32 @@
  * folds anything at or above 2^256 back as *38 (2^256 = 2*2^255 = 2*19 mod p). The
  * X25519 scalar multiplication is the RFC 7748 §5 Montgomery ladder with constant-time
  * conditional swaps. Validated against the RFC 7748 §5.2 vectors (test_ssh_ed25519).
+ *
+ * On the ESP32-S3 (Arduino) X25519 has a second, byte-identical implementation that runs the
+ * ladder in canonical uint32[8] and does each field multiply as one 256-bit modular multiply on
+ * the RSA/MPI accelerator (~4.3x the software/PIE ladder); see the DETWS_X25519_MPI_HW block. It
+ * shares the accelerator lock with mbedtls, so it is bracketed by esp_mpi_{enable,disable}_hardware_hw_op().
  */
 
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #ifdef ARDUINO
 #include "sdkconfig.h"      // CONFIG_IDF_TARGET_ESP32S3 - selects the vector (PIE) field multiply
 #include <mbedtls/bignum.h> // ESP32: field inversion on the MPI/RSA hardware accelerator
+// On the S3, X25519 runs its whole Montgomery ladder in canonical uint32[8] and does each field multiply as
+// one 256-bit modular multiply on the RSA/MPI accelerator (~4.3x the software/PIE ladder). Gated to Arduino
+// because it shares the peripheral (and its lock) with mbedtls via esp_mpi_{enable,disable}_hardware_hw_op().
+#if defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3
+#define DETWS_X25519_MPI_HW 1
+#include "soc/hwcrypto_reg.h" // RSA/MPI accelerator register map (MODMULT)
+#include "soc/soc.h"          // DR_REG_RSA_BASE
+#endif
 #endif
 
-// Small field constants.
-static const ssh_gf GF_1 = {1};
+// Small field constant (radix-2^16). Used only by the software X25519 ladder (the S3 MODMULT path carries its
+// own canonical a24), so it would be unused there.
+#ifndef DETWS_X25519_MPI_HW
 static const ssh_gf GF_121665 = {0xDB41, 1}; // 121665 = 0x1DB41 (Montgomery a24)
+#endif
 
 // Normalize each limb toward 16 bits, folding the carry above 2^256 back in as *38.
 // Two passes fully reduce a product's limbs; the +2^16 / -1 dance keeps it branch-free.
@@ -302,6 +317,248 @@ void ssh_gf_unpack(ssh_gf out, const uint8_t in[32])
     out[15] &= 0x7fff;
 }
 
+#ifdef DETWS_X25519_MPI_HW
+// ============================= ESP32-S3 X25519 on the RSA/MPI accelerator =================================
+// Field elements are canonical uint32[8] (< p = 2^255-19) THROUGHOUT the ladder, so every field multiply is a
+// single hardware 256-bit modular multiply and add/sub are native 32-bit with one conditional subtract of p.
+// Only the byte<->fe conversion happens per scalar-mult (not per multiply, as a drop-in would). Byte-exact
+// with the software radix-2^16 ladder, validated against the RFC 7748 §5.2 vectors on hardware.
+//
+// The accelerator (and its lock) are shared with mbedtls' RSA/DH; esp_mpi_enable_hardware_hw_op() takes that
+// lock and powers/clocks the peripheral (its mpi_hal_enable_hardware_hw_op() clears the RSA-mem power-down and
+// waits for the block to be ready). The ladder brackets itself with enable/disable and holds the lock for its
+// whole run: a KEX is infrequent, and per-multiply lock/power toggling would cost far more than it saves.
+extern "C"
+{
+    void esp_mpi_enable_hardware_hw_op(void);  // mbedtls port: acquire the MPI lock + clock/power the peripheral
+    void esp_mpi_disable_hardware_hw_op(void); // release the lock + power down
+}
+
+#define RSA_REG(a) (*(volatile uint32_t *)(a))
+
+// Constants for the 256-bit modular multiply mod p = 2^255-19 (scratchpad/montconst.py): Montgomery m' and
+// R^2 mod p (= 38^2 = 1444 = 0x5a4). Preloading R^2 into the result (Z/RB) block makes the accelerator return
+// a plain residue X*Y mod p rather than a Montgomery form - the esp_mpi_mul_mpi_mod convention.
+static const uint32_t MOD_MPRIME = 0x286bca1bu;
+static const uint32_t MOD_P[8] = {0xffffffedu, 0xffffffffu, 0xffffffffu, 0xffffffffu,
+                                  0xffffffffu, 0xffffffffu, 0xffffffffu, 0x7fffffffu};
+static const uint32_t MOD_R2[8] = {0x000005a4u, 0, 0, 0, 0, 0, 0, 0};
+
+// z = x*y mod p (8 words / 256-bit). Requires esp_mpi_enable_hardware_hw_op() first (peripheral up, lock held).
+// The result is always canonical (< p), so callers need no follow-up reduce.
+static void mpi_modmul256(uint32_t z[8], const uint32_t x[8], const uint32_t y[8])
+{
+    volatile uint32_t *M = (volatile uint32_t *)RSA_MEM_M_BLOCK_BASE;
+    volatile uint32_t *X = (volatile uint32_t *)RSA_MEM_X_BLOCK_BASE;
+    volatile uint32_t *Y = (volatile uint32_t *)RSA_MEM_Y_BLOCK_BASE;
+    volatile uint32_t *Z = (volatile uint32_t *)RSA_MEM_Z_BLOCK_BASE;
+    RSA_REG(RSA_LENGTH_REG) = 8 - 1; // mode = words - 1
+    RSA_REG(RSA_M_DASH_REG) = MOD_MPRIME;
+    for (int i = 0; i < 8; i++)
+    {
+        M[i] = MOD_P[i];
+        X[i] = x[i];
+        Y[i] = y[i];
+        Z[i] = MOD_R2[i]; // r = R^2 mod p in the result block -> plain (non-Montgomery) output
+    }
+    RSA_REG(RSA_CLEAR_INTERRUPT_REG) = 1; // clear any stale done flag before starting
+    RSA_REG(RSA_MOD_MULT_START_REG) = 1;
+    while (RSA_REG(RSA_QUERY_INTERRUPT_REG) == 0)
+        ;
+    RSA_REG(RSA_CLEAR_INTERRUPT_REG) = 1;
+    for (int i = 0; i < 8; i++)
+        z[i] = Z[i];
+}
+
+typedef uint32_t fe[8];
+static const uint32_t FE_A24[8] = {121665u, 0, 0, 0, 0, 0, 0, 0}; // X25519 a24 = (486662-2)/4 (RFC 7748 §5)
+
+static void fe_copy(fe o, const fe a)
+{
+    for (int i = 0; i < 8; i++)
+        o[i] = a[i];
+}
+static void fe_0(fe o)
+{
+    for (int i = 0; i < 8; i++)
+        o[i] = 0;
+}
+static void fe_1(fe o)
+{
+    o[0] = 1;
+    for (int i = 1; i < 8; i++)
+        o[i] = 0;
+}
+// If o >= p (o is in [p, 2p)), subtract p. Constant-time: the borrow out of o-p selects o or o-p.
+static void fe_reduce_once(fe o)
+{
+    uint32_t t[8];
+    int64_t b = 0;
+    for (int i = 0; i < 8; i++)
+    {
+        b += (int64_t)o[i] - (int64_t)MOD_P[i];
+        t[i] = (uint32_t)b;
+        b >>= 32;
+    }
+    uint32_t keep = (uint32_t)b; // 0 if o>=p (take t=o-p), 0xffffffff if o<p (keep o)
+    for (int i = 0; i < 8; i++)
+        o[i] = (o[i] & keep) | (t[i] & ~keep);
+}
+static void fe_add(fe o, const fe x, const fe y) // x,y < p -> o = x+y mod p
+{
+    uint64_t c = 0;
+    for (int i = 0; i < 8; i++)
+    {
+        c += (uint64_t)x[i] + y[i];
+        o[i] = (uint32_t)c;
+        c >>= 32;
+    }
+    fe_reduce_once(o); // x+y < 2p, one conditional subtract
+}
+static void fe_sub(fe o, const fe x, const fe y) // x,y < p -> o = x-y mod p
+{
+    int64_t b = 0;
+    uint32_t t[8];
+    for (int i = 0; i < 8; i++)
+    {
+        b += (int64_t)x[i] - (int64_t)y[i];
+        t[i] = (uint32_t)b;
+        b >>= 32;
+    }
+    uint32_t borrow = (uint32_t)b; // 0xffffffff if x<y -> add p back
+    uint64_t c = 0;
+    for (int i = 0; i < 8; i++)
+    {
+        c += (uint64_t)t[i] + (MOD_P[i] & borrow);
+        o[i] = (uint32_t)c;
+        c >>= 32;
+    }
+}
+static void fe_mul(fe o, const fe x, const fe y) // o = x*y mod p (HW MODMULT; safe if o aliases x/y)
+{
+    mpi_modmul256(o, x, y);
+}
+static void fe_sq(fe o, const fe x)
+{
+    mpi_modmul256(o, x, x);
+}
+static void fe_cswap(fe x, fe y, uint32_t swap) // constant-time swap of x,y when swap==1
+{
+    uint32_t mask = (uint32_t)(-(int32_t)swap);
+    for (int i = 0; i < 8; i++)
+    {
+        uint32_t t = mask & (x[i] ^ y[i]);
+        x[i] ^= t;
+        y[i] ^= t;
+    }
+}
+static void fe_frombytes(fe o, const uint8_t b[32])
+{
+    for (int i = 0; i < 8; i++)
+        o[i] = (uint32_t)b[4 * i] | ((uint32_t)b[4 * i + 1] << 8) | ((uint32_t)b[4 * i + 2] << 16) |
+               ((uint32_t)b[4 * i + 3] << 24);
+    o[7] &= 0x7fffffffu; // RFC 7748: mask bit 255 of u
+    fe_reduce_once(o);   // the masked value can still be in [p, 2^255) -> canonicalize
+}
+static void fe_tobytes(uint8_t b[32], const fe a)
+{
+    fe t;
+    fe_copy(t, a);
+    fe_reduce_once(t); // freeze to the canonical residue
+    for (int i = 0; i < 8; i++)
+    {
+        b[4 * i] = (uint8_t)t[i];
+        b[4 * i + 1] = (uint8_t)(t[i] >> 8);
+        b[4 * i + 2] = (uint8_t)(t[i] >> 16);
+        b[4 * i + 3] = (uint8_t)(t[i] >> 24);
+    }
+}
+// o = a^(p-2) = a^-1 mod p (tweetnacl square-and-multiply chain for the exponent 2^255-21).
+static void fe_invert(fe o, const fe a)
+{
+    fe c;
+    fe_copy(c, a);
+    for (int i = 253; i >= 0; i--)
+    {
+        fe_sq(c, c);
+        if (i != 2 && i != 4)
+            fe_mul(c, c, a);
+    }
+    fe_copy(o, c);
+}
+
+void ssh_x25519(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[32])
+{
+    uint8_t e[32];
+    for (int i = 0; i < 32; i++)
+        e[i] = scalar[i];
+    e[0] &= 248; // clamp the scalar (RFC 7748 §5)
+    e[31] &= 127;
+    e[31] |= 64;
+
+    esp_mpi_enable_hardware_hw_op(); // lock + power the accelerator for the whole ladder
+    RSA_REG(RSA_INTERRUPT_REG) = 0;  // poll only, no completion IRQ
+
+    fe x1;
+    fe x2;
+    fe z2;
+    fe x3;
+    fe z3;
+    fe A;
+    fe AA;
+    fe B;
+    fe BB;
+    fe E;
+    fe C;
+    fe D;
+    fe DA;
+    fe CB;
+    fe t0;
+    fe t1;
+    fe_frombytes(x1, point);
+    fe_1(x2);
+    fe_0(z2);
+    fe_copy(x3, x1);
+    fe_1(z3);
+    uint32_t swap = 0;
+
+    // Montgomery ladder over the 255 scalar bits, high to low (RFC 7748 §5).
+    for (int t = 254; t >= 0; t--)
+    {
+        uint32_t k_t = (e[t >> 3] >> (t & 7)) & 1;
+        swap ^= k_t;
+        fe_cswap(x2, x3, swap);
+        fe_cswap(z2, z3, swap);
+        swap = k_t;
+        fe_add(A, x2, z2);
+        fe_sq(AA, A);
+        fe_sub(B, x2, z2);
+        fe_sq(BB, B);
+        fe_sub(E, AA, BB);
+        fe_add(C, x3, z3);
+        fe_sub(D, x3, z3);
+        fe_mul(DA, D, A);
+        fe_mul(CB, C, B);
+        fe_add(t0, DA, CB);
+        fe_sq(x3, t0);
+        fe_sub(t1, DA, CB);
+        fe_sq(t1, t1);
+        fe_mul(z3, x1, t1);
+        fe_mul(x2, AA, BB);
+        fe_mul(t0, FE_A24, E);
+        fe_add(t0, AA, t0);
+        fe_mul(z2, E, t0);
+    }
+    fe_cswap(x2, x3, swap);
+    fe_cswap(z2, z3, swap);
+
+    // Result = X / Z = x2 * z2^-1.
+    fe_invert(z2, z2);
+    fe_mul(x2, x2, z2);
+    fe_tobytes(out, x2);
+    esp_mpi_disable_hardware_hw_op(); // release the lock + power down
+}
+#else
 void ssh_x25519(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[32])
 {
     uint8_t z[32];
@@ -357,8 +614,8 @@ void ssh_x25519(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[3
     ssh_gf_inv(c, c);
     ssh_gf_mul(a, a, c);
     ssh_gf_pack(out, a);
-    (void)GF_1;
 }
+#endif // DETWS_X25519_MPI_HW
 
 void ssh_x25519_base(uint8_t out[32], const uint8_t scalar[32])
 {
