@@ -504,17 +504,18 @@ authenticated extension fields. These are the pure framing hot ops - no TLS, no 
 stream once per key establishment, and stamps a Unique-Identifier + Cookie EF on every protected NTP
 request. The AES-SIV-CMAC-256 AEAD + the TLS-exporter key derivation sit on top and are not part of these ops.
 
-| Operation                    | Host ns/op | Host MB/s |
-| ---------------------------- | ---------: | --------: |
-| `ke_request` build           |        3.3 |    4779.6 |
-| `ke_parse` (server response) |       18.9 |    2755.6 |
-| `ef_unique_id` build         |        7.9 |    2525.0 |
-| `ef_cookie` build            |        7.9 |    4541.9 |
+| Operation                    | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ---------------------------- | ---------: | --------: | --------------: | -------------: |
+| `ke_request` build           |        3.3 |    4779.6 |               - |              - |
+| `ke_parse` (server response) |       18.9 |    2755.6 |             270 |           1125 |
+| `ef_unique_id` build         |        7.9 |    2525.0 |               - |              - |
+| `ef_cookie` build            |        7.9 |    4541.9 |               - |              - |
 
-- Framing is trivially cheap (single-digit ns): the real cost of NTS is the TLS-1.3 handshake + the AES-SIV
-  AEAD, not the record/EF assembly. The `ke_parse` walk (validate each `[critical|type][len][body]` TLV to
-  the End-of-Message record) is the heaviest at ~19 ns for a 4-record response. Device us/op via the rig
-  `/bench` op is a follow-up (needs DETWS_ENABLE_NTS on a rig).
+- Framing is trivially cheap: the real cost of NTS is the TLS-1.3 handshake + the AES-SIV AEAD, not the
+  record/EF assembly. The `ke_parse` walk (validate each `[critical|type][len][body]` TLV to the
+  End-of-Message record) is the heaviest - **~1.1 us (270 cyc) on the ESP32-S3** for a 4-record response
+  (host ~19 ns), from the rig `/bench` op. So key establishment parses in a microsecond; interop against a
+  real NTS client and a malformed-record attack remain the open NTS coverage.
 
 ### DNS server (DETWS_ENABLE_DNS_SERVER)
 
