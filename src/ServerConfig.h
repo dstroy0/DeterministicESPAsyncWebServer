@@ -41,9 +41,19 @@
 // Compile-time capacity constants (affect static array sizes)
 // ---------------------------------------------------------------------------
 
-/** @brief Maximum simultaneous TCP connections. */
+/**
+ * @brief Maximum simultaneous TCP connections (fixed static pool; ~3.95 KB of internal RAM per slot).
+ *
+ * Default 8: a keep-alive/concurrency server needs headroom above its peak concurrent client count,
+ * because a connection closed by the keep-alive fairness cap (DETWS_KEEPALIVE_MAX_REQUESTS) briefly
+ * holds its slot in CONN_CLOSING while it drains, and a reconnecting client needs a free slot mean-
+ * while - if concurrency equals the pool size there is none, and the overflow connection is refused
+ * (correct backpressure, but it caps clean throughput at concurrency == MAX_CONNS - 1). Set lower
+ * (e.g. -DMAX_CONNS=4, ~16 KB less RAM) on a RAM-constrained target, or higher (16/32) for a
+ * connection-heavy HTTP server; the event queue tracks it automatically (EVT_QUEUE_DEPTH below).
+ */
 #ifndef MAX_CONNS
-#define MAX_CONNS 4
+#define MAX_CONNS 8
 #endif
 
 /**
@@ -942,10 +952,11 @@
  *   heap = sizeof(StaticQueue_t) + EVT_QUEUE_DEPTH * sizeof(TcpEvt)
  *
  * Must be large enough to absorb a burst of MAX_CONNS * 4 events without
- * blocking the lwIP thread.
+ * blocking the lwIP thread, so it tracks MAX_CONNS automatically (a raised
+ * MAX_CONNS never trips the EVT_QUEUE_DEPTH >= MAX_CONNS * 4 guard below).
  */
 #ifndef EVT_QUEUE_DEPTH
-#define EVT_QUEUE_DEPTH 16
+#define EVT_QUEUE_DEPTH (MAX_CONNS * 4)
 #endif
 
 // ---------------------------------------------------------------------------
@@ -4349,7 +4360,7 @@
  * DETWS_KEEPALIVE_MAX_REQUESTS requests before a deliberate close.
  */
 #ifndef DETWS_ENABLE_KEEPALIVE
-#define DETWS_ENABLE_KEEPALIVE 0
+#define DETWS_ENABLE_KEEPALIVE 1
 #endif
 
 /**

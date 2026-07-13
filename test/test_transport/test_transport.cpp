@@ -37,9 +37,10 @@ void tearDown()
 
 // ---- Compile-time constants ----------------------------------------
 
-void test_pool_capacity_is_four()
+void test_pool_capacity_default_is_eight()
 {
-    TEST_ASSERT_EQUAL(4, MAX_CONNS);
+    // The default connection pool is 8 (keep-alive/concurrency headroom; see ServerConfig.h).
+    TEST_ASSERT_EQUAL(8, MAX_CONNS);
 }
 void test_rx_buffer_size_is_one_kb()
 {
@@ -626,7 +627,7 @@ int main()
     UNITY_BEGIN();
 
     // Unit tests
-    RUN_TEST(test_pool_capacity_is_four);
+    RUN_TEST(test_pool_capacity_default_is_eight);
     RUN_TEST(test_rx_buffer_size_is_one_kb);
     RUN_TEST(test_timeout_constant_is_5000ms);
     RUN_TEST(test_all_slots_free_after_init);

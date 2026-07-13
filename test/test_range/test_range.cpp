@@ -103,7 +103,7 @@ void test_no_range_full_200()
     TEST_ASSERT_NOT_NULL(strstr(r, "200 OK"));
     TEST_ASSERT_NOT_NULL(strstr(r, "Accept-Ranges: bytes"));
     TEST_ASSERT_NOT_NULL(strstr(r, "Content-Length: 20"));
-    TEST_ASSERT_NOT_NULL(strstr(r, "Connection: close")); // header must carry the Connection line
+    TEST_ASSERT_NOT_NULL(strstr(r, "Connection: keep-alive")); // HTTP/1.1 default is now persistent (keep-alive on)
     TEST_ASSERT_NULL(strstr(r, "Content-Range"));
     TEST_ASSERT_EQUAL_UINT(20, body_len());
     TEST_ASSERT_EQUAL_MEMORY(FILE_DATA, body_ptr(), 20);

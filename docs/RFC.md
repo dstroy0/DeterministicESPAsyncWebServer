@@ -43,11 +43,9 @@ Additional behaviors:
 
 ## HTTP/1.1 response generation (RFC 7230 §3.3, §4.1)
 
-By default every response closes the connection (`Connection: close`,
-HTTP/1.0-style). With optional **HTTP keep-alive**
-([`DETWS_ENABLE_KEEPALIVE`](@ref DETWS_ENABLE_KEEPALIVE), default off) a
-cleanly-parsed request is instead answered `Connection: keep-alive` and the
-connection is reused for the next request (persistent connections, RFC 7230
+**HTTP keep-alive** ([`DETWS_ENABLE_KEEPALIVE`](@ref DETWS_ENABLE_KEEPALIVE), default
+on) answers a cleanly-parsed request with `Connection: keep-alive` and reuses the
+connection for the next request (persistent connections, RFC 7230
 §6.3): HTTP/1.1 persists unless the client sends `Connection: close`, HTTP/1.0
 closes unless it sends `Connection: keep-alive`, and any error or non-complete
 parse (400/413/414) always closes since the next request boundary is unknown.
