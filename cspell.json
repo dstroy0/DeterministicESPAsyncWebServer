@@ -934,6 +934,7 @@
     "sec-websocket-accept",
     "sec-websocket-key",
     "sec-websocket-version",
+    "secp",
     "secretpassword",
     "SEDP",
     "seedh",

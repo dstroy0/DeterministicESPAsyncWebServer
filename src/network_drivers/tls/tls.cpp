@@ -305,6 +305,59 @@ static void tls_apply_max_frag_len(mbedtls_ssl_config *conf)
 #endif
 }
 
+// Pin the ECDHE curve/group preference (RFC 8446 supported_groups / RFC 8422 for TLS 1.2).
+// This is PERFORMANCE-CRITICAL on a chip with no ECC accelerator: mbedTLS, given no explicit
+// preference, negotiates the FIRST curve in its own default list that the client also offers,
+// and on the esp-idf mbedTLS build that is secp521r1 - the MOST expensive curve. The ECDHE
+// variable-base scalar multiply is the single dominant handshake op, and a P-521 one runs ~2.4x
+// a P-256/x25519 one in software. Measured end-to-end on an ESP32-S3 (full TLS 1.2 handshake,
+// ECDHE-ECDSA-AES256-GCM): default(secp521r1) ~1000 ms -> x25519 / secp256r1 ~487 ms (2.05x).
+// (For reference the fixed ECDSA-P256 server signature is only ~63 ms; the curve is what moves.)
+//
+// We pin a fast, modern order: x25519 then secp256r1 (both 128-bit-security, the industry-default
+// curves) ahead of secp384r1/secp521r1 (kept only for interop with a peer that offers nothing
+// cheaper). Every curve stays available - this only reorders PREFERENCE, so a client that supports
+// just one of them still connects. Applied to both the server config and the outbound-client config
+// so the device never pays for an oversized curve it did not need.
+static void tls_apply_curve_pref(mbedtls_ssl_config *conf)
+{
+#if MBEDTLS_VERSION_MAJOR >= 3
+    static const uint16_t kGroupPref[] = {
+#if defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED)
+        MBEDTLS_SSL_IANA_TLS_GROUP_X25519,
+#endif
+#if defined(MBEDTLS_ECP_DP_SECP256R1_ENABLED)
+        MBEDTLS_SSL_IANA_TLS_GROUP_SECP256R1,
+#endif
+#if defined(MBEDTLS_ECP_DP_SECP384R1_ENABLED)
+        MBEDTLS_SSL_IANA_TLS_GROUP_SECP384R1,
+#endif
+#if defined(MBEDTLS_ECP_DP_SECP521R1_ENABLED)
+        MBEDTLS_SSL_IANA_TLS_GROUP_SECP521R1,
+#endif
+        0,
+    };
+    mbedtls_ssl_conf_groups(conf, kGroupPref);
+#else
+    static const mbedtls_ecp_group_id kCurvePref[] = {
+#if defined(MBEDTLS_ECP_DP_CURVE25519_ENABLED)
+        MBEDTLS_ECP_DP_CURVE25519,
+#endif
+#if defined(MBEDTLS_ECP_DP_SECP256R1_ENABLED)
+        MBEDTLS_ECP_DP_SECP256R1,
+#endif
+#if defined(MBEDTLS_ECP_DP_SECP384R1_ENABLED)
+        MBEDTLS_ECP_DP_SECP384R1,
+#endif
+#if defined(MBEDTLS_ECP_DP_SECP521R1_ENABLED)
+        MBEDTLS_ECP_DP_SECP521R1,
+#endif
+        MBEDTLS_ECP_DP_NONE,
+    };
+    mbedtls_ssl_conf_curves(conf, kCurvePref);
+#endif
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -341,6 +394,7 @@ bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *ke
 
     mbedtls_ssl_conf_rng(&s_srv.conf, tls_rng, nullptr);
     tls_apply_max_frag_len(&s_srv.conf); // RFC 6066 record cap (DETWS_TLS_MAX_FRAG_LEN)
+    tls_apply_curve_pref(&s_srv.conf);   // prefer cheap curves (no ECC HW on the S3) - see helper
 #if MBEDTLS_VERSION_MAJOR >= 3
     mbedtls_ssl_conf_min_tls_version(&s_srv.conf, MBEDTLS_SSL_VERSION_TLS1_2);
 #else
@@ -623,6 +677,7 @@ static int client_conf_apply(mbedtls_ssl_config *conf)
         return -1;
     mbedtls_ssl_conf_rng(conf, tls_rng, nullptr);
     tls_apply_max_frag_len(conf); // RFC 6066 record cap (DETWS_TLS_MAX_FRAG_LEN)
+    tls_apply_curve_pref(conf);   // offer cheap curves first (no ECC HW on the S3) - see helper
     if (s_cli.ca_set)
     {
         mbedtls_ssl_conf_ca_chain(conf, &s_cli.ca, nullptr);

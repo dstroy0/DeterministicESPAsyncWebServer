@@ -652,16 +652,29 @@ its 48 KB static BSS arena (zero heap, no `malloc`), so the meaningful number is
 of a full handshake, measured end to end from a real client (Python `ssl` on the RPi) against the slim HTTPS
 rig on an ESP32-S3. Cipher suite `ECDHE-ECDSA-AES256-GCM-SHA384` (P-256), self-signed ECDSA leaf.
 
-| Operation                                | ESP32-S3 median | min    | max     | Rate (full req) |
-| ---------------------------------------- | --------------: | ------ | ------- | --------------: |
-| TLS 1.2 handshake (TCP+ClientHello..Fin) |          913 ms | 904 ms | 1073 ms |      ~1.0 req/s |
+| Operation (ECDHE curve)                          | ESP32-S3 min | avg     | Rate (full req) |
+| ------------------------------------------------ | -----------: | ------- | --------------: |
+| TLS 1.2 handshake - **before** (secp521r1)       |       870 ms | 1075 ms |      ~1.0 req/s |
+| TLS 1.2 handshake - **after** (x25519/secp256r1) |   **487 ms** | 501 ms  |      ~2.0 req/s |
 
-- The handshake is **~0.9 s** and dominates any HTTPS request: at one full handshake per request the device
-  serves ~1 req/s, so the practical guidance is to **keep connections alive** and/or enable
-  `DETWS_ENABLE_TLS_RESUMPTION` (RFC 5077 tickets) so a returning client skips the ECDHE+ECDSA cost. The
-  cost is the asymmetric crypto (ECDHE key-gen + the ECDSA signature over the transcript) in software mbedTLS;
-  bulk AES-256-GCM record encryption after the handshake is comparatively free. Practicality: fine for an
-  admin/config endpoint or an occasional secure POST; not for a high-rate polled API without keep-alive.
+- **Curve preference cut the handshake 2.05x (1000 ms -> 487 ms), no downside.** The cost of a full
+  handshake is dominated by one asymmetric op: the ECDHE **variable-base scalar multiply** in software
+  mbedTLS (no ECC accelerator on the S3). mbedTLS, given no server preference, negotiates the _first_ curve
+  in its own list that the client offers - which on the esp-idf build is **secp521r1, the most expensive**
+  (its scalar mult is ~2.4x a P-256/x25519 one). The library now pins a fast, modern preference order
+  (`mbedtls_ssl_conf_curves`/`_groups`: x25519, secp256r1 ahead of secp384r1/secp521r1) on both the server
+  and outbound-client config, so the negotiated curve is a cheap 128-bit one. Every curve stays enabled -
+  this only reorders preference, so a peer that supports just one still connects.
+- Decomposition (CCOUNT `us/op` on the S3, `/bench/tls`): ECDHE shared-secret (variable base) **~142 ms**
+  (x25519) / **~142 ms** (P-256) / **~333 ms** (P-521); ECDHE ephemeral gen (fixed base) ~57-142 ms; the
+  fixed **ECDSA-P256 server signature is only ~63 ms**. So the _curve_ is what moves the handshake, not the
+  signature - which is why the curve preference is the whole win and a P-256 field-math rewrite would not
+  help (mbedTLS already uses the HW MPI for the NIST reduction, and it is precompiled in the core anyway).
+- Still ~0.5 s per _full_ handshake, so the practical guidance stands: **keep connections alive** and/or
+  enable `DETWS_ENABLE_TLS_RESUMPTION` (RFC 5077 tickets) so a returning client skips the ECDHE+ECDSA cost
+  entirely (a resumed handshake is symmetric-only, single-digit ms). Bulk AES-256-GCM record encryption after
+  the handshake is comparatively free. Fine for an admin/config endpoint or an occasional secure POST; for a
+  high-rate polled API use keep-alive or resumption.
 - HW-verified: `curl`/browsers/OpenSSL/Python (all 1.3-leading) negotiate down to TLS 1.2 and get `200`;
   `tls_server_abuse` held every invariant (downgrade + weak-cipher refused, 7 malformed handshakes survived).
   Bringing this up found and fixed two hardware-only bugs (a tcpip_thread self-deadlock and an RX ring smaller
