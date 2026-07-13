@@ -87,7 +87,7 @@ from each example's `pio ci` size report and aggregated into
 | `TELNET`                                         | L5-Session/03.Telnet                    | 736.2 KB (57.5%) | 65.0 KB (20.3%)  |
 | `THREAD+GATEWAY`                                 | Foundation/18.ThreadGateway             | 262.8 KB (20.5%) | 22.1 KB (6.9%)   |
 | `TLS`                                            | L6-Presentation/07.SecureWebSocket      | 835.7 KB (65.3%) | 119.2 KB (37.2%) |
-| `TLS+MTLS`                                       | L4-Transport/04.mTLS                    | 836.6 KB (65.4%) | 119.5 KB (37.3%) |
+| `TLS+MTLS`                                       | L4-Transport/04.mTLS                    | 836.7 KB (65.4%) | 119.5 KB (37.3%) |
 | `TLS+TLS_RESUMPTION`                             | L4-Transport/06.TlsResumption           | 836.5 KB (65.4%) | 119.3 KB (37.3%) |
 | `TOTP`                                           | L7-Application/45.Totp                  | 735.2 KB (57.4%) | 64.5 KB (20.1%)  |
 | `UDP_TELEMETRY`                                  | L7-Application/39.UdpTelemetry          | 710.9 KB (55.5%) | 43.9 KB (13.7%)  |

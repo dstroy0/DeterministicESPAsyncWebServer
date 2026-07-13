@@ -549,21 +549,21 @@
     "example": "L6-Presentation/07.SecureWebSocket",
     "flags": "-DDETWS_ENABLE_TLS=1",
     "board": "esp32dev",
-    "flash_bytes": 855765,
+    "flash_bytes": 855801,
     "ram_bytes": 122020
   },
   "TLS+MTLS": {
     "example": "L4-Transport/04.mTLS",
     "flags": "-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_MTLS=1",
     "board": "esp32dev",
-    "flash_bytes": 856713,
+    "flash_bytes": 856761,
     "ram_bytes": 122356
   },
   "TLS+TLS_RESUMPTION": {
     "example": "L4-Transport/06.TlsResumption",
     "flags": "-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_TLS_RESUMPTION=1",
     "board": "esp32dev",
-    "flash_bytes": 856569,
+    "flash_bytes": 856617,
     "ram_bytes": 122180
   },
   "TOTP": {
@@ -619,7 +619,7 @@
     "example": "L7-Application/25.WebSocketClient",
     "flags": "-DDETWS_ENABLE_WS_CLIENT=1 -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_WS_CLIENT_TLS=1 -DDETWS_WS_CLIENT_BUF_SIZE=768",
     "board": "esp32dev",
-    "flash_bytes": 831661,
+    "flash_bytes": 831721,
     "ram_bytes": 123620
   },
   "WS_DEFLATE": {
