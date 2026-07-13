@@ -101,6 +101,19 @@ The one idea worth taking away: every HTTP version (1.1, 2, 3) is decoded into t
 
 <!-- END GENERATED API FLOW -->
 
+## Performance
+
+Benchmarked head-to-head against **[ESPAsyncWebServer 3.11.2](https://github.com/ESP32Async/ESPAsyncWebServer)** (the maintained me-no-dev successor) on an **ESP32-S3** - identical minimal server sketches, same board / core / `-Os`, only the library differs:
+
+| Workload                          | This library         | ESPAsyncWebServer   | Ratio    |
+| --------------------------------- | -------------------- | ------------------- | -------- |
+| Small GET, keep-alive (1 conn)    | **277 req/s**        | 110 req/s           | **2.5x** |
+| Small GET, 4 concurrent conns     | **536 req/s**        | 157 req/s           | **3.4x** |
+| Small GET latency under load (c4) | flat ~7 ms           | ~20 ms              | -        |
+| Heap while serving                | **0** (static pools) | per-connection heap | -        |
+
+The edge is **HTTP keep-alive** (persistent connections, on by default - ESPAsyncWebServer closes after every request) and **bounded, zero-heap concurrency**. Honestly: single-request RTT and large-file throughput are network-bound and roughly equal between the two - the difference is connection reuse and concurrency handling, not per-request compute. Full methodology, caveats, and a reproducible harness live in **[benchmarks/](benchmarks/)**.
+
 ## Features
 
 **Grouped by the OSI layer each feature lives at, alphabetized within each layer. Hover any entry for a one-line summary; full descriptions live in [docs/FEATURES.md](docs/FEATURES.md).** Each is an optional `DETWS_ENABLE_*` flag unless it is core (HTTP/1.1, routing, middleware, JSON, templating, chunked responses are always on). The tables are generated from `docs/FEATURES.md` by `docs/utilities/gen_feature_tables.py`, so they never drift.
