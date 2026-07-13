@@ -55,76 +55,53 @@ static constexpr uint32_t HASH_HTTP10 = fnv1a("HTTP/1.0");
 static constexpr uint32_t HASH_HTTP11 = fnv1a("HTTP/1.1");
 
 // ---------------------------------------------------------------------------
-// RFC 7230 character-class helpers
+// RFC 7230 character-class table (hot path)
 // ---------------------------------------------------------------------------
+//
+// The per-byte parser classifies every request byte, so the three character
+// classes below are folded into one 256-entry table built at compile time (it
+// lands in flash .rodata). A hot-path check is then a single table load + a mask
+// bit, instead of the range compares + 15-case switch it replaces:
+//   0x01 tchar       - method + header field-name (RFC 7230 §3.2.6)
+//   0x02 vchar       - request-target path/query bytes (RFC 5234 VCHAR = %x21-7E)
+//   0x04 field-value - header field-value bytes (RFC 7230 §3.2: VCHAR/SP/HTAB/obs-text)
 
-/**
- * @brief True for bytes that are valid HTTP "token" characters (RFC 7230 §3.2.6).
- *
- * token = 1*tchar
- * tchar = ALPHA / DIGIT / "!" / "#" / "$" / "%" / "&" / "'" /
- *         "*" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
- *
- * Used to validate method bytes and header field-name bytes.
- */
+static constexpr uint8_t CC_TCHAR = 0x01;
+static constexpr uint8_t CC_VCHAR = 0x02;
+static constexpr uint8_t CC_FIELD_VALUE = 0x04;
+
+// The 256-entry class table, one const byte per input octet (lands in flash .rodata). A plain literal so it is
+// standard-independent (the arduino-esp32 build is gnu++11, where a constexpr loop-built table is ill-formed).
+// Each entry ORs the classes that octet belongs to; regenerate via tools if the character classes ever change:
+//   tchar = ALPHA/DIGIT/"!#$%&'*+-.^_`|~"  vchar = %x21-7E  field-value = HTAB/%x20-7E/obs-text(%x80-FF)
+static const uint8_t kCharClass[256] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x07, 0x06, 0x07, 0x07, 0x07,
+    0x07, 0x07, 0x06, 0x06, 0x07, 0x07, 0x06, 0x07, 0x07, 0x06, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07,
+    0x07, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07,
+    0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x06, 0x06, 0x06, 0x07,
+    0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07,
+    0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x06, 0x07, 0x06, 0x07, 0x00, 0x04, 0x04, 0x04, 0x04, 0x04,
+    0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
+    0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
+    0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
+    0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
+    0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
+    0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
+    0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
+};
+
 static inline bool is_tchar(uint8_t b)
 {
-    if (b >= 'A' && b <= 'Z')
-        return true;
-    if (b >= 'a' && b <= 'z')
-        return true;
-    if (b >= '0' && b <= '9')
-        return true;
-    switch (b)
-    {
-    case '!':
-    case '#':
-    case '$':
-    case '%':
-    case '&':
-    case '\'':
-    case '*':
-    case '+':
-    case '-':
-    case '.':
-    case '^':
-    case '_':
-    case '`':
-    case '|':
-    case '~':
-        return true;
-    default:
-        return false;
-    }
+    return (kCharClass[b] & CC_TCHAR) != 0;
 }
-
-/**
- * @brief True for visible ASCII characters (RFC 5234 VCHAR = %x21-7E).
- *
- * Used to validate request-target (path, query) bytes.  Excludes NUL,
- * control characters, SP (which is the request-line field delimiter),
- * and DEL (0x7F).
- */
 static inline bool is_vchar(uint8_t b)
 {
-    return b >= 0x21 && b <= 0x7E;
+    return (kCharClass[b] & CC_VCHAR) != 0;
 }
-
-/**
- * @brief True for bytes permitted in an HTTP header field-value (RFC 7230 §3.2).
- *
- * field-value = *( field-vchar / SP / HTAB )
- * field-vchar = VCHAR / obs-text (%x80-FF)
- *
- * Excludes all control characters (%x00-08, %x0A-1F, %x7F).
- * SP (0x20) and HTAB (0x09) are allowed as internal whitespace.
- * obs-text (%x80-FF) is kept for legacy compatibility.
- */
 static inline bool is_field_value_char(uint8_t b)
 {
-    return b == 0x09                   // HTAB
-           || (b >= 0x20 && b <= 0x7E) // SP through '~', no DEL
-           || b >= 0x80;               // obs-text
+    return (kCharClass[b] & CC_FIELD_VALUE) != 0;
 }
 
 /**
@@ -187,18 +164,8 @@ void http_parser_reset(HttpReq *req)
 
 void http_parser_feed(HttpReq *p, uint8_t byte)
 {
-    // Terminal states - do nothing
-    switch (p->parse_state)
-    {
-    case ParseState::PARSE_COMPLETE:
-    case ParseState::PARSE_ERROR:
-    case ParseState::PARSE_ENTITY_TOO_LARGE:
-    case ParseState::PARSE_URI_TOO_LONG:
-        return;
-    default:
-        break;
-    }
-
+    // Terminal states (PARSE_COMPLETE / PARSE_ERROR / PARSE_ENTITY_TOO_LARGE / PARSE_URI_TOO_LONG) have no case
+    // below, so they fall through to `default:` and no-op - no separate guard switch on the per-byte hot path.
     char c = (char)byte;
 
     switch (p->parse_state)

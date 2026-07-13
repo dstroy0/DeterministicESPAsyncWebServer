@@ -730,25 +730,32 @@ request is ~220 bytes over 6 headers, the POST is ~150 bytes with a 50-byte JSON
 
 | Feature    | Operation              | Host ns/op | Host MB/s | ESP32-S3 us/op | ESP32-S3 MB/s |
 | ---------- | ---------------------- | ---------: | --------: | -------------: | ------------: |
-| http_parse | GET (6 headers)        |     1819.6 |     122.6 |         84.969 |           2.6 |
-| http_parse | POST + JSON body       |     1110.1 |     138.7 |         56.076 |           2.7 |
+| http_parse | GET (6 headers)        |     1692.0 |     131.8 |         83.304 |           2.7 |
+| http_parse | POST + JSON body       |     1104.0 |     139.5 |         54.620 |           2.8 |
 | json       | encode (8 fields, 96B) |      675.6 |     142.1 |         49.693 |           1.9 |
 | json       | decode (4 fields)      |      263.6 |     189.7 |         19.765 |           2.5 |
 
+The GET/POST device figures are direct CCOUNT reads from the rig `/bench/reqparse` endpoint (reset + a full
+`http_parser_feed` of the request), at 240 MHz over in-RAM buffers.
+
 Notes:
 
-- **The whole request path is cheap next to the network.** On the device a full browser GET parses in
-  ~85 us, a POST with a JSON body in ~56 us, and a typical telemetry response object encodes in ~50 us. So
-  a complete parse -> build-JSON round trip is on the order of **~135 us of CPU** - the device can turn over
-  ~7000 simple JSON request/responses per second of pure compute, far more than a 1-2-client embedded server
-  ever needs. Real request latency is dominated by the TCP round trip and (when enabled) the TLS handshake,
-  not by parsing or JSON. **No optimization was warranted here** (unlike the base64 and CRC findings in
-  sections 2 and 4), which is itself the useful result: the request path is not the bottleneck.
+- **Char-class table optimization (2026-07-12).** The per-byte parser classifies every request octet
+  (method/field-name `tchar`, path/query `vchar`, header-value bytes). Folding the three branch-heavy
+  classifiers into one 256-entry const table (flash `.rodata`, one load + a mask bit) and dropping a redundant
+  terminal-state guard switch cut the parser measurably - **device `http_parser_feed` -9.7% on the GET
+  (21146 -> 19088 cyc, ~94.8 -> ~85.6 cyc/byte) and -9.1% on the POST**, host `-O2` GET -12% - with the
+  parser's 93 unit tests unchanged. So the request path _was_ worth an optimization after all (the earlier
+  "not warranted" note predated a direct CCOUNT measurement of the feed loop).
+- **`http_parser_reset` is the cheap part.** Zeroing the whole `HttpReq` (2624 bytes) once per request costs
+  **905 cyc / ~3.8 us** on the device - only ~4% of a GET. The dominant per-request core cost is `feed()`, not
+  the reset, so the reset's simple full-struct clear (no stale-data risk) is kept.
 - **The parser is byte-at-a-time by design.** `http_parser_feed()` is a pure per-byte state machine with no
-  look-ahead or buffering, so its cost scales with request length (~0.4 us/byte on the device) and it can
+  look-ahead or buffering, so its cost scales with request length (~0.36 us/byte on the device) and it can
   consume bytes exactly as they arrive off the socket - the parse overlaps the network read instead of
   waiting for a whole request. That streaming design is why a ~220-byte GET costs more than a ~150-byte POST
-  here even though the POST carries a body.
+  here even though the POST carries a body. Real request latency is still dominated by the TCP round trip and
+  (when enabled) the TLS handshake, not by parsing.
 - **JSON throughput is ample.** The zero-heap writer emits a 96-byte object in ~50 us (~1.9 MB/s) and each
   top-level field read re-scans the body (~5 us/field on the device); four reads over a 50-byte body is
   ~20 us. Re-scanning per field is O(n) in the body, so for a large body with many reads a single parse pass
