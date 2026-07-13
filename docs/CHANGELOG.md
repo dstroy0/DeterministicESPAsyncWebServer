@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.100.3] - 2026-07-13
+
+<details>
+<summary><b>Show Changelog for version 5.100.3 - 2026-07-13</b></summary>
+
+### Bug Fixes
+
+- clear S2259 null-deref FP; branch-coverage + Ethernet failure hardening ([`63f550b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/63f550b342b39e9e60f470265e8e6247b0817359))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`00e2144`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/00e2144dae877d9af80999be9c757c7ad109e4b0))
+
+### Changes
+
+- Bump version: 5.100.2 → 5.100.3 ([`e860d49`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e860d4951ec448aaeb289698432ac0a7af5804cf))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`77d4512`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/77d451255d760279063e9e9c1b919c92b9cba5af))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b3a1071`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b3a10719a7b3587008c6dac7e6178003c6350808))
+
+</details>
+
 ## [5.100.2] - 2026-07-13
 
 <details>
