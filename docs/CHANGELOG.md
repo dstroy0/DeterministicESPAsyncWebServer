@@ -10,11 +10,17 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`500ca94`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/500ca94024aff734b96ea711b7a3ce27ff91beec))
 - update CHANGELOG.md [skip ci] ([`bad0a08`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bad0a08d00c260cb73740b9587bf25140f8ff1cb))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`aeee8da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aeee8da1b9f1636b858488053f8ab9095188029b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ab7d87c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab7d87c3ad4297727c886cb37846838eaf926ee6))
+
+### Testing
+
+- device-as-server IEEE 2030.5 interop vs a spec consumer (18/18 HW) ([`2ea07e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ea07e3c262e0f0d979feb289857076f6539a94b))
 
 ## [5.99.0] - 2026-07-13
 
