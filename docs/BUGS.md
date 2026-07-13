@@ -8,6 +8,34 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## W5500: large transfers crash / truncate - marginal SPI signal integrity, NOT a library defect
+
+- **Status:** NOT A LIBRARY BUG (hardware; 2026-07-13). Root-caused by JTAG + an SPI-clock sweep, resolved by
+  clean wiring + a conservative clock. Logged so it is not re-chased as a software bug.
+- **Symptom:** on an ESP32-S3 + W5500 (breadboard jumpers), a large streamed download (`send_chunked`) crashed
+  the board mid-transfer; curl saw a connection reset (`rc=56`). Small requests succeeded.
+- **Investigation:** a JTAG break-in under load caught a **TLSF heap-corruption panic**
+  (`assert block_is_free ... "block must be free"`) inside `emac_w5500_task -> esp_pbuf_allocate -> mem_malloc`
+    - the W5500 driver's RX path, entirely upstream, with **zero library frames**. The corrupt tlsf was in PSRAM.
+      Initial hypotheses (our send path flooding lwIP; pbufs spilling to a PSRAM heap) were **disproved** by
+      instrumenting the live heap: across clean 50 MB and 200 MB transfers the internal heap never drained, **PSRAM
+      was never allocated from** (`psram_free` flat), and `heap_caps_check_integrity_all` stayed OK. Our
+      `chunk_send_pump` already honors `tcp_sndbuf` backpressure and is zero-heap.
+- **Root cause:** marginal **SPI signal integrity**. After the W5500 was rewired in isolation (off shared
+  breadboard rails / USB3 noise), the same firmware streamed **200 MB byte-exact** with a flat heap. An SPI-clock
+  sweep then reproduced the failure **on demand**: clean to ~24 MHz sustained, truncation at 40-60 MHz, and at
+  80 MHz the W5500 chip-ID read back `0x82` instead of `0x04` - a corrupted SPI read. A corrupted frame length
+  from a bad SPI read makes the driver over-copy into a pbuf, which is what corrupts the heap. So the "crash" was
+  a downstream symptom of bad wiring, not a code defect.
+- **Fix / mitigation:** added `DETWS_ETH_W5500_SPI_MHZ` (default 20, the safe/upstream value proven at 200 MB) so
+  the clock can be tuned to the wiring; documented the SPI-bound throughput curve and the signal-integrity ceiling
+  in FEATURE_PERFORMANCE.md / HARDWARE_HOOKUP.md. No library code was at fault.
+- **Lesson:** an upstream-only backtrace plus a **flat heap under load** points at hardware, not the library; the
+  cheapest confirmation was an SPI-clock sweep that turned an intermittent crash into a monotonic, explainable
+  signal-integrity curve. Overclocking a bus to force the failure beats guessing at a software cause.
+
+---
+
 ## Transport: a large streamed response (chunked / file) truncates mid-transfer - the idle sweep reaps an actively-sending connection
 
 - **Status:** FIXED (library, 2026-07-13; found by a 1 GB download benchmark against ESP32Async/ESPAsyncWebServer

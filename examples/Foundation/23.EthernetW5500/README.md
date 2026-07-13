@@ -36,6 +36,17 @@ The pins come from the `DETWS_ETH_W5500_*` build flags in [build_opt.h](build_op
 Plus `VCC 3V3` and `GND`. Set the flags for your own wiring; see the
 [hardware hookup guide](../../../docs/HARDWARE_HOOKUP.md) for the full pinout.
 
+## SPI clock and throughput
+
+`DETWS_ETH_W5500_SPI_MHZ` sets the SPI clock (default `20`). Throughput is **SPI-bound, not
+PHY-bound**: measured on an ESP32-S3 it is ~7.2 Mbit/s at 20 MHz and ~8.2 Mbit/s at 24 MHz,
+plateauing near the W5500's internal ~8.3 Mbit/s ceiling around 30 MHz. Higher clocks need clean,
+short wiring - on breadboard jumpers, sustained transfers stay reliable to ~24 MHz and the SPI reads
+corrupt above ~33 MHz. Keep the default unless the W5500 is on a short, clean PCB trace. A 200 MB
+download completes byte-exact at the 20 MHz default. For near-100-Mbit speed use an RMII PHY
+(LAN8720, [19.Ethernet](../19.Ethernet)) - the W5500 trades speed for needing no built-in MAC. See
+[FEATURE_PERFORMANCE.md](../../../docs/FEATURE_PERFORMANCE.md) for the full clock-vs-throughput sweep.
+
 ## Core requirement
 
 W5500 SPI Ethernet is **arduino-esp32 3.x only** - the 2.x ETH library has no W5500 support

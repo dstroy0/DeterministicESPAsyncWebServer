@@ -9,9 +9,12 @@ lift some of these is tracked in [ROADMAP.md](ROADMAP.md).
 
 - **ESP32 only.** No ESP8266 / RP2040 / RP2350 port - the HW crypto, NVS, and
   lwIP raw-API integration are ESP32-specific. Host builds exist only for tests.
-- **Interfaces.** Wi-Fi STA/AP and, with `DETWS_ENABLE_ETHERNET`, a wired RMII Ethernet
-  PHY (`init_eth_physical()`; the PHY bring-up needs the hardware). Dual-stack IPv6 is
-  opt-in via `DETWS_ENABLE_IPV6` (SLAAC; the listeners bind `IPADDR_TYPE_ANY`), off by default.
+- **Interfaces.** Wi-Fi STA/AP and, with `DETWS_ENABLE_ETHERNET`, a wired Ethernet PHY
+  (`init_eth_physical()`; the PHY bring-up needs the hardware) - either an RMII part (LAN8720,
+  needs a built-in MAC) or a W5500 over SPI (`DETWS_ETH_W5500`, HW-verified on the S3, which has
+  no RMII MAC). W5500 throughput is SPI-bound (~7-8 Mbit/s, not the 100 Mbit PHY line rate; see
+  FEATURE_PERFORMANCE). Dual-stack IPv6 is opt-in via `DETWS_ENABLE_IPV6` (SLAAC; the listeners
+  bind `IPADDR_TYPE_ANY`), off by default.
 
 ## HTTP core
 

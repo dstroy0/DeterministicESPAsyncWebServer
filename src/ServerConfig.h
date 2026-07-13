@@ -654,6 +654,12 @@
 #ifndef DETWS_ETH_W5500_MOSI
 #define DETWS_ETH_W5500_MOSI 11 ///< HSPI MOSI (S3-DevKitC default)
 #endif
+// W5500 SPI clock in MHz. The W5500 datasheet allows up to 33.3 MHz; 20 is the arduino-esp32 default and
+// a safe value for breadboard jumper wiring. Higher clocks raise throughput (the link is SPI-bound, not
+// PHY-bound) but need clean, short wiring - marginal signal integrity at high MHz corrupts frames.
+#ifndef DETWS_ETH_W5500_SPI_MHZ
+#define DETWS_ETH_W5500_SPI_MHZ 20 ///< W5500 SPI clock (MHz); raise for throughput on clean wiring
+#endif
 
 /**
  * @brief Enable IPv6 on the network interface (dual-stack). Default off.

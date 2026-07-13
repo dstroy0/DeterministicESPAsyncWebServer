@@ -40,7 +40,8 @@ bool init_eth_physical(void)
     // DETWS_ETH_W5500_* pins (CS/INT/RST + SCK/MISO/MOSI). Needs CONFIG_ETH_SPI_ETHERNET_W5500 in the SDK
     // (default on for the S3). W5500 SPI is arduino-esp32 3.x only - the 2.x ETH library has no W5500.
     return ETH.begin(ETH_PHY_W5500, 1 /*phy addr*/, DETWS_ETH_W5500_CS, DETWS_ETH_W5500_INT, DETWS_ETH_W5500_RST,
-                     SPI3_HOST, DETWS_ETH_W5500_SCK, DETWS_ETH_W5500_MISO, DETWS_ETH_W5500_MOSI);
+                     SPI3_HOST, DETWS_ETH_W5500_SCK, DETWS_ETH_W5500_MISO, DETWS_ETH_W5500_MOSI,
+                     DETWS_ETH_W5500_SPI_MHZ);
 #else
     // RMII PHY: pins / type / clock come from the ETH_PHY_* build flags (ETH.begin() defaults).
     return ETH.begin();

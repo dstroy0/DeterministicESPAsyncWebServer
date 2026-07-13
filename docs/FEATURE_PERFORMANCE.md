@@ -1075,3 +1075,49 @@ trailer.
 **Practicality:** DNC programs are small (KB) and the controller's input buffer is tiny, so the design
 point is **correct framing + flow control**, not throughput - a fast sender just overruns the machine. The
 XON/XOFF pause path is the feature; the byte-exact framing is what keeps the controller from faulting.
+
+### W5500 SPI Ethernet throughput (DETWS_ETH_W5500)
+
+Wired Ethernet over a W5500 SPI PHY (arduino-esp32 3.x `esp_eth`). A large body is streamed with
+`send_chunked` (constant memory, one `tcp_write` per chunk within the send window). **Throughput is
+SPI-bound, not PHY-bound**: the W5500's 100 Mbit PHY is fed over SPI, and the per-frame register protocol
+(read RX size -> read socket buffer -> advance pointer -> RECV command) plus small on-chip socket buffers
+cap real throughput near ~8 Mbit/s regardless of the 100 Mbit line.
+
+> Measured 2026-07-13 on the COM4 **ESP32-S3** (W5500 on HSPI/SPI3: SCK=12, MISO=13, MOSI=11, CS=7,
+> RST=6, INT=5), breadboard jumper wiring. `curl` GET of a `send_chunked` body; heap integrity
+> (`heap_caps_check_integrity_all`) checked once per second throughout - it stayed intact on every run,
+> including the truncated ones (the failures are SPI signal-integrity connection resets, not heap crashes).
+
+#### Throughput vs SPI clock (10 MB GET burst)
+
+| SPI clock | Mbit/s |  MB/s | Result                           |
+| --------- | -----: | ----: | -------------------------------- |
+| 8 MHz     |    4.7 | 0.588 | clean                            |
+| 12 MHz    |    5.9 | 0.736 | clean                            |
+| 16 MHz    |    7.0 | 0.877 | clean                            |
+| 20 MHz    |    7.2 | 0.902 | clean (default)                  |
+| 24 MHz    |    8.2 | 1.025 | clean                            |
+| 30 MHz    |    8.3 | 1.037 | clean (burst); truncates > 15 MB |
+| 33 MHz    |    8.2 | 1.021 | clean (burst)                    |
+| 40 MHz    |      - |     - | truncated (SI, exit 56)          |
+| 60 MHz    |      - |     - | truncated (SI, exit 56)          |
+| 80 MHz    |      - |     - | link down (chip ID mis-read)     |
+
+**Throughput scales with the clock to ~24 MHz, then plateaus at the W5500's internal ~8.3 Mbit/s ceiling
+around 30 MHz** - faster SPI buys no more throughput, only less margin. `DETWS_ETH_W5500_SPI_MHZ` sets the
+clock (default 20).
+
+#### Sustained reliability (longer streams need more margin than bursts)
+
+| SPI clock | Test   | Result                       | Mbit/s |
+| --------- | ------ | ---------------------------- | -----: |
+| 20 MHz    | 200 MB | clean, byte-exact, flat heap |    7.0 |
+| 24 MHz    | 50 MB  | clean                        |    8.2 |
+| 30 MHz    | 50 MB  | truncated at ~15 MB (SI)     |      - |
+
+**Practicality:** wired Ethernet removes the Wi-Fi RTT, so it is the transport for **large, reliable
+transfers** (firmware images, data logs, file serving). On clean/short PCB wiring the reliable-sustained
+clock is higher; on breadboard jumpers keep it at the 20 MHz default (proven at 200 MB) or 24 MHz for
+~14% more. For near-100-Mbit speed use an **RMII PHY (LAN8720)** instead - the W5500 trades speed for
+needing no built-in MAC (works on the S3 / C3, which have none).

@@ -502,9 +502,22 @@ the ESP32's built-in Wi-Fi supplies the link.
   device needs a reachable IP address; many PLCs ship with a fixed default IP you
   set with the vendor's tool.
 - **Wired Ethernet (advanced):** for a hard-wired link, add an external Ethernet
-  PHY (an RMII part such as the LAN8720, or an SPI part such as the W5500). Wired
-  Ethernet is a roadmap item and is **not** hardware-verified in this library yet;
-  Wi-Fi is the supported transport today.
+  PHY (an RMII part such as the LAN8720, or an SPI part such as the W5500). The
+  **W5500 SPI path is hardware-verified** on an ESP32-S3 (arduino-esp32 3.x): a
+  200 MB streamed download completes byte-exact with a flat heap. Wired Ethernet
+  removes the Wi-Fi RTT, so it suits large transfers; Wi-Fi remains the default.
+    - **Throughput is SPI-bound, not PHY-bound.** The W5500's 100 Mbit PHY is fed
+      over SPI, and the per-frame register protocol caps real throughput well below
+      line rate. Measured on an ESP32-S3 (`send_chunked`, breadboard wiring):
+      ~7.2 Mbit/s at the default 20 MHz SPI clock, ~8.2 Mbit/s at 24 MHz, plateauing
+      near the W5500's internal ~8.3 Mbit/s ceiling around 30 MHz. For near-100-Mbit
+      speed use an RMII PHY (LAN8720) instead.
+    - **SPI clock and signal integrity.** `DETWS_ETH_W5500_SPI_MHZ` sets the SPI
+      clock (default 20; the W5500 allows up to 33.3 MHz). Higher clocks need clean,
+      short wiring: on breadboard jumpers, sustained transfers stay reliable to about
+      24 MHz, and above ~33 MHz the SPI reads corrupt (a mis-read chip ID or truncated
+      transfers) - keep the clock conservative unless the W5500 is on a short, clean
+      PCB trace.
 - **Ports and firewalls:** open the protocol's TCP/UDP port (table above) between
   the ESP32 and the device. On a flat factory LAN this is automatic; across
   routers you may need a firewall rule.
