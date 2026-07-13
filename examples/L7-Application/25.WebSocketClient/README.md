@@ -37,9 +37,13 @@ endpoint, build with only `-DDETWS_ENABLE_WS_CLIENT=1`, set `USE_TLS=false`, and
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_WS_CLIENT=1 -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_WS_CLIENT_TLS=1" \
+  --project-option="build_flags=-DDETWS_ENABLE_WS_CLIENT=1 -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_WS_CLIENT_TLS=1 -DDETWS_WS_CLIENT_BUF_SIZE=768" \
   --lib="." examples/L7-Application/25.WebSocketClient/25.WebSocketClient.ino
 ```
+
+`DETWS_WS_CLIENT_BUF_SIZE=768` trims the four outbound-WS buffers from the 1 KB default so the
+`wss://` stack (TLS arena + WS client) fits the classic ESP32's DRAM; 768 B is ample for this demo's
+small text messages. Boards with more DRAM (ESP32-S3) can keep the default.
 
 Flash and watch Serial @ 115200: the echo server returns each message the device
 sends.
