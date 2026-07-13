@@ -3029,11 +3029,11 @@ A thorough directory of all **2909 test cases** across **244 suites**. Expand a 
 <summary><b>test_chunked (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_chunked_source_overreport_clamped</b> &mdash; <i>256 (0x100) bytes framed, then the terminator - the +100 over-report is dropped.</i></summary>
+    <summary><b>test_chunked_source_overreport_clamped</b> &mdash; <i>CHUNK_BUF_SIZE bytes framed, then the terminator - the over-report is dropped.</i></summary>
 
-    * **Objective**: 256 (0x100) bytes framed, then the terminator - the +100 over-report is dropped.
+    * **Objective**: CHUNK_BUF_SIZE bytes framed, then the terminator - the over-report is dropped.
     * **Assertions**:
-      * <code>Assert not null (strstr(r, "100\\r\\n"))</code>
+      * <code>Assert not null (strstr(r, expect_sz))</code>
       * <code>Assert not null (strstr(r, "0\\r\\n\\r\\n"))</code>
       * <code>Assert equal int (CHUNK_BUF_SIZE, g_log_len)</code>
   </details>

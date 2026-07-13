@@ -887,7 +887,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `INA219` | `L7-Application/67.Ina219` | 287,001 | 21,800 |
 | `MPR121` | `L7-Application/63.Mpr121` | 287,609 | 21,800 |
 | `PN532+GATEWAY` | `Foundation/14.NfcGateway` | 288,129 | 21,920 |
-| `core/20.EthernetW5500` | `Foundation/20.EthernetW5500` | 469,193 | 57,880 |
+| `core/20.EthernetW5500` | `Foundation/20.EthernetW5500` | 469,513 | 73,672 |
 | `DNS_SERVER` | `L7-Application/60.DnsServer` | 725,677 | 45,976 |
 | `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD` | `L7-Application/28.CoapBlock` | 727,553 | 48,352 |
 | `UDP_TELEMETRY` | `L7-Application/39.UdpTelemetry` | 727,913 | 44,944 |
@@ -901,83 +901,83 @@ Feature Tables workflow from `docs/footprints.json`.
 | `MQTT` | `L7-Application/24.MqttClient` | 736,117 | 65,320 |
 | `SMB` | `L7-Application/68.SmbFileClient` | 742,341 | 65,208 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/58.NtpServer` | 748,069 | 46,668 |
-| `ACCEPT_THROTTLE` | `L4-Transport/02.AcceptThrottle` | 751,557 | 65,984 |
-| `core/02.CORS` | `L7-Application/02.CORS` | 751,701 | 65,976 |
-| `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 751,777 | 65,976 |
-| `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 751,781 | 65,976 |
-| `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 751,917 | 65,976 |
-| `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 752,041 | 65,976 |
-| `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 752,093 | 66,424 |
-| `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 752,137 | 66,016 |
-| `core/05.PathParams` | `L7-Application/05.PathParams` | 752,141 | 65,976 |
-| `core/09.WebSocket` | `L6-Presentation/09.WebSocket` | 752,165 | 65,976 |
-| `GUARDRAILS` | `L7-Application/40.Guardrails` | 752,277 | 65,992 |
-| `core/07.ResponseHeaders` | `L7-Application/07.ResponseHeaders` | 752,285 | 65,976 |
-| `core/04.Middleware` | `L7-Application/04.Middleware` | 752,361 | 65,984 |
-| `DIAG` | `L7-Application/20.Diagnostics` | 752,365 | 65,976 |
-| `KEEPALIVE` | `L4-Transport/01.KeepAlive` | 752,401 | 65,984 |
-| `core/08.ServerSentEvents` | `L6-Presentation/08.ServerSentEvents` | 752,421 | 65,984 |
-| `core/36.NetEgress` | `L7-Application/36.NetEgress` | 752,441 | 65,976 |
-| `PARTITION_MONITOR` | `L7-Application/37.PartitionMonitor` | 752,481 | 65,984 |
-| `core/01.ChunkedResponse` | `L7-Application/01.ChunkedResponse` | 752,497 | 65,992 |
-| `core/01.FormParams` | `L6-Presentation/01.FormParams` | 752,537 | 65,976 |
-| `OTA_ROLLBACK` | `L7-Application/44.OtaRollback` | 752,773 | 65,992 |
-| `AUTH_LOCKOUT` | `L6-Presentation/12.AuthLockout` | 752,781 | 66,552 |
-| `core/03.Multipart` | `L6-Presentation/03.Multipart` | 752,849 | 65,976 |
-| `TOTP` | `L7-Application/45.Totp` | 752,909 | 66,016 |
-| `IP_ALLOWLIST` | `L4-Transport/07.IpAllowlist` | 753,081 | 65,976 |
-| `CSRF` | `L7-Application/33.Csrf` | 753,161 | 66,032 |
-| `LOGBUF` | `L7-Application/41.LogBuffer` | 753,241 | 69,104 |
-| `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 753,345 | 65,976 |
-| `MODBUS` | `L7-Application/30.ModbusTcp` | 753,493 | 66,264 |
-| `core/08.Templating` | `L7-Application/08.Templating` | 753,565 | 66,024 |
-| `STATS` | `L7-Application/22.Stats` | 753,609 | 66,080 |
-| `MODBUS+MODBUS_MASTER` | `L7-Application/43.ModbusScan` | 753,813 | 66,256 |
-| `core/01.Basic` | `Foundation/01.Basic` | 753,825 | 65,992 |
-| `JWT` | `L6-Presentation/06.JWTAuth` | 753,909 | 66,552 |
-| `TELNET` | `L5-Session/03.Telnet` | 753,985 | 66,520 |
-| `AUDIT_LOG` | `L7-Application/49.AuditLog` | 754,009 | 68,968 |
-| `CBOR` | `L6-Presentation/13.Cbor` | 754,077 | 66,056 |
-| `IPV6` | `Foundation/20.IPv6` | 754,201 | 65,976 |
-| `core/03.Expert` | `Foundation/03.Expert` | 754,457 | 66,000 |
-| `SYSLOG` | `L7-Application/19.Syslog` | 755,133 | 67,840 |
-| `MSGPACK` | `L6-Presentation/14.MsgPack` | 755,357 | 66,056 |
-| `STATS+METRICS` | `L7-Application/21.PrometheusMetrics` | 755,757 | 66,120 |
-| `core/02.Json` | `L6-Presentation/02.Json` | 755,829 | 65,984 |
-| `GPIO_MAP` | `L7-Application/38.GpioMap` | 756,025 | 66,040 |
-| `WS_DEFLATE` | `L6-Presentation/11.WebSocketCompression` | 756,433 | 74,192 |
-| `WEB_TERMINAL` | `L6-Presentation/10.WebTerminal` | 756,485 | 66,064 |
-| `GRAPHQL` | `L7-Application/52.GraphQL` | 756,661 | 70,392 |
-| `CONFIG_STORE+CONFIG_IO` | `L7-Application/42.ConfigExport` | 756,701 | 66,044 |
+| `ACCEPT_THROTTLE` | `L4-Transport/02.AcceptThrottle` | 751,873 | 81,776 |
+| `core/02.CORS` | `L7-Application/02.CORS` | 752,037 | 81,768 |
+| `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 752,113 | 81,768 |
+| `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 752,113 | 81,768 |
+| `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 752,229 | 81,768 |
+| `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 752,353 | 81,768 |
+| `KEEPALIVE` | `L4-Transport/01.KeepAlive` | 752,397 | 81,768 |
+| `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 752,405 | 82,216 |
+| `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 752,465 | 81,808 |
+| `core/05.PathParams` | `L7-Application/05.PathParams` | 752,473 | 81,768 |
+| `core/09.WebSocket` | `L6-Presentation/09.WebSocket` | 752,497 | 81,768 |
+| `GUARDRAILS` | `L7-Application/40.Guardrails` | 752,585 | 81,784 |
+| `core/07.ResponseHeaders` | `L7-Application/07.ResponseHeaders` | 752,605 | 81,768 |
+| `core/04.Middleware` | `L7-Application/04.Middleware` | 752,697 | 81,776 |
+| `core/08.ServerSentEvents` | `L6-Presentation/08.ServerSentEvents` | 752,705 | 81,776 |
+| `DIAG` | `L7-Application/20.Diagnostics` | 752,713 | 81,768 |
+| `core/36.NetEgress` | `L7-Application/36.NetEgress` | 752,765 | 81,768 |
+| `PARTITION_MONITOR` | `L7-Application/37.PartitionMonitor` | 752,769 | 81,776 |
+| `core/01.ChunkedResponse` | `L7-Application/01.ChunkedResponse` | 752,797 | 81,784 |
+| `core/01.FormParams` | `L6-Presentation/01.FormParams` | 752,865 | 81,768 |
+| `AUTH_LOCKOUT` | `L6-Presentation/12.AuthLockout` | 753,101 | 82,344 |
+| `OTA_ROLLBACK` | `L7-Application/44.OtaRollback` | 753,105 | 81,784 |
+| `core/03.Multipart` | `L6-Presentation/03.Multipart` | 753,177 | 81,768 |
+| `TOTP` | `L7-Application/45.Totp` | 753,221 | 81,808 |
+| `IP_ALLOWLIST` | `L4-Transport/07.IpAllowlist` | 753,413 | 81,768 |
+| `CSRF` | `L7-Application/33.Csrf` | 753,501 | 81,824 |
+| `LOGBUF` | `L7-Application/41.LogBuffer` | 753,541 | 84,896 |
+| `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 753,665 | 81,768 |
+| `MODBUS` | `L7-Application/30.ModbusTcp` | 753,801 | 82,056 |
+| `core/08.Templating` | `L7-Application/08.Templating` | 753,881 | 81,816 |
+| `STATS` | `L7-Application/22.Stats` | 753,941 | 81,872 |
+| `core/01.Basic` | `Foundation/01.Basic` | 754,125 | 81,784 |
+| `MODBUS+MODBUS_MASTER` | `L7-Application/43.ModbusScan` | 754,137 | 82,048 |
+| `JWT` | `L6-Presentation/06.JWTAuth` | 754,225 | 82,920 |
+| `TELNET` | `L5-Session/03.Telnet` | 754,309 | 82,312 |
+| `AUDIT_LOG` | `L7-Application/49.AuditLog` | 754,337 | 84,760 |
+| `CBOR` | `L6-Presentation/13.Cbor` | 754,405 | 81,848 |
+| `IPV6` | `Foundation/20.IPv6` | 754,529 | 81,768 |
+| `core/03.Expert` | `Foundation/03.Expert` | 754,781 | 81,792 |
+| `SYSLOG` | `L7-Application/19.Syslog` | 755,445 | 83,632 |
+| `MSGPACK` | `L6-Presentation/14.MsgPack` | 755,701 | 81,848 |
+| `STATS+METRICS` | `L7-Application/21.PrometheusMetrics` | 756,089 | 81,912 |
+| `core/02.Json` | `L6-Presentation/02.Json` | 756,157 | 81,776 |
+| `GPIO_MAP` | `L7-Application/38.GpioMap` | 756,357 | 81,832 |
+| `WS_DEFLATE` | `L6-Presentation/11.WebSocketCompression` | 756,761 | 89,968 |
+| `WEB_TERMINAL` | `L6-Presentation/10.WebTerminal` | 756,809 | 81,856 |
+| `GRAPHQL` | `L7-Application/52.GraphQL` | 756,961 | 86,184 |
+| `CONFIG_STORE+CONFIG_IO` | `L7-Application/42.ConfigExport` | 757,013 | 81,836 |
 | `OTA` | `L7-Application/16.OTA` | 757,017 | 102,112 |
-| `COAP` | `L7-Application/13.CoAP` | 757,409 | 68,496 |
-| `DNS_RESOLVER` | `L7-Application/48.DnsResolver` | 757,701 | 67,264 |
-| `PROVISIONING` | `L7-Application/17.Provisioning` | 759,329 | 67,548 |
-| `OPCUA` | `L7-Application/55.OpcUa` | 759,685 | 76,264 |
-| `core/02.Advanced` | `Foundation/02.Advanced` | 760,469 | 66,088 |
-| `SNMP` | `L7-Application/14.SNMP` | 760,533 | 78,384 |
-| `TELEMETRY` | `L7-Application/34.Telemetry` | 760,585 | 66,300 |
-| `RELAY` | `L7-Application/70.PortForward` | 761,673 | 100,592 |
-| `HTTP_CLIENT+WEBHOOK` | `L7-Application/46.Webhook` | 762,273 | 85,736 |
-| `OAUTH2+HTTP_CLIENT` | `L7-Application/54.OAuth2` | 764,581 | 88,800 |
+| `COAP` | `L7-Application/13.CoAP` | 757,733 | 84,288 |
+| `DNS_RESOLVER` | `L7-Application/48.DnsResolver` | 758,025 | 83,056 |
+| `PROVISIONING` | `L7-Application/17.Provisioning` | 759,657 | 83,340 |
+| `OPCUA` | `L7-Application/55.OpcUa` | 760,017 | 92,056 |
+| `core/02.Advanced` | `Foundation/02.Advanced` | 760,797 | 81,880 |
+| `SNMP` | `L7-Application/14.SNMP` | 760,857 | 94,176 |
+| `TELEMETRY` | `L7-Application/34.Telemetry` | 760,897 | 82,092 |
+| `RELAY` | `L7-Application/70.PortForward` | 762,033 | 116,384 |
+| `HTTP_CLIENT+WEBHOOK` | `L7-Application/46.Webhook` | 762,581 | 101,528 |
 | `PROMISC+FORWARD+ETHERNET` | `Foundation/21.WifiCapture` | 764,637 | 47,520 |
-| `OIDC` | `L7-Application/50.OidcAuth` | 765,217 | 79,120 |
-| `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 765,689 | 65,992 |
+| `OAUTH2+HTTP_CLIENT` | `L7-Application/54.OAuth2` | 764,917 | 104,592 |
+| `OIDC` | `L7-Application/50.OidcAuth` | 765,517 | 99,824 |
+| `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 766,017 | 81,784 |
 | `RTC+TIME_SOURCE+NTP` | `L7-Application/61.Rtc` | 766,653 | 45,372 |
 | `BUS_CAPTURE+FORWARD+ETHERNET` | `Foundation/22.CanCapture` | 771,165 | 45,516 |
-| `DASHBOARD` | `L7-Application/35.Dashboard` | 772,509 | 66,352 |
-| `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 772,937 | 67,596 |
-| `MDNS` | `L7-Application/15.mDNS` | 777,197 | 67,880 |
-| `NTP` | `L7-Application/18.SNTP` | 777,453 | 68,528 |
-| `OPCUA+OPCUA_CLIENT` | `L7-Application/56.OpcUaClient` | 782,629 | 80,136 |
-| `ETHERNET` | `Foundation/19.Ethernet` | 790,373 | 66,028 |
-| `core/10.FileServing` | `L7-Application/10.FileServing` | 793,089 | 66,016 |
-| `UPLOAD` | `L7-Application/11.FileUpload` | 794,205 | 71,216 |
-| `RANGE` | `L7-Application/12.Range` | 794,321 | 66,016 |
-| `VFS` | `L7-Application/51.Vfs` | 795,301 | 70,504 |
+| `DASHBOARD` | `L7-Application/35.Dashboard` | 772,837 | 82,144 |
+| `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 773,249 | 83,388 |
+| `MDNS` | `L7-Application/15.mDNS` | 777,517 | 83,672 |
+| `NTP` | `L7-Application/18.SNTP` | 777,777 | 84,320 |
+| `OPCUA+OPCUA_CLIENT` | `L7-Application/56.OpcUaClient` | 782,965 | 95,928 |
+| `ETHERNET` | `Foundation/19.Ethernet` | 790,681 | 81,820 |
+| `core/10.FileServing` | `L7-Application/10.FileServing` | 793,417 | 81,808 |
+| `UPLOAD` | `L7-Application/11.FileUpload` | 794,525 | 91,120 |
+| `RANGE` | `L7-Application/12.Range` | 794,645 | 81,808 |
+| `VFS` | `L7-Application/51.Vfs` | 795,621 | 86,296 |
 | `WEBDAV` | `L7-Application/29.WebDav` | 821,069 | 105,352 |
-| `SSH` | `L5-Session/03.SSHHostKey` | 821,669 | 88,316 |
-| `ETAG` | `L7-Application/09.ETag` | 827,845 | 67,288 |
+| `SSH` | `L5-Session/03.SSHHostKey` | 821,989 | 108,220 |
+| `ETAG` | `L7-Application/09.ETag` | 828,161 | 83,080 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/25.WebSocketClient` | 831,745 | 123,620 |
 | `TLS` | `L6-Presentation/07.SecureWebSocket` | 855,873 | 122,020 |
@@ -1277,7 +1277,7 @@ guards at compile time.
 | :------- | :-----: | :---------- |
 | `BODY_BUF_SIZE` | `256` | Maximum request body bytes stored in `HttpReq::body`. |
 | `CACHE_CONTROL_BUF_SIZE` | `64` | Size of the optional Cache-Control header line stored in DetWebServer. |
-| `CHUNK_BUF_SIZE` | `256` | Per-chunk staging buffer for send_chunked()'s ChunkSource (max bytes a source produces per call, hence the largest single chunk on the wire). |
+| `CHUNK_BUF_SIZE` | `1440` | Per-chunk staging buffer for send_chunked()'s ChunkSource (max bytes a source produces per call, hence the largest single chunk on the wire). |
 | `CONN_TIMEOUT_MS` | `5000` | Compile-time default for connection idle timeout in milliseconds. |
 | `CORS_HDR_BUF_SIZE` | `192` | Size of the pre-built CORS header block stored in DetWebServer. |
 | `DETWS_ACCEPT_THROTTLE_MAX` | `20` | Max accepted connections per throttle window (see DETWS_ENABLE_ACCEPT_THROTTLE). |
@@ -1457,7 +1457,7 @@ guards at compile time.
 | `DETWS_ZWAVE_MAX_DATA` | `64` | Reject a Z-Wave frame whose declared length exceeds this data cap (sanity). |
 | `DIGEST_AUTH_HDR_MAX` | `384` | Capacity for the full `Authorization` header value (Digest auth). |
 | `EXTRA_HDR_BUF_SIZE` | `256` | Per-connection buffer for app-supplied custom response headers and cookies. |
-| `FILE_CHUNK_SIZE` | `512` | Bytes read from the filesystem and passed to tcp_write() per loop(). |
+| `FILE_CHUNK_SIZE` | `1024` | Bytes read from the filesystem and passed to tcp_write() per loop(). |
 | `JSON_MAX_DEPTH` | `8` | Maximum object/array nesting depth for the JsonWriter (see json.h). |
 | `MAX_AUTH_LEN` | `32` | Maximum username or password length for HTTP Basic Authentication. |
 | `MAX_BOUNDARY_LEN` | `72` | Maximum MIME boundary length (RFC 2046 allows up to 70 characters). |
