@@ -25,6 +25,9 @@
 #   wamp         -> none (device-as-client)              the wamp peer is stdlib - a spec WAMP-over-WebSocket
 #                   router (RFC 6455 handshake selecting wamp.2.json + broker/dealer) in a background thread -
 #                   no pip package (crossbar / autobahn are the production references)
+#   sep2         -> none (device-as-server)              the sep2 peer is stdlib - a spec IEEE 2030.5 consumer
+#                   (xml.etree) that walks the device's DeviceCapability -> EndDevice -> DERControl resources -
+#                   no pip package (the official sep.xsd / certified 2030.5 clients are the references)
 #   statsd       -> none (device-as-client)              the statsd peer is stdlib - a raw UDP collector + StatsD
 #                   line parser - and needs no pip package (Graphite/StatsD, Telegraf, Datadog are production peers)
 #   ssh          -> openssh-client + sshpass (device-as-server)   the ssh peer drives the reference OpenSSH

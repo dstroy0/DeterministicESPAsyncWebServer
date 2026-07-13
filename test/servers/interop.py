@@ -42,6 +42,7 @@ from peers import (
     ntp_peer,
     opcua_peer,
     redis_peer,
+    sep2_peer,
     smb_peer,
     smtp_peer,
     snmp_peer,
@@ -93,6 +94,7 @@ _MODULES = [
     sunspec_peer,
     xmpp_peer,
     wamp_peer,
+    sep2_peer,
 ]
 
 
