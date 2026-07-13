@@ -56,6 +56,9 @@ inline struct tcp_pcb *tcp_listen_with_backlog(struct tcp_pcb *p, uint8_t)
 inline void tcp_arg(struct tcp_pcb *, void *)
 {
 }
+inline void tcp_nagle_disable(struct tcp_pcb *)
+{
+}
 inline void tcp_accept(struct tcp_pcb *, tcp_accept_fn)
 {
 }

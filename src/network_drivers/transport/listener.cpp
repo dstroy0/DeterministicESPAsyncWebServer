@@ -430,6 +430,13 @@ static err_t listener_accept_cb(void *arg, struct tcp_pcb *newpcb, err_t err)
 
     tcp_arg(newpcb, slot);
 
+#if DETWS_TCP_NODELAY
+    // Latency-first: disable Nagle so the final sub-MSS segment of a response (or a streamed chunk) is not held
+    // waiting for the peer's ACK of the prior segment (a ~40-200 ms delayed-ACK stall). Runs in tcpip_thread
+    // (accept callback), so touching the pcb here is safe. See DETWS_TCP_NODELAY.
+    tcp_nagle_disable(newpcb);
+#endif
+
 #if DETWS_ENABLE_TLS
     // TLS listeners begin a handshake immediately; the session loop pumps it.
     slot->tls = lst->tls ? 1 : 0;

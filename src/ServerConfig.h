@@ -46,6 +46,19 @@
 #define MAX_CONNS 4
 #endif
 
+/**
+ * @brief Disable Nagle's algorithm (set TCP_NODELAY) on every accepted connection.
+ *
+ * A request/response server is latency-first: the response is buffered whole (`tcp_write`) and pushed with a
+ * single `tcp_output`, so Nagle only ever delays the final sub-MSS segment of a multi-segment response (or a
+ * streamed chunk) - it waits for the peer's ACK of the prior segment, costing a ~40-200 ms delayed-ACK stall
+ * for no bandwidth benefit here. Disabling it lets that tail go out immediately. Set to 0 only if the device
+ * mainly streams bulk data and you prefer Nagle's segment coalescing over per-response latency.
+ */
+#ifndef DETWS_TCP_NODELAY
+#define DETWS_TCP_NODELAY 1
+#endif
+
 /** @brief Ring-buffer capacity in bytes per connection slot. */
 #ifndef RX_BUF_SIZE
 #define RX_BUF_SIZE 1024
