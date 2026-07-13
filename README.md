@@ -211,7 +211,7 @@ The one idea worth taking away: every HTTP version (1.1, 2, 3) is decoded into t
 <tr>
   <td align="center"><a href="docs/FEATURES.md#accept-throttle" title="Opt-in global accept-rate throttle (connection-flood defense). Default off (zero cost / no behavior change). When set to 1 the accept callback rejects new connections once more than DETWS_ACCEPT_THROTTLE_MAX have been accepted within a DETWS_ACCEPT_THROTTLE_WINDOW_MS fixed window (global across all listeners, two static counters - no per-IP table). This bounds connection churn (e.g. reconnect brute-force) on top of the bounded connection pool and the per-connection auth limits. mitigate finer-grained / per-IP attacks at the network layer.">Accept Throttle</a></td>
   <td align="center"><a href="docs/FEATURES.md#ip-allowlist" title="Opt-in source-IP allowlist (accept-time firewall, keyed by source IPv4). Default off (zero cost / no behavior change). When set, the accept callback drops any connection whose source address does not match a configured CIDR rule (see listener_ip_allow_add()). An empty allowlist allows everything, so enabling the feature before adding rules never locks the device out. Rules live in a fixed BSS table of DETWS_IP_ALLOWLIST_SLOTS entries (no heap). This is a coarse first-line filter - a spoofed source address can still pass it - so combine it with the accept throttles and network-layer filtering.">IP Allowlist</a></td>
-  <td align="center"><a href="docs/FEATURES.md#keep-alive" title="HTTP/1.1 persistent connections (keep-alive). Default off (every response carries `Connection: close` and the connection is closed after one request - the long-standing behavior). When set to 1, a cleanly-parsed request is answered with `Connection: keep-alive` and the slot is recycled for the next request on the same socket: HTTP/1.1 keeps the connection open unless the client sends `Connection: close`; HTTP/1.0 closes unless the client sends `Connection: keep-alive`. Error responses (400/413/414 and any non-PARSE_COMPLETE path) always close, since the next request boundary is unknown. Idle keep-alive connections are still reclaimed by the existing conn_timeout sweep, and each connection serves at most DETWS_KEEPALIVE_MAX_REQUESTS requests before a deliberate close.">Keep-Alive</a></td>
+  <td align="center"><a href="docs/FEATURES.md#keep-alive" title="HTTP/1.1 persistent connections (keep-alive). Default on: a cleanly-parsed request is answered with `Connection: keep-alive` and the slot is recycled for the next request on the same socket: HTTP/1.1 keeps the connection open unless the client sends `Connection: close`; HTTP/1.0 closes unless the client sends `Connection: keep-alive`. Set `DETWS_ENABLE_KEEPALIVE=0` for the legacy behavior (every response carries `Connection: close` and the connection is closed after one request). The default connection pool is `MAX_CONNS=8` to give a persistent-connection workload headroom above its peak concurrency. Error responses (400/413/414 and any non-PARSE_COMPLETE path) always close, since the next request boundary is unknown. Idle keep-alive connections are still reclaimed by the existing conn_timeout sweep, and each connection serves at most DETWS_KEEPALIVE_MAX_REQUESTS requests before a deliberate close.">Keep-Alive</a></td>
   <td align="center"><a href="docs/FEATURES.md#mtls" title="Mutual TLS - require and verify a client certificate (mTLS). Default off. When set (requires TLS), the server can be given a trust-anchor CA via DetWebServer::tls_require_client_cert(): the TLS handshake then demands a client certificate chaining to that CA (MBEDTLS_SSL_VERIFY_REQUIRED) and aborts the connection if the client presents none or an untrusted one. The verified peer's subject DN is available to handlers via DetWebServer::tls_client_subject(). Strong transport-level client authentication with no passwords.">MTLS</a></td>
   <td align="center"><a href="docs/FEATURES.md#per-ip-throttle" title="Opt-in per-IP accept-rate throttle (connection-flood defense, keyed by source IPv4). Default off (zero cost / no behavior change). Complements the global accept throttle: the accept callback rejects a new connection once one source IPv4 address has opened more than DETWS_PER_IP_THROTTLE_MAX connections within a DETWS_PER_IP_THROTTLE_WINDOW_MS fixed window. A fixed BSS table of DETWS_PER_IP_THROTTLE_SLOTS buckets tracks the most-recently-seen source addresses; when a new address arrives and the table is full, an expired or least-recently-started bucket is reused, so memory stays bounded (no heap). This bounds reconnect/brute-force churn from a single host (the gap left by the global throttle, which cannot tell one noisy client from many). It is best-effort: an attacker spreading across many source addresses can still churn the bounded connection pool, so combine it with the global throttle and network-layer filtering.">Per IP Throttle</a></td>
 </tr>
@@ -498,41 +498,41 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | Core  | `FORWARD`       |            17.9 KB |         < 0.5 KB |
 | Core  | `PROMISC`       |            11.5 KB |         < 0.5 KB |
 | Core  | `IPV6`          |             1.3 KB |         < 0.5 KB |
-| L5    | `SSH`           |       66.6-67.1 KB |     21.6-21.8 KB |
-| L5    | `TELNET`        |             1.0 KB |         < 0.5 KB |
-| L6    | `TLS`           |           100.5 KB |          54.5 KB |
-| L6    | `WS_DEFLATE`    |         3.4-7.9 KB |       7.8-9.5 KB |
+| L5    | `SSH`           |       66.6-67.2 KB |     21.6-21.8 KB |
+| L5    | `TELNET`        |             1.1 KB |         < 0.5 KB |
+| L6    | `TLS`           |           100.6 KB |          54.5 KB |
+| L6    | `WS_DEFLATE`    |         3.5-7.9 KB |       7.8-9.5 KB |
 | L6    | `WEB_TERMINAL`  |         0.0-3.7 KB |       0.0-1.5 KB |
-| L6    | `MSGPACK`       |             2.4 KB |         < 0.5 KB |
-| L6    | `CBOR`          |             1.1 KB |         < 0.5 KB |
+| L6    | `MSGPACK`       |             2.5 KB |         < 0.5 KB |
+| L6    | `CBOR`          |             1.2 KB |         < 0.5 KB |
 | L6    | `JWT`           |             1.0 KB |         < 0.5 KB |
 | L7    | `WS_CLIENT`     |            76.6 KB |          53.1 KB |
 | L7    | `ETAG`          |        0.0-73.2 KB |       0.0-1.2 KB |
 | L7    | `WEBDAV`        |       26.2-66.6 KB |     38.2-38.7 KB |
-| L7    | `VFS`           |            41.4 KB |           4.2 KB |
-| L7    | `RANGE`         |        0.6-40.4 KB |         < 0.5 KB |
-| L7    | `UPLOAD`        |            40.3 KB |           4.9 KB |
-| L7    | `OPCUA_CLIENT`  |        6.8-29.0 KB |     10.0-13.6 KB |
+| L7    | `VFS`           |            41.5 KB |           4.2 KB |
+| L7    | `RANGE`         |        0.6-40.5 KB |         < 0.5 KB |
+| L7    | `UPLOAD`        |            40.4 KB |           4.9 KB |
+| L7    | `OPCUA_CLIENT`  |        6.8-29.1 KB |     10.0-13.6 KB |
 | L7    | `NTP`           |            24.0 KB |           2.3 KB |
-| L7    | `MDNS`          |            23.7 KB |           1.6 KB |
+| L7    | `MDNS`          |            23.8 KB |           1.6 KB |
 | L7    | `TIME_SOURCE`   |            19.6 KB |           1.4 KB |
-| L7    | `DASHBOARD`     |            19.1 KB |         < 0.5 KB |
+| L7    | `DASHBOARD`     |            19.2 KB |         < 0.5 KB |
 | L7    | `RTC`           |            13.5 KB |         < 0.5 KB |
-| L7    | `OIDC`          |            12.0 KB |          12.6 KB |
-| L7    | `OAUTH2`        |            11.4 KB |          22.1 KB |
-| L7    | `WEBHOOK`       |             9.1 KB |          19.1 KB |
+| L7    | `OIDC`          |            12.1 KB |          12.6 KB |
+| L7    | `OAUTH2`        |            11.5 KB |          22.1 KB |
+| L7    | `WEBHOOK`       |             9.2 KB |          19.1 KB |
 | L7    | `RELAY`         |             8.6 KB |          33.6 KB |
-| L7    | `TELEMETRY`     |             7.5 KB |         < 0.5 KB |
-| L7    | `SNMP`          |             7.4 KB |          11.9 KB |
-| L7    | `OPCUA`         |         6.6-6.9 KB |      9.8-10.0 KB |
+| L7    | `TELEMETRY`     |             7.6 KB |         < 0.5 KB |
+| L7    | `SNMP`          |             7.5 KB |          11.9 KB |
+| L7    | `OPCUA`         |         6.7-6.9 KB |      9.8-10.0 KB |
 | L7    | `PROVISIONING`  |             6.3 KB |           1.3 KB |
 | L7    | `DNS_RESOLVER`  |             4.7 KB |           1.0 KB |
-| L7    | `COAP`          |             4.4 KB |           2.2 KB |
-| L7    | `OTA`           |             4.0 KB |          35.1 KB |
-| L7    | `CONFIG_IO`     |             3.7 KB |         < 0.5 KB |
-| L7    | `CONFIG_STORE`  |             3.7 KB |         < 0.5 KB |
+| L7    | `COAP`          |             4.5 KB |           2.2 KB |
+| L7    | `OTA`           |             4.1 KB |          35.1 KB |
+| L7    | `CONFIG_IO`     |             3.8 KB |         < 0.5 KB |
+| L7    | `CONFIG_STORE`  |             3.8 KB |         < 0.5 KB |
 | L7    | `GRAPHQL`       |             3.7 KB |           4.1 KB |
-| L7    | `GPIO_MAP`      |             3.0 KB |         < 0.5 KB |
+| L7    | `GPIO_MAP`      |             3.1 KB |         < 0.5 KB |
 | L7    | `METRICS`       |             2.8 KB |         < 0.5 KB |
 | L7    | `SYSLOG`        |             2.2 KB |           1.6 KB |
 | L7    | `AUDIT_LOG`     |             1.1 KB |           2.7 KB |

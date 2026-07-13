@@ -22402,7 +22402,7 @@ A thorough directory of all **2909 test cases** across **244 suites**. Expand a 
       * <code>Assert not null (strstr(r, "200 OK"))</code>
       * <code>Assert not null (strstr(r, "Accept-Ranges: bytes"))</code>
       * <code>Assert not null (strstr(r, "Content-Length: 20"))</code>
-      * <code>Assert not null (strstr(r, "Connection: close"))</code>
+      * <code>Assert not null (strstr(r, "Connection: keep-alive")); // HTTP/1.1 default is now persistent (keep-alive on)</code>
       * <code>Assert null (strstr(r, "Content-Range"))</code>
       * <code>Assert equal uint (20, body_len())</code>
       * <code>Assert equal memory (FILE_DATA, body_ptr(), 20)</code>
@@ -30039,11 +30039,11 @@ A thorough directory of all **2909 test cases** across **244 suites**. Expand a 
 <summary><b>test_transport (45 tests)</b></summary>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_pool_capacity_is_four</b> &mdash; <i>Pool capacity is four</i></summary>
+    <summary><b>test_pool_capacity_default_is_eight</b> &mdash; <i>The default connection pool is 8 (keep-alive/concurrency headroom; see ServerConfig.h).</i></summary>
 
-    * **Objective**: Pool capacity is four
+    * **Objective**: The default connection pool is 8 (keep-alive/concurrency headroom; see ServerConfig.h).
     * **Assertions**:
-      * <code>Assert equal (4, MAX_CONNS)</code>
+      * <code>Assert equal (8, MAX_CONNS)</code>
   </details>
 
   <details style="margin-left: 20px;">
