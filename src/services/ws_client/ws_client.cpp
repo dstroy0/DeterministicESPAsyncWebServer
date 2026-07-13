@@ -43,11 +43,26 @@ void ws_client_accept_for_key(const char *key_b64, char *out, size_t out_cap)
     base64_encode(digest, SHA1_DIGEST_LEN, out);
 }
 
-size_t ws_client_build_handshake(uint8_t *out, size_t cap, const char *host, const char *path, const char *key_b64)
+size_t ws_client_build_handshake(uint8_t *out, size_t cap, const char *host, const char *path, const char *key_b64,
+                                 const char *subprotocol)
 {
     if (!out || !host || !path || !key_b64)
         return 0;
-    int n = snprintf((char *)out, cap,
+    // A Sec-WebSocket-Protocol offer is emitted only when a subprotocol is requested (e.g. "wamp.2.json" for
+    // WAMP-over-WebSocket); the server echoes the one it selected. Null/empty omits the header entirely.
+    int n;
+    if (subprotocol && subprotocol[0])
+        n = snprintf((char *)out, cap,
+                     "GET %s HTTP/1.1\r\n"
+                     "Host: %s\r\n"
+                     "Upgrade: websocket\r\n"
+                     "Connection: Upgrade\r\n"
+                     "Sec-WebSocket-Key: %s\r\n"
+                     "Sec-WebSocket-Protocol: %s\r\n"
+                     "Sec-WebSocket-Version: 13\r\n\r\n",
+                     path, host, key_b64, subprotocol);
+    else
+        n = snprintf((char *)out, cap,
                      "GET %s HTTP/1.1\r\n"
                      "Host: %s\r\n"
                      "Upgrade: websocket\r\n"
@@ -504,7 +519,7 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
     char expect[32];
     ws_client_accept_for_key(key_b64, expect, sizeof(expect));
 
-    size_t n = ws_client_build_handshake(s_wsc.tx, sizeof(s_wsc.tx), host, path, key_b64);
+    size_t n = ws_client_build_handshake(s_wsc.tx, sizeof(s_wsc.tx), host, path, key_b64, nullptr);
     if (n == 0 || !ws_tx(s_wsc.tx, n))
     {
         ws_close_tcp();

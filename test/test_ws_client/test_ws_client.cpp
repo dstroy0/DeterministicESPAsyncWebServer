@@ -26,13 +26,27 @@ void test_accept_rfc_example()
 void test_build_handshake()
 {
     uint8_t buf[256];
-    size_t n = ws_client_build_handshake(buf, sizeof(buf), "example.com", "/chat", "dGhlIHNhbXBsZSBub25jZQ==");
+    size_t n = ws_client_build_handshake(buf, sizeof(buf), "example.com", "/chat", "dGhlIHNhbXBsZSBub25jZQ==", nullptr);
     TEST_ASSERT_GREATER_THAN(0, n);
     buf[n] = '\0';
     TEST_ASSERT_NOT_NULL(strstr((char *)buf, "GET /chat HTTP/1.1\r\n"));
     TEST_ASSERT_NOT_NULL(strstr((char *)buf, "Host: example.com\r\n"));
     TEST_ASSERT_NOT_NULL(strstr((char *)buf, "Upgrade: websocket\r\n"));
     TEST_ASSERT_NOT_NULL(strstr((char *)buf, "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n"));
+    TEST_ASSERT_NOT_NULL(strstr((char *)buf, "Sec-WebSocket-Version: 13\r\n\r\n"));
+    // No subprotocol requested -> the Sec-WebSocket-Protocol header must be absent.
+    TEST_ASSERT_NULL(strstr((char *)buf, "Sec-WebSocket-Protocol"));
+}
+
+void test_build_handshake_subprotocol()
+{
+    uint8_t buf[256];
+    size_t n =
+        ws_client_build_handshake(buf, sizeof(buf), "router.example", "/ws", "dGhlIHNhbXBsZSBub25jZQ==", "wamp.2.json");
+    TEST_ASSERT_GREATER_THAN(0, n);
+    buf[n] = '\0';
+    // A requested subprotocol is offered (WAMP-over-WebSocket); the header sits before the terminating CRLF.
+    TEST_ASSERT_NOT_NULL(strstr((char *)buf, "Sec-WebSocket-Protocol: wamp.2.json\r\n"));
     TEST_ASSERT_NOT_NULL(strstr((char *)buf, "Sec-WebSocket-Version: 13\r\n\r\n"));
 }
 
@@ -155,11 +169,11 @@ void test_accept_for_key_guards()
 void test_build_handshake_guards()
 {
     uint8_t out[256];
-    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(nullptr, sizeof(out), "h", "/", "k"));
-    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(out, sizeof(out), nullptr, "/", "k"));
-    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(out, sizeof(out), "h", nullptr, "k"));
-    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(out, sizeof(out), "h", "/", nullptr));
-    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(out, 10, "host", "/path", "key")); // overflow
+    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(nullptr, sizeof(out), "h", "/", "k", nullptr));
+    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(out, sizeof(out), nullptr, "/", "k", nullptr));
+    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(out, sizeof(out), "h", nullptr, "k", nullptr));
+    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(out, sizeof(out), "h", "/", nullptr, nullptr));
+    TEST_ASSERT_EQUAL_UINT(0, ws_client_build_handshake(out, 10, "host", "/path", "key", nullptr)); // overflow
 }
 
 // check_response rejects null/short args, a buffer with no line ending, a non-101
@@ -255,6 +269,7 @@ int main(int, char **)
     RUN_TEST(test_host_transport_stubs);
     RUN_TEST(test_accept_rfc_example);
     RUN_TEST(test_build_handshake);
+    RUN_TEST(test_build_handshake_subprotocol);
     RUN_TEST(test_check_response_ok);
     RUN_TEST(test_check_response_bad_accept);
     RUN_TEST(test_check_response_not_101);

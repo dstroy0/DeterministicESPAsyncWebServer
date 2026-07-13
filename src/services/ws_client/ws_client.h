@@ -55,9 +55,11 @@ void ws_client_accept_for_key(const char *key_b64, char *out, size_t out_cap);
 
 /**
  * @brief Build the client opening handshake (an HTTP/1.1 Upgrade GET).
+ * @param subprotocol  requested Sec-WebSocket-Protocol (e.g. "wamp.2.json"), or null/empty to omit the header.
  * @return bytes written to @p out, or 0 if it would not fit @p cap.
  */
-size_t ws_client_build_handshake(uint8_t *out, size_t cap, const char *host, const char *path, const char *key_b64);
+size_t ws_client_build_handshake(uint8_t *out, size_t cap, const char *host, const char *path, const char *key_b64,
+                                 const char *subprotocol);
 
 /**
  * @brief Validate a server handshake response.

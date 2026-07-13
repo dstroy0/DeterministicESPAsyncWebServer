@@ -22,6 +22,9 @@
 #   amqp         -> none (device-as-client)              the amqp peer is stdlib - a spec AMQP 0-9-1 broker
 #                   (Connection/Channel handshake + SASL PLAIN + Basic.Publish capture) in a background thread -
 #                   no pip package (RabbitMQ is the production reference)
+#   wamp         -> none (device-as-client)              the wamp peer is stdlib - a spec WAMP-over-WebSocket
+#                   router (RFC 6455 handshake selecting wamp.2.json + broker/dealer) in a background thread -
+#                   no pip package (crossbar / autobahn are the production references)
 #   statsd       -> none (device-as-client)              the statsd peer is stdlib - a raw UDP collector + StatsD
 #                   line parser - and needs no pip package (Graphite/StatsD, Telegraf, Datadog are production peers)
 #   ssh          -> openssh-client + sshpass (device-as-server)   the ssh peer drives the reference OpenSSH

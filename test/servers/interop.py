@@ -53,6 +53,7 @@ from peers import (
     stomp_peer,
     syslog_peer,
     tls_peer,
+    wamp_peer,
     webdav_peer,
     ws_peer,
     xmpp_peer,
@@ -91,6 +92,7 @@ _MODULES = [
     sparkplug_peer,
     sunspec_peer,
     xmpp_peer,
+    wamp_peer,
 ]
 
 
