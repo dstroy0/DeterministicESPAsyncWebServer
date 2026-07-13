@@ -49,7 +49,8 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
 - **Docs** - chart the docs build + automation; full staleness audit; theming (palette/alignment);
   a teacher switch to disable the sandbox; live theme preview.
 - **Ongoing quality** - extend the pentest fuzz corpus; extend test coverage; raise branch coverage
-  (ftp 87% / httpcache 90% branches noted); remediate any Sonar/CodeQL (currently 0 bugs / 0 vulns).
+  (ftp + httpcache raised to ~99% branches, v5.100.3; sweep remaining codecs next); remediate any
+  Sonar/CodeQL (currently 0 bugs / 0 vulns).
 - **Interop harness -> entire feature set** - the HW interop harness currently proves 7 protocol
   families against real third-party peers; expand it to exercise EVERY shipped feature/protocol against
   a real reference implementation (per-feature interop driver + a real peer/broker), so every codec is
@@ -111,7 +112,7 @@ Ideas and intentions captured from the [Working Thread discussion](https://githu
 ### Codecs / drivers / features
 
 - [ ] Write more niche pure codecs from old manuals - the ones wanted a while ago but never put down on paper.
-- [x] W5500 SPI Ethernet driver, to support non-RMII ESP32s like the S3. _(done, HW-verified on an ESP32-S3 + WIZnet W5500 over HSPI: raw VERSIONR=0x04, then DHCP IP + HTTP served over the wired link. Pins CS7/SCK12/MISO13/MOSI11/RST6/INT5; needs arduino-esp32 3.x + PSRAM=opi on an N16R8.)_
+- [x] W5500 SPI Ethernet driver, to support non-RMII ESP32s like the S3. _(done, HW-verified on an ESP32-S3 + WIZnet W5500 over HSPI: raw VERSIONR=0x04, then DHCP IP + HTTP served over the wired link. Pins CS7/SCK12/MISO13/MOSI11/RST6/INT5; needs arduino-esp32 3.x + PSRAM=opi on an N16R8. **v5.101.0:** streamed 200 MB byte-exact with a flat heap; added `DETWS_ETH_W5500_SPI_MHZ` (default 20) + a clock-vs-throughput sweep - SPI-bound ~7.2 Mbit/s @20 MHz, ~8.2 @24, plateau ~8.3 @30; reliable-sustained ~24 MHz on breadboard wiring. The earlier "large-transfer crash" was marginal SPI signal integrity, not a library defect - see BUGS.md.)_
 - [ ] Radio-as-a-plugin: strip an ESP to bare metal and do (very legal) radio things as a server plugin.
 - [ ] `Industrial_ESPIDF/`: create the directory and write the CMake for it.
 
