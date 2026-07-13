@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`51605df`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51605df797f17990f8ad1305396d027669d39bcf))
+
+### Documentation
+
+- quantify TLS session-resumption win (full 509ms -> resumed ~54ms, ~10x) ([`fdd7659`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fdd76597770077086617acb2200927d367d14d05))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9f041d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f041d8cbefe796fa3962adc7d81b54ce5d132d6))
+
 ## [5.99.3] - 2026-07-13
 
 <details>
