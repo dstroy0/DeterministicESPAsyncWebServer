@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.99.0] - 2026-07-13
+
+<details>
+<summary><b>Show Changelog for version 5.99.0 - 2026-07-13</b></summary>
 
 ### Bug Fixes
 
@@ -10,6 +13,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1fe2915`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1fe2915ceaafb5dadd6a382c4fc38f9355f24fa6))
 - update CHANGELOG.md [skip ci] ([`2ab8ccd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ab8ccd7615193570f2375ffcbb6e776881afa60))
 - update test report + coverage [skip ci] ([`e1f5145`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1f5145ace51b619d6d46fbafa6fc5a077397279))
 - update CHANGELOG.md [skip ci] ([`b45872f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b45872f5cbcb34f49cbd495698b394487cd46e4d))
@@ -19,6 +23,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update CHANGELOG.md [skip ci] ([`4514d8a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4514d8a2791f6377e5e531eb57c672b2fcee6f90))
 - update CHANGELOG.md [skip ci] ([`1bfb14a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1bfb14a5cea5f953fc489d6bee801dcbccbbab04))
 - update CHANGELOG.md [skip ci] ([`0ed7c3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ed7c3cbdd236785b8f8dcfe4b68b52dd2467888))
+
+### Changes
+
+- Bump version: 5.98.0 → 5.99.0 ([`6890397`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/68903970f80363aaadafb741b7ade5e7487309eb))
 
 ### Documentation
 
@@ -32,6 +40,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- subprotocol negotiation + device-as-client WAMP interop (12/12 HW) ([`c6099a6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c6099a69632d842f4eb4f1cbfb9142a8fb9f344a))
 - W5500 SPI Ethernet bring-up for init_eth_physical (arduino 3.x) - compile-verified, HW link-up pending ([`6185e5c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6185e5ce79cdbac4ed290bb8f2551b15f5e8ab85))
 
 ### Testing
@@ -40,6 +49,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - device-as-client XMPP (RFC 6120) interop vs a stdlib c2s server (11/11 HW) ([`c3a289f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3a289f791a7d96bd5bd266133d0c451b5ab29f2))
 - device-as-server SunSpec Common-model interop vs pysunspec2 over Modbus TCP (6/6 HW) ([`fdd4c39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fdd4c390bcef9269fd80170a3fa8eb280e5c39b3))
 - device-as-client Sparkplug B NBIRTH interop over a real MQTT broker (9/9 HW) ([`0d5ef53`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d5ef53196cc89a1859a13ea1c197ea447177990))
+
+</details>
 
 ## [5.98.0] - 2026-07-12
 
