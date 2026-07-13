@@ -672,9 +672,15 @@ rig on an ESP32-S3. Cipher suite `ECDHE-ECDSA-AES256-GCM-SHA384` (P-256), self-s
   help (mbedTLS already uses the HW MPI for the NIST reduction, and it is precompiled in the core anyway).
 - Still ~0.5 s per _full_ handshake, so the practical guidance stands: **keep connections alive** and/or
   enable `DETWS_ENABLE_TLS_RESUMPTION` (RFC 5077 tickets) so a returning client skips the ECDHE+ECDSA cost
-  entirely (a resumed handshake is symmetric-only, single-digit ms). Bulk AES-256-GCM record encryption after
-  the handshake is comparatively free. Fine for an admin/config endpoint or an occasional secure POST; for a
-  high-rate polled API use keep-alive or resumption.
+  entirely. **Measured resumed handshake: ~54 ms (full 509 ms -> resumed 48-57 ms, ~10x)**, HW-verified with
+  OpenSSL reporting `Reused` (session saved with `-sess_out`, resumed with `-sess_in`, against the rig built
+  with resumption on). Stacked with the curve preference, a returning client goes from the original ~1000 ms
+  (unconfigured, secp521r1, no resumption) to ~54 ms - about 18x. The device work in a resumed handshake is
+  only symmetric (ticket AES-256-GCM decrypt + key schedule, both cheap); the ~54 ms wall time is mostly the
+  client/TCP round trip. Resumption is **off by default** (a deliberate attack-surface choice - the server
+  holds a ticket-sealing key; note TLS 1.2 has no 0-RTT so there is no early-data replay, and a replayed
+  ticket still cannot complete the handshake without the master secret). Bulk AES-256-GCM record encryption
+  after the handshake is comparatively free.
 - HW-verified: `curl`/browsers/OpenSSL/Python (all 1.3-leading) negotiate down to TLS 1.2 and get `200`;
   `tls_server_abuse` held every invariant (downgrade + weak-cipher refused, 7 malformed handshakes survived).
   Bringing this up found and fixed two hardware-only bugs (a tcpip_thread self-deadlock and an RX ring smaller
