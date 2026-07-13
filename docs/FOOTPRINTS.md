@@ -31,8 +31,8 @@ from each example's `pio ci` size report and aggregated into
 | `ENOCEAN+GATEWAY`                                                                                         | Foundation/13.EnOceanGateway            | 262.4 KB (20.5%) | 21.3 KB (6.7%)   |
 | `ESPNOW`                                                                                                  | L7-Application/53.EspNow                | 714.2 KB (55.8%) | 42.6 KB (13.3%)  |
 | `ETAG`                                                                                                    | L7-Application/09.ETag                  | 808.8 KB (63.2%) | 81.1 KB (25.4%)  |
-| `ETHERNET`                                                                                                | Foundation/19.Ethernet                  | 772.2 KB (60.3%) | 79.9 KB (25.0%)  |
-| `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | Foundation/23.EthernetW5500             | 772.3 KB (60.3%) | 79.9 KB (25.0%)  |
+| `ETHERNET`                                                                                                | Foundation/19.Ethernet                  | 772.4 KB (60.3%) | 79.9 KB (25.0%)  |
+| `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | Foundation/23.EthernetW5500             | 772.4 KB (60.3%) | 79.9 KB (25.0%)  |
 | `GPIO_MAP`                                                                                                | L7-Application/38.GpioMap               | 738.7 KB (57.7%) | 79.9 KB (25.0%)  |
 | `GRAPHQL`                                                                                                 | L7-Application/52.GraphQL               | 739.3 KB (57.8%) | 84.2 KB (26.3%)  |
 | `GUARDRAILS`                                                                                              | L7-Application/40.Guardrails            | 735.0 KB (57.4%) | 79.9 KB (25.0%)  |

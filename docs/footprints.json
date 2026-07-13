@@ -164,14 +164,14 @@
     "example": "Foundation/19.Ethernet",
     "flags": "-DDETWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_LAN8720 -DETH_PHY_ADDR=1 -DETH_PHY_POWER=-1 -DETH_PHY_MDC=23 -DETH_PHY_MDIO=18 -DETH_CLK_MODE=ETH_CLOCK_GPIO0_IN",
     "board": "esp32dev",
-    "flash_bytes": 790733,
+    "flash_bytes": 790965,
     "ram_bytes": 81820
   },
   "ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI": {
     "example": "Foundation/23.EthernetW5500",
     "flags": "-DDETWS_ENABLE_ETHERNET=1 -DDETWS_ETH_W5500=1 -DDETWS_ETH_W5500_CS=7 -DDETWS_ETH_W5500_RST=6 -DDETWS_ETH_W5500_INT=5 -DDETWS_ETH_W5500_SCK=12 -DDETWS_ETH_W5500_MISO=13 -DDETWS_ETH_W5500_MOSI=11",
     "board": "esp32dev",
-    "flash_bytes": 790829,
+    "flash_bytes": 790981,
     "ram_bytes": 81820
   },
   "GPIO_MAP": {
