@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.99.1] - 2026-07-13
+
+<details>
+<summary><b>Show Changelog for version 5.99.1 - 2026-07-13</b></summary>
 
 ### Bug Fixes
 
@@ -10,9 +13,15 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`0209f33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0209f33f53cc746f1e3635f398c62c375545956b))
+- update CHANGELOG.md [skip ci] ([`1de7316`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1de73166d8027b6c5d3ca2b2dd362b0165444b06))
 - update CHANGELOG.md [skip ci] ([`d4a99c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4a99c8ffad73e0c5ab67d5f5f4db90c9dcbe98f))
 - update CHANGELOG.md [skip ci] ([`500ca94`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/500ca94024aff734b96ea711b7a3ce27ff91beec))
 - update CHANGELOG.md [skip ci] ([`bad0a08`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bad0a08d00c260cb73740b9587bf25140f8ff1cb))
+
+### Changes
+
+- Bump version: 5.99.0 → 5.99.1 ([`f683c8b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f683c8b69a761126357f50fd32f6bd12eef9df56))
 
 ### Documentation
 
@@ -20,10 +29,16 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update ESP32 build footprints [skip ci] ([`aeee8da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aeee8da1b9f1636b858488053f8ab9095188029b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ab7d87c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab7d87c3ad4297727c886cb37846838eaf926ee6))
 
+### Performance
+
+- char-class lookup table + drop redundant terminal switch ([`f88a043`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f88a04306caf19a41b0efc499d514c2424aebdfa))
+
 ### Testing
 
 - device-as-server OpenADR 3.0 interop vs a spec consumer (17/17 HW) ([`9719460`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9719460912937ecbe5c1668569293022103a1bbe))
 - device-as-server IEEE 2030.5 interop vs a spec consumer (18/18 HW) ([`2ea07e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ea07e3c262e0f0d979feb289857076f6539a94b))
+
+</details>
 
 ## [5.99.0] - 2026-07-13
 
