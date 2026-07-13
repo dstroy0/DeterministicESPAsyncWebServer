@@ -41,6 +41,7 @@ from peers import (
     nats_peer,
     ntp_peer,
     opcua_peer,
+    openadr_peer,
     redis_peer,
     sep2_peer,
     smb_peer,
@@ -95,6 +96,7 @@ _MODULES = [
     xmpp_peer,
     wamp_peer,
     sep2_peer,
+    openadr_peer,
 ]
 
 

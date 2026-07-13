@@ -28,6 +28,9 @@
 #   sep2         -> none (device-as-server)              the sep2 peer is stdlib - a spec IEEE 2030.5 consumer
 #                   (xml.etree) that walks the device's DeviceCapability -> EndDevice -> DERControl resources -
 #                   no pip package (the official sep.xsd / certified 2030.5 clients are the references)
+#   openadr      -> none (device-as-server)              the openadr peer is stdlib - a spec OpenADR 3.0 consumer
+#                   (json) that validates the device's event + report objects - no pip package (the OpenADR 3.0
+#                   OpenAPI / openleadr are the references)
 #   statsd       -> none (device-as-client)              the statsd peer is stdlib - a raw UDP collector + StatsD
 #                   line parser - and needs no pip package (Graphite/StatsD, Telegraf, Datadog are production peers)
 #   ssh          -> openssh-client + sshpass (device-as-server)   the ssh peer drives the reference OpenSSH
