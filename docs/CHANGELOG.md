@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.100.1] - 2026-07-13
+
+<details>
+<summary><b>Show Changelog for version 5.100.1 - 2026-07-13</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`8472a93`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8472a938084f9523e6d123d1ecf9be492f0c4b6f))
+- update CHANGELOG.md [skip ci] ([`40618d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/40618d8f45157b133b7d47d6c46acaa56f3aaa2a))
+
+### Changes
+
+- Bump version: 5.100.0 → 5.100.1 ([`29df507`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/29df507496d20cab4f872844a79a2a5a09badbe3))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`96ea23b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96ea23bb4c31ed509c6c3aa97339e961321420c2))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`26382b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/26382b090aeccbb7cce29978fee5f2703c567522))
+
+### Performance
+
+- coalesce chunked framing to one marshal/chunk + MSS-sized chunks ([`e2539d4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e2539d426e10629aecdbdf264e4722b38666db43))
+
+</details>
+
 ## [5.100.0] - 2026-07-13
 
 <details>
