@@ -2,18 +2,34 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.100.2] - 2026-07-13
+
+<details>
+<summary><b>Show Changelog for version 5.100.2 - 2026-07-13</b></summary>
+
+### Bug Fixes
+
+- W5500 RST/INT pin defaults were swapped; docs audit + example renumber ([`eddaffe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eddaffe8c64b349c35bc27a4caeb7512f9e34d2c))
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`e63e4af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e63e4af9944f95bbded529edaca7c4733194f64a))
+- update CHANGELOG.md [skip ci] ([`ec494c3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec494c3b3e8b3e9ca3bc5e7c3883f4eb7d77aab4))
 - update test report + coverage [skip ci] ([`446b5f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/446b5f740d1bde3c84edfd5cb01dfc52bc505c17))
 - update CHANGELOG.md [skip ci] ([`be80a2b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be80a2b8d14b3ba96554c2008ab72247158f1c0f))
 
+### Changes
+
+- Bump version: 5.100.1 → 5.100.2 ([`503765a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/503765a4fa1007336bc54764b77f85957bcbb51f))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0400618`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/04006183c4d1ba1427c3a25f9c9799bf689f1281))
 - add reproducible ESPAsyncWebServer benchmark harness + README perf table ([`f33cba3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f33cba363778d6e37104aa4e2ddfdd7efa6286b8))
 - update ESP32 build footprints [skip ci] ([`9e9c075`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e9c075bf3452657012e203f05bd0c83e780a304))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b6ac55e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b6ac55e30f5fcceec00b8f6e0b8a6b5d9553f530))
+
+</details>
 
 ## [5.100.1] - 2026-07-13
 
