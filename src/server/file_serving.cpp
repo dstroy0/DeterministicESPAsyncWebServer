@@ -362,6 +362,10 @@ void DetWebServer::file_send_pump(uint8_t slot_id)
         return;
     }
 
+    // A file body still being paged out is active, not idle: keep the CONN_TIMEOUT_MS idle sweep
+    // off it so a transient send stall on a large file cannot reap the slot mid-transfer.
+    det_conn_touch_active(slot_id);
+
     uint8_t chunk[FILE_CHUNK_SIZE];
     while (s.remaining > 0)
     {

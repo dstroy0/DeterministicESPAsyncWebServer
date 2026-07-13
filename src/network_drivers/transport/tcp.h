@@ -249,6 +249,17 @@ u16_t det_conn_sndbuf(uint8_t slot);
 void det_conn_flush(uint8_t slot);
 
 /**
+ * @brief Refresh @p slot's idle-timeout timestamp while a response body is in flight.
+ *
+ * The file/chunk send pumps call this each poll they run: a slot still paging out a body is
+ * actively streaming (or briefly blocked on a full window / a transient link stall), not idle,
+ * so the CONN_TIMEOUT_MS idle sweep must not reap it mid-transfer - that truncates any body
+ * larger than one TCP window. A genuinely dead peer is still reclaimed by lwIP's retransmission
+ * timers (err callback), not this sweep.
+ */
+void det_conn_touch_active(uint8_t slot);
+
+/**
  * @brief Reopen the TCP receive window by however much @p slot has drained.
  *
  * Ack-on-consume, owned entirely by the transport layer: recv_cb no longer

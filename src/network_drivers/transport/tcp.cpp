@@ -672,6 +672,24 @@ bool det_conn_remote_addr(uint8_t slot, DetIp *out)
 #endif
 }
 
+// Refresh a slot's idle-timeout timestamp from the owning worker while a response body is still
+// being paged out (the file/chunk send pumps call this every poll they run). Such a slot is
+// actively streaming - or briefly blocked on a full send window / a transient link stall - NOT
+// idle, so the CONN_TIMEOUT_MS idle sweep must not reap it mid-transfer: that truncates any body
+// larger than one TCP window (seen on a multi-hundred-MB download as an rc=56 reset or a short
+// read). Dead-peer teardown for an in-flight response stays owned by lwIP's retransmission timers,
+// which abort a black-holed pcb through the err callback. Worker-context safe: it only writes our
+// own last_activity_ms hint (the sent callback writes the same uint32 from tcpip_thread; a torn
+// read of a timestamp is benign).
+void det_conn_touch_active(uint8_t slot_id)
+{
+    if (slot_id >= MAX_CONNS)
+        return;
+    TcpConn *c = &conn_pool[slot_id];
+    if (c->state == ConnState::CONN_ACTIVE)
+        c->last_activity_ms = detws_millis();
+}
+
 void DeterministicAsyncTCP::check_timeouts(int worker_id)
 {
     uint32_t now = detws_millis();

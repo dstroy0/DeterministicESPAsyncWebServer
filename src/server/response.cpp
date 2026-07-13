@@ -201,6 +201,10 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
         return;
     }
 
+    // A body still being paged out is active, not idle: keep the CONN_TIMEOUT_MS idle sweep off
+    // it so a transient send stall on a large stream cannot reap the slot mid-transfer.
+    det_conn_touch_active(slot_id);
+
     // Reserve room for the largest framing around one CHUNK_BUF_SIZE chunk:
     // "<hex>\r\n" (size line) + "\r\n" trailer. 12 bytes covers a 4-hex-digit size.
     // The raw (HTTP/1.0) path writes the body bytes verbatim, so it needs no reserve.

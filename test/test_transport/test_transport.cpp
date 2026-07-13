@@ -173,6 +173,29 @@ void test_timeout_fires_only_on_stale_slots()
     TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[1].state);
 }
 
+// Regression (BUGS.md "large streamed response truncates mid-transfer"): a slot still paging out a
+// body is active, not idle. The file/chunk send pumps call det_conn_touch_active() each poll while a
+// body is in flight, so an actively-sending slot must survive the idle sweep even past the deadline -
+// otherwise a transient send stall truncates a large chunked/file response. Slot 0 is touched (like the
+// pump would) and survives; an equally-stale UNtouched active slot 1 is still reaped (idle keep-alive).
+void test_active_send_not_reaped()
+{
+    conn_pool[0].state = ConnState::CONN_ACTIVE;
+    conn_pool[0].pcb = nullptr;
+    conn_pool[0].last_activity_ms = 0; // stale - would be reaped at the deadline
+
+    conn_pool[1].state = ConnState::CONN_ACTIVE;
+    conn_pool[1].pcb = nullptr;
+    conn_pool[1].last_activity_ms = 0; // equally stale, but NOT touched
+
+    set_millis(CONN_TIMEOUT_MS + 10); // past the idle deadline
+    det_conn_touch_active(0);         // the pump's per-poll refresh for an in-flight body
+    DeterministicAsyncTCP::check_timeouts();
+
+    TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state); // survives (streaming)
+    TEST_ASSERT_EQUAL(ConnState::CONN_FREE, (ConnState)conn_pool[1].state);   // reaped (idle)
+}
+
 void test_init_succeeds_on_native()
 {
     DeterministicAsyncTCP::pool_init();
@@ -619,6 +642,7 @@ int main()
     RUN_TEST(test_timeout_does_not_fire_before_deadline);
     RUN_TEST(test_timeout_fires_at_deadline);
     RUN_TEST(test_timeout_fires_only_on_stale_slots);
+    RUN_TEST(test_active_send_not_reaped);
     RUN_TEST(test_init_succeeds_on_native);
     RUN_TEST(test_all_last_activity_ms_zero_after_init);
     RUN_TEST(test_queue_not_null_after_init);

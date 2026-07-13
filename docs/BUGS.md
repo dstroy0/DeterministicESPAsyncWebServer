@@ -8,6 +8,36 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Transport: a large streamed response (chunked / file) truncates mid-transfer - the idle sweep reaps an actively-sending connection
+
+- **Status:** FIXED (library, 2026-07-13; found by a 1 GB download benchmark against ESP32Async/ESPAsyncWebServer
+  on an ESP32-S3, then reproduced deterministically).
+- **Symptom:** a response whose body is much larger than one TCP window (`send_chunked` or `serve_file`) drops
+  mid-stream at a **non-deterministic** point - observed once at 233 MB with a connection reset (curl `rc=56`) and
+  once at 86 MB with a short clean close - while small requests to the same server keep succeeding. The same 1 GB
+  download served by ESPAsyncWebServer completes fine.
+- **Root cause:** the `CONN_TIMEOUT_MS` (5 s) idle sweep in `check_timeouts()` reaps any `CONN_ACTIVE` slot whose
+  `last_activity_ms` is older than 5 s. That timestamp is refreshed on RX (recv callback) and on TX **ACK** (sent
+  callback), so a healthy stream stays fresh - until a **transient send stall** (a Wi-Fi hiccup, or a brief full
+  window with no ACKs) exceeds 5 s, at which point the sweep reaps a connection that is **actively mid-transfer**,
+  truncating the body. (Same 5 s mechanism as the SSH "drops every framed packet after the banner" bug below, a
+  different trigger.)
+- **Fix:** a slot still paging out a body is active, not idle. The file/chunk send pumps now call
+  `det_conn_touch_active(slot)` each poll they run (they run every `handle()` loop through the `on_poll` seam),
+  refreshing the idle timer so the sweep cannot reap an in-flight transfer. Dead-peer teardown for such a slot is
+  delegated to lwIP's own retransmission timers, which abort a black-holed pcb through the err callback. The
+  timestamp read that a size-based check would need lives on `tcpip_thread`, so refreshing from the worker-side
+  pump (writing our own `last_activity_ms`) is the layer-clean signal.
+- **Validation:** native `native` (334, incl. `test_transport`) + `native_keepalive` (11) + `native_range` (20)
+  all pass. HW (ESP32-S3): a deterministic reproduction - pause the client 9 s (> 5 s) mid-stream with `SIGSTOP`
+  so ACKs starve - truncates on the pre-fix build and **survives on the fixed build** (the transfer resumes on
+  `SIGCONT` and keeps streaming). Regression test `test_active_send_not_reaped`.
+- **Lesson:** an idle-timeout sweep must exclude a connection with an in-flight response - "no activity for N
+  seconds" only means "idle" when nothing is being sent. A large-transfer **stress** test (not a happy-path smoke)
+  is what exposes it; a small-response test never streams long enough to hit a stall.
+
+---
+
 ## SSH: SERVICE_REQUEST accepted before key exchange completes - pre-encryption userauth bypass
 
 - **Status:** FIXED (library, 2026-07-11; found by the pentest tool's `ssh_msgtype_abuse` against the S3 rig).
