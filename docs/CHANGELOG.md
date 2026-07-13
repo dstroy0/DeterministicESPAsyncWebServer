@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.101.0] - 2026-07-13
+
+<details>
+<summary><b>Show Changelog for version 5.101.0 - 2026-07-13</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`12b2541`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/12b2541515c46075dd215301500b5579ee6d2b3a))
+- update CHANGELOG.md [skip ci] ([`983d913`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/983d913e3b9b598e46a4ef119a06c22d782d5416))
+
+### Changes
+
+- Bump version: 5.100.3 → 5.101.0 ([`890a8be`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/890a8be784233b5cbe076bd9ef26d9fe25c7e8e4))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`9029be2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9029be2c29ab364e8a268c27eb478198831e5e5a))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`62bb2cf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/62bb2cfd8427db64722fccbb2e906fd2044a2d3a))
+
+### Features
+
+- configurable W5500 SPI clock (DETWS_ETH_W5500_SPI_MHZ) ([`a443fd5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a443fd5aa5ca50e5e2699db2f60f4a927e019213))
+
+</details>
+
 ## [5.100.3] - 2026-07-13
 
 <details>
