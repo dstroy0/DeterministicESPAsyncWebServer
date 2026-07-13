@@ -506,7 +506,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2907 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2908 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -33038,7 +33038,7 @@ A thorough directory of all **2907 test cases** across **244 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ws_client (16 tests)</b></summary>
+<summary><b>test_ws_client (17 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_accept_for_key_guards</b> &mdash; <i>Accept for key guards</i></summary>
@@ -33055,11 +33055,11 @@ A thorough directory of all **2907 test cases** across **244 suites**. Expand a 
 
     * **Objective**: Build handshake guards
     * **Assertions**:
-      * <code>Assert equal uint (0, ws_client_build_handshake(nullptr, sizeof(out), "h", "/", "k"))</code>
-      * <code>Assert equal uint (0, ws_client_build_handshake(out, sizeof(out), nullptr, "/", "k"))</code>
-      * <code>Assert equal uint (0, ws_client_build_handshake(out, sizeof(out), "h", nullptr, "k"))</code>
-      * <code>Assert equal uint (0, ws_client_build_handshake(out, sizeof(out), "h", "/", nullptr))</code>
-      * <code>Assert equal uint (0, ws_client_build_handshake(out, 10, "host", "/path", "key"))</code>
+      * <code>Assert equal uint (0, ws_client_build_handshake(nullptr, sizeof(out), "h", "/", "k", nullptr))</code>
+      * <code>Assert equal uint (0, ws_client_build_handshake(out, sizeof(out), nullptr, "/", "k", nullptr))</code>
+      * <code>Assert equal uint (0, ws_client_build_handshake(out, sizeof(out), "h", nullptr, "k", nullptr))</code>
+      * <code>Assert equal uint (0, ws_client_build_handshake(out, sizeof(out), "h", "/", nullptr, nullptr))</code>
+      * <code>Assert equal uint (0, ws_client_build_handshake(out, 10, "host", "/path", "key", nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33124,15 +33124,26 @@ A thorough directory of all **2907 test cases** across **244 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_build_handshake</b> &mdash; <i>Build handshake</i></summary>
+    <summary><b>test_build_handshake</b> &mdash; <i>No subprotocol requested -> the Sec-WebSocket-Protocol header must be absent.</i></summary>
 
-    * **Objective**: Build handshake
+    * **Objective**: No subprotocol requested -> the Sec-WebSocket-Protocol header must be absent.
     * **Assertions**:
       * <code>Assert greater than (0, n)</code>
       * <code>Assert not null (strstr((char *)buf, "GET /chat HTTP/1.1\\r\\n"))</code>
       * <code>Assert not null (strstr((char *)buf, "Host: example.com\\r\\n"))</code>
       * <code>Assert not null (strstr((char *)buf, "Upgrade: websocket\\r\\n"))</code>
       * <code>Assert not null (strstr((char *)buf, "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\\r\\n"))</code>
+      * <code>Assert not null (strstr((char *)buf, "Sec-WebSocket-Version: 13\\r\\n\\r\\n"))</code>
+      * <code>Assert null (strstr((char *)buf, "Sec-WebSocket-Protocol"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_handshake_subprotocol</b> &mdash; <i>A requested subprotocol is offered (WAMP-over-WebSocket); the header sits before the terminating CRLF.</i></summary>
+
+    * **Objective**: A requested subprotocol is offered (WAMP-over-WebSocket); the header sits before the terminating CRLF.
+    * **Assertions**:
+      * <code>Assert greater than (0, n)</code>
+      * <code>Assert not null (strstr((char *)buf, "Sec-WebSocket-Protocol: wamp.2.json\\r\\n"))</code>
       * <code>Assert not null (strstr((char *)buf, "Sec-WebSocket-Version: 13\\r\\n\\r\\n"))</code>
   </details>
 
