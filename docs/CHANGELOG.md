@@ -2,16 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.99.4] - 2026-07-13
+
+<details>
+<summary><b>Show Changelog for version 5.99.4 - 2026-07-13</b></summary>
+
+### Bug Fixes
+
+- don't reap an actively-sending connection on the idle sweep (large-stream truncation) ([`6042cdc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6042cdcbc452004cf1b128e79c0f95774cceec8d))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`918e7b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/918e7b6dd74dde905268c3b0d6d6ec2e045053ec))
 - update CHANGELOG.md [skip ci] ([`51605df`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51605df797f17990f8ad1305396d027669d39bcf))
+
+### Changes
+
+- Bump version: 5.99.3 → 5.99.4 ([`b3f0508`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b3f0508b6966d3ba9c7196f6bcacb2d8ac6d2b55))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`ff808c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff808c8c998ea15aca80b8646dc883b2e623f6e9))
 - quantify TLS session-resumption win (full 509ms -> resumed ~54ms, ~10x) ([`fdd7659`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fdd76597770077086617acb2200927d367d14d05))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9f041d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f041d8cbefe796fa3962adc7d81b54ce5d132d6))
+
+</details>
 
 ## [5.99.3] - 2026-07-13
 
