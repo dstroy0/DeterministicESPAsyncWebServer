@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.99.3] - 2026-07-13
+
+<details>
+<summary><b>Show Changelog for version 5.99.3 - 2026-07-13</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`cc1bb6c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc1bb6cef078dc66b64d12706be861f0195b8647))
+- update CHANGELOG.md [skip ci] ([`435603d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/435603dbded630024c9d1f88a4d5c6780a4cf544))
+
+### Changes
+
+- Bump version: 5.99.2 → 5.99.3 ([`7d051eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7d051eb7a9aeba3b6a45c938622e74208db6c6dd))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`e9d7fe1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e9d7fe1df28f8062fbd974534ba1c479e5edaec2))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`30dde5d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/30dde5de90eabfdd4fa424e6ae01f3f96265890c))
+
+### Performance
+
+- pin fast ECDHE curve preference (x25519/secp256r1) - handshake 1000->487ms ([`7515630`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7515630cc8d720e111e2f8bd23ef48bb3c847370))
+
+</details>
+
 ## [5.99.2] - 2026-07-13
 
 <details>
