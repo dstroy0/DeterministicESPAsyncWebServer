@@ -979,10 +979,10 @@ Feature Tables workflow from `docs/footprints.json`.
 | `SSH` | `L5-Session/03.SSHHostKey` | 821,593 | 88,316 |
 | `ETAG` | `L7-Application/09.ETag` | 827,777 | 67,288 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,548 |
-| `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/25.WebSocketClient` | 831,661 | 123,620 |
-| `TLS` | `L6-Presentation/07.SecureWebSocket` | 855,765 | 122,020 |
-| `TLS+TLS_RESUMPTION` | `L4-Transport/06.TlsResumption` | 856,569 | 122,180 |
-| `TLS+MTLS` | `L4-Transport/04.mTLS` | 856,713 | 122,356 |
+| `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/25.WebSocketClient` | 831,721 | 123,620 |
+| `TLS` | `L6-Presentation/07.SecureWebSocket` | 855,801 | 122,020 |
+| `TLS+TLS_RESUMPTION` | `L4-Transport/06.TlsResumption` | 856,617 | 122,180 |
+| `TLS+MTLS` | `L4-Transport/04.mTLS` | 856,761 | 122,356 |
 
 <!-- END GENERATED BUILD-FOOTPRINT -->
 

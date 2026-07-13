@@ -506,7 +506,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2908 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2909 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -30036,7 +30036,7 @@ A thorough directory of all **2908 test cases** across **244 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_transport (44 tests)</b></summary>
+<summary><b>test_transport (45 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_pool_capacity_is_four</b> &mdash; <i>Pool capacity is four</i></summary>
@@ -30169,6 +30169,15 @@ A thorough directory of all **2908 test cases** across **244 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[1].state)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_active_send_not_reaped</b> &mdash; <i>Active send not reaped</i></summary>
+
+    * **Objective**: Active send not reaped
+    * **Assertions**:
+      * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state); // survives (streaming)</code>
+      * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[1].state);   // reaped (idle)</code>
   </details>
 
   <details style="margin-left: 20px;">
