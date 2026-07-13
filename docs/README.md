@@ -971,6 +971,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `NTP` | `L7-Application/18.SNTP` | 777,833 | 84,320 |
 | `OPCUA+OPCUA_CLIENT` | `L7-Application/56.OpcUaClient` | 783,021 | 95,928 |
 | `ETHERNET` | `Foundation/19.Ethernet` | 790,733 | 81,820 |
+| `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | `Foundation/23.EthernetW5500` | 790,829 | 81,820 |
 | `core/10.FileServing` | `L7-Application/10.FileServing` | 793,469 | 81,808 |
 | `UPLOAD` | `L7-Application/11.FileUpload` | 794,577 | 91,120 |
 | `RANGE` | `L7-Application/12.Range` | 794,697 | 81,808 |

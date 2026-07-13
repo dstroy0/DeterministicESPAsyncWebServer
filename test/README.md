@@ -506,7 +506,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2909 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2918 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -8267,7 +8267,7 @@ A thorough directory of all **2909 test cases** across **244 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ftp (16 tests)</b></summary>
+<summary><b>test_ftp (21 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_command</b> &mdash; <i>bare verb (no arg) -> no trailing space</i></summary>
@@ -8448,6 +8448,65 @@ A thorough directory of all **2909 test cases** across **244 suites**. Expand a 
       * <code>Assert false (ftp_parse_epsv("229 (", 5, &port))</code>
       * <code>Assert false (ftp_parse_epsv("229 (|5|)", 9, &port))</code>
       * <code>Assert false (ftp_parse_epsv("229 (|||99999|)", 15, &port))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_null_args</b> &mdash; <i>Build null args</i></summary>
+
+    * **Objective**: Build null args
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ftp_build_command(nullptr, sizeof(b), "USER", "x"));       // !buf</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ftp_build_port(b, sizeof(b), nullptr, 80));                // !ip</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ftp_build_eprt(nullptr, sizeof(b), "1.2.3.4", false, 80)); // !buf</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ftp_build_eprt(b, sizeof(b), nullptr, false, 80));         // !ip_str</code>
+      * <code>Assert false (ftp_parse_pasv(pasv, strlen(pasv), nullptr, &port))</code>
+      * <code>Assert false (ftp_parse_pasv(pasv, strlen(pasv), oip, nullptr))</code>
+      * <code>Assert false (ftp_parse_epsv(epsv, strlen(epsv), nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_head_nondigit_edges</b> &mdash; <i>Reply head nondigit edges</i></summary>
+
+    * **Objective**: Reply head nondigit edges
+    * **Assertions**:
+      * <code>Assert false (ftp_parse_reply("/23 x\\r\\n", 7, &code, &used))</code>
+      * <code>Assert false (ftp_parse_reply(":23 x\\r\\n", 7, &code, &used))</code>
+      * <code>Assert false (ftp_parse_reply("2/3 x\\r\\n", 7, &code, &used))</code>
+      * <code>Assert false (ftp_parse_reply("22/ x\\r\\n", 7, &code, &used))</code>
+      * <code>Assert false (ftp_parse_reply("22: x\\r\\n", 7, &code, &used))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reply_multiline_samecode_dash</b> &mdash; <i>Reply multiline samecode dash</i></summary>
+
+    * **Objective**: Reply multiline samecode dash
+    * **Assertions**:
+      * <code>Assert true (ftp_parse_reply(r, strlen(r), &code, &used))</code>
+      * <code>Assert equal int (150, code)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen(r), used);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_pasv_edges</b> &mdash; <i>Parse pasv edges</i></summary>
+
+    * **Objective**: Parse pasv edges
+    * **Assertions**:
+      * <code>Assert false (ftp_parse_pasv("227 (", 5, ip, &port))</code>
+      * <code>Assert false (ftp_parse_pasv(hi, strlen(hi), ip, &port))</code>
+      * <code>Assert false (ftp_parse_pasv("227 (194", 8, ip, &port))</code>
+      * <code>Assert false (ftp_parse_pasv(empty, strlen(empty), ip, &port))</code>
+      * <code>Assert false (ftp_parse_pasv(trail, strlen(trail), ip, &port))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_epsv_edges</b> &mdash; <i>Parse epsv edges</i></summary>
+
+    * **Objective**: Parse epsv edges
+    * **Assertions**:
+      * <code>Assert false (ftp_parse_epsv("229 (|||", 8, &port))</code>
+      * <code>Assert false (ftp_parse_epsv(hi, strlen(hi), &port))</code>
+      * <code>Assert true (ftp_parse_epsv("229 (|||1050", 12, &port)); // digits run to end of buffer (valid)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1050, port);</code>
   </details>
 
 </details>
@@ -11484,7 +11543,7 @@ A thorough directory of all **2909 test cases** across **244 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_httpcache (11 tests)</b></summary>
+<summary><b>test_httpcache (15 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_preset_immutable</b> &mdash; <i>Preset immutable</i></summary>
@@ -11626,6 +11685,55 @@ A thorough directory of all **2909 test cases** across **244 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, cache_control_build(nullptr, 8, &cc));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, cache_control_build(b, 0, &cc));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, cache_control_build(snug, sizeof(snug), &cc));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_preset_clamps</b> &mdash; <i>Preset clamps</i></summary>
+
+    * **Objective**: Preset clamps
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT32(2147483647, cc.max_age);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(2147483647, cc.max_age);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(2147483647, cc.max_age);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(2147483647, cc.s_maxage);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_boundaries</b> &mdash; <i>Build boundaries</i></summary>
+
+    * **Objective**: Build boundaries
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, cache_control_build(b, sizeof(b), nullptr)); // !cc</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, cache_control_build(b7, sizeof(b7), &cc));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, cache_control_build(b3, sizeof(b3), &cc));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, cache_control_build(b8, sizeof(b8), &cc));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_ci_length_edges</b> &mdash; <i>Parse ci length edges</i></summary>
+
+    * **Objective**: Parse ci length edges
+    * **Assertions**:
+      * <code>Assert false (cache_control_parse("max", 3, &cc))</code>
+      * <code>Assert false (cache_control_parse("publicX", 7, &cc))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_ows_and_empty</b> &mdash; <i>Parse ows and empty</i></summary>
+
+    * **Objective**: Parse ows and empty
+    * **Assertions**:
+      * <code>Assert true (cache_control_parse(tabs, strlen(tabs), &cc))</code>
+      * <code>Assert true (cc.cc_public)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(42, cc.max_age);</code>
+      * <code>Assert true (cache_control_parse(trail, strlen(trail), &cc))</code>
+      * <code>Assert true (cc.no_store)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(5, cc.max_age);</code>
+      * <code>Assert true (cache_control_parse(empty, strlen(empty), &cc))</code>
+      * <code>Assert true (cc.cc_public)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, cc.max_age);</code>
+      * <code>Assert true (cache_control_parse(mixed, strlen(mixed), &cc))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(5, cc.max_age);</code>
   </details>
 
 </details>
