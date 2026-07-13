@@ -1,263 +1,263 @@
 # Test Report
 
-**Generated:** 2026-07-13 05:43:55
+**Generated:** 2026-07-13 06:37:34
 **Command:** `pio test` over 214 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 3038 passed - 685s
+**Result:** ✅ 3038 passed - 693s
 
 ---
 
 ## Summary
 
-| Suite                    | Environment             | Tests | Status |      Duration |
-| :----------------------- | :---------------------- | ----: | :----: | ------------: |
-| `test_canopen`           | `native_canopen`        |    17 |   ✅   |  00:00:04.283 |
-| `test_dbm`               | `native_dbm`            |    13 |   ✅   |  00:00:00.874 |
-| `test_docstore`          | `native_docstore`       |     5 |   ✅   |  00:00:00.938 |
-| `test_dnc`               | `native_dnc`            |    14 |   ✅   |  00:00:00.804 |
-| `test_dnc_stream`        | `native_dnc`            |     8 |   ✅   |  00:00:00.613 |
-| `test_ftp`               | `native_ftp`            |    16 |   ✅   |  00:00:00.782 |
-| `test_httpcache`         | `native_httpcache`      |    11 |   ✅   |  00:00:00.804 |
-| `test_det_primitives`    | `native_det_primitives` |     5 |   ✅   |  00:00:00.781 |
-| `test_det_ip`            | `native_det_ip`         |    11 |   ✅   |  00:00:00.790 |
-| `test_det_arena`         | `native_det_arena`      |    19 |   ✅   |  00:00:00.777 |
-| `test_ssh_ed25519`       | `native_ssh_ed25519`    |    17 |   ✅   |  00:00:04.905 |
-| `test_crypto_kat`        | `native_crypto_kat`     |     9 |   ✅   |  00:00:02.841 |
-| `test_promisc`           | `native_promisc`        |     9 |   ✅   |  00:00:00.778 |
-| `test_bus_capture`       | `native_bus_capture`    |     7 |   ✅   |  00:00:00.792 |
-| `test_j1939`             | `native_j1939`          |    11 |   ✅   |  00:00:00.800 |
-| `test_devicenet`         | `native_devicenet`      |    11 |   ✅   |  00:00:00.769 |
-| `test_nmea2000`          | `native_nmea2000`       |     7 |   ✅   |  00:00:00.821 |
-| `test_mbus`              | `native_mbus`           |    12 |   ✅   |  00:00:00.802 |
-| `test_iec60870`          | `native_iec60870`       |    13 |   ✅   |  00:00:00.782 |
-| `test_sdi12`             | `native_sdi12`          |     7 |   ✅   |  00:00:00.802 |
-| `test_dmx`               | `native_dmx`            |     6 |   ✅   |  00:00:00.762 |
-| `test_nmea0183`          | `native_nmea0183`       |     8 |   ✅   |  00:00:00.807 |
-| `test_iolink`            | `native_iolink`         |     6 |   ✅   |  00:00:00.800 |
-| `test_sse`               | `native`                |    46 |   ✅   |  00:00:01.344 |
-| `test_session`           | `native`                |    19 |   ✅   |  00:00:00.689 |
-| `test_presentation`      | `native`                |    63 |   ✅   |  00:00:00.756 |
-| `test_transport`         | `native`                |    45 |   ✅   |  00:00:00.769 |
-| `test_websocket`         | `native`                |    69 |   ✅   |  00:00:00.797 |
-| `test_http_parser`       | `native`                |    93 |   ✅   |  00:00:00.725 |
-| `test_observability`     | `native_observability`  |    17 |   ✅   |  00:00:00.944 |
-| `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   |  00:00:01.323 |
-| `test_http_ota`          | `native_ota`            |     3 |   ✅   |  00:00:00.854 |
-| `test_provisioning`      | `native_prov`           |     7 |   ✅   |  00:00:00.828 |
-| `test_ssh_crypto`        | `native_ssh`            |    53 |   ✅   |  00:00:04.394 |
-| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   |  00:00:00.814 |
-| `test_ssh_server`        | `native_ssh`            |    27 |   ✅   |  00:00:01.120 |
-| `test_ssh_transport`     | `native_ssh`            |    37 |   ✅   |  00:00:01.866 |
-| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   |  00:00:00.782 |
-| `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   |  00:00:01.320 |
-| `test_ssh_conn`          | `native_ssh_conn`       |    16 |   ✅   |  00:00:02.247 |
-| `test_regex`             | `native_app`            |    13 |   ✅   |  00:00:01.905 |
-| `test_template`          | `native_app`            |     6 |   ✅   |  00:00:00.716 |
-| `test_path_params`       | `native_app`            |     8 |   ✅   |  00:00:00.735 |
-| `test_digest_vectors`    | `native_app`            |     4 |   ✅   |  00:00:00.662 |
-| `test_form_params`       | `native_app`            |     5 |   ✅   |  00:00:00.732 |
-| `test_iface`             | `native_app`            |     7 |   ✅   |  00:00:00.746 |
-| `test_json`              | `native_app`            |    28 |   ✅   |  00:00:00.694 |
-| `test_response_headers`  | `native_app`            |    12 |   ✅   |  00:00:00.735 |
-| `test_middleware`        | `native_app`            |     9 |   ✅   |  00:00:00.734 |
-| `test_digest_auth`       | `native_app`            |    11 |   ✅   |  00:00:00.754 |
-| `test_web_terminal`      | `native_app`            |     9 |   ✅   |  00:00:00.721 |
-| `test_defer`             | `native_app`            |     3 |   ✅   |  00:00:00.682 |
-| `test_multipart`         | `native_app`            |    25 |   ✅   |  00:00:00.752 |
-| `test_auth`              | `native_app`            |    13 |   ✅   |  00:00:00.730 |
-| `test_file_serving`      | `native_app`            |    12 |   ✅   |  00:00:00.764 |
-| `test_dispatch`          | `native_app`            |    11 |   ✅   |  00:00:00.736 |
-| `test_chunked`           | `native_app`            |    14 |   ✅   |  00:00:00.752 |
-| `test_application`       | `native_app`            |    72 |   ✅   |  00:00:00.933 |
-| `test_webdav_handler`    | `native_webdav_handler` |    29 |   ✅   | 00:00:01.1000 |
-| `test_diag`              | `native_diag`           |     2 |   ✅   |  00:00:01.919 |
-| `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   |  00:00:00.864 |
-| `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   |  00:00:00.680 |
-| `test_snmp_v3`           | `native_snmp_v3`        |    22 |   ✅   |  00:00:02.965 |
-| `test_telnet`            | `native_telnet`         |    15 |   ✅   |  00:00:01.016 |
-| `test_coap`              | `native_coap`           |    44 |   ✅   |  00:00:00.929 |
-| `test_coap`              | `native_coap_observe`   |    46 |   ✅   |  00:00:00.969 |
-| `test_webdav`            | `native_webdav`         |    25 |   ✅   |  00:00:00.807 |
-| `test_modbus`            | `native_modbus`         |    23 |   ✅   |  00:00:00.780 |
-| `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   |  00:00:00.940 |
-| `test_redis_resp`        | `native_redis`          |    14 |   ✅   |  00:00:00.783 |
-| `test_sqlite`            | `native_sqlite`         |    23 |   ✅   |  00:00:00.829 |
-| `test_stomp`             | `native_stomp`          |    14 |   ✅   |  00:00:00.804 |
-| `test_mqtt_sn`           | `native_mqtt_sn`        |    13 |   ✅   |  00:00:00.773 |
-| `test_flow_export`       | `native_flow_export`    |     8 |   ✅   |  00:00:00.789 |
-| `test_protobuf`          | `native_protobuf`       |    13 |   ✅   |  00:00:00.779 |
-| `test_preempt_queue`     | `native_preempt_queue`  |    12 |   ✅   |  00:00:00.828 |
-| `test_dma`               | `native_dma`            |    12 |   ✅   |  00:00:00.936 |
-| `test_forward`           | `native_forward`        |    26 |   ✅   |  00:00:01.084 |
-| `test_gateway`           | `native_gateway`        |    12 |   ✅   |  00:00:00.983 |
-| `test_lora`              | `native_lora`           |    14 |   ✅   |  00:00:00.782 |
-| `test_nrf24`             | `native_nrf24`          |    11 |   ✅   |  00:00:00.800 |
-| `test_enocean`           | `native_enocean`        |    10 |   ✅   |  00:00:00.820 |
-| `test_pn532`             | `native_pn532`          |    11 |   ✅   |  00:00:00.787 |
-| `test_sigfox`            | `native_sigfox`         |     7 |   ✅   |  00:00:00.797 |
-| `test_zwave`             | `native_zwave`          |     9 |   ✅   |  00:00:00.781 |
-| `test_zigbee`            | `native_zigbee`         |    10 |   ✅   |  00:00:00.786 |
-| `test_thread`            | `native_thread`         |    15 |   ✅   |  00:00:00.783 |
-| `test_wamp`              | `native_wamp`           |    15 |   ✅   |  00:00:00.837 |
-| `test_sunspec`           | `native_sunspec`        |     7 |   ✅   |  00:00:00.790 |
-| `test_c37118`            | `native_c37118`         |     6 |   ✅   |  00:00:00.801 |
-| `test_dnp3`              | `native_dnp3`           |     8 |   ✅   |  00:00:00.804 |
-| `test_grpcweb`           | `native_grpcweb`        |     9 |   ✅   |  00:00:00.788 |
-| `test_lwm2m_tlv`         | `native_lwm2m_tlv`      |    14 |   ✅   |  00:00:00.775 |
-| `test_fins`              | `native_fins`           |     6 |   ✅   |  00:00:00.812 |
-| `test_hostlink`          | `native_hostlink`       |     8 |   ✅   |  00:00:00.781 |
-| `test_senml`             | `native_senml`          |     9 |   ✅   |  00:00:00.859 |
-| `test_df1`               | `native_df1`            |    10 |   ✅   |  00:00:00.778 |
-| `test_cotp`              | `native_cotp`           |     7 |   ✅   |  00:00:00.775 |
-| `test_s7comm`            | `native_s7comm`         |     9 |   ✅   |  00:00:00.777 |
-| `test_melsec`            | `native_melsec`         |     7 |   ✅   |  00:00:00.795 |
-| `test_bacnet`            | `native_bacnet`         |     9 |   ✅   |  00:00:00.809 |
-| `test_enip`              | `native_enip`           |     7 |   ✅   |  00:00:00.811 |
-| `test_amqp`              | `native_amqp`           |     8 |   ✅   |  00:00:00.797 |
-| `test_cip`               | `native_cip`            |     9 |   ✅   |  00:00:00.803 |
-| `test_nats`              | `native_nats`           |    14 |   ✅   |  00:00:00.814 |
-| `test_proxy_protocol`    | `native_proxy_protocol` |    10 |   ✅   |  00:00:00.803 |
-| `test_sparkplug`         | `native_sparkplug`      |     7 |   ✅   |  00:00:00.815 |
-| `test_modbus_master`     | `native_modbus_master`  |     5 |   ✅   |  00:00:00.821 |
-| `test_ota_rollback`      | `native_ota_rollback`   |     6 |   ✅   |  00:00:00.777 |
-| `test_totp`              | `native_totp`           |     5 |   ✅   |  00:00:00.832 |
-| `test_webhook`           | `native_webhook`        |     9 |   ✅   |  00:00:00.840 |
-| `test_radio_power`       | `native_radio_power`    |     2 |   ✅   |  00:00:00.779 |
-| `test_dns_resolver`      | `native_dns_resolver`   |     5 |   ✅   |  00:00:00.813 |
-| `test_audit_log`         | `native_audit_log`      |    16 |   ✅   |  00:00:00.868 |
-| `test_oidc`              | `native_oidc`           |    19 |   ✅   |  00:00:14.643 |
-| `test_vfs`               | `native_vfs`            |    12 |   ✅   |  00:00:00.836 |
-| `test_graphql`           | `native_graphql`        |    32 |   ✅   |  00:00:00.831 |
-| `test_espnow`            | `native_espnow`         |     8 |   ✅   |  00:00:00.784 |
-| `test_oauth2`            | `native_oauth2`         |     9 |   ✅   |  00:00:00.839 |
-| `test_opcua`             | `native_opcua`          |    47 |   ✅   |  00:00:00.990 |
-| `test_opcua_client`      | `native_opcua_client`   |    20 |   ✅   |  00:00:00.894 |
-| `test_keepalive`         | `native_keepalive`      |    11 |   ✅   |  00:00:01.874 |
-| `test_range`             | `native_range`          |    20 |   ✅   |  00:00:01.875 |
-| `test_syslog`            | `native_syslog`         |    10 |   ✅   |  00:00:00.833 |
-| `test_ntlm`              | `native_smb`            |     3 |   ✅   |  00:00:01.008 |
-| `test_smb_client`        | `native_smb`            |    10 |   ✅   |  00:00:00.649 |
-| `test_ntlmssp`           | `native_smb`            |     5 |   ✅   |  00:00:00.631 |
-| `test_smb_crypto`        | `native_smb`            |     5 |   ✅   |  00:00:00.632 |
-| `test_smb2`              | `native_smb`            |    19 |   ✅   |  00:00:00.711 |
-| `test_spnego`            | `native_smb`            |     4 |   ✅   |  00:00:00.619 |
-| `test_smtp`              | `native_smtp`           |    22 |   ✅   |  00:00:01.090 |
-| `test_ntp_server`        | `native_ntp_server`     |     8 |   ✅   |  00:00:00.827 |
-| `test_dns_server`        | `native_dns_server`     |    13 |   ✅   |  00:00:00.822 |
-| `test_rtc`               | `native_rtc`            |     9 |   ✅   |  00:00:00.813 |
-| `test_relay`             | `native_relay`          |     6 |   ✅   |  00:00:00.829 |
-| `test_ld2410`            | `native_ld2410`         |     8 |   ✅   |  00:00:00.819 |
-| `test_mpr121`            | `native_mpr121`         |     6 |   ✅   |  00:00:00.810 |
-| `test_sht3x`             | `native_sht3x`          |     6 |   ✅   |  00:00:00.810 |
-| `test_pca9685`           | `native_pca9685`        |     5 |   ✅   |  00:00:00.791 |
-| `test_ads1115`           | `native_ads1115`        |     5 |   ✅   |  00:00:00.838 |
-| `test_ina219`            | `native_ina219`         |     5 |   ✅   |  00:00:00.812 |
-| `test_hpack`             | `native_hpack`          |    15 |   ✅   |  00:00:01.008 |
-| `test_h2_frame`          | `native_h2frame`        |     7 |   ✅   |  00:00:00.822 |
-| `test_h2_conn`           | `native_h2conn`         |    22 |   ✅   |  00:00:01.210 |
-| `test_quic_varint`       | `native_quic_varint`    |     3 |   ✅   |  00:00:00.810 |
-| `test_h3_frame`          | `native_h3frame`        |     7 |   ✅   |  00:00:00.841 |
-| `test_jwt`               | `native_jwt`            |    22 |   ✅   |  00:00:00.910 |
-| `test_upload`            | `native_upload`         |     3 |   ✅   |  00:00:01.916 |
-| `test_http_client`       | `native_http_client`    |    15 |   ✅   |  00:00:00.808 |
-| `test_compliance`        | `native_compliance`     |    15 |   ✅   |  00:00:00.869 |
-| `test_mqtt`              | `native_mqtt`           |    22 |   ✅   |  00:00:00.832 |
-| `test_ws_client`         | `native_ws_client`      |    17 |   ✅   |  00:00:00.882 |
-| `test_scratch`           | `native_scratch`        |    15 |   ✅   |  00:00:00.854 |
-| `test_snmp_trap`         | `native_snmp_trap`      |     7 |   ✅   |  00:00:00.855 |
-| `test_inflate`           | `native_inflate`        |    14 |   ✅   |  00:00:00.808 |
-| `test_deflate`           | `native_deflate`        |    10 |   ✅   |  00:00:00.885 |
-| `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   |  00:00:00.885 |
-| `test_ssh_comp`          | `native_ssh_comp`       |     6 |   ✅   |  00:00:01.468 |
-| `test_websocket`         | `native_ws_deflate`     |    74 |   ✅   |  00:00:01.492 |
-| `test_time_source`       | `native_time_source`    |    10 |   ✅   |  00:00:00.820 |
-| `test_config_store`      | `native_config_store`   |    15 |   ✅   |  00:00:00.819 |
-| `test_device_id`         | `native_device_id`      |     4 |   ✅   |  00:00:00.855 |
-| `test_auth_lockout`      | `native_auth_lockout`   |    12 |   ✅   |  00:00:00.844 |
-| `test_csrf`              | `native_csrf`           |    10 |   ✅   |  00:00:00.858 |
-| `test_telemetry`         | `native_telemetry`      |     8 |   ✅   |  00:00:00.828 |
-| `test_dashboard`         | `native_dashboard`      |    15 |   ✅   |  00:00:00.805 |
-| `test_net_egress`        | `native_net_egress`     |     6 |   ✅   |  00:00:00.762 |
-| `test_partition_monitor` | `native_partition`      |     6 |   ✅   |  00:00:00.791 |
-| `test_cbor`              | `native_cbor`           |    21 |   ✅   |  00:00:00.779 |
-| `test_msgpack`           | `native_msgpack`        |    23 |   ✅   |  00:00:00.786 |
-| `test_gpio_map`          | `native_gpio_map`       |     9 |   ✅   |  00:00:00.787 |
-| `test_udp_telemetry`     | `native_udp_telemetry`  |     8 |   ✅   |  00:00:00.794 |
-| `test_statsd`            | `native_statsd`         |    10 |   ✅   |  00:00:00.826 |
-| `test_guardrails`        | `native_guardrails`     |     9 |   ✅   |  00:00:00.794 |
-| `test_failsafe`          | `native_failsafe`       |     7 |   ✅   |  00:00:00.826 |
-| `test_sleep_sched`       | `native_sleep_sched`    |     8 |   ✅   |  00:00:00.807 |
-| `test_wearlevel`         | `native_wearlevel`      |     5 |   ✅   |  00:00:00.781 |
-| `test_netadapt`          | `native_netadapt`       |     6 |   ✅   |  00:00:00.792 |
-| `test_dshot`             | `native_dshot`          |     8 |   ✅   |  00:00:00.793 |
-| `test_hart`              | `native_hart`           |     7 |   ✅   |  00:00:00.823 |
-| `test_nts`               | `native_nts`            |     5 |   ✅   |  00:00:00.777 |
-| `test_dds`               | `native_dds`            |     5 |   ✅   |  00:00:00.787 |
-| `test_xmpp`              | `native_xmpp`           |    11 |   ✅   |  00:00:00.765 |
-| `test_rawl2`             | `native_rawl2`          |     5 |   ✅   |  00:00:00.770 |
-| `test_spa_router`        | `native_spa_router`     |     2 |   ✅   |  00:00:00.754 |
-| `test_goose`             | `native_goose`          |     4 |   ✅   |  00:00:00.797 |
-| `test_mtconnect`         | `native_mtconnect`      |    12 |   ✅   |  00:00:00.844 |
-| `test_wal`               | `native_wal`            |     6 |   ✅   |  00:00:00.843 |
-| `test_wal_store`         | `native_wal`            |     7 |   ✅   |  00:00:00.645 |
-| `test_j2735`             | `native_j2735`          |    11 |   ✅   |  00:00:00.792 |
-| `test_nema_ts2`          | `native_nema_ts2`       |     4 |   ✅   |  00:00:00.803 |
-| `test_snp`               | `native_snp`            |     5 |   ✅   |  00:00:00.778 |
-| `test_directnet`         | `native_directnet`      |     5 |   ✅   |  00:00:00.770 |
-| `test_sep2`              | `native_sep2`           |     5 |   ✅   |  00:00:00.766 |
-| `test_profinet`          | `native_profinet`       |     5 |   ✅   |  00:00:00.784 |
-| `test_ntcip`             | `native_ntcip`          |     3 |   ✅   |  00:00:00.764 |
-| `test_openadr`           | `native_openadr`        |     5 |   ✅   |  00:00:00.768 |
-| `test_mms`               | `native_mms`            |    11 |   ✅   |  00:00:00.777 |
-| `test_cclink`            | `native_cclink`         |     5 |   ✅   |  00:00:00.775 |
-| `test_powerlink`         | `native_powerlink`      |     4 |   ✅   |  00:00:00.803 |
-| `test_sercos`            | `native_sercos`         |     4 |   ✅   |  00:00:00.772 |
-| `test_profibus`          | `native_profibus`       |     5 |   ✅   |  00:00:00.776 |
-| `test_lonworks`          | `native_lonworks`       |     5 |   ✅   |  00:00:00.793 |
-| `test_mbplus`            | `native_mbplus`         |     6 |   ✅   |  00:00:00.777 |
-| `test_interbus`          | `native_interbus`       |     5 |   ✅   |  00:00:00.759 |
-| `test_iccp`              | `native_iccp`           |     5 |   ✅   |  00:00:00.779 |
-| `test_wave`              | `native_wave`           |     9 |   ✅   |  00:00:00.781 |
-| `test_utmc`              | `native_utmc`           |     6 |   ✅   |  00:00:00.761 |
-| `test_ocit`              | `native_ocit`           |     4 |   ✅   |  00:00:00.760 |
-| `test_atc`               | `native_atc`            |     5 |   ✅   |  00:00:00.770 |
-| `test_southbound`        | `native_southbound`     |     6 |   ✅   |  00:00:00.760 |
-| `test_exc_decoder`       | `native_exc_decoder`    |     7 |   ✅   |  00:00:00.759 |
-| `test_http_delivery`     | `native_http_delivery`  |     8 |   ✅   |  00:00:00.764 |
-| `test_hw_health`         | `native_hw_health`      |     7 |   ✅   |  00:00:00.789 |
-| `test_mdns_adaptive`     | `native_mdns_adaptive`  |     5 |   ✅   |  00:00:00.770 |
-| `test_sockpool`          | `native_sockpool`       |     6 |   ✅   |  00:00:00.774 |
-| `test_psram_pool`        | `native_psram_pool`     |     5 |   ✅   |  00:00:00.763 |
-| `test_happy_eyeballs`    | `native_happy_eyeballs` |     5 |   ✅   |  00:00:00.797 |
-| `test_wifi_sniffer`      | `native_wifi_sniffer`   |     6 |   ✅   |  00:00:00.775 |
-| `test_link_manager`      | `native_link_manager`   |     4 |   ✅   |  00:00:00.765 |
-| `test_cc1101`            | `native_cc1101`         |    11 |   ✅   |  00:00:00.789 |
-| `test_fdc2214`           | `native_fdc2214`        |     4 |   ✅   |  00:00:00.778 |
-| `test_ldc1614`           | `native_ldc1614`        |     4 |   ✅   |  00:00:00.765 |
-| `test_vl53l0x`           | `native_vl53l0x`        |     3 |   ✅   |  00:00:00.752 |
-| `test_radio_sniff`       | `native_radio_sniff`    |     4 |   ✅   |  00:00:00.769 |
-| `test_ble_gatt`          | `native_ble_gatt`       |     7 |   ✅   |  00:00:00.777 |
-| `test_tls_policy`        | `native_tls_policy`     |     4 |   ✅   |  00:00:00.765 |
-| `test_wisun`             | `native_wisun`          |    10 |   ✅   |  00:00:00.812 |
-| `test_logbuf`            | `native_logbuf`         |     5 |   ✅   |  00:00:00.790 |
-| `test_config_io`         | `native_config_io`      |     5 |   ✅   |  00:00:00.816 |
-| `test_workers`           | `native_workers`        |     6 |   ✅   |  00:00:00.953 |
-| `test_clock`             | `native_clock`          |     7 |   ✅   |  00:00:00.763 |
-| `test_concurrency`       | `native_concurrency`    |     2 |   ✅   |  00:00:00.930 |
-| `test_concurrency`       | `native_tsan`           |     2 |   ✅   |  00:00:01.308 |
-| `test_qpack`             | `native_qpack`          |    11 |   ✅   |  00:00:00.945 |
-| `test_quic_packet`       | `native_quic_packet`    |     8 |   ✅   |  00:00:00.775 |
-| `test_quic_frame`        | `native_quic_frame`     |     9 |   ✅   |  00:00:00.832 |
-| `test_quic_crypto`       | `native_quic_crypto`    |     7 |   ✅   |  00:00:00.960 |
-| `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   |  00:00:00.888 |
-| `test_quic_tp`           | `native_quic_tp`        |     8 |   ✅   |  00:00:00.814 |
-| `test_tls13_msg`         | `native_tls13_msg`      |    11 |   ✅   |  00:00:00.958 |
-| `test_quic_tls`          | `native_quic_tls`       |    13 |   ✅   |  00:00:01.369 |
-| `test_quic_conn`         | `native_quic_conn`      |    27 |   ✅   |  00:00:02.617 |
-| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   |  00:00:01.326 |
-| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   |  00:00:01.322 |
-| `test_quic_server`       | `native_quic_server`    |     4 |   ✅   |  00:00:01.419 |
-| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   |  00:00:02.496 |
-| `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   |  00:00:00.842 |
+| Suite                    | Environment             | Tests | Status |     Duration |
+| :----------------------- | :---------------------- | ----: | :----: | -----------: |
+| `test_canopen`           | `native_canopen`        |    17 |   ✅   | 00:00:03.597 |
+| `test_dbm`               | `native_dbm`            |    13 |   ✅   | 00:00:00.907 |
+| `test_docstore`          | `native_docstore`       |     5 |   ✅   | 00:00:00.928 |
+| `test_dnc`               | `native_dnc`            |    14 |   ✅   | 00:00:00.842 |
+| `test_dnc_stream`        | `native_dnc`            |     8 |   ✅   | 00:00:00.638 |
+| `test_ftp`               | `native_ftp`            |    16 |   ✅   | 00:00:00.874 |
+| `test_httpcache`         | `native_httpcache`      |    11 |   ✅   | 00:00:00.800 |
+| `test_det_primitives`    | `native_det_primitives` |     5 |   ✅   | 00:00:00.799 |
+| `test_det_ip`            | `native_det_ip`         |    11 |   ✅   | 00:00:00.836 |
+| `test_det_arena`         | `native_det_arena`      |    19 |   ✅   | 00:00:00.818 |
+| `test_ssh_ed25519`       | `native_ssh_ed25519`    |    17 |   ✅   | 00:00:04.951 |
+| `test_crypto_kat`        | `native_crypto_kat`     |     9 |   ✅   | 00:00:02.785 |
+| `test_promisc`           | `native_promisc`        |     9 |   ✅   | 00:00:00.869 |
+| `test_bus_capture`       | `native_bus_capture`    |     7 |   ✅   | 00:00:00.821 |
+| `test_j1939`             | `native_j1939`          |    11 |   ✅   | 00:00:00.845 |
+| `test_devicenet`         | `native_devicenet`      |    11 |   ✅   | 00:00:00.851 |
+| `test_nmea2000`          | `native_nmea2000`       |     7 |   ✅   | 00:00:00.833 |
+| `test_mbus`              | `native_mbus`           |    12 |   ✅   | 00:00:00.840 |
+| `test_iec60870`          | `native_iec60870`       |    13 |   ✅   | 00:00:00.838 |
+| `test_sdi12`             | `native_sdi12`          |     7 |   ✅   | 00:00:00.842 |
+| `test_dmx`               | `native_dmx`            |     6 |   ✅   | 00:00:00.848 |
+| `test_nmea0183`          | `native_nmea0183`       |     8 |   ✅   | 00:00:00.845 |
+| `test_iolink`            | `native_iolink`         |     6 |   ✅   | 00:00:00.834 |
+| `test_sse`               | `native`                |    46 |   ✅   | 00:00:01.418 |
+| `test_session`           | `native`                |    19 |   ✅   | 00:00:00.736 |
+| `test_presentation`      | `native`                |    63 |   ✅   | 00:00:00.785 |
+| `test_transport`         | `native`                |    45 |   ✅   | 00:00:00.779 |
+| `test_websocket`         | `native`                |    69 |   ✅   | 00:00:00.861 |
+| `test_http_parser`       | `native`                |    93 |   ✅   | 00:00:00.802 |
+| `test_observability`     | `native_observability`  |    17 |   ✅   | 00:00:01.011 |
+| `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.420 |
+| `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.883 |
+| `test_provisioning`      | `native_prov`           |     7 |   ✅   | 00:00:00.863 |
+| `test_ssh_crypto`        | `native_ssh`            |    53 |   ✅   | 00:00:04.449 |
+| `test_ssh_auth`          | `native_ssh`            |    19 |   ✅   | 00:00:00.856 |
+| `test_ssh_server`        | `native_ssh`            |    27 |   ✅   | 00:00:01.199 |
+| `test_ssh_transport`     | `native_ssh`            |    37 |   ✅   | 00:00:01.770 |
+| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:00.781 |
+| `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.366 |
+| `test_ssh_conn`          | `native_ssh_conn`       |    16 |   ✅   | 00:00:02.338 |
+| `test_regex`             | `native_app`            |    13 |   ✅   | 00:00:01.996 |
+| `test_template`          | `native_app`            |     6 |   ✅   | 00:00:00.786 |
+| `test_path_params`       | `native_app`            |     8 |   ✅   | 00:00:00.786 |
+| `test_digest_vectors`    | `native_app`            |     4 |   ✅   | 00:00:00.688 |
+| `test_form_params`       | `native_app`            |     5 |   ✅   | 00:00:00.784 |
+| `test_iface`             | `native_app`            |     7 |   ✅   | 00:00:00.798 |
+| `test_json`              | `native_app`            |    28 |   ✅   | 00:00:00.751 |
+| `test_response_headers`  | `native_app`            |    12 |   ✅   | 00:00:00.800 |
+| `test_middleware`        | `native_app`            |     9 |   ✅   | 00:00:00.797 |
+| `test_digest_auth`       | `native_app`            |    11 |   ✅   | 00:00:00.845 |
+| `test_web_terminal`      | `native_app`            |     9 |   ✅   | 00:00:00.830 |
+| `test_defer`             | `native_app`            |     3 |   ✅   | 00:00:00.835 |
+| `test_multipart`         | `native_app`            |    25 |   ✅   | 00:00:00.870 |
+| `test_auth`              | `native_app`            |    13 |   ✅   | 00:00:00.859 |
+| `test_file_serving`      | `native_app`            |    12 |   ✅   | 00:00:00.864 |
+| `test_dispatch`          | `native_app`            |    11 |   ✅   | 00:00:00.832 |
+| `test_chunked`           | `native_app`            |    14 |   ✅   | 00:00:00.869 |
+| `test_application`       | `native_app`            |    72 |   ✅   | 00:00:01.049 |
+| `test_webdav_handler`    | `native_webdav_handler` |    29 |   ✅   | 00:00:02.070 |
+| `test_diag`              | `native_diag`           |     2 |   ✅   | 00:00:02.005 |
+| `test_snmp_ber`          | `native_snmp`           |    21 |   ✅   | 00:00:00.904 |
+| `test_snmp_agent`        | `native_snmp`           |    28 |   ✅   | 00:00:00.755 |
+| `test_snmp_v3`           | `native_snmp_v3`        |    22 |   ✅   | 00:00:03.011 |
+| `test_telnet`            | `native_telnet`         |    15 |   ✅   | 00:00:01.058 |
+| `test_coap`              | `native_coap`           |    44 |   ✅   | 00:00:00.972 |
+| `test_coap`              | `native_coap_observe`   |    46 |   ✅   | 00:00:00.989 |
+| `test_webdav`            | `native_webdav`         |    25 |   ✅   | 00:00:00.845 |
+| `test_modbus`            | `native_modbus`         |    23 |   ✅   | 00:00:00.809 |
+| `test_cloudevents`       | `native_cloudevents`    |     8 |   ✅   | 00:00:00.973 |
+| `test_redis_resp`        | `native_redis`          |    14 |   ✅   | 00:00:00.826 |
+| `test_sqlite`            | `native_sqlite`         |    23 |   ✅   | 00:00:00.837 |
+| `test_stomp`             | `native_stomp`          |    14 |   ✅   | 00:00:00.829 |
+| `test_mqtt_sn`           | `native_mqtt_sn`        |    13 |   ✅   | 00:00:00.797 |
+| `test_flow_export`       | `native_flow_export`    |     8 |   ✅   | 00:00:00.812 |
+| `test_protobuf`          | `native_protobuf`       |    13 |   ✅   | 00:00:00.863 |
+| `test_preempt_queue`     | `native_preempt_queue`  |    12 |   ✅   | 00:00:00.849 |
+| `test_dma`               | `native_dma`            |    12 |   ✅   | 00:00:01.013 |
+| `test_forward`           | `native_forward`        |    26 |   ✅   | 00:00:01.108 |
+| `test_gateway`           | `native_gateway`        |    12 |   ✅   | 00:00:01.007 |
+| `test_lora`              | `native_lora`           |    14 |   ✅   | 00:00:00.857 |
+| `test_nrf24`             | `native_nrf24`          |    11 |   ✅   | 00:00:00.832 |
+| `test_enocean`           | `native_enocean`        |    10 |   ✅   | 00:00:00.818 |
+| `test_pn532`             | `native_pn532`          |    11 |   ✅   | 00:00:00.820 |
+| `test_sigfox`            | `native_sigfox`         |     7 |   ✅   | 00:00:00.824 |
+| `test_zwave`             | `native_zwave`          |     9 |   ✅   | 00:00:00.823 |
+| `test_zigbee`            | `native_zigbee`         |    10 |   ✅   | 00:00:00.804 |
+| `test_thread`            | `native_thread`         |    15 |   ✅   | 00:00:00.823 |
+| `test_wamp`              | `native_wamp`           |    15 |   ✅   | 00:00:00.885 |
+| `test_sunspec`           | `native_sunspec`        |     7 |   ✅   | 00:00:00.826 |
+| `test_c37118`            | `native_c37118`         |     6 |   ✅   | 00:00:00.808 |
+| `test_dnp3`              | `native_dnp3`           |     8 |   ✅   | 00:00:00.822 |
+| `test_grpcweb`           | `native_grpcweb`        |     9 |   ✅   | 00:00:00.825 |
+| `test_lwm2m_tlv`         | `native_lwm2m_tlv`      |    14 |   ✅   | 00:00:00.812 |
+| `test_fins`              | `native_fins`           |     6 |   ✅   | 00:00:00.847 |
+| `test_hostlink`          | `native_hostlink`       |     8 |   ✅   | 00:00:00.832 |
+| `test_senml`             | `native_senml`          |     9 |   ✅   | 00:00:00.914 |
+| `test_df1`               | `native_df1`            |    10 |   ✅   | 00:00:00.840 |
+| `test_cotp`              | `native_cotp`           |     7 |   ✅   | 00:00:00.862 |
+| `test_s7comm`            | `native_s7comm`         |     9 |   ✅   | 00:00:00.825 |
+| `test_melsec`            | `native_melsec`         |     7 |   ✅   | 00:00:00.818 |
+| `test_bacnet`            | `native_bacnet`         |     9 |   ✅   | 00:00:00.818 |
+| `test_enip`              | `native_enip`           |     7 |   ✅   | 00:00:00.803 |
+| `test_amqp`              | `native_amqp`           |     8 |   ✅   | 00:00:00.803 |
+| `test_cip`               | `native_cip`            |     9 |   ✅   | 00:00:00.815 |
+| `test_nats`              | `native_nats`           |    14 |   ✅   | 00:00:00.832 |
+| `test_proxy_protocol`    | `native_proxy_protocol` |    10 |   ✅   | 00:00:00.850 |
+| `test_sparkplug`         | `native_sparkplug`      |     7 |   ✅   | 00:00:00.889 |
+| `test_modbus_master`     | `native_modbus_master`  |     5 |   ✅   | 00:00:00.863 |
+| `test_ota_rollback`      | `native_ota_rollback`   |     6 |   ✅   | 00:00:00.789 |
+| `test_totp`              | `native_totp`           |     5 |   ✅   | 00:00:00.871 |
+| `test_webhook`           | `native_webhook`        |     9 |   ✅   | 00:00:00.856 |
+| `test_radio_power`       | `native_radio_power`    |     2 |   ✅   | 00:00:00.839 |
+| `test_dns_resolver`      | `native_dns_resolver`   |     5 |   ✅   | 00:00:00.827 |
+| `test_audit_log`         | `native_audit_log`      |    16 |   ✅   | 00:00:00.905 |
+| `test_oidc`              | `native_oidc`           |    19 |   ✅   | 00:00:14.694 |
+| `test_vfs`               | `native_vfs`            |    12 |   ✅   | 00:00:00.815 |
+| `test_graphql`           | `native_graphql`        |    32 |   ✅   | 00:00:00.809 |
+| `test_espnow`            | `native_espnow`         |     8 |   ✅   | 00:00:00.828 |
+| `test_oauth2`            | `native_oauth2`         |     9 |   ✅   | 00:00:00.868 |
+| `test_opcua`             | `native_opcua`          |    47 |   ✅   | 00:00:00.995 |
+| `test_opcua_client`      | `native_opcua_client`   |    20 |   ✅   | 00:00:00.961 |
+| `test_keepalive`         | `native_keepalive`      |    11 |   ✅   | 00:00:01.946 |
+| `test_range`             | `native_range`          |    20 |   ✅   | 00:00:01.965 |
+| `test_syslog`            | `native_syslog`         |    10 |   ✅   | 00:00:00.930 |
+| `test_ntlm`              | `native_smb`            |     3 |   ✅   | 00:00:01.044 |
+| `test_smb_client`        | `native_smb`            |    10 |   ✅   | 00:00:00.708 |
+| `test_ntlmssp`           | `native_smb`            |     5 |   ✅   | 00:00:00.670 |
+| `test_smb_crypto`        | `native_smb`            |     5 |   ✅   | 00:00:00.661 |
+| `test_smb2`              | `native_smb`            |    19 |   ✅   | 00:00:00.743 |
+| `test_spnego`            | `native_smb`            |     4 |   ✅   | 00:00:00.670 |
+| `test_smtp`              | `native_smtp`           |    22 |   ✅   | 00:00:01.075 |
+| `test_ntp_server`        | `native_ntp_server`     |     8 |   ✅   | 00:00:00.827 |
+| `test_dns_server`        | `native_dns_server`     |    13 |   ✅   | 00:00:00.836 |
+| `test_rtc`               | `native_rtc`            |     9 |   ✅   | 00:00:00.849 |
+| `test_relay`             | `native_relay`          |     6 |   ✅   | 00:00:00.850 |
+| `test_ld2410`            | `native_ld2410`         |     8 |   ✅   | 00:00:00.855 |
+| `test_mpr121`            | `native_mpr121`         |     6 |   ✅   | 00:00:00.866 |
+| `test_sht3x`             | `native_sht3x`          |     6 |   ✅   | 00:00:00.830 |
+| `test_pca9685`           | `native_pca9685`        |     5 |   ✅   | 00:00:00.847 |
+| `test_ads1115`           | `native_ads1115`        |     5 |   ✅   | 00:00:00.838 |
+| `test_ina219`            | `native_ina219`         |     5 |   ✅   | 00:00:00.838 |
+| `test_hpack`             | `native_hpack`          |    15 |   ✅   | 00:00:01.033 |
+| `test_h2_frame`          | `native_h2frame`        |     7 |   ✅   | 00:00:00.843 |
+| `test_h2_conn`           | `native_h2conn`         |    22 |   ✅   | 00:00:01.239 |
+| `test_quic_varint`       | `native_quic_varint`    |     3 |   ✅   | 00:00:00.819 |
+| `test_h3_frame`          | `native_h3frame`        |     7 |   ✅   | 00:00:00.831 |
+| `test_jwt`               | `native_jwt`            |    22 |   ✅   | 00:00:00.910 |
+| `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.950 |
+| `test_http_client`       | `native_http_client`    |    15 |   ✅   | 00:00:00.845 |
+| `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.899 |
+| `test_mqtt`              | `native_mqtt`           |    22 |   ✅   | 00:00:00.862 |
+| `test_ws_client`         | `native_ws_client`      |    17 |   ✅   | 00:00:00.911 |
+| `test_scratch`           | `native_scratch`        |    15 |   ✅   | 00:00:00.891 |
+| `test_snmp_trap`         | `native_snmp_trap`      |     7 |   ✅   | 00:00:00.864 |
+| `test_inflate`           | `native_inflate`        |    14 |   ✅   | 00:00:00.836 |
+| `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.890 |
+| `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.923 |
+| `test_ssh_comp`          | `native_ssh_comp`       |     6 |   ✅   | 00:00:01.452 |
+| `test_websocket`         | `native_ws_deflate`     |    74 |   ✅   | 00:00:01.504 |
+| `test_time_source`       | `native_time_source`    |    10 |   ✅   | 00:00:00.832 |
+| `test_config_store`      | `native_config_store`   |    15 |   ✅   | 00:00:00.825 |
+| `test_device_id`         | `native_device_id`      |     4 |   ✅   | 00:00:00.865 |
+| `test_auth_lockout`      | `native_auth_lockout`   |    12 |   ✅   | 00:00:00.857 |
+| `test_csrf`              | `native_csrf`           |    10 |   ✅   | 00:00:00.878 |
+| `test_telemetry`         | `native_telemetry`      |     8 |   ✅   | 00:00:00.865 |
+| `test_dashboard`         | `native_dashboard`      |    15 |   ✅   | 00:00:00.841 |
+| `test_net_egress`        | `native_net_egress`     |     6 |   ✅   | 00:00:00.804 |
+| `test_partition_monitor` | `native_partition`      |     6 |   ✅   | 00:00:00.839 |
+| `test_cbor`              | `native_cbor`           |    21 |   ✅   | 00:00:00.840 |
+| `test_msgpack`           | `native_msgpack`        |    23 |   ✅   | 00:00:00.859 |
+| `test_gpio_map`          | `native_gpio_map`       |     9 |   ✅   | 00:00:00.819 |
+| `test_udp_telemetry`     | `native_udp_telemetry`  |     8 |   ✅   | 00:00:00.849 |
+| `test_statsd`            | `native_statsd`         |    10 |   ✅   | 00:00:00.877 |
+| `test_guardrails`        | `native_guardrails`     |     9 |   ✅   | 00:00:00.821 |
+| `test_failsafe`          | `native_failsafe`       |     7 |   ✅   | 00:00:00.838 |
+| `test_sleep_sched`       | `native_sleep_sched`    |     8 |   ✅   | 00:00:00.803 |
+| `test_wearlevel`         | `native_wearlevel`      |     5 |   ✅   | 00:00:00.823 |
+| `test_netadapt`          | `native_netadapt`       |     6 |   ✅   | 00:00:00.809 |
+| `test_dshot`             | `native_dshot`          |     8 |   ✅   | 00:00:00.841 |
+| `test_hart`              | `native_hart`           |     7 |   ✅   | 00:00:00.838 |
+| `test_nts`               | `native_nts`            |     5 |   ✅   | 00:00:00.837 |
+| `test_dds`               | `native_dds`            |     5 |   ✅   | 00:00:00.832 |
+| `test_xmpp`              | `native_xmpp`           |    11 |   ✅   | 00:00:00.823 |
+| `test_rawl2`             | `native_rawl2`          |     5 |   ✅   | 00:00:00.808 |
+| `test_spa_router`        | `native_spa_router`     |     2 |   ✅   | 00:00:00.801 |
+| `test_goose`             | `native_goose`          |     4 |   ✅   | 00:00:00.826 |
+| `test_mtconnect`         | `native_mtconnect`      |    12 |   ✅   | 00:00:00.835 |
+| `test_wal`               | `native_wal`            |     6 |   ✅   | 00:00:00.867 |
+| `test_wal_store`         | `native_wal`            |     7 |   ✅   | 00:00:00.660 |
+| `test_j2735`             | `native_j2735`          |    11 |   ✅   | 00:00:00.827 |
+| `test_nema_ts2`          | `native_nema_ts2`       |     4 |   ✅   | 00:00:00.825 |
+| `test_snp`               | `native_snp`            |     5 |   ✅   | 00:00:00.820 |
+| `test_directnet`         | `native_directnet`      |     5 |   ✅   | 00:00:00.831 |
+| `test_sep2`              | `native_sep2`           |     5 |   ✅   | 00:00:00.827 |
+| `test_profinet`          | `native_profinet`       |     5 |   ✅   | 00:00:00.827 |
+| `test_ntcip`             | `native_ntcip`          |     3 |   ✅   | 00:00:00.821 |
+| `test_openadr`           | `native_openadr`        |     5 |   ✅   | 00:00:00.799 |
+| `test_mms`               | `native_mms`            |    11 |   ✅   | 00:00:00.817 |
+| `test_cclink`            | `native_cclink`         |     5 |   ✅   | 00:00:00.826 |
+| `test_powerlink`         | `native_powerlink`      |     4 |   ✅   | 00:00:00.804 |
+| `test_sercos`            | `native_sercos`         |     4 |   ✅   | 00:00:00.819 |
+| `test_profibus`          | `native_profibus`       |     5 |   ✅   | 00:00:00.802 |
+| `test_lonworks`          | `native_lonworks`       |     5 |   ✅   | 00:00:00.798 |
+| `test_mbplus`            | `native_mbplus`         |     6 |   ✅   | 00:00:00.849 |
+| `test_interbus`          | `native_interbus`       |     5 |   ✅   | 00:00:00.826 |
+| `test_iccp`              | `native_iccp`           |     5 |   ✅   | 00:00:00.823 |
+| `test_wave`              | `native_wave`           |     9 |   ✅   | 00:00:00.803 |
+| `test_utmc`              | `native_utmc`           |     6 |   ✅   | 00:00:00.863 |
+| `test_ocit`              | `native_ocit`           |     4 |   ✅   | 00:00:00.862 |
+| `test_atc`               | `native_atc`            |     5 |   ✅   | 00:00:00.852 |
+| `test_southbound`        | `native_southbound`     |     6 |   ✅   | 00:00:00.865 |
+| `test_exc_decoder`       | `native_exc_decoder`    |     7 |   ✅   | 00:00:00.863 |
+| `test_http_delivery`     | `native_http_delivery`  |     8 |   ✅   | 00:00:00.846 |
+| `test_hw_health`         | `native_hw_health`      |     7 |   ✅   | 00:00:00.861 |
+| `test_mdns_adaptive`     | `native_mdns_adaptive`  |     5 |   ✅   | 00:00:00.854 |
+| `test_sockpool`          | `native_sockpool`       |     6 |   ✅   | 00:00:00.855 |
+| `test_psram_pool`        | `native_psram_pool`     |     5 |   ✅   | 00:00:00.862 |
+| `test_happy_eyeballs`    | `native_happy_eyeballs` |     5 |   ✅   | 00:00:00.875 |
+| `test_wifi_sniffer`      | `native_wifi_sniffer`   |     6 |   ✅   | 00:00:00.830 |
+| `test_link_manager`      | `native_link_manager`   |     4 |   ✅   | 00:00:00.819 |
+| `test_cc1101`            | `native_cc1101`         |    11 |   ✅   | 00:00:00.817 |
+| `test_fdc2214`           | `native_fdc2214`        |     4 |   ✅   | 00:00:00.817 |
+| `test_ldc1614`           | `native_ldc1614`        |     4 |   ✅   | 00:00:00.805 |
+| `test_vl53l0x`           | `native_vl53l0x`        |     3 |   ✅   | 00:00:00.793 |
+| `test_radio_sniff`       | `native_radio_sniff`    |     4 |   ✅   | 00:00:00.825 |
+| `test_ble_gatt`          | `native_ble_gatt`       |     7 |   ✅   | 00:00:00.825 |
+| `test_tls_policy`        | `native_tls_policy`     |     4 |   ✅   | 00:00:00.822 |
+| `test_wisun`             | `native_wisun`          |    10 |   ✅   | 00:00:00.883 |
+| `test_logbuf`            | `native_logbuf`         |     5 |   ✅   | 00:00:00.874 |
+| `test_config_io`         | `native_config_io`      |     5 |   ✅   | 00:00:00.885 |
+| `test_workers`           | `native_workers`        |     6 |   ✅   | 00:00:01.005 |
+| `test_clock`             | `native_clock`          |     7 |   ✅   | 00:00:00.810 |
+| `test_concurrency`       | `native_concurrency`    |     2 |   ✅   | 00:00:00.993 |
+| `test_concurrency`       | `native_tsan`           |     2 |   ✅   | 00:00:01.598 |
+| `test_qpack`             | `native_qpack`          |    11 |   ✅   | 00:00:01.014 |
+| `test_quic_packet`       | `native_quic_packet`    |     8 |   ✅   | 00:00:00.857 |
+| `test_quic_frame`        | `native_quic_frame`     |     9 |   ✅   | 00:00:00.886 |
+| `test_quic_crypto`       | `native_quic_crypto`    |     7 |   ✅   | 00:00:00.997 |
+| `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   | 00:00:00.911 |
+| `test_quic_tp`           | `native_quic_tp`        |     8 |   ✅   | 00:00:00.879 |
+| `test_tls13_msg`         | `native_tls13_msg`      |    11 |   ✅   | 00:00:01.006 |
+| `test_quic_tls`          | `native_quic_tls`       |    13 |   ✅   | 00:00:01.426 |
+| `test_quic_conn`         | `native_quic_conn`      |    27 |   ✅   | 00:00:02.635 |
+| `test_h3_conn`           | `native_h3_conn`        |    11 |   ✅   | 00:00:01.311 |
+| `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.363 |
+| `test_quic_server`       | `native_quic_server`    |     4 |   ✅   | 00:00:01.429 |
+| `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:02.556 |
+| `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.871 |
 
 ---
 
@@ -1002,53 +1002,53 @@ _Unit, stress, and race-condition tests for Layer 6 (Presentation)._
 
 _Unit and stress tests for Layer 4 (Transport) - constants, pool invariants,_
 
-|   # | Test                                             | Status | Description                                      |
-| --: | :----------------------------------------------- | :----: | :----------------------------------------------- |
-|   1 | `test_pool_capacity_is_four`                     |   ✅   | Pool capacity is four                            |
-|   2 | `test_rx_buffer_size_is_one_kb`                  |   ✅   | Rx buffer size is one kb                         |
-|   3 | `test_timeout_constant_is_5000ms`                |   ✅   | Timeout constant is 5000ms                       |
-|   4 | `test_all_slots_free_after_init`                 |   ✅   | All slots free after init                        |
-|   5 | `test_all_pcbs_null_after_init`                  |   ✅   | All pcbs null after init                         |
-|   6 | `test_all_ring_buffers_empty_after_init`         |   ✅   | All ring buffers empty after init                |
-|   7 | `test_slot_ids_match_indices`                    |   ✅   | Slot ids match indices                           |
-|   8 | `test_ring_empty_when_head_equals_tail`          |   ✅   | Ring empty when head equals tail                 |
-|   9 | `test_ring_wrap_at_boundary`                     |   ✅   | Ring wrap at boundary                            |
-|  10 | `test_ring_full_sentinel_one_slot_reserved`      |   ✅   | Ring full sentinel one slot reserved             |
-|  11 | `test_ring_can_store_size_minus_one_bytes`       |   ✅   | Ring can store size minus one bytes              |
-|  12 | `test_event_types_are_distinct`                  |   ✅   | Event types are distinct                         |
-|  13 | `test_timeout_does_not_fire_on_free_slot`        |   ✅   | Timeout does not fire on free slot               |
-|  14 | `test_timeout_does_not_fire_before_deadline`     |   ✅   | Timeout does not fire before deadline            |
-|  15 | `test_timeout_fires_at_deadline`                 |   ✅   | Timeout fires at deadline                        |
-|  16 | `test_timeout_fires_only_on_stale_slots`         |   ✅   | Timeout fires only on stale slots                |
-|  17 | `test_active_send_not_reaped`                    |   ✅   | Active send not reaped                           |
-|  18 | `test_init_succeeds_on_native`                   |   ✅   | Init succeeds on native                          |
-|  19 | `test_all_last_activity_ms_zero_after_init`      |   ✅   | All last activity ms zero after init             |
-|  20 | `test_queue_not_null_after_init`                 |   ✅   | Queue not null after init                        |
-|  21 | `stress_ring_buffer_fill_drain_integrity`        |   ✅   | Write known pattern                              |
-|  22 | `stress_ring_buffer_multi_cycle_no_corruption`   |   ✅   | Stress - Ring buffer multi cycle no corruption   |
-|  23 | `stress_all_slots_timeout_simultaneously`        |   ✅   | Stress - All slots timeout simultaneously        |
-|  24 | `stress_timeout_arm_recover_cycle`               |   ✅   | Stress - Timeout arm recover cycle               |
-|  25 | `stress_check_timeouts_high_call_rate`           |   ✅   | Stress - Check timeouts high call rate           |
-|  26 | `stress_ring_buffer_byte_by_byte_fill_and_drain` |   ✅   | Stress - Ring buffer byte by byte fill and drain |
-|  27 | `test_accept_throttle_blocks_over_budget`        |   ✅   | Accept throttle blocks over budget               |
-|  28 | `test_accept_throttle_window_refills`            |   ✅   | Accept throttle window refills                   |
-|  29 | `test_accept_throttle_handles_rollover`          |   ✅   | Accept throttle handles rollover                 |
-|  30 | `test_per_ip_throttle_blocks_over_budget`        |   ✅   | Per ip throttle blocks over budget               |
-|  31 | `test_per_ip_throttle_isolates_addresses`        |   ✅   | Per ip throttle isolates addresses               |
-|  32 | `test_per_ip_throttle_window_refills`            |   ✅   | Per ip throttle window refills                   |
-|  33 | `test_per_ip_throttle_evicts_when_full`          |   ✅   | Per ip throttle evicts when full                 |
-|  34 | `test_per_ip_throttle_zero_ip_always_allowed`    |   ✅   | Per ip throttle zero ip always allowed           |
-|  35 | `test_per_ip_throttle_v6_distinct`               |   ✅   | Per ip throttle v6 distinct                      |
-|  36 | `test_per_ip_throttle_handles_rollover`          |   ✅   | Per ip throttle handles rollover                 |
-|  37 | `test_ip_allowlist_empty_allows_all`             |   ✅   | Ip allowlist empty allows all                    |
-|  38 | `test_ip_allowlist_host_match`                   |   ✅   | Ip allowlist host match                          |
-|  39 | `test_ip_allowlist_cidr_match`                   |   ✅   | Ip allowlist cidr match                          |
-|  40 | `test_ip_allowlist_masks_host_bits`              |   ✅   | Ip allowlist masks host bits                     |
-|  41 | `test_ip_allowlist_multiple_rules`               |   ✅   | Ip allowlist multiple rules                      |
-|  42 | `test_ip_allowlist_zero_prefix_matches_all`      |   ✅   | Ip allowlist zero prefix matches all             |
-|  43 | `test_ip_allowlist_v6_cidr`                      |   ✅   | Ip allowlist v6 cidr                             |
-|  44 | `test_ip_allowlist_rejects_bad_prefix`           |   ✅   | Ip allowlist rejects bad prefix                  |
-|  45 | `test_ip_allowlist_table_full`                   |   ✅   | Ip allowlist table full                          |
+|   # | Test                                             | Status | Description                                                                             |
+| --: | :----------------------------------------------- | :----: | :-------------------------------------------------------------------------------------- |
+|   1 | `test_pool_capacity_default_is_eight`            |   ✅   | The default connection pool is 8 (keep-alive/concurrency headroom; see ServerConfig.h). |
+|   2 | `test_rx_buffer_size_is_one_kb`                  |   ✅   | Rx buffer size is one kb                                                                |
+|   3 | `test_timeout_constant_is_5000ms`                |   ✅   | Timeout constant is 5000ms                                                              |
+|   4 | `test_all_slots_free_after_init`                 |   ✅   | All slots free after init                                                               |
+|   5 | `test_all_pcbs_null_after_init`                  |   ✅   | All pcbs null after init                                                                |
+|   6 | `test_all_ring_buffers_empty_after_init`         |   ✅   | All ring buffers empty after init                                                       |
+|   7 | `test_slot_ids_match_indices`                    |   ✅   | Slot ids match indices                                                                  |
+|   8 | `test_ring_empty_when_head_equals_tail`          |   ✅   | Ring empty when head equals tail                                                        |
+|   9 | `test_ring_wrap_at_boundary`                     |   ✅   | Ring wrap at boundary                                                                   |
+|  10 | `test_ring_full_sentinel_one_slot_reserved`      |   ✅   | Ring full sentinel one slot reserved                                                    |
+|  11 | `test_ring_can_store_size_minus_one_bytes`       |   ✅   | Ring can store size minus one bytes                                                     |
+|  12 | `test_event_types_are_distinct`                  |   ✅   | Event types are distinct                                                                |
+|  13 | `test_timeout_does_not_fire_on_free_slot`        |   ✅   | Timeout does not fire on free slot                                                      |
+|  14 | `test_timeout_does_not_fire_before_deadline`     |   ✅   | Timeout does not fire before deadline                                                   |
+|  15 | `test_timeout_fires_at_deadline`                 |   ✅   | Timeout fires at deadline                                                               |
+|  16 | `test_timeout_fires_only_on_stale_slots`         |   ✅   | Timeout fires only on stale slots                                                       |
+|  17 | `test_active_send_not_reaped`                    |   ✅   | Active send not reaped                                                                  |
+|  18 | `test_init_succeeds_on_native`                   |   ✅   | Init succeeds on native                                                                 |
+|  19 | `test_all_last_activity_ms_zero_after_init`      |   ✅   | All last activity ms zero after init                                                    |
+|  20 | `test_queue_not_null_after_init`                 |   ✅   | Queue not null after init                                                               |
+|  21 | `stress_ring_buffer_fill_drain_integrity`        |   ✅   | Write known pattern                                                                     |
+|  22 | `stress_ring_buffer_multi_cycle_no_corruption`   |   ✅   | Stress - Ring buffer multi cycle no corruption                                          |
+|  23 | `stress_all_slots_timeout_simultaneously`        |   ✅   | Stress - All slots timeout simultaneously                                               |
+|  24 | `stress_timeout_arm_recover_cycle`               |   ✅   | Stress - Timeout arm recover cycle                                                      |
+|  25 | `stress_check_timeouts_high_call_rate`           |   ✅   | Stress - Check timeouts high call rate                                                  |
+|  26 | `stress_ring_buffer_byte_by_byte_fill_and_drain` |   ✅   | Stress - Ring buffer byte by byte fill and drain                                        |
+|  27 | `test_accept_throttle_blocks_over_budget`        |   ✅   | Accept throttle blocks over budget                                                      |
+|  28 | `test_accept_throttle_window_refills`            |   ✅   | Accept throttle window refills                                                          |
+|  29 | `test_accept_throttle_handles_rollover`          |   ✅   | Accept throttle handles rollover                                                        |
+|  30 | `test_per_ip_throttle_blocks_over_budget`        |   ✅   | Per ip throttle blocks over budget                                                      |
+|  31 | `test_per_ip_throttle_isolates_addresses`        |   ✅   | Per ip throttle isolates addresses                                                      |
+|  32 | `test_per_ip_throttle_window_refills`            |   ✅   | Per ip throttle window refills                                                          |
+|  33 | `test_per_ip_throttle_evicts_when_full`          |   ✅   | Per ip throttle evicts when full                                                        |
+|  34 | `test_per_ip_throttle_zero_ip_always_allowed`    |   ✅   | Per ip throttle zero ip always allowed                                                  |
+|  35 | `test_per_ip_throttle_v6_distinct`               |   ✅   | Per ip throttle v6 distinct                                                             |
+|  36 | `test_per_ip_throttle_handles_rollover`          |   ✅   | Per ip throttle handles rollover                                                        |
+|  37 | `test_ip_allowlist_empty_allows_all`             |   ✅   | Ip allowlist empty allows all                                                           |
+|  38 | `test_ip_allowlist_host_match`                   |   ✅   | Ip allowlist host match                                                                 |
+|  39 | `test_ip_allowlist_cidr_match`                   |   ✅   | Ip allowlist cidr match                                                                 |
+|  40 | `test_ip_allowlist_masks_host_bits`              |   ✅   | Ip allowlist masks host bits                                                            |
+|  41 | `test_ip_allowlist_multiple_rules`               |   ✅   | Ip allowlist multiple rules                                                             |
+|  42 | `test_ip_allowlist_zero_prefix_matches_all`      |   ✅   | Ip allowlist zero prefix matches all                                                    |
+|  43 | `test_ip_allowlist_v6_cidr`                      |   ✅   | Ip allowlist v6 cidr                                                                    |
+|  44 | `test_ip_allowlist_rejects_bad_prefix`           |   ✅   | Ip allowlist rejects bad prefix                                                         |
+|  45 | `test_ip_allowlist_table_full`                   |   ✅   | Ip allowlist table full                                                                 |
 
 </details>
 
