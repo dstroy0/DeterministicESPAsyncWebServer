@@ -25,6 +25,7 @@ import argparse
 import sys
 
 from peers import (
+    amqp_peer,
     coap_peer,
     dns_peer,
     ftp_peer,
@@ -59,6 +60,7 @@ from peers import (
 
 # Module list; each contributes one or more peers (module-level or via PEERS).
 _MODULES = [
+    amqp_peer,
     http_peer,
     h2_peer,
     h3_peer,

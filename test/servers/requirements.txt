@@ -19,6 +19,9 @@
 #   xmpp         -> none (device-as-client)              the xmpp peer is stdlib - a spec RFC 6120 c2s server
 #                   (stream + SASL PLAIN + resource bind) in a background thread - no pip package (prosody /
 #                   ejabberd are the production references)
+#   amqp         -> none (device-as-client)              the amqp peer is stdlib - a spec AMQP 0-9-1 broker
+#                   (Connection/Channel handshake + SASL PLAIN + Basic.Publish capture) in a background thread -
+#                   no pip package (RabbitMQ is the production reference)
 #   statsd       -> none (device-as-client)              the statsd peer is stdlib - a raw UDP collector + StatsD
 #                   line parser - and needs no pip package (Graphite/StatsD, Telegraf, Datadog are production peers)
 #   ssh          -> openssh-client + sshpass (device-as-server)   the ssh peer drives the reference OpenSSH
