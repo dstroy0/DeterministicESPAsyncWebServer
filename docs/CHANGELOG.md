@@ -10,16 +10,19 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`d4a99c8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d4a99c8ffad73e0c5ab67d5f5f4db90c9dcbe98f))
 - update CHANGELOG.md [skip ci] ([`500ca94`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/500ca94024aff734b96ea711b7a3ce27ff91beec))
 - update CHANGELOG.md [skip ci] ([`bad0a08`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bad0a08d00c260cb73740b9587bf25140f8ff1cb))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5e60197`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e601978b73ba61363d2139e3e4b2b873bfc93e4))
 - update ESP32 build footprints [skip ci] ([`aeee8da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aeee8da1b9f1636b858488053f8ab9095188029b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ab7d87c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab7d87c3ad4297727c886cb37846838eaf926ee6))
 
 ### Testing
 
+- device-as-server OpenADR 3.0 interop vs a spec consumer (17/17 HW) ([`9719460`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9719460912937ecbe5c1668569293022103a1bbe))
 - device-as-server IEEE 2030.5 interop vs a spec consumer (18/18 HW) ([`2ea07e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ea07e3c262e0f0d979feb289857076f6539a94b))
 
 ## [5.99.0] - 2026-07-13
