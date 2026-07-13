@@ -58,15 +58,15 @@ Every workflow that runs on `main`, grouped by what it checks:
 
 **[Read the Full Documentation Here 📖](https://dstroy0.github.io/DeterministicESPAsyncWebServer/)**
 
-**[Interactive build configurator ⚙️](https://dstroy0.github.io/DeterministicESPAsyncWebServer/configurator.html)** — tick the features you need, tune their knobs, and copy out a ready-made `platformio.ini` `build_flags` block (or the `#define`s). Dependencies resolve automatically and only non-default values are emitted. It is generated from `src/ServerConfig.h`, so it always matches the library.
+**[Interactive build configurator ⚙️](https://dstroy0.github.io/DeterministicESPAsyncWebServer/configurator.html)** lets you tick the features you need, tune their knobs, and copy out a ready-made `platformio.ini` `build_flags` block (or the `#define`s). Dependencies resolve automatically and only non-default values are emitted. It is generated from `src/ServerConfig.h`, so it always matches the library.
 
 The technical reference documentation has been moved to a dedicated landing page to provide a better reading experience. You can also view the local markdown copy at [docs/README.md](docs/README.md). See the [feature reference](docs/FEATURES.md) for every option and the [secure-boot & flash-encryption hardening guide](docs/SECURE_BOOT.md) for production deployment. Wiring a codec to a PLC, inverter, power-grid sensor, or another board? The [hardware hookup & settings guide](docs/HARDWARE_HOOKUP.md) covers the transceivers, ports, and settings.
 
 ## Using in the Arduino IDE
 
-Install the **esp32 by Espressif** boards package (3.x), then install this library (Library Manager, or drop it in your `libraries/` folder). The bundled examples build unmodified — each ships a `build_opt.h` that turns on the features it needs.
+Install the **esp32 by Espressif** boards package (3.x), then install this library (Library Manager, or drop it in your `libraries/` folder). The bundled examples build unmodified; each ships a `build_opt.h` that turns on the features it needs.
 
-Optional features are compile-time flags. In the Arduino IDE there is no `build_flags` field, and a `#define` in your `.ino` does **not** reach the library's separately-compiled `.cpp` files — so to enable a feature you place a file named **`build_opt.h`** in the same folder as your sketch (the one file the IDE feeds to every translation unit). The easy way:
+Optional features are compile-time flags. In the Arduino IDE there is no `build_flags` field, and a `#define` in your `.ino` does **not** reach the library's separately-compiled `.cpp` files, so to enable a feature you place a file named **`build_opt.h`** in the same folder as your sketch (the one file the IDE feeds to every translation unit). The easy way:
 
 1. Open the [interactive configurator](https://dstroy0.github.io/DeterministicESPAsyncWebServer/configurator.html) and tick the features you want (dependencies resolve for you).
 2. Switch to the **Arduino build_opt.h** tab and click **Download**.

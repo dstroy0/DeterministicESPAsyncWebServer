@@ -532,7 +532,7 @@
     "ram_bytes": 82092
   },
   "TELNET": {
-    "example": "L5-Session/03.Telnet",
+    "example": "L5-Session/04.Telnet",
     "flags": "-DDETWS_ENABLE_TELNET=1",
     "board": "esp32dev",
     "flash_bytes": 754361,
@@ -790,8 +790,8 @@
     "flash_bytes": 793469,
     "ram_bytes": 81808
   },
-  "core/20.EthernetW5500": {
-    "example": "Foundation/20.EthernetW5500",
+  "core/23.EthernetW5500": {
+    "example": "Foundation/23.EthernetW5500",
     "flags": "",
     "board": "esp32dev",
     "flash_bytes": 469573,

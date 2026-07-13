@@ -59,9 +59,9 @@ Start here: the core tutorial path (01-05), then the v5 hardware-integration exa
 [18.ThreadGateway](../examples/Foundation/18.ThreadGateway) ·
 [19.Ethernet](../examples/Foundation/19.Ethernet) ·
 [20.IPv6](../examples/Foundation/20.IPv6) ·
-[20.EthernetW5500](../examples/Foundation/20.EthernetW5500) ·
 [21.WifiCapture](../examples/Foundation/21.WifiCapture) ·
-[22.CanCapture](../examples/Foundation/22.CanCapture)
+[22.CanCapture](../examples/Foundation/22.CanCapture) ·
+[23.EthernetW5500](../examples/Foundation/23.EthernetW5500)
 
 ## L4 Transport
 
@@ -81,8 +81,8 @@ Interactive consoles:
 
 [01.SSH](../examples/L5-Session/01.SSH) ·
 [02.SSHCryptoSelfTest](../examples/L5-Session/02.SSHCryptoSelfTest) ·
-[03.Telnet](../examples/L5-Session/03.Telnet) ·
-[03.SSHHostKey](../examples/L5-Session/03.SSHHostKey)
+[03.SSHHostKey](../examples/L5-Session/03.SSHHostKey) ·
+[04.Telnet](../examples/L5-Session/04.Telnet)
 
 ## L6 Presentation
 

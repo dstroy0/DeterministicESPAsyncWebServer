@@ -17,7 +17,7 @@ lib_deps = https://github.com/dstroy0/DeterministicESPAsyncWebServer.git
 ```cpp
 #include <WiFi.h>
 #include "dwserver.h"
-#include "network_drivers/physical.h"
+#include "network_drivers/physical/physical.h"
 
 DetWebServer server;
 
@@ -837,6 +837,8 @@ src/
 │   │   └── DETWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
+│   │   ├── __pycache__/
+│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -887,7 +889,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `INA219` | `L7-Application/67.Ina219` | 287,001 | 21,800 |
 | `MPR121` | `L7-Application/63.Mpr121` | 287,609 | 21,800 |
 | `PN532+GATEWAY` | `Foundation/14.NfcGateway` | 288,129 | 21,920 |
-| `core/20.EthernetW5500` | `Foundation/20.EthernetW5500` | 469,573 | 73,672 |
+| `core/23.EthernetW5500` | `Foundation/23.EthernetW5500` | 469,573 | 73,672 |
 | `DNS_SERVER` | `L7-Application/60.DnsServer` | 725,677 | 45,976 |
 | `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD` | `L7-Application/28.CoapBlock` | 727,553 | 48,352 |
 | `UDP_TELEMETRY` | `L7-Application/39.UdpTelemetry` | 727,913 | 44,944 |
@@ -935,7 +937,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `core/01.Basic` | `Foundation/01.Basic` | 754,177 | 81,784 |
 | `MODBUS+MODBUS_MASTER` | `L7-Application/43.ModbusScan` | 754,189 | 82,048 |
 | `JWT` | `L6-Presentation/06.JWTAuth` | 754,277 | 82,920 |
-| `TELNET` | `L5-Session/03.Telnet` | 754,361 | 82,312 |
+| `TELNET` | `L5-Session/04.Telnet` | 754,361 | 82,312 |
 | `AUDIT_LOG` | `L7-Application/49.AuditLog` | 754,389 | 84,760 |
 | `CBOR` | `L6-Presentation/13.Cbor` | 754,457 | 81,848 |
 | `IPV6` | `Foundation/20.IPv6` | 754,581 | 81,768 |

@@ -387,10 +387,10 @@ ESP32 already has a CAN controller built in (called **TWAI**), so you only add a
 
 You need a CAN transceiver between the ESP32 and the bus. Two cheap options:
 
-- **SN65HVD230 breakout (~$1)** — 3.3 V, pairs directly with the ESP32's TWAI
+- **SN65HVD230 breakout (~$1)**: 3.3 V, pairs directly with the ESP32's TWAI
   controller. Connect ESP32 `TX` GPIO -> transceiver `D` (TXD), transceiver `R`
   (RXD) -> ESP32 `RX` GPIO, plus 3V3 and GND. CAN_H / CAN_L go to the bus.
-- **MCP2515 + TJA1050 module (~$2)** — a standalone CAN controller you talk to
+- **MCP2515 + TJA1050 module (~$2)**: a standalone CAN controller you talk to
   over **SPI** (use this if you would rather not use the internal TWAI, or need a
   second CAN channel). Wire SPI (SCK/MOSI/MISO/CS) + an interrupt GPIO.
 

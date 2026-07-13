@@ -84,7 +84,7 @@ from each example's `pio ci` size report and aggregated into
 | `STATSD`                                         | L7-Application/59.StatsdMetrics         | 711.3 KB (55.6%) | 44.0 KB (13.8%)  |
 | `SYSLOG`                                         | L7-Application/19.Syslog                | 737.8 KB (57.6%) | 81.7 KB (25.5%)  |
 | `TELEMETRY`                                      | L7-Application/34.Telemetry             | 743.1 KB (58.1%) | 80.2 KB (25.1%)  |
-| `TELNET`                                         | L5-Session/03.Telnet                    | 736.7 KB (57.6%) | 80.4 KB (25.1%)  |
+| `TELNET`                                         | L5-Session/04.Telnet                    | 736.7 KB (57.6%) | 80.4 KB (25.1%)  |
 | `THREAD+GATEWAY`                                 | Foundation/18.ThreadGateway             | 262.8 KB (20.5%) | 22.1 KB (6.9%)   |
 | `TLS`                                            | L6-Presentation/07.SecureWebSocket      | 835.8 KB (65.3%) | 119.2 KB (37.2%) |
 | `TLS+MTLS`                                       | L4-Transport/04.mTLS                    | 836.7 KB (65.4%) | 119.5 KB (37.3%) |
@@ -121,5 +121,5 @@ from each example's `pio ci` size report and aggregated into
 | `core/08.Templating`                             | L7-Application/08.Templating            | 736.3 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/09.WebSocket`                              | L6-Presentation/09.WebSocket            | 734.9 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/10.FileServing`                            | L7-Application/10.FileServing           | 774.9 KB (60.5%) | 79.9 KB (25.0%)  |
-| `core/20.EthernetW5500`                          | Foundation/20.EthernetW5500             | 458.6 KB (35.8%) | 71.9 KB (22.5%)  |
+| `core/23.EthernetW5500`                          | Foundation/23.EthernetW5500             | 458.6 KB (35.8%) | 71.9 KB (22.5%)  |
 | `core/36.NetEgress`                              | L7-Application/36.NetEgress             | 735.2 KB (57.4%) | 79.9 KB (25.0%)  |

@@ -1,4 +1,4 @@
-# 03.Telnet - a line-oriented Telnet console
+# 04.Telnet - a line-oriented Telnet console
 
 **Layer:** L5 Session · **Build flags:** `DETWS_ENABLE_TELNET`
 
@@ -48,7 +48,7 @@ session.
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
   --project-option="build_flags=-DDETWS_ENABLE_TELNET=1" \
-  --lib="." examples/L5-Session/03.Telnet/03.Telnet.ino
+  --lib="." examples/L5-Session/04.Telnet/04.Telnet.ino
 ```
 
 Flash, read the IP on Serial, then:
@@ -59,7 +59,7 @@ telnet <ip> 23        # type "help"
 
 ## Annotated source
 
-The complete sketch ([03.Telnet.ino](03.Telnet.ino)), reproduced verbatim with
+The complete sketch ([04.Telnet.ino](04.Telnet.ino)), reproduced verbatim with
 added explanatory comments:
 
 ```cpp

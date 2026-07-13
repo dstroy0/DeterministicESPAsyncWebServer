@@ -1,4 +1,4 @@
-// 20.EthernetW5500 - run the server over a W5500 SPI Ethernet module (ESP32-S3).
+// 23.EthernetW5500 - run the server over a W5500 SPI Ethernet module (ESP32-S3).
 //
 // The RMII path (example 19.Ethernet) needs an ESP32 with an on-chip Ethernet MAC. The S3 has
 // no RMII MAC, so a wired link there uses an SPI Ethernet controller - the WIZnet W5500 - over
@@ -10,7 +10,7 @@
 // with the arduino-cli / IDF-5.x core.
 //
 // Wiring (ESP32-S3-DevKitC, HSPI) - the DETWS_ETH_W5500_* build flags in build_opt.h:
-//   CS = GPIO7  RST = GPIO5  INT = GPIO6  SCLK = GPIO12  MOSI = GPIO11  MISO = GPIO13  (VCC 3V3, GND)
+//   CS = GPIO7  RST = GPIO6  INT = GPIO5  SCLK = GPIO12  MOSI = GPIO11  MISO = GPIO13  (VCC 3V3, GND)
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"

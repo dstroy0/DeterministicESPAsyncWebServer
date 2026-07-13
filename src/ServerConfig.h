@@ -640,10 +640,10 @@
 #define DETWS_ETH_W5500_CS 7 ///< chip select
 #endif
 #ifndef DETWS_ETH_W5500_RST
-#define DETWS_ETH_W5500_RST 5 ///< reset
+#define DETWS_ETH_W5500_RST 6 ///< reset
 #endif
 #ifndef DETWS_ETH_W5500_INT
-#define DETWS_ETH_W5500_INT 6 ///< interrupt
+#define DETWS_ETH_W5500_INT 5 ///< interrupt
 #endif
 #ifndef DETWS_ETH_W5500_SCK
 #define DETWS_ETH_W5500_SCK 12 ///< HSPI clock (S3-DevKitC default)

@@ -1188,7 +1188,7 @@ SSH_MAX_EFFECTIVE_PAYLOAD + SSH_MAX_PAD(32) + SSH_MAX_MAC(64)`, where the effect
 - **Found:** 2026-06-29, the codec bug-hunt audit of the v4.x protocol codecs.
 - **Three text/binary parsers computed `overhead + declared_length` before comparing to the
   buffer length, which wraps on a 32-bit `size_t` (the ESP32 target) for an attacker-controlled
-  length field — so the `> len` guard could falsely pass and hand the caller an out-of-bounds
+  length field, so the `> len` guard could falsely pass and hand the caller an out-of-bounds
   slice.** Affected: `amqp_parse_frame` (AMQP 0-9-1 32-bit size, `services/amqp/amqp.cpp`),
   `nats_parse` MSG byte count (`services/nats/nats.cpp`), and `resp_parse` `$` bulk length
   (`services/redis_resp.cpp`). The 64-bit host tests never exercised the wrap, so it was latent.

@@ -40,7 +40,7 @@ if (detws_web_terminal_client_count() > 0)
     detws_web_terminal_printf("uptime %lu ms, heap %u\n", millis(), ESP.getFreeHeap());
 ```
 
-A plaintext alternative is [03.Telnet](../../L5-Session/03.Telnet); the raw
+A plaintext alternative is [04.Telnet](../../L5-Session/04.Telnet); the raw
 WebSocket primitive is [09.WebSocket](../09.WebSocket).
 
 ## Build and run
