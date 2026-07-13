@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.100.0] - 2026-07-13
+
+<details>
+<summary><b>Show Changelog for version 5.100.0 - 2026-07-13</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`b0db183`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b0db183cbc80e65b0b65979ab4e6f39a2334ab41))
+- update CHANGELOG.md [skip ci] ([`870442f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/870442f66be6e812342501acaaa81ecec18a1768))
+
+### Changes
+
+- Bump version: 5.99.4 → 5.100.0 ([`f3155c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3155c1c15fb219e0bce362536835cea4ff85257))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`165c367`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/165c367237a69e3a9fb214a6ce2880c3730c4633))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`47452d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47452d785ad51920538b10debf72665bc19cd4b9))
+
+### Features
+
+- enable keep-alive by default + raise MAX_CONNS 4->8 (concurrency headroom) ([`0f89e1c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f89e1c714b4c9eb3200b724732fb04f7a827d5a))
+
+</details>
+
 ## [5.99.4] - 2026-07-13
 
 <details>
