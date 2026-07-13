@@ -813,9 +813,14 @@
  * Allocated on the worker stack only while a chunk is being framed - no persistent
  * RAM cost. The pump asks the source for at most this many bytes (or fewer when the
  * send window is smaller), so it bounds the chunk size, not the total body.
+ *
+ * Sized to one TCP segment (~MSS): the pump frames + sends each chunk in a single
+ * tcpip_thread round-trip (~23 us on-device), so a bigger chunk = fewer round-trips per
+ * byte. 1440 keeps the framed chunk within one segment; raise it (up to the send window)
+ * to cut the round-trip count further on a fast transport (e.g. Ethernet), at more stack.
  */
 #ifndef CHUNK_BUF_SIZE
-#define CHUNK_BUF_SIZE 256
+#define CHUNK_BUF_SIZE 1440
 #endif
 
 /**
@@ -896,11 +901,13 @@
 /**
  * @brief Bytes read from the filesystem and passed to tcp_write() per loop().
  *
- * Smaller values reduce peak stack use; larger values improve throughput.
- * Must be <= RX_BUF_SIZE to avoid stalling the TCP send window.
+ * Each read+send is one tcpip_thread round-trip (~23 us on-device), so a larger chunk =
+ * fewer round-trips per byte (better throughput on a fast transport), at more peak stack.
+ * Must be <= RX_BUF_SIZE to avoid stalling the TCP send window; 1024 tracks the default
+ * RX_BUF_SIZE. Lower it (e.g. -DFILE_CHUNK_SIZE=512) on a stack-constrained target.
  */
 #ifndef FILE_CHUNK_SIZE
-#define FILE_CHUNK_SIZE 512
+#define FILE_CHUNK_SIZE 1024
 #endif
 
 // ---------------------------------------------------------------------------

@@ -205,10 +205,14 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
     // it so a transient send stall on a large stream cannot reap the slot mid-transfer.
     det_conn_touch_active(slot_id);
 
-    // Reserve room for the largest framing around one CHUNK_BUF_SIZE chunk:
-    // "<hex>\r\n" (size line) + "\r\n" trailer. 12 bytes covers a 4-hex-digit size.
-    // The raw (HTTP/1.0) path writes the body bytes verbatim, so it needs no reserve.
+    // Frame each chunk in ONE buffer so it goes out in a single tcpip_thread round-trip (was three -
+    // size line, body, CRLF - each a ~23 us marshal on-device). Reserve CHUNK_HDR_RESERVE bytes ahead
+    // of the body for the "<hex>\r\n" size line and 2 after for the trailing CRLF, so the source writes
+    // the body in place and the whole "<hex>\r\n<body>\r\n" is one det_conn_send with no extra copy.
+    // FRAME reserves send-window room for that framing; the raw (HTTP/1.0) path sends the body verbatim.
+    static const u16_t CHUNK_HDR_RESERVE = 8; // "<hex>\r\n" is <= 6 bytes for a chunk <= 0xFFFF
     const u16_t FRAME = s.raw ? 0 : 12;
+    uint8_t framed[CHUNK_HDR_RESERVE + CHUNK_BUF_SIZE + 2];
     for (;;)
     {
         u16_t avail = det_conn_sndbuf(slot_id);
@@ -221,8 +225,8 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
         if (cap > CHUNK_BUF_SIZE)
             cap = CHUNK_BUF_SIZE;
 
-        uint8_t buf[CHUNK_BUF_SIZE];
-        size_t n = s.source(buf, cap, s.ctx);
+        uint8_t *body = framed + CHUNK_HDR_RESERVE;
+        size_t n = s.source(body, cap, s.ctx);
         if (n == 0)
         {
             if (!s.raw)
@@ -237,15 +241,19 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
 
         if (s.raw)
         {
-            det_conn_send(slot_id, buf, (u16_t)n); // close-delimited: no chunk framing
+            det_conn_send(slot_id, body, (u16_t)n); // close-delimited: no chunk framing
         }
         else
         {
-            char szhdr[12];
-            int sn = snprintf(szhdr, sizeof(szhdr), "%x\r\n", (unsigned)n);
-            det_conn_send(slot_id, szhdr, (u16_t)sn);
-            det_conn_send(slot_id, buf, (u16_t)n);
-            det_conn_send(slot_id, "\r\n", 2);
+            // Prepend the size line (right-justified against the body) + append the trailing CRLF,
+            // then send the framed chunk in one call.
+            char sz[8];
+            int sn = snprintf(sz, sizeof(sz), "%x\r\n", (unsigned)n);
+            uint8_t *start = body - sn;
+            memcpy(start, sz, (size_t)sn);
+            body[n] = '\r';
+            body[n + 1] = '\n';
+            det_conn_send(slot_id, start, (u16_t)((size_t)sn + n + 2));
         }
         s.total += (int)n;
     }

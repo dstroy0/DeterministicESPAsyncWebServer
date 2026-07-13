@@ -382,10 +382,12 @@ void test_chunked_source_overreport_clamped()
     server.on("/c", HttpMethod::HTTP_GET, h_overreport);
     feed_and_handle(0, "GET /c HTTP/1.1\r\n\r\n"); // default window: cap == CHUNK_BUF_SIZE
     const char *r = tcp_captured();
-    // 256 (0x100) bytes framed, then the terminator - the +100 over-report is dropped.
-    TEST_ASSERT_NOT_NULL(strstr(r, "100\r\n"));
+    // CHUNK_BUF_SIZE bytes framed, then the terminator - the over-report is dropped.
+    char expect_sz[16];
+    snprintf(expect_sz, sizeof(expect_sz), "%x\r\n", (unsigned)CHUNK_BUF_SIZE);
+    TEST_ASSERT_NOT_NULL(strstr(r, expect_sz));
     TEST_ASSERT_NOT_NULL(strstr(r, "0\r\n\r\n"));
-    TEST_ASSERT_EQUAL_INT(CHUNK_BUF_SIZE, g_log_len); // body length is the clamped count, not 356
+    TEST_ASSERT_EQUAL_INT(CHUNK_BUF_SIZE, g_log_len); // body length is the clamped count
 }
 
 int main()
