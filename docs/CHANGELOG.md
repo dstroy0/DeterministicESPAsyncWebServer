@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- fit 25.WebSocketClient in classic ESP32 DRAM ([`5f9eb40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f9eb402d64b625d3a8ee2dc0a5c7fa4e33a1d75))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`bad0a08`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bad0a08d00c260cb73740b9587bf25140f8ff1cb))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ab7d87c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab7d87c3ad4297727c886cb37846838eaf926ee6))
+
 ## [5.99.0] - 2026-07-13
 
 <details>
