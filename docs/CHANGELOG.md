@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [5.99.2] - 2026-07-13
+
+<details>
+<summary><b>Show Changelog for version 5.99.2 - 2026-07-13</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`4b818f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b818f78e5e6aa9a6e5284de5709518f18c35491))
+- update CHANGELOG.md [skip ci] ([`4714c1c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4714c1cecfe1a9b113c306af32b531ffa66e4fd4))
+
+### Changes
+
+- Bump version: 5.99.1 → 5.99.2 ([`8d80890`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d80890480d5f0014ffa3e703a13651d1dc78627))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`c4cf09d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4cf09d76fce270caba3cb57b8048d8cd7954d10))
+
+### Performance
+
+- disable Nagle on accepted connections (TCP_NODELAY, configurable) ([`dde8d9d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dde8d9dbccb4e24b4f0b8e66d5f4a95cf265a3ab))
+
+</details>
+
 ## [5.99.1] - 2026-07-13
 
 <details>
