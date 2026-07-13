@@ -10,6 +10,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`e1f5145`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1f5145ace51b619d6d46fbafa6fc5a077397279))
+- update CHANGELOG.md [skip ci] ([`b45872f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b45872f5cbcb34f49cbd495698b394487cd46e4d))
 - update CHANGELOG.md [skip ci] ([`a587df3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a587df3d5b11dc1dd99cfb3a13cb60ec97e1c577))
 - update CHANGELOG.md [skip ci] ([`811f2b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/811f2b96b927023bd64fe8f3d6d621321badb6f4))
 - update test report + coverage [skip ci] ([`789e51b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/789e51ba3257d38dce600e04d97b4f5ca1edf07c))
@@ -19,6 +21,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3c79e90`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c79e9090170497bca5b62a531f5684d3857f41b))
 - update ESP32 build footprints [skip ci] ([`7db4ea6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7db4ea6f42f6d141e613d30dfba7aca5133ba0f5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ec27284`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ec27284801409a5929fa80408d661e6e3fdf93a0))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8d4f9cb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8d4f9cbbae4be61673ce93116f2a31e0055d45c7))
@@ -32,6 +35,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Testing
 
+- device-as-client XMPP (RFC 6120) interop vs a stdlib c2s server (11/11 HW) ([`c3a289f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3a289f791a7d96bd5bd266133d0c451b5ab29f2))
 - device-as-server SunSpec Common-model interop vs pysunspec2 over Modbus TCP (6/6 HW) ([`fdd4c39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fdd4c390bcef9269fd80170a3fa8eb280e5c39b3))
 - device-as-client Sparkplug B NBIRTH interop over a real MQTT broker (9/9 HW) ([`0d5ef53`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d5ef53196cc89a1859a13ea1c197ea447177990))
 
