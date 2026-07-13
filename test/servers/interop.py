@@ -54,6 +54,7 @@ from peers import (
     tls_peer,
     webdav_peer,
     ws_peer,
+    xmpp_peer,
 )
 
 # Module list; each contributes one or more peers (module-level or via PEERS).
@@ -87,6 +88,7 @@ _MODULES = [
     grpcweb_peer,
     sparkplug_peer,
     sunspec_peer,
+    xmpp_peer,
 ]
 
 

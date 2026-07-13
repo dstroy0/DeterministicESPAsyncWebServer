@@ -16,6 +16,9 @@
 #                   (the nats peer itself is stdlib - raw NATS text protocol over a socket - no pip package)
 #   stomp        -> none (device-as-client)              the stomp peer is stdlib - a spec STOMP 1.2 broker in a
 #                   background thread - and needs no pip package (coilmq / RabbitMQ-STOMP are production references)
+#   xmpp         -> none (device-as-client)              the xmpp peer is stdlib - a spec RFC 6120 c2s server
+#                   (stream + SASL PLAIN + resource bind) in a background thread - no pip package (prosody /
+#                   ejabberd are the production references)
 #   statsd       -> none (device-as-client)              the statsd peer is stdlib - a raw UDP collector + StatsD
 #                   line parser - and needs no pip package (Graphite/StatsD, Telegraf, Datadog are production peers)
 #   ssh          -> openssh-client + sshpass (device-as-server)   the ssh peer drives the reference OpenSSH
