@@ -615,6 +615,13 @@
     "flash_bytes": 831333,
     "ram_bytes": 120548
   },
+  "WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE": {
+    "example": "L7-Application/25.WebSocketClient",
+    "flags": "-DDETWS_ENABLE_WS_CLIENT=1 -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_WS_CLIENT_TLS=1 -DDETWS_WS_CLIENT_BUF_SIZE=768",
+    "board": "esp32dev",
+    "flash_bytes": 831661,
+    "ram_bytes": 123620
+  },
   "WS_DEFLATE": {
     "example": "L6-Presentation/11.WebSocketCompression",
     "flags": "-DDETWS_ENABLE_WS_DEFLATE=1",
