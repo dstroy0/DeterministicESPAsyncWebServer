@@ -83,15 +83,15 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
 ### WON'T / BLOCKED (needs hardware, proprietary docs, or a closed decision)
 
 - **Portability beyond ESP32** (ESP8266 / RP2040 / RP2350) - closed won't-do (per the user).
-- **W5500 SPI Ethernet driver** - needs the chip to verify.
 - **Radio-as-a-plugin** - needs bare-metal RF hardware.
 - **Fanuc FOCAS** - proprietary wire format; needs manuals + a real controller.
 
 ### DONE (recent, this loop)
 
-DNC codec, FTP client, HTTP cache-control helpers, forwarding policy-routing + inspection hook,
-Ed25519-sign KAT (RFC 8032), a class of signed-overflow UB + `10^exp` DoS fixes in the number parsers,
-multipart binary-safety. Full shipped record: the `[x]` items and the collapsed sections below.
+W5500 SPI Ethernet driver (HW-verified on an ESP32-S3), DNC codec, FTP client, HTTP cache-control
+helpers, forwarding policy-routing + inspection hook, Ed25519-sign KAT (RFC 8032), a class of
+signed-overflow UB + `10^exp` DoS fixes in the number parsers, multipart binary-safety. Full shipped
+record: the `[x]` items and the collapsed sections below.
 
 ## From the working thread
 
@@ -111,7 +111,7 @@ Ideas and intentions captured from the [Working Thread discussion](https://githu
 ### Codecs / drivers / features
 
 - [ ] Write more niche pure codecs from old manuals - the ones wanted a while ago but never put down on paper.
-- [ ] W5500 SPI Ethernet driver, to support non-RMII ESP32s like the S3.
+- [x] W5500 SPI Ethernet driver, to support non-RMII ESP32s like the S3. _(done, HW-verified on an ESP32-S3 + WIZnet W5500 over HSPI: raw VERSIONR=0x04, then DHCP IP + HTTP served over the wired link. Pins CS7/SCK12/MISO13/MOSI11/RST6/INT5; needs arduino-esp32 3.x + PSRAM=opi on an N16R8.)_
 - [ ] Radio-as-a-plugin: strip an ESP to bare metal and do (very legal) radio things as a server plugin.
 - [ ] `Industrial_ESPIDF/`: create the directory and write the CMake for it.
 

@@ -236,6 +236,71 @@ void test_parse_and_build_guards()
     TEST_ASSERT_EQUAL_size_t(0, cache_control_build(snug, sizeof(snug), &cc));
 }
 
+// A delta above INT32_MAX passed to a preset clamps (the `> INT32_MAX` side of each preset).
+void test_preset_clamps()
+{
+    DetwsCacheControl cc;
+    cache_immutable_asset(&cc, 0xFFFFFFFFu);
+    TEST_ASSERT_EQUAL_INT32(2147483647, cc.max_age);
+    cache_revalidatable(&cc, 0xFFFFFFFFu, -1);
+    TEST_ASSERT_EQUAL_INT32(2147483647, cc.max_age);
+    cache_shared(&cc, 0xFFFFFFFFu, 0xFFFFFFFFu);
+    TEST_ASSERT_EQUAL_INT32(2147483647, cc.max_age);
+    TEST_ASSERT_EQUAL_INT32(2147483647, cc.s_maxage);
+}
+
+// Build boundary guards: null cc, a key that fills the buffer exactly (no room for '='), the key
+// token itself overflowing (CC_SENT into cc_kv), and an exact fill with no room for the NUL.
+void test_build_boundaries()
+{
+    DetwsCacheControl cc;
+    char b[32];
+    cache_control_init(&cc);
+    cc.max_age = 5;
+    TEST_ASSERT_EQUAL_size_t(0, cache_control_build(b, sizeof(b), nullptr)); // !cc
+    char b7[7];                                                              // "max-age" fills cap -> no room for '='
+    TEST_ASSERT_EQUAL_size_t(0, cache_control_build(b7, sizeof(b7), &cc));
+    char b3[3]; // the key token overflows -> cc_kv sees the CC_SENT sentinel
+    TEST_ASSERT_EQUAL_size_t(0, cache_control_build(b3, sizeof(b3), &cc));
+    cache_no_store(&cc); // "no-store" (8) fills cap 8 exactly -> no room for the NUL
+    char b8[8];
+    TEST_ASSERT_EQUAL_size_t(0, cache_control_build(b8, sizeof(b8), &cc));
+}
+
+// Case-insensitive compare length edges: a name that is a prefix of a directive (input ends first),
+// and one that extends past a directive (target ends first).
+void test_parse_ci_length_edges()
+{
+    DetwsCacheControl cc;
+    TEST_ASSERT_FALSE(cache_control_parse("max", 3, &cc));     // prefix of "max-age": i==len, target[i]!=0
+    TEST_ASSERT_FALSE(cache_control_parse("publicX", 7, &cc)); // extends past "public": i<len, target[i]==0
+}
+
+// Parser OWS / empty-name / no-digit-value edges (tab separators + trailing tabs, empty name, a
+// value present with no digits, a delta ending on a non-digit above '9').
+void test_parse_ows_and_empty()
+{
+    DetwsCacheControl cc;
+    const char *tabs = "public,\tmax-age=\t42"; // tab separator + tab as leading delta OWS
+    TEST_ASSERT_TRUE(cache_control_parse(tabs, strlen(tabs), &cc));
+    TEST_ASSERT_TRUE(cc.cc_public);
+    TEST_ASSERT_EQUAL_INT32(42, cc.max_age);
+
+    const char *trail = "no-store\t, max-age\t=5"; // trailing tab on a directive + tab in the name
+    TEST_ASSERT_TRUE(cache_control_parse(trail, strlen(trail), &cc));
+    TEST_ASSERT_TRUE(cc.no_store);
+    TEST_ASSERT_EQUAL_INT32(5, cc.max_age);
+
+    const char *empty = "=5, max-age=xyz, public"; // empty name skipped; "xyz" has no digits -> absent
+    TEST_ASSERT_TRUE(cache_control_parse(empty, strlen(empty), &cc));
+    TEST_ASSERT_TRUE(cc.cc_public);
+    TEST_ASSERT_EQUAL_INT32(-1, cc.max_age);
+
+    const char *mixed = "max-age=5:"; // digit then ':' (> '9') ends the delta loop
+    TEST_ASSERT_TRUE(cache_control_parse(mixed, strlen(mixed), &cc));
+    TEST_ASSERT_EQUAL_INT32(5, cc.max_age);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -250,5 +315,9 @@ int main()
     RUN_TEST(test_build_all_directives);
     RUN_TEST(test_parse_all_directives);
     RUN_TEST(test_parse_and_build_guards);
+    RUN_TEST(test_preset_clamps);
+    RUN_TEST(test_build_boundaries);
+    RUN_TEST(test_parse_ci_length_edges);
+    RUN_TEST(test_parse_ows_and_empty);
     return UNITY_END();
 }

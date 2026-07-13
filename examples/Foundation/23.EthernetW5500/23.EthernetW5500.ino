@@ -39,7 +39,15 @@ void setup()
 {
     Serial.begin(115200);
 
-    init_eth_physical(); // ETH.begin(ETH_PHY_W5500, ...) with the DETWS_ETH_W5500_* pin config
+    // init_eth_physical() installs the W5500 driver (ETH.begin with the DETWS_ETH_W5500_* pins). It
+    // returns false if the MAC never answered on SPI - check the return before polling for a link, or a
+    // never-installed driver reboot-loops the poll below.
+    if (!init_eth_physical())
+    {
+        Serial.println("W5500 init failed: the MAC did not answer on SPI. Check 3V3 power and the SPI "
+                       "wiring (CS/SCK/MISO/MOSI + RST/INT). Not polling for a link.");
+        return;
+    }
     Serial.print("Bringing up W5500 Ethernet");
     unsigned long t0 = millis();
     while (!eth_ready() && millis() - t0 < 15000)

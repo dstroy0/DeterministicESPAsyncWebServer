@@ -42,12 +42,25 @@ void setup()
 {
     Serial.begin(115200);
 
-    init_eth_physical(); // ETH.begin() with the ETH_PHY_* build-flag config
+    // init_eth_physical() brings up the RMII PHY (ETH.begin with the ETH_PHY_* flags). Check the return
+    // before polling for a link - a PHY that never installed would spin this loop forever.
+    if (!init_eth_physical())
+    {
+        Serial.println("Ethernet init failed: the PHY did not come up. Check the ETH_PHY_* pin / clock / "
+                       "power flags for your board. Not polling for a link.");
+        return;
+    }
     Serial.print("Bringing up Ethernet");
-    while (!eth_ready())
+    unsigned long t0 = millis();
+    while (!eth_ready() && millis() - t0 < 15000)
     {
         delay(250);
         Serial.print('.');
+    }
+    if (!eth_ready())
+    {
+        Serial.println("\nEthernet link did not come up (cable / DHCP?)");
+        return;
     }
     Serial.print("\nIP: ");
     Serial.println(ETH.localIP());

@@ -244,6 +244,76 @@ void test_pasv_epsv_null_and_edges()
     TEST_ASSERT_FALSE(ftp_parse_epsv("229 (|||99999|)", 15, &port));       // port > 65535
 }
 
+// Null-argument guards on every entry point (the other side of each `!buf`/`!ip`/`!port` guard).
+void test_build_null_args()
+{
+    char b[32];
+    const uint8_t ip[4] = {1, 2, 3, 4};
+    uint8_t oip[4];
+    uint16_t port;
+    TEST_ASSERT_EQUAL_size_t(0, ftp_build_command(nullptr, sizeof(b), "USER", "x"));       // !buf
+    TEST_ASSERT_EQUAL_size_t(0, ftp_build_port(b, sizeof(b), nullptr, 80));                // !ip
+    TEST_ASSERT_EQUAL_size_t(0, ftp_build_eprt(nullptr, sizeof(b), "1.2.3.4", false, 80)); // !buf
+    TEST_ASSERT_EQUAL_size_t(0, ftp_build_eprt(b, sizeof(b), nullptr, false, 80));         // !ip_str
+    const char *pasv = "227 (1,2,3,4,5,6)\r\n";
+    TEST_ASSERT_FALSE(ftp_parse_pasv(pasv, strlen(pasv), nullptr, &port)); // !ip
+    TEST_ASSERT_FALSE(ftp_parse_pasv(pasv, strlen(pasv), oip, nullptr));   // !port
+    const char *epsv = "229 (|||1050|)\r\n";
+    TEST_ASSERT_FALSE(ftp_parse_epsv(epsv, strlen(epsv), nullptr)); // !port
+}
+
+// A malformed reply head exercises each side of the 3-digit test (char below '0' / above '9' at
+// each of the three positions).
+void test_reply_head_nondigit_edges()
+{
+    int code = 0;
+    size_t used = 0;
+    TEST_ASSERT_FALSE(ftp_parse_reply("/23 x\r\n", 7, &code, &used)); // p[0] '/' < '0'
+    TEST_ASSERT_FALSE(ftp_parse_reply(":23 x\r\n", 7, &code, &used)); // p[0] ':' > '9'
+    TEST_ASSERT_FALSE(ftp_parse_reply("2/3 x\r\n", 7, &code, &used)); // p[1] '/' < '0'
+    TEST_ASSERT_FALSE(ftp_parse_reply("22/ x\r\n", 7, &code, &used)); // p[2] '/' < '0'
+    TEST_ASSERT_FALSE(ftp_parse_reply("22: x\r\n", 7, &code, &used)); // p[2] ':' > '9'
+}
+
+// A continuation line that repeats the SAME code with '-' (not space) must not terminate.
+void test_reply_multiline_samecode_dash()
+{
+    const char *r = "150-first\r\n"
+                    "150-still going\r\n" // same code 150 but '-' separator: not the terminator
+                    "150 done\r\n";       // real terminator: same code + space
+    int code = 0;
+    size_t used = 0;
+    TEST_ASSERT_TRUE(ftp_parse_reply(r, strlen(r), &code, &used));
+    TEST_ASSERT_EQUAL_INT(150, code);
+    TEST_ASSERT_EQUAL_size_t(strlen(r), used);
+}
+
+// PASV field scanner edges: field starting past the buffer, a char above '9', truncation mid-number.
+void test_parse_pasv_edges()
+{
+    uint8_t ip[4];
+    uint16_t port;
+    TEST_ASSERT_FALSE(ftp_parse_pasv("227 (", 5, ip, &port)); // first field: i >= len right after '('
+    const char *hi = "227 (194,:,3,4,5,6)\r\n";               // ':' (0x3A) > '9' in a field
+    TEST_ASSERT_FALSE(ftp_parse_pasv(hi, strlen(hi), ip, &port));
+    TEST_ASSERT_FALSE(ftp_parse_pasv("227 (194", 8, ip, &port)); // ends mid-number, then no comma
+    const char *empty = "227 (194,,3,4,5,6)\r\n";                // empty field: ',' (0x2C) < '0' at field start
+    TEST_ASSERT_FALSE(ftp_parse_pasv(empty, strlen(empty), ip, &port));
+    const char *trail = "227 (19a,3,4,5,6,7)\r\n"; // digit then 'a' (> '9') ends the accumulation loop
+    TEST_ASSERT_FALSE(ftp_parse_pasv(trail, strlen(trail), ip, &port));
+}
+
+// EPSV port scanner edges: end right after the delimiters, a char above '9', digits to end of buffer.
+void test_parse_epsv_edges()
+{
+    uint16_t port = 0;
+    TEST_ASSERT_FALSE(ftp_parse_epsv("229 (|||", 8, &port)); // i >= len at the port field
+    const char *hi = "229 (|||:|)\r\n";                      // ':' > '9' where the port should start
+    TEST_ASSERT_FALSE(ftp_parse_epsv(hi, strlen(hi), &port));
+    TEST_ASSERT_TRUE(ftp_parse_epsv("229 (|||1050", 12, &port)); // digits run to end of buffer (valid)
+    TEST_ASSERT_EQUAL_UINT16(1050, port);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -263,5 +333,10 @@ int main()
     RUN_TEST(test_reply_null_and_partial_multiline);
     RUN_TEST(test_build_overflow_and_null);
     RUN_TEST(test_pasv_epsv_null_and_edges);
+    RUN_TEST(test_build_null_args);
+    RUN_TEST(test_reply_head_nondigit_edges);
+    RUN_TEST(test_reply_multiline_samecode_dash);
+    RUN_TEST(test_parse_pasv_edges);
+    RUN_TEST(test_parse_epsv_edges);
     return UNITY_END();
 }
