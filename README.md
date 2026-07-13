@@ -506,7 +506,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 
 | Layer | Feature             | Flash (best-worst) | RAM (best-worst) |
 | ----- | ------------------- | -----------------: | ---------------: |
-| Core  | `ETHERNET`          |            37.0 KB |          15.3 KB |
+| Core  | `ETHERNET`          |            37.2 KB |          15.3 KB |
 | Core  | `BUS_CAPTURE`       |            17.9 KB |         < 0.5 KB |
 | Core  | `FORWARD`           |            17.9 KB |         < 0.5 KB |
 | Core  | `PROMISC`           |            11.5 KB |         < 0.5 KB |
