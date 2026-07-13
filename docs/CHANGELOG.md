@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`4f27879`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f27879d5619a2006ab2edbd678544ca43c1bfb5))
+
+### Documentation
+
+- refresh coverage note + enrich W5500 record after v5.101.0 ([`c5e4f63`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c5e4f63c7acaff50a00b0e77a44c6d62b846be10))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`261f4ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/261f4ed031435dbdef1ce9ea70964880d917cf8f))
+
 ## [5.101.0] - 2026-07-13
 
 <details>
