@@ -1035,6 +1035,14 @@ Together: **~0.4 -> ~1.8 Mbps (~4.5x)**, byte-exact. The remaining ceiling is th
 bandwidth-delay-product limit - the inbound TCP send window over the double-hop WiFi relay - not the pump;
 raising `TCP_SND_BUF` / enabling window scaling in a custom lwIP would lift it further.
 
+**Over a W5500 wired link (2026-07-13, ESP32-S3):** a 1 MB pull through the board (`8080 -> origin :8000`)
+was **byte-exact** (SHA256 matched) but ran at only **~44 KB/s (~0.35 Mbps)** - ~5x slower than the WiFi
+relay. The cause is the W5500's **single SPI bus**: both relay hops (inbound RX + origin RX/TX) serialize
+over one bus into the chip's small 2 KB socket buffers, so the doubly-traversed bytes cannot overlap the
+way they do on WiFi. A single-direction W5500 download is ~7 Mbps, but a relay crosses it twice and the two
+directions contend, collapsing the rate. Correctness is unaffected; wired relay is for control-plane
+publishing, not bulk transfer.
+
 **Practicality:** ~1.8 Mbps is the right tool for what a device-side port-forward is actually for -
 publishing a control-plane service through the board that bridges two segments: an SSH or HTTP admin
 console, a Modbus/OPC-UA endpoint, a config UI on a locked-down PLC network, and moderate file pulls. It

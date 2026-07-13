@@ -91,6 +91,13 @@ N40 M30
 
 (The leading/trailing blank runout bytes are invisible NULs.)
 
+> **Verified on hardware.** On an ESP32-S3 over a W5500 wired Ethernet link, the
+> drip to a TCP capture sink was **byte-exact** against an independently computed
+> reference (16-NUL leader, `%`CRLF, each block with CR before LF, `%`CRLF,
+> 16-NUL trailer), and the flow control holds: with the sink asserting XOFF,
+> **zero** program bytes were sent during a 3 s hold, and the full identical
+> program arrived the moment XON was sent.
+
 ## Troubleshooting
 
 The sketch prints `DncStreamResult` codes.

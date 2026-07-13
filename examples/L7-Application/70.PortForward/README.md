@@ -93,7 +93,12 @@ connect to this board on port 8080 and you reach the origin
 - **Publish several ports.** Call `server.listen` + `det_relay_publish` once per
   port (up to `DETWS_RELAY_MAX_PUBLISH`), each to a different origin.
 - **Throughput.** Each relay carries up to `DETWS_RELAY_BUF` bytes per pump step;
-  raise it for bulk transfers, at the cost of RAM per connection.
+  raise it for bulk transfers, at the cost of RAM per connection. **HW-verified**
+  on an ESP32-S3 over a W5500 wired link: a 1 MB file pulled through the front port
+  came back byte-exact (SHA256 matched the origin). Expect ~44 KB/s on a **single-NIC
+  relay** - every byte crosses the one interface twice (origin->board, board->client)
+  and the rate is round-trip-latency bound, so the relay suits publishing a service /
+  small control files rather than bulk transfer.
 
 ## Build and run (PlatformIO)
 
