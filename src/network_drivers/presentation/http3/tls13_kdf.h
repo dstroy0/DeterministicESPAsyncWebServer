@@ -76,11 +76,13 @@ void tls13_ks_early(Tls13KeySchedule *ks);
  * handshake_secret = HKDF-Extract(Derive-Secret(early, "derived", H("")), @p ecdhe); the traffic
  * secrets are Derive-Secret(handshake_secret, "c hs traffic"/"s hs traffic", @p ch_sh_hash).
  *
- * @param ecdhe       The 32-byte (EC)DHE shared secret (X25519 output).
+ * @param ecdhe       The (EC)DHE shared secret: 32 bytes for X25519, or the 64-byte concatenation
+ *                    ML-KEM_secret || X25519_secret for the X25519MLKEM768 hybrid group.
  * @param ch_sh_hash  Transcript-Hash of ClientHello..ServerHello.
+ * @param ecdhe_len   Length of @p ecdhe (32 for X25519, 64 for the hybrid).
  */
-void tls13_ks_handshake(Tls13KeySchedule *ks, const uint8_t ecdhe[TLS13_SECRET_LEN],
-                        const uint8_t ch_sh_hash[TLS13_SECRET_LEN]);
+void tls13_ks_handshake(Tls13KeySchedule *ks, const uint8_t *ecdhe, const uint8_t ch_sh_hash[TLS13_SECRET_LEN],
+                        size_t ecdhe_len = TLS13_SECRET_LEN);
 
 /**
  * @brief Step 3: master_secret and the client/server application traffic secrets.

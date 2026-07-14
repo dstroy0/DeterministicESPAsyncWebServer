@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **223 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **224 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -227,6 +227,7 @@ The native test matrix has **223 environments**, one per feature, generated from
 | `native_quic_packet` | `ETWS_ENABLE_HTTP3=1` | `test_quic_packet` | QUIC packet header + packet-number codec (network_drivers/presentation/http3/quic_packet, RFC 9000 sec 17): the long-header build/parse round-trip, a Version Negotiation packet (Version 0 + supported-... |
 | `native_quic_server` | `ETWS_ENABLE_HTTP3=1` | `test_quic_server` | HTTP/3 server glue (network_drivers/presentation/http3/quic_server): the UDP-facing pool that routes datagrams by Destination Connection ID to a pool of QuicConn + H3Conn engines. |
 | `native_quic_tls` | `ETWS_ENABLE_HTTP3=1` | `test_quic_tls` | TLS 1.3 server handshake state machine for QUIC (network_drivers/presentation/http3/ quic_tls, RFC 9001 / RFC 8446): a full interop round-trip - drive the server with a hand-built ClientHello, run the... |
+| `native_quic_tls_pqc` | `ETWS_ENABLE_HTTP3=1`, `ETWS_ENABLE_PQC_KEX=1`, `ETWS_WORKER_TASK_STACK=16384` | `test_quic_tls` | TLS 1.3 QUIC handshake with the X25519MLKEM768 post-quantum hybrid group (IANA 0x11ec, DETWS_ENABLE_PQC_KEX=1): drives the server with a hybrid ClientHello, then verifies it as a conforming client - M... |
 | `native_quic_tp` | `ETWS_ENABLE_HTTP3=1` | `test_quic_tp` | QUIC transport parameters codec (network_drivers/presentation/http3/quic_tp, RFC 9000 sec 18): the sec 18.2 defaults, an encode/parse round-trip over the connection IDs + every varint parameter + the ... |
 | `native_quic_varint` | `ETWS_ENABLE_HTTP3=1` | `test_quic_varint` | QUIC variable-length integer codec (network_drivers/presentation/http3/quic_varint, RFC 9000 sec 16) - the foundational HTTP/3 primitive: the Appendix A.1 worked examples (1/2/4/8 byte encodings), the... |
 | `native_radio_power` | `ETWS_ENABLE_RADIO_POWER=1` | `test_radio_power` | WiFi radio power controls (services/radio_power): modem-sleep mode names host-tested; the apply/readback are ESP32-only (esp_wifi). |
@@ -513,7 +514,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2972 test cases** across **251 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2973 test cases** across **251 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -22680,7 +22681,7 @@ A thorough directory of all **2972 test cases** across **251 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_quic_tls (13 tests)</b></summary>
+<summary><b>test_quic_tls (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_full_handshake_roundtrip</b> &mdash; <i>Client transport params.</i></summary>
@@ -22827,6 +22828,26 @@ A thorough directory of all **2972 test cases** across **251 suites**. Expand a 
       * <code>Assert true (buf &gt; ee + cert_overhead + leave_b)</code>
       * <code>Assert true (cfg.cert_len &lt; sizeof(big_cert))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_FAILED, run_handshake(&cfg));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hybrid_handshake_roundtrip</b> &mdash; <i>Walk the ServerHello extensions (start = 4+2+32+1+2+1+2 = 44 with a 0-length session id) to the</i></summary>
+
+    * **Objective**: Walk the ServerHello extensions (start = 4+2+32+1+2+1+2 = 44 with a 0-length session id) to the
+    * **Assertions**:
+      * <code>Assert equal uint (ch_len, used)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, si[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(TLS_GROUP_X25519MLKEM768, g);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(MLKEM768_CT_BYTES + 32, sl);</code>
+      * <code>Assert not null (server_ct)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.handshake_secret, cks.handshake_secret, 32);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.client_hs_traffic, cks.client_hs_traffic, 32);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.server_hs_traffic, cks.server_hs_traffic, 32);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.server_ap_traffic, cks.server_ap_traffic, 32);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);</code>
+      * <code>Assert equal uint (sizeof(cfin), used)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);</code>
   </details>
 
 </details>

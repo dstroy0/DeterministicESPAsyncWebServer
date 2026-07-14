@@ -12,6 +12,9 @@
 
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
+#if DETWS_ENABLE_PQC_KEX
+#include "network_drivers/presentation/pqc/mlkem.h" // mlkem768_encaps (X25519MLKEM768 hybrid)
+#endif
 #include <string.h>
 
 // TLS alert codes we may raise (RFC 8446 sec 6).
@@ -72,7 +75,12 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
         fail(qt, TlsAlert::TLS_ALERT_PROTOCOL_VERSION);
         return false;
     }
-    if (!ch.has_key_share || !ch.offers_x25519 || !ch.offers_ed25519)
+    bool use_hybrid = false;
+#if DETWS_ENABLE_PQC_KEX
+    // Prefer the PQ/T hybrid whenever the client sent a usable X25519MLKEM768 key_share.
+    use_hybrid = ch.has_hybrid_share && ch.offers_x25519mlkem768;
+#endif
+    if (!ch.offers_ed25519 || (!use_hybrid && (!ch.has_key_share || !ch.offers_x25519)))
     {
         fail(qt, TlsAlert::TLS_ALERT_HANDSHAKE_FAILURE);
         return false;
@@ -94,28 +102,61 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     }
     qt->have_peer = true;
 
-    // ECDHE shared secret and the server's public key share.
-    uint8_t ecdhe[32];
-    uint8_t server_pub[32];
-    ssh_x25519(ecdhe, qt->cfg.ephemeral_priv, ch.client_x25519);
-    ssh_x25519_base(server_pub, qt->cfg.ephemeral_priv);
+    // (EC)DHE shared secret + the server's key_share, per negotiated group. The hybrid secret is the
+    // 64-byte ML-KEM_secret || X25519_secret (ML-KEM first, per draft-ietf-tls-ecdhe-mlkem).
+    uint8_t ecdhe[64];
+    size_t ecdhe_len;
+    uint16_t group;
+    size_t share_len;
+#if DETWS_ENABLE_PQC_KEX
+    uint8_t server_share[MLKEM768_CT_BYTES + 32]; // S_CT2(1088) || Q_S(32) for the hybrid
+    if (use_hybrid)
+    {
+        uint8_t ml_ss[32];
+        if (!mlkem768_encaps(ch.client_mlkem_ek, qt->cfg.mlkem_m, server_share, ml_ss))
+        {
+            fail(qt, TlsAlert::TLS_ALERT_HANDSHAKE_FAILURE); // malformed ML-KEM key
+            return false;
+        }
+        uint8_t x_ss[32];
+        uint8_t server_pub[32];
+        ssh_x25519(x_ss, qt->cfg.ephemeral_priv, ch.client_x25519);
+        ssh_x25519_base(server_pub, qt->cfg.ephemeral_priv);
+        memcpy(server_share + MLKEM768_CT_BYTES, server_pub, 32);
+        memcpy(ecdhe, ml_ss, 32);
+        memcpy(ecdhe + 32, x_ss, 32);
+        ecdhe_len = 64;
+        share_len = MLKEM768_CT_BYTES + 32;
+        group = TLS_GROUP_X25519MLKEM768;
+    }
+    else
+#else
+    uint8_t server_share[32];
+#endif
+    {
+        ssh_x25519(ecdhe, qt->cfg.ephemeral_priv, ch.client_x25519);
+        ssh_x25519_base(server_share, qt->cfg.ephemeral_priv);
+        ecdhe_len = 32;
+        share_len = 32;
+        group = TLS_GROUP_X25519;
+    }
 
     // Transcript starts with the ClientHello.
     ssh_sha256_update(&qt->transcript, msg, msg_len);
 
     // ServerHello (Initial-level flight).
     size_t n = tls13_build_server_hello(qt->flight_initial, sizeof(qt->flight_initial), qt->cfg.random, ch.session_id,
-                                        ch.session_id_len, server_pub);
+                                        ch.session_id_len, server_share, share_len, group);
     qt->flight_initial_len = 0;
     if (!emit(qt, qt->flight_initial, sizeof(qt->flight_initial), &qt->flight_initial_len, n))
-        return false; // GCOVR_EXCL_LINE  ServerHello (<=~160B: 32B session_id cap + key share) always fits
-                      // flight_initial[256]
+        return false; // GCOVR_EXCL_LINE  ServerHello always fits flight_initial (classical <=~160B; the
+                      // hybrid's ~1.2 KB share fits the PQC-sized 1400B buffer)
 
     // Handshake keys from Transcript-Hash(ClientHello..ServerHello).
     uint8_t hash[32];
     snapshot_hash(&qt->transcript, hash);
     tls13_ks_early(&qt->ks);
-    tls13_ks_handshake(&qt->ks, ecdhe, hash);
+    tls13_ks_handshake(&qt->ks, ecdhe, hash, ecdhe_len);
     quic_keys_from_secret(qt->ks.client_hs_traffic, &qt->hs_client);
     quic_keys_from_secret(qt->ks.server_hs_traffic, &qt->hs_server);
     qt->hs_keys_ready = true;

@@ -12,6 +12,11 @@
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#if DETWS_ENABLE_PQC_KEX
+#include "../test_pqc_mlkem/mlkem_kat.h"            // kat_ek, kat_dk (a valid ML-KEM key pair)
+#include "../test_ssh_pqc/mlkem_ref.h"              // mlkem768_decaps_ref (the client side)
+#include "network_drivers/presentation/pqc/mlkem.h" // MLKEM768_EK_BYTES / MLKEM768_CT_BYTES
+#endif
 #include <string.h>
 #include <unity.h>
 
@@ -529,6 +534,196 @@ void test_quic_tls_more_guards()
     TEST_ASSERT_EQUAL_UINT8(80, qt.alert); // internal_error
 }
 
+#if DETWS_ENABLE_PQC_KEX
+// Build a ClientHello offering X25519MLKEM768: supported_groups {0x11ec, x25519} and a key_share
+// carrying the client's ML-KEM ek (kat_ek) || X25519 pub (1216 B), plus the other required extensions.
+static size_t build_client_hello_hybrid(uint8_t *out, const uint8_t client_pub[32], const uint8_t *tp, size_t tp_len)
+{
+    size_t p = 0;
+    out[p++] = TlsHs::TLS_HS_CLIENT_HELLO;
+    size_t hs_len_at = p;
+    p += 3;
+    out[p++] = 0x03;
+    out[p++] = 0x03;
+    for (int i = 0; i < 32; i++)
+        out[p++] = (uint8_t)i; // random
+    out[p++] = 0x00;           // session id length 0
+    out[p++] = 0x00;           // cipher_suites
+    out[p++] = 0x02;
+    out[p++] = 0x13;
+    out[p++] = 0x01;
+    out[p++] = 0x01; // compression
+    out[p++] = 0x00;
+    size_t ext_len_at = p;
+    p += 2;
+    {
+        static const uint8_t sv[] = {0x00, 0x2b, 0x00, 0x03, 0x02, 0x03, 0x04}; // supported_versions
+        memcpy(out + p, sv, sizeof(sv));
+        p += sizeof(sv);
+    }
+    {
+        static const uint8_t sg[] = {0x00, 0x0a, 0x00, 0x06, 0x00,
+                                     0x04, 0x11, 0xec, 0x00, 0x1d}; // supported_groups {X25519MLKEM768, x25519}
+        memcpy(out + p, sg, sizeof(sg));
+        p += sizeof(sg);
+    }
+    {
+        static const uint8_t sa[] = {0x00, 0x0d, 0x00, 0x04, 0x00, 0x02, 0x08, 0x07}; // sig_algs ed25519
+        memcpy(out + p, sa, sizeof(sa));
+        p += sizeof(sa);
+    }
+    { // key_share: one X25519MLKEM768 entry = ek(1184) || x25519(32)
+        out[p++] = 0x00;
+        out[p++] = 0x33;
+        size_t el_at = p;
+        p += 2; // ext_len
+        size_t cs_at = p;
+        p += 2; // client_shares length
+        out[p++] = 0x11;
+        out[p++] = 0xec; // group
+        out[p++] = (uint8_t)((MLKEM768_EK_BYTES + 32) >> 8);
+        out[p++] = (uint8_t)((MLKEM768_EK_BYTES + 32) & 0xff);
+        memcpy(out + p, kat_ek, MLKEM768_EK_BYTES);
+        p += MLKEM768_EK_BYTES;
+        memcpy(out + p, client_pub, 32);
+        p += 32;
+        uint16_t cs = (uint16_t)(p - cs_at - 2);
+        out[cs_at] = (uint8_t)(cs >> 8);
+        out[cs_at + 1] = (uint8_t)cs;
+        uint16_t el = (uint16_t)(p - el_at - 2);
+        out[el_at] = (uint8_t)(el >> 8);
+        out[el_at + 1] = (uint8_t)el;
+    }
+    {
+        static const uint8_t alpn[] = {0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 'h', '3'};
+        memcpy(out + p, alpn, sizeof(alpn));
+        p += sizeof(alpn);
+    }
+    {
+        out[p++] = 0x00; // quic_transport_parameters
+        out[p++] = 0x39;
+        out[p++] = (uint8_t)(tp_len >> 8);
+        out[p++] = (uint8_t)tp_len;
+        memcpy(out + p, tp, tp_len);
+        p += tp_len;
+    }
+    uint16_t ext_len = (uint16_t)(p - ext_len_at - 2);
+    out[ext_len_at] = (uint8_t)(ext_len >> 8);
+    out[ext_len_at + 1] = (uint8_t)ext_len;
+    uint32_t hs_len = (uint32_t)(p - hs_len_at - 3);
+    out[hs_len_at] = (uint8_t)(hs_len >> 16);
+    out[hs_len_at + 1] = (uint8_t)(hs_len >> 8);
+    out[hs_len_at + 2] = (uint8_t)hs_len;
+    return p;
+}
+
+// Full X25519MLKEM768 hybrid handshake, verified as a conforming client: decapsulate the server's
+// ML-KEM ciphertext, redo X25519, form the 64-byte ML-KEM||X25519 secret, and confirm both sides derive
+// identical handshake/application secrets and that the server's Finished + our Finished both verify.
+void test_hybrid_handshake_roundtrip()
+{
+    fill_test_material();
+    QuicTlsConfig cfg;
+    make_server_config(&cfg);
+    for (int i = 0; i < 32; i++)
+        cfg.mlkem_m[i] = (uint8_t)(0x5a ^ i); // fixed Encaps randomness for a repeatable test
+    QuicTls qt;
+    quic_tls_server_init(&qt, &cfg);
+
+    QuicTransportParams ctp;
+    quic_tp_defaults(&ctp);
+    ctp.has_initial_scid = true;
+    ctp.initial_scid_len = 4;
+    memcpy(ctp.initial_scid, "\xaa\xbb\xcc\xdd", 4);
+    uint8_t ctp_enc[128];
+    size_t ctp_len = quic_tp_encode(&ctp, ctp_enc, sizeof(ctp_enc));
+
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_PRIV);
+    static uint8_t ch[2048];
+    size_t ch_len = build_client_hello_hybrid(ch, client_pub, ctp_enc, ctp_len);
+
+    size_t used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_INITIAL, ch, ch_len);
+    TEST_ASSERT_EQUAL_UINT(ch_len, used);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_WAIT_FINISHED, qt.state);
+
+    size_t si_len = 0, sh_flight_len = 0;
+    const uint8_t *si = quic_tls_flight(&qt, QuicEnc::QUIC_ENC_INITIAL, &si_len);
+    const uint8_t *sh_flight = quic_tls_flight(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, &sh_flight_len);
+    TEST_ASSERT_EQUAL_UINT8(TlsHs::TLS_HS_SERVER_HELLO, si[0]);
+
+    // Walk the ServerHello extensions (start = 4+2+32+1+2+1+2 = 44 with a 0-length session id) to the
+    // key_share and confirm the hybrid group + 1120-byte share.
+    size_t o = 44;
+    const uint8_t *server_ct = nullptr;
+    const uint8_t *server_x25519 = nullptr;
+    while (o + 4 <= si_len)
+    {
+        uint16_t et = (uint16_t)((si[o] << 8) | si[o + 1]);
+        uint16_t el = (uint16_t)((si[o + 2] << 8) | si[o + 3]);
+        o += 4;
+        if (et == 0x0033)
+        {
+            uint16_t g = (uint16_t)((si[o] << 8) | si[o + 1]);
+            uint16_t sl = (uint16_t)((si[o + 2] << 8) | si[o + 3]);
+            TEST_ASSERT_EQUAL_UINT16(TLS_GROUP_X25519MLKEM768, g);
+            TEST_ASSERT_EQUAL_UINT16(MLKEM768_CT_BYTES + 32, sl);
+            server_ct = si + o + 4;
+            server_x25519 = si + o + 4 + MLKEM768_CT_BYTES;
+        }
+        o += el;
+    }
+    TEST_ASSERT_NOT_NULL(server_ct);
+
+    // Client combiner: ML-KEM secret first, then X25519.
+    uint8_t ml_ss[32];
+    mlkem768_decaps_ref(kat_dk, server_ct, ml_ss);
+    uint8_t x_ss[32];
+    ssh_x25519(x_ss, CLIENT_PRIV, server_x25519);
+    uint8_t ecdhe[64];
+    memcpy(ecdhe, ml_ss, 32);
+    memcpy(ecdhe + 32, x_ss, 32);
+
+    SshSha256Ctx t;
+    uint8_t ch_sh[32], ch_sf[32];
+    ssh_sha256_init(&t);
+    ssh_sha256_update(&t, ch, ch_len);
+    ssh_sha256_update(&t, si, si_len);
+    {
+        SshSha256Ctx tmp = t;
+        ssh_sha256_final(&tmp, ch_sh);
+    }
+    ssh_sha256_update(&t, sh_flight, sh_flight_len);
+    ssh_sha256_final(&t, ch_sf);
+
+    Tls13KeySchedule cks;
+    tls13_ks_early(&cks);
+    tls13_ks_handshake(&cks, ecdhe, ch_sh, 64); // 64-byte hybrid secret
+    tls13_ks_master(&cks, ch_sf);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.handshake_secret, cks.handshake_secret, 32);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.client_hs_traffic, cks.client_hs_traffic, 32);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.server_hs_traffic, cks.server_hs_traffic, 32);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.server_ap_traffic, cks.server_ap_traffic, 32);
+
+    // Server Finished verifies, then the server accepts the client Finished.
+    uint8_t ch_cv[32];
+    ssh_sha256_init(&t);
+    ssh_sha256_update(&t, ch, ch_len);
+    ssh_sha256_update(&t, si, si_len);
+    ssh_sha256_update(&t, sh_flight, sh_flight_len - 36);
+    ssh_sha256_final(&t, ch_cv);
+    uint8_t sfin_expected[32];
+    tls13_finished_mac(cks.server_hs_traffic, ch_cv, sfin_expected);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);
+
+    uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
+    tls13_finished_mac(cks.client_hs_traffic, ch_sf, cfin + 4);
+    used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
+    TEST_ASSERT_EQUAL_UINT(sizeof(cfin), used);
+    TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);
+}
+#endif // DETWS_ENABLE_PQC_KEX
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -545,5 +740,8 @@ int main(int, char **)
     RUN_TEST(test_reject_malformed_client_hello);
     RUN_TEST(test_quic_tls_more_guards);
     RUN_TEST(test_quic_tls_cert_size_boundary_emit_fails);
+#if DETWS_ENABLE_PQC_KEX
+    RUN_TEST(test_hybrid_handshake_roundtrip);
+#endif
     return UNITY_END();
 }

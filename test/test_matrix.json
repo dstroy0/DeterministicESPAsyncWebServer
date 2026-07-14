@@ -2188,6 +2188,33 @@
       ],
       "tests": ["test_quic_tls"]
     },
+    "native_quic_tls_pqc": {
+      "desc": "TLS 1.3 QUIC handshake with the X25519MLKEM768 post-quantum hybrid group (IANA 0x11ec,\nDETWS_ENABLE_PQC_KEX=1): drives the server with a hybrid ClientHello, then verifies it as a conforming\nclient - ML-KEM Decaps (an independent reference) + X25519, the 64-byte ML-KEM||X25519 secret, and\nboth Finished MACs. Reuses the classical test_quic_tls suite plus the added hybrid round-trip.",
+      "flags": [
+        "-DDETWS_ENABLE_HTTP3=1",
+        "-DDETWS_ENABLE_PQC_KEX=1",
+        "-DDETWS_WORKER_TASK_STACK=16384"
+      ],
+      "src": [
+        "+<network_drivers/presentation/http3/quic_tls.cpp>",
+        "+<network_drivers/presentation/http3/tls13_kdf.cpp>",
+        "+<network_drivers/presentation/http3/tls13_msg.cpp>",
+        "+<network_drivers/presentation/http3/quic_tp.cpp>",
+        "+<network_drivers/presentation/http3/quic_crypto.cpp>",
+        "+<network_drivers/presentation/http3/quic_aead.cpp>",
+        "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
+        "+<network_drivers/presentation/http3/quic_packet.cpp>",
+        "+<network_drivers/presentation/http3/quic_varint.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>",
+        "+<network_drivers/presentation/pqc/sha3.cpp>",
+        "+<network_drivers/presentation/pqc/mlkem.cpp>"
+      ],
+      "tests": ["test_quic_tls"]
+    },
     "native_quic_conn": {
       "desc": "QUIC v1 server connection engine (network_drivers/presentation/http3/quic_conn, RFC 9000\n/ RFC 9001): the test acts as a QUIC client - builds real Initial / Handshake / 1-RTT packets and\ndrives a server QuicConn through a full handshake (per-level AEAD, CRYPTO reassembly, ACKs,\ncoalescing, HANDSHAKE_DONE) and a 1-RTT request/response stream exchange.",
       "flags": ["-DDETWS_ENABLE_HTTP3=1"],

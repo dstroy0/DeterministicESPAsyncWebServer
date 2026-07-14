@@ -46,7 +46,8 @@ struct TlsHs
 };
 
 #define TLS_CIPHER_AES_128_GCM_SHA256 0x1301 ///< the one cipher suite we support
-#define TLS_GROUP_X25519 0x001d              ///< the one key-exchange group we support
+#define TLS_GROUP_X25519 0x001d              ///< the classical key-exchange group we support
+#define TLS_GROUP_X25519MLKEM768 0x11ec      ///< PQ/T hybrid group (ML-KEM-768 + X25519), when DETWS_ENABLE_PQC_KEX
 #define TLS_SIG_ED25519 0x0807               ///< the one signature scheme we produce
 #define TLS_VERSION_1_3 0x0304               ///< supported_versions selected value
 #define TLS_EXT_QUIC_TRANSPORT_PARAMS 0x0039 ///< quic_transport_parameters (RFC 9001 sec 8.2)
@@ -56,8 +57,13 @@ struct Tls13ClientHello
 {
     const uint8_t *session_id; ///< legacy_session_id (echoed back in ServerHello)
     uint8_t session_id_len;
-    uint8_t client_x25519[32]; ///< the client's X25519 key_share (valid iff has_key_share)
+    uint8_t client_x25519[32]; ///< the client's X25519 key_share (valid iff has_key_share or has_hybrid_share)
     bool has_key_share;
+#if DETWS_ENABLE_PQC_KEX
+    bool offers_x25519mlkem768;     ///< supported_groups contains X25519MLKEM768
+    bool has_hybrid_share;          ///< key_share carried an X25519MLKEM768 entry
+    const uint8_t *client_mlkem_ek; ///< the client's ML-KEM-768 encapsulation key (1184 B, aliases input)
+#endif
     bool offers_tls13;      ///< supported_versions contains 0x0304
     bool offers_x25519;     ///< supported_groups contains x25519
     bool offers_ed25519;    ///< signature_algorithms contains ed25519
@@ -76,16 +82,21 @@ struct Tls13ClientHello
 bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *out);
 
 /**
- * @brief Build a ServerHello (RFC 8446 sec 4.1.3) selecting TLS 1.3 / AES-128-GCM-SHA256 / X25519.
+ * @brief Build a ServerHello (RFC 8446 sec 4.1.3) selecting TLS 1.3 / AES-128-GCM-SHA256 and a
+ * key_share for @p group.
  *
  * @param random          32-byte server random.
  * @param session_id      legacy_session_id_echo (the client's, echoed verbatim; may be NULL if len 0).
  * @param session_id_len  echoed session-id length (0..32).
- * @param server_x25519   the server's 32-byte X25519 public key_share.
+ * @param share           the server's key_share (X25519 pub for the classical group, or the
+ *                        ciphertext || X25519 concatenation for X25519MLKEM768).
+ * @param share_len       length of @p share (32 for X25519, 1120 for the hybrid).
+ * @param group           the selected named group (default TLS_GROUP_X25519).
  * @return bytes written, or 0 on overflow.
  */
 size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[32], const uint8_t *session_id,
-                                uint8_t session_id_len, const uint8_t server_x25519[32]);
+                                uint8_t session_id_len, const uint8_t *share, size_t share_len = 32,
+                                uint16_t group = TLS_GROUP_X25519);
 
 /**
  * @brief Build EncryptedExtensions (RFC 8446 sec 4.3.1) carrying ALPN "h3" and the server's

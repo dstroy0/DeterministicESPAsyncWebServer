@@ -40,15 +40,15 @@ void tls13_ks_early(Tls13KeySchedule *ks)
     quic_hkdf_extract(nullptr, 0, zeros, sizeof(zeros), ks->early_secret);
 }
 
-void tls13_ks_handshake(Tls13KeySchedule *ks, const uint8_t ecdhe[TLS13_SECRET_LEN],
-                        const uint8_t ch_sh_hash[TLS13_SECRET_LEN])
+void tls13_ks_handshake(Tls13KeySchedule *ks, const uint8_t *ecdhe, const uint8_t ch_sh_hash[TLS13_SECRET_LEN],
+                        size_t ecdhe_len)
 {
     // Handshake Secret = HKDF-Extract(Derive-Secret(Early, "derived", ""), (EC)DHE).
     uint8_t eh[TLS13_SECRET_LEN];
     empty_hash(eh);
     uint8_t derived[TLS13_SECRET_LEN];
     tls13_derive_secret(ks->early_secret, "derived", eh, derived);
-    quic_hkdf_extract(derived, sizeof(derived), ecdhe, TLS13_SECRET_LEN, ks->handshake_secret);
+    quic_hkdf_extract(derived, sizeof(derived), ecdhe, ecdhe_len, ks->handshake_secret);
 
     tls13_derive_secret(ks->handshake_secret, "c hs traffic", ch_sh_hash, ks->client_hs_traffic);
     tls13_derive_secret(ks->handshake_secret, "s hs traffic", ch_sh_hash, ks->server_hs_traffic);

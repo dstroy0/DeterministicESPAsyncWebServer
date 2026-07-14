@@ -213,6 +213,9 @@ QuicSlot *open_conn(const QuicLongHeader *lh, const char *ip, uint16_t port)
     tc.params.max_idle_timeout = DETWS_QUIC_IDLE_MS; // both ends reclaim the connection after this idle
     s_quic.cfg.rng(tc.ephemeral_priv, sizeof tc.ephemeral_priv);
     s_quic.cfg.rng(tc.random, sizeof tc.random);
+#if DETWS_ENABLE_PQC_KEX
+    s_quic.cfg.rng(tc.mlkem_m, sizeof tc.mlkem_m); // fresh ML-KEM Encaps randomness per handshake
+#endif
 
     uint8_t our_scid[DETWS_QUIC_SCID_LEN];
     s_quic.cfg.rng(our_scid, sizeof our_scid);

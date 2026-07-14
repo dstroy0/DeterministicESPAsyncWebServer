@@ -11,6 +11,9 @@
 #if DETWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
+#if DETWS_ENABLE_PQC_KEX
+#include "network_drivers/presentation/pqc/mlkem.h" // MLKEM768_EK_BYTES (X25519MLKEM768 share sizing)
+#endif
 #include <string.h>
 
 // TLS extension types used here (RFC 8446 sec 4.2 + RFC 9001).
@@ -174,6 +177,9 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
             return;
         size_t ll = (body[0] << 8) | body[1];
         out->offers_x25519 = list16_contains(body + 2, blen - 2, ll, TLS_GROUP_X25519);
+#if DETWS_ENABLE_PQC_KEX
+        out->offers_x25519mlkem768 = list16_contains(body + 2, blen - 2, ll, TLS_GROUP_X25519MLKEM768);
+#endif
         break;
     }
     case TlsExt::TLS_EXT_SIGNATURE_ALGORITHMS: {
@@ -204,6 +210,14 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
                 memcpy(out->client_x25519, body + i, 32);
                 out->has_key_share = true;
             }
+#if DETWS_ENABLE_PQC_KEX
+            else if (group == TLS_GROUP_X25519MLKEM768 && klen == MLKEM768_EK_BYTES + 32)
+            {
+                out->client_mlkem_ek = body + i;                              // ML-KEM-768 ek (first)
+                memcpy(out->client_x25519, body + i + MLKEM768_EK_BYTES, 32); // X25519 (second)
+                out->has_hybrid_share = true;
+            }
+#endif
             i += klen;
         }
         break;
@@ -318,7 +332,7 @@ bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *
 // Builders
 // ---------------------------------------------------------------------------
 size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[32], const uint8_t *session_id,
-                                uint8_t session_id_len, const uint8_t server_x25519[32])
+                                uint8_t session_id_len, const uint8_t *share, size_t share_len, uint16_t group)
 {
     Writer w = {out, cap, 0, true};
     w_u8(&w, TlsHs::TLS_HS_SERVER_HELLO);
@@ -332,13 +346,13 @@ size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[3
     w_u8(&w, 0x00); // legacy_compression_method
 
     size_t ext_len = w_mark(&w, 2);
-    // key_share -> server KeyShareEntry { x25519, 32-byte key }. (Ordered key_share then
+    // key_share -> server KeyShareEntry { group, key_exchange }. (Ordered key_share then
     // supported_versions to match the RFC 8448 sec 3 ServerHello; extension order is not significant.)
     w_u16(&w, TlsExt::TLS_EXT_KEY_SHARE);
-    w_u16(&w, 4 + 32);
-    w_u16(&w, TLS_GROUP_X25519);
-    w_u16(&w, 32);
-    w_bytes(&w, server_x25519, 32);
+    w_u16(&w, (uint16_t)(4 + share_len));
+    w_u16(&w, group);
+    w_u16(&w, (uint16_t)share_len);
+    w_bytes(&w, share, share_len);
     // supported_versions -> selected 0x0304.
     w_u16(&w, TlsExt::TLS_EXT_SUPPORTED_VERSIONS);
     w_u16(&w, 2);

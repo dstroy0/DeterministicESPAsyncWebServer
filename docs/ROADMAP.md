@@ -460,12 +460,17 @@ hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, password + publickey auth.
       `K = SHA256(K_PQ || K_CL)` (RFC 9370). Byte-exact vs the FIPS 203 reference (kyber-py) + a decisive
       end-to-end host test (independent ML-KEM Decaps client, string-K exchange hash / KDF, ed25519 signature).
       Peak ~7 KB worker stack (`DETWS_WORKER_STACK_PQC_MIN`). _Pending:_ interop vs real OpenSSH 9.9+ on the S3 rig.
-- [ ] **Post-quantum hybrid key exchange - HTTP/3 / TLS 1.3** (M, reuses the shipped core) - wire the same
-      ML-KEM-768 core into the QUIC hand-rolled TLS 1.3 as the **X25519MLKEM768** group (IANA 0x11ec): add the
-      group to `tls13_msg` supported_groups + key_share (client share = X25519(32) || ek(1184); server share =
-      X25519(32) || ciphertext(1088)), concatenate the two shared secrets into `tls13_kdf`, and enlarge the
-      QUIC ServerHello flight buffer for the ~1.1 KB key_share. The classical HTTPS path stays on mbedTLS (whose
-      hybrid support tracks its version). Also consider **sntrup761x25519-sha512@openssh.com** for SSH parity.
+- [x] **Post-quantum hybrid key exchange - HTTP/3 / TLS 1.3** (SHIPPED v6.7.0) - wired the same ML-KEM-768
+      core into the QUIC hand-rolled TLS 1.3 as the **X25519MLKEM768** group (IANA 0x11ec): added the group to
+      `tls13_msg` supported_groups + key_share (client share = ek(1184) || X25519(32); server share =
+      ciphertext(1088) || X25519(32) - ML-KEM first per draft-ietf-tls-ecdhe-mlkem), concatenated the two secrets
+      (ML-KEM || X25519, 64 B) into the `tls13_kdf` handshake secret, and enlarged the QUIC ServerHello flight
+      buffer for the ~1.1 KB key_share. A PQC-capable browser negotiates it; others fall back to X25519. Verified
+      by a full hybrid handshake host test (independent ML-KEM Decaps client + both Finished MACs). The classical
+      HTTPS path stays on mbedTLS (whose hybrid support tracks its version). _Pending:_ curl/browser HW interop.
+- [ ] **PQC hybrid follow-ons** (S) - **sntrup761x25519-sha512@openssh.com** for SSH parity with OpenSSH's
+      other default, and a **HelloRetryRequest** path so a client that lists X25519MLKEM768 but sends only a
+      classical key_share still gets the hybrid (today we serve whatever key_share it sent).
 - [ ] **SSH cipher / host-key breadth** (M, cheap interop) - close the easy deltas vs CycloneSSH:
       **aes256-gcm@openssh.com** / **aes128-gcm@openssh.com** (reuse the existing GCM core in
       `http3/quic_aead` - an AEAD alternative to chacha that rides the AES-NI-equivalent HW), **rsa-sha2-512**
