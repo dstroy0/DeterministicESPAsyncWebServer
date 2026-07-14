@@ -117,6 +117,7 @@
 "native_nrf24",
 "native_ntcip",
 "native_ntp_server",
+"native_ntrip_caster",
 "native_nts",
 "native_oauth2",
 "native_observability",
@@ -2054,6 +2055,12 @@
 ],
 "src/services/gnss/gnss_survey.h": [
 "native_gnss_survey"
+],
+"src/services/gnss/ntrip_caster.cpp": [
+"native_ntrip_caster"
+],
+"src/services/gnss/ntrip_caster.h": [
+"native_ntrip_caster"
 ],
 "src/services/gnss/rtcm3.cpp": [
 "native_rtcm3"
