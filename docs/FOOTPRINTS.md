@@ -77,6 +77,7 @@ from each example's `pio ci` size report and aggregated into
 | `RANGE`                                                                                                   | L7-Application/12.Range                 | 776.2 KB (60.6%) | 79.9 KB (25.0%)  |
 | `RELAY`                                                                                                   | L7-Application/70.PortForward           | 744.3 KB (58.2%) | 113.7 KB (35.5%) |
 | `RTC+TIME_SOURCE+NTP`                                                                                     | L7-Application/61.Rtc                   | 748.7 KB (58.5%) | 44.3 KB (13.8%)  |
+| `SEN0192`                                                                                                 | L7-Application/77.Sen0192               | 263.5 KB (20.6%) | 21.0 KB (6.6%)   |
 | `SHT3X`                                                                                                   | L7-Application/64.Sht3x                 | 280.2 KB (21.9%) | 21.3 KB (6.7%)   |
 | `SIGFOX`                                                                                                  | Foundation/15.SigfoxUplink              | 261.7 KB (20.4%) | 21.0 KB (6.6%)   |
 | `SMB`                                                                                                     | L7-Application/68.SmbFileClient         | 724.9 KB (56.6%) | 63.7 KB (19.9%)  |

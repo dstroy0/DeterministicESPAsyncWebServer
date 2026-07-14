@@ -482,6 +482,13 @@
     "flash_bytes": 766653,
     "ram_bytes": 45372
   },
+  "SEN0192": {
+    "example": "L7-Application/77.Sen0192",
+    "flags": "-DDETWS_ENABLE_SEN0192=1",
+    "board": "esp32dev",
+    "flash_bytes": 269805,
+    "ram_bytes": 21488
+  },
   "SHT3X": {
     "example": "L7-Application/64.Sht3x",
     "flags": "-DDETWS_ENABLE_SHT3X=1",
