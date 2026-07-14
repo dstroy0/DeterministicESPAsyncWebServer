@@ -2,23 +2,37 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.9.0] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.9.0 - 2026-07-14</b></summary>
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`5e0cd56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5e0cd56ba2da38e314a2749a9b574175fd2b922d))
+- update CHANGELOG.md [skip ci] ([`1b939cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1b939cdc06b655710bbee76e1a994f6ae9c526c0))
 - update test report + coverage [skip ci] ([`e0f6ec7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0f6ec77eb99ea326e9a5e2f1547e2299be5dfa1))
 - update CHANGELOG.md [skip ci] ([`7ba4a6f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ba4a6f80c408df72816e3b679ddc9f45ab55031))
 - update CHANGELOG.md [skip ci] ([`531356b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/531356b68304e4cac6d32589798941704653542c))
 
+### Changes
+
+- Bump version: 6.8.0 → 6.9.0 ([`b180801`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b180801b68d356dff5024e8477a323f3d6f7634a))
+
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`86a2a20`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86a2a20ace5e104cff825227a82a0b8a90a16938))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`2060bff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2060bff45342b921d5c41da9b1e0305865f0f083))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`71ff5a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71ff5a8625fc589cc92e3f95b8d49149c3503670))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1e60ce1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e60ce10ad423800c1f93de0b50198e2b5fc9b5a))
 
 ### Features
 
+- NTRIP caster server + two-board RTK-base example ([`e1b636c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1b636cf06e41140a166d6d565fa1d14e30386be))
 - survey-in core - WGS84 geodetic<->ECEF + fixed-position averaging ([`11978a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/11978a5082b23aeeac7d7af7d7e2dacd96632f83))
 - RTCM 3.x codec - framing + CRC-24Q + 1005/1006 (RTK base foundation) ([`6932a65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6932a6516e32636f906b5bb0798699dee3b90f26))
+
+</details>
 
 ## [6.8.0] - 2026-07-14
 
