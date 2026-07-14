@@ -2,6 +2,16 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- bound the model-string length scan (S5813) ([`b9731eb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b9731eb771962f989dd90a126e607a485d57367f))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`19d6711`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19d67115d661c62bdb10ac5b6c9225df0590cd26))
+
 ## [6.10.1] - 2026-07-14
 
 <details>
