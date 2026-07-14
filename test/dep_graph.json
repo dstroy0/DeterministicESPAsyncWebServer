@@ -2,6 +2,7 @@
 "src/ServerConfig.h": [
 "native",
 "native_accept_gate",
+"native_ads",
 "native_ads1115",
 "native_amqp",
 "native_app",
@@ -1581,6 +1582,12 @@
 "native_range",
 "native_upload",
 "native_webdav_handler"
+],
+"src/services/ads/ads.cpp": [
+"native_ads"
+],
+"src/services/ads/ads.h": [
+"native_ads"
 ],
 "src/services/ads1115/ads1115.cpp": [
 "native_ads1115"
