@@ -404,7 +404,13 @@ ssh_gf_mul`. The QUIC TLS-1.3 handshake **reuses the SSH ed25519 signer**, whose
 
 ## Connection pool wedges (no recovery) under a saturation + RST-race flood - was masked by the crash
 
-- **Status:** OPEN (observed on hardware 2026-07-11; root cause not yet isolated).
+- **Status:** FIXED (library) - the remediation is implemented at
+  `src/network_drivers/transport/tcp.cpp` `lowlevel_recv_cb`: the idle-timer refresh
+  (`slot->last_activity_ms = detws_millis()`) now sits **after** the backpressure check, and the
+  refused-segment branch explicitly does not refresh (it returns `ERR_MEM` without touching the
+  timer), so a no-progress connection idle-times-out and is reaped. HW re-attack with the pentest
+  rig (`http_conn_saturation` + oversized lines, then confirm the pool recovers past CONN_TIMEOUT_MS)
+  is the remaining validation.
 - **Found:** re-attacking the S3 rig after the stale-pcb crash fix below. `http_conn_saturation` + a burst of
   oversized requests closed with SO_LINGER=0 (RST) leaves the device **pingable but not serving HTTP**
   (curl -> `000`), and it does **not** recover on its own past `CONN_TIMEOUT_MS` (5 s) - only a reset brings
@@ -432,7 +438,13 @@ ssh_gf_mul`. The QUIC TLS-1.3 handshake **reuses the SSH ed25519 signer**, whose
 
 ## Oversized request line / connection saturation reboots the device (tcp_output on a stale pcb)
 
-- **Status:** OPEN (found on hardware 2026-07-11 by the pentest rig).
+- **Status:** FIXED (library) - the remediation is implemented in
+  `src/network_drivers/transport/tcp.cpp` `det_tcp_do`: `pcb_still_bound()` (and the O(1)
+  `k->pcb == conn_pool[k->slot].pcb` check for the slot-carrying SEND/OUTPUT ops) re-validates the
+  captured pcb at execution time on `tcpip_thread`; a stale pcb skips with `ERR_CLSD` instead of
+  calling `tcp_write`/`tcp_output` on freed memory. HW re-attack with the pentest rig
+  (`http_oversized_request_line` + `http_conn_saturation`, confirm no panic + no heap drift) is the
+  remaining validation.
 - **Found:** `pentesting/detws_pentest.py --host <rig> --diag` (attacks `http_oversized_request_line` +
   `http_conn_saturation`) against the ESP32-S3 rig firmware (`pentesting/rig_firmware`, pinned
   `espressif32@6.13.0`, MAX_CONNS=4). Reproduced standalone with ~15 oversized-request-line connections.
@@ -447,10 +459,11 @@ ssh_gf_mul`. The QUIC TLS-1.3 handshake **reuses the SSH ed25519 signer**, whose
   nulls `conn_pool[slot].pcb`), leaving `k->pcb` stale. `tcp_output` on the freed/closed pcb trips lwIP's
   assertion and panics. Symbolized via `addr2line` on the `-g` rig `firmware.elf`:
   `0x420074c6 = det_tcp_do (tcp.cpp:232) -> tcp_output (tcp_out.c:1251) -> __assert_func`.
-- **Fix:** (pending) re-validate the pcb at execution time inside `det_tcp_do` for the SEND / RAWSEND /
-  OUTPUT ops - e.g. skip with `ERR_CLSD` when `k->pcb != conn_pool[k->slot].pcb` (both reads are on
-  `tcpip_thread`, where teardown also runs, so the compare is race-free). To be confirmed over JTAG
-  (breakpoint at the op, inspect `k->pcb` vs the slot pcb) and re-attacked to prove the crash is gone.
+- **Fix:** (implemented) re-validate the pcb at execution time inside `det_tcp_do` for the SEND /
+  RAWSEND / OUTPUT ops - skip with `ERR_CLSD` when the captured pcb is no longer the slot's live pcb
+  (`pcb_still_bound()` scans the pool for RAWSEND, whose slot is 0; SEND/OUTPUT do the O(1)
+  `k->pcb == conn_pool[k->slot].pcb` compare). Both reads are on `tcpip_thread`, where teardown also
+  runs, so the compare is race-free. HW re-attack over JTAG to confirm the crash is gone is pending.
 - **Lesson:** a marshalled/deferred raw-lwIP op MUST re-validate its pcb at execution time - the pcb it
   captured on another thread may have been freed by teardown before the op runs. Capturing a raw pointer
   across the worker -> tcpip_thread hop without a liveness re-check is a use-after-free waiting to happen.
