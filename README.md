@@ -656,6 +656,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `MDNS`              |            24.3 KB |          17.1 KB |
 | L7    | `TIME_SOURCE`       |            20.1 KB |          16.8 KB |
 | L7    | `DASHBOARD`         |            19.7 KB |          15.6 KB |
+| L7    | `ADS`               |            18.6 KB |         < 0.5 KB |
 | L7    | `RTC`               |            13.5 KB |         < 0.5 KB |
 | L7    | `OIDC`              |            12.6 KB |          32.8 KB |
 | L7    | `OAUTH2`            |            12.0 KB |          37.5 KB |

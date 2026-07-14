@@ -1043,6 +1043,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `RTC+TIME_SOURCE+NTP` | `L7-Application/61.Rtc` | 766,653 | 45,372 |
 | `OPCUA+UMATI` | `L7-Application/72.Umati` | 766,861 | 92,200 |
 | `BUS_CAPTURE+FORWARD+ETHERNET` | `Foundation/22.CanCapture` | 771,165 | 45,516 |
+| `ADS` | `L7-Application/73.AdsClient` | 771,933 | 45,440 |
 | `DASHBOARD` | `L7-Application/35.Dashboard` | 773,021 | 82,144 |
 | `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 773,441 | 83,388 |
 | `MDNS` | `L7-Application/15.mDNS` | 777,705 | 83,672 |
