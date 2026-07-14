@@ -7,11 +7,18 @@
 #include "baseline_keys.h"
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>
+
+// Native RSA sign fixture (defined in ssh_rsa.cpp native path) - lets a test forge a
+// genuine client signature with a private key we control.
+extern uint8_t _test_rsa_n[256];
+extern uint8_t _test_rsa_d[256];
+extern uint8_t _test_rsa_e[4];
 
 void setUp()
 {
@@ -297,6 +304,112 @@ void test_pubkey_valid_signature_succeeds()
     TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_SUCCESS, out[0]);
     TEST_ASSERT_TRUE(ssh_sess[0].authed);
     TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_OPEN, ssh_sess[0].phase);
+}
+
+// Encode an SSH mpint from a big-endian value (strip leading zeros, prepend 0x00 if the
+// high bit is set). Returns bytes written.
+static size_t put_mpint(uint8_t *p, const uint8_t *v, size_t vlen)
+{
+    size_t off = 0;
+    while (off < vlen && v[off] == 0)
+        off++;
+    bool pad = (off < vlen) && (v[off] & 0x80);
+    uint32_t mlen = (uint32_t)(vlen - off) + (pad ? 1u : 0u);
+    wr_u32(p, mlen);
+    size_t n = 4;
+    if (pad)
+        p[n++] = 0x00;
+    memcpy(p + n, v + off, vlen - off);
+    return n + (vlen - off);
+}
+
+// RSA-2048 keypair (identical to the rsa-sha2-512 KAT key in test_ssh_crypto) so this test can
+// forge a genuine client signature. NEVER use for actual SSH.
+static const char *AUTH_RSA_N = "beeda21e84ecc2e3335ce4f4f247ba4847d0bf23cc335effe99cbf54bf7e7428"
+                                "8a9a06d130f34b760071146b4689ac0f04abe7cad4c883a163ef98446b28b7ad"
+                                "5177c509fd5810b08e1acac05128496bfec0966ad69921366949d7b8b1d7e17f"
+                                "35b33b0681fc64afe7d3056b90293f757996648680ec195b1f45fb517f34529b"
+                                "ab86a3669afa957e4156820b2405ef560f1da6cd77b6f8a6a4298a03698ac1de"
+                                "4bc4884bcc2325eb6b59e3476fa03abd539ebffeadf52da5ecbf8a28ef056aaa"
+                                "b157efd5fb2a59d9394a007978a3cdb1e2e8018060537518b6ab0854da88ed25"
+                                "4cc63a52b1332a4631522a9a84577acead26bbefab695e5502a9f9e14421b73d";
+static const char *AUTH_RSA_D = "03a9d89e004bf0b35e556e793abae09aa9721a70cbe6c27063a1a3d432f670b1"
+                                "2473af24cd6d25aa067924fca7f6554c56791bf1fae23c1059340c3667ddf8a4"
+                                "4537689af7f6fc1eff230977e636c12de6cdf834e5983b98692dc70b5eb2373b"
+                                "f32254c41bb36595307c0e9311499153a6391a05b0ac9711f6082839d8987eeb"
+                                "4042247dc8f321efc730abf53170b02b55aba49d7e2323c782ebfebb34b3c634"
+                                "f34d0fd1cc81088c9c7db441169b1e26a3ad39d5d2e43b0ebe9b6fc6e71931f8"
+                                "a255d837862f830a3c82f2fb31ae5b47138bfed232aeeb74ddf766483edea5e1"
+                                "60f4dbe3cb313587a642e63caf60dcedddc4b229f072ef1f4cc8e2c5cd5e7401";
+
+// Server-sig-algs advertises rsa-sha2-512; prove the auth layer actually verifies a client's
+// rsa-sha2-512 signature. The verify hash is chosen from pk_algo: if the code ignored it and used
+// SHA-256, this genuine SHA-512 signature would fail and auth would return FAILURE.
+void test_pubkey_rsa_sha512_signature_succeeds()
+{
+    ssh_auth_set_pubkey_cb(pk_cb_alice);
+    set_session_id_0_to_31();
+
+    // Install the private key into the native RSA sign fixture, e = 65537.
+    hexdec(AUTH_RSA_N, _test_rsa_n);
+    hexdec(AUTH_RSA_D, _test_rsa_d);
+    _test_rsa_e[0] = 0x00;
+    _test_rsa_e[1] = 0x01;
+    _test_rsa_e[2] = 0x00;
+    _test_rsa_e[3] = 0x01;
+
+    // Matching ssh-rsa public blob = string("ssh-rsa") || mpint(e) || mpint(n).
+    uint8_t nbytes[256];
+    hexdec(AUTH_RSA_N, nbytes);
+    const uint8_t ebytes[3] = {0x01, 0x00, 0x01};
+    uint8_t blob[300];
+    size_t bl = put_string(blob, "ssh-rsa");
+    bl += put_mpint(blob + bl, ebytes, 3);
+    bl += put_mpint(blob + bl, nbytes, 256);
+
+    // Signed prefix P (RFC 4252 §7): msg .. blob, has_signature = 1, algo = rsa-sha2-512.
+    uint8_t P[512];
+    size_t pn = 0;
+    P[pn++] = SSH_MSG_USERAUTH_REQUEST;
+    pn += put_string(P + pn, "alice");
+    pn += put_string(P + pn, "ssh-connection");
+    pn += put_string(P + pn, "publickey");
+    P[pn++] = 1; // has_signature (part of the signed data)
+    pn += put_string(P + pn, "rsa-sha2-512");
+    wr_u32(P + pn, (uint32_t)bl);
+    pn += 4;
+    memcpy(P + pn, blob, bl);
+    pn += bl;
+
+    // signed_data = string(session_id) || P; sign it with SHA-512.
+    uint8_t sd[700];
+    size_t sn = 0;
+    wr_u32(sd + sn, 32);
+    sn += 4;
+    memcpy(sd + sn, ssh_sess[0].session_id, 32);
+    sn += 32;
+    memcpy(sd + sn, P, pn);
+    sn += pn;
+    uint8_t sig[256];
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign(sd, sn, SshRsaHash::SHA512, sig));
+
+    // Full request = P || string( string("rsa-sha2-512") || string(sig) ).
+    uint8_t pkt[1024];
+    memcpy(pkt, P, pn);
+    size_t n = pn;
+    wr_u32(pkt + n, 4 + 12 + 4 + 256); // inner sig-blob length
+    n += 4;
+    n += put_string(pkt + n, "rsa-sha2-512");
+    wr_u32(pkt + n, 256);
+    n += 4;
+    memcpy(pkt + n, sig, 256);
+    n += 256;
+
+    uint8_t out[64];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_SUCCESS, out[0]);
+    TEST_ASSERT_TRUE(ssh_sess[0].authed);
 }
 
 void test_pubkey_tampered_signature_fails()
@@ -658,6 +771,7 @@ int main()
     RUN_TEST(test_handle_request_no_callback_fails);
     RUN_TEST(test_pubkey_probe_returns_pk_ok);
     RUN_TEST(test_pubkey_valid_signature_succeeds);
+    RUN_TEST(test_pubkey_rsa_sha512_signature_succeeds);
     RUN_TEST(test_pubkey_ed25519_valid_signature_succeeds);
     RUN_TEST(test_pubkey_tampered_signature_fails);
     RUN_TEST(test_pubkey_unauthorized_key_fails);

@@ -518,7 +518,7 @@ static void test_rsa_pkcs1_pad_structure(void)
 
     const uint8_t msg[] = "test message for PKCS1 padding check";
     uint8_t sig[256];
-    int rc = ssh_rsa_sign(msg, sizeof(msg) - 1, sig);
+    int rc = ssh_rsa_sign(msg, sizeof(msg) - 1, SshRsaHash::SHA256, sig);
     TEST_ASSERT_EQUAL_INT(0, rc);
 
     // When d=1 and m < n, sig = m (the padded plaintext).
@@ -567,7 +567,7 @@ static void test_rsa_sign_verify_roundtrip(void)
 
     const uint8_t msg[] = "round-trip with a real private exponent";
     uint8_t sig[256];
-    int rc = ssh_rsa_sign(msg, sizeof(msg) - 1, sig);
+    int rc = ssh_rsa_sign(msg, sizeof(msg) - 1, SshRsaHash::SHA256, sig);
     TEST_ASSERT_EQUAL_INT(0, rc);
 
     // The signature must NOT equal the padded message (d != 1 exercised).
@@ -590,10 +590,10 @@ static void test_rsa_sign_verify_roundtrip(void)
     uint8_t n[256];
     uint8_t e[4] = {0x00, 0x01, 0x00, 0x01};
     hex_to_bytes(n, RT_N, 256);
-    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_verify(n, e, msg, sizeof(msg) - 1, sig, 256));
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_verify(n, e, msg, sizeof(msg) - 1, sig, 256, SshRsaHash::SHA256));
 
     // A tampered message must fail verification of the same signature.
-    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n, e, (const uint8_t *)"different", 9, sig, 256));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n, e, (const uint8_t *)"different", 9, sig, 256, SshRsaHash::SHA256));
 }
 
 static void test_rsa_encode_pubkey(void)
@@ -627,9 +627,11 @@ static void test_rsa_verify_and_encode_guards(void)
     uint8_t sig[256];
 
     memset(sig, 0, sizeof(sig));
-    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n, e, (const uint8_t *)"m", 1, sig, 255)); // sig length mismatch
-    memset(sig, 0xFF, sizeof(sig));                                                     // all-ones is >= any modulus
-    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n, e, (const uint8_t *)"m", 1, sig, 256)); // signature not reduced mod n
+    TEST_ASSERT_EQUAL_INT(
+        -1, ssh_rsa_verify(n, e, (const uint8_t *)"m", 1, sig, 255, SshRsaHash::SHA256)); // sig length mismatch
+    memset(sig, 0xFF, sizeof(sig));                                                       // all-ones >= any modulus
+    TEST_ASSERT_EQUAL_INT(
+        -1, ssh_rsa_verify(n, e, (const uint8_t *)"m", 1, sig, 256, SshRsaHash::SHA256)); // sig not reduced mod n
 
     setup_test_rsa_key();
     ssh_rsa_load_pubkey();
@@ -645,7 +647,7 @@ static void test_rsa_verify_and_encode_guards(void)
     memset(_test_rsa_d, 0, 256);
     ssh_rsa_load_pubkey();
     uint8_t sig0[256];
-    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)"x", 1, sig0));
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)"x", 1, SshRsaHash::SHA256, sig0));
     for (int i = 0; i < 255; i++)
         TEST_ASSERT_EQUAL_UINT8(0, sig0[i]);
     TEST_ASSERT_EQUAL_UINT8(1, sig0[255]);
@@ -678,7 +680,7 @@ static void test_rsa_verify_valid_signature(void)
     hex_to_bytes(n, RSA_KAT_N, 256);
     hex_to_bytes(sig, RSA_KAT_SIG, 256);
     const char *msg = "hello ssh";
-    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_verify(n, e, (const uint8_t *)msg, 9, sig, 256));
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_verify(n, e, (const uint8_t *)msg, 9, sig, 256, SshRsaHash::SHA256));
 }
 
 static void test_rsa_verify_rejects_tampered_signature(void)
@@ -688,7 +690,7 @@ static void test_rsa_verify_rejects_tampered_signature(void)
     hex_to_bytes(n, RSA_KAT_N, 256);
     hex_to_bytes(sig, RSA_KAT_SIG, 256);
     sig[200] ^= 0x01; // flip one bit
-    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n, e, (const uint8_t *)"hello ssh", 9, sig, 256));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n, e, (const uint8_t *)"hello ssh", 9, sig, 256, SshRsaHash::SHA256));
 }
 
 static void test_rsa_verify_rejects_wrong_message(void)
@@ -697,7 +699,75 @@ static void test_rsa_verify_rejects_wrong_message(void)
     uint8_t e[4] = {0x00, 0x01, 0x00, 0x01};
     hex_to_bytes(n, RSA_KAT_N, 256);
     hex_to_bytes(sig, RSA_KAT_SIG, 256);
-    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n, e, (const uint8_t *)"goodbye!", 8, sig, 256));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n, e, (const uint8_t *)"goodbye!", 8, sig, 256, SshRsaHash::SHA256));
+}
+
+// Real RSA-2048 rsa-sha2-512 KAT (RFC 8332): a genuine PKCS#1 v1.5 SHA-512
+// signature over RSA512_MSG, produced with python cryptography's RSA sign
+// (padding.PKCS1v15, hashes.SHA512). Fresh key; NEVER use for actual SSH.
+static const char *RSA512_N = "beeda21e84ecc2e3335ce4f4f247ba4847d0bf23cc335effe99cbf54bf7e7428"
+                              "8a9a06d130f34b760071146b4689ac0f04abe7cad4c883a163ef98446b28b7ad"
+                              "5177c509fd5810b08e1acac05128496bfec0966ad69921366949d7b8b1d7e17f"
+                              "35b33b0681fc64afe7d3056b90293f757996648680ec195b1f45fb517f34529b"
+                              "ab86a3669afa957e4156820b2405ef560f1da6cd77b6f8a6a4298a03698ac1de"
+                              "4bc4884bcc2325eb6b59e3476fa03abd539ebffeadf52da5ecbf8a28ef056aaa"
+                              "b157efd5fb2a59d9394a007978a3cdb1e2e8018060537518b6ab0854da88ed25"
+                              "4cc63a52b1332a4631522a9a84577acead26bbefab695e5502a9f9e14421b73d";
+static const char *RSA512_D = "03a9d89e004bf0b35e556e793abae09aa9721a70cbe6c27063a1a3d432f670b1"
+                              "2473af24cd6d25aa067924fca7f6554c56791bf1fae23c1059340c3667ddf8a4"
+                              "4537689af7f6fc1eff230977e636c12de6cdf834e5983b98692dc70b5eb2373b"
+                              "f32254c41bb36595307c0e9311499153a6391a05b0ac9711f6082839d8987eeb"
+                              "4042247dc8f321efc730abf53170b02b55aba49d7e2323c782ebfebb34b3c634"
+                              "f34d0fd1cc81088c9c7db441169b1e26a3ad39d5d2e43b0ebe9b6fc6e71931f8"
+                              "a255d837862f830a3c82f2fb31ae5b47138bfed232aeeb74ddf766483edea5e1"
+                              "60f4dbe3cb313587a642e63caf60dcedddc4b229f072ef1f4cc8e2c5cd5e7401";
+static const char *RSA512_SIG = "b09369d7c15b084a780c4db0f1ed03d2831f66c8d5b0143d2ba9e57236756fee"
+                                "958510ff01894c07ab776a9c1724b5cf331f124b96e067811a9dc6a3d4d925b8"
+                                "2cd63326da20d9d1f75afcac9d6cd55d683f30bea9108139af43c03e76e65fa9"
+                                "d1390d031484aba9bce4ce9dce930a04bacdb43488ecd1359df056606651fccf"
+                                "e759b3df4f76373b7caf2ac209c96562a99040c07033749e19ab0c0817ad6e12"
+                                "fe64d73cdb628794e00c828b34fd9fde35463e1eb590a76185752b66fa37085a"
+                                "ddf7b37645b08b844a5090a0e9b9e86d084873b3b233cf030dd6f4069a7d3bc8"
+                                "dd26bb6a3bafddd425303f87e507a19f4f97e38ffdad5ea6a929f51429d4ab27";
+static const char RSA512_MSG[] = "hello rsa-sha2-512";
+
+// Prove the native SHA-512 sign path is byte-exact against the reference, that the
+// signature round-trips under SHA-512, and that the hash algorithm is bound into the
+// signature (verifying a rsa-sha2-512 signature as rsa-sha2-256 must fail).
+static void test_rsa_sha512_kat_sign_verify(void)
+{
+    hex_to_bytes(_test_rsa_n, RSA512_N, 256);
+    hex_to_bytes(_test_rsa_d, RSA512_D, 256);
+    _test_rsa_e[0] = 0x00;
+    _test_rsa_e[1] = 0x01;
+    _test_rsa_e[2] = 0x00;
+    _test_rsa_e[3] = 0x01; // e = 65537
+
+    const size_t mlen = sizeof(RSA512_MSG) - 1;
+
+    // Native SHA-512 sign must byte-match the openssl/cryptography reference.
+    uint8_t sig[256];
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)RSA512_MSG, mlen, SshRsaHash::SHA512, sig));
+    uint8_t ref[256];
+    hex_to_bytes(ref, RSA512_SIG, 256);
+    TEST_ASSERT_EQUAL_MEMORY(ref, sig, 256);
+
+    // Both our signature and the reference verify under SHA-512.
+    uint8_t n[256];
+    uint8_t e[4] = {0x00, 0x01, 0x00, 0x01};
+    hex_to_bytes(n, RSA512_N, 256);
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_verify(n, e, (const uint8_t *)RSA512_MSG, mlen, sig, 256, SshRsaHash::SHA512));
+    TEST_ASSERT_EQUAL_INT(0, ssh_rsa_verify(n, e, (const uint8_t *)RSA512_MSG, mlen, ref, 256, SshRsaHash::SHA512));
+
+    // Hash-algorithm binding: a SHA-512 signature must NOT verify as SHA-256.
+    TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_verify(n, e, (const uint8_t *)RSA512_MSG, mlen, sig, 256, SshRsaHash::SHA256));
+
+    // A different message (same length) must fail SHA-512 verification.
+    TEST_ASSERT_EQUAL_INT(
+        -1, ssh_rsa_verify(n, e, (const uint8_t *)"hello rsa-sha2-256", mlen, sig, 256, SshRsaHash::SHA512));
+
+    setup_test_rsa_key(); // restore the fixture for any later test
+    ssh_rsa_load_pubkey();
 }
 
 // ============================================================================
@@ -1529,6 +1599,7 @@ int main(void)
     RUN_TEST(test_rsa_verify_valid_signature);
     RUN_TEST(test_rsa_verify_rejects_tampered_signature);
     RUN_TEST(test_rsa_verify_rejects_wrong_message);
+    RUN_TEST(test_rsa_sha512_kat_sign_verify);
 
     // Packet protocol
     RUN_TEST(test_pkt_send_recv_unencrypted);

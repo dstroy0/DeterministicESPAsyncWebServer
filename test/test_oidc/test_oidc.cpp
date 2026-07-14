@@ -81,7 +81,7 @@ static void make_jwt(const char *payload_json, char *tok, size_t tok_cap)
     b64url_enc((const uint8_t *)payload_json, strlen(payload_json), seg1);
     int sl = snprintf(signing, sizeof(signing), "%s.%s", seg0, seg1);
     uint8_t sig[256];
-    ssh_rsa_sign((const uint8_t *)signing, (size_t)sl, sig);
+    ssh_rsa_sign((const uint8_t *)signing, (size_t)sl, SshRsaHash::SHA256, sig); // RS256 = SHA-256
     b64url_enc(sig, 256, seg2);
     snprintf(tok, tok_cap, "%s.%s.%s", seg0, seg1, seg2);
 }
@@ -219,7 +219,7 @@ void test_oidc_signed_claim_guards()
         b64url_enc((const uint8_t *)HDR, strlen(HDR), seg0);
         int sl = snprintf(signing, sizeof(signing), "%s.A", seg0); // payload segment "A" decodes to 0 bytes
         uint8_t sig[256];
-        ssh_rsa_sign((const uint8_t *)signing, (size_t)sl, sig);
+        ssh_rsa_sign((const uint8_t *)signing, (size_t)sl, SshRsaHash::SHA256, sig); // RS256 = SHA-256
         b64url_enc(sig, 256, seg2);
         snprintf(tok, sizeof(tok), "%s.A.%s", seg0, seg2);
         TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,

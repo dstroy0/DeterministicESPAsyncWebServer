@@ -3,7 +3,7 @@
 
 /**
  * @file ssh_rsa.h
- * @brief RSA-SHA2-256 host-key signing and public-key serialization.
+ * @brief RSA-SHA2-256/512 host-key signing and public-key serialization.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * SECURITY MODEL - PRIVATE KEY LIFETIME
@@ -33,16 +33,18 @@
  * ═══════════════════════════════════════════════════════════════════════════
  *
  * The signature produced by ssh_rsa_sign() follows PKCS#1 v1.5 (RFC 8017
- * §8.2), which is what SSH uses for "rsa-sha2-256":
+ * §8.2), which is what SSH uses for "rsa-sha2-256" and "rsa-sha2-512"
+ * (RFC 8332) - the only difference is the hash and its DigestInfo OID:
  *
- *   1. Compute digest  = SHA256(msg, msg_len).
+ *   1. Compute digest  = SHA256(msg) or SHA512(msg), per @p hash.
  *   2. Encode digest in a DER DigestInfo wrapper:
- *        30 31 30 0d 06 09 60 86 48 01 65 03 04 02 01 05 00 04 20 <32 bytes>
- *      The OID 2.16.840.1.101.3.4.2.1 identifies SHA-256 (RFC 5754 §3.2).
+ *        SHA-256: 30 31 30 0d 06 09 60 86 48 01 65 03 04 02 01 05 00 04 20 <32 bytes>
+ *        SHA-512: 30 51 30 0d 06 09 60 86 48 01 65 03 04 02 03 05 00 04 40 <64 bytes>
+ *      The OID 2.16.840.1.101.3.4.2.1 identifies SHA-256, .2.3 SHA-512 (RFC 5754 §3.2).
  *   3. Pad to the RSA modulus length (256 bytes for RSA-2048):
  *        0x00 0x01 &lt;0xFF padding&gt; 0x00 &lt;DigestInfo&gt;
  *      The 0xFF padding fills bytes [2 .. 256-1-len(DigestInfo)-1].
- *      For SHA-256 DigestInfo = 51 bytes; padding = 256-3-51 = 202 bytes.
+ *      SHA-256 DigestInfo = 51 bytes (padding 202); SHA-512 DigestInfo = 83 bytes (padding 170).
  *   4. Interpret the 256-byte padded message M as a bignum m.
  *   5. Compute s = m^d mod n  (RSA private-key operation).
  *   6. Output s as a 256-byte big-endian integer.
@@ -51,13 +53,13 @@
  * ARDUINO VS NATIVE
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * Arduino: uses mbedtls_rsa_pkcs1_sign() with MBEDTLS_MD_SHA256, which
- *   performs the full PKCS#1 v1.5 pad-and-sign in hardware-accelerated
+ * Arduino: uses mbedtls_pk_sign() with MBEDTLS_MD_SHA256 or MBEDTLS_MD_SHA512,
+ *   which performs the full PKCS#1 v1.5 pad-and-sign in hardware-accelerated
  *   multiprecision arithmetic via ESP-IDF.
  *
- * Native:  software path - SHA-256 via ssh_sha256(), PKCS#1 v1.5 padding
- *   built by hand, RSA exponentiation via bn_expmod_group14() (same
- *   Montgomery path used for DH).  Both paths use the same key layout.
+ * Native:  software path - SHA-256/512 via ssh_sha256()/ssh_sha512(), PKCS#1
+ *   v1.5 padding built by hand, RSA exponentiation via bn_expmod_group14()
+ *   (same Montgomery path used for DH).  Both paths use the same key layout.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * NVS KEY FORMAT
@@ -90,8 +92,21 @@
 
 #include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha512.h"
 #include <stddef.h>
 #include <stdint.h>
+
+/**
+ * @brief Hash algorithm selecting the RSA signature scheme (RFC 8332).
+ *
+ * The RSA public-key blob is "ssh-rsa" for both; only the message hash and its
+ * DigestInfo OID differ. SHA256 = "rsa-sha2-256", SHA512 = "rsa-sha2-512".
+ */
+enum class SshRsaHash : uint8_t
+{
+    SHA256 = 0, ///< rsa-sha2-256
+    SHA512 = 1  ///< rsa-sha2-512
+};
 
 // ---------------------------------------------------------------------------
 // Key-blob sizes
@@ -121,16 +136,23 @@
 /** @brief Length of SSH_RSA_PUBKEY_ALG ("ssh-rsa" = 7 bytes). */
 #define SSH_RSA_PUBKEY_ALG_LEN 7
 
-/** @brief Signature algorithm name (RFC 8332). Used in the signature blob. */
-#define SSH_RSA_SIG_ALG "rsa-sha2-256"
+/** @brief Signature algorithm name for SHA-256 (RFC 8332). Used in the signature blob. */
+#define SSH_RSA_SIG_ALG_SHA256 "rsa-sha2-256"
+
+/** @brief Signature algorithm name for SHA-512 (RFC 8332). Used in the signature blob. */
+#define SSH_RSA_SIG_ALG_SHA512 "rsa-sha2-512"
 
 // ---------------------------------------------------------------------------
-// PKCS#1 v1.5 DigestInfo header for SHA-256 (RFC 8017, RFC 5754)
-// 30 31 30 0d 06 09 60 86 48 01 65 03 04 02 01 05 00 04 20
+// PKCS#1 v1.5 DigestInfo headers (RFC 8017, RFC 5754)
+//   SHA-256: 30 31 30 0d 06 09 60 86 48 01 65 03 04 02 01 05 00 04 20
+//   SHA-512: 30 51 30 0d 06 09 60 86 48 01 65 03 04 02 03 05 00 04 40
 // ---------------------------------------------------------------------------
 
 /** @brief Length of the DER DigestInfo wrapper for SHA-256. */
 #define SSH_PKCS1_DIGESTINFO_LEN 19
+
+/** @brief Length of the DER DigestInfo wrapper for SHA-512. */
+#define SSH_PKCS1_SHA512_DIGESTINFO_LEN 19
 
 /**
  * @brief The DER-encoded DigestInfo wrapper for SHA-256.
@@ -139,6 +161,14 @@
  * DigestInfo structure for PKCS#1 v1.5.
  */
 extern const uint8_t ssh_pkcs1_sha256_digestinfo[SSH_PKCS1_DIGESTINFO_LEN];
+
+/**
+ * @brief The DER-encoded DigestInfo wrapper for SHA-512.
+ *
+ * Prepend this to the 64-byte SHA-512 digest to form the 83-byte
+ * DigestInfo structure for PKCS#1 v1.5.
+ */
+extern const uint8_t ssh_pkcs1_sha512_digestinfo[SSH_PKCS1_SHA512_DIGESTINFO_LEN];
 
 // ---------------------------------------------------------------------------
 // RSA private key - stack-local only, never static or global
@@ -204,21 +234,22 @@ extern SshRsaPubKey ssh_host_pubkey;
 int ssh_rsa_load_pubkey(void);
 
 /**
- * @brief Sign @p msg using the RSA-SHA2-256 host key (PKCS#1 v1.5).
+ * @brief Sign @p msg using the RSA host key (PKCS#1 v1.5, rsa-sha2-256/512).
  *
  * The private key is loaded from NVS directly into a stack-local
  * SshRsaPrivKey struct, used, then zeroed before this function returns.
  * The key NEVER touches static or global memory.
  *
- * On Arduino: delegates to mbedtls_rsa_pkcs1_sign() (hardware-accelerated).
- * On native:  software SHA-256 + hand-built PKCS#1 pad + bn_expmod_group14().
+ * On Arduino: delegates to mbedtls_pk_sign() (hardware-accelerated).
+ * On native:  software SHA-256/512 + hand-built PKCS#1 pad + bn_expmod_group14().
  *
  * @param[in]  msg     Message to sign (typically the exchange hash H, 32 bytes).
  * @param[in]  msg_len Length of @p msg.
+ * @param[in]  hash    Signature hash: SHA256 (rsa-sha2-256) or SHA512 (rsa-sha2-512).
  * @param[out] sig     Output buffer, must be SSH_RSA_SIG_BYTES (256) bytes.
  * @return 0 on success, -1 on failure (NVS read error, RSA error).
  */
-int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, uint8_t sig[SSH_RSA_SIG_BYTES]);
+int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint8_t sig[SSH_RSA_SIG_BYTES]);
 
 /**
  * @brief Serialize the RSA public host key into an SSH "ssh-rsa" key blob.
@@ -240,13 +271,14 @@ int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, uint8_t sig[SSH_RSA_SIG_BYT
 int ssh_rsa_encode_pubkey(uint8_t *out, size_t *out_len, size_t out_cap);
 
 /**
- * @brief Verify an RSA-SHA2-256 PKCS#1 v1.5 signature with a given public key.
+ * @brief Verify an RSA PKCS#1 v1.5 signature (rsa-sha2-256/512) with a public key.
  *
  * Used for client publickey authentication (RFC 4252 §7): @p n_be / @p e_be4
  * come from the client-supplied key blob, not the host key. The public exponent
  * is small (typically 65537), so the modular exponentiation s^e mod n is cheap
  * and is performed for real on both platforms (native: schoolbook bignum;
- * Arduino: mbedTLS).
+ * Arduino: mbedTLS). The hash is selected by the client's signature algorithm
+ * name (rsa-sha2-256 -> SHA256, rsa-sha2-512 -> SHA512), not by the key blob.
  *
  * @param[in] n_be    RSA modulus n, big-endian, 256 bytes.
  * @param[in] e_be4   RSA public exponent e, big-endian, 4 bytes.
@@ -254,10 +286,11 @@ int ssh_rsa_encode_pubkey(uint8_t *out, size_t *out_len, size_t out_cap);
  * @param[in] msg_len Length of @p msg.
  * @param[in] sig     Signature bytes (256 for RSA-2048).
  * @param[in] sig_len Length of @p sig.
+ * @param[in] hash    Signature hash: SHA256 (rsa-sha2-256) or SHA512 (rsa-sha2-512).
  * @return 0 if the signature is valid, -1 otherwise.
  */
 int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4], const uint8_t *msg, size_t msg_len,
-                   const uint8_t *sig, size_t sig_len);
+                   const uint8_t *sig, size_t sig_len, SshRsaHash hash);
 
 /**
  * @brief Maximum byte length of the serialized RSA public key blob.

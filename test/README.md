@@ -520,7 +520,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3023 test cases** across **257 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3026 test cases** across **257 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28250,7 +28250,7 @@ A thorough directory of all **3023 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_auth (19 tests)</b></summary>
+<summary><b>test_ssh_auth (20 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_service_request_errors</b> &mdash; <i>Service request errors</i></summary>
@@ -28430,6 +28430,17 @@ A thorough directory of all **3023 test cases** across **257 suites**. Expand a 
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, ssh_sess[0].phase)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pubkey_rsa_sha512_signature_succeeds</b> &mdash; <i>Install the private key into the native RSA sign fixture, e = 65537.</i></summary>
+
+    * **Objective**: Install the private key into the native RSA sign fixture, e = 65537.
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_rsa_sign(sd, sn, SshRsaHash::SHA512, sig))</code>
+      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
+      * <code>Assert true (ssh_sess[0].authed)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29665,7 +29676,7 @@ A thorough directory of all **3023 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_transport (38 tests)</b></summary>
+<summary><b>test_ssh_transport (40 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_index_guards</b> &mdash; <i>Transport index guards</i></summary>
@@ -29853,6 +29864,19 @@ A thorough directory of all **3023 test cases** across **257 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
+    <summary><b>test_kexinit_parse_selects_rsa_sha512</b> &mdash; <i>Both offered -> rsa-sha2-512 wins (server preference).</i></summary>
+
+    * **Objective**: Both offered -> rsa-sha2-512 wins (server preference).
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal (SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512, ssh_sess[0].hostkey_alg)</code>
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal (SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA256, ssh_sess[0].hostkey_alg)</code>
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal (SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512, ssh_sess[0].hostkey_alg)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
     <summary><b>test_kexinit_parse_selects_etm_mac</b> &mdash; <i>Kexinit parse selects etm mac</i></summary>
 
     * **Objective**: Kexinit parse selects etm mac
@@ -29994,6 +30018,26 @@ A thorough directory of all **3023 test cases** across **257 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (0, ssh_kex_generate(0))</code>
       * <code>Assert equal int (-1, ssh_kexdh_handle(0, pkt, 1 + 4 + 32, reply, &rlen, sizeof(reply)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexdh_handle_rsa_sha512_signature</b> &mdash; <i>The negotiated signature name must be rsa-sha2-512, and rsa-sha2-256 absent.</i></summary>
+
+    * **Objective**: The negotiated signature name must be rsa-sha2-512, and rsa-sha2-256 absent.
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_dh_generate(0))</code>
+      * <code>Assert equal int (0, ssh_kexdh_handle(0, pkt, n, reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert true (has512)</code>
+      * <code>Assert false (has256)</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &ks, &ks_len))</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &f, &f_len))</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &sigblob, &sb_len))</code>
+      * <code>Assert true (rd_string(sigblob, sb_len, &so, &name, &name_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(12, name_len);</code>
+      * <code>Assert equal memory ("rsa-sha2-512", name, 12)</code>
+      * <code>Assert true (rd_string(sigblob, sb_len, &so, &sig, &sig_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(256, sig_len);</code>
+      * <code>Assert equal memory (em, sig, 256)</code>
   </details>
 
   <details style="margin-left: 20px;">

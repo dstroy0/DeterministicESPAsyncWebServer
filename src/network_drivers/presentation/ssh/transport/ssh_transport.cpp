@@ -40,7 +40,8 @@ static const char *const KEX_C25519_LIBSSH = "curve25519-sha256@libssh.org"; // 
 #if DETWS_ENABLE_PQC_KEX
 static const char *const KEX_MLKEM768 = "mlkem768x25519-sha256"; // PQ/T hybrid (ML-KEM-768 + X25519)
 #endif
-static const char *const HOSTKEY_RSA = "rsa-sha2-256";
+static const char *const HOSTKEY_RSA_SHA256 = "rsa-sha2-256";
+static const char *const HOSTKEY_RSA_SHA512 = "rsa-sha2-512";
 static const char *const HOSTKEY_ED = "ssh-ed25519";
 static const char *const ALG_CIPHER = "aes256-ctr";
 static const char *const ALG_CIPHER_GCM = "aes256-gcm@openssh.com";
@@ -125,17 +126,35 @@ static void build_kex_list(char *out, size_t cap)
 }
 static void build_hostkey_list(char *out, size_t cap)
 {
-    const char *first = s_sshtr.prefer_rsa ? HOSTKEY_RSA : HOSTKEY_ED;
-    const char *second = s_sshtr.prefer_rsa ? HOSTKEY_ED : HOSTKEY_RSA;
-    bool first_ok = s_sshtr.prefer_rsa ? hostkey_rsa_available() : ssh_hostkey_ed25519_available();
-    bool second_ok = s_sshtr.prefer_rsa ? ssh_hostkey_ed25519_available() : hostkey_rsa_available();
-    out[0] = '\0';
-    if (first_ok)
-        snprintf(out, cap, "%s", first);
-    if (second_ok)
+    // Both rsa-sha2-512 and rsa-sha2-256 are backed by the one "ssh-rsa" host key
+    // (RFC 8332): advertise 512 before 256 (OpenSSH's order). Filter to keys we hold.
+    const bool rsa = hostkey_rsa_available();
+    const bool ed = ssh_hostkey_ed25519_available();
+    struct HostkeyCand
     {
+        const char *name;
+        bool ok;
+    };
+    HostkeyCand cand[3];
+    if (s_sshtr.prefer_rsa)
+    {
+        cand[0] = {HOSTKEY_RSA_SHA512, rsa};
+        cand[1] = {HOSTKEY_RSA_SHA256, rsa};
+        cand[2] = {HOSTKEY_ED, ed};
+    }
+    else
+    {
+        cand[0] = {HOSTKEY_ED, ed};
+        cand[1] = {HOSTKEY_RSA_SHA512, rsa};
+        cand[2] = {HOSTKEY_RSA_SHA256, rsa};
+    }
+    out[0] = '\0';
+    for (int k = 0; k < 3; k++)
+    {
+        if (!cand[k].ok)
+            continue;
         size_t l = strlen(out);
-        snprintf(out + l, cap - l, "%s%s", l ? "," : "", second);
+        snprintf(out + l, cap - l, "%s%s", l ? "," : "", cand[k].name);
     }
 }
 
@@ -447,18 +466,24 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
     if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
     {
-        AlgCand<SshHostkeyAlg> hc[2];
+        // rsa-sha2-512 and rsa-sha2-256 are the same "ssh-rsa" key with a different
+        // signature hash (RFC 8332); both gated on the one RSA host key. 512 first.
+        const bool rsa = hostkey_rsa_available();
+        const bool ed = ssh_hostkey_ed25519_available();
+        AlgCand<SshHostkeyAlg> hc[3];
         if (s_sshtr.prefer_rsa)
         {
-            hc[0] = {HOSTKEY_RSA, SshHostkeyAlg::SSH_HOSTKEY_RSA, hostkey_rsa_available()};
-            hc[1] = {HOSTKEY_ED, SshHostkeyAlg::SSH_HOSTKEY_ED25519, ssh_hostkey_ed25519_available()};
+            hc[0] = {HOSTKEY_RSA_SHA512, SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512, rsa};
+            hc[1] = {HOSTKEY_RSA_SHA256, SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA256, rsa};
+            hc[2] = {HOSTKEY_ED, SshHostkeyAlg::SSH_HOSTKEY_ED25519, ed};
         }
         else
         {
-            hc[0] = {HOSTKEY_ED, SshHostkeyAlg::SSH_HOSTKEY_ED25519, ssh_hostkey_ed25519_available()};
-            hc[1] = {HOSTKEY_RSA, SshHostkeyAlg::SSH_HOSTKEY_RSA, hostkey_rsa_available()};
+            hc[0] = {HOSTKEY_ED, SshHostkeyAlg::SSH_HOSTKEY_ED25519, ed};
+            hc[1] = {HOSTKEY_RSA_SHA512, SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512, rsa};
+            hc[2] = {HOSTKEY_RSA_SHA256, SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA256, rsa};
         }
-        if (!negotiate_alg(list, nlen, hc, 2, &s->hostkey_alg))
+        if (!negotiate_alg(list, nlen, hc, 3, &s->hostkey_alg))
             return -1; // no mutual host-key algorithm
     }
     // encryption c2s / s2c: negotiate chacha20-poly1305@openssh.com or aes256-gcm@openssh.com (both
@@ -529,10 +554,13 @@ int ssh_extinfo_build(uint8_t *out, size_t *len, size_t cap)
     w_u8(w, SSH_MSG_EXT_INFO);
     w_u32(w, 1);                      // one extension
     w_namelist(w, "server-sig-algs"); // extension name
-    // Accepted client public-key signature algorithms for userauth. Both are always
+    // Accepted client public-key signature algorithms for userauth. All are always
     // verifiable (independent of which host key we hold); ordered by our preference so a
     // modern client picks the steered-to type. A client uses this to choose a key to offer.
-    const char *siglist = s_sshtr.prefer_rsa ? "rsa-sha2-256,ssh-ed25519" : "ssh-ed25519,rsa-sha2-256";
+    // Both RSA hashes are offered (rsa-sha2-512 first, RFC 8332); ssh_rsa_verify picks the
+    // hash from the client's chosen algorithm name.
+    const char *siglist =
+        s_sshtr.prefer_rsa ? "rsa-sha2-512,rsa-sha2-256,ssh-ed25519" : "ssh-ed25519,rsa-sha2-512,rsa-sha2-256";
     w_namelist(w, siglist); // value: accepted client-sig algorithms
     if (!w.ok)
         return -1;
@@ -722,11 +750,15 @@ static int sign_hash(uint8_t i, const uint8_t H[SSH_SHA256_DIGEST_LEN], uint8_t 
         *sig_name = HOSTKEY_ED; // "ssh-ed25519"
         return 0;
     }
+    // rsa-sha2-512 and rsa-sha2-256 share the one "ssh-rsa" key; the negotiated
+    // algorithm only chooses the signature hash (RFC 8332).
+    const bool sha512 = (ssh_sess[i].hostkey_alg == SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512);
+    const SshRsaHash rh = sha512 ? SshRsaHash::SHA512 : SshRsaHash::SHA256;
     if (sig_cap < SSH_RSA_SIG_BYTES ||
-        ssh_rsa_sign(H, SSH_SHA256_DIGEST_LEN, sig) != 0) // GCOVR_EXCL_LINE  sig buffer is 256B and the negotiated
+        ssh_rsa_sign(H, SSH_SHA256_DIGEST_LEN, rh, sig) != 0) // GCOVR_EXCL_LINE  sig buffer is 256B and the negotiated
         return -1; // GCOVR_EXCL_LINE  RSA key is loaded (available), so neither the size nor the sign can fail
     *sig_len = SSH_RSA_SIG_BYTES;
-    *sig_name = HOSTKEY_RSA; // "rsa-sha2-256"
+    *sig_name = sha512 ? HOSTKEY_RSA_SHA512 : HOSTKEY_RSA_SHA256;
     return 0;
 }
 
@@ -924,7 +956,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         s->have_session_id = true;
     }
 
-    // 4. Sign H with the negotiated host key (rsa-sha2-256 or ssh-ed25519).
+    // 4. Sign H with the negotiated host key (rsa-sha2-512/256 or ssh-ed25519).
     uint8_t sig[SSH_RSA_SIG_BYTES]; // 256 bytes: fits an RSA-2048 sig and a 64-byte ed25519 sig
     size_t sig_len = 0;
     const char *sig_name = nullptr;

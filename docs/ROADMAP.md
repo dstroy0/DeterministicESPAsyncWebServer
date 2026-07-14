@@ -449,7 +449,7 @@ Camellia / SEED / ARIA / Serpent / Twofish / RC4 / Blowfish / DSS ciphers are de
 handshake comparison must build our crypto at `-O3` too (our default examples build `-Os`); measure the
 same core on the same S3 at `-O3` before claiming a delta. Our current surface: **TLS** = mbedTLS 1.2/1.3
 (ECDHE curve-pref, AES-GCM, ChaCha20-Poly1305, tickets/resumption); **SSH** = curve25519-sha256 +
-dh-group14, ssh-ed25519 + rsa-sha2-256 host keys, chacha20-poly1305@openssh.com + aes256-ctr,
+dh-group14, ssh-ed25519 + rsa-sha2-512/256 host keys, chacha20-poly1305@openssh.com + aes256-gcm + aes256-ctr,
 hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, password + publickey auth.
 
 - [x] **Post-quantum hybrid key exchange - SSH** (SHIPPED v6.6.0, `DETWS_ENABLE_PQC_KEX`) - the **headline
@@ -471,12 +471,18 @@ hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, password + publickey auth.
 - [ ] **PQC hybrid follow-ons** (S) - **sntrup761x25519-sha512@openssh.com** for SSH parity with OpenSSH's
       other default, and a **HelloRetryRequest** path so a client that lists X25519MLKEM768 but sends only a
       classical key_share still gets the hybrid (today we serve whatever key_share it sent).
-- [ ] **SSH cipher / host-key breadth** (M, cheap interop) - close the easy deltas vs CycloneSSH: - [x] **`aes256-gcm@openssh.com`** _(shipped)_ - AES-256-GCM AEAD (RFC 5647): length-in-clear as AAD,
-      per-packet invocation counter, no separate MAC. Self-contained `ssh/crypto/ssh_aesgcm` (AES block HW
-      via mbedTLS on ESP32, GHASH in software; AES-256, so not the AES-128 `http3/quic_aead` core). Seal/open
-      KAT vs the NIST/McGrew Test Case 16 vector + a packet-layer round-trip; negotiated second after chacha. - _remaining:_ **rsa-sha2-512** host-key signatures (we advertise only rsa-sha2-256), and an
-      **ecdsa-sha2-nistp256** host key + client auth (the one common host-key type we lack). Small,
-      high-interop-yield additions to the negotiated sets. _(aes128-gcm skipped: 256 is the ESP32-relevant one.)_
+- [ ] **SSH cipher / host-key breadth** (M, cheap interop) - close the easy deltas vs CycloneSSH:
+    - [x] **`aes256-gcm@openssh.com`** _(shipped)_ - AES-256-GCM AEAD (RFC 5647): length-in-clear as AAD,
+          per-packet invocation counter, no separate MAC. Self-contained `ssh/crypto/ssh_aesgcm` (AES block HW
+          via mbedTLS on ESP32, GHASH in software; AES-256, so not the AES-128 `http3/quic_aead` core). Seal/open
+          KAT vs the NIST/McGrew Test Case 16 vector + a packet-layer round-trip; negotiated second after chacha.
+    - [x] **`rsa-sha2-512`** host-key signatures _(shipped)_ - RFC 8332 SHA-512 PKCS#1 v1.5 over the exchange
+          hash, hash-parameterized `ssh_rsa_sign`/`_verify` (SHA-512 DigestInfo). The one `ssh-rsa` key now
+          advertises both rsa-sha2-512 (preferred) and rsa-sha2-256 in `server_host_key_algorithms` and
+          `server-sig-algs`; client-auth picks the verify hash from the signature name. SHA-512 KAT byte-exact
+          vs openssl + hash-binding, e2e KEXDH reply, and a genuine client-auth signature all tested.
+    - _remaining:_ an **ecdsa-sha2-nistp256** host key + client auth (the one common host-key type we lack) -
+      a small, high-interop-yield addition to the negotiated sets. _(aes128-gcm skipped: 256 is the ESP32-relevant one.)_
 - [ ] **SFTP + SCP subsystem over SSH** (XL, high value - ties to G-code deployment) - Cyclone has both SFTP
       and SCP client+server; we have an SSH transport + shell/exec but no file-transfer subsystem. An SFTP
       _server_ subsystem (the SSH_FXP_* packet protocol over an SSH channel) is the standards-track southbound

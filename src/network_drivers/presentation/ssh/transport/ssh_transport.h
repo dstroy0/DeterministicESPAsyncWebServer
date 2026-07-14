@@ -14,7 +14,7 @@
  * ── Supported algorithms (crypto-agnostic KEX; steered to a runtime preference) ─
  *   kex            : diffie-hellman-group14-sha256   (RFC 8268)
  *                    curve25519-sha256               (RFC 8731)
- *   host key / sig : rsa-sha2-256                     (RFC 8332)
+ *   host key / sig : rsa-sha2-512, rsa-sha2-256       (RFC 8332)
  *                    ssh-ed25519                      (RFC 8709)
  *   cipher (both)  : aes256-ctr                       (RFC 4344)
  *   MAC (both)     : hmac-sha2-256                    (RFC 6668)
@@ -92,8 +92,9 @@ enum class SshKexAlg : uint8_t
 /** @brief Negotiated host-key / signature algorithm. */
 enum class SshHostkeyAlg : uint8_t
 {
-    SSH_HOSTKEY_RSA = 0,    ///< rsa-sha2-256 (HW-accelerated on ESP32)
-    SSH_HOSTKEY_ED25519 = 1 ///< ssh-ed25519 (RFC 8032)
+    SSH_HOSTKEY_RSA_SHA256 = 0, ///< rsa-sha2-256 (HW-accelerated on ESP32)
+    SSH_HOSTKEY_ED25519 = 1,    ///< ssh-ed25519 (RFC 8032)
+    SSH_HOSTKEY_RSA_SHA512 = 2  ///< rsa-sha2-512 (same "ssh-rsa" key, SHA-512 signature; RFC 8332)
 };
 
 struct SshSession
@@ -230,9 +231,9 @@ int ssh_kex_generate(uint8_t i);
  * @brief Build SSH_MSG_EXT_INFO advertising server-sig-algs (RFC 8308).
  *
  * Tells the client which public-key signature algorithms the server will accept
- * for userauth (rsa-sha2-256); without it a modern OpenSSH client refuses to sign
- * an RSA key ("no mutual signature algorithm"). Sent once, right after NEWKEYS,
- * when the client advertised ext-info-c.
+ * for userauth (rsa-sha2-512, rsa-sha2-256, ssh-ed25519); without it a modern
+ * OpenSSH client refuses to sign an RSA key ("no mutual signature algorithm").
+ * Sent once, right after NEWKEYS, when the client advertised ext-info-c.
  * @return 0 on success, -1 on buffer overflow.
  */
 int ssh_extinfo_build(uint8_t *out, size_t *len, size_t cap);
@@ -297,7 +298,7 @@ int ssh_kexdh_build_reply(const uint8_t *ks, size_t ks_len, const uint8_t *f_be,
  * Branches on the negotiated KEX method (ssh_sess[i].kex_alg): computes the shared
  * secret K = e^y mod p (DH-group14) or K = X25519(sk, Q_C) (curve25519), builds the
  * method-correct exchange hash H (e/f as mpints for DH, Q_C/Q_S as strings for curve),
- * signs H with the negotiated host key (rsa-sha2-256 or ssh-ed25519), assembles
+ * signs H with the negotiated host key (rsa-sha2-512/256 or ssh-ed25519), assembles
  * SSH_MSG_KEXDH_REPLY, and derives the six session keys (installed into ssh_keys[i];
  * encryption is not activated until NEWKEYS - see ssh_newkeys_complete()). On the first
  * KEX the exchange hash is saved as the session id. K is wiped from the stack before

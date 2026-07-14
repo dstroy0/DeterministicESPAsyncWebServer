@@ -3,7 +3,7 @@
 
 /**
  * @file ssh_rsa.cpp
- * @brief RSA-SHA2-256 host-key signing (stack-only private key, PKCS#1 v1.5).
+ * @brief RSA-SHA2-256/512 host-key signing (stack-only private key, PKCS#1 v1.5).
  */
 
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
@@ -11,7 +11,7 @@
 #include <string.h>
 
 // ---------------------------------------------------------------------------
-// DigestInfo for SHA-256 (PKCS#1 v1.5, RFC 8017 §9.2)
+// DigestInfo for SHA-256 / SHA-512 (PKCS#1 v1.5, RFC 8017 §9.2, RFC 5754)
 // ---------------------------------------------------------------------------
 
 const uint8_t ssh_pkcs1_sha256_digestinfo[SSH_PKCS1_DIGESTINFO_LEN] = {
@@ -23,34 +23,20 @@ const uint8_t ssh_pkcs1_sha256_digestinfo[SSH_PKCS1_DIGESTINFO_LEN] = {
     0x04, 0x20                                            // OCTET STRING, length 32 (digest follows)
 };
 
+const uint8_t ssh_pkcs1_sha512_digestinfo[SSH_PKCS1_SHA512_DIGESTINFO_LEN] = {
+    0x30, 0x51,                                           // SEQUENCE, length 81
+    0x30, 0x0d,                                           // SEQUENCE, length 13 (AlgorithmIdentifier)
+    0x06, 0x09,                                           // OID, length 9
+    0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, // OID 2.16.840.1.101.3.4.2.3
+    0x05, 0x00,                                           // NULL parameters
+    0x04, 0x40                                            // OCTET STRING, length 64 (digest follows)
+};
+
 // ---------------------------------------------------------------------------
 // Public host key (BSS - no secret material)
 // ---------------------------------------------------------------------------
 
 SshRsaPubKey ssh_host_pubkey;
-
-// ---------------------------------------------------------------------------
-// PKCS#1 v1.5 pad-and-encode
-// ---------------------------------------------------------------------------
-
-// Builds the 256-byte padded message:
-//   0x00 0x01 [202 × 0xFF] 0x00 [19-byte DigestInfo] [32-byte digest]
-// Returns 0 on success.
-static int pkcs1v15_encode(const uint8_t digest[SSH_SHA256_DIGEST_LEN], uint8_t em[SSH_RSA_KEY_BYTES])
-{
-    // DigestInfo total = 19 + 32 = 51 bytes
-    // Padding = 256 - 3 - 51 = 202 bytes of 0xFF
-    const size_t di_len = SSH_PKCS1_DIGESTINFO_LEN + SSH_SHA256_DIGEST_LEN; // 51
-    const size_t pad_len = SSH_RSA_KEY_BYTES - 3 - di_len;                  // 202
-
-    em[0] = 0x00;
-    em[1] = 0x01;
-    memset(em + 2, 0xFF, pad_len);
-    em[2 + pad_len] = 0x00;
-    memcpy(em + 3 + pad_len, ssh_pkcs1_sha256_digestinfo, SSH_PKCS1_DIGESTINFO_LEN);
-    memcpy(em + 3 + pad_len + SSH_PKCS1_DIGESTINFO_LEN, digest, SSH_SHA256_DIGEST_LEN);
-    return 0;
-}
 
 // ---------------------------------------------------------------------------
 // Arduino - mbedtls path
@@ -136,7 +122,7 @@ int ssh_rsa_load_pubkey(void)
     return 0;
 }
 
-int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, uint8_t sig[SSH_RSA_SIG_BYTES])
+int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint8_t sig[SSH_RSA_SIG_BYTES])
 {
     // 1. Load private key from NVS directly into a stack-local context.
     //    mbedtls_pk_context / mbedtls_rsa_context heap-allocate their MPI
@@ -171,19 +157,23 @@ int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, uint8_t sig[SSH_RSA_SIG_BYT
     }
 
     // 2. Hash the message, then sign the digest. mbedtls_pk_sign() does NOT hash
-    //    its input - it PKCS#1-pads the supplied digest - so for rsa-sha2-256
-    //    (RFC 8332) we must pass SHA-256(msg), not msg itself. (Passing msg here
-    //    would sign DigestInfo||msg and be rejected by any conforming peer.)
-    uint8_t digest[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(msg, msg_len, digest);
+    //    its input - it PKCS#1-pads the supplied digest - so for rsa-sha2-256/512
+    //    (RFC 8332) we must pass SHA-256(msg) / SHA-512(msg), not msg itself.
+    //    (Passing msg here would sign DigestInfo||msg and be rejected by a peer.)
+    const bool sha512 = (hash == SshRsaHash::SHA512);
+    const mbedtls_md_type_t md = sha512 ? MBEDTLS_MD_SHA512 : MBEDTLS_MD_SHA256;
+    const size_t dlen = sha512 ? SSH_SHA512_DIGEST_LEN : SSH_SHA256_DIGEST_LEN;
+    uint8_t digest[SSH_SHA512_DIGEST_LEN];
+    if (sha512)
+        ssh_sha512(msg, msg_len, digest);
+    else
+        ssh_sha256(msg, msg_len, digest);
 
     size_t sig_len = 0;
 #if MBEDTLS_VERSION_MAJOR >= 3
-    rc = mbedtls_pk_sign(&pk, MBEDTLS_MD_SHA256, digest, SSH_SHA256_DIGEST_LEN, sig, SSH_RSA_SIG_BYTES, &sig_len,
-                         ssh_mbedtls_rng, nullptr);
+    rc = mbedtls_pk_sign(&pk, md, digest, dlen, sig, SSH_RSA_SIG_BYTES, &sig_len, ssh_mbedtls_rng, nullptr);
 #else
-    rc =
-        mbedtls_pk_sign(&pk, MBEDTLS_MD_SHA256, digest, SSH_SHA256_DIGEST_LEN, sig, &sig_len, ssh_mbedtls_rng, nullptr);
+    rc = mbedtls_pk_sign(&pk, md, digest, dlen, sig, &sig_len, ssh_mbedtls_rng, nullptr);
 #endif
     ssh_wipe(digest, sizeof(digest));
     mbedtls_pk_free(&pk); // frees all MPI limb memory (private key)
@@ -192,7 +182,7 @@ int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, uint8_t sig[SSH_RSA_SIG_BYT
 }
 
 int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4], const uint8_t *msg, size_t msg_len,
-                   const uint8_t *sig, size_t sig_len)
+                   const uint8_t *sig, size_t sig_len, SshRsaHash hash)
 {
     if (sig_len != SSH_RSA_KEY_BYTES)
         return -1;
@@ -215,15 +205,20 @@ int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4]
     if (rc == 0)
         rc = mbedtls_rsa_complete(&rsa);
 
-    uint8_t digest[SSH_SHA256_DIGEST_LEN];
+    const bool sha512 = (hash == SshRsaHash::SHA512);
+    const mbedtls_md_type_t md = sha512 ? MBEDTLS_MD_SHA512 : MBEDTLS_MD_SHA256;
+    const size_t dlen = sha512 ? SSH_SHA512_DIGEST_LEN : SSH_SHA256_DIGEST_LEN;
+    uint8_t digest[SSH_SHA512_DIGEST_LEN];
     if (rc == 0)
     {
-        ssh_sha256(msg, msg_len, digest);
+        if (sha512)
+            ssh_sha512(msg, msg_len, digest);
+        else
+            ssh_sha256(msg, msg_len, digest);
 #if MBEDTLS_VERSION_MAJOR >= 3
-        rc = mbedtls_rsa_pkcs1_verify(&rsa, MBEDTLS_MD_SHA256, SSH_SHA256_DIGEST_LEN, digest, sig);
+        rc = mbedtls_rsa_pkcs1_verify(&rsa, md, dlen, digest, sig);
 #else
-        rc = mbedtls_rsa_pkcs1_verify(&rsa, nullptr, nullptr, MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_SHA256,
-                                      SSH_SHA256_DIGEST_LEN, digest, sig);
+        rc = mbedtls_rsa_pkcs1_verify(&rsa, nullptr, nullptr, MBEDTLS_RSA_PUBLIC, md, dlen, digest, sig);
 #endif
     }
 
@@ -252,6 +247,47 @@ int ssh_rsa_load_pubkey(void)
     memcpy(ssh_host_pubkey.e_bytes, _test_rsa_e, 4);
     ssh_host_pubkey.loaded = true;
     return 0;
+}
+
+// ---------------------------------------------------------------------------
+// PKCS#1 v1.5 pad-and-encode (software; Arduino delegates padding to mbedtls)
+// ---------------------------------------------------------------------------
+
+// Hash msg with the selected algorithm and return the matching DigestInfo.
+//   digest must be >= SSH_SHA512_DIGEST_LEN bytes.
+static void rsa_digest(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint8_t digest[SSH_SHA512_DIGEST_LEN],
+                       size_t *digest_len, const uint8_t **di, size_t *di_len)
+{
+    if (hash == SshRsaHash::SHA512)
+    {
+        ssh_sha512(msg, msg_len, digest);
+        *digest_len = SSH_SHA512_DIGEST_LEN;
+        *di = ssh_pkcs1_sha512_digestinfo;
+        *di_len = SSH_PKCS1_SHA512_DIGESTINFO_LEN;
+    }
+    else
+    {
+        ssh_sha256(msg, msg_len, digest);
+        *digest_len = SSH_SHA256_DIGEST_LEN;
+        *di = ssh_pkcs1_sha256_digestinfo;
+        *di_len = SSH_PKCS1_DIGESTINFO_LEN;
+    }
+}
+
+// Builds the 256-byte padded message:
+//   0x00 0x01 [pad × 0xFF] 0x00 [DigestInfo] [digest]
+// pad = 256 - 3 - di_len - digest_len (202 for SHA-256, 170 for SHA-512).
+static void pkcs1v15_encode(const uint8_t *digest, size_t digest_len, const uint8_t *di, size_t di_len,
+                            uint8_t em[SSH_RSA_KEY_BYTES])
+{
+    const size_t total = di_len + digest_len;
+    const size_t pad_len = SSH_RSA_KEY_BYTES - 3 - total;
+    em[0] = 0x00;
+    em[1] = 0x01;
+    memset(em + 2, 0xFF, pad_len);
+    em[2 + pad_len] = 0x00;
+    memcpy(em + 3 + pad_len, di, di_len);
+    memcpy(em + 3 + pad_len + di_len, digest, digest_len);
 }
 
 // ---------------------------------------------------------------------------
@@ -424,7 +460,7 @@ static void bn_modexp_full(const SshBigNum *base, const SshBigNum *exp, const Ss
     *out = r;
 }
 
-int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, uint8_t sig[SSH_RSA_SIG_BYTES])
+int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint8_t sig[SSH_RSA_SIG_BYTES])
 {
     // SECURITY: private key lives only in this stack frame.
     SshRsaPrivKey priv;
@@ -432,13 +468,16 @@ int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, uint8_t sig[SSH_RSA_SIG_BYT
     memcpy(priv.d, _test_rsa_d, SSH_RSA_KEY_BYTES);
     memcpy(priv.e_bytes, _test_rsa_e, 4);
 
-    // 1. SHA-256 digest of the message.
-    uint8_t digest[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(msg, msg_len, digest);
+    // 1. SHA-256/512 digest of the message + matching DigestInfo.
+    uint8_t digest[SSH_SHA512_DIGEST_LEN];
+    size_t digest_len = 0;
+    const uint8_t *di = nullptr;
+    size_t di_len = 0;
+    rsa_digest(msg, msg_len, hash, digest, &digest_len, &di, &di_len);
 
     // 2. PKCS#1 v1.5 encode: 0x00 0x01 0xFF... 0x00 DigestInfo digest
     uint8_t em[SSH_RSA_KEY_BYTES];
-    pkcs1v15_encode(digest, em);
+    pkcs1v15_encode(digest, digest_len, di, di_len, em);
     ssh_wipe(digest, sizeof(digest));
 
     // 3. RSA private-key operation: s = em^d mod n (full-width, correct for
@@ -468,7 +507,7 @@ int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, uint8_t sig[SSH_RSA_SIG_BYT
 }
 
 int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4], const uint8_t *msg, size_t msg_len,
-                   const uint8_t *sig, size_t sig_len)
+                   const uint8_t *sig, size_t sig_len, SshRsaHash hash)
 {
     if (sig_len != SSH_RSA_KEY_BYTES)
         return -1;
@@ -488,10 +527,13 @@ int ssh_rsa_verify(const uint8_t n_be[SSH_RSA_KEY_BYTES], const uint8_t e_be4[4]
     bn_to_bytes(em, &m);
 
     // Recompute the expected PKCS#1 v1.5 block and compare in constant time.
-    uint8_t digest[SSH_SHA256_DIGEST_LEN];
-    ssh_sha256(msg, msg_len, digest);
+    uint8_t digest[SSH_SHA512_DIGEST_LEN];
+    size_t digest_len = 0;
+    const uint8_t *di = nullptr;
+    size_t di_len = 0;
+    rsa_digest(msg, msg_len, hash, digest, &digest_len, &di, &di_len);
     uint8_t expected[SSH_RSA_KEY_BYTES];
-    pkcs1v15_encode(digest, expected);
+    pkcs1v15_encode(digest, digest_len, di, di_len, expected);
 
     uint8_t diff = 0;
     for (size_t k = 0; k < SSH_RSA_KEY_BYTES; k++)

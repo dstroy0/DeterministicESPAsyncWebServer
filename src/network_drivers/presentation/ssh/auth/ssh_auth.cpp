@@ -334,8 +334,12 @@ int ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8
         memcpy(signed_data + sd, req.signed_prefix, req.signed_prefix_len);
         sd += req.signed_prefix_len;
 
+        // For RSA the signature hash is chosen by the client's algorithm name (RFC 8332),
+        // not the key blob: rsa-sha2-512 -> SHA-512, otherwise SHA-256.
+        const SshRsaHash rh =
+            (strcmp(req.pk_algo, SSH_RSA_SIG_ALG_SHA512) == 0) ? SshRsaHash::SHA512 : SshRsaHash::SHA256;
         bool sig_ok = is_ed ? (req.signature_len == 64 && ssh_ed25519_verify(ed_pub, signed_data, sd, req.signature))
-                            : (ssh_rsa_verify(n_be, e_be, signed_data, sd, req.signature, req.signature_len) == 0);
+                            : (ssh_rsa_verify(n_be, e_be, signed_data, sd, req.signature, req.signature_len, rh) == 0);
         if (sig_ok)
         {
             ssh_sess[i].authed = true;

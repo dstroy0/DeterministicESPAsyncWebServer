@@ -969,6 +969,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_rsa.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>",
         "+<network_drivers/session/scratch.cpp>",
         "+<network_drivers/session/worker.cpp>"
       ],

@@ -247,6 +247,31 @@ void test_kexinit_parse_selects_aes256gcm()
     TEST_ASSERT_EQUAL(SSH_CIPHER_AES256GCM, ssh_sess[0].cipher_alg);
 }
 
+// rsa-sha2-512 and rsa-sha2-256 are both backed by the one "ssh-rsa" host key (RFC 8332). The
+// server prefers rsa-sha2-512; each is selected when offered alone (both gated on the RSA key).
+void test_kexinit_parse_selects_rsa_sha512()
+{
+    uint8_t buf[SSH_KEXINIT_MAX];
+
+    // Both offered -> rsa-sha2-512 wins (server preference).
+    size_t n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "rsa-sha2-512,rsa-sha2-256", "aes256-ctr",
+                                    "hmac-sha2-256", "none");
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL(SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512, ssh_sess[0].hostkey_alg);
+
+    // Only rsa-sha2-256 offered -> SHA-256 selected.
+    n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "rsa-sha2-256", "aes256-ctr", "hmac-sha2-256",
+                             "none");
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL(SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA256, ssh_sess[0].hostkey_alg);
+
+    // Only rsa-sha2-512 offered -> accepted (same key), SHA-512 selected.
+    n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "rsa-sha2-512", "aes256-ctr", "hmac-sha2-256",
+                             "none");
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL(SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512, ssh_sess[0].hostkey_alg);
+}
+
 // With aes256-ctr, the encrypt-then-MAC variants are preferred: a client offering an -etm MAC gets
 // it selected and its exact mode recorded.
 void test_kexinit_parse_selects_etm_mac()
@@ -690,6 +715,88 @@ void test_kexdh_handle_curve25519_rejects_low_order()
     TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, pkt, 1 + 4 + 32, reply, &rlen, sizeof(reply)));
 }
 
+// End-to-end DH-group14 + rsa-sha2-512: when SSH_HOSTKEY_RSA_SHA512 is negotiated, the reply
+// signature blob must carry "rsa-sha2-512" (not -256) and be a genuine PKCS#1 v1.5 SHA-512 block
+// over the exchange hash H. With the fixture's d = 1 the signature s = EM^1 mod n = EM, so we can
+// rebuild the padded EM and byte-compare - proving the SHA-512 DigestInfo/padding reached the wire.
+void test_kexdh_handle_rsa_sha512_signature()
+{
+    ssh_transport_init(0);
+    setup_rsa_fixture();
+    SshSession *s = &ssh_sess[0];
+    s->hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512; // as if negotiated
+    const char *vc = "SSH-2.0-TestClient";
+    strcpy(s->v_c, vc);
+    s->v_c_len = (uint16_t)strlen(vc);
+    for (int j = 0; j < 30; j++)
+    {
+        s->i_c[j] = (uint8_t)(j + 1);
+        s->i_s[j] = (uint8_t)(j + 100);
+    }
+    s->i_c_len = s->i_s_len = 30;
+    TEST_ASSERT_EQUAL_INT(0, ssh_dh_generate(0));
+
+    uint8_t e_be[256];
+    memset(e_be, 0, sizeof(e_be));
+    e_be[255] = 0x02; // valid client e
+    uint8_t pkt[300];
+    pkt[0] = SSH_MSG_KEXDH_INIT;
+    size_t n = 1 + put_mpint(pkt + 1, e_be, 256);
+
+    uint8_t reply[1024];
+    size_t rlen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexdh_handle(0, pkt, n, reply, &rlen, sizeof(reply)));
+
+    // The negotiated signature name must be rsa-sha2-512, and rsa-sha2-256 absent.
+    bool has512 = false;
+    bool has256 = false;
+    for (size_t k = 0; k + 12 <= rlen; k++)
+    {
+        if (memcmp(reply + k, "rsa-sha2-512", 12) == 0)
+            has512 = true;
+        if (memcmp(reply + k, "rsa-sha2-256", 12) == 0)
+            has256 = true;
+    }
+    TEST_ASSERT_TRUE(has512);
+    TEST_ASSERT_FALSE(has256);
+
+    // Parse: byte(31) || string(K_S) || mpint(f) || string(sigblob{ string(name) string(sig) }).
+    size_t off = 1;
+    const uint8_t *ks;
+    const uint8_t *f;
+    const uint8_t *sigblob;
+    uint32_t ks_len;
+    uint32_t f_len;
+    uint32_t sb_len;
+    TEST_ASSERT_TRUE(rd_string(reply, rlen, &off, &ks, &ks_len));
+    TEST_ASSERT_TRUE(rd_string(reply, rlen, &off, &f, &f_len));
+    TEST_ASSERT_TRUE(rd_string(reply, rlen, &off, &sigblob, &sb_len));
+    size_t so = 0;
+    const uint8_t *name;
+    const uint8_t *sig;
+    uint32_t name_len;
+    uint32_t sig_len;
+    TEST_ASSERT_TRUE(rd_string(sigblob, sb_len, &so, &name, &name_len));
+    TEST_ASSERT_EQUAL_UINT32(12, name_len);
+    TEST_ASSERT_EQUAL_MEMORY("rsa-sha2-512", name, 12);
+    TEST_ASSERT_TRUE(rd_string(sigblob, sb_len, &so, &sig, &sig_len));
+    TEST_ASSERT_EQUAL_UINT32(256, sig_len);
+
+    // Rebuild the expected PKCS#1 v1.5 SHA-512 block over H (= session_id) and byte-compare.
+    uint8_t d512[SSH_SHA512_DIGEST_LEN];
+    ssh_sha512(s->session_id, SSH_SHA256_DIGEST_LEN, d512);
+    uint8_t em[256];
+    const size_t total = SSH_PKCS1_SHA512_DIGESTINFO_LEN + SSH_SHA512_DIGEST_LEN; // 83
+    const size_t pad = 256 - 3 - total;                                           // 170
+    em[0] = 0x00;
+    em[1] = 0x01;
+    memset(em + 2, 0xFF, pad);
+    em[2 + pad] = 0x00;
+    memcpy(em + 3 + pad, ssh_pkcs1_sha512_digestinfo, SSH_PKCS1_SHA512_DIGESTINFO_LEN);
+    memcpy(em + 3 + pad + SSH_PKCS1_SHA512_DIGESTINFO_LEN, d512, SSH_SHA512_DIGEST_LEN);
+    TEST_ASSERT_EQUAL_MEMORY(em, sig, 256);
+}
+
 // ---- rekey (RFC 4253 §9) --------------------------------------------------
 
 void test_derive_keys_session_id_affects_output()
@@ -992,6 +1099,7 @@ int main()
     RUN_TEST(test_kexinit_parse_rejects_missing_cipher);
     RUN_TEST(test_kexinit_parse_selects_chacha20poly1305);
     RUN_TEST(test_kexinit_parse_selects_aes256gcm);
+    RUN_TEST(test_kexinit_parse_selects_rsa_sha512);
     RUN_TEST(test_kexinit_parse_selects_etm_mac);
     RUN_TEST(test_kexinit_parse_rejects_truncated);
     RUN_TEST(test_exchange_hash_matches_independent_assembly);
@@ -1005,6 +1113,7 @@ int main()
     RUN_TEST(test_kexdh_handle_rejects_invalid_e);
     RUN_TEST(test_kexdh_handle_curve25519_ed25519_end_to_end);
     RUN_TEST(test_kexdh_handle_curve25519_rejects_low_order);
+    RUN_TEST(test_kexdh_handle_rsa_sha512_signature);
     RUN_TEST(test_derive_keys_session_id_affects_output);
     RUN_TEST(test_rekey_needed_threshold);
     RUN_TEST(test_rekey_due_volume_and_time);

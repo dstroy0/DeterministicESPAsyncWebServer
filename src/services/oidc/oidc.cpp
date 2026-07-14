@@ -336,9 +336,10 @@ DetwsOidcResult detws_oidc_verify_with_key(const char *token, size_t token_len, 
     if (base64url_decode(seg[2], seglen[2], sig, DETWS_OIDC_RSA_BYTES) != DETWS_OIDC_RSA_BYTES)
         return DetwsOidcResult::DETWS_OIDC_ERR_FORMAT;
 
-    // Verify over the signing input "header.payload" (ssh_rsa_verify hashes it).
+    // Verify over the signing input "header.payload" (ssh_rsa_verify hashes it). RS256 = SHA-256.
     size_t signing_len = (size_t)(seg[1] + seglen[1] - token);
-    if (ssh_rsa_verify(key->n, key->e, (const uint8_t *)token, signing_len, sig, DETWS_OIDC_RSA_BYTES) != 0)
+    if (ssh_rsa_verify(key->n, key->e, (const uint8_t *)token, signing_len, sig, DETWS_OIDC_RSA_BYTES,
+                       SshRsaHash::SHA256) != 0)
         return DetwsOidcResult::DETWS_OIDC_ERR_SIGNATURE;
 
     // Claims (trusted only now that the signature is valid).
