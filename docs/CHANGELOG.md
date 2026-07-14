@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.4.1] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.4.1 - 2026-07-14</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`aef76d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aef76d8a5c51b900b248dededeff5dfac0f4867c))
+
+### Changes
+
+- Bump version: 6.4.0 → 6.4.1 ([`b468b8e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b468b8e188c683f163955351e3464008ff514cc0))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`7f10270`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7f10270273627c4a32aa6ff9f375375b3c711627))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5b0f4d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b0f4d3f6e6bc05e21a8b53323c37949ebc194a0))
+
+### Refactor
+
+- stop services reaching into another module's pool internals ([`220c5c9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/220c5c9de5b3a8ee2ac933d46bc67e3e4f987cec))
+
+</details>
+
 ## [6.4.0] - 2026-07-14
 
 <details>
