@@ -2,6 +2,22 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- real dshot value-truncation bug + at-source smell remediation ([`b5ad41b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b5ad41b4040410f36592033e4438e901b81825f6))
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`0a5ff75`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a5ff7542d724f9659e0d074cb27d7cfb0dbb219))
+- update CHANGELOG.md [skip ci] ([`53f2150`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53f2150da1b40a74ce54701405c61b62a41811aa))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`119559d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/119559dbc4015ee39cf49485a7edaf7dcba5d1f0))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`33554fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33554faff39c56a4d6d17e1befb078e058388713))
+
 ## [6.10.0] - 2026-07-14
 
 <details>
