@@ -2,6 +2,18 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`d09c971`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d09c971f50b16c77e28144b98bfb4ca9fa15a8b9))
+
+### Documentation
+
+- PID control law - definitive ccount numbers on ESP32-S3 ([`758db19`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/758db19dd727b4f475fd0939cc93beae6384b7a7))
+- update ESP32 build footprints [skip ci] ([`1bd7e23`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1bd7e23e907011bb0bbf606512b4958998fbefe5))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`476c438`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/476c43814180f020b8dc82af3efa3a714fcc2635))
+
 ## [6.3.0] - 2026-07-14
 
 <details>
