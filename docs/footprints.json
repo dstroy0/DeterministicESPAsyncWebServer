@@ -6,6 +6,13 @@
     "flash_bytes": 752061,
     "ram_bytes": 81776
   },
+  "ADS": {
+    "example": "L7-Application/73.AdsClient",
+    "flags": "-DDETWS_ENABLE_ADS=1",
+    "board": "esp32dev",
+    "flash_bytes": 771933,
+    "ram_bytes": 45440
+  },
   "ADS1115": {
     "example": "L7-Application/66.Ads1115",
     "flags": "-DDETWS_ENABLE_ADS1115=1",
