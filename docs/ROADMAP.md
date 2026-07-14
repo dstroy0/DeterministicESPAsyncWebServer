@@ -417,6 +417,48 @@ preempting queue, so sensing shares the real-time ingest path.
 - [x] MAC-derived UUID _(shipped)_ - `detws_uuid_from_mac` / `detws_device_uuid` (RFC 4122 v5; example 57.DeviceUuid).
 - [x] **Modern SSH ECC: Curve25519 key exchange + Ed25519 keys** (L) _(shipped v4.94.0)_ - the SSH server now negotiates a crypto-agnostic KEX: `curve25519-sha256` + `ssh-ed25519` host key + ed25519 client auth, alongside the `diffie-hellman-group14-sha256` + `rsa-sha2-256` set, with the preference runtime-selectable (`ssh_kex_set_prefer_rsa`, default RSA). The curve backend is a bespoke constant-time X25519 / Ed25519 that fits the zero-heap / no-stdlib idiom (no micro-ecc / donna / wolfSSL dependency), with the ESP32 MPI accelerator driving field inversion on-device and a software fallback retained. RSA stays as a fallback; ed25519 host-key provisioning sits alongside the RSA DER path; crypto KATs cover both suites and the OpenSSH interop test passes with zero forced algorithms. HW-verified on an ESP32-S3 (both suites; worker stack raised to 12288 when SSH is enabled, curve peaks ~10.5 KB).
 
+### Crypto parity vs CycloneSSL / CycloneSSH (ESP32-relevant gaps)
+
+Comparison against Oryx Embedded's **CycloneSSL** (TLS/DTLS) and **CycloneSSH** - the closest portable,
+zero-external-dependency C stacks to ours. Only gaps that matter on an ESP32 are tracked (their
+Camellia / SEED / ARIA / Serpent / Twofish / RC4 / Blowfish / DSS ciphers are deliberately skipped).
+**Benchmark caveat:** Oryx publishes their numbers at **-O3**, so any apples-to-apples throughput /
+handshake comparison must build our crypto at `-O3` too (our default examples build `-Os`); measure the
+same core on the same S3 at `-O3` before claiming a delta. Our current surface: **TLS** = mbedTLS 1.2/1.3
+(ECDHE curve-pref, AES-GCM, ChaCha20-Poly1305, tickets/resumption); **SSH** = curve25519-sha256 +
+dh-group14, ssh-ed25519 + rsa-sha2-256 host keys, chacha20-poly1305@openssh.com + aes256-ctr,
+hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, password + publickey auth.
+
+- [ ] **Post-quantum hybrid key exchange** (XL, **headline gap - both stacks have it, we don't**) - Cyclone
+      ships ML-KEM (512/768/1024) + hybrids **X25519MLKEM768** (TLS) and **sntrup761x25519-sha512@openssh.com**
+      / **mlkem768x25519-sha256** (SSH). This is no longer forward-looking: **OpenSSH defaults to PQC hybrid
+      KEX since 9.x and browsers/CDNs deployed X25519MLKEM768**, so our TLS/SSH endpoints negotiate _down_ to
+      classical today. The adoptable technique is simple and fits our zero-heap transport: run the classical
+      X25519 ECDH we already have, run an ML-KEM-768 encaps/decaps, **concatenate the two shared secrets into
+      the existing KDF** (RFC 9370 / the TLS hybrid-design construction). The hard part is a constant-time,
+      zero-heap **ML-KEM-768** core (~2-3 KB keys, NTT-based) - the one genuinely novel primitive to port;
+      once it exists both the TLS and SSH hybrids reuse it. Highest strategic value for a "future-proof
+      machine bridge." Do SSH first (we own the whole transport); TLS hybrid depends on the mbedTLS version.
+- [ ] **SSH cipher / host-key breadth** (M, cheap interop) - close the easy deltas vs CycloneSSH:
+      **aes256-gcm@openssh.com** / **aes128-gcm@openssh.com** (reuse the existing GCM core in
+      `http3/quic_aead` - an AEAD alternative to chacha that rides the AES-NI-equivalent HW), **rsa-sha2-512**
+      host-key signatures (we advertise only rsa-sha2-256), and an **ecdsa-sha2-nistp256** host key + client
+      auth (the one common host-key type we lack). Small, high-interop-yield additions to the negotiated sets.
+- [ ] **SFTP + SCP subsystem over SSH** (XL, high value - ties to G-code deployment) - Cyclone has both SFTP
+      and SCP client+server; we have an SSH transport + shell/exec but no file-transfer subsystem. An SFTP
+      _server_ subsystem (the SSH_FXP_* packet protocol over an SSH channel) is the standards-track southbound
+      path for the **secure machine-agent G-code push** goal - drop NC programs onto the device (or drip them
+      to a controller via the shipped `services/dnc`) over the one authenticated SSH port. Fixed-BSS handle
+      table, streamed reads/writes, no heap.
+- [ ] **TLS Raw Public Keys (RFC 7250)** (M) - Cyclone supports RPK; a cert-less TLS credential (bare
+      SubjectPublicKeyInfo, no X.509 chain) is a natural fit for constrained, provisioned ESP32 fleets where a
+      pinned key beats a full PKI - smaller handshakes, no cert parsing. Expose/enable it on the TLS path.
+- [ ] **DTLS 1.3** (L) - Cyclone does DTLS 1.0/1.2/1.3; we have QUIC (HTTP/3) but no DTLS service. DTLS 1.3
+      secures CoAP-over-UDP and other datagram telemetry without a TCP+TLS session - the missing secure UDP
+      transport for the IoT-device families. Layers on the existing TLS 1.3 record/handshake crypto.
+- [ ] **SSH keyboard-interactive auth (RFC 4256)** (S) - Cyclone supports it; a minor addition to our
+      password + publickey methods (enables server-driven MFA prompts / password-change flows over SSH).
+
 ## Storage & config
 
 - [x] Typed NVS config store _(shipped)_.

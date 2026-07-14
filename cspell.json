@@ -1269,7 +1269,11 @@
     "SMU",
     "acts2",
     "readparam",
-    "GPIB"
+    "GPIB",
+    "MLKEM",
+    "Twofish",
+    "decaps",
+    "encaps"
   ],
   "ignorePaths": [
     "node_modules/**",
