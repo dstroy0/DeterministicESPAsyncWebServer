@@ -153,7 +153,7 @@ void service(uint8_t slot)
 
 void relay_on_accept(uint8_t slot)
 {
-    RelayBind *bd = bind_by_listener(conn_pool[slot].listener_id);
+    RelayBind *bd = bind_by_listener(det_conn_listener_id(slot));
     if (!bd)
     {
         det_conn_close(slot); // no origin published for this listener

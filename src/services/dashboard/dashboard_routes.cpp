@@ -68,7 +68,7 @@ static void dash_ws_message(uint8_t ws_id)
 {
     // Control widgets send {"k":"<key>","v":<num>}; parse + dispatch to the callback.
     if (ws_id < MAX_WS_CONNS)
-        detws_dashboard_dispatch_control((const char *)ws_pool[ws_id].buf);
+        detws_dashboard_dispatch_control(ws_payload(ws_id));
 }
 static void dash_ws_close(uint8_t ws_id)
 {

@@ -356,6 +356,12 @@ static inline DetIface det_conn_iface(uint8_t slot)
     return conn_pool[slot].iface;
 }
 
+/** @brief The id of the listener @p slot's connection was accepted on. */
+static inline uint8_t det_conn_listener_id(uint8_t slot)
+{
+    return conn_pool[slot].listener_id;
+}
+
 /**
  * @brief Number of server connection slots currently in the CONN_ACTIVE state.
  *

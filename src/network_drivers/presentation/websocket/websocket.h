@@ -167,6 +167,14 @@ extern WsConn ws_pool[MAX_WS_CONNS];
  */
 void ws_init();
 
+/// @brief True if @p ws_id is a valid, in-use WebSocket slot. Use this instead of reaching into
+///        ws_pool[ws_id].active from another module.
+bool ws_active(uint8_t ws_id);
+
+/// @brief The NUL-terminated reassembled message payload for @p ws_id, or nullptr if the slot is
+///        out of range / inactive. Use this instead of reaching into ws_pool[ws_id].buf.
+const char *ws_payload(uint8_t ws_id);
+
 /**
  * @brief Allocate a WsConn slot and bind it to a TCP slot.
  *

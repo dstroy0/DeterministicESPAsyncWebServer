@@ -54,7 +54,7 @@ static void term_ws_connect(uint8_t ws_id)
 static void term_ws_message(uint8_t ws_id)
 {
     if (s_term.cb && ws_id < MAX_WS_CONNS)
-        s_term.cb((const char *)ws_pool[ws_id].buf, ws_id);
+        s_term.cb(ws_payload(ws_id), ws_id);
 }
 
 static void term_ws_close(uint8_t ws_id)
@@ -90,7 +90,7 @@ void detws_web_terminal_print(const char *s)
         return;
     for (uint8_t i = 0; i < MAX_WS_CONNS; i++)
     {
-        if (s_term.is_client[i] && ws_pool[i].active)
+        if (s_term.is_client[i] && ws_active(i))
             s_term.srv->ws_send_text(i, s);
     }
 }
@@ -116,7 +116,7 @@ uint8_t detws_web_terminal_client_count()
 {
     uint8_t n = 0;
     for (uint8_t i = 0; i < MAX_WS_CONNS; i++)
-        if (s_term.is_client[i] && ws_pool[i].active)
+        if (s_term.is_client[i] && ws_active(i))
             n++;
     return n;
 }

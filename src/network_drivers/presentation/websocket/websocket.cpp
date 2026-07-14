@@ -37,6 +37,16 @@ void ws_init()
     }
 }
 
+bool ws_active(uint8_t ws_id)
+{
+    return ws_id < MAX_WS_CONNS && ws_pool[ws_id].active;
+}
+
+const char *ws_payload(uint8_t ws_id)
+{
+    return (ws_id < MAX_WS_CONNS && ws_pool[ws_id].active) ? (const char *)ws_pool[ws_id].buf : nullptr;
+}
+
 WsConn *ws_alloc(uint8_t slot_id)
 {
     for (int i = 0; i < MAX_WS_CONNS; i++)
