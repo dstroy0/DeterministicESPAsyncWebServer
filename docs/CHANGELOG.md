@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.2.0] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.2.0 - 2026-07-14</b></summary>
 
 ### Bug Fixes
 
@@ -10,12 +13,23 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`689f253`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/689f2536918ef2a36053c5956028cbddc59dd1d3))
 - update test report + coverage [skip ci] ([`ff7bac0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff7bac06caf001a84274d84605b80d3900110531))
 - update CHANGELOG.md [skip ci] ([`1eae4dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1eae4dc7315d883a4e316e6243ef6401e2f3a5d9))
+
+### Changes
+
+- Bump version: 6.1.1 → 6.2.0 ([`0d2ff4e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d2ff4eb8521665b06e41b90784ff37f60be7e53))
 
 ### Documentation
 
 - update ESP32 build footprints [skip ci] ([`d1ea843`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1ea843e7b1abaafccd216ae5e778d62fb73193d))
+
+### Features
+
+- FPU PID control law + CiA 402 drive profile ([`60b95ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/60b95ae023bf7f3684f55a020c7a5c9c5977e4dc))
+
+</details>
 
 ## [6.1.1] - 2026-07-14
 
