@@ -2,6 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`f78f14e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f78f14ecf96062de8e9ebfb60081dd03eb1f07ed))
+- update CHANGELOG.md [skip ci] ([`6bc3c63`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6bc3c63115f99aa4d04da09ca61b2cb174381d3f))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`44aae1e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/44aae1e6fad861ec2aefee0ba384be531af7da8a))
+
+### Features
+
+- address:port -> hardware-bus bridge (pure core) ([`2a6dfe1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2a6dfe1657dcff346557738e23384d92e47d0105))
+
 ## [6.7.0] - 2026-07-14
 
 <details>
