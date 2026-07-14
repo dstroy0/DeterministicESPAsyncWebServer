@@ -1237,6 +1237,12 @@
       "src": ["+<services/ld2410/ld2410.cpp>"],
       "tests": ["test_ld2410"]
     },
+    "native_sen0192": {
+      "desc": "SEN0192 microwave motion sensor presence state machine (services/sen0192): presence\nasserts on an active sample and holds for the configured window after the last active sample, clears\nafter it, counts clear->present edges, and honors OUT polarity. Pure - the GPIO read is ESP32-only.",
+      "flags": ["-DDETWS_ENABLE_SEN0192=1"],
+      "src": ["+<services/sen0192/sen0192.cpp>"],
+      "tests": ["test_sen0192"]
+    },
     "native_mpr121": {
       "desc": "MPR121 capacitive-touch codec (services/mpr121): decoding the touch-status word into\nan electrode bitmask (masking proximity / over-current), the per-electrode touched test, the\nproximity / over-current flags, the 10-bit filtered/baseline word, and the exact bytes of the\nregister bring-up sequence. Pure - the I2C read/write is ESP32-only.",
       "flags": ["-DDETWS_ENABLE_MPR121=1"],

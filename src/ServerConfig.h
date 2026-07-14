@@ -2417,6 +2417,34 @@
 #endif
 
 /**
+ * @brief DFRobot SEN0192 10.525 GHz microwave Doppler motion sensor (single digital OUT line).
+ *
+ * Default off. services/sen0192 tracks the module's OUT line as a debounced presence signal: it asserts
+ * presence on an active sample and holds it for DETWS_SEN0192_HOLD_MS after the last active sample, so
+ * brief gaps between Doppler returns don't make presence flap. The presence state machine is pure and
+ * host-tested; only the GPIO read touches hardware. Unlike a PIR it senses motion through thin non-metal
+ * enclosures and is unaffected by ambient light / temperature.
+ */
+#ifndef DETWS_ENABLE_SEN0192
+#define DETWS_ENABLE_SEN0192 0
+#endif
+
+/** @brief GPIO the SEN0192 OUT line is wired to. */
+#ifndef DETWS_SEN0192_PIN
+#define DETWS_SEN0192_PIN 4
+#endif
+
+/** @brief Presence is held this many ms after the last active (motion) sample before it clears. */
+#ifndef DETWS_SEN0192_HOLD_MS
+#define DETWS_SEN0192_HOLD_MS 2000
+#endif
+
+/** @brief SEN0192 OUT polarity: 1 = the OUT line reads HIGH on motion, 0 = active-LOW. */
+#ifndef DETWS_SEN0192_ACTIVE_HIGH
+#define DETWS_SEN0192_ACTIVE_HIGH 1
+#endif
+
+/**
  * @brief NXP MPR121 12-channel capacitive-touch controller (I2C).
  *
  * Default off. services/mpr121 decodes the touch-status word (12 electrode bits + proximity +

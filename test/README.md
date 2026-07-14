@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **228 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **229 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -244,6 +244,7 @@ The native test matrix has **228 environments**, one per feature, generated from
 | `native_s7comm` | `ETWS_ENABLE_S7COMM=1` | `test_s7comm` | Siemens S7comm PDU codec (services/s7comm): the Setup Communication + Read Var request builders, the header parser, and the response data-item reader (length-in-bits + even padding). |
 | `native_scratch` | default | `test_scratch` | Shared per-dispatch scratch arena (session/scratch): bump-allocate + reset semantics, alignment, and fail-closed exhaustion. |
 | `native_sdi12` | `ETWS_ENABLE_SDI12=1` | `test_sdi12` | SDI-12 sensor-bus codec (services/sdi12): the command builders, the measurement response parser (atttn), the data-value splitter, and the SDI-12 CRC (compute/encode/verify). |
+| `native_sen0192` | `ETWS_ENABLE_SEN0192=1` | `test_sen0192` | SEN0192 microwave motion sensor presence state machine (services/sen0192): presence asserts on an active sample and holds for the configured window after the last active sample, clears after it, count... |
 | `native_senml` | `ETWS_ENABLE_SENML=1` | `test_senml` | SenML (RFC 8428) pack builder (services/senml): the SenML-JSON encoder (over the JSON writer) + the SenML-CBOR encoder (over the CBOR writer, integer labels), integral numbers emitted as integers. |
 | `native_sep2` | `ETWS_ENABLE_SEP2=1` | `test_sep2` | IEEE 2030.5 (SEP 2.0) resource codec (services/sep2): the DeviceCapability, EndDevice, and DERControl XML documents (urn:ieee:std:2030.5:ns), XML-escaped. |
 | `native_sercos` | `ETWS_ENABLE_SERCOS=1` | `test_sercos` | SERCOS III motion-bus codec (services/sercos): the MDT/AT telegram (type + phase + cycle + data) build + parse and the 16-bit IDN encode/decode (S/P + set + block). |
@@ -518,7 +519,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3014 test cases** across **255 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3019 test cases** across **256 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -24844,6 +24845,71 @@ A thorough directory of all **3014 test cases** across **255 suites**. Expand a 
       * <code>Assert float within (0.0001f, 1.5f, v[0])</code>
       * <code>Assert false (sdi12_check_crc(nullptr, 5))</code>
       * <code>Assert false (sdi12_check_crc("ab\\r\\n", 4))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_sen0192 (5 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_asserts_on_active_and_counts_edge</b> &mdash; <i>An inactive (low) sample keeps it clear.</i></summary>
+
+    * **Objective**: An inactive (low) sample keeps it clear.
+    * **Assertions**:
+      * <code>Assert false (sen0192_motion_present(&m))</code>
+      * <code>Assert false (sen0192_motion_update(&m, false, 500))</code>
+      * <code>Assert false (sen0192_motion_present(&m))</code>
+      * <code>Assert true (sen0192_motion_update(&m, true, 1000))</code>
+      * <code>Assert true (sen0192_motion_present(&m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, sen0192_motion_events(&m));</code>
+      * <code>Assert false (sen0192_motion_update(&m, true, 1500))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, sen0192_motion_events(&m));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_holds_then_clears_after_window</b> &mdash; <i>Within the hold window (<= 2000 ms since last active): still present.</i></summary>
+
+    * **Objective**: Within the hold window (<= 2000 ms since last active): still present.
+    * **Assertions**:
+      * <code>Assert true (sen0192_motion_tick(&m, 2999))</code>
+      * <code>Assert true (sen0192_motion_present(&m))</code>
+      * <code>Assert true (sen0192_motion_tick(&m, 3000)); // exactly 2000 ms later (still within)</code>
+      * <code>Assert true (sen0192_motion_present(&m))</code>
+      * <code>Assert false (sen0192_motion_tick(&m, 3001))</code>
+      * <code>Assert false (sen0192_motion_present(&m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reasserts_as_new_event</b> &mdash; <i>Reasserts as new event</i></summary>
+
+    * **Objective**: Reasserts as new event
+    * **Assertions**:
+      * <code>Assert true (sen0192_motion_update(&m, true, 100))</code>
+      * <code>Assert false (sen0192_motion_present(&m))</code>
+      * <code>Assert true (sen0192_motion_update(&m, true, 2000)); // event 2 (new edge)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, sen0192_motion_events(&m));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_active_low_polarity</b> &mdash; <i>Active low polarity</i></summary>
+
+    * **Objective**: Active low polarity
+    * **Assertions**:
+      * <code>Assert false (sen0192_motion_update(&m, true, 100))</code>
+      * <code>Assert false (sen0192_motion_present(&m))</code>
+      * <code>Assert true (sen0192_motion_update(&m, false, 200))</code>
+      * <code>Assert true (sen0192_motion_present(&m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, sen0192_motion_events(&m));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_active_age</b> &mdash; <i>Active age</i></summary>
+
+    * **Objective**: Active age
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, sen0192_motion_active_age_ms(&m, 1234)); // no sample yet</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(750, sen0192_motion_active_age_ms(&m, 1750));</code>
   </details>
 
 </details>

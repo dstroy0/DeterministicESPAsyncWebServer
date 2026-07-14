@@ -534,6 +534,12 @@ HTTP/1.1 persistent connections (keep-alive). Default on: a cleanly-parsed reque
 
 HLK-LD2410 24 GHz mmWave presence / motion radar (UART). Default off. services/ld2410 syncs to the module's framed serial output (256000 baud: header `F4 F3 F2 F1`, little-endian length, payload, footer `F8 F7 F6 F5`) and decodes the target report - presence state (none / moving / stationary / both), the moving and stationary target distance (cm) and energy (0-100), the overall detection distance, and, in engineering mode, the per-gate energy of all nine range gates - plus encodes the config commands (enter / exit config, enable / disable engineering, restart). Unlike a PIR sensor it detects a perfectly still person (micro-motion / breathing), in the dark, through thin walls. The `Ld2410Stream` byte-by-byte reassembler is fixed-buffer, no-heap, and resyncs cleanly on dropped bytes or noise; the frame decoder + reassembler + command encoders are host-tested (`native_ld2410`), and only the UART read/write touches hardware. Example 62.Ld2410 lights the onboard LED on presence. See src/services/ld2410/ld2410.h.
 
+## SEN0192
+
+`DETWS_ENABLE_SEN0192`
+
+DFRobot SEN0192 10.525 GHz microwave Doppler motion sensor (single digital OUT line). Default off. Unlike a PIR it senses movement through thin non-metal enclosures and is unaffected by ambient light or temperature; unlike the LD2410 it carries no protocol - just one digital line - so services/sen0192 tracks that line as a debounced presence signal: presence asserts on an active sample and is held for `DETWS_SEN0192_HOLD_MS` after the last active sample (so brief gaps between Doppler returns don't make presence flap), clears after it, and counts clear-to-present edges. The presence state machine (`Sen0192Motion`) is pure - it takes a sampled level and a timestamp, needing no clock or GPIO - and host-tested (`native_sen0192`); the ESP32 binding reads `DETWS_SEN0192_PIN` each poll via detws_millis() and only that read touches hardware. The OUT pin, hold window, and polarity are ServerConfig knobs (`DETWS_SEN0192_PIN` / `DETWS_SEN0192_HOLD_MS` / `DETWS_SEN0192_ACTIVE_HIGH`). Example 77.Sen0192 lights the onboard LED on motion. See src/services/sen0192/sen0192.h.
+
 ## LDC1614
 
 `DETWS_ENABLE_LDC1614`
