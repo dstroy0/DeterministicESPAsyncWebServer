@@ -3176,6 +3176,21 @@
 #define DETWS_ENABLE_NMEA0183 1
 #endif
 
+/** @brief Max length (incl. NUL) of an NTRIP mountpoint name the caster serves. */
+#ifndef DETWS_NTRIP_MOUNT_MAX
+#define DETWS_NTRIP_MOUNT_MAX 32
+#endif
+
+/** @brief Max NTRIP client request size (bytes) the caster buffers while reading the request headers. */
+#ifndef DETWS_NTRIP_REQ_MAX
+#define DETWS_NTRIP_REQ_MAX 512
+#endif
+
+/** @brief Max distinct mountpoints a single caster serves (each = one RTCM stream). */
+#ifndef DETWS_NTRIP_MAX_MOUNTS
+#define DETWS_NTRIP_MAX_MOUNTS 2
+#endif
+
 /**
  * @brief Per-direction relay buffer size (bytes) for services/relay (DETWS_ENABLE_RELAY).
  *
@@ -5212,15 +5227,16 @@ struct WebServerConfig
  */
 enum class ConnProto : uint8_t
 {
-    PROTO_NONE = 0,     ///< Unassigned slot.
-    PROTO_HTTP = 1,     ///< HTTP/1.1 with optional WS and SSE upgrades.
-    PROTO_TELNET = 2,   ///< Telnet (RFC 854).
-    PROTO_SSH = 3,      ///< SSH (RFC 4253/4252/4254).
-    PROTO_MODBUS = 4,   ///< Modbus TCP slave (Modbus Application Protocol).
-    PROTO_OPCUA = 5,    ///< OPC UA Binary (UA-TCP) server.
-    PROTO_SSH_RFWD = 6, ///< SSH remote-forward listener (ssh -R): accepts bridge to a forwarded-tcpip channel.
-    PROTO_RELAY = 7,    ///< TCP relay / DNAT (DETWS_ENABLE_RELAY): bridge to an origin det_client connection.
-    PROTO_BRIDGE = 8,   ///< address:port -> hardware bus (DETWS_ENABLE_IFACE_BRIDGE): UART/SPI/I2C device server.
+    PROTO_NONE = 0,         ///< Unassigned slot.
+    PROTO_HTTP = 1,         ///< HTTP/1.1 with optional WS and SSE upgrades.
+    PROTO_TELNET = 2,       ///< Telnet (RFC 854).
+    PROTO_SSH = 3,          ///< SSH (RFC 4253/4252/4254).
+    PROTO_MODBUS = 4,       ///< Modbus TCP slave (Modbus Application Protocol).
+    PROTO_OPCUA = 5,        ///< OPC UA Binary (UA-TCP) server.
+    PROTO_SSH_RFWD = 6,     ///< SSH remote-forward listener (ssh -R): accepts bridge to a forwarded-tcpip channel.
+    PROTO_RELAY = 7,        ///< TCP relay / DNAT (DETWS_ENABLE_RELAY): bridge to an origin det_client connection.
+    PROTO_BRIDGE = 8,       ///< address:port -> hardware bus (DETWS_ENABLE_IFACE_BRIDGE): UART/SPI/I2C device server.
+    PROTO_NTRIP_CASTER = 9, ///< NTRIP caster (DETWS_ENABLE_NTRIP_CASTER): serves RTCM3 corrections to rovers.
 };
 
 /**
@@ -5765,10 +5781,13 @@ enum class DetIface : uint8_t
 // them breaks conformance - so they stay in their feature file next to the code they bind.
 
 // -- Core: protocol dispatch + shared outbound transport (always built) --
-/** @brief Largest ConnProto id the protocol-handler dispatch table holds. */
+/** @brief Size of the protocol-handler dispatch table; must exceed the largest ConnProto id. */
 #ifndef DETWS_PROTO_MAX
-#define DETWS_PROTO_MAX 8
+#define DETWS_PROTO_MAX 10
 #endif
+// proto_register / proto_get index this table by ConnProto id, so it must be wide enough for every id.
+static_assert((unsigned)ConnProto::PROTO_NTRIP_CASTER < DETWS_PROTO_MAX,
+              "DETWS_PROTO_MAX must exceed the largest ConnProto id");
 /** @brief Number of simultaneous outbound client connections (BSS pool size). */
 #ifndef DETWS_CLIENT_CONNS
 #define DETWS_CLIENT_CONNS 2

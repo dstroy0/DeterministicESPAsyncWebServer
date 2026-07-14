@@ -8,6 +8,25 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Protocol dispatch: PROTO_BRIDGE (and any ConnProto id >= 8) silently never registered
+
+- **Status:** FIXED (2026-07-14). Found while adding `PROTO_NTRIP_CASTER = 9`.
+- **Symptom:** the interface-bridge listener (`PROTO_BRIDGE = 8`, shipped v6.8.0) would accept connections but
+  its handler was never invoked - the dispatch table returned no handler for the slot - so a bridged port did
+  nothing. Latent because the v6.8.0 verification was a host codec test + a compile, not a live PROTO_BRIDGE
+  connection.
+- **Root cause:** `DETWS_PROTO_MAX` (the dispatch-table size) was `8`, and both `proto_register()` and
+  `proto_get()` bound-check with `(unsigned)proto < DETWS_PROTO_MAX`. `PROTO_BRIDGE = 8` fails `8 < 8`, so the
+  handler was neither stored nor fetched. Adding a ConnProto id at/above the table size silently disabled it.
+- **Fix:** raised `DETWS_PROTO_MAX` to `10` and added a `static_assert((unsigned)ConnProto::PROTO_NTRIP_CASTER
+< DETWS_PROTO_MAX, ...)` next to the enum's config so any future proto that outgrows the table is a compile
+  error, not a silent no-op.
+- **Lesson:** a fixed-size table indexed by an enum needs a static_assert pinning the size to the enum's max; an
+  off-by-the-newest-value ceiling is invisible without one, and "compiles + host test passes" does not exercise
+  runtime registration. Verify a new listener with a live connection, not only a compile.
+
+---
+
 ## W5500: large transfers crash / truncate - marginal SPI signal integrity, NOT a library defect
 
 - **Status:** NOT A LIBRARY BUG (hardware; 2026-07-13). Root-caused by JTAG + an SPI-clock sweep, resolved by

@@ -854,6 +854,12 @@
       ],
       "tests": ["test_gnss_survey"]
     },
+    "native_ntrip_caster": {
+      "desc": "NTRIP caster protocol codec (services/gnss/ntrip_caster): rover request parsing\n(mountpoint, NTRIP 1.0/2.0 version, HTTP Basic auth), the stream-accept / error responses, and the RTCM\nsource table (STR records + ENDSOURCETABLE with a self-consistent Content-Length). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_NTRIP_CASTER=1"],
+      "src": ["+<services/gnss/ntrip_caster.cpp>"],
+      "tests": ["test_ntrip_caster"]
+    },
     "native_bacnet": {
       "desc": "BACnet/IP BVLC + NPDU codec (services/bacnet): the BVLC envelope (type 0x81,\nfunction, length) + the NPDU header (version + NPCI control + optional DNET/DADR + hop\ncount) builders and parsers, slicing the APDU. ASHRAE 135. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_BACNET=1"],

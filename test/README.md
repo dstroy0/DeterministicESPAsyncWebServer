@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **227 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **228 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -198,6 +198,7 @@ The native test matrix has **227 environments**, one per feature, generated from
 | `native_nrf24` | `ETWS_ENABLE_NRF24=1`, `ETWS_NRF24_PAYLOAD=8` | `test_nrf24` | nRF24L01+ driver (services/nrf24), v5 radio plugin: the Nordic SPI command protocol (STATUS shifted out first, W/R_REGISTER, W_TX/R_RX_PAYLOAD, write-1-to-clear) exercised against a mock chip - init /... |
 | `native_ntcip` | `ETWS_ENABLE_NTCIP=1` | `test_ntcip` | NTCIP transportation object OIDs (services/ntcip): the NTCIP 1202 signal-controller + 1203 DMS object roots under 1.3.6.1.4.1.1206.4.2 and the OID builder (root + instance index), for the shipped SNMP... |
 | `native_ntp_server` | `ETWS_ENABLE_NTP_SERVER=1` | `test_ntp_server` | NTP/SNTP server (RFC 5905 server mode) response codec (ntp_server_build_response): version echo, mode/LI/stratum, origin-timestamp copy, reference/receive/transmit stamps, big-endian encoding, and the... |
+| `native_ntrip_caster` | `ETWS_ENABLE_NTRIP_CASTER=1` | `test_ntrip_caster` | NTRIP caster protocol codec (services/gnss/ntrip_caster): rover request parsing (mountpoint, NTRIP 1.0/2.0 version, HTTP Basic auth), the stream-accept / error responses, and the RTCM source table (ST... |
 | `native_nts` | `ETWS_ENABLE_NTS=1` | `test_nts` | Network Time Security codec (services/nts, RFC 8915): the NTS-KE TLV records (build the standard request, parse a response) and the NTS NTP extension-field framing (unique id / cookie, RFC 7822 4-byte... |
 | `native_oauth2` | `ETWS_ENABLE_OAUTH2=1` | `test_oauth2` | OAuth2 token-endpoint client (services/oauth2) - the form-body builder + JSON token-response parser are host-tested (the parser reuses the JSON reader); the HTTP exchange is ESP32-only. |
 | `native_observability` | `ETWS_ENABLE_OBSERVABILITY=1` | `test_observability` | Transport observability (DETWS_ENABLE_OBSERVABILITY): the det_conn_on_event hook, by-reason counters, the live CONN_CLOSING gauge, and that the real lwIP callbacks (recv FIN / error / timeout / local ... |
@@ -517,7 +518,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3000 test cases** across **254 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3014 test cases** across **255 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -17961,6 +17962,164 @@ A thorough directory of all **3000 test cases** across **254 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(0x00010000u, rd_be32(out + 8)); // ~1 s dispersion (coarse clock)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0u, rd_be32(out + 4));          // root delay 0</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ntrip_caster (14 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_v1_stream_request</b> &mdash; <i>Parse v1 stream request</i></summary>
+
+    * **Objective**: Parse v1 stream request
+    * **Assertions**:
+      * <code>Assert true (ntrip_request_parse(req, strlen(req), &r))</code>
+      * <code>Assert true (r.complete)</code>
+      * <code>Assert true (r.is_get)</code>
+      * <code>Assert equal (NtripVersion::NTRIP_V1, r.version)</code>
+      * <code>Assert equal string ("BASE1", r.mountpoint)</code>
+      * <code>Assert false (r.want_sourcetable)</code>
+      * <code>Assert null (r.auth_b64)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_v2_request_detects_version</b> &mdash; <i>Parse v2 request detects version</i></summary>
+
+    * **Objective**: Parse v2 request detects version
+    * **Assertions**:
+      * <code>Assert true (ntrip_request_parse(req, strlen(req), &r))</code>
+      * <code>Assert equal (NtripVersion::NTRIP_V2, r.version)</code>
+      * <code>Assert equal string ("BASE1", r.mountpoint)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_sourcetable_request</b> &mdash; <i>Parse sourcetable request</i></summary>
+
+    * **Objective**: Parse sourcetable request
+    * **Assertions**:
+      * <code>Assert true (ntrip_request_parse(req, strlen(req), &r))</code>
+      * <code>Assert true (r.want_sourcetable)</code>
+      * <code>Assert equal string ("", r.mountpoint)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_extracts_basic_auth</b> &mdash; <i>The parser spans the base64 token verbatim (it does not decode it).</i></summary>
+
+    * **Objective**: The parser spans the base64 token verbatim (it does not decode it).
+    * **Assertions**:
+      * <code>Assert true (ntrip_request_parse(req, strlen(req), &r))</code>
+      * <code>Assert not null (r.auth_b64)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(12, r.auth_b64_len);</code>
+      * <code>Assert equal int (0, strncmp(r.auth_b64, "dXNlcjpwYXNz", 12))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_incomplete_needs_more</b> &mdash; <i>Parse incomplete needs more</i></summary>
+
+    * **Objective**: Parse incomplete needs more
+    * **Assertions**:
+      * <code>Assert false (ntrip_request_parse(req, strlen(req), &r))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_rejects_non_get</b> &mdash; <i>Parse rejects non get</i></summary>
+
+    * **Objective**: Parse rejects non get
+    * **Assertions**:
+      * <code>Assert true (ntrip_request_parse(req, strlen(req), &r))</code>
+      * <code>Assert false (r.is_get)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_stream_response_v1_v2</b> &mdash; <i>Stream response v1 v2</i></summary>
+
+    * **Objective**: Stream response v1 v2
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen("ICY 200 OK\\r\\n\\r\\n"), n1);</code>
+      * <code>Assert equal string ("ICY 200 OK\\r\\n\\r\\n", buf)</code>
+      * <code>Assert true (n2 &gt; 0)</code>
+      * <code>Assert not null (strstr(buf, "HTTP/1.1 200 OK\\r\\n"))</code>
+      * <code>Assert not null (strstr(buf, "Content-Type: gnss/data\\r\\n"))</code>
+      * <code>Assert equal char ('\\0', buf[n2])</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_str_record_format</b> &mdash; <i>A well-formed STR record has 19 fields (18 semicolons).</i></summary>
+
+    * **Objective**: A well-formed STR record has 19 fields (18 semicolons).
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert equal string ("STR;BASE1;Lab roof;RTCM 3.3;1005(1),1006(10)</code>
+      * <code>Assert equal int (18, semis)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_str_record_defaults_and_negative_small_lon</b> &mdash; <i>Str record defaults and negative small lon</i></summary>
+
+    * **Objective**: Str record defaults and negative small lon
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert not null (strstr(rec, ";GPS;"))</code>
+      * <code>Assert not null (strstr(rec, ";1005(1);"))</code>
+      * <code>Assert not null (strstr(rec, ";DetWebServer;"))</code>
+      * <code>Assert not null (strstr(rec, ";0.00;-0.05;"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sourcetable_has_records_and_correct_length</b> &mdash; <i>The advertised Content-Length must equal the actual body (everything after the blank line).</i></summary>
+
+    * **Objective**: The advertised Content-Length must equal the actual body (everything after the blank line).
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert not null (strstr(buf, "SOURCETABLE 200 OK\\r\\n"))</code>
+      * <code>Assert not null (strstr(buf, "STR;BASE1;"))</code>
+      * <code>Assert not null (strstr(buf, "STR;BASE2;"))</code>
+      * <code>Assert not null (strstr(buf, "ENDSOURCETABLE\\r\\n"))</code>
+      * <code>Assert not null (body)</code>
+      * <code>Assert equal int ((long)strlen(body), declared)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sourcetable_v2_content_type</b> &mdash; <i>Sourcetable v2 content type</i></summary>
+
+    * **Objective**: Sourcetable v2 content type
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert not null (strstr(buf, "HTTP/1.1 200 OK\\r\\n"))</code>
+      * <code>Assert not null (strstr(buf, "Content-Type: gnss/sourcetable\\r\\n"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_error_response</b> &mdash; <i>Error response</i></summary>
+
+    * **Objective**: Error response
+    * **Assertions**:
+      * <code>Assert true (n1 &gt; 0)</code>
+      * <code>Assert not null (strstr(buf, "ERROR"))</code>
+      * <code>Assert true (n2 &gt; 0)</code>
+      * <code>Assert not null (strstr(buf, "400 Bad Request"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_unauthorized_response</b> &mdash; <i>Unauthorized response</i></summary>
+
+    * **Objective**: Unauthorized response
+    * **Assertions**:
+      * <code>Assert true (n1 &gt; 0)</code>
+      * <code>Assert not null (strstr(buf, "Bad Password"))</code>
+      * <code>Assert true (n2 &gt; 0)</code>
+      * <code>Assert not null (strstr(buf, "401 Unauthorized"))</code>
+      * <code>Assert not null (strstr(buf, "WWW-Authenticate: Basic"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_response_overflow_fails_closed</b> &mdash; <i>Response overflow fails closed</i></summary>
+
+    * **Objective**: Response overflow fails closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ntrip_build_stream_response(tiny, sizeof(tiny), NtripVersion::NTRIP_V2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ntrip_build_sourcetable(tiny, sizeof(tiny), NtripVersion::NTRIP_V1, &m, 1));</code>
   </details>
 
 </details>

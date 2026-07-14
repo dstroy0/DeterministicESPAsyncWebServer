@@ -1287,7 +1287,11 @@
     "RAWX",
     "RTCM",
     "pyrtcm",
-    "sourcetable"
+    "sourcetable",
+    "ENDSOURCETABLE",
+    "averager",
+    "mountpoint",
+    "pyproj"
   ],
   "ignorePaths": [
     "node_modules/**",
