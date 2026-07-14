@@ -682,6 +682,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `SYSLOG`            |             2.7 KB |          17.0 KB |
 | L7    | `AUDIT_LOG`         |             1.6 KB |          18.1 KB |
 | L7    | `MODBUS_MASTER`     |             1.4 KB |          15.5 KB |
+| L7    | `CONTROL`           |             1.3 KB |          23.1 KB |
 | L7    | `STATS`             |             1.2 KB |          15.3 KB |
 | L7    | `MODBUS`            |             1.1 KB |          15.5 KB |
 | L7    | `LOGBUF`            |             0.9 KB |          18.3 KB |
