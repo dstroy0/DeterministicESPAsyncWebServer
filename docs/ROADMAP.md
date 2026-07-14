@@ -366,6 +366,29 @@ preempting queue, so sensing shares the real-time ingest path.
   `detws_he_attempt_due` gates the next attempt by the Connection Attempt Delay - fast IPv6, quick IPv4
   fallback. Pure, host-tested (`native_happy_eyeballs`). _Remaining:_ VPN tunneling + the reverse-SSH
   tunnel to a relay (L; the `ssh -R` tcpip-forward seam already landed).
+- [ ] **IPsec / IKEv2** (XL, the concrete VPN for the item above - **secure machine bridge over untrusted
+      networks**) - IKEv2 (RFC 7296) over UDP 500 / 4500 (NAT-T) plus the ESP datapath (RFC 4303). Splits
+      into three tractability tiers, built in order:
+    1. **IKEv2 message + payload codec** (M, tractable, matches our zero-heap codec pattern) - the 28-octet
+       header (initiator/responder SPIs, next-payload, MjVer/MnVer, exchange type, flags, message id, length)
+       and the generic payload chain (next-payload + critical + length) for the payloads: **SA** (proposals ->
+       transforms: ENCR / PRF / INTEG / D-H / ESN), **KE**, **Ni/Nr** nonce, **AUTH**, **IDi/IDr**, **CERT** /
+       **CERTREQ**, **TSi/TSr** traffic selectors, **N** notify, and **SK** encrypted-payload framing. Pure
+       build/parse into caller buffers, host-tested with RFC vectors. **Reuses crypto we already ship**:
+       `ssh_curve25519` (D-H group 31 = X25519, and MODP groups via `ssh_bignum`), `ssh_chachapoly`
+       (ChaCha20-Poly1305 per RFC 7634), `ssh_sha256/512` (PRF/INTEG HMAC), AES-GCM (the `quic_aead` core) -
+       so the primitive surface is largely done; this is mostly framing + the key-derivation (SKEYSEED /
+       the SK_* chain).
+    2. **IKE SA handshake state machine** (L) - IKE_SA_INIT -> IKE_AUTH (PSK and/or certificate auth) ->
+       CREATE_CHILD_SA / INFORMATIONAL, rekeying, DPD (dead-peer detection), and the fixed-BSS SA/SPI tables.
+       Still host-testable against a reference peer (strongSwan / libreswan) with no datapath.
+    3. **ESP datapath** (XL, the genuinely hard part - architecturally invasive) - RFC 4303 ESP packet
+       encapsulation is a **network-layer transform**, not an app service: it must hook lwIP's IP input/output
+       (a custom netif or an ip4/ip6 hook) to encrypt/decrypt + (anti-replay) sequence every datagram, with
+       the SAD/SPD. This is the real weight and the open architectural question (lwIP has no native IPsec);
+       tunnel mode first (whole-packet, simplest SPD). Gate behind its own flag; the codec + handshake tiers
+       ship and test independently first. Refs: RFC 7296 (IKEv2), 4303 (ESP), 7634 (ChaCha20-Poly1305 for
+       IKEv2/ESP), 8247 (algorithm requirements).
 - [~] WiFi (M): sniffer / traffic analyzer / RF diag, channel-agility roaming _(decode + decision shipped)_ -
   `DETWS_ENABLE_WIFI_SNIFFER` (`services/wifi_sniffer`): `detws_wifi_parse` decodes an 802.11 MAC header
   (frame-control type/subtype + flags and the addresses whose roles depend on the ToDS/FromDS bits),

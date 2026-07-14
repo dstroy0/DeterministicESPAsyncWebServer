@@ -1273,7 +1273,13 @@
     "MLKEM",
     "Twofish",
     "decaps",
-    "encaps"
+    "encaps",
+    "CERTREQ",
+    "ENCR",
+    "INTEG",
+    "SKEYSEED",
+    "datapath",
+    "libreswan"
   ],
   "ignorePaths": [
     "node_modules/**",
