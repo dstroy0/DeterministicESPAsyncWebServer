@@ -1747,6 +1747,22 @@
 #endif
 
 /**
+ * @brief FANUC FOCAS Ethernet protocol codec (`services/focas`).
+ *
+ * Default off. A zero-heap builder + parser for the FANUC CNC data protocol over TCP 8193:
+ * `focas_build_*` emit the complete on-wire frames (a 10-octet big-endian envelope + payload) for
+ * the open/close handshake and the documented read functions (SysInfo, alarm status, CNC
+ * parameters, macro variables, position/axis data, actual feed / spindle), and `focas_parse_*`
+ * decode the responses (echoed selector + status + data), including the ODBSYS SysInfo layout and
+ * the FANUC 8-octet `data / base^exp` value encoding. Frame layout, selector encoding, and value
+ * decoding reverse-engineered by and cross-checked against diohpix/pyfanuc. Pure codec, host-
+ * tested; the caller owns the TCP socket and drives the open -> command -> close sequence.
+ */
+#ifndef DETWS_ENABLE_FOCAS
+#define DETWS_ENABLE_FOCAS 0
+#endif
+
+/**
  * @brief BACnet/IP BVLC + NPDU codec (`services/bacnet`).
  *
  * Default off. A zero-heap framing codec for the ASHRAE 135 building-automation network

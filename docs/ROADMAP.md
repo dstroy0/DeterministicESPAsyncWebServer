@@ -711,16 +711,18 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       interpreter layer carried over 3964R - FETCH/SEND telegrams addressing DB/data blocks, words and
       bits), plus the **MPI** (Multipoint Interface bus) and **PtP IF** (point-to-point CP serial
       interface) link layers. Serial-first (RS-232/RS-485 transport step tracked with the other serial buses).
-- [ ] **Fanuc FOCAS** (L, CNC data collection - low priority) - the FANUC Open CNC API. FOCAS has no
-      _official_ public wire protocol (FANUC ships the licensed `fwlib32` binary, part # A02B-0207-K732/
-      K737, x86/ARM-Linux/Windows - it cannot run on an ESP32), BUT the **FOCAS2 wire protocol (TCP 8193)
-      is already reverse-engineered in open source** - `diohpix/pyfanuc` (Python) and
-      `zhideloh/node-red-contrib-fanuc-focas` (pure Node.js sockets, no fwlib32). So a zero-heap client
-      codec IS buildable + **host-verifiable against those reference impls** (byte-compare our request/
-      response framing + the data-read structures - position, spindle/feed + overrides, program/tool
-      status, alarms, part counts - against pyfanuc), and HW-verified against a real FANUC control when one
-      is available. Low priority (route FANUC through **MTConnect** in the meantime). Refs: pyfanuc,
-      node-red-contrib-fanuc-focas.
+- [x] **Fanuc FOCAS** (L, CNC data collection) - SHIPPED (`services/focas`, `DETWS_ENABLE_FOCAS`). The
+      FANUC Open CNC API's Ethernet wire protocol (TCP 8193) as a zero-heap client codec - no `fwlib32`
+      (the licensed FANUC binary, part # A02B-0207-K732/K737, which cannot run on an ESP32) is used or
+      required. `focas_build_*` emit the on-wire frames (a 10-octet big-endian magic/version/type/length
+      envelope + payload) for the open/close handshake and the documented read functions (SysInfo, alarm
+      status, CNC parameters, macro variables, position/axis data, actual feed / spindle), and
+      `focas_parse_*` decode the responses (echoed selector + FOCAS return code + data), including ODBSYS
+      and the FANUC 8-octet `data / base^exp` value encoding. Frame layout, selector set, and value
+      decoding reverse-engineered vs `diohpix/pyfanuc`; host-tested (`native_focas`, 11/11) and
+      **byte-cross-checked against an independent Python reference** (`test/servers/peers/focas_peer.py`,
+      which also serves a mock FANUC CNC for on-device interop). HW verification against a real FANUC
+      control pending a rig. Fixed BSS, no heap. Refs: pyfanuc, node-red-contrib-fanuc-focas.
 - [x] **Beckhoff ADS / AMS** (L, TwinCAT) - SHIPPED (`services/ads`, `DETWS_ENABLE_ADS`). The
       Automation Device Specification over TCP 48898: the AMS/TCP + AMS header (target-before-source
       AMSNetId + port, command id, state flags, cbData, invoke id) plus the ADS commands (ReadDeviceInfo,
@@ -752,6 +754,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
 - [ ] **OPC UA Robotics (OPC 40010)** - the VDMA Robotics OPC UA companion spec (the MotionDevice model:
       axes, controller, safety state), another umati-pattern model on the OPC UA server; pairs with the
       Siemens **Run MyRobot** item and **umati** for robot cells.
+- [ ] **FANUC robot interop** (M, R-30iB / R-30iA - **next machine-tool step**) - the robot counterpart
+      to the shipped FANUC **FOCAS** CNC codec. FANUC robot controllers expose several Ethernet
+      interfaces; the tractable, documented ones first: **PROFINET / EtherNet-IP** I/O (already partly
+      covered by the shipped `services/enip` + the PROFINET roadmap item - map the robot's assembly
+      objects), the **FANUC Robot Ethernet / Stream Motion** UDP position stream, and the **KAREL / R-30iB
+      web + socket messaging** (SNPX / the RPC the robot's PC interface uses). Start with a zero-heap codec
+      byte-checked against a public reference, then HW-verify against a real controller. Note: "Run MyRobot"
+      (above) is the Siemens SINUMERIK route to running a robot from a CNC - a distinct path we also want.
+      (Robot cell interop is currently **unimplemented** - this is the tracked entry point.)
 - [ ] **Secure machine agent: G-code deployment over a single secure port** (L) - the device as a
       secure local agent that deploys CNC part programs (G-code) to a machine tool over ONE authenticated,
       encrypted port: NC-program transfer/staging multiplexed on the existing TLS endpoint (or a secured
@@ -961,6 +972,38 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   Reads (on the shipped `services/mms` + `services/cotp`, ISO-on-TCP 102); host-tested (`native_iccp`).
   _Remaining:_ the data-set / transfer-set / bilateral-table object model on top of the MMS ACSI core.
   Fixed BSS object model, no heap.
+
+### Test & measurement / lab instrumentation
+
+Casting the interop net over bench and rack test equipment: a wireless ESP32 becomes a lab-instrument
+bridge/controller. SCPI is near-universal across modern instruments and is the highest-value first step;
+the LXI transports (VXI-11 / HiSLIP) and a GPIB gateway extend reach to older and higher-throughput gear.
+
+- [ ] **SCPI / IEEE 488.2** (S, universal instrument control - **high value**) - Standard Commands for
+      Programmable Instruments, the text command language nearly every modern bench instrument speaks
+      (oscilloscopes, DMMs, power supplies, function/arbitrary generators, SMUs, spectrum/network
+      analyzers, electronic loads) over a raw TCP socket on **port 5025** (also USBTMC / serial). A
+      zero-heap codec: a SCPI command builder (headers, `:` hierarchy, parameter formatting), the IEEE
+      488.2 common commands (`*IDN?` / `*RST` / `*OPC?` / `*CLS` / `*ESR?` / `*STB?`), and response
+      parsers (numeric, boolean, string, arbitrary block `#<n><len><data>` for waveform captures) + the
+      status byte / event-status register / error queue model. Makes the device a bench-instrument
+      controller or a wireless bridge that fans instrument telemetry into HTTP/MQTT. Trivially
+      host-verifiable against a Python `pyvisa` / raw-socket reference and any SCPI simulator.
+- [ ] **HiSLIP** (M, modern LXI transport, IVI Foundation) - High-Speed LAN Instrument Protocol on
+      **port 4880**, the current LXI transport that replaced VXI-11: a binary message protocol with
+      separate synchronous/asynchronous channels, message-type framing (Initialize / AsyncLock /
+      DataEnd / etc.), message-id sequencing, and much higher throughput than VXI-11. Carries SCPI as
+      its payload; the codec is the HiSLIP message framing + the two-channel handshake. The right
+      long-term LXI transport for high-rate instrument capture.
+- [ ] **LXI / VXI-11** (M, ONC RPC instrument channel) - the older LAN eXtensions for Instrumentation
+      transport: VXI-11 over ONC/Sun RPC (portmapper **port 111** -> the instrument channel), the
+      `create_link` / `device_write` / `device_read` / `device_readstb` / `destroy_link` calls, plus
+      the LXI mDNS/VXI-11 discovery beacon. Still the fallback transport for a large installed base of
+      LAN instruments that predate HiSLIP; also introduces a reusable ONC RPC codec.
+- [ ] **GPIB-over-LAN gateway** (S, Prologix-style) - the Prologix `++`-command GPIB-Ethernet gateway
+      control set (`++addr`, `++read`, `++eoi`, `++mode`), so the device drives a bench of legacy
+      IEEE-488 (GPIB) instruments through a common Prologix-compatible adapter - the bridge into
+      pre-LAN test gear that will never speak SCPI-over-TCP directly.
 
 ### Intelligent Transportation Systems (ITS)
 

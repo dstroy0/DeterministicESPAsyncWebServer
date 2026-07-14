@@ -316,6 +316,12 @@ Opt-in ESP32 panic / exception decoder for a live diagnostics panel. When set, s
 
 Opt-in software watchdog: deadlock detection + fail-safe safe-state. When set, services/failsafe provides a fixed registry of "lifelines" (a task / worker / control loop that must check in within its deadline). detws_failsafe_check() detects one that stopped feeding (a hang / deadlock) and fires a breach callback once per episode so the app can enter a known-safe state. App-defined and per-lifeline, on top of the hardware task watchdog. Pure core, zero heap. Default off.
 
+## FANUC FOCAS
+
+`DETWS_ENABLE_FOCAS`
+
+FANUC FOCAS Ethernet protocol codec (FANUC CNC data over TCP 8193). Default off. services/focas builds + parses the FOCAS wire frames a FANUC control speaks (big-endian throughout, a 10-octet magic/version/type/length envelope + payload): `focas_build_open`/`_close` drive the session handshake (FRAME_DST open, empty close), `focas_build_request` emits the generic command frame (a 6-octet function selector + five signed 32-bit arguments + optional trailing data), and typed wrappers cover SysInfo, alarm status, CNC parameters, macro variables, position/axis data, and the actual feedrate / spindle speed. `focas_parse_frame` validates the envelope, `focas_parse_response` decodes the echoed selector + FOCAS return code + data, `focas_parse_sysinfo` decodes ODBSYS, `focas_parse_alarm` reads the alarm bitmask, and `focas_decode8` / `focas_value_f` decode the FANUC 8-octet `data / base^exp` numeric encoding used by positions, feeds, and macros. Frame layout, selector encoding, the SysInfo/alarm response layouts, and the value encoding were reverse-engineered by and cross-checked against diohpix/pyfanuc (the FOCAS wire protocol is not officially published; the proprietary fwlib32 library is not required or used). Pure codec, host-tested (`native_focas`); the caller owns the TCP socket and drives the open -> command -> close sequence. FANUC is the most widely deployed CNC control, so this is a direct machine-tool data source. See src/services/focas/focas.h.
+
 ## FDC2214
 
 `DETWS_ENABLE_FDC2214`

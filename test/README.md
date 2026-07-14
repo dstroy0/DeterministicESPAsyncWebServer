@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **220 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **221 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -135,6 +135,7 @@ The native test matrix has **220 environments**, one per feature, generated from
 | `native_fdc2214` | `ETWS_ENABLE_FDC2214=1` | `test_fdc2214` | FDC2114/2214 capacitance-to-digital field sensor (services/fdc2214): the 28-bit data combine + error flags, the frequency scale (data/2^28 * fref), and the single-channel config-sequence builder. |
 | `native_fins` | `ETWS_ENABLE_FINS=1` | `test_fins` | Omron FINS frame codec (services/fins): the command builder + Memory Area Read convenience + the command / response parsers (10-octet header, MRC/SRC, MRES/SRES end code). |
 | `native_flow_export` | `ETWS_ENABLE_FLOW_EXPORT=1` | `test_flow_export` | Flow-record export codec (services/flow_export): NetFlow v5 fixed header/record builders + the NetFlow v9 / IPFIX template-then-data cursor (length/count patching, v9 4-octet padding). |
+| `native_focas` | `ETWS_ENABLE_FOCAS=1` | `test_focas` | FANUC FOCAS Ethernet codec (services/focas): the big-endian frame envelope (magic/version/type/length) + open/close handshake, the generic command request (6-octet function selector + five i32 args), ... |
 | `native_forward` | `ETWS_ENABLE_FORWARD=1`, `ETWS_FWD_MAX_IFACES=4`, `ETWS_FWD_MAX_RULES=4`, `ETWS_FWD_MAX_ACL=4`, `ETWS_FWD_MAX_ROUTES=4`, `ETWS_FWD_INSPECT=1` | `test_forward` | Interface forwarding plane (services/forward), v5 bridge / router: default-deny, an ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the source, the per-rule rate cap (hos... |
 | `native_ftp` | `ETWS_ENABLE_FTP=1` | `test_ftp` | FTP client wire codec (services/ftp, RFC 959 + RFC 2428): the control-command builders (generic verb + PORT + EPRT), the single/multi-line 3-digit reply parser, and the PASV / EPSV data-address decoders. |
 | `native_gateway` | `ETWS_ENABLE_GATEWAY=1`, `ETWS_GW_MAX_PORTS=4` | `test_gateway` | Radio / wireless gateway bridge (services/gateway), v5 southbound-to-northbound: an uplink envelopes a received frame (src address / port / rssi / seq) and publishes it, fail-closed on no sink / unkno... |
@@ -510,7 +511,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2950 test cases** across **247 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2961 test cases** across **248 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -8336,6 +8337,158 @@ A thorough directory of all **2950 test cases** across **247 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(0, flow_export_finish(&w));  // pad 3 overflows</code>
       * <code>Assert true (flow_ipfix_begin(&w, buf, sizeof(buf), 0, 0, 0))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, flow_export_finish(&w));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_focas (11 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_open</b> &mdash; <i>Build open</i></summary>
+
+    * **Objective**: Build open
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(12, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_close</b> &mdash; <i>Build close</i></summary>
+
+    * **Objective**: Build close
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_sysinfo</b> &mdash; <i>Build sysinfo</i></summary>
+
+    * **Objective**: Build sysinfo
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(36, n); // 10 envelope + 26 body</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_read_position</b> &mdash; <i>v1 (position kind) at payload offset 6 -> buf offset 16.</i></summary>
+
+    * **Objective**: v1 (position kind) at payload offset 6 -> buf offset 16.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(36, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x21, buf[6]);  // command frame</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x26, buf[15]); // c3 = 0x26</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[16]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[17]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[18]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x04, buf[19]); // absolute = 4</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_read_param</b> &mdash; <i>v1 = 6510 = 0x0000196E at buf offset 16.</i></summary>
+
+    * **Objective**: v1 = 6510 = 0x0000196E at buf offset 16.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(36, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0E, buf[15]); // c3 = 0x0e</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[16]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[17]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x19, buf[18]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x6E, buf[19]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x19, buf[22]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x6E, buf[23]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, buf[27]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_request_extra</b> &mdash; <i>payload length field = 26 + 3 = 29.</i></summary>
+
+    * **Objective**: payload length field = 26 + 3 = 29.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(10 + 26 + 3, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[8]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x1D, buf[9]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xAA, buf[36]); // extra begins right after the 26-octet body</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xCC, buf[38]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_sysinfo_response</b> &mdash; <i>Parse sysinfo response</i></summary>
+
+    * **Objective**: Parse sysinfo response
+    * **Assertions**:
+      * <code>Assert true (focas_parse_command_frame(frame, sizeof(frame), &resp))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, resp.c1);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1, resp.c2);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x18, resp.c3);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(0, resp.status);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(18, resp.data_len);</code>
+      * <code>Assert true (focas_parse_sysinfo(resp.data, resp.data_len, &si))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, si.add_info);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(8, si.max_axis);</code>
+      * <code>Assert equal string ("30", si.cnc_type)</code>
+      * <code>Assert equal string (" M", si.mt_type)</code>
+      * <code>Assert equal string ("G01A", si.series)</code>
+      * <code>Assert equal string ("27.1", si.version)</code>
+      * <code>Assert equal string ("03", si.axes)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_alarm_and_status</b> &mdash; <i>Parse alarm and status</i></summary>
+
+    * **Objective**: Parse alarm and status
+    * **Assertions**:
+      * <code>Assert true (focas_parse_command_frame(frame, sizeof(frame), &resp))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x1A, resp.c3);</code>
+      * <code>TEST_ASSERT_EQUAL_INT16(-10, resp.status); // signed return code</code>
+      * <code>Assert true (focas_parse_alarm(resp.data, resp.data_len, &alarm))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x00000010, alarm);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decode8_value</b> &mdash; <i>123.456 mm = 123456 / 10^3.</i></summary>
+
+    * **Objective**: 123.456 mm = 123456 / 10^3.
+    * **Assertions**:
+      * <code>Assert true (focas_decode8(v, sizeof(v), &fv))</code>
+      * <code>Assert true (fv.valid)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(123456, fv.data);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(10, fv.base);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, fv.exp);</code>
+      * <code>Assert float within (0.0005f, 123.456f, focas_value_f(&fv))</code>
+      * <code>Assert true (focas_decode8(neg, sizeof(neg), &nv))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-500, nv.data);</code>
+      * <code>Assert float within (0.0005f, -5.0f, focas_value_f(&nv))</code>
+      * <code>Assert false (focas_decode8(none, sizeof(none), &none_v))</code>
+      * <code>Assert false (none_v.valid)</code>
+      * <code>Assert equal float (0.0f, focas_value_f(&none_v))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_overflow_fails_closed</b> &mdash; <i>Build overflow fails closed</i></summary>
+
+    * **Objective**: Build overflow fails closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, focas_build_open(tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, focas_build_sysinfo(small, sizeof(small)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_guards</b> &mdash; <i>Bad magic.</i></summary>
+
+    * **Objective**: Bad magic.
+    * **Assertions**:
+      * <code>Assert false (focas_parse_frame(nullptr, 32, &f))</code>
+      * <code>Assert false (focas_parse_frame(shortbuf, sizeof(shortbuf), &f))</code>
+      * <code>Assert false (focas_parse_frame(badmagic, sizeof(badmagic), &f))</code>
+      * <code>Assert false (focas_parse_frame(liar, sizeof(liar), &f))</code>
+      * <code>Assert true (focas_parse_frame(openresp, sizeof(openresp), &f))</code>
+      * <code>Assert true (f.type == FocasFrameType::open_resp)</code>
+      * <code>Assert false (focas_parse_command_frame(openresp, sizeof(openresp), &r))</code>
+      * <code>Assert false (focas_parse_response(badlen, sizeof(badlen), &r2))</code>
   </details>
 
 </details>

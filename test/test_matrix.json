@@ -781,6 +781,12 @@
       "src": ["+<services/ads/ads.cpp>"],
       "tests": ["test_ads"]
     },
+    "native_focas": {
+      "desc": "FANUC FOCAS Ethernet codec (services/focas): the big-endian frame envelope\n(magic/version/type/length) + open/close handshake, the generic command request (6-octet function\nselector + five i32 args), and the response parsers (echoed selector + FOCAS return code + data),\nincl. ODBSYS SysInfo, the alarm bitmask, and the 8-octet data/base^exp value encoding. FANUC CNC\ndata over TCP 8193, reverse-engineered vs diohpix/pyfanuc. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_FOCAS=1"],
+      "src": ["+<services/focas/focas.cpp>"],
+      "tests": ["test_focas"]
+    },
     "native_bacnet": {
       "desc": "BACnet/IP BVLC + NPDU codec (services/bacnet): the BVLC envelope (type 0x81,\nfunction, length) + the NPDU header (version + NPCI control + optional DNET/DADR + hop\ncount) builders and parsers, slicing the APDU. ASHRAE 135. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_BACNET=1"],
