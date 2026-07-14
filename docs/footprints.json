@@ -80,8 +80,8 @@
     "example": "L7-Application/74.PidTuning",
     "flags": "-DDETWS_ENABLE_CONTROL=1",
     "board": "esp32dev",
-    "flash_bytes": 754201,
-    "ram_bytes": 89840
+    "flash_bytes": 754205,
+    "ram_bytes": 89848
   },
   "CSRF": {
     "example": "L7-Application/33.Csrf",
