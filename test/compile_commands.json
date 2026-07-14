@@ -744,6 +744,12 @@
     "output": ".pio/build/native_iec60870/src/services/iec60870/iec60870.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_iface_bridge/src/services/iface_bridge/iface_bridge.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_IFACE_BRIDGE=1 -Itest/mocks -Itest/support -Isrc src/services/iface_bridge/iface_bridge.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/iface_bridge/iface_bridge.cpp",
+    "output": ".pio/build/native_iface_bridge/src/services/iface_bridge/iface_bridge.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_ina219/src/services/ina219/ina219.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_INA219=1 -Itest/mocks -Itest/support -Isrc src/services/ina219/ina219.cpp",
     "directory": "@ROOT@",
     "file": "src/services/ina219/ina219.cpp",

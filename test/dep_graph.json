@@ -79,6 +79,7 @@
 "native_hw_health",
 "native_iccp",
 "native_iec60870",
+"native_iface_bridge",
 "native_ina219",
 "native_inflate",
 "native_interbus",
@@ -257,6 +258,7 @@
 "native_diag",
 "native_h3_server",
 "native_happy_eyeballs",
+"native_iface_bridge",
 "native_keepalive",
 "native_observability",
 "native_ota",
@@ -281,6 +283,7 @@
 "native_diag",
 "native_h3_server",
 "native_happy_eyeballs",
+"native_iface_bridge",
 "native_keepalive",
 "native_net_egress",
 "native_observability",
@@ -2129,6 +2132,12 @@
 ],
 "src/services/iec60870/iec60870.h": [
 "native_iec60870"
+],
+"src/services/iface_bridge/iface_bridge.cpp": [
+"native_iface_bridge"
+],
+"src/services/iface_bridge/iface_bridge.h": [
+"native_iface_bridge"
 ],
 "src/services/ina219/ina219.cpp": [
 "native_ina219"
