@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.1.1] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.1.1 - 2026-07-14</b></summary>
 
 ### Bug Fixes
 
@@ -10,13 +13,25 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`b4acf71`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4acf71013b9072b20eb84e7b99fae56bc426582))
 - update test report + coverage [skip ci] ([`3eb60c4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3eb60c496115165ad3992295765c2d5a756a55d4))
 - update CHANGELOG.md [skip ci] ([`792eff0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/792eff0a0aa21412b5e8b74e923cba2cd377cda9))
 
+### Changes
+
+- Bump version: 6.1.0 → 6.1.1 ([`cd8da87`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cd8da875493f54232064d5f27397a26e5467093d))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9cefe4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9cefe4a6a5938e8c2a2571b7ad7fb02b23db017c))
 - update ESP32 build footprints [skip ci] ([`6c52a91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c52a911bb046555dce417b516e34fd66c6defba))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`598fc04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/598fc0462193bbbd2ac0609d27045baf3bce5e87))
+
+### Refactor
+
+- route connection liveness through det_conn_active (no layer reaching into pcb/state) ([`a15a190`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a15a190ff3db5965e4931942b2c32167ec7d5779))
+
+</details>
 
 ## [6.1.0] - 2026-07-14
 
