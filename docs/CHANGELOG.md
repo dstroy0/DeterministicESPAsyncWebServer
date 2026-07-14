@@ -6,10 +6,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- WebDav - cap MAX_WS_CONNS/MAX_SSE_CONNS so MAX_CONNS=3 satisfies the pool guard ([`16bbc26`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/16bbc2662c737ca51667f83f2fff12466c8b05ca))
 - fit the heavy examples in classic-ESP32 DRAM (dram0_0_seg) ([`44eb6fd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/44eb6fdcd2d4a96cccc68608922e9a3b2b3bf2a0))
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`b4fb7d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4fb7d895f5f1c1ae7d02e250549db87021b0ad0))
 - update CHANGELOG.md [skip ci] ([`d63806c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d63806c50a2731c445f29caf867776a24c70cd5f))
 - update CHANGELOG.md [skip ci] ([`39af85f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39af85f8405d209e0a40f5eee1636904a1340de4))
 - gitignore the root /build/ dir (ESP-IDF component CMake output) ([`93f9709`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93f9709053f708dcc143d5e45713c1454f93b034))
@@ -18,6 +20,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`602706f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/602706f685b6037e8a6e512111536769815f4773))
 - rebuild the dependency graph - uncrossed tree, readable, zoomable ([`c907ce5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c907ce533f0d47aa1466124f9663a1028fd38ca3))
 - update ESP32 build footprints [skip ci] ([`fd31df0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd31df02d8d02e43fdf26019deb043399d90ed66))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c021f2b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c021f2bc1d514838e7d4d6faa25b7fd5396d9e74))
