@@ -37,7 +37,7 @@ The arena is the only memory TLS uses; size it for your cert chain and cipher.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_TLS=1" \
+  --project-option="build_flags=-DDETWS_ENABLE_TLS=1 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768" \
   --lib="." examples/L4-Transport/03.HTTPS/03.HTTPS.ino
 ```
 

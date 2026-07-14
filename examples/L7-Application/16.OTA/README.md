@@ -25,7 +25,7 @@ streaming-body hook as file upload, **enable OTA or upload, not both** (see
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_OTA=1" \
+  --project-option="build_flags=-DDETWS_ENABLE_OTA=1 -DMAX_CONNS=4" \
   --lib="." examples/L7-Application/16.OTA/16.OTA.ino
 ```
 

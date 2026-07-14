@@ -37,7 +37,7 @@ endpoint, build with only `-DDETWS_ENABLE_WS_CLIENT=1`, set `USE_TLS=false`, and
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_WS_CLIENT=1 -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_WS_CLIENT_TLS=1 -DDETWS_WS_CLIENT_BUF_SIZE=768" \
+  --project-option="build_flags=-DDETWS_ENABLE_WS_CLIENT=1 -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_WS_CLIENT_TLS=1 -DDETWS_WS_CLIENT_BUF_SIZE=768 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768" \
   --lib="." examples/L7-Application/25.WebSocketClient/25.WebSocketClient.ino
 ```
 

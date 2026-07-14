@@ -38,7 +38,7 @@ provide the session-ticket support; pass both flags to the library build.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_TLS_RESUMPTION=1" \
+  --project-option="build_flags=-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_TLS_RESUMPTION=1 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768" \
   --lib="." examples/L4-Transport/06.TlsResumption/06.TlsResumption.ino
 ```
 
