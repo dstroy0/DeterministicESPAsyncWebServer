@@ -327,7 +327,7 @@ typedef size_t (*ChunkSource)(uint8_t *buf, size_t cap, void *ctx);
  *
  * void setup() {
  *     WiFi.begin("SSID", "PASSWORD");
- *     server.on("/api/*", HttpMethod::HTTP_GET, handle_api);
+ *     server.on("/api/status", HttpMethod::HTTP_GET, handle_api);
  *     server.set_cors("*");
  *     int32_t result = server.begin(80);
  *     if (result < 0) { } // DetWebServerResult code: startup failed
@@ -463,8 +463,11 @@ class DetWebServer
      *        recycle the slot for the next request (keep-alive). Records the
      *        response and resets the HTTP parser either way. Addresses the
      *        connection by slot alone; the transport resolves the pcb internally.
+     *
+     * @param pre_flushed the caller already emitted the final bytes with det_conn_send_flush()
+     *        (write+tcp_output coalesced into one marshal), so skip the redundant flush here.
      */
-    void resp_end(uint8_t slot_id, int code, int body_len, bool keep);
+    void resp_end(uint8_t slot_id, int code, int body_len, bool keep, bool pre_flushed = false);
 
     /**
      * @brief Resolve the Connection response header and report keep-alive intent.
@@ -735,10 +738,10 @@ class DetWebServer
      * @brief Register a route handler.
      *
      * Routes are matched in registration order (first match wins).
-     * A trailing `*` in @p path enables prefix matching:
-     * `"/api/*"` matches `"/api/users"`, `"/api/devices"`, etc.
+     * A trailing `*` in @p path enables prefix matching: `"/api/"` followed by `*`
+     * matches `"/api/users"`, `"/api/devices"`, etc.
      *
-     * @param path     URL path pattern, e.g. `"/api/status"` or `"/files/*"`.
+     * @param path     URL path pattern, e.g. `"/api/status"`, or a prefix ending in a `*` wildcard.
      *                 Must be ≤ `MAX_PATH_LEN - 1` characters.
      * @param method   HTTP method this route accepts.
      * @param callback Function called when this route is matched.

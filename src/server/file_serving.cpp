@@ -257,8 +257,8 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
         char h304[RESP_HDR_BUF_SIZE];
         int n304 = snprintf(h304, sizeof(h304), "HTTP/1.1 304 Not Modified\r\nETag: %s\r\n%s%s%s%s\r\n", etag,
                             lastmod_line, _cache_control_buf, _cors_enabled ? _cors_header_buf : "", cl);
-        det_conn_send(slot_id, h304, (u16_t)n304);
-        resp_end(slot_id, 304, 0, keep);
+        det_conn_send_flush(slot_id, h304, (u16_t)n304); // 304s are frequent (cache revalidation): one marshal
+        resp_end(slot_id, 304, 0, keep, /*pre_flushed=*/true);
         return;
     }
     char etag_line[48];
@@ -292,8 +292,8 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
                             "Content-Length: 0\r\n"
                             "%s%s\r\n",
                             (unsigned)file_size, _cors_enabled ? _cors_header_buf : "", cl);
-        det_conn_send(slot_id, h416, (u16_t)n416);
-        resp_end(slot_id, 416, 0, keep);
+        det_conn_send_flush(slot_id, h416, (u16_t)n416);
+        resp_end(slot_id, 416, 0, keep, /*pre_flushed=*/true);
         return;
     }
     if (rr > 0)

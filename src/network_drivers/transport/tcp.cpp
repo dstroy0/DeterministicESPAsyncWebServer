@@ -225,6 +225,7 @@ struct DetTcpCall
     struct tcp_pcb *pcb;
     const void *data;
     u16_t len;
+    bool flush;   ///< DetTcpOp::DET_OP_SEND: also tcp_output() after a successful write (coalesced write+flush)
     err_t result; ///< outcome of the op (DetTcpOp::DET_OP_SEND: whether the write was queued)
 };
 
@@ -286,6 +287,8 @@ static err_t det_tcp_do(struct tcpip_api_call_data *c)
         }
 #endif
         k->result = tcp_write(k->pcb, k->data, k->len, TCP_WRITE_FLAG_COPY);
+        if (k->flush && k->result == ERR_OK)
+            tcp_output(k->pcb); // coalesced write+flush: one marshal for a terminal single-shot response
         break;
     case DetTcpOp::DET_OP_OUTPUT:
         // Hot path (O(1)): flush only if the slot still owns this pcb; else it was torn down - skip
@@ -319,7 +322,8 @@ static err_t det_tcp_do(struct tcpip_api_call_data *c)
     return ERR_OK;
 }
 
-static inline err_t det_tcp_marshal(DetTcpOp op, uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len)
+static inline err_t det_tcp_marshal(DetTcpOp op, uint8_t slot, struct tcp_pcb *pcb, const void *data, u16_t len,
+                                    bool flush = false)
 {
     DetTcpCall k;
     memset(&k, 0, sizeof(k));
@@ -328,6 +332,7 @@ static inline err_t det_tcp_marshal(DetTcpOp op, uint8_t slot, struct tcp_pcb *p
     k.pcb = pcb;
     k.data = data;
     k.len = len;
+    k.flush = flush;
     // On tcpip_thread already (a raw lwIP callback's teardown reaching a send/close): run the op inline.
     // Re-marshaling here would call tcpip_api_call from the thread that services its mailbox and block
     // forever (the TLS close_notify-from-sent-callback self-deadlock). Off-thread (worker): marshal.
@@ -367,6 +372,26 @@ bool det_conn_send(uint8_t slot, const void *data, u16_t len)
         return det_tls_write(slot, data, len) >= 0;
 #endif
     return tcp_write(conn_pool[slot].pcb, data, len, TCP_WRITE_FLAG_COPY) == ERR_OK;
+#endif
+}
+
+bool det_conn_send_flush(uint8_t slot, const void *data, u16_t len)
+{
+    // Terminal single-shot write: the bytes AND their tcp_output() happen in one tcpip_thread
+    // round-trip, so a small response costs one marshal instead of the send()+flush() pair (each
+    // a ~23 us marshal on-device). For a TLS slot this is identical to det_conn_send: the record
+    // BIO already pushes ciphertext per record, so there is no separate flush to fold in.
+#if defined(ARDUINO)
+    return det_tcp_marshal(DetTcpOp::DET_OP_SEND, slot, conn_pool[slot].pcb, data, len, /*flush=*/true) == ERR_OK;
+#else
+#if DETWS_ENABLE_TLS
+    if (conn_pool[slot].tls)
+        return det_tls_write(slot, data, len) >= 0; // TLS BIO already output the record
+#endif
+    if (tcp_write(conn_pool[slot].pcb, data, len, TCP_WRITE_FLAG_COPY) != ERR_OK)
+        return false;
+    tcp_output(conn_pool[slot].pcb);
+    return true;
 #endif
 }
 

@@ -345,9 +345,10 @@ bool DetWebServer::keepalive_eval(uint8_t slot_id)
 // Every response path now addresses the connection by slot alone - the transport
 // resolves the pcb internally, the same way the RX read path does (no pcb is
 // threaded through the app layer, so the send target can never disagree).
-void DetWebServer::resp_end(uint8_t slot_id, int code, int body_len, bool keep)
+void DetWebServer::resp_end(uint8_t slot_id, int code, int body_len, bool keep, bool pre_flushed)
 {
-    det_conn_flush(slot_id);
+    if (!pre_flushed)
+        det_conn_flush(slot_id); // a pre_flushed caller already did tcp_output in its final send
     if (!keep)
         det_conn_begin_close(slot_id); // ACTIVE -> ConnState::CONN_CLOSING; finalizes on ACK
     note_response(slot_id, code, body_len);
@@ -1245,10 +1246,18 @@ static void send_error_close(uint8_t slot_id, const char *status, const char *ex
                         "Connection: close\r\n\r\n",
                         status, extra_hdr ? extra_hdr : "", DET_MIME_TEXT_PLAIN, blen);
 
-    det_conn_send(slot_id, header, (u16_t)hlen);
+    // The last write carries the flush (det_conn_send_flush = write+tcp_output in one marshal), so
+    // an error-and-close costs one round-trip fewer - and 4xx/5xx closes are the hot path under a
+    // flood (rate-limit / auth-lockout 429s).
     if (blen > 0 && !req_is_head(slot_id))
-        det_conn_send(slot_id, body, (u16_t)blen);
-    det_conn_flush(slot_id);
+    {
+        det_conn_send(slot_id, header, (u16_t)hlen);
+        det_conn_send_flush(slot_id, body, (u16_t)blen);
+    }
+    else
+    {
+        det_conn_send_flush(slot_id, header, (u16_t)hlen);
+    }
     det_conn_begin_close(slot_id); // dwell in ConnState::CONN_CLOSING until the response drains
     http_reset(slot_id);
 }
@@ -1569,20 +1578,25 @@ void DetWebServer::send(uint8_t slot_id, int code, const char *content_type, con
 
     // HEAD responses carry the headers (incl. Content-Length) but no body. For a
     // body that fits the header scratch, coalesce headers+body into a single send
-    // so the response costs one tcpip_thread round-trip instead of two.
+    // so the response costs one tcpip_thread round-trip instead of two. The final
+    // write also carries the flush (det_conn_send_flush), so resp_end skips it -
+    // a keep-alive small response is now one marshal (write+output) instead of two.
     if (!head && payload_len > 0 && (size_t)hlen + (size_t)payload_len <= sizeof(header))
     {
         memcpy(header + hlen, payload, (size_t)payload_len);
-        det_conn_send(slot_id, header, (u16_t)(hlen + payload_len));
+        det_conn_send_flush(slot_id, header, (u16_t)(hlen + payload_len));
+    }
+    else if (!head && payload_len > 0)
+    {
+        det_conn_send(slot_id, header, (u16_t)hlen);
+        det_conn_send_flush(slot_id, payload, (u16_t)payload_len);
     }
     else
     {
-        det_conn_send(slot_id, header, (u16_t)hlen);
-        if (!head && payload_len > 0)
-            det_conn_send(slot_id, payload, (u16_t)payload_len);
+        det_conn_send_flush(slot_id, header, (u16_t)hlen);
     }
 
-    resp_end(slot_id, code, payload_len, keep);
+    resp_end(slot_id, code, payload_len, keep, /*pre_flushed=*/true);
 }
 
 /*
@@ -1623,9 +1637,9 @@ void DetWebServer::send_empty(uint8_t slot_id, int code)
                         code, status_text(code));
     hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
-    det_conn_send(slot_id, header, (u16_t)hlen);
+    det_conn_send_flush(slot_id, header, (u16_t)hlen);
 
-    resp_end(slot_id, code, 0, keep);
+    resp_end(slot_id, code, 0, keep, /*pre_flushed=*/true);
 }
 
 void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
@@ -1664,7 +1678,7 @@ void DetWebServer::redirect(uint8_t slot_id, int code, const char *location)
                         code, status_text(code), location);
     hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
-    det_conn_send(slot_id, header, (u16_t)hlen);
+    det_conn_send_flush(slot_id, header, (u16_t)hlen);
 
-    resp_end(slot_id, code, 0, keep);
+    resp_end(slot_id, code, 0, keep, /*pre_flushed=*/true);
 }

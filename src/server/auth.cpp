@@ -165,7 +165,11 @@ void DetWebServer::send_unauth(uint8_t slot_id, const Route *r, bool stale)
         return;
     }
 
-    char challenge[MAX_AUTH_LEN + 128];
+    // Sized for the worst-case Digest challenge without truncation: the fixed field text (~76) + a
+    // max-length realm (MAX_AUTH_LEN-1) + the fixed 41-char nonce ("8hex.32hex") + ", stale=true" (12)
+    // + NUL is ~161 bytes; MAX_AUTH_LEN + 160 clears that with margin. (A truncated WWW-Authenticate
+    // would be a malformed challenge that breaks Digest auth - a real, if narrow, defect.)
+    char challenge[MAX_AUTH_LEN + 160];
     if (r->auth_digest)
     {
         char nonce[48];
@@ -191,11 +195,19 @@ void DetWebServer::send_unauth(uint8_t slot_id, const Route *r, bool stale)
                         "%s\r\n",
                         challenge, (int)(sizeof(body) - 1), _cors_enabled ? _cors_header_buf : "", cl);
 
-    det_conn_send(slot_id, header, (u16_t)hlen);
+    // Fold the flush into the final write (one marshal instead of two); 401 challenges are frequent
+    // when a protected route is hammered.
     if (!req_is_head(slot_id))
-        det_conn_send(slot_id, body, (u16_t)(sizeof(body) - 1));
+    {
+        det_conn_send(slot_id, header, (u16_t)hlen);
+        det_conn_send_flush(slot_id, body, (u16_t)(sizeof(body) - 1));
+    }
+    else
+    {
+        det_conn_send_flush(slot_id, header, (u16_t)hlen);
+    }
 
-    resp_end(slot_id, 401, (int)(sizeof(body) - 1), keep);
+    resp_end(slot_id, 401, (int)(sizeof(body) - 1), keep, /*pre_flushed=*/true);
 }
 
 // Constant-time byte equality: compares all @p len bytes regardless of a mismatch, so a credential

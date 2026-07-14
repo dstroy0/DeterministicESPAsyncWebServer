@@ -235,6 +235,18 @@ class DeterministicAsyncTCP
 bool det_conn_send(uint8_t slot, const void *data, u16_t len);
 
 /**
+ * @brief Send @p len bytes on @p slot and flush in a single tcpip_thread round-trip.
+ *
+ * The terminal-write analogue of det_conn_send(): the tcp_write and its tcp_output() run inside
+ * one marshaled op, so a small single-shot response costs one ~23 us on-device marshal instead of
+ * the det_conn_send()+det_conn_flush() pair (two). Use for the LAST write of a response whose body
+ * is already fully buffered (send / send_empty / redirect); a streaming producer that pages across
+ * loops must keep using det_conn_send() + a single trailing det_conn_flush(). TLS-identical to
+ * det_conn_send (the record BIO already outputs per record). Same return contract as det_conn_send.
+ */
+bool det_conn_send_flush(uint8_t slot, const void *data, u16_t len);
+
+/**
  * @brief Bytes that can currently be queued for sending on @p slot.
  *
  * Advisory free space in the TCP send buffer: a producer can send at most this
