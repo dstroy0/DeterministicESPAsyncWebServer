@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`531356b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/531356b68304e4cac6d32589798941704653542c))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1e60ce1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e60ce10ad423800c1f93de0b50198e2b5fc9b5a))
+
+### Features
+
+- RTCM 3.x codec - framing + CRC-24Q + 1005/1006 (RTK base foundation) ([`6932a65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6932a6516e32636f906b5bb0798699dee3b90f26))
+
 ## [6.8.0] - 2026-07-14
 
 <details>
