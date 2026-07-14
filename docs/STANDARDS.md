@@ -94,6 +94,7 @@ newer entry here.
 - [RFC 4254](https://www.rfc-editor.org/rfc/rfc4254) - SSH connection protocol - **impl**.
 - [RFC 4250](https://www.rfc-editor.org/rfc/rfc4250) - SSH assigned numbers - **impl**.
 - [RFC 4344](https://www.rfc-editor.org/rfc/rfc4344) - SSH transport encryption modes (CTR) - **impl**.
+- [RFC 5647](https://www.rfc-editor.org/rfc/rfc5647) - AES-GCM for SSH (aes256-gcm@openssh.com) - **impl**.
 - [RFC 6668](https://www.rfc-editor.org/rfc/rfc6668) - SHA-2 data-integrity (HMAC) for SSH - **impl**.
 - [RFC 8268](https://www.rfc-editor.org/rfc/rfc8268) - More MODP DH groups for SSH - **impl**.
 - [RFC 8332](https://www.rfc-editor.org/rfc/rfc8332) - RSA SHA-2 (rsa-sha2-256/512) for SSH - **impl**.

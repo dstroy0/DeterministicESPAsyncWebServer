@@ -7,6 +7,7 @@
  */
 
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h"
@@ -141,12 +142,14 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
     }
 #endif
 
-    // Padding block size and base differ by mode. chacha (AEAD) and aes-ETM exclude the 4-byte
+    // Padding block size and base differ by mode. chacha/gcm (AEAD) and aes-ETM exclude the 4-byte
     // length from the block-alignment (it is AAD / sent in clear); plain aes-E&M includes it.
     //   chacha    : block 8,  base = padding_length + payload
+    //   aes GCM   : block 16, base = padding_length + payload   (RFC 5647 sec 7.3)
     //   aes ETM   : block 16, base = padding_length + payload
     //   aes E&M / plaintext : block 16, base = length + padding_length + payload  (compute_padding)
     bool chacha = s->enc_out && km->cipher_mode == SSH_CIPHER_CHACHA20POLY1305;
+    bool gcm = s->enc_out && km->cipher_mode == SSH_CIPHER_AES256GCM;
     bool etm = s->enc_out && km->cipher_mode == SSH_CIPHER_AES256CTR && ssh_mac_is_etm(km->mac_mode);
     size_t pad_len;
     size_t tag_len;
@@ -157,6 +160,14 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
         if (pad_len < 4)
             pad_len += 8;
         tag_len = SSH_CHACHAPOLY_TAG_LEN;
+    }
+    else if (gcm)
+    {
+        size_t base = 1 + payload_len;
+        pad_len = 16 - (base % 16);
+        if (pad_len < 4)
+            pad_len += 16;
+        tag_len = SSH_AESGCM_TAG_LEN;
     }
     else if (etm)
     {
@@ -187,6 +198,12 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
     {
         // Encrypt length (header key) + payload (main key) and append the Poly1305 tag.
         ssh_chachapoly_encrypt(km->chacha_key_s2c, s->seq_no_send, out, out, (uint32_t)pkt_len);
+    }
+    else if (gcm)
+    {
+        // aes256-gcm@openssh.com: length stays in clear (it is the AAD); seal the packet body in
+        // place and append the 16-byte GCM tag. The context's invocation counter advances by one.
+        ssh_aesgcm_seal(&km->gcm_s2c, out, 4, out + 4, pkt_len, out + 4);
     }
     else if (etm)
     {
@@ -288,6 +305,66 @@ int ssh_pkt_recv(uint8_t i, const uint8_t *data, size_t len, ssh_msg_handler_t h
             size_t payload_len = pkt_len - 1 - pad_len_byte;
             uint8_t msg_type = scratch[5];
             handler(i, msg_type, scratch + 5, payload_len);
+
+            size_t consumed = wire_need;
+            memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);
+            s->rx_len -= consumed;
+            ssh_wipe(scratch, scratch_sz);
+        }
+        else if (s->enc_in && km->cipher_mode == SSH_CIPHER_AES256GCM)
+        {
+            // aes256-gcm@openssh.com (RFC 5647): the 4-byte packet_length is sent in the clear and is
+            // the AEAD's additional authenticated data; the 16-byte GCM tag is verified over
+            // (length || ciphertext) BEFORE any plaintext is produced.
+            if (s->rx_len < 4)
+                break;
+            uint32_t pkt_len = read_u32_be(s->rx_buf);
+            // The encrypted portion (pkt_len) must be a positive whole number of AES blocks.
+            if (pkt_len < 1 || pkt_len > SSH_PKT_BUF_SIZE - 4 - SSH_AESGCM_TAG_LEN || (pkt_len % 16) != 0)
+            {
+                ssh_wipe(s->rx_buf, s->rx_len);
+                s->rx_len = 0;
+                return -1;
+            }
+            size_t wire_need = 4 + pkt_len + SSH_AESGCM_TAG_LEN;
+            if (s->rx_len < wire_need)
+                break; // incomplete packet
+
+            const size_t scratch_sz = pkt_len; // plaintext = padding_length || payload || padding
+            ScratchScope scratch_scope;
+            uint8_t *scratch = (uint8_t *)scratch_alloc(scratch_sz, 16);
+            if (!scratch)
+            {
+                ssh_wipe(s->rx_buf, s->rx_len);
+                s->rx_len = 0;
+                return -1;
+            }
+
+            // Verify the GCM tag over (length || ciphertext), then decrypt. No plaintext on failure.
+            if (!ssh_aesgcm_open(&km->gcm_c2s, s->rx_buf, 4, s->rx_buf + 4, pkt_len, s->rx_buf + 4 + pkt_len, scratch))
+            {
+                ssh_wipe(scratch, scratch_sz);
+                ssh_wipe(s->rx_buf, s->rx_len);
+                s->rx_len = 0;
+                return -1; // caller must close connection
+            }
+
+            if (s->seq_no_recv >= SSH_SEQ_CLOSE_THRESHOLD)
+            {
+                ssh_wipe(scratch, scratch_sz);
+                return -1;
+            }
+            s->seq_no_recv++;
+
+            uint8_t pad_len_byte = scratch[0];
+            if (pad_len_byte < 4 || pad_len_byte >= pkt_len)
+            {
+                ssh_wipe(scratch, scratch_sz);
+                return -1;
+            }
+            size_t payload_len = pkt_len - 1 - pad_len_byte;
+            uint8_t msg_type = scratch[1];
+            handler(i, msg_type, scratch + 1, payload_len);
 
             size_t consumed = wire_need;
             memmove(s->rx_buf, s->rx_buf + consumed, s->rx_len - consumed);

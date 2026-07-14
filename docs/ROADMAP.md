@@ -471,11 +471,12 @@ hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, password + publickey auth.
 - [ ] **PQC hybrid follow-ons** (S) - **sntrup761x25519-sha512@openssh.com** for SSH parity with OpenSSH's
       other default, and a **HelloRetryRequest** path so a client that lists X25519MLKEM768 but sends only a
       classical key_share still gets the hybrid (today we serve whatever key_share it sent).
-- [ ] **SSH cipher / host-key breadth** (M, cheap interop) - close the easy deltas vs CycloneSSH:
-      **aes256-gcm@openssh.com** / **aes128-gcm@openssh.com** (reuse the existing GCM core in
-      `http3/quic_aead` - an AEAD alternative to chacha that rides the AES-NI-equivalent HW), **rsa-sha2-512**
-      host-key signatures (we advertise only rsa-sha2-256), and an **ecdsa-sha2-nistp256** host key + client
-      auth (the one common host-key type we lack). Small, high-interop-yield additions to the negotiated sets.
+- [ ] **SSH cipher / host-key breadth** (M, cheap interop) - close the easy deltas vs CycloneSSH: - [x] **`aes256-gcm@openssh.com`** _(shipped)_ - AES-256-GCM AEAD (RFC 5647): length-in-clear as AAD,
+      per-packet invocation counter, no separate MAC. Self-contained `ssh/crypto/ssh_aesgcm` (AES block HW
+      via mbedTLS on ESP32, GHASH in software; AES-256, so not the AES-128 `http3/quic_aead` core). Seal/open
+      KAT vs the NIST/McGrew Test Case 16 vector + a packet-layer round-trip; negotiated second after chacha. - _remaining:_ **rsa-sha2-512** host-key signatures (we advertise only rsa-sha2-256), and an
+      **ecdsa-sha2-nistp256** host key + client auth (the one common host-key type we lack). Small,
+      high-interop-yield additions to the negotiated sets. _(aes128-gcm skipped: 256 is the ESP32-relevant one.)_
 - [ ] **SFTP + SCP subsystem over SSH** (XL, high value - ties to G-code deployment) - Cyclone has both SFTP
       and SCP client+server; we have an SSH transport + shell/exec but no file-transfer subsystem. An SFTP
       _server_ subsystem (the SSH_FXP_* packet protocol over an SSH channel) is the standards-track southbound

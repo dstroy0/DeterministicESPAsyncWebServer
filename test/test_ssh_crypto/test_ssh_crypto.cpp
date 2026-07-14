@@ -890,6 +890,57 @@ static void test_pkt_chacha20poly1305_roundtrip(void)
     ssh_keymat_wipe(0); // leave no chacha state for later (aes) tests
 }
 
+static void test_pkt_aes256gcm_roundtrip(void)
+{
+    // Install an aes256-gcm@openssh.com session with the same key/IV both directions, so ssh_pkt_send
+    // (server seals with the s2c context) round-trips through ssh_pkt_recv (opens with c2s).
+    ssh_keymat_wipe(0);
+    SshKeyMat *km = &ssh_keys[0];
+    km->cipher_mode = SSH_CIPHER_AES256GCM;
+    uint8_t key[32], iv[12];
+    for (int i = 0; i < 32; i++)
+        key[i] = (uint8_t)(i * 3 + 7);
+    for (int i = 0; i < 12; i++)
+        iv[i] = (uint8_t)(0x40 + i);
+    ssh_aesgcm_init(&km->gcm_c2s, key, iv);
+    ssh_aesgcm_init(&km->gcm_s2c, key, iv); // same key/IV both directions
+    km->active = true;
+
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
+
+    uint8_t payload[] = {SSH_MSG_IGNORE, 'a', 'e', 's', 'g', 'c', 'm', '2', '5', '6'};
+    uint8_t wire[256];
+    size_t wlen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)));
+    TEST_ASSERT_TRUE(wlen > 4 + SSH_AESGCM_TAG_LEN); // length + ciphertext + tag
+    // The 4-byte packet_length is in the clear (it is the AEAD's AAD).
+    uint32_t pkt_len = (uint32_t)((wire[0] << 24) | (wire[1] << 16) | (wire[2] << 8) | wire[3]);
+    TEST_ASSERT_EQUAL_UINT32(wlen - 4 - SSH_AESGCM_TAG_LEN, pkt_len);
+    TEST_ASSERT_EQUAL_UINT32(0, pkt_len % 16); // whole AES blocks
+    // The packet body is actually encrypted (not equal to the plaintext payload).
+    TEST_ASSERT_TRUE(memcmp(wire + 5, payload + 1, sizeof(payload) - 1) != 0);
+
+    last_msg_type = 0xFF;
+    last_payload_len = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+    TEST_ASSERT_EQUAL_INT(SSH_MSG_IGNORE, last_msg_type);
+    TEST_ASSERT_EQUAL_INT(sizeof(payload), (int)last_payload_len);
+    TEST_ASSERT_EQUAL_MEMORY(payload, last_payload, sizeof(payload));
+    TEST_ASSERT_EQUAL_UINT32(1, ssh_pkt[0].seq_no_recv);
+
+    // Tamper a ciphertext byte -> GCM tag rejects -> recv returns -1, and no plaintext is delivered.
+    ssh_pkt_init(0);
+    ssh_pkt[0].enc_out = true;
+    ssh_pkt[0].enc_in = true;
+    ssh_aesgcm_init(&km->gcm_c2s, key, iv); // reset receiver counter to the packet boundary
+    wire[6] ^= 0x01;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_pkt_recv(0, wire, wlen, pkt_handler));
+
+    ssh_keymat_wipe(0); // leave no gcm state for later tests
+}
+
 // aes256-ctr + encrypt-then-MAC round-trip for a given MAC mode. c2s == s2c so ssh_pkt_send
 // (encrypts with s2c) round-trips through ssh_pkt_recv (decrypts with c2s).
 static void etm_roundtrip_helper(uint8_t mac_mode)
@@ -1486,6 +1537,7 @@ int main(void)
     RUN_TEST(test_pkt_disconnect_zeroes_state);
     RUN_TEST(test_pkt_encrypted_roundtrip);
     RUN_TEST(test_pkt_chacha20poly1305_roundtrip);
+    RUN_TEST(test_pkt_aes256gcm_roundtrip);
     RUN_TEST(test_pkt_aes_etm_sha256_roundtrip);
     RUN_TEST(test_pkt_aes_etm_sha512_roundtrip);
     RUN_TEST(test_pkt_encrypted_fragmented);

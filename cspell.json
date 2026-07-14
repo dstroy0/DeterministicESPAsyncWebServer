@@ -1291,7 +1291,8 @@
     "ENDSOURCETABLE",
     "averager",
     "mountpoint",
-    "pyproj"
+    "pyproj",
+    "aesgcm"
   ],
   "ignorePaths": [
     "node_modules/**",

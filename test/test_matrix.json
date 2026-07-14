@@ -275,6 +275,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_keymat.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_dh.cpp>",
@@ -309,6 +310,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_keymat.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_dh.cpp>",
@@ -339,6 +341,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_keymat.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_dh.cpp>",
@@ -381,6 +384,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_keymat.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_dh.cpp>",
@@ -1447,6 +1451,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_keymat.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_dh.cpp>",
@@ -2398,6 +2403,12 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>"
       ],
       "tests": ["test_ssh_chachapoly"]
+    },
+    "native_ssh_aesgcm": {
+      "desc": "AES-256-GCM AEAD for aes256-gcm@openssh.com (RFC 5647) host-tested here: seal/open vs the\nNIST/McGrew AES-256-GCM Test Case 16 vector, tamper rejection, and the invocation-counter\nadvance. Software AES-256 + GHASH; no heap, no stdlib.",
+      "flags": [],
+      "src": ["+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>"],
+      "tests": ["test_ssh_aesgcm"]
     }
   }
 }

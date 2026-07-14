@@ -229,6 +229,24 @@ void test_kexinit_parse_selects_chacha20poly1305()
     TEST_ASSERT_EQUAL(SSH_CIPHER_CHACHA20POLY1305, ssh_sess[0].cipher_alg);
 }
 
+// aes256-gcm@openssh.com is a supported AEAD cipher: a client offering only it is accepted and the
+// GCM cipher is selected (no separate MAC required). It also outranks aes256-ctr when both are
+// offered, but sits below chacha20-poly1305.
+void test_kexinit_parse_selects_aes256gcm()
+{
+    uint8_t buf[SSH_KEXINIT_MAX];
+    size_t n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "rsa-sha2-256", "aes256-gcm@openssh.com",
+                                    "hmac-sha2-256", "none");
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL(SSH_CIPHER_AES256GCM, ssh_sess[0].cipher_alg);
+
+    // Preference: gcm beats ctr when both are offered (chacha absent).
+    n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "rsa-sha2-256", "aes256-ctr,aes256-gcm@openssh.com",
+                             "hmac-sha2-256", "none");
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL(SSH_CIPHER_AES256GCM, ssh_sess[0].cipher_alg);
+}
+
 // With aes256-ctr, the encrypt-then-MAC variants are preferred: a client offering an -etm MAC gets
 // it selected and its exact mode recorded.
 void test_kexinit_parse_selects_etm_mac()
@@ -973,6 +991,7 @@ int main()
     RUN_TEST(test_kexinit_parse_steers_to_curve_ed25519);
     RUN_TEST(test_kexinit_parse_rejects_missing_cipher);
     RUN_TEST(test_kexinit_parse_selects_chacha20poly1305);
+    RUN_TEST(test_kexinit_parse_selects_aes256gcm);
     RUN_TEST(test_kexinit_parse_selects_etm_mac);
     RUN_TEST(test_kexinit_parse_rejects_truncated);
     RUN_TEST(test_exchange_hash_matches_independent_assembly);

@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **229 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **230 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -263,6 +263,7 @@ The native test matrix has **229 environments**, one per feature, generated from
 | `native_sparkplug` | `ETWS_ENABLE_SPARKPLUG=1` | `test_sparkplug` | Sparkplug B codec (services/sparkplug): the topic builder + the Metric / Payload protobuf serializers (over the protobuf codec). |
 | `native_sqlite` | `ETWS_ENABLE_SQLITE=1` | `test_sqlite` | SQLite3 on-disk file-format reader (services/sqlite): the 100-byte database header, the b-tree page header, the record varint, and record serial types, parsed by hand. |
 | `native_ssh` | `ETWS_SSH_MAX_CHANNELS=3` | `test_ssh_crypto`, `test_ssh_transport`, `test_ssh_auth`, `test_ssh_channel`, `test_ssh_server` | SSH crypto layer (native software paths only, no mbedtls dependency); channels multiplexed (DETWS_SSH_MAX_CHANNELS=3) to exercise routing |
+| `native_ssh_aesgcm` | default | `test_ssh_aesgcm` | AES-256-GCM AEAD for aes256-gcm@openssh.com (RFC 5647) host-tested here: seal/open vs the NIST/McGrew AES-256-GCM Test Case 16 vector, tamper rejection, and the invocation-counter advance. |
 | `native_ssh_chachapoly` | default | `test_ssh_chachapoly` | chacha20-poly1305@openssh.com AEAD (network_drivers/presentation/ssh): ChaCha20 vs RFC 8439 sec 2.3.2 block vector, Poly1305 vs RFC 8439 sec 2.5.2, and the OpenSSH construction (length decode, encrypt... |
 | `native_ssh_comp` | `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_SSH_ZLIB=1`, `ETWS_ENABLE_WS_DEFLATE=1` | `test_ssh_comp` | SSH s2c compression WIRING with the full SSH stack built with DETWS_ENABLE_SSH_ZLIB=1: the compression owner (ssh_comp) + its NEWKEYS / USERAUTH_SUCCESS activation + the packet-layer compress path in ... |
 | `native_ssh_conn` | `ETWS_ENABLE_SSH=1` | `test_ssh_conn` | SSH wired through the real transport/session layers (PROTO_SSH byte-pump) |
@@ -519,7 +520,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3019 test cases** across **256 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3023 test cases** across **257 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28209,6 +28210,46 @@ A thorough directory of all **3019 test cases** across **256 suites**. Expand a 
 </details>
 
 <details>
+<summary><b>test_ssh_aesgcm (3 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_aesgcm_nist_tc16_seal</b> &mdash; <i>Aesgcm nist tc16 seal</i></summary>
+
+    * **Objective**: Aesgcm nist tc16 seal
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(TC16_CT, out, sizeof(TC16_CT));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(TC16_TAG, out + sizeof(TC16_CT), 16);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_aesgcm_nist_tc16_open</b> &mdash; <i>Tampered tag -> reject; the counter must NOT have advanced, so a correct open still works.</i></summary>
+
+    * **Objective**: Tampered tag -> reject; the counter must NOT have advanced, so a correct open still works.
+    * **Assertions**:
+      * <code>Assert true (ssh_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(TC16_PT, pt, sizeof(TC16_PT));</code>
+      * <code>Assert false (ssh_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), bad_tag, pt))</code>
+      * <code>Assert true (ssh_aesgcm_open(&ctx, TC16_AAD, sizeof(TC16_AAD), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(TC16_PT, pt, sizeof(TC16_PT));</code>
+      * <code>Assert false (ssh_aesgcm_open(&ctx, bad_aad, sizeof(bad_aad), TC16_CT, sizeof(TC16_CT), TC16_TAG, pt))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_aesgcm_invocation_counter_advances</b> &mdash; <i>Same key + same plaintext but a different invocation counter -> different ciphertext AND tag.</i></summary>
+
+    * **Objective**: Same key + same plaintext but a different invocation counter -> different ciphertext AND tag.
+    * **Assertions**:
+      * <code>Assert true (memcmp(p0, p1, 32) != 0)</code>
+      * <code>Assert true (ssh_aesgcm_open(&dec, aad, 4, p0, 16, p0 + 16, r0))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(msg, r0, 16);</code>
+      * <code>Assert true (ssh_aesgcm_open(&dec, aad, 4, p1, 16, p1 + 16, r1))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(msg, r1, 16);</code>
+      * <code>Assert false (ssh_aesgcm_open(&dec, aad, 4, p1, 16, p1 + 16, rx))</code>
+  </details>
+
+</details>
+
+<details>
 <summary><b>test_ssh_auth (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
@@ -29624,7 +29665,7 @@ A thorough directory of all **3019 test cases** across **256 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_transport (37 tests)</b></summary>
+<summary><b>test_ssh_transport (38 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_index_guards</b> &mdash; <i>Transport index guards</i></summary>
@@ -29798,6 +29839,17 @@ A thorough directory of all **3019 test cases** across **256 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
       * <code>Assert equal (SSH_CIPHER_CHACHA20POLY1305, ssh_sess[0].cipher_alg)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexinit_parse_selects_aes256gcm</b> &mdash; <i>Preference: gcm beats ctr when both are offered (chacha absent).</i></summary>
+
+    * **Objective**: Preference: gcm beats ctr when both are offered (chacha absent).
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal (SSH_CIPHER_AES256GCM, ssh_sess[0].cipher_alg)</code>
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal (SSH_CIPHER_AES256GCM, ssh_sess[0].cipher_alg)</code>
   </details>
 
   <details style="margin-left: 20px;">

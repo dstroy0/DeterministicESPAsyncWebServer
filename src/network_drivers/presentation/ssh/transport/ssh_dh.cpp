@@ -169,6 +169,28 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[
         return;
     }
 
+    if (cipher_alg == SSH_CIPHER_AES256GCM)
+    {
+        // aes256-gcm@openssh.com (RFC 5647): a 256-bit key (labels 'C'/'D') and a 96-bit initial IV
+        // (the first 12 bytes of the 'A'/'B' IV material) per direction; no separate MAC key (AEAD).
+        uint8_t iv_c2s[SSH_SHA256_DIGEST_LEN];
+        uint8_t iv_s2c[SSH_SHA256_DIGEST_LEN];
+        uint8_t key_c2s[32];
+        uint8_t key_s2c[32];
+        derive_key(K_be, H, session_id, 'A', iv_c2s, k_is_string);  // IV  C→S (first 12 bytes used)
+        derive_key(K_be, H, session_id, 'B', iv_s2c, k_is_string);  // IV  S→C
+        derive_key(K_be, H, session_id, 'C', key_c2s, k_is_string); // key C→S
+        derive_key(K_be, H, session_id, 'D', key_s2c, k_is_string); // key S→C
+        ssh_aesgcm_init(&km->gcm_c2s, key_c2s, iv_c2s);
+        ssh_aesgcm_init(&km->gcm_s2c, key_s2c, iv_s2c);
+        ssh_wipe(key_c2s, sizeof(key_c2s));
+        ssh_wipe(key_s2c, sizeof(key_s2c));
+        ssh_wipe(iv_c2s, sizeof(iv_c2s));
+        ssh_wipe(iv_s2c, sizeof(iv_s2c));
+        km->active = true;
+        return;
+    }
+
     // aes256-ctr + HMAC-SHA2-256: RFC 4253 §7.2 derives six values, each keyed by a label 'A'..'F'.
     // The AES contexts need both key and IV at init time, so derive all six values first.
     uint8_t iv_c2s[SSH_SHA256_DIGEST_LEN];

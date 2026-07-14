@@ -97,6 +97,7 @@
 
 #include "ServerConfig.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_aes256ctr.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_aesgcm.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_bignum.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_chachapoly.h"
 #include <stddef.h>
@@ -116,6 +117,7 @@ enum
 {
     SSH_CIPHER_AES256CTR = 0,        ///< aes256-ctr + a separate HMAC (the fallback)
     SSH_CIPHER_CHACHA20POLY1305 = 1, ///< chacha20-poly1305@openssh.com (AEAD; no separate MAC)
+    SSH_CIPHER_AES256GCM = 2,        ///< aes256-gcm@openssh.com (AEAD, RFC 5647; no separate MAC)
 };
 
 /** @brief Negotiated MAC for the aes256-ctr cipher (unused with the chacha AEAD). */
@@ -199,6 +201,11 @@ struct SshKeyMat
     // chacha20-poly1305@openssh.com: 512-bit key per direction (K_main || K_header); no IV, no MAC key.
     uint8_t chacha_key_c2s[SSH_CHACHAPOLY_KEY_LEN]; ///< client-to-server, used only in chacha mode.
     uint8_t chacha_key_s2c[SSH_CHACHAPOLY_KEY_LEN]; ///< server-to-client, used only in chacha mode.
+
+    // aes256-gcm@openssh.com (RFC 5647): a stateful AEAD context per direction (256-bit key + 96-bit
+    // nonce whose invocation counter advances per packet); no separate MAC key. Used only in gcm mode.
+    SshAesGcmCtx gcm_c2s; ///< client-to-server AES-256-GCM (server opens inbound with it).
+    SshAesGcmCtx gcm_s2c; ///< server-to-client AES-256-GCM (server seals outbound with it).
 
     bool active; ///< True once keys are installed after successful KEX.
 };

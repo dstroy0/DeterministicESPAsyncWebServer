@@ -43,9 +43,10 @@ static const char *const KEX_MLKEM768 = "mlkem768x25519-sha256"; // PQ/T hybrid 
 static const char *const HOSTKEY_RSA = "rsa-sha2-256";
 static const char *const HOSTKEY_ED = "ssh-ed25519";
 static const char *const ALG_CIPHER = "aes256-ctr";
-// Advertised cipher preference: chacha20-poly1305@openssh.com (OpenSSH's default, an AEAD) first,
-// aes256-ctr (the HW-accelerated fallback) second.
-static const char *const ALG_CIPHER_LIST = "chacha20-poly1305@openssh.com,aes256-ctr";
+static const char *const ALG_CIPHER_GCM = "aes256-gcm@openssh.com";
+// Advertised cipher preference (OpenSSH's default order): chacha20-poly1305@openssh.com (AEAD)
+// first, aes256-gcm@openssh.com (AEAD, HW-accelerated) second, aes256-ctr (HW fallback) last.
+static const char *const ALG_CIPHER_LIST = "chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes256-ctr";
 static const char *const ALG_MAC = "hmac-sha2-256";
 // Advertised MAC preference (aes256-ctr only; the chacha AEAD needs none): encrypt-then-MAC first
 // (OpenSSH's default), then plain encrypt-and-MAC.
@@ -460,21 +461,24 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
         if (!negotiate_alg(list, nlen, hc, 2, &s->hostkey_alg))
             return -1; // no mutual host-key algorithm
     }
-    // encryption c2s / s2c: negotiate chacha20-poly1305@openssh.com (preferred) or aes256-ctr.
-    const AlgCand<decltype(SSH_CIPHER_AES256CTR)> cc[2] = {
-        {"chacha20-poly1305@openssh.com", SSH_CIPHER_CHACHA20POLY1305, true}, {ALG_CIPHER, SSH_CIPHER_AES256CTR, true}};
+    // encryption c2s / s2c: negotiate chacha20-poly1305@openssh.com or aes256-gcm@openssh.com (both
+    // AEADs) or aes256-ctr, in that preference order.
+    const AlgCand<decltype(SSH_CIPHER_AES256CTR)> cc[3] = {
+        {"chacha20-poly1305@openssh.com", SSH_CIPHER_CHACHA20POLY1305, true},
+        {ALG_CIPHER_GCM, SSH_CIPHER_AES256GCM, true},
+        {ALG_CIPHER, SSH_CIPHER_AES256CTR, true}};
     if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
     decltype(SSH_CIPHER_AES256CTR) c2s;
     decltype(SSH_CIPHER_AES256CTR) s2c;
-    if (!negotiate_alg(list, nlen, cc, 2, &c2s))
+    if (!negotiate_alg(list, nlen, cc, 3, &c2s))
         return -1;
     if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
-    if (!negotiate_alg(list, nlen, cc, 2, &s2c) || s2c != c2s) // require the same cipher both directions
+    if (!negotiate_alg(list, nlen, cc, 3, &s2c) || s2c != c2s) // require the same cipher both directions
         return -1;
     s->cipher_alg = c2s;
-    // mac c2s / s2c: negotiated only for aes256-ctr (the chacha AEAD carries its own MAC). Prefer
+    // mac c2s / s2c: negotiated only for aes256-ctr (both AEAD ciphers carry their own MAC). Prefer
     // the encrypt-then-MAC variants (OpenSSH's default), require the same MAC both directions.
     const AlgCand<decltype(SSH_MAC_HMAC_SHA256)> mc[4] = {
         {"hmac-sha2-256-etm@openssh.com", SSH_MAC_HMAC_SHA256_ETM, true},
