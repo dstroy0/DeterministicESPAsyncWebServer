@@ -2,6 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- guard out pointer before the NUL terminator (SonarCloud S2259) ([`a6072df`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a6072df5ea46a812828fe7c35cda8cc7c6f224de))
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`ff7bac0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff7bac06caf001a84274d84605b80d3900110531))
+- update CHANGELOG.md [skip ci] ([`1eae4dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1eae4dc7315d883a4e316e6243ef6401e2f3a5d9))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`d1ea843`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1ea843e7b1abaafccd216ae5e778d62fb73193d))
+
 ## [6.1.1] - 2026-07-14
 
 <details>
