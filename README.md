@@ -546,12 +546,47 @@ cryptic linker error). Enable a child flag only together with its parent.
 
 > Generated from the `#error` / `#if` guards in [src/ServerConfig.h](src/ServerConfig.h) by `docs/utilities/gen_flag_deps.py` - do not edit by hand. Pre-rendered PNG (shows in the GitHub app + Doxygen); mermaid source: [`docs/diagrams/flag_deps.mmd`](docs/diagrams/flag_deps.mmd).
 
-**Green** = a parent feature; **blue** = a child that requires it (hard `#error`); **orange PSRAM** = a PSRAM-class feature (pool cannot fit internal DRAM; needs `*_IN_PSRAM` or an `*_ACK_DRAM` opt-out); **purple** = an auto-derived flag (do not set it yourself).
+Each **green** node is a parent feature and each **blue** node a child that requires it (a hard `#error` otherwise) - enable the parent to build the child. **Click the diagram to view it full size.** (Auto-derived flags and PSRAM-class features are listed below the picture rather than drawn as edges, so the graph stays a clean family tree.)
 
+<a href="docs/diagrams/flag_deps.light.png" title="Open the build-flag dependency graph full size">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/flag_deps.dark.png">
   <img alt="Build-flag dependencies" src="docs/diagrams/flag_deps.light.png">
 </picture>
+</a>
+
+> Not drawn (so the tree stays uncrossed): **`DETWS_ENABLE_HTTP_CLIENT_TLS`, `DETWS_ENABLE_MQTT_TLS`, `DETWS_ENABLE_WS_CLIENT_TLS`** also need `DETWS_ENABLE_TLS`.
+
+<details><summary><b>Auto-derived flags</b> - enabling the left flag turns the right one on for you; do not set it yourself.</summary>
+
+| Enabling this...               | ...auto-enables             |
+| ------------------------------ | --------------------------- |
+| `DETWS_ENABLE_HTTP_CLIENT`     | `DETWS_ENABLE_DNS_RESOLVER` |
+| `DETWS_ENABLE_HTTP_CLIENT_TLS` | `DETWS_ENABLE_CLIENT_TLS`   |
+| `DETWS_ENABLE_MODBUS_RTU`      | `DETWS_ENABLE_MODBUS`       |
+| `DETWS_ENABLE_MQTT`            | `DETWS_ENABLE_DNS_RESOLVER` |
+| `DETWS_ENABLE_MQTT_TLS`        | `DETWS_ENABLE_CLIENT_TLS`   |
+| `DETWS_ENABLE_NMEA2000`        | `DETWS_ENABLE_J1939`        |
+| `DETWS_ENABLE_OTA`             | `DETWS_ENABLE_STREAM_BODY`  |
+| `DETWS_ENABLE_RELAY`           | `DETWS_ENABLE_DNS_RESOLVER` |
+| `DETWS_ENABLE_SENML`           | `DETWS_ENABLE_CBOR`         |
+| `DETWS_ENABLE_SPARKPLUG`       | `DETWS_ENABLE_PROTOBUF`     |
+| `DETWS_ENABLE_UPLOAD`          | `DETWS_ENABLE_STREAM_BODY`  |
+| `DETWS_ENABLE_WEBDAV`          | `DETWS_ENABLE_STREAM_BODY`  |
+| `DETWS_ENABLE_WS_CLIENT`       | `DETWS_ENABLE_DNS_RESOLVER` |
+| `DETWS_ENABLE_WS_CLIENT_TLS`   | `DETWS_ENABLE_CLIENT_TLS`   |
+
+</details>
+
+<details><summary><b>PSRAM-class features</b> - the pool cannot fit internal DRAM; enable `*_IN_PSRAM` or acknowledge with an `*_ACK_DRAM` opt-out.</summary>
+
+| Feature                 | Gate               |
+| ----------------------- | ------------------ |
+| `DETWS_ENABLE_HTTP2`    | PSRAM pool         |
+| `DETWS_ENABLE_SSH_ZLIB` | PSRAM pool         |
+| `DETWS_ENABLE_TLS`      | MAX_TLS_CONNS gt 1 |
+
+</details>
 
 _23 hard dependencies, 3 PSRAM gates, 14 derived flags._
 

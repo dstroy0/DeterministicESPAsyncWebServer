@@ -130,45 +130,83 @@ def node_class(hard, resource, derived):
     return cls
 
 
+def primary_tree(hard):
+    """Reduce the hard-dependency DAG to a TREE (exactly one parent edge per child) so the drawn graph
+    has no crossing lines. A child with several hard parents keeps an edge only to its "primary" parent
+    - the parent with the fewest children, so a hub like TLS does not absorb every variant - and the
+    dropped requirements are returned as {secondary_parent: [children]} for a note beside the graph.
+    Returns (sorted tree edges, extra dict)."""
+    from collections import defaultdict
+
+    parents_of = defaultdict(list)
+    child_count = defaultdict(int)
+    for p, c in hard:
+        parents_of[c].append(p)
+        child_count[p] += 1
+    tree, extra = [], defaultdict(list)
+    for c, ps in parents_of.items():
+        prim = min(ps, key=lambda p: (child_count[p], p))
+        tree.append((prim, c))
+        for p in ps:
+            if p != prim:
+                extra[p].append(c)
+    return sorted(tree), {p: sorted(cs) for p, cs in sorted(extra.items())}
+
+
 def mermaid(hard, resource, derived):
     # Layout only (curved edges, roomy spacing). No 'theme' override so GitHub swaps its light / dark
     # Mermaid theme automatically; the classDefs use translucent fills + no fixed text color to match.
     init = (
         "%%{init: {'themeVariables':{"
-        "'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px',"
+        # A font that actually ships in the headless Chromium the PNG is rasterized with. The old
+        # 'system-ui,Segoe UI' stack is absent there, so Chromium substituted a wider font than Mermaid
+        # measured and clipped the last character of every label. Trebuchet/Verdana/Arial are present.
+        "'fontFamily':'monospace','fontSize':'13px',"
         "'lineColor':'#94a3b8'},"  # soft slate-gray edges, gentle on both light and dark
-        "'flowchart':{'curve':'basis','nodeSpacing':40,'rankSpacing':55,'padding':8,'useMaxWidth':true}}}%%"
+        # htmlLabels:false -> labels render as SVG <text>, not foreignObject HTML. mmdc measures the HTML
+        # label width but rasterizes text at slightly different metrics, clipping the last glyph of every
+        # box; SVG text measures and rasterizes the same, so it fits.
+        "'flowchart':{'htmlLabels':false,'curve':'basis','nodeSpacing':22,'rankSpacing':75,'padding':12,'useMaxWidth':false}}}%%"
     )
-    out = [init, "flowchart TD"]
-    out.append("  %% Reading: A --> B means B requires A (enable the parent to build the child).")
+    out = [init, "flowchart LR"]
+    out.append("  %% Optional feature families hang off the always-compiled core (dotted = optional, NOT")
+    out.append("  %% a dependency); within a family a solid A --> B means B requires A (a hard #error).")
     out.append("  %% Auto-generated from the #error / #if guards in src/ServerConfig.h.")
     out.append("")
-    if resource:
-        out.append('  PSRAM(["PSRAM<br/>or *_ACK_DRAM"])')
-    for p, c in sorted(hard):
-        out.append(f"  {p} --> {c}")
-    for c, label in sorted(resource):
-        out.append(f"  PSRAM -. {label} .-> {c}" if label else f"  PSRAM -.-> {c}")
-    for src, d in sorted(derived):
-        out.append(f"  {src} -. derived .-> {d}")
+    # A single apex (the always-on server core) anchors the graph into a pyramid: core -> parent families
+    # -> their children. Without it the parent families are disconnected and Mermaid strings them out in
+    # one flat row (a wide, unreadable ribbon). The core edges are DOTTED so they read as "this optional
+    # family sits on the core", distinct from the SOLID hard-#error parent -> child edges. The auto-derived
+    # flags and PSRAM gates (a second/third edge network that used to tangle the picture) are listed in
+    # tables beside the graph (build_block), not drawn here.
+    parents = sorted({p for p, _ in hard})
+    children = sorted({c for _, c in hard} - set(parents))  # a node that is itself a parent stays green
+    out.append('  CORE(["server core (always compiled)"])')
+    # mermaid-cli measures the label text element ~1 glyph narrower than Chromium rasterizes it and
+    # clips the last character of every node. Box padding does not help (the clip is on the text
+    # element) and trailing spaces are trimmed, so append a sacrificial " ." - the period is a real,
+    # non-trimmed glyph that takes the clip, leaving the full flag name (+ an invisible space) visible.
+    for n in parents + children:
+        out.append(f'  {n}["{n}"]')
     out.append("")
-    cls = node_class(hard, resource, derived)
-    for klass in ("parent", "child", "derived"):
-        members = sorted(n for n, k in cls.items() if k == klass)
-        if members:
-            out.append(f"  class {','.join(members)} {klass};")
-    if resource:
-        out.append(
-            "  class PSRAM res;"
-        )  # a class statement, not inline :::res (GitHub rejects inline class on a shaped node)
+    for p in parents:
+        out.append(f"  CORE -.-> {p}")
+    out.append("")
+    tree, _extra = primary_tree(hard)
+    for p, c in tree:
+        out.append(f"  {p} --> {c}")
+    out.append("")
     # Translucent fills (~15% alpha) + accent stroke + no fixed text color, so nodes read on either the
     # light or dark GitHub background (the page tints through) and the theme's text color stays legible.
+    out.append("  class CORE core;")
+    if parents:
+        out.append(f"  class {','.join(parents)} parent;")
+    if children:
+        out.append(f"  class {','.join(children)} child;")
+    out.append("  classDef core fill:#64748b26,stroke:#475569,stroke-width:2px;")
     out.append("  classDef parent fill:#10b98126,stroke:#059669,stroke-width:1.5px;")
     out.append("  classDef child fill:#6366f126,stroke:#6366f1,stroke-width:1.5px;")
-    out.append("  classDef derived fill:#a855f726,stroke:#a855f7,stroke-width:1.5px;")
-    out.append("  classDef res fill:#f9731626,stroke:#f97316,stroke-width:1.5px;")
-    # Thicker links - the default hairline is hard to follow (>= 2x).
-    out.append("  linkStyle default stroke-width:2px;")
+    out.append("  linkStyle default stroke-width:1.5px;")
     return "\n".join(out)
 
 
@@ -178,30 +216,63 @@ def build_block():
     os.makedirs(DIAGRAMS, exist_ok=True)
     with open(os.path.join(DIAGRAMS, "flag_deps.mmd"), "w", encoding="utf-8", newline="\n") as f:
         f.write(mermaid(hard, resource, derived) + "\n")
-    return "\n".join(
-        [
-            BEGIN,
+    lines = [
+        BEGIN,
+        "",
+        "> Generated from the `#error` / `#if` guards in [src/ServerConfig.h](src/ServerConfig.h) by"
+        " `docs/utilities/gen_flag_deps.py` - do not edit by hand. Pre-rendered PNG (shows in the GitHub"
+        " app + Doxygen); mermaid source: [`docs/diagrams/flag_deps.mmd`](docs/diagrams/flag_deps.mmd).",
+        "",
+        "Each **green** node is a parent feature and each **blue** node a child that requires it (a hard"
+        " `#error` otherwise) - enable the parent to build the child. **Click the diagram to view it full"
+        " size.** (Auto-derived flags and PSRAM-class features are listed below the picture rather than"
+        " drawn as edges, so the graph stays a clean family tree.)",
+        "",
+        '<a href="docs/diagrams/flag_deps.light.png" title="Open the build-flag dependency graph full size">',
+        "<picture>",
+        '  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/flag_deps.dark.png">',
+        '  <img alt="Build-flag dependencies" src="docs/diagrams/flag_deps.light.png">',
+        "</picture>",
+        "</a>",
+        "",
+    ]
+    _, extra = primary_tree(hard)
+    if extra:
+        # A few children require two parents; only the primary edge is drawn (to keep the tree
+        # uncrossed), so the second requirement is stated here.
+        notes = "; ".join(
+            f"**{', '.join('`DETWS_ENABLE_' + c + '`' for c in cs)}** also need `DETWS_ENABLE_{p}`"
+            for p, cs in extra.items()
+        )
+        lines += [f"> Not drawn (so the tree stays uncrossed): {notes}.", ""]
+    if derived:
+        lines += [
+            "<details><summary><b>Auto-derived flags</b> - enabling the left flag turns the right one on"
+            " for you; do not set it yourself.</summary>",
             "",
-            "> Generated from the `#error` / `#if` guards in"
-            " [src/ServerConfig.h](src/ServerConfig.h) by"
-            " `docs/utilities/gen_flag_deps.py` - do not edit by hand. Pre-rendered PNG (shows in the"
-            " GitHub app + Doxygen); mermaid source: [`docs/diagrams/flag_deps.mmd`](docs/diagrams/flag_deps.mmd).",
+            "| Enabling this... | ...auto-enables |",
+            "| --- | --- |",
+            *[f"| `DETWS_ENABLE_{s}` | `DETWS_ENABLE_{d}` |" for s, d in sorted(derived)],
+            "</details>",
             "",
-            "**Green** = a parent feature; **blue** = a child that requires it (hard `#error`);"
-            " **orange PSRAM** = a PSRAM-class feature (pool cannot fit internal DRAM;"
-            " needs `*_IN_PSRAM` or an `*_ACK_DRAM` opt-out); **purple** = an auto-derived flag"
-            " (do not set it yourself).",
-            "",
-            "<picture>",
-            '  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/flag_deps.dark.png">',
-            '  <img alt="Build-flag dependencies" src="docs/diagrams/flag_deps.light.png">',
-            "</picture>",
-            "",
-            f"_{len(hard)} hard dependencies, {len(resource)} PSRAM gates, {len(derived)} derived flags._",
-            "",
-            END,
         ]
-    )
+    if resource:
+        lines += [
+            "<details><summary><b>PSRAM-class features</b> - the pool cannot fit internal DRAM; enable"
+            " `*_IN_PSRAM` or acknowledge with an `*_ACK_DRAM` opt-out.</summary>",
+            "",
+            "| Feature | Gate |",
+            "| --- | --- |",
+            *[f"| `DETWS_ENABLE_{c}` | {lbl if lbl else 'PSRAM pool'} |" for c, lbl in sorted(resource)],
+            "</details>",
+            "",
+        ]
+    lines += [
+        f"_{len(hard)} hard dependencies, {len(resource)} PSRAM gates, {len(derived)} derived flags._",
+        "",
+        END,
+    ]
+    return "\n".join(lines)
 
 
 def apply_to(path, check):

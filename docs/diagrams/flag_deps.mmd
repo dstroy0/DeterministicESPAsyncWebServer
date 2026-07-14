@@ -1,9 +1,60 @@
-%%{init: {'themeVariables':{'fontFamily':'ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif','fontSize':'13px','lineColor':'#94a3b8'},'flowchart':{'curve':'basis','nodeSpacing':40,'rankSpacing':55,'padding':8,'useMaxWidth':true}}}%%
-flowchart TD
-  %% Reading: A --> B means B requires A (enable the parent to build the child).
+%%{init: {'themeVariables':{'fontFamily':'monospace','fontSize':'13px','lineColor':'#94a3b8'},'flowchart':{'htmlLabels':false,'curve':'basis','nodeSpacing':22,'rankSpacing':75,'padding':12,'useMaxWidth':false}}}%%
+flowchart LR
+  %% Optional feature families hang off the always-compiled core (dotted = optional, NOT
+  %% a dependency); within a family a solid A --> B means B requires A (a hard #error).
   %% Auto-generated from the #error / #if guards in src/ServerConfig.h.
 
-  PSRAM(["PSRAM<br/>or *_ACK_DRAM"])
+  CORE(["server core (always compiled)"])
+  AUTH["AUTH"]
+  COAP["COAP"]
+  CONFIG_STORE["CONFIG_STORE"]
+  FILE_SERVING["FILE_SERVING"]
+  HTTP_CLIENT["HTTP_CLIENT"]
+  MQTT["MQTT"]
+  OPCUA["OPCUA"]
+  SNMP["SNMP"]
+  SSE["SSE"]
+  SSH["SSH"]
+  STATS["STATS"]
+  TLS["TLS"]
+  WEBSOCKET["WEBSOCKET"]
+  WS_CLIENT["WS_CLIENT"]
+  AUTH_LOCKOUT["AUTH_LOCKOUT"]
+  COAP_BLOCK["COAP_BLOCK"]
+  COAP_OBSERVE["COAP_OBSERVE"]
+  CONFIG_IO["CONFIG_IO"]
+  DASHBOARD["DASHBOARD"]
+  HTTP_CLIENT_TLS["HTTP_CLIENT_TLS"]
+  METRICS["METRICS"]
+  MQTT_TLS["MQTT_TLS"]
+  MTLS["MTLS"]
+  OPCUA_CLIENT["OPCUA_CLIENT"]
+  RANGE["RANGE"]
+  SNMP_TRAP["SNMP_TRAP"]
+  SNMP_V3["SNMP_V3"]
+  SSH_ZLIB["SSH_ZLIB"]
+  TLS_RESUMPTION["TLS_RESUMPTION"]
+  UMATI["UMATI"]
+  WEBDAV["WEBDAV"]
+  WEB_TERMINAL["WEB_TERMINAL"]
+  WS_CLIENT_TLS["WS_CLIENT_TLS"]
+  WS_DEFLATE["WS_DEFLATE"]
+
+  CORE -.-> AUTH
+  CORE -.-> COAP
+  CORE -.-> CONFIG_STORE
+  CORE -.-> FILE_SERVING
+  CORE -.-> HTTP_CLIENT
+  CORE -.-> MQTT
+  CORE -.-> OPCUA
+  CORE -.-> SNMP
+  CORE -.-> SSE
+  CORE -.-> SSH
+  CORE -.-> STATS
+  CORE -.-> TLS
+  CORE -.-> WEBSOCKET
+  CORE -.-> WS_CLIENT
+
   AUTH --> AUTH_LOCKOUT
   COAP --> COAP_BLOCK
   COAP --> COAP_OBSERVE
@@ -19,38 +70,16 @@ flowchart TD
   SSE --> DASHBOARD
   SSH --> SSH_ZLIB
   STATS --> METRICS
-  TLS --> HTTP_CLIENT_TLS
-  TLS --> MQTT_TLS
   TLS --> MTLS
   TLS --> TLS_RESUMPTION
-  TLS --> WS_CLIENT_TLS
   WEBSOCKET --> WEB_TERMINAL
   WEBSOCKET --> WS_DEFLATE
   WS_CLIENT --> WS_CLIENT_TLS
-  PSRAM -.-> HTTP2
-  PSRAM -.-> SSH_ZLIB
-  PSRAM -. MAX_TLS_CONNS gt 1 .-> TLS
-  HTTP_CLIENT -. derived .-> DNS_RESOLVER
-  HTTP_CLIENT_TLS -. derived .-> CLIENT_TLS
-  MODBUS_RTU -. derived .-> MODBUS
-  MQTT -. derived .-> DNS_RESOLVER
-  MQTT_TLS -. derived .-> CLIENT_TLS
-  NMEA2000 -. derived .-> J1939
-  OTA -. derived .-> STREAM_BODY
-  RELAY -. derived .-> DNS_RESOLVER
-  SENML -. derived .-> CBOR
-  SPARKPLUG -. derived .-> PROTOBUF
-  UPLOAD -. derived .-> STREAM_BODY
-  WEBDAV -. derived .-> STREAM_BODY
-  WS_CLIENT -. derived .-> DNS_RESOLVER
-  WS_CLIENT_TLS -. derived .-> CLIENT_TLS
 
+  class CORE core;
   class AUTH,COAP,CONFIG_STORE,FILE_SERVING,HTTP_CLIENT,MQTT,OPCUA,SNMP,SSE,SSH,STATS,TLS,WEBSOCKET,WS_CLIENT parent;
-  class AUTH_LOCKOUT,COAP_BLOCK,COAP_OBSERVE,CONFIG_IO,DASHBOARD,HTTP2,HTTP_CLIENT_TLS,METRICS,MODBUS_RTU,MQTT_TLS,MTLS,NMEA2000,OPCUA_CLIENT,OTA,RANGE,RELAY,SENML,SNMP_TRAP,SNMP_V3,SPARKPLUG,SSH_ZLIB,TLS_RESUMPTION,UMATI,UPLOAD,WEBDAV,WEB_TERMINAL,WS_CLIENT_TLS,WS_DEFLATE child;
-  class CBOR,CLIENT_TLS,DNS_RESOLVER,J1939,MODBUS,PROTOBUF,STREAM_BODY derived;
-  class PSRAM res;
+  class AUTH_LOCKOUT,COAP_BLOCK,COAP_OBSERVE,CONFIG_IO,DASHBOARD,HTTP_CLIENT_TLS,METRICS,MQTT_TLS,MTLS,OPCUA_CLIENT,RANGE,SNMP_TRAP,SNMP_V3,SSH_ZLIB,TLS_RESUMPTION,UMATI,WEBDAV,WEB_TERMINAL,WS_CLIENT_TLS,WS_DEFLATE child;
+  classDef core fill:#64748b26,stroke:#475569,stroke-width:2px;
   classDef parent fill:#10b98126,stroke:#059669,stroke-width:1.5px;
   classDef child fill:#6366f126,stroke:#6366f1,stroke-width:1.5px;
-  classDef derived fill:#a855f726,stroke:#a855f7,stroke-width:1.5px;
-  classDef res fill:#f9731626,stroke:#f97316,stroke-width:1.5px;
-  linkStyle default stroke-width:2px;
+  linkStyle default stroke-width:1.5px;
