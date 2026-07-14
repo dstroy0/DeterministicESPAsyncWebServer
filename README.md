@@ -596,6 +596,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 | `DETWS_ENABLE_MQTT`            | `DETWS_ENABLE_DNS_RESOLVER` |
 | `DETWS_ENABLE_MQTT_TLS`        | `DETWS_ENABLE_CLIENT_TLS`   |
 | `DETWS_ENABLE_NMEA2000`        | `DETWS_ENABLE_J1939`        |
+| `DETWS_ENABLE_NTRIP_CASTER`    | `DETWS_ENABLE_NMEA0183`     |
 | `DETWS_ENABLE_OTA`             | `DETWS_ENABLE_STREAM_BODY`  |
 | `DETWS_ENABLE_RELAY`           | `DETWS_ENABLE_DNS_RESOLVER` |
 | `DETWS_ENABLE_SENML`           | `DETWS_ENABLE_CBOR`         |
@@ -617,7 +618,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 
 </details>
 
-_24 hard dependencies, 3 PSRAM gates, 14 derived flags._
+_24 hard dependencies, 3 PSRAM gates, 15 derived flags._
 
 <!-- END GENERATED FLAG DEPS -->
 
