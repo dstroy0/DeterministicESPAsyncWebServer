@@ -1027,27 +1027,43 @@ DCP header (frameID / service / xid / dataLength), the header parser, and the bl
 
 ### PID control law (DETWS_ENABLE_CONTROL)
 
-The single-precision-float PID (`pid_update`): derivative-on-measurement + optional low-pass,
-output clamp, anti-windup by conditional integration, feed-forward. Measured on a real **ESP32-S3
-@ 240 MHz** by reading the Xtensa `CCOUNT` cycle register around a 20 000-iteration loop and
-subtracting an empty-loop baseline, so each figure is the net cost of one call, warm cache.
+The single-precision-float PID: derivative-on-measurement + optional low-pass, output clamp,
+anti-windup by conditional integration, feed-forward. Measured on a real **ESP32-S3 @ 240 MHz** by
+reading the Xtensa `CCOUNT` cycle register around a 20 000-iteration loop and subtracting an
+empty-loop baseline, so each figure is the net cost of one call, warm cache.
 
-| Operation                        | ESP32-S3 cyc/op | ESP32-S3 ns/op | updates/s |
-| -------------------------------- | --------------: | -------------: | --------: |
-| `pid_update`                     |           153.6 |            640 |     1.56M |
-| `pid_update` + derivative filter |           160.7 |            670 |     1.49M |
-| `pid_update_n` (per axis, x4)    |           160.4 |            668 |     1.50M |
+First, the bare arithmetic ops on the LX7 (same CCOUNT method), because they explain everything
+below:
 
-- **~1.56 M updates/s on one core**, so a 1 kHz control loop is ~0.06% of the CPU, and even ~100
-  axes at 1 kHz is ~6%. `pid_update` is defined `inline`, so the whole law folds into the caller
-  with no function-call overhead (that alone cut it from 165.6 to 153.6 cyc). What remains is
-  dominated by the `/dt` derivative divide - the LX7 FPU has no hardware float-divide (it is a
-  reciprocal seed + Newton step), while the rest of the law is single-cycle FPU `madd.s` fused
-  multiply-adds. Everything is single-precision, so it never falls onto the soft-float `double`
-  path. The batched `pid_update_n` costs about the same per axis (its loop shares the inlined body
-  and amortizes overhead against the same per-call divide). For deterministic latency free of
-  flash-cache stalls, place the control loop itself in IRAM. Host-tested for correctness
-  (`native_control`); tune the gains offline with [`tools/pid_tune.py`](../tools/pid_tune.py).
+| bare op | int32 | float |
+| ------- | ----: | ----: |
+| `mul`   |   3.8 |   4.9 |
+| `add`   |     - |   5.1 |
+| `1/x`   |     - |  56.2 |
+| `div`   |   7.0 |  58.3 |
+
+A float **divide is ~58 cyc - ~12x a float multiply** - and it is fully FPU-accelerated: `mul`/`add`
+are single hardware instructions (`mul.s`/`add.s`), but the LX7 FPU has **no divide instruction**,
+so GCC compiles `a / b` to a `call8 __divsf3` (a libgcc helper that does an FPU reciprocal +
+Newton-Raphson). Confirmed by disassembly (`fmul` -> `mul.s`; `fdiv` -> `call __divsf3`).
+
+The PID's only divide is the derivative's `/dt`, so eliminating it is the whole game:
+
+| Operation                                      | ESP32-S3 cyc/op | ns/op | updates/s |
+| ---------------------------------------------- | --------------: | ----: | --------: |
+| `pid_update` (runtime dt - one `__divsf3`)     |           165.7 |   690 |     1.45M |
+| `pid_update` (compile-time-constant dt)        |          ~ 98.4 |   410 |     2.44M |
+| `pid_update_fixed` (dt cached by pid_set_rate) |            97.4 |   406 |     2.46M |
+
+- The `/dt` divide is ~68 of the 166 cyc. `pid_update` is `inline`, so if the caller passes a
+  **constant** `dt` the compiler folds `1/dt` to a literal and the `__divsf3` call vanishes (166 ->
+  98 cyc for free). For a **runtime** `dt`, call `pid_set_rate(p, dt)` once and then
+  `pid_update_fixed()` - it multiplies by a cached `1/dt` so the hot path is all `mul.s`/`madd.s`,
+  **97.4 cyc, ~41% faster** than paying the per-tick `__divsf3`. Everything is single-precision, so
+  it never falls onto the soft-float `double` path. At 97 cyc a 1 kHz loop is ~0.04% of one core,
+  and ~100 axes at 1 kHz is ~4%. For deterministic latency free of flash-cache stalls, place the
+  control loop itself in IRAM. Host-tested for correctness (`native_control`); tune the gains
+  offline with [`tools/pid_tune.py`](../tools/pid_tune.py).
 
 ### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
 

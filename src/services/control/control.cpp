@@ -27,7 +27,18 @@ void pid_init(Pid *p, float kp, float ki, float kd)
     p->integ_min = -CONTROL_UNBOUNDED;
     p->integ_max = CONTROL_UNBOUNDED;
     p->d_alpha = 0.0f;
+    p->dt = 0.0f;
+    p->inv_dt = 0.0f;
     pid_reset(p);
+}
+
+void pid_set_rate(Pid *p, float dt)
+{
+    if (p && dt > 0.0f)
+    {
+        p->dt = dt;
+        p->inv_dt = 1.0f / dt;
+    }
 }
 
 void pid_set_output_limits(Pid *p, float lo, float hi)

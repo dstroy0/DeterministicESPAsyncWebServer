@@ -76,6 +76,9 @@ struct Pid
     float integ_min; ///< integral accumulator lower clamp
     float integ_max; ///< integral accumulator upper clamp
     float d_alpha;   ///< derivative low-pass smoothing in [0,1); 0 = raw (unfiltered) derivative
+    // fixed-rate cache (set by pid_set_rate; lets pid_update_fixed() run with no divide)
+    float dt;     ///< cached sample period, 0 until pid_set_rate()
+    float inv_dt; ///< cached 1/dt
     // runtime state (owned by pid_update / pid_reset)
     float integ;     ///< integral accumulator
     float prev_meas; ///< previous measurement (for derivative-on-measurement)
@@ -134,20 +137,18 @@ void pid_set_derivative_filter(Pid *p, float alpha);
 /// Set the feed-forward gain (the command output includes kff * setpoint).
 void pid_set_feedforward(Pid *p, float kff);
 
+/// Cache the sample period @p dt (and 1/dt) for the zero-divide pid_update_fixed() fast path. Call
+/// once at setup for a fixed-rate loop; the single reciprocal is computed here, not per tick.
+void pid_set_rate(Pid *p, float dt);
+
 /// Clear the integrator, derivative memory, and prime flag (e.g. when re-enabling the loop).
 void pid_reset(Pid *p);
 
-/**
- * @brief Advance the loop one step: returns the (clamped) control output for @p setpoint given the
- *        measured process value @p measurement over the elapsed time @p dt seconds (dt <= 0 -> 0).
- *
- * Inline (no call overhead) and FPU-accelerated (single-precision, FMA-folded).
- */
-static inline float pid_update(Pid *p, float setpoint, float measurement, float dt)
+/// Internal shared step, used by pid_update() and pid_update_fixed(): the whole control law with
+/// @p dt and its reciprocal @p inv_dt supplied, so there is no divide inside. Call an entry point
+/// below, not this directly.
+static inline float pid_step_(Pid *p, float setpoint, float measurement, float dt, float inv_dt)
 {
-    if (!p || dt <= 0.0f)
-        return 0.0f;
-
     float error = setpoint - measurement;
 
     // Derivative on measurement (no setpoint-change "kick"): d(error)/dt = -d(measurement)/dt when
@@ -155,7 +156,7 @@ static inline float pid_update(Pid *p, float setpoint, float measurement, float 
     float deriv = 0.0f;
     if (p->primed)
     {
-        deriv = -(measurement - p->prev_meas) / dt;
+        deriv = -(measurement - p->prev_meas) * inv_dt; // multiply by 1/dt, no divide
         p->d_filt = (p->d_alpha > 0.0f) ? p->d_filt + p->d_alpha * (deriv - p->d_filt) : deriv;
     }
     p->prev_meas = measurement;
@@ -177,6 +178,32 @@ static inline float pid_update(Pid *p, float setpoint, float measurement, float 
         p->integ = integ_next;
 
     return out;
+}
+
+/**
+ * @brief Advance the loop one step: returns the (clamped) control output for @p setpoint given the
+ *        measured process value @p measurement over the elapsed time @p dt seconds (dt <= 0 -> 0).
+ *
+ * Inline (no call overhead) and FPU-accelerated (single-precision, FMA-folded). Variable-rate: it
+ * computes 1/dt each call. For a fixed-rate loop use pid_update_fixed() to skip that divide.
+ */
+static inline float pid_update(Pid *p, float setpoint, float measurement, float dt)
+{
+    if (!p || dt <= 0.0f)
+        return 0.0f;
+    return pid_step_(p, setpoint, measurement, dt, 1.0f / dt);
+}
+
+/**
+ * @brief Zero-divide fixed-rate step: same law as pid_update() but uses the dt / 1-over-dt cached
+ *        by pid_set_rate(), so the hot path is all multiplies (the fastest form). Returns 0 until
+ *        pid_set_rate() has supplied a positive dt.
+ */
+static inline float pid_update_fixed(Pid *p, float setpoint, float measurement)
+{
+    if (!p || p->dt <= 0.0f)
+        return 0.0f;
+    return pid_step_(p, setpoint, measurement, p->dt, p->inv_dt);
 }
 
 /// Batched multi-axis update: run @p n loops from contiguous arrays in one tight, FPU-bound,

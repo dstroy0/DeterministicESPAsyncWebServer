@@ -1238,7 +1238,12 @@
     "zeroization",
     "zhideloh",
     "Zigbee",
-    "zwave"
+    "zwave",
+    "divsf",
+    "fdiv",
+    "fmul",
+    "libgcc",
+    "Raphson"
   ],
   "ignorePaths": [
     "node_modules/**",

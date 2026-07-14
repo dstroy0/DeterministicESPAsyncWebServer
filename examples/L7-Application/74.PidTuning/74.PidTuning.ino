@@ -137,6 +137,7 @@ void setup()
 
     pid_init(&pid, KP, KI, KD);
     pid_set_output_limits(&pid, OUT_MIN, OUT_MAX);
+    pid_set_rate(&pid, PERIOD_MS * 0.001f); // fixed rate -> pid_update_fixed() skips the /dt divide
 
     server.on("/", HttpMethod::HTTP_GET, handle_root);
     server.on("/log.csv", HttpMethod::HTTP_GET, handle_log);
@@ -153,12 +154,12 @@ void loop()
     uint32_t now = millis();
     if (now - last < PERIOD_MS)
         return;
-    float dt = (now - last) / 1000.0f;
+    float dt = PERIOD_MS * 0.001f; // fixed rate; * 0.001f, not / 1000.0f (a float divide is a __divsf3 call)
     last = now;
 
     float sp = setpoint_now(now);
     float meas = plant_read();
-    float u = pid_update(&pid, sp, meas, dt);
+    float u = pid_update_fixed(&pid, sp, meas); // no per-tick /dt divide (rate cached in setup)
     plant_write(u, dt);
 
     if (g_count < LOG_N)

@@ -120,6 +120,30 @@ void test_batched_update()
     TEST_ASSERT_TRUE(near_f(out[1], 6.0f));
 }
 
+void test_fixed_rate_matches()
+{
+    // pid_update_fixed(sp, meas) must equal pid_update(sp, meas, dt) once pid_set_rate caches dt.
+    Pid a;
+    Pid b;
+    pid_init(&a, 1.5f, 4.0f, 0.05f);
+    pid_init(&b, 1.5f, 4.0f, 0.05f);
+    pid_set_derivative_filter(&b, 0.2f);
+    pid_set_derivative_filter(&a, 0.2f);
+    pid_set_rate(&b, 0.01f);
+    for (int i = 0; i < 25; i++)
+    {
+        float sp = (i < 5) ? 0.0f : 10.0f;
+        float meas = (float)i * 0.37f;
+        float va = pid_update(&a, sp, meas, 0.01f);
+        float vb = pid_update_fixed(&b, sp, meas);
+        TEST_ASSERT_TRUE(near_f(va, vb));
+    }
+    // no rate cached -> returns 0 (fails closed)
+    Pid c;
+    pid_init(&c, 1.0f, 0.0f, 0.0f);
+    TEST_ASSERT_TRUE(near_f(pid_update_fixed(&c, 1.0f, 0.0f), 0.0f));
+}
+
 void test_control_primitives()
 {
     TEST_ASSERT_TRUE(near_f(control_clamp(7.0f, 0.0f, 5.0f), 5.0f));
@@ -145,6 +169,7 @@ int main()
     RUN_TEST(test_derivative_filter);
     RUN_TEST(test_reset_and_guards);
     RUN_TEST(test_batched_update);
+    RUN_TEST(test_fixed_rate_matches);
     RUN_TEST(test_control_primitives);
     return UNITY_END();
 }
