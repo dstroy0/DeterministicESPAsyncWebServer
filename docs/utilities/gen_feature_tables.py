@@ -154,6 +154,178 @@ LAYER_MEMBERS = {
     },
 }
 
+# The Application (L7) layer holds ~125 features - too many for one table. Subdivide it into functional
+# categories (render order = CATEGORY_ORDER). CATEGORY_MEMBERS lists the FEATURES.md headings in each;
+# every application-layer heading should appear in exactly one set. An application feature left out of
+# all of them falls through to an "Application (L7) - Other" table (a build-time nudge to place it).
+# Only application-layer features belong here (build_block validates that). Non-application layers
+# (Foundation, L1-L6) keep their single per-layer table.
+CATEGORY_ORDER = [
+    "Web & HTTP",
+    "Auth, Identity & Security",
+    "IoT, Messaging & APIs",
+    "Industrial & Fieldbus",
+    "SCADA, Energy & Monitoring",
+    "Machine Tools & OT",
+    "Transportation & ITS",
+    "Clients & Gateways",
+    "Storage & Database",
+    "Time & Discovery",
+    "Observability & Telemetry",
+    "Firmware & System",
+]
+CATEGORY_MEMBERS = {
+    "Web & HTTP": {
+        "Chunked Responses",
+        "CORS",
+        "Dashboard",
+        "ETag",
+        "File Serving",
+        "HTTP Cache",
+        "Middleware",
+        "Range",
+        "Routing",
+        "SPA Router",
+        "Templating",
+        "Themes",
+        "Upload",
+        "WebDAV",
+    },
+    "Auth, Identity & Security": {
+        "Audit Log",
+        "CSRF",
+        "OAuth2",
+        "OIDC",
+        "TOTP",
+    },
+    "IoT, Messaging & APIs": {
+        "AMQP",
+        "CoAP",
+        "CoAP Block",
+        "CoAP Observe",
+        "DDS-RTPS",
+        "GraphQL",
+        "gRPC-Web",
+        "LwM2M",
+        "MQTT",
+        "MQTT SN",
+        "MQTT TLS",
+        "NATS",
+        "Sparkplug",
+        "Stomp",
+        "WAMP",
+        "XMPP",
+    },
+    "Industrial & Fieldbus": {
+        "BACnet",
+        "CANopen",
+        "CC-Link",
+        "CIP",
+        "COTP",
+        "DeviceNet",
+        "DF1",
+        "DirectNET",
+        "DMX512",
+        "EtherNet/IP",
+        "FINS",
+        "HART",
+        "Host Link",
+        "INTERBUS",
+        "IO-Link",
+        "LonWorks",
+        "MELSEC",
+        "Modbus",
+        "Modbus Master",
+        "Modbus Plus",
+        "Modbus RTU",
+        "POWERLINK",
+        "PROFIBUS",
+        "PROFINET",
+        "S7comm",
+        "SDI-12",
+        "SERCOS III",
+        "SNP",
+    },
+    "SCADA, Energy & Monitoring": {
+        "C37.118",
+        "DNP3",
+        "GOOSE",
+        "ICCP",
+        "IEC 60870",
+        "M-Bus",
+        "MMS",
+        "OpenADR",
+        "SEP2",
+        "SunSpec",
+    },
+    "Machine Tools & OT": {
+        "DNC (CNC drip-feed)",
+        "MTConnect",
+        "OPC-UA",
+        "OPC-UA Client",
+        "umati (OPC UA for Machine Tools)",
+    },
+    "Transportation & ITS": {
+        "ATC",
+        "J1939",
+        "J2735",
+        "NEMA TS2",
+        "NMEA 0183",
+        "NMEA 2000",
+        "NTCIP",
+        "OCIT",
+        "UTMC",
+        "WAVE",
+    },
+    "Clients & Gateways": {
+        "FTP client",
+        "HTTP Client",
+        "HTTP Client TLS",
+        "Relay (TCP forward / DNAT)",
+        "SMB",
+        "SMTP",
+        "Webhook",
+        "WS Client",
+        "WS Client TLS",
+    },
+    "Storage & Database": {
+        "DBM Key-Value Store",
+        "Document Store",
+        "Redis",
+        "SQLite",
+        "Write-Ahead Log",
+    },
+    "Time & Discovery": {
+        "Adaptive mDNS",
+        "DNS Server",
+        "MDNS",
+        "NTP",
+        "NTP Server",
+        "NTS",
+    },
+    "Observability & Telemetry": {
+        "Diag",
+        "Flow Export",
+        "Log-Buffer",
+        "Metrics",
+        "Observability",
+        "Partition Monitor",
+        "SNMP",
+        "SNMP Trap",
+        "SNMP V3",
+        "Stats",
+        "StatsD",
+        "Syslog",
+        "Telemetry",
+        "UDP Telemetry",
+    },
+    "Firmware & System": {
+        "OTA",
+        "OTA Rollback",
+        "Provisioning",
+    },
+}
+
 # Where each target file's links to FEATURES.md point.
 TARGETS = {
     os.path.join(ROOT, "README.md"): "docs/FEATURES.md",
@@ -238,6 +410,13 @@ def layer_of(name):
     return APPLICATION_LAYER
 
 
+def category_of(name):
+    for cat, members in CATEGORY_MEMBERS.items():
+        if name in members:
+            return cat
+    return None
+
+
 def build_block(link_prefix):
     entries = parse_features(FEATURES_MD)
     # Validate the layer map so a renamed/removed heading is caught, not silently dropped.
@@ -246,6 +425,15 @@ def build_block(link_prefix):
     missing = mapped - known
     if missing:
         raise SystemExit(f"LAYER_MEMBERS headings not found in FEATURES.md: {sorted(missing)}")
+    # Validate the L7 category map the same way: every listed heading must exist, and must be an
+    # application-layer feature (a heading pinned to a lower layer must not also be categorized).
+    cat_mapped = set().union(*CATEGORY_MEMBERS.values())
+    cat_missing = cat_mapped - known
+    if cat_missing:
+        raise SystemExit(f"CATEGORY_MEMBERS headings not found in FEATURES.md: {sorted(cat_missing)}")
+    cat_wrong_layer = {n for n in cat_mapped if layer_of(n) != APPLICATION_LAYER}
+    if cat_wrong_layer:
+        raise SystemExit(f"CATEGORY_MEMBERS entries are not Application-layer features: {sorted(cat_wrong_layer)}")
 
     by_layer = {layer: [] for layer in LAYER_ORDER}
     for name, desc in entries:
@@ -256,7 +444,22 @@ def build_block(link_prefix):
         rows = sorted(by_layer[layer], key=lambda e: e[0].lower())
         if not rows:
             continue
-        parts += [render_table(layer, rows, link_prefix), ""]
+        if layer != APPLICATION_LAYER:
+            parts += [render_table(layer, rows, link_prefix), ""]
+            continue
+        # Subdivide the large Application (L7) layer into functional categories; anything uncategorized
+        # falls into a trailing "Other" table (a nudge to slot it into CATEGORY_MEMBERS). rows is already
+        # alphabetized, so each category table stays alphabetized.
+        by_cat = {c: [] for c in CATEGORY_ORDER}
+        other = []
+        for name, desc in rows:
+            c = category_of(name)
+            (by_cat[c] if c else other).append((name, desc))
+        for c in CATEGORY_ORDER:
+            if by_cat[c]:
+                parts += [render_table(c, by_cat[c], link_prefix), ""]
+        if other:
+            parts += [render_table(APPLICATION_LAYER + " - Other", other, link_prefix), ""]
     parts.append(END)
     return "\n".join(parts)
 

@@ -711,11 +711,45 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       interpreter layer carried over 3964R - FETCH/SEND telegrams addressing DB/data blocks, words and
       bits), plus the **MPI** (Multipoint Interface bus) and **PtP IF** (point-to-point CP serial
       interface) link layers. Serial-first (RS-232/RS-485 transport step tracked with the other serial buses).
-- [ ] **Fanuc FOCAS** (M, CNC data collection) - the FANUC Open CNC API (FOCAS, Ethernet/HSSB) data
-      read path: CNC + program status, absolute/machine/relative position, spindle speed + feedrate and
-      their overrides, active/selected program number, active tool, alarms, and part/execution counters
-      from FANUC controllers over TCP. A southbound CNC source that pairs with **MTConnect** and the new
-      **umati** (OPC UA for Machine Tools) model. Fixed BSS, no heap.
+- [ ] **Fanuc FOCAS** (L, CNC data collection - low priority) - the FANUC Open CNC API. FOCAS has no
+      _official_ public wire protocol (FANUC ships the licensed `fwlib32` binary, part # A02B-0207-K732/
+      K737, x86/ARM-Linux/Windows - it cannot run on an ESP32), BUT the **FOCAS2 wire protocol (TCP 8193)
+      is already reverse-engineered in open source** - `diohpix/pyfanuc` (Python) and
+      `zhideloh/node-red-contrib-fanuc-focas` (pure Node.js sockets, no fwlib32). So a zero-heap client
+      codec IS buildable + **host-verifiable against those reference impls** (byte-compare our request/
+      response framing + the data-read structures - position, spindle/feed + overrides, program/tool
+      status, alarms, part counts - against pyfanuc), and HW-verified against a real FANUC control when one
+      is available. Low priority (route FANUC through **MTConnect** in the meantime). Refs: pyfanuc,
+      node-red-contrib-fanuc-focas.
+- [ ] **Beckhoff ADS / AMS** (L, TwinCAT) - the Automation Device Specification protocol Beckhoff
+      publishes (Beckhoff InfoSys), over TCP 48898: the AMS/ADS header (AMSNetId source/target + port,
+      command id, state flags, length, invoke id) plus the ADS commands (ReadDeviceInfo, Read, Write,
+      ReadWrite, ReadState, WriteControl, Add/Delete/Notification) that read + write PLC symbols by index
+      group/offset or by handle. Fully documented and verifiable against `pyads` / a TwinCAT router; the
+      most widely used PC-based-control protocol, and a machine-tool source via TwinCAT NC/CNC. Fixed BSS, no heap.
+- [ ] **Heidenhain LSV/2** (M, CNC DNC) - the LSV/2 protocol Heidenhain TNC controls use for DNC + data
+      access (block-numbered telegrams with a BCC, file transfer + run/status inspection). A CNC-native
+      southbound source for the common European control, over serial and Ethernet.
+- [ ] **EUROMAP 77 / 83** (M, OPC UA for plastics) - the injection-moulding / rubber-machine OPC UA
+      companion specs (EUROMAP, euromap.org NodeSet), the plastics analogue of **umati**. Layers on the
+      OPC UA server exactly like `services/umati` (the machine/mould/job model through the Browse + Read
+      resolvers out of a caller struct) - reuses the umati pattern, low risk, high value for moulding shops.
+- [ ] **CiA 402 drive profile** (M, IEC 61800-7-201) - the standardised servo/stepper drive + motion
+      profile over the existing **CANopen** (`services/canopen`) / EtherCAT-CoE: the state machine
+      (Controlword / Statusword), Modes of Operation (Profile Position / Velocity / Torque + Cyclic Sync),
+      and the target/actual position-velocity-torque objects. Turns the CAN stack into a motion master;
+      pairs with the dshot / ESC actuator set.
+- [ ] **PROFIdrive** (L, Siemens drive profile) - the Siemens PROFIBUS/PROFINET drive profile (parameter
+      access via PNU, the standard STW1/ZSW1 control/status telegrams + setpoint/actual) over the PROFINET stack.
+- [ ] **PackML / OMAC** (M, ISA-88 / OMAC PackTags) - the packaging-machine state model: the PackML state
+      machine (Idle/Execute/Held/Suspended/Aborted/...) plus the Admin/Status/Command PackTags, usually
+      surfaced over OPC UA - the state engine + tag model as a fixed-BSS service.
+- [ ] **Haas Machine Data Collection** (S, serial Q commands) - the documented Haas MDC serial protocol
+      (the `Q` command set: Q100 machine serial, Q500 program+status, Q600 macro-variable read) that Haas
+      CNC controls answer over RS-232 / the network port. A small, fully-documented CNC read source.
+- [ ] **OPC UA Robotics (OPC 40010)** - the VDMA Robotics OPC UA companion spec (the MotionDevice model:
+      axes, controller, safety state), another umati-pattern model on the OPC UA server; pairs with the
+      Siemens **Run MyRobot** item and **umati** for robot cells.
 - [ ] **Secure machine agent: G-code deployment over a single secure port** (L) - the device as a
       secure local agent that deploys CNC part programs (G-code) to a machine tool over ONE authenticated,
       encrypted port: NC-program transfer/staging multiplexed on the existing TLS endpoint (or a secured
