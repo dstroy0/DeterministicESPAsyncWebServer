@@ -1022,9 +1022,9 @@ Feature Tables workflow from `docs/footprints.json`.
 | `GPIO_MAP` | `L7-Application/38.GpioMap` | 756,541 | 81,832 |
 | `WS_DEFLATE` | `L6-Presentation/11.WebSocketCompression` | 756,945 | 89,968 |
 | `WEB_TERMINAL` | `L6-Presentation/10.WebTerminal` | 756,997 | 81,856 |
-| `OTA` | `L7-Application/16.OTA` | 757,017 | 102,112 |
 | `GRAPHQL` | `L7-Application/52.GraphQL` | 757,117 | 86,184 |
 | `CONFIG_STORE+CONFIG_IO` | `L7-Application/42.ConfigExport` | 757,205 | 81,836 |
+| `OTA` | `L7-Application/16.OTA` | 757,517 | 102,120 |
 | `COAP` | `L7-Application/13.CoAP` | 757,889 | 84,288 |
 | `DNS_RESOLVER` | `L7-Application/48.DnsResolver` | 758,209 | 83,056 |
 | `PROVISIONING` | `L7-Application/17.Provisioning` | 759,849 | 83,340 |
@@ -1057,9 +1057,13 @@ Feature Tables workflow from `docs/footprints.json`.
 | `ETAG` | `L7-Application/09.ETag` | 828,381 | 83,080 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/25.WebSocketClient` | 831,745 | 123,620 |
+| `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/25.WebSocketClient` | 831,769 | 107,236 |
 | `TLS` | `L6-Presentation/07.SecureWebSocket` | 855,873 | 122,020 |
+| `TLS+TLS_ARENA_SIZE` | `L6-Presentation/07.SecureWebSocket` | 856,425 | 105,644 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/06.TlsResumption` | 856,693 | 122,180 |
 | `TLS+MTLS` | `L4-Transport/04.mTLS` | 856,829 | 122,356 |
+| `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/06.TlsResumption` | 857,237 | 105,804 |
+| `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/04.mTLS` | 857,397 | 105,980 |
 
 <!-- END GENERATED BUILD-FOOTPRINT -->
 
