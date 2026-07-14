@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.10.0] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.10.0 - 2026-07-14</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`e04cc69`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e04cc692651ad5ebd809b25b3da63e5c3df60408))
+- update CHANGELOG.md [skip ci] ([`70077ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/70077eeb1995e11d065261ccbabbf0e06643a048))
+
+### Changes
+
+- Bump version: 6.9.0 → 6.10.0 ([`eebbc77`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eebbc7797ec439676e9403f3f4414fd2722daffe))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`57de2f5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/57de2f57b013c44ab12a6695635b479febe7319d))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a23cb70`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a23cb70d9903a702ad2cd6f03b6e8b316e8392f0))
+
+### Features
+
+- DFRobot SEN0192 microwave motion sensor driver + example ([`c131d1a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c131d1a8d83b5f722ecee8ec678a963488ebf380))
+
+</details>
+
 ## [6.9.0] - 2026-07-14
 
 <details>
