@@ -510,7 +510,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2949 test cases** across **247 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2950 test cases** across **247 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -4557,7 +4557,7 @@ A thorough directory of all **2949 test cases** across **247 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_control (11 tests)</b></summary>
+<summary><b>test_control (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_proportional_only</b> &mdash; <i>Proportional only</i></summary>
@@ -4647,6 +4647,15 @@ A thorough directory of all **2949 test cases** across **247 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (near_f(out[0], 5.0f))</code>
       * <code>Assert true (near_f(out[1], 6.0f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_fixed_rate_matches</b> &mdash; <i>pid_update_fixed(sp, meas) must equal pid_update(sp, meas, dt) once pid_set_rate caches dt.</i></summary>
+
+    * **Objective**: pid_update_fixed(sp, meas) must equal pid_update(sp, meas, dt) once pid_set_rate caches dt.
+    * **Assertions**:
+      * <code>Assert true (near_f(va, vb))</code>
+      * <code>Assert true (near_f(pid_update_fixed(&c, 1.0f, 0.0f), 0.0f))</code>
   </details>
 
   <details style="margin-left: 20px;">
