@@ -125,6 +125,26 @@ about **every 128-256 KiB** (a batch of 4-8 units). That reaches ~95%+ of the du
 away 60-90% of the throughput. The 90-150 ms write tail is present at every size, so the queue must be deep
 enough to keep accepting work across a stalled flush.
 
+### Second-board confirmation - XIAO ESP32-S3 Sense (2026-07-13)
+
+Repeated on a **XIAO ESP32-S3 Sense** (its onboard microSD, SPI CS=GPIO21, bus SCK7/MISO8/MOSI9) with a
+**32 GB SDHC** card, 16 KiB sequential blocks, content byte-verified (FNV-1a round-trip) at every point:
+
+| SPI clock       | Seq write MB/s | Seq read MB/s | Max write latency |
+| --------------- | -------------: | ------------: | ----------------: |
+| 4 MHz (default) |          0.424 |         0.424 |            133 ms |
+| 8 MHz           |          0.751 |         0.753 |            115 ms |
+| 16 MHz          |          1.394 |         1.242 |            105 ms |
+| **20 MHz**      |      **1.688** |         1.423 |         **16 ms** |
+| 25 / 40 MHz     |          1.688 |         1.423 |             16 ms |
+
+Same shape as the DevKitC: **scales to 20 MHz, then plateaus** (~1.69 MB/s write / ~1.42 MB/s read) - the ESP
+SD-SPI driver clamps the effective clock, so 25/40 MHz are byte-identical to 20. Max latency also collapses to
+~16 ms at 20 MHz, so **20 MHz is the sweet spot** (best throughput and lowest per-op stall). The Arduino
+`SD.begin(cs)` default is **4 MHz** - 4x slower - so an app must pass the clock: `SD.begin(cs, spi, 20000000)`.
+The ~1.5-1.7 MB/s SD-over-SPI ceiling holds across two boards and two cards, confirming it is card/protocol
+bound, not board-specific.
+
 ## 2. Pure codec host baseline
 
 Host = Raspberry Pi 5 (Cortex-A76, `-O2`), a relative baseline; ESP32-S3 = the real device at 240 MHz.
@@ -1134,3 +1154,29 @@ transfers** (firmware images, data logs, file serving). On clean/short PCB wirin
 clock is higher; on breadboard jumpers keep it at the 20 MHz default (proven at 200 MB) or 24 MHz for
 ~14% more. For near-100-Mbit speed use an **RMII PHY (LAN8720)** instead - the W5500 trades speed for
 needing no built-in MAC (works on the S3 / C3, which have none).
+
+### Camera MJPEG streaming over send_chunked (real producer load)
+
+The streaming TX path (`send_chunked`, constant memory, paged across worker loops) driven by a **live
+OV2640 camera** instead of a synthetic source - the same path a firmware image or a file download uses,
+now fed by a real, variable-size, back-to-back producer. Measured on a **XIAO ESP32-S3 Sense** (onboard
+OV2640, 8 MB PSRAM frame buffers) over Wi-Fi.
+
+| Endpoint   | Result                                                                                       |
+| ---------- | -------------------------------------------------------------------------------------------- |
+| `/capture` | one VGA JPEG, HTTP 200 `image/jpeg`, 15.7 KB, valid SOI..EOI (`FFD8`..`FFD9`)                |
+| `/stream`  | `multipart/x-mixed-replace` MJPEG: **105 complete frames in 5 s (~21 fps VGA), ~5.2 Mbit/s** |
+
+The `/stream` handler is a one-line `send_chunked(slot, 200, "multipart/x-mixed-replace; boundary=...",
+source, ctx)`; the `source` is a small per-frame state machine (boundary+headers -> JPEG body ->
+`esp_camera_fb_return`, then the next frame) that **never returns 0**, so the stream runs until the client
+disconnects. Over a 5 s pull the wire carried 106 multipart parts (boundary + `Content-Type: image/jpeg` +
+JPEG each); 105 JPEGs closed with `FFD9` and the 106th was cut mid-frame by the client timeout - exactly a
+live stream truncated at an arbitrary instant.
+
+**Practicality:** this proves the chunked streaming path holds up under a **continuous, unbounded producer**
+(a webcam) in constant memory, not just a fixed-size body. Throughput here is producer- and Wi-Fi-bound
+(~21 fps VGA), not a limit of the send path - the camera's JPEG rate and the radio set the pace. The
+library owns the HTTP framing and flow control; the camera driver (`esp_camera`) and pin map are the
+integration's (XIAO ESP32-S3 Sense: XCLK10, SIOD40/SIOC39, VSYNC38/HREF47/PCLK13, data Y2-Y9 =
+15/17/18/16/14/12/11/48).
