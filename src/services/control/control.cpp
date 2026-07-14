@@ -10,6 +10,8 @@
 
 #if DETWS_ENABLE_CONTROL
 
+#include <string.h>
+
 // clamp helper is control_clamp() from control.h (inline) - reused here, not re-declared.
 
 void pid_init(Pid *p, float kp, float ki, float kd)
@@ -110,6 +112,63 @@ void pid_update_n(Pid *p, const float *setpoint, const float *measurement, float
         return;
     for (uint8_t i = 0; i < n; i++)
         out[i] = pid_update(&p[i], setpoint[i], measurement[i], dt);
+}
+
+// --- dense-binary log packers (little-endian; see the PID_LOG_* format in control.h) ---
+
+static size_t put_u16le(uint8_t *p, uint16_t v)
+{
+    p[0] = (uint8_t)(v & 0xFF);
+    p[1] = (uint8_t)(v >> 8);
+    return 2;
+}
+
+static size_t put_u32le(uint8_t *p, uint32_t v)
+{
+    p[0] = (uint8_t)(v & 0xFF);
+    p[1] = (uint8_t)((v >> 8) & 0xFF);
+    p[2] = (uint8_t)((v >> 16) & 0xFF);
+    p[3] = (uint8_t)((v >> 24) & 0xFF);
+    return 4;
+}
+
+static size_t put_f32le(uint8_t *p, float v)
+{
+    uint32_t u;
+    memcpy(&u, &v, 4); // reinterpret the IEEE-754 bits, then emit little-endian
+    return put_u32le(p, u);
+}
+
+size_t pid_log_header(uint8_t *buf, size_t cap, const Pid *p, float dt)
+{
+    if (!buf || !p || cap < PID_LOG_HEADER_LEN)
+        return 0;
+    size_t o = 0;
+    memcpy(buf, PID_LOG_MAGIC, 4);
+    o += 4;
+    buf[o++] = PID_LOG_VERSION;
+    buf[o++] = 0; // flags (reserved)
+    o += put_u16le(buf + o, 0);
+    o += put_f32le(buf + o, dt);
+    o += put_f32le(buf + o, p->kp);
+    o += put_f32le(buf + o, p->ki);
+    o += put_f32le(buf + o, p->kd);
+    o += put_f32le(buf + o, p->kff);
+    o += put_f32le(buf + o, p->out_min);
+    o += put_f32le(buf + o, p->out_max);
+    return o; // == PID_LOG_HEADER_LEN
+}
+
+size_t pid_log_record(uint8_t *buf, size_t cap, float setpoint, float measurement, float output, bool saturated)
+{
+    if (!buf || cap < PID_LOG_RECORD_LEN)
+        return 0;
+    size_t o = 0;
+    o += put_f32le(buf + o, setpoint);
+    o += put_f32le(buf + o, measurement);
+    o += put_f32le(buf + o, output);
+    o += put_u32le(buf + o, saturated ? PID_LOG_STATUS_SATURATED : 0u);
+    return o; // == PID_LOG_RECORD_LEN
 }
 
 #endif // DETWS_ENABLE_CONTROL

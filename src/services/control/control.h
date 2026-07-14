@@ -31,6 +31,7 @@
 
 #if DETWS_ENABLE_CONTROL
 
+#include <stddef.h>
 #include <stdint.h>
 
 // Hardware acceleration: the math is single-precision float end to end so it runs on the ESP32 /
@@ -48,9 +49,23 @@
 
 #define CONTROL_UNBOUNDED 1e30f ///< sentinel for "no clamp" (well outside any real actuator range)
 
-// Canonical PID-run log columns (the device emits these; tools/pid_tune.py replays them):
-//   t_s,setpoint,measurement,output,dt_s
+// PID-run log for offline tuning with tools/pid_tune.py, in two interchangeable formats:
+//
+//  1. CSV (human / serial friendly) - one row per control step, these columns:
 #define CONTROL_LOG_HEADER "t_s,setpoint,measurement,output,dt_s"
+//
+//  2. Dense binary (little-endian) for high-rate loops - self-describing (the header carries the
+//     gains, limits, and sample period the run used, so the tuner needs no flags) and 16 B/sample:
+//       header (PID_LOG_HEADER_LEN): "DPID" | ver u8=1 | flags u8 | reserved u16 |
+//         dt_s f32 | kp f32 | ki f32 | kd f32 | kff f32 | out_min f32 | out_max f32
+//       record (PID_LOG_RECORD_LEN): setpoint f32 | measurement f32 | output f32 |
+//         status u32 (bit 0 = output was saturated this step, so the tuner can drop it from the
+//         plant identification fit).
+#define PID_LOG_MAGIC "DPID"
+#define PID_LOG_VERSION 1
+#define PID_LOG_HEADER_LEN 36
+#define PID_LOG_RECORD_LEN 16
+#define PID_LOG_STATUS_SATURATED 0x1u
 
 /**
  * @brief A single-loop PID controller. Zero its bytes or call pid_init() before first use; the
@@ -104,6 +119,14 @@ DETWS_CONTROL_HOT float pid_update(Pid *p, float setpoint, float measurement, fl
 /// SIMD-friendly pass (motion masters run several drives off one control tick). Each
 /// out[i] = pid_update(&p[i], setpoint[i], measurement[i], dt).
 void pid_update_n(Pid *p, const float *setpoint, const float *measurement, float dt, float *out, uint8_t n);
+
+/// Write the self-describing 36-octet dense-binary log header from @p p's gains + limits and the
+/// sample period @p dt (see the PID_LOG_* format above). Returns PID_LOG_HEADER_LEN, or 0 if cap
+/// is too small. Emit once, then a pid_log_record() per control step.
+size_t pid_log_header(uint8_t *buf, size_t cap, const Pid *p, float dt);
+
+/// Write one 16-octet dense-binary log record. Returns PID_LOG_RECORD_LEN, or 0 if cap too small.
+size_t pid_log_record(uint8_t *buf, size_t cap, float setpoint, float measurement, float output, bool saturated);
 
 // --- inline control-law primitives (dedup of the arithmetic every loop reaches for) ---
 
