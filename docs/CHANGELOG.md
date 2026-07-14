@@ -6,12 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`503c617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/503c617819a670bb006d9126eb25de4bc0ca00fb))
 - update CHANGELOG.md [skip ci] ([`2a2d0a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2a2d0a93ed888c7f14f5649bdae3b33ff8507458))
 - update CHANGELOG.md [skip ci] ([`b988aa8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b988aa8cae8d635942e5c8510b8273080f8e4218))
 - update CHANGELOG.md [skip ci] ([`4f27879`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f27879d5619a2006ab2edbd678544ca43c1bfb5))
 
 ### Documentation
 
+- XIAO ESP32-S3 Sense camera MJPEG + SD storage characterization ([`111d187`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/111d187cdff3dbe7c9891ad31cd329c1a1951635))
 - re-confirm on-device HW-verify over W5500 + curl second client ([`696321b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/696321b1a52b090a2b81109f7f5dd8517ded22f1))
 - HW-verify Port-Forward + Ethernet DNC over W5500 ([`f36c8d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f36c8d8d77d326d182b41b450f95995d759eb33b))
 - refresh coverage note + enrich W5500 record after v5.101.0 ([`c5e4f63`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c5e4f63c7acaff50a00b0e77a44c6d62b846be10))
