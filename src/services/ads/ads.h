@@ -250,8 +250,8 @@ bool ads_parse_add_notification(const uint8_t *data, size_t data_len, uint32_t *
 
 /// Callback invoked once per sample while walking a DeviceNotification (cmd 8) payload.
 /// `timestamp` is the raw Windows FILETIME (100 ns ticks since 1601-01-01 UTC).
-typedef void (*AdsNotificationSampleFn)(uint32_t notification_handle, const uint8_t *sample, uint32_t sample_len,
-                                        uint64_t timestamp, void *user);
+using AdsNotificationSampleFn = void (*)(uint32_t notification_handle, const uint8_t *sample, uint32_t sample_len,
+                                         uint64_t timestamp, void *user);
 
 /// Walk a DeviceNotification payload (Length + Stamps, each stamp = Timestamp + Samples + the
 /// per-sample handle/size/data), calling `on_sample` for every sample. Returns false if the

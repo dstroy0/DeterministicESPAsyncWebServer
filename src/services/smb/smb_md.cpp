@@ -189,7 +189,7 @@ void md4_init(MdCtx *c)
 
 // --- shared absorb / finish (MD4 and MD5 share the framing) ----------------
 
-typedef void (*md_compress_fn)(uint32_t[4], const uint8_t[64]);
+using md_compress_fn = void (*)(uint32_t[4], const uint8_t[64]);
 
 static void md_absorb(MdCtx *c, const uint8_t *data, size_t len, md_compress_fn compress)
 {

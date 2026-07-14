@@ -45,8 +45,8 @@ enum class DncStreamResult : int32_t
  *         While paused by XOFF the engine polls @c recv for XON, so a real transport should pace it
  *         (block briefly when idle) rather than spin.
  */
-typedef int (*DncSendFn)(void *ctx, const uint8_t *data, size_t len);
-typedef int (*DncRecvFn)(void *ctx, uint8_t *buf, size_t cap);
+using DncSendFn = int (*)(void *ctx, const uint8_t *data, size_t len);
+using DncRecvFn = int (*)(void *ctx, uint8_t *buf, size_t cap);
 
 /**
  * @brief Drip-feed @p program (plain ASCII G-code, lines separated by LF; a trailing CR is stripped)

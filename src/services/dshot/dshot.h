@@ -43,9 +43,11 @@ struct DshotCmd
     static constexpr uint8_t DSHOT_CMD_3D_MODE_ON = 10;      ///< enable bidirectional 3D mode (send 6x).
     static constexpr uint8_t DSHOT_CMD_SETTINGS_REQUEST = 11;
     static constexpr uint8_t DSHOT_CMD_SAVE_SETTINGS = 12; ///< persist settings (send 6x).
-    static constexpr uint8_t DSHOT_THROTTLE_MIN = 48;      ///< first real throttle step.
-    static constexpr uint8_t DSHOT_THROTTLE_MAX = 2047;    ///< last throttle step (2000 steps of resolution).
-    static constexpr uint8_t DSHOT_VALUE_MAX = 2047;       ///< widest value the 11-bit field holds.
+    // The throttle / value domain is the 11-bit value field (0..2047), so these need a 16-bit type -
+    // uint8_t would silently truncate 2047 to 255.
+    static constexpr uint16_t DSHOT_THROTTLE_MIN = 48;   ///< first real throttle step.
+    static constexpr uint16_t DSHOT_THROTTLE_MAX = 2047; ///< last throttle step (2000 steps of resolution).
+    static constexpr uint16_t DSHOT_VALUE_MAX = 2047;    ///< widest value the 11-bit field holds.
 };
 
 /**

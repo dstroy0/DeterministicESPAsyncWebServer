@@ -225,7 +225,7 @@ static void poly_compress10(uint8_t r[320], const int16_t a[MK_N])
         r[k + 1] = (uint8_t)((t[0] >> 8) | (t[1] << 2));
         r[k + 2] = (uint8_t)((t[1] >> 6) | (t[2] << 4));
         r[k + 3] = (uint8_t)((t[2] >> 4) | (t[3] << 6));
-        r[k + 4] = (uint8_t)((t[3] >> 2));
+        r[k + 4] = (uint8_t)(t[3] >> 2);
         k += 5;
     }
 }

@@ -64,7 +64,7 @@ bool detws_docstore_sync(DetwsDocStore *ds);
  * @brief Per-match callback for the find calls: the matching document's id and JSON body (the body points
  * into a temporary buffer valid only for this call). Return false to stop the scan early.
  */
-typedef bool (*DetwsDocMatchCb)(const char *id, uint16_t id_len, const uint8_t *json, uint32_t json_len, void *ctx);
+using DetwsDocMatchCb = bool (*)(const char *id, uint16_t id_len, const uint8_t *json, uint32_t json_len, void *ctx);
 
 /**
  * @brief Find documents whose top-level string field @p field equals @p value. @return the match count.

@@ -78,7 +78,7 @@ enum class det_fwd_action : uint8_t
  * @brief Egress: emit @p len bytes on interface @p if_id.
  * @return true if the interface accepted the bytes; false drops (counted as a send fail).
  */
-typedef bool (*det_if_send_fn)(uint8_t if_id, const uint8_t *data, uint16_t len, void *ctx);
+using det_if_send_fn = bool (*)(uint8_t if_id, const uint8_t *data, uint16_t len, void *ctx);
 
 /** @brief Forwarding counters (monotonic since the last det_forward_reset()). */
 struct det_forward_stats
@@ -161,7 +161,7 @@ enum class det_fwd_verdict : uint8_t
  *        return a ::det_fwd_verdict. Runs after the ACL and before policy routes / the fan-out.
  *        The callback must not block; it may record metrics, log, or decide to drop.
  */
-typedef det_fwd_verdict (*det_fwd_inspect_fn)(uint8_t src_if, const uint8_t *data, uint16_t len, void *ctx);
+using det_fwd_inspect_fn = det_fwd_verdict (*)(uint8_t src_if, const uint8_t *data, uint16_t len, void *ctx);
 
 /**
  * @brief Install (or clear, with @p fn null) the ingress inspection hook.

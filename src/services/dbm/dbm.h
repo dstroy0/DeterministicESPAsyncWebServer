@@ -90,7 +90,7 @@ bool detws_dbm_sync(DetwsDbm *db);
 
 /** @brief Per-key callback for ::detws_dbm_iterate; return false to stop early. The key bytes are not
  * NUL-terminated. Do not put/delete during iteration (it mutates the index). */
-typedef bool (*DetwsDbmIterCb)(const char *key, uint16_t key_len, void *ctx);
+using DetwsDbmIterCb = bool (*)(const char *key, uint16_t key_len, void *ctx);
 
 /** @brief Visit every live key (unordered). @return the number of keys visited. */
 uint32_t detws_dbm_iterate(DetwsDbm *db, DetwsDbmIterCb cb, void *ctx);

@@ -26,6 +26,7 @@ BASE = "https://sonarcloud.io"
 
 # Style rules that contradict a deliberate design choice -> transition "accept" (won't fix).
 ACCEPT_RULES = {
+    "cpp:S5028": "macros define constants (the whole compile-time feature/config system is #define, #if-gated)",
     "cpp:S5350": "const-qualify local ptr/ref",
     "cpp:S5827": "use auto to avoid repeating types",
     "cpp:S5817": "const-qualify non-mutating member fn",

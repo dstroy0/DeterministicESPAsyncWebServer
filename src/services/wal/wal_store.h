@@ -55,17 +55,17 @@
  * bytes moved (== @p len on success; a short/zero return is a failure). @c sync is the durability barrier
  * (fsync / File::flush) and returns true on success. @c size is the total bytes of the backing region.
  */
-typedef struct WalDev
+struct WalDev
 {
     size_t (*read)(void *ctx, uint64_t off, uint8_t *buf, size_t len);
     size_t (*write)(void *ctx, uint64_t off, const uint8_t *buf, size_t len);
     bool (*sync)(void *ctx);
     void *ctx;
     uint64_t size;
-} WalDev;
+};
 
 /** @brief A mounted durable WAL store. Treat fields as read-only; use the accessors below. */
-typedef struct WalStore
+struct WalStore
 {
     WalDev dev;
     uint64_t data_off;  ///< first byte of the data region (== ::WAL_DATA_OFFSET)
@@ -75,7 +75,7 @@ typedef struct WalStore
     uint64_t next_seq;  ///< sequence number the next appended record will carry
     uint64_t gen;       ///< generation of the currently newest superblock
     int ab;             ///< index (0/1) of the newest superblock copy; the next checkpoint writes 1 - ab
-} WalStore;
+};
 
 /**
  * @brief Format @p dev into an empty store (writes a generation-1 superblock). Erases any existing log.
@@ -105,7 +105,7 @@ bool wal_store_checkpoint(WalStore *s);
 
 /** @brief Per-record callback for ::wal_store_scan - like ::WalRecordCb but also gives the record's
  * data-region byte offset (so an index can record where to re-read the payload later). */
-typedef void (*WalStoreRecordCb)(uint64_t seq, uint64_t data_off, const uint8_t *payload, uint32_t len, void *ctx);
+using WalStoreRecordCb = void (*)(uint64_t seq, uint64_t data_off, const uint8_t *payload, uint32_t len, void *ctx);
 
 /**
  * @brief Walk every valid record currently in the store (offsets [0, head)) in order, invoking @p cb for each.

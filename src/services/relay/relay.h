@@ -47,17 +47,17 @@ enum class DetRelayStatus : int32_t
  * @return bytes read (> 0), 0 if none are available now, or < 0 once the peer has closed its send
  *         side (EOF) or errored.
  */
-typedef int (*DetRelayRecvFn)(void *ctx, uint8_t *buf, size_t cap);
+using DetRelayRecvFn = int (*)(void *ctx, uint8_t *buf, size_t cap);
 
 /**
  * @brief Write up to @p len bytes to the peer.
  * @return bytes accepted (> 0, may be < @p len under backpressure), 0 if none can be accepted right
  *         now, or < 0 on error.
  */
-typedef int (*DetRelaySendFn)(void *ctx, const uint8_t *buf, size_t len);
+using DetRelaySendFn = int (*)(void *ctx, const uint8_t *buf, size_t len);
 
 /** @brief Optional: signal the peer that no more data will be sent to it (a write-side half-close). */
-typedef void (*DetRelayShutdownFn)(void *ctx);
+using DetRelayShutdownFn = void (*)(void *ctx);
 
 /** @brief One end of a relay (a socket, behind seams). @p shutdown may be null. */
 struct DetRelayEnd

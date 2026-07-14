@@ -66,7 +66,7 @@ uint32_t wal_crc32_final(uint32_t crc);                              ///< finali
 size_t wal_record_encode(uint8_t *out, size_t cap, uint64_t seq, const uint8_t *payload, uint32_t len);
 
 /** @brief Per-record callback for ::wal_replay. */
-typedef void (*WalRecordCb)(uint64_t seq, const uint8_t *payload, uint32_t len, void *ctx);
+using WalRecordCb = void (*)(uint64_t seq, const uint8_t *payload, uint32_t len, void *ctx);
 
 /**
  * @brief Replay a journal image, invoking @p cb for each valid record in order.

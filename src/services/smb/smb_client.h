@@ -46,8 +46,8 @@ enum class SmbResult : int32_t
  * @return send: bytes written (must equal @p len), else < 0. recv: bytes read (> 0), else <= 0 on
  *         close / error / timeout.
  */
-typedef int (*SmbSendFn)(void *ctx, const uint8_t *data, size_t len);
-typedef int (*SmbRecvFn)(void *ctx, uint8_t *buf, size_t cap);
+using SmbSendFn = int (*)(void *ctx, const uint8_t *data, size_t len);
+using SmbRecvFn = int (*)(void *ctx, uint8_t *buf, size_t cap);
 
 /** @brief Server credentials + the file to open. Strings are ASCII/UTF-8 (encoded UTF-16LE for you). */
 struct SmbConfig

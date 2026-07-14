@@ -158,7 +158,8 @@ size_t quic_frame_parse(const uint8_t *buf, size_t len, QuicFrame *out)
     }
     if (type == QuicFrameType::QUIC_FT_NEW_CONNECTION_ID)
     {
-        uint64_t seq = 0, retire = 0; // seq no, retire prior to, then a 1-byte CID length
+        uint64_t seq = 0;    // sequence number
+        uint64_t retire = 0; // retire-prior-to, then a 1-byte CID length follows
         if (!rd(buf, len, &pos, &seq) || !rd(buf, len, &pos, &retire) || pos >= len)
             return 0;
         uint8_t cidlen = buf[pos++];
