@@ -1386,6 +1386,12 @@
     "output": ".pio/build/native_udp_telemetry/src/services/udp_telemetry/udp_telemetry.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_umati/src/services/umati/umati.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_UMATI=1 -Itest/mocks -Itest/support -Isrc src/services/umati/umati.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/umati/umati.cpp",
+    "output": ".pio/build/native_umati/src/services/umati/umati.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_upload/src/services/upload_service/upload_service.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/services/upload_service/upload_service.cpp",
     "directory": "@ROOT@",
     "file": "src/services/upload_service/upload_service.cpp",

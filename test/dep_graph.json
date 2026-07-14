@@ -188,6 +188,7 @@
 "native_tls_policy",
 "native_totp",
 "native_udp_telemetry",
+"native_umati",
 "native_upload",
 "native_utmc",
 "native_vfs",
@@ -2246,12 +2247,14 @@
 "src/services/opcua/opcua.cpp": [
 "native_opcua",
 "native_opcua_client",
-"native_pentest"
+"native_pentest",
+"native_umati"
 ],
 "src/services/opcua/opcua.h": [
 "native_opcua",
 "native_opcua_client",
-"native_pentest"
+"native_pentest",
+"native_umati"
 ],
 "src/services/opcua_client/opcua_client.cpp": [
 "native_opcua_client"
@@ -2626,6 +2629,12 @@
 ],
 "src/services/udp_telemetry/udp_telemetry.h": [
 "native_udp_telemetry"
+],
+"src/services/umati/umati.cpp": [
+"native_umati"
+],
+"src/services/umati/umati.h": [
+"native_umati"
 ],
 "src/services/upload_service/upload_service.cpp": [
 "native_upload"
