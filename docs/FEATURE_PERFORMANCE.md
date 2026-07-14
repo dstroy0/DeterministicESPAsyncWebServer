@@ -1025,6 +1025,30 @@ DCP header (frameID / service / xid / dataLength), the header parser, and the bl
   `/bench` op + a `profinet_dcp_fuzz` attack are the next increments; full interop needs a raw-L2 DCP peer
   (e.g. a PROFINET discovery tool) + an Ethernet PHY.
 
+### PID control law (DETWS_ENABLE_CONTROL)
+
+The single-precision-float PID (`pid_update`): derivative-on-measurement + optional low-pass,
+output clamp, anti-windup by conditional integration, feed-forward. Measured on a real **ESP32-S3
+@ 240 MHz** by reading the Xtensa `CCOUNT` cycle register around a 20 000-iteration loop and
+subtracting an empty-loop baseline, so each figure is the net cost of one call (function call +
+body), warm cache.
+
+| Operation                        | ESP32-S3 cyc/op | ESP32-S3 ns/op | updates/s |
+| -------------------------------- | --------------: | -------------: | --------: |
+| `pid_update`                     |           165.6 |            690 |     1.45M |
+| `pid_update` + derivative filter |           172.7 |            720 |     1.39M |
+| `pid_update_n` (per axis, x4)    |           178.7 |            745 |     1.34M |
+
+- **~1.4 M updates/s on one core**, so a 1 kHz control loop is ~0.07% of the CPU, and even ~100
+  axes at 1 kHz is ~7%. The `/dt` derivative divide dominates the cost - the LX7 FPU has no
+  hardware float-divide (it is a reciprocal seed + Newton step), while the rest of the law is
+  single-cycle FPU `madd.s` fused multiply-adds. Everything is single-precision, so it never falls
+  onto the soft-float `double` path. Placing the hot update in IRAM (`DETWS_CONTROL_IRAM=1`) keeps
+  a real-time loop from adding a flash-cache-miss stall on top of this steady-state figure. The
+  batched `pid_update_n` costs about the same per axis (the loop overhead amortizes against the
+  same per-call divide). Host-tested for correctness (`native_control`); tune the gains offline
+  with [`tools/pid_tune.py`](../tools/pid_tune.py).
+
 ### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
 
 The board fronts a port and relays every byte to an internal origin (`server.listen(p, PROTO_RELAY)` +
