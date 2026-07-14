@@ -17,6 +17,7 @@
 "native_cbor",
 "native_cc1101",
 "native_cclink",
+"native_cia402",
 "native_cip",
 "native_cloudevents",
 "native_coap",
@@ -24,6 +25,7 @@
 "native_compliance",
 "native_config_io",
 "native_config_store",
+"native_control",
 "native_cotp",
 "native_crypto_kat",
 "native_csrf",
@@ -1650,10 +1652,12 @@
 "native_pentest"
 ],
 "src/services/canopen/canopen.cpp": [
-"native_canopen"
+"native_canopen",
+"native_cia402"
 ],
 "src/services/canopen/canopen.h": [
-"native_canopen"
+"native_canopen",
+"native_cia402"
 ],
 "src/services/cc1101/cc1101.cpp": [
 "native_cc1101"
@@ -1668,6 +1672,12 @@
 "src/services/cclink/cclink.h": [
 "native_cclink",
 "native_pentest"
+],
+"src/services/cia402/cia402.cpp": [
+"native_cia402"
+],
+"src/services/cia402/cia402.h": [
+"native_cia402"
 ],
 "src/services/cip/cip.cpp": [
 "native_cip",
@@ -1728,6 +1738,12 @@
 "src/services/config_store/config_store.h": [
 "native_config_io",
 "native_config_store"
+],
+"src/services/control/control.cpp": [
+"native_control"
+],
+"src/services/control/control.h": [
+"native_control"
 ],
 "src/services/cotp/cotp.cpp": [
 "native_cotp",
@@ -2797,6 +2813,7 @@
 "src/shared_primitives/can.h": [
 "native_bus_capture",
 "native_canopen",
+"native_cia402",
 "native_devicenet",
 "native_j1939",
 "native_nmea2000"
