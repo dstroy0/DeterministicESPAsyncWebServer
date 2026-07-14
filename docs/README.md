@@ -672,6 +672,7 @@ src/
 │   ├── webdav.cpp
 │   └── websocket_sse.cpp
 ├── services/
+│   ├── ads/  (ads.h, ads.cpp)
 │   ├── ads1115/  (ads1115.h, ads1115.cpp)
 │   ├── amqp/  (amqp.h, amqp.cpp)
 │   ├── atc/  (atc.h, atc.cpp)
@@ -1134,6 +1135,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | Flag | Default | Description |
 | :--- | :-----: | :---------- |
 | `DETWS_ENABLE_ACCEPT_THROTTLE` | `0` | Opt-in global accept-rate throttle (connection-flood defense). |
+| `DETWS_ENABLE_ADS` | `0` | Beckhoff ADS / AMS protocol codec (`services/ads`). |
 | `DETWS_ENABLE_ADS1115` | `0` | TI ADS1115 16-bit ADC (I2C) - a precise external analog input. |
 | `DETWS_ENABLE_AMQP` | `0` | AMQP 0-9-1 frame codec (`services/amqp`). |
 | `DETWS_ENABLE_ATC` | `0` | Opt-in ATC (Advanced Traffic Controller) field-I/O interop snapshot. |
