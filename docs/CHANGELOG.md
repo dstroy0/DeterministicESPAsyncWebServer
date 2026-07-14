@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`d16a3d4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d16a3d443fbf6f486d099d0a287061133d42af5a))
+
+### Documentation
+
+- mark the pool-wedge + stale-pcb crash FIXED (library) ([`7a0eb31`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a0eb31a5ab527fc68f95a766ff438af377c68f3))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`29481f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/29481f083477c037aba6424524b2e310261105f1))
+
 ## [6.4.1] - 2026-07-14
 
 <details>
