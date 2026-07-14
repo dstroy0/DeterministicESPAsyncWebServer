@@ -114,6 +114,18 @@ Benchmarked head-to-head against **[ESPAsyncWebServer 3.11.2](https://github.com
 
 The edge is **HTTP keep-alive** (persistent connections, on by default - ESPAsyncWebServer closes after every request) and **bounded, zero-heap concurrency**. Honestly: single-request RTT and large-file throughput are network-bound and roughly equal between the two - the difference is connection reuse and concurrency handling, not per-request compute. Full methodology, caveats, and a reproducible harness live in **[benchmarks/](benchmarks/)**.
 
+### SSH & QUIC handshake crypto (ESP32-S3)
+
+The SSH-2 (and HTTP/3 / QUIC) handshake runs its GF(2^255-19) field arithmetic on the S3's RSA/MPI hardware accelerator, so connection setup is a fixed **~0.13 s** - down from ~0.85 s of pure-software crypto. Measured on-device (CCOUNT @ 240 MHz) and HW-verified by a live `curve25519-sha256` + `ssh-ed25519` KEX against OpenSSH:
+
+| Operation (ESP32-S3)                           | Software |    HW-accel |  Speedup |
+| ---------------------------------------------- | -------: | ----------: | -------: |
+| `ssh_x25519` scalar-mult (KEX, 2x / handshake) | 150.8 ms | **22.7 ms** | **6.7x** |
+| `ssh_ed25519_sign` (host-key signature)        | 547.9 ms | **85.6 ms** | **6.4x** |
+| Handshake crypto total (2 KEX + 1 sign)        |  ~0.85 s | **~0.13 s** | **6.5x** |
+
+Steady state, the `chacha20-poly1305@openssh.com` record layer runs at **~1.5 MB/s** (software - ample for a shell / control channel). Full breakdown in **[docs/FEATURE_PERFORMANCE.md](docs/FEATURE_PERFORMANCE.md#ssh-server-crypto-detws_enable_ssh)**.
+
 ## Features
 
 **Grouped by the OSI layer each feature lives at, alphabetized within each layer. Hover any entry for a one-line summary; full descriptions live in [docs/FEATURES.md](docs/FEATURES.md).** Each is an optional `DETWS_ENABLE_*` flag unless it is core (HTTP/1.1, routing, middleware, JSON, templating, chunked responses are always on). The tables are generated from `docs/FEATURES.md` by `docs/utilities/gen_feature_tables.py`, so they never drift.
