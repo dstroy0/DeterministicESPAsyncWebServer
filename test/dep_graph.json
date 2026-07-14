@@ -157,6 +157,7 @@
 "native_redis",
 "native_relay",
 "native_rtc",
+"native_rtcm3",
 "native_s7comm",
 "native_scratch",
 "native_sdi12",
@@ -2046,6 +2047,12 @@
 ],
 "src/services/gateway/gateway.h": [
 "native_gateway"
+],
+"src/services/gnss/rtcm3.cpp": [
+"native_rtcm3"
+],
+"src/services/gnss/rtcm3.h": [
+"native_rtcm3"
 ],
 "src/services/goose/goose.cpp": [
 "native_goose"
