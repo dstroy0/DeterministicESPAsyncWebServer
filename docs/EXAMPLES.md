@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 118 runnable examples under [examples/](../examples), grouped by
+The library ships 119 runnable examples under [examples/](../examples), grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -176,6 +176,7 @@ Routing, protocols, services, and clients:
 [67.Ina219](../examples/L7-Application/67.Ina219) ·
 [68.SmbFileClient](../examples/L7-Application/68.SmbFileClient) ·
 [69.EthernetDnc](../examples/L7-Application/69.EthernetDnc) ·
-[70.PortForward](../examples/L7-Application/70.PortForward)
+[70.PortForward](../examples/L7-Application/70.PortForward) ·
+[71.MediaStreaming](../examples/L7-Application/71.MediaStreaming)
 
 <!-- END GENERATED EXAMPLE INDEX -->
