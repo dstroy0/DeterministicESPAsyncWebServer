@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.1.0] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.1.0 - 2026-07-14</b></summary>
 
 ### Bug Fixes
 
@@ -11,6 +14,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`cc31c75`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc31c7562a6115075551b2d99576f66f217a34f4))
 - update CHANGELOG.md [skip ci] ([`aef526a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aef526a306ac54f7319495e57ae5991a8c37562b))
 - update CHANGELOG.md [skip ci] ([`b4fb7d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b4fb7d895f5f1c1ae7d02e250549db87021b0ad0))
 - update CHANGELOG.md [skip ci] ([`d63806c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d63806c50a2731c445f29caf867776a24c70cd5f))
@@ -19,8 +23,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update test report + coverage [skip ci] ([`dd85edc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd85edc09f400517fa363d8bbefe8ae72aa34a98))
 - update CHANGELOG.md [skip ci] ([`dc944f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc944f8bc425ebef9905ee27749f251fde9196db))
 
+### Changes
+
+- Bump version: 6.0.0 → 6.1.0 ([`1137f5c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1137f5cf02bdbf58051ff2e438fad67baab49a39))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d98f2ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d98f2ae48ca63ce4f498c413e879aa2735328a09))
 - add SSH & QUIC handshake-crypto timings after the benchmarks ([`0a64d59`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a64d59f80a399a37ba087b9d57dab1f65594121))
 - update ESP32 build footprints [skip ci] ([`692a048`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/692a048418549d37f1bc33a88307b99a93741047))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`602706f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/602706f685b6037e8a6e512111536769815f4773))
@@ -30,6 +39,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - subdivide the Application-layer feature table into functional categories ([`47e08c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47e08c068c27b63d539909664a3d5d39a64880b7))
 - update ESP32 build footprints [skip ci] ([`aaa93c7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aaa93c77dfe2802f7f869d4d532edd0ce2536b3e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7a7c6bc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a7c6bc957f69d542bc8357ba2057514307aa500))
+
+### Features
+
+- Beckhoff ADS / AMS codec (TwinCAT PC-based control) ([`8994d67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8994d675d09b1ffb3d243275c6b5230e992f5dbb))
+
+</details>
 
 ## [6.0.0] - 2026-07-14
 
