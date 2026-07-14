@@ -70,41 +70,7 @@ void pid_reset(Pid *p)
     p->primed = false;
 }
 
-DETWS_CONTROL_HOT float pid_update(Pid *p, float setpoint, float measurement, float dt)
-{
-    if (!p || dt <= 0.0f)
-        return 0.0f;
-
-    float error = setpoint - measurement;
-
-    // Derivative on measurement (no setpoint-change "kick"): d(error)/dt = -d(measurement)/dt when
-    // the setpoint is held. Skip the first update (no prev_meas yet), optionally low-pass filter it.
-    float deriv = 0.0f;
-    if (p->primed)
-    {
-        deriv = -(measurement - p->prev_meas) / dt;
-        p->d_filt = (p->d_alpha > 0.0f) ? p->d_filt + p->d_alpha * (deriv - p->d_filt) : deriv;
-    }
-    p->prev_meas = measurement;
-    p->primed = true;
-
-    // Tentative integration, hard-clamped to the accumulator bounds (a secondary safety limit).
-    float integ_next = control_clamp(p->integ + p->ki * error * dt, p->integ_min, p->integ_max);
-
-    // FMA chain -> madd.s on the FPU: kp*error + integ + kd*d_filt + kff*setpoint.
-    float unclamped = p->kp * error + integ_next + p->kd * p->d_filt + p->kff * setpoint;
-    float out = control_clamp(unclamped, p->out_min, p->out_max);
-
-    // Anti-windup by conditional integration: commit the new integral unless the output is
-    // saturated AND integrating further this direction would push it deeper into the rail - then
-    // freeze the accumulator instead, so it never winds up past what the actuator can deliver.
-    bool worsen_high = (unclamped > p->out_max) && (error > 0.0f);
-    bool worsen_low = (unclamped < p->out_min) && (error < 0.0f);
-    if (!worsen_high && !worsen_low)
-        p->integ = integ_next;
-
-    return out;
-}
+// pid_update() is defined inline in control.h (zero call overhead); this TU just uses it below.
 
 void pid_update_n(Pid *p, const float *setpoint, const float *measurement, float dt, float *out, uint8_t n)
 {

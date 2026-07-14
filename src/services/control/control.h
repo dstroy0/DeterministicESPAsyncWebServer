@@ -12,10 +12,15 @@
  *   - an optional single-pole low-pass on the derivative (measurement noise otherwise dominates
  *     the D term),
  *   - output clamping to the actuator's range, and
- *   - anti-windup by back-calculation (the integrator is pulled back by exactly the amount the
- *     output was clamped, so it never winds up past what the actuator can deliver), plus a hard
- *     integral clamp as a secondary bound,
+ *   - anti-windup by conditional integration (the integrator is frozen while the output is
+ *     saturated and integrating would push it deeper into the rail, so it never winds up past
+ *     what the actuator can deliver), plus a hard integral clamp as a secondary bound,
  *   - a feed-forward term (kff * setpoint) for the part of the command known in advance.
+ *
+ * pid_update() is defined inline (below): the whole law folds into the caller with no function-
+ * call overhead, and on the ESP32 / ESP32-S3 the single-precision-float math maps to the FPU
+ * (single-cycle add/mul + `madd.s` fused multiply-add, never the soft-float double path). Put your
+ * control loop in IRAM if you need deterministic latency free of flash-cache stalls.
  *
  * Pure float arithmetic - no heap, no <math.h>. Pair it with a plant it can command (a CiA 402
  * drive via `services/cia402`, a dshot ESC, a heater PWM) and a sensor it can read back.
@@ -33,19 +38,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-
-// Hardware acceleration: the math is single-precision float end to end so it runs on the ESP32 /
-// ESP32-S3 FPU (single-cycle add/mul + `madd.s`/`msub.s` fused multiply-add), never the soft-float
-// double path. The update is written as an FMA chain so `-ffp-contract=fast` (on at -O2) folds it
-// into madd.s. Define DETWS_CONTROL_IRAM=1 to place the hot pid_update() in IRAM so a real-time
-// loop never stalls on a flash-cache miss. On an FPU-less target (e.g. ESP32-C3) it still works,
-// just via soft-float.
-#if defined(DETWS_CONTROL_IRAM) && DETWS_CONTROL_IRAM && (defined(ARDUINO) || defined(ESP_PLATFORM))
-#include <esp_attr.h>
-#define DETWS_CONTROL_HOT IRAM_ATTR
-#else
-#define DETWS_CONTROL_HOT
-#endif
 
 #define CONTROL_UNBOUNDED 1e30f ///< sentinel for "no clamp" (well outside any real actuator range)
 
@@ -91,43 +83,6 @@ struct Pid
     bool primed;     ///< false until the first update supplies prev_meas (no derivative on step 1)
 };
 
-/// Initialize with the three gains; feed-forward 0, no derivative filter, output/integral
-/// unbounded (CONTROL_UNBOUNDED). Clears the runtime state.
-void pid_init(Pid *p, float kp, float ki, float kd);
-
-/// Clamp the controller output to [lo, hi] (the actuator's range).
-void pid_set_output_limits(Pid *p, float lo, float hi);
-
-/// Hard clamp the integral accumulator to [lo, hi] (a secondary anti-windup bound).
-void pid_set_integral_limits(Pid *p, float lo, float hi);
-
-/// Set the derivative low-pass smoothing factor in [0,1); 0 disables the filter.
-void pid_set_derivative_filter(Pid *p, float alpha);
-
-/// Set the feed-forward gain (the command output includes kff * setpoint).
-void pid_set_feedforward(Pid *p, float kff);
-
-/// Clear the integrator, derivative memory, and prime flag (e.g. when re-enabling the loop).
-void pid_reset(Pid *p);
-
-/// Advance the loop one step: returns the (clamped) control output for @p setpoint given the
-/// measured process value @p measurement over the elapsed time @p dt seconds. dt <= 0 returns 0.
-/// FPU-accelerated (single-precision, FMA); place in IRAM with DETWS_CONTROL_IRAM=1.
-DETWS_CONTROL_HOT float pid_update(Pid *p, float setpoint, float measurement, float dt);
-
-/// Batched multi-axis update: run @p n loops from contiguous arrays in one tight, FPU-bound,
-/// SIMD-friendly pass (motion masters run several drives off one control tick). Each
-/// out[i] = pid_update(&p[i], setpoint[i], measurement[i], dt).
-void pid_update_n(Pid *p, const float *setpoint, const float *measurement, float dt, float *out, uint8_t n);
-
-/// Write the self-describing 36-octet dense-binary log header from @p p's gains + limits and the
-/// sample period @p dt (see the PID_LOG_* format above). Returns PID_LOG_HEADER_LEN, or 0 if cap
-/// is too small. Emit once, then a pid_log_record() per control step.
-size_t pid_log_header(uint8_t *buf, size_t cap, const Pid *p, float dt);
-
-/// Write one 16-octet dense-binary log record. Returns PID_LOG_RECORD_LEN, or 0 if cap too small.
-size_t pid_log_record(uint8_t *buf, size_t cap, float setpoint, float measurement, float output, bool saturated);
-
 // --- inline control-law primitives (dedup of the arithmetic every loop reaches for) ---
 
 /// Clamp @p v to [lo, hi].
@@ -162,6 +117,80 @@ static inline float control_lpf(float prev, float sample, float alpha)
 {
     return prev + alpha * (sample - prev);
 }
+
+/// Initialize with the three gains; feed-forward 0, no derivative filter, output/integral
+/// unbounded (CONTROL_UNBOUNDED). Clears the runtime state.
+void pid_init(Pid *p, float kp, float ki, float kd);
+
+/// Clamp the controller output to [lo, hi] (the actuator's range).
+void pid_set_output_limits(Pid *p, float lo, float hi);
+
+/// Hard clamp the integral accumulator to [lo, hi] (a secondary anti-windup bound).
+void pid_set_integral_limits(Pid *p, float lo, float hi);
+
+/// Set the derivative low-pass smoothing factor in [0,1); 0 disables the filter.
+void pid_set_derivative_filter(Pid *p, float alpha);
+
+/// Set the feed-forward gain (the command output includes kff * setpoint).
+void pid_set_feedforward(Pid *p, float kff);
+
+/// Clear the integrator, derivative memory, and prime flag (e.g. when re-enabling the loop).
+void pid_reset(Pid *p);
+
+/**
+ * @brief Advance the loop one step: returns the (clamped) control output for @p setpoint given the
+ *        measured process value @p measurement over the elapsed time @p dt seconds (dt <= 0 -> 0).
+ *
+ * Inline (no call overhead) and FPU-accelerated (single-precision, FMA-folded).
+ */
+static inline float pid_update(Pid *p, float setpoint, float measurement, float dt)
+{
+    if (!p || dt <= 0.0f)
+        return 0.0f;
+
+    float error = setpoint - measurement;
+
+    // Derivative on measurement (no setpoint-change "kick"): d(error)/dt = -d(measurement)/dt when
+    // the setpoint is held. Skip the first update (no prev_meas yet), optionally low-pass filter it.
+    float deriv = 0.0f;
+    if (p->primed)
+    {
+        deriv = -(measurement - p->prev_meas) / dt;
+        p->d_filt = (p->d_alpha > 0.0f) ? p->d_filt + p->d_alpha * (deriv - p->d_filt) : deriv;
+    }
+    p->prev_meas = measurement;
+    p->primed = true;
+
+    // Tentative integration, hard-clamped to the accumulator bounds (a secondary safety limit).
+    float integ_next = control_clamp(p->integ + p->ki * error * dt, p->integ_min, p->integ_max);
+
+    // FMA chain -> madd.s on the FPU: kp*error + integ + kd*d_filt + kff*setpoint.
+    float unclamped = p->kp * error + integ_next + p->kd * p->d_filt + p->kff * setpoint;
+    float out = control_clamp(unclamped, p->out_min, p->out_max);
+
+    // Anti-windup by conditional integration: commit the new integral unless the output is
+    // saturated AND integrating further this direction would push it deeper into the rail - then
+    // freeze the accumulator instead, so it never winds up past what the actuator can deliver.
+    bool worsen_high = (unclamped > p->out_max) && (error > 0.0f);
+    bool worsen_low = (unclamped < p->out_min) && (error < 0.0f);
+    if (!worsen_high && !worsen_low)
+        p->integ = integ_next;
+
+    return out;
+}
+
+/// Batched multi-axis update: run @p n loops from contiguous arrays in one tight, FPU-bound,
+/// SIMD-friendly pass (motion masters run several drives off one control tick). Each
+/// out[i] = pid_update(&p[i], setpoint[i], measurement[i], dt).
+void pid_update_n(Pid *p, const float *setpoint, const float *measurement, float dt, float *out, uint8_t n);
+
+/// Write the self-describing 36-octet dense-binary log header from @p p's gains + limits and the
+/// sample period @p dt (see the PID_LOG_* format above). Returns PID_LOG_HEADER_LEN, or 0 if cap
+/// is too small. Emit once, then a pid_log_record() per control step.
+size_t pid_log_header(uint8_t *buf, size_t cap, const Pid *p, float dt);
+
+/// Write one 16-octet dense-binary log record. Returns PID_LOG_RECORD_LEN, or 0 if cap too small.
+size_t pid_log_record(uint8_t *buf, size_t cap, float setpoint, float measurement, float output, bool saturated);
 
 #endif // DETWS_ENABLE_CONTROL
 
