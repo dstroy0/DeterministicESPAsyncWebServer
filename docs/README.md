@@ -790,6 +790,7 @@ src/
 │   ├── tls_policy/  (tls_policy.h, tls_policy.cpp)
 │   ├── totp/  (totp.h, totp.cpp)
 │   ├── udp_telemetry/  (udp_telemetry.h, udp_telemetry.cpp)
+│   ├── umati/  (umati.h, umati.cpp)
 │   ├── upload_service/  (upload_service.h, upload_service.cpp)
 │   ├── utmc/  (utmc.h, utmc.cpp)
 │   ├── vfs/  (vfs.h, vfs.cpp)
@@ -837,6 +838,8 @@ src/
 │   │   └── DETWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
+│   │   ├── __pycache__/
+│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -1234,6 +1237,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_TLS_RESUMPTION` | `0` | TLS session resumption via RFC 5077 session tickets (requires DETWS_ENABLE_TLS). |
 | `DETWS_ENABLE_TOTP` | `0` | Opt-in TOTP two-factor auth (RFC 6238). |
 | `DETWS_ENABLE_UDP_TELEMETRY` | `0` | Opt-in fire-and-forget UDP telemetry cast. |
+| `DETWS_ENABLE_UMATI` | `0` | umati - OPC UA for Machine Tools information model. |
 | `DETWS_ENABLE_UPLOAD` | `0` | Streaming file upload: POST a body straight to a file on the filesystem. |
 | `DETWS_ENABLE_UTMC` | `0` | Opt-in UTMC (Urban Traffic Management and Control) common-database codec. |
 | `DETWS_ENABLE_VFS` | `0` | Unified virtual filesystem wrapper. |
@@ -1443,6 +1447,7 @@ guards at compile time.
 | `DETWS_TLS_TICKET_LIFETIME_S` | `86400` | Session-ticket lifetime / key-rotation period in seconds (see DETWS_ENABLE_TLS_RESUMPTION). |
 | `DETWS_UDP_RX_BUF_SIZE` | `1472` | Shared receive-scratch size for the transport-layer UDP service. |
 | `DETWS_UDP_TELEMETRY_BUF` | `256` | Stack buffer for one telemetry line (bytes). |
+| `DETWS_UMATI_NS` | `1` | NamespaceIndex the umati MachineTool nodes live at (default 1). |
 | `DETWS_WEBDAV_BUF_SIZE` | `2048` | Buffer (BSS) for a WebDAV 207 Multi-Status response, in bytes (see DETWS_ENABLE_WEBDAV). |
 | `DETWS_WEBDAV_MAX_ENTRIES` | `32` | Maximum children listed in a WebDAV Depth-1 PROPFIND (bounds the response). |
 | `DETWS_WEBDAV_MAX_PROPS` | `16` | Maximum properties echoed in a WebDAV PROPPATCH 207 response (bounds the response). |

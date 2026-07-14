@@ -641,6 +641,15 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
 
 ## Industrial / standards protocols
 
+- [x] **umati / OPC UA for Machine Tools** (M, OPC 40501-1) _(MachineTool model shipped)_ -
+      `DETWS_ENABLE_UMATI` (`services/umati`, requires `DETWS_ENABLE_OPCUA`): the umati companion-spec
+      MachineTool information model - Identification, Monitoring (MachineTool / Channel / Spindle /
+      Axis_X..Z), Production, and Notification - served through the OPC UA Browse + Read resolvers out of a
+      caller-owned `UmatiMachineTool` struct, with faithful BrowseNames per OPC 40501-1 (namespace
+      `http://opcfoundation.org/UA/MachineTool/`). Host-tested (`native_umati`, 11/11) and ESP32-compiled
+      (example 72.Umati); a read-only monitoring model any umati / OPC UA client browses and reads by
+      BrowseName. _Remaining:_ companion-spec TypeDefinitions + the MachineTool namespace in the server
+      NamespaceArray (needs array-Variant support), multiple channels/spindles, and Equipment (tool magazine).
 - [~] **MTConnect** (L, ANSI/MTC1.4-2018) _(streams/error response codec shipped)_ -
   `DETWS_ENABLE_MTCONNECT` (`services/mtconnect`): the MTConnect agent response documents over the
   existing HTTP stack - an incremental **MTConnectStreams** builder (the `current` / `sample`

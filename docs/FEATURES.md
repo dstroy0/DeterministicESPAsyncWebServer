@@ -742,6 +742,12 @@ OPC UA Binary server. Default off. services/opcua provides an OPC UA (IEC 62541)
 
 OPC UA Binary client. Default off (requires OPC-UA, shares the codec). services/opcua_client builds the client-side requests (Hello, OpenSecureChannel, CreateSession, ActivateSession, Read, Browse, CloseSession, CloseSecureChannel) and parses the server responses, reusing the opcua.h codec. Transport-agnostic - the app supplies the outbound socket (e.g. an Arduino WiFiClient). No heap, no stdlib.
 
+## umati (OPC UA for Machine Tools)
+
+`DETWS_ENABLE_UMATI`
+
+umati / OPC UA for Machine Tools information model (OPC 40501-1). Default off (requires OPC-UA). services/umati exposes a fixed MachineTool node hierarchy - Identification, Monitoring (MachineTool / Channel / Spindle / Axis_X..Z), Production, and Notification - through the OPC UA Browse + Read resolvers, served out of a caller-owned UmatiMachineTool struct you refresh each loop. Faithful BrowseNames per OPC 40501-1 (namespace `http://opcfoundation.org/UA/MachineTool/`); a read-only monitoring model any umati / OPC UA client browses and reads by BrowseName. No heap, no stdlib.
+
 ## OpenADR
 
 `DETWS_ENABLE_OPENADR`
