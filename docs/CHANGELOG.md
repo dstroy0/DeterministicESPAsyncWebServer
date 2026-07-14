@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.7.0] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.7.0 - 2026-07-14</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`242ce67`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/242ce67781a33e49ba8ee08a3c084fab6ec7a692))
+- update CHANGELOG.md [skip ci] ([`2a11425`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2a114255f51b51f5cba19e24fb1b1e6d64acb240))
+
+### Changes
+
+- Bump version: 6.6.0 → 6.7.0 ([`7246ce9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7246ce959623f0afa3be524d93d2842e6ecfdc9b))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`92b9398`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/92b93980b46b37344bd12f590d02fdd4c9dfdaf8))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`290df13`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/290df13f885c1026dc0790e67688fa1ad6207afb))
+
+### Features
+
+- X25519MLKEM768 post-quantum hybrid TLS 1.3 group ([`9bfaa98`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9bfaa98be3af6f276048b76f103c698318864057))
+
+</details>
+
 ## [6.6.0] - 2026-07-14
 
 <details>
