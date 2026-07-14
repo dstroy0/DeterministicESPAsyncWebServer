@@ -3128,6 +3128,28 @@
 #endif
 
 /**
+ * @brief Max write / read payload (bytes) per TRANSACTION frame (services/iface_bridge).
+ *
+ * Bounds the per-transaction stack scratch used to clock an SPI/I2C write-then-read, and rejects a frame
+ * whose write_len or read_len exceeds it. Device-server transactions are small register accesses, so the
+ * default is modest; a frame over the cap closes the connection (protocol error). Keep it comfortably
+ * under the transport RX ring so a whole frame can buffer before it is parsed.
+ */
+#ifndef DETWS_BRIDGE_TXN_MAX
+#define DETWS_BRIDGE_TXN_MAX 256
+#endif
+
+/** @brief STREAM (UART) pipe chunk size (bytes) for services/iface_bridge - one socket<->UART hop. */
+#ifndef DETWS_BRIDGE_STREAM_CHUNK
+#define DETWS_BRIDGE_STREAM_CHUNK 256
+#endif
+
+/** @brief UART TRANSACTION read window (ms): how long a write-then-read waits for the read_len reply. */
+#ifndef DETWS_BRIDGE_UART_TXN_MS
+#define DETWS_BRIDGE_UART_TXN_MS 50
+#endif
+
+/**
  * @brief Per-direction relay buffer size (bytes) for services/relay (DETWS_ENABLE_RELAY).
  *
  * Each active relay holds two buffers of this size (one per direction) for bytes read from one peer
@@ -5171,6 +5193,7 @@ enum class ConnProto : uint8_t
     PROTO_OPCUA = 5,    ///< OPC UA Binary (UA-TCP) server.
     PROTO_SSH_RFWD = 6, ///< SSH remote-forward listener (ssh -R): accepts bridge to a forwarded-tcpip channel.
     PROTO_RELAY = 7,    ///< TCP relay / DNAT (DETWS_ENABLE_RELAY): bridge to an origin det_client connection.
+    PROTO_BRIDGE = 8,   ///< address:port -> hardware bus (DETWS_ENABLE_IFACE_BRIDGE): UART/SPI/I2C device server.
 };
 
 /**
