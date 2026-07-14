@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.3.0] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.3.0 - 2026-07-14</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`bf584c6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf584c6aaab5005f8b875fadd40523cd4c6a408f))
+
+### Changes
+
+- Bump version: 6.2.0 → 6.3.0 ([`c94d6a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c94d6a8de611ed91596af4aa967523ab2ffd958c))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`571a3b7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/571a3b77b69e17f464b04a02726e879beb504aa7))
+- update ESP32 build footprints [skip ci] ([`2be4275`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2be4275bcf1361234d2df634ba59c20c0ec00136))
+
+### Features
+
+- dense self-describing PID run-log format + offline tuner + example ([`bd59ae9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bd59ae982dcba9a7ee46f7c384a1f0ea9aea3aff))
+
+</details>
+
 ## [6.2.0] - 2026-07-14
 
 <details>
