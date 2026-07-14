@@ -388,7 +388,7 @@
     "example": "L7-Application/72.Umati",
     "flags": "-DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_UMATI=1",
     "board": "esp32dev",
-    "flash_bytes": 766845,
+    "flash_bytes": 766897,
     "ram_bytes": 92208
   },
   "OTA": {
