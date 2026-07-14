@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.11.0] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.11.0 - 2026-07-14</b></summary>
 
 ### Bug Fixes
 
@@ -10,7 +13,23 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`53ceca4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53ceca4f64bbdf11e86544cf653f715908d557a9))
+- update CHANGELOG.md [skip ci] ([`f734f31`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f734f3104cd072f9df64d5a9e1ea624099a0dabf))
 - update CHANGELOG.md [skip ci] ([`19d6711`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/19d67115d661c62bdb10ac5b6c9225df0590cd26))
+
+### Changes
+
+- Bump version: 6.10.1 → 6.11.0 ([`78a2940`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/78a294023b7ea98a4c945544787a176dd95a224c))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`8590a43`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8590a43492e21164a63160ddbdc76252a880d45d))
+
+### Features
+
+- aes256-gcm@openssh.com cipher (RFC 5647) ([`1b5c44f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1b5c44fb9df21eb7405954fcfb234dccc3ac581f))
+
+</details>
 
 ## [6.10.1] - 2026-07-14
 
