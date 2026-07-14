@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.10.1] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.10.1 - 2026-07-14</b></summary>
 
 ### Bug Fixes
 
@@ -10,13 +13,22 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`9f327a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9f327a1b4a94f55df59bd8eb4f59837182d0ef23))
 - update test report + coverage [skip ci] ([`0a5ff75`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0a5ff7542d724f9659e0d074cb27d7cfb0dbb219))
 - update CHANGELOG.md [skip ci] ([`53f2150`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53f2150da1b40a74ce54701405c61b62a41811aa))
 
+### Changes
+
+- Bump version: 6.10.0 → 6.10.1 ([`d922089`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9220898f8e96de5598094a7332e41a154900aa0))
+
 ### Documentation
 
+- audit README security notice + reformat CI badge table ([`459b1ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/459b1eadb8fddbd58c8553763c08d4cfcb46aa10))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`272d7b5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/272d7b55b222a70b2056025bebdd390fe7a8d898))
 - update ESP32 build footprints [skip ci] ([`119559d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/119559dbc4015ee39cf49485a7edaf7dcba5d1f0))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`33554fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/33554faff39c56a4d6d17e1befb078e058388713))
+
+</details>
 
 ## [6.10.0] - 2026-07-14
 
