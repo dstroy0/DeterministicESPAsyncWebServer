@@ -29,7 +29,7 @@
 
   <!-- Version tag -->
   <rect x="786" y="30" width="84" height="26" rx="3" fill="#001100" stroke="#008000" stroke-width="1.5"/>
-  <text x="828" y="48" font-size="16" font-weight="700" fill="#40ff40" text-anchor="middle">v6.10.0</text>
+  <text x="828" y="48" font-size="16" font-weight="700" fill="#40ff40" text-anchor="middle">v6.10.1</text>
 
   <!-- CRT overlays -->
   <rect x="1" y="1" width="898" height="218" rx="6" fill="url(#scan)"/>
