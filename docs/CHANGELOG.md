@@ -2,19 +2,32 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.6.0] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.6.0 - 2026-07-14</b></summary>
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`05039ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/05039ef35e816520f9af8961d7c9cc6cb9d6e918))
+- update CHANGELOG.md [skip ci] ([`f00a41d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f00a41dc30b2b335e181e45d6da34b09bcf1813f))
 - update CHANGELOG.md [skip ci] ([`430064f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/430064f290344252c924a454286caec03fea54c7))
 
 ### Changes
 
+- Bump version: 6.5.0 → 6.6.0 ([`ac9b542`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac9b5428e55b55cf9663ebef138c4cbb1385f429))
+- @ ([`cf781b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cf781b94105469500f66123f8da66e3f183f57e5))
 - @ ([`5f9b95d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5f9b95d695834636c5e52a0616a3f7786df76705))
 
 ### Documentation
 
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c5f14e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c5f14e4303d4ed18d22e23450ed6966f5436961a))
+
+### Features
+
+- mlkem768x25519-sha256 post-quantum hybrid key exchange ([`bf5a750`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf5a750ce441ab329c2d3a1fe475e99eb5d965a4))
+
+</details>
 
 ## [6.5.0] - 2026-07-14
 
