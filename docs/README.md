@@ -992,6 +992,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `ZIGBEE+GATEWAY` | `Foundation/17.ZigbeeGateway` | 269,237 | 22,104 |
 | `DMA+PREEMPT_QUEUE+DMA_SIMULATE` | `Foundation/07.DmaIngest` | 269,401 | 28,600 |
 | `core/02.SSHCryptoSelfTest` | `L5-Session/02.SSHCryptoSelfTest` | 269,537 | 21,476 |
+| `SEN0192` | `L7-Application/77.Sen0192` | 269,805 | 21,488 |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE` | `Foundation/10.RadioGateway` | 270,557 | 28,720 |
 | `LD2410` | `L7-Application/62.Ld2410` | 270,681 | 21,576 |
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE` | `Foundation/09.InterfaceForward` | 270,813 | 29,096 |
