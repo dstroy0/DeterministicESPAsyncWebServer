@@ -14,6 +14,12 @@ Opt-in global accept-rate throttle (connection-flood defense). Default off (zero
 
 Opt-in adaptive mDNS beacon scheduling. Pure scheduling decisions on top of the shipped mDNS service: detws_mdns_beacon_adapt backs the announce interval off toward a ceiling under RF contention and recovers it when the air is quiet, detws_mdns_refresh_interval gives the TTL/2 continuous-refresher cadence, detws_mdns_beacon_due says when an announce is due, and detws_mdns_beacon_presleep_due says whether to announce before a sleep window that would otherwise let the record lapse. Wrap-safe time math, no heap/stdlib. Default off.
 
+## ADS (Beckhoff)
+
+`DETWS_ENABLE_ADS`
+
+Beckhoff ADS / AMS protocol codec (TwinCAT PC-based control over TCP 48898). Default off. services/ads builds + parses the AMS/TCP + AMS-header frames the TwinCAT router speaks (little-endian throughout, target-before-source AMSNetId+port addressing, a command id + state flags + cbData + invoke id): `ads_build_*` emit complete request frames for ReadDeviceInfo, Read, Write, ReadWrite, ReadState, WriteControl, and Add/DeleteDeviceNotification, and `ads_parse_*` decode the matching responses - including the DeviceNotification stamp/sample stream (`ads_parse_notification` walks every sample via a callback). ReadWrite drives symbol-by-name access (write the name to index group 0xF003 to get a handle, then read/write the value through 0xF005). AMS header field order + command ids + state-flag bits verified against the Beckhoff InfoSys AMS/ADS specification; payload layouts cross-checked with Beckhoff's own open-source ADS library, pyads, and Apache PLC4X. Pure codec, host-tested (`native_ads`); the caller owns the TCP socket and the AMS route registration on the target router. The most widely used PC-based-control protocol and a machine-tool data source via TwinCAT NC/CNC. See src/services/ads/ads.h.
+
 ## ADS1115
 
 `DETWS_ENABLE_ADS1115`

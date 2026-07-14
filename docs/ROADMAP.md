@@ -721,12 +721,14 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
       status, alarms, part counts - against pyfanuc), and HW-verified against a real FANUC control when one
       is available. Low priority (route FANUC through **MTConnect** in the meantime). Refs: pyfanuc,
       node-red-contrib-fanuc-focas.
-- [ ] **Beckhoff ADS / AMS** (L, TwinCAT) - the Automation Device Specification protocol Beckhoff
-      publishes (Beckhoff InfoSys), over TCP 48898: the AMS/ADS header (AMSNetId source/target + port,
-      command id, state flags, length, invoke id) plus the ADS commands (ReadDeviceInfo, Read, Write,
-      ReadWrite, ReadState, WriteControl, Add/Delete/Notification) that read + write PLC symbols by index
-      group/offset or by handle. Fully documented and verifiable against `pyads` / a TwinCAT router; the
-      most widely used PC-based-control protocol, and a machine-tool source via TwinCAT NC/CNC. Fixed BSS, no heap.
+- [x] **Beckhoff ADS / AMS** (L, TwinCAT) - SHIPPED (`services/ads`, `DETWS_ENABLE_ADS`). The
+      Automation Device Specification over TCP 48898: the AMS/TCP + AMS header (target-before-source
+      AMSNetId + port, command id, state flags, cbData, invoke id) plus the ADS commands (ReadDeviceInfo,
+      Read, Write, ReadWrite, ReadState, WriteControl, Add/Delete/DeviceNotification) that read + write PLC
+      symbols by index group/offset or by handle (name -> handle via 0xF003, value via 0xF005). Header
+      layout + command ids verified against the Beckhoff InfoSys spec; payloads cross-checked with
+      Beckhoff's ADS library, `pyads`, and Apache PLC4X. Host-tested (`native_ads`), example 73.AdsClient.
+      Fixed BSS, no heap.
 - [ ] **Heidenhain LSV/2** (M, CNC DNC) - the LSV/2 protocol Heidenhain TNC controls use for DNC + data
       access (block-numbered telegrams with a BCC, file transfer + run/status inspection). A CNC-native
       southbound source for the common European control, over serial and Ethernet.

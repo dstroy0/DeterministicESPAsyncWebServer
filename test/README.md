@@ -71,12 +71,13 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **217 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **218 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
 | `native` | `ETWS_ENFORCE_HOST_HEADER=0` | `test_transport`, `test_presentation`, `test_session`, `test_http_parser`, `test_websocket`, `test_sse` | Layers 4-6: transport + session + presentation + standalone parser (no app layer) These suites predate the RFC 7230 Â§5.4 Host rule and feed bare HTTP/1.1 request lines to exercise parser mechanics; H... |
 | `native_accept_gate` | `ETWS_ENFORCE_HOST_HEADER=0`, `ETWS_ENABLE_ACCEPT_THROTTLE=1`, `ETWS_ENABLE_PER_IP_THROTTLE=1`, `ETWS_ENABLE_IP_ALLOWLIST=1`, `ETWS_ACCEPT_THROTTLE_MAX=3`, `ETWS_ACCEPT_THROTTLE_WINDOW_MS=1000`, `ETWS_PER_IP_THROTTLE_MAX=2`, `ETWS_PER_IP_THROTTLE_WINDOW_MS=1000`, `ETWS_PER_IP_THROTTLE_SLOTS=4`, `ETWS_IP_ALLOWLIST_SLOTS=4` | `test_accept_gate` | Accept-time connection gates with their flags ON (DETWS_ENABLE_ACCEPT_THROTTLE / PER_IP_THROTTLE / IP_ALLOWLIST): the global fixed-window throttle, the per-source-IP bucket table (independent budgets,... |
+| `native_ads` | `ETWS_ENABLE_ADS=1` | `test_ads` | Beckhoff ADS / AMS codec (services/ads): the AMS/TCP + AMS-header request builders (little-endian, target-before-source addressing, cmd id + state flags + cbData + invoke id) for Read/Write/ReadWrite/... |
 | `native_ads1115` | `ETWS_ENABLE_ADS1115=1` | `test_ads1115` | ADS1115 16-bit ADC codec (services/ads1115): building the 16-bit config word for a single-shot single-ended reading (channel MUX, gain, data rate, start/mode/comparator bits, with out-of-range fallbac... |
 | `native_amqp` | `ETWS_ENABLE_AMQP=1` | `test_amqp` | AMQP 0-9-1 frame codec (services/amqp): the protocol header, the frame + method builders, the heartbeat, and the frame/method parsers (type/channel/size/payload/0xCE). |
 | `native_app` | `BODY_BUF_SIZE=512`, `ETWS_ENFORCE_HOST_HEADER=0`, `ETWS_ENABLE_STATS=1`, `ETWS_ENABLE_METRICS=1`, `ETWS_ENABLE_ETAG=1`, `ETWS_ENABLE_WEB_TERMINAL=1`, `ETWS_HTTP_EMIT_DATE=1` | `test_auth`, `test_file_serving`, `test_multipart`, `test_dispatch`, `test_application`, `test_response_headers`, `test_form_params`, `test_path_params`, `test_digest_auth`, `test_digest_vectors`, `test_template`, `test_middleware`, `test_chunked`, `test_json`, `test_iface`, `test_regex`, `test_web_terminal`, `test_defer` | Full stack including Layer 7 application |
@@ -507,7 +508,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2918 test cases** across **244 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2929 test cases** across **245 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -659,6 +660,160 @@ A thorough directory of all **2918 test cases** across **244 suites**. Expand a 
       * <code>Assert false (listener_ip_allow_add(&bad, 33))</code>
       * <code>Assert true (listener_ip_allow_add(&r, 32))</code>
       * <code>Assert false (listener_ip_allow_add(&overflow, 32))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ads (11 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_read_bytes</b> &mdash; <i>Build read bytes</i></summary>
+
+    * **Objective**: Build read bytes
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(50, n); // 6 + 32 + 12</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_read_response</b> &mdash; <i>Parse read response</i></summary>
+
+    * **Objective**: Parse read response
+    * **Assertions**:
+      * <code>Assert true (ads_parse_ams_header(resp, sizeof(resp), &h))</code>
+      * <code>Assert true (h.cmd == AdsCommand::read)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(AdsStateFlags::reply, h.state_flags);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(42, h.invoke_id);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, h.error_code);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(12, h.data_len);</code>
+      * <code>Assert true (ads_parse_read(h.data, h.data_len, &rr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, rr.result);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4, rr.len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xDE, rr.data[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xEF, rr.data[3]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_write</b> &mdash; <i>cbData at AMS-header offset 20 (buf offset 26) = 16.</i></summary>
+
+    * **Objective**: cbData at AMS-header offset 20 (buf offset 26) = 16.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(6 + 32 + 12 + 4, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x10, buf[26]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x03, buf[22]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x20, buf[ADS_HDR_LEN]);      // 0x4020 LE</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x08, buf[ADS_HDR_LEN + 4]);  // offset 8</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x04, buf[ADS_HDR_LEN + 8]);  // length 4</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, buf[ADS_HDR_LEN + 12]); // first data octet</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_read_write_symbol</b> &mdash; <i>cmd id = 9 (ReadWrite).</i></summary>
+
+    * **Objective**: cmd id = 9 (ReadWrite).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(6 + 32 + 16 + 12, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x09, buf[22]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x03, buf[ADS_HDR_LEN]); // 0xF003 LE low</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xF0, buf[ADS_HDR_LEN + 1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x04, buf[ADS_HDR_LEN + 8]);  // read length 4</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0C, buf[ADS_HDR_LEN + 12]); // write length 12</code>
+      * <code>Assert equal memory (name, buf + ADS_HDR_LEN + 16, nl)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_state_roundtrip</b> &mdash; <i>Read state roundtrip</i></summary>
+
+    * **Objective**: Read state roundtrip
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN, n); // no payload</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x04, buf[22]);    // cmd 4 (ReadState)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[26]);    // cbData = 0</code>
+      * <code>Assert true (ads_parse_ams_header(resp, sizeof(resp), &h))</code>
+      * <code>Assert true (ads_parse_read_state(h.data, h.data_len, &st))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, st.result);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16((uint16_t)AdsState::run, st.ads_state);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, st.device_state);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_device_info</b> &mdash; <i>Parse device info</i></summary>
+
+    * **Objective**: Parse device info
+    * **Assertions**:
+      * <code>Assert true (ads_parse_ams_header(resp, sizeof(resp), &h))</code>
+      * <code>Assert true (ads_parse_read_device_info(h.data, h.data_len, &di))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, di.result);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(3, di.version_major);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, di.version_minor);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4052, di.version_build);</code>
+      * <code>Assert equal string ("Plc30", di.device_name)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_control_and_result</b> &mdash; <i>Write control and result</i></summary>
+
+    * **Objective**: Write control and result
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 8, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x05, buf[22]);              // cmd 5 (WriteControl)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x08, buf[26]);              // cbData 8</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x05, buf[ADS_HDR_LEN]);     // ADS state = run</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[ADS_HDR_LEN + 2]); // device state</code>
+      * <code>Assert true (ads_parse_result(data, sizeof(data), &res))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, res);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_add_notification</b> &mdash; <i>Add notification</i></summary>
+
+    * **Objective**: Add notification
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 40, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x06, buf[22]);               // cmd 6 (AddNotification)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x28, buf[26]);               // cbData 40</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x02, buf[ADS_HDR_LEN + 8]);  // length 2</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x04, buf[ADS_HDR_LEN + 12]); // trans mode 4 (on change)</code>
+      * <code>Assert true (ads_parse_add_notification(resp_data, sizeof(resp_data), &result, &handle))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, result);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x44332211, handle);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_notification_stream</b> &mdash; <i>Parse notification stream</i></summary>
+
+    * **Objective**: Parse notification stream
+    * **Assertions**:
+      * <code>Assert true (ads_parse_notification(payload, sizeof(payload), on_sample, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, g_notif_count);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x1234, g_notif_handle);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, g_notif_len);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, g_notif_ts);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x11, g_notif_val[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x22, g_notif_val[1]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_overflow_fails_closed</b> &mdash; <i>Build overflow fails closed</i></summary>
+
+    * **Objective**: Build overflow fails closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ads_build_read(small, sizeof(small), &r, 0, 0, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ads_build_read_state(tiny, sizeof(tiny), &r)); // needs 38</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_guards</b> &mdash; <i>AMS/TCP reserved not zero.</i></summary>
+
+    * **Objective**: AMS/TCP reserved not zero.
+    * **Assertions**:
+      * <code>Assert false (ads_parse_ams_header(nullptr, 64, &h))</code>
+      * <code>Assert false (ads_parse_ams_header(short_buf, sizeof(short_buf), &h))</code>
+      * <code>Assert false (ads_parse_ams_header(badres, sizeof(badres), &h))</code>
+      * <code>Assert false (ads_parse_ams_header(liar, sizeof(liar), &h))</code>
+      * <code>Assert false (ads_parse_read(bad_read, sizeof(bad_read), &rr))</code>
   </details>
 
 </details>

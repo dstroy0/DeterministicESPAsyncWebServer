@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 120 runnable examples under [examples/](../examples), grouped by
+The library ships 121 runnable examples under [examples/](../examples), grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -178,6 +178,7 @@ Routing, protocols, services, and clients:
 [69.EthernetDnc](../examples/L7-Application/69.EthernetDnc) ·
 [70.PortForward](../examples/L7-Application/70.PortForward) ·
 [71.MediaStreaming](../examples/L7-Application/71.MediaStreaming) ·
-[72.Umati](../examples/L7-Application/72.Umati)
+[72.Umati](../examples/L7-Application/72.Umati) ·
+[73.AdsClient](../examples/L7-Application/73.AdsClient)
 
 <!-- END GENERATED EXAMPLE INDEX -->

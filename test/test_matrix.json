@@ -760,6 +760,12 @@
       "src": ["+<services/melsec/melsec.cpp>"],
       "tests": ["test_melsec"]
     },
+    "native_ads": {
+      "desc": "Beckhoff ADS / AMS codec (services/ads): the AMS/TCP + AMS-header request builders\n(little-endian, target-before-source addressing, cmd id + state flags + cbData + invoke id) for\nRead/Write/ReadWrite/ReadState/ReadDeviceInfo/WriteControl/Add+DeleteNotification + the response\nparsers incl. the DeviceNotification stamp/sample walk. TwinCAT PC-based control. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_ADS=1"],
+      "src": ["+<services/ads/ads.cpp>"],
+      "tests": ["test_ads"]
+    },
     "native_bacnet": {
       "desc": "BACnet/IP BVLC + NPDU codec (services/bacnet): the BVLC envelope (type 0x81,\nfunction, length) + the NPDU header (version + NPCI control + optional DNET/DADR + hop\ncount) builders and parsers, slicing the APDU. ASHRAE 135. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_BACNET=1"],

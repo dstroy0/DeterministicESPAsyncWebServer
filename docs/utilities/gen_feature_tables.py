@@ -217,6 +217,7 @@ CATEGORY_MEMBERS = {
         "XMPP",
     },
     "Industrial & Fieldbus": {
+        "ADS (Beckhoff)",
         "BACnet",
         "CANopen",
         "CC-Link",

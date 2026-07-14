@@ -1700,6 +1700,22 @@
 #endif
 
 /**
+ * @brief Beckhoff ADS / AMS protocol codec (`services/ads`).
+ *
+ * Default off. A zero-heap builder + parser for the TwinCAT PC-based-control protocol over TCP
+ * 48898: `ads_build_*` emit complete AMS/TCP + AMS-header frames (little-endian, target-before-
+ * source addressing, cmd id + state flags + cbData + invoke id) for ReadDeviceInfo / Read /
+ * Write / ReadWrite / ReadState / WriteControl / Add+DeleteNotification, and `ads_parse_*` decode
+ * the responses (including the DeviceNotification stamp/sample stream). ReadWrite drives symbol-
+ * by-name access (name -> handle via index group 0xF003, value via 0xF005). AMS header layout +
+ * command ids verified against the Beckhoff InfoSys spec. Pure codec, host-tested; the caller
+ * owns the TCP socket and the AMS route on the target router.
+ */
+#ifndef DETWS_ENABLE_ADS
+#define DETWS_ENABLE_ADS 0
+#endif
+
+/**
  * @brief BACnet/IP BVLC + NPDU codec (`services/bacnet`).
  *
  * Default off. A zero-heap framing codec for the ASHRAE 135 building-automation network
