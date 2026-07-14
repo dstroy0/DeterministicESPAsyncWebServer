@@ -108,6 +108,12 @@ Opt-in CC1101 sub-GHz radio driver. A gateway radio plugin for the TI CC1101 300
 
 Streaming / chunked responses of unbounded length in constant memory via send_chunked(). Always on.
 
+## CiA 402
+
+`DETWS_ENABLE_CIA402`
+
+CiA 402 / IEC 61800-7-201 drive + motion profile over CANopen. Default off (requires CANOPEN). services/cia402 is the standardised servo / stepper drive profile: `cia402_state` decodes the power state machine from the Statusword (the CiA 402 mask/value table - Not ready to switch on / Switch on disabled / Ready to switch on / Switched on / Operation enabled / Quick stop active / Fault reaction active / Fault), `cia402_controlword` and `cia402_enable_sequence` produce the Controlword commands (Shutdown 0x06, Switch on 0x07, Enable operation 0x0F, Quick stop 0x02, Fault reset 0x80) that walk an axis to Operation Enabled, and the `cia402_sdo_set_*` / `cia402_pack_command` / `cia402_unpack_status` helpers write the Controlword, Modes of Operation (PP / PV / PT / HM / IP / CSP / CSV / CST), and target/actual position-velocity-torque objects (0x6040 / 0x6041 / 0x6060 / 0x607A / 0x60FF / 0x6071 / 0x6064 / ...) through the shipped CANopen SDO / PDO codec. State masks + command values + object indices verified against IEC 61800-7-201 and multiple drive vendors' tables; pure and host-tested (`native_cia402`). Turns the ESP32 CAN stack (TWAI or MCP2515) into a motion master; close the loop with a services/control PID. See src/services/cia402/cia402.h.
+
 ## CIP
 
 `DETWS_ENABLE_CIP`
@@ -149,6 +155,12 @@ Opt-in schema-driven config export / restore. Default off. Requires CONFIG_STORE
 `DETWS_ENABLE_CONFIG_STORE`
 
 Typed NVS configuration store (WiFi creds, IP config,... as blobs). When set, src/services/config_store/config_store.h provides a typed key/value API (string / u32 / blob) that routes core settings into the ESP32's native NVS partition (via `Preferences`) instead of a JSON file on the filesystem - which survives FS corruption and is the corruption-resistant home for credentials. On host builds it is backed by a fixed in-memory table so the typed contract is unit-testable. Default off.
+
+## Control
+
+`DETWS_ENABLE_CONTROL`
+
+Closed-loop control law: a zero-heap, FPU-accelerated PID controller. Default off. services/control provides a single-precision-float PID (`pid_init` / `pid_update`) with the corrections that matter on real hardware - derivative-on-measurement (a setpoint step produces no derivative kick) with an optional single-pole low-pass, output clamping, anti-windup by conditional integration (the integrator freezes while saturated instead of winding up) plus a hard integral clamp, and a feed-forward term - and inline control-law primitives (`control_clamp` / `control_deadband` / `control_slew` / `control_lpf`). The maths is single-precision end to end so it runs on the ESP32 / ESP32-S3 FPU (`madd.s` fused multiply-add, never the soft-float double path); `pid_update` is IRAM-placeable (`DETWS_CONTROL_IRAM=1`) so a real-time loop never stalls on a flash-cache miss, and `pid_update_n` runs a batch of axes off one control tick. Pure maths, host-tested (`native_control`); measured at a handful of cycles per update on the S3 FPU (see docs/FEATURE_PERFORMANCE.md). Pair it with a plant it can command (a services/cia402 drive, a dshot ESC, a heater PWM) and tune the gains offline by replaying the device's run log through `tools/pid_tune.py`. See src/services/control/control.h.
 
 ## CORS
 

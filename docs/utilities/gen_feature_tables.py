@@ -220,6 +220,8 @@ CATEGORY_MEMBERS = {
         "ADS (Beckhoff)",
         "BACnet",
         "CANopen",
+        "CiA 402",
+        "Control",
         "CC-Link",
         "CIP",
         "COTP",

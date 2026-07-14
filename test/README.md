@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **218 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **220 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -92,6 +92,7 @@ The native test matrix has **218 environments**, one per feature, generated from
 | `native_cbor` | `ETWS_ENABLE_CBOR=1` | `test_cbor` | CBOR (RFC 8949) encoder (network_drivers/presentation/cbor): a pure byte-output codec, host-tested against the RFC 8949 Appendix A vectors. |
 | `native_cc1101` | `ETWS_ENABLE_CC1101=1` | `test_cc1101` | CC1101 sub-GHz radio driver (services/cc1101): the TI SPI header protocol (config registers, command strobes, status registers, TX/RX FIFO) - init/detect, variable-length send, TX-done, set-rx, packet... |
 | `native_cclink` | `ETWS_ENABLE_CCLINK=1` | `test_cclink` | CC-Link cyclic fieldbus frame codec (services/cclink): the frame ([station][command][bit data][word data][sum]) build + parse and the bit/word process-image accessors. |
+| `native_cia402` | `ETWS_ENABLE_CIA402=1`, `ETWS_ENABLE_CANOPEN=1` | `test_cia402` | CiA 402 / IEC 61800-7-201 drive profile (services/cia402): the Statusword power-state decode (mask/value table), the Controlword commands + enable sequence, Statusword flags, the CANopen SDO setters (... |
 | `native_cip` | `ETWS_ENABLE_CIP=1` | `test_cip` | CIP message codec (services/cip): the EPATH logical-segment builder, the request builders (Get_Attribute_Single), and the response parser (service / status / data). |
 | `native_clock` | default | `test_clock` | Pluggable monotonic clock (services/det_clock): default millis(), custom clock divided down to the internal 1000 Hz. |
 | `native_cloudevents` | `ETWS_ENABLE_CLOUDEVENTS=1` | `test_cloudevents` | CloudEvents v1.0 envelope (services/cloudevents): the structured-JSON builder (over the JSON writer) + the binary-mode ce-* header reader. |
@@ -102,6 +103,7 @@ The native test matrix has **218 environments**, one per feature, generated from
 | `native_concurrency` | `O1`, `pthread` | `test_concurrency` | Concurrency proof for the cross-thread slot fields (DetAtomic state / rx_head / rx_tail). |
 | `native_config_io` | `ETWS_ENABLE_CONFIG_STORE=1`, `ETWS_ENABLE_CONFIG_IO=1` | `test_config_io` | Schema-driven config export/restore (services/config_io) over the config store; round-trip host-tested against the in-memory backend. |
 | `native_config_store` | `ETWS_ENABLE_CONFIG_STORE=1` | `test_config_store` | Typed NVS config store (services/config_store): string/u32/blob round-trips, defaults, capacity, erase/clear - run against the host in-memory backend (the ESP32 Preferences/NVS backend is compiled in ... |
+| `native_control` | `ETWS_ENABLE_CONTROL=1` | `test_control` | PID control law (services/control): the P/I/D terms, output clamping, anti-windup by conditional integration, derivative-on-measurement (no setpoint kick) + optional low-pass, feed-forward, the batche... |
 | `native_cotp` | `ETWS_ENABLE_COTP=1` | `test_cotp` | TPKT (RFC 1006) + COTP X.224 class-0 frame codec (services/cotp): the TPKT envelope, the COTP Data TPDU + Connection Request builders, and the COTP parser. |
 | `native_crypto_kat` | `ETWS_ENABLE_HTTP3=1` | `test_crypto_kat` | Data-driven external crypto known-answer tests: HMAC-SHA256/512, AEAD_AES_128_GCM, X25519, and Ed25519 verify from Project Wycheproof (including its adversarial edge cases), plus HKDF-SHA256 Extract (... |
 | `native_csrf` | `ETWS_ENABLE_CSRF=1` | `test_csrf` | Stateless HMAC-signed CSRF token (services/csrf): issue/verify with a fixed secret unit-tests on the host (DETWS_ENABLE_CSRF set). |
@@ -508,7 +510,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2929 test cases** across **245 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2949 test cases** across **247 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -3319,6 +3321,139 @@ A thorough directory of all **2929 test cases** across **245 suites**. Expand a 
 </details>
 
 <details>
+<summary><b>test_cia402 (9 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_state_decode</b> &mdash; <i>State decode</i></summary>
+
+    * **Objective**: State decode
+    * **Assertions**:
+      * <code>Assert true (cia402_state(0x0000) == Cia402State::not_ready_to_switch_on)</code>
+      * <code>Assert true (cia402_state(0x0040) == Cia402State::switch_on_disabled)</code>
+      * <code>Assert true (cia402_state(0x0021) == Cia402State::ready_to_switch_on)</code>
+      * <code>Assert true (cia402_state(0x0023) == Cia402State::switched_on)</code>
+      * <code>Assert true (cia402_state(0x0027) == Cia402State::operation_enabled)</code>
+      * <code>Assert true (cia402_state(0x0007) == Cia402State::quick_stop_active)</code>
+      * <code>Assert true (cia402_state(0x000F) == Cia402State::fault_reaction_active)</code>
+      * <code>Assert true (cia402_state(0x0008) == Cia402State::fault)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_state_decode_ignores_high_bits</b> &mdash; <i>The upper Statusword bits (voltage, remote, target reached, warning, ...) must not change</i></summary>
+
+    * **Objective**: The upper Statusword bits (voltage, remote, target reached, warning, ...) must not change
+    * **Assertions**:
+      * <code>Assert true (cia402_state(0x0637) == Cia402State::operation_enabled)</code>
+      * <code>Assert true (cia402_state(0x1237) == Cia402State::operation_enabled)</code>
+      * <code>Assert true (cia402_state(0x0233) == Cia402State::switched_on)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_controlword_commands</b> &mdash; <i>Controlword commands</i></summary>
+
+    * **Objective**: Controlword commands
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0006, cia402_controlword(Cia402Command::shutdown));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0007, cia402_controlword(Cia402Command::switch_on));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0007, cia402_controlword(Cia402Command::disable_operation));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x000F, cia402_controlword(Cia402Command::enable_operation));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0000, cia402_controlword(Cia402Command::disable_voltage));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0002, cia402_controlword(Cia402Command::quick_stop));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0080, cia402_controlword(Cia402Command::fault_reset));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_enable_sequence</b> &mdash; <i>Enable sequence</i></summary>
+
+    * **Objective**: Enable sequence
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0080, cia402_enable_sequence(Cia402State::fault));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0080, cia402_enable_sequence(Cia402State::fault_reaction_active));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0006, cia402_enable_sequence(Cia402State::switch_on_disabled));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0007, cia402_enable_sequence(Cia402State::ready_to_switch_on));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x000F, cia402_enable_sequence(Cia402State::switched_on));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x000F, cia402_enable_sequence(Cia402State::operation_enabled));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0000, cia402_enable_sequence(Cia402State::not_ready_to_switch_on));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_statusword_flags</b> &mdash; <i>Statusword flags</i></summary>
+
+    * **Objective**: Statusword flags
+    * **Assertions**:
+      * <code>Assert true (cia402_target_reached(0x0400))</code>
+      * <code>Assert false (cia402_target_reached(0x0000))</code>
+      * <code>Assert true (cia402_has_fault(0x0008))</code>
+      * <code>Assert true (cia402_warning(0x0080))</code>
+      * <code>Assert true (cia402_voltage_enabled(0x0010))</code>
+      * <code>Assert true (cia402_remote(0x0200))</code>
+      * <code>Assert true (cia402_internal_limit(0x0800))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sdo_set_controlword</b> &mdash; <i>Sdo set controlword</i></summary>
+
+    * **Objective**: Sdo set controlword
+    * **Assertions**:
+      * <code>Assert true (cia402_sdo_set_controlword(&f, 5, 0x000F))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x605u, f.id);   // SDO_RX (0x600) + node 5</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x40, f.data[1]); // index 0x6040 LE</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x60, f.data[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, f.data[3]); // sub 0</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0F, f.data[4]); // value 0x000F LE</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, f.data[5]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sdo_set_targets</b> &mdash; <i>Sdo set targets</i></summary>
+
+    * **Objective**: Sdo set targets
+    * **Assertions**:
+      * <code>Assert true (cia402_sdo_set_target_position(&f, 1, 0x01020304))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x601u, f.id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x7A, f.data[1]); // 0x607A LE</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x60, f.data[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x04, f.data[4]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x03, f.data[5]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x02, f.data[6]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, f.data[7]);</code>
+      * <code>Assert true (cia402_sdo_set_mode(&f, 3, Cia402Mode::cyclic_sync_position))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x60, f.data[1]); // 0x6060 LE</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x60, f.data[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(8, f.data[4]); // CSP = 8</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sdo_get_roundtrip</b> &mdash; <i>Build a read request, then decode a crafted SDO upload response for the Statusword.</i></summary>
+
+    * **Objective**: Build a read request, then decode a crafted SDO upload response for the Statusword.
+    * **Assertions**:
+      * <code>Assert true (cia402_sdo_read(&req, 7, CIA402_OD_STATUSWORD, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x607u, req.id);</code>
+      * <code>Assert true (cia402_sdo_get_u16(&resp, CIA402_OD_STATUSWORD, &sw))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0637, sw);</code>
+      * <code>Assert true (cia402_state(sw) == Cia402State::operation_enabled)</code>
+      * <code>Assert false (cia402_sdo_get_u16(&resp, CIA402_OD_CONTROLWORD, &v))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pdo_pack_unpack</b> &mdash; <i>Pdo pack unpack</i></summary>
+
+    * **Objective**: Pdo pack unpack
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0F, buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[1]);</code>
+      * <code>Assert true (cia402_unpack_status(tpdo, sizeof(tpdo), &sw, &actual))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0637, sw);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-12345, actual);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, cia402_pack_command(buf, 4, 0, 0)); // too small</code>
+      * <code>Assert false (cia402_unpack_status(tpdo, 5, &sw, &actual))</code>
+  </details>
+
+</details>
+
+<details>
 <summary><b>test_cip (9 tests)</b></summary>
 
   <details style="margin-left: 20px;">
@@ -4417,6 +4552,116 @@ A thorough directory of all **2929 test cases** across **245 suites**. Expand a 
       * <code>Assert false (detws_config_set_str("k", nullptr))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, detws_config_get_str("k", nullptr, 0, "def")); // null out</code>
       * <code>Assert false (detws_config_set_blob("k", nullptr, 4))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_control (11 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_proportional_only</b> &mdash; <i>Proportional only</i></summary>
+
+    * **Objective**: Proportional only
+    * **Assertions**:
+      * <code>Assert true (near_f(pid_update(&p, 10.0f, 0.0f, 0.1f), 20.0f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_integral_accumulates</b> &mdash; <i>Integral accumulates</i></summary>
+
+    * **Objective**: Integral accumulates
+    * **Assertions**:
+      * <code>Assert true (near_f(pid_update(&p, 1.0f, 0.0f, 0.1f), 2.0f))</code>
+      * <code>Assert true (near_f(pid_update(&p, 1.0f, 0.0f, 0.1f), 3.0f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_feedforward</b> &mdash; <i>Feedforward</i></summary>
+
+    * **Objective**: Feedforward
+    * **Assertions**:
+      * <code>Assert true (near_f(pid_update(&p, 8.0f, 0.0f, 0.1f), 4.0f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_output_clamp_and_antiwindup</b> &mdash; <i>Output clamp and antiwindup</i></summary>
+
+    * **Objective**: Output clamp and antiwindup
+    * **Assertions**:
+      * <code>Assert true (near_f(pid_update(&p, 100.0f, 0.0f, 0.1f), 5.0f))</code>
+      * <code>Assert true (near_f(pid_update(&p, 100.0f, 0.0f, 0.1f), 5.0f))</code>
+      * <code>Assert true (p.integ == integ1);     // integrator frozen while saturated (no windup)</code>
+      * <code>Assert true (fabsf(p.integ) &lt; 1.0f)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_antiwindup_recovers</b> &mdash; <i>Once the error reverses, the (un-wound) integrator resumes normally.</i></summary>
+
+    * **Objective**: Once the error reverses, the (un-wound) integrator resumes normally.
+    * **Assertions**:
+      * <code>Assert true (out &lt; 5.0f)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_derivative_on_measurement</b> &mdash; <i>Derivative on measurement</i></summary>
+
+    * **Objective**: Derivative on measurement
+    * **Assertions**:
+      * <code>Assert true (near_f(pid_update(&p, 0.0f, 0.0f, 0.1f), 0.0f))</code>
+      * <code>Assert true (near_f(pid_update(&p, 0.0f, 1.0f, 0.1f), -10.0f)); // d=-(1-0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_setpoint_step_no_kick</b> &mdash; <i>A setpoint step must NOT produce a derivative kick (D acts on measurement only).</i></summary>
+
+    * **Objective**: A setpoint step must NOT produce a derivative kick (D acts on measurement only).
+    * **Assertions**:
+      * <code>Assert true (near_f(pid_update(&p, 99.0f, 0.0f, 0.1f), 0.0f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_derivative_filter</b> &mdash; <i>raw d = -(1-0)/0.1 = -10; filtered = 0 + 0.5*(-10 - 0) = -5</i></summary>
+
+    * **Objective**: raw d = -(1-0)/0.1 = -10; filtered = 0 + 0.5*(-10 - 0) = -5
+    * **Assertions**:
+      * <code>Assert true (near_f(pid_update(&p, 0.0f, 1.0f, 0.1f), -5.0f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_reset_and_guards</b> &mdash; <i>Reset and guards</i></summary>
+
+    * **Objective**: Reset and guards
+    * **Assertions**:
+      * <code>Assert true (p.integ != 0.0f)</code>
+      * <code>Assert true (p.integ == 0.0f)</code>
+      * <code>Assert false (p.primed)</code>
+      * <code>Assert true (near_f(pid_update(&p, 1.0f, 0.0f, 0.0f), 0.0f))</code>
+      * <code>Assert true (near_f(pid_update(nullptr, 1.0f, 0.0f, 0.1f), 0.0f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_batched_update</b> &mdash; <i>Batched update</i></summary>
+
+    * **Objective**: Batched update
+    * **Assertions**:
+      * <code>Assert true (near_f(out[0], 5.0f))</code>
+      * <code>Assert true (near_f(out[1], 6.0f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_control_primitives</b> &mdash; <i>Control primitives</i></summary>
+
+    * **Objective**: Control primitives
+    * **Assertions**:
+      * <code>Assert true (near_f(control_clamp(7.0f, 0.0f, 5.0f), 5.0f))</code>
+      * <code>Assert true (near_f(control_clamp(-1.0f, 0.0f, 5.0f), 0.0f))</code>
+      * <code>Assert true (near_f(control_deadband(0.3f, 0.5f), 0.0f))</code>
+      * <code>Assert true (near_f(control_deadband(1.5f, 0.5f), 1.0f))</code>
+      * <code>Assert true (near_f(control_deadband(-1.5f, 0.5f), -1.0f))</code>
+      * <code>Assert true (near_f(control_slew(10.0f, 0.0f, 2.0f), 2.0f))</code>
+      * <code>Assert true (near_f(control_slew(1.0f, 0.0f, 2.0f), 1.0f))</code>
+      * <code>Assert true (near_f(control_lpf(0.0f, 10.0f, 0.25f), 2.5f))</code>
   </details>
 
 </details>

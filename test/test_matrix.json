@@ -7,6 +7,21 @@
       "src": ["+<services/canopen/canopen.cpp>"],
       "tests": ["test_canopen"]
     },
+    "native_cia402": {
+      "desc": "CiA 402 / IEC 61800-7-201 drive profile (services/cia402): the Statusword power-state\ndecode (mask/value table), the Controlword commands + enable sequence, Statusword flags, the\nCANopen SDO setters (Controlword / Modes / target position-velocity-torque) and cyclic PDO\npack/unpack. Layers on services/canopen. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_CIA402=1", "-DDETWS_ENABLE_CANOPEN=1"],
+      "src": [
+        "+<services/cia402/cia402.cpp>",
+        "+<services/canopen/canopen.cpp>"
+      ],
+      "tests": ["test_cia402"]
+    },
+    "native_control": {
+      "desc": "PID control law (services/control): the P/I/D terms, output clamping, anti-windup by\nconditional integration, derivative-on-measurement (no setpoint kick) + optional low-pass,\nfeed-forward, the batched multi-axis update, and the inline control-law primitives (clamp /\ndeadband / slew / low-pass). Pure single-precision float; host tests.",
+      "flags": ["-DDETWS_ENABLE_CONTROL=1"],
+      "src": ["+<services/control/control.cpp>"],
+      "tests": ["test_control"]
+    },
     "native_dbm": {
       "desc": "Log-structured hash key-value store on the WAL (services/dbm): put/get/delete with an\nin-RAM open-addressed index and value data appended to the write-ahead log, plus index rebuild by\nreplaying the log on open. Pure host tests over a RAM-backed WalDev, incl. overwrite, tombstone\nresurrection, persistence across a remount (with and without checkpoint), collisions, index-full\nfail-closed, key/value bounds, and a max-size value round-trip.",
       "flags": ["-DDETWS_ENABLE_WAL=1", "-DDETWS_ENABLE_DBM=1"],
