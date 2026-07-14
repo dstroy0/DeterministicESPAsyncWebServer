@@ -2,6 +2,22 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- 73.AdsClient - include dwserver.h so arduino-cli resolves the src/ include root ([`cba620a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cba620a5a5b78de9412eba382d8520891d158f7b))
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`3eb60c4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3eb60c496115165ad3992295765c2d5a756a55d4))
+- update CHANGELOG.md [skip ci] ([`792eff0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/792eff0a0aa21412b5e8b74e923cba2cd377cda9))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`6c52a91`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c52a911bb046555dce417b516e34fd66c6defba))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`598fc04`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/598fc0462193bbbd2ac0609d27045baf3bce5e87))
+
 ## [6.1.0] - 2026-07-14
 
 <details>
