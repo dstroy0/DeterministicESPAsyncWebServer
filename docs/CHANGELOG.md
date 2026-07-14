@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.12.0] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.12.0 - 2026-07-14</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`1e2c953`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e2c9536df8e093de2f46929733a30cab486b5d4))
+- update CHANGELOG.md [skip ci] ([`7fe3155`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7fe31553e7047a902b1f01955634c72a612eaed1))
+
+### Changes
+
+- Bump version: 6.11.0 → 6.12.0 ([`1980f38`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1980f38835051eacc98b61b774b6094a9a4163c5))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`c71bb7a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c71bb7a89e5ed9fe40a13914616b9a427678cf55))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0f35424`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f35424aee735ab94b81f0d73ccb586aad2199e0))
+
+### Features
+
+- rsa-sha2-512 host-key signatures + client auth (RFC 8332) ([`916f529`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/916f5294361f09282ddf1ed49597ccf226eefee4))
+
+</details>
+
 ## [6.11.0] - 2026-07-14
 
 <details>
