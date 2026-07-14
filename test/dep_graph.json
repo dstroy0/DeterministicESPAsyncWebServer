@@ -54,6 +54,7 @@
 "native_fdc2214",
 "native_fins",
 "native_flow_export",
+"native_focas",
 "native_forward",
 "native_ftp",
 "native_gateway",
@@ -1920,6 +1921,12 @@
 ],
 "src/services/flow_export/flow_export.h": [
 "native_flow_export"
+],
+"src/services/focas/focas.cpp": [
+"native_focas"
+],
+"src/services/focas/focas.h": [
+"native_focas"
 ],
 "src/services/forward/forward.cpp": [
 "native_forward"
