@@ -61,7 +61,7 @@ from each example's `pio ci` size report and aggregated into
 | `OPCUA`                                                                                                   | L7-Application/55.OpcUa                 | 742.4 KB (58.0%) | 89.9 KB (28.1%)  |
 | `OPCUA+OPCUA_CLIENT`                                                                                      | L7-Application/56.OpcUaClient           | 764.8 KB (59.7%) | 93.7 KB (29.3%)  |
 | `OPCUA+UMATI`                                                                                             | L7-Application/72.Umati                 | 748.9 KB (58.5%) | 90.0 KB (28.1%)  |
-| `OTA`                                                                                                     | L7-Application/16.OTA                   | 739.3 KB (57.8%) | 99.7 KB (31.2%)  |
+| `OTA`                                                                                                     | L7-Application/16.OTA                   | 739.8 KB (57.8%) | 99.7 KB (31.2%)  |
 | `OTA_ROLLBACK`                                                                                            | L7-Application/44.OtaRollback           | 735.6 KB (57.5%) | 79.9 KB (25.0%)  |
 | `PARTITION_MONITOR`                                                                                       | L7-Application/37.PartitionMonitor      | 735.3 KB (57.4%) | 79.9 KB (25.0%)  |
 | `PCA9685`                                                                                                 | L7-Application/65.Pca9685               | 277.9 KB (21.7%) | 21.3 KB (6.7%)   |
@@ -90,7 +90,10 @@ from each example's `pio ci` size report and aggregated into
 | `THREAD+GATEWAY`                                                                                          | Foundation/18.ThreadGateway             | 262.8 KB (20.5%) | 22.1 KB (6.9%)   |
 | `TLS`                                                                                                     | L6-Presentation/07.SecureWebSocket      | 835.8 KB (65.3%) | 119.2 KB (37.2%) |
 | `TLS+MTLS`                                                                                                | L4-Transport/04.mTLS                    | 836.7 KB (65.4%) | 119.5 KB (37.3%) |
+| `TLS+MTLS+TLS_ARENA_SIZE`                                                                                 | L4-Transport/04.mTLS                    | 837.3 KB (65.4%) | 103.5 KB (32.3%) |
+| `TLS+TLS_ARENA_SIZE`                                                                                      | L6-Presentation/07.SecureWebSocket      | 836.4 KB (65.3%) | 103.2 KB (32.2%) |
 | `TLS+TLS_RESUMPTION`                                                                                      | L4-Transport/06.TlsResumption           | 836.6 KB (65.4%) | 119.3 KB (37.3%) |
+| `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE`                                                                       | L4-Transport/06.TlsResumption           | 837.1 KB (65.4%) | 103.3 KB (32.3%) |
 | `TOTP`                                                                                                    | L7-Application/45.Totp                  | 735.8 KB (57.5%) | 79.9 KB (25.0%)  |
 | `UDP_TELEMETRY`                                                                                           | L7-Application/39.UdpTelemetry          | 710.9 KB (55.5%) | 43.9 KB (13.7%)  |
 | `UPLOAD`                                                                                                  | L7-Application/11.FileUpload            | 776.1 KB (60.6%) | 89.0 KB (27.8%)  |
@@ -99,6 +102,7 @@ from each example's `pio ci` size report and aggregated into
 | `WEB_TERMINAL`                                                                                            | L6-Presentation/10.WebTerminal          | 739.3 KB (57.8%) | 79.9 KB (25.0%)  |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS`                                                                             | L7-Application/25.WebSocketClient       | 811.8 KB (63.4%) | 117.7 KB (36.8%) |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE`                                                          | L7-Application/25.WebSocketClient       | 812.3 KB (63.5%) | 120.7 KB (37.7%) |
+| `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE`                                           | L7-Application/25.WebSocketClient       | 812.3 KB (63.5%) | 104.7 KB (32.7%) |
 | `WS_DEFLATE`                                                                                              | L6-Presentation/11.WebSocketCompression | 739.2 KB (57.8%) | 87.9 KB (27.5%)  |
 | `ZIGBEE+GATEWAY`                                                                                          | Foundation/17.ZigbeeGateway             | 262.9 KB (20.5%) | 21.6 KB (6.7%)   |
 | `ZWAVE+GATEWAY`                                                                                           | Foundation/16.ZWaveGateway              | 262.6 KB (20.5%) | 21.3 KB (6.7%)   |

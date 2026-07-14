@@ -372,10 +372,10 @@
   },
   "OTA": {
     "example": "L7-Application/16.OTA",
-    "flags": "-DDETWS_ENABLE_OTA=1",
+    "flags": "-DDETWS_ENABLE_OTA=1 -DMAX_CONNS=4",
     "board": "esp32dev",
-    "flash_bytes": 757017,
-    "ram_bytes": 102112
+    "flash_bytes": 757517,
+    "ram_bytes": 102120
   },
   "OTA_ROLLBACK": {
     "example": "L7-Application/44.OtaRollback",
@@ -573,12 +573,33 @@
     "flash_bytes": 856829,
     "ram_bytes": 122356
   },
+  "TLS+MTLS+TLS_ARENA_SIZE": {
+    "example": "L4-Transport/04.mTLS",
+    "flags": "-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_MTLS=1 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768",
+    "board": "esp32dev",
+    "flash_bytes": 857397,
+    "ram_bytes": 105980
+  },
+  "TLS+TLS_ARENA_SIZE": {
+    "example": "L6-Presentation/07.SecureWebSocket",
+    "flags": "-DDETWS_ENABLE_TLS=1 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768",
+    "board": "esp32dev",
+    "flash_bytes": 856425,
+    "ram_bytes": 105644
+  },
   "TLS+TLS_RESUMPTION": {
     "example": "L4-Transport/06.TlsResumption",
     "flags": "-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_TLS_RESUMPTION=1",
     "board": "esp32dev",
     "flash_bytes": 856693,
     "ram_bytes": 122180
+  },
+  "TLS+TLS_RESUMPTION+TLS_ARENA_SIZE": {
+    "example": "L4-Transport/06.TlsResumption",
+    "flags": "-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_TLS_RESUMPTION=1 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768",
+    "board": "esp32dev",
+    "flash_bytes": 857237,
+    "ram_bytes": 105804
   },
   "TOTP": {
     "example": "L7-Application/45.Totp",
@@ -635,6 +656,13 @@
     "board": "esp32dev",
     "flash_bytes": 831745,
     "ram_bytes": 123620
+  },
+  "WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE": {
+    "example": "L7-Application/25.WebSocketClient",
+    "flags": "-DDETWS_ENABLE_WS_CLIENT=1 -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_WS_CLIENT_TLS=1 -DDETWS_WS_CLIENT_BUF_SIZE=768 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768",
+    "board": "esp32dev",
+    "flash_bytes": 831769,
+    "ram_bytes": 107236
   },
   "WS_DEFLATE": {
     "example": "L6-Presentation/11.WebSocketCompression",
