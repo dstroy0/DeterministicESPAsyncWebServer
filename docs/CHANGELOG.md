@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- gitignore the root /build/ dir (ESP-IDF component CMake output) ([`93f9709`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93f9709053f708dcc143d5e45713c1454f93b034))
+- update test report + coverage [skip ci] ([`dd85edc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd85edc09f400517fa363d8bbefe8ae72aa34a98))
+- update CHANGELOG.md [skip ci] ([`dc944f8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc944f8bc425ebef9905ee27749f251fde9196db))
+
+### Documentation
+
+- subdivide the Application-layer feature table into functional categories ([`47e08c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47e08c068c27b63d539909664a3d5d39a64880b7))
+- update ESP32 build footprints [skip ci] ([`aaa93c7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aaa93c77dfe2802f7f869d4d532edd0ce2536b3e))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7a7c6bc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a7c6bc957f69d542bc8357ba2057514307aa500))
+
 ## [6.0.0] - 2026-07-14
 
 <details>
