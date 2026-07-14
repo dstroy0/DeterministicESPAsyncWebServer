@@ -550,6 +550,15 @@ Steady state, the `chacha20-poly1305@openssh.com` record layer runs at **~1.5 MB
 </tbody>
 </table>
 
+<table class="feature-table" width="100%">
+<thead><tr><th colspan="5" align="center">Application (L7) - Other</th></tr></thead>
+<tbody>
+<tr>
+  <td align="center"><a href="docs/FEATURES.md#fanuc-focas" title="FANUC FOCAS Ethernet protocol codec (FANUC CNC data over TCP 8193). Default off. services/focas builds + parses the FOCAS wire frames a FANUC control speaks (big-endian throughout, a 10-octet magic/version/type/length envelope + payload): `focas_build_open`/`_close` drive the session handshake (FRAME_DST open, empty close), `focas_build_request` emits the generic command frame (a 6-octet function selector + five signed 32-bit arguments + optional trailing data), and typed wrappers cover SysInfo, alarm status, CNC parameters, macro variables, position/axis data, and the actual feedrate / spindle speed. `focas_parse_frame` validates the envelope, `focas_parse_response` decodes the echoed selector + FOCAS return code + data, `focas_parse_sysinfo` decodes ODBSYS, `focas_parse_alarm` reads the alarm bitmask, and `focas_decode8` / `focas_value_f` decode the FANUC 8-octet `data / base^exp` numeric encoding used by positions, feeds, and macros. Frame layout, selector encoding, the SysInfo/alarm response layouts, and the value encoding were reverse-engineered by and cross-checked against diohpix/pyfanuc (the FOCAS wire protocol is not officially published; the proprietary fwlib32 library is not required or used). Pure codec, host-tested (`native_focas`); the caller owns the TCP socket and drives the open -&gt; command -&gt; close sequence. FANUC is the most widely deployed CNC control, so this is a direct machine-tool data source. See src/services/focas/focas.h.">FANUC FOCAS</a></td>
+</tr>
+</tbody>
+</table>
+
 <!-- END GENERATED FEATURE TABLES -->
 
 ## Build-flag dependencies
@@ -636,7 +645,6 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | Core  | `FORWARD`           |            17.9 KB |         < 0.5 KB |
 | Core  | `PROMISC`           |            11.5 KB |         < 0.5 KB |
 | Core  | `IPV6`              |             1.8 KB |          15.2 KB |
-| Core  | `DIAG`              |             1.5 KB |          11.1 KB |
 | L4    | `IP_ALLOWLIST`      |             0.7 KB |          15.2 KB |
 | L4    | `KEEPALIVE`         |           < 0.5 KB |          15.2 KB |
 | L4    | `PER_IP_THROTTLE`   |           < 0.5 KB |          15.6 KB |
@@ -645,7 +653,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L5    | `TELNET`            |             1.6 KB |          15.7 KB |
 | L6    | `TLS`               |           100.6 KB |          54.5 KB |
 | L6    | `WS_DEFLATE`        |         4.0-7.9 KB |      8.0-23.2 KB |
-| L6    | `WEB_TERMINAL`      |         0.0-4.0 KB |      0.0-15.3 KB |
+| L6    | `WEB_TERMINAL`      |         0.0-4.1 KB |      0.0-15.3 KB |
 | L6    | `MSGPACK`           |             2.9 KB |          15.3 KB |
 | L6    | `CBOR`              |             1.7 KB |          15.3 KB |
 | L6    | `JWT`               |             1.5 KB |          16.3 KB |
@@ -666,14 +674,14 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `OIDC`              |            12.5 KB |          32.8 KB |
 | L7    | `OAUTH2`            |            12.0 KB |          37.5 KB |
 | L7    | `WEBHOOK`           |             9.7 KB |          34.5 KB |
-| L7    | `RELAY`             |             9.2 KB |          49.0 KB |
+| L7    | `RELAY`             |             9.1 KB |          49.0 KB |
 | L7    | `TELEMETRY`         |             8.0 KB |          15.5 KB |
 | L7    | `SNMP`              |             8.0 KB |          27.3 KB |
 | L7    | `OPCUA`             |         6.8-7.2 KB |     10.0-25.2 KB |
 | L7    | `PROVISIONING`      |             6.8 KB |          16.7 KB |
 | L7    | `DNS_RESOLVER`      |             5.2 KB |          16.5 KB |
 | L7    | `COAP`              |             4.9 KB |          17.7 KB |
-| L7    | `OTA`               |             4.6 KB |          35.1 KB |
+| L7    | `OTA`               |             4.5 KB |          35.1 KB |
 | L7    | `CONFIG_IO`         |             4.2 KB |          15.3 KB |
 | L7    | `CONFIG_STORE`      |             4.2 KB |          15.3 KB |
 | L7    | `GRAPHQL`           |             4.2 KB |          19.5 KB |
@@ -685,11 +693,12 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `CONTROL`           |             1.3 KB |          23.1 KB |
 | L7    | `STATS`             |             1.2 KB |          15.3 KB |
 | L7    | `MODBUS`            |             1.1 KB |          15.5 KB |
-| L7    | `LOGBUF`            |             0.9 KB |          18.3 KB |
+| L7    | `LOGBUF`            |             0.8 KB |          18.3 KB |
 | L7    | `CSRF`              |             0.8 KB |          15.3 KB |
 | L7    | `TOTP`              |             0.5 KB |          15.2 KB |
 | L7    | `OTA_ROLLBACK`      |           < 0.5 KB |          15.2 KB |
 | L7    | `PARTITION_MONITOR` |           < 0.5 KB |          15.2 KB |
+| L7    | `DIAG`              |           < 0.5 KB |          15.2 KB |
 | L7    | `GUARDRAILS`        |           < 0.5 KB |          15.2 KB |
 | L7    | `DEVICE_ID`         |           < 0.5 KB |          15.2 KB |
 | L7    | `RADIO_POWER`       |           < 0.5 KB |          15.2 KB |
