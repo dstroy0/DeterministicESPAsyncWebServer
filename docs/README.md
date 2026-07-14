@@ -1053,6 +1053,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `RANGE` | `L7-Application/12.Range` | 794,829 | 81,808 |
 | `VFS` | `L7-Application/51.Vfs` | 795,809 | 86,296 |
 | `WEBDAV` | `L7-Application/29.WebDav` | 821,069 | 105,352 |
+| `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/29.WebDav` | 821,417 | 90,848 |
 | `SSH` | `L5-Session/03.SSHHostKey` | 822,181 | 108,220 |
 | `ETAG` | `L7-Application/09.ETag` | 828,381 | 83,080 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,548 |
