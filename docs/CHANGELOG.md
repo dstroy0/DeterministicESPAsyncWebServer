@@ -2,20 +2,33 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.8.0] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.8.0 - 2026-07-14</b></summary>
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`1f103dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f103ddb5eb51b707b7a96e22125e6995e097c18))
+- update CHANGELOG.md [skip ci] ([`079c9b9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/079c9b9c3fdb214038298a32d8b50a164af0bd80))
 - update test report + coverage [skip ci] ([`f78f14e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f78f14ecf96062de8e9ebfb60081dd03eb1f07ed))
 - update CHANGELOG.md [skip ci] ([`6bc3c63`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6bc3c63115f99aa4d04da09ca61b2cb174381d3f))
 
+### Changes
+
+- Bump version: 6.7.0 → 6.8.0 ([`8df7f32`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8df7f32978440be948948892b832cccba8a85735))
+- @ ([`e61dead`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e61deaddc804291cfcca526b2cb07a120fd04d15))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d3bee8e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3bee8ef9f704a3616281c89350b16ccada54607))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`44aae1e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/44aae1e6fad861ec2aefee0ba384be531af7da8a))
 
 ### Features
 
 - address:port -> hardware-bus bridge (pure core) ([`2a6dfe1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2a6dfe1657dcff346557738e23384d92e47d0105))
+
+</details>
 
 ## [6.7.0] - 2026-07-14
 
