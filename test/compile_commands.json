@@ -558,6 +558,18 @@
     "output": ".pio/build/native_gateway/src/services/gateway/gateway.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_gnss_survey/src/services/gnss/gnss_survey.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_NTRIP_CASTER=1 -DDETWS_ENABLE_NMEA0183=1 -DUNITY_INCLUDE_DOUBLE -Itest/mocks -Itest/support -Isrc src/services/gnss/gnss_survey.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/gnss/gnss_survey.cpp",
+    "output": ".pio/build/native_gnss_survey/src/services/gnss/gnss_survey.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_gnss_survey/src/services/nmea0183/nmea0183.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_NTRIP_CASTER=1 -DDETWS_ENABLE_NMEA0183=1 -DUNITY_INCLUDE_DOUBLE -Itest/mocks -Itest/support -Isrc src/services/nmea0183/nmea0183.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/nmea0183/nmea0183.cpp",
+    "output": ".pio/build/native_gnss_survey/src/services/nmea0183/nmea0183.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_goose/src/services/goose/goose.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_GOOSE=1 -Itest/mocks -Itest/support -Isrc src/services/goose/goose.cpp",
     "directory": "@ROOT@",
     "file": "src/services/goose/goose.cpp",
@@ -922,12 +934,6 @@
     "directory": "@ROOT@",
     "file": "src/services/netadapt/netadapt.cpp",
     "output": ".pio/build/native_netadapt/src/services/netadapt/netadapt.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_nmea0183/src/services/nmea0183/nmea0183.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_NMEA0183=1 -Itest/mocks -Itest/support -Isrc src/services/nmea0183/nmea0183.cpp",
-    "directory": "@ROOT@",
-    "file": "src/services/nmea0183/nmea0183.cpp",
-    "output": ".pio/build/native_nmea0183/src/services/nmea0183/nmea0183.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_nmea2000/src/services/nmea2000/nmea2000.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_NMEA2000=1 -Itest/mocks -Itest/support -Isrc src/services/nmea2000/nmea2000.cpp",

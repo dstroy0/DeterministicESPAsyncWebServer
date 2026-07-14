@@ -58,6 +58,7 @@
 "native_forward",
 "native_ftp",
 "native_gateway",
+"native_gnss_survey",
 "native_goose",
 "native_gpio_map",
 "native_graphql",
@@ -2048,6 +2049,12 @@
 "src/services/gateway/gateway.h": [
 "native_gateway"
 ],
+"src/services/gnss/gnss_survey.cpp": [
+"native_gnss_survey"
+],
+"src/services/gnss/gnss_survey.h": [
+"native_gnss_survey"
+],
 "src/services/gnss/rtcm3.cpp": [
 "native_rtcm3"
 ],
@@ -2323,9 +2330,11 @@
 "native_netadapt"
 ],
 "src/services/nmea0183/nmea0183.cpp": [
+"native_gnss_survey",
 "native_nmea0183"
 ],
 "src/services/nmea0183/nmea0183.h": [
+"native_gnss_survey",
 "native_nmea0183"
 ],
 "src/services/nmea2000/nmea2000.cpp": [
@@ -2979,6 +2988,7 @@
 "native_dashboard",
 "native_diag",
 "native_docstore",
+"native_gnss_survey",
 "native_h3_server",
 "native_http_client",
 "native_nmea0183",
