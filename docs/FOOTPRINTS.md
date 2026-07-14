@@ -19,7 +19,7 @@ from each example's `pio ci` size report and aggregated into
 | `COAP+COAP_BLOCK+COAP_MAX_PAYLOAD`                                                                        | L7-Application/28.CoapBlock             | 710.5 KB (55.5%) | 47.2 KB (14.8%)  |
 | `COAP+COAP_OBSERVE`                                                                                       | L7-Application/27.CoapObserve           | 712.3 KB (55.6%) | 45.0 KB (14.1%)  |
 | `CONFIG_STORE+CONFIG_IO`                                                                                  | L7-Application/42.ConfigExport          | 739.4 KB (57.8%) | 79.9 KB (25.0%)  |
-| `CONTROL`                                                                                                 | L7-Application/74.PidTuning             | 736.5 KB (57.5%) | 87.7 KB (27.4%)  |
+| `CONTROL`                                                                                                 | L7-Application/74.PidTuning             | 736.5 KB (57.5%) | 87.8 KB (27.4%)  |
 | `CSRF`                                                                                                    | L7-Application/33.Csrf                  | 736.0 KB (57.5%) | 79.9 KB (25.0%)  |
 | `DASHBOARD`                                                                                               | L7-Application/35.Dashboard             | 754.9 KB (59.0%) | 80.2 KB (25.1%)  |
 | `DEVICE_ID`                                                                                               | L7-Application/32.DeviceUuid            | 735.0 KB (57.4%) | 79.9 KB (25.0%)  |
@@ -39,7 +39,7 @@ from each example's `pio ci` size report and aggregated into
 | `GRAPHQL`                                                                                                 | L7-Application/52.GraphQL               | 739.4 KB (57.8%) | 84.2 KB (26.3%)  |
 | `GUARDRAILS`                                                                                              | L7-Application/40.Guardrails            | 735.1 KB (57.4%) | 79.9 KB (25.0%)  |
 | `HTTP_CLIENT`                                                                                             | L7-Application/23.HttpClient            | 717.3 KB (56.0%) | 61.7 KB (19.3%)  |
-| `HTTP_CLIENT+WEBHOOK`                                                                                     | L7-Application/46.Webhook               | 744.9 KB (58.2%) | 99.1 KB (31.0%)  |
+| `HTTP_CLIENT+WEBHOOK`                                                                                     | L7-Application/46.Webhook               | 744.9 KB (58.2%) | 99.2 KB (31.0%)  |
 | `INA219`                                                                                                  | L7-Application/67.Ina219                | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
 | `IPV6`                                                                                                    | Foundation/20.IPv6                      | 737.0 KB (57.6%) | 79.9 KB (25.0%)  |
 | `IP_ALLOWLIST`                                                                                            | L4-Transport/07.IpAllowlist             | 735.9 KB (57.5%) | 79.9 KB (25.0%)  |
@@ -55,9 +55,10 @@ from each example's `pio ci` size report and aggregated into
 | `MQTT`                                                                                                    | L7-Application/24.MqttClient            | 718.9 KB (56.2%) | 63.8 KB (19.9%)  |
 | `MSGPACK`                                                                                                 | L6-Presentation/14.MsgPack              | 738.1 KB (57.7%) | 79.9 KB (25.0%)  |
 | `NRF24+GATEWAY`                                                                                           | Foundation/12.Nrf24Gateway              | 269.6 KB (21.1%) | 21.2 KB (6.6%)   |
-| `NTP`                                                                                                     | L7-Application/18.SNTP                  | 759.7 KB (59.4%) | 82.3 KB (25.7%)  |
-| `NTP+TIME_SOURCE`                                                                                         | L7-Application/31.TimeSourceFallback    | 755.3 KB (59.0%) | 81.4 KB (25.4%)  |
+| `NTP`                                                                                                     | L7-Application/18.SNTP                  | 759.7 KB (59.4%) | 82.4 KB (25.7%)  |
+| `NTP+TIME_SOURCE`                                                                                         | L7-Application/31.TimeSourceFallback    | 755.3 KB (59.0%) | 81.4 KB (25.5%)  |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP`                                                                     | L7-Application/58.NtpServer             | 730.5 KB (57.1%) | 45.6 KB (14.2%)  |
+| `NTRIP_CASTER`                                                                                            | L7-Application/76.NtripCaster           | 752.3 KB (58.8%) | 82.7 KB (25.8%)  |
 | `OAUTH2+HTTP_CLIENT`                                                                                      | L7-Application/54.OAuth2                | 747.2 KB (58.4%) | 102.1 KB (31.9%) |
 | `OIDC`                                                                                                    | L7-Application/50.OidcAuth              | 747.7 KB (58.4%) | 97.5 KB (30.5%)  |
 | `OPCUA`                                                                                                   | L7-Application/55.OpcUa                 | 742.4 KB (58.0%) | 89.9 KB (28.1%)  |
