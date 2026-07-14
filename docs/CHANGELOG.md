@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.0.0] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.0.0 - 2026-07-14</b></summary>
 
 ### Bug Fixes
 
@@ -10,13 +13,25 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ff058ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff058ba63aab1823009ffcf859c10d5414a38b1b))
 - update test report + coverage [skip ci] ([`9204273`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/920427391e0a190f70a3f9fa9c1baee5215d8740))
 - update CHANGELOG.md [skip ci] ([`9ef0800`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ef08009bb88e9831b3f2bd7e9660557295c24c6))
 
+### Changes
+
+- Bump version: 5.102.0 → 6.0.0 ([`4c078ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c078aecf2b35e4c2c4d37c0c7606cc55d28f648))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`aaf49f4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aaf49f49fb1bdeaec0c7f1f0e2eb1905ae6860e1))
 - update ESP32 build footprints [skip ci] ([`e2ba87f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e2ba87f93428ed65e00ca9cdd7b1e07fd757ccfd))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4f4d318`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f4d3188de58a1a09d6432acc15e736e141a2665))
+
+### Features
+
+- OPC UA for Machine Tools (OPC 40501-1) MachineTool model ([`658e4f9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/658e4f9d31a94adaec4080b1ce7be79fae3d77cd))
+
+</details>
 
 ## [5.102.0] - 2026-07-14
 
