@@ -1433,6 +1433,37 @@
 #endif
 
 /**
+ * @brief CiA 402 / IEC 61800-7-201 drive + motion profile (`services/cia402`).
+ *
+ * Default off. Requires CANOPEN. The standardised servo / stepper drive profile over CANopen:
+ * `cia402_state` decodes the power state machine from the Statusword (the CiA 402 mask/value
+ * table), `cia402_controlword` / `cia402_enable_sequence` produce the Controlword commands that
+ * walk an axis to Operation Enabled, and the `cia402_sdo_set_*` / `cia402_pack_command` helpers
+ * write Controlword / Modes of Operation / target position-velocity-torque via the shipped
+ * CANopen SDO / PDO codec. State masks + command values + object indices verified against
+ * IEC 61800-7-201. Pure profile, host-tested. Turns the CAN stack into a motion master; close
+ * the loop with a `services/control` PID.
+ */
+#ifndef DETWS_ENABLE_CIA402
+#define DETWS_ENABLE_CIA402 0
+#endif
+
+/**
+ * @brief Closed-loop control law (`services/control`).
+ *
+ * Default off. A zero-heap, FPU-accelerated PID controller (single-precision float, FMA-folded,
+ * IRAM-placeable with DETWS_CONTROL_IRAM=1) with derivative-on-measurement, an optional
+ * derivative low-pass, output clamping, and anti-windup by back-calculation plus a hard integral
+ * clamp, and a feed-forward term - plus inline control-law primitives (clamp / deadband / slew /
+ * low-pass). `pid_update` runs one loop; `pid_update_n` runs a batch of axes off one tick. Pair
+ * it with a plant it can command (a `services/cia402` drive, a dshot ESC, a heater) and tune the
+ * gains offline with `tools/pid_tune.py`. Pure math, host-tested.
+ */
+#ifndef DETWS_ENABLE_CONTROL
+#define DETWS_ENABLE_CONTROL 0
+#endif
+
+/**
  * @brief SAE J1939 message codec (`services/j1939`).
  *
  * Default off. A zero-heap codec for the heavy-duty-vehicle / agriculture / marine / genset
@@ -5506,6 +5537,10 @@ enum class DetIface : uint8_t
 
 #if DETWS_ENABLE_WS_DEFLATE && !DETWS_ENABLE_WEBSOCKET
 #error "DeterministicESPAsyncWebServer: DETWS_ENABLE_WS_DEFLATE requires DETWS_ENABLE_WEBSOCKET"
+#endif
+
+#if DETWS_ENABLE_CIA402 && !DETWS_ENABLE_CANOPEN
+#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_CIA402 requires DETWS_ENABLE_CANOPEN"
 #endif
 
 #if DETWS_ENABLE_SSH_ZLIB && !DETWS_ENABLE_SSH

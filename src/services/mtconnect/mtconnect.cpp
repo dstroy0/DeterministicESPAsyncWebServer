@@ -198,12 +198,11 @@ size_t detws_mtc_error(uint64_t instance_id, const char *error_code, const char 
     put(&s, "\">");
     put_escaped(&s, message ? message : "");
     put(&s, "</Error></Errors></MTConnectError>");
-    if (!s.ok)
+    // Null-check `out` directly (not just s.ok, which already implies it) so the NUL terminator
+    // write is provably safe to the analyzer as well as at runtime.
+    if (!s.ok || out == nullptr)
         return 0;
-    // s.ok implies out != nullptr (set at init; put() only ever clears ok). Terminate through the
-    // struct's own buffer pointer (s.buf == out), matching detws_mtc_streams_end - a raw out[] write
-    // trips a null-deref false positive (the flag can't link s.ok back to the parameter).
-    s.buf[s.len] = '\0';
+    out[s.len] = '\0';
     return s.len;
 }
 
