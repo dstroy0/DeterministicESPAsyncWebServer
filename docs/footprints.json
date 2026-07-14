@@ -76,6 +76,13 @@
     "flash_bytes": 757193,
     "ram_bytes": 81836
   },
+  "CONTROL": {
+    "example": "L7-Application/74.PidTuning",
+    "flags": "-DDETWS_ENABLE_CONTROL=1",
+    "board": "esp32dev",
+    "flash_bytes": 754213,
+    "ram_bytes": 89840
+  },
   "CSRF": {
     "example": "L7-Application/33.Csrf",
     "flags": "-DDETWS_ENABLE_CSRF=1",
