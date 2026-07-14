@@ -124,3 +124,4 @@ from each example's `pio ci` size report and aggregated into
 | `core/10.FileServing`                                                                                     | L7-Application/10.FileServing           | 774.9 KB (60.5%) | 79.9 KB (25.0%)  |
 | `core/23.EthernetW5500`                                                                                   | Foundation/23.EthernetW5500             | 458.6 KB (35.8%) | 71.9 KB (22.5%)  |
 | `core/36.NetEgress`                                                                                       | L7-Application/36.NetEgress             | 735.2 KB (57.4%) | 79.9 KB (25.0%)  |
+| `core/71.MediaStreaming`                                                                                  | L7-Application/71.MediaStreaming        | 734.4 KB (57.4%) | 79.9 KB (25.0%)  |

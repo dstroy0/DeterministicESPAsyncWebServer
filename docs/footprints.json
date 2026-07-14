@@ -810,5 +810,12 @@
     "board": "esp32dev",
     "flash_bytes": 752821,
     "ram_bytes": 81768
+  },
+  "core/71.MediaStreaming": {
+    "example": "L7-Application/71.MediaStreaming",
+    "flags": "",
+    "board": "esp32dev",
+    "flash_bytes": 752025,
+    "ram_bytes": 81768
   }
 }
