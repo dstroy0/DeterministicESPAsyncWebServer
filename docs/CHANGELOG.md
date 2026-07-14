@@ -6,13 +6,23 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`fb69982`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb69982393c1c2a41da15616f17fb929d4052164))
 - update CHANGELOG.md [skip ci] ([`d09c971`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d09c971f50b16c77e28144b98bfb4ca9fa15a8b9))
+
+### Changes
+
+- Bump version: 6.3.0 → 6.3.1 ([`8f951ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8f951ba1eff2b890340da98b12ea0d6961d91ea8))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`daf28b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/daf28b17ace139d111ec1d5a9c1e7ffb05cb9331))
 - PID control law - definitive ccount numbers on ESP32-S3 ([`758db19`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/758db19dd727b4f475fd0939cc93beae6384b7a7))
 - update ESP32 build footprints [skip ci] ([`1bd7e23`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1bd7e23e907011bb0bbf606512b4958998fbefe5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`476c438`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/476c43814180f020b8dc82af3efa3a714fcc2635))
+
+### Performance
+
+- inline pid_update (165.6 -> 153.6 cyc on S3); drop the IRAM knob ([`fc8be41`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc8be416ee834ff4497df35bf4edd162ff088f45))
 
 ## [6.3.0] - 2026-07-14
 
