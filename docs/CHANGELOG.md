@@ -10,6 +10,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`d63806c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d63806c50a2731c445f29caf867776a24c70cd5f))
 - update CHANGELOG.md [skip ci] ([`39af85f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39af85f8405d209e0a40f5eee1636904a1340de4))
 - gitignore the root /build/ dir (ESP-IDF component CMake output) ([`93f9709`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93f9709053f708dcc143d5e45713c1454f93b034))
 - update test report + coverage [skip ci] ([`dd85edc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dd85edc09f400517fa363d8bbefe8ae72aa34a98))
@@ -17,6 +18,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- rebuild the dependency graph - uncrossed tree, readable, zoomable ([`c907ce5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c907ce533f0d47aa1466124f9663a1028fd38ca3))
+- update ESP32 build footprints [skip ci] ([`fd31df0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd31df02d8d02e43fdf26019deb043399d90ed66))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c021f2b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c021f2bc1d514838e7d4d6faa25b7fd5396d9e74))
 - subdivide the Application-layer feature table into functional categories ([`47e08c0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47e08c068c27b63d539909664a3d5d39a64880b7))
 - update ESP32 build footprints [skip ci] ([`aaa93c7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aaa93c77dfe2802f7f869d4d532edd0ce2536b3e))
