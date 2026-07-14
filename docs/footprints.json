@@ -94,7 +94,7 @@
     "example": "L7-Application/35.Dashboard",
     "flags": "-DDETWS_ENABLE_DASHBOARD=1",
     "board": "esp32dev",
-    "flash_bytes": 773001,
+    "flash_bytes": 772997,
     "ram_bytes": 82144
   },
   "DEVICE_ID": {
