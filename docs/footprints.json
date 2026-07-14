@@ -363,6 +363,13 @@
     "flash_bytes": 783153,
     "ram_bytes": 95928
   },
+  "OPCUA+UMATI": {
+    "example": "L7-Application/72.Umati",
+    "flags": "-DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_UMATI=1",
+    "board": "esp32dev",
+    "flash_bytes": 766861,
+    "ram_bytes": 92200
+  },
   "OTA": {
     "example": "L7-Application/16.OTA",
     "flags": "-DDETWS_ENABLE_OTA=1",
