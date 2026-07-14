@@ -2046,6 +2046,7 @@
         "+<services/opcua_client/opcua_client.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_rsa.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>",
         "+<services/csrf/csrf.cpp>",
         "+<services/auth_lockout/auth_lockout.cpp>",
         "+<services/time_source/time_source.cpp>",
