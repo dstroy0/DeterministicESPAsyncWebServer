@@ -16,7 +16,7 @@ namespace
 {
 void put(DetwsMtcStreams *s, const char *text)
 {
-    if (!s->ok)
+    if (!s->ok || !text) // null text is a no-op: harden the helper itself, not just every call site
         return;
     size_t tl = strlen(text);
     if (s->len + tl >= s->cap)
@@ -30,7 +30,7 @@ void put(DetwsMtcStreams *s, const char *text)
 
 void put_escaped(DetwsMtcStreams *s, const char *text)
 {
-    if (!s->ok)
+    if (!s->ok || !text) // null text is a no-op: harden the helper itself, not just every call site
         return;
     for (const char *p = text; *p; p++)
     {

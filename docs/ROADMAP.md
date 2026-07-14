@@ -690,6 +690,31 @@ instrument variables (incl. HART's 4-20 mA primary value) need no special front 
   arithmetic-sum FCS) that a DP master exchanges with slaves over RS-485; host-tested (`native_profibus`).
   _Remaining:_ the PROFINET IO cyclic data exchange + GSDML, and the DP-V0 master state machine + GSD
   slave model. Fixed BSS process image, no heap.
+- [ ] **S7comm+** (L, Siemens S7-1200/1500) - the modern S7CommPlus protocol, the successor to the
+      classic S7comm (`services/s7comm`, S7-300/400) already shipped, over the same COTP/TPKT transport
+      (`services/cotp`): the S7CommPlus PDU framing + the integrity/session handshake (protocol
+      versioning + the anti-replay integrity id) and read/write of tag values by symbolic access. Harder
+      than classic S7comm (session keying); zero-heap codec first, then the session state machine.
+- [ ] **SIMATIC serial family** (M, Siemens legacy point-to-point) - the pre-Ethernet SIMATIC link +
+      messaging protocols as zero-heap codecs, pairing with the existing S7comm/COTP stack for the full
+      Siemens set: **3964(R)** (the byte-oriented point-to-point link protocol - STX/DLE/ETX framing with
+      priority arbitration and a BCC block-check byte on the "R" variant), **RK512** (the message /
+      interpreter layer carried over 3964R - FETCH/SEND telegrams addressing DB/data blocks, words and
+      bits), plus the **MPI** (Multipoint Interface bus) and **PtP IF** (point-to-point CP serial
+      interface) link layers. Serial-first (RS-232/RS-485 transport step tracked with the other serial buses).
+- [ ] **Fanuc FOCAS** (M, CNC data collection) - the FANUC Open CNC API (FOCAS, Ethernet/HSSB) data
+      read path: CNC + program status, absolute/machine/relative position, spindle speed + feedrate and
+      their overrides, active/selected program number, active tool, alarms, and part/execution counters
+      from FANUC controllers over TCP. A southbound CNC source that pairs with **MTConnect** and the new
+      **umati** (OPC UA for Machine Tools) model. Fixed BSS, no heap.
+- [ ] **Secure machine agent: G-code deployment over a single secure port** (L) - the device as a
+      secure local agent that deploys CNC part programs (G-code) to a machine tool over ONE authenticated,
+      encrypted port: NC-program transfer/staging multiplexed on the existing TLS endpoint (or a secured
+      OPC UA channel / an OPC UA for Machine Tools program-transfer method), so a shop pushes and stages
+      programs to controllers through a single connection instead of per-machine FTP/USB. Northbound
+      monitoring = **umati** / **MTConnect** / **FOCAS**; southbound program push builds on TLS + file
+      upload (`services/upload_service`) and the existing **DNC** drip-feed (`services/dnc`) for controllers
+      with no network stack. The unifying goal behind the machine-tool protocol set.
 - [~] **DNP3** (L, IEEE 1815) - _data-link frame codec shipped._ `DETWS_ENABLE_DNP3`
   (`services\dnp3`): a zero-heap builder + CRC-validating parser for the data-link layer - `dnp3_build_frame` emits the `0x0564 LEN CTRL DEST SRC CRC` header block plus the
   CRC'd 16-octet user-data blocks, and `dnp3_parse_frame` validates the header and every
