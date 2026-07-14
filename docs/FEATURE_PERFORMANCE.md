@@ -1180,3 +1180,16 @@ live stream truncated at an arbitrary instant.
 library owns the HTTP framing and flow control; the camera driver (`esp_camera`) and pin map are the
 integration's (XIAO ESP32-S3 Sense: XCLK10, SIOD40/SIOC39, VSYNC38/HREF47/PCLK13, data Y2-Y9 =
 15/17/18/16/14/12/11/48).
+
+### PDM microphone WAV streaming over send_chunked
+
+The same streaming path fed by the XIAO's **PDM digital microphone** (I2S PDM RX, CLK42/DATA41, 16 kHz /
+16-bit / mono) as a WAV: `/capture.wav` returns a complete 2 s recording (44-byte RIFF/WAVE header + 64000 B
+PCM), and `/stream.wav` streams a live WAV whose `source` emits the header once then continuous mic PCM
+forever. `/stream.wav` runs at **31.4 KB/s ≈ 32000 B/s exactly** - the real-time byte rate for 16 kHz mono
+16-bit - so the send path is paced by the microphone's sample production (1x realtime), which is correct for
+audio. The mic is a live acoustic sensor, not a stuck value: an ambient capture reads ~442 peak-to-peak, and
+capturing while a sound is made near the board widens it to ~1573 (min 653 / max 2226) - the range tracks the
+acoustic input. (PDM output carries a DC bias, ~1418 here; a playback path high-passes it.) Together with the
+camera, this shows `send_chunked` handles two very different real producers - a bursty variable-size video
+frame source and a fixed-rate audio sample stream - in constant memory.
