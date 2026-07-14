@@ -473,6 +473,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
 <tbody>
 <tr>
   <td align="center"><a href="FEATURES.md#fanuc-focas" title="FANUC FOCAS Ethernet protocol codec (FANUC CNC data over TCP 8193). Default off. services/focas builds + parses the FOCAS wire frames a FANUC control speaks (big-endian throughout, a 10-octet magic/version/type/length envelope + payload): `focas_build_open`/`_close` drive the session handshake (FRAME_DST open, empty close), `focas_build_request` emits the generic command frame (a 6-octet function selector + five signed 32-bit arguments + optional trailing data), and typed wrappers cover SysInfo, alarm status, CNC parameters, macro variables, position/axis data, and the actual feedrate / spindle speed. `focas_parse_frame` validates the envelope, `focas_parse_response` decodes the echoed selector + FOCAS return code + data, `focas_parse_sysinfo` decodes ODBSYS, `focas_parse_alarm` reads the alarm bitmask, and `focas_decode8` / `focas_value_f` decode the FANUC 8-octet `data / base^exp` numeric encoding used by positions, feeds, and macros. Frame layout, selector encoding, the SysInfo/alarm response layouts, and the value encoding were reverse-engineered by and cross-checked against diohpix/pyfanuc (the FOCAS wire protocol is not officially published; the proprietary fwlib32 library is not required or used). Pure codec, host-tested (`native_focas`); the caller owns the TCP socket and drives the open -&gt; command -&gt; close sequence. FANUC is the most widely deployed CNC control, so this is a direct machine-tool data source. See src/services/focas/focas.h.">FANUC FOCAS</a></td>
+  <td align="center"><a href="FEATURES.md#post-quantum-hybrid-kex" title="Post-quantum / traditional hybrid key exchange: ML-KEM-768 (FIPS 203) combined with X25519. Closes the harvest-now-decrypt-later gap - OpenSSH 9.9+ and current browsers now DEFAULT to a hybrid group, so without this the device negotiates DOWN to classical X25519. When set (and SSH is on) the server advertises `mlkem768x25519-sha256` (draft-ietf-sshm-mlkem-hybrid-kex) first in its SSH KEX list and, on selection, ML-KEM-Encaps to the client's key + X25519, combining `K = SHA256(K_PQ || K_CL)` per the RFC 9370 concatenation combiner. The device is always the KEM responder, so only Encaps ships (no KeyGen/Decaps, so none of the constant-time FO re-encryption surface). The ML-KEM core (network_drivers/presentation/pqc) is a software NTT over q=3329 with Montgomery reduction plus a Keccak/SHA-3/SHAKE sponge (FIPS 202); zero heap, peak ~7 KB of worker stack (raise `DETWS_WORKER_TASK_STACK` to &gt;= `DETWS_WORKER_STACK_PQC_MIN` = 16384). Byte-exact against the FIPS 203 reference (kyber-py) and verified end to end vs an independent client (ML-KEM Decaps + the string-K exchange hash / KDF). Currently wired into the SSH key exchange (`DETWS_ENABLE_SSH`); the HTTP/3 **X25519MLKEM768** TLS 1.3 group (IANA 0x11ec) is the tracked next integration of the same core. Default off.">Post-Quantum Hybrid KEX</a></td>
 </tr>
 </tbody>
 </table>
@@ -598,6 +599,11 @@ src/
 │   │   ├── json/  (json.h, json.cpp)
 │   │   ├── msgpack/  (msgpack.h, msgpack.cpp)
 │   │   ├── multipart/  (multipart.h, multipart.cpp)
+│   │   ├── pqc/
+│   │   │   ├── mlkem.cpp
+│   │   │   ├── mlkem.h
+│   │   │   ├── sha3.cpp
+│   │   │   └── sha3.h
 │   │   ├── sha1/  (sha1.h, sha1.cpp)
 │   │   ├── sse/  (sse.h, sse.cpp)
 │   │   ├── ssh/
@@ -1285,6 +1291,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_PER_IP_THROTTLE` | `0` | Opt-in per-IP accept-rate throttle (connection-flood defense, keyed by source IPv4). |
 | `DETWS_ENABLE_PN532` | `0` | Enable the PN532 NFC frame codec (default off). |
 | `DETWS_ENABLE_POWERLINK` | `0` | Opt-in Ethernet POWERLINK (EPSG) basic frame codec. |
+| `DETWS_ENABLE_PQC_KEX` | `0` | Post-quantum hybrid key exchange: ML-KEM-768 + X25519 (FIPS 203 / RFC 9370 combiner). |
 | `DETWS_ENABLE_PREEMPT_QUEUE` | `0` | Enable the preempting work queue primitive (default off). |
 | `DETWS_ENABLE_PROFIBUS` | `0` | Opt-in PROFIBUS-DP FDL telegram codec. |
 | `DETWS_ENABLE_PROFINET` | `0` | Opt-in PROFINET DCP (Discovery and Configuration Protocol) frame codec. |
@@ -1556,6 +1563,7 @@ guards at compile time.
 | `DETWS_WORKER_COUNT` | `1` | Number of server worker tasks (slots partitioned i % N). |
 | `DETWS_WORKER_POLL_TICKS` | `1` | Idle-sweep timeout, in FreeRTOS ticks, that a worker blocks between service iterations when no events are pending. |
 | `DETWS_WORKER_STACK_CURVE_MIN` | `12288` | Minimum worker-task stack (bytes) required once SSH is compiled in. |
+| `DETWS_WORKER_STACK_PQC_MIN` | `16384` |  |
 | `DETWS_WORKER_STACK_RSA_MIN` | `8192` | Minimum worker-task stack (bytes) required once an RSA-2048 verifier is compiled in (OIDC / SSH). |
 | `DETWS_WORKER_TASK_PRIORITY` | `5` | FreeRTOS priority for each server worker task (ESP32). |
 | `DETWS_WS_CLIENT_BUF_SIZE` | `1024` | WebSocket client send/receive buffer size in bytes (bounds one frame). |
