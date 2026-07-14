@@ -2,6 +2,22 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- null-guard the XML put helpers; roadmap machine-tool protocols ([`fb6087d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb6087dd961c5b6543cc95cdc6e1ffcde90557f3))
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`9204273`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/920427391e0a190f70a3f9fa9c1baee5215d8740))
+- update CHANGELOG.md [skip ci] ([`9ef0800`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ef08009bb88e9831b3f2bd7e9660557295c24c6))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`e2ba87f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e2ba87f93428ed65e00ca9cdd7b1e07fd757ccfd))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4f4d318`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f4d3188de58a1a09d6432acc15e736e141a2665))
+
 ## [5.102.0] - 2026-07-14
 
 <details>
