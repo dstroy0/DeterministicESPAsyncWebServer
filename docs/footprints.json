@@ -636,6 +636,13 @@
     "flash_bytes": 821069,
     "ram_bytes": 105352
   },
+  "WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE": {
+    "example": "L7-Application/29.WebDav",
+    "flags": "-DDETWS_ENABLE_WEBDAV=1 -DMAX_CONNS=3 -DMAX_WS_CONNS=1 -DMAX_SSE_CONNS=1 -DMAX_ROUTES=8 -DDETWS_WEBDAV_MAX_ENTRIES=8 -DDETWS_WEBDAV_BUF_SIZE=1024",
+    "board": "esp32dev",
+    "flash_bytes": 821417,
+    "ram_bytes": 90848
+  },
   "WEB_TERMINAL": {
     "example": "L6-Presentation/10.WebTerminal",
     "flags": "-DDETWS_ENABLE_WEB_TERMINAL=1",

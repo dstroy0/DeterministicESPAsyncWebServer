@@ -99,6 +99,7 @@ from each example's `pio ci` size report and aggregated into
 | `UPLOAD`                                                                                                  | L7-Application/11.FileUpload            | 776.1 KB (60.6%) | 89.0 KB (27.8%)  |
 | `VFS`                                                                                                     | L7-Application/51.Vfs                   | 777.2 KB (60.7%) | 84.3 KB (26.3%)  |
 | `WEBDAV`                                                                                                  | L7-Application/29.WebDav                | 801.8 KB (62.6%) | 102.9 KB (32.2%) |
+| `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE`                                                               | L7-Application/29.WebDav                | 802.2 KB (62.7%) | 88.7 KB (27.7%)  |
 | `WEB_TERMINAL`                                                                                            | L6-Presentation/10.WebTerminal          | 739.3 KB (57.8%) | 79.9 KB (25.0%)  |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS`                                                                             | L7-Application/25.WebSocketClient       | 811.8 KB (63.4%) | 117.7 KB (36.8%) |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE`                                                          | L7-Application/25.WebSocketClient       | 812.3 KB (63.5%) | 120.7 KB (37.7%) |
