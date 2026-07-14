@@ -737,6 +737,11 @@ h3 rig.
   multiplexed second stream). Bring-up fixed two hardware-only bugs - a worker-stack overflow in the QUIC
   Ed25519 signer and a frame parser that rejected a real client's post-handshake frames - see
   [BUGS.md](BUGS.md).
+- Re-confirmed 2026-07-13 over a **W5500 wired link** (not just WiFi) and with a **second independent client**:
+  `curl --http3` (OpenSSL QUIC + nghttp3) completes the exchange at HTTP/3, `:status` 200 on both `/` and
+  `/status`, and reports `Certificate level 0: ED25519, signed using ED25519` - so a real client **validates
+  the Ed25519 CertificateVerify signature**, not only the aioquic path (which disables verification). Two
+  mature stacks now agree on the wire against the on-device server.
 
 ## 3. Request-path benchmarks
 
