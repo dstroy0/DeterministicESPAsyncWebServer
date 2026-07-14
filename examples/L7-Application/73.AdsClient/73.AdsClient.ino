@@ -25,6 +25,7 @@
 
 #define DETWS_ENABLE_ADS 1
 
+#include "dwserver.h" // library entry header (also sets the src/ include root)
 #include "network_drivers/physical/physical.h"
 #include "services/ads/ads.h"
 #include <WiFi.h>
