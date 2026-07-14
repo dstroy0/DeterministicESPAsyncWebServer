@@ -33,7 +33,7 @@ exposing it. The sketch seeds one file so a fresh share is not empty.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_WEBDAV=1 -DMAX_CONNS=3 -DMAX_ROUTES=8 -DDETWS_WEBDAV_MAX_ENTRIES=8 -DDETWS_WEBDAV_BUF_SIZE=1024" \
+  --project-option="build_flags=-DDETWS_ENABLE_WEBDAV=1 -DMAX_CONNS=3 -DMAX_WS_CONNS=1 -DMAX_SSE_CONNS=1 -DMAX_ROUTES=8 -DDETWS_WEBDAV_MAX_ENTRIES=8 -DDETWS_WEBDAV_BUF_SIZE=1024" \
   --lib="." examples/L7-Application/29.WebDav/29.WebDav.ino
 ```
 
