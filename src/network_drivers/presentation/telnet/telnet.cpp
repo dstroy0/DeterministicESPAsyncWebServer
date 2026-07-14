@@ -69,11 +69,10 @@ static TelnetConn *find_conn(uint8_t slot)
 
 static void raw_send(uint8_t slot, const void *data, size_t n)
 {
-    TcpConn *c = &conn_pool[slot];
-    if (c->state != ConnState::CONN_ACTIVE || !c->pcb || n == 0)
+    if (!det_conn_active(slot) || n == 0)
         return;
-    det_conn_send(c->id, data, (u16_t)n);
-    det_conn_flush(c->id);
+    det_conn_send(slot, data, (u16_t)n);
+    det_conn_flush(slot);
 }
 
 // Send Telnet *data* (echo + application output): a literal IAC byte (0xFF) MUST be
@@ -82,8 +81,7 @@ static void raw_send(uint8_t slot, const void *data, size_t n)
 // (IAC WILL/DO/...) use raw_send directly - they send IAC intentionally.
 static void send_escaped(uint8_t slot, const void *data, size_t n)
 {
-    TcpConn *c = &conn_pool[slot];
-    if (c->state != ConnState::CONN_ACTIVE || !c->pcb || n == 0)
+    if (!det_conn_active(slot) || n == 0)
         return;
     const uint8_t *b = (const uint8_t *)data;
     size_t start = 0;
@@ -92,14 +90,14 @@ static void send_escaped(uint8_t slot, const void *data, size_t n)
         if (b[i] == 0xFF)
         {
             if (i > start)
-                det_conn_send(c->id, b + start, (u16_t)(i - start));
-            det_conn_send(c->id, "\xff\xff", 2); // doubled IAC
+                det_conn_send(slot, b + start, (u16_t)(i - start));
+            det_conn_send(slot, "\xff\xff", 2); // doubled IAC
             start = i + 1;
         }
     }
     if (n > start)
-        det_conn_send(c->id, b + start, (u16_t)(n - start));
-    det_conn_flush(c->id);
+        det_conn_send(slot, b + start, (u16_t)(n - start));
+    det_conn_flush(slot);
 }
 
 // ---------------------------------------------------------------------------

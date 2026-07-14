@@ -643,6 +643,15 @@ void DeterministicAsyncTCP::stop()
     }
 }
 
+uint8_t det_conn_active_count()
+{
+    uint8_t n = 0;
+    for (uint8_t i = 0; i < MAX_CONNS; i++)
+        if (conn_pool[i].state == ConnState::CONN_ACTIVE)
+            n++;
+    return n;
+}
+
 uint32_t det_conn_remote_ip(uint8_t slot)
 {
 #ifdef ARDUINO

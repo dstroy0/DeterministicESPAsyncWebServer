@@ -86,8 +86,7 @@ static bool ws_accept_key(const char *client_key, char *out)
  */
 void ws_send_version_required(uint8_t slot_id)
 {
-    TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != ConnState::CONN_ACTIVE || conn->pcb == nullptr)
+    if (!det_conn_active(slot_id))
     {
         http_reset(slot_id);
         return;
@@ -115,8 +114,7 @@ bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_connect)
     if (!ws_accept_key(client_key, accept))
         return false;
 
-    TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
+    if (!det_conn_active(slot_id))
         return false;
 
     char hdr[WS_HDR_BUF_SIZE];
@@ -181,8 +179,7 @@ bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_connect)
  */
 bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect)
 {
-    TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
+    if (!det_conn_active(slot_id))
         return false;
 
     static const char SSE_HDR[] = "HTTP/1.1 200 OK\r\n"
@@ -230,9 +227,8 @@ void DetWebServer::ws_send_text(uint8_t ws_id, const char *text)
     uint16_t len = (uint16_t)strnlen(text, 0xFFFF);
     if (ws_send_frame(ws, WsOpcode::WS_OP_TEXT, (const uint8_t *)text, len))
     {
-        TcpConn *conn = &conn_pool[ws->slot_id];
-        if (conn->pcb)
-            det_conn_flush(conn->id);
+        if (det_conn_active(ws->slot_id))
+            det_conn_flush(ws->slot_id);
     }
 }
 
@@ -245,9 +241,8 @@ void DetWebServer::ws_send_binary(uint8_t ws_id, const uint8_t *data, uint16_t l
         return;
     if (ws_send_frame(ws, WsOpcode::WS_OP_BINARY, data, len))
     {
-        TcpConn *conn = &conn_pool[ws->slot_id];
-        if (conn->pcb)
-            det_conn_flush(conn->id);
+        if (det_conn_active(ws->slot_id))
+            det_conn_flush(ws->slot_id);
     }
 }
 
@@ -257,9 +252,8 @@ void DetWebServer::ws_disconnect(uint8_t ws_id)
         return;
     WsConn *ws = &ws_pool[ws_id];
     ws_close(ws, WsCloseCode::WS_CLOSE_NORMAL);
-    TcpConn *conn = &conn_pool[ws->slot_id];
-    if (conn->pcb)
-        det_conn_flush(conn->id);
+    if (det_conn_active(ws->slot_id))
+        det_conn_flush(ws->slot_id);
     // handle() detects WsParseState::WS_CLOSED next tick and fires ws_close callback
 }
 #endif // DETWS_ENABLE_WEBSOCKET
@@ -276,9 +270,8 @@ void DetWebServer::sse_send(uint8_t sse_id, const char *data, const char *event,
     SseConn *sse = &sse_pool[sse_id];
     if (sse_write(sse, data, event, id))
     {
-        TcpConn *conn = &conn_pool[sse->slot_id];
-        if (conn->pcb)
-            det_conn_flush(conn->id);
+        if (det_conn_active(sse->slot_id))
+            det_conn_flush(sse->slot_id);
     }
 }
 
@@ -293,9 +286,8 @@ void DetWebServer::sse_broadcast(const char *path, const char *data, const char 
         SseConn *sse = &sse_pool[i];
         if (sse_write(sse, data, event, id))
         {
-            TcpConn *conn = &conn_pool[sse->slot_id];
-            if (conn->pcb)
-                det_conn_flush(conn->id);
+            if (det_conn_active(sse->slot_id))
+                det_conn_flush(sse->slot_id);
         }
     }
 }

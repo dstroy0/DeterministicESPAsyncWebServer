@@ -336,6 +336,35 @@ static inline size_t det_conn_read(uint8_t slot, uint8_t *buf, size_t cap)
 }
 
 /**
+ * @brief True if @p slot holds a live connection that can accept a send or close.
+ *
+ * The single predicate every layer uses to ask "is this slot sendable": it folds the
+ * CONN_ACTIVE state check and the non-null pcb check the send / flush / close paths
+ * require. Callers outside transport/ + tls/ must NOT test conn_pool[slot].state or
+ * .pcb themselves - .pcb is a raw lwIP pointer, so poking it couples a higher layer to
+ * the transport's internals. Guard a send with `if (!det_conn_active(slot)) return;`.
+ */
+static inline bool det_conn_active(uint8_t slot)
+{
+    const TcpConn *c = &conn_pool[slot];
+    return c->state == ConnState::CONN_ACTIVE && c->pcb != nullptr;
+}
+
+/** @brief The network interface (STA / AP / ANY) @p slot's connection arrived on. */
+static inline DetIface det_conn_iface(uint8_t slot)
+{
+    return conn_pool[slot].iface;
+}
+
+/**
+ * @brief Number of server connection slots currently in the CONN_ACTIVE state.
+ *
+ * The connection pool owns this aggregate: callers (stats / metrics) ask transport for the
+ * count instead of sweeping conn_pool[] and testing .state themselves.
+ */
+uint8_t det_conn_active_count();
+
+/**
  * @brief Write raw bytes straight to @p pcb (no TLS), context-safe.
  *
  * This is the one safe path for the TLS engine's BIO to emit ciphertext: it

@@ -158,8 +158,7 @@ bool DetWebServer::verify_digest_nonce(const char *nonce, bool *expired)
 
 void DetWebServer::send_unauth(uint8_t slot_id, const Route *r, bool stale)
 {
-    TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
+    if (!det_conn_active(slot_id))
     {
         http_reset(slot_id);
         return;

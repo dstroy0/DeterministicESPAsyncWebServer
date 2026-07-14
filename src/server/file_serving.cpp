@@ -213,8 +213,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
         return;
     }
 
-    TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
+    if (!det_conn_active(slot_id))
     {
         f.close();
         http_reset(slot_id);
@@ -353,8 +352,7 @@ void DetWebServer::file_send_pump(uint8_t slot_id)
     if (!s.active)
         return;
 
-    TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
+    if (!det_conn_active(slot_id))
     {
         // Connection went away mid-transfer: drop the source and the continuation.
         s.file.close();

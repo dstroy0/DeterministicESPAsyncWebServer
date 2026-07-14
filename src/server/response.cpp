@@ -84,8 +84,7 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
 {
     if (slot_id >= MAX_CONNS)
         return;
-    TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != ConnState::CONN_ACTIVE || conn->pcb == nullptr)
+    if (!det_conn_active(slot_id))
     {
         http_reset(slot_id);
         return;
@@ -131,8 +130,7 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
 {
     if (slot_id >= MAX_CONNS)
         return;
-    TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != ConnState::CONN_ACTIVE || conn->pcb == nullptr)
+    if (!det_conn_active(slot_id))
     {
         http_reset(slot_id);
         return;
@@ -194,8 +192,7 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
     if (!s.active)
         return;
 
-    TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != ConnState::CONN_ACTIVE || !conn->pcb)
+    if (!det_conn_active(slot_id))
     {
         s.active = false; // connection gone mid-stream
         return;
@@ -407,10 +404,7 @@ static const char *stats_var(const char *name)
 
 void DetWebServer::stats(uint8_t slot_id)
 {
-    int active = 0;
-    for (int i = 0; i < MAX_CONNS; i++)
-        if (conn_pool[i].state == ConnState::CONN_ACTIVE)
-            active++;
+    int active = det_conn_active_count();
 
     unsigned long up = millis();
 #ifdef ARDUINO
@@ -482,10 +476,7 @@ static const char *metrics_var(const char *name)
 
 void DetWebServer::metrics(uint8_t slot_id)
 {
-    int active = 0;
-    for (int i = 0; i < MAX_CONNS; i++)
-        if (conn_pool[i].state == ConnState::CONN_ACTIVE)
-            active++;
+    int active = det_conn_active_count();
 
     unsigned long up = millis();
 #ifdef ARDUINO

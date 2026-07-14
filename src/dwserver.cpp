@@ -1400,7 +1400,7 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
 
         // Per-route interface gate: a route bound to STA/AP is invisible on the
         // other interface (falls through to other routes / 404).
-        if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != conn_pool[slot_id].iface)
+        if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != det_conn_iface(slot_id))
             continue;
 
 #if DETWS_ENABLE_WEBSOCKET

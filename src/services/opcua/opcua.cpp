@@ -1076,11 +1076,10 @@ void ring_consume(TcpConn *c, size_t n)
 }
 void raw_send(uint8_t slot, const void *data, size_t n)
 {
-    TcpConn *c = &conn_pool[slot];
-    if (c->state != ConnState::CONN_ACTIVE || !c->pcb || n == 0)
+    if (!det_conn_active(slot) || n == 0)
         return;
-    det_conn_send(c->id, data, (u16_t)n);
-    det_conn_flush(c->id);
+    det_conn_send(slot, data, (u16_t)n);
+    det_conn_flush(slot);
 }
 void close_conn(uint8_t slot)
 {
@@ -1091,9 +1090,9 @@ void close_conn(uint8_t slot)
 
 void opcua_rx(uint8_t slot)
 {
-    TcpConn *c = &conn_pool[slot];
-    if (c->state != ConnState::CONN_ACTIVE)
+    if (!det_conn_active(slot))
         return;
+    TcpConn *c = &conn_pool[slot];
 
     // Drain every complete UACP message currently in the rx ring (a client may
     // pipeline HEL then OPN; each arrives framed by an 8-byte header + MessageSize).

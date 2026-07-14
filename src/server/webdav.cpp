@@ -247,7 +247,7 @@ bool DetWebServer::dav_stream_put_begin(HttpReq *req)
             continue;
         if (!path_matches(r->path, r->is_wildcard, req->path))
             continue;
-        if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != conn_pool[slot].iface)
+        if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != det_conn_iface(slot))
             continue;
         // GCOVR_EXCL_START  a RouteType::ROUTE_DAV route always carries static_fs (set in dav()); this null-guard
         // cannot fire
@@ -317,8 +317,7 @@ void DetWebServer::dav(const char *url_prefix, fs::FS &file_sys, const char *fs_
 
 void DetWebServer::dav_send_status(uint8_t slot_id, int code, const char *extra_headers)
 {
-    TcpConn *conn = &conn_pool[slot_id];
-    if (conn->state != ConnState::CONN_ACTIVE || conn->pcb == nullptr)
+    if (!det_conn_active(slot_id))
     {
         http_reset(slot_id);
         return;
@@ -341,7 +340,7 @@ bool DetWebServer::try_serve_dav(uint8_t slot_id, HttpReq *req)
             continue;
         if (!path_matches(r->path, r->is_wildcard, req->path))
             continue;
-        if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != conn_pool[slot_id].iface)
+        if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != det_conn_iface(slot_id))
             continue;
         serve_dav_request(slot_id, req, r);
         return true;
