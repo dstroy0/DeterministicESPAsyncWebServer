@@ -470,6 +470,12 @@ TI INA219 high-side current / power monitor (I2C). Default off. services/ina219 
 
 Opt-in INTERBUS summation-frame fieldbus codec. When set, services/interbus assembles/disassembles the INTERBUS summation frame (loopback word + per-device 16-bit process-image slices + CRC-16/CCITT FCS) of the Phoenix Contact ring fieldbus, where every device is a shift-register slice of one circulating frame. Pure codec (the physical ring clocking is hardware-gated). Default off.
 
+## Interface Bridge
+
+`DETWS_ENABLE_IFACE_BRIDGE`
+
+Opt-in user-defined address:port -> hardware-bus bridge, a configurable "device server". The app registers rules mapping a listen `x.x.x.x:nnnn` (TCP/UDP) to a UART, an SPI chip-select, or an I2C address (`bridge_map(ip, port, proto, target)`), so a network client talking to that port is transparently bridged to the bus: raw bidirectional stream passthrough for UART (a ser2net-style serial device server), or framed write-then-read transactions (`uint16 write_len || uint16 read_len || write_bytes`, big-endian) for the master-initiated SPI / I2C buses, with the bus address / chip-select / clock / mode taken from the rule's target. The fixed-capacity rule table (keyed by port+proto, carrying the full DetIp bind address, never a flattened one) and the transaction frame codec are a pure, zero-heap, host-tested core (services/iface_bridge); the bus I/O (Serial / SPI / Wire) and the PROTO_BRIDGE listener are the ESP32 step. Default off.
+
 ## Interface Forwarding
 
 `DETWS_ENABLE_FORWARD`

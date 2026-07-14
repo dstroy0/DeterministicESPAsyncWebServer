@@ -826,6 +826,15 @@
       ],
       "tests": ["test_pqc_sha3", "test_pqc_mlkem"]
     },
+    "native_iface_bridge": {
+      "desc": "Interface bridge pure core (services/iface_bridge): the user-defined address:port -> bus\nrule table (register / find / dedup / capacity, keyed by port+proto with the full DetIp bind address\npreserved) and the write-then-read transaction frame codec (big-endian write_len/read_len header,\npartial-frame handling, build/parse round-trip). Bus I/O + listener are ESP32-only. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_IFACE_BRIDGE=1"],
+      "src": [
+        "+<services/iface_bridge/iface_bridge.cpp>",
+        "+<network_drivers/network/ip.cpp>"
+      ],
+      "tests": ["test_iface_bridge"]
+    },
     "native_bacnet": {
       "desc": "BACnet/IP BVLC + NPDU codec (services/bacnet): the BVLC envelope (type 0x81,\nfunction, length) + the NPDU header (version + NPCI control + optional DNET/DADR + hop\ncount) builders and parsers, slicing the APDU. ASHRAE 135. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_BACNET=1"],

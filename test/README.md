@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **224 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **225 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -160,6 +160,7 @@ The native test matrix has **224 environments**, one per feature, generated from
 | `native_hw_health` | `ETWS_ENABLE_HW_HEALTH=1` | `test_hw_health` | Hardware-health diagnostics (services/hw_health): power-rail voltage-drop logger (worst droop + sag/brownout counts), SPI-bus CRC audit with hysteretic clock backoff, GPIO short-circuit test (driven v... |
 | `native_iccp` | `ETWS_ENABLE_ICCP=1` | `test_iccp` | ICCP / TASE.2 (IEC 60870-6) Data_Value codec (services/iccp): the StateQ (state + quality) and RealQ (scaled INTEGER + quality) indication-point BER structures with optional timestamp. |
 | `native_iec60870` | `ETWS_ENABLE_IEC60870=1` | `test_iec60870` | IEC 60870-5-101/-104 codec (services/iec60870): the -104 APCI (I/S/U), the ASDU header + 3-octet IOA, and the -101 FT1.2 fixed/variable link frames (sum checksum). |
+| `native_iface_bridge` | `ETWS_ENABLE_IFACE_BRIDGE=1` | `test_iface_bridge` | Interface bridge pure core (services/iface_bridge): the user-defined address:port -> bus rule table (register / find / dedup / capacity, keyed by port+proto with the full DetIp bind address preserved)... |
 | `native_ina219` | `ETWS_ENABLE_INA219=1` | `test_ina219` | INA219 current/power codec (services/ina219): decoding the bus-voltage register (bits [15:3], LSB 4 mV, status bits ignored) and the shunt-voltage register (signed, LSB 10 uV), computing the calibrati... |
 | `native_inflate` | `ETWS_ENABLE_WS_DEFLATE=1` | `test_inflate` | RFC 1951 INFLATE core (the WebSocket permessage-deflate decompressor). |
 | `native_interbus` | `ETWS_ENABLE_INTERBUS=1` | `test_interbus` | INTERBUS summation-frame codec (services/interbus): the summation frame (loopback + per-device 16-bit slices + CRC-16/CCITT FCS) assemble + disassemble. |
@@ -514,7 +515,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2973 test cases** across **251 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2980 test cases** across **252 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -12701,6 +12702,96 @@ A thorough directory of all **2973 test cases** across **251 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(0x0104A8C0u, detws_ap_ip);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0u, detws_ap_ip);</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_iface_bridge (7 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_map_and_find</b> &mdash; <i>Map and find</i></summary>
+
+    * **Objective**: Map and find
+    * **Assertions**:
+      * <code>Assert true (bridge_map("192.168.1.50", 4001, BridgeProto::tcp, &u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, bridge_count());</code>
+      * <code>Assert not null (r)</code>
+      * <code>Assert equal (BridgeBus::uart, r-&gt;target.bus)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(4001, r-&gt;listen_port);</code>
+      * <code>Assert equal (DetIpFamily::DET_IP_V4, r-&gt;listen_ip.family)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(192, r-&gt;listen_ip.bytes[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(50, r-&gt;listen_ip.bytes[3]);</code>
+      * <code>Assert null (bridge_find(4001, BridgeProto::udp))</code>
+      * <code>Assert null (bridge_find(4002, BridgeProto::tcp))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_any_interface_and_dedup</b> &mdash; <i>Same port+proto is a duplicate -> rejected.</i></summary>
+
+    * **Objective**: Same port+proto is a duplicate -> rejected.
+    * **Assertions**:
+      * <code>Assert true (bridge_map(nullptr, 5000, BridgeProto::tcp, &i))</code>
+      * <code>Assert not null (r)</code>
+      * <code>Assert equal (DetIpFamily::DET_IP_NONE, r-&gt;listen_ip.family)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x40, r-&gt;target.addr_cs);</code>
+      * <code>Assert false (bridge_map("10.0.0.1", 5000, BridgeProto::tcp, &u))</code>
+      * <code>Assert true (bridge_map(nullptr, 5000, BridgeProto::udp, &i))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, bridge_count());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_bad_address_rejected</b> &mdash; <i>Bad address rejected</i></summary>
+
+    * **Objective**: Bad address rejected
+    * **Assertions**:
+      * <code>Assert false (bridge_map("not.an.ip", 6000, BridgeProto::tcp, &u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, bridge_count());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_table_full</b> &mdash; <i>Table full</i></summary>
+
+    * **Objective**: Table full
+    * **Assertions**:
+      * <code>Assert true (bridge_map(nullptr, (uint16_t)(7000 + p), BridgeProto::tcp, &u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_BRIDGE_MAX_RULES, bridge_count());</code>
+      * <code>Assert false (bridge_map(nullptr, 9999, BridgeProto::tcp, &u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, bridge_count());</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_txn_roundtrip</b> &mdash; <i>Txn roundtrip</i></summary>
+
+    * **Objective**: Txn roundtrip
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(DETWS_BRIDGE_TXN_HDR + 3, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, frame, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(n, used);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(3, wl);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(5, rl);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(wr, wd, 3);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_txn_partial_and_readonly</b> &mdash; <i>Partial header (< 4 bytes) -> need more.</i></summary>
+
+    * **Objective**: Partial header (< 4 bytes) -> need more.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, bridge_txn_parse(hdr2, sizeof(hdr2), nullptr, nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, bridge_txn_parse(partial, sizeof(partial), nullptr, nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(DETWS_BRIDGE_TXN_HDR, bridge_txn_parse(readonly, sizeof(readonly), &wl, &rl, &wd));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, wl);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(8, rl);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_overflow_fails_closed</b> &mdash; <i>Build overflow fails closed</i></summary>
+
+    * **Objective**: Build overflow fails closed
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, bridge_txn_build(small, sizeof(small), wr, 4, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, bridge_txn_parse(nullptr, 10, nullptr, nullptr, nullptr));</code>
   </details>
 
 </details>

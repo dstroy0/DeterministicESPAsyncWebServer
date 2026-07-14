@@ -3109,6 +3109,25 @@
 #endif
 
 /**
+ * @brief User-defined address:port -> hardware-bus bridge (services/iface_bridge).
+ *
+ * A configurable "device server": the app registers rules mapping a listen `x.x.x.x:nnnn` (TCP/UDP) to a
+ * UART, SPI chip-select, or I2C address. A network client talking to the port is bridged to that bus -
+ * raw stream passthrough for UART, or framed write-then-read transactions (uint16 write_len || uint16
+ * read_len || write_bytes) for SPI/I2C. The rule table + transaction frame codec are a pure, zero-heap,
+ * host-tested core; the bus I/O (Serial/SPI/Wire) and the PROTO_BRIDGE listener are the ESP32 step.
+ * Default off.
+ */
+#ifndef DETWS_ENABLE_IFACE_BRIDGE
+#define DETWS_ENABLE_IFACE_BRIDGE 0
+#endif
+
+/** @brief Max concurrent address:port -> bus rules (services/iface_bridge). */
+#ifndef DETWS_BRIDGE_MAX_RULES
+#define DETWS_BRIDGE_MAX_RULES 8
+#endif
+
+/**
  * @brief Per-direction relay buffer size (bytes) for services/relay (DETWS_ENABLE_RELAY).
  *
  * Each active relay holds two buffers of this size (one per direction) for bytes read from one peer
