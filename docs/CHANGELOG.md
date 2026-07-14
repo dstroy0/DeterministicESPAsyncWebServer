@@ -6,14 +6,18 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`e0f6ec7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e0f6ec77eb99ea326e9a5e2f1547e2299be5dfa1))
+- update CHANGELOG.md [skip ci] ([`7ba4a6f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ba4a6f80c408df72816e3b679ddc9f45ab55031))
 - update CHANGELOG.md [skip ci] ([`531356b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/531356b68304e4cac6d32589798941704653542c))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`71ff5a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71ff5a8625fc589cc92e3f95b8d49149c3503670))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1e60ce1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e60ce10ad423800c1f93de0b50198e2b5fc9b5a))
 
 ### Features
 
+- survey-in core - WGS84 geodetic<->ECEF + fixed-position averaging ([`11978a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/11978a5082b23aeeac7d7af7d7e2dacd96632f83))
 - RTCM 3.x codec - framing + CRC-24Q + 1005/1006 (RTK base foundation) ([`6932a65`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6932a6516e32636f906b5bb0798699dee3b90f26))
 
 ## [6.8.0] - 2026-07-14
