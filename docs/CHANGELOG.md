@@ -2,10 +2,15 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [5.102.0] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 5.102.0 - 2026-07-14</b></summary>
 
 ### CI / Build
 
+- add ESP-IDF CMake component + toolchain support ([`89f8c40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89f8c402a03bf8d184eef31724f004cb9860a4a3))
+- update CHANGELOG.md [skip ci] ([`02ec51c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/02ec51c44054ad13d179dbd61c55624011280b51))
 - update CHANGELOG.md [skip ci] ([`1e4389c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e4389c282b4c4a684d78423250ec0be7bf0a677))
 - update CHANGELOG.md [skip ci] ([`c4da57c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4da57caa065c510dbb6d4dadceded0acbeb2d58))
 - update CHANGELOG.md [skip ci] ([`503c617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/503c617819a670bb006d9126eb25de4bc0ca00fb))
@@ -13,8 +18,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update CHANGELOG.md [skip ci] ([`b988aa8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b988aa8cae8d635942e5c8510b8273080f8e4218))
 - update CHANGELOG.md [skip ci] ([`4f27879`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f27879d5619a2006ab2edbd678544ca43c1bfb5))
 
+### Changes
+
+- Bump version: 5.101.0 → 5.102.0 ([`c300719`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3007192182ff903af586033511b0aeb2016fb6a))
+
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`a720002`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7200029bfe2c350e0de52def445d17f0cbcd29d))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c424151`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4241518a781ebf2ac2ae39b90851381422de07e))
 - add 71.MediaStreaming - live camera MJPEG + mic WAV (XIAO ESP32-S3 Sense) ([`2b9523f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b9523f1d1b68b2a25dfe9ecaf387c0023a6549c))
 - XIAO PDM mic WAV streaming over send_chunked (HW-verified) ([`d378007`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3780077a69e05dbb641198afcb5460b934358a0))
 - XIAO ESP32-S3 Sense camera MJPEG + SD storage characterization ([`111d187`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/111d187cdff3dbe7c9891ad31cd329c1a1951635))
@@ -22,6 +33,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - HW-verify Port-Forward + Ethernet DNC over W5500 ([`f36c8d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f36c8d8d77d326d182b41b450f95995d759eb33b))
 - refresh coverage note + enrich W5500 record after v5.101.0 ([`c5e4f63`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c5e4f63c7acaff50a00b0e77a44c6d62b846be10))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`261f4ed`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/261f4ed031435dbdef1ce9ea70964880d917cf8f))
+
+### Performance
+
+- coalesce terminal write+flush into one tcpip_thread marshal ([`20180e7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/20180e741bf8c2406e1b3e2d599bfbefdd4b8a3f))
+
+</details>
 
 ## [5.101.0] - 2026-07-13
 
