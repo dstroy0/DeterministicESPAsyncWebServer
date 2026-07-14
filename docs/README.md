@@ -623,6 +623,8 @@ src/
 │   │   │   ├── crypto/
 │   │   │   │   ├── ssh_aes256ctr.cpp
 │   │   │   │   ├── ssh_aes256ctr.h
+│   │   │   │   ├── ssh_aesgcm.cpp
+│   │   │   │   ├── ssh_aesgcm.h
 │   │   │   │   ├── ssh_bignum.cpp
 │   │   │   │   ├── ssh_bignum.h
 │   │   │   │   ├── ssh_chacha20.cpp
@@ -1083,7 +1085,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `OIDC` | `L7-Application/50.OidcAuth` | 765,689 | 99,824 |
 | `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 766,177 | 81,792 |
 | `RTC+TIME_SOURCE+NTP` | `L7-Application/61.Rtc` | 766,653 | 45,372 |
-| `OPCUA+UMATI` | `L7-Application/72.Umati` | 766,845 | 92,208 |
+| `OPCUA+UMATI` | `L7-Application/72.Umati` | 766,897 | 92,208 |
 | `NTRIP_CASTER` | `L7-Application/76.NtripCaster` | 770,365 | 84,700 |
 | `BUS_CAPTURE+FORWARD+ETHERNET` | `Foundation/22.CanCapture` | 771,165 | 45,516 |
 | `ADS` | `L7-Application/73.AdsClient` | 771,933 | 45,440 |
