@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1e4389c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e4389c282b4c4a684d78423250ec0be7bf0a677))
 - update CHANGELOG.md [skip ci] ([`c4da57c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4da57caa065c510dbb6d4dadceded0acbeb2d58))
 - update CHANGELOG.md [skip ci] ([`503c617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/503c617819a670bb006d9126eb25de4bc0ca00fb))
 - update CHANGELOG.md [skip ci] ([`2a2d0a9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2a2d0a93ed888c7f14f5649bdae3b33ff8507458))
@@ -14,6 +15,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- add 71.MediaStreaming - live camera MJPEG + mic WAV (XIAO ESP32-S3 Sense) ([`2b9523f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b9523f1d1b68b2a25dfe9ecaf387c0023a6549c))
 - XIAO PDM mic WAV streaming over send_chunked (HW-verified) ([`d378007`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3780077a69e05dbb641198afcb5460b934358a0))
 - XIAO ESP32-S3 Sense camera MJPEG + SD storage characterization ([`111d187`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/111d187cdff3dbe7c9891ad31cd329c1a1951635))
 - re-confirm on-device HW-verify over W5500 + curl second client ([`696321b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/696321b1a52b090a2b81109f7f5dd8517ded22f1))
