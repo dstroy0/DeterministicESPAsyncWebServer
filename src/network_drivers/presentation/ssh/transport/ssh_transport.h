@@ -84,8 +84,9 @@ enum class SshPhase : uint8_t
 /** @brief Negotiated key-exchange method (crypto-agnostic KEX dispatch). */
 enum class SshKexAlg : uint8_t
 {
-    SSH_KEX_DH_GROUP14 = 0, ///< diffie-hellman-group14-sha256 (HW-accelerated MPI on ESP32)
-    SSH_KEX_CURVE25519 = 1  ///< curve25519-sha256 (RFC 8731, X25519)
+    SSH_KEX_DH_GROUP14 = 0,     ///< diffie-hellman-group14-sha256 (HW-accelerated MPI on ESP32)
+    SSH_KEX_CURVE25519 = 1,     ///< curve25519-sha256 (RFC 8731, X25519)
+    SSH_KEX_MLKEM768_X25519 = 2 ///< mlkem768x25519-sha256 (PQ/T hybrid, draft-ietf-sshm-mlkem-hybrid-kex)
 };
 
 /** @brief Negotiated host-key / signature algorithm. */

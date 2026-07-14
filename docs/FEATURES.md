@@ -820,6 +820,12 @@ PN532 NFC frame codec (v5 gateway plugin). Default off. services/pn532 is the co
 
 Opt-in Ethernet POWERLINK (EPSG) basic frame codec. When set, services/powerlink builds/parses the EPL basic frames ([messageType][dest][source][payload]) of the isochronous managed-node cycle - SoC (start of cycle), PReq (poll request), PRes (poll response with process data), SoA (start of async) - over raw L2 (ethertype 0x88AB, on the shipped services/rawl2). Pure codec (the raw-L2 transmit + isochronous timing are the device step). Default off.
 
+## Post-Quantum Hybrid KEX
+
+`DETWS_ENABLE_PQC_KEX`
+
+Post-quantum / traditional hybrid key exchange: ML-KEM-768 (FIPS 203) combined with X25519. Closes the harvest-now-decrypt-later gap - OpenSSH 9.9+ and current browsers now DEFAULT to a hybrid group, so without this the device negotiates DOWN to classical X25519. When set (and SSH is on) the server advertises `mlkem768x25519-sha256` (draft-ietf-sshm-mlkem-hybrid-kex) first in its SSH KEX list and, on selection, ML-KEM-Encaps to the client's key + X25519, combining `K = SHA256(K_PQ || K_CL)` per the RFC 9370 concatenation combiner. The device is always the KEM responder, so only Encaps ships (no KeyGen/Decaps, so none of the constant-time FO re-encryption surface). The ML-KEM core (network_drivers/presentation/pqc) is a software NTT over q=3329 with Montgomery reduction plus a Keccak/SHA-3/SHAKE sponge (FIPS 202); zero heap, peak ~7 KB of worker stack (raise `DETWS_WORKER_TASK_STACK` to >= `DETWS_WORKER_STACK_PQC_MIN` = 16384). Byte-exact against the FIPS 203 reference (kyber-py) and verified end to end vs an independent client (ML-KEM Decaps + the string-K exchange hash / KDF). Currently wired into the SSH key exchange (`DETWS_ENABLE_SSH`); the HTTP/3 **X25519MLKEM768** TLS 1.3 group (IANA 0x11ec) is the tracked next integration of the same core. Default off.
+
 ## Preempting Work Queue
 
 `DETWS_ENABLE_PREEMPT_QUEUE`

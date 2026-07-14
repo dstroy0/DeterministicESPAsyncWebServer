@@ -83,6 +83,24 @@ static void hash_mpint_K(SshSha256Ctx *ctx, const uint8_t K_be[256])
     ssh_sha256_update(ctx, K_be + off, 256 - off);
 }
 
+// Hybrid KEX (mlkem768x25519-sha256): K is a fixed 32-octet HASH output, hashed as a plain SSH
+// string (RFC 4251 §5) - length prefix then the bytes verbatim, NO mpint sign/strip. It lives in the
+// last 32 octets of the right-aligned K_be buffer. Both H and this KDF must encode K identically.
+static void hash_string_K(SshSha256Ctx *ctx, const uint8_t K_be[256])
+{
+    uint8_t len_be[4] = {0, 0, 0, 32};
+    ssh_sha256_update(ctx, len_be, 4);
+    ssh_sha256_update(ctx, K_be + (256 - 32), 32);
+}
+
+static inline void hash_K(SshSha256Ctx *ctx, const uint8_t K_be[256], bool k_is_string)
+{
+    if (k_is_string)
+        hash_string_K(ctx, K_be);
+    else
+        hash_mpint_K(ctx, K_be);
+}
+
 // RFC 4253 §7.2 key derivation extended to any length:
 //   K1 = HASH(mpint(K) || H || X || session_id)   (X = label byte)
 //   K2 = HASH(mpint(K) || H || K1)
@@ -90,17 +108,18 @@ static void hash_mpint_K(SshSha256Ctx *ctx, const uint8_t K_be[256])
 // @p out_len up to SSH_KDF_MAX. For the first KEX session_id == H; on a re-key it
 // is the H from the first KEX.
 void ssh_kdf_derive(const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN],
-                    const uint8_t session_id[SSH_SHA256_DIGEST_LEN], char label, uint8_t *out, size_t out_len)
+                    const uint8_t session_id[SSH_SHA256_DIGEST_LEN], char label, uint8_t *out, size_t out_len,
+                    bool k_is_string)
 {
     if (out_len > SSH_KDF_MAX)
         out_len = SSH_KDF_MAX; // bounded: every negotiated algorithm needs <= 32 B today
     uint8_t acc[SSH_KDF_MAX];  // K1 || K2 || ... accumulated for the chain hash
     size_t have = 0;
 
-    // K1 = HASH(mpint(K) || H || label || session_id)
+    // K1 = HASH(K || H || label || session_id)  (K encoded per the KEX method: mpint or string)
     SshSha256Ctx ctx;
     ssh_sha256_init(&ctx);
-    hash_mpint_K(&ctx, K_be);
+    hash_K(&ctx, K_be, k_is_string);
     ssh_sha256_update(&ctx, H, SSH_SHA256_DIGEST_LEN);
     uint8_t lbl = (uint8_t)label;
     ssh_sha256_update(&ctx, &lbl, 1);
@@ -108,11 +127,11 @@ void ssh_kdf_derive(const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_L
     ssh_sha256_final(&ctx, acc); // acc[0..31] = K1
     have = SSH_SHA256_DIGEST_LEN;
 
-    // Ki+1 = HASH(mpint(K) || H || K1..Ki) until enough material.
+    // Ki+1 = HASH(K || H || K1..Ki) until enough material.
     while (have < out_len && have + SSH_SHA256_DIGEST_LEN <= SSH_KDF_MAX)
     {
         ssh_sha256_init(&ctx);
-        hash_mpint_K(&ctx, K_be);
+        hash_K(&ctx, K_be, k_is_string);
         ssh_sha256_update(&ctx, H, SSH_SHA256_DIGEST_LEN);
         ssh_sha256_update(&ctx, acc, have); // all prior blocks
         ssh_sha256_final(&ctx, acc + have);
@@ -123,13 +142,15 @@ void ssh_kdf_derive(const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_L
 
 // One 32-byte derived value (the only size any negotiated algorithm needs today).
 static void derive_key(const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN],
-                       const uint8_t session_id[SSH_SHA256_DIGEST_LEN], char label, uint8_t out[SSH_SHA256_DIGEST_LEN])
+                       const uint8_t session_id[SSH_SHA256_DIGEST_LEN], char label, uint8_t out[SSH_SHA256_DIGEST_LEN],
+                       bool k_is_string)
 {
-    ssh_kdf_derive(K_be, H, session_id, label, out, SSH_SHA256_DIGEST_LEN);
+    ssh_kdf_derive(K_be, H, session_id, label, out, SSH_SHA256_DIGEST_LEN, k_is_string);
 }
 
 void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[SSH_SHA256_DIGEST_LEN],
-                            const uint8_t session_id[SSH_SHA256_DIGEST_LEN], uint8_t cipher_alg, uint8_t mac_alg)
+                            const uint8_t session_id[SSH_SHA256_DIGEST_LEN], uint8_t cipher_alg, uint8_t mac_alg,
+                            bool k_is_string)
 {
     if (i >= MAX_SSH_CONNS)
         return;
@@ -142,8 +163,8 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[
         // chacha20-poly1305@openssh.com: a 512-bit key per direction (labels 'C'/'D'), no IV and
         // no separate MAC key (the AEAD authenticates). The 64 bytes come from the RFC 4253 §7.2
         // extension chain (K1 || K2).
-        ssh_kdf_derive(K_be, H, session_id, 'C', km->chacha_key_c2s, SSH_CHACHAPOLY_KEY_LEN);
-        ssh_kdf_derive(K_be, H, session_id, 'D', km->chacha_key_s2c, SSH_CHACHAPOLY_KEY_LEN);
+        ssh_kdf_derive(K_be, H, session_id, 'C', km->chacha_key_c2s, SSH_CHACHAPOLY_KEY_LEN, k_is_string);
+        ssh_kdf_derive(K_be, H, session_id, 'D', km->chacha_key_s2c, SSH_CHACHAPOLY_KEY_LEN, k_is_string);
         km->active = true;
         return;
     }
@@ -155,13 +176,13 @@ void ssh_dh_derive_keys_sid(uint8_t i, const uint8_t K_be[256], const uint8_t H[
     uint8_t key_c2s[32];
     uint8_t key_s2c[32];
 
-    derive_key(K_be, H, session_id, 'A', iv_c2s);                    // IV  C→S (first 16 bytes used)
-    derive_key(K_be, H, session_id, 'B', iv_s2c);                    // IV  S→C
-    derive_key(K_be, H, session_id, 'C', key_c2s);                   // cipher key C→S
-    derive_key(K_be, H, session_id, 'D', key_s2c);                   // cipher key S→C
-    uint8_t mlen = ssh_mac_len(mac_alg);                             // 32 (SHA-256) or 64 (SHA-512)
-    ssh_kdf_derive(K_be, H, session_id, 'E', km->mac_key_c2s, mlen); // MAC key C→S
-    ssh_kdf_derive(K_be, H, session_id, 'F', km->mac_key_s2c, mlen); // MAC key S→C
+    derive_key(K_be, H, session_id, 'A', iv_c2s, k_is_string);                    // IV  C→S (first 16 bytes used)
+    derive_key(K_be, H, session_id, 'B', iv_s2c, k_is_string);                    // IV  S→C
+    derive_key(K_be, H, session_id, 'C', key_c2s, k_is_string);                   // cipher key C→S
+    derive_key(K_be, H, session_id, 'D', key_s2c, k_is_string);                   // cipher key S→C
+    uint8_t mlen = ssh_mac_len(mac_alg);                                          // 32 (SHA-256) or 64 (SHA-512)
+    ssh_kdf_derive(K_be, H, session_id, 'E', km->mac_key_c2s, mlen, k_is_string); // MAC key C→S
+    ssh_kdf_derive(K_be, H, session_id, 'F', km->mac_key_s2c, mlen, k_is_string); // MAC key S→C
 
     ssh_aes256ctr_init(&km->c2s_ctx, key_c2s, iv_c2s);
     ssh_aes256ctr_init(&km->s2c_ctx, key_s2c, iv_s2c);

@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **221 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **223 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -211,6 +211,7 @@ The native test matrix has **221 environments**, one per feature, generated from
 | `native_pentest` | `ETWS_ENABLE_MODBUS=1`, `ETWS_ENABLE_MODBUS_MASTER=1`, `ETWS_ENABLE_TOTP=1`, `ETWS_ENABLE_MULTIPART=1`, `ETWS_ENABLE_CBOR=1`, `ETWS_ENABLE_MSGPACK=1`, `ETWS_ENABLE_COAP=1`, `ETWS_ENABLE_COAP_BLOCK=1`, `ETWS_COAP_BLOCK_SZX_MAX=2`, `ETWS_COAP_BLOCK1_MAX=128`, `ETWS_ENABLE_SNMP=1`, `ETWS_ENABLE_SQLITE=1`, `ETWS_ENABLE_REDIS=1`, `ETWS_ENABLE_OPCUA=1`, `ETWS_ENABLE_GRAPHQL=1`, `ETWS_ENABLE_DNS_SERVER=1`, `ETWS_ENABLE_DNP3=1`, `ETWS_ENABLE_STOMP=1`, `ETWS_ENABLE_SMB=1`, `ETWS_ENABLE_DNC=1`, `ETWS_ENABLE_FTP=1`, `ETWS_ENABLE_FINS=1`, `ETWS_ENABLE_MELSEC=1`, `ETWS_ENABLE_CIP=1`, `ETWS_ENABLE_ENIP=1`, `ETWS_ENABLE_DF1=1`, `ETWS_ENABLE_BACNET=1`, `ETWS_ENABLE_COTP=1`, `ETWS_ENABLE_C37118=1`, `ETWS_ENABLE_JWT=1`, `ETWS_ENABLE_DIRECTNET=1`, `ETWS_ENABLE_CCLINK=1`, `ETWS_ENABLE_AMQP=1`, `ETWS_ENABLE_MMS=1`, `ETWS_ENABLE_DDS=1` | `test_pentest` | Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`), NOT part of run_tests.sh. |
 | `native_pn532` | `ETWS_ENABLE_PN532=1`, `ETWS_PN532_MAX_DATA=8` | `test_pn532` | PN532 NFC frame codec (services/pn532), v5 radio plugin: the normal-information-frame build/parse against the documented GetFirmwareVersion command + response frames (LEN/LCS + DCS checksums), a round... |
 | `native_powerlink` | `ETWS_ENABLE_POWERLINK=1` | `test_powerlink` | Ethernet POWERLINK basic frame codec (services/powerlink): the EPL cyclic frames ([messageType][dest][source][payload]) - SoC/PReq/PRes/SoA - build + parse, over raw L2 (0x88AB). |
+| `native_pqc` | `ETWS_ENABLE_PQC_KEX=1` | `test_pqc_sha3`, `test_pqc_mlkem` | Post-quantum hybrid KEX primitives (network_drivers/presentation/pqc): the Keccak/SHA-3/SHAKE sponge (FIPS 202) and ML-KEM-768 Encaps (FIPS 203) - the responder half of the mlkem768x25519-sha256 (SSH)... |
 | `native_preempt_queue` | `ETWS_ENABLE_PREEMPT_QUEUE=1`, `ETWS_PQ_DEPTH=4`, `ETWS_PQ_ITEM_SIZE=4` | `test_preempt_queue` | Preempting work queue (services/preempt_queue), v5 real-time ingest: the host fixed-ring core - FIFO order, urgent-to-front, fail-closed when full, high-water, and drain/handler dispatch. |
 | `native_profibus` | `ETWS_ENABLE_PROFIBUS=1` | `test_profibus` | PROFIBUS-DP FDL telegram codec (services/profibus): the SD1 (no-data) + SD2 (variable data, LE/LEr + arithmetic-sum FCS) telegrams build + validate. |
 | `native_profinet` | `ETWS_ENABLE_PROFINET=1` | `test_profinet` | PROFINET DCP frame codec (services/profinet): the 10-octet DCP header + option/suboption blocks (even-padding) build + parse/walk, for Identify/Set over raw L2 (ethertype 0x8892). |
@@ -261,6 +262,7 @@ The native test matrix has **221 environments**, one per feature, generated from
 | `native_ssh_conn` | `ETWS_ENABLE_SSH=1` | `test_ssh_conn` | SSH wired through the real transport/session layers (PROTO_SSH byte-pump) |
 | `native_ssh_ed25519` | default | `test_ssh_ed25519` | Modern SSH crypto KATs (curve25519-sha256 KEX + ssh-ed25519 host key / client auth): SHA-512 (FIPS 180-4), X25519 (RFC 7748), Ed25519 (RFC 8032). |
 | `native_ssh_hardened` | `ETWS_SSH_ALLOW_PASSWORD=0` | `test_ssh_hardening` | SSH built with password auth disabled (publickey-only hardening) |
+| `native_ssh_pqc` | `ETWS_SSH_MAX_CHANNELS=3`, `ETWS_ENABLE_PQC_KEX=1` | `test_ssh_pqc` | mlkem768x25519-sha256 SSH hybrid KEX (draft-ietf-sshm-mlkem-hybrid-kex) end to end: the full SSH transport built with DETWS_ENABLE_PQC_KEX=1 plus the ML-KEM-768 / SHA-3 core. |
 | `native_ssh_zlib` | `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_SSH_ZLIB=1`, `ETWS_ENABLE_WS_DEFLATE=1` | `test_ssh_zlib` | SSH server-to-client streaming compressor (zlib@openssh.com / zlib): a context-takeover DEFLATE stream (persistent sliding window across packets, sync-flush per packet, zlib wrapper). |
 | `native_statsd` | `ETWS_ENABLE_STATSD=1` | `test_statsd` | StatsD metrics client (services/statsd): the pure line formatter (name:value\|type, sample rate, DogStatsD tags) plus the count/gauge/timing/set emit helpers, whose sent bytes are captured through the... |
 | `native_stomp` | `ETWS_ENABLE_STOMP=1` | `test_stomp` | STOMP 1.2 frame codec (services/stomp): the zero-heap frame builder (command + escaped headers + NUL body) + the non-mutating parser (command/header slices/body, honoring content-length) + escape/unes... |
@@ -511,7 +513,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2961 test cases** across **248 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2972 test cases** across **251 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -20348,6 +20350,79 @@ A thorough directory of all **2961 test cases** across **248 suites**. Expand a 
 </details>
 
 <details>
+<summary><b>test_pqc_mlkem (3 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mlkem768_encaps_kat</b> &mdash; <i>Mlkem768 encaps kat</i></summary>
+
+    * **Objective**: Mlkem768 encaps kat
+    * **Assertions**:
+      * <code>Assert true (ok)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(kat_ct, ct, MLKEM768_CT_BYTES);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(kat_ss, ss, MLKEM768_SS_BYTES);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mlkem768_encaps_varies_with_m</b> &mdash; <i>Mlkem768 encaps varies with m</i></summary>
+
+    * **Objective**: Mlkem768 encaps varies with m
+    * **Assertions**:
+      * <code>Assert true (mlkem768_encaps(kat_ek, m2, ct, ss))</code>
+      * <code>Assert not equal (0, memcmp(ss, kat_ss, MLKEM768_SS_BYTES))</code>
+      * <code>Assert not equal (0, memcmp(ct, kat_ct, MLKEM768_CT_BYTES))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mlkem768_rejects_malformed_ek</b> &mdash; <i>Force the first 12-bit coefficient to 0xFFF (4095 >= q=3329).</i></summary>
+
+    * **Objective**: Force the first 12-bit coefficient to 0xFFF (4095 >= q=3329).
+    * **Assertions**:
+      * <code>Assert false (mlkem768_encaps(bad, kat_m, ct, ss))</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_pqc_sha3 (4 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sha3_256</b> &mdash; <i>Sha3 256</i></summary>
+
+    * **Objective**: Sha3 256
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(want, got, 32);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(want, got, 32);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sha3_512</b> &mdash; <i>Sha3 512</i></summary>
+
+    * **Objective**: Sha3 512
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(want, got, 64);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(want, got, 64);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_shake_empty</b> &mdash; <i>Shake empty</i></summary>
+
+    * **Objective**: Shake empty
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(want, got, 32);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(want, got, 32);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_shake_stream_continuity</b> &mdash; <i>Shake stream continuity</i></summary>
+
+    * **Objective**: Shake stream continuity
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(oneshot, split, sizeof(oneshot));</code>
+  </details>
+
+</details>
+
+<details>
 <summary><b>test_preempt_queue (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
@@ -28607,6 +28682,63 @@ A thorough directory of all **2961 test cases** across **248 suites**. Expand a 
       * <code>Assert equal int (0, ssh_auth_build_failure(out, &olen, sizeof(out), false))</code>
       * <code>Assert true (has_pk)</code>
       * <code>Assert false (has_pw)</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ssh_pqc (4 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_decaps_ref_matches_kat</b> &mdash; <i>Decaps ref matches kat</i></summary>
+
+    * **Objective**: Decaps ref matches kat
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(kat_ss, ss, 32);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hybrid_negotiated</b> &mdash; <i>Hybrid negotiated</i></summary>
+
+    * **Objective**: Hybrid negotiated
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal (SshKexAlg::SSH_KEX_MLKEM768_X25519, ssh_sess[0].kex_alg)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hybrid_absent_falls_back</b> &mdash; <i>Hybrid absent falls back</i></summary>
+
+    * **Objective**: Hybrid absent falls back
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal (SshKexAlg::SSH_KEX_CURVE25519, ssh_sess[0].kex_alg)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hybrid_kex_end_to_end</b> &mdash; <i>Server ephemeral (X25519 half). Client uses the KAT ML-KEM key pair + a fixed X25519 scalar.</i></summary>
+
+    * **Objective**: Server ephemeral (X25519 half). Client uses the KAT ML-KEM key pair + a fixed X25519 scalar.
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kex_generate(0))</code>
+      * <code>Assert equal int (0, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal (SSH_MSG_KEXDH_REPLY, reply[0])</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_NEWKEYS, s-&gt;phase)</code>
+      * <code>Assert true (ssh_keys[0].active)</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &ks, &ks_len))</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &s_reply, &sr_len))</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &sigblob, &sb_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(MLKEM768_CT_BYTES + 32, sr_len); // S_REPLY = ciphertext(1088) || Q_S(32)</code>
+      * <code>Assert true (rd_string(ks, ks_len, &ko, &kt, &kt_len))</code>
+      * <code>Assert equal memory ("ssh-ed25519", kt, 11)</code>
+      * <code>Assert true (rd_string(ks, ks_len, &ko, &hostpub, &hp_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(32, hp_len);</code>
+      * <code>Assert equal memory (H, s-&gt;session_id, SSH_SHA256_DIGEST_LEN)</code>
+      * <code>Assert true (rd_string(sigblob, sb_len, &so, &st, &st_len))</code>
+      * <code>Assert true (rd_string(sigblob, sb_len, &so, &sig, &sl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(64, sl);</code>
+      * <code>Assert true (ssh_ed25519_verify(hostpub, H, SSH_SHA256_DIGEST_LEN, sig))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_c2s, ssh_keys[0].chacha_key_c2s, SSH_CHACHAPOLY_KEY_LEN);</code>
   </details>
 
 </details>

@@ -1279,7 +1279,9 @@
     "INTEG",
     "SKEYSEED",
     "datapath",
-    "libreswan"
+    "libreswan",
+    "Keccak",
+    "sshm"
   ],
   "ignorePaths": [
     "node_modules/**",

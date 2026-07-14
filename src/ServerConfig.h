@@ -1244,6 +1244,21 @@
 #endif
 
 /**
+ * @brief Post-quantum hybrid key exchange: ML-KEM-768 + X25519 (FIPS 203 / RFC 9370 combiner).
+ *
+ * Adds the mlkem768x25519-sha256 SSH KEX method (draft-ietf-sshm-mlkem-hybrid-kex) and the
+ * X25519MLKEM768 TLS 1.3 group (IANA 0x11ec) for HTTP/3, so a PQC-capable peer (OpenSSH 9.x+ and
+ * current browsers, which now DEFAULT to hybrid) negotiates a quantum-resistant handshake instead of
+ * down-negotiating to classical X25519. The device is always the responder, so only ML-KEM Encaps
+ * ships (no KeyGen/Decaps, so none of the constant-time FO-comparison surface). The NTT core is
+ * software with Montgomery reduction over q=3329 (the MPI accelerator is for RSA/DH-sized operands,
+ * not 12-bit coefficients). Requires DETWS_ENABLE_SSH and/or DETWS_ENABLE_HTTP3.
+ */
+#ifndef DETWS_ENABLE_PQC_KEX
+#define DETWS_ENABLE_PQC_KEX 0
+#endif
+
+/**
  * @brief Modbus TCP slave/server (Modbus Application Protocol v1.1b3) on TCP/502.
  *
  * Default off. When set, listen(502, ConnProto::PROTO_MODBUS) serves a fixed data model
@@ -5377,6 +5392,18 @@ enum class DetIface : uint8_t
 #if (DETWS_ENABLE_SSH || DETWS_ENABLE_HTTP3) && (DETWS_WORKER_TASK_STACK < DETWS_WORKER_STACK_CURVE_MIN)
 #error                                                                                                                 \
     "DeterministicESPAsyncWebServer: DETWS_WORKER_TASK_STACK is below DETWS_WORKER_STACK_CURVE_MIN; SSH and HTTP/3 (QUIC TLS-1.3) curve25519/ed25519 need ~10.5 KB of worker stack - raise DETWS_WORKER_TASK_STACK (>= 12288) or marshal the handshake onto a dedicated larger-stack task"
+#endif
+
+// The PQ/T hybrid KEX (DETWS_ENABLE_PQC_KEX) runs ML-KEM-768 Encaps in the handshake path, whose NTT
+// + sampling peak at ~7 KB of worker stack on top of the classical curve/ed25519 work. Enforce a
+// higher floor so it is caught at build time rather than overflowing on the first hybrid handshake.
+#ifndef DETWS_WORKER_STACK_PQC_MIN
+#define DETWS_WORKER_STACK_PQC_MIN 16384
+#endif
+#if DETWS_ENABLE_PQC_KEX && (DETWS_ENABLE_SSH || DETWS_ENABLE_HTTP3) &&                                                \
+    (DETWS_WORKER_TASK_STACK < DETWS_WORKER_STACK_PQC_MIN)
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DETWS_WORKER_TASK_STACK is below DETWS_WORKER_STACK_PQC_MIN; the ML-KEM-768 hybrid KEX (DETWS_ENABLE_PQC_KEX) needs ~7 KB more worker stack - raise DETWS_WORKER_TASK_STACK (>= 16384) or marshal the handshake onto a dedicated larger-stack task"
 #endif
 
 #if DETWS_ENABLE_TLS

@@ -452,16 +452,20 @@ same core on the same S3 at `-O3` before claiming a delta. Our current surface: 
 dh-group14, ssh-ed25519 + rsa-sha2-256 host keys, chacha20-poly1305@openssh.com + aes256-ctr,
 hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, password + publickey auth.
 
-- [ ] **Post-quantum hybrid key exchange** (XL, **headline gap - both stacks have it, we don't**) - Cyclone
-      ships ML-KEM (512/768/1024) + hybrids **X25519MLKEM768** (TLS) and **sntrup761x25519-sha512@openssh.com**
-      / **mlkem768x25519-sha256** (SSH). This is no longer forward-looking: **OpenSSH defaults to PQC hybrid
-      KEX since 9.x and browsers/CDNs deployed X25519MLKEM768**, so our TLS/SSH endpoints negotiate _down_ to
-      classical today. The adoptable technique is simple and fits our zero-heap transport: run the classical
-      X25519 ECDH we already have, run an ML-KEM-768 encaps/decaps, **concatenate the two shared secrets into
-      the existing KDF** (RFC 9370 / the TLS hybrid-design construction). The hard part is a constant-time,
-      zero-heap **ML-KEM-768** core (~2-3 KB keys, NTT-based) - the one genuinely novel primitive to port;
-      once it exists both the TLS and SSH hybrids reuse it. Highest strategic value for a "future-proof
-      machine bridge." Do SSH first (we own the whole transport); TLS hybrid depends on the mbedTLS version.
+- [x] **Post-quantum hybrid key exchange - SSH** (SHIPPED v6.6.0, `DETWS_ENABLE_PQC_KEX`) - the **headline
+      gap is closed for SSH**. Shipped a constant-time, zero-heap **ML-KEM-768** core (FIPS 203, the novel
+      primitive: software NTT over q=3329 + a Keccak/SHA-3/SHAKE sponge) in `network_drivers/presentation/pqc`,
+      Encaps-only (the device is always the responder). The SSH transport advertises **mlkem768x25519-sha256**
+      (draft-ietf-sshm-mlkem-hybrid-kex) first, runs the existing X25519 alongside ML-KEM-Encaps, and combines
+      `K = SHA256(K_PQ || K_CL)` (RFC 9370). Byte-exact vs the FIPS 203 reference (kyber-py) + a decisive
+      end-to-end host test (independent ML-KEM Decaps client, string-K exchange hash / KDF, ed25519 signature).
+      Peak ~7 KB worker stack (`DETWS_WORKER_STACK_PQC_MIN`). _Pending:_ interop vs real OpenSSH 9.9+ on the S3 rig.
+- [ ] **Post-quantum hybrid key exchange - HTTP/3 / TLS 1.3** (M, reuses the shipped core) - wire the same
+      ML-KEM-768 core into the QUIC hand-rolled TLS 1.3 as the **X25519MLKEM768** group (IANA 0x11ec): add the
+      group to `tls13_msg` supported_groups + key_share (client share = X25519(32) || ek(1184); server share =
+      X25519(32) || ciphertext(1088)), concatenate the two shared secrets into `tls13_kdf`, and enlarge the
+      QUIC ServerHello flight buffer for the ~1.1 KB key_share. The classical HTTPS path stays on mbedTLS (whose
+      hybrid support tracks its version). Also consider **sntrup761x25519-sha512@openssh.com** for SSH parity.
 - [ ] **SSH cipher / host-key breadth** (M, cheap interop) - close the easy deltas vs CycloneSSH:
       **aes256-gcm@openssh.com** / **aes128-gcm@openssh.com** (reuse the existing GCM core in
       `http3/quic_aead` - an AEAD alternative to chacha that rides the AES-NI-equivalent HW), **rsa-sha2-512**

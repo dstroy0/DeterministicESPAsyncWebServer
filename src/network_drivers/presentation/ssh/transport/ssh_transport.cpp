@@ -15,6 +15,9 @@
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h" // ssh_rng_fill(), ssh_dh[], ssh_dh_generate/derive_keys
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXINIT, ssh_pkt[]
 #include "services/clock.h"                                        // detws_millis() (re-key timer)
+#if DETWS_ENABLE_PQC_KEX
+#include "network_drivers/presentation/pqc/mlkem.h" // mlkem768_encaps (PQ/T hybrid KEX responder)
+#endif
 #if DETWS_ENABLE_SSH_ZLIB
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h" // s2c compression negotiation
 #endif
@@ -34,6 +37,9 @@ SshSession ssh_sess[MAX_SSH_CONNS];
 static const char *const KEX_DH = "diffie-hellman-group14-sha256";
 static const char *const KEX_C25519 = "curve25519-sha256";
 static const char *const KEX_C25519_LIBSSH = "curve25519-sha256@libssh.org"; // identical wire protocol
+#if DETWS_ENABLE_PQC_KEX
+static const char *const KEX_MLKEM768 = "mlkem768x25519-sha256"; // PQ/T hybrid (ML-KEM-768 + X25519)
+#endif
 static const char *const HOSTKEY_RSA = "rsa-sha2-256";
 static const char *const HOSTKEY_ED = "ssh-ed25519";
 static const char *const ALG_CIPHER = "aes256-ctr";
@@ -101,10 +107,20 @@ static void build_kex_list(char *out, size_t cap)
     const char *c1 = KEX_C25519;
     const char *c2 = KEX_C25519_LIBSSH;
     const char *dh = KEX_DH;
+#if DETWS_ENABLE_PQC_KEX
+    // Post-quantum hybrid advertised first: a PQC-capable peer (OpenSSH 9.9+, which also lists it
+    // first) negotiates it over classical X25519, closing the harvest-now-decrypt-later gap.
+    const char *pq = KEX_MLKEM768;
+    if (s_sshtr.prefer_rsa)
+        snprintf(out, cap, "%s,%s,%s,%s,ext-info-s", pq, dh, c1, c2);
+    else
+        snprintf(out, cap, "%s,%s,%s,%s,ext-info-s", pq, c1, c2, dh);
+#else
     if (s_sshtr.prefer_rsa)
         snprintf(out, cap, "%s,%s,%s,ext-info-s", dh, c1, c2);
     else
         snprintf(out, cap, "%s,%s,%s,ext-info-s", c1, c2, dh);
+#endif
 }
 static void build_hostkey_list(char *out, size_t cap)
 {
@@ -406,20 +422,24 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
     // RFC 8308: if the client offers ext-info-c we will send SSH_MSG_EXT_INFO.
     s->ext_info_c = namelist_contains(list, nlen, EXT_INFO_C);
     {
-        AlgCand<SshKexAlg> kc[3];
+        AlgCand<SshKexAlg> kc[4];
+        int nk = 0;
+#if DETWS_ENABLE_PQC_KEX
+        kc[nk++] = {KEX_MLKEM768, SshKexAlg::SSH_KEX_MLKEM768_X25519, true}; // hybrid first (PQC-preferred)
+#endif
         if (s_sshtr.prefer_rsa)
         {
-            kc[0] = {KEX_DH, SshKexAlg::SSH_KEX_DH_GROUP14, true};
-            kc[1] = {KEX_C25519, SshKexAlg::SSH_KEX_CURVE25519, true};
-            kc[2] = {KEX_C25519_LIBSSH, SshKexAlg::SSH_KEX_CURVE25519, true};
+            kc[nk++] = {KEX_DH, SshKexAlg::SSH_KEX_DH_GROUP14, true};
+            kc[nk++] = {KEX_C25519, SshKexAlg::SSH_KEX_CURVE25519, true};
+            kc[nk++] = {KEX_C25519_LIBSSH, SshKexAlg::SSH_KEX_CURVE25519, true};
         }
         else
         {
-            kc[0] = {KEX_C25519, SshKexAlg::SSH_KEX_CURVE25519, true};
-            kc[1] = {KEX_C25519_LIBSSH, SshKexAlg::SSH_KEX_CURVE25519, true};
-            kc[2] = {KEX_DH, SshKexAlg::SSH_KEX_DH_GROUP14, true};
+            kc[nk++] = {KEX_C25519, SshKexAlg::SSH_KEX_CURVE25519, true};
+            kc[nk++] = {KEX_C25519_LIBSSH, SshKexAlg::SSH_KEX_CURVE25519, true};
+            kc[nk++] = {KEX_DH, SshKexAlg::SSH_KEX_DH_GROUP14, true};
         }
-        if (!negotiate_alg(list, nlen, kc, 3, &s->kex_alg))
+        if (!negotiate_alg(list, nlen, kc, nk, &s->kex_alg))
             return -1; // no mutual KEX
     }
     // server_host_key_algorithms: negotiate, restricted to keys we actually hold.
@@ -559,12 +579,14 @@ static void hash_mpint(SshSha256Ctx *ctx, const uint8_t *be, size_t len)
 }
 
 // Method-neutral exchange hash. The client/server public values are hashed as SSH
-// strings for an ECDH KEX (Q_C, Q_S; RFC 8731) or as mpints for a finite-field DH KEX
-// (e, f; RFC 4253 §8). K is always an mpint. cpub/spub are big-endian, right-aligned in
-// their buffers, so hash_mpint / hash_string produce the canonical minimal encoding.
+// strings for an ECDH KEX (Q_C, Q_S; RFC 8731) or the PQ/T hybrid (C_INIT, S_REPLY), or as mpints
+// for a finite-field DH KEX (e, f; RFC 4253 §8). K is an mpint for the classical methods but a plain
+// string for the hybrid (its K is a fixed-length HASH output, RFC 4251 §5 / draft-ietf-sshm). cpub/
+// spub are big-endian, right-aligned in their buffers, so hash_mpint / hash_string produce the
+// canonical minimal encoding.
 static int compute_exchange_hash(uint8_t i, bool pub_is_string, const uint8_t *cpub, size_t cpub_len,
                                  const uint8_t *spub, size_t spub_len, const uint8_t *k_be, size_t k_len,
-                                 const uint8_t *ks, size_t ks_len, uint8_t out[SSH_SHA256_DIGEST_LEN])
+                                 const uint8_t *ks, size_t ks_len, uint8_t out[SSH_SHA256_DIGEST_LEN], bool k_is_string)
 {
     if (i >= MAX_SSH_CONNS)
         return -1;
@@ -589,7 +611,10 @@ static int compute_exchange_hash(uint8_t i, bool pub_is_string, const uint8_t *c
         hash_mpint(&ctx, cpub, cpub_len); // e
         hash_mpint(&ctx, spub, spub_len); // f
     }
-    hash_mpint(&ctx, k_be, k_len); // K
+    if (k_is_string)
+        hash_string(&ctx, k_be, k_len); // hybrid: K is a fixed-length HASH output (RFC 4251 string)
+    else
+        hash_mpint(&ctx, k_be, k_len); // classical: K is an mpint
     ssh_sha256_final(&ctx, out);
     return 0;
 }
@@ -597,7 +622,7 @@ static int compute_exchange_hash(uint8_t i, bool pub_is_string, const uint8_t *c
 int ssh_kex_exchange_hash(uint8_t i, const uint8_t *e_be, const uint8_t *f_be, const uint8_t *k_be, const uint8_t *ks,
                           size_t ks_len, uint8_t out[SSH_SHA256_DIGEST_LEN])
 {
-    return compute_exchange_hash(i, false, e_be, 256, f_be, 256, k_be, 256, ks, ks_len, out);
+    return compute_exchange_hash(i, false, e_be, 256, f_be, 256, k_be, 256, ks, ks_len, out, false);
 }
 
 // ---------------------------------------------------------------------------
@@ -701,8 +726,8 @@ static int sign_hash(uint8_t i, const uint8_t H[SSH_SHA256_DIGEST_LEN], uint8_t 
     return 0;
 }
 
-// Assemble SSH_MSG_KEXDH_REPLY (== KEX_ECDH_REPLY, msg 31):
-//   byte(31) || string(K_S) || (mpint f | string Q_S) || string( string(sig_name) || string(sig) )
+// Assemble SSH_MSG_KEXDH_REPLY (== KEX_ECDH_REPLY / KEX_HYBRID_REPLY, msg 31):
+//   byte(31) || string(K_S) || (mpint f | string Q_S | string S_REPLY) || string( string(sig_name) || string(sig) )
 static int build_kex_reply(uint8_t i, const uint8_t *ks, size_t ks_len, const uint8_t *spub, size_t spub_len,
                            const char *sig_name, const uint8_t *sig, size_t sig_len, uint8_t *out, size_t *out_len,
                            size_t cap)
@@ -710,10 +735,10 @@ static int build_kex_reply(uint8_t i, const uint8_t *ks, size_t ks_len, const ui
     Writer w = {out, cap, 0, true};
     w_u8(w, SSH_MSG_KEXDH_REPLY);
     w_string(w, ks, ks_len); // K_S
-    if (ssh_sess[i].kex_alg == SshKexAlg::SSH_KEX_CURVE25519)
-        w_string(w, spub, spub_len); // Q_S (raw string)
-    else
+    if (ssh_sess[i].kex_alg == SshKexAlg::SSH_KEX_DH_GROUP14)
         w_mpint(w, spub, spub_len); // f (mpint)
+    else
+        w_string(w, spub, spub_len); // Q_S (curve25519) or S_REPLY (hybrid), a raw string
     uint32_t nl = (uint32_t)strlen(sig_name);
     w_u32(w, 4 + nl + 4 + (uint32_t)sig_len); // signature blob length
     w_string(w, (const uint8_t *)sig_name, nl);
@@ -728,7 +753,12 @@ int ssh_kex_generate(uint8_t i)
 {
     if (i >= MAX_SSH_CONNS)
         return -1;
-    if (ssh_sess[i].kex_alg == SshKexAlg::SSH_KEX_CURVE25519)
+    SshKexAlg a = ssh_sess[i].kex_alg;
+    bool curve = (a == SshKexAlg::SSH_KEX_CURVE25519);
+#if DETWS_ENABLE_PQC_KEX
+    curve = curve || (a == SshKexAlg::SSH_KEX_MLKEM768_X25519); // the hybrid's classical half is X25519
+#endif
+    if (curve)
     {
         // X25519 ephemeral: random 32-byte scalar, public = X25519(scalar, base point).
         ssh_rng_fill(ssh_sess[i].ecdh_sk, 32);
@@ -738,21 +768,80 @@ int ssh_kex_generate(uint8_t i)
     return ssh_dh_generate(i);
 }
 
+#if DETWS_ENABLE_PQC_KEX
+// mlkem768x25519-sha256 (draft-ietf-sshm-mlkem-hybrid-kex): from the client's SSH_MSG_KEX_HYBRID_INIT
+// (byte 30 || string C_INIT, C_INIT = ek(1184) || Q_C(32)), ML-KEM-Encaps to the peer's key and X25519
+// against Q_C, then combine K = SHA256(K_PQ || K_CL). Writes S_REPLY = ciphertext(1088) || Q_S(32) and
+// the 32-byte shared secret. Returns 0, or -1 on a malformed C_INIT, bad ML-KEM key, or low-order point.
+static int hybrid_mlkem_x25519(uint8_t i, const uint8_t *payload, size_t len, uint8_t s_reply[MLKEM768_CT_BYTES + 32],
+                               uint8_t k_out[32])
+{
+    if (len < 1 + 4 || payload[0] != SSH_MSG_KEXDH_INIT)
+        return -1;
+    uint32_t n = ((uint32_t)payload[1] << 24) | ((uint32_t)payload[2] << 16) | ((uint32_t)payload[3] << 8) |
+                 (uint32_t)payload[4];
+    if (n != MLKEM768_EK_BYTES + 32 || (size_t)5 + n > len)
+        return -1;
+    const uint8_t *ek = payload + 5;                     // C_PK2: ML-KEM-768 encapsulation key
+    const uint8_t *qc = payload + 5 + MLKEM768_EK_BYTES; // C_PK1: client X25519 public
+
+    uint8_t m[32];
+    ssh_rng_fill(m, sizeof(m));
+    uint8_t k_pq[32];
+    bool ok = mlkem768_encaps(ek, m, s_reply, k_pq); // ciphertext -> s_reply[0..1087]
+    ssh_wipe(m, sizeof(m));
+    if (!ok)
+        return -1; // malformed encapsulation key (FIPS 203 modulus check)
+
+    uint8_t k_cl[32];
+    ssh_x25519(k_cl, ssh_sess[i].ecdh_sk, qc);
+    uint8_t zacc = 0;
+    for (int b = 0; b < 32; b++)
+        zacc |= k_cl[b];
+    if (zacc == 0) // low-order X25519 point (RFC 7748 §6.1)
+    {
+        ssh_wipe(k_pq, sizeof(k_pq));
+        ssh_wipe(k_cl, sizeof(k_cl));
+        return -1;
+    }
+    memcpy(s_reply + MLKEM768_CT_BYTES, ssh_sess[i].ecdh_pk, 32); // S_PK1: server X25519 public
+
+    SshSha256Ctx hc;
+    ssh_sha256_init(&hc);
+    ssh_sha256_update(&hc, k_pq, sizeof(k_pq)); // K = SHA256(K_PQ || K_CL) (RFC 9370 concat combiner)
+    ssh_sha256_update(&hc, k_cl, sizeof(k_cl));
+    ssh_sha256_final(&hc, k_out);
+    ssh_wipe(k_pq, sizeof(k_pq));
+    ssh_wipe(k_cl, sizeof(k_cl));
+    return 0;
+}
+#endif
+
 int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *reply_out, size_t *reply_len, size_t cap)
 {
     if (i >= MAX_SSH_CONNS)
         return -1;
     SshSession *s = &ssh_sess[i];
 
-    // 1. Shared secret K + the two public values, per negotiated KEX method.
-    //    k_be holds K big-endian, right-aligned so hash_mpint / the KDF strip to minimal.
+    // 1. Shared secret K + the two public values, per negotiated KEX method. cpub_p / spub_p point at
+    //    the values hashed into H (local buffers for DH / curve, the larger C_INIT / S_REPLY blobs for
+    //    the hybrid); k_hash / k_hash_len select K's encoding (an mpint for DH / curve, a fixed 32-byte
+    //    string for the hybrid). k_be holds K right-aligned so hash_mpint / the KDF strip to minimal.
     uint8_t k_be[256];
     memset(k_be, 0, sizeof(k_be));
     uint8_t cpub[256];
-    uint8_t spub[256]; // client / server public value (right-aligned)
+    uint8_t spub[256]; // client / server public value (right-aligned) for DH / curve25519
+    const uint8_t *cpub_p = cpub;
+    const uint8_t *spub_p = spub;
     size_t cpub_len = 256;
     size_t spub_len = 256;
+    const uint8_t *k_hash = k_be;
+    size_t k_hash_len = 256;
     bool pub_is_string = false;
+    bool k_is_string = false;
+#if DETWS_ENABLE_PQC_KEX
+    uint8_t s_reply[MLKEM768_CT_BYTES + 32]; // hybrid S_REPLY = ciphertext(1088) || Q_S(32)
+#endif
 
     if (s->kex_alg == SshKexAlg::SSH_KEX_CURVE25519)
     {
@@ -778,6 +867,22 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         pub_is_string = true;
         ssh_wipe(kk, sizeof(kk));
     }
+#if DETWS_ENABLE_PQC_KEX
+    else if (s->kex_alg == SshKexAlg::SSH_KEX_MLKEM768_X25519)
+    {
+        // mlkem768x25519-sha256: K = SHA256(K_PQ || K_CL); C_INIT / S_REPLY and K hashed as strings.
+        if (hybrid_mlkem_x25519(i, payload, len, s_reply, k_be + (256 - 32)) != 0)
+            return -1;
+        cpub_p = payload + 5; // C_INIT (ek || Q_C), hashed verbatim as a string
+        cpub_len = MLKEM768_EK_BYTES + 32;
+        spub_p = s_reply; // S_REPLY (ciphertext || Q_S)
+        spub_len = MLKEM768_CT_BYTES + 32;
+        k_hash = k_be + (256 - 32); // K is exactly 32 bytes, string-encoded (not mpint)
+        k_hash_len = 32;
+        pub_is_string = true;
+        k_is_string = true;
+    }
+#endif
     else
     {
         // diffie-hellman-group14-sha256 (RFC 4253 §8): K = e^y mod p; e/f are mpints.
@@ -807,7 +912,8 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
 
     // 3. Exchange hash H; capture the session id on the first KEX.
     uint8_t H[SSH_SHA256_DIGEST_LEN];
-    compute_exchange_hash(i, pub_is_string, cpub, cpub_len, spub, spub_len, k_be, 256, ks, ks_len, H);
+    compute_exchange_hash(i, pub_is_string, cpub_p, cpub_len, spub_p, spub_len, k_hash, k_hash_len, ks, ks_len, H,
+                          k_is_string);
     if (!s->have_session_id)
     {
         memcpy(s->session_id, H, SSH_SHA256_DIGEST_LEN);
@@ -825,12 +931,12 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     }
 
     // 5. Assemble the reply, then derive the six session keys (id fixed at first KEX's H).
-    if (build_kex_reply(i, ks, ks_len, spub, spub_len, sig_name, sig, sig_len, reply_out, reply_len, cap) != 0)
+    if (build_kex_reply(i, ks, ks_len, spub_p, spub_len, sig_name, sig, sig_len, reply_out, reply_len, cap) != 0)
     {
         ssh_wipe(k_be, sizeof(k_be));
         return -1;
     }
-    ssh_dh_derive_keys_sid(i, k_be, H, s->session_id, s->cipher_alg, s->mac_alg);
+    ssh_dh_derive_keys_sid(i, k_be, H, s->session_id, s->cipher_alg, s->mac_alg, k_is_string);
     ssh_wipe(k_be, sizeof(k_be));
 
     s->phase = SshPhase::SSH_PHASE_NEWKEYS;

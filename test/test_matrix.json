@@ -298,6 +298,36 @@
         "test_ssh_server"
       ]
     },
+    "native_ssh_pqc": {
+      "desc": "mlkem768x25519-sha256 SSH hybrid KEX (draft-ietf-sshm-mlkem-hybrid-kex) end to end: the\nfull SSH transport built with DETWS_ENABLE_PQC_KEX=1 plus the ML-KEM-768 / SHA-3 core. Verifies the\nhybrid is negotiated, then runs a real server-side key exchange and checks it as a conforming client\nwould - ML-KEM Decaps (an independent reference) + X25519, K = SHA256(K_PQ || K_CL), the string-K\nexchange hash and KDF, and the ed25519 signature over H.",
+      "flags": ["-DDETWS_SSH_MAX_CHANNELS=3", "-DDETWS_ENABLE_PQC_KEX=1"],
+      "src": [
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_keymat.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_dh.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_rsa.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_packet.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha512.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp>",
+        "+<network_drivers/presentation/ssh/transport/ssh_transport.cpp>",
+        "+<network_drivers/presentation/ssh/auth/ssh_auth.cpp>",
+        "+<network_drivers/presentation/ssh/connection/ssh_channel.cpp>",
+        "+<network_drivers/presentation/ssh/connection/ssh_server.cpp>",
+        "+<network_drivers/presentation/pqc/sha3.cpp>",
+        "+<network_drivers/presentation/pqc/mlkem.cpp>",
+        "+<network_drivers/session/scratch.cpp>",
+        "+<network_drivers/session/worker.cpp>"
+      ],
+      "tests": ["test_ssh_pqc"]
+    },
     "native_ssh_hardened": {
       "desc": "SSH built with password auth disabled (publickey-only hardening)",
       "flags": ["-DDETWS_SSH_ALLOW_PASSWORD=0"],
@@ -786,6 +816,15 @@
       "flags": ["-DDETWS_ENABLE_FOCAS=1"],
       "src": ["+<services/focas/focas.cpp>"],
       "tests": ["test_focas"]
+    },
+    "native_pqc": {
+      "desc": "Post-quantum hybrid KEX primitives (network_drivers/presentation/pqc): the\nKeccak/SHA-3/SHAKE sponge (FIPS 202) and ML-KEM-768 Encaps (FIPS 203) - the responder half of the\nmlkem768x25519-sha256 (SSH) and X25519MLKEM768 (TLS 1.3) hybrid key exchanges. SHA-3/SHAKE digests\npinned from NIST FIPS 202 vectors; ML-KEM Encaps byte-checked against a kyber-py reference vector\n(tools/gen_mlkem_kat.py). Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_PQC_KEX=1"],
+      "src": [
+        "+<network_drivers/presentation/pqc/sha3.cpp>",
+        "+<network_drivers/presentation/pqc/mlkem.cpp>"
+      ],
+      "tests": ["test_pqc_sha3", "test_pqc_mlkem"]
     },
     "native_bacnet": {
       "desc": "BACnet/IP BVLC + NPDU codec (services/bacnet): the BVLC envelope (type 0x81,\nfunction, length) + the NPDU header (version + NPCI control + optional DNET/DADR + hop\ncount) builders and parsers, slicing the APDU. ASHRAE 135. Pure host tests.",
