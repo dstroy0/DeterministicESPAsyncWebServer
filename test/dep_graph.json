@@ -957,6 +957,23 @@
 "native_ssh_hardened",
 "native_ssh_pqc"
 ],
+"src/network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp": [
+"native_ssh",
+"native_ssh_aesgcm",
+"native_ssh_comp",
+"native_ssh_conn",
+"native_ssh_hardened",
+"native_ssh_pqc"
+],
+"src/network_drivers/presentation/ssh/crypto/ssh_aesgcm.h": [
+"native_oidc",
+"native_ssh",
+"native_ssh_aesgcm",
+"native_ssh_comp",
+"native_ssh_conn",
+"native_ssh_hardened",
+"native_ssh_pqc"
+],
 "src/network_drivers/presentation/ssh/crypto/ssh_bignum.cpp": [
 "native_oidc",
 "native_ssh",
@@ -2943,6 +2960,7 @@
 "native_quic_tls_pqc",
 "native_snmp_v3",
 "native_ssh",
+"native_ssh_aesgcm",
 "native_ssh_comp",
 "native_ssh_conn",
 "native_ssh_hardened",
