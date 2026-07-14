@@ -689,11 +689,13 @@ src/
 │   ├── canopen/  (canopen.h, canopen.cpp)
 │   ├── cc1101/  (cc1101.h, cc1101.cpp)
 │   ├── cclink/  (cclink.h, cclink.cpp)
+│   ├── cia402/  (cia402.h, cia402.cpp)
 │   ├── cip/  (cip.h, cip.cpp)
 │   ├── cloudevents/  (cloudevents.h, cloudevents.cpp)
 │   ├── coap/  (coap.h, coap.cpp)
 │   ├── config_io/  (config_io.h, config_io.cpp)
 │   ├── config_store/  (config_store.h, config_store.cpp)
+│   ├── control/  (control.h, control.cpp)
 │   ├── cotp/  (cotp.h, cotp.cpp)
 │   ├── csrf/  (csrf.h, csrf.cpp)
 │   ├── dashboard/
@@ -981,97 +983,97 @@ Feature Tables workflow from `docs/footprints.json`.
 | `MQTT` | `L7-Application/24.MqttClient` | 736,117 | 65,320 |
 | `SMB` | `L7-Application/68.SmbFileClient` | 742,341 | 65,208 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/58.NtpServer` | 748,069 | 46,668 |
-| `ACCEPT_THROTTLE` | `L4-Transport/02.AcceptThrottle` | 752,061 | 81,776 |
-| `core/71.MediaStreaming` | `L7-Application/71.MediaStreaming` | 752,157 | 81,768 |
-| `core/02.CORS` | `L7-Application/02.CORS` | 752,225 | 81,768 |
-| `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 752,297 | 81,768 |
-| `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 752,301 | 81,768 |
-| `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 752,421 | 81,768 |
-| `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 752,545 | 81,768 |
-| `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 752,565 | 82,216 |
-| `KEEPALIVE` | `L4-Transport/01.KeepAlive` | 752,585 | 81,768 |
-| `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 752,625 | 81,808 |
-| `core/05.PathParams` | `L7-Application/05.PathParams` | 752,629 | 81,768 |
-| `core/09.WebSocket` | `L6-Presentation/09.WebSocket` | 752,685 | 81,768 |
-| `GUARDRAILS` | `L7-Application/40.Guardrails` | 752,749 | 81,784 |
-| `core/07.ResponseHeaders` | `L7-Application/07.ResponseHeaders` | 752,761 | 81,768 |
-| `core/04.Middleware` | `L7-Application/04.Middleware` | 752,853 | 81,776 |
-| `core/08.ServerSentEvents` | `L6-Presentation/08.ServerSentEvents` | 752,893 | 81,776 |
-| `DIAG` | `L7-Application/20.Diagnostics` | 752,897 | 81,768 |
-| `core/36.NetEgress` | `L7-Application/36.NetEgress` | 752,929 | 81,768 |
-| `PARTITION_MONITOR` | `L7-Application/37.PartitionMonitor` | 752,957 | 81,776 |
-| `core/01.ChunkedResponse` | `L7-Application/01.ChunkedResponse` | 752,989 | 81,784 |
-| `core/01.FormParams` | `L6-Presentation/01.FormParams` | 753,053 | 81,768 |
-| `OTA_ROLLBACK` | `L7-Application/44.OtaRollback` | 753,289 | 81,784 |
-| `AUTH_LOCKOUT` | `L6-Presentation/12.AuthLockout` | 753,297 | 82,344 |
-| `core/03.Multipart` | `L6-Presentation/03.Multipart` | 753,365 | 81,768 |
-| `TOTP` | `L7-Application/45.Totp` | 753,409 | 81,808 |
-| `IP_ALLOWLIST` | `L4-Transport/07.IpAllowlist` | 753,589 | 81,768 |
-| `CSRF` | `L7-Application/33.Csrf` | 753,673 | 81,824 |
-| `LOGBUF` | `L7-Application/41.LogBuffer` | 753,729 | 84,896 |
-| `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 753,853 | 81,768 |
-| `MODBUS` | `L7-Application/30.ModbusTcp` | 753,985 | 82,056 |
-| `core/08.Templating` | `L7-Application/08.Templating` | 754,069 | 81,816 |
-| `STATS` | `L7-Application/22.Stats` | 754,129 | 81,872 |
-| `core/01.Basic` | `Foundation/01.Basic` | 754,313 | 81,784 |
-| `MODBUS+MODBUS_MASTER` | `L7-Application/43.ModbusScan` | 754,325 | 82,048 |
-| `JWT` | `L6-Presentation/06.JWTAuth` | 754,409 | 82,920 |
-| `TELNET` | `L5-Session/04.Telnet` | 754,489 | 82,312 |
-| `AUDIT_LOG` | `L7-Application/49.AuditLog` | 754,525 | 84,760 |
-| `CBOR` | `L6-Presentation/13.Cbor` | 754,593 | 81,848 |
-| `IPV6` | `Foundation/20.IPv6` | 754,713 | 81,768 |
-| `core/03.Expert` | `Foundation/03.Expert` | 754,961 | 81,792 |
-| `SYSLOG` | `L7-Application/19.Syslog` | 755,633 | 83,632 |
-| `MSGPACK` | `L6-Presentation/14.MsgPack` | 755,893 | 81,848 |
-| `STATS+METRICS` | `L7-Application/21.PrometheusMetrics` | 756,289 | 81,912 |
-| `core/02.Json` | `L6-Presentation/02.Json` | 756,341 | 81,776 |
-| `GPIO_MAP` | `L7-Application/38.GpioMap` | 756,541 | 81,832 |
-| `WS_DEFLATE` | `L6-Presentation/11.WebSocketCompression` | 756,945 | 89,968 |
-| `WEB_TERMINAL` | `L6-Presentation/10.WebTerminal` | 756,997 | 81,856 |
-| `GRAPHQL` | `L7-Application/52.GraphQL` | 757,117 | 86,184 |
-| `CONFIG_STORE+CONFIG_IO` | `L7-Application/42.ConfigExport` | 757,205 | 81,836 |
-| `OTA` | `L7-Application/16.OTA` | 757,517 | 102,120 |
-| `COAP` | `L7-Application/13.CoAP` | 757,889 | 84,288 |
-| `DNS_RESOLVER` | `L7-Application/48.DnsResolver` | 758,209 | 83,056 |
-| `PROVISIONING` | `L7-Application/17.Provisioning` | 759,849 | 83,340 |
-| `OPCUA` | `L7-Application/55.OpcUa` | 760,193 | 92,056 |
-| `core/02.Advanced` | `Foundation/02.Advanced` | 760,981 | 81,880 |
-| `SNMP` | `L7-Application/14.SNMP` | 761,041 | 94,176 |
-| `TELEMETRY` | `L7-Application/34.Telemetry` | 761,093 | 82,092 |
+| `ACCEPT_THROTTLE` | `L4-Transport/02.AcceptThrottle` | 752,049 | 81,776 |
+| `core/71.MediaStreaming` | `L7-Application/71.MediaStreaming` | 752,145 | 81,768 |
+| `core/02.CORS` | `L7-Application/02.CORS` | 752,213 | 81,768 |
+| `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 752,285 | 81,768 |
+| `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 752,289 | 81,768 |
+| `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 752,409 | 81,768 |
+| `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 752,533 | 81,768 |
+| `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 752,553 | 82,216 |
+| `KEEPALIVE` | `L4-Transport/01.KeepAlive` | 752,573 | 81,768 |
+| `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 752,613 | 81,808 |
+| `core/05.PathParams` | `L7-Application/05.PathParams` | 752,617 | 81,768 |
+| `core/09.WebSocket` | `L6-Presentation/09.WebSocket` | 752,657 | 81,768 |
+| `GUARDRAILS` | `L7-Application/40.Guardrails` | 752,733 | 81,784 |
+| `core/07.ResponseHeaders` | `L7-Application/07.ResponseHeaders` | 752,749 | 81,768 |
+| `core/04.Middleware` | `L7-Application/04.Middleware` | 752,841 | 81,776 |
+| `core/08.ServerSentEvents` | `L6-Presentation/08.ServerSentEvents` | 752,849 | 81,776 |
+| `DIAG` | `L7-Application/20.Diagnostics` | 752,885 | 81,768 |
+| `core/01.ChunkedResponse` | `L7-Application/01.ChunkedResponse` | 752,941 | 81,784 |
+| `core/36.NetEgress` | `L7-Application/36.NetEgress` | 752,941 | 81,768 |
+| `PARTITION_MONITOR` | `L7-Application/37.PartitionMonitor` | 752,945 | 81,776 |
+| `core/01.FormParams` | `L6-Presentation/01.FormParams` | 753,041 | 81,768 |
+| `OTA_ROLLBACK` | `L7-Application/44.OtaRollback` | 753,277 | 81,784 |
+| `AUTH_LOCKOUT` | `L6-Presentation/12.AuthLockout` | 753,281 | 82,344 |
+| `core/03.Multipart` | `L6-Presentation/03.Multipart` | 753,353 | 81,768 |
+| `TOTP` | `L7-Application/45.Totp` | 753,397 | 81,808 |
+| `IP_ALLOWLIST` | `L4-Transport/07.IpAllowlist` | 753,577 | 81,768 |
+| `CSRF` | `L7-Application/33.Csrf` | 753,661 | 81,824 |
+| `LOGBUF` | `L7-Application/41.LogBuffer` | 753,717 | 84,896 |
+| `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 753,841 | 81,768 |
+| `MODBUS` | `L7-Application/30.ModbusTcp` | 753,969 | 82,056 |
+| `core/08.Templating` | `L7-Application/08.Templating` | 754,021 | 81,816 |
+| `STATS` | `L7-Application/22.Stats` | 754,101 | 81,872 |
+| `core/01.Basic` | `Foundation/01.Basic` | 754,301 | 81,784 |
+| `MODBUS+MODBUS_MASTER` | `L7-Application/43.ModbusScan` | 754,309 | 82,048 |
+| `JWT` | `L6-Presentation/06.JWTAuth` | 754,397 | 82,920 |
+| `TELNET` | `L5-Session/04.Telnet` | 754,457 | 82,312 |
+| `AUDIT_LOG` | `L7-Application/49.AuditLog` | 754,513 | 84,760 |
+| `CBOR` | `L6-Presentation/13.Cbor` | 754,549 | 81,848 |
+| `IPV6` | `Foundation/20.IPv6` | 754,701 | 81,768 |
+| `core/03.Expert` | `Foundation/03.Expert` | 754,949 | 81,792 |
+| `SYSLOG` | `L7-Application/19.Syslog` | 755,621 | 83,632 |
+| `MSGPACK` | `L6-Presentation/14.MsgPack` | 755,849 | 81,848 |
+| `STATS+METRICS` | `L7-Application/21.PrometheusMetrics` | 756,257 | 81,912 |
+| `core/02.Json` | `L6-Presentation/02.Json` | 756,329 | 81,776 |
+| `GPIO_MAP` | `L7-Application/38.GpioMap` | 756,529 | 81,832 |
+| `WS_DEFLATE` | `L6-Presentation/11.WebSocketCompression` | 756,905 | 89,968 |
+| `WEB_TERMINAL` | `L6-Presentation/10.WebTerminal` | 756,969 | 81,856 |
+| `GRAPHQL` | `L7-Application/52.GraphQL` | 757,105 | 86,184 |
+| `CONFIG_STORE+CONFIG_IO` | `L7-Application/42.ConfigExport` | 757,193 | 81,836 |
+| `OTA` | `L7-Application/16.OTA` | 757,505 | 102,120 |
+| `COAP` | `L7-Application/13.CoAP` | 757,877 | 84,288 |
+| `DNS_RESOLVER` | `L7-Application/48.DnsResolver` | 758,197 | 83,056 |
+| `PROVISIONING` | `L7-Application/17.Provisioning` | 759,837 | 83,340 |
+| `OPCUA` | `L7-Application/55.OpcUa` | 760,185 | 92,056 |
+| `core/02.Advanced` | `Foundation/02.Advanced` | 760,969 | 81,880 |
+| `SNMP` | `L7-Application/14.SNMP` | 761,029 | 94,176 |
+| `TELEMETRY` | `L7-Application/34.Telemetry` | 761,081 | 82,092 |
 | `RELAY` | `L7-Application/70.PortForward` | 762,217 | 116,384 |
-| `HTTP_CLIENT+WEBHOOK` | `L7-Application/46.Webhook` | 762,765 | 101,528 |
+| `HTTP_CLIENT+WEBHOOK` | `L7-Application/46.Webhook` | 762,753 | 101,528 |
 | `PROMISC+FORWARD+ETHERNET` | `Foundation/21.WifiCapture` | 764,637 | 47,520 |
-| `OAUTH2+HTTP_CLIENT` | `L7-Application/54.OAuth2` | 765,101 | 104,592 |
-| `OIDC` | `L7-Application/50.OidcAuth` | 765,705 | 99,824 |
-| `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 766,193 | 81,784 |
+| `OAUTH2+HTTP_CLIENT` | `L7-Application/54.OAuth2` | 765,089 | 104,592 |
+| `OIDC` | `L7-Application/50.OidcAuth` | 765,693 | 99,824 |
+| `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 766,181 | 81,784 |
 | `RTC+TIME_SOURCE+NTP` | `L7-Application/61.Rtc` | 766,653 | 45,372 |
-| `OPCUA+UMATI` | `L7-Application/72.Umati` | 766,861 | 92,200 |
+| `OPCUA+UMATI` | `L7-Application/72.Umati` | 766,849 | 92,200 |
 | `BUS_CAPTURE+FORWARD+ETHERNET` | `Foundation/22.CanCapture` | 771,165 | 45,516 |
 | `ADS` | `L7-Application/73.AdsClient` | 771,933 | 45,440 |
-| `DASHBOARD` | `L7-Application/35.Dashboard` | 773,021 | 82,144 |
-| `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 773,441 | 83,388 |
-| `MDNS` | `L7-Application/15.mDNS` | 777,705 | 83,672 |
-| `NTP` | `L7-Application/18.SNTP` | 777,965 | 84,320 |
-| `OPCUA+OPCUA_CLIENT` | `L7-Application/56.OpcUaClient` | 783,153 | 95,928 |
-| `ETHERNET` | `Foundation/19.Ethernet` | 791,097 | 81,820 |
-| `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | `Foundation/23.EthernetW5500` | 791,113 | 81,820 |
-| `core/10.FileServing` | `L7-Application/10.FileServing` | 793,601 | 81,808 |
-| `UPLOAD` | `L7-Application/11.FileUpload` | 794,745 | 91,120 |
-| `RANGE` | `L7-Application/12.Range` | 794,829 | 81,808 |
-| `VFS` | `L7-Application/51.Vfs` | 795,809 | 86,296 |
+| `DASHBOARD` | `L7-Application/35.Dashboard` | 772,977 | 82,144 |
+| `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 773,429 | 83,388 |
+| `MDNS` | `L7-Application/15.mDNS` | 777,693 | 83,672 |
+| `NTP` | `L7-Application/18.SNTP` | 777,953 | 84,320 |
+| `OPCUA+OPCUA_CLIENT` | `L7-Application/56.OpcUaClient` | 783,145 | 95,928 |
+| `ETHERNET` | `Foundation/19.Ethernet` | 791,085 | 81,820 |
+| `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | `Foundation/23.EthernetW5500` | 791,101 | 81,820 |
+| `core/10.FileServing` | `L7-Application/10.FileServing` | 793,589 | 81,808 |
+| `UPLOAD` | `L7-Application/11.FileUpload` | 794,733 | 91,120 |
+| `RANGE` | `L7-Application/12.Range` | 794,817 | 81,808 |
+| `VFS` | `L7-Application/51.Vfs` | 795,797 | 86,296 |
 | `WEBDAV` | `L7-Application/29.WebDav` | 821,069 | 105,352 |
-| `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/29.WebDav` | 821,417 | 90,848 |
-| `SSH` | `L5-Session/03.SSHHostKey` | 822,181 | 108,220 |
-| `ETAG` | `L7-Application/09.ETag` | 828,381 | 83,080 |
+| `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/29.WebDav` | 821,401 | 90,848 |
+| `SSH` | `L5-Session/03.SSHHostKey` | 822,189 | 108,220 |
+| `ETAG` | `L7-Application/09.ETag` | 828,369 | 83,080 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/25.WebSocketClient` | 831,745 | 123,620 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/25.WebSocketClient` | 831,769 | 107,236 |
 | `TLS` | `L6-Presentation/07.SecureWebSocket` | 855,873 | 122,020 |
-| `TLS+TLS_ARENA_SIZE` | `L6-Presentation/07.SecureWebSocket` | 856,425 | 105,644 |
+| `TLS+TLS_ARENA_SIZE` | `L6-Presentation/07.SecureWebSocket` | 856,357 | 105,644 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/06.TlsResumption` | 856,693 | 122,180 |
 | `TLS+MTLS` | `L4-Transport/04.mTLS` | 856,829 | 122,356 |
-| `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/06.TlsResumption` | 857,237 | 105,804 |
-| `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/04.mTLS` | 857,397 | 105,980 |
+| `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/06.TlsResumption` | 857,213 | 105,804 |
+| `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/04.mTLS` | 857,373 | 105,980 |
 
 <!-- END GENERATED BUILD-FOOTPRINT -->
 
@@ -1155,6 +1157,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_CBOR` | `0` | Zero-heap CBOR (RFC 8949) encoder for compact binary payloads. |
 | `DETWS_ENABLE_CC1101` | `0` | Opt-in CC1101 sub-GHz radio driver. |
 | `DETWS_ENABLE_CCLINK` | `0` | Opt-in CC-Link (CLPA) cyclic fieldbus frame codec. |
+| `DETWS_ENABLE_CIA402` | `0` | CiA 402 / IEC 61800-7-201 drive + motion profile (`services/cia402`). |
 | `DETWS_ENABLE_CIP` | `0` | CIP (Common Industrial Protocol) message codec (`services/cip`). |
 | `DETWS_ENABLE_CLOUDEVENTS` | `0` | CloudEvents v1.0 (CNCF) event envelope (structured JSON + binary headers). |
 | `DETWS_ENABLE_COAP` | `0` | CoAP server (RFC 7252) over UDP/5683. |
@@ -1162,6 +1165,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_COAP_OBSERVE` | `0` | CoAP resource observation - RFC 7641 (requires DETWS_ENABLE_COAP). |
 | `DETWS_ENABLE_CONFIG_IO` | `0` | Opt-in schema-driven config export / restore. |
 | `DETWS_ENABLE_CONFIG_STORE` | `0` | Typed NVS configuration store (WiFi creds, IP config, ... |
+| `DETWS_ENABLE_CONTROL` | `0` | Closed-loop control law (`services/control`). |
 | `DETWS_ENABLE_COTP` | `0` | TPKT (RFC 1006) + COTP (X.224 class 0) frame codec (`services/cotp`). |
 | `DETWS_ENABLE_CSRF` | `0` | Opt-in CSRF protection for state-changing HTTP requests. |
 | `DETWS_ENABLE_DASHBOARD` | `0` | Real-time SVG dashboard (DETWS_ENABLE_DASHBOARD; requires DETWS_ENABLE_SSE). |

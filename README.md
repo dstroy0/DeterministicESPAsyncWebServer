@@ -605,7 +605,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 
 </details>
 
-_23 hard dependencies, 3 PSRAM gates, 14 derived flags._
+_24 hard dependencies, 3 PSRAM gates, 14 derived flags._
 
 <!-- END GENERATED FLAG DEPS -->
 
@@ -631,7 +631,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 
 | Layer | Feature             | Flash (best-worst) | RAM (best-worst) |
 | ----- | ------------------- | -----------------: | ---------------: |
-| Core  | `ETHERNET`          |            37.4 KB |          15.3 KB |
+| Core  | `ETHERNET`          |            37.3 KB |          15.3 KB |
 | Core  | `BUS_CAPTURE`       |            17.9 KB |         < 0.5 KB |
 | Core  | `FORWARD`           |            17.9 KB |         < 0.5 KB |
 | Core  | `PROMISC`           |            11.5 KB |         < 0.5 KB |
@@ -644,15 +644,15 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L5    | `TELNET`            |             1.6 KB |          15.7 KB |
 | L6    | `TLS`               |           100.6 KB |          54.5 KB |
 | L6    | `WS_DEFLATE`        |         4.0-7.9 KB |      8.0-23.2 KB |
-| L6    | `WEB_TERMINAL`      |         0.0-4.1 KB |      0.0-15.3 KB |
-| L6    | `MSGPACK`           |             3.0 KB |          15.3 KB |
+| L6    | `WEB_TERMINAL`      |         0.0-4.0 KB |      0.0-15.3 KB |
+| L6    | `MSGPACK`           |             2.9 KB |          15.3 KB |
 | L6    | `CBOR`              |             1.7 KB |          15.3 KB |
 | L6    | `JWT`               |             1.5 KB |          16.3 KB |
 | L6    | `AUTH_LOCKOUT`      |           < 0.5 KB |          15.8 KB |
 | L7    | `WS_CLIENT`         |            76.6 KB |          53.1 KB |
 | L7    | `ETAG`              |        0.0-73.8 KB |      0.0-16.5 KB |
 | L7    | `WEBDAV`            |       26.2-66.6 KB |     38.2-38.7 KB |
-| L7    | `VFS`               |            42.0 KB |          19.6 KB |
+| L7    | `VFS`               |            41.9 KB |          19.6 KB |
 | L7    | `RANGE`             |        0.6-41.0 KB |      0.0-15.2 KB |
 | L7    | `UPLOAD`            |            40.9 KB |          24.3 KB |
 | L7    | `OPCUA_CLIENT`      |        6.8-29.6 KB |     10.0-29.0 KB |
@@ -662,30 +662,30 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `DASHBOARD`         |            19.7 KB |          15.6 KB |
 | L7    | `ADS`               |            18.6 KB |         < 0.5 KB |
 | L7    | `RTC`               |            13.5 KB |         < 0.5 KB |
-| L7    | `OIDC`              |            12.6 KB |          32.8 KB |
+| L7    | `OIDC`              |            12.5 KB |          32.8 KB |
 | L7    | `OAUTH2`            |            12.0 KB |          37.5 KB |
 | L7    | `WEBHOOK`           |             9.7 KB |          34.5 KB |
 | L7    | `RELAY`             |             9.2 KB |          49.0 KB |
-| L7    | `TELEMETRY`         |             8.1 KB |          15.5 KB |
+| L7    | `TELEMETRY`         |             8.0 KB |          15.5 KB |
 | L7    | `SNMP`              |             8.0 KB |          27.3 KB |
 | L7    | `OPCUA`             |         6.8-7.2 KB |     10.0-25.2 KB |
 | L7    | `PROVISIONING`      |             6.8 KB |          16.7 KB |
 | L7    | `DNS_RESOLVER`      |             5.2 KB |          16.5 KB |
 | L7    | `COAP`              |             4.9 KB |          17.7 KB |
 | L7    | `OTA`               |             4.6 KB |          35.1 KB |
-| L7    | `CONFIG_IO`         |             4.3 KB |          15.3 KB |
-| L7    | `CONFIG_STORE`      |             4.3 KB |          15.3 KB |
+| L7    | `CONFIG_IO`         |             4.2 KB |          15.3 KB |
+| L7    | `CONFIG_STORE`      |             4.2 KB |          15.3 KB |
 | L7    | `GRAPHQL`           |             4.2 KB |          19.5 KB |
 | L7    | `GPIO_MAP`          |             3.6 KB |          15.3 KB |
-| L7    | `METRICS`           |             3.4 KB |          15.3 KB |
+| L7    | `METRICS`           |             3.3 KB |          15.3 KB |
 | L7    | `SYSLOG`            |             2.7 KB |          17.0 KB |
 | L7    | `AUDIT_LOG`         |             1.6 KB |          18.1 KB |
 | L7    | `MODBUS_MASTER`     |             1.4 KB |          15.5 KB |
-| L7    | `STATS`             |             1.3 KB |          15.3 KB |
+| L7    | `STATS`             |             1.2 KB |          15.3 KB |
 | L7    | `MODBUS`            |             1.1 KB |          15.5 KB |
 | L7    | `LOGBUF`            |             0.9 KB |          18.3 KB |
 | L7    | `CSRF`              |             0.8 KB |          15.3 KB |
-| L7    | `TOTP`              |             0.6 KB |          15.2 KB |
+| L7    | `TOTP`              |             0.5 KB |          15.2 KB |
 | L7    | `OTA_ROLLBACK`      |           < 0.5 KB |          15.2 KB |
 | L7    | `PARTITION_MONITOR` |           < 0.5 KB |          15.2 KB |
 | L7    | `DIAG`              |           < 0.5 KB |          15.2 KB |
