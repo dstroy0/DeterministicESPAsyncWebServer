@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **226 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **227 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -139,6 +139,7 @@ The native test matrix has **226 environments**, one per feature, generated from
 | `native_forward` | `ETWS_ENABLE_FORWARD=1`, `ETWS_FWD_MAX_IFACES=4`, `ETWS_FWD_MAX_RULES=4`, `ETWS_FWD_MAX_ACL=4`, `ETWS_FWD_MAX_ROUTES=4`, `ETWS_FWD_INSPECT=1` | `test_forward` | Interface forwarding plane (services/forward), v5 bridge / router: default-deny, an ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the source, the per-rule rate cap (hos... |
 | `native_ftp` | `ETWS_ENABLE_FTP=1` | `test_ftp` | FTP client wire codec (services/ftp, RFC 959 + RFC 2428): the control-command builders (generic verb + PORT + EPRT), the single/multi-line 3-digit reply parser, and the PASV / EPSV data-address decoders. |
 | `native_gateway` | `ETWS_ENABLE_GATEWAY=1`, `ETWS_GW_MAX_PORTS=4` | `test_gateway` | Radio / wireless gateway bridge (services/gateway), v5 southbound-to-northbound: an uplink envelopes a received frame (src address / port / rssi / seq) and publishes it, fail-closed on no sink / unkno... |
+| `native_gnss_survey` | `ETWS_ENABLE_NTRIP_CASTER=1`, `ETWS_ENABLE_NMEA0183=1`, `UNITY_INCLUDE_DOUBLE` | `test_gnss_survey` | GNSS survey-in core (services/gnss/gnss_survey): the exact WGS84 geodetic<->ECEF transform (matched against pyproj EPSG:4979->EPSG:4978), the shifted-origin position averager with a 3-D accuracy estim... |
 | `native_goose` | `ETWS_ENABLE_GOOSE=1` | `test_goose` | IEC 61850 GOOSE publisher codec (services/goose): the BER IECGoosePdu (gocbRef..allData, minimal-length INTEGERs with the positive leading-zero rule) + the GOOSE header + Ethernet frame (ethertype 0x8... |
 | `native_gpio_map` | `ETWS_ENABLE_GPIO_MAP=1` | `test_gpio_map` | GPIO pin-mapper / browser diag core (services/gpio_map): direction names, JSON serializer, control-POST parser, output guard - all pure and host-tested. |
 | `native_graphql` | `ETWS_ENABLE_GRAPHQL=1` | `test_graphql` | GraphQL query subset (services/graphql) - pure parser + executor, host-tested with a demo resolver. |
@@ -516,7 +517,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2991 test cases** across **253 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3000 test cases** across **254 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -9220,6 +9221,119 @@ A thorough directory of all **2991 test cases** across **253 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gw_topic(nullptr, buf, sizeof(buf))); // null msg</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gw_topic(&m, buf, 0));                // zero buflen</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gw_topic(&m, buf, cap));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_gnss_survey (9 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_geodetic_to_ecef_matches_pyproj</b> &mdash; <i>pyproj prints to 1e-6 m; allow 0.2 mm for that rounding plus our own.</i></summary>
+
+    * **Objective**: pyproj prints to 1e-6 m; allow 0.2 mm for that rounding plus our own.
+    * **Assertions**:
+      * <code>Assert double within (2e-4, CASES[i].x, e.x)</code>
+      * <code>Assert double within (2e-4, CASES[i].y, e.y)</code>
+      * <code>Assert double within (2e-4, CASES[i].z, e.z)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ecef_to_geodetic_roundtrip</b> &mdash; <i>Ecef to geodetic roundtrip</i></summary>
+
+    * **Objective**: Ecef to geodetic roundtrip
+    * **Assertions**:
+      * <code>Assert double within (1e-8, CASES[i].lat, g.lat_deg)</code>
+      * <code>Assert double within (1e-8, CASES[i].lon, g.lon_deg)</code>
+      * <code>Assert double within (1e-3, CASES[i].h, g.height_m)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_m_to_01mm_rounds_half_away</b> &mdash; <i>M to 01mm rounds half away</i></summary>
+
+    * **Objective**: M to 01mm rounds half away
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT64(63781370000LL, gnss_ecef_m_to_01mm(6378137.0));</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(1, gnss_ecef_m_to_01mm(0.00005));   // 0.00005 m = 0.5 units -&gt; 1</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(-1, gnss_ecef_m_to_01mm(-0.00005)); // -0.5 units -&gt; -1</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(0, gnss_ecef_m_to_01mm(0.0));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_survey_single_fix_matches_reference</b> &mdash; <i>One fix -> no spread, and not "complete" (needs >= 2 obs).</i></summary>
+
+    * **Objective**: One fix -> no spread, and not "complete" (needs >= 2 obs).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, gnss_survey_count(&s));</code>
+      * <code>Assert true (gnss_survey_mean(&s, &mean))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(-27061968819LL, gnss_ecef_m_to_01mm(mean.x));</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(-42610941854LL, gnss_ecef_m_to_01mm(mean.y));</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(38857573432LL, gnss_ecef_m_to_01mm(mean.z));</code>
+      * <code>Assert equal double (0.0, gnss_survey_accuracy_m(&s))</code>
+      * <code>Assert false (gnss_survey_complete(&s, 1, 10.0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_survey_averages_out_scatter</b> &mdash; <i>Four fixes: +/-d on x and +/-d on y, truth on z. Mean of the offsets is exactly zero.</i></summary>
+
+    * **Objective**: Four fixes: +/-d on x and +/-d on y, truth on z. Mean of the offsets is exactly zero.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(4, gnss_survey_count(&s));</code>
+      * <code>Assert true (gnss_survey_mean(&s, &mean))</code>
+      * <code>Assert double within (1e-6, truth.x, mean.x)</code>
+      * <code>Assert double within (1e-6, truth.y, mean.y)</code>
+      * <code>Assert double within (1e-6, truth.z, mean.z)</code>
+      * <code>Assert double within (1e-6, expect, gnss_survey_accuracy_m(&s))</code>
+      * <code>Assert true (gnss_survey_complete(&s, 4, 3.0))</code>
+      * <code>Assert false (gnss_survey_complete(&s, 4, 2.0))</code>
+      * <code>Assert false (gnss_survey_complete(&s, 5, 3.0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_survey_empty_has_no_mean</b> &mdash; <i>Survey empty has no mean</i></summary>
+
+    * **Objective**: Survey empty has no mean
+    * **Assertions**:
+      * <code>Assert false (gnss_survey_mean(&s, &mean))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, gnss_survey_count(&s));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_gga_to_geodetic</b> &mdash; <i>3723.2475 -> 37 + 23.2475/60 = 37.387458...; W/S negate.</i></summary>
+
+    * **Objective**: 3723.2475 -> 37 + 23.2475/60 = 37.387458...; W/S negate.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (gnss_gga_to_geodetic(&m, &g))</code>
+      * <code>Assert double within (1e-6, 37.3874583333, g.lat_deg)</code>
+      * <code>Assert double within (1e-6, -122.0353933333, g.lon_deg)</code>
+      * <code>Assert double within (1e-6, 5.5, g.height_m); // 30.5 + (-25.0)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_gga_no_fix_rejected</b> &mdash; <i>Fix quality field (index 6) = 0 -> no fix -> reject.</i></summary>
+
+    * **Objective**: Fix quality field (index 6) = 0 -> no fix -> reject.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert false (gnss_gga_to_geodetic(&m, &g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_survey_add_gga_folds_fix</b> &mdash; <i>The folded fix matches a direct geodetic->ECEF of the same position.</i></summary>
+
+    * **Objective**: The folded fix matches a direct geodetic->ECEF of the same position.
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (nmea0183_parse(buf, n, &m))</code>
+      * <code>Assert true (gnss_survey_add_gga(&s, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, gnss_survey_count(&s));</code>
+      * <code>Assert true (gnss_survey_mean(&s, &mean))</code>
+      * <code>Assert double within (1e-2, direct.x, mean.x)</code>
+      * <code>Assert double within (1e-2, direct.y, mean.y)</code>
+      * <code>Assert double within (1e-2, direct.z, mean.z)</code>
   </details>
 
 </details>

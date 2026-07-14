@@ -3170,6 +3170,12 @@
 #define DETWS_NTRIP_MAX_ROVERS 4
 #endif
 
+// The base surveys in from the receiver's GGA fixes, so the NTRIP caster implies the NMEA 0183 codec.
+#if DETWS_ENABLE_NTRIP_CASTER && !DETWS_ENABLE_NMEA0183
+#undef DETWS_ENABLE_NMEA0183
+#define DETWS_ENABLE_NMEA0183 1
+#endif
+
 /**
  * @brief Per-direction relay buffer size (bytes) for services/relay (DETWS_ENABLE_RELAY).
  *

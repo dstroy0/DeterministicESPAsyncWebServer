@@ -63,8 +63,8 @@ inline unsigned long det_strtoul(const char *s, const char **end)
     return v;
 }
 
-/** @brief Parse a float (integer[.frac][e[+/-]exp]); sets @p end (or to @p s if none). */
-inline float det_strtof(const char *s, const char **end)
+/** @brief Parse a double (integer[.frac][e[+/-]exp]); sets @p end (or to @p s if none). */
+inline double det_strtod(const char *s, const char **end)
 {
     const char *p = s;
     while (det_np_ws(*p))
@@ -110,7 +110,13 @@ inline float det_strtof(const char *s, const char **end)
     }
     if (end)
         *end = any ? p : s;
-    return (float)(neg ? -val : val);
+    return neg ? -val : val;
+}
+
+/** @brief Parse a float (integer[.frac][e[+/-]exp]); sets @p end (or to @p s if none). */
+inline float det_strtof(const char *s, const char **end)
+{
+    return (float)det_strtod(s, end); // GGA lat/lon and other sub-meter values need det_strtod's precision
 }
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DET_NUMPARSE_H
