@@ -902,6 +902,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `SMB` | `L7-Application/68.SmbFileClient` | 742,341 | 65,208 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/58.NtpServer` | 748,069 | 46,668 |
 | `ACCEPT_THROTTLE` | `L4-Transport/02.AcceptThrottle` | 751,925 | 81,776 |
+| `core/71.MediaStreaming` | `L7-Application/71.MediaStreaming` | 752,025 | 81,768 |
 | `core/02.CORS` | `L7-Application/02.CORS` | 752,089 | 81,768 |
 | `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 752,165 | 81,768 |
 | `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 752,169 | 81,768 |
