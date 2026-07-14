@@ -163,6 +163,7 @@
 "native_s7comm",
 "native_scratch",
 "native_sdi12",
+"native_sen0192",
 "native_senml",
 "native_sep2",
 "native_sercos",
@@ -2555,6 +2556,12 @@
 ],
 "src/services/sdi12/sdi12.h": [
 "native_sdi12"
+],
+"src/services/sen0192/sen0192.cpp": [
+"native_sen0192"
+],
+"src/services/sen0192/sen0192.h": [
+"native_sen0192"
 ],
 "src/services/senml/senml.cpp": [
 "native_senml"
