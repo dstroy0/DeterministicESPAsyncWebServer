@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`e95321b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e95321bd5b4fe9c0bf3d5ad5fcbe93c7b509f0e0))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c62bf35`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c62bf35a4f2edb9971c4a830a964ba2a6efae696))
+
+### Testing
+
+- link ssh_sha512.cpp into native_codeql (rsa-sha2-512 dep) ([`6d5391a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d5391a49ac67aeb262ad6e426ebededb0d839f2))
+
 ## [6.12.0] - 2026-07-14
 
 <details>
