@@ -2,7 +2,34 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.4.0] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.4.0 - 2026-07-14</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`8a35112`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a35112ff1efb6920d0a6d29dfcb4fa1f12b541e))
+- update CHANGELOG.md [skip ci] ([`fe460fb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe460fb184fc8d9f97743ca1645ea759a90a8264))
+
+### Changes
+
+- Bump version: 6.3.1 → 6.4.0 ([`b1e4d92`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b1e4d92585075bed0c7281b703792d092225e9fd))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`d7656a8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d7656a85f5ba605b8b9c9d608da862a71963bd26))
+
+### Features
+
+- pid_update_fixed - zero-divide fixed-rate PID (166 -> 97 cyc) ([`093c218`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/093c21897e6fd64c751128f80fd3acb65f83c8ce))
+
+</details>
+
+## [6.3.1] - 2026-07-14
+
+<details>
+<summary><b>Show Changelog for version 6.3.1 - 2026-07-14</b></summary>
 
 ### CI / Build
 
@@ -23,6 +50,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 ### Performance
 
 - inline pid_update (165.6 -> 153.6 cyc on S3); drop the IRAM knob ([`fc8be41`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc8be416ee834ff4497df35bf4edd162ff088f45))
+
+</details>
 
 ## [6.3.0] - 2026-07-14
 
