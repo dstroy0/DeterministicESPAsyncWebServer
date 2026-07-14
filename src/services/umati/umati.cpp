@@ -15,7 +15,7 @@
 
 #if DETWS_ENABLE_UMATI
 
-#include <string.h> // strlen (string.h is allowed; the no-stdlib rule is about stdlib.h/malloc)
+#include <string.h> // strnlen (string.h is allowed; the no-stdlib rule is about stdlib.h/malloc)
 
 // ---------------------------------------------------------------------------
 // Node identifiers (namespace DETWS_UMATI_NS). Objects end in 0; their variables count up from it.
@@ -77,7 +77,7 @@ void set_str(OpcUaVariant *o, const char *s)
 {
     o->type = OpcUaVariantType::OPCUA_VAR_STRING;
     o->str = s ? s : "";
-    o->str_len = (int32_t)strlen(o->str);
+    o->str_len = (int32_t)strnlen(o->str, 0xFFFF); // bound the scan: a model string is a caller-owned C string
 }
 void set_u32(OpcUaVariant *o, uint32_t v)
 {
