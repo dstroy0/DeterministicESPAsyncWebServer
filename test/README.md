@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **225 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **226 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -238,6 +238,7 @@ The native test matrix has **225 environments**, one per feature, generated from
 | `native_redis` | `ETWS_ENABLE_REDIS=1` | `test_redis_resp` | Redis RESP2/RESP3 codec (services/redis_resp): the zero-heap command encoder + the cursor reply parser (RESP2 simple/error/integer/bulk/array/nil plus RESP3 null/boolean/double/big number/bulk error/v... |
 | `native_relay` | `ETWS_ENABLE_RELAY=1` | `test_relay` | TCP relay / DNAT byte pump (services/relay): the bidirectional relay engine that publishes an internal host:port through the server. |
 | `native_rtc` | `ETWS_ENABLE_RTC=1` | `test_rtc` | DS1307/DS3231 RTC conversions (services/rtc): BCD time registers <-> Unix epoch in 24- and 12-hour encodings, leap years, clock-halt/century bit masks, range validation, and a round-trip over the 2000... |
+| `native_rtcm3` | `ETWS_ENABLE_NTRIP_CASTER=1` | `test_rtcm3` | RTCM 3.x framing + station-reference codec (services/gnss/rtcm3), the pure core of the GNSS RTK base / NTRIP caster: the transport frame (0xD3 preamble, 10-bit length, CRC-24Q), MSB-first bit I/O, and... |
 | `native_s7comm` | `ETWS_ENABLE_S7COMM=1` | `test_s7comm` | Siemens S7comm PDU codec (services/s7comm): the Setup Communication + Read Var request builders, the header parser, and the response data-item reader (length-in-bits + even padding). |
 | `native_scratch` | default | `test_scratch` | Shared per-dispatch scratch arena (session/scratch): bump-allocate + reset semantics, alignment, and fail-closed exhaustion. |
 | `native_sdi12` | `ETWS_ENABLE_SDI12=1` | `test_sdi12` | SDI-12 sensor-bus codec (services/sdi12): the command builders, the measurement response parser (atttn), the data-value splitter, and the SDI-12 CRC (compute/encode/verify). |
@@ -515,7 +516,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **2980 test cases** across **252 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **2991 test cases** across **253 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -24090,6 +24091,129 @@ A thorough directory of all **2980 test cases** across **252 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(0, rtc_read_epoch());</code>
       * <code>Assert false (rtc_set_epoch(1730882977u))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, rtc_time_source());</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_rtcm3 (11 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_1005_matches_pyrtcm</b> &mdash; <i>Build 1005 matches pyrtcm</i></summary>
+
+    * **Objective**: Build 1005 matches pyrtcm
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(FRAME_1005), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(FRAME_1005, out, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_1006_matches_pyrtcm</b> &mdash; <i>Build 1006 matches pyrtcm</i></summary>
+
+    * **Objective**: Build 1006 matches pyrtcm
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(FRAME_1006), n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(FRAME_1006, out, n);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_frame_and_1005</b> &mdash; <i>Parse frame and 1005</i></summary>
+
+    * **Objective**: Parse frame and 1005
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(FRAME_1005), n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1005, f.msg_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(19, f.payload_len);</code>
+      * <code>Assert true (f.crc_ok)</code>
+      * <code>Assert true (rtcm3_parse_1005(f.payload, f.payload_len, &arp))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(SID, arp.station_id);</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(EX, arp.ecef_x_01mm);</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(EY, arp.ecef_y_01mm);</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(EZ, arp.ecef_z_01mm);</code>
+      * <code>Assert false (arp.has_height)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_frame_and_1006</b> &mdash; <i>Parse frame and 1006</i></summary>
+
+    * **Objective**: Parse frame and 1006
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(FRAME_1006), n);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(1006, f.msg_type);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(21, f.payload_len);</code>
+      * <code>Assert true (f.crc_ok)</code>
+      * <code>Assert true (rtcm3_parse_1005(f.payload, f.payload_len, &arp))</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(EZ, arp.ecef_z_01mm);</code>
+      * <code>Assert true (arp.has_height)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(AH, arp.antenna_height_01mm);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_crc24q_matches_frame</b> &mdash; <i>The 3 trailing CRC bytes are CRC-24Q over the preamble + header + payload (all but the last 3 bytes).</i></summary>
+
+    * **Objective**: The 3 trailing CRC bytes are CRC-24Q over the preamble + header + payload (all but the last 3 bytes).
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX32(appended, crc);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_crc_detects_corruption</b> &mdash; <i>Crc detects corruption</i></summary>
+
+    * **Objective**: Crc detects corruption
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(bad), n); // still a complete frame...</code>
+      * <code>Assert false (f.crc_ok)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_partial_frame_needs_more</b> &mdash; <i>Partial frame needs more</i></summary>
+
+    * **Objective**: Partial frame needs more
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, rtcm3_frame_parse(FRAME_1005, 2, &f));                      // &lt; header</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, rtcm3_frame_parse(FRAME_1005, sizeof(FRAME_1005) - 1, &f)); // one byte short</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sync_finds_preamble</b> &mdash; <i>Sync finds preamble</i></summary>
+
+    * **Objective**: Sync finds preamble
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(3, rtcm3_sync(stream, sizeof(stream)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(none), rtcm3_sync(none, sizeof(none)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_bit_io_roundtrip</b> &mdash; <i>Bit io roundtrip</i></summary>
+
+    * **Objective**: Bit io roundtrip
+    * **Assertions**:
+      * <code>Assert true (w.ok)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1005, rtcm_br_u(buf, &p, 12));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0x2A, rtcm_br_u(buf, &p, 6));</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(-1, rtcm_br_s(buf, &p, 12));</code>
+      * <code>TEST_ASSERT_EQUAL_INT64(-48500020000LL, rtcm_br_s(buf, &p, 38));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_writer_overflow_fails_closed</b> &mdash; <i>Writer overflow fails closed</i></summary>
+
+    * **Objective**: Writer overflow fails closed
+    * **Assertions**:
+      * <code>Assert false (w.ok)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_frame_build_roundtrip</b> &mdash; <i>Build fails closed when the output buffer is too small.</i></summary>
+
+    * **Objective**: Build fails closed when the output buffer is too small.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(RTCM3_HDR_LEN + sizeof(payload) + RTCM3_CRC_LEN, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(n, rtcm3_frame_parse(frame, n, &f));</code>
+      * <code>Assert true (f.crc_ok)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(sizeof(payload), f.payload_len);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, f.payload, sizeof(payload));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, rtcm3_frame_build(tiny, sizeof(tiny), payload, sizeof(payload)));</code>
   </details>
 
 </details>

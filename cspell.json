@@ -1281,7 +1281,13 @@
     "datapath",
     "libreswan",
     "Keccak",
-    "sshm"
+    "sshm",
+    "DGPS",
+    "NTRIP",
+    "RAWX",
+    "RTCM",
+    "pyrtcm",
+    "sourcetable"
   ],
   "ignorePaths": [
     "node_modules/**",

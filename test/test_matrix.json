@@ -835,6 +835,12 @@
       ],
       "tests": ["test_iface_bridge"]
     },
+    "native_rtcm3": {
+      "desc": "RTCM 3.x framing + station-reference codec (services/gnss/rtcm3), the pure core of the\nGNSS RTK base / NTRIP caster: the transport frame (0xD3 preamble, 10-bit length, CRC-24Q), MSB-first\nbit I/O, and 1005/1006 Stationary Antenna Reference Point encode/decode. Frames verified byte-for-byte\nagainst pyrtcm. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_NTRIP_CASTER=1"],
+      "src": ["+<services/gnss/rtcm3.cpp>"],
+      "tests": ["test_rtcm3"]
+    },
     "native_bacnet": {
       "desc": "BACnet/IP BVLC + NPDU codec (services/bacnet): the BVLC envelope (type 0x81,\nfunction, length) + the NPDU header (version + NPCI control + optional DNET/DADR + hop\ncount) builders and parsers, slicing the APDU. ASHRAE 135. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_BACNET=1"],

@@ -3150,6 +3150,27 @@
 #endif
 
 /**
+ * @brief GNSS RTK base station + NTRIP caster (services/gnss).
+ *
+ * Turns the device into a differential-GNSS correction source: it surveys in a fixed antenna position and
+ * serves RTCM 3.x corrections to rovers over the network as an NTRIP caster, so a rover applies them for
+ * RTK / DGPS accuracy. The RTCM3 frame codec (0xD3 preamble, 10-bit length, CRC-24Q, message-type parse,
+ * MSB-first bit I/O, station-reference 1005/1006 encode/decode) is a pure, zero-heap, host-tested core;
+ * the caster server (rover connections + sourcetable) and the receiver bring-up (UBX / NMEA over UART) are
+ * the ESP32 step. Generating RTCM3 *observation* (MSM) messages needs a receiver that outputs raw
+ * measurements (u-blox RXM-RAWX: F9P / M8T class); a raw-less module (NEO-6/7, GT-U7) can still serve the
+ * surveyed reference point + sourcetable. Default off.
+ */
+#ifndef DETWS_ENABLE_NTRIP_CASTER
+#define DETWS_ENABLE_NTRIP_CASTER 0
+#endif
+
+/** @brief Max concurrent rover connections a caster serves corrections to (services/gnss). */
+#ifndef DETWS_NTRIP_MAX_ROVERS
+#define DETWS_NTRIP_MAX_ROVERS 4
+#endif
+
+/**
  * @brief Per-direction relay buffer size (bytes) for services/relay (DETWS_ENABLE_RELAY).
  *
  * Each active relay holds two buffers of this size (one per direction) for bytes read from one peer
