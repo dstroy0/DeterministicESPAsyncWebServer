@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 124 runnable examples under [examples/](../examples), grouped by
+The library ships 125 runnable examples under [examples/](../examples), grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -182,6 +182,7 @@ Routing, protocols, services, and clients:
 [73.AdsClient](../examples/L7-Application/73.AdsClient) ·
 [74.PidTuning](../examples/L7-Application/74.PidTuning) ·
 [75.InterfaceBridge](../examples/L7-Application/75.InterfaceBridge) ·
-[76.NtripCaster](../examples/L7-Application/76.NtripCaster)
+[76.NtripCaster](../examples/L7-Application/76.NtripCaster) ·
+[77.Sen0192](../examples/L7-Application/77.Sen0192)
 
 <!-- END GENERATED EXAMPLE INDEX -->

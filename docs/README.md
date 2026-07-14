@@ -476,6 +476,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
   <td align="center"><a href="FEATURES.md#interface-bridge" title="Opt-in user-defined address:port -&gt; hardware-bus bridge, a configurable &quot;device server&quot;. The app registers rules mapping a listen `x.x.x.x:nnnn` (TCP/UDP) to a UART, an SPI chip-select, or an I2C address (`bridge_map(ip, port, proto, target)`), so a network client talking to that port is transparently bridged to the bus: raw bidirectional stream passthrough for UART (a ser2net-style serial device server), or framed write-then-read transactions (`uint16 write_len || uint16 read_len || write_bytes`, big-endian) for the master-initiated SPI / I2C buses, with the bus address / chip-select / clock / mode taken from the rule's target. The fixed-capacity rule table (keyed by port+proto, carrying the full DetIp bind address, never a flattened one) and the transaction frame codec are a pure, zero-heap, host-tested core (services/iface_bridge); the bus I/O (Serial / SPI / Wire) and the PROTO_BRIDGE connection handler are the ESP32 step (iface_bridge_hw), wired up in two calls: `server.listen(port, ConnProto::PROTO_BRIDGE)` then `det_bridge_publish(listener_id, port, proto, target)`. UART stream mode is a ser2net-style raw pipe pumped by the server poll loop; SPI/I2C transaction mode peeks a whole frame out of the connection ring, clocks it against the bus (I2C uses a repeated-start read), and returns the read bytes. Default off. See src/services/iface_bridge/iface_bridge_hw.h and examples/L7-Application/75.InterfaceBridge.">Interface Bridge</a></td>
   <td align="center"><a href="FEATURES.md#ntrip-caster" title="Opt-in GNSS RTK base station + NTRIP caster (services/gnss). Default off (implies `DETWS_ENABLE_NMEA0183`). Turns the device into a differential-GNSS correction source: it surveys in a fixed antenna position and serves RTCM 3.x corrections to rovers over the network (the NTRIP protocol), so a rover applies them for RTK / DGPS accuracy instead of the ~2.5 m of a bare receiver. Three pure, zero-heap, host-tested cores plus a ConnProto listener: (1) the RTCM3 codec (services/gnss/rtcm3) - the transport frame (0xD3 preamble, 6 reserved + 10-bit length, payload, 24-bit CRC-24Q), MSB-first bit I/O, and the Stationary Antenna Reference Point messages 1005 (no height) / 1006 (with antenna height) that advertise the base's surveyed ECEF position (38-bit signed coordinates at 0.0001 m resolution), verified byte-for-byte against pyrtcm; (2) the survey-in core (services/gnss/gnss_survey) - the exact WGS84 geodetic&amp;lt;-&amp;gt;ECEF transform (matched against pyproj), a shifted-origin position averager with a 3-D accuracy estimate and a min-observations / accuracy-limit convergence gate, and a GGA-fix fold (ellipsoidal height = MSL + geoid separation); (3) the NTRIP caster protocol (services/gnss/ntrip_caster) - rover request parsing (mountpoint, NTRIP 1.0 / 2.0 version, optional HTTP Basic auth), the stream-accept / error / 401 responses, and the RTCM source table (STR records + ENDSOURCETABLE). The `ConnProto::PROTO_NTRIP_CASTER` listener (services/gnss/ntrip_caster_listener) answers rovers and fans RTCM corrections out to every subscriber, published like the relay: `server.listen(2101, ConnProto::PROTO_NTRIP_CASTER)` then `det_ntrip_caster_add_mount()` / `det_ntrip_caster_broadcast()`. Example 76.NtripCaster runs a base (survey-in + caster) and a rover (NTRIP client that CRC-validates and decodes the 1005) on two boards. Generating RTCM3 _observation_ messages (the MSM sets 1074/1077/1084/... that let a rover fix carrier-phase ambiguities for centimeter RTK) requires a receiver that outputs raw measurements (u-blox RXM-RAWX: F9P / M8T class); a raw-less module (NEO-6/7, GT-U7) can still survey in and serve the reference point + sourcetable. See src/services/gnss/ntrip_caster_listener.h.">NTRIP Caster</a></td>
   <td align="center"><a href="FEATURES.md#post-quantum-hybrid-kex" title="Post-quantum / traditional hybrid key exchange: ML-KEM-768 (FIPS 203) combined with X25519. Closes the harvest-now-decrypt-later gap - OpenSSH 9.9+ and current browsers now DEFAULT to a hybrid group, so without this the device negotiates DOWN to classical X25519. When set (and SSH is on) the server advertises `mlkem768x25519-sha256` (draft-ietf-sshm-mlkem-hybrid-kex) first in its SSH KEX list and, on selection, ML-KEM-Encaps to the client's key + X25519, combining `K = SHA256(K_PQ || K_CL)` per the RFC 9370 concatenation combiner. The device is always the KEM responder, so only Encaps ships (no KeyGen/Decaps, so none of the constant-time FO re-encryption surface). The ML-KEM core (network_drivers/presentation/pqc) is a software NTT over q=3329 with Montgomery reduction plus a Keccak/SHA-3/SHAKE sponge (FIPS 202); zero heap, peak ~7 KB of worker stack (raise `DETWS_WORKER_TASK_STACK` to &gt;= `DETWS_WORKER_STACK_PQC_MIN` = 16384). Byte-exact against the FIPS 203 reference (kyber-py) and verified end to end vs an independent client (ML-KEM Decaps). Wired into both transports from the one core: the SSH key exchange (`DETWS_ENABLE_SSH`, `mlkem768x25519-sha256`, K = SHA256(K_PQ || K_CL), K as an RFC 4251 string) and the HTTP/3 QUIC TLS 1.3 handshake (`DETWS_ENABLE_HTTP3`, the **X25519MLKEM768** group, IANA 0x11ec, ML-KEM-first client/server shares and a 64-byte ML-KEM || X25519 secret into the key schedule). A PQC-capable peer (OpenSSH 9.9+, current browsers) negotiates the hybrid; others fall back to classical X25519. Default off.">Post-Quantum Hybrid KEX</a></td>
+  <td align="center"><a href="FEATURES.md#sen0192" title="DFRobot SEN0192 10.525 GHz microwave Doppler motion sensor (single digital OUT line). Default off. Unlike a PIR it senses movement through thin non-metal enclosures and is unaffected by ambient light or temperature; unlike the LD2410 it carries no protocol - just one digital line - so services/sen0192 tracks that line as a debounced presence signal: presence asserts on an active sample and is held for `DETWS_SEN0192_HOLD_MS` after the last active sample (so brief gaps between Doppler returns don't make presence flap), clears after it, and counts clear-to-present edges. The presence state machine (`Sen0192Motion`) is pure - it takes a sampled level and a timestamp, needing no clock or GPIO - and host-tested (`native_sen0192`); the ESP32 binding reads `DETWS_SEN0192_PIN` each poll via detws_millis() and only that read touches hardware. The OUT pin, hold window, and polarity are ServerConfig knobs (`DETWS_SEN0192_PIN` / `DETWS_SEN0192_HOLD_MS` / `DETWS_SEN0192_ACTIVE_HIGH`). Example 77.Sen0192 lights the onboard LED on motion. See src/services/sen0192/sen0192.h.">SEN0192</a></td>
 </tr>
 </tbody>
 </table>
@@ -856,6 +857,7 @@ src/
 │   ├── rtc/  (rtc.h, rtc.cpp)
 │   ├── s7comm/  (s7comm.h, s7comm.cpp)
 │   ├── sdi12/  (sdi12.h, sdi12.cpp)
+│   ├── sen0192/  (sen0192.h, sen0192.cpp)
 │   ├── senml/  (senml.h, senml.cpp)
 │   ├── sep2/  (sep2.h, sep2.cpp)
 │   ├── sercos/  (sercos.h, sercos.cpp)
@@ -1015,98 +1017,99 @@ Feature Tables workflow from `docs/footprints.json`.
 | `MQTT` | `L7-Application/24.MqttClient` | 736,117 | 65,320 |
 | `SMB` | `L7-Application/68.SmbFileClient` | 742,341 | 65,208 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/58.NtpServer` | 748,069 | 46,668 |
-| `ACCEPT_THROTTLE` | `L4-Transport/02.AcceptThrottle` | 752,045 | 81,776 |
-| `core/71.MediaStreaming` | `L7-Application/71.MediaStreaming` | 752,141 | 81,768 |
-| `core/02.CORS` | `L7-Application/02.CORS` | 752,209 | 81,768 |
-| `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 752,281 | 81,768 |
-| `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 752,285 | 81,768 |
-| `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 752,405 | 81,768 |
-| `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 752,529 | 81,768 |
-| `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 752,549 | 82,216 |
-| `KEEPALIVE` | `L4-Transport/01.KeepAlive` | 752,569 | 81,768 |
-| `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 752,609 | 81,808 |
-| `core/05.PathParams` | `L7-Application/05.PathParams` | 752,613 | 81,768 |
-| `core/09.WebSocket` | `L6-Presentation/09.WebSocket` | 752,653 | 81,768 |
-| `GUARDRAILS` | `L7-Application/40.Guardrails` | 752,729 | 81,784 |
-| `core/07.ResponseHeaders` | `L7-Application/07.ResponseHeaders` | 752,745 | 81,768 |
-| `core/04.Middleware` | `L7-Application/04.Middleware` | 752,837 | 81,776 |
-| `core/08.ServerSentEvents` | `L6-Presentation/08.ServerSentEvents` | 752,845 | 81,776 |
-| `DIAG` | `L7-Application/20.Diagnostics` | 752,881 | 81,768 |
-| `core/01.ChunkedResponse` | `L7-Application/01.ChunkedResponse` | 752,937 | 81,784 |
-| `core/36.NetEgress` | `L7-Application/36.NetEgress` | 752,937 | 81,768 |
-| `PARTITION_MONITOR` | `L7-Application/37.PartitionMonitor` | 752,941 | 81,776 |
-| `core/01.FormParams` | `L6-Presentation/01.FormParams` | 753,037 | 81,768 |
-| `OTA_ROLLBACK` | `L7-Application/44.OtaRollback` | 753,273 | 81,784 |
-| `AUTH_LOCKOUT` | `L6-Presentation/12.AuthLockout` | 753,277 | 82,344 |
-| `core/03.Multipart` | `L6-Presentation/03.Multipart` | 753,349 | 81,768 |
-| `TOTP` | `L7-Application/45.Totp` | 753,393 | 81,808 |
-| `IP_ALLOWLIST` | `L4-Transport/07.IpAllowlist` | 753,573 | 81,768 |
-| `CSRF` | `L7-Application/33.Csrf` | 753,657 | 81,824 |
-| `LOGBUF` | `L7-Application/41.LogBuffer` | 753,713 | 84,896 |
-| `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 753,837 | 81,768 |
-| `MODBUS` | `L7-Application/30.ModbusTcp` | 753,965 | 82,056 |
-| `core/08.Templating` | `L7-Application/08.Templating` | 754,017 | 81,816 |
-| `STATS` | `L7-Application/22.Stats` | 754,097 | 81,872 |
-| `CONTROL` | `L7-Application/74.PidTuning` | 754,201 | 89,848 |
-| `core/01.Basic` | `Foundation/01.Basic` | 754,297 | 81,784 |
-| `MODBUS+MODBUS_MASTER` | `L7-Application/43.ModbusScan` | 754,305 | 82,048 |
-| `JWT` | `L6-Presentation/06.JWTAuth` | 754,393 | 82,920 |
-| `TELNET` | `L5-Session/04.Telnet` | 754,453 | 82,312 |
-| `AUDIT_LOG` | `L7-Application/49.AuditLog` | 754,509 | 84,760 |
-| `CBOR` | `L6-Presentation/13.Cbor` | 754,545 | 81,848 |
-| `IPV6` | `Foundation/20.IPv6` | 754,697 | 81,768 |
-| `core/03.Expert` | `Foundation/03.Expert` | 754,945 | 81,792 |
-| `SYSLOG` | `L7-Application/19.Syslog` | 755,617 | 83,632 |
-| `MSGPACK` | `L6-Presentation/14.MsgPack` | 755,845 | 81,848 |
-| `STATS+METRICS` | `L7-Application/21.PrometheusMetrics` | 756,253 | 81,912 |
-| `core/02.Json` | `L6-Presentation/02.Json` | 756,325 | 81,776 |
-| `GPIO_MAP` | `L7-Application/38.GpioMap` | 756,525 | 81,832 |
-| `WS_DEFLATE` | `L6-Presentation/11.WebSocketCompression` | 756,901 | 89,968 |
-| `WEB_TERMINAL` | `L6-Presentation/10.WebTerminal` | 757,045 | 81,856 |
-| `GRAPHQL` | `L7-Application/52.GraphQL` | 757,101 | 86,184 |
-| `CONFIG_STORE+CONFIG_IO` | `L7-Application/42.ConfigExport` | 757,189 | 81,836 |
-| `OTA` | `L7-Application/16.OTA` | 757,501 | 102,120 |
-| `COAP` | `L7-Application/13.CoAP` | 757,873 | 84,288 |
-| `DNS_RESOLVER` | `L7-Application/48.DnsResolver` | 758,193 | 83,056 |
-| `PROVISIONING` | `L7-Application/17.Provisioning` | 759,833 | 83,340 |
-| `OPCUA` | `L7-Application/55.OpcUa` | 760,181 | 92,056 |
-| `core/02.Advanced` | `Foundation/02.Advanced` | 760,965 | 81,880 |
-| `SNMP` | `L7-Application/14.SNMP` | 761,025 | 94,176 |
-| `TELEMETRY` | `L7-Application/34.Telemetry` | 761,077 | 82,092 |
-| `RELAY` | `L7-Application/70.PortForward` | 762,213 | 116,384 |
-| `HTTP_CLIENT+WEBHOOK` | `L7-Application/46.Webhook` | 762,749 | 101,528 |
+| `ACCEPT_THROTTLE` | `L4-Transport/02.AcceptThrottle` | 752,045 | 81,784 |
+| `core/71.MediaStreaming` | `L7-Application/71.MediaStreaming` | 752,141 | 81,776 |
+| `core/02.CORS` | `L7-Application/02.CORS` | 752,209 | 81,776 |
+| `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 752,281 | 81,776 |
+| `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 752,285 | 81,776 |
+| `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 752,405 | 81,776 |
+| `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 752,529 | 81,776 |
+| `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 752,549 | 82,224 |
+| `KEEPALIVE` | `L4-Transport/01.KeepAlive` | 752,569 | 81,776 |
+| `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 752,609 | 81,816 |
+| `core/05.PathParams` | `L7-Application/05.PathParams` | 752,613 | 81,776 |
+| `core/09.WebSocket` | `L6-Presentation/09.WebSocket` | 752,653 | 81,776 |
+| `GUARDRAILS` | `L7-Application/40.Guardrails` | 752,729 | 81,792 |
+| `core/07.ResponseHeaders` | `L7-Application/07.ResponseHeaders` | 752,745 | 81,776 |
+| `core/04.Middleware` | `L7-Application/04.Middleware` | 752,837 | 81,784 |
+| `core/08.ServerSentEvents` | `L6-Presentation/08.ServerSentEvents` | 752,845 | 81,784 |
+| `DIAG` | `L7-Application/20.Diagnostics` | 752,881 | 81,776 |
+| `core/01.ChunkedResponse` | `L7-Application/01.ChunkedResponse` | 752,937 | 81,792 |
+| `core/36.NetEgress` | `L7-Application/36.NetEgress` | 752,937 | 81,776 |
+| `PARTITION_MONITOR` | `L7-Application/37.PartitionMonitor` | 752,941 | 81,784 |
+| `core/01.FormParams` | `L6-Presentation/01.FormParams` | 753,037 | 81,776 |
+| `OTA_ROLLBACK` | `L7-Application/44.OtaRollback` | 753,273 | 81,792 |
+| `AUTH_LOCKOUT` | `L6-Presentation/12.AuthLockout` | 753,277 | 82,352 |
+| `core/03.Multipart` | `L6-Presentation/03.Multipart` | 753,349 | 81,776 |
+| `TOTP` | `L7-Application/45.Totp` | 753,393 | 81,816 |
+| `IP_ALLOWLIST` | `L4-Transport/07.IpAllowlist` | 753,573 | 81,776 |
+| `CSRF` | `L7-Application/33.Csrf` | 753,657 | 81,832 |
+| `LOGBUF` | `L7-Application/41.LogBuffer` | 753,713 | 84,904 |
+| `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 753,837 | 81,776 |
+| `MODBUS` | `L7-Application/30.ModbusTcp` | 753,965 | 82,064 |
+| `core/08.Templating` | `L7-Application/08.Templating` | 754,017 | 81,824 |
+| `STATS` | `L7-Application/22.Stats` | 754,097 | 81,880 |
+| `CONTROL` | `L7-Application/74.PidTuning` | 754,201 | 89,856 |
+| `core/01.Basic` | `Foundation/01.Basic` | 754,297 | 81,792 |
+| `MODBUS+MODBUS_MASTER` | `L7-Application/43.ModbusScan` | 754,305 | 82,056 |
+| `JWT` | `L6-Presentation/06.JWTAuth` | 754,393 | 82,928 |
+| `TELNET` | `L5-Session/04.Telnet` | 754,453 | 82,320 |
+| `AUDIT_LOG` | `L7-Application/49.AuditLog` | 754,509 | 84,768 |
+| `CBOR` | `L6-Presentation/13.Cbor` | 754,545 | 81,856 |
+| `IPV6` | `Foundation/20.IPv6` | 754,697 | 81,776 |
+| `core/03.Expert` | `Foundation/03.Expert` | 754,945 | 81,800 |
+| `SYSLOG` | `L7-Application/19.Syslog` | 755,617 | 83,640 |
+| `MSGPACK` | `L6-Presentation/14.MsgPack` | 755,845 | 81,856 |
+| `STATS+METRICS` | `L7-Application/21.PrometheusMetrics` | 756,253 | 81,920 |
+| `core/02.Json` | `L6-Presentation/02.Json` | 756,325 | 81,784 |
+| `GPIO_MAP` | `L7-Application/38.GpioMap` | 756,525 | 81,840 |
+| `WS_DEFLATE` | `L6-Presentation/11.WebSocketCompression` | 756,901 | 89,976 |
+| `WEB_TERMINAL` | `L6-Presentation/10.WebTerminal` | 757,045 | 81,864 |
+| `GRAPHQL` | `L7-Application/52.GraphQL` | 757,101 | 86,192 |
+| `CONFIG_STORE+CONFIG_IO` | `L7-Application/42.ConfigExport` | 757,189 | 81,844 |
+| `OTA` | `L7-Application/16.OTA` | 757,501 | 102,128 |
+| `COAP` | `L7-Application/13.CoAP` | 757,873 | 84,296 |
+| `DNS_RESOLVER` | `L7-Application/48.DnsResolver` | 758,193 | 83,064 |
+| `PROVISIONING` | `L7-Application/17.Provisioning` | 759,833 | 83,348 |
+| `OPCUA` | `L7-Application/55.OpcUa` | 760,181 | 92,064 |
+| `core/02.Advanced` | `Foundation/02.Advanced` | 760,965 | 81,888 |
+| `SNMP` | `L7-Application/14.SNMP` | 761,025 | 94,184 |
+| `TELEMETRY` | `L7-Application/34.Telemetry` | 761,077 | 82,100 |
+| `RELAY` | `L7-Application/70.PortForward` | 762,213 | 116,392 |
+| `HTTP_CLIENT+WEBHOOK` | `L7-Application/46.Webhook` | 762,749 | 101,536 |
 | `PROMISC+FORWARD+ETHERNET` | `Foundation/21.WifiCapture` | 764,637 | 47,520 |
-| `OAUTH2+HTTP_CLIENT` | `L7-Application/54.OAuth2` | 765,085 | 104,592 |
+| `OAUTH2+HTTP_CLIENT` | `L7-Application/54.OAuth2` | 765,085 | 104,600 |
 | `OIDC` | `L7-Application/50.OidcAuth` | 765,689 | 99,824 |
-| `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 766,177 | 81,784 |
+| `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 766,177 | 81,792 |
 | `RTC+TIME_SOURCE+NTP` | `L7-Application/61.Rtc` | 766,653 | 45,372 |
-| `OPCUA+UMATI` | `L7-Application/72.Umati` | 766,845 | 92,200 |
+| `OPCUA+UMATI` | `L7-Application/72.Umati` | 766,845 | 92,208 |
+| `NTRIP_CASTER` | `L7-Application/76.NtripCaster` | 770,365 | 84,700 |
 | `BUS_CAPTURE+FORWARD+ETHERNET` | `Foundation/22.CanCapture` | 771,165 | 45,516 |
 | `ADS` | `L7-Application/73.AdsClient` | 771,933 | 45,440 |
-| `DASHBOARD` | `L7-Application/35.Dashboard` | 772,997 | 82,144 |
-| `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 773,425 | 83,388 |
-| `MDNS` | `L7-Application/15.mDNS` | 777,689 | 83,672 |
-| `NTP` | `L7-Application/18.SNTP` | 777,949 | 84,320 |
-| `OPCUA+OPCUA_CLIENT` | `L7-Application/56.OpcUaClient` | 783,141 | 95,928 |
-| `ETHERNET` | `Foundation/19.Ethernet` | 791,081 | 81,820 |
-| `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | `Foundation/23.EthernetW5500` | 791,097 | 81,820 |
-| `core/10.FileServing` | `L7-Application/10.FileServing` | 793,585 | 81,808 |
-| `UPLOAD` | `L7-Application/11.FileUpload` | 794,729 | 91,120 |
-| `RANGE` | `L7-Application/12.Range` | 794,813 | 81,808 |
-| `VFS` | `L7-Application/51.Vfs` | 795,793 | 86,296 |
+| `DASHBOARD` | `L7-Application/35.Dashboard` | 772,997 | 82,152 |
+| `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 773,425 | 83,396 |
+| `MDNS` | `L7-Application/15.mDNS` | 777,689 | 83,680 |
+| `NTP` | `L7-Application/18.SNTP` | 777,949 | 84,328 |
+| `OPCUA+OPCUA_CLIENT` | `L7-Application/56.OpcUaClient` | 783,141 | 95,936 |
+| `ETHERNET` | `Foundation/19.Ethernet` | 791,081 | 81,828 |
+| `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | `Foundation/23.EthernetW5500` | 791,097 | 81,828 |
+| `core/10.FileServing` | `L7-Application/10.FileServing` | 793,585 | 81,816 |
+| `UPLOAD` | `L7-Application/11.FileUpload` | 794,729 | 91,128 |
+| `RANGE` | `L7-Application/12.Range` | 794,813 | 81,816 |
+| `VFS` | `L7-Application/51.Vfs` | 795,793 | 86,304 |
 | `WEBDAV` | `L7-Application/29.WebDav` | 821,069 | 105,352 |
-| `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/29.WebDav` | 821,405 | 90,848 |
-| `SSH` | `L5-Session/03.SSHHostKey` | 822,329 | 108,220 |
-| `ETAG` | `L7-Application/09.ETag` | 828,365 | 83,080 |
+| `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/29.WebDav` | 821,405 | 90,856 |
+| `SSH` | `L5-Session/03.SSHHostKey` | 822,329 | 108,228 |
+| `ETAG` | `L7-Application/09.ETag` | 828,365 | 83,088 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/25.WebSocketClient` | 831,745 | 123,620 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/25.WebSocketClient` | 831,769 | 107,236 |
 | `TLS` | `L6-Presentation/07.SecureWebSocket` | 855,873 | 122,020 |
-| `TLS+TLS_ARENA_SIZE` | `L6-Presentation/07.SecureWebSocket` | 856,353 | 105,644 |
+| `TLS+TLS_ARENA_SIZE` | `L6-Presentation/07.SecureWebSocket` | 856,353 | 105,652 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/06.TlsResumption` | 856,693 | 122,180 |
 | `TLS+MTLS` | `L4-Transport/04.mTLS` | 856,829 | 122,356 |
-| `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/06.TlsResumption` | 857,209 | 105,804 |
-| `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/04.mTLS` | 857,369 | 105,980 |
+| `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/06.TlsResumption` | 857,209 | 105,812 |
+| `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/04.mTLS` | 857,369 | 105,988 |
 
 <!-- END GENERATED BUILD-FOOTPRINT -->
 
@@ -1328,6 +1331,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_RTC` | `0` | I2C real-time-clock driver (DS1307 / DS3231) - a battery-backed time source. |
 | `DETWS_ENABLE_S7COMM` | `0` | Siemens S7comm PDU codec (`services/s7comm`). |
 | `DETWS_ENABLE_SDI12` | `0` | SDI-12 sensor-bus codec (`services/sdi12`). |
+| `DETWS_ENABLE_SEN0192` | `0` | DFRobot SEN0192 10.525 GHz microwave Doppler motion sensor (single digital OUT line). |
 | `DETWS_ENABLE_SENML` | `0` | SenML (RFC 8428) measurement-pack builder (`services/senml`). |
 | `DETWS_ENABLE_SEP2` | `0` | Opt-in IEEE 2030.5 (Smart Energy Profile 2.0) resource codec. |
 | `DETWS_ENABLE_SERCOS` | `0` | Opt-in SERCOS III motion-bus telegram codec. |
@@ -1540,6 +1544,9 @@ guards at compile time.
 | `DETWS_RELAY_MAX_PUBLISH` | `4` | Max published relay ports (bind table size) for the relay listener. |
 | `DETWS_RTC_I2C_ADDR` | `0x68` | I2C address of the RTC (DS1307/DS3231 are fixed at 0x68). |
 | `DETWS_SCRATCH_ARENA_SIZE` | `8192` | Size in bytes of the shared per-dispatch scratch arena. |
+| `DETWS_SEN0192_ACTIVE_HIGH` | `1` | SEN0192 OUT polarity: 1 = the OUT line reads HIGH on motion, 0 = active-LOW. |
+| `DETWS_SEN0192_HOLD_MS` | `2000` | Presence is held this many ms after the last active (motion) sample before it clears. |
+| `DETWS_SEN0192_PIN` | `4` | GPIO the SEN0192 OUT line is wired to. |
 | `DETWS_SHT3X_I2C_ADDR` | `0x44` | I2C address of the SHT3x (0x44 with ADDR low; 0x45 with ADDR high). |
 | `DETWS_SIGFOX_MAX_PAYLOAD` | `12` | Maximum Sigfox uplink payload (the network caps a message at 12 bytes). |
 | `DETWS_SMB_BUF` | `1024` | SMB2 client work-buffer size (bytes) for smb_client's request/response framing. |
