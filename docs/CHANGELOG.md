@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.16.0] - 2026-07-15
+
+<details>
+<summary><b>Show Changelog for version 6.16.0 - 2026-07-15</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`3ec8cf2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3ec8cf2d9e77b7a9f01dc7ddcfeef01445ef4ce7))
+- update CHANGELOG.md [skip ci] ([`6523577`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6523577729f482bb3cbfcf325c14643bfa7d1a76))
+
+### Changes
+
+- Bump version: 6.15.0 → 6.16.0 ([`4c32891`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4c32891d20d07cdda6d34ffd6e52dbfdce505010))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4b3956d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4b3956d4d89caab690b0dae871789486dc11df32))
+
+### Features
+
+- DTLS 1.3 handshake framing + reliability (RFC 9147 §5, §7) ([`ff7c5d4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ff7c5d428dce787c88ef2ec4641bbaccbb3b7bcf))
+
+</details>
+
 ## [6.15.0] - 2026-07-15
 
 <details>
