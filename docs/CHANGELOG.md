@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.18.0] - 2026-07-15
+
+<details>
+<summary><b>Show Changelog for version 6.18.0 - 2026-07-15</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`03a99d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03a99d27a949a8da8b94a3adb28a5f325def85ba))
+
+### Changes
+
+- Bump version: 6.17.0 → 6.18.0 ([`756a828`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/756a82812b3a646267c7e16027f0b8bf76301039))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`93ecd2a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/93ecd2a8fab4cbcc0999f425d60a58efe106832e))
+
+### Features
+
+- DTLS 1.3 server handshake state machine (RFC 9147 §5-6) ([`badb4ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/badb4ec3f064a209e9ab85f091bda09e1bc6f048))
+
+</details>
+
 ## [6.17.0] - 2026-07-15
 
 <details>
