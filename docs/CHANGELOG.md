@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.19.0] - 2026-07-15
+
+<details>
+<summary><b>Show Changelog for version 6.19.0 - 2026-07-15</b></summary>
+
+### Bug Fixes
+
+- DTLS 1.3 now interoperates with wolfSSL (dtls13 labels + 2 more) ([`45a6ba7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45a6ba7d5af474a93dafefede7ae0171213900d1))
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`5426a23`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5426a23e6f5104b56c180dc49e4cd78521b986c4))
+- update CHANGELOG.md [skip ci] ([`5b12205`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5b1220547d3278b5c1c5960b7fa71b5b8ffb3229))
+
+### Changes
+
+- Bump version: 6.18.0 → 6.19.0 ([`2e622d9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2e622d9143208f520e68cc41b09f4bb7f4000bcb))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`9bbe795`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9bbe79547a6733cdb9dffc2fbb8fbd4af02e9968))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`e3e767f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e3e767f22b39b0061b4f1a07ffe4b244ef37c070))
+
+</details>
+
 ## [6.18.0] - 2026-07-15
 
 <details>
