@@ -2,7 +2,10 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.14.0] - 2026-07-15
+
+<details>
+<summary><b>Show Changelog for version 6.14.0 - 2026-07-15</b></summary>
 
 ### Bug Fixes
 
@@ -10,11 +13,24 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ca9b924`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ca9b92443853e37ac51c944ce1ef1739a848f00c))
 - update CHANGELOG.md [skip ci] ([`87364ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87364ea15e044100c5329b64f3748b62b69b4ed8))
+
+### Changes
+
+- Bump version: 6.13.0 → 6.14.0 ([`cabf78a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cabf78a4a7b3879d16bc7b1e523d6fcf587183fc))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`53c20d5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53c20d518322460f1a3e3e37ee9660177c178690))
+- update ESP32 build footprints [skip ci] ([`cb1aa39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cb1aa39d70e869ba71ce89f9c2141fa571a012f1))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ea83f0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ea83f0eb812f30150475216e0f973e156bfd351f))
+
+### Features
+
+- ecdh-sha2-nistp256 key exchange (RFC 5656 §4) ([`ef2eb78`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef2eb7854ee8f1c1044e947d8c6e2bf5aadd7240))
+
+</details>
 
 ## [6.13.0] - 2026-07-15
 
