@@ -1294,7 +1294,8 @@
     "pyproj",
     "aesgcm",
     "kbuf",
-    "routability"
+    "routability",
+    "deprotects"
   ],
   "ignorePaths": [
     "node_modules/**",

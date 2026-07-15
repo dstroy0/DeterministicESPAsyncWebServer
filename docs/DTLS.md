@@ -14,13 +14,14 @@ be dropped, duplicated, or reordered, so the handshake carries acknowledgements 
 retransmits). This server builds DTLS 1.3 on the same hand-rolled TLS 1.3 crypto that backs
 HTTP/3 - no second TLS stack.
 
-> **Status.** Two layers are implemented: the **record layer** (RFC 9147 §4), which protects and
-> unprotects individual datagrams once keys exist, and the datagram **handshake framing and
-> reliability** (RFC 9147 §5, §7) - the 12-byte handshake header, overlap-tolerant message
-> reassembly, the ACK message, and the stateless return-routability cookie. The **handshake state
-> machine** that drives these (flights, epoch transitions, PTO retransmission) and a
-> **CoAP-over-DTLS** front-end are the following phases. Each layer is a complete, independently
-> tested unit that the next builds on.
+> **Status.** The DTLS 1.3 **server handshake completes**: the record layer (RFC 9147 §4), the
+> handshake framing and reliability primitives (§5, §7), and the **server-side handshake state
+> machine** (§5-6) are implemented, and a from-scratch peer completes a full handshake against it,
+> installing matching application-traffic keys. This is the one-round-trip full handshake
+> (`TLS_AES_128_GCM_SHA256` / X25519 / Ed25519, no PSK / 0-RTT / client auth); the remaining
+> refinements are the **HelloRetryRequest cookie exchange** (§5.1) and **ACK/timeout
+> retransmission** (§5.8, §7) for loss recovery - the primitives both need already exist - and a
+> **CoAP-over-DTLS** front-end. Each layer is a complete, independently tested unit.
 
 ## The record layer
 
@@ -80,6 +81,30 @@ reused TLS 1.3 message builders never have to know they are on UDP.
   server storing anything, and a timestamp bounds its lifetime. The opaque payload is where the
   state machine parks what it needs to resume the handshake after the retry.
 
+## The handshake
+
+The server state machine ties the layers together and reuses the TLS 1.3 message builders and key
+schedule that already back HTTP/3 - it is a DTLS driver over the same crypto, not a second TLS
+stack. A full handshake is one round trip:
+
+1. The client's **ClientHello** arrives in an epoch-0 `DTLSPlaintext` record. The server checks the
+   offer (TLS 1.3, X25519, Ed25519), computes the X25519 shared secret, and starts the transcript.
+2. The server replies with a **ServerHello** (still epoch 0, plaintext), then derives the
+   handshake-traffic secrets from `Transcript-Hash(ClientHello..ServerHello)` and installs the
+   **epoch-2** record keys.
+3. Under those keys it sends **EncryptedExtensions, Certificate, CertificateVerify, and Finished**
+   as epoch-2 `DTLSCiphertext` records. CertificateVerify is an Ed25519 signature over the
+   transcript; Finished is the HMAC the client checks to authenticate the whole exchange.
+4. From `Transcript-Hash(ClientHello..Finished)` the server derives the **application-traffic**
+   secrets and installs the **epoch-3** keys.
+5. The client's **Finished** arrives (epoch 2); the server verifies its MAC and the handshake is
+   complete. Application data (CoAP) then flows under the epoch-3 keys.
+
+Each TLS handshake message is wrapped in the 12-byte DTLS handshake header and carried in its own
+record; the transcript is computed over the reassembled TLS messages (the DTLS framing fields
+removed), exactly as RFC 9147 §5.2 requires. Epochs advance 0 → 2 → 3 as the keys are installed
+(RFC 9147 §6.1).
+
 ## What is verified
 
 The whole record - header layout, AEAD nonce, associated-data selection, and sequence-number
@@ -94,7 +119,17 @@ and rejects malformed fragments; reassembly is exercised in order, out of order,
 overlapping and duplicate fragments, and its bounds are checked; the ACK message round-trips and
 rejects malformed input. The cookie's wire format is pinned **byte-for-byte** to an independent
 Python-stdlib HMAC-SHA256, and verification is shown to reject a wrong client address, a tampered
-byte, a truncated cookie, and a stale or future-dated timestamp.
+byte, a truncated cookie, and a stale or future-dated timestamp. The TLS 1.3 messages the DTLS
+handshake adds - HelloRetryRequest, the cookie extension, and the `message_hash` transcript
+wrapper - are host-tested too (`native_dtls_tls13`), with the HelloRetryRequest pinned byte-exact.
+
+The **handshake itself** is proven end-to-end (`native_dtls_conn`): a from-scratch peer, built from
+the same primitives but driven independently, completes a full handshake against the server. It
+deprotects the server's epoch-2 flight, **verifies the CertificateVerify Ed25519 signature and the
+server Finished MAC over the real transcript**, sends its own Finished, and confirms that both
+sides install **identical application-traffic keys**. Any wrong transcript byte, epoch, nonce, or
+derived secret would fail the AEAD open, the signature check, or the key comparison. A ClientHello
+that does not offer TLS 1.3 is rejected with the right alert.
 
 ## Standards
 
@@ -108,8 +143,10 @@ byte, a truncated cookie, and a stale or future-dated timestamp.
 | Record-key derivation          | RFC 8446 §7.3, RFC 5869   | Implemented - `key` / `iv` / `sn` = HKDF-Expand-Label(traffic secret)           |
 | Handshake header + reassembly  | RFC 9147 §5.2, §5.4       | Implemented - 12-byte header build/parse, overlap-tolerant reassembly           |
 | ACK message                    | RFC 9147 §7               | Implemented - content type 26, record-number list build/parse                   |
-| HelloRetryRequest cookie       | RFC 9147 §5.1             | Implemented - stateless HMAC-SHA256 cookie binding the client address           |
-| Handshake state machine        | RFC 9147 §5-6             | **Roadmap** - flights, epoch transitions, PTO retransmission                    |
+| HelloRetryRequest cookie       | RFC 9147 §5.1             | Implemented (framing) - stateless HMAC-SHA256 cookie binding the client address |
+| Server handshake state machine | RFC 9147 §5-6             | Implemented - full 1-RTT handshake, epoch 0→2→3 transitions, client Finished    |
+| HelloRetryRequest exchange     | RFC 9147 §5.1             | **Roadmap** - cookie round-trip + message_hash transcript (primitives ready)    |
+| ACK / timeout retransmission   | RFC 9147 §5.8, §7         | **Roadmap** - loss recovery (ACK message + replay window ready)                 |
 | Connection ID                  | RFC 9147 §9               | **Roadmap** - negotiated via extension; CID records are rejected for now        |
 
 The handshake DTLS carries is the TLS 1.3 already documented for HTTP/3

@@ -29,7 +29,9 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP3
+// Shared by the HTTP/3 (QUIC) handshake and the DTLS 1.3 handshake - both run the same TLS 1.3 key
+// schedule (see tls13_msg.h for the matching guard on the message layer).
+#if (DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS)
 
 #include <stddef.h>
 #include <stdint.h>

@@ -4681,12 +4681,15 @@
  * telemetry - reusing the hand-rolled TLS 1.3 handshake crypto that already backs HTTP/3. This
  * flag gates the DTLS 1.3 **record layer** (dtls_record): the DTLSCiphertext unified header,
  * per-record AEAD protection (AEAD_AES_128_GCM), the RFC 9147 sequence-number encryption,
- * sequence-number reconstruction, and the anti-replay window; and the **handshake framing and
+ * sequence-number reconstruction, and the anti-replay window; the **handshake framing and
  * reliability** layer (dtls_handshake, RFC 9147 §5 + §7): the 12-byte handshake header,
  * overlap-tolerant message reassembly, the ACK message, and the stateless HelloRetryRequest
- * cookie. The handshake state machine that drives these (flights, epoch transitions, PTO) and a
- * CoAPs front-end are the following phases. Enabling this also compiles the shared quic_hkdf /
- * quic_aead primitives (otherwise gated behind HTTP/3). Default off.
+ * cookie; and the **server handshake state machine** (dtls_conn, RFC 9147 §5-6): the
+ * one-round-trip full handshake (TLS_AES_128_GCM_SHA256 / X25519 / Ed25519), epoch 0->2->3
+ * transitions, reusing the TLS 1.3 messages + key schedule (tls13_msg / tls13_kdf). The
+ * HelloRetryRequest cookie round-trip and ACK/timeout retransmission, plus a CoAPs front-end, are
+ * the following phases. Enabling this also compiles the shared quic_hkdf / quic_aead / tls13_*
+ * primitives (otherwise gated behind HTTP/3). Default off.
  */
 #ifndef DETWS_ENABLE_DTLS
 #define DETWS_ENABLE_DTLS 0
