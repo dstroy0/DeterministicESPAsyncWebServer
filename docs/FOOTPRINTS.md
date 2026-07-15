@@ -40,6 +40,7 @@ from each example's `pio ci` size report and aggregated into
 | `GUARDRAILS`                                                                                              | L7-Application/40.Guardrails            | 735.1 KB (57.4%) | 79.9 KB (25.0%)  |
 | `HTTP_CLIENT`                                                                                             | L7-Application/23.HttpClient            | 717.3 KB (56.0%) | 61.7 KB (19.3%)  |
 | `HTTP_CLIENT+WEBHOOK`                                                                                     | L7-Application/46.Webhook               | 744.9 KB (58.2%) | 99.2 KB (31.0%)  |
+| `IFACE_BRIDGE`                                                                                            | L7-Application/75.InterfaceBridge       | 762.0 KB (59.5%) | 80.7 KB (25.2%)  |
 | `INA219`                                                                                                  | L7-Application/67.Ina219                | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
 | `IPV6`                                                                                                    | Foundation/20.IPv6                      | 737.0 KB (57.6%) | 79.9 KB (25.0%)  |
 | `IP_ALLOWLIST`                                                                                            | L4-Transport/07.IpAllowlist             | 735.9 KB (57.5%) | 79.9 KB (25.0%)  |

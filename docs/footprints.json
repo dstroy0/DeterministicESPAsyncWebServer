@@ -223,6 +223,13 @@
     "flash_bytes": 762749,
     "ram_bytes": 101536
   },
+  "IFACE_BRIDGE": {
+    "example": "L7-Application/75.InterfaceBridge",
+    "flags": "-DDETWS_ENABLE_IFACE_BRIDGE=1",
+    "board": "esp32dev",
+    "flash_bytes": 780269,
+    "ram_bytes": 82624
+  },
   "INA219": {
     "example": "L7-Application/67.Ina219",
     "flags": "-DDETWS_ENABLE_INA219=1",
