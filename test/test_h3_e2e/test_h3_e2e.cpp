@@ -261,7 +261,7 @@ void test_http3_get_end_to_end()
         ssh_sha256_final(&tmp, chsh);
     }
     Tls13KeySchedule cks;
-    tls13_ks_early(&cks);
+    tls13_ks_early(&TLS13_KDF, &cks);
     tls13_ks_handshake(&cks, ecdhe, chsh);
     QuicPacketKeys hs_s, hs_c, ap_s, ap_c;
     quic_keys_from_secret(cks.server_hs_traffic, &hs_s);
@@ -283,7 +283,7 @@ void test_http3_get_end_to_end()
     size_t idl = build_long(idg, sizeof(idg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
                             sizeof(CLIENT_SCID), 1, &init.client, ifr, ifl);
     uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
-    tls13_finished_mac(cks.client_hs_traffic, chsf, cfin + 4);
+    tls13_finished_mac(&TLS13_KDF, cks.client_hs_traffic, chsf, cfin + 4);
     uint8_t hfr[64];
     size_t hfl = quic_build_ack(hfr, sizeof(hfr), 0, 0, 0);
     hfl += quic_build_crypto(hfr + hfl, sizeof(hfr) - hfl, 0, cfin, sizeof(cfin));

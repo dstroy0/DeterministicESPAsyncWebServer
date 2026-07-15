@@ -313,7 +313,7 @@ void test_full_handshake_and_stream()
         ssh_sha256_final(&tmp, ch_sh);
     }
     Tls13KeySchedule cks;
-    tls13_ks_early(&cks);
+    tls13_ks_early(&TLS13_KDF, &cks);
     tls13_ks_handshake(&cks, ecdhe, ch_sh);
     QuicPacketKeys hs_server_keys, hs_client_keys;
     quic_keys_from_secret(cks.server_hs_traffic, &hs_server_keys);
@@ -345,7 +345,7 @@ void test_full_handshake_and_stream()
                             sizeof(CLIENT_SCID), 1, &init.client, ifr, ifl);
 
     uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
-    tls13_finished_mac(cks.client_hs_traffic, ch_sf, cfin + 4);
+    tls13_finished_mac(&TLS13_KDF, cks.client_hs_traffic, ch_sf, cfin + 4);
     uint8_t hfr[64];
     size_t hfl = quic_build_ack(hfr, sizeof(hfr), 0, 0, 0);
     hfl += quic_build_crypto(hfr + hfl, sizeof(hfr) - hfl, 0, cfin, sizeof(cfin));
@@ -617,7 +617,7 @@ void test_connection_close_on_malformed_frame()
     ssh_sha256_update(&tctx, sh, sh_len);
     ssh_sha256_final(&tctx, ch_sh);
     Tls13KeySchedule cks;
-    tls13_ks_early(&cks);
+    tls13_ks_early(&TLS13_KDF, &cks);
     tls13_ks_handshake(&cks, ecdhe, ch_sh);
     QuicPacketKeys hs_server_keys, hs_client_keys;
     quic_keys_from_secret(cks.server_hs_traffic, &hs_server_keys);
@@ -1144,7 +1144,7 @@ static void complete_handshake(QuicConn *qc, QuicConnCallbacks *cb, QuicInitialS
         ssh_sha256_final(&tmp, ch_sh);
     }
     Tls13KeySchedule cks;
-    tls13_ks_early(&cks);
+    tls13_ks_early(&TLS13_KDF, &cks);
     tls13_ks_handshake(&cks, ecdhe, ch_sh);
     QuicPacketKeys hs_server_keys, hs_client_keys;
     quic_keys_from_secret(cks.server_hs_traffic, &hs_server_keys);
@@ -1165,7 +1165,7 @@ static void complete_handshake(QuicConn *qc, QuicConnCallbacks *cb, QuicInitialS
     size_t idl = build_long(idg, sizeof(idg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
                             sizeof(CLIENT_SCID), 1, &init->client, ifr, ifl);
     uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
-    tls13_finished_mac(cks.client_hs_traffic, ch_sf, cfin + 4);
+    tls13_finished_mac(&TLS13_KDF, cks.client_hs_traffic, ch_sf, cfin + 4);
     uint8_t hfr[64];
     size_t hfl = quic_build_ack(hfr, sizeof(hfr), 0, 0, 0);
     hfl += quic_build_crypto(hfr + hfl, sizeof(hfr) - hfl, 0, cfin, sizeof(cfin));

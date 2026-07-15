@@ -155,7 +155,7 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     // Handshake keys from Transcript-Hash(ClientHello..ServerHello).
     uint8_t hash[32];
     snapshot_hash(&qt->transcript, hash);
-    tls13_ks_early(&qt->ks);
+    tls13_ks_early(&TLS13_KDF, &qt->ks);
     tls13_ks_handshake(&qt->ks, ecdhe, hash, ecdhe_len);
     quic_keys_from_secret(qt->ks.client_hs_traffic, &qt->hs_client);
     quic_keys_from_secret(qt->ks.server_hs_traffic, &qt->hs_server);
@@ -186,7 +186,7 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     // Server Finished over Transcript-Hash(ClientHello..CertificateVerify).
     snapshot_hash(&qt->transcript, hash);
     uint8_t verify[32];
-    tls13_finished_mac(qt->ks.server_hs_traffic, hash, verify);
+    tls13_finished_mac(&TLS13_KDF, qt->ks.server_hs_traffic, hash, verify);
     n = tls13_build_finished(qt->flight_hs + qt->flight_hs_len, sizeof(qt->flight_hs) - qt->flight_hs_len, verify);
     if (!emit(qt, qt->flight_hs, sizeof(qt->flight_hs), &qt->flight_hs_len, n))
         return false;
@@ -211,7 +211,7 @@ bool process_client_finished(QuicTls *qt, const uint8_t *msg, size_t msg_len)
         return false;
     }
     uint8_t expected[32];
-    tls13_finished_mac(qt->ks.client_hs_traffic, qt->hs_finished_hash, expected);
+    tls13_finished_mac(&TLS13_KDF, qt->ks.client_hs_traffic, qt->hs_finished_hash, expected);
     uint8_t diff = 0;
     for (int i = 0; i < 32; i++)
         diff |= (uint8_t)(expected[i] ^ msg[4 + i]);

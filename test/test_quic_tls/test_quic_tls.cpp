@@ -215,7 +215,7 @@ void test_full_handshake_roundtrip()
     ssh_sha256_final(&t, ch_sf); // H(CH..server Finished)
 
     Tls13KeySchedule cks;
-    tls13_ks_early(&cks);
+    tls13_ks_early(&TLS13_KDF, &cks);
     tls13_ks_handshake(&cks, ecdhe, ch_sh);
     tls13_ks_master(&cks, ch_sf);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.handshake_secret, cks.handshake_secret, 32);
@@ -232,12 +232,12 @@ void test_full_handshake_roundtrip()
     ssh_sha256_update(&t, sh_flight, sh_flight_len - 36);
     ssh_sha256_final(&t, ch_cv);
     uint8_t sfin_expected[32];
-    tls13_finished_mac(cks.server_hs_traffic, ch_cv, sfin_expected);
+    tls13_finished_mac(&TLS13_KDF, cks.server_hs_traffic, ch_cv, sfin_expected);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);
 
     // 3) Client builds its Finished and the server accepts it.
     uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
-    tls13_finished_mac(cks.client_hs_traffic, ch_sf, cfin + 4);
+    tls13_finished_mac(&TLS13_KDF, cks.client_hs_traffic, ch_sf, cfin + 4);
     used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
     TEST_ASSERT_EQUAL_UINT(sizeof(cfin), used);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);
@@ -697,7 +697,7 @@ void test_hybrid_handshake_roundtrip()
     ssh_sha256_final(&t, ch_sf);
 
     Tls13KeySchedule cks;
-    tls13_ks_early(&cks);
+    tls13_ks_early(&TLS13_KDF, &cks);
     tls13_ks_handshake(&cks, ecdhe, ch_sh, 64); // 64-byte hybrid secret
     tls13_ks_master(&cks, ch_sf);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(qt.ks.handshake_secret, cks.handshake_secret, 32);
@@ -713,11 +713,11 @@ void test_hybrid_handshake_roundtrip()
     ssh_sha256_update(&t, sh_flight, sh_flight_len - 36);
     ssh_sha256_final(&t, ch_cv);
     uint8_t sfin_expected[32];
-    tls13_finished_mac(cks.server_hs_traffic, ch_cv, sfin_expected);
+    tls13_finished_mac(&TLS13_KDF, cks.server_hs_traffic, ch_cv, sfin_expected);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(sfin_expected, sh_flight + sh_flight_len - 32, 32);
 
     uint8_t cfin[36] = {TlsHs::TLS_HS_FINISHED, 0x00, 0x00, 0x20};
-    tls13_finished_mac(cks.client_hs_traffic, ch_sf, cfin + 4);
+    tls13_finished_mac(&TLS13_KDF, cks.client_hs_traffic, ch_sf, cfin + 4);
     used = quic_tls_recv_crypto(&qt, QuicEnc::QUIC_ENC_HANDSHAKE, cfin, sizeof(cfin));
     TEST_ASSERT_EQUAL_UINT(sizeof(cfin), used);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);

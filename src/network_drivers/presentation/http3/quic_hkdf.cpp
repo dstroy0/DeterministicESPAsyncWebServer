@@ -54,21 +54,23 @@ void hkdf_expand(const uint8_t prk[QUIC_HKDF_HASH_LEN], const uint8_t *info, siz
 } // namespace
 
 void quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, const uint8_t *context,
-                                size_t context_len, uint8_t *out, size_t out_len)
+                                size_t context_len, uint8_t *out, size_t out_len, const char *label_prefix)
 {
-    // HkdfLabel (RFC 8446 sec 7.1): uint16 length | opaque label<..> = "tls13 " + label | opaque context.
-    // Label length maxes out well under 255 (longest is "tls13 client in" = 15); the context is a
-    // Transcript-Hash (<= 32) for Derive-Secret and empty for packet-protection keys. A fixed
-    // 2 + 1 + 255 + 1 + 255 scratch buffer covers every caller.
-    static const char PREFIX[6] = {'t', 'l', 's', '1', '3', ' '};
+    // HkdfLabel (RFC 8446 sec 7.1): uint16 length | opaque label<..> = label_prefix + label | opaque context.
+    // The prefix is "tls13 " for TLS/QUIC (RFC 8446) or "dtls13" for DTLS 1.3 (RFC 9147 sec 5.9); the
+    // caller supplies whichever applies, so this primitive stays protocol-agnostic. Label length maxes
+    // out well under 255 (longest is "tls13 client in" = 15); the context is a Transcript-Hash (<= 32)
+    // for Derive-Secret and empty for packet-protection keys. A fixed 2 + 1 + 255 + 1 + 255 scratch
+    // buffer covers every caller.
+    size_t prefix_len = strlen(label_prefix);
     size_t label_len = strlen(label);
     uint8_t info[2 + 1 + 255 + 1 + 255];
     size_t p = 0;
     info[p++] = (uint8_t)(out_len >> 8);
     info[p++] = (uint8_t)(out_len & 0xff);
-    info[p++] = (uint8_t)(sizeof(PREFIX) + label_len); // full label length, prefix included
-    memcpy(info + p, PREFIX, sizeof(PREFIX));
-    p += sizeof(PREFIX);
+    info[p++] = (uint8_t)(prefix_len + label_len); // full label length, prefix included
+    memcpy(info + p, label_prefix, prefix_len);
+    p += prefix_len;
     memcpy(info + p, label, label_len);
     p += label_len;
     info[p++] = (uint8_t)context_len;
@@ -81,9 +83,10 @@ void quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], const 
     hkdf_expand(secret, info, p, out, out_len);
 }
 
-void quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, uint8_t *out, size_t out_len)
+void quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, uint8_t *out, size_t out_len,
+                            const char *label_prefix)
 {
-    quic_hkdf_expand_label_ctx(secret, label, nullptr, 0, out, out_len);
+    quic_hkdf_expand_label_ctx(secret, label, nullptr, 0, out, out_len, label_prefix);
 }
 
 #endif // DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS

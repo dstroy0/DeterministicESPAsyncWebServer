@@ -1295,7 +1295,10 @@
     "aesgcm",
     "kbuf",
     "routability",
-    "deprotects"
+    "deprotects",
+    "SSLKEYLOGFILE",
+    "codepoints",
+    "reimplementation"
   ],
   "ignorePaths": [
     "node_modules/**",

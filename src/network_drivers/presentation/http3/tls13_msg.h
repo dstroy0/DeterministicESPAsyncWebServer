@@ -52,7 +52,9 @@ struct TlsHs
 #define TLS_GROUP_X25519 0x001d              ///< the classical key-exchange group we support
 #define TLS_GROUP_X25519MLKEM768 0x11ec      ///< PQ/T hybrid group (ML-KEM-768 + X25519), when DETWS_ENABLE_PQC_KEX
 #define TLS_SIG_ED25519 0x0807               ///< the one signature scheme we produce
-#define TLS_VERSION_1_3 0x0304               ///< supported_versions selected value
+#define TLS_VERSION_1_3 0x0304               ///< supported_versions selected value (TLS 1.3)
+#define TLS_VERSION_DTLS_1_3 0xFEFC          ///< supported_versions selected value (DTLS 1.3, RFC 9147)
+#define TLS_LEGACY_VERSION_DTLS 0xFEFD       ///< legacy_version on the wire for DTLS (DTLS 1.2)
 #define TLS_EXT_QUIC_TRANSPORT_PARAMS 0x0039 ///< quic_transport_parameters (RFC 9001 sec 8.2)
 
 /** @brief What the state machine needs out of a parsed ClientHello (pointers alias the input). */
@@ -81,10 +83,13 @@ struct Tls13ClientHello
 
 /**
  * @brief Parse a ClientHello handshake message (@p msg includes the 4-byte handshake header).
+ *
+ * @param dtls  true for a DTLS ClientHello (RFC 9147 §5.3), which carries an extra @c legacy_cookie
+ *              field between @c legacy_session_id and @c cipher_suites; false for TLS/QUIC.
  * @return false if it is not a well-formed ClientHello. Missing/!supported extensions are reported
  * through the offers_* flags rather than failing the parse, so the caller can send the right alert.
  */
-bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *out);
+bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *out, bool dtls = false);
 
 /**
  * @brief Build a ServerHello (RFC 8446 sec 4.1.3) selecting TLS 1.3 / AES-128-GCM-SHA256 and a
@@ -101,7 +106,7 @@ bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *
  */
 size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[32], const uint8_t *session_id,
                                 uint8_t session_id_len, const uint8_t *share, size_t share_len = 32,
-                                uint16_t group = TLS_GROUP_X25519);
+                                uint16_t group = TLS_GROUP_X25519, bool dtls = false);
 
 /**
  * @brief Build EncryptedExtensions (RFC 8446 sec 4.3.1) carrying ALPN "h3" and the server's

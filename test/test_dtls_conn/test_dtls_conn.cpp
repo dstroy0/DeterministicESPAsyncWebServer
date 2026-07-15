@@ -75,17 +75,18 @@ static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32])
     for (int i = 0; i < 32; i++)
         b8(&b, (uint8_t)(0x30 + i)); // random
     b8(&b, 0x00);                    // session_id: empty
+    b8(&b, 0x00);                    // legacy_cookie: empty (DTLS ClientHello, RFC 9147 §5.3)
     b16(&b, 0x0002);
     b16(&b, 0x1301); // cipher_suites: TLS_AES_128_GCM_SHA256
     b8(&b, 0x01);
     b8(&b, 0x00); // compression: null
     size_t ext_len_at = b.n;
     b16(&b, 0); // extensions length (patched)
-    // supported_versions
+    // supported_versions: DTLS 1.3 (0xFEFC), RFC 9147
     b16(&b, 0x002b);
     b16(&b, 0x0003);
     b8(&b, 0x02);
-    b16(&b, 0x0304);
+    b16(&b, 0xFEFC);
     // supported_groups: x25519
     b16(&b, 0x000a);
     b16(&b, 0x0004);
@@ -222,7 +223,7 @@ static void test_full_handshake(void)
     uint8_t h[32];
     SshSha256Ctx tmp = tr;
     ssh_sha256_final(&tmp, h); // H(CH..SH)
-    tls13_ks_early(&cks);
+    tls13_ks_early(&DTLS13_KDF, &cks);
     tls13_ks_handshake(&cks, ecdhe, h, 32);
 
     DtlsRecordKeys srv_read; // client reads the server's epoch-2 records
@@ -266,7 +267,7 @@ static void test_full_handshake(void)
             SshSha256Ctx s = tr;
             ssh_sha256_final(&s, hcv);
             uint8_t expect[32];
-            tls13_finished_mac(cks.server_hs_traffic, hcv, expect);
+            tls13_finished_mac(&DTLS13_KDF, cks.server_hs_traffic, hcv, expect);
             TEST_ASSERT_EQUAL_MEMORY(expect, msg + 4, 32);
             seen_fin = 1;
         }
@@ -288,7 +289,7 @@ static void test_full_handshake(void)
     tls13_ks_master(&cks, h_sfin);
 
     uint8_t cfin_verify[32];
-    tls13_finished_mac(cks.client_hs_traffic, h_sfin, cfin_verify);
+    tls13_finished_mac(&DTLS13_KDF, cks.client_hs_traffic, h_sfin, cfin_verify);
     uint8_t cfin[64];
     size_t cfin_len = tls13_build_finished(cfin, sizeof(cfin), cfin_verify);
 
@@ -303,7 +304,7 @@ static void test_full_handshake(void)
 
     uint8_t out2[64];
     int r2 = dtls_conn_process(&conn, cfin_rec, cfr, out2, sizeof(out2));
-    TEST_ASSERT_EQUAL_INT(0, r2); // no further output
+    TEST_ASSERT_TRUE(r2 > 0); // the server acknowledges the client Finished (RFC 9147 §5.8.3)
     TEST_ASSERT_TRUE(dtls_conn_established(&conn));
 
     // --- both sides agree on the application-traffic keys ---
@@ -311,6 +312,12 @@ static void test_full_handshake(void)
     DtlsRecordKeys cli_app_write; // client writes app data (from client_ap_traffic)
     dtls_record_keys_derive(&cli_app_read, DtlsCipher::AES_128_GCM_SHA256, 3, cks.server_ap_traffic);
     dtls_record_keys_derive(&cli_app_write, DtlsCipher::AES_128_GCM_SHA256, 3, cks.client_ap_traffic);
+
+    // The ACK is an epoch-3 (application) record of content type 26 that the client can decrypt.
+    uint8_t ack_pt[64];
+    DtlsCiphertext ackinfo;
+    TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&cli_app_read, 0, out2, (size_t)r2, ack_pt, sizeof(ack_pt), &ackinfo));
+    TEST_ASSERT_EQUAL_UINT8(DTLS_CT_ACK, ackinfo.content_type);
 
     const DtlsRecordKeys *srv_app_write = dtls_conn_app_write_keys(&conn); // server->client
     const DtlsRecordKeys *srv_app_read = dtls_conn_app_read_keys(&conn);   // client->server
@@ -335,11 +342,11 @@ static void test_reject_no_tls13(void)
 
     uint8_t ch[256];
     size_t ch_len = build_client_hello(ch, client_pub);
-    // Corrupt the supported_versions value 0x0304 -> 0x0303 so offers_tls13 is false.
+    // Corrupt the supported_versions value 0xFEFC (DTLS 1.3) -> 0xFEFD (DTLS 1.2) so offers_tls13 is false.
     for (size_t i = 0; i + 1 < ch_len; i++)
-        if (ch[i] == 0x03 && ch[i + 1] == 0x04)
+        if (ch[i] == 0xFE && ch[i + 1] == 0xFC)
         {
-            ch[i + 1] = 0x03;
+            ch[i + 1] = 0xFD;
             break;
         }
     uint8_t frag[300], rec[320], out[1024];

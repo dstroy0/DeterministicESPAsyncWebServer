@@ -161,16 +161,16 @@ bool list16_contains(const uint8_t *body, size_t body_len, size_t list_len, uint
     return false;
 }
 
-void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13ClientHello *out)
+void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13ClientHello *out, bool dtls)
 {
     switch (type)
     {
     case TlsExt::TLS_EXT_SUPPORTED_VERSIONS: {
-        // 1-byte list length, then 2-byte versions.
+        // 1-byte list length, then 2-byte versions. DTLS 1.3 advertises 0xFEFC, TLS 1.3 advertises 0x0304.
         if (blen < 1)
             return;
         size_t ll = body[0];
-        out->offers_tls13 = list16_contains(body + 1, blen - 1, ll, TLS_VERSION_1_3);
+        out->offers_tls13 = list16_contains(body + 1, blen - 1, ll, dtls ? TLS_VERSION_DTLS_1_3 : TLS_VERSION_1_3);
         break;
     }
     case TlsExt::TLS_EXT_SUPPORTED_GROUPS: {
@@ -285,7 +285,7 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
 }
 } // namespace
 
-bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *out)
+bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *out, bool dtls)
 {
     memset(out, 0, sizeof(*out));
 
@@ -311,6 +311,16 @@ bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *
         return false;
     out->session_id_len = sid_len;
 
+    // DTLS ClientHello carries a legacy_cookie between session_id and cipher_suites (RFC 9147 §5.3);
+    // it is zero-length in DTLS 1.3 but the field is always present. TLS/QUIC ClientHellos omit it.
+    if (dtls)
+    {
+        uint8_t cookie_len = 0;
+        const uint8_t *cookie = nullptr;
+        if (!r_u8(&r, &cookie_len) || !r_take(&r, cookie_len, &cookie))
+            return false;
+    }
+
     uint16_t cs_len = 0;
     const uint8_t *cs = nullptr;
     if (!r_u16(&r, &cs_len) || (cs_len % 2) != 0 || !r_take(&r, cs_len, &cs))
@@ -335,7 +345,7 @@ bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *
         const uint8_t *ebody = nullptr;
         if (!r_u16(&r, &etype) || !r_u16(&r, &elen) || !r_take(&r, elen, &ebody))
             return false;
-        parse_extension(etype, ebody, elen, out);
+        parse_extension(etype, ebody, elen, out, dtls);
     }
     return true;
 }
@@ -344,13 +354,15 @@ bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *
 // Builders
 // ---------------------------------------------------------------------------
 size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[32], const uint8_t *session_id,
-                                uint8_t session_id_len, const uint8_t *share, size_t share_len, uint16_t group)
+                                uint8_t session_id_len, const uint8_t *share, size_t share_len, uint16_t group,
+                                bool dtls)
 {
     Writer w = {out, cap, 0, true};
     w_u8(&w, TlsHs::TLS_HS_SERVER_HELLO);
     size_t hs_len = w_mark(&w, 3);
 
-    w_u16(&w, 0x0303); // legacy_version
+    // legacy_version is 0x0303 (TLS 1.2) for TLS/QUIC, 0xFEFD (DTLS 1.2) for DTLS (RFC 9147 §5.3).
+    w_u16(&w, dtls ? TLS_LEGACY_VERSION_DTLS : (uint16_t)0x0303);
     w_bytes(&w, random, 32);
     w_u8(&w, session_id_len);
     w_bytes(&w, session_id, session_id_len);
@@ -365,10 +377,10 @@ size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[3
     w_u16(&w, group);
     w_u16(&w, (uint16_t)share_len);
     w_bytes(&w, share, share_len);
-    // supported_versions -> selected 0x0304.
+    // supported_versions -> selected version (DTLS 1.3 = 0xFEFC, TLS 1.3 = 0x0304).
     w_u16(&w, TlsExt::TLS_EXT_SUPPORTED_VERSIONS);
     w_u16(&w, 2);
-    w_u16(&w, TLS_VERSION_1_3);
+    w_u16(&w, dtls ? TLS_VERSION_DTLS_1_3 : TLS_VERSION_1_3);
     w_patch16(&w, ext_len);
 
     w_patch24(&w, hs_len);

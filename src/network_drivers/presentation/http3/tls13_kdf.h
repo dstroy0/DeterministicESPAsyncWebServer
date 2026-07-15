@@ -40,15 +40,33 @@
 #define TLS13_SECRET_LEN 32
 
 /**
+ * @brief The one thing that differs between the TLS 1.3 and DTLS 1.3 key schedules: the
+ * HKDF-Expand-Label prefix ("tls13 " for TLS/QUIC per RFC 8446 sec 7.1, "dtls13" for DTLS 1.3 per
+ * RFC 9147 sec 5.9). A caller picks the variant once (@ref TLS13_KDF or @ref DTLS13_KDF) and the
+ * key schedule carries it, so no per-call flag is threaded through the derivation steps.
+ */
+struct Tls13Kdf
+{
+    const char *label_prefix;
+};
+
+/** @brief TLS 1.3 / QUIC variant ("tls13 " prefix, RFC 8446). */
+extern const Tls13Kdf TLS13_KDF;
+/** @brief DTLS 1.3 variant ("dtls13" prefix, RFC 9147 sec 5.9). */
+extern const Tls13Kdf DTLS13_KDF;
+
+/**
  * @brief The running key-schedule state for one handshake (server side).
  *
- * Filled in three steps as the handshake progresses: tls13_ks_early() before any (EC)DHE,
- * tls13_ks_handshake() once ClientHello..ServerHello is hashed and the shared secret is known, and
- * tls13_ks_master() once ClientHello..server Finished is hashed. Each step also derives that level's
- * client and server traffic secrets, from which quic_keys_from_secret() makes the packet keys.
+ * Filled in three steps as the handshake progresses: tls13_ks_early() (which also binds the @ref
+ * Tls13Kdf variant) before any (EC)DHE, tls13_ks_handshake() once ClientHello..ServerHello is hashed
+ * and the shared secret is known, and tls13_ks_master() once ClientHello..server Finished is hashed.
+ * Each step also derives that level's client and server traffic secrets, from which the record/packet
+ * keys are made.
  */
 struct Tls13KeySchedule
 {
+    const Tls13Kdf *kdf;                         ///< variant (label prefix) bound by tls13_ks_early()
     uint8_t early_secret[TLS13_SECRET_LEN];      ///< HKDF-Extract(0, PSK|0) - no-PSK: Extract(0, 0^32)
     uint8_t handshake_secret[TLS13_SECRET_LEN];  ///< HKDF-Extract(Derive(early,"derived"), (EC)DHE)
     uint8_t master_secret[TLS13_SECRET_LEN];     ///< HKDF-Extract(Derive(handshake,"derived"), 0^32)
@@ -59,24 +77,35 @@ struct Tls13KeySchedule
 };
 
 /**
+ * @brief HKDF-Expand-Label under a KDF variant (RFC 8446 sec 7.1 with the @p kdf label prefix).
+ *
+ * The record-key derivations (key/iv/sn) call this so the label prefix follows the negotiated
+ * protocol without the record layer knowing the prefix string.
+ */
+void tls13_kdf_expand_label(const Tls13Kdf *kdf, const uint8_t secret[TLS13_SECRET_LEN], const char *label,
+                            uint8_t *out, size_t out_len);
+
+/**
  * @brief Derive-Secret (RFC 8446 sec 7.1): HKDF-Expand-Label(secret, label, transcript_hash, 32).
  *
+ * @param kdf              KDF variant (label prefix).
  * @param secret           A 32-byte PRK / traffic secret.
- * @param label            Short label without the "tls13 " prefix, e.g. "c hs traffic", "derived".
+ * @param label            Short label without the prefix, e.g. "c hs traffic", "derived".
  * @param transcript_hash  Transcript-Hash of the relevant messages (32 bytes; H("") for "derived").
  * @param out              32-byte derived secret.
  */
-void tls13_derive_secret(const uint8_t secret[TLS13_SECRET_LEN], const char *label,
+void tls13_derive_secret(const Tls13Kdf *kdf, const uint8_t secret[TLS13_SECRET_LEN], const char *label,
                          const uint8_t transcript_hash[TLS13_SECRET_LEN], uint8_t out[TLS13_SECRET_LEN]);
 
-/** @brief Step 1: early_secret = HKDF-Extract(0, 0^32) (no-PSK; the only mode we support). */
-void tls13_ks_early(Tls13KeySchedule *ks);
+/** @brief Step 1: bind the @p kdf variant and compute early_secret = HKDF-Extract(0, 0^32) (no-PSK). */
+void tls13_ks_early(const Tls13Kdf *kdf, Tls13KeySchedule *ks);
 
 /**
  * @brief Step 2: handshake_secret and the client/server handshake traffic secrets.
  *
  * handshake_secret = HKDF-Extract(Derive-Secret(early, "derived", H("")), @p ecdhe); the traffic
- * secrets are Derive-Secret(handshake_secret, "c hs traffic"/"s hs traffic", @p ch_sh_hash).
+ * secrets are Derive-Secret(handshake_secret, "c hs traffic"/"s hs traffic", @p ch_sh_hash). The
+ * variant bound by tls13_ks_early() is used throughout.
  *
  * @param ecdhe       The (EC)DHE shared secret: 32 bytes for X25519, or the 64-byte concatenation
  *                    ML-KEM_secret || X25519_secret for the X25519MLKEM768 hybrid group.
@@ -103,12 +132,13 @@ void tls13_ks_master(Tls13KeySchedule *ks, const uint8_t ch_sfin_hash[TLS13_SECR
  * HMAC-SHA256(finished_key, @p transcript_hash). @p base_secret is the sender's handshake traffic
  * secret (server_hs_traffic for the server's Finished, client_hs_traffic to verify the client's).
  *
+ * @param kdf              KDF variant (label prefix).
  * @param base_secret      The Finished sender's handshake traffic secret.
  * @param transcript_hash  Transcript-Hash of the handshake up to but excluding this Finished.
  * @param out              32-byte verify_data.
  */
-void tls13_finished_mac(const uint8_t base_secret[TLS13_SECRET_LEN], const uint8_t transcript_hash[TLS13_SECRET_LEN],
-                        uint8_t out[TLS13_SECRET_LEN]);
+void tls13_finished_mac(const Tls13Kdf *kdf, const uint8_t base_secret[TLS13_SECRET_LEN],
+                        const uint8_t transcript_hash[TLS13_SECRET_LEN], uint8_t out[TLS13_SECRET_LEN]);
 
 #endif // DETWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_TLS13_KDF_H

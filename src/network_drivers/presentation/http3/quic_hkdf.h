@@ -53,12 +53,19 @@ void quic_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm,
  * this function pass an empty context). @p out_len must not exceed 255*32 bytes; QUIC only ever asks
  * for <= 32, which is a single HMAC block.
  *
- * @param secret    Traffic secret (HKDF PRK), QUIC_HKDF_HASH_LEN bytes.
- * @param label     Short ASCII label, e.g. "quic key" (without the "tls13 " prefix), <= 249 bytes.
- * @param out       Output keying material.
- * @param out_len   Number of output bytes requested.
+/** @brief The RFC 8446 sec 7.1 HKDF-Expand-Label prefix used by TLS 1.3 and QUIC. DTLS 1.3 overrides
+ *  it with "dtls13" (RFC 9147 sec 5.9); callers that need it pass it explicitly. */
+#define QUIC_HKDF_LABEL_PREFIX "tls13 "
+
+/**
+ * @param secret        Traffic secret (HKDF PRK), QUIC_HKDF_HASH_LEN bytes.
+ * @param label         Short ASCII label, e.g. "quic key" (without the prefix), <= 249 bytes.
+ * @param out           Output keying material.
+ * @param out_len       Number of output bytes requested.
+ * @param label_prefix  HkdfLabel prefix; defaults to the TLS 1.3 "tls13 " prefix. DTLS 1.3 passes "dtls13".
  */
-void quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, uint8_t *out, size_t out_len);
+void quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, uint8_t *out, size_t out_len,
+                            const char *label_prefix = QUIC_HKDF_LABEL_PREFIX);
 
 /**
  * @brief HKDF-Expand-Label with an explicit context (RFC 8446 sec 7.1, the general form).
@@ -73,9 +80,11 @@ void quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char
  * @param context_len  Context length.
  * @param out          Output keying material.
  * @param out_len      Number of output bytes requested.
+ * @param label_prefix HkdfLabel prefix; defaults to the TLS 1.3 "tls13 " prefix. DTLS 1.3 passes "dtls13".
  */
 void quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char *label, const uint8_t *context,
-                                size_t context_len, uint8_t *out, size_t out_len);
+                                size_t context_len, uint8_t *out, size_t out_len,
+                                const char *label_prefix = QUIC_HKDF_LABEL_PREFIX);
 
 #endif // DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_HKDF_H

@@ -11,7 +11,7 @@
 #if DETWS_ENABLE_DTLS
 
 #include "network_drivers/presentation/http3/quic_aead.h"
-#include "network_drivers/presentation/http3/quic_hkdf.h"
+#include "network_drivers/presentation/http3/tls13_kdf.h"
 #include <string.h>
 
 namespace
@@ -55,10 +55,11 @@ void dtls_record_keys_derive(DtlsRecordKeys *out, DtlsCipher cipher, uint16_t ep
 {
     out->cipher = cipher;
     out->epoch = epoch;
-    // AEAD_AES_128_GCM: 16-byte key, 12-byte IV, 16-byte sequence-number key.
-    quic_hkdf_expand_label(secret, "key", out->key, sizeof(out->key));
-    quic_hkdf_expand_label(secret, "iv", out->iv, sizeof(out->iv));
-    quic_hkdf_expand_label(secret, "sn", out->sn_key, sizeof(out->sn_key));
+    // AEAD_AES_128_GCM: 16-byte key, 12-byte IV, 16-byte sequence-number key. The DTLS 1.3 variant
+    // carries the "dtls13" HKDF-Expand-Label prefix (RFC 9147 §4.2.3 / §5.9).
+    tls13_kdf_expand_label(&DTLS13_KDF, secret, "key", out->key, sizeof(out->key));
+    tls13_kdf_expand_label(&DTLS13_KDF, secret, "iv", out->iv, sizeof(out->iv));
+    tls13_kdf_expand_label(&DTLS13_KDF, secret, "sn", out->sn_key, sizeof(out->sn_key));
 }
 
 // ---------------------------------------------------------------------------

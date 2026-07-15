@@ -73,7 +73,7 @@ void test_early_secret()
     uint8_t exp[32];
     hx(EARLY, exp, 32);
     Tls13KeySchedule ks;
-    tls13_ks_early(&ks);
+    tls13_ks_early(&TLS13_KDF, &ks);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, ks.early_secret, 32);
 }
 
@@ -83,7 +83,7 @@ void test_handshake_secrets()
     hx(ECDHE, ecdhe, 32);
     hx(CH_SH_HASH, ch_sh, 32);
     Tls13KeySchedule ks;
-    tls13_ks_early(&ks);
+    tls13_ks_early(&TLS13_KDF, &ks);
     tls13_ks_handshake(&ks, ecdhe, ch_sh);
 
     uint8_t exp[32];
@@ -102,7 +102,7 @@ void test_master_secrets()
     hx(CH_SH_HASH, ch_sh, 32);
     hx(CH_SFIN_HASH, ch_sfin, 32);
     Tls13KeySchedule ks;
-    tls13_ks_early(&ks);
+    tls13_ks_early(&TLS13_KDF, &ks);
     tls13_ks_handshake(&ks, ecdhe, ch_sh);
     tls13_ks_master(&ks, ch_sfin);
 
@@ -194,7 +194,7 @@ void test_server_finished()
     uint8_t s_hs[32];
     hx(S_HS, s_hs, 32);
     uint8_t verify[32], exp[32];
-    tls13_finished_mac(s_hs, thash, verify);
+    tls13_finished_mac(&TLS13_KDF, s_hs, thash, verify);
     hx("9b9b141d906337fbd2cbdce71df4deda4ab42c309572cb7fffee5454b78f0718", exp, 32);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, verify, 32);
 }

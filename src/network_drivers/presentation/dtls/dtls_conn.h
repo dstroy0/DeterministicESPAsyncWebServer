@@ -97,6 +97,8 @@ struct DtlsConn
     uint64_t tx_seq_ep3;         ///< next outbound record sequence number, epoch 3
     uint16_t next_recv_msg_seq;  ///< handshake message_seq expected next from the client
     DtlsReplayWindow replay_ep2; ///< anti-replay window for inbound epoch-2 records
+    uint64_t rx_ep2_seq;         ///< sequence number of the last inbound epoch-2 record (the client Finished)
+    bool hs_ack_sent;            ///< the client Finished has been acknowledged (RFC 9147 §5.8.3 / §7)
 
     DtlsHsReasm reasm;                                    ///< inbound handshake reassembler
     uint8_t reasm_buf[4 + DTLS_CONN_REASM_CAP];           ///< TLS message = 4-byte header [0..3] + body [4..]

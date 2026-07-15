@@ -2193,6 +2193,7 @@
       "flags": ["-DDETWS_ENABLE_DTLS=1"],
       "src": [
         "+<network_drivers/presentation/dtls/dtls_record.cpp>",
+        "+<network_drivers/presentation/http3/tls13_kdf.cpp>",
         "+<network_drivers/presentation/http3/quic_hkdf.cpp>",
         "+<network_drivers/presentation/http3/quic_aead.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",

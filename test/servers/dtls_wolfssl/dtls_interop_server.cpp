@@ -1,0 +1,130 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// DTLS 1.3 real-peer interop harness: a tiny UDP server that wraps the library's transport-neutral
+// dtls_conn state machine, so it can be driven by a reference DTLS 1.3 client (wolfSSL). It is a
+// Linux test driver, NOT part of the library. See README.md for the wolfSSL build + run steps.
+//
+//   usage: dtls_interop_server <udp-port> <cert.der> <ed25519-seed-32.bin>
+//
+// It completes the DTLS 1.3 handshake against the peer, then decrypts inbound application records
+// (epoch 3) and echoes them back, printing "INTEROP OK" once a full round trip has happened.
+
+#include "network_drivers/presentation/dtls/dtls_conn.h"
+#include "network_drivers/presentation/dtls/dtls_record.h"
+#include <arpa/inet.h>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+static size_t read_file(const char *path, uint8_t *buf, size_t cap)
+{
+    FILE *f = fopen(path, "rb");
+    if (!f)
+    {
+        fprintf(stderr, "cannot open %s\n", path);
+        exit(2);
+    }
+    size_t n = fread(buf, 1, cap, f);
+    fclose(f);
+    return n;
+}
+
+static void rand_bytes(uint8_t *p, size_t n)
+{
+    FILE *f = fopen("/dev/urandom", "rb");
+    if (!f || fread(p, 1, n, f) != n)
+        exit(2);
+    fclose(f);
+}
+
+int main(int argc, char **argv)
+{
+    if (argc < 4)
+    {
+        fprintf(stderr, "usage: %s <port> <cert.der> <seed32.bin>\n", argv[0]);
+        return 2;
+    }
+    uint16_t port = (uint16_t)atoi(argv[1]);
+    static uint8_t cert[4096];
+    size_t cert_len = read_file(argv[2], cert, sizeof cert);
+    uint8_t seed[32];
+    read_file(argv[3], seed, 32);
+    uint8_t eph[32], srand[32]; // fresh per connection, from the CSPRNG
+    rand_bytes(eph, 32);
+    rand_bytes(srand, 32);
+
+    DtlsServerConfig cfg;
+    cfg.cert_der = cert;
+    cfg.cert_len = cert_len;
+    cfg.ed25519_seed = seed;
+    cfg.ephemeral_priv = eph;
+    cfg.server_random = srand;
+    DtlsConn conn;
+    dtls_conn_init(&conn, &cfg);
+
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    sockaddr_in a;
+    memset(&a, 0, sizeof a);
+    a.sin_family = AF_INET;
+    a.sin_addr.s_addr = INADDR_ANY;
+    a.sin_port = htons(port);
+    if (bind(fd, (sockaddr *)&a, sizeof a) < 0)
+    {
+        perror("bind");
+        return 2;
+    }
+    fprintf(stderr, "listening udp/%u cert_len=%zu\n", port, cert_len);
+
+    uint8_t dgram[8192], out[8192];
+    uint64_t app_rx_next = 0, app_tx_seq = 0;
+    sockaddr_in peer;
+    socklen_t plen;
+    for (;;)
+    {
+        plen = sizeof peer;
+        ssize_t n = recvfrom(fd, dgram, sizeof dgram, 0, (sockaddr *)&peer, &plen);
+        if (n <= 0)
+            continue;
+        if (!dtls_conn_established(&conn))
+        {
+            int r = dtls_conn_process(&conn, dgram, (size_t)n, out, sizeof out);
+            if (r < 0)
+            {
+                fprintf(stderr, "HANDSHAKE FAIL alert=%u\n", dtls_conn_alert(&conn));
+                return 1;
+            }
+            if (r > 0)
+                sendto(fd, out, (size_t)r, 0, (sockaddr *)&peer, plen);
+            if (dtls_conn_established(&conn))
+                fprintf(stderr, "HANDSHAKE OK\n");
+        }
+        else
+        {
+            // epoch-3 application data: unprotect and echo back.
+            const DtlsRecordKeys *rk = dtls_conn_app_read_keys(&conn);
+            const DtlsRecordKeys *wk = dtls_conn_app_write_keys(&conn);
+            uint8_t inner[8192];
+            DtlsCiphertext info;
+            if (dtls_ciphertext_unprotect(rk, app_rx_next, dgram, (size_t)n, inner, sizeof inner, &info))
+            {
+                app_rx_next = info.seq + 1;
+                if (info.content_type == DTLS_CT_APPLICATION_DATA)
+                {
+                    fprintf(stderr, "APPDATA RX %zu bytes: %.*s\n", info.pt_len, (int)info.pt_len, inner);
+                    uint8_t rec[8192];
+                    size_t rn = dtls_ciphertext_protect(wk, app_tx_seq++, DTLS_CT_APPLICATION_DATA, inner, info.pt_len,
+                                                        rec, sizeof rec);
+                    if (rn)
+                        sendto(fd, rec, rn, 0, (sockaddr *)&peer, plen);
+                    fprintf(stderr, "APPDATA echoed %zu bytes; INTEROP OK\n", info.pt_len);
+                    fflush(stderr);
+                }
+            }
+        }
+    }
+}

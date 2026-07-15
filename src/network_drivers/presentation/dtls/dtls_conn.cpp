@@ -98,7 +98,7 @@ bool emit_handshake(DtlsConn *c, const uint8_t *tls_msg, size_t tls_len, uint16_
 int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t *out, size_t out_cap, size_t *out_len)
 {
     Tls13ClientHello ch;
-    if (!tls13_parse_client_hello(msg, msg_len, &ch))
+    if (!tls13_parse_client_hello(msg, msg_len, &ch, /*dtls=*/true))
         return fail(c, ALERT_DECODE_ERROR);
     if (!ch.offers_tls13)
         return fail(c, ALERT_PROTOCOL_VERSION);
@@ -115,7 +115,7 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
 
     // ServerHello (epoch 0, plaintext), message_seq 0.
     size_t n = tls13_build_server_hello(c->msgbuf, sizeof(c->msgbuf), c->cfg.server_random, ch.session_id,
-                                        ch.session_id_len, server_share, 32, TLS_GROUP_X25519);
+                                        ch.session_id_len, server_share, 32, TLS_GROUP_X25519, /*dtls=*/true);
     if (!n)
         return fail(c, ALERT_INTERNAL_ERROR);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
@@ -125,7 +125,7 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     // Handshake-traffic keys from Transcript-Hash(ClientHello..ServerHello).
     uint8_t hash[SSH_SHA256_DIGEST_LEN];
     snapshot(&c->transcript, hash);
-    tls13_ks_early(&c->ks);
+    tls13_ks_early(&DTLS13_KDF, &c->ks);
     tls13_ks_handshake(&c->ks, ecdhe, hash, 32);
     dtls_record_keys_derive(&c->ep2_srv, DtlsCipher::AES_128_GCM_SHA256, 2, c->ks.server_hs_traffic);
     dtls_record_keys_derive(&c->ep2_cli, DtlsCipher::AES_128_GCM_SHA256, 2, c->ks.client_hs_traffic);
@@ -157,7 +157,7 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     // Server Finished over Transcript-Hash(ClientHello..CertificateVerify), message_seq 4.
     snapshot(&c->transcript, hash);
     uint8_t verify[SSH_SHA256_DIGEST_LEN];
-    tls13_finished_mac(c->ks.server_hs_traffic, hash, verify);
+    tls13_finished_mac(&DTLS13_KDF, c->ks.server_hs_traffic, hash, verify);
     n = tls13_build_finished(c->msgbuf, sizeof(c->msgbuf), verify);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
     if (!emit_handshake(c, c->msgbuf, n, 4, 2, &c->ep2_srv, out, out_cap, out_len))
@@ -183,7 +183,7 @@ int handle_client_finished(DtlsConn *c, const uint8_t *msg, size_t msg_len)
     if (msg[0] != TlsHs::TLS_HS_FINISHED || msg_len != 4 + SSH_SHA256_DIGEST_LEN)
         return fail(c, ALERT_DECODE_ERROR);
     uint8_t expected[SSH_SHA256_DIGEST_LEN];
-    tls13_finished_mac(c->ks.client_hs_traffic, c->hs_finished_hash, expected);
+    tls13_finished_mac(&DTLS13_KDF, c->ks.client_hs_traffic, c->hs_finished_hash, expected);
     uint8_t diff = 0;
     for (int i = 0; i < SSH_SHA256_DIGEST_LEN; i++)
         diff |= (uint8_t)(expected[i] ^ msg[4 + i]);
@@ -269,6 +269,7 @@ int dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *ou
             if (!dtls_replay_check(&c->replay_ep2, info.seq))
                 continue; // replay: drop, but keep processing the datagram
             dtls_replay_mark(&c->replay_ep2, info.seq);
+            c->rx_ep2_seq = info.seq; // the client Finished's record number, for the completion ACK
             if (info.content_type == DTLS_CT_HANDSHAKE &&
                 drive_handshake(c, inner, info.pt_len, out, out_cap, &out_len) < 0)
                 return -1;
@@ -283,6 +284,23 @@ int dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *ou
             if (pt.content_type == DTLS_CT_HANDSHAKE &&
                 drive_handshake(c, pt.fragment, pt.frag_len, out, out_cap, &out_len) < 0)
                 return -1;
+        }
+    }
+
+    // Once the client Finished completes the handshake, acknowledge it so the client stops
+    // retransmitting its final flight (RFC 9147 §5.8.3). The ACK is a content-type-26 record in the
+    // highest available epoch (3, application), covering the epoch-2 Finished record (§7).
+    if (dtls_conn_established(c) && !c->hs_ack_sent)
+    {
+        DtlsRecordNumber rn = {2, c->rx_ep2_seq};
+        uint8_t ack_body[2 + 16];
+        size_t bl = dtls_ack_build(&rn, 1, ack_body, sizeof(ack_body));
+        size_t rec = dtls_ciphertext_protect(&c->ep3_srv, c->tx_seq_ep3++, DTLS_CT_ACK, ack_body, bl, out + out_len,
+                                             out_cap - out_len);
+        if (rec)
+        {
+            out_len += rec;
+            c->hs_ack_sent = true;
         }
     }
     return (int)out_len;

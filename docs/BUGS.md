@@ -8,6 +8,41 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## DTLS 1.3 used the TLS 1.3 "tls13 " HKDF label prefix instead of "dtls13" (plus two DTLS ClientHello/version bugs)
+
+- **Status:** FIXED (2026-07-15). Three DTLS-vs-TLS conformance bugs found by the first **real-peer interop**
+  (wolfSSL DTLS 1.3 client vs. `dtls_conn`; `test/servers/dtls_wolfssl`). Shipped in v6.15.0 (record layer)
+  and v6.18.0 (handshake).
+- **Symptom:** the hand-rolled DTLS 1.3 server completed a self-consistent handshake against its own test
+  client but could not interoperate with wolfSSL at all - the ClientHello failed to parse, then (after that
+  was fixed) the handshake was rejected on version, then (after that) the AEAD open of the peer's first
+  encrypted record failed because the derived keys diverged.
+- **Root causes (all DTLS-specific deviations from TLS 1.3 that the self-referential host KATs could not
+  catch, since the KATs shared the implementation's assumptions):**
+    1. **`legacy_cookie`** (RFC 9147 §5.3): the DTLS ClientHello carries an extra `legacy_cookie` field between
+       `legacy_session_id` and `cipher_suites`; the shared `tls13_parse_client_hello` (written for QUIC) skipped
+       it, so it read `cipher_suites` at the wrong offset and the parse failed.
+    2. **Version codepoints** (RFC 9147 §5.3): DTLS 1.3 advertises `0xFEFC` in `supported_versions` (not the TLS
+       `0x0304`) and puts `legacy_version` `0xFEFD` in the ServerHello. The server checked for `0x0304` and sent
+       a TLS ServerHello, so wolfSSL rejected it with a protocol_version alert.
+    3. **HKDF-Expand-Label prefix** (RFC 9147 §5.9): DTLS 1.3 replaces the `"tls13 "` label prefix with
+       `"dtls13"` in **every** Expand-Label - both the key schedule (traffic secrets, Finished) and the record
+       `key`/`iv`/`sn`. The DTLS code reused `quic_hkdf_expand_label`, which hard-coded `"tls13 "`, so every
+       DTLS secret was wrong. Diagnosed by dumping our handshake-traffic secret and comparing to wolfSSL's
+       `SSLKEYLOGFILE`, then bisecting transcript vs. key-schedule in an independent Python reconstruction.
+- **Fix:** (1) `tls13_parse_client_hello` takes a `dtls` flag that skips `legacy_cookie`; (2)
+  `tls13_build_server_hello` + `supported_versions` parse use the DTLS codepoints under the same flag; (3) the
+  label prefix became a first-class KDF variant - `Tls13Kdf` (`TLS13_KDF` / `DTLS13_KDF`), bound once into the
+  `Tls13KeySchedule` and passed to the record-key derivation, replacing the hard-coded prefix (no `bool dtls`
+  threaded through the schedule). The record KAT was recomputed with `"dtls13"`. Verified end-to-end: wolfSSL
+  now completes the handshake **and** an application-data round trip (`INTEROP OK`).
+- **Lesson:** a byte-exact KAT pinned to your _own_ independent reimplementation proves self-consistency, not
+  conformance - it shares your misreadings of the spec. A real reference peer (or vectors from one) is the
+  only thing that catches a wrong-but-consistent assumption. Every new wire protocol needs a real-peer interop
+  check, not just a self-KAT.
+
+---
+
 ## SSH server KEXINIT (I_S) overflowed its 512-byte store once ecdh-sha2-nistp256 was advertised
 
 - **Status:** FIXED (2026-07-15). Found while adding the `ecdh-sha2-nistp256` KEX (v6.14.0).
