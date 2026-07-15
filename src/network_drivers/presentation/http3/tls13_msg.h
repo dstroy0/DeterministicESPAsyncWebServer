@@ -29,7 +29,10 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP3
+// Shared by the HTTP/3 (QUIC) handshake and the DTLS 1.3 handshake: both carry the same TLS 1.3
+// messages, so this module compiles for either. The DTLS-specific additions (HelloRetryRequest, the
+// cookie extension, the sec 4.4.1 message_hash) are used by the DTLS handshake but are valid TLS 1.3.
+#if (DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS)
 
 #include <stddef.h>
 #include <stdint.h>
@@ -72,6 +75,8 @@ struct Tls13ClientHello
     size_t quic_tp_len;
     const uint8_t *sni; ///< first server_name host_name (or NULL), not NUL-terminated
     size_t sni_len;
+    const uint8_t *cookie; ///< cookie extension body echoed after a HelloRetryRequest (or NULL); DTLS §5.1
+    size_t cookie_len;
 };
 
 /**
@@ -138,5 +143,39 @@ size_t tls13_build_finished(uint8_t *out, size_t cap, const uint8_t verify_data[
  */
 size_t tls13_cert_verify_content(uint8_t *out, size_t cap, const uint8_t transcript_hash[32], bool is_server);
 
-#endif // DETWS_ENABLE_HTTP3
+// ---------------------------------------------------------------------------
+// HelloRetryRequest + cookie (RFC 8446 §4.1.4), used by the DTLS 1.3 handshake
+// ---------------------------------------------------------------------------
+
+/** @brief The fixed HelloRetryRequest random - SHA-256("HelloRetryRequest"), RFC 8446 §4.1.3. A
+ *  ServerHello carrying this random _is_ a HelloRetryRequest. 32 bytes. */
+extern const uint8_t tls13_hrr_random[32];
+
+/**
+ * @brief Build a HelloRetryRequest (RFC 8446 §4.1.4): a ServerHello whose random is
+ * @ref tls13_hrr_random, selecting TLS 1.3 / AES-128-GCM-SHA256, asking the client to retry with a
+ * key_share for @p selected_group, and echoing @p cookie in the cookie extension (§4.2.2).
+ *
+ * @param session_id      legacy_session_id_echo (the client's, echoed verbatim; may be NULL if len 0).
+ * @param selected_group  the NamedGroup the server wants the client's key_share for.
+ * @param cookie          the return-routability cookie the client must echo (may be NULL if len 0).
+ * @return bytes written, or 0 on overflow.
+ */
+size_t tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8_t *session_id, uint8_t session_id_len,
+                                       uint16_t selected_group, const uint8_t *cookie, size_t cookie_len);
+
+/**
+ * @brief Build an EncryptedExtensions (RFC 8446 §4.3.1) with an empty extension list - the DTLS
+ * profile carries no ALPN or transport parameters. @return bytes written, or 0 on overflow.
+ */
+size_t tls13_build_encrypted_extensions_empty(uint8_t *out, size_t cap);
+
+/**
+ * @brief Write the synthetic @c message_hash handshake message that replaces ClientHello1 in the
+ * transcript when a HelloRetryRequest is used (RFC 8446 §4.4.1): @c message_hash (254), a 24-bit
+ * length of 32, then @p ch1_hash. @return bytes written (36), or 0 on overflow.
+ */
+size_t tls13_build_message_hash(uint8_t *out, size_t cap, const uint8_t ch1_hash[32]);
+
+#endif // DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_TLS13_MSG_H

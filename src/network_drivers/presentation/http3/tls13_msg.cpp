@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http3/tls13_msg.h"
 
-#if DETWS_ENABLE_HTTP3
+#if (DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS)
 
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #if DETWS_ENABLE_PQC_KEX
@@ -24,6 +24,7 @@ struct TlsExt
     static constexpr uint16_t TLS_EXT_SIGNATURE_ALGORITHMS = 0x000d;
     static constexpr uint16_t TLS_EXT_ALPN = 0x0010;
     static constexpr uint16_t TLS_EXT_SUPPORTED_VERSIONS = 0x002b;
+    static constexpr uint16_t TLS_EXT_COOKIE = 0x002c;
     static constexpr uint16_t TLS_EXT_KEY_SHARE = 0x0033;
 };
 
@@ -246,6 +247,17 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
         out->quic_tp = body;
         out->quic_tp_len = blen;
         break;
+    case TlsExt::TLS_EXT_COOKIE: {
+        // Cookie { opaque cookie<1..2^16-1> } (RFC 8446 §4.2.2): 2-byte length then the cookie bytes.
+        if (blen < 2)
+            return;
+        size_t cl = (size_t)((body[0] << 8) | body[1]);
+        if (cl + 2 > blen)
+            return;
+        out->cookie = body + 2;
+        out->cookie_len = cl;
+        break;
+    }
     case TlsExt::TLS_EXT_SERVER_NAME: {
         // ServerNameList: 2-byte length, then entries: type(1), name<2>. Take the first host_name.
         if (blen < 2)
@@ -363,6 +375,69 @@ size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[3
     return w.ok ? w.pos : 0;
 }
 
+// SHA-256("HelloRetryRequest") - RFC 8446 §4.1.3. A ServerHello with this random is a HelloRetryRequest.
+const uint8_t tls13_hrr_random[32] = {0xCF, 0x21, 0xAD, 0x74, 0xE5, 0x9A, 0x61, 0x11, 0xBE, 0x1D, 0x8C,
+                                      0x02, 0x1E, 0x65, 0xB8, 0x91, 0xC2, 0xA2, 0x11, 0x16, 0x7A, 0xBB,
+                                      0x8C, 0x5E, 0x07, 0x9E, 0x09, 0xE2, 0xC8, 0xA8, 0x33, 0x9C};
+
+size_t tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8_t *session_id, uint8_t session_id_len,
+                                       uint16_t selected_group, const uint8_t *cookie, size_t cookie_len)
+{
+    if (cookie_len > 0xFFFD)
+        return 0; // cookie extension body (cookie_len + 2) must fit a uint16
+    Writer w = {out, cap, 0, true};
+    w_u8(&w, TlsHs::TLS_HS_SERVER_HELLO);
+    size_t hs_len = w_mark(&w, 3);
+
+    w_u16(&w, 0x0303); // legacy_version
+    w_bytes(&w, tls13_hrr_random, 32);
+    w_u8(&w, session_id_len);
+    w_bytes(&w, session_id, session_id_len);
+    w_u16(&w, TLS_CIPHER_AES_128_GCM_SHA256);
+    w_u8(&w, 0x00); // legacy_compression_method
+
+    size_t ext_len = w_mark(&w, 2);
+    // supported_versions -> selected 0x0304.
+    w_u16(&w, TlsExt::TLS_EXT_SUPPORTED_VERSIONS);
+    w_u16(&w, 2);
+    w_u16(&w, TLS_VERSION_1_3);
+    // key_share (HelloRetryRequest form) -> just the selected group (RFC 8446 §4.2.8).
+    w_u16(&w, TlsExt::TLS_EXT_KEY_SHARE);
+    w_u16(&w, 2);
+    w_u16(&w, selected_group);
+    // cookie -> the return-routability token the client must echo (RFC 8446 §4.2.2).
+    if (cookie_len)
+    {
+        w_u16(&w, TlsExt::TLS_EXT_COOKIE);
+        w_u16(&w, (uint16_t)(cookie_len + 2));
+        w_u16(&w, (uint16_t)cookie_len);
+        w_bytes(&w, cookie, cookie_len);
+    }
+    w_patch16(&w, ext_len);
+
+    w_patch24(&w, hs_len);
+    return w.ok ? w.pos : 0;
+}
+
+size_t tls13_build_encrypted_extensions_empty(uint8_t *out, size_t cap)
+{
+    Writer w = {out, cap, 0, true};
+    w_u8(&w, TlsHs::TLS_HS_ENCRYPTED_EXTENSIONS);
+    size_t hs_len = w_mark(&w, 3);
+    w_u16(&w, 0); // extensions: empty (the DTLS profile carries no ALPN / transport params)
+    w_patch24(&w, hs_len);
+    return w.ok ? w.pos : 0;
+}
+
+size_t tls13_build_message_hash(uint8_t *out, size_t cap, const uint8_t ch1_hash[32])
+{
+    Writer w = {out, cap, 0, true};
+    w_u8(&w, 254); // message_hash synthetic handshake type (RFC 8446 §4.4.1)
+    w_u24(&w, 32); // Hash.length for SHA-256
+    w_bytes(&w, ch1_hash, 32);
+    return w.ok ? w.pos : 0;
+}
+
 size_t tls13_build_encrypted_extensions(uint8_t *out, size_t cap, const uint8_t *quic_tp, size_t quic_tp_len)
 {
     Writer w = {out, cap, 0, true};
@@ -452,4 +527,4 @@ size_t tls13_build_finished(uint8_t *out, size_t cap, const uint8_t verify_data[
     return w.ok ? w.pos : 0;
 }
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS
