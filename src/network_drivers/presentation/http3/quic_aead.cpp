@@ -12,7 +12,7 @@
 
 #include "network_drivers/presentation/http3/quic_aead.h"
 
-#if DETWS_ENABLE_HTTP3
+#if (DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS)
 
 #include <string.h>
 
@@ -347,4 +347,4 @@ bool quic_aes128_gcm_open(const uint8_t key[16], const uint8_t nonce[12], const 
     return true;
 }
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS

@@ -4674,6 +4674,22 @@
 #define DETWS_ENABLE_HTTP3 0
 #endif
 
+/**
+ * @brief DTLS 1.3 datagram security (RFC 9147) - the record layer.
+ *
+ * DTLS 1.3 secures datagram (UDP) transports - CoAP-over-DTLS and other constrained-device
+ * telemetry - reusing the hand-rolled TLS 1.3 handshake crypto that already backs HTTP/3. This
+ * flag currently gates the DTLS 1.3 **record layer** (network_drivers/presentation/dtls): the
+ * DTLSCiphertext unified header, per-record AEAD protection (AEAD_AES_128_GCM), the RFC 9147
+ * sequence-number encryption, sequence-number reconstruction, and the anti-replay window. The
+ * datagram handshake state machine (reliability, ACKs, cookie exchange) and a CoAPs front-end
+ * are the following phases. Enabling this also compiles the shared quic_hkdf / quic_aead
+ * primitives (otherwise gated behind HTTP/3). Default off.
+ */
+#ifndef DETWS_ENABLE_DTLS
+#define DETWS_ENABLE_DTLS 0
+#endif
+
 // Internal request-dispatch slots appended to the connection pool for non-TCP transports.
 // HTTP/3 runs over QUIC/UDP and has no accept-time TCP slot, but it reuses the same request
 // pipeline (match_and_execute + send), which is indexed by a connection-pool slot. One reserved

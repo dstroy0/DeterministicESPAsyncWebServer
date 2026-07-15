@@ -274,6 +274,12 @@ Local JSON document store on the write-ahead log (services/docstore; requires DB
 
 Opt-in DShot ESC throttle protocol codec. When set, services/dshot provides detws_dshot_encode() / _decode(): the 16-bit DShot frame (11-bit throttle/command + telemetry bit + 4-bit CRC), the bidirectional/extended inverted-CRC variant, and the per-rate bit timing for an RMT driver. Pure codec (the app clocks it out via RMT). Default off.
 
+## DTLS 1.3
+
+`DETWS_ENABLE_DTLS`
+
+DTLS 1.3 (RFC 9147) datagram security for UDP transports - the secure datagram counterpart to the TLS 1.3 that already backs HTTP/3, aimed at CoAP-over-DTLS and constrained-device telemetry. Default off. This flag currently gates the DTLS 1.3 **record layer** (network_drivers/presentation/dtls/dtls_record): the DTLSPlaintext classic header (initial flight + alerts) and the DTLSCiphertext unified header with per-record AEAD (AEAD_AES_128_GCM), the RFC 9147 §4.2.3 sequence-number encryption (AES-ECB mask over the ciphertext sample) and §4.2.2 reconstruction, the TLS 1.3 AEAD nonce, and the §4.5.1 anti-replay sliding window. Record and key derivation are reused from the hand-rolled TLS 1.3 stack (quic_hkdf HKDF-Expand-Label, quic_aead AES-128-GCM), so enabling this also compiles those primitives (otherwise gated behind HTTP/3). The record layer is byte-exact against an independent HKDF + AES-128-GCM + AES-ECB reconstruction (host-tested, `native_dtls`). The datagram handshake state machine (reliability / ACKs / cookie exchange) and a CoAPs front-end are the following phases. Pure, zero-heap, not the mbedTLS TCP-TLS engine. See src/network_drivers/presentation/dtls/dtls_record.h.
+
 ## EnOcean
 
 `DETWS_ENABLE_ENOCEAN`
