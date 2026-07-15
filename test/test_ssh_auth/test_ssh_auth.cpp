@@ -6,6 +6,7 @@
 
 #include "baseline_keys.h"
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
@@ -412,6 +413,80 @@ void test_pubkey_rsa_sha512_signature_succeeds()
     TEST_ASSERT_TRUE(ssh_sess[0].authed);
 }
 
+// Server-sig-algs advertises ecdsa-sha2-nistp256; prove the auth layer verifies a genuine
+// client P-256 signature (RFC 5656). The signature is forged at test time with a key we control.
+void test_pubkey_ecdsa_signature_succeeds()
+{
+    ssh_auth_set_pubkey_cb(pk_cb_alice);
+    set_session_id_0_to_31();
+
+    uint8_t d[32];
+    memset(d, 0, 32);
+    d[31] = 0x0A; // client private scalar
+    uint8_t q[SSH_ECDSA_P256_PUB_LEN];
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(q, d));
+
+    // pubkey blob = string("ecdsa-sha2-nistp256") || string("nistp256") || string(Q).
+    uint8_t blob[200];
+    size_t bl = 0;
+    bl += put_string(blob + bl, "ecdsa-sha2-nistp256");
+    bl += put_string(blob + bl, "nistp256");
+    wr_u32(blob + bl, SSH_ECDSA_P256_PUB_LEN);
+    bl += 4;
+    memcpy(blob + bl, q, SSH_ECDSA_P256_PUB_LEN);
+    bl += SSH_ECDSA_P256_PUB_LEN;
+
+    // Signed prefix P: msg .. blob, has_signature = 1, algo = ecdsa-sha2-nistp256.
+    uint8_t P[512];
+    size_t pn = 0;
+    P[pn++] = SSH_MSG_USERAUTH_REQUEST;
+    pn += put_string(P + pn, "alice");
+    pn += put_string(P + pn, "ssh-connection");
+    pn += put_string(P + pn, "publickey");
+    P[pn++] = 1;
+    pn += put_string(P + pn, "ecdsa-sha2-nistp256");
+    wr_u32(P + pn, (uint32_t)bl);
+    pn += 4;
+    memcpy(P + pn, blob, bl);
+    pn += bl;
+
+    // signed_data = string(session_id) || P; sign it.
+    uint8_t sd[700];
+    size_t sn = 0;
+    wr_u32(sd + sn, 32);
+    sn += 4;
+    memcpy(sd + sn, ssh_sess[0].session_id, 32);
+    sn += 32;
+    memcpy(sd + sn, P, pn);
+    sn += pn;
+    uint8_t raw[SSH_ECDSA_P256_SIG_LEN];
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_sign(raw, sd, sn, d));
+
+    // ECDSA signature blob = mpint(r) || mpint(s).
+    uint8_t ecblob[80];
+    size_t el = 0;
+    el += put_mpint(ecblob + el, raw, 32);
+    el += put_mpint(ecblob + el, raw + 32, 32);
+
+    // Full request = P || string( string("ecdsa-sha2-nistp256") || string(ecblob) ).
+    uint8_t pkt[1024];
+    memcpy(pkt, P, pn);
+    size_t n = pn;
+    wr_u32(pkt + n, 4 + 19 + 4 + (uint32_t)el);
+    n += 4;
+    n += put_string(pkt + n, "ecdsa-sha2-nistp256");
+    wr_u32(pkt + n, (uint32_t)el);
+    n += 4;
+    memcpy(pkt + n, ecblob, el);
+    n += el;
+
+    uint8_t out[64];
+    size_t olen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_SUCCESS, out[0]);
+    TEST_ASSERT_TRUE(ssh_sess[0].authed);
+}
+
 void test_pubkey_tampered_signature_fails()
 {
     ssh_auth_set_pubkey_cb(pk_cb_alice);
@@ -772,6 +847,7 @@ int main()
     RUN_TEST(test_pubkey_probe_returns_pk_ok);
     RUN_TEST(test_pubkey_valid_signature_succeeds);
     RUN_TEST(test_pubkey_rsa_sha512_signature_succeeds);
+    RUN_TEST(test_pubkey_ecdsa_signature_succeeds);
     RUN_TEST(test_pubkey_ed25519_valid_signature_succeeds);
     RUN_TEST(test_pubkey_tampered_signature_fails);
     RUN_TEST(test_pubkey_unauthorized_key_fails);

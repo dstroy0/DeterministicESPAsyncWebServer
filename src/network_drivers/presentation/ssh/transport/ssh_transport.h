@@ -15,6 +15,7 @@
  *   kex            : diffie-hellman-group14-sha256   (RFC 8268)
  *                    curve25519-sha256               (RFC 8731)
  *   host key / sig : rsa-sha2-512, rsa-sha2-256       (RFC 8332)
+ *                    ecdsa-sha2-nistp256              (RFC 5656)
  *                    ssh-ed25519                      (RFC 8709)
  *   cipher (both)  : aes256-ctr                       (RFC 4344)
  *   MAC (both)     : hmac-sha2-256                    (RFC 6668)
@@ -92,9 +93,10 @@ enum class SshKexAlg : uint8_t
 /** @brief Negotiated host-key / signature algorithm. */
 enum class SshHostkeyAlg : uint8_t
 {
-    SSH_HOSTKEY_RSA_SHA256 = 0, ///< rsa-sha2-256 (HW-accelerated on ESP32)
-    SSH_HOSTKEY_ED25519 = 1,    ///< ssh-ed25519 (RFC 8032)
-    SSH_HOSTKEY_RSA_SHA512 = 2  ///< rsa-sha2-512 (same "ssh-rsa" key, SHA-512 signature; RFC 8332)
+    SSH_HOSTKEY_RSA_SHA256 = 0,    ///< rsa-sha2-256 (HW-accelerated on ESP32)
+    SSH_HOSTKEY_ED25519 = 1,       ///< ssh-ed25519 (RFC 8032)
+    SSH_HOSTKEY_RSA_SHA512 = 2,    ///< rsa-sha2-512 (same "ssh-rsa" key, SHA-512 signature; RFC 8332)
+    SSH_HOSTKEY_ECDSA_NISTP256 = 3 ///< ecdsa-sha2-nistp256 (NIST P-256, RFC 5656)
 };
 
 struct SshSession
@@ -214,6 +216,18 @@ void ssh_hostkey_ed25519_set(const uint8_t seed[32]);
 
 /** @brief True if an ssh-ed25519 host key has been installed. */
 bool ssh_hostkey_ed25519_available(void);
+
+/**
+ * @brief Install an ecdsa-sha2-nistp256 host key from its 32-byte P-256 private scalar.
+ *
+ * Enables the ecdsa-sha2-nistp256 host-key algorithm (RFC 5656) for negotiation and derives
+ * the public point. May coexist with the RSA and ssh-ed25519 host keys; negotiation picks one
+ * per ssh_kex_set_prefer_rsa(). An invalid scalar (0 or >= the group order) is ignored.
+ */
+void ssh_hostkey_ecdsa_set(const uint8_t priv[32]);
+
+/** @brief True if an ecdsa-sha2-nistp256 host key has been installed. */
+bool ssh_hostkey_ecdsa_available(void);
 
 /**
  * @brief Generate the server ephemeral for the negotiated KEX method (call after parse).

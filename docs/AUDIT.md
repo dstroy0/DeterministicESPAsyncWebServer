@@ -116,6 +116,7 @@ harness - `vec:<spec>` = pinned spec test vectors - `HW` = verified on ESP32 har
 | RFC 8332 RSA-SHA2   | ✅      | rsa-sha2-256/512 host key signatures                                                        | `native_ssh`, HW                     |
 | RFC 8731 curve25519 | ✅      | curve25519-sha256 KEX                                                                       | `native_ssh_ed`, `interop:OpenSSH`   |
 | RFC 8709 Ed25519    | ✅      | ssh-ed25519 host key + auth                                                                 | `native_ssh_ed`                      |
+| RFC 5656 ECDSA P256 | ✅      | ecdsa-sha2-nistp256 host key + auth (RFC 6979 sign KAT)                                     | `native_ssh_ecdsa`, `native_ssh`     |
 | RFC 8308 ext-info   | ✅      | ext-info-c, server-sig-algs                                                                 | `native_ssh_server`                  |
 | RFC 854 Telnet      | ✅      | IAC command/option negotiation                                                              | `native_telnet`                      |
 

@@ -6,6 +6,7 @@
 
 #include "baseline_keys.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
@@ -270,6 +271,23 @@ void test_kexinit_parse_selects_rsa_sha512()
                              "none");
     TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
     TEST_ASSERT_EQUAL(SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512, ssh_sess[0].hostkey_alg);
+}
+
+// ecdsa-sha2-nistp256 (RFC 5656) is a distinct P-256 host key: once installed it is negotiable,
+// and a client offering only it selects it.
+void test_kexinit_parse_selects_ecdsa()
+{
+    uint8_t ec_priv[32];
+    memset(ec_priv, 0, 32);
+    ec_priv[31] = 0x42;
+    ssh_hostkey_ecdsa_set(ec_priv);
+    TEST_ASSERT_TRUE(ssh_hostkey_ecdsa_available());
+
+    uint8_t buf[SSH_KEXINIT_MAX];
+    size_t n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "ecdsa-sha2-nistp256", "aes256-ctr",
+                                    "hmac-sha2-256", "none");
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL(SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256, ssh_sess[0].hostkey_alg);
 }
 
 // With aes256-ctr, the encrypt-then-MAC variants are preferred: a client offering an -etm MAC gets
@@ -797,6 +815,130 @@ void test_kexdh_handle_rsa_sha512_signature()
     TEST_ASSERT_EQUAL_MEMORY(em, sig, 256);
 }
 
+// End-to-end curve25519 + ecdsa-sha2-nistp256 (RFC 5656): the reply K_S carries the P-256
+// public point, and the signature blob (string(name) || string(mpint r || mpint s)) verifies
+// against the host key over the reconstructed exchange hash H. Nothing here is a shortcut.
+void test_kexdh_handle_ecdsa_end_to_end()
+{
+    ssh_transport_init(0);
+    uint8_t ec_priv[32];
+    memset(ec_priv, 0, 32);
+    ec_priv[31] = 0x07;
+    ssh_hostkey_ecdsa_set(ec_priv);
+    uint8_t ec_pub[SSH_ECDSA_P256_PUB_LEN];
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(ec_pub, ec_priv));
+
+    SshSession *s = &ssh_sess[0];
+    s->kex_alg = SshKexAlg::SSH_KEX_CURVE25519;
+    s->hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256;
+    const char *vc = "SSH-2.0-EcdsaClient";
+    strcpy(s->v_c, vc);
+    s->v_c_len = (uint16_t)strlen(vc);
+    for (int j = 0; j < 30; j++)
+    {
+        s->i_c[j] = (uint8_t)(j + 1);
+        s->i_s[j] = (uint8_t)(j + 100);
+    }
+    s->i_c_len = s->i_s_len = 30;
+
+    TEST_ASSERT_EQUAL_INT(0, ssh_kex_generate(0));
+    uint8_t client_sk[32];
+    uint8_t qc[32];
+    for (int j = 0; j < 32; j++)
+        client_sk[j] = (uint8_t)(0x40 + j);
+    ssh_x25519_base(qc, client_sk);
+    uint8_t pkt[64];
+    pkt[0] = SSH_MSG_KEXDH_INIT;
+    put_string(pkt + 1, qc, 32);
+    size_t plen = 1 + 4 + 32;
+
+    uint8_t reply[512];
+    size_t rlen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)));
+    TEST_ASSERT_EQUAL(SSH_MSG_KEXDH_REPLY, reply[0]);
+
+    size_t off = 1;
+    const uint8_t *ks;
+    const uint8_t *qs;
+    const uint8_t *sigblob;
+    uint32_t ks_len;
+    uint32_t qs_len;
+    uint32_t sig_len;
+    TEST_ASSERT_TRUE(rd_string(reply, rlen, &off, &ks, &ks_len));
+    TEST_ASSERT_TRUE(rd_string(reply, rlen, &off, &qs, &qs_len));
+    TEST_ASSERT_TRUE(rd_string(reply, rlen, &off, &sigblob, &sig_len));
+    TEST_ASSERT_EQUAL_UINT32(32, qs_len);
+
+    // K_S = string("ecdsa-sha2-nistp256") || string("nistp256") || string(Q = 0x04||X||Y).
+    size_t ko = 0;
+    const uint8_t *kt;
+    const uint8_t *curve;
+    const uint8_t *q;
+    uint32_t kt_len;
+    uint32_t curve_len;
+    uint32_t q_len;
+    TEST_ASSERT_TRUE(rd_string(ks, ks_len, &ko, &kt, &kt_len));
+    TEST_ASSERT_EQUAL_UINT32(19, kt_len);
+    TEST_ASSERT_EQUAL_MEMORY("ecdsa-sha2-nistp256", kt, 19);
+    TEST_ASSERT_TRUE(rd_string(ks, ks_len, &ko, &curve, &curve_len));
+    TEST_ASSERT_EQUAL_MEMORY("nistp256", curve, 8);
+    TEST_ASSERT_TRUE(rd_string(ks, ks_len, &ko, &q, &q_len));
+    TEST_ASSERT_EQUAL_UINT32(SSH_ECDSA_P256_PUB_LEN, q_len);
+    TEST_ASSERT_EQUAL_MEMORY(ec_pub, q, SSH_ECDSA_P256_PUB_LEN);
+
+    // sigblob = string("ecdsa-sha2-nistp256") || string( mpint(r) || mpint(s) ).
+    size_t so = 0;
+    const uint8_t *st;
+    const uint8_t *ecsig;
+    uint32_t st_len;
+    uint32_t ecsig_len;
+    TEST_ASSERT_TRUE(rd_string(sigblob, sig_len, &so, &st, &st_len));
+    TEST_ASSERT_EQUAL_MEMORY("ecdsa-sha2-nistp256", st, 19);
+    TEST_ASSERT_TRUE(rd_string(sigblob, sig_len, &so, &ecsig, &ecsig_len));
+
+    // Decode mpint(r) || mpint(s) into a raw 64-byte r || s.
+    uint8_t raw[64];
+    memset(raw, 0, sizeof(raw));
+    size_t eo = 0;
+    const uint8_t *rp;
+    const uint8_t *sp;
+    uint32_t rl;
+    uint32_t sl;
+    TEST_ASSERT_TRUE(rd_string(ecsig, ecsig_len, &eo, &rp, &rl));
+    TEST_ASSERT_TRUE(rd_string(ecsig, ecsig_len, &eo, &sp, &sl));
+    while (rl > 0 && rp[0] == 0) // strip mpint sign byte / leading zeros
+    {
+        rp++;
+        rl--;
+    }
+    while (sl > 0 && sp[0] == 0)
+    {
+        sp++;
+        sl--;
+    }
+    TEST_ASSERT_TRUE(rl <= 32 && sl <= 32);
+    memcpy(raw + (32 - rl), rp, rl);
+    memcpy(raw + 32 + (32 - sl), sp, sl);
+
+    // Reconstruct H the way a conforming client would and verify the P-256 signature.
+    uint8_t K[32];
+    ssh_x25519(K, client_sk, qs);
+    static uint8_t pre[1024];
+    size_t o = 0;
+    o += put_string(pre + o, (const uint8_t *)vc, strlen(vc));
+    o += put_string(pre + o, (const uint8_t *)SSH_SERVER_VERSION, strlen(SSH_SERVER_VERSION));
+    o += put_string(pre + o, s->i_c, s->i_c_len);
+    o += put_string(pre + o, s->i_s, s->i_s_len);
+    o += put_string(pre + o, ks, ks_len);
+    o += put_string(pre + o, qc, 32);
+    o += put_string(pre + o, qs, 32);
+    o += put_mpint(pre + o, K, 32);
+    uint8_t H[SSH_SHA256_DIGEST_LEN];
+    ssh_sha256(pre, o, H);
+    TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, SSH_SHA256_DIGEST_LEN);
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_verify(ec_pub, H, SSH_SHA256_DIGEST_LEN, raw));
+}
+
 // ---- rekey (RFC 4253 §9) --------------------------------------------------
 
 void test_derive_keys_session_id_affects_output()
@@ -1100,6 +1242,7 @@ int main()
     RUN_TEST(test_kexinit_parse_selects_chacha20poly1305);
     RUN_TEST(test_kexinit_parse_selects_aes256gcm);
     RUN_TEST(test_kexinit_parse_selects_rsa_sha512);
+    RUN_TEST(test_kexinit_parse_selects_ecdsa);
     RUN_TEST(test_kexinit_parse_selects_etm_mac);
     RUN_TEST(test_kexinit_parse_rejects_truncated);
     RUN_TEST(test_exchange_hash_matches_independent_assembly);
@@ -1114,6 +1257,7 @@ int main()
     RUN_TEST(test_kexdh_handle_curve25519_ed25519_end_to_end);
     RUN_TEST(test_kexdh_handle_curve25519_rejects_low_order);
     RUN_TEST(test_kexdh_handle_rsa_sha512_signature);
+    RUN_TEST(test_kexdh_handle_ecdsa_end_to_end);
     RUN_TEST(test_derive_keys_session_id_affects_output);
     RUN_TEST(test_rekey_needed_threshold);
     RUN_TEST(test_rekey_due_volume_and_time);

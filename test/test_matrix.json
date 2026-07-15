@@ -276,6 +276,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_keymat.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_dh.cpp>",
@@ -311,6 +312,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_keymat.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_dh.cpp>",
@@ -342,6 +344,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_keymat.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_dh.cpp>",
@@ -385,6 +388,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_keymat.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_dh.cpp>",
@@ -1453,6 +1457,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_chachapoly.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aes256ctr.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_bignum.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_keymat.cpp>",
         "+<network_drivers/presentation/ssh/transport/ssh_dh.cpp>",
@@ -2411,6 +2416,16 @@
       "flags": [],
       "src": ["+<network_drivers/presentation/ssh/crypto/ssh_aesgcm.cpp>"],
       "tests": ["test_ssh_aesgcm"]
+    },
+    "native_ssh_ecdsa": {
+      "desc": "ECDSA P-256 for ecdsa-sha2-nistp256 (RFC 5656) host-tested on the software path: pubkey,\ndeterministic sign, and verify pinned byte-exact to the RFC 6979 A.2.5 (P-256/SHA-256)\nvectors, plus tamper rejection. Self-contained field/point math + RFC 6979 (HMAC-SHA256).",
+      "flags": [],
+      "src": [
+        "+<network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
+      ],
+      "tests": ["test_ssh_ecdsa"]
     }
   }
 }

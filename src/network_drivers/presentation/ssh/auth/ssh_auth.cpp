@@ -7,6 +7,7 @@
  */
 
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"        // ssh_ecdsa_p256_verify() (ecdsa-sha2-nistp256)
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"      // ssh_ed25519_verify() (ssh-ed25519 client keys)
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"          // ssh_rsa_verify(), SSH_RSA_KEY_BYTES
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"    // SSH_MSG_* constants
@@ -143,6 +144,47 @@ static bool parse_ssh_ed25519_blob(const uint8_t *blob, uint32_t blen, uint8_t p
         return false;
     memcpy(pub, pk, 32);
     return true;
+}
+
+// Parse an "ecdsa-sha2-nistp256" public-key blob (RFC 5656 §3.1):
+//   string("ecdsa-sha2-nistp256") string("nistp256") string(Q = 0x04||X||Y, 65 bytes).
+static bool parse_ssh_ecdsa_blob(const uint8_t *blob, uint32_t blen, uint8_t pub[SSH_ECDSA_P256_PUB_LEN])
+{
+    size_t off = 0;
+    const uint8_t *type;
+    uint32_t type_len;
+    if (!read_string_ref(blob, blen, &off, &type, &type_len))
+        return false;
+    if (type_len != 19 || memcmp(type, "ecdsa-sha2-nistp256", 19) != 0)
+        return false;
+    const uint8_t *curve;
+    uint32_t curve_len;
+    if (!read_string_ref(blob, blen, &off, &curve, &curve_len))
+        return false;
+    if (curve_len != 8 || memcmp(curve, "nistp256", 8) != 0)
+        return false;
+    const uint8_t *q;
+    uint32_t q_len;
+    if (!read_string_ref(blob, blen, &off, &q, &q_len))
+        return false;
+    if (q_len != SSH_ECDSA_P256_PUB_LEN || q[0] != 0x04) // uncompressed point only
+        return false;
+    memcpy(pub, q, SSH_ECDSA_P256_PUB_LEN);
+    return true;
+}
+
+// Parse an ECDSA signature blob (RFC 5656 §3.1.2): mpint(r) || mpint(s) -> raw r || s (32 + 32).
+static bool parse_ecdsa_sig(const uint8_t *sig, uint32_t slen, uint8_t out[SSH_ECDSA_P256_SIG_LEN])
+{
+    size_t off = 0;
+    const uint8_t *r;
+    const uint8_t *s;
+    uint32_t r_len;
+    uint32_t s_len;
+    if (!read_string_ref(sig, slen, &off, &r, &r_len) || !read_string_ref(sig, slen, &off, &s, &s_len))
+        return false;
+    return mpint_to_fixed(r, r_len, out, SSH_ECDSA_P256_COORD_LEN) &&
+           mpint_to_fixed(s, s_len, out + SSH_ECDSA_P256_COORD_LEN, SSH_ECDSA_P256_COORD_LEN);
 }
 
 // ---------------------------------------------------------------------------
@@ -305,17 +347,23 @@ int ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8
     // ---- publickey method (RFC 4252 §7) ----
     if (req.is_pubkey)
     {
-        // Key type is taken from the blob (the algo name only steers the signature).
+        // Key type is taken from the blob (the algo name only steers the RSA signature hash).
         bool is_ed = req.pk_blob_len >= 4 + 11 && memcmp(req.pk_blob,
                                                          "\x00\x00\x00\x0b"
                                                          "ssh-ed25519",
                                                          4 + 11) == 0;
+        bool is_ecdsa = req.pk_blob_len >= 4 + 19 && memcmp(req.pk_blob,
+                                                            "\x00\x00\x00\x13"
+                                                            "ecdsa-sha2-nistp256",
+                                                            4 + 19) == 0;
         uint8_t n_be[SSH_RSA_KEY_BYTES];
         uint8_t e_be[4];
         uint8_t ed_pub[32];
-        bool key_ok = (is_ed ? parse_ssh_ed25519_blob(req.pk_blob, req.pk_blob_len, ed_pub)
-                             : parse_ssh_rsa_blob(req.pk_blob, req.pk_blob_len, n_be, e_be)) &&
-                      s_auth.pk_cb && s_auth.pk_cb(req.user, req.pk_blob, req.pk_blob_len);
+        uint8_t ec_pub[SSH_ECDSA_P256_PUB_LEN];
+        bool parsed = is_ed      ? parse_ssh_ed25519_blob(req.pk_blob, req.pk_blob_len, ed_pub)
+                      : is_ecdsa ? parse_ssh_ecdsa_blob(req.pk_blob, req.pk_blob_len, ec_pub)
+                                 : parse_ssh_rsa_blob(req.pk_blob, req.pk_blob_len, n_be, e_be);
+        bool key_ok = parsed && s_auth.pk_cb && s_auth.pk_cb(req.user, req.pk_blob, req.pk_blob_len);
         if (!key_ok)
             return ssh_auth_build_failure(out, out_len, cap, false);
 
@@ -338,8 +386,21 @@ int ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8
         // not the key blob: rsa-sha2-512 -> SHA-512, otherwise SHA-256.
         const SshRsaHash rh =
             (strcmp(req.pk_algo, SSH_RSA_SIG_ALG_SHA512) == 0) ? SshRsaHash::SHA512 : SshRsaHash::SHA256;
-        bool sig_ok = is_ed ? (req.signature_len == 64 && ssh_ed25519_verify(ed_pub, signed_data, sd, req.signature))
-                            : (ssh_rsa_verify(n_be, e_be, signed_data, sd, req.signature, req.signature_len, rh) == 0);
+        bool sig_ok;
+        if (is_ed)
+        {
+            sig_ok = req.signature_len == 64 && ssh_ed25519_verify(ed_pub, signed_data, sd, req.signature);
+        }
+        else if (is_ecdsa)
+        {
+            uint8_t ec_sig[SSH_ECDSA_P256_SIG_LEN];
+            sig_ok = parse_ecdsa_sig(req.signature, req.signature_len, ec_sig) &&
+                     ssh_ecdsa_p256_verify(ec_pub, signed_data, sd, ec_sig);
+        }
+        else
+        {
+            sig_ok = ssh_rsa_verify(n_be, e_be, signed_data, sd, req.signature, req.signature_len, rh) == 0;
+        }
         if (sig_ok)
         {
             ssh_sess[i].authed = true;

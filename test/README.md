@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **230 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **231 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -267,6 +267,7 @@ The native test matrix has **230 environments**, one per feature, generated from
 | `native_ssh_chachapoly` | default | `test_ssh_chachapoly` | chacha20-poly1305@openssh.com AEAD (network_drivers/presentation/ssh): ChaCha20 vs RFC 8439 sec 2.3.2 block vector, Poly1305 vs RFC 8439 sec 2.5.2, and the OpenSSH construction (length decode, encrypt... |
 | `native_ssh_comp` | `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_SSH_ZLIB=1`, `ETWS_ENABLE_WS_DEFLATE=1` | `test_ssh_comp` | SSH s2c compression WIRING with the full SSH stack built with DETWS_ENABLE_SSH_ZLIB=1: the compression owner (ssh_comp) + its NEWKEYS / USERAUTH_SUCCESS activation + the packet-layer compress path in ... |
 | `native_ssh_conn` | `ETWS_ENABLE_SSH=1` | `test_ssh_conn` | SSH wired through the real transport/session layers (PROTO_SSH byte-pump) |
+| `native_ssh_ecdsa` | default | `test_ssh_ecdsa` | ECDSA P-256 for ecdsa-sha2-nistp256 (RFC 5656) host-tested on the software path: pubkey, deterministic sign, and verify pinned byte-exact to the RFC 6979 A.2.5 (P-256/SHA-256) vectors, plus tamper rej... |
 | `native_ssh_ed25519` | default | `test_ssh_ed25519` | Modern SSH crypto KATs (curve25519-sha256 KEX + ssh-ed25519 host key / client auth): SHA-512 (FIPS 180-4), X25519 (RFC 7748), Ed25519 (RFC 8032). |
 | `native_ssh_hardened` | `ETWS_SSH_ALLOW_PASSWORD=0` | `test_ssh_hardening` | SSH built with password auth disabled (publickey-only hardening) |
 | `native_ssh_pqc` | `ETWS_SSH_MAX_CHANNELS=3`, `ETWS_ENABLE_PQC_KEX=1` | `test_ssh_pqc` | mlkem768x25519-sha256 SSH hybrid KEX (draft-ietf-sshm-mlkem-hybrid-kex) end to end: the full SSH transport built with DETWS_ENABLE_PQC_KEX=1 plus the ML-KEM-768 / SHA-3 core. |
@@ -520,7 +521,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3026 test cases** across **257 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3029 test cases** across **257 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -28250,7 +28251,7 @@ A thorough directory of all **3026 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_auth (20 tests)</b></summary>
+<summary><b>test_ssh_auth (21 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_service_request_errors</b> &mdash; <i>Service request errors</i></summary>
@@ -28438,6 +28439,18 @@ A thorough directory of all **3026 test cases** across **257 suites**. Expand a 
     * **Objective**: Install the private key into the native RSA sign fixture, e = 65537.
     * **Assertions**:
       * <code>Assert equal int (0, ssh_rsa_sign(sd, sn, SshRsaHash::SHA512, sig))</code>
+      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
+      * <code>Assert true (ssh_sess[0].authed)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pubkey_ecdsa_signature_succeeds</b> &mdash; <i>pubkey blob = string("ecdsa-sha2-nistp256") \|\| string("nistp256") \|\| string(Q).</i></summary>
+
+    * **Objective**: pubkey blob = string("ecdsa-sha2-nistp256") \|\| string("nistp256") \|\| string(Q).
+    * **Assertions**:
+      * <code>Assert true (ssh_ecdsa_p256_pubkey(q, d))</code>
+      * <code>Assert true (ssh_ecdsa_p256_sign(raw, sd, sn, d))</code>
       * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
@@ -29676,7 +29689,7 @@ A thorough directory of all **3026 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_transport (40 tests)</b></summary>
+<summary><b>test_ssh_transport (42 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_index_guards</b> &mdash; <i>Transport index guards</i></summary>
@@ -29877,6 +29890,16 @@ A thorough directory of all **3026 test cases** across **257 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
+    <summary><b>test_kexinit_parse_selects_ecdsa</b> &mdash; <i>Kexinit parse selects ecdsa</i></summary>
+
+    * **Objective**: Kexinit parse selects ecdsa
+    * **Assertions**:
+      * <code>Assert true (ssh_hostkey_ecdsa_available())</code>
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal (SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256, ssh_sess[0].hostkey_alg)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
     <summary><b>test_kexinit_parse_selects_etm_mac</b> &mdash; <i>Kexinit parse selects etm mac</i></summary>
 
     * **Objective**: Kexinit parse selects etm mac
@@ -30038,6 +30061,37 @@ A thorough directory of all **3026 test cases** across **257 suites**. Expand a 
       * <code>Assert true (rd_string(sigblob, sb_len, &so, &sig, &sig_len))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(256, sig_len);</code>
       * <code>Assert equal memory (em, sig, 256)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexdh_handle_ecdsa_end_to_end</b> &mdash; <i>K_S = string("ecdsa-sha2-nistp256") \|\| string("nistp256") \|\| string(Q = 0x04\|\|X\|\|Y).</i></summary>
+
+    * **Objective**: K_S = string("ecdsa-sha2-nistp256") \|\| string("nistp256") \|\| string(Q = 0x04\|\|X\|\|Y).
+    * **Assertions**:
+      * <code>Assert true (ssh_ecdsa_p256_pubkey(ec_pub, ec_priv))</code>
+      * <code>Assert equal int (0, ssh_kex_generate(0))</code>
+      * <code>Assert equal int (0, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal (SSH_MSG_KEXDH_REPLY, reply[0])</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &ks, &ks_len))</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &qs, &qs_len))</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &sigblob, &sig_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(32, qs_len);</code>
+      * <code>Assert true (rd_string(ks, ks_len, &ko, &kt, &kt_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(19, kt_len);</code>
+      * <code>Assert equal memory ("ecdsa-sha2-nistp256", kt, 19)</code>
+      * <code>Assert true (rd_string(ks, ks_len, &ko, &curve, &curve_len))</code>
+      * <code>Assert equal memory ("nistp256", curve, 8)</code>
+      * <code>Assert true (rd_string(ks, ks_len, &ko, &q, &q_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(SSH_ECDSA_P256_PUB_LEN, q_len);</code>
+      * <code>Assert equal memory (ec_pub, q, SSH_ECDSA_P256_PUB_LEN)</code>
+      * <code>Assert true (rd_string(sigblob, sig_len, &so, &st, &st_len))</code>
+      * <code>Assert equal memory ("ecdsa-sha2-nistp256", st, 19)</code>
+      * <code>Assert true (rd_string(sigblob, sig_len, &so, &ecsig, &ecsig_len))</code>
+      * <code>Assert true (rd_string(ecsig, ecsig_len, &eo, &rp, &rl))</code>
+      * <code>Assert true (rd_string(ecsig, ecsig_len, &eo, &sp, &sl))</code>
+      * <code>Assert true (rl &lt;= 32 && sl &lt;= 32)</code>
+      * <code>Assert equal memory (H, s-&gt;session_id, SSH_SHA256_DIGEST_LEN)</code>
+      * <code>Assert true (ssh_ecdsa_p256_verify(ec_pub, H, SSH_SHA256_DIGEST_LEN, raw))</code>
   </details>
 
   <details style="margin-left: 20px;">
