@@ -47,6 +47,9 @@
 "native_docstore",
 "native_dshot",
 "native_dtls",
+"native_dtls_conn",
+"native_dtls_hs",
+"native_dtls_tls13",
 "native_enip",
 "native_enocean",
 "native_espnow",
@@ -363,11 +366,27 @@
 "native_deflate",
 "native_ws_deflate"
 ],
+"src/network_drivers/presentation/dtls/dtls_conn.cpp": [
+"native_dtls_conn"
+],
+"src/network_drivers/presentation/dtls/dtls_conn.h": [
+"native_dtls_conn"
+],
+"src/network_drivers/presentation/dtls/dtls_handshake.cpp": [
+"native_dtls_conn",
+"native_dtls_hs"
+],
+"src/network_drivers/presentation/dtls/dtls_handshake.h": [
+"native_dtls_conn",
+"native_dtls_hs"
+],
 "src/network_drivers/presentation/dtls/dtls_record.cpp": [
-"native_dtls"
+"native_dtls",
+"native_dtls_conn"
 ],
 "src/network_drivers/presentation/dtls/dtls_record.h": [
-"native_dtls"
+"native_dtls",
+"native_dtls_conn"
 ],
 "src/network_drivers/presentation/hpack_prim/hpack_prim.cpp": [
 "native_h2conn",
@@ -452,6 +471,7 @@
 "src/network_drivers/presentation/http3/quic_aead.cpp": [
 "native_crypto_kat",
 "native_dtls",
+"native_dtls_conn",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -464,6 +484,7 @@
 "src/network_drivers/presentation/http3/quic_aead.h": [
 "native_crypto_kat",
 "native_dtls",
+"native_dtls_conn",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -526,6 +547,7 @@
 "src/network_drivers/presentation/http3/quic_hkdf.cpp": [
 "native_crypto_kat",
 "native_dtls",
+"native_dtls_conn",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -539,6 +561,7 @@
 "src/network_drivers/presentation/http3/quic_hkdf.h": [
 "native_crypto_kat",
 "native_dtls",
+"native_dtls_conn",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -645,6 +668,7 @@
 "native_quic_varint"
 ],
 "src/network_drivers/presentation/http3/tls13_kdf.cpp": [
+"native_dtls_conn",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -655,6 +679,7 @@
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/tls13_kdf.h": [
+"native_dtls_conn",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -665,6 +690,8 @@
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/tls13_msg.cpp": [
+"native_dtls_conn",
+"native_dtls_tls13",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -675,6 +702,8 @@
 "native_tls13_msg"
 ],
 "src/network_drivers/presentation/http3/tls13_msg.h": [
+"native_dtls_conn",
+"native_dtls_tls13",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1038,6 +1067,8 @@
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp": [
 "native_crypto_kat",
+"native_dtls_conn",
+"native_dtls_tls13",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1055,6 +1086,8 @@
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_curve25519.h": [
 "native_crypto_kat",
+"native_dtls_conn",
+"native_dtls_tls13",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1088,6 +1121,8 @@
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp": [
 "native_crypto_kat",
+"native_dtls_conn",
+"native_dtls_tls13",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1105,6 +1140,8 @@
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_ed25519.h": [
 "native_crypto_kat",
+"native_dtls_conn",
+"native_dtls_tls13",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1122,6 +1159,8 @@
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_fe25519.h": [
 "native_crypto_kat",
+"native_dtls_conn",
+"native_dtls_tls13",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1141,6 +1180,8 @@
 "native_crypto_kat",
 "native_csrf",
 "native_dtls",
+"native_dtls_conn",
+"native_dtls_hs",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1164,6 +1205,8 @@
 "native_crypto_kat",
 "native_csrf",
 "native_dtls",
+"native_dtls_conn",
+"native_dtls_hs",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1240,6 +1283,8 @@
 "native_csrf",
 "native_diag",
 "native_dtls",
+"native_dtls_conn",
+"native_dtls_hs",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1271,6 +1316,8 @@
 "native_csrf",
 "native_diag",
 "native_dtls",
+"native_dtls_conn",
+"native_dtls_hs",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1297,6 +1344,8 @@
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp": [
 "native_crypto_kat",
+"native_dtls_conn",
+"native_dtls_tls13",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1315,6 +1364,8 @@
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_sha512.h": [
 "native_crypto_kat",
+"native_dtls_conn",
+"native_dtls_tls13",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -2988,6 +3039,7 @@
 "src/shared_primitives/aes_sbox.h": [
 "native_crypto_kat",
 "native_dtls",
+"native_dtls_conn",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
