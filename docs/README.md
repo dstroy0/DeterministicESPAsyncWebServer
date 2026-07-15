@@ -633,6 +633,8 @@ src/
 │   │   │   │   ├── ssh_chachapoly.h
 │   │   │   │   ├── ssh_curve25519.cpp
 │   │   │   │   ├── ssh_curve25519.h
+│   │   │   │   ├── ssh_ecdsa.cpp
+│   │   │   │   ├── ssh_ecdsa.h
 │   │   │   │   ├── ssh_ed25519.cpp
 │   │   │   │   ├── ssh_ed25519.h
 │   │   │   │   ├── ssh_fe25519.h
@@ -1036,7 +1038,6 @@ Feature Tables workflow from `docs/footprints.json`.
 | `core/07.ResponseHeaders` | `L7-Application/07.ResponseHeaders` | 752,745 | 81,776 |
 | `core/04.Middleware` | `L7-Application/04.Middleware` | 752,837 | 81,784 |
 | `core/08.ServerSentEvents` | `L6-Presentation/08.ServerSentEvents` | 752,845 | 81,784 |
-| `DIAG` | `L7-Application/20.Diagnostics` | 752,881 | 81,776 |
 | `core/01.ChunkedResponse` | `L7-Application/01.ChunkedResponse` | 752,937 | 81,792 |
 | `core/36.NetEgress` | `L7-Application/36.NetEgress` | 752,937 | 81,776 |
 | `PARTITION_MONITOR` | `L7-Application/37.PartitionMonitor` | 752,941 | 81,784 |
@@ -1055,6 +1056,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `CONTROL` | `L7-Application/74.PidTuning` | 754,201 | 89,856 |
 | `core/01.Basic` | `Foundation/01.Basic` | 754,297 | 81,792 |
 | `MODBUS+MODBUS_MASTER` | `L7-Application/43.ModbusScan` | 754,305 | 82,056 |
+| `DIAG` | `Foundation/05.Configuration` | 754,345 | 77,536 |
 | `JWT` | `L6-Presentation/06.JWTAuth` | 754,393 | 82,928 |
 | `TELNET` | `L5-Session/04.Telnet` | 754,453 | 82,320 |
 | `AUDIT_LOG` | `L7-Application/49.AuditLog` | 754,509 | 84,768 |
@@ -1082,7 +1084,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `HTTP_CLIENT+WEBHOOK` | `L7-Application/46.Webhook` | 762,749 | 101,536 |
 | `PROMISC+FORWARD+ETHERNET` | `Foundation/21.WifiCapture` | 764,637 | 47,520 |
 | `OAUTH2+HTTP_CLIENT` | `L7-Application/54.OAuth2` | 765,085 | 104,600 |
-| `OIDC` | `L7-Application/50.OidcAuth` | 765,689 | 99,824 |
+| `OIDC` | `L7-Application/50.OidcAuth` | 765,901 | 99,824 |
 | `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 766,177 | 81,792 |
 | `RTC+TIME_SOURCE+NTP` | `L7-Application/61.Rtc` | 766,653 | 45,372 |
 | `OPCUA+UMATI` | `L7-Application/72.Umati` | 766,897 | 92,208 |
@@ -1102,7 +1104,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `VFS` | `L7-Application/51.Vfs` | 795,793 | 86,304 |
 | `WEBDAV` | `L7-Application/29.WebDav` | 821,069 | 105,352 |
 | `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/29.WebDav` | 821,405 | 90,856 |
-| `SSH` | `L5-Session/03.SSHHostKey` | 824,081 | 108,356 |
+| `SSH` | `L5-Session/03.SSHHostKey` | 824,337 | 108,356 |
 | `ETAG` | `L7-Application/09.ETag` | 828,365 | 83,088 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/25.WebSocketClient` | 831,745 | 123,620 |
