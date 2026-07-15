@@ -503,17 +503,19 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
 - [ ] **TLS Raw Public Keys (RFC 7250)** (M) - Cyclone supports RPK; a cert-less TLS credential (bare
       SubjectPublicKeyInfo, no X.509 chain) is a natural fit for constrained, provisioned ESP32 fleets where a
       pinned key beats a full PKI - smaller handshakes, no cert parsing. Expose/enable it on the TLS path.
-- [~] **DTLS 1.3** (L) _(record layer shipped)_ - Cyclone does DTLS 1.0/1.2/1.3; we have QUIC (HTTP/3) but no
-  DTLS service. DTLS 1.3 secures CoAP-over-UDP and other datagram telemetry without a TCP+TLS session -
-  the missing secure UDP transport for the IoT-device families. Layers on the existing TLS 1.3
-  record/handshake crypto. **Shipped (`DETWS_ENABLE_DTLS`, network_drivers/presentation/dtls/dtls_record):**
-  the RFC 9147 §4 record layer - DTLSPlaintext + DTLSCiphertext (unified header, AEAD_AES_128_GCM, §4.2.3
-  sequence-number encryption via an AES-ECB mask + §4.2.2 reconstruction, the TLS 1.3 nonce, §4.5.1
-  anti-replay window), reusing quic_hkdf / quic_aead. Byte-exact host KAT vs an independent HKDF +
-  AES-128-GCM + AES-ECB reconstruction (`native_dtls`); ESP32 compile verified. _Remaining (the following
-  phases):_ the datagram handshake state machine (RFC 9147 §5-7: reliability, message fragmentation, ACKs,
-  the HelloRetryRequest return-routability cookie), connection IDs (§9), then a CoAP-over-DTLS front-end on
-  the existing `services/coap` core.
+- [~] **DTLS 1.3** (L) _(record layer + handshake framing shipped)_ - Cyclone does DTLS 1.0/1.2/1.3; we have
+  QUIC (HTTP/3) but no DTLS service. DTLS 1.3 secures CoAP-over-UDP and other datagram telemetry without a
+  TCP+TLS session - the missing secure UDP transport for the IoT-device families. Layers on the existing
+  TLS 1.3 record/handshake crypto. **Shipped (`DETWS_ENABLE_DTLS`, network_drivers/presentation/dtls):**
+  the RFC 9147 §4 record layer (dtls_record) - DTLSPlaintext + DTLSCiphertext (unified header,
+  AEAD_AES_128_GCM, §4.2.3 sequence-number encryption via an AES-ECB mask + §4.2.2 reconstruction, the
+  TLS 1.3 nonce, §4.5.1 anti-replay window), reusing quic_hkdf / quic_aead; and the §5 + §7 handshake
+  framing / reliability (dtls_handshake) - the 12-byte handshake header, overlap-tolerant message
+  reassembly, the ACK message (content type 26), and the stateless HelloRetryRequest cookie. Byte-exact
+  host KATs vs independent reconstructions (`native_dtls`, `native_dtls_hs`); ESP32 compile verified.
+  _Remaining (the following phases):_ the handshake state machine that drives the framing (RFC 9147 §5-6:
+  flights, epoch 0→2→3 transitions, PTO retransmission), connection IDs (§9), then a CoAP-over-DTLS
+  front-end on the existing `services/coap` core.
 - [ ] **SSH keyboard-interactive auth (RFC 4256)** (S) - Cyclone supports it; a minor addition to our
       password + publickey methods (enables server-driven MFA prompts / password-change flows over SSH).
 

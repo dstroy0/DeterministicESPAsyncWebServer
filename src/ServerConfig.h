@@ -4679,12 +4679,14 @@
  *
  * DTLS 1.3 secures datagram (UDP) transports - CoAP-over-DTLS and other constrained-device
  * telemetry - reusing the hand-rolled TLS 1.3 handshake crypto that already backs HTTP/3. This
- * flag currently gates the DTLS 1.3 **record layer** (network_drivers/presentation/dtls): the
- * DTLSCiphertext unified header, per-record AEAD protection (AEAD_AES_128_GCM), the RFC 9147
- * sequence-number encryption, sequence-number reconstruction, and the anti-replay window. The
- * datagram handshake state machine (reliability, ACKs, cookie exchange) and a CoAPs front-end
- * are the following phases. Enabling this also compiles the shared quic_hkdf / quic_aead
- * primitives (otherwise gated behind HTTP/3). Default off.
+ * flag gates the DTLS 1.3 **record layer** (dtls_record): the DTLSCiphertext unified header,
+ * per-record AEAD protection (AEAD_AES_128_GCM), the RFC 9147 sequence-number encryption,
+ * sequence-number reconstruction, and the anti-replay window; and the **handshake framing and
+ * reliability** layer (dtls_handshake, RFC 9147 §5 + §7): the 12-byte handshake header,
+ * overlap-tolerant message reassembly, the ACK message, and the stateless HelloRetryRequest
+ * cookie. The handshake state machine that drives these (flights, epoch transitions, PTO) and a
+ * CoAPs front-end are the following phases. Enabling this also compiles the shared quic_hkdf /
+ * quic_aead primitives (otherwise gated behind HTTP/3). Default off.
  */
 #ifndef DETWS_ENABLE_DTLS
 #define DETWS_ENABLE_DTLS 0
