@@ -2,6 +2,20 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- document 75.InterfaceBridge pio ci build flag ([`90e5a97`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/90e5a9722318bdb929675d70e2cf9f022f587316))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`87364ea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87364ea15e044100c5329b64f3748b62b69b4ed8))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ea83f0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ea83f0eb812f30150475216e0f973e156bfd351f))
+
 ## [6.13.0] - 2026-07-15
 
 <details>
