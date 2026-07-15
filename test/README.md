@@ -521,7 +521,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3029 test cases** across **257 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3032 test cases** across **257 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -29689,7 +29689,7 @@ A thorough directory of all **3029 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_transport (42 tests)</b></summary>
+<summary><b>test_ssh_transport (45 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_index_guards</b> &mdash; <i>Transport index guards</i></summary>
@@ -29823,9 +29823,9 @@ A thorough directory of all **3029 test cases** across **257 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_kexinit_parse_rejects_missing_kex</b> &mdash; <i>Only a KEX method we do not implement (nistp256) -> no mutual KEX -> reject.</i></summary>
+    <summary><b>test_kexinit_parse_rejects_missing_kex</b> &mdash; <i>Only a KEX method we do not implement (nistp521) -> no mutual KEX -> reject. (nistp256 IS</i></summary>
 
-    * **Objective**: Only a KEX method we do not implement (nistp256) -> no mutual KEX -> reject.
+    * **Objective**: Only a KEX method we do not implement (nistp521) -> no mutual KEX -> reject. (nistp256 IS
     * **Assertions**:
       * <code>Assert equal int (-1, ssh_kexinit_parse(0, buf, n))</code>
   </details>
@@ -29897,6 +29897,15 @@ A thorough directory of all **3029 test cases** across **257 suites**. Expand a 
       * <code>Assert true (ssh_hostkey_ecdsa_available())</code>
       * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
       * <code>Assert equal (SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256, ssh_sess[0].hostkey_alg)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexinit_parse_selects_ecdh_nistp256</b> &mdash; <i>Kexinit parse selects ecdh nistp256</i></summary>
+
+    * **Objective**: Kexinit parse selects ecdh nistp256
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
+      * <code>Assert equal (SshKexAlg::SSH_KEX_ECDH_NISTP256, ssh_sess[0].kex_alg)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30041,6 +30050,46 @@ A thorough directory of all **3029 test cases** across **257 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (0, ssh_kex_generate(0))</code>
       * <code>Assert equal int (-1, ssh_kexdh_handle(0, pkt, 1 + 4 + 32, reply, &rlen, sizeof(reply)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexdh_handle_ecdh_nistp256_end_to_end</b> &mdash; <i>Server ephemeral (P-256), then a client ephemeral Q_C = client_sk * G (65-byte point).</i></summary>
+
+    * **Objective**: Server ephemeral (P-256), then a client ephemeral Q_C = client_sk * G (65-byte point).
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kex_generate(0))</code>
+      * <code>Assert true (ssh_ecdsa_p256_pubkey(qc, client_sk))</code>
+      * <code>Assert equal int (0, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)))</code>
+      * <code>Assert equal (SSH_MSG_KEXDH_REPLY, reply[0])</code>
+      * <code>Assert true (s-&gt;have_session_id)</code>
+      * <code>Assert equal (SshPhase::SSH_PHASE_NEWKEYS, s-&gt;phase)</code>
+      * <code>Assert true (ssh_keys[0].active)</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &ks, &ks_len))</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &qs, &qs_len))</code>
+      * <code>Assert true (rd_string(reply, rlen, &off, &sigblob, &sig_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(65, qs_len); // Q_S is the 65-byte uncompressed point, not an mpint</code>
+      * <code>Assert true (rd_string(ks, ks_len, &ko, &kt, &kt_len))</code>
+      * <code>Assert equal memory ("ssh-ed25519", kt, 11)</code>
+      * <code>Assert true (rd_string(ks, ks_len, &ko, &hostpub, &hp_len))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(32, hp_len);</code>
+      * <code>Assert equal memory (expect_pub, hostpub, 32)</code>
+      * <code>Assert true (rd_string(sigblob, sig_len, &so, &st, &st_len))</code>
+      * <code>Assert equal memory ("ssh-ed25519", st, 11)</code>
+      * <code>Assert true (rd_string(sigblob, sig_len, &so, &sig, &sl))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(64, sl);</code>
+      * <code>Assert true (ssh_ecdsa_p256_ecdh(K, qs, client_sk))</code>
+      * <code>Assert equal memory (H, s-&gt;session_id, SSH_SHA256_DIGEST_LEN)</code>
+      * <code>Assert true (ssh_ed25519_verify(hostpub, H, SSH_SHA256_DIGEST_LEN, sig))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kexdh_handle_ecdh_nistp256_rejects_bad_point</b> &mdash; <i>Kexdh handle ecdh nistp256 rejects bad point</i></summary>
+
+    * **Objective**: Kexdh handle ecdh nistp256 rejects bad point
+    * **Assertions**:
+      * <code>Assert equal int (0, ssh_kex_generate(0))</code>
+      * <code>Assert true (ssh_ecdsa_p256_pubkey(qc, client_sk))</code>
+      * <code>Assert equal int (-1, ssh_kexdh_handle(0, pkt, 1 + 4 + 65, reply, &rlen, sizeof(reply)))</code>
   </details>
 
   <details style="margin-left: 20px;">

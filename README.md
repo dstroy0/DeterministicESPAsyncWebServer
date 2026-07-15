@@ -648,12 +648,11 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | Core  | `FORWARD`           |            17.9 KB |         < 0.5 KB |
 | Core  | `PROMISC`           |            11.5 KB |         < 0.5 KB |
 | Core  | `IPV6`              |             1.8 KB |          15.2 KB |
-| Core  | `DIAG`              |             1.5 KB |          11.1 KB |
 | L4    | `IP_ALLOWLIST`      |             0.7 KB |          15.2 KB |
 | L4    | `KEEPALIVE`         |           < 0.5 KB |          15.2 KB |
 | L4    | `PER_IP_THROTTLE`   |           < 0.5 KB |          15.6 KB |
 | L4    | `ACCEPT_THROTTLE`   |           < 0.5 KB |          15.2 KB |
-| L5    | `SSH`               |       66.6-69.8 KB |     21.8-41.2 KB |
+| L5    | `SSH`               |       66.6-71.3 KB |     21.8-41.3 KB |
 | L5    | `TELNET`            |             1.6 KB |          15.7 KB |
 | L6    | `TLS`               |           100.6 KB |          54.5 KB |
 | L6    | `WS_DEFLATE`        |         4.0-7.9 KB |      8.0-23.2 KB |
@@ -669,6 +668,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `RANGE`             |        0.6-41.0 KB |      0.0-15.2 KB |
 | L7    | `UPLOAD`            |            40.9 KB |          24.3 KB |
 | L7    | `OPCUA_CLIENT`      |        6.8-29.6 KB |     10.0-29.0 KB |
+| L7    | `IFACE_BRIDGE`      |            26.8 KB |          16.0 KB |
 | L7    | `NTP`               |            24.5 KB |          17.7 KB |
 | L7    | `MDNS`              |            24.3 KB |          17.1 KB |
 | L7    | `TIME_SOURCE`       |            20.1 KB |          16.8 KB |
@@ -703,6 +703,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `TOTP`              |             0.5 KB |          15.2 KB |
 | L7    | `OTA_ROLLBACK`      |           < 0.5 KB |          15.2 KB |
 | L7    | `PARTITION_MONITOR` |           < 0.5 KB |          15.2 KB |
+| L7    | `DIAG`              |           < 0.5 KB |          15.2 KB |
 | L7    | `GUARDRAILS`        |           < 0.5 KB |          15.2 KB |
 | L7    | `DEVICE_ID`         |           < 0.5 KB |          15.2 KB |
 | L7    | `RADIO_POWER`       |           < 0.5 KB |          15.2 KB |
