@@ -488,6 +488,12 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
           negotiated in `server_host_key_algorithms` + `server-sig-algs`; the KEXDH reply carries the P-256 blob
           and an `mpint(r)||mpint(s)` signature; client-auth verifies. KAT + e2e KEXDH + genuine client-auth
           all tested. _(aes128-gcm skipped: 256 is the ESP32-relevant one.)_
+    - [x] **`ecdh-sha2-nistp256`** key exchange _(shipped)_ - completes RFC 5656 (its §4 ECDH alongside the §3
+          ECDSA host key). The shared secret is the X coordinate of `d_S * Q_C`, hashed as an mpint with
+          `Q_C`/`Q_S` as 65-byte point strings; the peer point is on-curve checked. Reuses the one P-256 curve
+          in `ssh/crypto/ssh_ecdsa` (ESP32 `mbedtls_ecdh_compute_shared`, HW; native software P-256), added
+          `ssh_ecdsa_p256_ecdh()`. Negotiated in `kex_algorithms`. Byte-exact vs the RFC 5903 §8.1 shared-secret
+          KAT + a negotiation test + an e2e KEXDH that verifies the host signature over the reconstructed hash.
 - [ ] **SFTP + SCP subsystem over SSH** (XL, high value - ties to G-code deployment) - Cyclone has both SFTP
       and SCP client+server; we have an SSH transport + shell/exec but no file-transfer subsystem. An SFTP
       _server_ subsystem (the SSH_FXP_* packet protocol over an SSH channel) is the standards-track southbound

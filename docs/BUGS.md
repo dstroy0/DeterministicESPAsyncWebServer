@@ -8,6 +8,45 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## SSH server KEXINIT (I_S) overflowed its 512-byte store once ecdh-sha2-nistp256 was advertised
+
+- **Status:** FIXED (2026-07-15). Found while adding the `ecdh-sha2-nistp256` KEX (v6.14.0).
+- **Symptom:** advertising one more KEX algorithm made `ssh_kexinit_build()` return `-1` in some builds; two
+  native tests (`test_begin_rekey_preserves_session_and_auth`, `test_ssh_transport_more_guards`) failed with
+  a stack-smash abort (SIGQUIT) once the payload crossed the buffer edge.
+- **Root cause:** `SSH_KEXINIT_S_MAX` was `512`, exactly enough for the _previous_ advertised suite. Adding
+  `ecdh-sha2-nistp256,` (19 bytes) to `kex_algorithms` pushed the worst-case server KEXINIT (PQC hybrid + zlib
+  s2c + all three host-key types + the full cipher/MAC lists ~= 580 bytes) past 512, tripping the `w.len >
+SSH_KEXINIT_S_MAX` guard (which had been marked "never exceeds"). The production packet buffer
+  (`SSH_PKT_BUF_SIZE = 2048`) was fine; the fixed `i_s[]` store and one test's local 512-byte buffer were not.
+- **Fix:** raised `SSH_KEXINIT_S_MAX` to `704` (headroom over the ~580 worst case) and grew the test's local
+  `kbuf` to 1024. Also corrected `test_kexinit_parse_rejects_missing_kex`, which had used `ecdh-sha2-nistp256`
+  as its example of an _unsupported_ KEX - now `ecdh-sha2-nistp521`.
+- **Lesson:** a buffer sized to _exactly_ fit today's advertised algorithm lists breaks the next time a list
+  grows. Size protocol-list buffers to the theoretical worst case with headroom, and never mark a length guard
+  "unreachable" - it is one algorithm away from firing.
+
+---
+
+## 75.InterfaceBridge: ESP32 Build linked without its feature flag - det_bridge_publish undefined
+
+- **Status:** FIXED (2026-07-15, commit 90e5a972).
+- **Symptom:** the **ESP32 Build** CI job for `75.InterfaceBridge` failed at link with an undefined reference to
+  `det_bridge_publish()` - chronically red since the example shipped (v6.8.0).
+- **Root cause:** the ESP32 Build discovers each example's `build_flags` by scraping the first documented
+  `pio ci` command from its `README.md` (`tools/ci/example_footprints.py`). 75.InterfaceBridge's README had no
+  such command, so CI built it with _empty_ flags: the library's `iface_bridge_hw.cpp` guards its body under
+  `#if DETWS_ENABLE_IFACE_BRIDGE`, so with the flag absent `det_bridge_publish()` compiled to nothing while the
+  sketch (which sets the flag only in its own translation unit) still referenced it. An in-sketch `#define`
+  never reaches the separately compiled library.
+- **Fix:** added the standard `## Build` section with `-DDETWS_ENABLE_IFACE_BRIDGE=1` to the README, matching
+  every other feature-gated example. Verified `pio ci` links on a real ESP32 (esp32dev, 59.5% flash) and the
+  ESP32 Build CI turned green.
+- **Lesson:** when the build system derives config from docs, a missing doc line is a silent build break. Every
+  feature-gated example needs its `pio ci` build-flag command in the README, not just an in-sketch `#define`.
+
+---
+
 ## Protocol dispatch: PROTO_BRIDGE (and any ConnProto id >= 8) silently never registered
 
 - **Status:** FIXED (2026-07-14). Found while adding `PROTO_NTRIP_CASTER = 9`.

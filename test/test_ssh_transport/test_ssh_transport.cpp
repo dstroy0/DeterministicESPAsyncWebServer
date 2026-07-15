@@ -179,9 +179,10 @@ void test_kexinit_parse_accepts_when_ours_listed_among_others()
 
 void test_kexinit_parse_rejects_missing_kex()
 {
-    // Only a KEX method we do not implement (nistp256) -> no mutual KEX -> reject.
+    // Only a KEX method we do not implement (nistp521) -> no mutual KEX -> reject. (nistp256 IS
+    // implemented now, so it can no longer stand in for an unsupported method here.)
     uint8_t buf[SSH_KEXINIT_MAX];
-    size_t n = build_client_kexinit(buf, "ecdh-sha2-nistp256", "rsa-sha2-256", "aes256-ctr", "hmac-sha2-256", "none");
+    size_t n = build_client_kexinit(buf, "ecdh-sha2-nistp521", "rsa-sha2-256", "aes256-ctr", "hmac-sha2-256", "none");
     TEST_ASSERT_EQUAL_INT(-1, ssh_kexinit_parse(0, buf, n));
 }
 
@@ -288,6 +289,17 @@ void test_kexinit_parse_selects_ecdsa()
                                     "hmac-sha2-256", "none");
     TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
     TEST_ASSERT_EQUAL(SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256, ssh_sess[0].hostkey_alg);
+}
+
+// ecdh-sha2-nistp256 (RFC 5656 §4) is a negotiable P-256 key-exchange method: a client offering
+// only it selects it (independent of the host-key type).
+void test_kexinit_parse_selects_ecdh_nistp256()
+{
+    ssh_hostkey_ed25519_set(BASELINE_ED25519_SEEDS[0]); // any host key so negotiation can complete
+    uint8_t buf[SSH_KEXINIT_MAX];
+    size_t n = build_client_kexinit(buf, "ecdh-sha2-nistp256", "ssh-ed25519", "aes256-ctr", "hmac-sha2-256", "none");
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
+    TEST_ASSERT_EQUAL(SshKexAlg::SSH_KEX_ECDH_NISTP256, ssh_sess[0].kex_alg);
 }
 
 // With aes256-ctr, the encrypt-then-MAC variants are preferred: a client offering an -etm MAC gets
@@ -731,6 +743,128 @@ void test_kexdh_handle_curve25519_rejects_low_order()
     uint8_t reply[512];
     size_t rlen = 0;
     TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, pkt, 1 + 4 + 32, reply, &rlen, sizeof(reply)));
+}
+
+// ecdh-sha2-nistp256 (RFC 5656 §4) key exchange end to end: a real P-256 client ephemeral, the
+// server's KEXDH_REPLY parsed, the shared secret recomputed by the client, the exchange hash
+// rebuilt (Q_C/Q_S as 65-byte strings, K as an mpint), and the host signature verified over it.
+void test_kexdh_handle_ecdh_nistp256_end_to_end()
+{
+    uint8_t seed[32];
+    throwaway_ed25519_seed(seed);
+    ssh_transport_init(0);
+    ssh_hostkey_ed25519_set(seed);
+    SshSession *s = &ssh_sess[0];
+    s->kex_alg = SshKexAlg::SSH_KEX_ECDH_NISTP256;
+    s->hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_ED25519;
+
+    const char *vc = "SSH-2.0-EcdhClient";
+    strcpy(s->v_c, vc);
+    s->v_c_len = (uint16_t)strlen(vc);
+    for (int j = 0; j < 30; j++)
+    {
+        s->i_c[j] = (uint8_t)(j + 1);
+        s->i_s[j] = (uint8_t)(j + 100);
+    }
+    s->i_c_len = s->i_s_len = 30;
+
+    // Server ephemeral (P-256), then a client ephemeral Q_C = client_sk * G (65-byte point).
+    TEST_ASSERT_EQUAL_INT(0, ssh_kex_generate(0));
+    uint8_t client_sk[32];
+    memset(client_sk, 0, 32);
+    client_sk[31] = 0x09; // d = 9, a valid small P-256 scalar
+    uint8_t qc[65];
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(qc, client_sk));
+
+    uint8_t pkt[128];
+    pkt[0] = SSH_MSG_KEXDH_INIT;
+    put_string(pkt + 1, qc, 65);
+    size_t plen = 1 + 4 + 65;
+
+    uint8_t reply[512];
+    size_t rlen = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_kexdh_handle(0, pkt, plen, reply, &rlen, sizeof(reply)));
+    TEST_ASSERT_EQUAL(SSH_MSG_KEXDH_REPLY, reply[0]);
+    TEST_ASSERT_TRUE(s->have_session_id);
+    TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_NEWKEYS, s->phase);
+    TEST_ASSERT_TRUE(ssh_keys[0].active);
+
+    // Parse reply: string(K_S) || string(Q_S) || string(sigblob).
+    size_t off = 1;
+    const uint8_t *ks, *qs, *sigblob;
+    uint32_t ks_len, qs_len, sig_len;
+    TEST_ASSERT_TRUE(rd_string(reply, rlen, &off, &ks, &ks_len));
+    TEST_ASSERT_TRUE(rd_string(reply, rlen, &off, &qs, &qs_len));
+    TEST_ASSERT_TRUE(rd_string(reply, rlen, &off, &sigblob, &sig_len));
+    TEST_ASSERT_EQUAL_UINT32(65, qs_len); // Q_S is the 65-byte uncompressed point, not an mpint
+
+    // K_S = string("ssh-ed25519") || string(pub32); recover and check the host public.
+    size_t ko = 0;
+    const uint8_t *kt, *hostpub;
+    uint32_t kt_len, hp_len;
+    TEST_ASSERT_TRUE(rd_string(ks, ks_len, &ko, &kt, &kt_len));
+    TEST_ASSERT_EQUAL_MEMORY("ssh-ed25519", kt, 11);
+    TEST_ASSERT_TRUE(rd_string(ks, ks_len, &ko, &hostpub, &hp_len));
+    TEST_ASSERT_EQUAL_UINT32(32, hp_len);
+    uint8_t expect_pub[32];
+    ssh_ed25519_pubkey(expect_pub, seed);
+    TEST_ASSERT_EQUAL_MEMORY(expect_pub, hostpub, 32);
+
+    // sigblob = string("ssh-ed25519") || string(sig64).
+    size_t so = 0;
+    const uint8_t *st, *sig;
+    uint32_t st_len, sl;
+    TEST_ASSERT_TRUE(rd_string(sigblob, sig_len, &so, &st, &st_len));
+    TEST_ASSERT_EQUAL_MEMORY("ssh-ed25519", st, 11);
+    TEST_ASSERT_TRUE(rd_string(sigblob, sig_len, &so, &sig, &sl));
+    TEST_ASSERT_EQUAL_UINT32(64, sl);
+
+    // Client recomputes K = X(client_sk * Q_S) and rebuilds the exchange hash exactly.
+    uint8_t K[32];
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_ecdh(K, qs, client_sk));
+    static uint8_t pre[1024];
+    size_t o = 0;
+    o += put_string(pre + o, (const uint8_t *)vc, strlen(vc));
+    o += put_string(pre + o, (const uint8_t *)SSH_SERVER_VERSION, strlen(SSH_SERVER_VERSION));
+    o += put_string(pre + o, s->i_c, s->i_c_len);
+    o += put_string(pre + o, s->i_s, s->i_s_len);
+    o += put_string(pre + o, ks, ks_len);
+    o += put_string(pre + o, qc, 65); // Q_C (string)
+    o += put_string(pre + o, qs, 65); // Q_S (string)
+    o += put_mpint(pre + o, K, 32);   // K (mpint)
+    uint8_t H[SSH_SHA256_DIGEST_LEN];
+    ssh_sha256(pre, o, H);
+    TEST_ASSERT_EQUAL_MEMORY(H, s->session_id, SSH_SHA256_DIGEST_LEN); // server captured this same H
+
+    // The host signature verifies against the reconstructed H.
+    TEST_ASSERT_TRUE(ssh_ed25519_verify(hostpub, H, SSH_SHA256_DIGEST_LEN, sig));
+}
+
+// An off-curve client point is rejected (RFC 5656 §4 point validation).
+void test_kexdh_handle_ecdh_nistp256_rejects_bad_point()
+{
+    uint8_t seed[32];
+    throwaway_ed25519_seed(seed);
+    ssh_transport_init(0);
+    ssh_hostkey_ed25519_set(seed);
+    ssh_sess[0].kex_alg = SshKexAlg::SSH_KEX_ECDH_NISTP256;
+    ssh_sess[0].hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_ED25519;
+    ssh_sess[0].v_c_len = ssh_sess[0].i_c_len = ssh_sess[0].i_s_len = 0;
+    TEST_ASSERT_EQUAL_INT(0, ssh_kex_generate(0));
+
+    uint8_t client_sk[32];
+    memset(client_sk, 0, 32);
+    client_sk[31] = 0x09;
+    uint8_t qc[65];
+    TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(qc, client_sk));
+    qc[1] ^= 0x01; // corrupt X -> off curve
+
+    uint8_t pkt[128];
+    pkt[0] = SSH_MSG_KEXDH_INIT;
+    put_string(pkt + 1, qc, 65);
+    uint8_t reply[512];
+    size_t rlen = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, pkt, 1 + 4 + 65, reply, &rlen, sizeof(reply)));
 }
 
 // End-to-end DH-group14 + rsa-sha2-512: when SSH_HOSTKEY_RSA_SHA512 is negotiated, the reply
@@ -1199,7 +1333,7 @@ void test_ssh_transport_more_guards()
     TEST_ASSERT_TRUE(ssh_kex_prefer_rsa());
     ssh_kex_set_prefer_rsa(false);
     TEST_ASSERT_FALSE(ssh_kex_prefer_rsa());
-    uint8_t kbuf[512];
+    uint8_t kbuf[1024]; // the full advertised KEXINIT (kex+hostkey+cipher+mac+comp lists) exceeds 512
     size_t kn = 0;
     TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_build(0, kbuf, &kn, sizeof(kbuf))); // build_kex_list non-RSA branch
     ssh_kex_set_prefer_rsa(true);                                            // restore the setUp default
@@ -1243,6 +1377,7 @@ int main()
     RUN_TEST(test_kexinit_parse_selects_aes256gcm);
     RUN_TEST(test_kexinit_parse_selects_rsa_sha512);
     RUN_TEST(test_kexinit_parse_selects_ecdsa);
+    RUN_TEST(test_kexinit_parse_selects_ecdh_nistp256);
     RUN_TEST(test_kexinit_parse_selects_etm_mac);
     RUN_TEST(test_kexinit_parse_rejects_truncated);
     RUN_TEST(test_exchange_hash_matches_independent_assembly);
@@ -1256,6 +1391,8 @@ int main()
     RUN_TEST(test_kexdh_handle_rejects_invalid_e);
     RUN_TEST(test_kexdh_handle_curve25519_ed25519_end_to_end);
     RUN_TEST(test_kexdh_handle_curve25519_rejects_low_order);
+    RUN_TEST(test_kexdh_handle_ecdh_nistp256_end_to_end);
+    RUN_TEST(test_kexdh_handle_ecdh_nistp256_rejects_bad_point);
     RUN_TEST(test_kexdh_handle_rsa_sha512_signature);
     RUN_TEST(test_kexdh_handle_ecdsa_end_to_end);
     RUN_TEST(test_derive_keys_session_id_affects_output);

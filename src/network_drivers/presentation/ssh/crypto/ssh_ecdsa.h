@@ -3,12 +3,13 @@
 
 /**
  * @file ssh_ecdsa.h
- * @brief ECDSA over NIST P-256 (RFC 6090 / FIPS 186-4) for ecdsa-sha2-nistp256.
+ * @brief NIST P-256 primitives for SSH: ECDSA signatures and ECDH (RFC 5656 / FIPS 186-4).
  *
- * Backs the SSH ecdsa-sha2-nistp256 host key and client publickey auth (RFC 5656):
- * the server signs the KEX exchange hash with its P-256 host key, and verifies a
- * client's ecdsa-sha2-nistp256 signature. The message is always hashed with SHA-256
- * (nistp256 pairs with SHA-256 per RFC 5656 §6.2.1).
+ * Backs three P-256 SSH mechanisms, all sharing the one curve:
+ *   - ecdsa-sha2-nistp256 host key + client publickey auth (RFC 5656 §3): the server signs
+ *     the KEX exchange hash with its P-256 host key and verifies a client's signature.
+ *   - ecdh-sha2-nistp256 key exchange (RFC 5656 §4): the P-256 ECDH shared secret.
+ * ECDSA always hashes the message with SHA-256 (nistp256 pairs with SHA-256, RFC 5656 §6.2.1).
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * ARDUINO VS NATIVE
@@ -35,6 +36,10 @@
  * Signature blob (RFC 5656 §3.1.2):
  *   string("ecdsa-sha2-nistp256") || string( mpint(r) || mpint(s) )
  * This module exposes the raw r || s (32 + 32 big-endian); the layers mpint-wrap them.
+ *
+ * ECDH shared secret (RFC 5656 §4):
+ *   K = the X coordinate of d * Q_peer. @ref ssh_ecdsa_p256_ecdh returns the raw 32-byte X;
+ *   the transport encodes it as an mpint in the exchange hash and the key derivation.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -90,5 +95,20 @@ bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg
  */
 bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t *msg, size_t mlen,
                            const uint8_t sig[SSH_ECDSA_P256_SIG_LEN]);
+
+/**
+ * @brief P-256 ECDH: the shared-secret X coordinate of d * Q_peer (RFC 5656 §4 / RFC 5903).
+ *
+ * Backs the ecdh-sha2-nistp256 SSH key exchange. Validates that @p peer_pub is a valid
+ * on-curve point and that the product is not the identity; the returned 32-byte big-endian
+ * X coordinate is the shared field element the transport encodes as an mpint.
+ *
+ * @param[out] shared_x  32-byte big-endian X coordinate of d * Q_peer.
+ * @param[in]  peer_pub  65-byte uncompressed peer point 0x04 || X || Y.
+ * @param[in]  priv      32-byte big-endian private scalar d (1 <= d < n).
+ * @return true on success, false on an invalid peer point / scalar or an identity result.
+ */
+bool ssh_ecdsa_p256_ecdh(uint8_t shared_x[SSH_ECDSA_P256_COORD_LEN], const uint8_t peer_pub[SSH_ECDSA_P256_PUB_LEN],
+                         const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN]);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_ECDSA_H

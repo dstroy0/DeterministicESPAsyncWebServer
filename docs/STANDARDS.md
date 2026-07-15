@@ -98,8 +98,9 @@ newer entry here.
 - [RFC 6668](https://www.rfc-editor.org/rfc/rfc6668) - SHA-2 data-integrity (HMAC) for SSH - **impl**.
 - [RFC 8268](https://www.rfc-editor.org/rfc/rfc8268) - More MODP DH groups for SSH - **impl**.
 - [RFC 8332](https://www.rfc-editor.org/rfc/rfc8332) - RSA SHA-2 (rsa-sha2-256/512) for SSH - **impl**.
-- [RFC 5656](https://www.rfc-editor.org/rfc/rfc5656) - ECC algorithms for SSH (ecdsa-sha2-nistp256) - **impl**.
+- [RFC 5656](https://www.rfc-editor.org/rfc/rfc5656) - ECC algorithms for SSH (ecdsa-sha2-nistp256 host key + ecdh-sha2-nistp256 KEX) - **impl**.
 - [RFC 6979](https://www.rfc-editor.org/rfc/rfc6979) - Deterministic ECDSA (native ECDSA nonce; KAT source) - **impl**.
+- [RFC 5903](https://www.rfc-editor.org/rfc/rfc5903) - ECP groups for IKE/IKEv2 (P-256 ECDH shared-secret KAT source) - **impl**.
 - [RFC 3526](https://www.rfc-editor.org/rfc/rfc3526) - MODP Diffie-Hellman groups - **impl** (SSH KEX).
 - [RFC 8731](https://www.rfc-editor.org/rfc/rfc8731) - curve25519-sha256 key exchange for SSH - **impl**.
 - [RFC 8709](https://www.rfc-editor.org/rfc/rfc8709) - Ed25519/Ed448 public keys for SSH (ssh-ed25519) - **impl**.

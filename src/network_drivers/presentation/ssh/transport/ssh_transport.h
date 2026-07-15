@@ -14,6 +14,7 @@
  * ── Supported algorithms (crypto-agnostic KEX; steered to a runtime preference) ─
  *   kex            : diffie-hellman-group14-sha256   (RFC 8268)
  *                    curve25519-sha256               (RFC 8731)
+ *                    ecdh-sha2-nistp256              (RFC 5656 §4)
  *   host key / sig : rsa-sha2-512, rsa-sha2-256       (RFC 8332)
  *                    ecdsa-sha2-nistp256              (RFC 5656)
  *                    ssh-ed25519                      (RFC 8709)
@@ -46,9 +47,11 @@
 /** @brief Max stored length of an SSH identification string (RFC 4253 §4.2: 255). */
 #define SSH_VERSION_MAX 256
 
-/** @brief Max stored size of our own KEXINIT (I_S). Fits the cipher (chacha+aes) and MAC
- *  (2x etm + 2x plain) preference lists we advertise. */
-#define SSH_KEXINIT_S_MAX 512
+/** @brief Max stored size of our own KEXINIT (I_S). Sized for the full advertised suite: the
+ *  kex list (mlkem + dh + ecdh-nistp256 + curve25519 x2 + ext-info-s), all three host-key types,
+ *  the cipher (chacha + 2x aes) and MAC (2x etm + 2x plain) lists, and zlib s2c compression
+ *  (worst case ~580 bytes; 704 leaves headroom for future algorithm additions). */
+#define SSH_KEXINIT_S_MAX 704
 
 /** @brief Server identification string (no CR LF; appended on the wire). */
 #define SSH_SERVER_VERSION "SSH-2.0-DetWS_1.0"
@@ -85,9 +88,10 @@ enum class SshPhase : uint8_t
 /** @brief Negotiated key-exchange method (crypto-agnostic KEX dispatch). */
 enum class SshKexAlg : uint8_t
 {
-    SSH_KEX_DH_GROUP14 = 0,     ///< diffie-hellman-group14-sha256 (HW-accelerated MPI on ESP32)
-    SSH_KEX_CURVE25519 = 1,     ///< curve25519-sha256 (RFC 8731, X25519)
-    SSH_KEX_MLKEM768_X25519 = 2 ///< mlkem768x25519-sha256 (PQ/T hybrid, draft-ietf-sshm-mlkem-hybrid-kex)
+    SSH_KEX_DH_GROUP14 = 0,      ///< diffie-hellman-group14-sha256 (HW-accelerated MPI on ESP32)
+    SSH_KEX_CURVE25519 = 1,      ///< curve25519-sha256 (RFC 8731, X25519)
+    SSH_KEX_MLKEM768_X25519 = 2, ///< mlkem768x25519-sha256 (PQ/T hybrid, draft-ietf-sshm-mlkem-hybrid-kex)
+    SSH_KEX_ECDH_NISTP256 = 3    ///< ecdh-sha2-nistp256 (NIST P-256 ECDH, RFC 5656 §4)
 };
 
 /** @brief Negotiated host-key / signature algorithm. */
@@ -234,8 +238,9 @@ bool ssh_hostkey_ecdsa_available(void);
  *
  * Branches on ssh_sess[i].kex_alg: for diffie-hellman-group14 it delegates to
  * ssh_dh_generate(); for curve25519-sha256 it draws a random X25519 scalar and computes
- * the matching public value into ssh_sess[i].ecdh_sk / ecdh_pk. Must run after
- * ssh_kexinit_parse() has set kex_alg.
+ * the matching public value into ssh_sess[i].ecdh_sk / ecdh_pk; for ecdh-sha2-nistp256 it
+ * draws a random P-256 scalar into ecdh_sk (the 65-byte public point is re-derived when the
+ * KEXDH_INIT arrives). Must run after ssh_kexinit_parse() has set kex_alg.
  *
  * @return 0 on success, -1 on error.
  */

@@ -17,6 +17,7 @@
 #ifdef ARDUINO
 
 #include <esp_random.h> // esp_fill_random() for the ECDSA nonce / blinding RNG
+#include <mbedtls/ecdh.h>
 #include <mbedtls/ecdsa.h>
 #include <mbedtls/ecp.h>
 
@@ -113,6 +114,33 @@ bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint
 
     mbedtls_mpi_free(&s);
     mbedtls_mpi_free(&r);
+    mbedtls_ecp_point_free(&Q);
+    mbedtls_ecp_group_free(&grp);
+    return ok;
+}
+
+bool ssh_ecdsa_p256_ecdh(uint8_t shared_x[SSH_ECDSA_P256_COORD_LEN], const uint8_t peer_pub[SSH_ECDSA_P256_PUB_LEN],
+                         const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
+{
+    mbedtls_ecp_group grp;
+    mbedtls_ecp_point Q;
+    mbedtls_mpi d;
+    mbedtls_mpi z; // shared secret = the X coordinate of d*Q
+    mbedtls_ecp_group_init(&grp);
+    mbedtls_ecp_point_init(&Q);
+    mbedtls_mpi_init(&d);
+    mbedtls_mpi_init(&z);
+
+    bool ok = false;
+    if (mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1) == 0 &&
+        mbedtls_ecp_point_read_binary(&grp, &Q, peer_pub, SSH_ECDSA_P256_PUB_LEN) == 0 &&
+        mbedtls_ecp_check_pubkey(&grp, &Q) == 0 && mbedtls_mpi_read_binary(&d, priv, SSH_ECDSA_P256_PRIV_LEN) == 0 &&
+        mbedtls_ecdh_compute_shared(&grp, &z, &Q, &d, ecdsa_rng, nullptr) == 0 &&
+        mbedtls_mpi_write_binary(&z, shared_x, SSH_ECDSA_P256_COORD_LEN) == 0)
+        ok = true;
+
+    mbedtls_mpi_free(&z);
+    mbedtls_mpi_free(&d);
     mbedtls_ecp_point_free(&Q);
     mbedtls_ecp_group_free(&grp);
     return ok;
@@ -732,6 +760,34 @@ bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint
     jac_to_affine(rx, ry, &R);
     fp_reduce_once(rxn, rx, P256_N);
     return fp_cmp(rxn, r) == 0;
+}
+
+bool ssh_ecdsa_p256_ecdh(uint8_t shared_x[SSH_ECDSA_P256_COORD_LEN], const uint8_t peer_pub[SSH_ECDSA_P256_PUB_LEN],
+                         const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
+{
+    if (peer_pub[0] != 0x04)
+        return false;
+    uint32_t qx[8];
+    uint32_t qy[8];
+    load_be(qx, peer_pub + 1);
+    load_be(qy, peer_pub + 33);
+    if (!on_curve(qx, qy)) // rejects off-curve / out-of-range peer points
+        return false;
+    uint32_t d[8];
+    load_be(d, priv);
+    if (fp_is_zero(d) || fp_cmp(d, P256_N) >= 0)
+        return false;
+    Jac Q;
+    Jac R;
+    jac_set_affine(&Q, qx, qy);
+    jac_scalar_mul(&R, d, &Q);
+    if (fp_is_zero(R.Z)) // d*Q is the identity -> invalid shared secret
+        return false;
+    uint32_t rx[8];
+    uint32_t ry[8];
+    jac_to_affine(rx, ry, &R);
+    store_be(shared_x, rx); // K = X coordinate (big-endian)
+    return true;
 }
 
 #endif // ARDUINO

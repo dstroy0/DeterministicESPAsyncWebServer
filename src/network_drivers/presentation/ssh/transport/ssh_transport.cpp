@@ -38,6 +38,7 @@ SshSession ssh_sess[MAX_SSH_CONNS];
 static const char *const KEX_DH = "diffie-hellman-group14-sha256";
 static const char *const KEX_C25519 = "curve25519-sha256";
 static const char *const KEX_C25519_LIBSSH = "curve25519-sha256@libssh.org"; // identical wire protocol
+static const char *const KEX_ECDH_NISTP256 = "ecdh-sha2-nistp256";           // NIST P-256 ECDH (RFC 5656 §4)
 #if DETWS_ENABLE_PQC_KEX
 static const char *const KEX_MLKEM768 = "mlkem768x25519-sha256"; // PQ/T hybrid (ML-KEM-768 + X25519)
 #endif
@@ -126,19 +127,20 @@ static void build_kex_list(char *out, size_t cap)
     const char *c1 = KEX_C25519;
     const char *c2 = KEX_C25519_LIBSSH;
     const char *dh = KEX_DH;
+    const char *ec = KEX_ECDH_NISTP256; // NIST P-256 ECDH (RFC 5656)
 #if DETWS_ENABLE_PQC_KEX
     // Post-quantum hybrid advertised first: a PQC-capable peer (OpenSSH 9.9+, which also lists it
     // first) negotiates it over classical X25519, closing the harvest-now-decrypt-later gap.
     const char *pq = KEX_MLKEM768;
     if (s_sshtr.prefer_rsa)
-        snprintf(out, cap, "%s,%s,%s,%s,ext-info-s", pq, dh, c1, c2);
+        snprintf(out, cap, "%s,%s,%s,%s,%s,ext-info-s", pq, dh, ec, c1, c2);
     else
-        snprintf(out, cap, "%s,%s,%s,%s,ext-info-s", pq, c1, c2, dh);
+        snprintf(out, cap, "%s,%s,%s,%s,%s,ext-info-s", pq, c1, c2, ec, dh);
 #else
     if (s_sshtr.prefer_rsa)
-        snprintf(out, cap, "%s,%s,%s,ext-info-s", dh, c1, c2);
+        snprintf(out, cap, "%s,%s,%s,%s,ext-info-s", dh, ec, c1, c2);
     else
-        snprintf(out, cap, "%s,%s,%s,ext-info-s", c1, c2, dh);
+        snprintf(out, cap, "%s,%s,%s,%s,ext-info-s", c1, c2, ec, dh);
 #endif
 }
 static void build_hostkey_list(char *out, size_t cap)
@@ -389,7 +391,7 @@ int ssh_kexinit_build(uint8_t i, uint8_t *payload, size_t *len, size_t cap)
     ssh_rng_fill(cookie, sizeof(cookie));
     w_bytes(w, cookie, sizeof(cookie));
 
-    char kexlist[160];
+    char kexlist[192];
     char hklist[48];
     build_kex_list(kexlist, sizeof(kexlist));
     build_hostkey_list(hklist, sizeof(hklist));
@@ -462,7 +464,7 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
     // RFC 8308: if the client offers ext-info-c we will send SSH_MSG_EXT_INFO.
     s->ext_info_c = namelist_contains(list, nlen, EXT_INFO_C);
     {
-        AlgCand<SshKexAlg> kc[4];
+        AlgCand<SshKexAlg> kc[5];
         int nk = 0;
 #if DETWS_ENABLE_PQC_KEX
         kc[nk++] = {KEX_MLKEM768, SshKexAlg::SSH_KEX_MLKEM768_X25519, true}; // hybrid first (PQC-preferred)
@@ -470,6 +472,7 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
         if (s_sshtr.prefer_rsa)
         {
             kc[nk++] = {KEX_DH, SshKexAlg::SSH_KEX_DH_GROUP14, true};
+            kc[nk++] = {KEX_ECDH_NISTP256, SshKexAlg::SSH_KEX_ECDH_NISTP256, true};
             kc[nk++] = {KEX_C25519, SshKexAlg::SSH_KEX_CURVE25519, true};
             kc[nk++] = {KEX_C25519_LIBSSH, SshKexAlg::SSH_KEX_CURVE25519, true};
         }
@@ -477,6 +480,7 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
         {
             kc[nk++] = {KEX_C25519, SshKexAlg::SSH_KEX_CURVE25519, true};
             kc[nk++] = {KEX_C25519_LIBSSH, SshKexAlg::SSH_KEX_CURVE25519, true};
+            kc[nk++] = {KEX_ECDH_NISTP256, SshKexAlg::SSH_KEX_ECDH_NISTP256, true};
             kc[nk++] = {KEX_DH, SshKexAlg::SSH_KEX_DH_GROUP14, true};
         }
         if (!negotiate_alg(list, nlen, kc, nk, &s->kex_alg))
@@ -743,6 +747,20 @@ static int parse_ecdh_init(const uint8_t *payload, size_t len, uint8_t qc[32])
     return 0;
 }
 
+// Parse SSH_MSG_KEX_ECDH_INIT for ecdh-sha2-nistp256 (RFC 5656 §4): byte(30) || string(Q_C),
+// where Q_C is the 65-byte uncompressed client point 0x04 || X || Y.
+static int parse_ecdh_init_p256(const uint8_t *payload, size_t len, uint8_t qc[SSH_ECDSA_P256_PUB_LEN])
+{
+    if (len < 1 + 4 || payload[0] != SSH_MSG_KEXDH_INIT)
+        return -1;
+    uint32_t n = ((uint32_t)payload[1] << 24) | ((uint32_t)payload[2] << 16) | ((uint32_t)payload[3] << 8) |
+                 (uint32_t)payload[4];
+    if (n != SSH_ECDSA_P256_PUB_LEN || (size_t)5 + n > len)
+        return -1;
+    memcpy(qc, payload + 5, SSH_ECDSA_P256_PUB_LEN);
+    return 0;
+}
+
 // Encode the server host-key blob K_S for the negotiated host-key algorithm.
 //   rsa-sha2-256/512     → "ssh-rsa" blob (ssh_rsa_encode_pubkey)
 //   ssh-ed25519          → string("ssh-ed25519") || string(pub32)          (RFC 8709 §4)
@@ -852,6 +870,20 @@ int ssh_kex_generate(uint8_t i)
         ssh_rng_fill(ssh_sess[i].ecdh_sk, 32);
         ssh_x25519_base(ssh_sess[i].ecdh_pk, ssh_sess[i].ecdh_sk);
         return 0;
+    }
+    if (a == SshKexAlg::SSH_KEX_ECDH_NISTP256)
+    {
+        // P-256 ECDH ephemeral: a random scalar d in [1, n) stored in ecdh_sk. The 65-byte public
+        // point Q_S = d*G is re-derived in ssh_kexdh_handle (avoids a curve-specific session field).
+        // Re-draw on the negligible chance a raw 32-byte value is 0 or >= n (an invalid P-256 scalar).
+        uint8_t qtmp[SSH_ECDSA_P256_PUB_LEN];
+        for (int t = 0; t < 8; t++)
+        {
+            ssh_rng_fill(ssh_sess[i].ecdh_sk, 32);
+            if (ssh_ecdsa_p256_pubkey(qtmp, ssh_sess[i].ecdh_sk))
+                return 0;
+        }
+        return -1; // GCOVR_EXCL_LINE  a random 32-byte scalar is a valid P-256 key with overwhelming probability
     }
     return ssh_dh_generate(i);
 }
@@ -971,6 +1003,25 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         k_is_string = true;
     }
 #endif
+    else if (s->kex_alg == SshKexAlg::SSH_KEX_ECDH_NISTP256)
+    {
+        // ecdh-sha2-nistp256 (RFC 5656 §4): K = X(d_S * Q_C). Q_C/Q_S are 65-byte point strings; K an mpint.
+        uint8_t qc[SSH_ECDSA_P256_PUB_LEN];
+        if (parse_ecdh_init_p256(payload, len, qc) != 0)
+            return -1;
+        uint8_t qs[SSH_ECDSA_P256_PUB_LEN];
+        uint8_t kk[SSH_ECDSA_P256_COORD_LEN];
+        // Re-derive our ephemeral public Q_S, then the shared secret. ssh_ecdsa_p256_ecdh validates
+        // Q_C is on-curve and the product is not the identity (RFC 5656 §4 point checks).
+        if (!ssh_ecdsa_p256_pubkey(qs, s->ecdh_sk) || !ssh_ecdsa_p256_ecdh(kk, qc, s->ecdh_sk))
+            return -1;
+        memcpy(k_be + (256 - SSH_ECDSA_P256_COORD_LEN), kk, SSH_ECDSA_P256_COORD_LEN);
+        memcpy(cpub, qc, SSH_ECDSA_P256_PUB_LEN);
+        memcpy(spub, qs, SSH_ECDSA_P256_PUB_LEN);
+        cpub_len = spub_len = SSH_ECDSA_P256_PUB_LEN;
+        pub_is_string = true;
+        ssh_wipe(kk, sizeof(kk));
+    }
     else
     {
         // diffie-hellman-group14-sha256 (RFC 4253 §8): K = e^y mod p; e/f are mpints.
