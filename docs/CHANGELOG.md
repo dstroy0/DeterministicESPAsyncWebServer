@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.17.0] - 2026-07-15
+
+<details>
+<summary><b>Show Changelog for version 6.17.0 - 2026-07-15</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`ba574cf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ba574cfe7032db520fa1860c6126c9a5836e928e))
+
+### Changes
+
+- Bump version: 6.16.0 → 6.17.0 ([`58858c6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/58858c64f2b568ad6a7ebf2d5fd027fd125d4317))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`bdb3c0e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bdb3c0ee17fd9d98709f3ce5d7bb4f6c7365a903))
+
+### Features
+
+- HelloRetryRequest + cookie + message_hash (RFC 8446 §4.1.4) ([`4cd7497`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4cd749750468151f0c41aca5fcd250339ea66314))
+
+</details>
+
 ## [6.16.0] - 2026-07-15
 
 <details>
