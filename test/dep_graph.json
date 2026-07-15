@@ -1059,6 +1059,22 @@
 "native_ssh_pqc",
 "native_tls13_msg"
 ],
+"src/network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp": [
+"native_ssh",
+"native_ssh_comp",
+"native_ssh_conn",
+"native_ssh_ecdsa",
+"native_ssh_hardened",
+"native_ssh_pqc"
+],
+"src/network_drivers/presentation/ssh/crypto/ssh_ecdsa.h": [
+"native_ssh",
+"native_ssh_comp",
+"native_ssh_conn",
+"native_ssh_ecdsa",
+"native_ssh_hardened",
+"native_ssh_pqc"
+],
 "src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp": [
 "native_crypto_kat",
 "native_h3_conn",
@@ -1127,6 +1143,7 @@
 "native_ssh",
 "native_ssh_comp",
 "native_ssh_conn",
+"native_ssh_ecdsa",
 "native_ssh_hardened",
 "native_ssh_pqc",
 "native_tls13_kdf"
@@ -1148,6 +1165,7 @@
 "native_ssh",
 "native_ssh_comp",
 "native_ssh_conn",
+"native_ssh_ecdsa",
 "native_ssh_hardened",
 "native_ssh_pqc",
 "native_tls13_kdf"
@@ -1225,6 +1243,7 @@
 "native_ssh",
 "native_ssh_comp",
 "native_ssh_conn",
+"native_ssh_ecdsa",
 "native_ssh_hardened",
 "native_ssh_pqc",
 "native_tls13_kdf",
@@ -1254,6 +1273,7 @@
 "native_ssh",
 "native_ssh_comp",
 "native_ssh_conn",
+"native_ssh_ecdsa",
 "native_ssh_hardened",
 "native_ssh_pqc",
 "native_tls13_kdf",
