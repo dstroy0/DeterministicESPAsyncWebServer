@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.15.0] - 2026-07-15
+
+<details>
+<summary><b>Show Changelog for version 6.15.0 - 2026-07-15</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`79a40f4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/79a40f47c889c46eac6c21c0f86a5685a123b903))
+- update CHANGELOG.md [skip ci] ([`995b1e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/995b1e3d4f31ef7d5b9ab40608f72b776535a378))
+
+### Changes
+
+- Bump version: 6.14.0 → 6.15.0 ([`6d41e1f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d41e1f30c9e19f5de437b3e55b442f9a9da7f8c))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`5067ec0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5067ec0b7e63f5e3f1871bdc6a1cbc8be123d793))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fc577b4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc577b47ab542a70bbb6cc73c329ba79452383de))
+
+### Features
+
+- DTLS 1.3 record layer (RFC 9147 §4) ([`f17f8ba`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f17f8baa6c4517f74dae03b826c4f2e044174e61))
+
+</details>
+
 ## [6.14.0] - 2026-07-15
 
 <details>
