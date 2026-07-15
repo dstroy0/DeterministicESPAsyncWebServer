@@ -2,19 +2,35 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.13.0] - 2026-07-15
+
+<details>
+<summary><b>Show Changelog for version 6.13.0 - 2026-07-15</b></summary>
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`be729d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/be729d6befdf868099b6bc539867bb084099121f))
+- update CHANGELOG.md [skip ci] ([`9e6fdbc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9e6fdbcf71b9a29aedc7935afb39e05ad4f2d1f6))
 - update CHANGELOG.md [skip ci] ([`e95321b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e95321bd5b4fe9c0bf3d5ad5fcbe93c7b509f0e0))
+
+### Changes
+
+- Bump version: 6.12.0 → 6.13.0 ([`671051a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/671051a3dce5c80950eac4bb3787659e4ed82215))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`3eb25ee`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3eb25ee43a583a75543b427b9079613619ada1ed))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c62bf35`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c62bf35a4f2edb9971c4a830a964ba2a6efae696))
+
+### Features
+
+- ecdsa-sha2-nistp256 host key + client auth (RFC 5656) ([`4900588`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/490058816ad6dbd139f66b37a78703ed26c7939a))
 
 ### Testing
 
 - link ssh_sha512.cpp into native_codeql (rsa-sha2-512 dep) ([`6d5391a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d5391a49ac67aeb262ad6e426ebededb0d839f2))
+
+</details>
 
 ## [6.12.0] - 2026-07-14
 
