@@ -9,6 +9,19 @@ that only speaks a wire protocol from anywhere on your LAN.
 You can try the UART side with no extra parts: a jumper from TX to RX makes a
 loopback you can talk to over the network.
 
+## Build
+
+`DETWS_ENABLE_IFACE_BRIDGE` must be set for the whole build; an in-sketch
+`#define` does not reach the separately compiled library, so pass it as a
+`build_flag` (see the [build_flags gotcha](../../../docs/EXAMPLES.md)). The
+Arduino IDE reads it from `build_opt.h`; with PlatformIO:
+
+```sh
+pio ci --board=esp32dev --project-option="framework=arduino" \
+  --project-option="build_flags=-DDETWS_ENABLE_IFACE_BRIDGE=1" \
+  --lib="." examples/L7-Application/75.InterfaceBridge/75.InterfaceBridge.ino
+```
+
 ## What is going on here? (the big picture)
 
 The board opens a **port per bus endpoint**. When a client connects, the bridge
