@@ -30,7 +30,7 @@ void ws_client_accept_for_key(const char *key_b64, char *out, size_t out_cap)
     if (!key_b64)
         return;
     char concat[64];
-    size_t klen = strlen(key_b64);
+    size_t klen = strnlen(key_b64, sizeof(concat));
     size_t mlen = sizeof(WS_MAGIC) - 1;
     if (klen + mlen >= sizeof(concat))
         return;
@@ -79,7 +79,7 @@ size_t ws_client_build_handshake(uint8_t *out, size_t cap, const char *host, con
 // to the value (past "name:" and OWS) and its length via *vlen, or nullptr.
 static const char *find_header(const uint8_t *buf, size_t len, const char *name, size_t *vlen)
 {
-    size_t nlen = strlen(name);
+    size_t nlen = strnlen(name, len + 1);
     const uint8_t *p = buf;
     const uint8_t *end = buf + len;
     while (p + nlen + 1 < end)
@@ -124,7 +124,7 @@ bool ws_client_check_response(const uint8_t *buf, size_t len, const char *expect
     const char *acc = find_header(buf, len, "Sec-WebSocket-Accept", &vlen);
     if (!acc)
         return false;
-    return vlen == strlen(expected_accept) && memcmp(acc, expected_accept, vlen) == 0;
+    return vlen == strnlen(expected_accept, vlen + 1) && memcmp(acc, expected_accept, vlen) == 0;
 }
 
 size_t ws_client_build_frame(uint8_t *out, size_t cap, WsClientOpcode opcode, const uint8_t *payload, size_t len,
@@ -563,7 +563,8 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
 
 bool ws_client_send_text(const char *text)
 {
-    return ws_send_frame(WsClientOpcode::WSC_OP_TEXT, (const uint8_t *)text, text ? strlen(text) : 0);
+    return ws_send_frame(WsClientOpcode::WSC_OP_TEXT, (const uint8_t *)text,
+                         text ? strnlen(text, DETWS_WS_CLIENT_BUF_SIZE) : 0);
 }
 bool ws_client_send_binary(const uint8_t *data, size_t len)
 {
