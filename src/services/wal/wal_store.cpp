@@ -82,6 +82,51 @@ bool read_super(const WalStore *s, int ab, uint64_t &gen, uint64_t &head, uint64
         return false;
     return true;
 }
+
+// Replay records appended after the committed head: each is CRC self-validating, so recover them one by
+// one and stop at the first torn / short / non-record. Advances s->head and s->next_seq.
+void wal_replay_tail(WalStore *s)
+{
+    uint8_t hdr[WAL_RECORD_HEADER];
+    uint8_t chunk[256];
+    for (;;)
+    {
+        uint64_t off = s->head;
+        if (off + WAL_RECORD_HEADER > s->data_cap)
+            break;
+        if (!dev_read(s->dev, s->data_off + off, hdr, WAL_RECORD_HEADER))
+            break;
+        if (get_u32(hdr + 0) != WAL_MAGIC)
+            break;
+        uint64_t seq = get_u64(hdr + 4);
+        uint32_t plen = get_u32(hdr + 12);
+        uint32_t crc_stored = get_u32(hdr + 16);
+        if (off + (uint64_t)WAL_RECORD_HEADER + plen > s->data_cap)
+            break; // truncated tail
+        // CRC over the 16 header bytes then the payload, streamed in small chunks.
+        uint32_t crc = wal_crc32_update(wal_crc32_init(), hdr, 16);
+        uint64_t pos = s->data_off + off + WAL_RECORD_HEADER;
+        uint32_t left = plen;
+        bool read_ok = true;
+        while (left)
+        {
+            size_t n = left < sizeof(chunk) ? left : sizeof(chunk);
+            if (!dev_read(s->dev, pos, chunk, n))
+            {
+                read_ok = false;
+                break;
+            }
+            crc = wal_crc32_update(crc, chunk, n);
+            pos += n;
+            left -= (uint32_t)n;
+        }
+        if (!read_ok || wal_crc32_final(crc) != crc_stored)
+            break; // torn / corrupt record - this is the durable end
+        s->head = off + (uint64_t)WAL_RECORD_HEADER + plen;
+        if (seq + 1 > s->next_seq)
+            s->next_seq = seq + 1;
+    }
+}
 } // namespace
 
 bool wal_store_format(WalStore *s, const WalDev *dev)
@@ -144,47 +189,8 @@ bool wal_store_mount(WalStore *s, const WalDev *dev)
     }
     s->head = s->committed;
 
-    // Replay the tail: records appended after the committed head are self-validating (CRC), so recover
-    // them one by one and stop at the first torn/short/non-record. This bounds correctness to the codec.
-    uint8_t hdr[WAL_RECORD_HEADER];
-    uint8_t chunk[256];
-    for (;;)
-    {
-        uint64_t off = s->head;
-        if (off + WAL_RECORD_HEADER > s->data_cap)
-            break;
-        if (!dev_read(s->dev, s->data_off + off, hdr, WAL_RECORD_HEADER))
-            break;
-        if (get_u32(hdr + 0) != WAL_MAGIC)
-            break;
-        uint64_t seq = get_u64(hdr + 4);
-        uint32_t plen = get_u32(hdr + 12);
-        uint32_t crc_stored = get_u32(hdr + 16);
-        if (off + (uint64_t)WAL_RECORD_HEADER + plen > s->data_cap)
-            break; // truncated tail
-        // CRC over the 16 header bytes then the payload, streamed in small chunks.
-        uint32_t crc = wal_crc32_update(wal_crc32_init(), hdr, 16);
-        uint64_t pos = s->data_off + off + WAL_RECORD_HEADER;
-        uint32_t left = plen;
-        bool read_ok = true;
-        while (left)
-        {
-            size_t n = left < sizeof(chunk) ? left : sizeof(chunk);
-            if (!dev_read(s->dev, pos, chunk, n))
-            {
-                read_ok = false;
-                break;
-            }
-            crc = wal_crc32_update(crc, chunk, n);
-            pos += n;
-            left -= (uint32_t)n;
-        }
-        if (!read_ok || wal_crc32_final(crc) != crc_stored)
-            break; // torn / corrupt record - this is the durable end
-        s->head = off + (uint64_t)WAL_RECORD_HEADER + plen;
-        if (seq + 1 > s->next_seq)
-            s->next_seq = seq + 1;
-    }
+    // Recover any records appended after the committed head (each CRC self-validating).
+    wal_replay_tail(s);
     return true;
 }
 

@@ -250,6 +250,56 @@ void udp_ingest_cb(const uint8_t *data, size_t len, DetUdpPeer *peer, void * /*c
     ring_push(data, len, ip, port);
 }
 #endif
+
+// Route one ingested datagram to its peer slot (opening one for a fresh peer's ClientHello) and drive
+// the DTLS handshake / CoAP exchange through the bridge.
+void coaps_route_datagram(const CoapsIngest *ig, uint32_t now, uint8_t *out, size_t out_cap)
+{
+    // A DTLSCiphertext with the C bit (0b001C....) carries a connection id: route by it so a peer that
+    // has roamed to a new address still reaches its connection (RFC 9146 / RFC 9147 §9). Otherwise route
+    // by source address; a fresh peer's (plaintext) ClientHello opens a slot.
+    bool cid_rec = ig->len >= 1 && (ig->data[0] & 0xE0) == 0x20 && (ig->data[0] & 0x10);
+    CoapsSlot *s = cid_rec ? slot_by_cid(ig->data + 1, ig->len - 1) : nullptr;
+    if (!s)
+        s = slot_by_peer(ig->ip, ig->port);
+    if (!s && !cid_rec)
+        s = open_conn(ig->ip, ig->port);
+    if (!s)
+        return; // unknown connection id, or pool full: drop (the peer retransmits / DTLS PTO recovers)
+    // Address migration: a valid CID record from a new address updates where we send replies.
+    if (cid_rec && (s->peer_port != ig->port || strcmp(s->peer_ip, ig->ip) != 0))
+    {
+        copy_str(s->peer_ip, sizeof s->peer_ip, ig->ip);
+        s->peer_port = ig->port;
+    }
+    s->last_ms = now;
+    int n = coaps_process(&s->conn, ig->data, ig->len, out, out_cap);
+    if (n > 0)
+        server_send(s->peer_ip, s->peer_port, out, (size_t)n);
+    else if (n < 0)
+        s->used = false; // fatal handshake error: free the slot
+}
+
+// Fire the retransmission timer for a slot's outstanding flight, then reap it if the handshake failed or
+// the connection has gone idle.
+void coaps_service_slot(CoapsSlot *s, uint32_t now, uint8_t *out, size_t out_cap)
+{
+    if (!s->used)
+        return;
+    if (dtls_conn_timeout_ms(&s->conn) == 0) // 0 == due now (-1 == no timer, >0 == still pending)
+    {
+        int n = dtls_conn_on_timeout(&s->conn, out, out_cap);
+        if (n > 0)
+            server_send(s->peer_ip, s->peer_port, out, (size_t)n);
+        else if (n < 0)
+        {
+            s->used = false; // retransmission ceiling hit: abandon the handshake
+            return;
+        }
+    }
+    if ((uint32_t)(now - s->last_ms) >= DETWS_COAPS_IDLE_MS) // wrap-safe idle delta
+        s->used = false;
+}
 } // namespace
 
 bool coaps_server_begin(uint16_t port, const CoapsServerConfig *cfg)
@@ -285,52 +335,11 @@ void coaps_server_poll()
     // handshake / CoAP exchange through the bridge.
     CoapsIngest ig;
     while (ring_pop(&ig))
-    {
-        // A DTLSCiphertext with the C bit (0b001C....) carries a connection id: route by it so a peer that
-        // has roamed to a new address still reaches its connection (RFC 9146 / RFC 9147 §9). Otherwise route
-        // by source address; a fresh peer's (plaintext) ClientHello opens a slot.
-        bool cid_rec = ig.len >= 1 && (ig.data[0] & 0xE0) == 0x20 && (ig.data[0] & 0x10);
-        CoapsSlot *s = cid_rec ? slot_by_cid(ig.data + 1, ig.len - 1) : nullptr;
-        if (!s)
-            s = slot_by_peer(ig.ip, ig.port);
-        if (!s && !cid_rec)
-            s = open_conn(ig.ip, ig.port);
-        if (!s)
-            continue; // unknown connection id, or pool full: drop (the peer retransmits / DTLS PTO recovers)
-        // Address migration: a valid CID record from a new address updates where we send replies.
-        if (cid_rec && (s->peer_port != ig.port || strcmp(s->peer_ip, ig.ip) != 0))
-        {
-            copy_str(s->peer_ip, sizeof s->peer_ip, ig.ip);
-            s->peer_port = ig.port;
-        }
-        s->last_ms = now;
-        int n = coaps_process(&s->conn, ig.data, ig.len, out, sizeof out);
-        if (n > 0)
-            server_send(s->peer_ip, s->peer_port, out, (size_t)n);
-        else if (n < 0)
-            s->used = false; // fatal handshake error: free the slot
-    }
+        coaps_route_datagram(&ig, now, out, sizeof out);
 
     // Fire the retransmission timer for any outstanding flight, then reap closed / idle connections.
     for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
-    {
-        CoapsSlot *s = &s_cpool.pool[i];
-        if (!s->used)
-            continue;
-        if (dtls_conn_timeout_ms(&s->conn) == 0) // 0 == due now (-1 == no timer, >0 == still pending)
-        {
-            int n = dtls_conn_on_timeout(&s->conn, out, sizeof out);
-            if (n > 0)
-                server_send(s->peer_ip, s->peer_port, out, (size_t)n);
-            else if (n < 0)
-            {
-                s->used = false; // retransmission ceiling hit: abandon the handshake
-                continue;
-            }
-        }
-        if ((uint32_t)(now - s->last_ms) >= DETWS_COAPS_IDLE_MS) // wrap-safe idle delta
-            s->used = false;
-    }
+        coaps_service_slot(&s_cpool.pool[i], now, out, sizeof out);
 }
 
 uint8_t coaps_server_active_conns()
