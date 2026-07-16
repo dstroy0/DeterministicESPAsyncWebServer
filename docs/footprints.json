@@ -262,7 +262,7 @@
     "example": "L6-Presentation/06.JWTAuth",
     "flags": "-DDETWS_ENABLE_JWT=1",
     "board": "esp32dev",
-    "flash_bytes": 754501,
+    "flash_bytes": 754529,
     "ram_bytes": 82928
   },
   "KEEPALIVE": {
@@ -570,7 +570,7 @@
     "example": "L7-Application/59.StatsdMetrics",
     "flags": "-DDETWS_ENABLE_STATSD=1",
     "board": "esp32dev",
-    "flash_bytes": 728393,
+    "flash_bytes": 728425,
     "ram_bytes": 45088
   },
   "SYSLOG": {
