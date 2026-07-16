@@ -349,6 +349,29 @@ struct SnmpReqCtx
 };
 static SnmpReqCtx s_req;
 
+// Run the SET varbind loop: apply each varbind, stopping at the first error. On failure writes the
+// SnmpErr and the 1-based varbind index into *err_status/*err_index (left unchanged if all succeed;
+// v2c selects the v2c error variant). Extracted so the per-varbind guards are not nested 4 deep (S134).
+static void snmp_apply_set_all(size_t nvb, bool v2c, long *err_status, long *err_index)
+{
+    for (size_t i = 0; i < nvb; i++)
+    {
+        const SnmpMibEntry *en = mib_find_exact(s_agent, s_req.in[i].oid, s_req.in[i].oid_len);
+        int e = 0;
+        if (!en)
+            e = (int)SnmpErr::SNMP_ERR_NO_SUCH_NAME;
+        else if (!en->setter)
+            e = (!v2c) ? (int)SnmpErr::SNMP_ERR_READ_ONLY : (int)SnmpErr::SNMP_ERR_NOT_WRITABLE;
+        else if (!en->setter(&s_req.in[i].val))
+            e = (!v2c) ? (int)SnmpErr::SNMP_ERR_BAD_VALUE : (int)SnmpErr::SNMP_ERR_WRONG_TYPE;
+        if (!e)
+            continue;
+        *err_status = e;
+        *err_index = (long)(i + 1);
+        return;
+    }
+}
+
 static bool community_eq(const char *stored, const char *p, size_t len)
 {
     return stored[0] != '\0' && strlen(stored) == len && memcmp(stored, p, len) == 0;
@@ -562,28 +585,7 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
         }
         else
         {
-            for (size_t i = 0; i < nvb; i++)
-            {
-                const SnmpMibEntry *en = mib_find_exact(s_agent, s_req.in[i].oid, s_req.in[i].oid_len);
-                if (!en)
-                {
-                    err_status = (int)SnmpErr::SNMP_ERR_NO_SUCH_NAME;
-                    err_index = (long)(i + 1);
-                    break;
-                }
-                if (!en->setter)
-                {
-                    err_status = (!v2c) ? (int)SnmpErr::SNMP_ERR_READ_ONLY : (int)SnmpErr::SNMP_ERR_NOT_WRITABLE;
-                    err_index = (long)(i + 1);
-                    break;
-                }
-                if (!en->setter(&s_req.in[i].val))
-                {
-                    err_status = (!v2c) ? (int)SnmpErr::SNMP_ERR_BAD_VALUE : (int)SnmpErr::SNMP_ERR_WRONG_TYPE;
-                    err_index = (long)(i + 1);
-                    break;
-                }
-            }
+            snmp_apply_set_all(nvb, v2c, &err_status, &err_index);
         }
     }
     else

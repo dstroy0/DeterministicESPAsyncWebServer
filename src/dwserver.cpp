@@ -920,6 +920,23 @@ bool DetWebServer::path_matches(const char *route, bool is_wildcard, const char 
  *
  * @return True on a full match (params captured); false otherwise.
  */
+// Record one `:name` path parameter (key from the route segment, value from the path segment), each
+// truncated to its buffer. No-op once the param table is full. Extracted to keep the matcher loop flat.
+static void capture_path_param(HttpReq *req, const char *key, size_t klen, const char *val, size_t vlen)
+{
+    if (req->path_param_count >= MAX_PATH_PARAMS)
+        return;
+    QueryParam *qp = &req->path_params[req->path_param_count++];
+    if (klen > QUERY_KEY_LEN - 1)
+        klen = QUERY_KEY_LEN - 1;
+    memcpy(qp->key, key, klen);
+    qp->key[klen] = '\0';
+    if (vlen > QUERY_VAL_LEN - 1)
+        vlen = QUERY_VAL_LEN - 1;
+    memcpy(qp->val, val, vlen);
+    qp->val[vlen] = '\0';
+}
+
 static bool match_path_params(const char *route, const char *path, HttpReq *req)
 {
     req->path_param_count = 0;
@@ -943,20 +960,7 @@ static bool match_path_params(const char *route, const char *path, HttpReq *req)
         {
             if (plen == 0)
                 return false; // a `:name` segment must capture a non-empty value
-            if (req->path_param_count < MAX_PATH_PARAMS)
-            {
-                QueryParam *qp = &req->path_params[req->path_param_count++];
-                size_t klen = rlen - 1;
-                if (klen > QUERY_KEY_LEN - 1)
-                    klen = QUERY_KEY_LEN - 1;
-                memcpy(qp->key, rseg + 1, klen);
-                qp->key[klen] = '\0';
-                size_t vlen = plen;
-                if (vlen > QUERY_VAL_LEN - 1)
-                    vlen = QUERY_VAL_LEN - 1;
-                memcpy(qp->val, pseg, vlen);
-                qp->val[vlen] = '\0';
-            }
+            capture_path_param(req, rseg + 1, rlen - 1, pseg, plen);
         }
         else if (rlen != plen || strncmp(rseg, pseg, rlen) != 0)
         {

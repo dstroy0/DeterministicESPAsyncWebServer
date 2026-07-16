@@ -384,6 +384,19 @@ void sqlite_table_cursor_set_overflow_buf(SqliteTableCursor *c, uint8_t *buf, ui
     c->ovf_cap = cap;
 }
 
+// Begin reading a row record from one leaf cell: straight from the leaf page, or (for an overflowing
+// cell) reassembled into the caller's overflow buffer first. Extracted to keep the cursor loop flat.
+static bool sqlite_cursor_begin_row(SqliteTableCursor *c, const SqliteTableLeafCell *cell, SqliteRecordCursor *row)
+{
+    if (!cell->has_overflow || !c->ovf_buf)
+        return sqlite_record_begin(row, c->leaf + cell->local_off, cell->local_len);
+    // c->work is free here (we are at a leaf, not descending), so it serves as the scratch page.
+    if (!sqlite_read_payload(c->read, c->ctx, c->page_size, c->reserved, c->leaf, cell, c->ovf_buf, c->ovf_cap,
+                             c->work))
+        return false;
+    return sqlite_record_begin(row, c->ovf_buf, cell->payload_len);
+}
+
 bool sqlite_table_cursor_next(SqliteTableCursor *c, uint64_t *rowid, SqliteRecordCursor *row)
 {
     for (;;)
@@ -397,17 +410,7 @@ bool sqlite_table_cursor_next(SqliteTableCursor *c, uint64_t *rowid, SqliteRecor
             SqliteTableLeafCell cell;
             if (!sqlite_parse_table_leaf_cell(c->leaf, c->page_size, c->page_size, c->reserved, cp, &cell))
                 continue;
-            if (cell.has_overflow && c->ovf_buf)
-            {
-                // Reassemble the full record into the caller's overflow buffer, then read columns from it.
-                // c->work is free here (we are at a leaf, not descending), so it serves as the scratch page.
-                if (!sqlite_read_payload(c->read, c->ctx, c->page_size, c->reserved, c->leaf, &cell, c->ovf_buf,
-                                         c->ovf_cap, c->work))
-                    continue;
-                if (!sqlite_record_begin(row, c->ovf_buf, cell.payload_len))
-                    continue;
-            }
-            else if (!sqlite_record_begin(row, c->leaf + cell.local_off, cell.local_len))
+            if (!sqlite_cursor_begin_row(c, &cell, row))
                 continue;
             *rowid = cell.rowid;
             return true;

@@ -61,6 +61,20 @@ static bool re_class_member(char lo, char hi, char ch)
     return ch >= lo && ch <= hi;
 }
 
+// Read one class atom at *q (a backslash-escape consumes 2 bytes, else 1), advancing q past it.
+static char re_read_atom(const char *&q, const char *end)
+{
+    if (*q == '\\' && (q + 1) < end)
+    {
+        char c = q[1];
+        q += 2;
+        return c;
+    }
+    char c = *q;
+    q++;
+    return c;
+}
+
 // Does the atom [p, p+len) match the single character ch (ch != '\0')?
 static bool re_atom_matches(const char *p, size_t len, char ch)
 {
@@ -102,33 +116,12 @@ static bool re_atom_matches(const char *p, size_t len, char ch)
         bool m = false;
         while (q < end)
         {
-            char lo;
-            if (*q == '\\' && (q + 1) < end)
-            {
-                lo = q[1];
-                q += 2;
-            }
-            else
-            {
-                lo = *q;
-                q++;
-            }
+            char lo = re_read_atom(q, end);
             if (q < end && *q == '-' && (q + 1) < end && q[1] != ']')
             {
                 q++; // consume '-'
-                char hi;
-                if (*q == '\\' && (q + 1) < end)
-                {
-                    hi = q[1];
-                    q += 2;
-                }
-                else
-                {
-                    hi = *q;
-                    q++;
-                }
-                if (re_class_member(lo, hi, ch))
-                    m = true;
+                char hi = re_read_atom(q, end);
+                m = re_class_member(lo, hi, ch) || m;
             }
             else if (ch == lo)
             {
