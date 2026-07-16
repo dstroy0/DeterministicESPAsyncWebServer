@@ -527,7 +527,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3032 test cases** across **257 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3187 test cases** across **257 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -684,7 +684,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ads (11 tests)</b></summary>
+<summary><b>test_ads (17 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_read_bytes</b> &mdash; <i>Build read bytes</i></summary>
@@ -833,6 +833,105 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert false (ads_parse_ams_header(badres, sizeof(badres), &h))</code>
       * <code>Assert false (ads_parse_ams_header(liar, sizeof(liar), &h))</code>
       * <code>Assert false (ads_parse_read(bad_read, sizeof(bad_read), &rr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_read_device_info_and_del</b> &mdash; <i>Build read device info and del</i></summary>
+
+    * **Objective**: Build read device info and del
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, buf[22]);                               // cmd 1 (ReadDeviceInfo)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[26]);                               // cbData 0</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ads_build_read_device_info(buf, 8, &r)); // buffer too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 4, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x07, buf[22]);          // cmd 7 (DeleteNotification)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x04, buf[26]);          // cbData 4</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xDD, buf[ADS_HDR_LEN]); // handle LE</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xCC, buf[ADS_HDR_LEN + 1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xBB, buf[ADS_HDR_LEN + 2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xAA, buf[ADS_HDR_LEN + 3]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ads_build_del_notification(buf, 8, &r, 0)); // buffer too small</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_null_and_small_buffer_guards</b> &mdash; <i>Write: null data with len>0 rejects; len==0 skips the copy; a too-small buffer fails closed.</i></summary>
+
+    * **Objective**: Write: null data with len>0 rejects; len==0 skips the copy; a too-small buffer fails closed.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ads_build_read_state(nullptr, sizeof(buf), &r));  // write_header !buf</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ads_build_read_state(buf, sizeof(buf), nullptr)); // write_header !r</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ads_build_write(buf, sizeof(buf), &r, 0x4020, 0, nullptr, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 12, ads_build_write(buf, sizeof(buf), &r, 0x4020, 0, nullptr, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ads_build_write(buf, 40, &r, 0x4020, 0, val, 4)); // needs 54</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ads_build_read_write(buf, sizeof(buf), &r, 0xF003, 0, 4, nullptr, 12));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 16, ads_build_read_write(buf, sizeof(buf), &r, 0xF003, 0, 4, nullptr, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ads_build_read_write(buf, 40, &r, 0xF003, 0, 4, val, 4)); // needs 58</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_write_control_variants</b> &mdash; <i>Build write control variants</i></summary>
+
+    * **Objective**: Build write control variants
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 8 + 2, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x06, buf[ADS_HDR_LEN]);     // ADS state = stop (6) LE</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x07, buf[ADS_HDR_LEN + 2]); // device state 7</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x02, buf[ADS_HDR_LEN + 4]); // length 2</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xAA, buf[ADS_HDR_LEN + 8]); // copied data</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xBB, buf[ADS_HDR_LEN + 9]);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ads_build_write_control(buf, sizeof(buf), &r, 0, 0, nullptr, 4));      // len && !data</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ads_build_write_control(buf, 40, &r, 0, 0, payload, sizeof(payload))); // needs 48</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_ams_header_more_guards</b> &mdash; <i>Parse ams header more guards</i></summary>
+
+    * **Objective**: Parse ams header more guards
+    * **Assertions**:
+      * <code>Assert true (fn &gt; 0)</code>
+      * <code>Assert false (ads_parse_ams_header(frame, fn, nullptr))</code>
+      * <code>Assert false (ads_parse_ams_header(r1, sizeof(r1), &h))</code>
+      * <code>Assert false (ads_parse_ams_header(shortlen, sizeof(shortlen), &h))</code>
+      * <code>Assert false (ads_parse_ams_header(bigcb, sizeof(bigcb), &h))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_payload_guards</b> &mdash; <i>Parse payload guards</i></summary>
+
+    * **Objective**: Parse payload guards
+    * **Assertions**:
+      * <code>Assert false (ads_parse_read(nullptr, 8, &rr))</code>
+      * <code>Assert false (ads_parse_read(data, 8, nullptr))</code>
+      * <code>Assert false (ads_parse_read(data, 4, &rr))</code>
+      * <code>Assert false (ads_parse_result(nullptr, 4, &res))</code>
+      * <code>Assert false (ads_parse_result(data, 4, nullptr))</code>
+      * <code>Assert false (ads_parse_result(data, 2, &res))</code>
+      * <code>Assert false (ads_parse_read_state(nullptr, 8, &st))</code>
+      * <code>Assert false (ads_parse_read_state(data, 8, nullptr))</code>
+      * <code>Assert false (ads_parse_read_state(data, 4, &st))</code>
+      * <code>Assert false (ads_parse_read_device_info(nullptr, 24, &di))</code>
+      * <code>Assert false (ads_parse_read_device_info(data, 24, nullptr))</code>
+      * <code>Assert false (ads_parse_read_device_info(data, 20, &di))</code>
+      * <code>Assert false (ads_parse_add_notification(nullptr, 8, &result, &handle))</code>
+      * <code>Assert false (ads_parse_add_notification(data, 8, nullptr, &handle))</code>
+      * <code>Assert false (ads_parse_add_notification(data, 8, &result, nullptr))</code>
+      * <code>Assert false (ads_parse_add_notification(data, 4, &result, &handle))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_notification_guards</b> &mdash; <i>Parse notification guards</i></summary>
+
+    * **Objective**: Parse notification guards
+    * **Assertions**:
+      * <code>Assert false (ads_parse_notification(nullptr, 8, on_sample, nullptr))</code>
+      * <code>Assert false (ads_parse_notification(data, 8, nullptr, nullptr))</code>
+      * <code>Assert false (ads_parse_notification(data, 4, on_sample, nullptr))</code>
+      * <code>Assert false (ads_parse_notification(bad_length, sizeof(bad_length), on_sample, nullptr))</code>
+      * <code>Assert false (ads_parse_notification(short_stamp, sizeof(short_stamp), on_sample, nullptr))</code>
+      * <code>Assert false (ads_parse_notification(short_sample, sizeof(short_sample), on_sample, nullptr))</code>
+      * <code>Assert false (ads_parse_notification(short_data, sizeof(short_data), on_sample, nullptr))</code>
   </details>
 
 </details>
@@ -3021,7 +3120,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_cc1101 (11 tests)</b></summary>
+<summary><b>test_cc1101 (18 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_init_configures_and_detects</b> &mdash; <i>Init configures and detects</i></summary>
@@ -3132,6 +3231,71 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert false (cc1101_send(&g_bus, data, 0))</code>
       * <code>Assert false (cc1101_send(&g_bus, data, 64))</code>
       * <code>Assert true (cc1101_send(&g_bus, data, 8))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_init_null_args</b> &mdash; <i>Init null args</i></summary>
+
+    * **Objective**: Init null args
+    * **Assertions**:
+      * <code>Assert false (cc1101_init(nullptr, &c))</code>
+      * <code>Assert false (cc1101_init(&g_bus_no_spi, &c))</code>
+      * <code>Assert false (cc1101_init(&g_bus, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_init_no_regs</b> &mdash; <i>Init no regs</i></summary>
+
+    * **Objective**: Init no regs
+    * **Assertions**:
+      * <code>Assert true (cc1101_init(&g_bus, &c))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(7, g.reg[0x0A]); // CHANNR still applied</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_tx_done_null_args</b> &mdash; <i>Tx done null args</i></summary>
+
+    * **Objective**: Tx done null args
+    * **Assertions**:
+      * <code>Assert false (cc1101_tx_done(nullptr))</code>
+      * <code>Assert false (cc1101_tx_done(&g_bus_no_spi))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_set_rx_null_args</b> &mdash; <i>Set rx null args</i></summary>
+
+    * **Objective**: Set rx null args
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xEE, g.last_strobe); // untouched: the guard returned before any SPI</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_recv_null_args</b> &mdash; <i>Recv null args</i></summary>
+
+    * **Objective**: Recv null args
+    * **Assertions**:
+      * <code>Assert equal int (-1, cc1101_recv(nullptr, buf, sizeof(buf), &rssi))</code>
+      * <code>Assert equal int (-1, cc1101_recv(&g_bus_no_spi, buf, sizeof(buf), &rssi))</code>
+      * <code>Assert equal int (-1, cc1101_recv(&g_bus, nullptr, sizeof(buf), &rssi))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_recv_bad_length</b> &mdash; <i>Zero length byte with bytes waiting.</i></summary>
+
+    * **Objective**: Zero length byte with bytes waiting.
+    * **Assertions**:
+      * <code>Assert equal int (-1, cc1101_recv(&g_bus, buf, sizeof(buf), nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x3A, g.last_strobe); // SFRX flush issued</code>
+      * <code>Assert equal int (-1, cc1101_recv(&g_bus, buf, sizeof(buf), nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x3A, g.last_strobe);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_send_null_spi</b> &mdash; <i>Send null spi</i></summary>
+
+    * **Objective**: Send null spi
+    * **Assertions**:
+      * <code>Assert false (cc1101_send(&g_bus_no_spi, data, 8))</code>
   </details>
 
 </details>
@@ -3338,7 +3502,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_cia402 (9 tests)</b></summary>
+<summary><b>test_cia402 (15 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_state_decode</b> &mdash; <i>State decode</i></summary>
@@ -3466,6 +3630,86 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_INT32(-12345, actual);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, cia402_pack_command(buf, 4, 0, 0)); // too small</code>
       * <code>Assert false (cia402_unpack_status(tpdo, 5, &sw, &actual))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_state_decode_unknown</b> &mdash; <i>State decode unknown</i></summary>
+
+    * **Objective**: State decode unknown
+    * **Assertions**:
+      * <code>Assert true (cia402_state(0x0001) == Cia402State::unknown)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_controlword_invalid_command</b> &mdash; <i>Controlword invalid command</i></summary>
+
+    * **Objective**: Controlword invalid command
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0000, cia402_controlword((Cia402Command)99));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sdo_set_velocity_torque</b> &mdash; <i>null out frame -> false, for every SDO setter (each forwards canopen_build_sdo_write's false).</i></summary>
+
+    * **Objective**: null out frame -> false, for every SDO setter (each forwards canopen_build_sdo_write's false).
+    * **Assertions**:
+      * <code>Assert true (cia402_sdo_set_target_velocity(&f, 2, 0x0A0B0C0D))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x602u, f.id);   // SDO_RX (0x600) + node 2</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, f.data[1]); // index 0x60FF LE</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x60, f.data[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, f.data[3]); // sub 0</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0D, f.data[4]); // value LE</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0C, f.data[5]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0B, f.data[6]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0A, f.data[7]);</code>
+      * <code>Assert true (cia402_sdo_set_target_torque(&f, 4, -2))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x604u, f.id);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x71, f.data[1]); // index 0x6071 LE</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x60, f.data[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFE, f.data[4]); // -2 LE</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, f.data[5]);</code>
+      * <code>Assert false (cia402_sdo_set_controlword(nullptr, 5, 0x000F))</code>
+      * <code>Assert false (cia402_sdo_set_mode(nullptr, 3, Cia402Mode::cyclic_sync_position))</code>
+      * <code>Assert false (cia402_sdo_set_target_position(nullptr, 1, 0))</code>
+      * <code>Assert false (cia402_sdo_set_target_velocity(nullptr, 2, 0))</code>
+      * <code>Assert false (cia402_sdo_set_target_torque(nullptr, 4, 0))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sdo_get_i32_roundtrip</b> &mdash; <i>want_index 0 skips the index match (the short-circuited first arm) and still decodes.</i></summary>
+
+    * **Objective**: want_index 0 skips the index match (the short-circuited first arm) and still decodes.
+    * **Assertions**:
+      * <code>Assert true (cia402_sdo_get_i32(&resp, CIA402_OD_POSITION_ACTUAL, &val))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-20, val);</code>
+      * <code>Assert true (cia402_sdo_get_i32(&resp, 0, &val))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-20, val);</code>
+      * <code>Assert false (cia402_sdo_get_i32(&resp, 0, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_sdo_upload_reject_paths</b> &mdash; <i>(a) parse failure: dlc < 8 makes canopen_parse_sdo_response fail.</i></summary>
+
+    * **Objective**: (a) parse failure: dlc < 8 makes canopen_parse_sdo_response fail.
+    * **Assertions**:
+      * <code>Assert false (cia402_sdo_get_u16(&shortf, 0, &v))</code>
+      * <code>Assert false (cia402_sdo_get_u16(&ab, 0, &v))</code>
+      * <code>Assert false (cia402_sdo_get_u16(&dl, 0, &v))</code>
+      * <code>Assert false (cia402_sdo_get_u16(&seg, 0, &v))</code>
+      * <code>Assert false (cia402_sdo_get_u16(&shortlen, 0, &v))</code>
+      * <code>Assert false (cia402_sdo_get_u16(&okresp, 0, nullptr))</code>
+      * <code>Assert false (cia402_sdo_get_i32(&u16resp, 0, &iv))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pdo_null_guards</b> &mdash; <i>Pdo null guards</i></summary>
+
+    * **Objective**: Pdo null guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, cia402_pack_command(nullptr, sizeof(buf), 0, 0));  // null buffer</code>
+      * <code>Assert false (cia402_unpack_status(nullptr, sizeof(tpdo), &sw, &actual))</code>
+      * <code>Assert false (cia402_unpack_status(tpdo, sizeof(tpdo), nullptr, &actual))</code>
+      * <code>Assert false (cia402_unpack_status(tpdo, sizeof(tpdo), &sw, nullptr))</code>
   </details>
 
 </details>
@@ -4574,7 +4818,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_control (12 tests)</b></summary>
+<summary><b>test_control (17 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_proportional_only</b> &mdash; <i>Proportional only</i></summary>
@@ -4688,6 +4932,80 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert true (near_f(control_slew(10.0f, 0.0f, 2.0f), 2.0f))</code>
       * <code>Assert true (near_f(control_slew(1.0f, 0.0f, 2.0f), 1.0f))</code>
       * <code>Assert true (near_f(control_lpf(0.0f, 10.0f, 0.25f), 2.5f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_setter_null_guards</b> &mdash; <i>Setter null guards</i></summary>
+
+    * **Objective**: Setter null guards
+    * **Assertions**:
+      * <code>Assert true (p.dt == 0.0f)</code>
+      * <code>Assert true (near_f(pid_update_fixed(&p, 1.0f, 0.0f), 0.0f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_integral_limits_take_effect</b> &mdash; <i>Integral limits take effect</i></summary>
+
+    * **Objective**: Integral limits take effect
+    * **Assertions**:
+      * <code>Assert true (near_f(p.integ_min, -0.5f))</code>
+      * <code>Assert true (near_f(p.integ_max, 0.5f))</code>
+      * <code>Assert true (near_f(p.integ, 0.5f))</code>
+      * <code>Assert true (near_f(p.integ, 0.5f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pid_update_n_null_guards</b> &mdash; <i>Pid update n null guards</i></summary>
+
+    * **Objective**: Pid update n null guards
+    * **Assertions**:
+      * <code>Assert true (out[0] == 123.0f)</code>
+      * <code>Assert true (out[0] == 123.0f)</code>
+      * <code>Assert true (out[0] == 123.0f)</code>
+      * <code>Assert true (out[0] == 123.0f)</code>
+      * <code>Assert true (near_f(out[0], 5.0f))</code>
+      * <code>Assert true (near_f(out[1], 5.0f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pid_log_header_bytes</b> &mdash; <i>guards: null buf, null Pid, capacity too small -> 0.</i></summary>
+
+    * **Objective**: guards: null buf, null Pid, capacity too small -> 0.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(PID_LOG_HEADER_LEN, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('D', buf[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('P', buf[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('I', buf[2]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8('D', buf[3]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(PID_LOG_VERSION, buf[4]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0, buf[5]);                   // flags (reserved)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0, rd_u16le(buf + 6));       // reserved u16</code>
+      * <code>Assert true (near_f(rd_f32le(buf + 8), 0.01f))</code>
+      * <code>Assert true (near_f(rd_f32le(buf + 12), 1.5f))</code>
+      * <code>Assert true (near_f(rd_f32le(buf + 16), 2.5f))</code>
+      * <code>Assert true (near_f(rd_f32le(buf + 20), 0.75f))</code>
+      * <code>Assert true (near_f(rd_f32le(buf + 24), 0.25f))</code>
+      * <code>Assert true (near_f(rd_f32le(buf + 28), -5.0f))</code>
+      * <code>Assert true (near_f(rd_f32le(buf + 32), 5.0f))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, pid_log_header(nullptr, sizeof(buf), &p, 0.01f));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, pid_log_header(buf, sizeof(buf), nullptr, 0.01f));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, pid_log_header(buf, PID_LOG_HEADER_LEN - 1, &p, 0.01f));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pid_log_record_bytes</b> &mdash; <i>guards: null buf, capacity too small -> 0.</i></summary>
+
+    * **Objective**: guards: null buf, capacity too small -> 0.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(PID_LOG_RECORD_LEN, n);</code>
+      * <code>Assert true (near_f(rd_f32le(buf + 0), 3.0f))</code>
+      * <code>Assert true (near_f(rd_f32le(buf + 4), 2.0f))</code>
+      * <code>Assert true (near_f(rd_f32le(buf + 8), 4.5f))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(PID_LOG_STATUS_SATURATED, rd_u32le(buf + 12));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(PID_LOG_RECORD_LEN, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0u, rd_u32le(buf + 12)); // status clear when not saturated</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, pid_log_record(nullptr, sizeof(buf), 0.0f, 0.0f, 0.0f, false));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, pid_log_record(buf, PID_LOG_RECORD_LEN - 1, 0.0f, 0.0f, 0.0f, false));</code>
   </details>
 
 </details>
@@ -7338,7 +7656,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_docstore (5 tests)</b></summary>
+<summary><b>test_docstore (7 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_put_get_del</b> &mdash; <i>Replace u1's document.</i></summary>
@@ -7404,6 +7722,30 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(1, m);</code>
       * <code>Assert equal int (1, once.seen)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_find_field_absent</b> &mdash; <i>Find field absent</i></summary>
+
+    * **Objective**: Find field absent
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_str(&g_ds, "name", "x", collect, &cs)); // "b" has no name</code>
+      * <code>Assert true (has_id(&cs, "a"))</code>
+      * <code>Assert false (has_id(&cs, "b"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_int(&g_ds, "age", 5, collect, &ci)); // "b" has no age</code>
+      * <code>Assert true (has_id(&ci, "a"))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_bool(&g_ds, "on", true, collect, &cb)); // "b" has no on</code>
+      * <code>Assert true (has_id(&cb, "a"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_find_count_only_null_cb</b> &mdash; <i>Find count only null cb</i></summary>
+
+    * **Objective**: Find count only null cb
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_docstore_find_str(&g_ds, "grp", "x", nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_str(&g_ds, "grp", "y", nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_docstore_find_str(&g_ds, "grp", "z", nullptr, nullptr));</code>
   </details>
 
 </details>
@@ -9236,7 +9578,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_gnss_survey (9 tests)</b></summary>
+<summary><b>test_gnss_survey (22 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_geodetic_to_ecef_matches_pyproj</b> &mdash; <i>pyproj prints to 1e-6 m; allow 0.2 mm for that rounding plus our own.</i></summary>
@@ -9344,6 +9686,138 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert double within (1e-2, direct.x, mean.x)</code>
       * <code>Assert double within (1e-2, direct.y, mean.y)</code>
       * <code>Assert double within (1e-2, direct.z, mean.z)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ecef_to_geodetic_north_pole</b> &mdash; <i>Ecef to geodetic north pole</i></summary>
+
+    * **Objective**: Ecef to geodetic north pole
+    * **Assertions**:
+      * <code>Assert equal double (90.0, g.lat_deg)</code>
+      * <code>Assert equal double (0.0, g.lon_deg); // atan2(0, 0)</code>
+      * <code>Assert double within (1e-4, 100.0, g.height_m)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ecef_to_geodetic_south_pole</b> &mdash; <i>Ecef to geodetic south pole</i></summary>
+
+    * **Objective**: Ecef to geodetic south pole
+    * **Assertions**:
+      * <code>Assert equal double (-90.0, g.lat_deg)</code>
+      * <code>Assert double within (1e-4, 250.0, g.height_m)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_gga_empty_lat_rejected</b> &mdash; <i>Gga empty lat rejected</i></summary>
+
+    * **Objective**: Gga empty lat rejected
+    * **Assertions**:
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert false (gnss_gga_to_geodetic(&m, &g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_gga_nonnumeric_lat_rejected</b> &mdash; <i>Gga nonnumeric lat rejected</i></summary>
+
+    * **Objective**: Gga nonnumeric lat rejected
+    * **Assertions**:
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert false (gnss_gga_to_geodetic(&m, &g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_gga_empty_lon_rejected</b> &mdash; <i>Gga empty lon rejected</i></summary>
+
+    * **Objective**: Gga empty lon rejected
+    * **Assertions**:
+      * <code>Assert true (build_parse_gga("GPGGA,124515.00,3723.2475,N,,W,1,08,0.9,30.5,M,-25.0,M,,", buf, sizeof(buf), &m))</code>
+      * <code>Assert false (gnss_gga_to_geodetic(&m, &g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_gga_empty_quality_rejected</b> &mdash; <i>Gga empty quality rejected</i></summary>
+
+    * **Objective**: Gga empty quality rejected
+    * **Assertions**:
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert false (gnss_gga_to_geodetic(&m, &g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_gga_empty_altitude_rejected</b> &mdash; <i>Gga empty altitude rejected</i></summary>
+
+    * **Objective**: Gga empty altitude rejected
+    * **Assertions**:
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert false (gnss_gga_to_geodetic(&m, &g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_gga_too_few_fields_rejected</b> &mdash; <i>Gga too few fields rejected</i></summary>
+
+    * **Objective**: Gga too few fields rejected
+    * **Assertions**:
+      * <code>Assert true (build_parse_gga("GPGGA,124515.00,3723.2475,N,12202.1236,W,1", buf, sizeof(buf), &m))</code>
+      * <code>Assert true (m.field_count &lt; 10)</code>
+      * <code>Assert false (gnss_gga_to_geodetic(&m, &g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_gga_southern_eastern_hemisphere</b> &mdash; <i>Gga southern eastern hemisphere</i></summary>
+
+    * **Objective**: Gga southern eastern hemisphere
+    * **Assertions**:
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert true (gnss_gga_to_geodetic(&m, &g))</code>
+      * <code>Assert double within (1e-6, -37.3874583333, g.lat_deg)</code>
+      * <code>Assert double within (1e-6, 122.0353933333, g.lon_deg)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_gga_lowercase_hemispheres</b> &mdash; <i>Gga lowercase hemispheres</i></summary>
+
+    * **Objective**: Gga lowercase hemispheres
+    * **Assertions**:
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert true (gnss_gga_to_geodetic(&m, &g))</code>
+      * <code>Assert double within (1e-6, -37.3874583333, g.lat_deg)</code>
+      * <code>Assert double within (1e-6, -122.0353933333, g.lon_deg)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_gga_geoid_absent_defaults_zero</b> &mdash; <i>Gga geoid absent defaults zero</i></summary>
+
+    * **Objective**: Gga geoid absent defaults zero
+    * **Assertions**:
+      * <code>Assert true (build_parse_gga("GPGGA,124515.00,3723.2475,N,12202.1236,W,1,08,0.9,30.5,M", buf, sizeof(buf), &m))</code>
+      * <code>Assert true (gnss_gga_to_geodetic(&m, &g))</code>
+      * <code>Assert double within (1e-6, 30.5, g.height_m)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_gga_bad_args_and_types_rejected</b> &mdash; <i>Gga bad args and types rejected</i></summary>
+
+    * **Objective**: Gga bad args and types rejected
+    * **Assertions**:
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert false (gnss_gga_to_geodetic(nullptr, &g))</code>
+      * <code>Assert false (gnss_gga_to_geodetic(&good, nullptr))</code>
+      * <code>Assert true (build_parse_gga("GPVTG,054.7,T,034.4,M,005.5,N,010.2,K", b2, sizeof(b2), &m))</code>
+      * <code>Assert false (gnss_gga_to_geodetic(&m, &g))</code>
+      * <code>Assert true (build_parse_gga("GPGLL,3723.2475,N,12202.1236,W,124515,A", b2, sizeof(b2), &m))</code>
+      * <code>Assert false (gnss_gga_to_geodetic(&m, &g))</code>
+      * <code>Assert true (build_parse_gga("GPGGZ,124515.00,3723.2475,N,12202.1236,W,1,08,0.9,30.5,M", b2, sizeof(b2), &m))</code>
+      * <code>Assert false (gnss_gga_to_geodetic(&m, &g))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_survey_add_gga_rejects_bad_fix</b> &mdash; <i>Survey add gga rejects bad fix</i></summary>
+
+    * **Objective**: Survey add gga rejects bad fix
+    * **Assertions**:
+      * <code>TEST_ASSERT_TRUE(</code>
+      * <code>Assert false (gnss_survey_add_gga(&s, &m))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, gnss_survey_count(&s));</code>
   </details>
 
 </details>
@@ -14374,7 +14848,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_link_manager (4 tests)</b></summary>
+<summary><b>test_link_manager (7 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_init_none_up</b> &mdash; <i>Init none up</i></summary>
@@ -14422,6 +14896,38 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert false (detws_link_set(&g_m, 9, true, &from, &to))</code>
       * <code>Assert equal int (1, from)</code>
       * <code>Assert equal int (1, to)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_select_null_guards</b> &mdash; <i>Select null guards</i></summary>
+
+    * **Objective**: Select null guards
+    * **Assertions**:
+      * <code>Assert equal int (-1, detws_link_select(nullptr))</code>
+      * <code>Assert equal int (-1, detws_link_select(&m))</code>
+      * <code>Assert equal int (-1, detws_link_active(&m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_init_and_active_null</b> &mdash; <i>Init and active null</i></summary>
+
+    * **Objective**: Init and active null
+    * **Assertions**:
+      * <code>Assert equal int (-1, detws_link_active(nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_set_guard_paths</b> &mdash; <i>Null manager: reports -1 for both previous and new active, returns false.</i></summary>
+
+    * **Objective**: Null manager: reports -1 for both previous and new active, returns false.
+    * **Assertions**:
+      * <code>Assert false (detws_link_set(nullptr, 0, true, &from, &to))</code>
+      * <code>Assert equal int (-1, from)</code>
+      * <code>Assert equal int (-1, to)</code>
+      * <code>Assert false (detws_link_set(&m, 0, true, &from, &to))</code>
+      * <code>Assert equal int (-1, from)</code>
+      * <code>Assert equal int (-1, to)</code>
+      * <code>Assert false (detws_link_set(&g_m, 9, true, nullptr, nullptr))</code>
   </details>
 
 </details>
@@ -15735,7 +16241,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_modbus_master (5 tests)</b></summary>
+<summary><b>test_modbus_master (12 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_build_read_bytes</b> &mdash; <i>Build read bytes</i></summary>
@@ -15786,6 +16292,69 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
     * **Objective**: Parse short frame fails
     * **Assertions**:
       * <code>Assert equal int (-1, modbus_parse_response(buf, sizeof(buf), nullptr, 0, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_build_null_out_and_input_fc</b> &mdash; <i>Build null out and input fc</i></summary>
+
+    * **Objective**: Build null out and input fc
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, modbus_build_read(0x03, 1, 1, 0, 2, nullptr, 16)); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(12, n);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x04, adu[7]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_null_adu</b> &mdash; <i>Parse null adu</i></summary>
+
+    * **Objective**: Parse null adu
+    * **Assertions**:
+      * <code>Assert equal int (-1, modbus_parse_response(nullptr, 12, regs, 4, &ex))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_bad_protocol_id</b> &mdash; <i>Parse bad protocol id</i></summary>
+
+    * **Objective**: Parse bad protocol id
+    * **Assertions**:
+      * <code>Assert equal int (-1, modbus_parse_response(adu, sizeof(adu), regs, 4, &ex))</code>
+      * <code>Assert equal int (-1, modbus_parse_response(adu, sizeof(adu), regs, 4, &ex))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_unexpected_function</b> &mdash; <i>Parse unexpected function</i></summary>
+
+    * **Objective**: Parse unexpected function
+    * **Assertions**:
+      * <code>Assert equal int (-1, modbus_parse_response(adu, sizeof(adu), regs, 4, &ex))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_exception_null_out</b> &mdash; <i>Parse exception null out</i></summary>
+
+    * **Objective**: Parse exception null out
+    * **Assertions**:
+      * <code>Assert equal int (0, modbus_parse_response(adu, sizeof(adu), regs, 4, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_bad_byte_count</b> &mdash; <i>Parse bad byte count</i></summary>
+
+    * **Objective**: Parse bad byte count
+    * **Assertions**:
+      * <code>Assert equal int (-1, modbus_parse_response(odd, sizeof(odd), regs, 4, &ex))</code>
+      * <code>Assert equal int (-1, modbus_parse_response(truncated, sizeof(truncated), regs, 4, &ex))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_max_regs_and_null_out</b> &mdash; <i>A 4-register response (byte count 8), len = 9 + 8 = 17.</i></summary>
+
+    * **Objective**: A 4-register response (byte count 8), len = 9 + 8 = 17.
+    * **Assertions**:
+      * <code>Assert equal int (2, got)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x1122, regs[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x3344, regs[1]);</code>
+      * <code>Assert equal int (4, got2)</code>
   </details>
 
 </details>
@@ -17781,7 +18350,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ntlm (3 tests)</b></summary>
+<summary><b>test_ntlm (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_ntowfv2</b> &mdash; <i>MS-NLMP 4.2.4.1 published value</i></summary>
@@ -17810,6 +18379,50 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
     * **Objective**: Fail closed
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, ntlm_v2_response(owf, srv, cli, time, ti, sizeof(ti), out, sizeof(out), skey));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ntowfv2_user_overflow</b> &mdash; <i>Ntowfv2 user overflow</i></summary>
+
+    * **Objective**: Ntowfv2 user overflow
+    * **Assertions**:
+      * <code>Assert false (ntlm_ntowfv2(nt, user, "X", owf))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ntowfv2_domain_overflow</b> &mdash; <i>Ntowfv2 domain overflow</i></summary>
+
+    * **Objective**: Ntowfv2 domain overflow
+    * **Assertions**:
+      * <code>Assert false (ntlm_ntowfv2(nt, user, domain, owf))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ntowfv2_upper_high_char</b> &mdash; <i>A null out buffer fails closed before any write (ntlm.cpp:86, the !out side of the guard).</i></summary>
+
+    * **Objective**: A null out buffer fails closed before any write (ntlm.cpp:86, the !out side of the guard).
+    * **Assertions**:
+      * <code>Assert true (ntlm_ntowfv2(nt, "a{z", "", owf))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ntlm_v2_response(owf, srv, cli, time, ti, sizeof(ti), nullptr, 100, skey));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(48 + ti_len, n);</code>
+      * <code>Assert equal string ("68cd0ab851e51c96aabc927bebef6a1c", hex)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v2_response_null_out</b> &mdash; <i>V2 response null out</i></summary>
+
+    * **Objective**: V2 response null out
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, ntlm_v2_response(owf, srv, cli, time, ti, sizeof(ti), nullptr, 100, skey));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_v2_response_null_skey</b> &mdash; <i>V2 response null skey</i></summary>
+
+    * **Objective**: V2 response null skey
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(48 + ti_len, n);</code>
+      * <code>Assert equal string ("68cd0ab851e51c96aabc927bebef6a1c", hex)</code>
   </details>
 
 </details>
@@ -22656,7 +23269,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_quic_crypto (7 tests)</b></summary>
+<summary><b>test_quic_crypto (13 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_aes128_block_fips197</b> &mdash; <i>Aes128 block fips197</i></summary>
@@ -22739,10 +23352,61 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert false (quic_aes128_gcm_open(key, nonce, nullptr, 0, ct, sizeof ct, out))</code>
   </details>
 
+  <details style="margin-left: 20px;">
+    <summary><b>test_protect_rejects_bad_pn_len</b> &mdash; <i>Protect rejects bad pn len</i></summary>
+
+    * **Objective**: Protect rejects bad pn len
+    * **Assertions**:
+      * <code>Assert equal int (0, (int)</code>
+      * <code>Assert equal int (0, (int)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_protect_rejects_small_cap</b> &mdash; <i>hdr(pn_offset 4 + pn_len 2 = 6) + payload(100) + tag(16) = 122 > cap 8.</i></summary>
+
+    * **Objective**: hdr(pn_offset 4 + pn_len 2 = 6) + payload(100) + tag(16) = 122 > cap 8.
+    * **Assertions**:
+      * <code>Assert equal int (0, (int)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_unprotect_rejects_short</b> &mdash; <i>Unprotect rejects short</i></summary>
+
+    * **Objective**: Unprotect rejects short
+    * **Assertions**:
+      * <code>Assert true (got == (size_t)-1)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_unprotect_rejects_tampered</b> &mdash; <i>Unprotect rejects tampered</i></summary>
+
+    * **Objective**: Unprotect rejects tampered
+    * **Assertions**:
+      * <code>Assert equal int (135, (int)elen)</code>
+      * <code>Assert true (got == (size_t)-1)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_retry_tag_rejects_oversize</b> &mdash; <i>ODCID length beyond the QUIC maximum -> first guard condition.</i></summary>
+
+    * **Objective**: ODCID length beyond the QUIC maximum -> first guard condition.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(zero, tag, 16);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(zero, tag, 16);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_hkdf_expand_label_multiblock</b> &mdash; <i>Hkdf expand label multiblock</i></summary>
+
+    * **Objective**: Hkdf expand label multiblock
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, got, sizeof got);</code>
+  </details>
+
 </details>
 
 <details>
-<summary><b>test_quic_frame (9 tests)</b></summary>
+<summary><b>test_quic_frame (11 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_frame_edge_guards</b> &mdash; <i>STREAM with LEN set but the Length varint is absent -> rejected at the length read.</i></summary>
@@ -22787,6 +23451,16 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert true (f.ack.range_count == 0 && f.ack.first_range == 3)</code>
       * <code>Assert equal int (10, (int)quic_frame_parse(ecn, sizeof ecn, &f))</code>
       * <code>Assert true (f.ack.largest == 60 && f.ack.range_count == 1 && f.ack.first_range == 3)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ack_multi_range</b> &mdash; <i>type 0x03, largest 60, delay 5, range_count 2, first_range 3, [gap 2,len 4][gap 1,len 1], ECN 1/2/0.</i></summary>
+
+    * **Objective**: type 0x03, largest 60, delay 5, range_count 2, first_range 3, [gap 2,len 4][gap 1,len 1], ECN 1/2/0.
+    * **Assertions**:
+      * <code>Assert equal int (12, (int)quic_frame_parse(ecn2, sizeof ecn2, &f))</code>
+      * <code>Assert equal uint (QuicFrameType::QUIC_FT_ACK_ECN, (unsigned)f.type)</code>
+      * <code>Assert true (f.ack.largest == 60 && f.ack.range_count == 2 && f.ack.first_range == 3)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -22882,6 +23556,36 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert equal int (0, (int)quic_frame_parse(close_reason_over, 4, &f))</code>
       * <code>Assert equal int (0, (int)quic_frame_parse(appclose_trunc, 2, &f))</code>
       * <code>Assert equal int (0, (int)quic_frame_parse(unhandled, 1, &f))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_skip_and_extra_frames</b> &mdash; <i>One-varint frames: type followed by a single varint.</i></summary>
+
+    * **Objective**: One-varint frames: type followed by a single varint.
+    * **Assertions**:
+      * <code>Assert equal int (2, (int)quic_frame_parse(ok, sizeof ok, &f))</code>
+      * <code>Assert equal uint (one_varint[i], (unsigned)f.type)</code>
+      * <code>Assert equal int (0, (int)quic_frame_parse(trunc, sizeof trunc, &f))</code>
+      * <code>Assert equal int (3, (int)quic_frame_parse(ok, sizeof ok, &f))</code>
+      * <code>Assert equal uint (two_varint[i], (unsigned)f.type)</code>
+      * <code>Assert equal int (0, (int)quic_frame_parse(trunc, sizeof trunc, &f))</code>
+      * <code>Assert equal int (4, (int)quic_frame_parse(reset, sizeof reset, &f))</code>
+      * <code>Assert equal uint (QuicFrameType::QUIC_FT_RESET_STREAM, (unsigned)f.type)</code>
+      * <code>Assert equal int (0, (int)quic_frame_parse(reset_trunc, sizeof reset_trunc, &f))</code>
+      * <code>Assert equal int (5, (int)quic_frame_parse(new_token, sizeof new_token, &f))</code>
+      * <code>Assert equal uint (QuicFrameType::QUIC_FT_NEW_TOKEN, (unsigned)f.type)</code>
+      * <code>Assert equal int (0, (int)quic_frame_parse(new_token_no_len, sizeof new_token_no_len, &f))</code>
+      * <code>Assert equal int (0, (int)quic_frame_parse(new_token_over, sizeof new_token_over, &f))</code>
+      * <code>Assert equal int (24, (int)quic_frame_parse(ncid, sizeof ncid, &f))</code>
+      * <code>Assert equal uint (QuicFrameType::QUIC_FT_NEW_CONNECTION_ID, (unsigned)f.type)</code>
+      * <code>Assert equal int (0, (int)quic_frame_parse(ncid, sizeof ncid - 1, &f))</code>
+      * <code>Assert equal int (0, (int)quic_frame_parse(ncid_hdr_only, sizeof ncid_hdr_only, &f))</code>
+      * <code>Assert equal int (9, (int)quic_frame_parse(path, sizeof path, &f))</code>
+      * <code>Assert equal uint (QuicFrameType::QUIC_FT_PATH_CHALLENGE, (unsigned)f.type)</code>
+      * <code>Assert equal int (9, (int)quic_frame_parse(path, sizeof path, &f))</code>
+      * <code>Assert equal uint (QuicFrameType::QUIC_FT_PATH_RESPONSE, (unsigned)f.type)</code>
+      * <code>Assert equal int (0, (int)quic_frame_parse(path_trunc, sizeof path_trunc, &f))</code>
+      * <code>Assert equal int (0, (int)quic_frame_parse(unknown, sizeof unknown, &f))</code>
   </details>
 
 </details>
@@ -25849,7 +26553,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_smb_client (10 tests)</b></summary>
+<summary><b>test_smb_client (58 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_open_close_success</b> &mdash; <i>NEGOTIATE + 2x SESSION_SETUP + TREE_CONNECT + CREATE = 5 requests</i></summary>
@@ -25954,6 +26658,397 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert equal int (SmbResult::SMB_OK, smb_read(&h, 0, back, sizeof(back), &got, mock_send, mock_recv, &m))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1500, got);</code>
       * <code>Assert equal memory (data, back, 1500)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_negotiate_malformed</b> &mdash; <i>Negotiate malformed</i></summary>
+
+    * **Objective**: Negotiate malformed
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_negotiate_dropped</b> &mdash; <i>Negotiate dropped</i></summary>
+
+    * **Objective**: Negotiate dropped
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_IO, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_session1_bad_header</b> &mdash; <i>Session1 bad header</i></summary>
+
+    * **Objective**: Session1 bad header
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_AUTH, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_session1_wrong_status</b> &mdash; <i>Session1 wrong status</i></summary>
+
+    * **Objective**: Session1 wrong status
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_AUTH, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_session1_bad_body</b> &mdash; <i>Session1 bad body</i></summary>
+
+    * **Objective**: Session1 bad body
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_session1_no_secbuf</b> &mdash; <i>Session1 no secbuf</i></summary>
+
+    * **Objective**: Session1 no secbuf
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_session1_bad_spnego</b> &mdash; <i>Session1 bad spnego</i></summary>
+
+    * **Objective**: Session1 bad spnego
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_session1_bad_ntlmssp</b> &mdash; <i>Session1 bad ntlmssp</i></summary>
+
+    * **Objective**: Session1 bad ntlmssp
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_session2_dropped</b> &mdash; <i>Session2 dropped</i></summary>
+
+    * **Objective**: Session2 dropped
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_IO, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_session2_bad_header</b> &mdash; <i>Session2 bad header</i></summary>
+
+    * **Objective**: Session2 bad header
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_tree_dropped</b> &mdash; <i>Tree dropped</i></summary>
+
+    * **Objective**: Tree dropped
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_IO, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_tree_bad_body</b> &mdash; <i>Tree bad body</i></summary>
+
+    * **Objective**: Tree bad body
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_create_dropped</b> &mdash; <i>Create dropped</i></summary>
+
+    * **Objective**: Create dropped
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_IO, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_create_bad_body</b> &mdash; <i>Create bad body</i></summary>
+
+    * **Objective**: Create bad body
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_long_share_overflow</b> &mdash; <i>Long share overflow</i></summary>
+
+    * **Objective**: Long share overflow
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_OVERFLOW, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_long_path_overflow</b> &mdash; <i>Long path overflow</i></summary>
+
+    * **Objective**: Long path overflow
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_OVERFLOW, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_long_user_overflow</b> &mdash; <i>Long user overflow</i></summary>
+
+    * **Objective**: Long user overflow
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_OVERFLOW, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_challenge_ti_ntlmv2_overflow</b> &mdash; <i>Challenge ti ntlmv2 overflow</i></summary>
+
+    * **Objective**: Challenge ti ntlmv2 overflow
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_OVERFLOW, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_challenge_ti_authenticate_overflow</b> &mdash; <i>Challenge ti authenticate overflow</i></summary>
+
+    * **Objective**: Challenge ti authenticate overflow
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_OVERFLOW, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_challenge_ti_spnego_overflow</b> &mdash; <i>Challenge ti spnego overflow</i></summary>
+
+    * **Objective**: Challenge ti spnego overflow
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_OVERFLOW, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_av_eol_only</b> &mdash; <i>Av eol only</i></summary>
+
+    * **Objective**: Av eol only
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_av_skip_then_find</b> &mdash; <i>Av skip then find</i></summary>
+
+    * **Objective**: Av skip then find
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_av_truncated_timestamp</b> &mdash; <i>Av truncated timestamp</i></summary>
+
+    * **Objective**: Av truncated timestamp
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_open(&cfg, &h, mock_send, mock_recv, &m))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_arg</b> &mdash; <i>Read arg</i></summary>
+
+    * **Objective**: Read arg
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_send_io</b> &mdash; <i>Read send io</i></summary>
+
+    * **Objective**: Read send io
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_IO,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_recv_io</b> &mdash; <i>Read recv io</i></summary>
+
+    * **Objective**: Read recv io
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_IO,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_bad_header</b> &mdash; <i>Read bad header</i></summary>
+
+    * **Objective**: Read bad header
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_status_error</b> &mdash; <i>Read status error</i></summary>
+
+    * **Objective**: Read status error
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_bad_body</b> &mdash; <i>Read bad body</i></summary>
+
+    * **Objective**: Read bad body
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_data_too_long</b> &mdash; <i>Read data too long</i></summary>
+
+    * **Objective**: Read data too long
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_read_zero_data</b> &mdash; <i>Read zero data</i></summary>
+
+    * **Objective**: Read zero data
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_OK, smb_read(&h, 0, buf, sizeof(buf), &got, canned_send, canned_recv, &cn))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, got);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_arg</b> &mdash; <i>Write arg</i></summary>
+
+    * **Objective**: Write arg
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_ARG,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_send_io</b> &mdash; <i>Write send io</i></summary>
+
+    * **Objective**: Write send io
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_IO,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_recv_io</b> &mdash; <i>Write recv io</i></summary>
+
+    * **Objective**: Write recv io
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_IO,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_recv_overflow</b> &mdash; <i>Write recv overflow</i></summary>
+
+    * **Objective**: Write recv overflow
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_OVERFLOW,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_bad_header</b> &mdash; <i>Write bad header</i></summary>
+
+    * **Objective**: Write bad header
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_status_error</b> &mdash; <i>Write status error</i></summary>
+
+    * **Objective**: Write status error
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_bad_body</b> &mdash; <i>Write bad body</i></summary>
+
+    * **Objective**: Write bad body
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_zero_count</b> &mdash; <i>Write zero count</i></summary>
+
+    * **Objective**: Write zero count
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_count_too_big</b> &mdash; <i>Write count too big</i></summary>
+
+    * **Objective**: Write count too big
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_INT(SmbResult::SMB_ERR_PROTOCOL,</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_close_arg</b> &mdash; <i>Close arg</i></summary>
+
+    * **Objective**: Close arg
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_close(nullptr, canned_send, canned_recv, &cn))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_close(&h, nullptr, canned_recv, &cn))</code>
+      * <code>Assert equal int (SmbResult::SMB_ERR_ARG, smb_close(&h, canned_send, nullptr, &cn))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_close_send_io</b> &mdash; <i>Close send io</i></summary>
+
+    * **Objective**: Close send io
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_IO, smb_close(&h, canned_send, canned_recv, &cn))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_close_recv_overflow</b> &mdash; <i>Close recv overflow</i></summary>
+
+    * **Objective**: Close recv overflow
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_OVERFLOW, smb_close(&h, canned_send, canned_recv, &cn))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_close_recv_zero_len</b> &mdash; <i>Close recv zero len</i></summary>
+
+    * **Objective**: Close recv zero len
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_IO, smb_close(&h, canned_send, canned_recv, &cn))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_close_recv_trunc_body</b> &mdash; <i>Close recv trunc body</i></summary>
+
+    * **Objective**: Close recv trunc body
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_IO, smb_close(&h, canned_send, canned_recv, &cn))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_close_bad_header</b> &mdash; <i>Close bad header</i></summary>
+
+    * **Objective**: Close bad header
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_close(&h, canned_send, canned_recv, &cn))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_close_status_error</b> &mdash; <i>Close status error</i></summary>
+
+    * **Objective**: Close status error
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_close(&h, canned_send, canned_recv, &cn))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_close_bad_body</b> &mdash; <i>Close bad body</i></summary>
+
+    * **Objective**: Close bad body
+    * **Assertions**:
+      * <code>Assert equal int (SmbResult::SMB_ERR_PROTOCOL, smb_close(&h, canned_send, canned_recv, &cn))</code>
   </details>
 
 </details>
@@ -27412,7 +28507,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_spnego (4 tests)</b></summary>
+<summary><b>test_spnego (14 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_wrap_negotiate_bytes</b> &mdash; <i>overflow fails closed</i></summary>
@@ -27453,6 +28548,99 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert false (spnego_parse_response(bad, n, &rt, &rl))</code>
       * <code>Assert false (spnego_parse_response(blob, 10, &rt, &rl))</code>
       * <code>Assert false (spnego_parse_response(nort, m, &rt, &rl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_wrap_len_2byte</b> &mdash; <i>Wrap len 2byte</i></summary>
+
+    * **Objective**: Wrap len 2byte
+    * **Assertions**:
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(sizeof(tok), n);</code>
+      * <code>Assert true (spnego_parse_response(out, n, &rt, &rl))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(tok), rl);</code>
+      * <code>Assert equal memory (tok, rt, sizeof(tok))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_wrap_len_3byte</b> &mdash; <i>Wrap len 3byte</i></summary>
+
+    * **Objective**: Wrap len 3byte
+    * **Assertions**:
+      * <code>TEST_ASSERT_GREATER_THAN_size_t(sizeof(tok), n);</code>
+      * <code>Assert true (spnego_parse_response(out, n, &rt, &rl))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(tok), rl);</code>
+      * <code>Assert equal memory (tok, rt, sizeof(tok))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_wrap_negotiate_guards</b> &mdash; <i>Wrap negotiate guards</i></summary>
+
+    * **Objective**: Wrap negotiate guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, spnego_wrap_negotiate(nullptr, sizeof(tok), out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, spnego_wrap_negotiate(tok, sizeof(tok), nullptr, sizeof(out)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_wrap_authenticate_guards</b> &mdash; <i>Wrap authenticate guards</i></summary>
+
+    * **Objective**: Wrap authenticate guards
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_size_t(0, spnego_wrap_authenticate(nullptr, sizeof(tok), out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, spnego_wrap_authenticate(tok, sizeof(tok), out, 20));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, spnego_wrap_authenticate(tok, sizeof(tok), nullptr, sizeof(out)));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_null_args</b> &mdash; <i>Parse null args</i></summary>
+
+    * **Objective**: Parse null args
+    * **Assertions**:
+      * <code>Assert false (spnego_parse_response(nullptr, sizeof(blob), &rt, &rl))</code>
+      * <code>Assert false (spnego_parse_response(blob, sizeof(blob), nullptr, &rl))</code>
+      * <code>Assert false (spnego_parse_response(blob, sizeof(blob), &rt, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_truncated_header</b> &mdash; <i>Parse truncated header</i></summary>
+
+    * **Objective**: Parse truncated header
+    * **Assertions**:
+      * <code>Assert false (spnego_parse_response(blob, 1, &rt, &rl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_bad_longform_len</b> &mdash; <i>Parse bad longform len</i></summary>
+
+    * **Objective**: Parse bad longform len
+    * **Assertions**:
+      * <code>Assert false (spnego_parse_response(indef, sizeof(indef), &rt, &rl))</code>
+      * <code>Assert false (spnego_parse_response(big, sizeof(big), &rt, &rl))</code>
+      * <code>Assert false (spnego_parse_response(trunc, sizeof(trunc), &rt, &rl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_inner_not_seq</b> &mdash; <i>Parse inner not seq</i></summary>
+
+    * **Objective**: Parse inner not seq
+    * **Assertions**:
+      * <code>Assert false (spnego_parse_response(blob, sizeof(blob), &rt, &rl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_field_malformed</b> &mdash; <i>Parse field malformed</i></summary>
+
+    * **Objective**: Parse field malformed
+    * **Assertions**:
+      * <code>Assert false (spnego_parse_response(blob, sizeof(blob), &rt, &rl))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_parse_resptoken_not_octet</b> &mdash; <i>Parse resptoken not octet</i></summary>
+
+    * **Objective**: Parse resptoken not octet
+    * **Assertions**:
+      * <code>Assert false (spnego_parse_response(blob, sizeof(blob), &rt, &rl))</code>
   </details>
 
 </details>
@@ -28497,7 +29685,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_chachapoly (4 tests)</b></summary>
+<summary><b>test_ssh_chachapoly (5 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_chacha20_block_rfc8439</b> &mdash; <i>Chacha20 block rfc8439</i></summary>
@@ -28536,6 +29724,17 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert false (ssh_chachapoly_decrypt(key, 0, rt, ct, payload_len))</code>
       * <code>Assert false (ssh_chachapoly_decrypt(key, 1, rt, ct, payload_len))</code>
       * <code>Assert true (ssh_chachapoly_decrypt(key, 0, rt, ct, payload_len))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_chachapoly_empty_payload</b> &mdash; <i>The length field decodes to 0.</i></summary>
+
+    * **Objective**: The length field decodes to 0.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, ssh_chachapoly_get_length(key, seqnr, enc_len));</code>
+      * <code>Assert true (ssh_chachapoly_decrypt(key, seqnr, rt, ct, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, 4);</code>
+      * <code>Assert false (ssh_chachapoly_decrypt(key, seqnr, rt, ct, 0))</code>
   </details>
 
 </details>
@@ -28977,7 +30176,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_comp (6 tests)</b></summary>
+<summary><b>test_ssh_comp (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_delayed_activation</b> &mdash; <i>Delayed activation</i></summary>
@@ -29027,6 +30226,30 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (ssh_comp_s2c_active(0))</code>
       * <code>Assert equal int (-1, ssh_pkt_send(0, payload, sizeof(payload), wire, &wlen, sizeof(wire)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_comp_slot_guards</b> &mdash; <i>Comp slot guards</i></summary>
+
+    * **Objective**: Comp slot guards
+    * **Assertions**:
+      * <code>Assert false (ssh_comp_s2c_active(MAX_SSH_CONNS))</code>
+      * <code>Assert equal int (-1, ssh_comp_s2c(MAX_SSH_CONNS, src, sizeof(src), dst, sizeof(dst), &out_len))</code>
+      * <code>Assert false (ssh_comp_s2c_active(0))</code>
+      * <code>Assert equal int (-1, ssh_comp_s2c(0, src, sizeof(src), dst, sizeof(dst), &out_len))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_comp_activation_idempotent</b> &mdash; <i>zlib: NEWKEYS starts it; a second NEWKEYS is a no-op (s2c_active already true), and USERAUTH is</i></summary>
+
+    * **Objective**: zlib: NEWKEYS starts it; a second NEWKEYS is a no-op (s2c_active already true), and USERAUTH is
+    * **Assertions**:
+      * <code>Assert true (ssh_comp_s2c_active(0))</code>
+      * <code>Assert true (ssh_comp_s2c_active(0))</code>
+      * <code>Assert true (ssh_comp_s2c_active(0))</code>
+      * <code>Assert false (ssh_comp_s2c_active(0))</code>
+      * <code>Assert true (ssh_comp_s2c_active(0))</code>
+      * <code>Assert true (ssh_comp_s2c_active(0))</code>
   </details>
 
 </details>
@@ -29186,7 +30409,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_ed25519 (17 tests)</b></summary>
+<summary><b>test_ssh_ed25519 (19 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_sha512_empty</b> &mdash; <i>Sha512 empty</i></summary>
@@ -29287,6 +30510,24 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert false (ssh_ed25519_verify(pub, msg, 3, bad))</code>
       * <code>Assert false (ssh_ed25519_verify(pub, badmsg, 3, sig))</code>
       * <code>Assert false (ssh_ed25519_verify(badpub, msg, 3, sig))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ed25519_verify_rejects_noncanonical_s</b> &mdash; <i>S = 0xFF..FF is far above the group order L (~2^252): non-canonical -> reject.</i></summary>
+
+    * **Objective**: S = 0xFF..FF is far above the group order L (~2^252): non-canonical -> reject.
+    * **Assertions**:
+      * <code>Assert true (ssh_ed25519_verify(pub, msg, 3, sig))</code>
+      * <code>Assert false (ssh_ed25519_verify(pub, msg, 3, bad))</code>
+      * <code>Assert false (ssh_ed25519_verify(pub, msg, 3, bad))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ed25519_verify_rejects_invalid_pubkey_point</b> &mdash; <i>Ed25519 verify rejects invalid pubkey point</i></summary>
+
+    * **Objective**: Ed25519 verify rejects invalid pubkey point
+    * **Assertions**:
+      * <code>Assert false (ssh_ed25519_verify(cand, wrongmsg, 3, sig))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29695,7 +30936,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_ssh_transport (45 tests)</b></summary>
+<summary><b>test_ssh_transport (47 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_transport_index_guards</b> &mdash; <i>Transport index guards</i></summary>
@@ -30225,6 +31466,26 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert equal int (0, ssh_kex_generate(0))</code>
       * <code>Assert equal int (-1, ssh_kexdh_handle(0, too_short, sizeof(too_short), reply, &rlen, sizeof(reply)))</code>
       * <code>Assert equal int (-1, ssh_kexdh_handle(0, wrong_len, sizeof(wrong_len), reply, &rlen, sizeof(reply)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_dh_derive_keys_gcm_installs</b> &mdash; <i>Independently derive the C->S key ('C') + IV ('A') and the S->C key ('D') + IV ('B').</i></summary>
+
+    * **Objective**: Independently derive the C->S key ('C') + IV ('A') and the S->C key ('D') + IV ('B').
+    * **Assertions**:
+      * <code>Assert true (ssh_keys[0].active)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(SSH_CIPHER_AES256GCM, ssh_keys[0].cipher_mode);</code>
+      * <code>Assert equal memory (seal_ref, seal_km, sizeof(seal_ref))</code>
+      * <code>Assert equal memory (seal_ref, seal_km, sizeof(seal_ref))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kdf_string_k_hybrid</b> &mdash; <i>Independent: K1 = SHA256( string(K[224:256]) \|\| H \|\| 'C' \|\| sid ), string = 4-byte len(32) \|\| bytes.</i></summary>
+
+    * **Objective**: Independent: K1 = SHA256( string(K[224:256]) \|\| H \|\| 'C' \|\| sid ), string = 4-byte len(32) \|\| bytes.
+    * **Assertions**:
+      * <code>Assert equal memory (expected, got, SSH_SHA256_DIGEST_LEN)</code>
+      * <code>Assert not equal (0, memcmp(got, as_mpint, SSH_SHA256_DIGEST_LEN))</code>
   </details>
 
 </details>
@@ -31328,7 +32589,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_tls13_kdf (5 tests)</b></summary>
+<summary><b>test_tls13_kdf (6 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_early_secret</b> &mdash; <i>Early secret</i></summary>
@@ -31373,6 +32634,15 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
     * **Objective**: ClientHello (196 octets).
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, verify, 32);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_kdf_expand_label_wrapper</b> &mdash; <i>Kdf expand label wrapper</i></summary>
+
+    * **Objective**: Kdf expand label wrapper
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(exp_key, key, 16);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(via_quic, key, 16);</code>
   </details>
 
 </details>
@@ -32113,7 +33383,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_upload (3 tests)</b></summary>
+<summary><b>test_upload (8 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_upload_streams_body_to_file</b> &mdash; <i>200-byte body (> BODY_BUF_SIZE=64) -> several streamed chunks.</i></summary>
@@ -32144,6 +33414,51 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal uint (0, fs::mock_fs_written())</code>
       * <code>Assert not null (strstr(tcp_captured(), "400"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_non_post_body_rejected_by_begin</b> &mdash; <i>Non post body rejected by begin</i></summary>
+
+    * **Objective**: Non post body rejected by begin
+    * **Assertions**:
+      * <code>Assert equal uint (0, fs::mock_fs_written())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_wrong_path_rejected_by_begin</b> &mdash; <i>Wrong path rejected by begin</i></summary>
+
+    * **Objective**: Wrong path rejected by begin
+    * **Assertions**:
+      * <code>Assert equal uint (0, fs::mock_fs_written())</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_open_failure_replies_500</b> &mdash; <i>Open failure replies 500</i></summary>
+
+    * **Objective**: Open failure replies 500
+    * **Assertions**:
+      * <code>Assert equal uint (0, fs::mock_fs_written())</code>
+      * <code>Assert not null (strstr(out, "500"))</code>
+      * <code>Assert not null (strstr(out, "upload failed"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_dest_replies_500</b> &mdash; <i>Null dest replies 500</i></summary>
+
+    * **Objective**: Null dest replies 500
+    * **Assertions**:
+      * <code>Assert equal uint (0, fs::mock_fs_written())</code>
+      * <code>Assert not null (strstr(tcp_captured(), "500"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_write_failure_replies_500</b> &mdash; <i>Write failure replies 500</i></summary>
+
+    * **Objective**: Write failure replies 500
+    * **Assertions**:
+      * <code>Assert equal uint (0, detws_upload_last_size())</code>
+      * <code>Assert not null (strstr(out, "500"))</code>
+      * <code>Assert not null (strstr(out, "upload failed"))</code>
   </details>
 
 </details>
@@ -32461,7 +33776,7 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
 </details>
 
 <details>
-<summary><b>test_wal_store (7 tests)</b></summary>
+<summary><b>test_wal_store (29 tests)</b></summary>
 
   <details style="margin-left: 20px;">
     <summary><b>test_format_then_mount_empty</b> &mdash; <i>Format then mount empty</i></summary>
@@ -32556,6 +33871,233 @@ A thorough directory of all **3032 test cases** across **257 suites**. Expand a 
       * <code>Assert true (wal_store_used(&s) &lt;= wal_store_capacity(&s))</code>
       * <code>Assert true (wal_store_mount(&m, &dev))</code>
       * <code>TEST_ASSERT_EQUAL_UINT64(5 * REC, wal_store_used(&m));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_format_and_mount_too_small</b> &mdash; <i>Format and mount too small</i></summary>
+
+    * **Objective**: Format and mount too small
+    * **Assertions**:
+      * <code>Assert false (wal_store_format(&s, &dev))</code>
+      * <code>Assert false (wal_store_format(&s, nullptr))</code>
+      * <code>Assert false (wal_store_mount(&s, &dev))</code>
+      * <code>Assert false (wal_store_mount(&s, nullptr))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_format_write_b_unwired_fails</b> &mdash; <i>Format write b unwired fails</i></summary>
+
+    * **Objective**: Format write b unwired fails
+    * **Assertions**:
+      * <code>Assert false (wal_store_format(&s, &dev))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_format_write_super_a_fails</b> &mdash; <i>Format write super a fails</i></summary>
+
+    * **Objective**: Format write super a fails
+    * **Assertions**:
+      * <code>Assert false (wal_store_format(&s, &dev))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_null_sync_still_commits</b> &mdash; <i>Null sync still commits</i></summary>
+
+    * **Objective**: Null sync still commits
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"one", 3))</code>
+      * <code>Assert true (wal_store_checkpoint(&s))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(REC + 3, wal_store_committed(&s));</code>
+      * <code>Assert true (wal_store_mount(&m, &dev))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(REC + 3, wal_store_committed(&m));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mount_read_unwired_fails</b> &mdash; <i>Mount read unwired fails</i></summary>
+
+    * **Objective**: Mount read unwired fails
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert false (wal_store_mount(&m, &bad))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mount_super_crc_mismatch</b> &mdash; <i>Mount super crc mismatch</i></summary>
+
+    * **Objective**: Mount super crc mismatch
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert false (wal_store_mount(&m, &dev))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_mount_head_past_capacity_rejected</b> &mdash; <i>Remount the same media through a device that reports a smaller size: copy B's committed head</i></summary>
+
+    * **Objective**: Remount the same media through a device that reports a smaller size: copy B's committed head
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &bigdev))</code>
+      * <code>Assert true (wal_store_append(&s, blob, sizeof(blob)))</code>
+      * <code>Assert true (wal_store_checkpoint(&s))</code>
+      * <code>Assert true (wal_store_mount(&m, &smalldev))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, wal_store_committed(&m));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_replay_truncated_len_stops</b> &mdash; <i>Replay truncated len stops</i></summary>
+
+    * **Objective**: Replay truncated len stops
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"x", 1))</code>
+      * <code>Assert true (wal_store_mount(&m, &dev))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, wal_store_used(&m)); // record header + len overruns capacity -&gt; stop</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_replay_header_read_fails</b> &mdash; <i>Replay header read fails</i></summary>
+
+    * **Objective**: Replay header read fails
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_mount(&m, &dev))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, wal_store_used(&m));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_replay_payload_read_fails</b> &mdash; <i>Replay payload read fails</i></summary>
+
+    * **Objective**: Replay payload read fails
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"hello", 5))</code>
+      * <code>Assert true (wal_store_mount(&m, &dev))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, wal_store_used(&m));</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_append_header_write_fails</b> &mdash; <i>Append header write fails</i></summary>
+
+    * **Objective**: Append header write fails
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert false (wal_store_append(&s, (const uint8_t *)"x", 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_append_payload_write_fails</b> &mdash; <i>Append payload write fails</i></summary>
+
+    * **Objective**: Append payload write fails
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert false (wal_store_append(&s, (const uint8_t *)"hello", 5))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_checkpoint_super_write_fails</b> &mdash; <i>Checkpoint super write fails</i></summary>
+
+    * **Objective**: Checkpoint super write fails
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert false (wal_store_checkpoint(&s))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_checkpoint_second_sync_fails</b> &mdash; <i>Checkpoint second sync fails</i></summary>
+
+    * **Objective**: Checkpoint second sync fails
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert false (wal_store_checkpoint(&s))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scan_reads_records</b> &mdash; <i>Scan reads records</i></summary>
+
+    * **Objective**: Scan reads records
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"alpha", 5))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"bravo", 5))</code>
+      * <code>Assert equal uint (2, wal_store_scan(&s, scan_cb, nullptr, scratch, sizeof(scratch)))</code>
+      * <code>Assert equal int (2, g_scan_count)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(0, g_scan_seq[0]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT64(1, g_scan_seq[1]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5, g_scan_len[0]);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scan_null_callback_counts</b> &mdash; <i>Scan null callback counts</i></summary>
+
+    * **Objective**: Scan null callback counts
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"one", 3))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"two", 3))</code>
+      * <code>Assert equal uint (2, wal_store_scan(&s, nullptr, nullptr, scratch, sizeof(scratch)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scan_scratch_too_small</b> &mdash; <i>Scan scratch too small</i></summary>
+
+    * **Objective**: Scan scratch too small
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"x", 1))</code>
+      * <code>Assert equal uint (0, wal_store_scan(&s, scan_cb, nullptr, scratch, WAL_RECORD_HEADER - 1))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scan_header_read_fails</b> &mdash; <i>Scan header read fails</i></summary>
+
+    * **Objective**: Scan header read fails
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"x", 1))</code>
+      * <code>Assert equal uint (0, wal_store_scan(&s, scan_cb, nullptr, scratch, sizeof(scratch)))</code>
+      * <code>Assert equal int (0, g_scan_count)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scan_full_read_fails</b> &mdash; <i>Scan full read fails</i></summary>
+
+    * **Objective**: Scan full read fails
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"hi", 2))</code>
+      * <code>Assert equal uint (0, wal_store_scan(&s, scan_cb, nullptr, scratch, sizeof(scratch)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scan_bad_magic_stops</b> &mdash; <i>Scan bad magic stops</i></summary>
+
+    * **Objective**: Scan bad magic stops
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"x", 1))</code>
+      * <code>Assert equal uint (0, wal_store_scan(&s, scan_cb, nullptr, scratch, sizeof(scratch)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_scan_crc_mismatch_stops</b> &mdash; <i>Scan crc mismatch stops</i></summary>
+
+    * **Objective**: Scan crc mismatch stops
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"hello", 5))</code>
+      * <code>Assert equal uint (0, wal_store_scan(&s, scan_cb, nullptr, scratch, sizeof(scratch)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_pread_in_and_out_of_range</b> &mdash; <i>Pread in and out of range</i></summary>
+
+    * **Objective**: Pread in and out of range
+    * **Assertions**:
+      * <code>Assert true (wal_store_format(&s, &dev))</code>
+      * <code>Assert true (wal_store_append(&s, (const uint8_t *)"hello", 5))</code>
+      * <code>Assert true (wal_store_pread(&s, WAL_RECORD_HEADER, buf, 5))</code>
+      * <code>Assert equal memory ("hello", buf, 5)</code>
+      * <code>Assert false (wal_store_pread(&s, wal_store_capacity(&s) - 2, buf, 5))</code>
   </details>
 
 </details>
