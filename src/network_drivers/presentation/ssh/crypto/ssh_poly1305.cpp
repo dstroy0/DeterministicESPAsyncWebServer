@@ -13,6 +13,14 @@
 
 #include "network_drivers/presentation/ssh/crypto/ssh_poly1305.h"
 
+// Poly1305 is a hot, pure-integer MAC (the other half of chacha20-poly1305). Like ChaCha it has no
+// vector path on the S3 and runs materially faster at -O2, but the library ships at the arduino
+// framework's -Os - force -O2 for this translation unit. Byte-exact (no logic change). See the ChaCha
+// note in ssh_chacha20.cpp and docs/FEATURE_PERFORMANCE.md.
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC optimize("O2")
+#endif
+
 namespace
 {
 uint32_t rd_le32(const uint8_t *p)

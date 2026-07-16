@@ -447,11 +447,11 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
 | `ssh_aes256ctr`                 | HW AES            |       10,909 |      44.4 | 22.5 |
 | `ssh_sha256`                    | HW SHA            |       12,859 |      52.3 | 19.1 |
 | `ssh_sha512`                    | HW SHA            |       17,149 |      69.8 | 14.3 |
-| `ssh_poly1305`                  | SW                |       31,452 |     128.0 |  7.8 |
+| `ssh_poly1305`                  | SW (-O2 TU)       |       24,904 |     101.3 |  9.9 |
 | `ssh_hmac_sha256`               | HW SHA            |       31,994 |     130.2 |  7.7 |
 | `ssh_hmac_sha512`               | HW SHA            |       43,628 |     177.5 |  5.6 |
-| `ssh_chacha20`                  | SW                |      108,919 |     443.2 |  2.3 |
-| `ssh_chachapoly` encrypt (AEAD) | SW                |      154,194 |     627.4 |  1.6 |
+| `ssh_chacha20`                  | SW (-O2 TU)       |       46,434 |     188.9 |  5.3 |
+| `ssh_chachapoly` encrypt (AEAD) | SW (-O2 TU)       |       77,433 |     315.1 |  3.2 |
 | `ssh_aesgcm` seal (AES-256-GCM) | HW AES + SW GHASH |      555,421 |     2,260 | 0.44 |
 | `quic_aes128_gcm` seal          | HW AES + SW GHASH |      562,292 |     2,288 | 0.44 |
 | `dtls_record` protect (DTLS1.3) | HW AES + SW GHASH |      578,730 |     2,355 | 0.42 |
@@ -505,9 +505,17 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
   a small fixed add on top of a handshake already dominated by the host-key signature.
 - **The HKDF/KDF layer is cheap** (~104-108 us each): three HMAC-SHA256 calls on the HW SHA engine. TLS 1.3 /
   QUIC / DTLS all key-schedule through the same `expand_label` at this cost.
-- **HW SHA is ~19 MB/s** (SHA-256); HMAC halves it (two hash passes plus key blocks). ChaCha20 and Poly1305
-  are pure software (`~2.3` / `~7.8` MB/s) - the record layer's ~1.6 MB/s chacha20-poly1305 ceiling is the sum
-  of a ChaCha20 keystream and a Poly1305 tag.
+- **HW SHA is ~19 MB/s** (SHA-256); HMAC halves it (two hash passes plus key blocks).
+- **ChaCha20 / Poly1305 (the default SSH AEAD) sped up ~2x by compiling those two TUs at `-O2`.** These are
+  pure-integer software ciphers. SIMD is **not** available: the ESP32-S3 PIE vector unit has only a
+  _saturating_ 32-bit add (`ee.vadds.s32`) and no wrapping `ee.vadd.s32` (assembler-verified), and ChaCha's
+  quarter-round is modular uint32 arithmetic, so it cannot be vectorized (nor via 16-bit halves - those adds
+  saturate too). The real lever is that the whole library ships at the arduino framework's `-Os`; ChaCha runs
+  **108,919 -> 46,434 cyc (2.35x, 2.3 -> 5.3 MB/s)** and Poly1305 **31,452 -> 24,904 cyc (1.26x)** at `-O2`,
+  so `chacha20-poly1305` seal goes **154,194 -> 77,433 cyc (1.99x, 1.6 -> 3.2 MB/s)**. A per-translation-unit
+  `#pragma GCC optimize("O2")` on `ssh_chacha20.cpp` / `ssh_poly1305.cpp` forces `-O2` for just those hot
+  functions (byte-exact, RFC 8439 KATs unchanged) so the cipher is fast on any consumer's size-optimized
+  build. AES-256-CTR (22.5 MB/s, HW) is still faster where an AEAD is not required.
 
 ### MQTT 3.1.1 client codec (DETWS_ENABLE_MQTT)
 

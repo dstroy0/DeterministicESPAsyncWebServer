@@ -1316,7 +1316,9 @@
     "codesys",
     "superframe",
     "Shoup",
-    "cryptobench"
+    "cryptobench",
+    "vadd",
+    "vadds"
   ],
   "ignorePaths": [
     "node_modules/**",
