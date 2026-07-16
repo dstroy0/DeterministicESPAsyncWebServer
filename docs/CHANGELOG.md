@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`b0acc32`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b0acc32cf1bf1a7c6fbd57c6238bd69f6b2b23c1))
 - update test report + coverage [skip ci] ([`bc9f6fc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bc9f6fc24586e1303e2a5afdf23aab7862eacbac))
 - update CHANGELOG.md [skip ci] ([`86afaef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86afaef521c260992e24b1e3ce620c6257b867af))
 - update test report + coverage [skip ci] ([`e540320`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e540320fface911a0627717528dd6ca391025075))
@@ -23,6 +24,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8a83c30`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a83c30d2001561e4675b25653bcbdf48459e3b6))
 - update ESP32 build footprints [skip ci] ([`492a5ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/492a5aefb6d6a0d0803ca2dc9255dcbe75374432))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`156e1d2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/156e1d26c51cdeb96640cbb22ef7dfc996331e2d))
 - update ESP32 build footprints [skip ci] ([`a066983`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a0669838a389e8949b5315139926139dff0c77c2))
@@ -35,6 +37,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- reduce cognitive complexity in forward/httpcache (S3776) ([`c76c6ac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c76c6acd5b87b0b32f6d069bbfdac093c81967f2))
 - reduce cognitive complexity in regex/ssh_kexinit (S3776) ([`6742d71`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6742d71e267e5f46a5a2a36973af081a79f700ab))
 - reduce cognitive complexity in wal/coaps poll (S3776) ([`87a153d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87a153d08da02cadbc903eb07b922c8b83b0a4c9))
 - reduce cognitive complexity via helper extraction (S3776) ([`9caf6e8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9caf6e810212912decbc6df2c1c957bfa55b8d43))
