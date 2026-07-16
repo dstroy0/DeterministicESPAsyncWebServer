@@ -63,8 +63,8 @@ from each example's `pio ci` size report and aggregated into
 | `NTRIP_CASTER`                                                                                            | L7-Application/76.NtripCaster           | 752.3 KB (58.8%) | 82.7 KB (25.8%)  |
 | `OAUTH2+HTTP_CLIENT`                                                                                      | L7-Application/54.OAuth2                | 747.1 KB (58.4%) | 102.1 KB (31.9%) |
 | `OIDC`                                                                                                    | L7-Application/50.OidcAuth              | 748.0 KB (58.4%) | 97.5 KB (30.5%)  |
-| `OPCUA`                                                                                                   | L7-Application/55.OpcUa                 | 742.4 KB (58.0%) | 89.9 KB (28.1%)  |
-| `OPCUA+OPCUA_CLIENT`                                                                                      | L7-Application/56.OpcUaClient           | 764.8 KB (59.7%) | 93.7 KB (29.3%)  |
+| `OPCUA`                                                                                                   | L7-Application/55.OpcUa                 | 742.7 KB (58.0%) | 89.9 KB (28.1%)  |
+| `OPCUA+OPCUA_CLIENT`                                                                                      | L7-Application/56.OpcUaClient           | 765.1 KB (59.8%) | 93.7 KB (29.3%)  |
 | `OPCUA+UMATI`                                                                                             | L7-Application/72.Umati                 | 748.9 KB (58.5%) | 90.0 KB (28.1%)  |
 | `OTA`                                                                                                     | L7-Application/16.OTA                   | 739.8 KB (57.8%) | 99.7 KB (31.2%)  |
 | `OTA_ROLLBACK`                                                                                            | L7-Application/44.OtaRollback           | 735.6 KB (57.5%) | 79.9 KB (25.0%)  |

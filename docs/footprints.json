@@ -388,14 +388,14 @@
     "example": "L7-Application/55.OpcUa",
     "flags": "-DDETWS_ENABLE_OPCUA=1",
     "board": "esp32dev",
-    "flash_bytes": 760189,
+    "flash_bytes": 760477,
     "ram_bytes": 92064
   },
   "OPCUA+OPCUA_CLIENT": {
     "example": "L7-Application/56.OpcUaClient",
     "flags": "-DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_OPCUA_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 783149,
+    "flash_bytes": 783441,
     "ram_bytes": 95936
   },
   "OPCUA+UMATI": {
