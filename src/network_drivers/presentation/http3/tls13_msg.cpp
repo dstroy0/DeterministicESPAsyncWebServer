@@ -162,6 +162,83 @@ bool list16_contains(const uint8_t *body, size_t body_len, size_t list_len, uint
     return false;
 }
 
+// KEY_SHARE (RFC 8446 §4.2.8): 2-byte client_shares length, then KeyShareEntry { group(2), key_exchange<2> }.
+void parse_key_share(const uint8_t *body, size_t blen, Tls13ClientHello *out)
+{
+    if (blen < 2)
+        return;
+    size_t ll = (body[0] << 8) | body[1];
+    if (ll + 2 > blen)
+        return;
+    size_t i = 2;
+    size_t end = 2 + ll;
+    while (i + 4 <= end)
+    {
+        uint16_t group = (uint16_t)((body[i] << 8) | body[i + 1]);
+        uint16_t klen = (uint16_t)((body[i + 2] << 8) | body[i + 3]);
+        i += 4;
+        if (i + klen > end)
+            return;
+        if (group == TLS_GROUP_X25519 && klen == 32)
+        {
+            memcpy(out->client_x25519, body + i, 32);
+            out->has_key_share = true;
+        }
+#if DETWS_ENABLE_PQC_KEX
+        else if (group == TLS_GROUP_X25519MLKEM768 && klen == MLKEM768_EK_BYTES + 32)
+        {
+            out->client_mlkem_ek = body + i;                              // ML-KEM-768 ek (first)
+            memcpy(out->client_x25519, body + i + MLKEM768_EK_BYTES, 32); // X25519 (second)
+            out->has_hybrid_share = true;
+        }
+#endif
+        i += klen;
+    }
+}
+
+// ALPN (RFC 7301): 2-byte list length, then entries of 1-byte name length + name. Flags an "h3" offer.
+void parse_alpn(const uint8_t *body, size_t blen, Tls13ClientHello *out)
+{
+    if (blen < 2)
+        return;
+    size_t ll = (body[0] << 8) | body[1];
+    if (ll + 2 > blen)
+        return;
+    size_t i = 2;
+    size_t end = 2 + ll;
+    while (i + 1 <= end)
+    {
+        size_t nl = body[i++];
+        if (i + nl > end)
+            return;
+        if (nl == 2 && body[i] == 'h' && body[i + 1] == '3')
+            out->offers_h3_alpn = true;
+        i += nl;
+    }
+}
+
+// SNI (RFC 6066 §3): ServerNameList of 2-byte length, then entries type(1), name<2>. Take the first host_name.
+void parse_server_name(const uint8_t *body, size_t blen, Tls13ClientHello *out)
+{
+    if (blen < 2)
+        return;
+    size_t ll = (body[0] << 8) | body[1];
+    if (ll + 2 > blen)
+        return;
+    size_t i = 2;
+    size_t end = 2 + ll;
+    if (i + 3 > end)
+        return;
+    uint8_t nt = body[i++];
+    size_t nl = (body[i] << 8) | body[i + 1];
+    i += 2;
+    if (nt == 0 && i + nl <= end)
+    {
+        out->sni = body + i;
+        out->sni_len = nl;
+    }
+}
+
 void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13ClientHello *out, bool dtls)
 {
     switch (type)
@@ -191,59 +268,12 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
         out->offers_ed25519 = list16_contains(body + 2, blen - 2, ll, TLS_SIG_ED25519);
         break;
     }
-    case TlsExt::TLS_EXT_KEY_SHARE: {
-        // 2-byte client_shares length, then KeyShareEntry { group(2), key_exchange<2> }.
-        if (blen < 2)
-            return;
-        size_t ll = (body[0] << 8) | body[1];
-        if (ll + 2 > blen)
-            return;
-        size_t i = 2;
-        size_t end = 2 + ll;
-        while (i + 4 <= end)
-        {
-            uint16_t group = (uint16_t)((body[i] << 8) | body[i + 1]);
-            uint16_t klen = (uint16_t)((body[i + 2] << 8) | body[i + 3]);
-            i += 4;
-            if (i + klen > end)
-                return;
-            if (group == TLS_GROUP_X25519 && klen == 32)
-            {
-                memcpy(out->client_x25519, body + i, 32);
-                out->has_key_share = true;
-            }
-#if DETWS_ENABLE_PQC_KEX
-            else if (group == TLS_GROUP_X25519MLKEM768 && klen == MLKEM768_EK_BYTES + 32)
-            {
-                out->client_mlkem_ek = body + i;                              // ML-KEM-768 ek (first)
-                memcpy(out->client_x25519, body + i + MLKEM768_EK_BYTES, 32); // X25519 (second)
-                out->has_hybrid_share = true;
-            }
-#endif
-            i += klen;
-        }
+    case TlsExt::TLS_EXT_KEY_SHARE:
+        parse_key_share(body, blen, out);
         break;
-    }
-    case TlsExt::TLS_EXT_ALPN: {
-        // 2-byte list length, then entries: 1-byte name length + name.
-        if (blen < 2)
-            return;
-        size_t ll = (body[0] << 8) | body[1];
-        if (ll + 2 > blen)
-            return;
-        size_t i = 2;
-        size_t end = 2 + ll;
-        while (i + 1 <= end)
-        {
-            size_t nl = body[i++];
-            if (i + nl > end)
-                return;
-            if (nl == 2 && body[i] == 'h' && body[i + 1] == '3')
-                out->offers_h3_alpn = true;
-            i += nl;
-        }
+    case TlsExt::TLS_EXT_ALPN:
+        parse_alpn(body, blen, out);
         break;
-    }
     case TLS_EXT_QUIC_TRANSPORT_PARAMS:
         out->quic_tp = body;
         out->quic_tp_len = blen;
@@ -272,27 +302,9 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
         out->conn_id_len = cl;
         break;
     }
-    case TlsExt::TLS_EXT_SERVER_NAME: {
-        // ServerNameList: 2-byte length, then entries: type(1), name<2>. Take the first host_name.
-        if (blen < 2)
-            return;
-        size_t ll = (body[0] << 8) | body[1];
-        if (ll + 2 > blen)
-            return;
-        size_t i = 2;
-        size_t end = 2 + ll;
-        if (i + 3 > end)
-            return;
-        uint8_t nt = body[i++];
-        size_t nl = (body[i] << 8) | body[i + 1];
-        i += 2;
-        if (nt == 0 && i + nl <= end)
-        {
-            out->sni = body + i;
-            out->sni_len = nl;
-        }
+    case TlsExt::TLS_EXT_SERVER_NAME:
+        parse_server_name(body, blen, out);
         break;
-    }
     default:
         break;
     }
