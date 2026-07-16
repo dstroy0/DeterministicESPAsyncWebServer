@@ -115,7 +115,14 @@ int main(int argc, char **argv)
             if (r > 0)
                 sendto(fd, out, (size_t)r, 0, (sockaddr *)&peer, plen);
             if (dtls_conn_established(&conn))
-                fprintf(stderr, "HANDSHAKE OK%s\n", pre_flights >= 2 ? " (via HelloRetryRequest)" : "");
+            {
+                uint8_t cid[DTLS_CID_MAX];
+                size_t cidlen = dtls_conn_local_cid(&conn, cid);
+                fprintf(stderr, "HANDSHAKE OK%s%s", pre_flights >= 2 ? " (via HelloRetryRequest)" : "",
+                        cidlen ? " (with connection ID, " : "\n");
+                if (cidlen)
+                    fprintf(stderr, "%zu bytes)\n", cidlen);
+            }
             else if (r > 0)
                 pre_flights++;
         }

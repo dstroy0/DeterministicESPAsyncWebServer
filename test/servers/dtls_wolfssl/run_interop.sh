@@ -19,14 +19,15 @@ mkdir -p "$WORK"
 # --- 1. wolfSSL with DTLS 1.3 (release tarballs ship a pre-built configure, but only the source
 #        tarball is a GitHub asset here, so build from the git tag; needs autoconf/automake/libtool) ---
 CLIENT="$WORK/wolfssl/examples/client/client"
-if [ ! -x "$CLIENT" ]; then
-  echo ">> building wolfSSL $WOLF_VER (DTLS 1.3)"
+# Rebuild if the client is missing or was built without DTLS connection-id support (RFC 9146, --enable-dtlscid).
+if [ ! -x "$CLIENT" ] || ! grep -q 'WOLFSSL_DTLS_CID' "$WORK/wolfssl/wolfssl/options.h" 2>/dev/null; then
+  echo ">> building wolfSSL $WOLF_VER (DTLS 1.3 + connection ID)"
   command -v autoconf >/dev/null || { echo "install autoconf automake libtool first"; exit 2; }
   rm -rf "$WORK/wolfssl"
   git clone --depth 1 -b "$WOLF_VER" https://github.com/wolfSSL/wolfssl.git "$WORK/wolfssl"
   ( cd "$WORK/wolfssl" && ./autogen.sh && \
     ./configure --enable-dtls --enable-dtls13 --enable-ed25519 --enable-curve25519 \
-                --enable-aesgcm --disable-shared && make -j"$(nproc)" )
+                --enable-aesgcm --enable-dtlscid --disable-shared && make -j"$(nproc)" )
 fi
 
 # --- 2. throwaway Ed25519 leaf certificate + its raw 32-byte seed ---
@@ -56,8 +57,8 @@ g++ -O2 -std=gnu++17 -DDETWS_ENABLE_DTLS=1 -I"$ROOT/src" -I"$ROOT/test/mocks" "$
 #   Run A (default groups): wolfSSL leads with a non-X25519 key_share, so the server answers with a
 #     HelloRetryRequest and renegotiates the group to X25519 (RFC 9147 sec 5.1) - the HRR interop path.
 #   Run B (-t): wolfSSL offers an X25519 key_share up front - the one-round-trip path.
-run_once() { # <label> <client-extra-flags> <require-hrr:0|1>
-  local label="$1" extra="$2" require_hrr="$3"
+run_once() { # <label> <client-extra-flags> <require-hrr:0|1> <require-cid:0|1>
+  local label="$1" extra="$2" require_hrr="$3" require_cid="${4:-0}"
   echo ">> running interop [$label] on udp/$PORT"
   pkill -f "$WORK/harness" 2>/dev/null && sleep 1 # never talk to a stale harness holding the port
   "$WORK/harness" "$PORT" "$WORK/cert.der" "$WORK/seed.bin" >"$WORK/harness.log" 2>&1 &
@@ -76,9 +77,16 @@ run_once() { # <label> <client-extra-flags> <require-hrr:0|1>
     echo ">> FAIL [$label]: expected a HelloRetryRequest but the handshake was 1-RTT"
     return 1
   fi
+  if [ "$require_cid" = 1 ] && ! grep -q 'with connection ID' "$WORK/harness.log"; then
+    echo ">> FAIL [$label]: expected a connection ID but none was negotiated"
+    return 1
+  fi
   echo ">> PASS [$label]"
 }
 
 run_once "HRR (default groups)" "" 1
 run_once "direct X25519 (-t)" "-t" 0
+# Connection ID (RFC 9146 / RFC 9147 sec 9): the client offers a CID, so the server places it in the
+# records it sends and chooses its own CID for the client's records; the full exchange runs with CIDs.
+run_once "connection ID (--cid)" "-t --cid feedc0de" 0 1
 echo ">> ALL PASS"
