@@ -116,9 +116,9 @@ static bool slice_ieq(const uint8_t *buf, size_t from, size_t end, const char *s
     return *s == '\0';
 }
 
-// Best-effort decimal-to-double for a RESP3 double line: inf / -inf / nan, or
-// [sign] int [.frac] [(e|E)[sign]exp]. The raw text stays authoritative in str.
-static bool parse_double(const uint8_t *buf, size_t from, size_t end, double *out)
+// RESP3 double special forms: inf / +inf / -inf / nan. Returns true (setting *out) if [from,end) is one,
+// else false with *out untouched.
+static bool parse_double_special(const uint8_t *buf, size_t from, size_t end, double *out)
 {
     if (slice_ieq(buf, from, end, "inf") || slice_ieq(buf, from, end, "+inf"))
     {
@@ -136,6 +136,44 @@ static bool parse_double(const uint8_t *buf, size_t from, size_t end, double *ou
         *out = inf * 0.0;          // infinity * 0 = NaN, without an identical-operand division
         return true;
     }
+    return false;
+}
+
+// Parse an optional [ (e|E) [sign] digits ] exponent at *i (advancing it). A missing exponent leaves
+// *exp = 0 and returns true; an 'e' with no following digits returns false.
+static bool parse_exponent(const uint8_t *buf, size_t *i, size_t end, int *exp)
+{
+    *exp = 0;
+    if (!(*i < end && (buf[*i] == 'e' || buf[*i] == 'E')))
+        return true;
+    (*i)++;
+    bool eneg = false;
+    if (*i < end && (buf[*i] == '+' || buf[*i] == '-'))
+    {
+        eneg = (buf[*i] == '-');
+        (*i)++;
+    }
+    bool edig = false;
+    for (; *i < end && buf[*i] >= '0' && buf[*i] <= '9'; (*i)++)
+    {
+        if (*exp < 1000000) // clamp: a larger exponent saturates the double to inf/0 anyway
+            *exp = *exp * 10 + (buf[*i] - '0');
+        edig = true;
+    }
+    if (!edig)
+        return false;
+    if (eneg)
+        *exp = -*exp;
+    return true;
+}
+
+// Best-effort decimal-to-double for a RESP3 double line: inf / -inf / nan, or
+// [sign] int [.frac] [(e|E)[sign]exp]. The raw text stays authoritative in str.
+static bool parse_double(const uint8_t *buf, size_t from, size_t end, double *out)
+{
+    if (parse_double_special(buf, from, end, out))
+        return true;
+
     size_t i = from;
     bool neg = false;
     if (i < end && (buf[i] == '+' || buf[i] == '-'))
@@ -164,27 +202,8 @@ static bool parse_double(const uint8_t *buf, size_t from, size_t end, double *ou
     if (!any)
         return false;
     int exp = 0;
-    if (i < end && (buf[i] == 'e' || buf[i] == 'E'))
-    {
-        i++;
-        bool eneg = false;
-        if (i < end && (buf[i] == '+' || buf[i] == '-'))
-        {
-            eneg = (buf[i] == '-');
-            i++;
-        }
-        bool edig = false;
-        for (; i < end && buf[i] >= '0' && buf[i] <= '9'; i++)
-        {
-            if (exp < 1000000) // clamp: a larger exponent saturates the double to inf/0 anyway
-                exp = exp * 10 + (buf[i] - '0');
-            edig = true;
-        }
-        if (!edig)
-            return false;
-        if (eneg)
-            exp = -exp;
-    }
+    if (!parse_exponent(buf, &i, end, &exp))
+        return false;
     if (i != end)
         return false; // trailing garbage
     double scale = 1.0;
@@ -193,6 +212,61 @@ static bool parse_double(const uint8_t *buf, size_t from, size_t end, double *ou
         scale *= 10.0;
     mant = (exp < 0) ? (mant / scale) : (mant * scale);
     *out = neg ? -mant : mant;
+    return true;
+}
+
+// Length-prefixed body: bulk string ($), bulk error (!), verbatim string (=). Validates the declared
+// length against the buffer and its trailing CRLF; $-1 decodes to nil. type is buf[0].
+static bool parse_bulk_body(const uint8_t *buf, size_t len, uint8_t type, size_t header_from, size_t header_to,
+                            size_t after_header, RespReply *out, size_t *consumed)
+{
+    int64_t blen;
+    if (!parse_int(buf, header_from, header_to, &blen))
+        return false;
+    if (type == '$' && blen < 0) // $-1 = nil
+    {
+        out->type = RespType::RESP_NIL;
+        *consumed = after_header;
+        return true;
+    }
+    if (blen < 0)
+        return false;
+    // Bound the length against the remaining capacity without adding it (a 32-bit
+    // size_t would wrap if we computed after_header + blen + 2 first).
+    if (after_header + 2 > len || (uint64_t)blen > (uint64_t)(len - after_header - 2))
+        return false;                              // body + trailing CRLF not fully buffered
+    size_t need = after_header + (size_t)blen + 2; // body + trailing CRLF
+    if (buf[after_header + (size_t)blen] != '\r' || buf[after_header + (size_t)blen + 1] != '\n')
+        return false; // malformed terminator
+    out->type = (type == '$')   ? RespType::RESP_BULK
+                : (type == '!') ? RespType::RESP_BULK_ERROR
+                                : RespType::RESP_VERBATIM;
+    out->str = (const char *)(buf + after_header);
+    out->str_len = (size_t)blen;
+    *consumed = need;
+    return true;
+}
+
+// Aggregate header whose children follow: array (*), set (~), push (>). Only the count is read here; the
+// caller parses each element next. *-1 decodes to nil. type is buf[0].
+static bool parse_aggregate(const uint8_t *buf, uint8_t type, size_t header_from, size_t header_to, size_t after_header,
+                            RespReply *out, size_t *consumed)
+{
+    int64_t n;
+    if (!parse_int(buf, header_from, header_to, &n))
+        return false;
+    if (type == '*' && n < 0) // *-1 = nil array
+    {
+        out->type = RespType::RESP_NIL;
+        *consumed = after_header;
+        return true;
+    }
+    if (n < 0)
+        return false;
+    out->type = (type == '*') ? RespType::RESP_ARRAY : (type == '~') ? RespType::RESP_SET : RespType::RESP_PUSH;
+    out->ival = n;
+    out->count = n;
+    *consumed = after_header; // header only; the caller parses each element next
     return true;
 }
 
@@ -237,55 +311,14 @@ bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed
     // Length-prefixed bodies: bulk string ($), bulk error (!), verbatim string (=).
     case '$':
     case '!':
-    case '=': {
-        int64_t blen;
-        if (!parse_int(buf, header_from, header_to, &blen))
-            return false;
-        if (buf[0] == '$' && blen < 0) // $-1 = nil
-        {
-            out->type = RespType::RESP_NIL;
-            *consumed = after_header;
-            return true;
-        }
-        if (blen < 0)
-            return false;
-        // Bound the length against the remaining capacity without adding it (a 32-bit
-        // size_t would wrap if we computed after_header + blen + 2 first).
-        if (after_header + 2 > len || (uint64_t)blen > (uint64_t)(len - after_header - 2))
-            return false;                              // body + trailing CRLF not fully buffered
-        size_t need = after_header + (size_t)blen + 2; // body + trailing CRLF
-        if (buf[after_header + (size_t)blen] != '\r' || buf[after_header + (size_t)blen + 1] != '\n')
-            return false; // malformed terminator
-        out->type = (buf[0] == '$')   ? RespType::RESP_BULK
-                    : (buf[0] == '!') ? RespType::RESP_BULK_ERROR
-                                      : RespType::RESP_VERBATIM;
-        out->str = (const char *)(buf + after_header);
-        out->str_len = (size_t)blen;
-        *consumed = need;
-        return true;
-    }
+    case '=':
+        return parse_bulk_body(buf, len, buf[0], header_from, header_to, after_header, out, consumed);
 
     // Aggregates whose children follow: array (*), set (~), push (>).
     case '*':
     case '~':
-    case '>': {
-        int64_t n;
-        if (!parse_int(buf, header_from, header_to, &n))
-            return false;
-        if (buf[0] == '*' && n < 0) // *-1 = nil array
-        {
-            out->type = RespType::RESP_NIL;
-            *consumed = after_header;
-            return true;
-        }
-        if (n < 0)
-            return false;
-        out->type = (buf[0] == '*') ? RespType::RESP_ARRAY : (buf[0] == '~') ? RespType::RESP_SET : RespType::RESP_PUSH;
-        out->ival = n;
-        out->count = n;
-        *consumed = after_header; // header only; the caller parses each element next
-        return true;
-    }
+    case '>':
+        return parse_aggregate(buf, buf[0], header_from, header_to, after_header, out, consumed);
 
     case '%': { // map: N pairs -> 2N following child values
         int64_t n;

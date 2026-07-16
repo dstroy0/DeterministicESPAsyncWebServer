@@ -335,6 +335,72 @@ static int build_pk_ok(const SshAuthReq *req, uint8_t *out, size_t *out_len, siz
 // Orchestration
 // ---------------------------------------------------------------------------
 
+// publickey method (RFC 4252 §7): validate the offered key (a signature-less probe -> PK_OK) or verify
+// the signature over string(session_id) || signed_prefix, keying success to connection i.
+static int ssh_auth_handle_pubkey(uint8_t i, const SshAuthReq *req, uint8_t *out, size_t *out_len, size_t cap)
+{
+    // Key type is taken from the blob (the algo name only steers the RSA signature hash).
+    bool is_ed = req->pk_blob_len >= 4 + 11 && memcmp(req->pk_blob,
+                                                      "\x00\x00\x00\x0b"
+                                                      "ssh-ed25519",
+                                                      4 + 11) == 0;
+    bool is_ecdsa = req->pk_blob_len >= 4 + 19 && memcmp(req->pk_blob,
+                                                         "\x00\x00\x00\x13"
+                                                         "ecdsa-sha2-nistp256",
+                                                         4 + 19) == 0;
+    uint8_t n_be[SSH_RSA_KEY_BYTES];
+    uint8_t e_be[4];
+    uint8_t ed_pub[32];
+    uint8_t ec_pub[SSH_ECDSA_P256_PUB_LEN];
+    bool parsed = is_ed      ? parse_ssh_ed25519_blob(req->pk_blob, req->pk_blob_len, ed_pub)
+                  : is_ecdsa ? parse_ssh_ecdsa_blob(req->pk_blob, req->pk_blob_len, ec_pub)
+                             : parse_ssh_rsa_blob(req->pk_blob, req->pk_blob_len, n_be, e_be);
+    bool key_ok = parsed && s_auth.pk_cb && s_auth.pk_cb(req->user, req->pk_blob, req->pk_blob_len);
+    if (!key_ok)
+        return ssh_auth_build_failure(out, out_len, cap, false);
+
+    if (!req->has_signature)
+        return build_pk_ok(req, out, out_len, cap); // probe: ask for a signature
+
+    // Verify the signature over string(session_id) || signed_prefix.
+    uint8_t signed_data[SSH_PKT_BUF_SIZE + 4 + SSH_SHA256_DIGEST_LEN];
+    size_t sd = 0;
+    put_u32(signed_data + sd, SSH_SHA256_DIGEST_LEN);
+    sd += 4;
+    memcpy(signed_data + sd, ssh_sess[i].session_id, SSH_SHA256_DIGEST_LEN);
+    sd += SSH_SHA256_DIGEST_LEN;
+    if (req->signed_prefix_len > SSH_PKT_BUF_SIZE)
+        return ssh_auth_build_failure(out, out_len, cap, false);
+    memcpy(signed_data + sd, req->signed_prefix, req->signed_prefix_len);
+    sd += req->signed_prefix_len;
+
+    // For RSA the signature hash is chosen by the client's algorithm name (RFC 8332),
+    // not the key blob: rsa-sha2-512 -> SHA-512, otherwise SHA-256.
+    const SshRsaHash rh = (strcmp(req->pk_algo, SSH_RSA_SIG_ALG_SHA512) == 0) ? SshRsaHash::SHA512 : SshRsaHash::SHA256;
+    bool sig_ok;
+    if (is_ed)
+    {
+        sig_ok = req->signature_len == 64 && ssh_ed25519_verify(ed_pub, signed_data, sd, req->signature);
+    }
+    else if (is_ecdsa)
+    {
+        uint8_t ec_sig[SSH_ECDSA_P256_SIG_LEN];
+        sig_ok = parse_ecdsa_sig(req->signature, req->signature_len, ec_sig) &&
+                 ssh_ecdsa_p256_verify(ec_pub, signed_data, sd, ec_sig);
+    }
+    else
+    {
+        sig_ok = ssh_rsa_verify(n_be, e_be, signed_data, sd, req->signature, req->signature_len, rh) == 0;
+    }
+    if (sig_ok)
+    {
+        ssh_sess[i].authed = true;
+        ssh_sess[i].phase = SshPhase::SSH_PHASE_OPEN;
+        return ssh_auth_build_success(out, out_len, cap);
+    }
+    return ssh_auth_build_failure(out, out_len, cap, false);
+}
+
 int ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap)
 {
     if (i >= MAX_SSH_CONNS)
@@ -346,69 +412,7 @@ int ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8
 
     // ---- publickey method (RFC 4252 §7) ----
     if (req.is_pubkey)
-    {
-        // Key type is taken from the blob (the algo name only steers the RSA signature hash).
-        bool is_ed = req.pk_blob_len >= 4 + 11 && memcmp(req.pk_blob,
-                                                         "\x00\x00\x00\x0b"
-                                                         "ssh-ed25519",
-                                                         4 + 11) == 0;
-        bool is_ecdsa = req.pk_blob_len >= 4 + 19 && memcmp(req.pk_blob,
-                                                            "\x00\x00\x00\x13"
-                                                            "ecdsa-sha2-nistp256",
-                                                            4 + 19) == 0;
-        uint8_t n_be[SSH_RSA_KEY_BYTES];
-        uint8_t e_be[4];
-        uint8_t ed_pub[32];
-        uint8_t ec_pub[SSH_ECDSA_P256_PUB_LEN];
-        bool parsed = is_ed      ? parse_ssh_ed25519_blob(req.pk_blob, req.pk_blob_len, ed_pub)
-                      : is_ecdsa ? parse_ssh_ecdsa_blob(req.pk_blob, req.pk_blob_len, ec_pub)
-                                 : parse_ssh_rsa_blob(req.pk_blob, req.pk_blob_len, n_be, e_be);
-        bool key_ok = parsed && s_auth.pk_cb && s_auth.pk_cb(req.user, req.pk_blob, req.pk_blob_len);
-        if (!key_ok)
-            return ssh_auth_build_failure(out, out_len, cap, false);
-
-        if (!req.has_signature)
-            return build_pk_ok(&req, out, out_len, cap); // probe: ask for a signature
-
-        // Verify the signature over string(session_id) || signed_prefix.
-        uint8_t signed_data[SSH_PKT_BUF_SIZE + 4 + SSH_SHA256_DIGEST_LEN];
-        size_t sd = 0;
-        put_u32(signed_data + sd, SSH_SHA256_DIGEST_LEN);
-        sd += 4;
-        memcpy(signed_data + sd, ssh_sess[i].session_id, SSH_SHA256_DIGEST_LEN);
-        sd += SSH_SHA256_DIGEST_LEN;
-        if (req.signed_prefix_len > SSH_PKT_BUF_SIZE)
-            return ssh_auth_build_failure(out, out_len, cap, false);
-        memcpy(signed_data + sd, req.signed_prefix, req.signed_prefix_len);
-        sd += req.signed_prefix_len;
-
-        // For RSA the signature hash is chosen by the client's algorithm name (RFC 8332),
-        // not the key blob: rsa-sha2-512 -> SHA-512, otherwise SHA-256.
-        const SshRsaHash rh =
-            (strcmp(req.pk_algo, SSH_RSA_SIG_ALG_SHA512) == 0) ? SshRsaHash::SHA512 : SshRsaHash::SHA256;
-        bool sig_ok;
-        if (is_ed)
-        {
-            sig_ok = req.signature_len == 64 && ssh_ed25519_verify(ed_pub, signed_data, sd, req.signature);
-        }
-        else if (is_ecdsa)
-        {
-            uint8_t ec_sig[SSH_ECDSA_P256_SIG_LEN];
-            sig_ok = parse_ecdsa_sig(req.signature, req.signature_len, ec_sig) &&
-                     ssh_ecdsa_p256_verify(ec_pub, signed_data, sd, ec_sig);
-        }
-        else
-        {
-            sig_ok = ssh_rsa_verify(n_be, e_be, signed_data, sd, req.signature, req.signature_len, rh) == 0;
-        }
-        if (sig_ok)
-        {
-            ssh_sess[i].authed = true;
-            ssh_sess[i].phase = SshPhase::SSH_PHASE_OPEN;
-            return ssh_auth_build_success(out, out_len, cap);
-        }
-        return ssh_auth_build_failure(out, out_len, cap, false);
-    }
+        return ssh_auth_handle_pubkey(i, &req, out, out_len, cap);
 
     // ---- password method (RFC 4252 §8) ----
     // Password auth can be compiled out for publickey-only hardening.
