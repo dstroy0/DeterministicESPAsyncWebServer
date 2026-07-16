@@ -82,7 +82,8 @@ static void bmem(Buf *b, const uint8_t *m, size_t k)
 // X25519 in supported_groups but sends no share (the HelloRetryRequest trigger). A non-NULL @p cookie
 // is echoed in a cookie extension (RFC 8446 §4.2.2), as a client does on its post-HRR retry.
 static size_t build_client_hello_ex(uint8_t *out, const uint8_t client_pub[32], bool with_keyshare,
-                                    const uint8_t *cookie, size_t cookie_len)
+                                    const uint8_t *cookie, size_t cookie_len, const uint8_t *cid = nullptr,
+                                    size_t cid_len = 0)
 {
     Buf b = {out, 0};
     b8(&b, 0x01); // client_hello
@@ -133,6 +134,15 @@ static size_t build_client_hello_ex(uint8_t *out, const uint8_t client_pub[32], 
         b16(&b, (uint16_t)(cookie_len + 2));
         b16(&b, (uint16_t)cookie_len);
         bmem(&b, cookie, cookie_len);
+    }
+    if (cid)
+    {
+        // connection_id { opaque cid<0..2^8-1> } (RFC 9146 §3): the CID the server must place in records
+        // it sends to this client.
+        b16(&b, 0x0036);
+        b16(&b, (uint16_t)(1 + cid_len));
+        b8(&b, (uint8_t)cid_len);
+        bmem(&b, cid, cid_len);
     }
     uint16_t ext_len = (uint16_t)(b.n - ext_len_at - 2);
     out[ext_len_at] = (uint8_t)(ext_len >> 8);
@@ -225,12 +235,46 @@ static size_t frag_to_tls(const uint8_t *payload, size_t plen, uint8_t *tls_out)
     return 4 + hh.length;
 }
 
-static size_t ct_record_len(const uint8_t *rec, size_t avail)
+static size_t ct_record_len(const uint8_t *rec, size_t avail, size_t cid_len = 0)
 {
+    size_t pre = 1 + ((rec[0] & 0x10) ? cid_len : 0); // byte0 + optional connection id
     size_t seq_len = (rec[0] & 0x08) ? 2 : 1;
-    size_t o = 1 + seq_len + 2;
-    size_t enc = ((size_t)rec[1 + seq_len] << 8) | rec[1 + seq_len + 1];
+    size_t len_off = pre + seq_len;
+    size_t o = len_off + 2;
+    size_t enc = ((size_t)rec[len_off] << 8) | rec[len_off + 1];
     return (o + enc <= avail) ? o + enc : 0;
+}
+
+// Pull the server's connection_id (extension 0x0036, RFC 9146) out of a ServerHello. Returns its length
+// (0 if absent) and copies the CID bytes to @p cid_out.
+static size_t sh_conn_id(const uint8_t *sh, size_t len, uint8_t *cid_out)
+{
+    if (len < 44)
+        return 0;
+    size_t o = 4 + 2 + 32;
+    uint8_t sid = sh[o++];
+    o += sid;
+    o += 2 + 1;
+    if (o + 2 > len)
+        return 0;
+    size_t ext_end = o + 2 + ((sh[o] << 8) | sh[o + 1]);
+    o += 2;
+    while (o + 4 <= ext_end && ext_end <= len)
+    {
+        uint16_t et = (uint16_t)((sh[o] << 8) | sh[o + 1]);
+        uint16_t el = (uint16_t)((sh[o + 2] << 8) | sh[o + 3]);
+        o += 4;
+        if (et == 0x0036 && el >= 1)
+        {
+            size_t cl = sh[o]; // 1-byte CID length
+            if (1 + cl > el || o + 1 + cl > len)
+                return 0;
+            memcpy(cid_out, sh + o + 1, cl);
+            return cl;
+        }
+        o += el;
+    }
+    return 0;
 }
 
 // Given the server's flight (its response to the client's final ClientHello) and the client transcript
@@ -239,7 +283,8 @@ static size_t ct_record_len(const uint8_t *rec, size_t avail)
 // application-traffic keys. @p tr is taken by value so the caller's copy is untouched. Shared by the
 // one-round-trip and HelloRetryRequest paths (they differ only in the transcript prefix and message_seq).
 static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint16_t cfin_msg_seq,
-                                           const uint8_t *flight, size_t fl)
+                                           const uint8_t *flight, size_t fl, const uint8_t *client_cid = nullptr,
+                                           size_t client_cid_len = 0)
 {
     size_t off = 0;
     // record 0: ServerHello (DTLSPlaintext, epoch 0)
@@ -254,6 +299,14 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
 
     uint8_t server_pub[32];
     TEST_ASSERT_TRUE(sh_keyshare(sh, sh_len, server_pub));
+
+    // Connection ids (RFC 9146 / RFC 9147 §9): when we offered a CID, the ServerHello carries the
+    // server's CID (which we place in records we send), and every protected record the server sends us
+    // carries our CID (@p client_cid). scid = the server's CID; empty when CID was not negotiated.
+    uint8_t scid[DTLS_CID_MAX];
+    size_t scid_len = client_cid_len ? sh_conn_id(sh, sh_len, scid) : 0;
+    if (client_cid_len)
+        TEST_ASSERT_TRUE(scid_len > 0); // the server must echo a connection_id extension
 
     // client handshake key schedule from Transcript-Hash(..SH)
     uint8_t ecdhe[32];
@@ -275,11 +328,12 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
     int seen_fin = 0;
     while (off < fl)
     {
-        size_t crl = ct_record_len(flight + off, fl - off);
+        size_t crl = ct_record_len(flight + off, fl - off, client_cid_len);
         TEST_ASSERT_TRUE(crl > 0);
         uint8_t inner[512];
         DtlsCiphertext info;
-        TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&srv_read, exp_seq, flight + off, crl, inner, sizeof(inner), &info));
+        TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&srv_read, exp_seq, flight + off, crl, inner, sizeof(inner), &info,
+                                                   client_cid, client_cid_len));
         exp_seq = info.seq + 1;
         off += crl;
         TEST_ASSERT_EQUAL_UINT8(DTLS_CT_HANDSHAKE, info.content_type);
@@ -339,7 +393,8 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
     size_t cff = dtls_hs_frag_build(cfin[0], cfin_msg_seq, (uint32_t)(cfin_len - 4), 0, cfin + 4,
                                     (uint32_t)(cfin_len - 4), cfin_frag, sizeof(cfin_frag));
     uint8_t cfin_rec[128];
-    size_t cfr = dtls_ciphertext_protect(&cli_write, 0, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec, sizeof(cfin_rec));
+    size_t cfr = dtls_ciphertext_protect(&cli_write, 0, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec, sizeof(cfin_rec),
+                                         scid_len ? scid : nullptr, scid_len);
 
     uint8_t out2[64];
     int r2 = dtls_conn_process(conn, cfin_rec, cfr, out2, sizeof(out2));
@@ -355,7 +410,8 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
     // The ACK is an epoch-3 (application) record of content type 26 that the client can decrypt.
     uint8_t ack_pt[64];
     DtlsCiphertext ackinfo;
-    TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&cli_app_read, 0, out2, (size_t)r2, ack_pt, sizeof(ack_pt), &ackinfo));
+    TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&cli_app_read, 0, out2, (size_t)r2, ack_pt, sizeof(ack_pt), &ackinfo,
+                                               client_cid, client_cid_len));
     TEST_ASSERT_EQUAL_UINT8(DTLS_CT_ACK, ackinfo.content_type);
 
     const DtlsRecordKeys *srv_app_write = dtls_conn_app_write_keys(conn); // server->client
@@ -370,16 +426,16 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
     // A retransmitted client Finished (its ACK was lost) must draw a fresh ACK, not a fatal error
     // (RFC 9147 §5.8.3): re-send the same Finished in a new record and expect another ACK.
     uint8_t cfin_rec2[128];
-    size_t cfr2 =
-        dtls_ciphertext_protect(&cli_write, 1, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec2, sizeof(cfin_rec2));
+    size_t cfr2 = dtls_ciphertext_protect(&cli_write, 1, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec2,
+                                          sizeof(cfin_rec2), scid_len ? scid : nullptr, scid_len);
     uint8_t out3[64];
     int r3 = dtls_conn_process(conn, cfin_rec2, cfr2, out3, sizeof(out3));
     TEST_ASSERT_TRUE(r3 > 0);
     TEST_ASSERT_TRUE(dtls_conn_established(conn));
     uint8_t ack_pt3[64];
     DtlsCiphertext ackinfo3;
-    TEST_ASSERT_TRUE(
-        dtls_ciphertext_unprotect(&cli_app_read, 1, out3, (size_t)r3, ack_pt3, sizeof(ack_pt3), &ackinfo3));
+    TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&cli_app_read, 1, out3, (size_t)r3, ack_pt3, sizeof(ack_pt3), &ackinfo3,
+                                               client_cid, client_cid_len));
     TEST_ASSERT_EQUAL_UINT8(DTLS_CT_ACK, ackinfo3.content_type);
 }
 
@@ -425,6 +481,53 @@ static void test_full_handshake(void)
     TEST_ASSERT_TRUE(fl > 0); // server produced its flight
 
     complete_handshake_from_flight(&conn, tr, /*cfin_msg_seq=*/1, flight, (size_t)fl);
+}
+
+// Connection id negotiation (RFC 9146 / RFC 9147 §9): the ClientHello offers a connection_id, so the
+// server echoes its own CID in the ServerHello, protects its epoch-2 flight with the client's CID, and
+// accepts the client's Finished carrying the server's CID - the whole handshake completes with CIDs.
+static void test_cid_handshake(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    dtls_conn_init(&conn, &cfg, nullptr, 0);
+
+    // ClientHello offering a 3-byte connection id (the CID the server must place in records it sends us).
+    const uint8_t client_cid[3] = {0xC1, 0xC2, 0xC3};
+    uint8_t ch[256];
+    size_t ch_len =
+        build_client_hello_ex(ch, client_pub, /*with_keyshare=*/true, nullptr, 0, client_cid, sizeof(client_cid));
+    SshSha256Ctx tr;
+    ssh_sha256_init(&tr);
+    ssh_sha256_update(&tr, ch, ch_len);
+
+    uint8_t ch_frag[300];
+    size_t ch_fl = dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
+                                      sizeof(ch_frag));
+    uint8_t ch_rec[320];
+    size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
+
+    uint8_t flight[2048];
+    int fl = dtls_conn_process(&conn, ch_rec, ch_rl, flight, sizeof(flight));
+    TEST_ASSERT_TRUE(fl > 0);
+
+    // The server's first epoch-2 record (after the plaintext ServerHello) must carry the C bit + our CID.
+    DtlsPlaintext sh_pt;
+    size_t shrl = dtls_plaintext_parse(flight, (size_t)fl, &sh_pt);
+    TEST_ASSERT_TRUE(shrl > 0);
+    const uint8_t *ep2 = flight + shrl;
+    TEST_ASSERT_TRUE((ep2[0] & 0x10) != 0); // C bit set on the encrypted flight
+    TEST_ASSERT_EQUAL_MEMORY(client_cid, ep2 + 1, sizeof(client_cid));
+
+    // The rest completes with CIDs threaded both directions (this also checks the ServerHello carries the
+    // server's connection_id, the client's CID-bearing Finished is accepted, and both derive matching keys).
+    complete_handshake_from_flight(&conn, tr, /*cfin_msg_seq=*/1, flight, (size_t)fl, client_cid, sizeof(client_cid));
 }
 
 // The HelloRetryRequest path (RFC 9147 §5.1): a ClientHello that offers X25519 but sends no key_share
@@ -707,6 +810,7 @@ int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_full_handshake);
+    RUN_TEST(test_cid_handshake);
     RUN_TEST(test_hrr_group_renegotiation);
     RUN_TEST(test_hrr_retry_without_cookie_rejected);
     RUN_TEST(test_pto_retransmit_and_recovery);

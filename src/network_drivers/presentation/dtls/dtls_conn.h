@@ -56,6 +56,11 @@
 /** @brief Largest serialized peer address the HelloRetryRequest cookie binds (IPv6 16 + port 2). */
 #define DTLS_PEER_ADDR_MAX 18
 
+/** @brief Length of the connection id the server chooses for itself (RFC 9146 / RFC 9147 §9): the id the
+ *         client must place in every record it sends, so the server can route by it across an address
+ *         change. 4 bytes is ample per-connection entropy; must be <= @ref DTLS_CID_MAX. */
+#define DTLS_CONN_LOCAL_CID_LEN 4
+
 /** @brief Most handshake messages in one outbound flight (ServerHello + EE + Cert + CV + Finished). */
 #define DTLS_FLIGHT_MSGS 6
 
@@ -133,6 +138,13 @@ struct DtlsConn
     bool hs_ack_sent;                      ///< the client Finished has been acknowledged (RFC 9147 §5.8.3 / §7)
     uint8_t peer_addr[DTLS_PEER_ADDR_MAX]; ///< serialized peer address the HRR cookie is bound to (§5.1)
     uint8_t peer_addr_len;                 ///< bytes of @ref peer_addr in use (0 = no address bound)
+
+    // Connection ids (RFC 9146 / RFC 9147 §9), negotiated by the connection_id extension.
+    bool cid_negotiated;             ///< the client offered connection_id and we accepted it
+    uint8_t peer_cid[DTLS_CID_MAX];  ///< the client's CID: placed in every record we send to the client (may be empty)
+    uint8_t peer_cid_len;            ///< bytes of @ref peer_cid in use
+    uint8_t local_cid[DTLS_CID_MAX]; ///< the CID we chose: the client places it in every record it sends to us
+    uint8_t local_cid_len;           ///< bytes of @ref local_cid in use
 
     // Retransmission (RFC 9147 §5.8): the current outbound flight, buffered as fragments so it can be
     // re-sent with fresh record sequence numbers, plus the exponential-backoff timer state.

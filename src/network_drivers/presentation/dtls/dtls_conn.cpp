@@ -36,15 +36,18 @@ bool is_ciphertext(uint8_t b0)
 }
 
 // On-wire length of a DTLSCiphertext record from its (plaintext) header, so a datagram carrying more
-// than one record can be walked. Mirrors the header flags dtls_ciphertext_protect writes.
-size_t ciphertext_record_len(const uint8_t *rec, size_t avail)
+// than one record can be walked. Mirrors the header flags dtls_ciphertext_protect writes. @p cid_len is
+// our negotiated connection id length (the CID is not length-prefixed on the wire, RFC 9146), 0 if none.
+size_t ciphertext_record_len(const uint8_t *rec, size_t avail, size_t cid_len)
 {
     if (avail < 1)
         return 0;
     uint8_t b0 = rec[0];
-    size_t seq_len = (b0 & 0x08) ? 2 : 1; // S bit: 16- vs 8-bit sequence number
-    size_t off = 1 + seq_len;
-    if (b0 & 0x04) // L bit: explicit length present
+    size_t off = 1;
+    if (b0 & 0x10) // C bit: connection id present, cid_len bytes (known only from negotiation)
+        off += cid_len;
+    off += (b0 & 0x08) ? 2 : 1; // S bit: 16- vs 8-bit sequence number
+    if (b0 & 0x04)              // L bit: explicit length present
     {
         if (off + 2 > avail)
             return 0;
@@ -124,7 +127,8 @@ bool flight_transmit(DtlsConn *c, uint8_t *out, size_t out_cap, size_t *out_len)
         {
             seq = c->tx_seq_ep2++;
             rn = dtls_ciphertext_protect(&c->ep2_srv, seq, DTLS_CT_HANDSHAKE, frag, flen, out + *out_len,
-                                         out_cap - *out_len);
+                                         out_cap - *out_len, c->cid_negotiated ? c->peer_cid : nullptr,
+                                         c->cid_negotiated ? c->peer_cid_len : 0);
         }
         if (!rn)
             return false;
@@ -232,6 +236,19 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
             return fail(c, ALERT_HANDSHAKE_FAILURE);
     }
 
+    // Connection id negotiation (RFC 9146 / RFC 9147 §9): if the client offered a connection_id we can
+    // hold, accept it - store the client's CID (placed in records we send it) and choose our own CID from
+    // the fresh ServerHello random (unique per connection) for the records the client sends us.
+    if (ch.has_conn_id && ch.conn_id_len <= DTLS_CID_MAX)
+    {
+        c->cid_negotiated = true;
+        c->peer_cid_len = (uint8_t)ch.conn_id_len;
+        if (ch.conn_id_len)
+            memcpy(c->peer_cid, ch.conn_id, ch.conn_id_len);
+        c->local_cid_len = DTLS_CONN_LOCAL_CID_LEN;
+        memcpy(c->local_cid, c->cfg.server_random, DTLS_CONN_LOCAL_CID_LEN);
+    }
+
     // X25519 shared secret and the server's key_share.
     uint8_t ecdhe[32];
     uint8_t server_share[32];
@@ -243,8 +260,10 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     flight_reset(c); // this ClientHello starts a fresh server flight (ServerHello..Finished)
 
     // ServerHello (epoch 0, plaintext).
-    size_t n = tls13_build_server_hello(c->msgbuf, sizeof(c->msgbuf), c->cfg.server_random, ch.session_id,
-                                        ch.session_id_len, server_share, 32, TLS_GROUP_X25519, /*dtls=*/true);
+    size_t n =
+        tls13_build_server_hello(c->msgbuf, sizeof(c->msgbuf), c->cfg.server_random, ch.session_id, ch.session_id_len,
+                                 server_share, 32, TLS_GROUP_X25519, /*dtls=*/true,
+                                 c->cid_negotiated ? c->local_cid : nullptr, c->cid_negotiated ? c->local_cid_len : 0);
     if (!n)
         return fail(c, ALERT_INTERNAL_ERROR);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
@@ -432,7 +451,7 @@ int dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *ou
         uint8_t b0 = dgram[off];
         if (is_ciphertext(b0))
         {
-            size_t rlen = ciphertext_record_len(dgram + off, len - off);
+            size_t rlen = ciphertext_record_len(dgram + off, len - off, c->cid_negotiated ? c->local_cid_len : 0);
             if (!rlen)
                 break; // malformed header; stop walking the datagram
             if (!c->ep2_ready)
@@ -440,7 +459,9 @@ int dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *ou
             uint8_t inner[DTLS_CONN_REASM_CAP + DTLS_TAG_LEN];
             DtlsCiphertext info;
             uint64_t next = c->replay_ep2.seeded ? c->replay_ep2.highest + 1 : 0;
-            if (!dtls_ciphertext_unprotect(&c->ep2_cli, next, dgram + off, rlen, inner, sizeof(inner), &info))
+            if (!dtls_ciphertext_unprotect(&c->ep2_cli, next, dgram + off, rlen, inner, sizeof(inner), &info,
+                                           c->cid_negotiated ? c->local_cid : nullptr,
+                                           c->cid_negotiated ? c->local_cid_len : 0))
                 return fail(c, ALERT_DECRYPT_ERROR);
             off += rlen;
             if (!dtls_replay_check(&c->replay_ep2, info.seq))
@@ -477,7 +498,8 @@ int dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *ou
         uint8_t ack_body[2 + 16];
         size_t bl = dtls_ack_build(&rn, 1, ack_body, sizeof(ack_body));
         size_t rec = dtls_ciphertext_protect(&c->ep3_srv, c->tx_seq_ep3++, DTLS_CT_ACK, ack_body, bl, out + out_len,
-                                             out_cap - out_len);
+                                             out_cap - out_len, c->cid_negotiated ? c->peer_cid : nullptr,
+                                             c->cid_negotiated ? c->peer_cid_len : 0);
         if (rec)
         {
             out_len += rec;
@@ -544,7 +566,9 @@ bool dtls_conn_open_app(DtlsConn *c, const uint8_t *rec, size_t rec_len, uint8_t
         return false;
     DtlsCiphertext info;
     uint64_t next = c->replay_ep3.seeded ? c->replay_ep3.highest + 1 : 0;
-    if (!dtls_ciphertext_unprotect(&c->ep3_cli, next, rec, rec_len, out, out_cap, &info))
+    if (!dtls_ciphertext_unprotect(&c->ep3_cli, next, rec, rec_len, out, out_cap, &info,
+                                   c->cid_negotiated ? c->local_cid : nullptr,
+                                   c->cid_negotiated ? c->local_cid_len : 0))
         return false;
     if (!dtls_replay_check(&c->replay_ep3, info.seq))
         return false; // replay or too old
@@ -560,7 +584,8 @@ size_t dtls_conn_seal_app(DtlsConn *c, const uint8_t *data, size_t len, uint8_t 
     if (!dtls_conn_established(c))
         return 0;
     // tx_seq_ep3 is shared with the completion ACK, so app records never reuse its sequence number.
-    return dtls_ciphertext_protect(&c->ep3_srv, c->tx_seq_ep3++, DTLS_CT_APPLICATION_DATA, data, len, out, out_cap);
+    return dtls_ciphertext_protect(&c->ep3_srv, c->tx_seq_ep3++, DTLS_CT_APPLICATION_DATA, data, len, out, out_cap,
+                                   c->cid_negotiated ? c->peer_cid : nullptr, c->cid_negotiated ? c->peer_cid_len : 0);
 }
 
 #endif // DETWS_ENABLE_DTLS

@@ -79,6 +79,9 @@ struct Tls13ClientHello
     size_t sni_len;
     const uint8_t *cookie; ///< cookie extension body echoed after a HelloRetryRequest (or NULL); DTLS §5.1
     size_t cookie_len;
+    bool has_conn_id;       ///< the connection_id extension was present (RFC 9146 / RFC 9147 §9)
+    const uint8_t *conn_id; ///< the CID the client wants the server to use in records sent to it (may be empty)
+    size_t conn_id_len;     ///< length of @c conn_id (0..255; 0 = the client wants a zero-length CID)
 };
 
 /**
@@ -102,11 +105,15 @@ bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *
  *                        ciphertext || X25519 concatenation for X25519MLKEM768).
  * @param share_len       length of @p share (32 for X25519, 1120 for the hybrid).
  * @param group           the selected named group (default TLS_GROUP_X25519).
+ * @param conn_id          when non-NULL, emit a connection_id extension (RFC 9146 / RFC 9147 §9)
+ *                         carrying the server's CID (the id the client must place in records it sends).
+ * @param conn_id_len      length of @p conn_id (0..255).
  * @return bytes written, or 0 on overflow.
  */
 size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[32], const uint8_t *session_id,
                                 uint8_t session_id_len, const uint8_t *share, size_t share_len = 32,
-                                uint16_t group = TLS_GROUP_X25519, bool dtls = false);
+                                uint16_t group = TLS_GROUP_X25519, bool dtls = false, const uint8_t *conn_id = nullptr,
+                                size_t conn_id_len = 0);
 
 /**
  * @brief Build EncryptedExtensions (RFC 8446 sec 4.3.1) carrying ALPN "h3" and the server's

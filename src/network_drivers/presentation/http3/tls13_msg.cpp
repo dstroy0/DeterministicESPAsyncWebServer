@@ -26,6 +26,7 @@ struct TlsExt
     static constexpr uint16_t TLS_EXT_SUPPORTED_VERSIONS = 0x002b;
     static constexpr uint16_t TLS_EXT_COOKIE = 0x002c;
     static constexpr uint16_t TLS_EXT_KEY_SHARE = 0x0033;
+    static constexpr uint16_t TLS_EXT_CONNECTION_ID = 0x0036; ///< RFC 9146 / RFC 9147 §9
 };
 
 // ---------------------------------------------------------------------------
@@ -258,6 +259,19 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
         out->cookie_len = cl;
         break;
     }
+    case TlsExt::TLS_EXT_CONNECTION_ID: {
+        // ConnectionId { opaque cid<0..2^8-1> } (RFC 9146 §3): a 1-byte length then the CID the client
+        // wants the server to place in records it sends to the client (an empty CID is legal).
+        if (blen < 1)
+            return;
+        size_t cl = body[0];
+        if (1 + cl > blen)
+            return;
+        out->has_conn_id = true;
+        out->conn_id = body + 1;
+        out->conn_id_len = cl;
+        break;
+    }
     case TlsExt::TLS_EXT_SERVER_NAME: {
         // ServerNameList: 2-byte length, then entries: type(1), name<2>. Take the first host_name.
         if (blen < 2)
@@ -355,7 +369,7 @@ bool tls13_parse_client_hello(const uint8_t *msg, size_t len, Tls13ClientHello *
 // ---------------------------------------------------------------------------
 size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[32], const uint8_t *session_id,
                                 uint8_t session_id_len, const uint8_t *share, size_t share_len, uint16_t group,
-                                bool dtls)
+                                bool dtls, const uint8_t *conn_id, size_t conn_id_len)
 {
     Writer w = {out, cap, 0, true};
     w_u8(&w, TlsHs::TLS_HS_SERVER_HELLO);
@@ -381,6 +395,15 @@ size_t tls13_build_server_hello(uint8_t *out, size_t cap, const uint8_t random[3
     w_u16(&w, TlsExt::TLS_EXT_SUPPORTED_VERSIONS);
     w_u16(&w, 2);
     w_u16(&w, dtls ? TLS_VERSION_DTLS_1_3 : TLS_VERSION_1_3);
+    // connection_id (RFC 9146 / RFC 9147 §9) -> the server's CID the client must place in the records
+    // it sends. Sent in the ServerHello (epoch 0) so the client uses it from its first protected record.
+    if (conn_id)
+    {
+        w_u16(&w, TlsExt::TLS_EXT_CONNECTION_ID);
+        w_u16(&w, (uint16_t)(1 + conn_id_len));
+        w_u8(&w, (uint8_t)conn_id_len);
+        w_bytes(&w, conn_id, conn_id_len);
+    }
     w_patch16(&w, ext_len);
 
     w_patch24(&w, hs_len);
