@@ -556,14 +556,14 @@
     "example": "L7-Application/22.Stats",
     "flags": "-DDETWS_ENABLE_STATS=1",
     "board": "esp32dev",
-    "flash_bytes": 754097,
+    "flash_bytes": 754093,
     "ram_bytes": 81880
   },
   "STATS+METRICS": {
     "example": "L7-Application/21.PrometheusMetrics",
     "flags": "-DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1",
     "board": "esp32dev",
-    "flash_bytes": 756253,
+    "flash_bytes": 756249,
     "ram_bytes": 81920
   },
   "STATSD": {
@@ -864,7 +864,7 @@
     "example": "L7-Application/08.Templating",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 754017,
+    "flash_bytes": 754013,
     "ram_bytes": 81824
   },
   "core/09.WebSocket": {
