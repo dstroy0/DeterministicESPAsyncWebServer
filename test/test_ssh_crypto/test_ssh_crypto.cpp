@@ -23,6 +23,7 @@
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/session/scratch.h"
+#include "shared_primitives/ghash.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>
@@ -1579,12 +1580,75 @@ static void test_pkt_eam_forged_rejects(void)
 }
 
 // ============================================================================
+// GHASH 4-bit table vs bitwise reference (proves the optimization is byte-exact)
+// ============================================================================
+
+// The pre-optimization reference: textbook 128-iteration bitwise GF(2^128) multiply (NIST SP 800-38D
+// sec 6.3), acc *= y. The table method in shared_primitives/ghash.h must match this for all inputs.
+static void ghash_gf_mul_bitwise(uint8_t x[16], const uint8_t y[16])
+{
+    uint8_t z[16] = {0}, v[16];
+    memcpy(v, y, 16);
+    for (int i = 0; i < 128; i++)
+    {
+        if ((x[i >> 3] >> (7 - (i & 7))) & 1)
+            for (int k = 0; k < 16; k++)
+                z[k] ^= v[k];
+        uint8_t lsb = v[15] & 1;
+        for (int j = 15; j > 0; j--)
+            v[j] = (uint8_t)((v[j] >> 1) | (v[j - 1] << 7));
+        v[0] >>= 1;
+        if (lsb)
+            v[0] ^= 0xe1;
+    }
+    memcpy(x, z, 16);
+}
+
+void test_ghash_table_matches_bitwise()
+{
+    uint32_t s = 0xC0FFEE11u;
+    for (int t = 0; t < 4000; t++)
+    {
+        uint8_t h[16], acc[16], ref[16];
+        for (int i = 0; i < 16; i++)
+        {
+            s = s * 1664525u + 1013904223u;
+            h[i] = (uint8_t)(s >> 17);
+            s = s * 1664525u + 1013904223u;
+            acc[i] = ref[i] = (uint8_t)(s >> 19);
+        }
+        GhashKey ghk;
+        ghash_key_init(&ghk, h);
+        ghash_mul(&ghk, acc);         // table method
+        ghash_gf_mul_bitwise(ref, h); // reference
+        TEST_ASSERT_EQUAL_UINT8_ARRAY(ref, acc, 16);
+    }
+    // Boundary operands: H = 0, H = 1<<127 (0x80 in byte 0), acc = all-ones.
+    uint8_t hz[16] = {0}, one[16] = {0}, allf[16];
+    one[0] = 0x80;
+    memset(allf, 0xFF, 16);
+    for (int c = 0; c < 2; c++)
+    {
+        const uint8_t *H = c ? one : hz;
+        uint8_t a[16], r[16];
+        memcpy(a, allf, 16);
+        memcpy(r, allf, 16);
+        GhashKey g;
+        ghash_key_init(&g, H);
+        ghash_mul(&g, a);
+        ghash_gf_mul_bitwise(r, H);
+        TEST_ASSERT_EQUAL_UINT8_ARRAY(r, a, 16);
+    }
+}
+
+// ============================================================================
 // main
 // ============================================================================
 
 int main(void)
 {
     UNITY_BEGIN();
+    RUN_TEST(test_ghash_table_matches_bitwise);
 
     // SHA-256
     RUN_TEST(test_sha256_empty);

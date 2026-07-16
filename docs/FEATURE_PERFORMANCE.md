@@ -442,19 +442,19 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
 
 **Bulk primitives (per 1 KiB, sorted by throughput):**
 
-| Primitive                       | Backend           | S3 cyc / KiB | ns / byte |  MB/s |
-| ------------------------------- | ----------------- | -----------: | --------: | ----: |
-| `ssh_aes256ctr`                 | HW AES            |       10,909 |      44.4 |  22.5 |
-| `ssh_sha256`                    | HW SHA            |       12,859 |      52.3 |  19.1 |
-| `ssh_sha512`                    | HW SHA            |       17,149 |      69.8 |  14.3 |
-| `ssh_poly1305`                  | SW                |       31,452 |     128.0 |   7.8 |
-| `ssh_hmac_sha256`               | HW SHA            |       31,994 |     130.2 |   7.7 |
-| `ssh_hmac_sha512`               | HW SHA            |       43,628 |     177.5 |   5.6 |
-| `ssh_chacha20`                  | SW                |      108,919 |     443.2 |   2.3 |
-| `ssh_chachapoly` encrypt (AEAD) | SW                |      154,194 |     627.4 |   1.6 |
-| `ssh_aesgcm` seal (AES-256-GCM) | HW AES + SW GHASH |    3,828,352 |    15,578 | 0.064 |
-| `quic_aes128_gcm` seal          | HW AES + SW GHASH |    3,847,542 |    15,656 | 0.064 |
-| `dtls_record` protect (DTLS1.3) | HW AES + SW GHASH |    3,886,668 |    15,815 | 0.063 |
+| Primitive                       | Backend           | S3 cyc / KiB | ns / byte | MB/s |
+| ------------------------------- | ----------------- | -----------: | --------: | ---: |
+| `ssh_aes256ctr`                 | HW AES            |       10,909 |      44.4 | 22.5 |
+| `ssh_sha256`                    | HW SHA            |       12,859 |      52.3 | 19.1 |
+| `ssh_sha512`                    | HW SHA            |       17,149 |      69.8 | 14.3 |
+| `ssh_poly1305`                  | SW                |       31,452 |     128.0 |  7.8 |
+| `ssh_hmac_sha256`               | HW SHA            |       31,994 |     130.2 |  7.7 |
+| `ssh_hmac_sha512`               | HW SHA            |       43,628 |     177.5 |  5.6 |
+| `ssh_chacha20`                  | SW                |      108,919 |     443.2 |  2.3 |
+| `ssh_chachapoly` encrypt (AEAD) | SW                |      154,194 |     627.4 |  1.6 |
+| `ssh_aesgcm` seal (AES-256-GCM) | HW AES + SW GHASH |      555,421 |     2,260 | 0.44 |
+| `quic_aes128_gcm` seal          | HW AES + SW GHASH |      562,292 |     2,288 | 0.44 |
+| `dtls_record` protect (DTLS1.3) | HW AES + SW GHASH |      578,730 |     2,355 | 0.42 |
 
 **One-shot primitives (KEX, KDF, signatures; sorted by cost):**
 
@@ -476,15 +476,21 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
 | `ssh_ecdsa_p256_verify`            | HW MPI              |  69,939,476 |  291.4 ms |
 | `ssh_rsa_2048_sign` (SHA-256)      | HW MPI              | 105,704,723 |  440.4 ms |
 
-- **AES-GCM is GHASH-bound, and GHASH is pure software.** AES-256-CTR runs at **22.5 MB/s** on the HW AES
-  block, but AES-256-GCM seals the same 1 KiB **~350x slower** (0.064 MB/s). The AES ciphertext is the same
-  ~11 K cycles; the other ~3.82 M cycles/KiB is the GHASH GF(2^128) authenticator, done as a table-less
-  bitwise multiply (~3,700 cyc/byte). The QUIC and DTLS 1.3 record layers (AES-128-GCM) share the exact same
-  GHASH and land at the same ~0.063 MB/s. So the **AEAD record-layer throughput ceiling on this chip is GHASH,
-  not AES** - a Shoup 4-bit-table GHASH (or the S3 SIMD `ee.vmulas` GF-multiply, like the curve25519 win) is
-  the obvious next optimization for any bulk AES-GCM transfer. For an SSH bulk transfer, `chacha20-poly1305`
-  (1.6 MB/s, all software) is already **25x faster than aes256-gcm** here and is negotiated first; AES-256-CTR
-  (22.5 MB/s) is faster still where an AEAD is not required.
+- **AES-GCM is GHASH-bound, and GHASH is software (now 4-bit-table, ~7x faster).** AES-256-CTR runs at
+  **22.5 MB/s** on the HW AES block, but AES-256-GCM authenticates (GHASH) in software, so it is far slower.
+  The original table-less bitwise GF(2^128) multiply (128 iterations/block, ~3,700 cyc/byte) sealed 1 KiB in
+  ~3.83 M cyc (0.064 MB/s). A shared **4-bit (Shoup) table GHASH** ([`shared_primitives/ghash.h`](../src/shared_primitives/ghash.h),
+  built once per key) replaced it: **555,421 cyc (0.44 MB/s) - a 6.9x speedup**, byte-exact vs the bitwise
+  reference (NIST/McGrew GCM KATs + a direct fuzz cross-check). The QUIC and DTLS 1.3 record layers
+  (AES-128-GCM) share the same GHASH and gain the same ~6.8x. Unlike curve25519 (which offloads its field
+  multiply to the RSA/MPI MODMULT), **this chip has no hardware GF(2^128) multiplier** (no `SOC_AES_SUPPORT_GCM`
+  on the arduino-2.x toolchain), so the lever was algorithmic, not a HW offload. The platform mbedtls GCM is
+  still ~5x faster again (104 K cyc, 2.4 MB/s) - it is precompiled at `-O2` (the library ships at the arduino
+  framework's `-Os`, which does not speed up the table GHASH but ~2x's the other pure-C crypto) and/or uses a
+  larger table; routing the ESP32 path through `mbedtls_gcm` would reach 2.4 MB/s but adds a host-untestable
+  code path, so it is left as a documented option. For an SSH bulk transfer, `chacha20-poly1305` (1.6 MB/s
+  software) is still faster than aes256-gcm and is negotiated first; AES-256-CTR (22.5 MB/s) is faster still
+  where an AEAD is not required.
 - **Prefer Ed25519 host keys over RSA.** An `ssh-ed25519` host-key signature is **84.6 ms**; an RSA-2048
   signature is **440 ms** (5.2x slower - the private-key CRT modexp). RSA _verify_ is cheap (16.5 ms, public
   exponent 65537), but the server pays the _sign_ cost on every handshake, so RSA host keys add ~0.36 s to

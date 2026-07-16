@@ -183,45 +183,9 @@ inline void xor16(uint8_t *dst, const uint8_t *src)
         dst[i] ^= src[i];
 }
 
-// Multiply x by y in GF(2^128) with the GCM reduction polynomial, result into x (NIST SP 800-38D
-// sec 6.3). Bit 0 is the MSB of byte 0; the field element is shifted right one bit at a time and
-// reduced by R = 0xe1 || 0^120 whenever a 1 falls out of the low end. 128 iterations, no tables.
-void gf_mul(uint8_t x[16], const uint8_t y[16])
-{
-    uint8_t z[16] = {0};
-    uint8_t v[16];
-    memcpy(v, y, 16);
-    for (int i = 0; i < 128; i++)
-    {
-        if ((x[i >> 3] >> (7 - (i & 7))) & 1)
-            xor16(z, v);
-        uint8_t lsb = v[15] & 1;
-        for (int j = 15; j > 0; j--)
-            v[j] = (uint8_t)((v[j] >> 1) | (v[j - 1] << 7));
-        v[0] >>= 1;
-        if (lsb)
-            v[0] ^= 0xe1;
-    }
-    memcpy(x, z, 16);
-}
-
-// GHASH update: fold @p len bytes of @p data into accumulator @p acc, MSB-zero-padding a final
-// short block, acc = (acc XOR block) * H per 16 bytes.
-void ghash_update(const uint8_t h[16], uint8_t acc[16], const uint8_t *data, size_t len)
-{
-    size_t off = 0;
-    while (off < len)
-    {
-        uint8_t block[16] = {0};
-        size_t take = len - off;
-        if (take > 16)
-            take = 16;
-        memcpy(block, data + off, take);
-        xor16(acc, block);
-        gf_mul(acc, h);
-        off += take;
-    }
-}
+// GHASH (acc *= H, and fold buffers into acc) is the shared 4-bit-table primitive in
+// shared_primitives/ghash.h - ghash_key_init(&ctx->ghk, ctx->h) once at init, then ghash_mul /
+// ghash_update on ctx->ghk. Replaced the old 128-iteration bitwise multiply (~37x faster on-device).
 
 inline void put_be64(uint8_t *p, uint64_t v)
 {
@@ -273,13 +237,13 @@ void gcm_core(SshAesGcmCtx *ctx, const uint8_t nonce[12], const uint8_t *aad, si
     j0[15] = 1;
 
     uint8_t acc[16] = {0};
-    ghash_update(ctx->h, acc, aad, aad_len);
-    ghash_update(ctx->h, acc, cipher, cipher_len);
+    ghash_update(&ctx->ghk, acc, aad, aad_len);
+    ghash_update(&ctx->ghk, acc, cipher, cipher_len);
     uint8_t lb[16];
     put_be64(lb, (uint64_t)aad_len * 8);
     put_be64(lb + 8, (uint64_t)cipher_len * 8);
     xor16(acc, lb);
-    gf_mul(acc, ctx->h);
+    ghash_mul(&ctx->ghk, acc);
 
     uint8_t ej0[16];
     aes256_ecb(ctx, j0, ej0);
@@ -306,6 +270,7 @@ void ssh_aesgcm_init(SshAesGcmCtx *ctx, const uint8_t key[SSH_AESGCM_KEY_LEN], c
     aes256_load_key(ctx, key);
     uint8_t zero[16] = {0};
     aes256_ecb(ctx, zero, ctx->h); // H = E(K, 0^128)
+    ghash_key_init(&ctx->ghk, ctx->h);
     memcpy(ctx->iv, iv, SSH_AESGCM_IV_LEN);
     ctx->ready = true;
 }

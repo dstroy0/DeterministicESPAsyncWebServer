@@ -32,6 +32,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_SSH_AESGCM_H
 #define DETERMINISTICESPASYNCWEBSERVER_SSH_AESGCM_H
 
+#include "shared_primitives/ghash.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -49,6 +50,7 @@ struct SshAesGcmCtx
 {
     mbedtls_aes_context mbed;      ///< mbedtls context (HW-accelerated on ESP32), encrypt key schedule.
     uint8_t h[16];                 ///< GHASH subkey H = E(K, 0^128).
+    GhashKey ghk;                  ///< 4-bit GHASH table built from H (once at init).
     uint8_t iv[SSH_AESGCM_IV_LEN]; ///< current nonce; low 8 bytes (invocation counter) ++ per packet.
     bool ready;                    ///< true once a key/IV is installed.
 };
@@ -58,6 +60,7 @@ struct SshAesGcmCtx
 {
     uint32_t rk[60];               ///< AES-256 expanded round-key schedule (60 words, 240 bytes).
     uint8_t h[16];                 ///< GHASH subkey H = E(K, 0^128).
+    GhashKey ghk;                  ///< 4-bit GHASH table built from H (once at init).
     uint8_t iv[SSH_AESGCM_IV_LEN]; ///< current nonce; low 8 bytes (invocation counter) ++ per packet.
     bool ready;                    ///< true once a key/IV is installed.
 };
