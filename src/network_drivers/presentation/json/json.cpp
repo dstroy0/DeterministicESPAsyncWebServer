@@ -374,6 +374,84 @@ enum class JsonEsc
     TRUNCATED  // sequence would overflow out_cap; caller returns
 };
 
+// Decode a \uXXXX sequence with p at the 'u'. A high surrogate (0xD800..0xDBFF) followed by a low
+// surrogate combines into one code point (0x10000..0x10FFFF); an unpaired/lone surrogate becomes
+// U+FFFD. On success returns the code point and leaves p on the last consumed byte. Returns -1 for
+// malformed / short hex, leaving p unchanged so the caller emits a literal '?'.
+static long json_decode_u(const char *&p)
+{
+    int h1 = p[1] ? hex_val(p[1]) : -1;
+    int h2 = (h1 >= 0 && p[2]) ? hex_val(p[2]) : -1;
+    int h3 = (h2 >= 0 && p[3]) ? hex_val(p[3]) : -1;
+    int h4 = (h3 >= 0 && p[4]) ? hex_val(p[4]) : -1;
+    if (h4 < 0)
+        return -1;
+    unsigned cp = (unsigned)((h1 << 12) | (h2 << 8) | (h3 << 4) | h4);
+    p += 4; // consume the four hex digits (p now at the last one)
+    if (cp >= 0xD800 && cp <= 0xDBFF)
+    {
+        int l1 = (p[1] == '\\' && p[2] == 'u' && p[3]) ? hex_val(p[3]) : -1;
+        int l2 = (l1 >= 0 && p[4]) ? hex_val(p[4]) : -1;
+        int l3 = (l2 >= 0 && p[5]) ? hex_val(p[5]) : -1;
+        int l4 = (l3 >= 0 && p[6]) ? hex_val(p[6]) : -1;
+        unsigned lo = (l4 >= 0) ? (unsigned)((l1 << 12) | (l2 << 8) | (l3 << 4) | l4) : 0;
+        if (l4 >= 0 && lo >= 0xDC00 && lo <= 0xDFFF)
+        {
+            cp = 0x10000u + ((cp - 0xD800u) << 10) + (lo - 0xDC00u);
+            p += 6; // consume the low surrogate's \uXXXX too
+        }
+        else
+            cp = 0xFFFDu; // unpaired high surrogate
+    }
+    else if (cp >= 0xDC00 && cp <= 0xDFFF)
+    {
+        cp = 0xFFFDu; // lone low surrogate
+    }
+    return (long)cp;
+}
+
+// Encode code point cp as UTF-8 into out at *i (bounded by out_cap): <= 0x7F one byte, then 2/3/4
+// bytes. Returns EMITTED on success, or TRUNCATED (writing a NUL) if the whole sequence will not fit.
+static JsonEsc json_emit_utf8(unsigned cp, char *out, size_t &i, size_t out_cap)
+{
+    unsigned char u8[4];
+    int un;
+    if (cp < 0x80u)
+    {
+        u8[0] = (unsigned char)cp;
+        un = 1;
+    }
+    else if (cp < 0x800u)
+    {
+        u8[0] = (unsigned char)(0xC0u | (cp >> 6));
+        u8[1] = (unsigned char)(0x80u | (cp & 0x3Fu));
+        un = 2;
+    }
+    else if (cp < 0x10000u)
+    {
+        u8[0] = (unsigned char)(0xE0u | (cp >> 12));
+        u8[1] = (unsigned char)(0x80u | ((cp >> 6) & 0x3Fu));
+        u8[2] = (unsigned char)(0x80u | (cp & 0x3Fu));
+        un = 3;
+    }
+    else
+    {
+        u8[0] = (unsigned char)(0xF0u | (cp >> 18));
+        u8[1] = (unsigned char)(0x80u | ((cp >> 12) & 0x3Fu));
+        u8[2] = (unsigned char)(0x80u | ((cp >> 6) & 0x3Fu));
+        u8[3] = (unsigned char)(0x80u | (cp & 0x3Fu));
+        un = 4;
+    }
+    if (i + (size_t)un >= out_cap)
+    {
+        out[i] = '\0'; // the whole UTF-8 sequence must fit; truncate cleanly
+        return JsonEsc::TRUNCATED;
+    }
+    for (int k = 0; k < un; k++)
+        out[i++] = (char)u8[k];
+    return JsonEsc::EMITTED;
+}
+
 // Decode one JSON string escape. On entry p points at the escape char (just past the '\'). Simple
 // escapes and malformed \u yield LITERAL_C (resolved char in *c_out); a valid \uXXXX emits its UTF-8
 // bytes directly (EMITTED) or reports TRUNCATED when the whole sequence will not fit. p is left on
@@ -413,76 +491,15 @@ static JsonEsc json_decode_escape(const char *&p, char *out, size_t &i, size_t o
         return JsonEsc::LITERAL_C;
     }
 
-    // \uXXXX -> UTF-8. <= 0x7F stays one byte; 0x80..0x7FF / 0x800..0xFFFF and (via a
-    // surrogate pair) 0x10000..0x10FFFF emit 2/3/4 bytes. A high surrogate (0xD800..0xDBFF)
-    // followed by a low surrogate (0xDC00..0xDFFF) combines into one code point; an unpaired
-    // surrogate becomes U+FFFD. Malformed / short hex -> '?', rescanned as literals.
-    int h1 = p[1] ? hex_val(p[1]) : -1;
-    int h2 = (h1 >= 0 && p[2]) ? hex_val(p[2]) : -1;
-    int h3 = (h2 >= 0 && p[3]) ? hex_val(p[3]) : -1;
-    int h4 = (h3 >= 0 && p[4]) ? hex_val(p[4]) : -1;
-    if (h4 < 0)
+    // \uXXXX -> UTF-8. <= 0x7F stays one byte; 0x80..0x7FF / 0x800..0xFFFF and (via a surrogate pair)
+    // 0x10000..0x10FFFF emit 2/3/4 bytes. Malformed / short hex -> '?', rescanned as literals.
+    long cp = json_decode_u(p);
+    if (cp < 0)
     {
         *c_out = '?';
         return JsonEsc::LITERAL_C;
     }
-    unsigned cp = (unsigned)((h1 << 12) | (h2 << 8) | (h3 << 4) | h4);
-    p += 4; // consume the four hex digits (p now at the last one)
-    if (cp >= 0xD800 && cp <= 0xDBFF)
-    {
-        int l1 = (p[1] == '\\' && p[2] == 'u' && p[3]) ? hex_val(p[3]) : -1;
-        int l2 = (l1 >= 0 && p[4]) ? hex_val(p[4]) : -1;
-        int l3 = (l2 >= 0 && p[5]) ? hex_val(p[5]) : -1;
-        int l4 = (l3 >= 0 && p[6]) ? hex_val(p[6]) : -1;
-        unsigned lo = (l4 >= 0) ? (unsigned)((l1 << 12) | (l2 << 8) | (l3 << 4) | l4) : 0;
-        if (l4 >= 0 && lo >= 0xDC00 && lo <= 0xDFFF)
-        {
-            cp = 0x10000u + ((cp - 0xD800u) << 10) + (lo - 0xDC00u);
-            p += 6; // consume the low surrogate's \uXXXX too
-        }
-        else
-            cp = 0xFFFDu; // unpaired high surrogate
-    }
-    else if (cp >= 0xDC00 && cp <= 0xDFFF)
-    {
-        cp = 0xFFFDu; // lone low surrogate
-    }
-    unsigned char u8[4];
-    int un;
-    if (cp < 0x80u)
-    {
-        u8[0] = (unsigned char)cp;
-        un = 1;
-    }
-    else if (cp < 0x800u)
-    {
-        u8[0] = (unsigned char)(0xC0u | (cp >> 6));
-        u8[1] = (unsigned char)(0x80u | (cp & 0x3Fu));
-        un = 2;
-    }
-    else if (cp < 0x10000u)
-    {
-        u8[0] = (unsigned char)(0xE0u | (cp >> 12));
-        u8[1] = (unsigned char)(0x80u | ((cp >> 6) & 0x3Fu));
-        u8[2] = (unsigned char)(0x80u | (cp & 0x3Fu));
-        un = 3;
-    }
-    else
-    {
-        u8[0] = (unsigned char)(0xF0u | (cp >> 18));
-        u8[1] = (unsigned char)(0x80u | ((cp >> 12) & 0x3Fu));
-        u8[2] = (unsigned char)(0x80u | ((cp >> 6) & 0x3Fu));
-        u8[3] = (unsigned char)(0x80u | (cp & 0x3Fu));
-        un = 4;
-    }
-    if (i + (size_t)un >= out_cap)
-    {
-        out[i] = '\0'; // the whole UTF-8 sequence must fit; truncate cleanly
-        return JsonEsc::TRUNCATED;
-    }
-    for (int k = 0; k < un; k++)
-        out[i++] = (char)u8[k];
-    return JsonEsc::EMITTED;
+    return json_emit_utf8((unsigned)cp, out, i, out_cap);
 }
 
 bool json_get_str(const char *json, const char *key, char *out, size_t out_cap)

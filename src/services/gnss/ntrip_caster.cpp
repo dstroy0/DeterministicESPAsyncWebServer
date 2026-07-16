@@ -52,6 +52,61 @@ void fmt_deg2(char *out, size_t cap, double v)
     const char *sign = (v < 0.0 && whole == 0) ? "-" : ""; // preserve "-0.xx"
     snprintf(out, cap, "%s%d.%02d", sign, whole, frac);
 }
+
+// Find the request header block terminator (CRLFCRLF, or bare LFLF fallback). On success sets *hend
+// just past the blank line and returns true; returns false if the block is incomplete (need more bytes).
+bool find_header_end(const char *buf, size_t len, size_t *hend)
+{
+    for (size_t i = 0; i < len; i++)
+    {
+        if (i + 3 < len && buf[i] == '\r' && buf[i + 1] == '\n' && buf[i + 2] == '\r' && buf[i + 3] == '\n')
+        {
+            *hend = i + 4;
+            return true;
+        }
+        if (i + 1 < len && buf[i] == '\n' && buf[i + 1] == '\n')
+        {
+            *hend = i + 2;
+            return true;
+        }
+    }
+    return false;
+}
+
+// Scan the header lines in [buf,end) for Ntrip-Version and Authorization: Basic, filling out.
+void scan_headers(const char *buf, const char *end, NtripRequest *out)
+{
+    const char *line = buf;
+    while (line < end)
+    {
+        const char *le = line;
+        while (le < end && *le != '\n')
+            le++;
+        const char *lend = le; // exclusive; trim a trailing '\r'
+        if (lend > line && *(lend - 1) == '\r')
+            lend--;
+
+        if (ci_prefix(line, lend, "ntrip-version:"))
+        {
+            const char *v = line + 14;
+            while (v + 2 < lend && !(v[0] == '2' && v[1] == '.' && v[2] == '0'))
+                v++;
+            if (v + 2 < lend) // found "Ntrip/2.0"
+                out->version = NtripVersion::NTRIP_V2;
+        }
+        else if (ci_prefix(line, lend, "authorization:"))
+        {
+            const char *v = skip_ws(line + 14, lend);
+            if (ci_prefix(v, lend, "basic "))
+            {
+                v = skip_ws(v + 6, lend);
+                out->auth_b64 = v;
+                out->auth_b64_len = (uint16_t)(lend - v);
+            }
+        }
+        line = le + 1;
+    }
+}
 } // namespace
 
 bool ntrip_request_parse(const char *buf, size_t len, NtripRequest *out)
@@ -61,23 +116,7 @@ bool ntrip_request_parse(const char *buf, size_t len, NtripRequest *out)
 
     // Find the end of the request header block (blank line): CRLFCRLF, or bare LFLF as a fallback.
     size_t hend = 0;
-    bool found = false;
-    for (size_t i = 0; i < len; i++)
-    {
-        if (i + 3 < len && buf[i] == '\r' && buf[i + 1] == '\n' && buf[i + 2] == '\r' && buf[i + 3] == '\n')
-        {
-            hend = i + 4;
-            found = true;
-            break;
-        }
-        if (i + 1 < len && buf[i] == '\n' && buf[i + 1] == '\n')
-        {
-            hend = i + 2;
-            found = true;
-            break;
-        }
-    }
-    if (!found)
+    if (!find_header_end(buf, len, &hend))
         return false; // need more bytes
     out->complete = true;
 
@@ -117,36 +156,7 @@ bool ntrip_request_parse(const char *buf, size_t len, NtripRequest *out)
     }
 
     // Scan the header lines for Ntrip-Version and Authorization.
-    const char *line = buf;
-    while (line < end)
-    {
-        const char *le = line;
-        while (le < end && *le != '\n')
-            le++;
-        const char *lend = le; // exclusive; trim a trailing '\r'
-        if (lend > line && *(lend - 1) == '\r')
-            lend--;
-
-        if (ci_prefix(line, lend, "ntrip-version:"))
-        {
-            const char *v = line + 14;
-            while (v + 2 < lend && !(v[0] == '2' && v[1] == '.' && v[2] == '0'))
-                v++;
-            if (v + 2 < lend) // found "Ntrip/2.0"
-                out->version = NtripVersion::NTRIP_V2;
-        }
-        else if (ci_prefix(line, lend, "authorization:"))
-        {
-            const char *v = skip_ws(line + 14, lend);
-            if (ci_prefix(v, lend, "basic "))
-            {
-                v = skip_ws(v + 6, lend);
-                out->auth_b64 = v;
-                out->auth_b64_len = (uint16_t)(lend - v);
-            }
-        }
-        line = le + 1;
-    }
+    scan_headers(buf, end, out);
     return true;
 }
 

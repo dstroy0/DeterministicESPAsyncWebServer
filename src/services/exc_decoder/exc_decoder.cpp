@@ -120,6 +120,89 @@ int parse_small_int(const char *p)
     }
     return n;
 }
+
+// Cause: "...panic'ed (LoadProhibited)."
+void parse_cause(const char *text, ExcInfo *out)
+{
+    const char *c = strstr(text, "panic'ed (");
+    if (!c)
+        return;
+    c += 10;
+    size_t i = 0;
+    while (i < sizeof(out->cause) - 1 && c[i] && c[i] != ')') // range check first (short-circuits the read)
+    {
+        out->cause[i] = c[i];
+        i++;
+    }
+    out->cause[i] = '\0';
+}
+
+// Core number: "Core  N ...".
+void parse_core(const char *text, ExcInfo *out)
+{
+    const char *co = strstr(text, "Core ");
+    if (!co)
+        return;
+    const char *p = skip_ws(co + 5);
+    if (*p >= '0' && *p <= '9')
+        out->core = parse_small_int(p); // clamped inside; avoids signed-overflow UB on a huge number
+}
+
+// EXCVADDR (faulting data address).
+void parse_excvaddr(const char *text, ExcInfo *out)
+{
+    const char *e = strstr(text, "EXCVADDR");
+    if (!e)
+        return;
+    const char *colon = strchr(e, ':');
+    if (!colon)
+        return;
+    uint32_t v = 0;
+    if (parse_hex(skip_ws(colon + 1), &v))
+    {
+        out->excvaddr = v;
+        out->has_excvaddr = true;
+    }
+}
+
+// Register-dump PC: a line that starts with "PC" (not "EPC..."). Anchor to a line break.
+void parse_pc(const char *text, ExcInfo *out)
+{
+    const char *pcl = (strncmp(text, "PC", 2) == 0) ? text : strstr(text, "\nPC");
+    if (!pcl)
+        return;
+    const char *colon = strchr(pcl, ':');
+    if (!colon)
+        return;
+    uint32_t v = 0;
+    if (parse_hex(skip_ws(colon + 1), &v))
+        out->pc = v;
+}
+
+// Backtrace: "Backtrace: pc:sp pc:sp ...".
+void parse_backtrace(const char *text, ExcInfo *out)
+{
+    const char *bt = strstr(text, "Backtrace:");
+    if (!bt)
+        return;
+    const char *p = bt + 10;
+    while (out->frame_count < DETWS_EXC_MAX_FRAMES)
+    {
+        p = skip_ws(p);
+        uint32_t pc = 0;
+        uint32_t sp = 0;
+        const char *q = parse_hex(p, &pc);
+        if (!q || *q != ':')
+            break;
+        const char *r = parse_hex(q + 1, &sp);
+        if (!r)
+            break;
+        out->frames[out->frame_count].pc = pc;
+        out->frames[out->frame_count].sp = sp;
+        out->frame_count++;
+        p = r;
+    }
+}
 } // namespace
 
 bool detws_exc_parse(const char *text, ExcInfo *out)
@@ -133,84 +216,11 @@ bool detws_exc_parse(const char *text, ExcInfo *out)
     out->has_excvaddr = false;
     out->frame_count = 0;
 
-    // Cause: "...panic'ed (LoadProhibited)."
-    const char *c = strstr(text, "panic'ed (");
-    if (c)
-    {
-        c += 10;
-        size_t i = 0;
-        while (i < sizeof(out->cause) - 1 && c[i] && c[i] != ')') // range check first (short-circuits the read)
-        {
-            out->cause[i] = c[i];
-            i++;
-        }
-        out->cause[i] = '\0';
-    }
-
-    // Core number: "Core  N ...".
-    const char *co = strstr(text, "Core ");
-    if (co)
-    {
-        const char *p = skip_ws(co + 5);
-        if (*p >= '0' && *p <= '9')
-            out->core = parse_small_int(p); // clamped inside; avoids signed-overflow UB on a huge number
-    }
-
-    // EXCVADDR (faulting data address).
-    const char *e = strstr(text, "EXCVADDR");
-    if (e)
-    {
-        const char *colon = strchr(e, ':');
-        if (colon)
-        {
-            uint32_t v = 0;
-            if (parse_hex(skip_ws(colon + 1), &v))
-            {
-                out->excvaddr = v;
-                out->has_excvaddr = true;
-            }
-        }
-    }
-
-    // Register-dump PC: a line that starts with "PC" (not "EPC..."). Anchor to a line break.
-    const char *pcl = nullptr;
-    if (strncmp(text, "PC", 2) == 0)
-        pcl = text;
-    else
-        pcl = strstr(text, "\nPC");
-    if (pcl)
-    {
-        const char *colon = strchr(pcl, ':');
-        if (colon)
-        {
-            uint32_t v = 0;
-            if (parse_hex(skip_ws(colon + 1), &v))
-                out->pc = v;
-        }
-    }
-
-    // Backtrace: "Backtrace: pc:sp pc:sp ...".
-    const char *bt = strstr(text, "Backtrace:");
-    if (bt)
-    {
-        const char *p = bt + 10;
-        while (out->frame_count < DETWS_EXC_MAX_FRAMES)
-        {
-            p = skip_ws(p);
-            uint32_t pc = 0;
-            uint32_t sp = 0;
-            const char *q = parse_hex(p, &pc);
-            if (!q || *q != ':')
-                break;
-            const char *r = parse_hex(q + 1, &sp);
-            if (!r)
-                break;
-            out->frames[out->frame_count].pc = pc;
-            out->frames[out->frame_count].sp = sp;
-            out->frame_count++;
-            p = r;
-        }
-    }
+    parse_cause(text, out);
+    parse_core(text, out);
+    parse_excvaddr(text, out);
+    parse_pc(text, out);
+    parse_backtrace(text, out);
 
     if (out->pc == 0 && out->frame_count > 0)
         out->pc = out->frames[0].pc;
