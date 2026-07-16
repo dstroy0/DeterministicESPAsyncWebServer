@@ -596,27 +596,27 @@ void DetWebServer::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, con
     http_reset(slot);
 
     // Map the semantic request fields into the shared HttpReq (as h2_server does per stream).
-    size_t mn = strlen(method);
+    size_t mn = strnlen(method, sizeof(r->method));
     if (mn >= sizeof(r->method))
         mn = sizeof(r->method) - 1;
     memcpy(r->method, method, mn);
     r->method[mn] = 0;
 
     const char *q = strchr(path, '?');
-    size_t plen = q ? (size_t)(q - path) : strlen(path);
+    size_t plen = q ? (size_t)(q - path) : strnlen(path, sizeof(r->path));
     if (plen >= sizeof(r->path))
         plen = sizeof(r->path) - 1;
     memcpy(r->path, path, plen);
     r->path[plen] = 0;
-    r->path_idx = strlen(r->path);
+    r->path_idx = strnlen(r->path, sizeof(r->path));
     if (q)
     {
-        size_t ql = strlen(q + 1);
+        size_t ql = strnlen(q + 1, sizeof(r->query));
         if (ql >= sizeof(r->query))
             ql = sizeof(r->query) - 1;
         memcpy(r->query, q + 1, ql);
         r->query[ql] = 0;
-        r->query_idx = strlen(r->query);
+        r->query_idx = strnlen(r->query, sizeof(r->query));
     }
 
     // :authority maps to Host, the way the h2 bridge does.
@@ -624,7 +624,7 @@ void DetWebServer::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, con
     {
         Header *h = &r->headers[r->header_count++];
         memcpy(h->key, "host", 5);
-        size_t vl = strlen(authority);
+        size_t vl = strnlen(authority, sizeof(h->val));
         if (vl >= sizeof(h->val))
             vl = sizeof(h->val) - 1;
         memcpy(h->val, authority, vl);
