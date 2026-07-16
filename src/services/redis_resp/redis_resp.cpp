@@ -154,11 +154,12 @@ static bool parse_exponent(const uint8_t *buf, size_t *i, size_t end, int *exp)
         (*i)++;
     }
     bool edig = false;
-    for (; *i < end && buf[*i] >= '0' && buf[*i] <= '9'; (*i)++)
+    while (*i < end && buf[*i] >= '0' && buf[*i] <= '9')
     {
         if (*exp < 1000000) // clamp: a larger exponent saturates the double to inf/0 anyway
             *exp = *exp * 10 + (buf[*i] - '0');
         edig = true;
+        (*i)++;
     }
     if (!edig)
         return false;
@@ -238,9 +239,12 @@ static bool parse_bulk_body(const uint8_t *buf, size_t len, uint8_t type, size_t
     size_t need = after_header + (size_t)blen + 2; // body + trailing CRLF
     if (buf[after_header + (size_t)blen] != '\r' || buf[after_header + (size_t)blen + 1] != '\n')
         return false; // malformed terminator
-    out->type = (type == '$')   ? RespType::RESP_BULK
-                : (type == '!') ? RespType::RESP_BULK_ERROR
-                                : RespType::RESP_VERBATIM;
+    if (type == '$')
+        out->type = RespType::RESP_BULK;
+    else if (type == '!')
+        out->type = RespType::RESP_BULK_ERROR;
+    else
+        out->type = RespType::RESP_VERBATIM;
     out->str = (const char *)(buf + after_header);
     out->str_len = (size_t)blen;
     *consumed = need;
@@ -263,7 +267,12 @@ static bool parse_aggregate(const uint8_t *buf, uint8_t type, size_t header_from
     }
     if (n < 0)
         return false;
-    out->type = (type == '*') ? RespType::RESP_ARRAY : (type == '~') ? RespType::RESP_SET : RespType::RESP_PUSH;
+    if (type == '*')
+        out->type = RespType::RESP_ARRAY;
+    else if (type == '~')
+        out->type = RespType::RESP_SET;
+    else
+        out->type = RespType::RESP_PUSH;
     out->ival = n;
     out->count = n;
     *consumed = after_header; // header only; the caller parses each element next

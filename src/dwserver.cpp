@@ -1296,7 +1296,7 @@ static void send_too_many_requests(uint8_t slot_id, uint32_t retry_after_s)
 }
 #endif // DETWS_ENABLE_AUTH_LOCKOUT
 
-bool DetWebServer::route_admits(const Route *r, uint8_t slot_id, HttpReq *req)
+bool DetWebServer::route_admits(const Route *r, uint8_t slot_id, HttpReq *req) const
 {
     if (!r->is_active)
         return false;

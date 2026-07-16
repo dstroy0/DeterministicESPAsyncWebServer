@@ -350,8 +350,9 @@ struct SnmpReqCtx
 static SnmpReqCtx s_req;
 
 // Run the SET varbind loop: apply each varbind, stopping at the first error. On failure writes the
-// SnmpErr and the 1-based varbind index into *err_status/*err_index (left unchanged if all succeed;
-// v2c selects the v2c error variant). Extracted so the per-varbind guards are not nested 4 deep (S134).
+// SnmpErr and the 1-based varbind index into the err_status and err_index outputs (left unchanged if
+// all succeed; v2c selects the v2c error variant). Extracted so the per-varbind guards are not nested
+// 4 deep (S134).
 static void snmp_apply_set_all(size_t nvb, bool v2c, long *err_status, long *err_index)
 {
     for (size_t i = 0; i < nvb; i++)

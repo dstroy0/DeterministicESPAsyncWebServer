@@ -115,24 +115,28 @@ uint32_t detws_failsafe_check(void)
     return detws_failsafe_check_at(detws_millis());
 }
 
+// append a literal into out[*n], bounded by cap (leaving room for the NUL); truncates safely on overflow.
+static void fs_put(char *out, size_t cap, size_t *n, const char *s)
+{
+    while (*s && *n + 1 < cap)
+        out[(*n)++] = *s++;
+}
+// append @p v as decimal into out[*n], same bound.
+static void fs_put_u32(char *out, size_t cap, size_t *n, uint32_t v)
+{
+    char b[10];
+    size_t k = u32_dec(v, b);
+    for (size_t i = 0; i < k && *n + 1 < cap; i++)
+        out[(*n)++] = b[i];
+}
+
 int detws_failsafe_json_at(uint32_t now, char *out, size_t cap)
 {
     // {"lifelines":[{"name":"...","overdue":false,"age_ms":N,"deadline_ms":N},...]}
     if (!out || cap == 0)
         return 0;
     size_t n = 0;
-    // append a literal; truncates safely if it would overflow.
-    auto put = [&](const char *s) {
-        while (*s && n + 1 < cap)
-            out[n++] = *s++;
-    };
-    auto put_u32 = [&](uint32_t v) {
-        char b[10];
-        size_t k = u32_dec(v, b);
-        for (size_t i = 0; i < k && n + 1 < cap; i++)
-            out[n++] = b[i];
-    };
-    put("{\"lifelines\":[");
+    fs_put(out, cap, &n, "{\"lifelines\":[");
     bool first = true;
     for (int i = 0; i < DETWS_FAILSAFE_MAX_LIFELINES; i++)
     {
@@ -140,19 +144,19 @@ int detws_failsafe_json_at(uint32_t now, char *out, size_t cap)
         if (!l.armed)
             continue;
         if (!first)
-            put(",");
+            fs_put(out, cap, &n, ",");
         first = false;
-        put("{\"name\":\"");
-        put(l.name ? l.name : "");
-        put("\",\"overdue\":");
-        put(detws_lifeline_overdue(now, l.last_feed_ms, l.deadline_ms) ? "true" : "false");
-        put(",\"age_ms\":");
-        put_u32((uint32_t)(now - l.last_feed_ms));
-        put(",\"deadline_ms\":");
-        put_u32(l.deadline_ms);
-        put("}");
+        fs_put(out, cap, &n, "{\"name\":\"");
+        fs_put(out, cap, &n, l.name ? l.name : "");
+        fs_put(out, cap, &n, "\",\"overdue\":");
+        fs_put(out, cap, &n, detws_lifeline_overdue(now, l.last_feed_ms, l.deadline_ms) ? "true" : "false");
+        fs_put(out, cap, &n, ",\"age_ms\":");
+        fs_put_u32(out, cap, &n, (uint32_t)(now - l.last_feed_ms));
+        fs_put(out, cap, &n, ",\"deadline_ms\":");
+        fs_put_u32(out, cap, &n, l.deadline_ms);
+        fs_put(out, cap, &n, "}");
     }
-    put("]}");
+    fs_put(out, cap, &n, "]}");
     out[n < cap ? n : cap - 1] = '\0';
     return (int)n;
 }

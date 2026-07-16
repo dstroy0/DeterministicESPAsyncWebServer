@@ -48,15 +48,21 @@ inline uint8_t xtime(uint8_t a)
     return (uint8_t)((a << 1) ^ ((a >> 7) ? 0x1bu : 0x00u));
 }
 
+// AES SubWord (FIPS 197 sec 5.2): apply the S-box to each of the four bytes of a 32-bit word.
+uint32_t aes_sub_word(uint32_t w)
+{
+    return ((uint32_t)DET_AES_SBOX[w >> 24] << 24) | ((uint32_t)DET_AES_SBOX[(w >> 16) & 0xff] << 16) |
+           ((uint32_t)DET_AES_SBOX[(w >> 8) & 0xff] << 8) | (uint32_t)DET_AES_SBOX[w & 0xff];
+}
+// AES RotWord (FIPS 197 sec 5.2): cyclically rotate a 32-bit word one byte left.
+uint32_t aes_rot_word(uint32_t w)
+{
+    return (w << 8) | (w >> 24);
+}
+
 // AES-256 key schedule (FIPS 197 sec 5.2): Nk=8, Nr=14 -> 15 round keys x 4 words = 60 words.
 void aes256_key_expand(const uint8_t key[32], uint32_t rk[60])
 {
-    auto sub_word = [](uint32_t w) -> uint32_t {
-        return ((uint32_t)DET_AES_SBOX[w >> 24] << 24) | ((uint32_t)DET_AES_SBOX[(w >> 16) & 0xff] << 16) |
-               ((uint32_t)DET_AES_SBOX[(w >> 8) & 0xff] << 8) | (uint32_t)DET_AES_SBOX[w & 0xff];
-    };
-    auto rot_word = [](uint32_t w) -> uint32_t { return (w << 8) | (w >> 24); };
-
     for (int i = 0; i < 8; i++)
         rk[i] = ((uint32_t)key[4 * i] << 24) | ((uint32_t)key[4 * i + 1] << 16) | ((uint32_t)key[4 * i + 2] << 8) |
                 (uint32_t)key[4 * i + 3];
@@ -65,9 +71,9 @@ void aes256_key_expand(const uint8_t key[32], uint32_t rk[60])
     {
         uint32_t t = rk[i - 1];
         if (i % 8 == 0)
-            t = sub_word(rot_word(t)) ^ ((uint32_t)RCON[i / 8] << 24);
+            t = aes_sub_word(aes_rot_word(t)) ^ ((uint32_t)RCON[i / 8] << 24);
         else if (i % 8 == 4) // AES-256 applies an extra SubWord at the mid-point of each 8-word run.
-            t = sub_word(t);
+            t = aes_sub_word(t);
         rk[i] = rk[i - 8] ^ t;
     }
 }
@@ -147,7 +153,7 @@ void aes256_encrypt_block(const uint32_t rk[60], const uint8_t in[16], uint8_t o
 }
 } // namespace
 
-static inline void aes256_ecb(SshAesGcmCtx *ctx, const uint8_t in[16], uint8_t out[16])
+static inline void aes256_ecb(const SshAesGcmCtx *ctx, const uint8_t in[16], uint8_t out[16])
 {
     aes256_encrypt_block(ctx->rk, in, out);
 }

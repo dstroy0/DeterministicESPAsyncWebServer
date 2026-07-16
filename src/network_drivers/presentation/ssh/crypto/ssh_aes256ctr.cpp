@@ -77,16 +77,20 @@ static inline uint8_t xtime(uint8_t a)
 // AES-256 has Nk=8, Nr=14, producing 15 round keys × 4 words = 60 words.
 // ---------------------------------------------------------------------------
 
+// SubWord: apply the S-box to each of the four bytes of a word.
+static uint32_t aes_sub_word(uint32_t w)
+{
+    return ((uint32_t)DET_AES_SBOX[w >> 24] << 24) | ((uint32_t)DET_AES_SBOX[(w >> 16) & 0xff] << 16) |
+           ((uint32_t)DET_AES_SBOX[(w >> 8) & 0xff] << 8) | (uint32_t)DET_AES_SBOX[w & 0xff];
+}
+// RotWord: cyclically rotate a word one byte left ([a,b,c,d] -> [b,c,d,a]).
+static uint32_t aes_rot_word(uint32_t w)
+{
+    return (w << 8) | (w >> 24);
+}
+
 static void aes256_key_expand(const uint8_t key[32], uint32_t rk[60])
 {
-    // SubWord: apply the S-box to each of the four bytes of a word.
-    auto sub_word = [](uint32_t w) -> uint32_t {
-        return ((uint32_t)DET_AES_SBOX[w >> 24] << 24) | ((uint32_t)DET_AES_SBOX[(w >> 16) & 0xff] << 16) |
-               ((uint32_t)DET_AES_SBOX[(w >> 8) & 0xff] << 8) | (uint32_t)DET_AES_SBOX[w & 0xff];
-    };
-    // RotWord: cyclically rotate a word one byte left ([a,b,c,d] -> [b,c,d,a]).
-    auto rot_word = [](uint32_t w) -> uint32_t { return (w << 8) | (w >> 24); };
-
     // The first Nk=8 words of the schedule are the cipher key verbatim, read as
     // big-endian 32-bit words.
     for (int i = 0; i < 8; i++)
@@ -103,10 +107,10 @@ static void aes256_key_expand(const uint8_t key[32], uint32_t rk[60])
         uint32_t t = rk[i - 1];
         if (i % 8 == 0)
             // Start of a new key: RotWord, SubWord, then XOR the round constant.
-            t = sub_word(rot_word(t)) ^ ((uint32_t)RCON[i / 8] << 24);
+            t = aes_sub_word(aes_rot_word(t)) ^ ((uint32_t)RCON[i / 8] << 24);
         else if (i % 8 == 4)
             // Mid-key SubWord step unique to 256-bit keys.
-            t = sub_word(t);
+            t = aes_sub_word(t);
         rk[i] = rk[i - 8] ^ t;
     }
 }

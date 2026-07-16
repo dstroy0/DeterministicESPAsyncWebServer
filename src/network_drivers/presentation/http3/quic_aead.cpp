@@ -53,15 +53,21 @@ inline uint8_t xtime(uint8_t a)
     return (uint8_t)((a << 1) ^ ((a >> 7) ? 0x1bu : 0x00u));
 }
 
+// AES SubWord (FIPS 197 sec 5.2): apply the S-box to each of the four bytes of a 32-bit word.
+uint32_t aes_sub_word(uint32_t w)
+{
+    return ((uint32_t)DET_AES_SBOX[w >> 24] << 24) | ((uint32_t)DET_AES_SBOX[(w >> 16) & 0xff] << 16) |
+           ((uint32_t)DET_AES_SBOX[(w >> 8) & 0xff] << 8) | (uint32_t)DET_AES_SBOX[w & 0xff];
+}
+// AES RotWord (FIPS 197 sec 5.2): cyclically rotate a 32-bit word one byte left.
+uint32_t aes_rot_word(uint32_t w)
+{
+    return (w << 8) | (w >> 24);
+}
+
 // AES-128 key schedule (FIPS 197 sec 5.2): Nk=4, Nr=10 -> 11 round keys x 4 words = 44 words.
 void aes128_key_expand(const uint8_t key[16], uint32_t rk[44])
 {
-    auto sub_word = [](uint32_t w) -> uint32_t {
-        return ((uint32_t)DET_AES_SBOX[w >> 24] << 24) | ((uint32_t)DET_AES_SBOX[(w >> 16) & 0xff] << 16) |
-               ((uint32_t)DET_AES_SBOX[(w >> 8) & 0xff] << 8) | (uint32_t)DET_AES_SBOX[w & 0xff];
-    };
-    auto rot_word = [](uint32_t w) -> uint32_t { return (w << 8) | (w >> 24); };
-
     for (int i = 0; i < 4; i++)
         rk[i] = ((uint32_t)key[4 * i] << 24) | ((uint32_t)key[4 * i + 1] << 16) | ((uint32_t)key[4 * i + 2] << 8) |
                 (uint32_t)key[4 * i + 3];
@@ -70,7 +76,7 @@ void aes128_key_expand(const uint8_t key[16], uint32_t rk[44])
     {
         uint32_t t = rk[i - 1];
         if (i % 4 == 0)
-            t = sub_word(rot_word(t)) ^ ((uint32_t)RCON[i / 4] << 24);
+            t = aes_sub_word(aes_rot_word(t)) ^ ((uint32_t)RCON[i / 4] << 24);
         rk[i] = rk[i - 4] ^ t;
     }
 }

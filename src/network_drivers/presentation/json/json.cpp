@@ -378,26 +378,32 @@ enum class JsonEsc
 // surrogate combines into one code point (0x10000..0x10FFFF); an unpaired/lone surrogate becomes
 // U+FFFD. On success returns the code point and leaves p on the last consumed byte. Returns -1 for
 // malformed / short hex, leaving p unchanged so the caller emits a literal '?'.
+// Read the four hex digits at src[0..3] into a 16-bit value; -1 if any is absent or non-hex.
+static int json_hex4(const char *src)
+{
+    int h0 = src[0] ? hex_val(src[0]) : -1;
+    int h1 = (h0 >= 0 && src[1]) ? hex_val(src[1]) : -1;
+    int h2 = (h1 >= 0 && src[2]) ? hex_val(src[2]) : -1;
+    int h3 = (h2 >= 0 && src[3]) ? hex_val(src[3]) : -1;
+    if (h3 < 0)
+        return -1;
+    return (h0 << 12) | (h1 << 8) | (h2 << 4) | h3;
+}
+
 static long json_decode_u(const char *&p)
 {
-    int h1 = p[1] ? hex_val(p[1]) : -1;
-    int h2 = (h1 >= 0 && p[2]) ? hex_val(p[2]) : -1;
-    int h3 = (h2 >= 0 && p[3]) ? hex_val(p[3]) : -1;
-    int h4 = (h3 >= 0 && p[4]) ? hex_val(p[4]) : -1;
-    if (h4 < 0)
+    int v = json_hex4(p + 1); // p at 'u'; the four hex digits are p[1..4]
+    if (v < 0)
         return -1;
-    unsigned cp = (unsigned)((h1 << 12) | (h2 << 8) | (h3 << 4) | h4);
+    unsigned cp = (unsigned)v;
     p += 4; // consume the four hex digits (p now at the last one)
     if (cp >= 0xD800 && cp <= 0xDBFF)
     {
-        int l1 = (p[1] == '\\' && p[2] == 'u' && p[3]) ? hex_val(p[3]) : -1;
-        int l2 = (l1 >= 0 && p[4]) ? hex_val(p[4]) : -1;
-        int l3 = (l2 >= 0 && p[5]) ? hex_val(p[5]) : -1;
-        int l4 = (l3 >= 0 && p[6]) ? hex_val(p[6]) : -1;
-        unsigned lo = (l4 >= 0) ? (unsigned)((l1 << 12) | (l2 << 8) | (l3 << 4) | l4) : 0;
-        if (l4 >= 0 && lo >= 0xDC00 && lo <= 0xDFFF)
+        // A high surrogate pairs with a following \uXXXX low surrogate (0xDC00..0xDFFF).
+        int lo = (p[1] == '\\' && p[2] == 'u') ? json_hex4(p + 3) : -1;
+        if (lo >= 0xDC00 && lo <= 0xDFFF)
         {
-            cp = 0x10000u + ((cp - 0xD800u) << 10) + (lo - 0xDC00u);
+            cp = 0x10000u + ((cp - 0xD800u) << 10) + ((unsigned)lo - 0xDC00u);
             p += 6; // consume the low surrogate's \uXXXX too
         }
         else

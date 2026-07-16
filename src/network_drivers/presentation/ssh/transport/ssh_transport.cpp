@@ -201,7 +201,7 @@ void w_bytes(Writer &w, const void *src, size_t n)
         w.ok = false;
         return;
     }
-    memcpy(w.p + w.len, src, n);
+    memcpy(w.p + w.len, src, n); // NOSONAR - bound proven above; analyzer follows an infeasible path
     w.len += n;
 }
 
@@ -1025,7 +1025,8 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         memcpy(k_be + (256 - SSH_ECDSA_P256_COORD_LEN), kk, SSH_ECDSA_P256_COORD_LEN);
         memcpy(cpub, qc, SSH_ECDSA_P256_PUB_LEN);
         memcpy(spub, qs, SSH_ECDSA_P256_PUB_LEN);
-        cpub_len = spub_len = SSH_ECDSA_P256_PUB_LEN;
+        cpub_len = SSH_ECDSA_P256_PUB_LEN;
+        spub_len = SSH_ECDSA_P256_PUB_LEN;
         pub_is_string = true;
         ssh_wipe(kk, sizeof(kk));
     }

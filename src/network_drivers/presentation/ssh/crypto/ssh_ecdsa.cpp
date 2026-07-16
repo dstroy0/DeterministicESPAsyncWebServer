@@ -649,10 +649,10 @@ bool ecdsa_sign_core(uint8_t sig[64], const uint8_t h1[32], const uint32_t d[8])
     uint8_t K[32];
     memset(V, 0x01, 32);
     memset(K, 0x00, 32);
-    // K = HMAC_K(V || 0x00 || x || e); V = HMAC_K(V)
+    // RFC 6979 first pass: rekey K from V, tag byte 0x00, x_oct and h_oct, then refresh V from K.
     hmac_cat(K, K, V, 32, 0x00, x_oct, h_oct);
     hmac_cat(V, K, V, 32, -1, nullptr, nullptr);
-    // K = HMAC_K(V || 0x01 || x || e); V = HMAC_K(V)
+    // RFC 6979 second pass: rekey K from V, tag byte 0x01, x_oct and h_oct, then refresh V from K.
     hmac_cat(K, K, V, 32, 0x01, x_oct, h_oct);
     hmac_cat(V, K, V, 32, -1, nullptr, nullptr);
 

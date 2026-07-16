@@ -96,7 +96,7 @@ size_t dtls_hs_header_parse(const uint8_t *p, size_t len, DtlsHsHeader *out)
     out->frag_length = ((uint32_t)p[9] << 16) | ((uint32_t)p[10] << 8) | p[11];
     if (out->frag_offset + out->frag_length > out->length)
         return 0; // fragment falls outside the declared message
-    if ((size_t)DTLS_HS_HDR_LEN + out->frag_length > len)
+    if (DTLS_HS_HDR_LEN + out->frag_length > len)
         return 0; // fragment bytes truncated
     out->fragment = p + DTLS_HS_HDR_LEN;
     return DTLS_HS_HDR_LEN + out->frag_length;

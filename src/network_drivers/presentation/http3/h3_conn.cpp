@@ -166,11 +166,8 @@ void on_stream_data(void *app, QuicConn *, uint64_t stream_id, const uint8_t *da
     append(st, data, len);
 
     // A unidirectional stream begins with a stream-type varint; classify it once.
-    if (st->role != H3StreamRole::H3_ROLE_REQUEST && !st->type_read && st->buf_len >= 1)
-    {
-        if (!h3_classify_uni_stream(st))
-            return; // need more bytes for the varint
-    }
+    if (st->role != H3StreamRole::H3_ROLE_REQUEST && !st->type_read && st->buf_len >= 1 && !h3_classify_uni_stream(st))
+        return; // need more bytes for the varint
 
     if (st->role == H3StreamRole::H3_ROLE_CONTROL)
     {

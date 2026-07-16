@@ -132,6 +132,28 @@ bool ber_put_null(BerEnc *e)
     return e->ok;
 }
 
+// Emit @p v as base-128, big-endian, high bit set on all but the last byte, into tmp[*t] bounded by cap.
+static void oid_emit_arc(uint8_t *tmp, size_t cap, size_t *t, uint32_t v, BerEnc *e)
+{
+    uint8_t b[5];
+    int k = 0;
+    do
+    {
+        b[k++] = (uint8_t)(v & 0x7F);
+        v >>= 7;
+    } while (v);
+    for (int i = k - 1; i >= 0; i--)
+    {
+        uint8_t byte = b[i];
+        if (i != 0)
+            byte |= 0x80;
+        if (*t < cap)
+            tmp[(*t)++] = byte;
+        else
+            e->ok = false;
+    }
+}
+
 bool ber_put_oid(BerEnc *e, const uint32_t *arcs, size_t n)
 {
     if (n < 2)
@@ -143,29 +165,9 @@ bool ber_put_oid(BerEnc *e, const uint32_t *arcs, size_t n)
     size_t t = 0;
     // First two arcs combine into one byte/value: 40*arc0 + arc1.
     uint32_t first = 40u * arcs[0] + arcs[1];
-    // Base-128, big-endian, high bit set on all but the last byte.
-    auto emit = [&](uint32_t v) {
-        uint8_t b[5];
-        int k = 0;
-        do
-        {
-            b[k++] = (uint8_t)(v & 0x7F);
-            v >>= 7;
-        } while (v);
-        for (int i = k - 1; i >= 0; i--)
-        {
-            uint8_t byte = b[i];
-            if (i != 0)
-                byte |= 0x80;
-            if (t < sizeof(tmp))
-                tmp[t++] = byte;
-            else
-                e->ok = false;
-        }
-    };
-    emit(first);
+    oid_emit_arc(tmp, sizeof(tmp), &t, first, e);
     for (size_t i = 2; i < n; i++)
-        emit(arcs[i]);
+        oid_emit_arc(tmp, sizeof(tmp), &t, arcs[i], e);
     return ber_put_tlv(e, (uint8_t)SnmpTag::BER_OID, tmp, t);
 }
 

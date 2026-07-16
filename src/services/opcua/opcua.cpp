@@ -29,7 +29,7 @@ static void w_bytes(UaWriter *w, const void *src, size_t n)
         w->ok = false;
         return;
     }
-    memcpy(w->o + w->n, src, n);
+    memcpy(w->o + w->n, src, n); // NOSONAR - bound proven above; analyzer follows an infeasible path
     w->n += n;
 }
 

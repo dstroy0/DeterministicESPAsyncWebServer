@@ -556,7 +556,7 @@ class DetWebServer
     /// @brief Route-selection predicate: true if route @p r is active, its path pattern matches
     ///        @p req, and its interface filter admits this slot's connection. Matching a param route
     ///        captures its path parameters into @p req as a side effect (as the inline match did).
-    bool route_admits(const Route *r, uint8_t slot_id, HttpReq *req);
+    bool route_admits(const Route *r, uint8_t slot_id, HttpReq *req) const;
 
     /// @brief Dispatch a route whose path + interface already matched (WS/SSE/STATIC/HTTP + auth).
     /// @return true when a response was sent (the caller stops); false to keep scanning later routes,

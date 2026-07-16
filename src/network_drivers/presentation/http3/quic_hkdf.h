@@ -44,6 +44,10 @@
 void quic_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm, size_t ikm_len,
                        uint8_t prk[QUIC_HKDF_HASH_LEN]);
 
+/** @brief The RFC 8446 sec 7.1 HKDF-Expand-Label prefix used by TLS 1.3 and QUIC. DTLS 1.3 overrides
+ *  it with "dtls13" (RFC 9147 sec 5.9); callers that need it pass it explicitly. */
+static constexpr char QUIC_HKDF_LABEL_PREFIX[] = "tls13 ";
+
 /**
  * @brief HKDF-Expand-Label (RFC 8446 sec 7.1) with the QUIC/TLS 1.3 "tls13 " label prefix.
  *
@@ -53,11 +57,6 @@ void quic_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm,
  * this function pass an empty context). @p out_len must not exceed 255*32 bytes; QUIC only ever asks
  * for <= 32, which is a single HMAC block.
  *
-/** @brief The RFC 8446 sec 7.1 HKDF-Expand-Label prefix used by TLS 1.3 and QUIC. DTLS 1.3 overrides
- *  it with "dtls13" (RFC 9147 sec 5.9); callers that need it pass it explicitly. */
-static constexpr char QUIC_HKDF_LABEL_PREFIX[] = "tls13 ";
-
-/**
  * @param secret        Traffic secret (HKDF PRK), QUIC_HKDF_HASH_LEN bytes.
  * @param label         Short ASCII label, e.g. "quic key" (without the prefix), <= 249 bytes.
  * @param out           Output keying material.

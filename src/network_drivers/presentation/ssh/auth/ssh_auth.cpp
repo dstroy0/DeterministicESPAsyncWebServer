@@ -352,9 +352,13 @@ static int ssh_auth_handle_pubkey(uint8_t i, const SshAuthReq *req, uint8_t *out
     uint8_t e_be[4];
     uint8_t ed_pub[32];
     uint8_t ec_pub[SSH_ECDSA_P256_PUB_LEN];
-    bool parsed = is_ed      ? parse_ssh_ed25519_blob(req->pk_blob, req->pk_blob_len, ed_pub)
-                  : is_ecdsa ? parse_ssh_ecdsa_blob(req->pk_blob, req->pk_blob_len, ec_pub)
-                             : parse_ssh_rsa_blob(req->pk_blob, req->pk_blob_len, n_be, e_be);
+    bool parsed = false;
+    if (is_ed)
+        parsed = parse_ssh_ed25519_blob(req->pk_blob, req->pk_blob_len, ed_pub);
+    else if (is_ecdsa)
+        parsed = parse_ssh_ecdsa_blob(req->pk_blob, req->pk_blob_len, ec_pub);
+    else
+        parsed = parse_ssh_rsa_blob(req->pk_blob, req->pk_blob_len, n_be, e_be);
     bool key_ok = parsed && s_auth.pk_cb && s_auth.pk_cb(req->user, req->pk_blob, req->pk_blob_len);
     if (!key_ok)
         return ssh_auth_build_failure(out, out_len, cap, false);
