@@ -24,7 +24,7 @@
     "example": "L7-Application/49.AuditLog",
     "flags": "-DDETWS_ENABLE_AUDIT_LOG=1",
     "board": "esp32dev",
-    "flash_bytes": 754613,
+    "flash_bytes": 754633,
     "ram_bytes": 84768
   },
   "AUTH_LOCKOUT": {
@@ -59,64 +59,64 @@
     "example": "L7-Application/28.CoapBlock",
     "flags": "-DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1 -DDETWS_COAP_MAX_PAYLOAD=1024",
     "board": "esp32dev",
-    "flash_bytes": 727553,
+    "flash_bytes": 727557,
     "ram_bytes": 48352
   },
   "COAP+COAP_OBSERVE": {
     "example": "L7-Application/27.CoapObserve",
     "flags": "-DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_OBSERVE=1",
     "board": "esp32dev",
-    "flash_bytes": 729365,
+    "flash_bytes": 729369,
     "ram_bytes": 46104
   },
   "COAP+DTLS": {
     "example": "L7-Application/78.CoapSecure",
     "flags": "-DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_DTLS=1",
     "board": "esp32dev",
-    "flash_bytes": 780005,
+    "flash_bytes": 780501,
     "ram_bytes": 102864
   },
   "CONFIG_STORE+CONFIG_IO": {
     "example": "L7-Application/42.ConfigExport",
     "flags": "-DDETWS_ENABLE_CONFIG_STORE=1 -DDETWS_ENABLE_CONFIG_IO=1",
     "board": "esp32dev",
-    "flash_bytes": 757293,
+    "flash_bytes": 757329,
     "ram_bytes": 81844
   },
   "CONTROL": {
     "example": "L7-Application/74.PidTuning",
     "flags": "-DDETWS_ENABLE_CONTROL=1",
     "board": "esp32dev",
-    "flash_bytes": 754305,
+    "flash_bytes": 754325,
     "ram_bytes": 89856
   },
   "CSRF": {
     "example": "L7-Application/33.Csrf",
     "flags": "-DDETWS_ENABLE_CSRF=1",
     "board": "esp32dev",
-    "flash_bytes": 753909,
+    "flash_bytes": 753941,
     "ram_bytes": 81832
   },
   "DASHBOARD": {
     "example": "L7-Application/35.Dashboard",
     "flags": "-DDETWS_ENABLE_DASHBOARD=1",
     "board": "esp32dev",
-    "flash_bytes": 773105,
+    "flash_bytes": 773173,
     "ram_bytes": 82152
   },
   "DEVICE_ID": {
     "example": "L7-Application/32.DeviceUuid",
     "flags": "-DDETWS_ENABLE_DEVICE_ID=1",
     "board": "esp32dev",
-    "flash_bytes": 752713,
+    "flash_bytes": 752733,
     "ram_bytes": 81816
   },
   "DIAG": {
-    "example": "Foundation/05.Configuration",
+    "example": "L7-Application/20.Diagnostics",
     "flags": "-DDETWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 754473,
-    "ram_bytes": 77536
+    "flash_bytes": 753009,
+    "ram_bytes": 81776
   },
   "DMA+PREEMPT_QUEUE+DMA_SIMULATE": {
     "example": "Foundation/07.DmaIngest",
@@ -150,7 +150,7 @@
     "example": "L7-Application/48.DnsResolver",
     "flags": "-DDETWS_ENABLE_DNS_RESOLVER=1",
     "board": "esp32dev",
-    "flash_bytes": 758297,
+    "flash_bytes": 758317,
     "ram_bytes": 83064
   },
   "DNS_SERVER": {
@@ -199,42 +199,42 @@
     "example": "L7-Application/38.GpioMap",
     "flags": "-DDETWS_ENABLE_GPIO_MAP=1",
     "board": "esp32dev",
-    "flash_bytes": 756633,
+    "flash_bytes": 756701,
     "ram_bytes": 81840
   },
   "GRAPHQL": {
     "example": "L7-Application/52.GraphQL",
     "flags": "-DDETWS_ENABLE_GRAPHQL=1",
     "board": "esp32dev",
-    "flash_bytes": 757233,
+    "flash_bytes": 757285,
     "ram_bytes": 86192
   },
   "GUARDRAILS": {
     "example": "L7-Application/40.Guardrails",
     "flags": "-DDETWS_ENABLE_GUARDRAILS=1",
     "board": "esp32dev",
-    "flash_bytes": 752837,
+    "flash_bytes": 752857,
     "ram_bytes": 81792
   },
   "HTTP_CLIENT": {
     "example": "L7-Application/23.HttpClient",
     "flags": "-DDETWS_ENABLE_HTTP_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 734473,
+    "flash_bytes": 734501,
     "ram_bytes": 63160
   },
   "HTTP_CLIENT+WEBHOOK": {
     "example": "L7-Application/46.Webhook",
     "flags": "-DDETWS_ENABLE_HTTP_CLIENT=1 -DDETWS_ENABLE_WEBHOOK=1",
     "board": "esp32dev",
-    "flash_bytes": 762853,
+    "flash_bytes": 762985,
     "ram_bytes": 101536
   },
   "IFACE_BRIDGE": {
     "example": "L7-Application/75.InterfaceBridge",
     "flags": "-DDETWS_ENABLE_IFACE_BRIDGE=1",
     "board": "esp32dev",
-    "flash_bytes": 780373,
+    "flash_bytes": 780393,
     "ram_bytes": 82624
   },
   "INA219": {
@@ -283,7 +283,7 @@
     "example": "L7-Application/41.LogBuffer",
     "flags": "-DDETWS_ENABLE_LOGBUF=1",
     "board": "esp32dev",
-    "flash_bytes": 753817,
+    "flash_bytes": 753877,
     "ram_bytes": 84904
   },
   "LORA+GATEWAY": {
@@ -304,14 +304,14 @@
     "example": "L7-Application/30.ModbusTcp",
     "flags": "-DDETWS_ENABLE_MODBUS=1",
     "board": "esp32dev",
-    "flash_bytes": 754069,
+    "flash_bytes": 754093,
     "ram_bytes": 82064
   },
   "MODBUS+MODBUS_MASTER": {
     "example": "L7-Application/43.ModbusScan",
     "flags": "-DDETWS_ENABLE_MODBUS=1 -DDETWS_ENABLE_MODBUS_MASTER=1",
     "board": "esp32dev",
-    "flash_bytes": 754409,
+    "flash_bytes": 754429,
     "ram_bytes": 82056
   },
   "MPR121": {
@@ -346,63 +346,63 @@
     "example": "L7-Application/18.SNTP",
     "flags": "-DDETWS_ENABLE_NTP=1",
     "board": "esp32dev",
-    "flash_bytes": 778053,
+    "flash_bytes": 778073,
     "ram_bytes": 84328
   },
   "NTP+TIME_SOURCE": {
     "example": "L7-Application/31.TimeSourceFallback",
     "flags": "-DDETWS_ENABLE_NTP=1 -DDETWS_ENABLE_TIME_SOURCE=1",
     "board": "esp32dev",
-    "flash_bytes": 773529,
+    "flash_bytes": 773549,
     "ram_bytes": 83396
   },
   "NTP_SERVER+TIME_SOURCE+NMEA0183+NTP": {
     "example": "L7-Application/58.NtpServer",
     "flags": "-DDETWS_ENABLE_NTP_SERVER=1 -DDETWS_ENABLE_TIME_SOURCE=1 -DDETWS_ENABLE_NMEA0183=1 -DDETWS_ENABLE_NTP=1",
     "board": "esp32dev",
-    "flash_bytes": 748069,
+    "flash_bytes": 748109,
     "ram_bytes": 46668
   },
   "NTRIP_CASTER": {
     "example": "L7-Application/76.NtripCaster",
     "flags": "-DDETWS_ENABLE_NTRIP_CASTER=1",
     "board": "esp32dev",
-    "flash_bytes": 770465,
+    "flash_bytes": 770525,
     "ram_bytes": 84700
   },
   "OAUTH2+HTTP_CLIENT": {
     "example": "L7-Application/54.OAuth2",
     "flags": "-DDETWS_ENABLE_OAUTH2=1 -DDETWS_ENABLE_HTTP_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 765077,
+    "flash_bytes": 765217,
     "ram_bytes": 104600
   },
   "OIDC": {
     "example": "L7-Application/50.OidcAuth",
     "flags": "-DDETWS_ENABLE_OIDC=1",
     "board": "esp32dev",
-    "flash_bytes": 766129,
+    "flash_bytes": 766149,
     "ram_bytes": 99824
   },
   "OPCUA": {
     "example": "L7-Application/55.OpcUa",
     "flags": "-DDETWS_ENABLE_OPCUA=1",
     "board": "esp32dev",
-    "flash_bytes": 760477,
+    "flash_bytes": 760497,
     "ram_bytes": 92064
   },
   "OPCUA+OPCUA_CLIENT": {
     "example": "L7-Application/56.OpcUaClient",
     "flags": "-DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_OPCUA_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 783441,
+    "flash_bytes": 783461,
     "ram_bytes": 95936
   },
   "OPCUA+UMATI": {
     "example": "L7-Application/72.Umati",
     "flags": "-DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_UMATI=1",
     "board": "esp32dev",
-    "flash_bytes": 767197,
+    "flash_bytes": 767217,
     "ram_bytes": 92208
   },
   "OTA": {
@@ -416,14 +416,14 @@
     "example": "L7-Application/44.OtaRollback",
     "flags": "-DDETWS_ENABLE_OTA_ROLLBACK=1",
     "board": "esp32dev",
-    "flash_bytes": 753377,
+    "flash_bytes": 753401,
     "ram_bytes": 81792
   },
   "PARTITION_MONITOR": {
     "example": "L7-Application/37.PartitionMonitor",
     "flags": "-DDETWS_ENABLE_PARTITION_MONITOR=1",
     "board": "esp32dev",
-    "flash_bytes": 753045,
+    "flash_bytes": 753065,
     "ram_bytes": 81784
   },
   "PCA9685": {
@@ -465,14 +465,14 @@
     "example": "L7-Application/17.Provisioning",
     "flags": "-DDETWS_ENABLE_PROVISIONING=1",
     "board": "esp32dev",
-    "flash_bytes": 759937,
+    "flash_bytes": 759961,
     "ram_bytes": 83348
   },
   "RADIO_POWER+RADIO_WIFI_PS": {
     "example": "L7-Application/47.RadioPower",
     "flags": "-DDETWS_ENABLE_RADIO_POWER=1 -DDETWS_RADIO_WIFI_PS=1",
     "board": "esp32dev",
-    "flash_bytes": 752389,
+    "flash_bytes": 752409,
     "ram_bytes": 81776
   },
   "RANGE": {
@@ -486,7 +486,7 @@
     "example": "L7-Application/70.PortForward",
     "flags": "-DDETWS_ENABLE_RELAY=1",
     "board": "esp32dev",
-    "flash_bytes": 762317,
+    "flash_bytes": 762337,
     "ram_bytes": 116392
   },
   "RTC+TIME_SOURCE+NTP": {
@@ -528,7 +528,7 @@
     "example": "L7-Application/57.SmtpAlert",
     "flags": "-DDETWS_ENABLE_SMTP=1",
     "board": "esp32dev",
-    "flash_bytes": 734625,
+    "flash_bytes": 734637,
     "ram_bytes": 61112
   },
   "SNMP": {
@@ -549,21 +549,21 @@
     "example": "L5-Session/03.SSHHostKey",
     "flags": "-DDETWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 827465,
-    "ram_bytes": 108644
+    "flash_bytes": 827877,
+    "ram_bytes": 109156
   },
   "STATS": {
     "example": "L7-Application/22.Stats",
     "flags": "-DDETWS_ENABLE_STATS=1",
     "board": "esp32dev",
-    "flash_bytes": 754193,
+    "flash_bytes": 754209,
     "ram_bytes": 81880
   },
   "STATS+METRICS": {
     "example": "L7-Application/21.PrometheusMetrics",
     "flags": "-DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1",
     "board": "esp32dev",
-    "flash_bytes": 756349,
+    "flash_bytes": 756373,
     "ram_bytes": 81920
   },
   "STATSD": {
@@ -577,14 +577,14 @@
     "example": "L7-Application/19.Syslog",
     "flags": "-DDETWS_ENABLE_SYSLOG=1",
     "board": "esp32dev",
-    "flash_bytes": 755721,
+    "flash_bytes": 755741,
     "ram_bytes": 83640
   },
   "TELEMETRY": {
     "example": "L7-Application/34.Telemetry",
     "flags": "-DDETWS_ENABLE_TELEMETRY=1",
     "board": "esp32dev",
-    "flash_bytes": 761181,
+    "flash_bytes": 761201,
     "ram_bytes": 82100
   },
   "TELNET": {
@@ -654,7 +654,7 @@
     "example": "L7-Application/39.UdpTelemetry",
     "flags": "-DDETWS_ENABLE_UDP_TELEMETRY=1",
     "board": "esp32dev",
-    "flash_bytes": 727913,
+    "flash_bytes": 728137,
     "ram_bytes": 44944
   },
   "UPLOAD": {
@@ -668,7 +668,7 @@
     "example": "L7-Application/51.Vfs",
     "flags": "-DDETWS_ENABLE_VFS=1",
     "board": "esp32dev",
-    "flash_bytes": 795897,
+    "flash_bytes": 795973,
     "ram_bytes": 86304
   },
   "WEBDAV": {
@@ -682,7 +682,7 @@
     "example": "L7-Application/29.WebDav",
     "flags": "-DDETWS_ENABLE_WEBDAV=1 -DMAX_CONNS=3 -DMAX_WS_CONNS=1 -DMAX_SSE_CONNS=1 -DMAX_ROUTES=8 -DDETWS_WEBDAV_MAX_ENTRIES=8 -DDETWS_WEBDAV_BUF_SIZE=1024",
     "board": "esp32dev",
-    "flash_bytes": 821573,
+    "flash_bytes": 821761,
     "ram_bytes": 90856
   },
   "WEB_TERMINAL": {
@@ -892,14 +892,14 @@
     "example": "L7-Application/36.NetEgress",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 753017,
+    "flash_bytes": 753037,
     "ram_bytes": 81776
   },
   "core/71.MediaStreaming": {
     "example": "L7-Application/71.MediaStreaming",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 752249,
+    "flash_bytes": 752269,
     "ram_bytes": 81776
   }
 }
