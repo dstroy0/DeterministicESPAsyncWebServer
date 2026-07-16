@@ -526,7 +526,7 @@ bool http_get_cookie(const HttpReq *req, const char *name, char *out, size_t out
     const char *c = http_get_header(req, "Cookie");
     if (c == nullptr)
         return false;
-    size_t nlen = strlen(name);
+    size_t nlen = strnlen(name, MAX_VAL_LEN); // a matchable cookie-name span cannot exceed a header value
 
     const char *p = c;
     while (*p != '\0')
@@ -648,7 +648,7 @@ bool http_forwarded_client(const HttpReq *req, char *ip_out, size_t ip_cap, bool
     {
         // First element = up to the first ','. Within it, find for= and proto=.
         const char *elem_end = strchr(fwd, ',');
-        size_t elen = elem_end ? (size_t)(elem_end - fwd) : strlen(fwd);
+        size_t elen = elem_end ? (size_t)(elem_end - fwd) : strnlen(fwd, MAX_VAL_LEN);
         // proto=
         if (is_https)
         {
@@ -683,7 +683,7 @@ bool http_forwarded_client(const HttpReq *req, char *ip_out, size_t ip_cap, bool
     if (xff)
     {
         const char *end = strchr(xff, ',');
-        size_t len = end ? (size_t)(end - xff) : strlen(xff);
+        size_t len = end ? (size_t)(end - xff) : strnlen(xff, MAX_VAL_LEN);
         if (fwd_extract_client(xff, len, ip_out, ip_cap))
             return true;
     }
@@ -715,7 +715,7 @@ bool http_get_form(const HttpReq *req, const char *key, char *out, size_t out_si
 
     const char *body = (const char *)req->body;
     size_t len = req->body_len;
-    size_t key_len = strlen(key);
+    size_t key_len = strnlen(key, len + 1); // a matchable body key cannot exceed the body length
     size_t i = 0;
 
     while (i < len)
