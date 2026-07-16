@@ -6002,6 +6002,9 @@ static_assert((unsigned)ConnProto::PROTO_NTRIP_CASTER < DETWS_PROTO_MAX,
 #ifndef DETWS_OIDC_KID_LEN
 #define DETWS_OIDC_KID_LEN 80 ///< Max `kid` length.
 #endif
+#ifndef DETWS_OIDC_JWKS_MAX
+#define DETWS_OIDC_JWKS_MAX 16384 ///< Max JWKS document scanned; exceeds any real multi-key set, bounds the parse.
+#endif
 #endif // DETWS_ENABLE_OIDC
 
 #if DETWS_ENABLE_OPCUA

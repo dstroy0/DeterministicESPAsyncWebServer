@@ -29,7 +29,7 @@ namespace
 // Bounded substring search of [hs, he) for the NUL-terminated needle.
 const char *mem_find(const char *hs, const char *he, const char *needle)
 {
-    size_t nl = strlen(needle);
+    size_t nl = strnlen(needle, (size_t)(he - hs) + 1);
     if (nl == 0 || (size_t)(he - hs) < nl)
         return nullptr;
     for (const char *p = hs; p + nl <= he; p++)
@@ -154,7 +154,7 @@ bool aud_contains(const char *s, const char *e, const char *want)
     char t;
     if (!find_field(s, e, "aud", &v, &vl, &t))
         return false;
-    size_t wl = strlen(want);
+    size_t wl = strnlen(want, vl + 1);
     if (t == 's')
         return vl == wl && memcmp(v, want, wl) == 0;
     if (t == 'a')
@@ -227,14 +227,14 @@ bool parse_rsa_jwk(const char *s, const char *e, DetwsOidcKey *key)
     if (!get_str(s, e, "n", b64, sizeof(b64)))
         return false;
     uint8_t tmp[DETWS_OIDC_RSA_BYTES + 8];
-    size_t nlen = base64url_decode(b64, strlen(b64), tmp, sizeof(tmp));
+    size_t nlen = base64url_decode(b64, strnlen(b64, sizeof(b64)), tmp, sizeof(tmp));
     if (nlen == 0 || !right_align(tmp, nlen, key->n, DETWS_OIDC_RSA_BYTES))
         return false;
 
     if (!get_str(s, e, "e", b64, sizeof(b64)))
         return false;
     uint8_t e_tmp[8];
-    size_t elen = base64url_decode(b64, strlen(b64), e_tmp, sizeof(e_tmp));
+    size_t elen = base64url_decode(b64, strnlen(b64, sizeof(b64)), e_tmp, sizeof(e_tmp));
     if (elen == 0 || !right_align(e_tmp, elen, key->e, 4))
         return false;
     key->loaded = true;
@@ -262,7 +262,7 @@ bool detws_oidc_jwks_find(const char *jwks_json, const char *kid, DetwsOidcKey *
 {
     if (!jwks_json || !key)
         return false;
-    const char *all_end = jwks_json + strlen(jwks_json);
+    const char *all_end = jwks_json + strnlen(jwks_json, DETWS_OIDC_JWKS_MAX);
     const char *p = mem_find(jwks_json, all_end, "\"keys\"");
     p = p ? (const char *)memchr(p, '[', (size_t)(all_end - p)) : nullptr;
     if (!p)
