@@ -30,9 +30,9 @@ namespace
 #endif
 // Scratch for one poll's outbound datagram: a full server flight (ServerHello..Finished) or a sealed
 // CoAP response. The Certificate-dominated flight is the largest thing written here.
-#define DETWS_COAPS_OUT_CAP 2048
+static constexpr size_t DETWS_COAPS_OUT_CAP = 2048;
 // The HelloRetryRequest cookie binds the peer's IPv4 address (4) + port (2); the transport is IPv4.
-#define DETWS_COAPS_PEER_SER 6
+static constexpr size_t DETWS_COAPS_PEER_SER = 6;
 
 // One buffered inbound datagram (payload + the peer it arrived from).
 struct CoapsIngest
@@ -112,7 +112,8 @@ bool serialize_peer(const char *ip, uint16_t port, uint8_t out[DETWS_COAPS_PEER_
         if (*p >= '0' && *p <= '9')
         {
             oct = oct * 10 + (uint32_t)(*p - '0');
-            if (oct > 255 || ++ndig > 3)
+            ndig++;
+            if (oct > 255 || ndig > 3)
                 return false;
         }
         else if (*p == '.' || *p == 0)

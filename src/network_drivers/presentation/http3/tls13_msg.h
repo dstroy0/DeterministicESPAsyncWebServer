@@ -53,9 +53,9 @@ struct TlsHs
 #define TLS_GROUP_X25519MLKEM768 0x11ec      ///< PQ/T hybrid group (ML-KEM-768 + X25519), when DETWS_ENABLE_PQC_KEX
 #define TLS_SIG_ED25519 0x0807               ///< the one signature scheme we produce
 #define TLS_VERSION_1_3 0x0304               ///< supported_versions selected value (TLS 1.3)
-#define TLS_VERSION_DTLS_1_3 0xFEFC          ///< supported_versions selected value (DTLS 1.3, RFC 9147)
-#define TLS_LEGACY_VERSION_DTLS 0xFEFD       ///< legacy_version on the wire for DTLS (DTLS 1.2)
-#define TLS_EXT_QUIC_TRANSPORT_PARAMS 0x0039 ///< quic_transport_parameters (RFC 9001 sec 8.2)
+static constexpr uint16_t TLS_VERSION_DTLS_1_3 = 0xFEFC;    ///< supported_versions selected value (DTLS 1.3, RFC 9147)
+static constexpr uint16_t TLS_LEGACY_VERSION_DTLS = 0xFEFD; ///< legacy_version on the wire for DTLS (DTLS 1.2)
+#define TLS_EXT_QUIC_TRANSPORT_PARAMS 0x0039                ///< quic_transport_parameters (RFC 9001 sec 8.2)
 
 /** @brief What the state machine needs out of a parsed ClientHello (pointers alias the input). */
 struct Tls13ClientHello

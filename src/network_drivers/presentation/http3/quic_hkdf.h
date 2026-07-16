@@ -55,7 +55,7 @@ void quic_hkdf_extract(const uint8_t *salt, size_t salt_len, const uint8_t *ikm,
  *
 /** @brief The RFC 8446 sec 7.1 HKDF-Expand-Label prefix used by TLS 1.3 and QUIC. DTLS 1.3 overrides
  *  it with "dtls13" (RFC 9147 sec 5.9); callers that need it pass it explicitly. */
-#define QUIC_HKDF_LABEL_PREFIX "tls13 "
+static constexpr char QUIC_HKDF_LABEL_PREFIX[] = "tls13 ";
 
 /**
  * @param secret        Traffic secret (HKDF PRK), QUIC_HKDF_HASH_LEN bytes.

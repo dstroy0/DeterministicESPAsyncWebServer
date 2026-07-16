@@ -47,32 +47,32 @@
 #include <stdint.h>
 
 /** @brief Largest inbound handshake message body reassembled (ClientHello / client Finished). */
-#define DTLS_CONN_REASM_CAP 1024
+static constexpr size_t DTLS_CONN_REASM_CAP = 1024;
 
 /** @brief Largest single outbound handshake message (Certificate-dominated; one record per message
  *         in this phase, so the certificate plus framing must fit one record). */
-#define DTLS_CONN_MSG_CAP 1024
+static constexpr size_t DTLS_CONN_MSG_CAP = 1024;
 
 /** @brief Largest serialized peer address the HelloRetryRequest cookie binds (IPv6 16 + port 2). */
-#define DTLS_PEER_ADDR_MAX 18
+static constexpr size_t DTLS_PEER_ADDR_MAX = 18;
 
 /** @brief Length of the connection id the server chooses for itself (RFC 9146 / RFC 9147 §9): the id the
  *         client must place in every record it sends, so the server can route by it across an address
  *         change. 4 bytes is ample per-connection entropy; must be <= @ref DTLS_CID_MAX. */
-#define DTLS_CONN_LOCAL_CID_LEN 4
+static constexpr size_t DTLS_CONN_LOCAL_CID_LEN = 4;
 
 /** @brief Most handshake messages in one outbound flight (ServerHello + EE + Cert + CV + Finished). */
-#define DTLS_FLIGHT_MSGS 6
+static constexpr size_t DTLS_FLIGHT_MSGS = 6;
 
 /** @brief Buffer for the current flight's DTLS handshake fragments, so it can be retransmitted with
  *         fresh record sequence numbers. Sized for the Certificate-dominated server flight. */
-#define DTLS_FLIGHT_CAP (DTLS_CONN_MSG_CAP + 512)
+static constexpr size_t DTLS_FLIGHT_CAP = DTLS_CONN_MSG_CAP + 512;
 
 /** @brief Retransmission timer (RFC 9147 §5.8.1): initial PTO, its cap, and the retransmission ceiling
  *         after which the handshake is abandoned. Times are in the units of @ref detws_millis (ms). */
-#define DTLS_PTO_INITIAL_MS 1000u
-#define DTLS_PTO_MAX_MS 60000u
-#define DTLS_MAX_RETRANSMITS 8
+static constexpr uint32_t DTLS_PTO_INITIAL_MS = 1000u;
+static constexpr uint32_t DTLS_PTO_MAX_MS = 60000u;
+static constexpr uint8_t DTLS_MAX_RETRANSMITS = 8;
 
 /** @brief One buffered outbound handshake message: where its DTLS fragment sits in @ref DtlsConn.flight_buf
  *         and which epoch protects it. */

@@ -14,7 +14,7 @@
 
 // Largest CoAP request/response carried in one DTLS application record. CoAP messages are expected to
 // fit a single datagram (RFC 7252 §4.6); anything larger is dropped rather than fragmented here.
-#define COAPS_MSG_CAP 1152
+static constexpr size_t COAPS_MSG_CAP = 1152;
 
 int coaps_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *out, size_t out_cap)
 {

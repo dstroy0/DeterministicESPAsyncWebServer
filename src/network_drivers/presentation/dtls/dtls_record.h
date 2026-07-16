@@ -42,26 +42,26 @@
 /** @name Record content types (RFC 8446 §5 / RFC 9147 §4).
  *  Shared by the DTLSPlaintext `type` field and the DTLSInnerPlaintext trailing content type. */
 ///@{
-#define DTLS_CT_CHANGE_CIPHER_SPEC 20
-#define DTLS_CT_ALERT 21
-#define DTLS_CT_HANDSHAKE 22
-#define DTLS_CT_APPLICATION_DATA 23
-#define DTLS_CT_ACK 26 ///< DTLS 1.3 acknowledgement (RFC 9147 §7)
+static constexpr uint8_t DTLS_CT_CHANGE_CIPHER_SPEC = 20;
+static constexpr uint8_t DTLS_CT_ALERT = 21;
+static constexpr uint8_t DTLS_CT_HANDSHAKE = 22;
+static constexpr uint8_t DTLS_CT_APPLICATION_DATA = 23;
+static constexpr uint8_t DTLS_CT_ACK = 26; ///< DTLS 1.3 acknowledgement (RFC 9147 §7)
 ///@}
 
 /** @brief DTLSPlaintext legacy_version on the wire: DTLS 1.2 (RFC 9147 §4). */
-#define DTLS_LEGACY_VERSION 0xFEFD
+static constexpr uint16_t DTLS_LEGACY_VERSION = 0xFEFD;
 
 /** @brief DTLSPlaintext header length: type(1) + version(2) + epoch(2) + seq(6) + length(2). */
-#define DTLS_PLAINTEXT_HDR_LEN 13
+static constexpr size_t DTLS_PLAINTEXT_HDR_LEN = 13;
 
 /** @brief AEAD tag length (all supported suites: 16 bytes). */
-#define DTLS_TAG_LEN 16
+static constexpr size_t DTLS_TAG_LEN = 16;
 
 /** @brief Largest connection id carried in a DTLSCiphertext header (RFC 9146 / RFC 9147 §9). The CID
  *         is not length-prefixed on the wire, so the receiver must know its length from negotiation; 8
  *         bytes is ample routing entropy and bounds the fixed header-scratch buffers. */
-#define DTLS_CID_MAX 8
+static constexpr size_t DTLS_CID_MAX = 8;
 
 /** @brief Record-layer AEAD suites (phase 1: AEAD_AES_128_GCM with SHA-256). */
 enum class DtlsCipher : uint8_t

@@ -36,11 +36,11 @@
 #include <stdint.h>
 
 /** @brief AES-256-GCM key length (bytes). */
-#define SSH_AESGCM_KEY_LEN 32
+static constexpr size_t SSH_AESGCM_KEY_LEN = 32;
 /** @brief GCM nonce length (bytes) = fixed_field(4) || invocation_counter(8). */
-#define SSH_AESGCM_IV_LEN 12
+static constexpr size_t SSH_AESGCM_IV_LEN = 12;
 /** @brief GCM authentication tag length (bytes). */
-#define SSH_AESGCM_TAG_LEN 16
+static constexpr size_t SSH_AESGCM_TAG_LEN = 16;
 
 #ifdef ARDUINO
 #include <mbedtls/aes.h>

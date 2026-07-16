@@ -157,6 +157,8 @@ static inline void aes256_load_key(SshAesGcmCtx *ctx, const uint8_t key[32])
 }
 static inline void aes256_free_key(SshAesGcmCtx *)
 {
+    // no-op: the key schedule lives in-place in SshAesGcmCtx (a plain array), so there is
+    // no external key handle to release. Kept for signature parity with the hardware path.
 }
 
 #endif // ARDUINO

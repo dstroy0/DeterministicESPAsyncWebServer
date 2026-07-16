@@ -52,13 +52,13 @@
 #include <stdint.h>
 
 /** @brief P-256 private key (scalar d) length. */
-#define SSH_ECDSA_P256_PRIV_LEN 32
+static constexpr size_t SSH_ECDSA_P256_PRIV_LEN = 32;
 /** @brief P-256 coordinate length (one of X, Y). */
-#define SSH_ECDSA_P256_COORD_LEN 32
+static constexpr size_t SSH_ECDSA_P256_COORD_LEN = 32;
 /** @brief P-256 uncompressed public point length: 0x04 || X || Y. */
-#define SSH_ECDSA_P256_PUB_LEN 65
+static constexpr size_t SSH_ECDSA_P256_PUB_LEN = 65;
 /** @brief Raw ECDSA signature length: r || s (32 + 32, big-endian). */
-#define SSH_ECDSA_P256_SIG_LEN 64
+static constexpr size_t SSH_ECDSA_P256_SIG_LEN = 64;
 
 /**
  * @brief Derive the uncompressed public point Q = d*G from a P-256 private scalar.

@@ -8,6 +8,24 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## native_codeql (all-flags) test_dispatch::test_get_route_advertises_head_in_allow fails - hidden by CI
+
+- **Status:** OPEN (found 2026-07-16). Surfaced by the new WSL native test env actually _running_ the
+  `native_codeql` suite. **CI never caught it** because the CodeQL workflow builds `native_codeql` with
+  `pio test --without-testing` (compile-only, to trace the build) - its test assertions have never executed
+  in CI. Confirmed pre-existing on committed `main` (fails identically with all local changes stashed), so it
+  is unrelated to the SonarCloud remediation in flight.
+- **Symptom:** under the all-feature-flags `native_codeql` config, `test_get_route_advertises_head_in_allow`
+  (POST to a GET-only route → expect `405` with `GET`/`HEAD` in Allow) finds no `405` in the captured response,
+  and the env reports ERRORED. The narrower `test_head_on_post_only_route_405` and `test_correct_method_still_dispatches`
+  pass, so ordinary method dispatch works; only this all-flags path diverges.
+- **Root cause:** TBD. Likely a feature-flag interaction (a module enabled only in the all-flags build intercepts
+  the request) or shared `server`/slot state carried between tests in this config. Passes in the per-feature envs.
+- **Next:** re-run `native_codeql` in isolation, bisect the enabled flags / add a per-test server reset, then fix.
+  Also worth making CI actually run (not just compile) at least a smoke of `native_codeql` so this can't hide again.
+
+---
+
 ## DTLS 1.3 HelloRetryRequest carried the TLS version codepoints (0x0303 / 0x0304) instead of DTLS (0xFEFD / 0xFEFC)
 
 - **Status:** FIXED (2026-07-15). Found by **real-peer interop** the moment the HelloRetryRequest path was first

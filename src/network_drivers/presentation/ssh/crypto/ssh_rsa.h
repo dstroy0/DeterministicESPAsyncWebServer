@@ -137,10 +137,10 @@ enum class SshRsaHash : uint8_t
 #define SSH_RSA_PUBKEY_ALG_LEN 7
 
 /** @brief Signature algorithm name for SHA-256 (RFC 8332). Used in the signature blob. */
-#define SSH_RSA_SIG_ALG_SHA256 "rsa-sha2-256"
+static constexpr char SSH_RSA_SIG_ALG_SHA256[] = "rsa-sha2-256";
 
 /** @brief Signature algorithm name for SHA-512 (RFC 8332). Used in the signature blob. */
-#define SSH_RSA_SIG_ALG_SHA512 "rsa-sha2-512"
+static constexpr char SSH_RSA_SIG_ALG_SHA512[] = "rsa-sha2-512";
 
 // ---------------------------------------------------------------------------
 // PKCS#1 v1.5 DigestInfo headers (RFC 8017, RFC 5754)
@@ -149,10 +149,10 @@ enum class SshRsaHash : uint8_t
 // ---------------------------------------------------------------------------
 
 /** @brief Length of the DER DigestInfo wrapper for SHA-256. */
-#define SSH_PKCS1_DIGESTINFO_LEN 19
+static constexpr size_t SSH_PKCS1_DIGESTINFO_LEN = 19;
 
 /** @brief Length of the DER DigestInfo wrapper for SHA-512. */
-#define SSH_PKCS1_SHA512_DIGESTINFO_LEN 19
+static constexpr size_t SSH_PKCS1_SHA512_DIGESTINFO_LEN = 19;
 
 /**
  * @brief The DER-encoded DigestInfo wrapper for SHA-256.

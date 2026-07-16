@@ -39,11 +39,11 @@
 
 /** @brief DTLS handshake header length: msg_type(1) + length(3) + message_seq(2) + fragment_offset(3)
  *         + fragment_length(3) = 12 bytes (RFC 9147 §5.2). */
-#define DTLS_HS_HDR_LEN 12
+static constexpr size_t DTLS_HS_HDR_LEN = 12;
 
 /** @brief message_hash synthetic-message type used when wrapping ClientHello1 for a HelloRetryRequest
  *         transcript (RFC 8446 §4.4.1). Framing constant; the transcript itself lives in dtls_conn. */
-#define DTLS_HS_TYPE_MESSAGE_HASH 254
+static constexpr uint8_t DTLS_HS_TYPE_MESSAGE_HASH = 254;
 
 // ---------------------------------------------------------------------------
 // Handshake message header (RFC 9147 §5.2)
@@ -90,7 +90,7 @@ size_t dtls_hs_frag_build(uint8_t msg_type, uint16_t msg_seq, uint32_t full_len,
 
 /** @brief Max distinct byte ranges tracked while reassembling one message (bounds the work an
  *         adversary can force by sending maximally fragmented flights). */
-#define DTLS_HS_REASM_MAX_RANGES 8
+static constexpr size_t DTLS_HS_REASM_MAX_RANGES = 8;
 
 /**
  * @brief Reassembles the fragments of a single handshake message into a contiguous body.
@@ -166,7 +166,7 @@ bool dtls_ack_parse(const uint8_t *body, size_t len, DtlsRecordNumber *out, size
 
 /** @brief Maximum cookie length this implementation emits / accepts. Overhead is 43 bytes
  *         (version + timestamp + payload_len + HMAC); the rest is available for the payload. */
-#define DTLS_COOKIE_MAX 128
+static constexpr size_t DTLS_COOKIE_MAX = 128;
 
 /**
  * @brief Build a stateless HRR cookie binding the client address and an opaque server payload.

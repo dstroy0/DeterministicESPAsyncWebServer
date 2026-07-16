@@ -51,7 +51,7 @@
  *  kex list (mlkem + dh + ecdh-nistp256 + curve25519 x2 + ext-info-s), all three host-key types,
  *  the cipher (chacha + 2x aes) and MAC (2x etm + 2x plain) lists, and zlib s2c compression
  *  (worst case ~580 bytes; 704 leaves headroom for future algorithm additions). */
-#define SSH_KEXINIT_S_MAX 704
+static constexpr size_t SSH_KEXINIT_S_MAX = 704;
 
 /** @brief Server identification string (no CR LF; appended on the wire). */
 #define SSH_SERVER_VERSION "SSH-2.0-DetWS_1.0"
