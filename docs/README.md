@@ -1111,6 +1111,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 773,425 | 83,396 |
 | `MDNS` | `L7-Application/15.mDNS` | 777,689 | 83,680 |
 | `NTP` | `L7-Application/18.SNTP` | 777,949 | 84,328 |
+| `COAP+DTLS` | `L7-Application/78.CoapSecure` | 779,029 | 102,816 |
 | `IFACE_BRIDGE` | `L7-Application/75.InterfaceBridge` | 780,269 | 82,624 |
 | `OPCUA+OPCUA_CLIENT` | `L7-Application/56.OpcUaClient` | 783,141 | 95,936 |
 | `ETHERNET` | `Foundation/19.Ethernet` | 791,081 | 81,828 |
