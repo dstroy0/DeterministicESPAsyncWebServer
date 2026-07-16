@@ -332,7 +332,7 @@
     "example": "L6-Presentation/14.MsgPack",
     "flags": "-DDETWS_ENABLE_MSGPACK=1",
     "board": "esp32dev",
-    "flash_bytes": 755853,
+    "flash_bytes": 755949,
     "ram_bytes": 81856
   },
   "NRF24+GATEWAY": {
@@ -623,10 +623,10 @@
     "ram_bytes": 105988
   },
   "TLS+TLS_ARENA_SIZE": {
-    "example": "L6-Presentation/07.SecureWebSocket",
+    "example": "L4-Transport/03.HTTPS",
     "flags": "-DDETWS_ENABLE_TLS=1 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768",
     "board": "esp32dev",
-    "flash_bytes": 856465,
+    "flash_bytes": 856653,
     "ram_bytes": 105652
   },
   "TLS+TLS_RESUMPTION": {
@@ -640,7 +640,7 @@
     "example": "L4-Transport/06.TlsResumption",
     "flags": "-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_TLS_RESUMPTION=1 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768",
     "board": "esp32dev",
-    "flash_bytes": 857217,
+    "flash_bytes": 857321,
     "ram_bytes": 105812
   },
   "TOTP": {
@@ -717,7 +717,7 @@
     "example": "L6-Presentation/11.WebSocketCompression",
     "flags": "-DDETWS_ENABLE_WS_DEFLATE=1",
     "board": "esp32dev",
-    "flash_bytes": 756909,
+    "flash_bytes": 757005,
     "ram_bytes": 89976
   },
   "ZIGBEE+GATEWAY": {
@@ -864,7 +864,7 @@
     "example": "L7-Application/08.Templating",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 754021,
+    "flash_bytes": 754117,
     "ram_bytes": 81824
   },
   "core/09.WebSocket": {
@@ -878,7 +878,7 @@
     "example": "L7-Application/10.FileServing",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 793593,
+    "flash_bytes": 793693,
     "ram_bytes": 81816
   },
   "core/23.EthernetW5500": {

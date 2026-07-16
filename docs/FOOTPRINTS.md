@@ -55,7 +55,7 @@ from each example's `pio ci` size report and aggregated into
 | `MODBUS+MODBUS_MASTER`                                                                                    | L7-Application/43.ModbusScan            | 736.6 KB (57.5%) | 80.1 KB (25.0%)  |
 | `MPR121`                                                                                                  | L7-Application/63.Mpr121                | 280.9 KB (21.9%) | 21.3 KB (6.7%)   |
 | `MQTT`                                                                                                    | L7-Application/24.MqttClient            | 719.1 KB (56.2%) | 63.8 KB (19.9%)  |
-| `MSGPACK`                                                                                                 | L6-Presentation/14.MsgPack              | 738.1 KB (57.7%) | 79.9 KB (25.0%)  |
+| `MSGPACK`                                                                                                 | L6-Presentation/14.MsgPack              | 738.2 KB (57.7%) | 79.9 KB (25.0%)  |
 | `NRF24+GATEWAY`                                                                                           | Foundation/12.Nrf24Gateway              | 269.6 KB (21.1%) | 21.2 KB (6.6%)   |
 | `NTP`                                                                                                     | L7-Application/18.SNTP                  | 759.7 KB (59.4%) | 82.4 KB (25.7%)  |
 | `NTP+TIME_SOURCE`                                                                                         | L7-Application/31.TimeSourceFallback    | 755.3 KB (59.0%) | 81.4 KB (25.5%)  |
@@ -97,9 +97,9 @@ from each example's `pio ci` size report and aggregated into
 | `TLS`                                                                                                     | L6-Presentation/07.SecureWebSocket      | 835.8 KB (65.3%) | 119.2 KB (37.2%) |
 | `TLS+MTLS`                                                                                                | L4-Transport/04.mTLS                    | 836.7 KB (65.4%) | 119.5 KB (37.3%) |
 | `TLS+MTLS+TLS_ARENA_SIZE`                                                                                 | L4-Transport/04.mTLS                    | 837.4 KB (65.4%) | 103.5 KB (32.3%) |
-| `TLS+TLS_ARENA_SIZE`                                                                                      | L6-Presentation/07.SecureWebSocket      | 836.4 KB (65.3%) | 103.2 KB (32.2%) |
+| `TLS+TLS_ARENA_SIZE`                                                                                      | L4-Transport/03.HTTPS                   | 836.6 KB (65.4%) | 103.2 KB (32.2%) |
 | `TLS+TLS_RESUMPTION`                                                                                      | L4-Transport/06.TlsResumption           | 836.6 KB (65.4%) | 119.3 KB (37.3%) |
-| `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE`                                                                       | L4-Transport/06.TlsResumption           | 837.1 KB (65.4%) | 103.3 KB (32.3%) |
+| `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE`                                                                       | L4-Transport/06.TlsResumption           | 837.2 KB (65.4%) | 103.3 KB (32.3%) |
 | `TOTP`                                                                                                    | L7-Application/45.Totp                  | 735.7 KB (57.5%) | 79.9 KB (25.0%)  |
 | `UDP_TELEMETRY`                                                                                           | L7-Application/39.UdpTelemetry          | 710.9 KB (55.5%) | 43.9 KB (13.7%)  |
 | `UPLOAD`                                                                                                  | L7-Application/11.FileUpload            | 776.2 KB (60.6%) | 89.0 KB (27.8%)  |
@@ -110,7 +110,7 @@ from each example's `pio ci` size report and aggregated into
 | `WS_CLIENT+TLS+WS_CLIENT_TLS`                                                                             | L7-Application/25.WebSocketClient       | 811.8 KB (63.4%) | 117.7 KB (36.8%) |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE`                                                          | L7-Application/25.WebSocketClient       | 812.3 KB (63.5%) | 120.7 KB (37.7%) |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE`                                           | L7-Application/25.WebSocketClient       | 812.3 KB (63.5%) | 104.7 KB (32.7%) |
-| `WS_DEFLATE`                                                                                              | L6-Presentation/11.WebSocketCompression | 739.2 KB (57.7%) | 87.9 KB (27.5%)  |
+| `WS_DEFLATE`                                                                                              | L6-Presentation/11.WebSocketCompression | 739.3 KB (57.8%) | 87.9 KB (27.5%)  |
 | `ZIGBEE+GATEWAY`                                                                                          | Foundation/17.ZigbeeGateway             | 262.9 KB (20.5%) | 21.6 KB (6.7%)   |
 | `ZWAVE+GATEWAY`                                                                                           | Foundation/16.ZWaveGateway              | 262.6 KB (20.5%) | 21.3 KB (6.7%)   |
 | `core/01.Basic`                                                                                           | Foundation/01.Basic                     | 736.7 KB (57.6%) | 79.9 KB (25.0%)  |
@@ -131,9 +131,9 @@ from each example's `pio ci` size report and aggregated into
 | `core/06.RegexRoutes`                                                                                     | L7-Application/06.RegexRoutes           | 734.9 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/07.ResponseHeaders`                                                                                 | L7-Application/07.ResponseHeaders       | 735.2 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/08.ServerSentEvents`                                                                                | L6-Presentation/08.ServerSentEvents     | 735.3 KB (57.4%) | 79.9 KB (25.0%)  |
-| `core/08.Templating`                                                                                      | L7-Application/08.Templating            | 736.3 KB (57.5%) | 79.9 KB (25.0%)  |
+| `core/08.Templating`                                                                                      | L7-Application/08.Templating            | 736.4 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/09.WebSocket`                                                                                       | L6-Presentation/09.WebSocket            | 735.1 KB (57.4%) | 79.9 KB (25.0%)  |
-| `core/10.FileServing`                                                                                     | L7-Application/10.FileServing           | 775.0 KB (60.5%) | 79.9 KB (25.0%)  |
+| `core/10.FileServing`                                                                                     | L7-Application/10.FileServing           | 775.1 KB (60.6%) | 79.9 KB (25.0%)  |
 | `core/23.EthernetW5500`                                                                                   | Foundation/23.EthernetW5500             | 458.6 KB (35.8%) | 71.9 KB (22.5%)  |
 | `core/36.NetEgress`                                                                                       | L7-Application/36.NetEgress             | 735.3 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/71.MediaStreaming`                                                                                  | L7-Application/71.MediaStreaming        | 734.5 KB (57.4%) | 79.9 KB (25.0%)  |
