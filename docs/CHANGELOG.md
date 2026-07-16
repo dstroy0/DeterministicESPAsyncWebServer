@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`97d2b62`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/97d2b6266d91b53b5eb052b25e5a1b1154ea26df))
 - update test report + coverage [skip ci] ([`bce1b46`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bce1b46a7f0acf9c522dd4d6ac6916fed491ab7a))
 - update CHANGELOG.md [skip ci] ([`a577cce`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a577cce0a635af79e3d12abdb6667974371204b1))
 - update CHANGELOG.md [skip ci] ([`7a95249`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a952492e6d5243287949f557071e8872d4426cd))
@@ -53,6 +54,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`c53b622`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c53b62254d8759cd641389415aaab2d4f65024a5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`725bb73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/725bb73a25234045f9414e491b91264a31aebc57))
 - update ESP32 build footprints [skip ci] ([`69e1c9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/69e1c9fcd5709036081d6040bfbe76c338a5d61b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`71c6567`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71c65672b525bb9b570dd4e867e2528d8a7d89dc))
@@ -84,6 +86,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- bound strlen->strnlen in topic builder ([`c2ff76f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c2ff76ffc50bbd2a124f773b05773847b22b2004))
 - bound strlen->strnlen in path handling ([`085c184`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/085c18496e186bd888c1410331555463161a1ad7))
 - bound strlen->strnlen across transport/auth/channel ([`fe97d6f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe97d6fd2c65f64428c400057f2d78056effe91c))
 - bound strlen->strnlen in binary encoders ([`07ff6f4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/07ff6f43d408973b7bb115f6e2e94e64da603acd))
