@@ -3151,6 +3151,28 @@
 "native_j1939",
 "native_nmea2000"
 ],
+"src/shared_primitives/ghash.h": [
+"native_coaps",
+"native_coaps_server",
+"native_crypto_kat",
+"native_dtls",
+"native_dtls_conn",
+"native_h3_conn",
+"native_h3_e2e",
+"native_h3_server",
+"native_oidc",
+"native_quic_conn",
+"native_quic_crypto",
+"native_quic_server",
+"native_quic_tls",
+"native_quic_tls_pqc",
+"native_ssh",
+"native_ssh_aesgcm",
+"native_ssh_comp",
+"native_ssh_conn",
+"native_ssh_hardened",
+"native_ssh_pqc"
+],
 "src/shared_primitives/hex.h": [
 "native_app",
 "native_audit_log",
