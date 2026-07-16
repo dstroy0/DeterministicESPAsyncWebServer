@@ -2,6 +2,17 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`28ca3b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28ca3b0f93e06b6560db371576b1c6fea92e8ef5))
+
+### Documentation
+
+- add HMMD / RCWL-0516 / LD2410B radar presence sensor drivers ([`45c8dec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45c8dec8f0341047181a2cc01869aabe4e3d6b16))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`db1b9cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db1b9cddaf760423bdc803e976aaa37865fc47de))
+
 ## [6.23.0] - 2026-07-16
 
 <details>
