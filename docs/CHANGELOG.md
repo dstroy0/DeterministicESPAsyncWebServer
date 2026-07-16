@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`ac86f4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac86f4a5ad5f4c238ba7cd36e8c179bd2f2f44ea))
+- update CHANGELOG.md [skip ci] ([`159fc38`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/159fc388fc2fe7b70df761609abee9585a5ab989))
 - update CHANGELOG.md [skip ci] ([`dc4f445`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc4f4454d4625c2660480dee8c549ce7465bf64f))
 - update CHANGELOG.md [skip ci] ([`c71db3c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c71db3cbb21e8640bce7a656d017742bad1ccd96))
 - update test report + coverage [skip ci] ([`4e5c5e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4e5c5e57aa733d5c4a8dd0b0981adadc8fbac948))
@@ -60,6 +62,9 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`edc87b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/edc87b28cd3e171cd10cf5a81ef684d4dfe4fe02))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`39e4cb9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39e4cb92a3d6ba75fe6f00f16be6a46acf9e7d88))
+- update ESP32 build footprints [skip ci] ([`a9ae62e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a9ae62e2deb6be525faad992ac34c545fbbac79f))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`61075b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61075b0f7cc71576d66ac6247f3664c35053ef02))
 - update ESP32 build footprints [skip ci] ([`25d24dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/25d24dce766e4068a249be28679af905fde55a9e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`03dd368`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03dd3681a2a357bc6a5bf3af4be1e100ba102546))
@@ -97,6 +102,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- bound strlen->strnlen ([`0d2c617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d2c6173d9d735b3f7528deb58f2f15cf4adeda5))
 - bound strlen->strnlen in handshake/send ([`1ccd303`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ccd30359fa09e568cf2aca6413ccbb1976fe49a))
 - bound strlen->strnlen on static tables ([`015b9c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/015b9c5b43b1e4394bfb01440db1f2c5051e4e5d))
 - bound strlen->strnlen in JWT/JWKS parsing ([`96786ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96786ff386d79e94e187ed1a4c48f6d41e07284d))
