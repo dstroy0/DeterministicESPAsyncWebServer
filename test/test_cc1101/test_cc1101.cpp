@@ -85,6 +85,7 @@ static void mock_spi(const uint8_t *tx, uint8_t *rx, uint8_t len, void *)
 }
 
 static cc1101_bus g_bus = {mock_spi, nullptr};
+static cc1101_bus g_bus_no_spi = {nullptr, nullptr}; // a bus whose transfer callback is missing
 
 // A minimal SmartRF-style register table (just a couple of entries for the test).
 static const cc1101_reg REGS[] = {{0x00, 0x29}, {0x08, 0x05}};
@@ -219,6 +220,80 @@ void test_send_guard_subconditions()
     TEST_ASSERT_TRUE(cc1101_send(&g_bus, data, 8));     // valid FIFO burst
 }
 
+// init guards each argument: a null bus, a bus with no transfer callback, and a null config.
+void test_init_null_args(void)
+{
+    cc1101_config c = default_cfg();
+    TEST_ASSERT_FALSE(cc1101_init(nullptr, &c));
+    TEST_ASSERT_FALSE(cc1101_init(&g_bus_no_spi, &c));
+    TEST_ASSERT_FALSE(cc1101_init(&g_bus, nullptr));
+}
+
+// init with a null register table skips the table write loop but still sets the channel and detects.
+void test_init_no_regs(void)
+{
+    cc1101_config c = {};
+    c.regs = nullptr; // no table
+    c.nregs = 2;      // nregs non-zero, but regs null -> loop body never runs
+    c.channel = 7;
+    TEST_ASSERT_TRUE(cc1101_init(&g_bus, &c));
+    TEST_ASSERT_EQUAL_UINT8(7, g.reg[0x0A]); // CHANNR still applied
+}
+
+// tx_done guards a null bus / missing transfer callback.
+void test_tx_done_null_args(void)
+{
+    TEST_ASSERT_FALSE(cc1101_tx_done(nullptr));
+    TEST_ASSERT_FALSE(cc1101_tx_done(&g_bus_no_spi));
+}
+
+// set_rx guards a null bus / missing transfer callback (no strobe issued).
+void test_set_rx_null_args(void)
+{
+    g.last_strobe = 0xEE;
+    cc1101_set_rx(nullptr);
+    cc1101_set_rx(&g_bus_no_spi);
+    TEST_ASSERT_EQUAL_HEX8(0xEE, g.last_strobe); // untouched: the guard returned before any SPI
+}
+
+// recv guards a null bus, a missing transfer callback, and a null buffer.
+void test_recv_null_args(void)
+{
+    uint8_t buf[16];
+    int16_t rssi = 0;
+    TEST_ASSERT_EQUAL_INT(-1, cc1101_recv(nullptr, buf, sizeof(buf), &rssi));
+    TEST_ASSERT_EQUAL_INT(-1, cc1101_recv(&g_bus_no_spi, buf, sizeof(buf), &rssi));
+    TEST_ASSERT_EQUAL_INT(-1, cc1101_recv(&g_bus, nullptr, sizeof(buf), &rssi));
+}
+
+// recv flushes the RX FIFO and bails on a corrupt length byte (0 or > 63).
+void test_recv_bad_length(void)
+{
+    uint8_t buf[16];
+    // Zero length byte with bytes waiting.
+    g.rxfifo[0] = 0;
+    g.rxcount = 1;
+    g.rxread = 0;
+    g.last_strobe = 0;
+    TEST_ASSERT_EQUAL_INT(-1, cc1101_recv(&g_bus, buf, sizeof(buf), nullptr));
+    TEST_ASSERT_EQUAL_HEX8(0x3A, g.last_strobe); // SFRX flush issued
+
+    // Over-long length byte.
+    g.rxfifo[0] = 64;
+    g.rxcount = 5;
+    g.rxread = 0;
+    g.last_strobe = 0;
+    TEST_ASSERT_EQUAL_INT(-1, cc1101_recv(&g_bus, buf, sizeof(buf), nullptr));
+    TEST_ASSERT_EQUAL_HEX8(0x3A, g.last_strobe);
+}
+
+// send guards a bus with no transfer callback (the remaining subconditions are covered elsewhere).
+void test_send_null_spi(void)
+{
+    const uint8_t data[8] = {0};
+    TEST_ASSERT_FALSE(cc1101_send(&g_bus_no_spi, data, 8));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -233,5 +308,12 @@ int main()
     RUN_TEST(test_recv_truncates);
     RUN_TEST(test_rssi_decode);
     RUN_TEST(test_send_guard_subconditions);
+    RUN_TEST(test_init_null_args);
+    RUN_TEST(test_init_no_regs);
+    RUN_TEST(test_tx_done_null_args);
+    RUN_TEST(test_set_rx_null_args);
+    RUN_TEST(test_recv_null_args);
+    RUN_TEST(test_recv_bad_length);
+    RUN_TEST(test_send_null_spi);
     return UNITY_END();
 }

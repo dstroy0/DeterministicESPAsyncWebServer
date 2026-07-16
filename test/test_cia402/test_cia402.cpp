@@ -15,6 +15,26 @@ void tearDown()
 {
 }
 
+// Build an SDO server upload/abort response frame (0x580+node, dlc 8) with a given command byte,
+// echoed object index (sub 0), and up to 4 expedited payload octets (little-endian).
+static CanFrame make_sdo_tx(uint8_t node, uint8_t cmd, uint16_t index, uint32_t payload)
+{
+    CanFrame f{};
+    f.id = 0x580u + node;
+    f.extended = false;
+    f.rtr = false;
+    f.dlc = 8;
+    f.data[0] = cmd;
+    f.data[1] = (uint8_t)index;
+    f.data[2] = (uint8_t)(index >> 8);
+    f.data[3] = 0;
+    f.data[4] = (uint8_t)payload;
+    f.data[5] = (uint8_t)(payload >> 8);
+    f.data[6] = (uint8_t)(payload >> 16);
+    f.data[7] = (uint8_t)(payload >> 24);
+    return f;
+}
+
 void test_state_decode()
 {
     TEST_ASSERT_TRUE(cia402_state(0x0000) == Cia402State::not_ready_to_switch_on);
@@ -148,6 +168,107 @@ void test_pdo_pack_unpack()
     TEST_ASSERT_FALSE(cia402_unpack_status(tpdo, 5, &sw, &actual)); // too short
 }
 
+// A Statusword matching no CiA 402 mask/value pattern decodes to unknown (the fall-through after
+// the fault mask). 0x0001 hits none of the eight defined states.
+void test_state_decode_unknown()
+{
+    TEST_ASSERT_TRUE(cia402_state(0x0001) == Cia402State::unknown);
+}
+
+// An out-of-range command value hits the Controlword switch default and returns a safe 0x0000.
+void test_controlword_invalid_command()
+{
+    TEST_ASSERT_EQUAL_HEX16(0x0000, cia402_controlword((Cia402Command)99));
+}
+
+// The velocity / torque SDO setters the happy-path test skips, byte-checked, plus each setter's
+// null-frame reject (the false side of the canopen_build_sdo_write return).
+void test_sdo_set_velocity_torque()
+{
+    CanFrame f{};
+    TEST_ASSERT_TRUE(cia402_sdo_set_target_velocity(&f, 2, 0x0A0B0C0D));
+    TEST_ASSERT_EQUAL_HEX32(0x602u, f.id);   // SDO_RX (0x600) + node 2
+    TEST_ASSERT_EQUAL_HEX8(0xFF, f.data[1]); // index 0x60FF LE
+    TEST_ASSERT_EQUAL_HEX8(0x60, f.data[2]);
+    TEST_ASSERT_EQUAL_HEX8(0x00, f.data[3]); // sub 0
+    TEST_ASSERT_EQUAL_HEX8(0x0D, f.data[4]); // value LE
+    TEST_ASSERT_EQUAL_HEX8(0x0C, f.data[5]);
+    TEST_ASSERT_EQUAL_HEX8(0x0B, f.data[6]);
+    TEST_ASSERT_EQUAL_HEX8(0x0A, f.data[7]);
+
+    TEST_ASSERT_TRUE(cia402_sdo_set_target_torque(&f, 4, -2)); // -2 = 0xFFFE
+    TEST_ASSERT_EQUAL_HEX32(0x604u, f.id);
+    TEST_ASSERT_EQUAL_HEX8(0x71, f.data[1]); // index 0x6071 LE
+    TEST_ASSERT_EQUAL_HEX8(0x60, f.data[2]);
+    TEST_ASSERT_EQUAL_HEX8(0xFE, f.data[4]); // -2 LE
+    TEST_ASSERT_EQUAL_HEX8(0xFF, f.data[5]);
+
+    // null out frame -> false, for every SDO setter (each forwards canopen_build_sdo_write's false).
+    TEST_ASSERT_FALSE(cia402_sdo_set_controlword(nullptr, 5, 0x000F));
+    TEST_ASSERT_FALSE(cia402_sdo_set_mode(nullptr, 3, Cia402Mode::cyclic_sync_position));
+    TEST_ASSERT_FALSE(cia402_sdo_set_target_position(nullptr, 1, 0));
+    TEST_ASSERT_FALSE(cia402_sdo_set_target_velocity(nullptr, 2, 0));
+    TEST_ASSERT_FALSE(cia402_sdo_set_target_torque(nullptr, 4, 0));
+}
+
+// Decode a signed 32-bit object from an expedited SDO upload (cmd 0x43: scs=2, e=1, s=1, len 4).
+void test_sdo_get_i32_roundtrip()
+{
+    CanFrame resp = make_sdo_tx(7, 0x43, CIA402_OD_POSITION_ACTUAL, 0xFFFFFFECu); // -20
+    int32_t val = 0;
+    TEST_ASSERT_TRUE(cia402_sdo_get_i32(&resp, CIA402_OD_POSITION_ACTUAL, &val));
+    TEST_ASSERT_EQUAL_INT32(-20, val);
+    // want_index 0 skips the index match (the short-circuited first arm) and still decodes.
+    val = 0;
+    TEST_ASSERT_TRUE(cia402_sdo_get_i32(&resp, 0, &val));
+    TEST_ASSERT_EQUAL_INT32(-20, val);
+    // null value pointer -> false.
+    TEST_ASSERT_FALSE(cia402_sdo_get_i32(&resp, 0, nullptr));
+}
+
+// Every reject path inside the SDO upload validation: parse failure, abort, download-ack,
+// segmented (non-expedited), and payload shorter than the requested width.
+void test_sdo_upload_reject_paths()
+{
+    uint16_t v = 0;
+    // (a) parse failure: dlc < 8 makes canopen_parse_sdo_response fail.
+    CanFrame shortf = make_sdo_tx(7, 0x4B, CIA402_OD_STATUSWORD, 0);
+    shortf.dlc = 4;
+    TEST_ASSERT_FALSE(cia402_sdo_get_u16(&shortf, 0, &v));
+    // (b) abort response (scs=4): is_abort.
+    CanFrame ab = make_sdo_tx(7, (uint8_t)(4u << 5), CIA402_OD_STATUSWORD, 0);
+    TEST_ASSERT_FALSE(cia402_sdo_get_u16(&ab, 0, &v));
+    // (c) download-initiate ack (scs=3): not an upload.
+    CanFrame dl = make_sdo_tx(7, (uint8_t)(3u << 5), CIA402_OD_STATUSWORD, 0);
+    TEST_ASSERT_FALSE(cia402_sdo_get_u16(&dl, 0, &v));
+    // (d) segmented upload (scs=2, e=0): not expedited.
+    CanFrame seg = make_sdo_tx(7, (uint8_t)(2u << 5), CIA402_OD_STATUSWORD, 0);
+    TEST_ASSERT_FALSE(cia402_sdo_get_u16(&seg, 0, &v));
+    // (e) expedited upload of only 1 octet (cmd 0x4F -> len 1): shorter than the 2 needed.
+    CanFrame shortlen = make_sdo_tx(7, 0x4F, CIA402_OD_STATUSWORD, 0);
+    TEST_ASSERT_FALSE(cia402_sdo_get_u16(&shortlen, 0, &v));
+    // null value pointer to get_u16.
+    CanFrame okresp = make_sdo_tx(7, 0x4B, CIA402_OD_STATUSWORD, 0x0637);
+    TEST_ASSERT_FALSE(cia402_sdo_get_u16(&okresp, 0, nullptr));
+    // a 2-octet upload is too short for a 4-octet get_i32.
+    CanFrame u16resp = make_sdo_tx(7, 0x4B, CIA402_OD_POSITION_ACTUAL, 0x1234);
+    int32_t iv = 0;
+    TEST_ASSERT_FALSE(cia402_sdo_get_i32(&u16resp, 0, &iv));
+}
+
+// Null-argument guards on the cyclic PDO pack/unpack (complementing the too-short cases).
+void test_pdo_null_guards()
+{
+    uint8_t buf[8];
+    uint16_t sw = 0;
+    int32_t actual = 0;
+    const uint8_t tpdo[6] = {0x37, 0x06, 0xC7, 0xCF, 0xFF, 0xFF};
+    TEST_ASSERT_EQUAL_size_t(0, cia402_pack_command(nullptr, sizeof(buf), 0, 0));  // null buffer
+    TEST_ASSERT_FALSE(cia402_unpack_status(nullptr, sizeof(tpdo), &sw, &actual));  // null buffer
+    TEST_ASSERT_FALSE(cia402_unpack_status(tpdo, sizeof(tpdo), nullptr, &actual)); // null statusword
+    TEST_ASSERT_FALSE(cia402_unpack_status(tpdo, sizeof(tpdo), &sw, nullptr));     // null actual
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -160,5 +281,11 @@ int main()
     RUN_TEST(test_sdo_set_targets);
     RUN_TEST(test_sdo_get_roundtrip);
     RUN_TEST(test_pdo_pack_unpack);
+    RUN_TEST(test_state_decode_unknown);
+    RUN_TEST(test_controlword_invalid_command);
+    RUN_TEST(test_sdo_set_velocity_torque);
+    RUN_TEST(test_sdo_get_i32_roundtrip);
+    RUN_TEST(test_sdo_upload_reject_paths);
+    RUN_TEST(test_pdo_null_guards);
     return UNITY_END();
 }

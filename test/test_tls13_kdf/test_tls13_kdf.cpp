@@ -199,6 +199,27 @@ void test_server_finished()
     TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, verify, 32);
 }
 
+// tls13_kdf_expand_label() is the KDF-variant HKDF-Expand-Label wrapper the record-key derivations
+// call (the key-schedule steps above reach the HKDF core through tls13_derive_secret instead, so this
+// public entry point is otherwise unexercised). RFC 8448 sec 3: HKDF-Expand-Label("tls13 " prefix,
+// server_handshake_traffic_secret, "key", 16) is the server write key - the same KAT as
+// test_server_hs_write_keys, here through the wrapper. It must equal quic_hkdf_expand_label() with the
+// TLS 1.3 prefix, which is exactly what the wrapper forwards to.
+void test_kdf_expand_label_wrapper()
+{
+    uint8_t s_hs[32];
+    hx(S_HS, s_hs, 32);
+
+    uint8_t key[16], exp_key[16];
+    tls13_kdf_expand_label(&TLS13_KDF, s_hs, "key", key, sizeof(key));
+    hx("3fce516009c21727d0f2e4e86ee403bc", exp_key, 16);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(exp_key, key, 16);
+
+    uint8_t via_quic[16];
+    quic_hkdf_expand_label(s_hs, "key", via_quic, sizeof(via_quic));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(via_quic, key, 16);
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -207,5 +228,6 @@ int main(int, char **)
     RUN_TEST(test_master_secrets);
     RUN_TEST(test_server_hs_write_keys);
     RUN_TEST(test_server_finished);
+    RUN_TEST(test_kdf_expand_label_wrapper);
     return UNITY_END();
 }

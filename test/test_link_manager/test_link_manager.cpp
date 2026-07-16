@@ -70,6 +70,46 @@ void test_out_of_range_no_change(void)
     TEST_ASSERT_EQUAL_INT(1, to);
 }
 
+// select guards a null manager and a manager with a null interface table.
+void test_select_null_guards(void)
+{
+    TEST_ASSERT_EQUAL_INT(-1, detws_link_select(nullptr));
+    LinkManager m;
+    detws_link_init(&m, nullptr, 3); // null ifaces -> n forced to 0, active -1
+    TEST_ASSERT_EQUAL_INT(-1, detws_link_select(&m));
+    TEST_ASSERT_EQUAL_INT(-1, detws_link_active(&m));
+}
+
+// init and active tolerate a null manager (no crash, active reports -1).
+void test_init_and_active_null(void)
+{
+    detws_link_init(nullptr, g_ifaces, 3); // must simply return
+    TEST_ASSERT_EQUAL_INT(-1, detws_link_active(nullptr));
+}
+
+// set's failure paths still write from/to (or tolerate null out-pointers): null manager, null interface
+// table, and an out-of-range index with null out-pointers.
+void test_set_guard_paths(void)
+{
+    int from = 7, to = 7;
+    // Null manager: reports -1 for both previous and new active, returns false.
+    TEST_ASSERT_FALSE(detws_link_set(nullptr, 0, true, &from, &to));
+    TEST_ASSERT_EQUAL_INT(-1, from);
+    TEST_ASSERT_EQUAL_INT(-1, to);
+
+    // Null interface table: reports the manager's active (-1), returns false.
+    LinkManager m;
+    detws_link_init(&m, nullptr, 3);
+    from = 7;
+    to = 7;
+    TEST_ASSERT_FALSE(detws_link_set(&m, 0, true, &from, &to));
+    TEST_ASSERT_EQUAL_INT(-1, from);
+    TEST_ASSERT_EQUAL_INT(-1, to);
+
+    // Out-of-range index with null out-pointers: guard path must not dereference them.
+    TEST_ASSERT_FALSE(detws_link_set(&g_m, 9, true, nullptr, nullptr));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -77,5 +117,8 @@ int main(void)
     RUN_TEST(test_escalation_and_failover);
     RUN_TEST(test_tie_break_lower_index);
     RUN_TEST(test_out_of_range_no_change);
+    RUN_TEST(test_select_null_guards);
+    RUN_TEST(test_init_and_active_null);
+    RUN_TEST(test_set_guard_paths);
     return UNITY_END();
 }

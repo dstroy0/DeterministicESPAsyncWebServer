@@ -14,6 +14,8 @@
 #include "network_drivers/presentation/http3/quic_aead.h"
 #include "network_drivers/presentation/http3/quic_crypto.h"
 #include "network_drivers/presentation/http3/quic_hkdf.h"
+#include "network_drivers/presentation/http3/quic_packet.h" // QUIC_MAX_CID_LEN (retry-tag guard bound)
+#include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include <string.h>
 #include <unity.h>
 
@@ -256,6 +258,158 @@ void test_gcm_open_rejects_short()
     TEST_ASSERT_FALSE(quic_aes128_gcm_open(key, nonce, nullptr, 0, ct, sizeof ct, out));
 }
 
+// --- quic_packet_protect parameter/capacity guards ------------------------------------------
+// The packet-number length must be 1..4; anything else is a parameter error (returns 0). Drives both
+// sides of the `pn_len < 1 || pn_len > 4` reject that the RFC-vector protect/unprotect never hits.
+void test_protect_rejects_bad_pn_len()
+{
+    QuicPacketKeys keys;
+    memset(&keys, 0, sizeof keys);
+    uint8_t pkt[64];
+    memset(pkt, 0, sizeof pkt);
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_packet_protect(pkt, sizeof pkt, /*pn_offset*/ 4, /*pn_len*/ 0, /*full_pn*/ 1,
+                                                      /*payload_len*/ 8, &keys, /*is_long*/ true));
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_packet_protect(pkt, sizeof pkt, /*pn_offset*/ 4, /*pn_len*/ 5, /*full_pn*/ 1,
+                                                      /*payload_len*/ 8, &keys, /*is_long*/ true));
+}
+
+// header + payload + 16-byte tag must fit the buffer, else 0 (before any crypto runs).
+void test_protect_rejects_small_cap()
+{
+    QuicPacketKeys keys;
+    memset(&keys, 0, sizeof keys);
+    uint8_t pkt[8];
+    memset(pkt, 0, sizeof pkt);
+    // hdr(pn_offset 4 + pn_len 2 = 6) + payload(100) + tag(16) = 122 > cap 8.
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_packet_protect(pkt, sizeof pkt, /*pn_offset*/ 4, /*pn_len*/ 2, /*full_pn*/ 1,
+                                                      /*payload_len*/ 100, &keys, /*is_long*/ true));
+}
+
+// --- quic_packet_unprotect reject paths -----------------------------------------------------
+// A record whose Length is below the header-protection sample + tag minimum (4 + 16) is rejected up
+// front with (size_t)-1, before touching the buffer.
+void test_unprotect_rejects_short()
+{
+    QuicPacketKeys keys;
+    memset(&keys, 0, sizeof keys);
+    uint8_t pkt[32];
+    memset(pkt, 0, sizeof pkt);
+    uint8_t out[32];
+    uint64_t pn = 0;
+    size_t got = quic_packet_unprotect(pkt, /*pn_offset*/ 0, /*length*/ 19, /*largest_pn*/ 0, &keys,
+                                       /*is_long*/ true, out, &pn);
+    TEST_ASSERT_TRUE(got == (size_t)-1);
+}
+
+// A tampered ciphertext must fail the AEAD tag check: unprotect returns (size_t)-1 and writes no
+// plaintext. Starts from the byte-exact RFC 9001 A.3 protected server Initial and flips one tag byte
+// (outside the header-protection sample, so the packet number still recovers, but the AEAD open fails).
+void test_unprotect_rejects_tampered()
+{
+    uint8_t dcid[8];
+    hx("8394c8f03e515708", dcid, 8);
+    QuicInitialSecrets s;
+    quic_derive_initial_secrets(dcid, 8, &s);
+
+    uint8_t pkt[256];
+    size_t elen = hx("cf000000010008f067a5502a4262b5004075c0d95a482cd0991cd25b0aac406a"
+                     "5816b6394100f37a1c69797554780bb38cc5a99f5ede4cf73c3ec2493a1839b3"
+                     "dbcba3f6ea46c5b7684df3548e7ddeb9c3bf9c73cc3f3bded74b562bfb19fb84"
+                     "022f8ef4cdd93795d77d06edbb7aaf2f58891850abbdca3d20398c276456cbc4"
+                     "2158407dd074ee",
+                     pkt, sizeof pkt);
+    TEST_ASSERT_EQUAL_INT(135, (int)elen);
+    pkt[elen - 1] ^= 0x01; // corrupt the final auth-tag byte
+
+    uint8_t out[128];
+    uint64_t pn = 0;
+    size_t got = quic_packet_unprotect(pkt, /*pn_offset*/ 18, /*length*/ 117, /*largest_pn*/ 0, &s.server,
+                                       /*is_long*/ true, out, &pn);
+    TEST_ASSERT_TRUE(got == (size_t)-1);
+}
+
+// --- quic_retry_integrity_tag guard ---------------------------------------------------------
+// Either an over-long ODCID (> QUIC_MAX_CID_LEN) or a Retry that would overflow the AAD scratch
+// buffer zeroes the tag rather than reading out of bounds. Drives both sides of the compound guard.
+void test_retry_tag_rejects_oversize()
+{
+    uint8_t odcid[QUIC_MAX_CID_LEN + 2];
+    memset(odcid, 0xCC, sizeof odcid);
+    uint8_t retry[16];
+    memset(retry, 0, sizeof retry);
+    const uint8_t zero[16] = {0};
+    uint8_t tag[16];
+
+    // ODCID length beyond the QUIC maximum -> first guard condition.
+    memset(tag, 0xEE, sizeof tag);
+    quic_retry_integrity_tag(odcid, QUIC_MAX_CID_LEN + 1, retry, sizeof retry, tag);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(zero, tag, 16);
+
+    // A valid-length ODCID but a Retry so long that 1 + odcid_len + retry_len exceeds the AAD buffer
+    // (1 + QUIC_MAX_CID_LEN + 256) -> second guard condition.
+    static uint8_t big_retry[300];
+    memset(big_retry, 0, sizeof big_retry);
+    memset(tag, 0xEE, sizeof tag);
+    quic_retry_integrity_tag(odcid, 8, big_retry, sizeof big_retry, tag);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(zero, tag, 16);
+}
+
+// --- quic_hkdf HKDF-Expand-Label multi-block output -----------------------------------------
+// An independent recomputation of RFC 5869 HKDF-Expand over the RFC 8446 sec 7.1 HkdfLabel, using the
+// KAT-verified HMAC-SHA256 primitive. Used to check the > 32-byte (multi-hash-block) path of the
+// library's expander, which QUIC itself never exercises (all its outputs are <= 32).
+static void expand_label_ref(const uint8_t secret[32], const char *label, uint8_t *out, size_t out_len)
+{
+    uint8_t info[64];
+    size_t p = 0;
+    info[p++] = (uint8_t)(out_len >> 8);
+    info[p++] = (uint8_t)(out_len & 0xff);
+    const char *prefix = "tls13 ";
+    size_t plen = strlen(prefix);
+    size_t llen = strlen(label);
+    info[p++] = (uint8_t)(plen + llen);
+    memcpy(info + p, prefix, plen);
+    p += plen;
+    memcpy(info + p, label, llen);
+    p += llen;
+    info[p++] = 0; // empty context
+
+    uint8_t t[32];
+    size_t t_len = 0;
+    size_t done = 0;
+    uint8_t counter = 0;
+    while (done < out_len)
+    {
+        counter++;
+        SshHmacCtx c;
+        ssh_hmac_sha256_init(&c, secret, 32);
+        ssh_hmac_sha256_update(&c, t, t_len);
+        ssh_hmac_sha256_update(&c, info, p);
+        ssh_hmac_sha256_update(&c, &counter, 1);
+        ssh_hmac_sha256_final(&c, t);
+        t_len = 32;
+        size_t take = out_len - done;
+        if (take > 32)
+            take = 32;
+        memcpy(out + done, t, take);
+        done += take;
+    }
+}
+
+// 48 output bytes cross into a second HMAC block: the library must run the N-block loop (T(2) chains
+// off T(1)) and match the reference exactly.
+void test_hkdf_expand_label_multiblock()
+{
+    uint8_t secret[32];
+    for (int i = 0; i < 32; i++)
+        secret[i] = (uint8_t)(0xA0 + i);
+
+    uint8_t got[48], exp[48];
+    quic_hkdf_expand_label(secret, "test label", got, sizeof got);
+    expand_label_ref(secret, "test label", exp, sizeof exp);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(exp, got, sizeof got);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -266,5 +420,11 @@ int main()
     RUN_TEST(test_client_initial_a2);
     RUN_TEST(test_retry_integrity_a4);
     RUN_TEST(test_gcm_open_rejects_short);
+    RUN_TEST(test_protect_rejects_bad_pn_len);
+    RUN_TEST(test_protect_rejects_small_cap);
+    RUN_TEST(test_unprotect_rejects_short);
+    RUN_TEST(test_unprotect_rejects_tampered);
+    RUN_TEST(test_retry_tag_rejects_oversize);
+    RUN_TEST(test_hkdf_expand_label_multiblock);
     return UNITY_END();
 }

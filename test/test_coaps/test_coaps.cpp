@@ -317,10 +317,100 @@ static void test_coap_over_dtls_replay_dropped(void)
     TEST_ASSERT_EQUAL_INT(0, coaps_process(&conn, app_rec, ar, out, sizeof(out))); // replay: dropped
 }
 
+// An established connection whose decrypted CoAP message yields no response drives the resp_len == 0
+// path: coaps_process must return 0 without sealing a record. A CoAP ACK (not a request, RFC 7252
+// §4.2) is ignored by coap_server_process, so it produces zero response bytes.
+static void test_coaps_no_coap_response(void)
+{
+    DtlsConn conn;
+    DtlsRecordKeys cli_app_write, cli_app_read;
+    handshake(&conn, &cli_app_write, &cli_app_read);
+
+    const uint8_t coap_ack[] = {0x60, 0x00, 0x12, 0x34}; // Ver 1, Type ACK (2), TKL 0, MID 0x1234
+    uint8_t app_rec[128];
+    size_t ar = dtls_ciphertext_protect(&cli_app_write, 0, DTLS_CT_APPLICATION_DATA, coap_ack, sizeof(coap_ack),
+                                        app_rec, sizeof(app_rec));
+    TEST_ASSERT_TRUE(ar > 0);
+
+    uint8_t out[256];
+    TEST_ASSERT_EQUAL_INT(0, coaps_process(&conn, app_rec, ar, out, sizeof(out)));
+}
+
+// After establishment a datagram that is not an epoch-3 application record is routed back to the DTLS
+// state machine (coaps_process's fall-through return dtls_conn_process). A zero-length datagram (the
+// length guard fails first) and a DTLSPlaintext-content-type byte (not a 0b001xxxxx ciphertext header)
+// both take that path and, being nothing the established machine needs to answer, produce no output.
+static void test_coaps_non_app_record(void)
+{
+    DtlsConn conn;
+    DtlsRecordKeys cli_app_write, cli_app_read;
+    handshake(&conn, &cli_app_write, &cli_app_read);
+
+    uint8_t out[256];
+    uint8_t byte[1] = {0x16}; // 0x16: a DTLSPlaintext content-type, not a ciphertext unified header
+    TEST_ASSERT_EQUAL_INT(0, coaps_process(&conn, byte, 0, out, sizeof(out))); // len < 1
+    TEST_ASSERT_EQUAL_INT(0, coaps_process(&conn, byte, 1, out, sizeof(out))); // not (b0 & 0xE0) == 0x20
+    TEST_ASSERT_TRUE(dtls_conn_established(&conn));                            // neither disturbed the connection
+}
+
+// A DTLSCiphertext record whose epoch is not 3 (0b001xxx with epoch bits != 3) is also routed to the
+// state machine. Here its body is garbage, so the record fails to open and the machine reports a fatal
+// error (-1), which coaps_process passes through. Covers the epoch (low-two-bits) side of the record test.
+static void test_coaps_wrong_epoch_record(void)
+{
+    DtlsConn conn;
+    DtlsRecordKeys cli_app_write, cli_app_read;
+    handshake(&conn, &cli_app_write, &cli_app_read);
+
+    uint8_t rec[24];
+    memset(rec, 0, sizeof(rec));
+    rec[0] = 0x22; // (0x22 & 0xE0) == 0x20 (ciphertext), (0x22 & 0x03) == 2 (epoch 2, not 3)
+    uint8_t out[64];
+    TEST_ASSERT_EQUAL_INT(-1, coaps_process(&conn, rec, sizeof(rec), out, sizeof(out)));
+}
+
+// Before establishment coaps_process forwards the datagram straight to the DTLS handshake state
+// machine (the !dtls_conn_established branch). Driving the ClientHello through coaps_process must emit
+// the server's flight, exactly as feeding dtls_conn_process directly does.
+static void test_coaps_forwards_handshake(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+
+    DtlsServerConfig cfg;
+    cfg.cert_der = server_ed_pub;
+    cfg.cert_len = 32;
+    cfg.ed25519_seed = SERVER_ED_SEED;
+    cfg.ephemeral_priv = SERVER_X25519_PRIV;
+    cfg.server_random = SERVER_RANDOM;
+    cfg.cookie_key = SERVER_COOKIE_KEY;
+    DtlsConn conn;
+    dtls_conn_init(&conn, &cfg, nullptr, 0);
+
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello(ch, client_pub);
+    uint8_t ch_frag[300];
+    size_t ch_fl = dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
+                                      sizeof(ch_frag));
+    uint8_t ch_rec[320];
+    size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
+
+    TEST_ASSERT_FALSE(dtls_conn_established(&conn));
+    uint8_t flight[2048];
+    int fl = coaps_process(&conn, ch_rec, ch_rl, flight, sizeof(flight));
+    TEST_ASSERT_TRUE(fl > 0); // the server flight was produced via the handshake-forward path
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_coap_over_dtls);
     RUN_TEST(test_coap_over_dtls_replay_dropped);
+    RUN_TEST(test_coaps_no_coap_response);
+    RUN_TEST(test_coaps_non_app_record);
+    RUN_TEST(test_coaps_wrong_epoch_record);
+    RUN_TEST(test_coaps_forwards_handshake);
     return UNITY_END();
 }

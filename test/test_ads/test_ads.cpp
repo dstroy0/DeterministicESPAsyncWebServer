@@ -294,6 +294,165 @@ void test_parse_guards()
     TEST_ASSERT_FALSE(ads_parse_read(bad_read, sizeof(bad_read), &rr));
 }
 
+// ReadDeviceInfo (no payload) and DeleteDeviceNotification (a single handle) builders, plus their
+// too-small-buffer rejects.
+void test_build_read_device_info_and_del()
+{
+    AdsRequest r = make_req();
+    uint8_t buf[64];
+    size_t n = ads_build_read_device_info(buf, sizeof(buf), &r);
+    TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN, n);
+    TEST_ASSERT_EQUAL_HEX8(0x01, buf[22]);                               // cmd 1 (ReadDeviceInfo)
+    TEST_ASSERT_EQUAL_HEX8(0x00, buf[26]);                               // cbData 0
+    TEST_ASSERT_EQUAL_size_t(0, ads_build_read_device_info(buf, 8, &r)); // buffer too small
+
+    n = ads_build_del_notification(buf, sizeof(buf), &r, 0xAABBCCDD);
+    TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 4, n);
+    TEST_ASSERT_EQUAL_HEX8(0x07, buf[22]);          // cmd 7 (DeleteNotification)
+    TEST_ASSERT_EQUAL_HEX8(0x04, buf[26]);          // cbData 4
+    TEST_ASSERT_EQUAL_HEX8(0xDD, buf[ADS_HDR_LEN]); // handle LE
+    TEST_ASSERT_EQUAL_HEX8(0xCC, buf[ADS_HDR_LEN + 1]);
+    TEST_ASSERT_EQUAL_HEX8(0xBB, buf[ADS_HDR_LEN + 2]);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, buf[ADS_HDR_LEN + 3]);
+    TEST_ASSERT_EQUAL_size_t(0, ads_build_del_notification(buf, 8, &r, 0)); // buffer too small
+}
+
+// write_header's null-buffer / null-request arms (reached through a builder) and the per-builder
+// null-data + short-buffer rejects and the zero-length branches the happy path skips.
+void test_build_null_and_small_buffer_guards()
+{
+    AdsRequest r = make_req();
+    uint8_t buf[64];
+    const uint8_t val[] = {0x01, 0x02, 0x03, 0x04};
+
+    TEST_ASSERT_EQUAL_size_t(0, ads_build_read_state(nullptr, sizeof(buf), &r));  // write_header !buf
+    TEST_ASSERT_EQUAL_size_t(0, ads_build_read_state(buf, sizeof(buf), nullptr)); // write_header !r
+
+    // Write: null data with len>0 rejects; len==0 skips the copy; a too-small buffer fails closed.
+    TEST_ASSERT_EQUAL_size_t(0, ads_build_write(buf, sizeof(buf), &r, 0x4020, 0, nullptr, 4));
+    TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 12, ads_build_write(buf, sizeof(buf), &r, 0x4020, 0, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, ads_build_write(buf, 40, &r, 0x4020, 0, val, 4)); // needs 54
+
+    // ReadWrite: same shape on write_data / write_len.
+    TEST_ASSERT_EQUAL_size_t(0, ads_build_read_write(buf, sizeof(buf), &r, 0xF003, 0, 4, nullptr, 12));
+    TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 16, ads_build_read_write(buf, sizeof(buf), &r, 0xF003, 0, 4, nullptr, 0));
+    TEST_ASSERT_EQUAL_size_t(0, ads_build_read_write(buf, 40, &r, 0xF003, 0, 4, val, 4)); // needs 58
+
+    // AddNotification into a buffer too small for its 40-octet payload (needs 78).
+    TEST_ASSERT_EQUAL_size_t(
+        0, ads_build_add_notification(buf, sizeof(buf), &r, 0xF005, 0, 2, AdsTransMode::server_on_change, 0, 0));
+}
+
+// WriteControl with an actual data payload (the len>0 copy branch) plus its null-data and
+// short-buffer rejects.
+void test_build_write_control_variants()
+{
+    AdsRequest r = make_req();
+    uint8_t buf[64];
+    const uint8_t payload[] = {0xAA, 0xBB};
+    size_t n = ads_build_write_control(buf, sizeof(buf), &r, (uint16_t)AdsState::stop, 7, payload, sizeof(payload));
+    TEST_ASSERT_EQUAL_size_t(ADS_HDR_LEN + 8 + 2, n);
+    TEST_ASSERT_EQUAL_HEX8(0x06, buf[ADS_HDR_LEN]);     // ADS state = stop (6) LE
+    TEST_ASSERT_EQUAL_HEX8(0x07, buf[ADS_HDR_LEN + 2]); // device state 7
+    TEST_ASSERT_EQUAL_HEX8(0x02, buf[ADS_HDR_LEN + 4]); // length 2
+    TEST_ASSERT_EQUAL_HEX8(0xAA, buf[ADS_HDR_LEN + 8]); // copied data
+    TEST_ASSERT_EQUAL_HEX8(0xBB, buf[ADS_HDR_LEN + 9]);
+    TEST_ASSERT_EQUAL_size_t(0, ads_build_write_control(buf, sizeof(buf), &r, 0, 0, nullptr, 4));      // len && !data
+    TEST_ASSERT_EQUAL_size_t(0, ads_build_write_control(buf, 40, &r, 0, 0, payload, sizeof(payload))); // needs 48
+}
+
+// The AMS-header parse rejects the happy path skips: null out, a non-zero second reserved octet,
+// an AMS/TCP length below the bare AMS header, and a cbData larger than that length allows.
+void test_parse_ams_header_more_guards()
+{
+    AdsRequest r = make_req();
+    uint8_t frame[64];
+    size_t fn = ads_build_read_state(frame, sizeof(frame), &r);
+    TEST_ASSERT_TRUE(fn > 0);
+    TEST_ASSERT_FALSE(ads_parse_ams_header(frame, fn, nullptr)); // !out
+
+    AdsAmsHeader h;
+    uint8_t r1[ADS_HDR_LEN] = {0};
+    r1[1] = 0x01;            // second reserved octet non-zero (buf[0] stays 0)
+    r1[2] = ADS_AMS_HDR_LEN; // plausible frame_len
+    TEST_ASSERT_FALSE(ads_parse_ams_header(r1, sizeof(r1), &h));
+
+    uint8_t shortlen[ADS_HDR_LEN] = {0};
+    shortlen[2] = 0x10; // frame_len = 16 < 32
+    TEST_ASSERT_FALSE(ads_parse_ams_header(shortlen, sizeof(shortlen), &h));
+
+    uint8_t bigcb[ADS_HDR_LEN] = {0};
+    bigcb[2] = ADS_AMS_HDR_LEN; // frame_len = 32 (6 + 32 == 38 == len)
+    bigcb[6 + 20] = 0x04;       // cbData = 4 -> 32 + 4 = 36 > 32
+    TEST_ASSERT_FALSE(ads_parse_ams_header(bigcb, sizeof(bigcb), &h));
+}
+
+// Null-pointer and short-buffer rejects for every payload parser.
+void test_parse_payload_guards()
+{
+    const uint8_t data[32] = {0};
+
+    AdsReadResult rr;
+    TEST_ASSERT_FALSE(ads_parse_read(nullptr, 8, &rr));  // !data
+    TEST_ASSERT_FALSE(ads_parse_read(data, 8, nullptr)); // !out
+    TEST_ASSERT_FALSE(ads_parse_read(data, 4, &rr));     // data_len < 8
+
+    uint32_t res = 0;
+    TEST_ASSERT_FALSE(ads_parse_result(nullptr, 4, &res)); // !data
+    TEST_ASSERT_FALSE(ads_parse_result(data, 4, nullptr)); // !result
+    TEST_ASSERT_FALSE(ads_parse_result(data, 2, &res));    // data_len < 4
+
+    AdsReadStateResult st;
+    TEST_ASSERT_FALSE(ads_parse_read_state(nullptr, 8, &st));  // !data
+    TEST_ASSERT_FALSE(ads_parse_read_state(data, 8, nullptr)); // !out
+    TEST_ASSERT_FALSE(ads_parse_read_state(data, 4, &st));     // data_len < 8
+
+    AdsDeviceInfo di;
+    TEST_ASSERT_FALSE(ads_parse_read_device_info(nullptr, 24, &di));  // !data
+    TEST_ASSERT_FALSE(ads_parse_read_device_info(data, 24, nullptr)); // !out
+    TEST_ASSERT_FALSE(ads_parse_read_device_info(data, 20, &di));     // data_len < 24
+
+    uint32_t result = 0, handle = 0;
+    TEST_ASSERT_FALSE(ads_parse_add_notification(nullptr, 8, &result, &handle)); // !data
+    TEST_ASSERT_FALSE(ads_parse_add_notification(data, 8, nullptr, &handle));    // !result
+    TEST_ASSERT_FALSE(ads_parse_add_notification(data, 8, &result, nullptr));    // !handle
+    TEST_ASSERT_FALSE(ads_parse_add_notification(data, 4, &result, &handle));    // data_len < 8
+}
+
+// The DeviceNotification walk's truncation rejects: header guards, an over-long Length, and a
+// buffer too short for a stamp header, a sample header, or a sample's declared data.
+void test_parse_notification_guards()
+{
+    const uint8_t data[8] = {0};
+    TEST_ASSERT_FALSE(ads_parse_notification(nullptr, 8, on_sample, nullptr)); // !data
+    TEST_ASSERT_FALSE(ads_parse_notification(data, 8, nullptr, nullptr));      // !on_sample
+    TEST_ASSERT_FALSE(ads_parse_notification(data, 4, on_sample, nullptr));    // data_len < 8
+
+    const uint8_t bad_length[8] = {0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Length = 100 > buffer
+    TEST_ASSERT_FALSE(ads_parse_notification(bad_length, sizeof(bad_length), on_sample, nullptr));
+
+    const uint8_t short_stamp[8] = {0x04, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00}; // Stamps=1, no stamp header
+    TEST_ASSERT_FALSE(ads_parse_notification(short_stamp, sizeof(short_stamp), on_sample, nullptr));
+
+    const uint8_t short_sample[20] = {
+        0x10, 0x00, 0x00, 0x00,                         // Length = 16
+        0x01, 0x00, 0x00, 0x00,                         // Stamps = 1
+        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Timestamp
+        0x01, 0x00, 0x00, 0x00                          // Samples = 1 (no sample header follows)
+    };
+    TEST_ASSERT_FALSE(ads_parse_notification(short_sample, sizeof(short_sample), on_sample, nullptr));
+
+    const uint8_t short_data[28] = {
+        0x18, 0x00, 0x00, 0x00,                         // Length = 24
+        0x01, 0x00, 0x00, 0x00,                         // Stamps = 1
+        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Timestamp
+        0x01, 0x00, 0x00, 0x00,                         // Samples = 1
+        0x34, 0x12, 0x00, 0x00,                         // NotificationHandle
+        0x64, 0x00, 0x00, 0x00                          // SampleSize = 100 (no data follows)
+    };
+    TEST_ASSERT_FALSE(ads_parse_notification(short_data, sizeof(short_data), on_sample, nullptr));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -308,5 +467,11 @@ int main()
     RUN_TEST(test_parse_notification_stream);
     RUN_TEST(test_build_overflow_fails_closed);
     RUN_TEST(test_parse_guards);
+    RUN_TEST(test_build_read_device_info_and_del);
+    RUN_TEST(test_build_null_and_small_buffer_guards);
+    RUN_TEST(test_build_write_control_variants);
+    RUN_TEST(test_parse_ams_header_more_guards);
+    RUN_TEST(test_parse_payload_guards);
+    RUN_TEST(test_parse_notification_guards);
     return UNITY_END();
 }

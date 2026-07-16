@@ -7,6 +7,8 @@
 
 #include "services/control/control.h"
 #include <math.h>
+#include <stdint.h>
+#include <string.h>
 #include <unity.h>
 
 void setUp()
@@ -19,6 +21,23 @@ void tearDown()
 static bool near_f(float a, float b)
 {
     return fabsf(a - b) < 1e-4f;
+}
+
+// --- little-endian readers for the dense-binary PID log format (mirror the packers in control.cpp) ---
+static uint16_t rd_u16le(const uint8_t *b)
+{
+    return (uint16_t)(b[0] | ((uint16_t)b[1] << 8));
+}
+static uint32_t rd_u32le(const uint8_t *b)
+{
+    return (uint32_t)b[0] | ((uint32_t)b[1] << 8) | ((uint32_t)b[2] << 16) | ((uint32_t)b[3] << 24);
+}
+static float rd_f32le(const uint8_t *b)
+{
+    uint32_t u = rd_u32le(b);
+    float f = 0.0f;
+    memcpy(&f, &u, 4);
+    return f;
 }
 
 void test_proportional_only()
@@ -156,6 +175,114 @@ void test_control_primitives()
     TEST_ASSERT_TRUE(near_f(control_lpf(0.0f, 10.0f, 0.25f), 2.5f));
 }
 
+// Every setter / reset must no-op on a null Pid (the false side of each guard) without crashing,
+// and pid_set_rate must ignore a non-positive dt (leaving no rate cached).
+void test_setter_null_guards()
+{
+    pid_init(nullptr, 1.0f, 2.0f, 3.0f);           // pid_init early return
+    pid_set_rate(nullptr, 0.01f);                  // p false
+    pid_set_output_limits(nullptr, 0.0f, 5.0f);    // p false
+    pid_set_integral_limits(nullptr, -1.0f, 1.0f); // p false
+    pid_set_derivative_filter(nullptr, 0.5f);      // p false
+    pid_set_feedforward(nullptr, 0.5f);            // p false
+    pid_reset(nullptr);                            // early return
+
+    Pid p;
+    pid_init(&p, 1.0f, 0.0f, 0.0f);
+    pid_set_rate(&p, 0.0f);  // dt not > 0: does not cache
+    pid_set_rate(&p, -1.0f); // dt not > 0 again
+    TEST_ASSERT_TRUE(p.dt == 0.0f);
+    TEST_ASSERT_TRUE(near_f(pid_update_fixed(&p, 1.0f, 0.0f), 0.0f)); // no rate cached -> fails closed
+}
+
+// pid_set_integral_limits clamps the accumulator (the secondary anti-windup bound): with a tight
+// integral cap and unbounded output, the integrator saturates at the cap and no higher.
+void test_integral_limits_take_effect()
+{
+    Pid p;
+    pid_init(&p, 1.0f, 10.0f, 0.0f);
+    pid_set_integral_limits(&p, -0.5f, 0.5f);
+    TEST_ASSERT_TRUE(near_f(p.integ_min, -0.5f)); // setter wrote the fields
+    TEST_ASSERT_TRUE(near_f(p.integ_max, 0.5f));
+    pid_update(&p, 1.0f, 0.0f, 0.1f); // ki*error*dt = 10*1*0.1 = 1.0, clamped to 0.5
+    TEST_ASSERT_TRUE(near_f(p.integ, 0.5f));
+    pid_update(&p, 1.0f, 0.0f, 0.1f);
+    TEST_ASSERT_TRUE(near_f(p.integ, 0.5f)); // stays at the cap
+}
+
+// The batched update rejects a null pointer for any of its four arrays (the guard's OR arms),
+// leaving the output buffer untouched, then runs normally when all four are valid.
+void test_pid_update_n_null_guards()
+{
+    Pid axes[2];
+    pid_init(&axes[0], 1.0f, 0.0f, 0.0f);
+    pid_init(&axes[1], 1.0f, 0.0f, 0.0f);
+    float sp[2] = {5.0f, 5.0f};
+    float meas[2] = {0.0f, 0.0f};
+    float out[2] = {123.0f, 123.0f};
+    pid_update_n(nullptr, sp, meas, 0.1f, out, 2); // !p
+    TEST_ASSERT_TRUE(out[0] == 123.0f);
+    pid_update_n(axes, nullptr, meas, 0.1f, out, 2); // !setpoint
+    TEST_ASSERT_TRUE(out[0] == 123.0f);
+    pid_update_n(axes, sp, nullptr, 0.1f, out, 2); // !measurement
+    TEST_ASSERT_TRUE(out[0] == 123.0f);
+    pid_update_n(axes, sp, meas, 0.1f, nullptr, 2); // !out
+    TEST_ASSERT_TRUE(out[0] == 123.0f);
+    pid_update_n(axes, sp, meas, 0.1f, out, 2); // all valid -> writes
+    TEST_ASSERT_TRUE(near_f(out[0], 5.0f));
+    TEST_ASSERT_TRUE(near_f(out[1], 5.0f));
+}
+
+// pid_log_header emits the self-describing 36-octet dense-binary header: magic, version, flags,
+// reserved, then dt / kp / ki / kd / kff / out_min / out_max as little-endian f32. Byte-exact.
+void test_pid_log_header_bytes()
+{
+    Pid p;
+    pid_init(&p, 1.5f, 2.5f, 0.75f);
+    pid_set_feedforward(&p, 0.25f);
+    pid_set_output_limits(&p, -5.0f, 5.0f);
+    uint8_t buf[PID_LOG_HEADER_LEN];
+    size_t n = pid_log_header(buf, sizeof(buf), &p, 0.01f);
+    TEST_ASSERT_EQUAL_size_t(PID_LOG_HEADER_LEN, n);
+    TEST_ASSERT_EQUAL_HEX8('D', buf[0]);
+    TEST_ASSERT_EQUAL_HEX8('P', buf[1]);
+    TEST_ASSERT_EQUAL_HEX8('I', buf[2]);
+    TEST_ASSERT_EQUAL_HEX8('D', buf[3]);
+    TEST_ASSERT_EQUAL_HEX8(PID_LOG_VERSION, buf[4]);
+    TEST_ASSERT_EQUAL_HEX8(0, buf[5]);                   // flags (reserved)
+    TEST_ASSERT_EQUAL_HEX16(0, rd_u16le(buf + 6));       // reserved u16
+    TEST_ASSERT_TRUE(near_f(rd_f32le(buf + 8), 0.01f));  // dt
+    TEST_ASSERT_TRUE(near_f(rd_f32le(buf + 12), 1.5f));  // kp
+    TEST_ASSERT_TRUE(near_f(rd_f32le(buf + 16), 2.5f));  // ki
+    TEST_ASSERT_TRUE(near_f(rd_f32le(buf + 20), 0.75f)); // kd
+    TEST_ASSERT_TRUE(near_f(rd_f32le(buf + 24), 0.25f)); // kff
+    TEST_ASSERT_TRUE(near_f(rd_f32le(buf + 28), -5.0f)); // out_min
+    TEST_ASSERT_TRUE(near_f(rd_f32le(buf + 32), 5.0f));  // out_max
+    // guards: null buf, null Pid, capacity too small -> 0.
+    TEST_ASSERT_EQUAL_size_t(0, pid_log_header(nullptr, sizeof(buf), &p, 0.01f));
+    TEST_ASSERT_EQUAL_size_t(0, pid_log_header(buf, sizeof(buf), nullptr, 0.01f));
+    TEST_ASSERT_EQUAL_size_t(0, pid_log_header(buf, PID_LOG_HEADER_LEN - 1, &p, 0.01f));
+}
+
+// pid_log_record emits the 16-octet record: setpoint / measurement / output f32 + a u32 status
+// word carrying the SATURATED bit. Byte-check both the saturated and un-saturated status.
+void test_pid_log_record_bytes()
+{
+    uint8_t buf[PID_LOG_RECORD_LEN];
+    size_t n = pid_log_record(buf, sizeof(buf), 3.0f, 2.0f, 4.5f, true);
+    TEST_ASSERT_EQUAL_size_t(PID_LOG_RECORD_LEN, n);
+    TEST_ASSERT_TRUE(near_f(rd_f32le(buf + 0), 3.0f)); // setpoint
+    TEST_ASSERT_TRUE(near_f(rd_f32le(buf + 4), 2.0f)); // measurement
+    TEST_ASSERT_TRUE(near_f(rd_f32le(buf + 8), 4.5f)); // output
+    TEST_ASSERT_EQUAL_HEX32(PID_LOG_STATUS_SATURATED, rd_u32le(buf + 12));
+    n = pid_log_record(buf, sizeof(buf), 0.0f, 0.0f, 0.0f, false);
+    TEST_ASSERT_EQUAL_size_t(PID_LOG_RECORD_LEN, n);
+    TEST_ASSERT_EQUAL_HEX32(0u, rd_u32le(buf + 12)); // status clear when not saturated
+    // guards: null buf, capacity too small -> 0.
+    TEST_ASSERT_EQUAL_size_t(0, pid_log_record(nullptr, sizeof(buf), 0.0f, 0.0f, 0.0f, false));
+    TEST_ASSERT_EQUAL_size_t(0, pid_log_record(buf, PID_LOG_RECORD_LEN - 1, 0.0f, 0.0f, 0.0f, false));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -171,5 +298,10 @@ int main()
     RUN_TEST(test_batched_update);
     RUN_TEST(test_fixed_rate_matches);
     RUN_TEST(test_control_primitives);
+    RUN_TEST(test_setter_null_guards);
+    RUN_TEST(test_integral_limits_take_effect);
+    RUN_TEST(test_pid_update_n_null_guards);
+    RUN_TEST(test_pid_log_header_bytes);
+    RUN_TEST(test_pid_log_record_bytes);
     return UNITY_END();
 }

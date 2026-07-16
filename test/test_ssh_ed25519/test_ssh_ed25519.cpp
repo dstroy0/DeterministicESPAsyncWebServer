@@ -260,6 +260,55 @@ void test_ed25519_verify_rejects_tampering()
     TEST_ASSERT_FALSE(ssh_ed25519_verify(badpub, msg, 3, sig));
 }
 
+// Verification must reject a non-canonical scalar S >= L (RFC 8032 §5.1.7): S and S+L both satisfy the
+// group equation, so accepting an out-of-range S makes signatures malleable. An honest signature is
+// mutated to carry S = 0xFF..FF (>> L) and S = L exactly; both must be rejected before any point math.
+void test_ed25519_verify_rejects_noncanonical_s()
+{
+    uint8_t seed[32], pub[32], sig[64], msg[3] = {'a', 'b', 'c'};
+    fromhex("4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb", seed, 32);
+    ssh_ed25519_pubkey(pub, seed);
+    ssh_ed25519_sign(sig, msg, 3, seed);
+    TEST_ASSERT_TRUE(ssh_ed25519_verify(pub, msg, 3, sig)); // sanity: the honest signature verifies
+
+    // S = 0xFF..FF is far above the group order L (~2^252): non-canonical -> reject.
+    uint8_t bad[64];
+    memcpy(bad, sig, 64);
+    memset(bad + 32, 0xFF, 32);
+    TEST_ASSERT_FALSE(ssh_ed25519_verify(pub, msg, 3, bad));
+
+    // S == L (the group order, little-endian) is also out of range (canonical requires S < L).
+    static const uint8_t L_le[32] = {0xed, 0xd3, 0xf5, 0x5c, 0x1a, 0x63, 0x12, 0x58, 0xd6, 0x9c, 0xf7,
+                                     0xa2, 0xde, 0xf9, 0xde, 0x14, 0,    0,    0,    0,    0,    0,
+                                     0,    0,    0,    0,    0,    0,    0,    0,    0,    0x10};
+    memcpy(bad, sig, 64);
+    memcpy(bad + 32, L_le, 32);
+    TEST_ASSERT_FALSE(ssh_ed25519_verify(pub, msg, 3, bad));
+}
+
+// Verification must reject a public key that does not decode to a valid curve point (RFC 8032 §5.1.7:
+// point decompression fails when (y^2-1)/(d*y^2+1) is a non-square). We sweep candidate y encodings
+// with a canonical S (a real signature, so verification reaches the point-decode step) but a mismatched
+// message so no candidate can ever verify. About half of all y are non-square (invalid points), so the
+// sweep drives the "invalid A" reject path; every candidate must be rejected.
+void test_ed25519_verify_rejects_invalid_pubkey_point()
+{
+    uint8_t seed[32], sig[64];
+    fromhex("4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb", seed, 32);
+    uint8_t realmsg[3] = {'a', 'b', 'c'};
+    ssh_ed25519_sign(sig, realmsg, 3, seed); // canonical S -> verify() reaches point decode
+
+    uint8_t wrongmsg[3] = {'x', 'y', 'z'}; // different message: even a valid-point key cannot verify
+    for (int i = 0; i < 64; i++)
+    {
+        uint8_t cand[32];
+        memset(cand, 0, 32);
+        cand[0] = (uint8_t)i;
+        cand[16] = (uint8_t)(i * 7 + 1); // spread bits so successive candidate y are unrelated
+        TEST_ASSERT_FALSE(ssh_ed25519_verify(cand, wrongmsg, 3, sig));
+    }
+}
+
 // Sign/verify round-trip over a longer, multi-block message.
 void test_ed25519_roundtrip_long()
 {
@@ -362,6 +411,8 @@ int main()
     RUN_TEST(test_ed25519_vector_rfc8032_test2);
     RUN_TEST(test_ed25519_vector_zero_seed);
     RUN_TEST(test_ed25519_verify_rejects_tampering);
+    RUN_TEST(test_ed25519_verify_rejects_noncanonical_s);
+    RUN_TEST(test_ed25519_verify_rejects_invalid_pubkey_point);
     RUN_TEST(test_ed25519_roundtrip_long);
     RUN_TEST(test_gf_mul_s16_model_matches_scalar);
     return UNITY_END();

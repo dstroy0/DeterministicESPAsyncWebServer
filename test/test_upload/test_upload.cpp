@@ -105,11 +105,94 @@ void test_empty_body_not_streamed()
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "400"));
 }
 
+// A body request whose method is not POST: the stream-begin hook runs (there is a body) but rejects,
+// so nothing is opened or written.
+void test_non_post_body_rejected_by_begin()
+{
+    detws_upload_begin(server, "/upload", g_fs, "/dest.bin");
+    char req[128];
+    int hn = snprintf(req, sizeof(req), "PUT /upload HTTP/1.1\r\nContent-Length: 4\r\n\r\ndata");
+    push_bytes(0, req, (size_t)hn);
+    http_parse(0);
+    server.handle();
+    TEST_ASSERT_EQUAL_UINT(0, fs::mock_fs_written()); // begin rejected the non-POST -> no file write
+}
+
+// A POST with a body to a different path: the begin hook rejects on the path mismatch.
+void test_wrong_path_rejected_by_begin()
+{
+    detws_upload_begin(server, "/upload", g_fs, "/dest.bin");
+    char req[128];
+    int hn = snprintf(req, sizeof(req), "POST /nope HTTP/1.1\r\nContent-Length: 4\r\n\r\ndata");
+    push_bytes(0, req, (size_t)hn);
+    http_parse(0);
+    server.handle();
+    TEST_ASSERT_EQUAL_UINT(0, fs::mock_fs_written());
+}
+
+// The destination file cannot be opened: begin flags an error, the body is still consumed, and the
+// route handler replies 500.
+void test_open_failure_replies_500()
+{
+    detws_upload_begin(server, "/upload", g_fs, "/dest.bin");
+    fs::_mock_open_fail_path() = "/dest.bin"; // FS::open() returns an invalid File for this path
+    char req[128];
+    int hn = snprintf(req, sizeof(req), "POST /upload HTTP/1.1\r\nContent-Length: 5\r\n\r\nhello");
+    push_bytes(0, req, (size_t)hn);
+    http_parse(0);
+    server.handle();
+    TEST_ASSERT_EQUAL_UINT(0, fs::mock_fs_written()); // open failed -> nothing written
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "500"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "upload failed"));
+}
+
+// No destination path configured: begin skips the open (fs && dest is false), so the upload reports 500.
+void test_null_dest_replies_500()
+{
+    detws_upload_begin(server, "/upload", g_fs, nullptr);
+    char req[128];
+    int hn = snprintf(req, sizeof(req), "POST /upload HTTP/1.1\r\nContent-Length: 5\r\n\r\nhello");
+    push_bytes(0, req, (size_t)hn);
+    http_parse(0);
+    server.handle();
+    TEST_ASSERT_EQUAL_UINT(0, fs::mock_fs_written());
+    TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "500"));
+}
+
+// A short write mid-stream: the mock write-capture buffer is pre-filled so the first chunk write is
+// short, which flags the error and makes the handler reply 500.
+void test_write_failure_replies_500()
+{
+    detws_upload_begin(server, "/upload", g_fs, "/dest.bin");
+    fs::_mock_wlen() = 8192 - 32; // only 32 bytes of write capacity left -> a 64-byte chunk is short
+
+    char body[128];
+    for (int i = 0; i < (int)sizeof(body); i++)
+        body[i] = (char)('A' + (i % 26));
+    char req[128];
+    int hn = snprintf(req, sizeof(req), "POST /upload HTTP/1.1\r\nContent-Length: 128\r\n\r\n");
+    push_bytes(0, req, (size_t)hn);
+    push_bytes(0, body, sizeof(body));
+    http_parse(0);
+    server.handle();
+
+    TEST_ASSERT_EQUAL_UINT(0, detws_upload_last_size()); // no full chunk landed before the short write
+    const char *out = tcp_captured();
+    TEST_ASSERT_NOT_NULL(strstr(out, "500"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "upload failed"));
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_upload_streams_body_to_file);
     RUN_TEST(test_small_body_single_chunk);
     RUN_TEST(test_empty_body_not_streamed);
+    RUN_TEST(test_non_post_body_rejected_by_begin);
+    RUN_TEST(test_wrong_path_rejected_by_begin);
+    RUN_TEST(test_open_failure_replies_500);
+    RUN_TEST(test_null_dest_replies_500);
+    RUN_TEST(test_write_failure_replies_500);
     return UNITY_END();
 }

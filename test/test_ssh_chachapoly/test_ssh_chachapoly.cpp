@@ -122,6 +122,32 @@ void test_chachapoly_tamper_rejected()
     TEST_ASSERT_TRUE(ssh_chachapoly_decrypt(key, 0, rt, ct, payload_len));
 }
 
+// A zero-length payload (payload_len == 0): the AEAD still authenticates the 4-byte length field. The
+// encrypt/decrypt round-trip succeeds, the length decodes to 0, and a tampered tag is still rejected.
+void test_chachapoly_empty_payload()
+{
+    uint8_t key[64];
+    for (int i = 0; i < 64; i++)
+        key[i] = (uint8_t)(i * 5 + 9);
+    const uint32_t seqnr = 7;
+    uint8_t pt[4] = {0, 0, 0, 0}; // length field = 0, no payload
+    uint8_t ct[4 + 16];           // encrypted length (4) + tag (16), no payload bytes
+    ssh_chachapoly_encrypt(key, seqnr, ct, pt, 0);
+
+    // The length field decodes to 0.
+    uint8_t enc_len[4] = {ct[0], ct[1], ct[2], ct[3]};
+    TEST_ASSERT_EQUAL_UINT32(0, ssh_chachapoly_get_length(key, seqnr, enc_len));
+
+    // Verify + decrypt recovers the (empty-payload) length field.
+    uint8_t rt[4];
+    TEST_ASSERT_TRUE(ssh_chachapoly_decrypt(key, seqnr, rt, ct, 0));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(pt, rt, 4);
+
+    // Flip a tag byte -> reject even with an empty payload.
+    ct[4] ^= 0x01;
+    TEST_ASSERT_FALSE(ssh_chachapoly_decrypt(key, seqnr, rt, ct, 0));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -129,5 +155,6 @@ int main()
     RUN_TEST(test_poly1305_rfc8439);
     RUN_TEST(test_chachapoly_roundtrip);
     RUN_TEST(test_chachapoly_tamper_rejected);
+    RUN_TEST(test_chachapoly_empty_payload);
     return UNITY_END();
 }

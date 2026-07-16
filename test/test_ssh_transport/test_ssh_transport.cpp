@@ -1354,6 +1354,102 @@ void test_ssh_transport_more_guards()
     TEST_ASSERT_EQUAL_INT(-1, ssh_kexdh_handle(0, wrong_len, sizeof(wrong_len), reply, &rlen, sizeof(reply)));
 }
 
+// aes256-gcm@openssh.com key derivation (RFC 5647 + RFC 4253 §7.2): ssh_dh_derive_keys_sid installs a
+// per-direction AES-256-GCM context (256-bit key from label 'C'/'D', 96-bit initial IV = first 12
+// bytes of label 'A'/'B'). Verified byte-exact: independently deriving the key + IV and sealing the
+// same block must produce the same ciphertext+tag as the installed context, proving the GCM branch
+// derived the right material into both directions.
+void test_dh_derive_keys_gcm_installs()
+{
+    ssh_keymat_wipe(0);
+    uint8_t K[256];
+    uint8_t H[SSH_SHA256_DIGEST_LEN];
+    uint8_t sid[SSH_SHA256_DIGEST_LEN];
+    memset(K, 0, sizeof(K));
+    K[0] = 0x11; // nonzero shared secret, MSB set -> mpint pad path
+    K[255] = 0x22;
+    for (int j = 0; j < SSH_SHA256_DIGEST_LEN; j++)
+    {
+        H[j] = (uint8_t)(0x40 + j);
+        sid[j] = (uint8_t)(0x90 + j);
+    }
+
+    ssh_dh_derive_keys_sid(0, K, H, sid, SSH_CIPHER_AES256GCM, SSH_MAC_HMAC_SHA256);
+    TEST_ASSERT_TRUE(ssh_keys[0].active);
+    TEST_ASSERT_EQUAL_UINT8(SSH_CIPHER_AES256GCM, ssh_keys[0].cipher_mode);
+
+    // Independently derive the C->S key ('C') + IV ('A') and the S->C key ('D') + IV ('B').
+    uint8_t iv_c[SSH_SHA256_DIGEST_LEN];
+    uint8_t iv_s[SSH_SHA256_DIGEST_LEN];
+    uint8_t key_c[SSH_SHA256_DIGEST_LEN];
+    uint8_t key_s[SSH_SHA256_DIGEST_LEN];
+    ssh_kdf_derive(K, H, sid, 'A', iv_c, SSH_SHA256_DIGEST_LEN);
+    ssh_kdf_derive(K, H, sid, 'B', iv_s, SSH_SHA256_DIGEST_LEN);
+    ssh_kdf_derive(K, H, sid, 'C', key_c, SSH_SHA256_DIGEST_LEN);
+    ssh_kdf_derive(K, H, sid, 'D', key_s, SSH_SHA256_DIGEST_LEN);
+
+    SshAesGcmCtx ref_c;
+    SshAesGcmCtx ref_s;
+    ssh_aesgcm_init(&ref_c, key_c, iv_c); // ssh_aesgcm_init reads the first 12 bytes as the IV
+    ssh_aesgcm_init(&ref_s, key_s, iv_s);
+
+    uint8_t pt[16];
+    for (int j = 0; j < 16; j++)
+        pt[j] = (uint8_t)(j + 1);
+    uint8_t aad[4] = {0, 0, 0, 16};
+    uint8_t seal_ref[16 + SSH_AESGCM_TAG_LEN];
+    uint8_t seal_km[16 + SSH_AESGCM_TAG_LEN];
+
+    ssh_aesgcm_seal(&ref_c, aad, sizeof(aad), pt, sizeof(pt), seal_ref);
+    ssh_aesgcm_seal(&ssh_keys[0].gcm_c2s, aad, sizeof(aad), pt, sizeof(pt), seal_km);
+    TEST_ASSERT_EQUAL_MEMORY(seal_ref, seal_km, sizeof(seal_ref)); // C->S key + IV byte-correct
+
+    ssh_aesgcm_seal(&ref_s, aad, sizeof(aad), pt, sizeof(pt), seal_ref);
+    ssh_aesgcm_seal(&ssh_keys[0].gcm_s2c, aad, sizeof(aad), pt, sizeof(pt), seal_km);
+    TEST_ASSERT_EQUAL_MEMORY(seal_ref, seal_km, sizeof(seal_ref)); // S->C key + IV byte-correct
+
+    ssh_keymat_wipe(0);
+}
+
+// Hybrid KEX (mlkem768x25519-sha256): K is hashed as a plain 32-byte SSH string (the last 32 octets of
+// the K buffer), NOT as a canonical mpint. ssh_kdf_derive(..., k_is_string=true) must match an
+// independent string-encoded computation, and must differ from the mpint encoding of the same buffer.
+void test_kdf_string_k_hybrid()
+{
+    uint8_t K[256];
+    uint8_t H[SSH_SHA256_DIGEST_LEN];
+    uint8_t sid[SSH_SHA256_DIGEST_LEN];
+    for (int i = 0; i < 256; i++)
+        K[i] = (uint8_t)(i * 11 + 3);
+    for (int i = 0; i < SSH_SHA256_DIGEST_LEN; i++)
+    {
+        H[i] = (uint8_t)(0x20 + i);
+        sid[i] = (uint8_t)(0x70 + i);
+    }
+
+    uint8_t got[SSH_SHA256_DIGEST_LEN];
+    ssh_kdf_derive(K, H, sid, 'C', got, SSH_SHA256_DIGEST_LEN, true); // K encoded as a 32-byte string
+
+    // Independent: K1 = SHA256( string(K[224:256]) || H || 'C' || sid ), string = 4-byte len(32) || bytes.
+    uint8_t len_be[4] = {0, 0, 0, 32};
+    SshSha256Ctx c;
+    ssh_sha256_init(&c);
+    ssh_sha256_update(&c, len_be, 4);
+    ssh_sha256_update(&c, K + (256 - 32), 32);
+    ssh_sha256_update(&c, H, SSH_SHA256_DIGEST_LEN);
+    uint8_t lbl = 'C';
+    ssh_sha256_update(&c, &lbl, 1);
+    ssh_sha256_update(&c, sid, SSH_SHA256_DIGEST_LEN);
+    uint8_t expected[SSH_SHA256_DIGEST_LEN];
+    ssh_sha256_final(&c, expected);
+    TEST_ASSERT_EQUAL_MEMORY(expected, got, SSH_SHA256_DIGEST_LEN);
+
+    // The mpint encoding of the same buffer yields a different key (string != mpint encoding).
+    uint8_t as_mpint[SSH_SHA256_DIGEST_LEN];
+    ssh_kdf_derive(K, H, sid, 'C', as_mpint, SSH_SHA256_DIGEST_LEN, false);
+    TEST_ASSERT_NOT_EQUAL(0, memcmp(got, as_mpint, SSH_SHA256_DIGEST_LEN));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -1402,5 +1498,7 @@ int main()
     RUN_TEST(test_kdf_edge_paths_and_slot_guards);
     RUN_TEST(test_kexinit_parse_truncation_points);
     RUN_TEST(test_ssh_transport_more_guards);
+    RUN_TEST(test_dh_derive_keys_gcm_installs);
+    RUN_TEST(test_kdf_string_k_hybrid);
     return UNITY_END();
 }

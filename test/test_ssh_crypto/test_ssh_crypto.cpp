@@ -223,6 +223,38 @@ static void test_hmac_sha512_streaming(void)
     TEST_ASSERT_EQUAL_MEMORY(expected, got, 64);
 }
 
+// RFC 4231 Test Case 6: a 131-byte key exceeds the 64-byte SHA-256 block, so build_key_block()
+// pre-hashes it (RFC 2104 §2) instead of zero-padding - the key-length branch SSH-derived 32-byte
+// keys never take.
+static void test_hmac_sha256_tc6_large_key(void)
+{
+    uint8_t key[131];
+    memset(key, 0xaa, sizeof(key));
+    const char *data = "Test Using Larger Than Block-Size Key - Hash Key First";
+    uint8_t got[32];
+    ssh_hmac_sha256(key, sizeof(key), (const uint8_t *)data, strlen(data), got);
+    uint8_t expected[32];
+    hex_to_bytes(expected, "60e431591ee0b67f0d8a26aacbf5b77f8e0bc6213728c5140546040f0ee37f54", 32);
+    TEST_ASSERT_EQUAL_MEMORY(expected, got, 32);
+}
+
+// RFC 4231 Test Case 6 for SHA-512: a 131-byte key exceeds the 128-byte SHA-512 block and is
+// pre-hashed (exercises the >128-byte key-length branch of the SHA-512 build_key_block).
+static void test_hmac_sha512_tc6_large_key(void)
+{
+    uint8_t key[131];
+    memset(key, 0xaa, sizeof(key));
+    const char *data = "Test Using Larger Than Block-Size Key - Hash Key First";
+    uint8_t got[64];
+    ssh_hmac_sha512(key, sizeof(key), (const uint8_t *)data, strlen(data), got);
+    uint8_t expected[64];
+    hex_to_bytes(expected,
+                 "80b24263c7c1a3ebb71493c1dd7be8b49b46d1f41b4aeec1121b013783f8f352"
+                 "6b56d037e05f2598bd0fd2215d6a1e5295e64f73f63f0aec8b915a985d786598",
+                 64);
+    TEST_ASSERT_EQUAL_MEMORY(expected, got, 64);
+}
+
 // ============================================================================
 // AES-256-CTR tests (NIST SP 800-38A, F.5.5 + F.5.6)
 // ============================================================================
@@ -1565,9 +1597,11 @@ int main(void)
     RUN_TEST(test_hmac_sha256_tc2);
     RUN_TEST(test_hmac_sha256_tc3);
     RUN_TEST(test_hmac_sha256_streaming);
+    RUN_TEST(test_hmac_sha256_tc6_large_key);
     RUN_TEST(test_hmac_sha512_tc1);
     RUN_TEST(test_hmac_sha512_tc2);
     RUN_TEST(test_hmac_sha512_streaming);
+    RUN_TEST(test_hmac_sha512_tc6_large_key);
 
     // AES-256-CTR
     RUN_TEST(test_aes256ctr_encrypt);

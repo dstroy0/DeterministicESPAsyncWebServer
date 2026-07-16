@@ -232,6 +232,39 @@ void test_find_early_stop(void)
     TEST_ASSERT_EQUAL_INT(1, once.seen);
 }
 
+// A document missing the queried field never matches (json_get_* returns false), for every field kind.
+void test_find_field_absent(void)
+{
+    fresh();
+    put_doc("a", "{\"name\":\"x\",\"age\":5,\"on\":true}");
+    put_doc("b", "{\"other\":\"y\"}"); // lacks name / age / on
+
+    Collected cs = {};
+    TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_str(&g_ds, "name", "x", collect, &cs)); // "b" has no name
+    TEST_ASSERT_TRUE(has_id(&cs, "a"));
+    TEST_ASSERT_FALSE(has_id(&cs, "b"));
+
+    Collected ci = {};
+    TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_int(&g_ds, "age", 5, collect, &ci)); // "b" has no age
+    TEST_ASSERT_TRUE(has_id(&ci, "a"));
+
+    Collected cb = {};
+    TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_bool(&g_ds, "on", true, collect, &cb)); // "b" has no on
+    TEST_ASSERT_TRUE(has_id(&cb, "a"));
+}
+
+// find with a null callback just counts the matches (the per-match callback branch is skipped).
+void test_find_count_only_null_cb(void)
+{
+    fresh();
+    put_doc("u1", "{\"grp\":\"x\"}");
+    put_doc("u2", "{\"grp\":\"x\"}");
+    put_doc("u3", "{\"grp\":\"y\"}");
+    TEST_ASSERT_EQUAL_UINT32(2, detws_docstore_find_str(&g_ds, "grp", "x", nullptr, nullptr));
+    TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_str(&g_ds, "grp", "y", nullptr, nullptr));
+    TEST_ASSERT_EQUAL_UINT32(0, detws_docstore_find_str(&g_ds, "grp", "z", nullptr, nullptr));
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -240,5 +273,7 @@ int main(void)
     RUN_TEST(test_find_bool);
     RUN_TEST(test_persist_and_query_across_reboot);
     RUN_TEST(test_find_early_stop);
+    RUN_TEST(test_find_field_absent);
+    RUN_TEST(test_find_count_only_null_cb);
     return UNITY_END();
 }

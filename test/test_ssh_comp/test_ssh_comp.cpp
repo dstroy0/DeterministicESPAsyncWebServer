@@ -150,6 +150,53 @@ void test_packet_compress_scratch_exhausted()
     scratch_reset();
 }
 
+// Every entry point rejects an out-of-range slot (the i >= MAX_SSH_CONNS guard branch), and a valid
+// but inactive slot cannot compress.
+void test_comp_slot_guards()
+{
+    ssh_comp_reset(MAX_SSH_CONNS); // out-of-range: no-op, no crash
+    ssh_comp_set_s2c(MAX_SSH_CONNS, SshCompAlg::SSH_COMP_ZLIB);
+    ssh_comp_on_newkeys(MAX_SSH_CONNS);                    // out-of-range: no-op
+    ssh_comp_on_auth_success(MAX_SSH_CONNS);               // out-of-range: no-op
+    TEST_ASSERT_FALSE(ssh_comp_s2c_active(MAX_SSH_CONNS)); // out-of-range slot is never active
+
+    uint8_t src[8] = {0};
+    uint8_t dst[64];
+    size_t out_len = 0;
+    TEST_ASSERT_EQUAL_INT(-1, ssh_comp_s2c(MAX_SSH_CONNS, src, sizeof(src), dst, sizeof(dst), &out_len));
+    ssh_comp_reset(0); // slot 0 valid but no stream started
+    TEST_ASSERT_FALSE(ssh_comp_s2c_active(0));
+    TEST_ASSERT_EQUAL_INT(-1, ssh_comp_s2c(0, src, sizeof(src), dst, sizeof(dst), &out_len)); // inactive slot
+}
+
+// Activation is idempotent: a second NEWKEYS (zlib) or a second USERAUTH_SUCCESS (delayed) must not
+// restart the stream - it drives the `already active` side of the start guard. The wrong event for a
+// given algorithm is also a no-op.
+void test_comp_activation_idempotent()
+{
+    // zlib: NEWKEYS starts it; a second NEWKEYS is a no-op (s2c_active already true), and USERAUTH is
+    // the wrong event so it does nothing.
+    ssh_comp_reset(0);
+    ssh_comp_set_s2c(0, SshCompAlg::SSH_COMP_ZLIB);
+    ssh_comp_on_newkeys(0);
+    TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
+    ssh_comp_on_newkeys(0); // idempotent
+    TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
+    ssh_comp_on_auth_success(0); // wrong event for zlib
+    TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
+
+    // zlib@openssh.com (delayed): USERAUTH_SUCCESS starts it; a second one is idempotent, and NEWKEYS
+    // is the wrong event.
+    ssh_comp_reset(0);
+    ssh_comp_set_s2c(0, SshCompAlg::SSH_COMP_ZLIB_DELAYED);
+    ssh_comp_on_newkeys(0); // wrong event for delayed: must NOT start
+    TEST_ASSERT_FALSE(ssh_comp_s2c_active(0));
+    ssh_comp_on_auth_success(0);
+    TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
+    ssh_comp_on_auth_success(0); // idempotent
+    TEST_ASSERT_TRUE(ssh_comp_s2c_active(0));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -159,5 +206,7 @@ int main()
     RUN_TEST(test_packet_layer_stream_roundtrip);
     RUN_TEST(test_packet_layer_window_slide);
     RUN_TEST(test_packet_compress_scratch_exhausted);
+    RUN_TEST(test_comp_slot_guards);
+    RUN_TEST(test_comp_activation_idempotent);
     return UNITY_END();
 }

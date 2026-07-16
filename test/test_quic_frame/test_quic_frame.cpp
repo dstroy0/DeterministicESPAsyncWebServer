@@ -225,17 +225,109 @@ void test_frame_edge_guards()
     TEST_ASSERT_EQUAL_INT(0, (int)quic_build_stream(b, 3, 0, 0, d, 3, false));
 }
 
+// An ACK (with ECN) carrying two ACK Ranges: exercises the range-skip loop across more than one
+// iteration and the three ECN-count skips (the single-range test_ack iterates them at most once).
+void test_ack_multi_range()
+{
+    // type 0x03, largest 60, delay 5, range_count 2, first_range 3, [gap 2,len 4][gap 1,len 1], ECN 1/2/0.
+    const uint8_t ecn2[12] = {0x03, 60, 5, 2, 3, 2, 4, 1, 1, 1, 2, 0};
+    QuicFrame f;
+    TEST_ASSERT_EQUAL_INT(12, (int)quic_frame_parse(ecn2, sizeof ecn2, &f));
+    TEST_ASSERT_EQUAL_UINT(QuicFrameType::QUIC_FT_ACK_ECN, (unsigned)f.type);
+    TEST_ASSERT_TRUE(f.ack.largest == 60 && f.ack.range_count == 2 && f.ack.first_range == 3);
+}
+
+// Frames the minimal server does not act on but MUST still parse to skip (RFC 9000 sec 12.4): each
+// wire-shape group, a valid instance (whole frame consumed) plus a truncation that must be rejected.
+void test_skip_and_extra_frames()
+{
+    QuicFrame f;
+
+    // One-varint frames: type followed by a single varint.
+    const uint8_t one_varint[] = {
+        QuicFrameType::QUIC_FT_MAX_STREAMS_BIDI,    QuicFrameType::QUIC_FT_MAX_STREAMS_UNI,
+        QuicFrameType::QUIC_FT_DATA_BLOCKED,        QuicFrameType::QUIC_FT_STREAMS_BLOCKED_BIDI,
+        QuicFrameType::QUIC_FT_STREAMS_BLOCKED_UNI, QuicFrameType::QUIC_FT_RETIRE_CONNECTION_ID};
+    for (size_t i = 0; i < sizeof one_varint; i++)
+    {
+        const uint8_t ok[2] = {one_varint[i], 0x0a};
+        TEST_ASSERT_EQUAL_INT(2, (int)quic_frame_parse(ok, sizeof ok, &f));
+        TEST_ASSERT_EQUAL_UINT(one_varint[i], (unsigned)f.type);
+        const uint8_t trunc[1] = {one_varint[i]}; // the lone varint is absent
+        TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(trunc, sizeof trunc, &f));
+    }
+
+    // Two-varint frames.
+    const uint8_t two_varint[] = {QuicFrameType::QUIC_FT_STOP_SENDING, QuicFrameType::QUIC_FT_MAX_STREAM_DATA,
+                                  QuicFrameType::QUIC_FT_STREAM_DATA_BLOCKED};
+    for (size_t i = 0; i < sizeof two_varint; i++)
+    {
+        const uint8_t ok[3] = {two_varint[i], 0x01, 0x02};
+        TEST_ASSERT_EQUAL_INT(3, (int)quic_frame_parse(ok, sizeof ok, &f));
+        TEST_ASSERT_EQUAL_UINT(two_varint[i], (unsigned)f.type);
+        const uint8_t trunc[2] = {two_varint[i], 0x01}; // only the first varint present
+        TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(trunc, sizeof trunc, &f));
+    }
+
+    // RESET_STREAM: three varints (stream id, app error code, final size).
+    const uint8_t reset[4] = {QuicFrameType::QUIC_FT_RESET_STREAM, 0x01, 0x02, 0x03};
+    TEST_ASSERT_EQUAL_INT(4, (int)quic_frame_parse(reset, sizeof reset, &f));
+    TEST_ASSERT_EQUAL_UINT(QuicFrameType::QUIC_FT_RESET_STREAM, (unsigned)f.type);
+    const uint8_t reset_trunc[3] = {QuicFrameType::QUIC_FT_RESET_STREAM, 0x01, 0x02}; // third varint absent
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(reset_trunc, sizeof reset_trunc, &f));
+
+    // NEW_TOKEN: token length + token bytes.
+    const uint8_t new_token[5] = {QuicFrameType::QUIC_FT_NEW_TOKEN, 0x03, 0xAA, 0xBB, 0xCC};
+    TEST_ASSERT_EQUAL_INT(5, (int)quic_frame_parse(new_token, sizeof new_token, &f));
+    TEST_ASSERT_EQUAL_UINT(QuicFrameType::QUIC_FT_NEW_TOKEN, (unsigned)f.type);
+    const uint8_t new_token_no_len[1] = {QuicFrameType::QUIC_FT_NEW_TOKEN}; // length varint absent
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(new_token_no_len, sizeof new_token_no_len, &f));
+    const uint8_t new_token_over[3] = {QuicFrameType::QUIC_FT_NEW_TOKEN, 0x05, 0xAA}; // token len 5 > remaining
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(new_token_over, sizeof new_token_over, &f));
+
+    // NEW_CONNECTION_ID: seq, retire-prior-to, 1-byte CID length, CID, 16-byte stateless reset token.
+    uint8_t ncid[24];
+    memset(ncid, 0, sizeof ncid);
+    ncid[0] = QuicFrameType::QUIC_FT_NEW_CONNECTION_ID;
+    ncid[1] = 0x01; // sequence number
+    ncid[2] = 0x00; // retire prior to
+    ncid[3] = 0x04; // CID length 4, then 4 CID + 16 token bytes = total 24
+    TEST_ASSERT_EQUAL_INT(24, (int)quic_frame_parse(ncid, sizeof ncid, &f));
+    TEST_ASSERT_EQUAL_UINT(QuicFrameType::QUIC_FT_NEW_CONNECTION_ID, (unsigned)f.type);
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(ncid, sizeof ncid - 1, &f)); // one byte short of CID + token
+    const uint8_t ncid_hdr_only[3] = {QuicFrameType::QUIC_FT_NEW_CONNECTION_ID, 0x01, 0x00}; // no CID length byte
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(ncid_hdr_only, sizeof ncid_hdr_only, &f));
+
+    // PATH_CHALLENGE / PATH_RESPONSE: 8 opaque bytes.
+    uint8_t path[9];
+    memset(path, 0x11, sizeof path);
+    path[0] = QuicFrameType::QUIC_FT_PATH_CHALLENGE;
+    TEST_ASSERT_EQUAL_INT(9, (int)quic_frame_parse(path, sizeof path, &f));
+    TEST_ASSERT_EQUAL_UINT(QuicFrameType::QUIC_FT_PATH_CHALLENGE, (unsigned)f.type);
+    path[0] = QuicFrameType::QUIC_FT_PATH_RESPONSE;
+    TEST_ASSERT_EQUAL_INT(9, (int)quic_frame_parse(path, sizeof path, &f));
+    TEST_ASSERT_EQUAL_UINT(QuicFrameType::QUIC_FT_PATH_RESPONSE, (unsigned)f.type);
+    const uint8_t path_trunc[4] = {QuicFrameType::QUIC_FT_PATH_CHALLENGE, 0, 0, 0}; // fewer than 8 opaque bytes
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(path_trunc, sizeof path_trunc, &f));
+
+    // A genuinely unknown / reserved frame type falls through to the final reject.
+    const uint8_t unknown[1] = {0x1f};
+    TEST_ASSERT_EQUAL_INT(0, (int)quic_frame_parse(unknown, sizeof unknown, &f));
+}
+
 int main()
 {
     UNITY_BEGIN();
     RUN_TEST(test_frame_edge_guards);
     RUN_TEST(test_simple_frames);
     RUN_TEST(test_ack);
+    RUN_TEST(test_ack_multi_range);
     RUN_TEST(test_crypto);
     RUN_TEST(test_stream);
     RUN_TEST(test_max_data_and_close);
     RUN_TEST(test_sequence_and_truncation);
     RUN_TEST(test_builder_overflow);
     RUN_TEST(test_parse_errors);
+    RUN_TEST(test_skip_and_extra_frames);
     return UNITY_END();
 }

@@ -100,6 +100,126 @@ void test_parse_rejects()
     TEST_ASSERT_FALSE(spnego_parse_response(nort, m, &rt, &rl));
 }
 
+// A 300-byte token forces the two-byte definite length form (0x82) in wr_tag_len and der_len_size
+// (spnego.cpp:40,42-44) on the way out, and the matching long-form der_read on the way back.
+void test_wrap_len_2byte()
+{
+    uint8_t tok[300];
+    for (int i = 0; i < (int)sizeof(tok); i++)
+        tok[i] = (uint8_t)(i * 5 + 2);
+    uint8_t out[512];
+    size_t n = spnego_wrap_authenticate(tok, sizeof(tok), out, sizeof(out));
+    TEST_ASSERT_GREATER_THAN_size_t(sizeof(tok), n);
+
+    const uint8_t *rt = nullptr;
+    size_t rl = 0;
+    TEST_ASSERT_TRUE(spnego_parse_response(out, n, &rt, &rl));
+    TEST_ASSERT_EQUAL_size_t(sizeof(tok), rl);
+    TEST_ASSERT_EQUAL_MEMORY(tok, rt, sizeof(tok));
+}
+
+// A >64 KB token forces the three-byte definite length form (0x83) in wr_tag_len / der_len_size
+// (spnego.cpp:48-51) and the 3-byte long-form der_read on parse.
+void test_wrap_len_3byte()
+{
+    static uint8_t tok[65540];
+    static uint8_t out[65600];
+    for (size_t i = 0; i < sizeof(tok); i++)
+        tok[i] = (uint8_t)(i * 7 + 1);
+    size_t n = spnego_wrap_authenticate(tok, sizeof(tok), out, sizeof(out));
+    TEST_ASSERT_GREATER_THAN_size_t(sizeof(tok), n);
+
+    const uint8_t *rt = nullptr;
+    size_t rl = 0;
+    TEST_ASSERT_TRUE(spnego_parse_response(out, n, &rt, &rl));
+    TEST_ASSERT_EQUAL_size_t(sizeof(tok), rl);
+    TEST_ASSERT_EQUAL_MEMORY(tok, rt, sizeof(tok));
+}
+
+// spnego_wrap_negotiate fails closed on a null token (spnego.cpp:84) and a null out buffer
+// (the !out side of the overflow guard, spnego.cpp:93).
+void test_wrap_negotiate_guards()
+{
+    const uint8_t tok[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    uint8_t out[64];
+    TEST_ASSERT_EQUAL_size_t(0, spnego_wrap_negotiate(nullptr, sizeof(tok), out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, spnego_wrap_negotiate(tok, sizeof(tok), nullptr, sizeof(out)));
+}
+
+// spnego_wrap_authenticate fails closed on a null token (spnego.cpp:116), on overflow
+// (total > cap, spnego.cpp:122), and on a null out buffer (the !out side, spnego.cpp:121).
+void test_wrap_authenticate_guards()
+{
+    uint8_t tok[200];
+    memset(tok, 0x33, sizeof(tok));
+    uint8_t out[256];
+    TEST_ASSERT_EQUAL_size_t(0, spnego_wrap_authenticate(nullptr, sizeof(tok), out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, spnego_wrap_authenticate(tok, sizeof(tok), out, 20));
+    TEST_ASSERT_EQUAL_size_t(0, spnego_wrap_authenticate(tok, sizeof(tok), nullptr, sizeof(out)));
+}
+
+// spnego_parse_response rejects null out-params (spnego.cpp:136-137).
+void test_parse_null_args()
+{
+    const uint8_t blob[8] = {0xa1, 0x06, 0x30, 0x04, 0xa2, 0x02, 0x04, 0x00};
+    const uint8_t *rt = nullptr;
+    size_t rl = 0;
+    TEST_ASSERT_FALSE(spnego_parse_response(nullptr, sizeof(blob), &rt, &rl));
+    TEST_ASSERT_FALSE(spnego_parse_response(blob, sizeof(blob), nullptr, &rl));
+    TEST_ASSERT_FALSE(spnego_parse_response(blob, sizeof(blob), &rt, nullptr));
+}
+
+// der_read rejects a TLV whose header does not even fit the buffer (spnego.cpp:60-61).
+void test_parse_truncated_header()
+{
+    const uint8_t blob[2] = {0xa1, 0x02};
+    const uint8_t *rt = nullptr;
+    size_t rl = 0;
+    TEST_ASSERT_FALSE(spnego_parse_response(blob, 1, &rt, &rl));
+}
+
+// der_read rejects bad long-form lengths: indefinite (nb == 0), oversized (nb > 4), and a length
+// whose bytes run off the end (p + nb > len) - spnego.cpp:67-68.
+void test_parse_bad_longform_len()
+{
+    const uint8_t *rt = nullptr;
+    size_t rl = 0;
+    const uint8_t indef[2] = {0xa1, 0x80};
+    TEST_ASSERT_FALSE(spnego_parse_response(indef, sizeof(indef), &rt, &rl));
+    const uint8_t big[2] = {0xa1, 0x85};
+    TEST_ASSERT_FALSE(spnego_parse_response(big, sizeof(big), &rt, &rl));
+    const uint8_t trunc[3] = {0xa1, 0x82, 0x00};
+    TEST_ASSERT_FALSE(spnego_parse_response(trunc, sizeof(trunc), &rt, &rl));
+}
+
+// [1] wrapping something other than a SEQUENCE is rejected (spnego.cpp:148-149).
+void test_parse_inner_not_seq()
+{
+    const uint8_t blob[5] = {0xa1, 0x03, 0x04, 0x01, 0xFF};
+    const uint8_t *rt = nullptr;
+    size_t rl = 0;
+    TEST_ASSERT_FALSE(spnego_parse_response(blob, sizeof(blob), &rt, &rl));
+}
+
+// A malformed field inside the SEQUENCE (OCTET length runs off the end) fails the field walk
+// (spnego.cpp:155-156).
+void test_parse_field_malformed()
+{
+    const uint8_t blob[6] = {0xa1, 0x04, 0x30, 0x02, 0x04, 0x05};
+    const uint8_t *rt = nullptr;
+    size_t rl = 0;
+    TEST_ASSERT_FALSE(spnego_parse_response(blob, sizeof(blob), &rt, &rl));
+}
+
+// A [2] responseToken whose inner element is not an OCTET STRING is rejected (spnego.cpp:163-164).
+void test_parse_resptoken_not_octet()
+{
+    const uint8_t blob[9] = {0xa1, 0x07, 0x30, 0x05, 0xa2, 0x03, 0x05, 0x01, 0xFF};
+    const uint8_t *rt = nullptr;
+    size_t rl = 0;
+    TEST_ASSERT_FALSE(spnego_parse_response(blob, sizeof(blob), &rt, &rl));
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -107,5 +227,15 @@ int main()
     RUN_TEST(test_authenticate_roundtrip);
     RUN_TEST(test_parse_server_response);
     RUN_TEST(test_parse_rejects);
+    RUN_TEST(test_wrap_len_2byte);
+    RUN_TEST(test_wrap_len_3byte);
+    RUN_TEST(test_wrap_negotiate_guards);
+    RUN_TEST(test_wrap_authenticate_guards);
+    RUN_TEST(test_parse_null_args);
+    RUN_TEST(test_parse_truncated_header);
+    RUN_TEST(test_parse_bad_longform_len);
+    RUN_TEST(test_parse_inner_not_seq);
+    RUN_TEST(test_parse_field_malformed);
+    RUN_TEST(test_parse_resptoken_not_octet);
     return UNITY_END();
 }
