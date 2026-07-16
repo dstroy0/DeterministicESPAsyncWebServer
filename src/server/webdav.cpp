@@ -42,7 +42,7 @@ static DavBufCtx s_dav;
 // separator handling). Returns false on overflow.
 static bool dav_join(const char *root, const char *sub, char *out, size_t cap)
 {
-    size_t rlen = strlen(root);
+    size_t rlen = strnlen(root, MAX_PATH_LEN);
     bool root_slash = (rlen > 0 && root[rlen - 1] == '/');
     if (root_slash && sub[0] == '/')
         sub++;
@@ -176,16 +176,16 @@ static bool dav_copy_recursive(fs::FS &fsys, const char *src, const char *dst, i
 // handler and the streaming-PUT begin hook.
 static int dav_resolve_path(const Route *r, const char *reqpath, char *out, size_t cap)
 {
-    size_t plen = strlen(r->path);
+    size_t plen = strnlen(r->path, MAX_PATH_LEN);
     if (plen > 0 && r->path[plen - 1] == '*')
         plen--;
-    const char *sub = (strlen(reqpath) >= plen) ? reqpath + plen : "";
+    const char *sub = (strnlen(reqpath, MAX_PATH_LEN) >= plen) ? reqpath + plen : "";
     if (strstr(sub, ".."))
         return 403;
     const char *root = r->static_root ? r->static_root : "";
     if (!dav_join(root, sub, out, cap))
         return 414;
-    size_t fpl = strlen(out);
+    size_t fpl = strnlen(out, cap);
     if (fpl > 1 && out[fpl - 1] == '/')
         out[fpl - 1] = '\0';
     return 0;
@@ -297,7 +297,7 @@ void DetWebServer::dav(const char *url_prefix, fs::FS &file_sys, const char *fs_
     Route *r = &_routes[_route_count++];
 
     char pat[MAX_PATH_LEN];
-    size_t n = strlen(url_prefix);
+    size_t n = strnlen(url_prefix, MAX_PATH_LEN);
     if (n > 0 && url_prefix[n - 1] == '*')
         snprintf(pat, sizeof(pat), "%s", url_prefix);
     else
@@ -369,7 +369,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
     }
 
     // Mount-prefix length and FS root, used by COPY/MOVE to resolve the Destination.
-    size_t plen = strlen(r->path);
+    size_t plen = strnlen(r->path, MAX_PATH_LEN);
     if (plen > 0 && r->path[plen - 1] == '*')
         plen--;
     const char *root = r->static_root ? r->static_root : "";
@@ -493,7 +493,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
             dav_send_status(slot_id, 414, "");
             return;
         }
-        size_t dpl = strlen(dest_fs);
+        size_t dpl = strnlen(dest_fs, sizeof(dest_fs));
         if (dpl > 1 && dest_fs[dpl - 1] == '/')
             dest_fs[dpl - 1] = '\0';
 
@@ -600,7 +600,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         // Self href: the request path, with a trailing '/' for a collection.
         char self_href[MAX_PATH_LEN + 2];
         snprintf(self_href, sizeof(self_href), "%s", req->path);
-        size_t sl = strlen(self_href);
+        size_t sl = strnlen(self_href, sizeof(self_href));
         if (isdir && (sl == 0 || self_href[sl - 1] != '/'))
         {
             if (sl + 1 < sizeof(self_href))
