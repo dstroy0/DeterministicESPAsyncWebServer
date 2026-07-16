@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`99558b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99558b0a341d175bf4bd248dd0b4bb97c16b7bf3))
+- update CHANGELOG.md [skip ci] ([`797777f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/797777f3f6e932c8455c06bfcc6885a228d9a1bd))
 - update test report + coverage [skip ci] ([`4a0538a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a0538aab7cf0fdc46dbe855016b1688ada72846))
 - update CHANGELOG.md [skip ci] ([`026b12e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/026b12edb34f95033e0612f537e15582208eaddd))
 - update CHANGELOG.md [skip ci] ([`3696bc8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3696bc8d5ce29b76000b96ad166da5fb47912364))
@@ -37,6 +39,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ad33972`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad33972ce1e3dfdbebd6b021b9b8b62ef31ed555))
+- update ESP32 build footprints [skip ci] ([`d948c37`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d948c37e8cd468b936d4a6c2cf877f29f987e2fc))
 - update ESP32 build footprints [skip ci] ([`7ac09cf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ac09cf5d13bb428c69d159679374686b1c44d4d))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`0f0378f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f0378f6f730c6ffde6d5bb172989a88b45ad88f))
 - update ESP32 build footprints [skip ci] ([`01de263`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01de263ef6997867a9b3f30e2c7a36f639e408c7))
@@ -58,6 +62,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- split dtls_conn_process datagram walk (S3776 cc 54->~8) ([`7c3a3e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c3a3e9899d8f117f7382ecc5b4b16618054bd44))
 - split match_and_execute router (S3776 cc 61->~16) ([`07e13e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/07e13e364beecc8073eccecd581bf501df444d8d))
 - reduce cognitive complexity S3776 in parse_extension ([`a2809fe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a2809feca7751bf5d6117452e846f589dd302eb0))
 - reduce cognitive complexity S3776 in quic_tp_parse ([`bab1b3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bab1b3f23fdc2ca801e4fb4ef1733308c846ee32))
