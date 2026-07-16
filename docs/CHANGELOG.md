@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`4f39ece`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f39ece763705716a51a8b45a295249591b8b658))
 - update test report + coverage [skip ci] ([`f266cea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f266cea2cd89dfe444f6a120152eb4ee7f21129b))
 - update CHANGELOG.md [skip ci] ([`3751657`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37516572efb49fc47fbd45dcc72b2268f0bb2f24))
 - update test report + coverage [skip ci] ([`3f6c18a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f6c18ae1427b1d6a90907137a97d0bf31899ff5))
@@ -118,6 +119,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update ESP32 build footprints [skip ci] ([`c4a19dc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4a19dc05538245f399e594447396634b46b28cd))
 - update ESP32 build footprints [skip ci] ([`1cc3914`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1cc391495a1c8a0e31e495f9e7b78a3f6c923b0c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d893280`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d893280c13d26a915d18b15c8f2c882b088a0a65))
+
+### Features
+
+- add Industrial_ESPIDF ESP-IDF example ([`e462ac8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e462ac896da5b8e23e04c78bdb13dfc9b15a9a6c))
 
 ### Refactor
 
