@@ -409,7 +409,7 @@
     "example": "L7-Application/16.OTA",
     "flags": "-DDETWS_ENABLE_OTA=1 -DMAX_CONNS=4",
     "board": "esp32dev",
-    "flash_bytes": 757509,
+    "flash_bytes": 757605,
     "ram_bytes": 102128
   },
   "OTA_ROLLBACK": {
@@ -549,7 +549,7 @@
     "example": "L5-Session/01.SSH",
     "flags": "-DDETWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 827877,
+    "flash_bytes": 828105,
     "ram_bytes": 108644
   },
   "STATS": {
@@ -623,10 +623,10 @@
     "ram_bytes": 105988
   },
   "TLS+TLS_ARENA_SIZE": {
-    "example": "L4-Transport/03.HTTPS",
+    "example": "L6-Presentation/07.SecureWebSocket",
     "flags": "-DDETWS_ENABLE_TLS=1 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768",
     "board": "esp32dev",
-    "flash_bytes": 856653,
+    "flash_bytes": 856465,
     "ram_bytes": 105652
   },
   "TLS+TLS_RESUMPTION": {
@@ -787,7 +787,7 @@
     "example": "Foundation/03.Expert",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 754953,
+    "flash_bytes": 755049,
     "ram_bytes": 81800
   },
   "core/03.InterfaceFilter": {
@@ -843,7 +843,7 @@
     "example": "L7-Application/06.RegexRoutes",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 752537,
+    "flash_bytes": 752633,
     "ram_bytes": 81776
   },
   "core/07.ResponseHeaders": {

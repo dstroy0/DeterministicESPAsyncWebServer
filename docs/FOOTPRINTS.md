@@ -86,7 +86,7 @@ from each example's `pio ci` size report and aggregated into
 | `SMTP`                                                                                                    | L7-Application/57.SmtpAlert             | 717.4 KB (56.0%) | 59.7 KB (18.6%)  |
 | `SNMP`                                                                                                    | L7-Application/14.SNMP                  | 743.3 KB (58.1%) | 92.0 KB (28.7%)  |
 | `SNMP+SNMP_TRAP`                                                                                          | L7-Application/26.SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |
-| `SSH`                                                                                                     | L5-Session/01.SSH                       | 808.5 KB (63.2%) | 106.1 KB (33.2%) |
+| `SSH`                                                                                                     | L5-Session/01.SSH                       | 808.7 KB (63.2%) | 106.1 KB (33.2%) |
 | `STATS`                                                                                                   | L7-Application/22.Stats                 | 736.4 KB (57.5%) | 80.0 KB (25.0%)  |
 | `STATS+METRICS`                                                                                           | L7-Application/21.PrometheusMetrics     | 738.5 KB (57.7%) | 80.0 KB (25.0%)  |
 | `STATSD`                                                                                                  | L7-Application/59.StatsdMetrics         | 711.3 KB (55.6%) | 44.0 KB (13.8%)  |
@@ -97,7 +97,7 @@ from each example's `pio ci` size report and aggregated into
 | `TLS`                                                                                                     | L6-Presentation/07.SecureWebSocket      | 835.8 KB (65.3%) | 119.2 KB (37.2%) |
 | `TLS+MTLS`                                                                                                | L4-Transport/04.mTLS                    | 836.7 KB (65.4%) | 119.5 KB (37.3%) |
 | `TLS+MTLS+TLS_ARENA_SIZE`                                                                                 | L4-Transport/04.mTLS                    | 837.4 KB (65.4%) | 103.5 KB (32.3%) |
-| `TLS+TLS_ARENA_SIZE`                                                                                      | L4-Transport/03.HTTPS                   | 836.6 KB (65.4%) | 103.2 KB (32.2%) |
+| `TLS+TLS_ARENA_SIZE`                                                                                      | L6-Presentation/07.SecureWebSocket      | 836.4 KB (65.3%) | 103.2 KB (32.2%) |
 | `TLS+TLS_RESUMPTION`                                                                                      | L4-Transport/06.TlsResumption           | 836.6 KB (65.4%) | 119.3 KB (37.3%) |
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE`                                                                       | L4-Transport/06.TlsResumption           | 837.2 KB (65.4%) | 103.3 KB (32.3%) |
 | `TOTP`                                                                                                    | L7-Application/45.Totp                  | 735.7 KB (57.5%) | 79.9 KB (25.0%)  |
@@ -120,7 +120,7 @@ from each example's `pio ci` size report and aggregated into
 | `core/02.CORS`                                                                                            | L7-Application/02.CORS                  | 734.7 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/02.Json`                                                                                            | L6-Presentation/02.Json                 | 738.7 KB (57.7%) | 79.9 KB (25.0%)  |
 | `core/02.SSHCryptoSelfTest`                                                                               | L5-Session/02.SSHCryptoSelfTest         | 263.2 KB (20.6%) | 21.0 KB (6.6%)   |
-| `core/03.Expert`                                                                                          | Foundation/03.Expert                    | 737.3 KB (57.6%) | 79.9 KB (25.0%)  |
+| `core/03.Expert`                                                                                          | Foundation/03.Expert                    | 737.4 KB (57.6%) | 79.9 KB (25.0%)  |
 | `core/03.InterfaceFilter`                                                                                 | L7-Application/03.InterfaceFilter       | 736.3 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/03.Multipart`                                                                                       | L6-Presentation/03.Multipart            | 735.8 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/04.BasicAuth`                                                                                       | L6-Presentation/04.BasicAuth            | 734.8 KB (57.4%) | 79.9 KB (25.0%)  |
@@ -128,7 +128,7 @@ from each example's `pio ci` size report and aggregated into
 | `core/04.Sysadmin`                                                                                        | Foundation/04.Sysadmin                  | 748.3 KB (58.5%) | 79.9 KB (25.0%)  |
 | `core/05.DigestAuth`                                                                                      | L6-Presentation/05.DigestAuth           | 734.9 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/05.PathParams`                                                                                      | L7-Application/05.PathParams            | 735.1 KB (57.4%) | 79.9 KB (25.0%)  |
-| `core/06.RegexRoutes`                                                                                     | L7-Application/06.RegexRoutes           | 734.9 KB (57.4%) | 79.9 KB (25.0%)  |
+| `core/06.RegexRoutes`                                                                                     | L7-Application/06.RegexRoutes           | 735.0 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/07.ResponseHeaders`                                                                                 | L7-Application/07.ResponseHeaders       | 735.2 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/08.ServerSentEvents`                                                                                | L6-Presentation/08.ServerSentEvents     | 735.3 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/08.Templating`                                                                                      | L7-Application/08.Templating            | 736.4 KB (57.5%) | 79.9 KB (25.0%)  |
