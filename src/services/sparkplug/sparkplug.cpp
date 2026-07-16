@@ -36,30 +36,30 @@ size_t spb_build_topic(char *buf, size_t cap, const char *group, const char *mes
     if (!buf || !group || !message_type || !edge_node)
         return 0;
     // spBv1.0/<group>/<message_type>/<edge_node>[/<device>]
-    size_t need = 8 /*"spBv1.0/"*/ + strlen(group) + 1 + strlen(message_type) + 1 + strlen(edge_node);
+    size_t need = 8 /*"spBv1.0/"*/ + strnlen(group, cap) + 1 + strnlen(message_type, cap) + 1 + strnlen(edge_node, cap);
     if (device)
-        need += 1 + strlen(device);
+        need += 1 + strnlen(device, cap);
     if (need + 1 > cap) // + NUL
         return 0;
     size_t p = 0;
     const char *prefix = "spBv1.0/";
     memcpy(buf + p, prefix, 8);
     p += 8;
-    size_t n = strlen(group);
+    size_t n = strnlen(group, cap);
     memcpy(buf + p, group, n);
     p += n;
     buf[p++] = '/';
-    n = strlen(message_type);
+    n = strnlen(message_type, cap);
     memcpy(buf + p, message_type, n);
     p += n;
     buf[p++] = '/';
-    n = strlen(edge_node);
+    n = strnlen(edge_node, cap);
     memcpy(buf + p, edge_node, n);
     p += n;
     if (device)
     {
         buf[p++] = '/';
-        n = strlen(device);
+        n = strnlen(device, cap);
         memcpy(buf + p, device, n);
         p += n;
     }
