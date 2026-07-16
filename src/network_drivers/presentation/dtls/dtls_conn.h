@@ -218,6 +218,17 @@ const DtlsRecordKeys *dtls_conn_app_write_keys(const DtlsConn *c);
 const DtlsRecordKeys *dtls_conn_app_read_keys(const DtlsConn *c);
 
 /**
+ * @brief The server's connection id (RFC 9146 / RFC 9147 §9) for this connection, if one was negotiated.
+ *
+ * The client places this id in every record it sends, so a UDP front-end can route inbound records by it
+ * and follow the peer across an address change (NAT rebinding). Copies the id to @p out (which must hold
+ * at least @ref DTLS_CID_MAX bytes).
+ *
+ * @return the connection-id length, or 0 if no connection id was negotiated.
+ */
+size_t dtls_conn_local_cid(const DtlsConn *c, uint8_t *out);
+
+/**
  * @brief Decrypt one inbound epoch-3 application record into @p out (RFC 9147 §4).
  *
  * Only valid once established. Enforces the epoch-3 anti-replay window (§4.5.1) and that the record's

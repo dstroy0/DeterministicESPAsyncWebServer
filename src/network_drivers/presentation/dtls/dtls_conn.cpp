@@ -560,6 +560,14 @@ const DtlsRecordKeys *dtls_conn_app_read_keys(const DtlsConn *c)
     return c->ep3_ready ? &c->ep3_cli : nullptr;
 }
 
+size_t dtls_conn_local_cid(const DtlsConn *c, uint8_t *out)
+{
+    if (!c->cid_negotiated || c->local_cid_len == 0)
+        return 0;
+    memcpy(out, c->local_cid, c->local_cid_len);
+    return c->local_cid_len;
+}
+
 bool dtls_conn_open_app(DtlsConn *c, const uint8_t *rec, size_t rec_len, uint8_t *out, size_t out_cap, size_t *out_len)
 {
     if (!dtls_conn_established(c))

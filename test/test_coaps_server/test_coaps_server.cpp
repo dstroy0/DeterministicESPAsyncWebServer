@@ -153,7 +153,8 @@ static void bmem(Buf *b, const uint8_t *m, size_t k)
     b->n += k;
 }
 
-static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32])
+static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32], const uint8_t *cid = nullptr,
+                                 size_t cid_len = 0)
 {
     Buf b = {out, 0};
     b8(&b, 0x01); // client_hello
@@ -190,6 +191,13 @@ static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32])
     b16(&b, 0x001d);
     b16(&b, 0x0020);
     bmem(&b, client_pub, 32);
+    if (cid)
+    {
+        b16(&b, 0x0036); // connection_id (RFC 9146): the CID the server places in records it sends us
+        b16(&b, (uint16_t)(1 + cid_len));
+        b8(&b, (uint8_t)cid_len);
+        bmem(&b, cid, cid_len);
+    }
     uint16_t ext_len = (uint16_t)(b.n - ext_len_at - 2);
     out[ext_len_at] = (uint8_t)(ext_len >> 8);
     out[ext_len_at + 1] = (uint8_t)ext_len;
@@ -240,23 +248,58 @@ static size_t frag_to_tls(const uint8_t *payload, size_t plen, uint8_t *tls_out)
     return 4 + hh.length;
 }
 
-static size_t ct_record_len(const uint8_t *rec, size_t avail)
+static size_t ct_record_len(const uint8_t *rec, size_t avail, size_t cid_len = 0)
 {
+    size_t pre = 1 + ((rec[0] & 0x10) ? cid_len : 0);
     size_t seq_len = (rec[0] & 0x08) ? 2 : 1;
-    size_t o = 1 + seq_len + 2;
-    size_t enc = ((size_t)rec[1 + seq_len] << 8) | rec[1 + seq_len + 1];
+    size_t len_off = pre + seq_len;
+    size_t o = len_off + 2;
+    size_t enc = ((size_t)rec[len_off] << 8) | rec[len_off + 1];
     return (o + enc <= avail) ? o + enc : 0;
+}
+
+// Pull the server's connection_id (extension 0x0036, RFC 9146) out of a ServerHello.
+static size_t sh_conn_id(const uint8_t *sh, size_t len, uint8_t *cid_out)
+{
+    if (len < 44)
+        return 0;
+    size_t o = 4 + 2 + 32;
+    uint8_t sid = sh[o++];
+    o += sid;
+    o += 2 + 1;
+    if (o + 2 > len)
+        return 0;
+    size_t ext_end = o + 2 + ((sh[o] << 8) | sh[o + 1]);
+    o += 2;
+    while (o + 4 <= ext_end && ext_end <= len)
+    {
+        uint16_t et = (uint16_t)((sh[o] << 8) | sh[o + 1]);
+        uint16_t el = (uint16_t)((sh[o + 2] << 8) | sh[o + 3]);
+        o += 4;
+        if (et == 0x0036 && el >= 1)
+        {
+            size_t cl = sh[o];
+            if (1 + cl > el || o + 1 + cl > len)
+                return 0;
+            memcpy(cid_out, sh + o + 1, cl);
+            return cl;
+        }
+        o += el;
+    }
+    return 0;
 }
 
 // Complete the handshake for peer ip:port through the front-end seam and hand back the client's
 // application-traffic keys. Asserts each step so a failure pinpoints the stage.
-static void client_handshake(const char *ip, uint16_t port, DtlsRecordKeys *cli_app_write, DtlsRecordKeys *cli_app_read)
+static void client_handshake(const char *ip, uint16_t port, DtlsRecordKeys *cli_app_write, DtlsRecordKeys *cli_app_read,
+                             const uint8_t *client_cid = nullptr, size_t client_cid_len = 0,
+                             uint8_t *scid_out = nullptr, size_t *scid_len_out = nullptr)
 {
     uint8_t client_pub[32];
     ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
 
     uint8_t ch[256];
-    size_t ch_len = build_client_hello(ch, client_pub);
+    size_t ch_len = build_client_hello(ch, client_pub, client_cid, client_cid_len);
     SshSha256Ctx tr;
     ssh_sha256_init(&tr);
     ssh_sha256_update(&tr, ch, ch_len);
@@ -285,6 +328,18 @@ static void client_handshake(const char *ip, uint16_t port, DtlsRecordKeys *cli_
     uint8_t server_pub[32];
     TEST_ASSERT_TRUE(sh_keyshare(sh, sh_len, server_pub));
 
+    // When we offered a CID, the ServerHello carries the server's CID (which we place in the records we
+    // send); its epoch-2 flight carries our CID (@p client_cid).
+    uint8_t scid[DTLS_CID_MAX];
+    size_t scid_len = client_cid_len ? sh_conn_id(sh, sh_len, scid) : 0;
+    if (client_cid_len)
+        TEST_ASSERT_TRUE(scid_len > 0);
+    if (scid_out && scid_len_out)
+    {
+        memcpy(scid_out, scid, scid_len);
+        *scid_len_out = scid_len;
+    }
+
     uint8_t ecdhe[32];
     ssh_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
     Tls13KeySchedule cks;
@@ -299,11 +354,12 @@ static void client_handshake(const char *ip, uint16_t port, DtlsRecordKeys *cli_
     uint64_t exp_seq = 0;
     while (off < fl)
     {
-        size_t crl = ct_record_len(flight + off, fl - off);
+        size_t crl = ct_record_len(flight + off, fl - off, client_cid_len);
         TEST_ASSERT_TRUE(crl > 0);
         uint8_t inner[512];
         DtlsCiphertext info;
-        TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&srv_read, exp_seq, flight + off, crl, inner, sizeof(inner), &info));
+        TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&srv_read, exp_seq, flight + off, crl, inner, sizeof(inner), &info,
+                                                   client_cid, client_cid_len));
         exp_seq = info.seq + 1;
         off += crl;
         uint8_t msg[512];
@@ -326,7 +382,8 @@ static void client_handshake(const char *ip, uint16_t port, DtlsRecordKeys *cli_
     size_t cff = dtls_hs_frag_build(cfin[0], 1, (uint32_t)(cfin_len - 4), 0, cfin + 4, (uint32_t)(cfin_len - 4),
                                     cfin_frag, sizeof(cfin_frag));
     uint8_t cfin_rec[128];
-    size_t cfr = dtls_ciphertext_protect(&cli_write, 0, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec, sizeof(cfin_rec));
+    size_t cfr = dtls_ciphertext_protect(&cli_write, 0, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec, sizeof(cfin_rec),
+                                         scid_len ? scid : nullptr, scid_len);
     TEST_ASSERT_TRUE(coaps_server_ingest(cfin_rec, cfr, ip, port));
     coaps_server_poll();
 
@@ -340,19 +397,22 @@ static void client_handshake(const char *ip, uint16_t port, DtlsRecordKeys *cli_
 }
 
 // Seal a CoAP CON GET /temp as one epoch-3 client application record (client send-seq @p cseq).
-static size_t client_get_temp(DtlsRecordKeys *w, uint64_t cseq, uint8_t *out, size_t cap)
+static size_t client_get_temp(DtlsRecordKeys *w, uint64_t cseq, uint8_t *out, size_t cap, const uint8_t *cid = nullptr,
+                              size_t cid_len = 0)
 {
     const uint8_t coap_get[] = {0x40, 0x01, 0x12, 0x34, 0xB4, 't', 'e', 'm', 'p'};
-    return dtls_ciphertext_protect(w, cseq, DTLS_CT_APPLICATION_DATA, coap_get, sizeof(coap_get), out, cap);
+    return dtls_ciphertext_protect(w, cseq, DTLS_CT_APPLICATION_DATA, coap_get, sizeof(coap_get), out, cap, cid,
+                                   cid_len);
 }
 
 // Decrypt the server's response record (epoch-3 send-seq 1, after the completion ACK) and assert it is
 // the piggybacked 2.05 Content "hi".
-static void assert_coap_205(DtlsRecordKeys *r, const OutDg *dg)
+static void assert_coap_205(DtlsRecordKeys *r, const OutDg *dg, const uint8_t *cid = nullptr, size_t cid_len = 0)
 {
     uint8_t coap_resp[256];
     DtlsCiphertext info;
-    TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(r, 1, dg->buf, dg->len, coap_resp, sizeof(coap_resp), &info));
+    TEST_ASSERT_TRUE(
+        dtls_ciphertext_unprotect(r, 1, dg->buf, dg->len, coap_resp, sizeof(coap_resp), &info, cid, cid_len));
     TEST_ASSERT_EQUAL_UINT8(DTLS_CT_APPLICATION_DATA, info.content_type);
     TEST_ASSERT_TRUE(info.pt_len >= 6);
     TEST_ASSERT_EQUAL_UINT8(0x60, coap_resp[0] & 0xF0); // Ver 1, Type ACK
@@ -448,6 +508,34 @@ static void test_pto_retransmit_driven_by_poll(void)
     TEST_ASSERT_EQUAL_UINT8(1, coaps_server_active_conns()); // still handshaking, not reaped
 }
 
+// Route-by-CID + address migration (RFC 9146 / RFC 9147 §9): a connection that negotiated a connection id
+// is found by that id even after the peer's source address changes, and the reply follows to the new
+// address - the NAT-rebinding survival the CID is for.
+static void test_cid_address_migration(void)
+{
+    const uint8_t client_cid[3] = {0xC1, 0xC2, 0xC3};
+    uint8_t scid[DTLS_CID_MAX];
+    size_t scid_len = 0;
+    DtlsRecordKeys w, r;
+    client_handshake("10.0.0.5", 40001, &w, &r, client_cid, sizeof(client_cid), scid, &scid_len);
+    TEST_ASSERT_TRUE(scid_len > 0); // the server chose a connection id
+    TEST_ASSERT_EQUAL_UINT8(1, coaps_server_active_conns());
+
+    // The peer roams to a new address and sends a CoAP GET protected with the server's CID.
+    uint8_t rec[128];
+    size_t n = client_get_temp(&w, 0, rec, sizeof(rec), scid, scid_len);
+    TEST_ASSERT_TRUE(coaps_server_ingest(rec, n, "10.9.9.9", 55555)); // a different ip:port
+    coaps_server_poll();
+
+    // The response is routed to the connection by its CID and sent to the NEW address, not the old one.
+    OutDg dg;
+    TEST_ASSERT_TRUE(take_out_for("10.9.9.9", 55555, &dg));
+    OutDg stale;
+    TEST_ASSERT_FALSE(take_out_for("10.0.0.5", 40001, &stale));
+    assert_coap_205(&r, &dg, client_cid, sizeof(client_cid)); // the response carries our CID
+    TEST_ASSERT_EQUAL_UINT8(1, coaps_server_active_conns());  // migrated the existing connection, not a new one
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -455,5 +543,6 @@ int main(int, char **)
     RUN_TEST(test_two_peers_routing);
     RUN_TEST(test_idle_reap);
     RUN_TEST(test_pto_retransmit_driven_by_poll);
+    RUN_TEST(test_cid_address_migration);
     return UNITY_END();
 }

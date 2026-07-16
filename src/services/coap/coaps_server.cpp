@@ -174,13 +174,31 @@ bool ring_pop(CoapsIngest *out)
     return true;
 }
 
-// --- slot pool (keyed by peer address; DTLS has no connection id in the datagram) --------------
+// --- slot pool (keyed by peer address, or by connection id once one is negotiated) -------------
 CoapsSlot *slot_by_peer(const char *ip, uint16_t port)
 {
     for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
     {
         CoapsSlot *s = &s_cpool.pool[i];
         if (s->used && s->peer_port == port && strcmp(s->peer_ip, ip) == 0)
+            return s;
+    }
+    return nullptr;
+}
+
+// Find the connection whose negotiated connection id (RFC 9146 / RFC 9147 §9) matches the id carried in
+// an inbound CID record, so a peer that has roamed to a new address is still routed to its connection.
+// @p cid points just past the record's first byte; @p avail is the bytes available there.
+CoapsSlot *slot_by_cid(const uint8_t *cid, size_t avail)
+{
+    uint8_t sc[DTLS_CID_MAX];
+    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+    {
+        CoapsSlot *s = &s_cpool.pool[i];
+        if (!s->used)
+            continue;
+        size_t sl = dtls_conn_local_cid(&s->conn, sc);
+        if (sl && sl <= avail && memcmp(cid, sc, sl) == 0)
             return s;
     }
     return nullptr;
@@ -267,11 +285,23 @@ void coaps_server_poll()
     CoapsIngest ig;
     while (ring_pop(&ig))
     {
-        CoapsSlot *s = slot_by_peer(ig.ip, ig.port);
+        // A DTLSCiphertext with the C bit (0b001C....) carries a connection id: route by it so a peer that
+        // has roamed to a new address still reaches its connection (RFC 9146 / RFC 9147 §9). Otherwise route
+        // by source address; a fresh peer's (plaintext) ClientHello opens a slot.
+        bool cid_rec = ig.len >= 1 && (ig.data[0] & 0xE0) == 0x20 && (ig.data[0] & 0x10);
+        CoapsSlot *s = cid_rec ? slot_by_cid(ig.data + 1, ig.len - 1) : nullptr;
         if (!s)
+            s = slot_by_peer(ig.ip, ig.port);
+        if (!s && !cid_rec)
             s = open_conn(ig.ip, ig.port);
         if (!s)
-            continue; // pool full: drop (the peer retransmits / DTLS PTO recovers)
+            continue; // unknown connection id, or pool full: drop (the peer retransmits / DTLS PTO recovers)
+        // Address migration: a valid CID record from a new address updates where we send replies.
+        if (cid_rec && (s->peer_port != ig.port || strcmp(s->peer_ip, ig.ip) != 0))
+        {
+            copy_str(s->peer_ip, sizeof s->peer_ip, ig.ip);
+            s->peer_port = ig.port;
+        }
         s->last_ms = now;
         int n = coaps_process(&s->conn, ig.data, ig.len, out, sizeof out);
         if (n > 0)
