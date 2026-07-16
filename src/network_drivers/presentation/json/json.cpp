@@ -367,6 +367,124 @@ static int hex_val(char c)
     return -1;
 }
 
+enum class JsonEsc
+{
+    LITERAL_C, // *c_out holds one char for the caller's common write path
+    EMITTED,   // UTF-8 bytes already written to out; caller advances p and continues
+    TRUNCATED  // sequence would overflow out_cap; caller returns
+};
+
+// Decode one JSON string escape. On entry p points at the escape char (just past the '\'). Simple
+// escapes and malformed \u yield LITERAL_C (resolved char in *c_out); a valid \uXXXX emits its UTF-8
+// bytes directly (EMITTED) or reports TRUNCATED when the whole sequence will not fit. p is left on
+// the last consumed byte so the caller can advance past it uniformly.
+static JsonEsc json_decode_escape(const char *&p, char *out, size_t &i, size_t out_cap, char *c_out)
+{
+    switch (*p)
+    {
+    case 'n':
+        *c_out = '\n';
+        return JsonEsc::LITERAL_C;
+    case 't':
+        *c_out = '\t';
+        return JsonEsc::LITERAL_C;
+    case 'r':
+        *c_out = '\r';
+        return JsonEsc::LITERAL_C;
+    case 'b':
+        *c_out = '\b';
+        return JsonEsc::LITERAL_C;
+    case 'f':
+        *c_out = '\f';
+        return JsonEsc::LITERAL_C;
+    case '"':
+        *c_out = '"';
+        return JsonEsc::LITERAL_C;
+    case '\\':
+        *c_out = '\\';
+        return JsonEsc::LITERAL_C;
+    case '/':
+        *c_out = '/';
+        return JsonEsc::LITERAL_C;
+    case 'u':
+        break; // \uXXXX handled below
+    default:
+        *c_out = *p;
+        return JsonEsc::LITERAL_C;
+    }
+
+    // \uXXXX -> UTF-8. <= 0x7F stays one byte; 0x80..0x7FF / 0x800..0xFFFF and (via a
+    // surrogate pair) 0x10000..0x10FFFF emit 2/3/4 bytes. A high surrogate (0xD800..0xDBFF)
+    // followed by a low surrogate (0xDC00..0xDFFF) combines into one code point; an unpaired
+    // surrogate becomes U+FFFD. Malformed / short hex -> '?', rescanned as literals.
+    int h1 = p[1] ? hex_val(p[1]) : -1;
+    int h2 = (h1 >= 0 && p[2]) ? hex_val(p[2]) : -1;
+    int h3 = (h2 >= 0 && p[3]) ? hex_val(p[3]) : -1;
+    int h4 = (h3 >= 0 && p[4]) ? hex_val(p[4]) : -1;
+    if (h4 < 0)
+    {
+        *c_out = '?';
+        return JsonEsc::LITERAL_C;
+    }
+    unsigned cp = (unsigned)((h1 << 12) | (h2 << 8) | (h3 << 4) | h4);
+    p += 4; // consume the four hex digits (p now at the last one)
+    if (cp >= 0xD800 && cp <= 0xDBFF)
+    {
+        int l1 = (p[1] == '\\' && p[2] == 'u' && p[3]) ? hex_val(p[3]) : -1;
+        int l2 = (l1 >= 0 && p[4]) ? hex_val(p[4]) : -1;
+        int l3 = (l2 >= 0 && p[5]) ? hex_val(p[5]) : -1;
+        int l4 = (l3 >= 0 && p[6]) ? hex_val(p[6]) : -1;
+        unsigned lo = (l4 >= 0) ? (unsigned)((l1 << 12) | (l2 << 8) | (l3 << 4) | l4) : 0;
+        if (l4 >= 0 && lo >= 0xDC00 && lo <= 0xDFFF)
+        {
+            cp = 0x10000u + ((cp - 0xD800u) << 10) + (lo - 0xDC00u);
+            p += 6; // consume the low surrogate's \uXXXX too
+        }
+        else
+            cp = 0xFFFDu; // unpaired high surrogate
+    }
+    else if (cp >= 0xDC00 && cp <= 0xDFFF)
+    {
+        cp = 0xFFFDu; // lone low surrogate
+    }
+    unsigned char u8[4];
+    int un;
+    if (cp < 0x80u)
+    {
+        u8[0] = (unsigned char)cp;
+        un = 1;
+    }
+    else if (cp < 0x800u)
+    {
+        u8[0] = (unsigned char)(0xC0u | (cp >> 6));
+        u8[1] = (unsigned char)(0x80u | (cp & 0x3Fu));
+        un = 2;
+    }
+    else if (cp < 0x10000u)
+    {
+        u8[0] = (unsigned char)(0xE0u | (cp >> 12));
+        u8[1] = (unsigned char)(0x80u | ((cp >> 6) & 0x3Fu));
+        u8[2] = (unsigned char)(0x80u | (cp & 0x3Fu));
+        un = 3;
+    }
+    else
+    {
+        u8[0] = (unsigned char)(0xF0u | (cp >> 18));
+        u8[1] = (unsigned char)(0x80u | ((cp >> 12) & 0x3Fu));
+        u8[2] = (unsigned char)(0x80u | ((cp >> 6) & 0x3Fu));
+        u8[3] = (unsigned char)(0x80u | (cp & 0x3Fu));
+        un = 4;
+    }
+    if (i + (size_t)un >= out_cap)
+    {
+        out[i] = '\0'; // the whole UTF-8 sequence must fit; truncate cleanly
+        return JsonEsc::TRUNCATED;
+    }
+    for (int k = 0; k < un; k++)
+        out[i++] = (char)u8[k];
+    return JsonEsc::EMITTED;
+}
+
 bool json_get_str(const char *json, const char *key, char *out, size_t out_cap)
 {
     if (!out || out_cap == 0)
@@ -383,108 +501,13 @@ bool json_get_str(const char *json, const char *key, char *out, size_t out_cap)
         if (c == '\\' && p[1])
         {
             p++;
-            switch (*p)
+            JsonEsc r = json_decode_escape(p, out, i, out_cap, &c);
+            if (r == JsonEsc::TRUNCATED)
+                return true;
+            if (r == JsonEsc::EMITTED)
             {
-            case 'n':
-                c = '\n';
-                break;
-            case 't':
-                c = '\t';
-                break;
-            case 'r':
-                c = '\r';
-                break;
-            case 'b':
-                c = '\b';
-                break;
-            case 'f':
-                c = '\f';
-                break;
-            case '"':
-                c = '"';
-                break;
-            case '\\':
-                c = '\\';
-                break;
-            case '/':
-                c = '/';
-                break;
-            case 'u': {
-                // \uXXXX -> UTF-8. <= 0x7F stays one byte; 0x80..0x7FF / 0x800..0xFFFF and (via a
-                // surrogate pair) 0x10000..0x10FFFF emit 2/3/4 bytes. A high surrogate (0xD800..0xDBFF)
-                // followed by a low surrogate (0xDC00..0xDFFF) combines into one code point; an unpaired
-                // surrogate becomes U+FFFD. Malformed / short hex -> '?', rescanned as literals.
-                int h1 = p[1] ? hex_val(p[1]) : -1;
-                int h2 = (h1 >= 0 && p[2]) ? hex_val(p[2]) : -1;
-                int h3 = (h2 >= 0 && p[3]) ? hex_val(p[3]) : -1;
-                int h4 = (h3 >= 0 && p[4]) ? hex_val(p[4]) : -1;
-                if (h4 < 0)
-                {
-                    c = '?';
-                    break;
-                }
-                unsigned cp = (unsigned)((h1 << 12) | (h2 << 8) | (h3 << 4) | h4);
-                p += 4; // consume the four hex digits (p now at the last one)
-                if (cp >= 0xD800 && cp <= 0xDBFF)
-                {
-                    int l1 = (p[1] == '\\' && p[2] == 'u' && p[3]) ? hex_val(p[3]) : -1;
-                    int l2 = (l1 >= 0 && p[4]) ? hex_val(p[4]) : -1;
-                    int l3 = (l2 >= 0 && p[5]) ? hex_val(p[5]) : -1;
-                    int l4 = (l3 >= 0 && p[6]) ? hex_val(p[6]) : -1;
-                    unsigned lo = (l4 >= 0) ? (unsigned)((l1 << 12) | (l2 << 8) | (l3 << 4) | l4) : 0;
-                    if (l4 >= 0 && lo >= 0xDC00 && lo <= 0xDFFF)
-                    {
-                        cp = 0x10000u + ((cp - 0xD800u) << 10) + (lo - 0xDC00u);
-                        p += 6; // consume the low surrogate's \uXXXX too
-                    }
-                    else
-                        cp = 0xFFFDu; // unpaired high surrogate
-                }
-                else if (cp >= 0xDC00 && cp <= 0xDFFF)
-                {
-                    cp = 0xFFFDu; // lone low surrogate
-                }
-                unsigned char u8[4];
-                int un;
-                if (cp < 0x80u)
-                {
-                    u8[0] = (unsigned char)cp;
-                    un = 1;
-                }
-                else if (cp < 0x800u)
-                {
-                    u8[0] = (unsigned char)(0xC0u | (cp >> 6));
-                    u8[1] = (unsigned char)(0x80u | (cp & 0x3Fu));
-                    un = 2;
-                }
-                else if (cp < 0x10000u)
-                {
-                    u8[0] = (unsigned char)(0xE0u | (cp >> 12));
-                    u8[1] = (unsigned char)(0x80u | ((cp >> 6) & 0x3Fu));
-                    u8[2] = (unsigned char)(0x80u | (cp & 0x3Fu));
-                    un = 3;
-                }
-                else
-                {
-                    u8[0] = (unsigned char)(0xF0u | (cp >> 18));
-                    u8[1] = (unsigned char)(0x80u | ((cp >> 12) & 0x3Fu));
-                    u8[2] = (unsigned char)(0x80u | ((cp >> 6) & 0x3Fu));
-                    u8[3] = (unsigned char)(0x80u | (cp & 0x3Fu));
-                    un = 4;
-                }
-                if (i + (size_t)un >= out_cap)
-                {
-                    out[i] = '\0'; // the whole UTF-8 sequence must fit; truncate cleanly
-                    return true;
-                }
-                for (int k = 0; k < un; k++)
-                    out[i++] = (char)u8[k];
                 p++; // past the last consumed hex digit
                 continue;
-            }
-            default:
-                c = *p;
-                break;
             }
         }
         if (i + 1 < out_cap)

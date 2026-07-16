@@ -109,6 +109,13 @@ char peek(Lex &L)
     return L.p < L.e ? *L.p : '\0';
 }
 
+// Record a generic parse error, preserving any more specific error already set.
+void gql_flag_parse_err()
+{
+    if (s_gql.err == DetwsGqlResult::DETWS_GQL_OK)
+        s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+}
+
 bool is_name_start(char c)
 {
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
@@ -255,8 +262,8 @@ bool parse_value(Lex &L, DetwsGqlValue *v)
             int ex = 0;
             while (L.p < L.e && *L.p >= '0' && *L.p <= '9')
             {
-                if (ex < 400) // clamp: 10^400 overflows the double to inf, and bounds the loop below
-                    ex = ex * 10 + (*L.p - '0');
+                // clamp: 10^400 overflows the double to inf, and bounds the exponent below
+                ex = (ex < 400) ? ex * 10 + (*L.p - '0') : ex;
                 L.p++;
             }
             double m = 1.0;
@@ -318,8 +325,7 @@ int parse_field(Lex &L, int depth)
         return -1;
     if (!parse_name(L, s_gql.nodes[idx].name))
     {
-        if (s_gql.err == DetwsGqlResult::DETWS_GQL_OK)
-            s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+        gql_flag_parse_err();
         return -1;
     }
     // arguments
@@ -338,8 +344,7 @@ int parse_field(Lex &L, int depth)
             Arg *a = &s_gql.args[s_gql.nargs];
             if (!parse_name(L, a->name))
             {
-                if (s_gql.err == DetwsGqlResult::DETWS_GQL_OK)
-                    s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+                gql_flag_parse_err();
                 return -1;
             }
             if (peek(L) != ':')
@@ -416,8 +421,7 @@ bool parse_document(Lex &L)
             char opname[DETWS_GQL_NAME_MAX];
             if (!parse_name(L, opname))
             {
-                if (s_gql.err == DetwsGqlResult::DETWS_GQL_OK)
-                    s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+                gql_flag_parse_err();
                 return false;
             }
         }

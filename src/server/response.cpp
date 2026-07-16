@@ -33,6 +33,35 @@
 // passes. A "{{" with no matching "}}", or a name longer than 32 chars, is
 // emitted literally.
 // ---------------------------------------------------------------------------
+// Consume one "{{name}}" placeholder at @p p (advancing it), sizing into @p total and, when
+// @p emit, streaming the resolved value. An unterminated or over-long (> 32 char) name is emitted
+// as a literal "{{" and the scan resumes just past it.
+static void tmpl_take_placeholder(uint8_t slot, const char *&p, TemplateVar resolver, bool emit, size_t &total)
+{
+    const char *end = strstr(p + 2, "}}");
+    size_t nlen = end ? (size_t)(end - (p + 2)) : 0;
+    if (!end || nlen > 32)
+    {
+        // Unterminated or over-long placeholder: emit "{{" literally.
+        total += 2;
+        if (emit)
+            det_conn_send(slot, "{{", 2);
+        p += 2;
+        return;
+    }
+    char name[33];
+    memcpy(name, p + 2, nlen);
+    name[nlen] = '\0';
+    const char *val = resolver ? resolver(name) : nullptr;
+    if (!val)
+        val = "";
+    size_t vlen = strnlen(val, 0xFFFF);
+    total += vlen;
+    if (emit && vlen)
+        det_conn_send(slot, val, (u16_t)vlen);
+    p = end + 2;
+}
+
 // Two-pass: pass 1 sizes the body (emit=false), pass 2 streams it (emit=true).
 static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, bool emit)
 {
@@ -42,28 +71,7 @@ static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, bo
     {
         if (p[0] == '{' && p[1] == '{')
         {
-            const char *end = strstr(p + 2, "}}");
-            size_t nlen = end ? (size_t)(end - (p + 2)) : 0;
-            if (!end || nlen > 32)
-            {
-                // Unterminated or over-long placeholder: emit "{{" literally.
-                total += 2;
-                if (emit)
-                    det_conn_send(slot, "{{", 2);
-                p += 2;
-                continue;
-            }
-            char name[33];
-            memcpy(name, p + 2, nlen);
-            name[nlen] = '\0';
-            const char *val = resolver ? resolver(name) : nullptr;
-            if (!val)
-                val = "";
-            size_t vlen = strnlen(val, 0xFFFF);
-            total += vlen;
-            if (emit && vlen)
-                det_conn_send(slot, val, (u16_t)vlen);
-            p = end + 2;
+            tmpl_take_placeholder(slot, p, resolver, emit, total);
             continue;
         }
 

@@ -12,6 +12,29 @@
 
 #include <string.h>
 
+// Read one non-blocking chunk from src and forward it to dst. Sets *src_eof on a src seam error;
+// returns -1 on a dst send error, else 0. A zero-length read leaves the buffers untouched.
+static int pump_refill(DetRelayEnd *src, DetRelayEnd *dst, uint8_t *buf, uint16_t *len, uint16_t *off, bool *src_eof,
+                       uint32_t *counter)
+{
+    int r = src->recv(src->ctx, buf, DETWS_RELAY_BUF);
+    if (r < 0)
+    {
+        *src_eof = true;
+        return 0;
+    }
+    if (r > 0)
+    {
+        *len = (uint16_t)r;
+        int s = dst->send(dst->ctx, buf, *len);
+        if (s < 0)
+            return -1;
+        *off = (uint16_t)s;
+        *counter += (uint32_t)s;
+    }
+    return 0;
+}
+
 // Pump one direction (src -> dst) one non-blocking pass: flush pending bytes, then read more.
 // @param dst_shut_sent  the "shutdown already called" flag for @p dst (the peer that stops receiving
 //                       once this direction finishes). Returns -1 on a seam error, else 0.
@@ -37,23 +60,8 @@ static int pump(DetRelayEnd *src, DetRelayEnd *dst, uint8_t *buf, uint16_t *len,
     {
         *off = 0;
         *len = 0;
-        if (!*src_eof)
-        {
-            int r = src->recv(src->ctx, buf, DETWS_RELAY_BUF);
-            if (r < 0)
-            {
-                *src_eof = true;
-            }
-            else if (r > 0)
-            {
-                *len = (uint16_t)r;
-                int s = dst->send(dst->ctx, buf, *len);
-                if (s < 0)
-                    return -1;
-                *off = (uint16_t)s;
-                *counter += (uint32_t)s;
-            }
-        }
+        if (!*src_eof && pump_refill(src, dst, buf, len, off, src_eof, counter) < 0)
+            return -1;
     }
 
     // 3. this direction is finished once src is at EOF and nothing is left to flush

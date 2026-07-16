@@ -263,6 +263,14 @@ void fp_subm(uint32_t r[8], const uint32_t a[8], const uint32_t b[8], const uint
     }
     fp_set(r, t);
 }
+// acc[0..7] >= m[0..7]? Compares the low 8 limbs from the most significant down.
+bool reduce_low8_ge(const uint32_t acc[8], const uint32_t m[8])
+{
+    for (int k = 7; k >= 0; k--)
+        if (acc[k] != m[k])
+            return acc[k] > m[k];
+    return true; // all limbs equal
+}
 // Reduce a 512-bit product mod m (bit-serial, MSB to LSB). Correct but slow; native is test-only.
 void reduce_mod(uint32_t r[8], const uint32_t prod[16], const uint32_t m[8])
 {
@@ -281,15 +289,7 @@ void reduce_mod(uint32_t r[8], const uint32_t prod[16], const uint32_t m[8])
         acc[0] |= (prod[bit >> 5] >> (bit & 31)) & 1u;
         bool ge = acc[8] != 0;
         if (!ge)
-        {
-            ge = true;
-            for (int k = 7; k >= 0; k--)
-                if (acc[k] != m[k])
-                {
-                    ge = acc[k] > m[k];
-                    break;
-                }
-        }
+            ge = reduce_low8_ge(acc, m);
         if (ge)
         {
             uint64_t brw = 0;
@@ -603,6 +603,35 @@ void hmac_cat(uint8_t out[32], const uint8_t key[32], const uint8_t *v, size_t v
     ssh_hmac_sha256(key, 32, buf, n, out);
 }
 
+// One RFC 6979 candidate k: if it yields a valid r and s, write the 64-byte signature and return true.
+bool ecdsa_try_sign(const uint32_t k[8], const Jac *G, const uint32_t d[8], const uint32_t e[8], uint8_t sig[64])
+{
+    if (fp_is_zero(k) || fp_cmp(k, P256_N) >= 0)
+        return false;
+    Jac R;
+    jac_scalar_mul(&R, k, G);
+    if (fp_is_zero(R.Z))
+        return false;
+    uint32_t rx[8];
+    uint32_t ry[8];
+    jac_to_affine(rx, ry, &R);
+    uint32_t r[8];
+    fp_reduce_once(r, rx, P256_N); // r = Rx mod n
+    if (fp_is_zero(r))
+        return false;
+    uint32_t kinv[8];
+    uint32_t s[8];
+    fp_inv(kinv, k, P256_N);
+    fp_mul(s, r, d, P256_N);    // r*d
+    fp_addm(s, s, e, P256_N);   // e + r*d
+    fp_mul(s, kinv, s, P256_N); // k^-1 (e + r*d)
+    if (fp_is_zero(s))
+        return false;
+    store_be(sig, r);
+    store_be(sig + 32, s);
+    return true;
+}
+
 // ECDSA core: sign hash e_bytes (32) with scalar d, deterministic k per RFC 6979.
 bool ecdsa_sign_core(uint8_t sig[64], const uint8_t h1[32], const uint32_t d[8])
 {
@@ -636,34 +665,8 @@ bool ecdsa_sign_core(uint8_t sig[64], const uint8_t h1[32], const uint32_t d[8])
         hmac_cat(V, K, V, 32, -1, nullptr, nullptr);
         uint32_t k[8];
         load_be(k, V); // bits2int(T)
-        if (!fp_is_zero(k) && fp_cmp(k, P256_N) < 0)
-        {
-            Jac R;
-            jac_scalar_mul(&R, k, &G);
-            if (!fp_is_zero(R.Z))
-            {
-                uint32_t rx[8];
-                uint32_t ry[8];
-                jac_to_affine(rx, ry, &R);
-                uint32_t r[8];
-                fp_reduce_once(r, rx, P256_N); // r = Rx mod n
-                if (!fp_is_zero(r))
-                {
-                    uint32_t kinv[8];
-                    uint32_t s[8];
-                    fp_inv(kinv, k, P256_N);
-                    fp_mul(s, r, d, P256_N);    // r*d
-                    fp_addm(s, s, e, P256_N);   // e + r*d
-                    fp_mul(s, kinv, s, P256_N); // k^-1 (e + r*d)
-                    if (!fp_is_zero(s))
-                    {
-                        store_be(sig, r);
-                        store_be(sig + 32, s);
-                        return true;
-                    }
-                }
-            }
-        }
+        if (ecdsa_try_sign(k, &G, d, e, sig))
+            return true;
         // Retry: K = HMAC_K(V || 0x00); V = HMAC_K(V).
         uint8_t buf[33];
         memcpy(buf, V, 32);

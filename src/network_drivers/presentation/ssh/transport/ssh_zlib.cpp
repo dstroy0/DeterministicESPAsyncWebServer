@@ -179,6 +179,33 @@ void emit_match(BitWriter *w, const SshDeflate *z, int len, int dist)
     if (DIST_EXTRA[di])
         put_bits(w, (uint32_t)(dist - DIST_BASE[di]), DIST_EXTRA[di]);
 }
+
+// Walk the hash chain from cand (newest-first) for the longest match of buf[i..] within WINDOW.
+// Writes the best match length/distance found (both 0 if none).
+void zlib_chain_match(const SshDeflate *z, const uint8_t *buf, size_t i, uint16_t cand, int chain, size_t max_len,
+                      int *best_len, int *best_dist)
+{
+    *best_len = 0;
+    *best_dist = 0;
+    while (cand != NONE && chain > 0)
+    {
+        chain--;
+        size_t dist = i - cand;
+        if (dist > (size_t)WINDOW)
+            break; // chain is newest-first; everything past here is farther
+        size_t l = 0;
+        while (l < max_len && buf[cand + l] == buf[i + l])
+            l++;
+        if ((int)l > *best_len)
+        {
+            *best_len = (int)l;
+            *best_dist = (int)dist;
+            if (l >= max_len)
+                break;
+        }
+        cand = z->prev[cand];
+    }
+}
 } // namespace
 
 void ssh_deflate_init(SshDeflate *z, uint8_t *work, uint16_t *head, uint16_t *prev, uint16_t *ll_code, uint8_t *ll_len,
@@ -250,28 +277,10 @@ int ssh_deflate_packet(SshDeflate *z, const uint8_t *src, size_t src_len, uint8_
         {
             int h = hash3(buf + i);
             uint16_t cand = z->head[h];
-            int chain = MAX_CHAIN;
             size_t max_len = total - i;
             if (max_len > (size_t)MAX_MATCH)
                 max_len = MAX_MATCH;
-            while (cand != NONE && chain > 0)
-            {
-                chain--;
-                size_t dist = i - cand;
-                if (dist > (size_t)WINDOW)
-                    break; // chain is newest-first; everything past here is farther
-                size_t l = 0;
-                while (l < max_len && buf[cand + l] == buf[i + l])
-                    l++;
-                if ((int)l > best_len)
-                {
-                    best_len = (int)l;
-                    best_dist = (int)dist;
-                    if (l >= max_len)
-                        break;
-                }
-                cand = z->prev[cand];
-            }
+            zlib_chain_match(z, buf, i, cand, MAX_CHAIN, max_len, &best_len, &best_dist);
         }
 
         size_t advance;

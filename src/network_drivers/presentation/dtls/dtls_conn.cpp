@@ -467,14 +467,13 @@ int dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *ou
             if (!dtls_replay_check(&c->replay_ep2, info.seq))
                 continue; // replay: drop, but keep processing the datagram
             dtls_replay_mark(&c->replay_ep2, info.seq);
+            bool is_hs = (info.content_type == DTLS_CT_HANDSHAKE);
+            if (is_hs)
+                c->rx_ep2_seq = info.seq; // the client Finished's record number, for the completion ACK
             if (info.content_type == DTLS_CT_ACK)
                 process_ack(c, inner, info.pt_len); // the client acknowledged our flight
-            else if (info.content_type == DTLS_CT_HANDSHAKE)
-            {
-                c->rx_ep2_seq = info.seq; // the client Finished's record number, for the completion ACK
-                if (drive_handshake(c, inner, info.pt_len, out, out_cap, &out_len) < 0)
-                    return -1;
-            }
+            else if (is_hs && drive_handshake(c, inner, info.pt_len, out, out_cap, &out_len) < 0)
+                return -1;
         }
         else
         {

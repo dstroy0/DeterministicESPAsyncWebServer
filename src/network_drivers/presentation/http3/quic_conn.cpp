@@ -386,15 +386,13 @@ size_t build_frames(QuicConn *qc, int level, uint8_t *buf, size_t cap, bool *ae)
             // Leave room for the CRYPTO frame header (type + offset + length varints, <= 1+8+8).
             size_t room = (cap - p > 20) ? (cap - p - 20) : 0;
             size_t take = remain < room ? remain : room;
-            if (take)
+            size_t n =
+                take ? quic_build_crypto(buf + p, cap - p, s->crypto_tx_off, flight + s->crypto_tx_off, take) : 0;
+            if (n)
             {
-                size_t n = quic_build_crypto(buf + p, cap - p, s->crypto_tx_off, flight + s->crypto_tx_off, take);
-                if (n)
-                {
-                    p += n;
-                    s->crypto_tx_off += take;
-                    *ae = true;
-                }
+                p += n;
+                s->crypto_tx_off += take;
+                *ae = true;
             }
         }
     }
@@ -432,8 +430,7 @@ size_t build_frames(QuicConn *qc, int level, uint8_t *buf, size_t cap, bool *ae)
                 p += n;
                 st->tx_off += take;
                 st->tx_sent += take;
-                if (fin)
-                    st->tx_fin_sent = true;
+                st->tx_fin_sent = st->tx_fin_sent || fin;
                 *ae = true;
             }
         }
@@ -530,6 +527,16 @@ size_t build_packet(QuicConn *qc, int level, uint8_t *out, size_t cap)
     s->next_pn++;
     return total;
 }
+
+// Highest encryption level (INITIAL..APP) we still hold seal keys for and haven't discarded - the
+// level at which a CONNECTION_CLOSE can still be decrypted by the peer. Falls back to INITIAL.
+int quic_highest_sealed_level(QuicConn *qc)
+{
+    for (int l = QuicEnc::QUIC_ENC_APP; l >= QuicEnc::QUIC_ENC_INITIAL; l--)
+        if (!qc->space[l].discarded && seal_keys(qc, l))
+            return l;
+    return QuicEnc::QUIC_ENC_INITIAL;
+}
 } // namespace
 
 size_t quic_conn_send(QuicConn *qc, uint8_t *out, size_t cap)
@@ -555,15 +562,7 @@ size_t quic_conn_send(QuicConn *qc, uint8_t *out, size_t cap)
         int level = qc->close_level;
         if (level < QuicEnc::QUIC_ENC_INITIAL || level > QuicEnc::QUIC_ENC_APP || qc->space[level].discarded ||
             !seal_keys(qc, level))
-        {
-            level = QuicEnc::QUIC_ENC_INITIAL;
-            for (int l = QuicEnc::QUIC_ENC_APP; l >= QuicEnc::QUIC_ENC_INITIAL; l--)
-                if (!qc->space[l].discarded && seal_keys(qc, l))
-                {
-                    level = l;
-                    break;
-                }
-        }
+            level = quic_highest_sealed_level(qc);
         size_t n = build_packet(qc, level, out, cap);
         if (n)
         {
@@ -677,13 +676,7 @@ size_t quic_conn_stream_send(QuicConn *qc, uint64_t stream_id, const uint8_t *da
 void quic_conn_close(QuicConn *qc, uint64_t error_code)
 {
     // Application-initiated close: send at the highest level we still hold keys for.
-    int level = QuicEnc::QUIC_ENC_INITIAL;
-    for (int l = QuicEnc::QUIC_ENC_APP; l >= QuicEnc::QUIC_ENC_INITIAL; l--)
-        if (!qc->space[l].discarded && seal_keys(qc, l))
-        {
-            level = l;
-            break;
-        }
+    int level = quic_highest_sealed_level(qc);
     queue_close(qc, error_code, 0, level);
 }
 
