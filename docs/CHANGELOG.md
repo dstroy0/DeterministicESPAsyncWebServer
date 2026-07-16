@@ -6,11 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- revert ssh_aesgcm ctx const to unbreak the ESP32/Arduino build ([`89ef6c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89ef6c56cb3c971abb2868f2bebaa8bdb6ab8d87))
 - resolve remaining 8 MINOR findings (const-correctness + cleanup) ([`fdfd72e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fdfd72e60886fbf4506c3838fc7ed22aa35c165a))
 - remediate CI code-scan findings (2 blockers + smells) ([`32c86b7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32c86b75243df6631b762dabcba297d288d9881d))
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`3f6c18a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f6c18ae1427b1d6a90907137a97d0bf31899ff5))
+- update CHANGELOG.md [skip ci] ([`983570b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/983570b522653407c560739bb173bf0903521bdc))
 - update test report + coverage [skip ci] ([`065355c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/065355c6d8b2b8de0ed3824c881e2df98ba3bc69))
 - update CHANGELOG.md [skip ci] ([`2b8265d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2b8265de347a5a174b1d84bf6965ddf2ba17cb48))
 - update test report + coverage [skip ci] ([`5374a73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5374a7389482fdcf34d35739ca37db312e3436f1))
@@ -71,6 +74,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`89fffad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89fffad7a456a90789c2ee745a4498ebc9b3d337))
 - update ESP32 build footprints [skip ci] ([`11d5f4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/11d5f4bf280ce9db5f032f4f29168ae5f73f5fcd))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9bb027f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9bb027fdb23058df08d4224a265278cc8fb2f1a3))
 - update ESP32 build footprints [skip ci] ([`3aaef75`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3aaef75c030bff87be2389947f53b1ab667ef35b))
