@@ -149,7 +149,7 @@ static void test_dtls_ciphertext_unprotect_rejects(void)
     dtls_record_keys_derive(&k2, DtlsCipher::AES_128_GCM_SHA256, 2, KAT_SECRET); // epoch 2 != header's 3
     TEST_ASSERT_FALSE(dtls_ciphertext_unprotect(&k2, KAT_SEQ, KAT_WIRE, sizeof(KAT_WIRE), out, sizeof(out), &info));
 
-    // A connection-id record (C bit set) is not supported in this phase.
+    // A connection-id record (C bit set) when no CID was negotiated (the default) is rejected.
     memcpy(bad, KAT_WIRE, sizeof(bad));
     bad[0] |= 0x10; // set C
     TEST_ASSERT_FALSE(dtls_ciphertext_unprotect(&k, KAT_SEQ, bad, sizeof(bad), out, sizeof(out), &info));
@@ -207,6 +207,67 @@ static void test_dtls_replay_window(void)
     TEST_ASSERT_TRUE(dtls_replay_check(&w, 201));  // ahead
 }
 
+// Connection ids (RFC 9146 / RFC 9147 §9): a record protected with a CID carries the C bit and the CID
+// immediately after the first byte, round-trips when the receiver expects that exact CID, and the CID is
+// covered by the AEAD AAD (so a mismatch fails to open).
+static void test_dtls_cid_roundtrip(void)
+{
+    DtlsRecordKeys k;
+    dtls_record_keys_derive(&k, DtlsCipher::AES_128_GCM_SHA256, 3, KAT_SECRET);
+    const uint8_t cid[4] = {0xCA, 0xFE, 0xBA, 0xBE};
+    const uint8_t pt[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+    uint8_t wire[64];
+    size_t n =
+        dtls_ciphertext_protect(&k, 7, DTLS_CT_APPLICATION_DATA, pt, sizeof(pt), wire, sizeof(wire), cid, sizeof(cid));
+    TEST_ASSERT_TRUE(n > 0);
+    TEST_ASSERT_TRUE((wire[0] & 0x10) != 0);              // C bit set
+    TEST_ASSERT_EQUAL_MEMORY(cid, wire + 1, sizeof(cid)); // CID immediately after the first byte
+
+    uint8_t out[64];
+    DtlsCiphertext info;
+    TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&k, 7, wire, n, out, sizeof(out), &info, cid, sizeof(cid)));
+    TEST_ASSERT_EQUAL_UINT64(7, info.seq);
+    TEST_ASSERT_EQUAL_size_t(sizeof(pt), info.pt_len);
+    TEST_ASSERT_EQUAL_MEMORY(pt, out, sizeof(pt));
+}
+
+// Every CID mismatch is rejected: an unexpected CID, a wrong CID, a wrong CID length, a missing CID when
+// one was negotiated, and an over-long CID at protect time.
+static void test_dtls_cid_rejects(void)
+{
+    DtlsRecordKeys k;
+    dtls_record_keys_derive(&k, DtlsCipher::AES_128_GCM_SHA256, 3, KAT_SECRET);
+    const uint8_t cid[4] = {0xCA, 0xFE, 0xBA, 0xBE};
+    const uint8_t pt[8] = {9, 8, 7, 6, 5, 4, 3, 2};
+    uint8_t out[64];
+    DtlsCiphertext info;
+
+    uint8_t wire[64];
+    size_t n =
+        dtls_ciphertext_protect(&k, 3, DTLS_CT_APPLICATION_DATA, pt, sizeof(pt), wire, sizeof(wire), cid, sizeof(cid));
+    TEST_ASSERT_TRUE(n > 0);
+
+    // A CID record but the receiver expects none -> rejected (unexpected CID).
+    TEST_ASSERT_FALSE(dtls_ciphertext_unprotect(&k, 3, wire, n, out, sizeof(out), &info));
+    // Wrong CID of the right length -> rejected.
+    const uint8_t other[4] = {0xDE, 0xAD, 0xBE, 0xEF};
+    TEST_ASSERT_FALSE(dtls_ciphertext_unprotect(&k, 3, wire, n, out, sizeof(out), &info, other, sizeof(other)));
+    // Right CID prefix but a shorter expected length -> rejected (offsets + AAD differ).
+    TEST_ASSERT_FALSE(dtls_ciphertext_unprotect(&k, 3, wire, n, out, sizeof(out), &info, cid, 3));
+
+    // A non-CID record but the receiver expects a CID -> rejected.
+    uint8_t plain[64];
+    size_t pn = dtls_ciphertext_protect(&k, 3, DTLS_CT_APPLICATION_DATA, pt, sizeof(pt), plain, sizeof(plain));
+    TEST_ASSERT_TRUE(pn > 0);
+    TEST_ASSERT_FALSE(dtls_ciphertext_unprotect(&k, 3, plain, pn, out, sizeof(out), &info, cid, sizeof(cid)));
+
+    // A CID longer than DTLS_CID_MAX is refused by protect.
+    uint8_t longcid[DTLS_CID_MAX + 1] = {0};
+    TEST_ASSERT_EQUAL_size_t(0, dtls_ciphertext_protect(&k, 3, DTLS_CT_APPLICATION_DATA, pt, sizeof(pt), wire,
+                                                        sizeof(wire), longcid, sizeof(longcid)));
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
@@ -216,6 +277,8 @@ int main(int, char **)
     RUN_TEST(test_dtls_ciphertext_roundtrip);
     RUN_TEST(test_dtls_seq_reconstruction);
     RUN_TEST(test_dtls_ciphertext_unprotect_rejects);
+    RUN_TEST(test_dtls_cid_roundtrip);
+    RUN_TEST(test_dtls_cid_rejects);
     RUN_TEST(test_dtls_plaintext_roundtrip);
     RUN_TEST(test_dtls_replay_window);
     return UNITY_END();

@@ -113,23 +113,32 @@ size_t dtls_plaintext_parse(const uint8_t *rec, size_t rec_len, DtlsPlaintext *o
 // ---------------------------------------------------------------------------
 
 size_t dtls_ciphertext_protect(const DtlsRecordKeys *keys, uint64_t seq, uint8_t content_type, const uint8_t *plaintext,
-                               size_t pt_len, uint8_t *out, size_t out_cap)
+                               size_t pt_len, uint8_t *out, size_t out_cap, const uint8_t *cid, size_t cid_len)
 {
     if (keys->cipher != DtlsCipher::AES_128_GCM_SHA256)
         return 0;
-    // Unified header: C=0, S=1 (16-bit seq), L=1 (length present). hdr = byte0 || seq16 || length16.
-    const size_t hdr_len = 1 + 2 + 2;
+    if (cid_len > DTLS_CID_MAX || (cid_len && !cid))
+        return 0;
+    // Unified header: [C] connection id, S=1 (16-bit seq), L=1 (length). hdr = byte0 || [cid] || seq16 ||
+    // length16. The CID (RFC 9146 / RFC 9147 §9) sits between the first byte and the sequence number.
+    const size_t hdr_len = 1 + cid_len + 2 + 2;
     size_t inner_len = pt_len + 1;             // DTLSInnerPlaintext = plaintext || content_type
     size_t enc_len = inner_len + DTLS_TAG_LEN; // AEAD ciphertext || tag
     size_t total = hdr_len + enc_len;
     if (total > out_cap)
         return 0;
 
-    out[0] = (uint8_t)(DTLS_UH_FIXED | DTLS_UH_SEQ16 | DTLS_UH_LENGTH | (keys->epoch & DTLS_UH_EPOCH_MASK));
-    out[1] = (uint8_t)(seq >> 8); // plaintext sequence number (this header form is the AEAD AAD)
-    out[2] = (uint8_t)seq;
-    out[3] = (uint8_t)(enc_len >> 8);
-    out[4] = (uint8_t)enc_len;
+    uint8_t flags = (uint8_t)(DTLS_UH_FIXED | DTLS_UH_SEQ16 | DTLS_UH_LENGTH | (keys->epoch & DTLS_UH_EPOCH_MASK));
+    if (cid_len)
+        flags |= DTLS_UH_CID;
+    out[0] = flags;
+    if (cid_len)
+        memcpy(out + 1, cid, cid_len);
+    size_t seq_off = 1 + cid_len;
+    out[seq_off] = (uint8_t)(seq >> 8); // plaintext sequence number (this header form is the AEAD AAD)
+    out[seq_off + 1] = (uint8_t)seq;
+    out[seq_off + 2] = (uint8_t)(enc_len >> 8);
+    out[seq_off + 3] = (uint8_t)enc_len;
 
     // Assemble the inner plaintext where it will be sealed (seal permits out == pt).
     memcpy(out + hdr_len, plaintext, pt_len);
@@ -137,7 +146,8 @@ size_t dtls_ciphertext_protect(const DtlsRecordKeys *keys, uint64_t seq, uint8_t
 
     uint8_t nonce[12];
     build_nonce(keys->iv, seq, nonce);
-    // AAD = the unified header carrying the plaintext sequence number (before §4.2.3 encryption).
+    // AAD = the whole unified header (including any connection id) carrying the plaintext sequence
+    // number (before §4.2.3 encryption).
     quic_aes128_gcm_seal(keys->key, nonce, out, hdr_len, out + hdr_len, inner_len, out + hdr_len);
 
     // Encrypt the sequence number (RFC 9147 §4.2.3): mask = AES-ECB(sn_key, ciphertext[0..15]).
@@ -147,26 +157,41 @@ size_t dtls_ciphertext_protect(const DtlsRecordKeys *keys, uint64_t seq, uint8_t
     uint8_t mask[16];
     quic_aes128_encrypt_block(&sn, out + hdr_len, mask);
     quic_aes128_wipe(&sn);
-    out[1] ^= mask[0];
-    out[2] ^= mask[1];
+    out[seq_off] ^= mask[0];
+    out[seq_off + 1] ^= mask[1];
     return total;
 }
 
 bool dtls_ciphertext_unprotect(const DtlsRecordKeys *keys, uint64_t next_seq, const uint8_t *rec, size_t rec_len,
-                               uint8_t *out, size_t out_cap, DtlsCiphertext *info)
+                               uint8_t *out, size_t out_cap, DtlsCiphertext *info, const uint8_t *expected_cid,
+                               size_t expected_cid_len)
 {
     if (keys->cipher != DtlsCipher::AES_128_GCM_SHA256 || rec_len < 1)
+        return false;
+    if (expected_cid_len > DTLS_CID_MAX)
         return false;
     uint8_t b0 = rec[0];
     if ((b0 & DTLS_UH_FIXED_MASK) != DTLS_UH_FIXED)
         return false; // top 3 bits must be 001
-    if (b0 & DTLS_UH_CID)
-        return false; // connection-id records are not negotiated in this phase
     if ((b0 & DTLS_UH_EPOCH_MASK) != (keys->epoch & DTLS_UH_EPOCH_MASK))
         return false; // wrong epoch keys for this record
 
-    size_t seq_len = (b0 & DTLS_UH_SEQ16) ? 2 : 1;
     size_t off = 1;
+    if (b0 & DTLS_UH_CID)
+    {
+        // A connection-id record: a CID must have been negotiated for this direction, and it must be
+        // ours (the CID is not length-prefixed on the wire - its length is known only from negotiation).
+        if (expected_cid_len == 0 || off + expected_cid_len > rec_len ||
+            memcmp(rec + off, expected_cid, expected_cid_len) != 0)
+            return false;
+        off += expected_cid_len;
+    }
+    else if (expected_cid_len != 0)
+    {
+        return false; // a CID was negotiated for this direction but the record carries none
+    }
+
+    size_t seq_len = (b0 & DTLS_UH_SEQ16) ? 2 : 1;
     if (off + seq_len > rec_len)
         return false;
     size_t seq_off = off;
@@ -188,10 +213,10 @@ bool dtls_ciphertext_unprotect(const DtlsRecordKeys *keys, uint64_t next_seq, co
         return false; // need >= 16 bytes for the SN sample and >= tag + one inner byte
 
     const uint8_t *enc = rec + off;
-    size_t hdr_len = off; // unified header length (C=0, so <= 5)
+    size_t hdr_len = off; // unified header length (including any connection id)
 
     // Copy the header so we can write the decrypted sequence number into the AEAD AAD form.
-    uint8_t hdr[5];
+    uint8_t hdr[1 + DTLS_CID_MAX + 4];
     memcpy(hdr, rec, hdr_len);
 
     // Decrypt the sequence number (RFC 9147 §4.2.3).

@@ -58,6 +58,11 @@
 /** @brief AEAD tag length (all supported suites: 16 bytes). */
 #define DTLS_TAG_LEN 16
 
+/** @brief Largest connection id carried in a DTLSCiphertext header (RFC 9146 / RFC 9147 §9). The CID
+ *         is not length-prefixed on the wire, so the receiver must know its length from negotiation; 8
+ *         bytes is ample routing entropy and bounds the fixed header-scratch buffers. */
+#define DTLS_CID_MAX 8
+
 /** @brief Record-layer AEAD suites (phase 1: AEAD_AES_128_GCM with SHA-256). */
 enum class DtlsCipher : uint8_t
 {
@@ -122,15 +127,21 @@ size_t dtls_plaintext_parse(const uint8_t *rec, size_t rec_len, DtlsPlaintext *o
  * @brief Protect one record (RFC 9147 §4.2).
  *
  * Seals @p plaintext (whose inner content type is @p content_type) under @p keys at record sequence
- * number @p seq, writing a complete DTLSCiphertext to @p out: the unified header (C=0 no connection
- * id, S=1 16-bit sequence number, L=1 length present, low 2 epoch bits), the AEAD-sealed body, and
- * the encrypted sequence number. The AEAD nonce is iv XOR seq; the associated data is the unified
- * header carrying the *plaintext* sequence number (before §4.2.3 encryption).
+ * number @p seq, writing a complete DTLSCiphertext to @p out: the unified header (S=1 16-bit sequence
+ * number, L=1 length present, low 2 epoch bits), the AEAD-sealed body, and the encrypted sequence
+ * number. The AEAD nonce is iv XOR seq; the associated data is the unified header carrying the
+ * *plaintext* sequence number (before §4.2.3 encryption).
  *
- * @return bytes written, or 0 on overflow / unsupported cipher.
+ * When @p cid_len is non-zero the peer's connection id (RFC 9146 / RFC 9147 §9) is placed in the
+ * header (C bit set, @p cid bytes immediately after the first byte) and is covered by the AEAD AAD;
+ * @p cid_len must be <= @ref DTLS_CID_MAX. With @p cid_len 0 the header carries no CID (C=0), the
+ * original behaviour.
+ *
+ * @return bytes written, or 0 on overflow / unsupported cipher / an over-long CID.
  */
 size_t dtls_ciphertext_protect(const DtlsRecordKeys *keys, uint64_t seq, uint8_t content_type, const uint8_t *plaintext,
-                               size_t pt_len, uint8_t *out, size_t out_cap);
+                               size_t pt_len, uint8_t *out, size_t out_cap, const uint8_t *cid = nullptr,
+                               size_t cid_len = 0);
 
 /** @brief Result of a successful @ref dtls_ciphertext_unprotect. */
 struct DtlsCiphertext
@@ -147,14 +158,20 @@ struct DtlsCiphertext
  * Decrypts the sequence number, reconstructs the full sequence number from @p next_seq (the expected
  * next value for this epoch, RFC 9147 §4.2.2 / RFC 9000 Appendix A.3), opens the AEAD, and strips the
  * inner content type and any zero padding. @p keys must be the epoch whose low 2 bits match the
- * record header (verified). Connection-ID records (header C bit set) are rejected - CID is not
- * negotiated in this phase.
+ * record header (verified).
+ *
+ * Connection ids (RFC 9146 / RFC 9147 §9): when @p expected_cid_len is non-zero a CID was negotiated
+ * for this direction, so the record must carry the C bit and a connection id equal to @p expected_cid
+ * (the CID is not length-prefixed on the wire - its length is known only from negotiation); the CID is
+ * covered by the AEAD AAD. When @p expected_cid_len is 0 a record with the C bit set is rejected (a CID
+ * was not negotiated).
  *
  * @return true on success (@p out / @p info filled); false on a malformed header, an epoch-bit
- *         mismatch, a connection-id record, a failed AEAD tag, or an output overflow.
+ *         mismatch, an unexpected / mismatched connection id, a failed AEAD tag, or an output overflow.
  */
 bool dtls_ciphertext_unprotect(const DtlsRecordKeys *keys, uint64_t next_seq, const uint8_t *rec, size_t rec_len,
-                               uint8_t *out, size_t out_cap, DtlsCiphertext *info);
+                               uint8_t *out, size_t out_cap, DtlsCiphertext *info,
+                               const uint8_t *expected_cid = nullptr, size_t expected_cid_len = 0);
 
 // ---------------------------------------------------------------------------
 // Anti-replay sliding window (RFC 9147 §4.5.1)
