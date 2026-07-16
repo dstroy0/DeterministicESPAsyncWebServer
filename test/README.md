@@ -527,7 +527,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3187 test cases** across **257 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3188 test cases** across **258 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -30404,6 +30404,20 @@ A thorough directory of all **3187 test cases** across **257 suites**. Expand a 
     * **Objective**: Rx overlong banner closes
     * **Assertions**:
       * <code>Assert equal (DETWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot)</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_ssh_crypto (1 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_ghash_table_matches_bitwise</b> &mdash; <i>Boundary operands: H = 0, H = 1<<127 (0x80 in byte 0), acc = all-ones.</i></summary>
+
+    * **Objective**: Boundary operands: H = 0, H = 1<<127 (0x80 in byte 0), acc = all-ones.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(ref, acc, 16);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(r, a, 16);</code>
   </details>
 
 </details>
