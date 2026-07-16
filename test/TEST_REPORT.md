@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-16 01:51:48
+**Generated:** 2026-07-16 02:54:21
 **Command:** `pio test` over 234 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 3235 passed - 806s
+**Result:** ✅ 3237 passed - 270s
 
 ---
 
@@ -261,11 +261,11 @@
 | `test_quic_packet`       | `native_quic_packet`    |     8 |   ✅   | 00:00:00.778 |
 | `test_quic_frame`        | `native_quic_frame`     |     9 |   ✅   | 00:00:00.809 |
 | `test_quic_crypto`       | `native_quic_crypto`    |     7 |   ✅   | 00:00:00.971 |
-| `test_dtls_record`       | `native_dtls`           |     8 |   ✅   | 00:00:00.957 |
+| `test_dtls_record`       | `native_dtls`           |    10 |   ✅   | 00:00:00.923 |
 | `test_dtls_handshake`    | `native_dtls_hs`        |    15 |   ✅   | 00:00:00.846 |
 | `test_dtls_tls13`        | `native_dtls_tls13`     |     6 |   ✅   | 00:00:00.865 |
-| `test_dtls_conn`         | `native_dtls_conn`      |     7 |   ✅   | 00:00:01.323 |
-| `test_coaps`             | `native_coaps`          |     2 |   ✅   | 00:00:01.231 |
+| `test_dtls_conn`         | `native_dtls_conn`      |     7 |   ✅   | 00:00:01.344 |
+| `test_coaps`             | `native_coaps`          |     2 |   ✅   | 00:00:03.801 |
 | `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   | 00:00:00.851 |
 | `test_quic_tp`           | `native_quic_tp`        |     8 |   ✅   | 00:00:00.793 |
 | `test_tls13_msg`         | `native_tls13_msg`      |    11 |   ✅   | 00:00:00.911 |
@@ -6881,7 +6881,7 @@ _Unit tests for QUIC Initial packet crypto (network_drivers/presentation/http3/q
 
 ---
 
-## test_dtls_record - native_dtls - ✅ 8 passed
+## test_dtls_record - native_dtls - ✅ 10 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6896,8 +6896,10 @@ _DTLS 1.3 record layer tests (RFC 9147 §4). The record + key derivation is pinn
 |   4 | `test_dtls_ciphertext_roundtrip`         |   ✅   | Dtls ciphertext roundtrip         |
 |   5 | `test_dtls_seq_reconstruction`           |   ✅   | Dtls seq reconstruction           |
 |   6 | `test_dtls_ciphertext_unprotect_rejects` |   ✅   | Dtls ciphertext unprotect rejects |
-|   7 | `test_dtls_plaintext_roundtrip`          |   ✅   | Dtls plaintext roundtrip          |
-|   8 | `test_dtls_replay_window`                |   ✅   | Dtls replay window                |
+|   7 | `test_dtls_cid_roundtrip`                |   ✅   | Dtls cid roundtrip                |
+|   8 | `test_dtls_cid_rejects`                  |   ✅   | Dtls cid rejects                  |
+|   9 | `test_dtls_plaintext_roundtrip`          |   ✅   | Dtls plaintext roundtrip          |
+|  10 | `test_dtls_replay_window`                |   ✅   | Dtls replay window                |
 
 </details>
 
