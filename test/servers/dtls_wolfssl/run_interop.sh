@@ -20,7 +20,7 @@ mkdir -p "$WORK"
 #        tarball is a GitHub asset here, so build from the git tag; needs autoconf/automake/libtool) ---
 CLIENT="$WORK/wolfssl/examples/client/client"
 # Rebuild if the client is missing or was built without DTLS connection-id support (RFC 9146, --enable-dtlscid).
-if [ ! -x "$CLIENT" ] || ! grep -q 'WOLFSSL_DTLS_CID' "$WORK/wolfssl/wolfssl/options.h" 2>/dev/null; then
+if [[ ! -x "$CLIENT" ]] || ! grep -q 'WOLFSSL_DTLS_CID' "$WORK/wolfssl/wolfssl/options.h" 2>/dev/null; then
   echo ">> building wolfSSL $WOLF_VER (DTLS 1.3 + connection ID)"
   command -v autoconf >/dev/null || { echo "install autoconf automake libtool first"; exit 2; }
   rm -rf "$WORK/wolfssl"
@@ -31,7 +31,7 @@ if [ ! -x "$CLIENT" ] || ! grep -q 'WOLFSSL_DTLS_CID' "$WORK/wolfssl/wolfssl/opt
 fi
 
 # --- 2. throwaway Ed25519 leaf certificate + its raw 32-byte seed ---
-if [ ! -f "$WORK/cert.der" ]; then
+if [[ ! -f "$WORK/cert.der" ]]; then
   echo ">> generating Ed25519 certificate"
   openssl genpkey -algorithm ed25519 -out "$WORK/ed.key" 2>/dev/null
   openssl pkey -in "$WORK/ed.key" -outform DER 2>/dev/null | tail -c 32 > "$WORK/seed.bin" # PKCS#8 tail = raw seed
@@ -73,11 +73,11 @@ run_once() { # <label> <client-extra-flags> <require-hrr:0|1> <require-cid:0|1>
   echo "--- harness log [$label] ---"
   grep -E 'HANDSHAKE|APPDATA|INTEROP|FAIL' "$WORK/harness.log" || true
   grep -q 'INTEROP OK' "$WORK/harness.log" || { echo ">> FAIL [$label]"; return 1; }
-  if [ "$require_hrr" = 1 ] && ! grep -q 'via HelloRetryRequest' "$WORK/harness.log"; then
+  if [[ "$require_hrr" = 1 ]] && ! grep -q 'via HelloRetryRequest' "$WORK/harness.log"; then
     echo ">> FAIL [$label]: expected a HelloRetryRequest but the handshake was 1-RTT"
     return 1
   fi
-  if [ "$require_cid" = 1 ] && ! grep -q 'with connection ID' "$WORK/harness.log"; then
+  if [[ "$require_cid" = 1 ]] && ! grep -q 'with connection ID' "$WORK/harness.log"; then
     echo ">> FAIL [$label]: expected a connection ID but none was negotiated"
     return 1
   fi
