@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-16 16:12:58
+**Generated:** 2026-07-16 17:00:09
 **Command:** `pio test` over 235 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 3243 passed - 811s
+**Result:** ✅ 3420 passed - 298s
 
 ---
 
@@ -11,10 +11,10 @@
 | Suite                    | Environment             | Tests | Status |     Duration |
 | :----------------------- | :---------------------- | ----: | :----: | -----------: |
 | `test_canopen`           | `native_canopen`        |    17 |   ✅   | 00:00:04.169 |
-| `test_cia402`            | `native_cia402`         |     9 |   ✅   | 00:00:00.832 |
-| `test_control`           | `native_control`        |    12 |   ✅   | 00:00:00.770 |
+| `test_cia402`            | `native_cia402`         |    15 |   ✅   | 00:00:00.806 |
+| `test_control`           | `native_control`        |    17 |   ✅   | 00:00:00.760 |
 | `test_dbm`               | `native_dbm`            |    13 |   ✅   | 00:00:00.833 |
-| `test_docstore`          | `native_docstore`       |     5 |   ✅   | 00:00:00.912 |
+| `test_docstore`          | `native_docstore`       |     7 |   ✅   | 00:00:00.897 |
 | `test_dnc`               | `native_dnc`            |    14 |   ✅   | 00:00:00.792 |
 | `test_dnc_stream`        | `native_dnc`            |     8 |   ✅   | 00:00:00.591 |
 | `test_ftp`               | `native_ftp`            |    21 |   ✅   | 00:00:00.768 |
@@ -22,7 +22,7 @@
 | `test_det_primitives`    | `native_det_primitives` |     5 |   ✅   | 00:00:00.756 |
 | `test_det_ip`            | `native_det_ip`         |    11 |   ✅   | 00:00:00.799 |
 | `test_det_arena`         | `native_det_arena`      |    19 |   ✅   | 00:00:00.791 |
-| `test_ssh_ed25519`       | `native_ssh_ed25519`    |    17 |   ✅   | 00:00:04.930 |
+| `test_ssh_ed25519`       | `native_ssh_ed25519`    |    19 |   ✅   | 00:00:05.103 |
 | `test_crypto_kat`        | `native_crypto_kat`     |     9 |   ✅   | 00:00:02.748 |
 | `test_promisc`           | `native_promisc`        |     9 |   ✅   | 00:00:00.752 |
 | `test_bus_capture`       | `native_bus_capture`    |     7 |   ✅   | 00:00:00.770 |
@@ -45,11 +45,11 @@
 | `test_accept_gate`       | `native_accept_gate`    |    13 |   ✅   | 00:00:01.322 |
 | `test_http_ota`          | `native_ota`            |     3 |   ✅   | 00:00:00.838 |
 | `test_provisioning`      | `native_prov`           |     7 |   ✅   | 00:00:00.768 |
-| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:01.475 |
-| `test_ssh_auth`          | `native_ssh`            |    21 |   ✅   | 00:00:03.790 |
-| `test_ssh_crypto`        | `native_ssh`            |    55 |   ✅   | 00:00:06.368 |
-| `test_ssh_transport`     | `native_ssh`            |    45 |   ✅   | 00:00:02.959 |
-| `test_ssh_server`        | `native_ssh`            |    27 |   ✅   | 00:00:01.095 |
+| `test_ssh_channel`       | `native_ssh`            |    37 |   ✅   | 00:00:01.420 |
+| `test_ssh_auth`          | `native_ssh`            |    21 |   ✅   | 00:00:03.773 |
+| `test_ssh_crypto`        | `native_ssh`            |    57 |   ✅   | 00:00:06.574 |
+| `test_ssh_transport`     | `native_ssh`            |    47 |   ✅   | 00:00:03.415 |
+| `test_ssh_server`        | `native_ssh`            |    27 |   ✅   | 00:00:01.112 |
 | `test_ssh_pqc`           | `native_ssh_pqc`        |     4 |   ✅   | 00:00:01.530 |
 | `test_ssh_hardening`     | `native_ssh_hardened`   |     2 |   ✅   | 00:00:01.383 |
 | `test_ssh_conn`          | `native_ssh_conn`       |    16 |   ✅   | 00:00:02.316 |
@@ -113,13 +113,13 @@
 | `test_cotp`              | `native_cotp`           |     7 |   ✅   | 00:00:00.784 |
 | `test_s7comm`            | `native_s7comm`         |     9 |   ✅   | 00:00:00.783 |
 | `test_melsec`            | `native_melsec`         |     7 |   ✅   | 00:00:00.775 |
-| `test_ads`               | `native_ads`            |    11 |   ✅   | 00:00:00.796 |
+| `test_ads`               | `native_ads`            |    17 |   ✅   | 00:00:25.432 |
 | `test_focas`             | `native_focas`          |    11 |   ✅   | 00:00:00.794 |
 | `test_pqc_sha3`          | `native_pqc`            |     4 |   ✅   | 00:00:00.804 |
 | `test_pqc_mlkem`         | `native_pqc`            |     3 |   ✅   | 00:00:00.624 |
 | `test_iface_bridge`      | `native_iface_bridge`   |     7 |   ✅   | 00:00:00.827 |
 | `test_rtcm3`             | `native_rtcm3`          |    11 |   ✅   | 00:00:00.795 |
-| `test_gnss_survey`       | `native_gnss_survey`    |     9 |   ✅   | 00:00:00.851 |
+| `test_gnss_survey`       | `native_gnss_survey`    |    22 |   ✅   | 00:00:00.874 |
 | `test_ntrip_caster`      | `native_ntrip_caster`   |    14 |   ✅   | 00:00:00.794 |
 | `test_bacnet`            | `native_bacnet`         |     9 |   ✅   | 00:00:00.782 |
 | `test_enip`              | `native_enip`           |     7 |   ✅   | 00:00:00.766 |
@@ -128,7 +128,7 @@
 | `test_nats`              | `native_nats`           |    14 |   ✅   | 00:00:00.774 |
 | `test_proxy_protocol`    | `native_proxy_protocol` |    10 |   ✅   | 00:00:00.754 |
 | `test_sparkplug`         | `native_sparkplug`      |     7 |   ✅   | 00:00:00.773 |
-| `test_modbus_master`     | `native_modbus_master`  |     5 |   ✅   | 00:00:00.799 |
+| `test_modbus_master`     | `native_modbus_master`  |    12 |   ✅   | 00:00:00.808 |
 | `test_ota_rollback`      | `native_ota_rollback`   |     6 |   ✅   | 00:00:00.734 |
 | `test_totp`              | `native_totp`           |     5 |   ✅   | 00:00:00.800 |
 | `test_webhook`           | `native_webhook`        |     9 |   ✅   | 00:00:00.769 |
@@ -146,12 +146,12 @@
 | `test_keepalive`         | `native_keepalive`      |    11 |   ✅   | 00:00:01.808 |
 | `test_range`             | `native_range`          |    20 |   ✅   | 00:00:01.809 |
 | `test_syslog`            | `native_syslog`         |    10 |   ✅   | 00:00:00.807 |
-| `test_smb_client`        | `native_smb`            |    10 |   ✅   | 00:00:00.951 |
-| `test_smb_crypto`        | `native_smb`            |     5 |   ✅   | 00:00:00.596 |
-| `test_spnego`            | `native_smb`            |     4 |   ✅   | 00:00:00.592 |
-| `test_ntlm`              | `native_smb`            |     3 |   ✅   | 00:00:00.619 |
-| `test_ntlmssp`           | `native_smb`            |     5 |   ✅   | 00:00:00.619 |
-| `test_smb2`              | `native_smb`            |    19 |   ✅   | 00:00:00.676 |
+| `test_smb_client`        | `native_smb`            |    58 |   ✅   | 00:00:00.934 |
+| `test_smb_crypto`        | `native_smb`            |     5 |   ✅   | 00:00:00.585 |
+| `test_spnego`            | `native_smb`            |    14 |   ✅   | 00:00:00.600 |
+| `test_ntlm`              | `native_smb`            |     8 |   ✅   | 00:00:00.591 |
+| `test_ntlmssp`           | `native_smb`            |     5 |   ✅   | 00:00:00.591 |
+| `test_smb2`              | `native_smb`            |    19 |   ✅   | 00:00:00.660 |
 | `test_smtp`              | `native_smtp`           |    22 |   ✅   | 00:00:00.992 |
 | `test_ntp_server`        | `native_ntp_server`     |     8 |   ✅   | 00:00:00.766 |
 | `test_dns_server`        | `native_dns_server`     |    13 |   ✅   | 00:00:00.761 |
@@ -170,7 +170,7 @@
 | `test_quic_varint`       | `native_quic_varint`    |     3 |   ✅   | 00:00:00.749 |
 | `test_h3_frame`          | `native_h3frame`        |     7 |   ✅   | 00:00:00.834 |
 | `test_jwt`               | `native_jwt`            |    22 |   ✅   | 00:00:00.840 |
-| `test_upload`            | `native_upload`         |     3 |   ✅   | 00:00:01.843 |
+| `test_upload`            | `native_upload`         |     8 |   ✅   | 00:00:01.835 |
 | `test_http_client`       | `native_http_client`    |    15 |   ✅   | 00:00:00.768 |
 | `test_compliance`        | `native_compliance`     |    15 |   ✅   | 00:00:00.820 |
 | `test_mqtt`              | `native_mqtt`           |    22 |   ✅   | 00:00:00.781 |
@@ -180,7 +180,7 @@
 | `test_inflate`           | `native_inflate`        |    14 |   ✅   | 00:00:00.790 |
 | `test_deflate`           | `native_deflate`        |    10 |   ✅   | 00:00:00.824 |
 | `test_ssh_zlib`          | `native_ssh_zlib`       |     9 |   ✅   | 00:00:00.851 |
-| `test_ssh_comp`          | `native_ssh_comp`       |     6 |   ✅   | 00:00:01.443 |
+| `test_ssh_comp`          | `native_ssh_comp`       |     8 |   ✅   | 00:00:01.464 |
 | `test_websocket`         | `native_ws_deflate`     |    74 |   ✅   | 00:00:01.467 |
 | `test_time_source`       | `native_time_source`    |    10 |   ✅   | 00:00:00.764 |
 | `test_config_store`      | `native_config_store`   |    15 |   ✅   | 00:00:00.792 |
@@ -210,8 +210,8 @@
 | `test_spa_router`        | `native_spa_router`     |     2 |   ✅   | 00:00:00.749 |
 | `test_goose`             | `native_goose`          |     4 |   ✅   | 00:00:00.757 |
 | `test_mtconnect`         | `native_mtconnect`      |    12 |   ✅   | 00:00:00.794 |
-| `test_wal`               | `native_wal`            |     6 |   ✅   | 00:00:00.819 |
-| `test_wal_store`         | `native_wal`            |     7 |   ✅   | 00:00:00.625 |
+| `test_wal`               | `native_wal`            |     6 |   ✅   | 00:00:00.802 |
+| `test_wal_store`         | `native_wal`            |    29 |   ✅   | 00:00:00.653 |
 | `test_j2735`             | `native_j2735`          |    11 |   ✅   | 00:00:00.786 |
 | `test_nema_ts2`          | `native_nema_ts2`       |     4 |   ✅   | 00:00:00.751 |
 | `test_snp`               | `native_snp`            |     5 |   ✅   | 00:00:00.753 |
@@ -242,8 +242,8 @@
 | `test_psram_pool`        | `native_psram_pool`     |     5 |   ✅   | 00:00:00.807 |
 | `test_happy_eyeballs`    | `native_happy_eyeballs` |     5 |   ✅   | 00:00:00.824 |
 | `test_wifi_sniffer`      | `native_wifi_sniffer`   |     6 |   ✅   | 00:00:00.800 |
-| `test_link_manager`      | `native_link_manager`   |     4 |   ✅   | 00:00:00.747 |
-| `test_cc1101`            | `native_cc1101`         |    11 |   ✅   | 00:00:00.771 |
+| `test_link_manager`      | `native_link_manager`   |     7 |   ✅   | 00:00:00.754 |
+| `test_cc1101`            | `native_cc1101`         |    18 |   ✅   | 00:00:00.759 |
 | `test_fdc2214`           | `native_fdc2214`        |     4 |   ✅   | 00:00:00.760 |
 | `test_ldc1614`           | `native_ldc1614`        |     4 |   ✅   | 00:00:00.755 |
 | `test_vl53l0x`           | `native_vl53l0x`        |     3 |   ✅   | 00:00:00.745 |
@@ -259,15 +259,15 @@
 | `test_concurrency`       | `native_tsan`           |     2 |   ✅   | 00:00:01.576 |
 | `test_qpack`             | `native_qpack`          |    11 |   ✅   | 00:00:00.941 |
 | `test_quic_packet`       | `native_quic_packet`    |     8 |   ✅   | 00:00:00.783 |
-| `test_quic_frame`        | `native_quic_frame`     |     9 |   ✅   | 00:00:00.803 |
-| `test_quic_crypto`       | `native_quic_crypto`    |     7 |   ✅   | 00:00:00.953 |
-| `test_dtls_record`       | `native_dtls`           |    10 |   ✅   | 00:00:00.931 |
+| `test_quic_frame`        | `native_quic_frame`     |    11 |   ✅   | 00:00:00.811 |
+| `test_quic_crypto`       | `native_quic_crypto`    |    13 |   ✅   | 00:00:00.926 |
+| `test_dtls_record`       | `native_dtls`           |    16 |   ✅   | 00:00:00.924 |
 | `test_dtls_handshake`    | `native_dtls_hs`        |    15 |   ✅   | 00:00:00.842 |
 | `test_dtls_tls13`        | `native_dtls_tls13`     |     6 |   ✅   | 00:00:00.891 |
 | `test_dtls_conn`         | `native_dtls_conn`      |     8 |   ✅   | 00:00:01.413 |
-| `test_coaps`             | `native_coaps`          |     2 |   ✅   | 00:00:01.230 |
-| `test_coaps_server`      | `native_coaps_server`   |     5 |   ✅   | 00:00:01.382 |
-| `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   | 00:00:00.843 |
+| `test_coaps`             | `native_coaps`          |     6 |   ✅   | 00:00:01.382 |
+| `test_coaps_server`      | `native_coaps_server`   |    15 |   ✅   | 00:00:01.594 |
+| `test_tls13_kdf`         | `native_tls13_kdf`      |     6 |   ✅   | 00:00:00.846 |
 | `test_quic_tp`           | `native_quic_tp`        |     8 |   ✅   | 00:00:00.800 |
 | `test_tls13_msg`         | `native_tls13_msg`      |    11 |   ✅   | 00:00:00.910 |
 | `test_quic_tls`          | `native_quic_tls`       |    13 |   ✅   | 00:00:01.365 |
@@ -277,7 +277,7 @@
 | `test_h3_e2e`            | `native_h3_e2e`         |     1 |   ✅   | 00:00:01.345 |
 | `test_quic_server`       | `native_quic_server`    |     4 |   ✅   | 00:00:01.429 |
 | `test_h3_server`         | `native_h3_server`      |     1 |   ✅   | 00:00:02.459 |
-| `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.832 |
+| `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     5 |   ✅   | 00:00:00.803 |
 | `test_ssh_aesgcm`        | `native_ssh_aesgcm`     |     3 |   ✅   | 00:00:00.776 |
 | `test_ssh_ecdsa`         | `native_ssh_ecdsa`      |    10 |   ✅   | 00:00:02.669 |
 
@@ -314,7 +314,7 @@ _Unit tests for the CANopen (CiA 301) message codec (services/canopen): NMT, SYN
 
 ---
 
-## test_cia402 - native_cia402 - ✅ 9 passed
+## test_cia402 - native_cia402 - ✅ 15 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -332,12 +332,18 @@ _Unit tests for the CiA 402 drive profile (services/cia402): the Statusword stat
 |   7 | `test_sdo_set_targets`                |   ✅   | Sdo set targets                                                                           |
 |   8 | `test_sdo_get_roundtrip`              |   ✅   | Build a read request, then decode a crafted SDO upload response for the Statusword.       |
 |   9 | `test_pdo_pack_unpack`                |   ✅   | Pdo pack unpack                                                                           |
+|  10 | `test_state_decode_unknown`           |   ✅   | State decode unknown                                                                      |
+|  11 | `test_controlword_invalid_command`    |   ✅   | Controlword invalid command                                                               |
+|  12 | `test_sdo_set_velocity_torque`        |   ✅   | Sdo set velocity torque                                                                   |
+|  13 | `test_sdo_get_i32_roundtrip`          |   ✅   | Sdo get i32 roundtrip                                                                     |
+|  14 | `test_sdo_upload_reject_paths`        |   ✅   | (a) parse failure: dlc < 8 makes canopen_parse_sdo_response fail.                         |
+|  15 | `test_pdo_null_guards`                |   ✅   | Pdo null guards                                                                           |
 
 </details>
 
 ---
 
-## test_control - native_control - ✅ 12 passed
+## test_control - native_control - ✅ 17 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -358,6 +364,11 @@ _Unit tests for the PID control law (services/control): P / I / D terms, output 
 |  10 | `test_batched_update`              |   ✅   | Batched update                                                                              |
 |  11 | `test_fixed_rate_matches`          |   ✅   | pid_update_fixed(sp, meas) must equal pid_update(sp, meas, dt) once pid_set_rate caches dt. |
 |  12 | `test_control_primitives`          |   ✅   | Control primitives                                                                          |
+|  13 | `test_setter_null_guards`          |   ✅   | Setter null guards                                                                          |
+|  14 | `test_integral_limits_take_effect` |   ✅   | Integral limits take effect                                                                 |
+|  15 | `test_pid_update_n_null_guards`    |   ✅   | Pid update n null guards                                                                    |
+|  16 | `test_pid_log_header_bytes`        |   ✅   | Pid log header bytes                                                                        |
+|  17 | `test_pid_log_record_bytes`        |   ✅   | Pid log record bytes                                                                        |
 
 </details>
 
@@ -390,7 +401,7 @@ _Host tests for services/dbm: a log-structured hash KV over the WAL, exercised o
 
 ---
 
-## test_docstore - native_docstore - ✅ 5 passed
+## test_docstore - native_docstore - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -404,6 +415,8 @@ _Host tests for services/docstore: a JSON document store on the WAL (via dbm), w
 |   3 | `test_find_bool`                       |   ✅   | Find bool                       |
 |   4 | `test_persist_and_query_across_reboot` |   ✅   | Persist and query across reboot |
 |   5 | `test_find_early_stop`                 |   ✅   | Find early stop                 |
+|   6 | `test_find_field_absent`               |   ✅   | Find field absent               |
+|   7 | `test_find_count_only_null_cb`         |   ✅   | Find count only null cb         |
 
 </details>
 
@@ -600,32 +613,34 @@ _Unit tests for the unified double-ended arena (network_drivers/session/det_aren
 
 ---
 
-## test_ssh_ed25519 - native_ssh_ed25519 - ✅ 17 passed
+## test_ssh_ed25519 - native_ssh_ed25519 - ✅ 19 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Known-answer tests for the modern SSH crypto suite (curve25519-sha256 KEX +_
 
-|   # | Test                                    | Status | Description                      |
-| --: | :-------------------------------------- | :----: | :------------------------------- |
-|   1 | `test_sha512_empty`                     |   ✅   | Sha512 empty                     |
-|   2 | `test_sha512_abc`                       |   ✅   | Sha512 abc                       |
-|   3 | `test_sha512_one_block_boundary`        |   ✅   | Sha512 one block boundary        |
-|   4 | `test_sha512_two_block_boundary`        |   ✅   | Sha512 two block boundary        |
-|   5 | `test_sha512_million_a_streaming`       |   ✅   | Sha512 million a streaming       |
-|   6 | `test_sha512_streaming_matches_oneshot` |   ✅   | Sha512 streaming matches oneshot |
-|   7 | `test_x25519_rfc7748_vector1`           |   ✅   | X25519 rfc7748 vector1           |
-|   8 | `test_x25519_rfc7748_vector2`           |   ✅   | X25519 rfc7748 vector2           |
-|   9 | `test_x25519_iterated_1`                |   ✅   | X25519 iterated 1                |
-|  10 | `test_x25519_iterated_1000`             |   ✅   | X25519 iterated 1000             |
-|  11 | `test_x25519_dh_agreement`              |   ✅   | X25519 dh agreement              |
-|  12 | `test_ed25519_vector_empty_msg`         |   ✅   | Ed25519 vector empty msg         |
-|  13 | `test_ed25519_vector_rfc8032_test2`     |   ✅   | Ed25519 vector rfc8032 test2     |
-|  14 | `test_ed25519_vector_zero_seed`         |   ✅   | Ed25519 vector zero seed         |
-|  15 | `test_ed25519_verify_rejects_tampering` |   ✅   | Ed25519 verify rejects tampering |
-|  16 | `test_ed25519_roundtrip_long`           |   ✅   | Ed25519 roundtrip long           |
-|  17 | `test_gf_mul_s16_model_matches_scalar`  |   ✅   | Gf mul s16 model matches scalar  |
+|   # | Test                                               | Status | Description                                 |
+| --: | :------------------------------------------------- | :----: | :------------------------------------------ |
+|   1 | `test_sha512_empty`                                |   ✅   | Sha512 empty                                |
+|   2 | `test_sha512_abc`                                  |   ✅   | Sha512 abc                                  |
+|   3 | `test_sha512_one_block_boundary`                   |   ✅   | Sha512 one block boundary                   |
+|   4 | `test_sha512_two_block_boundary`                   |   ✅   | Sha512 two block boundary                   |
+|   5 | `test_sha512_million_a_streaming`                  |   ✅   | Sha512 million a streaming                  |
+|   6 | `test_sha512_streaming_matches_oneshot`            |   ✅   | Sha512 streaming matches oneshot            |
+|   7 | `test_x25519_rfc7748_vector1`                      |   ✅   | X25519 rfc7748 vector1                      |
+|   8 | `test_x25519_rfc7748_vector2`                      |   ✅   | X25519 rfc7748 vector2                      |
+|   9 | `test_x25519_iterated_1`                           |   ✅   | X25519 iterated 1                           |
+|  10 | `test_x25519_iterated_1000`                        |   ✅   | X25519 iterated 1000                        |
+|  11 | `test_x25519_dh_agreement`                         |   ✅   | X25519 dh agreement                         |
+|  12 | `test_ed25519_vector_empty_msg`                    |   ✅   | Ed25519 vector empty msg                    |
+|  13 | `test_ed25519_vector_rfc8032_test2`                |   ✅   | Ed25519 vector rfc8032 test2                |
+|  14 | `test_ed25519_vector_zero_seed`                    |   ✅   | Ed25519 vector zero seed                    |
+|  15 | `test_ed25519_verify_rejects_tampering`            |   ✅   | Ed25519 verify rejects tampering            |
+|  16 | `test_ed25519_verify_rejects_noncanonical_s`       |   ✅   | Ed25519 verify rejects noncanonical s       |
+|  17 | `test_ed25519_verify_rejects_invalid_pubkey_point` |   ✅   | Ed25519 verify rejects invalid pubkey point |
+|  18 | `test_ed25519_roundtrip_long`                      |   ✅   | Ed25519 roundtrip long                      |
+|  19 | `test_gf_mul_s16_model_matches_scalar`             |   ✅   | Gf mul s16 model matches scalar             |
 
 </details>
 
@@ -1506,7 +1521,7 @@ _SSH user-authentication tests (RFC 4252): service request/accept, request_
 
 ---
 
-## test_ssh_crypto - native_ssh - ✅ 55 passed
+## test_ssh_crypto - native_ssh - ✅ 57 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1523,59 +1538,61 @@ _SSH crypto layer test suite._
 |   6 | `test_hmac_sha256_tc2`                       |   ✅   | RFC 4231 Test Case 2                                                                            |
 |   7 | `test_hmac_sha256_tc3`                       |   ✅   | RFC 4231 Test Case 3                                                                            |
 |   8 | `test_hmac_sha256_streaming`                 |   ✅   | Same as tc1 but via streaming API.                                                              |
-|   9 | `test_hmac_sha512_tc1`                       |   ✅   | RFC 4231 Test Case 1: Key = 0x0b x20, Data = "Hi There".                                        |
-|  10 | `test_hmac_sha512_tc2`                       |   ✅   | RFC 4231 Test Case 2: Key = "Jefe", Data = "what do ya want for nothing?".                      |
-|  11 | `test_hmac_sha512_streaming`                 |   ✅   | Same as tc1 but via the streaming API (also exercises the 128-byte block boundary).             |
-|  12 | `test_aes256ctr_encrypt`                     |   ✅   | NIST SP 800-38A, Section F.5.5                                                                  |
-|  13 | `test_aes256ctr_decrypt`                     |   ✅   | AES-256-CTR decrypt is identical to encrypt.                                                    |
-|  14 | `test_aes256ctr_multi_block`                 |   ✅   | NIST F.5.5 blocks 1-4 (64 bytes).                                                               |
-|  15 | `test_aes256ctr_wipe`                        |   ✅   | After wipe, the context should be all zeros.                                                    |
-|  16 | `test_bn_roundtrip`                          |   ✅   | Round-trip: bytes → SshBigNum → bytes.                                                          |
-|  17 | `test_bn_cmp_equal`                          |   ✅   | Bn cmp equal                                                                                    |
-|  18 | `test_bn_cmp_less`                           |   ✅   | Bn cmp less                                                                                     |
-|  19 | `test_bn_cmp_greater`                        |   ✅   | Bn cmp greater                                                                                  |
-|  20 | `test_bn_is_zero`                            |   ✅   | Bn is zero                                                                                      |
-|  21 | `test_bn_dh_validate_rejects_zero`           |   ✅   | Bn dh validate rejects zero                                                                     |
-|  22 | `test_bn_dh_validate_rejects_one`            |   ✅   | Bn dh validate rejects one                                                                      |
-|  23 | `test_bn_dh_validate_accepts_two`            |   ✅   | Bn dh validate accepts two                                                                      |
-|  24 | `test_expmod_exp1`                           |   ✅   | Expmod exp1                                                                                     |
-|  25 | `test_expmod_exp2`                           |   ✅   | Expmod exp2                                                                                     |
-|  26 | `test_expmod_exp3`                           |   ✅   | Expmod exp3                                                                                     |
-|  27 | `test_expmod_commutative`                    |   ✅   | Expmod commutative                                                                              |
-|  28 | `test_rsa_pkcs1_pad_structure`               |   ✅   | With d=1, sign(msg) = m^1 mod n = m (the padded message itself).                                |
-|  29 | `test_rsa_sign_verify_roundtrip`             |   ✅   | Install the real keypair into the native sign fixture.                                          |
-|  30 | `test_rsa_encode_pubkey`                     |   ✅   | Rsa encode pubkey                                                                               |
-|  31 | `test_rsa_verify_and_encode_guards`          |   ✅   | Rsa verify and encode guards                                                                    |
-|  32 | `test_rsa_verify_valid_signature`            |   ✅   | Rsa verify valid signature                                                                      |
-|  33 | `test_rsa_verify_rejects_tampered_signature` |   ✅   | Rsa verify rejects tampered signature                                                           |
-|  34 | `test_rsa_verify_rejects_wrong_message`      |   ✅   | Rsa verify rejects wrong message                                                                |
-|  35 | `test_rsa_sha512_kat_sign_verify`            |   ✅   | Rsa sha512 kat sign verify                                                                      |
-|  36 | `test_pkt_send_recv_unencrypted`             |   ✅   | Pkt send recv unencrypted                                                                       |
-|  37 | `test_pkt_padding_alignment`                 |   ✅   | Packet length + padding must be multiple of 16.                                                 |
-|  38 | `test_pkt_seq_increments`                    |   ✅   | Pkt seq increments                                                                              |
-|  39 | `test_pkt_disconnect_zeroes_state`           |   ✅   | Pkt disconnect zeroes state                                                                     |
-|  40 | `test_pkt_encrypted_roundtrip`               |   ✅   | Pkt encrypted roundtrip                                                                         |
-|  41 | `test_pkt_chacha20poly1305_roundtrip`        |   ✅   | Install a chacha20-poly1305 session with the same key both directions, so ssh_pkt_send()        |
-|  42 | `test_pkt_aes256gcm_roundtrip`               |   ✅   | Install an aes256-gcm@openssh.com session with the same key/IV both directions, so ssh_pkt_send |
-|  43 | `test_pkt_aes_etm_sha256_roundtrip`          |   ✅   | Pkt aes etm sha256 roundtrip                                                                    |
-|  44 | `test_pkt_aes_etm_sha512_roundtrip`          |   ✅   | Pkt aes etm sha512 roundtrip                                                                    |
-|  45 | `test_pkt_encrypted_fragmented`              |   ✅   | Pkt encrypted fragmented                                                                        |
-|  46 | `test_pkt_encrypted_two_packets`             |   ✅   | Pkt encrypted two packets                                                                       |
-|  47 | `test_pkt_chacha_padding_and_incomplete`     |   ✅   | Pkt chacha padding and incomplete                                                               |
-|  48 | `test_pkt_etm_padding_and_incomplete`        |   ✅   | Pkt etm padding and incomplete                                                                  |
-|  49 | `test_pkt_chacha_forged_rejects`             |   ✅   | Pkt chacha forged rejects                                                                       |
-|  50 | `test_pkt_etm_bad_length`                    |   ✅   | Pkt etm bad length                                                                              |
-|  51 | `test_pkt_etm_forged_rejects`                |   ✅   | Pkt etm forged rejects                                                                          |
-|  52 | `test_pkt_scratch_exhausted`                 |   ✅   | Pkt scratch exhausted                                                                           |
-|  53 | `test_pkt_eam_forged_rejects`                |   ✅   | Pkt eam forged rejects                                                                          |
-|  54 | `test_ssh_kdf_canonical_mpint_k`             |   ✅   | Ssh kdf canonical mpint k                                                                       |
-|  55 | `test_ssh_kdf_extension_chain`               |   ✅   | Ssh kdf extension chain                                                                         |
+|   9 | `test_hmac_sha256_tc6_large_key`             |   ✅   | Hmac sha256 tc6 large key                                                                       |
+|  10 | `test_hmac_sha512_tc1`                       |   ✅   | RFC 4231 Test Case 1: Key = 0x0b x20, Data = "Hi There".                                        |
+|  11 | `test_hmac_sha512_tc2`                       |   ✅   | RFC 4231 Test Case 2: Key = "Jefe", Data = "what do ya want for nothing?".                      |
+|  12 | `test_hmac_sha512_streaming`                 |   ✅   | Same as tc1 but via the streaming API (also exercises the 128-byte block boundary).             |
+|  13 | `test_hmac_sha512_tc6_large_key`             |   ✅   | Hmac sha512 tc6 large key                                                                       |
+|  14 | `test_aes256ctr_encrypt`                     |   ✅   | NIST SP 800-38A, Section F.5.5                                                                  |
+|  15 | `test_aes256ctr_decrypt`                     |   ✅   | AES-256-CTR decrypt is identical to encrypt.                                                    |
+|  16 | `test_aes256ctr_multi_block`                 |   ✅   | NIST F.5.5 blocks 1-4 (64 bytes).                                                               |
+|  17 | `test_aes256ctr_wipe`                        |   ✅   | After wipe, the context should be all zeros.                                                    |
+|  18 | `test_bn_roundtrip`                          |   ✅   | Round-trip: bytes → SshBigNum → bytes.                                                          |
+|  19 | `test_bn_cmp_equal`                          |   ✅   | Bn cmp equal                                                                                    |
+|  20 | `test_bn_cmp_less`                           |   ✅   | Bn cmp less                                                                                     |
+|  21 | `test_bn_cmp_greater`                        |   ✅   | Bn cmp greater                                                                                  |
+|  22 | `test_bn_is_zero`                            |   ✅   | Bn is zero                                                                                      |
+|  23 | `test_bn_dh_validate_rejects_zero`           |   ✅   | Bn dh validate rejects zero                                                                     |
+|  24 | `test_bn_dh_validate_rejects_one`            |   ✅   | Bn dh validate rejects one                                                                      |
+|  25 | `test_bn_dh_validate_accepts_two`            |   ✅   | Bn dh validate accepts two                                                                      |
+|  26 | `test_expmod_exp1`                           |   ✅   | Expmod exp1                                                                                     |
+|  27 | `test_expmod_exp2`                           |   ✅   | Expmod exp2                                                                                     |
+|  28 | `test_expmod_exp3`                           |   ✅   | Expmod exp3                                                                                     |
+|  29 | `test_expmod_commutative`                    |   ✅   | Expmod commutative                                                                              |
+|  30 | `test_rsa_pkcs1_pad_structure`               |   ✅   | With d=1, sign(msg) = m^1 mod n = m (the padded message itself).                                |
+|  31 | `test_rsa_sign_verify_roundtrip`             |   ✅   | Install the real keypair into the native sign fixture.                                          |
+|  32 | `test_rsa_encode_pubkey`                     |   ✅   | Rsa encode pubkey                                                                               |
+|  33 | `test_rsa_verify_and_encode_guards`          |   ✅   | Rsa verify and encode guards                                                                    |
+|  34 | `test_rsa_verify_valid_signature`            |   ✅   | Rsa verify valid signature                                                                      |
+|  35 | `test_rsa_verify_rejects_tampered_signature` |   ✅   | Rsa verify rejects tampered signature                                                           |
+|  36 | `test_rsa_verify_rejects_wrong_message`      |   ✅   | Rsa verify rejects wrong message                                                                |
+|  37 | `test_rsa_sha512_kat_sign_verify`            |   ✅   | Rsa sha512 kat sign verify                                                                      |
+|  38 | `test_pkt_send_recv_unencrypted`             |   ✅   | Pkt send recv unencrypted                                                                       |
+|  39 | `test_pkt_padding_alignment`                 |   ✅   | Packet length + padding must be multiple of 16.                                                 |
+|  40 | `test_pkt_seq_increments`                    |   ✅   | Pkt seq increments                                                                              |
+|  41 | `test_pkt_disconnect_zeroes_state`           |   ✅   | Pkt disconnect zeroes state                                                                     |
+|  42 | `test_pkt_encrypted_roundtrip`               |   ✅   | Pkt encrypted roundtrip                                                                         |
+|  43 | `test_pkt_chacha20poly1305_roundtrip`        |   ✅   | Install a chacha20-poly1305 session with the same key both directions, so ssh_pkt_send()        |
+|  44 | `test_pkt_aes256gcm_roundtrip`               |   ✅   | Install an aes256-gcm@openssh.com session with the same key/IV both directions, so ssh_pkt_send |
+|  45 | `test_pkt_aes_etm_sha256_roundtrip`          |   ✅   | Pkt aes etm sha256 roundtrip                                                                    |
+|  46 | `test_pkt_aes_etm_sha512_roundtrip`          |   ✅   | Pkt aes etm sha512 roundtrip                                                                    |
+|  47 | `test_pkt_encrypted_fragmented`              |   ✅   | Pkt encrypted fragmented                                                                        |
+|  48 | `test_pkt_encrypted_two_packets`             |   ✅   | Pkt encrypted two packets                                                                       |
+|  49 | `test_pkt_chacha_padding_and_incomplete`     |   ✅   | Pkt chacha padding and incomplete                                                               |
+|  50 | `test_pkt_etm_padding_and_incomplete`        |   ✅   | Pkt etm padding and incomplete                                                                  |
+|  51 | `test_pkt_chacha_forged_rejects`             |   ✅   | Pkt chacha forged rejects                                                                       |
+|  52 | `test_pkt_etm_bad_length`                    |   ✅   | Pkt etm bad length                                                                              |
+|  53 | `test_pkt_etm_forged_rejects`                |   ✅   | Pkt etm forged rejects                                                                          |
+|  54 | `test_pkt_scratch_exhausted`                 |   ✅   | Pkt scratch exhausted                                                                           |
+|  55 | `test_pkt_eam_forged_rejects`                |   ✅   | Pkt eam forged rejects                                                                          |
+|  56 | `test_ssh_kdf_canonical_mpint_k`             |   ✅   | Ssh kdf canonical mpint k                                                                       |
+|  57 | `test_ssh_kdf_extension_chain`               |   ✅   | Ssh kdf extension chain                                                                         |
 
 </details>
 
 ---
 
-## test_ssh_transport - native_ssh - ✅ 45 passed
+## test_ssh_transport - native_ssh - ✅ 47 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -1629,6 +1646,8 @@ _SSH transport handshake tests (RFC 4253): identification-string exchange and_
 |  43 | `test_kdf_edge_paths_and_slot_guards`                      |   ✅   | Kdf edge paths and slot guards                                                            |
 |  44 | `test_kexinit_parse_truncation_points`                     |   ✅   | Kexinit parse truncation points                                                           |
 |  45 | `test_ssh_transport_more_guards`                           |   ✅   | Ssh transport more guards                                                                 |
+|  46 | `test_dh_derive_keys_gcm_installs`                         |   ✅   | Dh derive keys gcm installs                                                               |
+|  47 | `test_kdf_string_k_hybrid`                                 |   ✅   | Kdf string k hybrid                                                                       |
 
 </details>
 
@@ -3453,26 +3472,32 @@ _Unit tests for the Mitsubishi MELSEC MC binary 3E codec (services/melsec): the 
 
 ---
 
-## test_ads - native_ads - ✅ 11 passed
+## test_ads - native_ads - ✅ 17 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the Beckhoff ADS / AMS codec (services/ads): the request builders and the_
 
-|   # | Test                               | Status | Description                 |
-| --: | :--------------------------------- | :----: | :-------------------------- |
-|   1 | `test_build_read_bytes`            |   ✅   | Build read bytes            |
-|   2 | `test_parse_read_response`         |   ✅   | Parse read response         |
-|   3 | `test_build_write`                 |   ✅   | Build write                 |
-|   4 | `test_build_read_write_symbol`     |   ✅   | Build read write symbol     |
-|   5 | `test_read_state_roundtrip`        |   ✅   | Read state roundtrip        |
-|   6 | `test_parse_device_info`           |   ✅   | Parse device info           |
-|   7 | `test_write_control_and_result`    |   ✅   | Write control and result    |
-|   8 | `test_add_notification`            |   ✅   | Add notification            |
-|   9 | `test_parse_notification_stream`   |   ✅   | Parse notification stream   |
-|  10 | `test_build_overflow_fails_closed` |   ✅   | Build overflow fails closed |
-|  11 | `test_parse_guards`                |   ✅   | Parse guards                |
+|   # | Test                                      | Status | Description                        |
+| --: | :---------------------------------------- | :----: | :--------------------------------- |
+|   1 | `test_build_read_bytes`                   |   ✅   | Build read bytes                   |
+|   2 | `test_parse_read_response`                |   ✅   | Parse read response                |
+|   3 | `test_build_write`                        |   ✅   | Build write                        |
+|   4 | `test_build_read_write_symbol`            |   ✅   | Build read write symbol            |
+|   5 | `test_read_state_roundtrip`               |   ✅   | Read state roundtrip               |
+|   6 | `test_parse_device_info`                  |   ✅   | Parse device info                  |
+|   7 | `test_write_control_and_result`           |   ✅   | Write control and result           |
+|   8 | `test_add_notification`                   |   ✅   | Add notification                   |
+|   9 | `test_parse_notification_stream`          |   ✅   | Parse notification stream          |
+|  10 | `test_build_overflow_fails_closed`        |   ✅   | Build overflow fails closed        |
+|  11 | `test_parse_guards`                       |   ✅   | Parse guards                       |
+|  12 | `test_build_read_device_info_and_del`     |   ✅   | Build read device info and del     |
+|  13 | `test_build_null_and_small_buffer_guards` |   ✅   | Build null and small buffer guards |
+|  14 | `test_build_write_control_variants`       |   ✅   | Build write control variants       |
+|  15 | `test_parse_ams_header_more_guards`       |   ✅   | Parse ams header more guards       |
+|  16 | `test_parse_payload_guards`               |   ✅   | Parse payload guards               |
+|  17 | `test_parse_notification_guards`          |   ✅   | Parse notification guards          |
 
 </details>
 
@@ -3584,7 +3609,7 @@ _Unit tests for the RTCM 3.x pure codec (services/gnss/rtcm3): CRC-24Q, MSB-firs
 
 ---
 
-## test_gnss_survey - native_gnss_survey - ✅ 9 passed
+## test_gnss_survey - native_gnss_survey - ✅ 22 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -3602,6 +3627,19 @@ _Unit tests for the GNSS survey-in core (services/gnss/gnss_survey): the WGS84 g
 |   7 | `test_gga_to_geodetic`                     |   ✅   | Gga to geodetic                                      |
 |   8 | `test_gga_no_fix_rejected`                 |   ✅   | Fix quality field (index 6) = 0 -> no fix -> reject. |
 |   9 | `test_survey_add_gga_folds_fix`            |   ✅   | Survey add gga folds fix                             |
+|  10 | `test_ecef_to_geodetic_north_pole`         |   ✅   | Ecef to geodetic north pole                          |
+|  11 | `test_ecef_to_geodetic_south_pole`         |   ✅   | Ecef to geodetic south pole                          |
+|  12 | `test_gga_empty_lat_rejected`              |   ✅   | Gga empty lat rejected                               |
+|  13 | `test_gga_nonnumeric_lat_rejected`         |   ✅   | Gga nonnumeric lat rejected                          |
+|  14 | `test_gga_empty_lon_rejected`              |   ✅   | Gga empty lon rejected                               |
+|  15 | `test_gga_empty_quality_rejected`          |   ✅   | Gga empty quality rejected                           |
+|  16 | `test_gga_empty_altitude_rejected`         |   ✅   | Gga empty altitude rejected                          |
+|  17 | `test_gga_too_few_fields_rejected`         |   ✅   | Gga too few fields rejected                          |
+|  18 | `test_gga_southern_eastern_hemisphere`     |   ✅   | Gga southern eastern hemisphere                      |
+|  19 | `test_gga_lowercase_hemispheres`           |   ✅   | Gga lowercase hemispheres                            |
+|  20 | `test_gga_geoid_absent_defaults_zero`      |   ✅   | Gga geoid absent defaults zero                       |
+|  21 | `test_gga_bad_args_and_types_rejected`     |   ✅   | Gga bad args and types rejected                      |
+|  22 | `test_survey_add_gga_rejects_bad_fix`      |   ✅   | Survey add gga rejects bad fix                       |
 
 </details>
 
@@ -3797,20 +3835,27 @@ _Unit tests for the Sparkplug B codec (services/sparkplug): the topic builder, t
 
 ---
 
-## test_modbus_master - native_modbus_master - ✅ 5 passed
+## test_modbus_master - native_modbus_master - ✅ 12 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the Modbus master codec (services/modbus/modbus_master): request_
 
-|   # | Test                           | Status | Description                                                             |
-| --: | :----------------------------- | :----: | :---------------------------------------------------------------------- |
-|   1 | `test_build_read_bytes`        |   ✅   | Build read bytes                                                        |
-|   2 | `test_build_rejects_bad_args`  |   ✅   | Build rejects bad args                                                  |
-|   3 | `test_round_trip_holding_regs` |   ✅   | Round trip holding regs                                                 |
-|   4 | `test_round_trip_exception`    |   ✅   | Read a wildly out-of-range address: the slave returns an exception ADU. |
-|   5 | `test_parse_short_frame_fails` |   ✅   | Parse short frame fails                                                 |
+|   # | Test                               | Status | Description                                                             |
+| --: | :--------------------------------- | :----: | :---------------------------------------------------------------------- |
+|   1 | `test_build_read_bytes`            |   ✅   | Build read bytes                                                        |
+|   2 | `test_build_rejects_bad_args`      |   ✅   | Build rejects bad args                                                  |
+|   3 | `test_round_trip_holding_regs`     |   ✅   | Round trip holding regs                                                 |
+|   4 | `test_round_trip_exception`        |   ✅   | Read a wildly out-of-range address: the slave returns an exception ADU. |
+|   5 | `test_parse_short_frame_fails`     |   ✅   | Parse short frame fails                                                 |
+|   6 | `test_build_null_out_and_input_fc` |   ✅   | Build null out and input fc                                             |
+|   7 | `test_parse_null_adu`              |   ✅   | Parse null adu                                                          |
+|   8 | `test_parse_bad_protocol_id`       |   ✅   | Parse bad protocol id                                                   |
+|   9 | `test_parse_unexpected_function`   |   ✅   | Parse unexpected function                                               |
+|  10 | `test_parse_exception_null_out`    |   ✅   | Parse exception null out                                                |
+|  11 | `test_parse_bad_byte_count`        |   ✅   | Parse bad byte count                                                    |
+|  12 | `test_parse_max_regs_and_null_out` |   ✅   | A 4-register response (byte count 8), len = 9 + 8 = 17.                 |
 
 </details>
 
@@ -4296,25 +4341,73 @@ _Unit tests for the RFC 5424 syslog client (syslog_format formatter + syslog_ini
 
 ---
 
-## test_smb_client - native_smb - ✅ 10 passed
+## test_smb_client - native_smb - ✅ 58 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the SMB2 client dialogue engine (services/smb/smb_client): smb_open drives the_
 
-|   # | Test                             | Status | Description               |
-| --: | :------------------------------- | :----: | :------------------------ |
-|   1 | `test_open_close_success`        |   ✅   | Open close success        |
-|   2 | `test_auth_failure`              |   ✅   | Auth failure              |
-|   3 | `test_bad_share`                 |   ✅   | Bad share                 |
-|   4 | `test_create_not_found`          |   ✅   | Create not found          |
-|   5 | `test_io_error`                  |   ✅   | Io error                  |
-|   6 | `test_arg_validation`            |   ✅   | Arg validation            |
-|   7 | `test_read_file`                 |   ✅   | Read file                 |
-|   8 | `test_read_past_eof`             |   ✅   | Read past eof             |
-|   9 | `test_write_file`                |   ✅   | Write file                |
-|  10 | `test_write_then_read_roundtrip` |   ✅   | Write then read roundtrip |
+|   # | Test                                      | Status | Description                        |
+| --: | :---------------------------------------- | :----: | :--------------------------------- |
+|   1 | `test_open_close_success`                 |   ✅   | Open close success                 |
+|   2 | `test_auth_failure`                       |   ✅   | Auth failure                       |
+|   3 | `test_bad_share`                          |   ✅   | Bad share                          |
+|   4 | `test_create_not_found`                   |   ✅   | Create not found                   |
+|   5 | `test_io_error`                           |   ✅   | Io error                           |
+|   6 | `test_arg_validation`                     |   ✅   | Arg validation                     |
+|   7 | `test_read_file`                          |   ✅   | Read file                          |
+|   8 | `test_read_past_eof`                      |   ✅   | Read past eof                      |
+|   9 | `test_write_file`                         |   ✅   | Write file                         |
+|  10 | `test_write_then_read_roundtrip`          |   ✅   | Write then read roundtrip          |
+|  11 | `test_negotiate_malformed`                |   ✅   | Negotiate malformed                |
+|  12 | `test_negotiate_dropped`                  |   ✅   | Negotiate dropped                  |
+|  13 | `test_session1_bad_header`                |   ✅   | Session1 bad header                |
+|  14 | `test_session1_wrong_status`              |   ✅   | Session1 wrong status              |
+|  15 | `test_session1_bad_body`                  |   ✅   | Session1 bad body                  |
+|  16 | `test_session1_no_secbuf`                 |   ✅   | Session1 no secbuf                 |
+|  17 | `test_session1_bad_spnego`                |   ✅   | Session1 bad spnego                |
+|  18 | `test_session1_bad_ntlmssp`               |   ✅   | Session1 bad ntlmssp               |
+|  19 | `test_session2_dropped`                   |   ✅   | Session2 dropped                   |
+|  20 | `test_session2_bad_header`                |   ✅   | Session2 bad header                |
+|  21 | `test_tree_dropped`                       |   ✅   | Tree dropped                       |
+|  22 | `test_tree_bad_body`                      |   ✅   | Tree bad body                      |
+|  23 | `test_create_dropped`                     |   ✅   | Create dropped                     |
+|  24 | `test_create_bad_body`                    |   ✅   | Create bad body                    |
+|  25 | `test_long_share_overflow`                |   ✅   | Long share overflow                |
+|  26 | `test_long_path_overflow`                 |   ✅   | Long path overflow                 |
+|  27 | `test_long_user_overflow`                 |   ✅   | Long user overflow                 |
+|  28 | `test_challenge_ti_ntlmv2_overflow`       |   ✅   | Challenge ti ntlmv2 overflow       |
+|  29 | `test_challenge_ti_authenticate_overflow` |   ✅   | Challenge ti authenticate overflow |
+|  30 | `test_challenge_ti_spnego_overflow`       |   ✅   | Challenge ti spnego overflow       |
+|  31 | `test_av_eol_only`                        |   ✅   | Av eol only                        |
+|  32 | `test_av_skip_then_find`                  |   ✅   | Av skip then find                  |
+|  33 | `test_av_truncated_timestamp`             |   ✅   | Av truncated timestamp             |
+|  34 | `test_read_arg`                           |   ✅   | Read arg                           |
+|  35 | `test_read_send_io`                       |   ✅   | Read send io                       |
+|  36 | `test_read_recv_io`                       |   ✅   | Read recv io                       |
+|  37 | `test_read_bad_header`                    |   ✅   | Read bad header                    |
+|  38 | `test_read_status_error`                  |   ✅   | Read status error                  |
+|  39 | `test_read_bad_body`                      |   ✅   | Read bad body                      |
+|  40 | `test_read_data_too_long`                 |   ✅   | Read data too long                 |
+|  41 | `test_read_zero_data`                     |   ✅   | Read zero data                     |
+|  42 | `test_write_arg`                          |   ✅   | Write arg                          |
+|  43 | `test_write_send_io`                      |   ✅   | Write send io                      |
+|  44 | `test_write_recv_io`                      |   ✅   | Write recv io                      |
+|  45 | `test_write_recv_overflow`                |   ✅   | Write recv overflow                |
+|  46 | `test_write_bad_header`                   |   ✅   | Write bad header                   |
+|  47 | `test_write_status_error`                 |   ✅   | Write status error                 |
+|  48 | `test_write_bad_body`                     |   ✅   | Write bad body                     |
+|  49 | `test_write_zero_count`                   |   ✅   | Write zero count                   |
+|  50 | `test_write_count_too_big`                |   ✅   | Write count too big                |
+|  51 | `test_close_arg`                          |   ✅   | Close arg                          |
+|  52 | `test_close_send_io`                      |   ✅   | Close send io                      |
+|  53 | `test_close_recv_overflow`                |   ✅   | Close recv overflow                |
+|  54 | `test_close_recv_zero_len`                |   ✅   | Close recv zero len                |
+|  55 | `test_close_recv_trunc_body`              |   ✅   | Close recv trunc body              |
+|  56 | `test_close_bad_header`                   |   ✅   | Close bad header                   |
+|  57 | `test_close_status_error`                 |   ✅   | Close status error                 |
+|  58 | `test_close_bad_body`                     |   ✅   | Close bad body                     |
 
 </details>
 
@@ -4339,36 +4432,51 @@ _KAT tests for the NTLM digests (services/smb/smb_md): MD5 (RFC 1321 App A.5),_
 
 ---
 
-## test_spnego - native_smb - ✅ 4 passed
+## test_spnego - native_smb - ✅ 14 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the SPNEGO GSS-API DER wrapping (services/smb/spnego): the InitialContextToken_
 
-|   # | Test                          | Status | Description            |
-| --: | :---------------------------- | :----: | :--------------------- |
-|   1 | `test_wrap_negotiate_bytes`   |   ✅   | Wrap negotiate bytes   |
-|   2 | `test_authenticate_roundtrip` |   ✅   | Authenticate roundtrip |
-|   3 | `test_parse_server_response`  |   ✅   | Parse server response  |
-|   4 | `test_parse_rejects`          |   ✅   | Parse rejects          |
+|   # | Test                             | Status | Description               |
+| --: | :------------------------------- | :----: | :------------------------ |
+|   1 | `test_wrap_negotiate_bytes`      |   ✅   | Wrap negotiate bytes      |
+|   2 | `test_authenticate_roundtrip`    |   ✅   | Authenticate roundtrip    |
+|   3 | `test_parse_server_response`     |   ✅   | Parse server response     |
+|   4 | `test_parse_rejects`             |   ✅   | Parse rejects             |
+|   5 | `test_wrap_len_2byte`            |   ✅   | Wrap len 2byte            |
+|   6 | `test_wrap_len_3byte`            |   ✅   | Wrap len 3byte            |
+|   7 | `test_wrap_negotiate_guards`     |   ✅   | Wrap negotiate guards     |
+|   8 | `test_wrap_authenticate_guards`  |   ✅   | Wrap authenticate guards  |
+|   9 | `test_parse_null_args`           |   ✅   | Parse null args           |
+|  10 | `test_parse_truncated_header`    |   ✅   | Parse truncated header    |
+|  11 | `test_parse_bad_longform_len`    |   ✅   | Parse bad longform len    |
+|  12 | `test_parse_inner_not_seq`       |   ✅   | Parse inner not seq       |
+|  13 | `test_parse_field_malformed`     |   ✅   | Parse field malformed     |
+|  14 | `test_parse_resptoken_not_octet` |   ✅   | Parse resptoken not octet |
 
 </details>
 
 ---
 
-## test_ntlm - native_smb - ✅ 3 passed
+## test_ntlm - native_smb - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _KAT test for the NTLMv2 response (services/smb/ntlm) against the MS-NLMP section 4.2_
 
-|   # | Test                   | Status | Description     |
-| --: | :--------------------- | :----: | :-------------- |
-|   1 | `test_ntowfv2`         |   ✅   | Ntowfv2         |
-|   2 | `test_ntlmv2_response` |   ✅   | Ntlmv2 response |
-|   3 | `test_fail_closed`     |   ✅   | Fail closed     |
+|   # | Test                           | Status | Description             |
+| --: | :----------------------------- | :----: | :---------------------- |
+|   1 | `test_ntowfv2`                 |   ✅   | Ntowfv2                 |
+|   2 | `test_ntlmv2_response`         |   ✅   | Ntlmv2 response         |
+|   3 | `test_fail_closed`             |   ✅   | Fail closed             |
+|   4 | `test_ntowfv2_user_overflow`   |   ✅   | Ntowfv2 user overflow   |
+|   5 | `test_ntowfv2_domain_overflow` |   ✅   | Ntowfv2 domain overflow |
+|   6 | `test_ntowfv2_upper_high_char` |   ✅   | Ntowfv2 upper high char |
+|   7 | `test_v2_response_null_out`    |   ✅   | V2 response null out    |
+|   8 | `test_v2_response_null_skey`   |   ✅   | V2 response null skey   |
 
 </details>
 
@@ -4852,18 +4960,23 @@ _Unit tests for the JWT HS256 verifier. The reference token below was produced_
 
 ---
 
-## test_upload - native_upload - ✅ 3 passed
+## test_upload - native_upload - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Streaming file upload (DETWS_ENABLE_UPLOAD): a POST body is streamed straight_
 
-|   # | Test                               | Status | Description                 |
-| --: | :--------------------------------- | :----: | :-------------------------- |
-|   1 | `test_upload_streams_body_to_file` |   ✅   | Upload streams body to file |
-|   2 | `test_small_body_single_chunk`     |   ✅   | Small body single chunk     |
-|   3 | `test_empty_body_not_streamed`     |   ✅   | Empty body not streamed     |
+|   # | Test                                   | Status | Description                     |
+| --: | :------------------------------------- | :----: | :------------------------------ |
+|   1 | `test_upload_streams_body_to_file`     |   ✅   | Upload streams body to file     |
+|   2 | `test_small_body_single_chunk`         |   ✅   | Small body single chunk         |
+|   3 | `test_empty_body_not_streamed`         |   ✅   | Empty body not streamed         |
+|   4 | `test_non_post_body_rejected_by_begin` |   ✅   | Non post body rejected by begin |
+|   5 | `test_wrong_path_rejected_by_begin`    |   ✅   | Wrong path rejected by begin    |
+|   6 | `test_open_failure_replies_500`        |   ✅   | Open failure replies 500        |
+|   7 | `test_null_dest_replies_500`           |   ✅   | Null dest replies 500           |
+|   8 | `test_write_failure_replies_500`       |   ✅   | Write failure replies 500       |
 
 </details>
 
@@ -5119,21 +5232,23 @@ _Unit tests for the SSH server-to-client streaming compressor_
 
 ---
 
-## test_ssh_comp - native_ssh_comp - ✅ 6 passed
+## test_ssh_comp - native_ssh_comp - ✅ 8 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Integration test for SSH server-to-client compression WIRING (network_drivers/presentation/ssh):_
 
-|   # | Test                                     | Status | Description                       |
-| --: | :--------------------------------------- | :----: | :-------------------------------- |
-|   1 | `test_delayed_activation`                |   ✅   | Delayed activation                |
-|   2 | `test_immediate_activation`              |   ✅   | Immediate activation              |
-|   3 | `test_none_never_activates`              |   ✅   | None never activates              |
-|   4 | `test_packet_layer_stream_roundtrip`     |   ✅   | Packet layer stream roundtrip     |
-|   5 | `test_packet_layer_window_slide`         |   ✅   | Packet layer window slide         |
-|   6 | `test_packet_compress_scratch_exhausted` |   ✅   | Packet compress scratch exhausted |
+|   # | Test                                     | Status | Description                                                                                     |
+| --: | :--------------------------------------- | :----: | :---------------------------------------------------------------------------------------------- |
+|   1 | `test_delayed_activation`                |   ✅   | Delayed activation                                                                              |
+|   2 | `test_immediate_activation`              |   ✅   | Immediate activation                                                                            |
+|   3 | `test_none_never_activates`              |   ✅   | None never activates                                                                            |
+|   4 | `test_packet_layer_stream_roundtrip`     |   ✅   | Packet layer stream roundtrip                                                                   |
+|   5 | `test_packet_layer_window_slide`         |   ✅   | Packet layer window slide                                                                       |
+|   6 | `test_packet_compress_scratch_exhausted` |   ✅   | Packet compress scratch exhausted                                                               |
+|   7 | `test_comp_slot_guards`                  |   ✅   | Comp slot guards                                                                                |
+|   8 | `test_comp_activation_idempotent`        |   ✅   | zlib: NEWKEYS starts it; a second NEWKEYS is a no-op (s2c_active already true), and USERAUTH is |
 
 </details>
 
@@ -5890,7 +6005,7 @@ _Host tests for services/wal: record framing + CRC32 + crash-recovery replay (th
 
 ---
 
-## test_wal_store - native_wal - ✅ 7 passed
+## test_wal_store - native_wal - ✅ 29 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -5906,6 +6021,28 @@ _Host tests for services/wal wal_store: A/B superblock + checkpoint + mount/reco
 |   5 | `test_torn_tail_recovers_to_last_good`             |   ✅   | Torn tail recovers to last good             |
 |   6 | `test_ab_superblock_fallback`                      |   ✅   | Ab superblock fallback                      |
 |   7 | `test_append_full_fails_closed`                    |   ✅   | Append full fails closed                    |
+|   8 | `test_format_and_mount_too_small`                  |   ✅   | Format and mount too small                  |
+|   9 | `test_format_write_b_unwired_fails`                |   ✅   | Format write b unwired fails                |
+|  10 | `test_format_write_super_a_fails`                  |   ✅   | Format write super a fails                  |
+|  11 | `test_null_sync_still_commits`                     |   ✅   | Null sync still commits                     |
+|  12 | `test_mount_read_unwired_fails`                    |   ✅   | Mount read unwired fails                    |
+|  13 | `test_mount_super_crc_mismatch`                    |   ✅   | Mount super crc mismatch                    |
+|  14 | `test_mount_head_past_capacity_rejected`           |   ✅   | Mount head past capacity rejected           |
+|  15 | `test_replay_truncated_len_stops`                  |   ✅   | Replay truncated len stops                  |
+|  16 | `test_replay_header_read_fails`                    |   ✅   | Replay header read fails                    |
+|  17 | `test_replay_payload_read_fails`                   |   ✅   | Replay payload read fails                   |
+|  18 | `test_append_header_write_fails`                   |   ✅   | Append header write fails                   |
+|  19 | `test_append_payload_write_fails`                  |   ✅   | Append payload write fails                  |
+|  20 | `test_checkpoint_super_write_fails`                |   ✅   | Checkpoint super write fails                |
+|  21 | `test_checkpoint_second_sync_fails`                |   ✅   | Checkpoint second sync fails                |
+|  22 | `test_scan_reads_records`                          |   ✅   | Scan reads records                          |
+|  23 | `test_scan_null_callback_counts`                   |   ✅   | Scan null callback counts                   |
+|  24 | `test_scan_scratch_too_small`                      |   ✅   | Scan scratch too small                      |
+|  25 | `test_scan_header_read_fails`                      |   ✅   | Scan header read fails                      |
+|  26 | `test_scan_full_read_fails`                        |   ✅   | Scan full read fails                        |
+|  27 | `test_scan_bad_magic_stops`                        |   ✅   | Scan bad magic stops                        |
+|  28 | `test_scan_crc_mismatch_stops`                     |   ✅   | Scan crc mismatch stops                     |
+|  29 | `test_pread_in_and_out_of_range`                   |   ✅   | Pread in and out of range                   |
 
 </details>
 
@@ -6503,25 +6640,28 @@ _Host tests for services/wifi_sniffer: 802.11 header decode, traffic tally, roam
 
 ---
 
-## test_link_manager - native_link_manager - ✅ 4 passed
+## test_link_manager - native_link_manager - ✅ 7 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Host tests for services/link_manager: egress selection, graceful escalation, failover._
 
-|   # | Test                           | Status | Description                                             |
-| --: | :----------------------------- | :----: | :------------------------------------------------------ |
-|   1 | `test_init_none_up`            |   ✅   | Init none up                                            |
-|   2 | `test_escalation_and_failover` |   ✅   | WiFi STA comes up first -> it becomes active.           |
-|   3 | `test_tie_break_lower_index`   |   ✅   | Two interfaces at equal priority: the lower index wins. |
-|   4 | `test_out_of_range_no_change`  |   ✅   | Out of range no change                                  |
+|   # | Test                           | Status | Description                                                               |
+| --: | :----------------------------- | :----: | :------------------------------------------------------------------------ |
+|   1 | `test_init_none_up`            |   ✅   | Init none up                                                              |
+|   2 | `test_escalation_and_failover` |   ✅   | WiFi STA comes up first -> it becomes active.                             |
+|   3 | `test_tie_break_lower_index`   |   ✅   | Two interfaces at equal priority: the lower index wins.                   |
+|   4 | `test_out_of_range_no_change`  |   ✅   | Out of range no change                                                    |
+|   5 | `test_select_null_guards`      |   ✅   | Select null guards                                                        |
+|   6 | `test_init_and_active_null`    |   ✅   | Init and active null                                                      |
+|   7 | `test_set_guard_paths`         |   ✅   | Null manager: reports -1 for both previous and new active, returns false. |
 
 </details>
 
 ---
 
-## test_cc1101 - native_cc1101 - ✅ 11 passed
+## test_cc1101 - native_cc1101 - ✅ 18 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6541,6 +6681,13 @@ _Unit tests for the CC1101 driver (services/cc1101) against a mock chip emulatin
 |   9 | `test_recv_truncates`                  |   ✅   | Recv truncates                                          |
 |  10 | `test_rssi_decode`                     |   ✅   | TI formula: raw>=128 -> (raw-256)/2-74 ; else raw/2-74. |
 |  11 | `test_send_guard_subconditions`        |   ✅   | Send guard subconditions                                |
+|  12 | `test_init_null_args`                  |   ✅   | Init null args                                          |
+|  13 | `test_init_no_regs`                    |   ✅   | Init no regs                                            |
+|  14 | `test_tx_done_null_args`               |   ✅   | Tx done null args                                       |
+|  15 | `test_set_rx_null_args`                |   ✅   | Set rx null args                                        |
+|  16 | `test_recv_null_args`                  |   ✅   | Recv null args                                          |
+|  17 | `test_recv_bad_length`                 |   ✅   | Zero length byte with bytes waiting.                    |
+|  18 | `test_send_null_spi`                   |   ✅   | Send null spi                                           |
 
 </details>
 
@@ -6838,51 +6985,59 @@ _Unit tests for the QUIC packet header + packet-number codec (network_drivers/pr
 
 ---
 
-## test_quic_frame - native_quic_frame - ✅ 9 passed
+## test_quic_frame - native_quic_frame - ✅ 11 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the QUIC frame codec (network_drivers/presentation/http3/quic_frame, RFC 9000_
 
-|   # | Test                           | Status | Description                                                                         |
-| --: | :----------------------------- | :----: | :---------------------------------------------------------------------------------- |
-|   1 | `test_frame_edge_guards`       |   ✅   | STREAM with LEN set but the Length varint is absent -> rejected at the length read. |
-|   2 | `test_simple_frames`           |   ✅   | Simple frames                                                                       |
-|   3 | `test_ack`                     |   ✅   | Ack                                                                                 |
-|   4 | `test_crypto`                  |   ✅   | Crypto                                                                              |
-|   5 | `test_stream`                  |   ✅   | With offset + FIN.                                                                  |
-|   6 | `test_max_data_and_close`      |   ✅   | Max data and close                                                                  |
-|   7 | `test_sequence_and_truncation` |   ✅   | A packet payload: PADDING, PING, then a CRYPTO frame - parse them in order.         |
-|   8 | `test_builder_overflow`        |   ✅   | Builder overflow                                                                    |
-|   9 | `test_parse_errors`            |   ✅   | Parse errors                                                                        |
+|   # | Test                           | Status | Description                                                                                          |
+| --: | :----------------------------- | :----: | :--------------------------------------------------------------------------------------------------- |
+|   1 | `test_frame_edge_guards`       |   ✅   | STREAM with LEN set but the Length varint is absent -> rejected at the length read.                  |
+|   2 | `test_simple_frames`           |   ✅   | Simple frames                                                                                        |
+|   3 | `test_ack`                     |   ✅   | Ack                                                                                                  |
+|   4 | `test_ack_multi_range`         |   ✅   | type 0x03, largest 60, delay 5, range_count 2, first_range 3, [gap 2,len 4][gap 1,len 1], ECN 1/2/0. |
+|   5 | `test_crypto`                  |   ✅   | Crypto                                                                                               |
+|   6 | `test_stream`                  |   ✅   | With offset + FIN.                                                                                   |
+|   7 | `test_max_data_and_close`      |   ✅   | Max data and close                                                                                   |
+|   8 | `test_sequence_and_truncation` |   ✅   | A packet payload: PADDING, PING, then a CRYPTO frame - parse them in order.                          |
+|   9 | `test_builder_overflow`        |   ✅   | Builder overflow                                                                                     |
+|  10 | `test_parse_errors`            |   ✅   | Parse errors                                                                                         |
+|  11 | `test_skip_and_extra_frames`   |   ✅   | One-varint frames: type followed by a single varint.                                                 |
 
 </details>
 
 ---
 
-## test_quic_crypto - native_quic_crypto - ✅ 7 passed
+## test_quic_crypto - native_quic_crypto - ✅ 13 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for QUIC Initial packet crypto (network_drivers/presentation/http3/quic_hkdf,_
 
-|   # | Test                               | Status | Description                 |
-| --: | :--------------------------------- | :----: | :-------------------------- |
-|   1 | `test_aes128_block_fips197`        |   ✅   | Aes128 block fips197        |
-|   2 | `test_aes128_gcm_testcase4`        |   ✅   | Aes128 gcm testcase4        |
-|   3 | `test_initial_secrets_appendix_a1` |   ✅   | Initial secrets appendix a1 |
-|   4 | `test_server_initial_a3`           |   ✅   | Server initial a3           |
-|   5 | `test_client_initial_a2`           |   ✅   | Client initial a2           |
-|   6 | `test_retry_integrity_a4`          |   ✅   | Retry integrity a4          |
-|   7 | `test_gcm_open_rejects_short`      |   ✅   | Gcm open rejects short      |
+|   # | Test                                | Status | Description                  |
+| --: | :---------------------------------- | :----: | :--------------------------- |
+|   1 | `test_aes128_block_fips197`         |   ✅   | Aes128 block fips197         |
+|   2 | `test_aes128_gcm_testcase4`         |   ✅   | Aes128 gcm testcase4         |
+|   3 | `test_initial_secrets_appendix_a1`  |   ✅   | Initial secrets appendix a1  |
+|   4 | `test_server_initial_a3`            |   ✅   | Server initial a3            |
+|   5 | `test_client_initial_a2`            |   ✅   | Client initial a2            |
+|   6 | `test_retry_integrity_a4`           |   ✅   | Retry integrity a4           |
+|   7 | `test_gcm_open_rejects_short`       |   ✅   | Gcm open rejects short       |
+|   8 | `test_protect_rejects_bad_pn_len`   |   ✅   | Protect rejects bad pn len   |
+|   9 | `test_protect_rejects_small_cap`    |   ✅   | Protect rejects small cap    |
+|  10 | `test_unprotect_rejects_short`      |   ✅   | Unprotect rejects short      |
+|  11 | `test_unprotect_rejects_tampered`   |   ✅   | Unprotect rejects tampered   |
+|  12 | `test_retry_tag_rejects_oversize`   |   ✅   | Retry tag rejects oversize   |
+|  13 | `test_hkdf_expand_label_multiblock` |   ✅   | Hkdf expand label multiblock |
 
 </details>
 
 ---
 
-## test_dtls_record - native_dtls - ✅ 10 passed
+## test_dtls_record - native_dtls - ✅ 16 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6901,6 +7056,12 @@ _DTLS 1.3 record layer tests (RFC 9147 §4). The record + key derivation is pinn
 |   8 | `test_dtls_cid_rejects`                  |   ✅   | Dtls cid rejects                  |
 |   9 | `test_dtls_plaintext_roundtrip`          |   ✅   | Dtls plaintext roundtrip          |
 |  10 | `test_dtls_replay_window`                |   ✅   | Dtls replay window                |
+|  11 | `test_dtls_seq_rollover_both_directions` |   ✅   | Dtls seq rollover both directions |
+|  12 | `test_dtls_plaintext_bounds`             |   ✅   | total > out_cap.                  |
+|  13 | `test_dtls_protect_bounds`               |   ✅   | Dtls protect bounds               |
+|  14 | `test_dtls_unprotect_bounds`             |   ✅   | Dtls unprotect bounds             |
+|  15 | `test_dtls_unprotect_all_zero_inner`     |   ✅   | Dtls unprotect all zero inner     |
+|  16 | `test_dtls_replay_mark_below_window`     |   ✅   | Dtls replay mark below window     |
 
 </details>
 
@@ -6977,7 +7138,7 @@ _DTLS 1.3 server handshake (RFC 9147 §5-6). A self-consistent proof: the test p
 
 ---
 
-## test_coaps - native_coaps - ✅ 2 passed
+## test_coaps - native_coaps - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -6988,12 +7149,16 @@ _CoAP over DTLS (coaps.h) end-to-end. An in-test DTLS 1.3 client completes the h
 | --: | :----------------------------------- | :----: | :---------------------------- |
 |   1 | `test_coap_over_dtls`                |   ✅   | Coap over dtls                |
 |   2 | `test_coap_over_dtls_replay_dropped` |   ✅   | Coap over dtls replay dropped |
+|   3 | `test_coaps_no_coap_response`        |   ✅   | Coaps no coap response        |
+|   4 | `test_coaps_non_app_record`          |   ✅   | Coaps non app record          |
+|   5 | `test_coaps_wrong_epoch_record`      |   ✅   | Coaps wrong epoch record      |
+|   6 | `test_coaps_forwards_handshake`      |   ✅   | Coaps forwards handshake      |
 
 </details>
 
 ---
 
-## test_coaps_server - native_coaps_server - ✅ 5 passed
+## test_coaps_server - native_coaps_server - ✅ 15 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -7007,25 +7172,36 @@ _CoAP-over-DTLS server front-end (coaps_server.h): the per-peer DtlsConn pool + 
 |   3 | `test_idle_reap`                     |   ✅   | Idle reap                     |
 |   4 | `test_pto_retransmit_driven_by_poll` |   ✅   | Pto retransmit driven by poll |
 |   5 | `test_cid_address_migration`         |   ✅   | Cid address migration         |
+|   6 | `test_begin_rejects_invalid_cfg`     |   ✅   | Begin rejects invalid cfg     |
+|   7 | `test_poll_when_stopped`             |   ✅   | Poll when stopped             |
+|   8 | `test_ingest_rejects_bad_len`        |   ✅   | Ingest rejects bad len        |
+|   9 | `test_ingest_ring_full`              |   ✅   | Ingest ring full              |
+|  10 | `test_ingest_addr_copy_edges`        |   ✅   | Ingest addr copy edges        |
+|  11 | `test_malformed_peer_addr`           |   ✅   | Malformed peer addr           |
+|  12 | `test_fatal_handshake_frees_slot`    |   ✅   | Fatal handshake frees slot    |
+|  13 | `test_pool_full_rejects_new_peer`    |   ✅   | Pool full rejects new peer    |
+|  14 | `test_pto_ceiling_frees_slot`        |   ✅   | Pto ceiling frees slot        |
+|  15 | `test_unknown_cid_dropped`           |   ✅   | Unknown cid dropped           |
 
 </details>
 
 ---
 
-## test_tls13_kdf - native_tls13_kdf - ✅ 5 passed
+## test_tls13_kdf - native_tls13_kdf - ✅ 6 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
 _Unit tests for the TLS 1.3 key schedule (network_drivers/presentation/http3/tls13_kdf; RFC 8446_
 
-|   # | Test                        | Status | Description               |
-| --: | :-------------------------- | :----: | :------------------------ |
-|   1 | `test_early_secret`         |   ✅   | Early secret              |
-|   2 | `test_handshake_secrets`    |   ✅   | Handshake secrets         |
-|   3 | `test_master_secrets`       |   ✅   | Master secrets            |
-|   4 | `test_server_hs_write_keys` |   ✅   | Server hs write keys      |
-|   5 | `test_server_finished`      |   ✅   | ClientHello (196 octets). |
+|   # | Test                            | Status | Description               |
+| --: | :------------------------------ | :----: | :------------------------ |
+|   1 | `test_early_secret`             |   ✅   | Early secret              |
+|   2 | `test_handshake_secrets`        |   ✅   | Handshake secrets         |
+|   3 | `test_master_secrets`           |   ✅   | Master secrets            |
+|   4 | `test_server_hs_write_keys`     |   ✅   | Server hs write keys      |
+|   5 | `test_server_finished`          |   ✅   | ClientHello (196 octets). |
+|   6 | `test_kdf_expand_label_wrapper` |   ✅   | Kdf expand label wrapper  |
 
 </details>
 
@@ -7247,7 +7423,7 @@ _HTTP/3 dispatch-bridge test: proves an HTTP/3 request served by a *real DetWebS
 
 ---
 
-## test_ssh_chachapoly - native_ssh_chachapoly - ✅ 4 passed
+## test_ssh_chachapoly - native_ssh_chachapoly - ✅ 5 passed
 
 <details>
 <summary><b>Expand Suite Details</b></summary>
@@ -7260,6 +7436,7 @@ _Unit tests for the chacha20-poly1305@openssh.com cipher and its primitives:_
 |   2 | `test_poly1305_rfc8439`           |   ✅   | Poly1305 rfc8439           |
 |   3 | `test_chachapoly_roundtrip`       |   ✅   | Chachapoly roundtrip       |
 |   4 | `test_chachapoly_tamper_rejected` |   ✅   | Chachapoly tamper rejected |
+|   5 | `test_chachapoly_empty_payload`   |   ✅   | Chachapoly empty payload   |
 
 </details>
 
