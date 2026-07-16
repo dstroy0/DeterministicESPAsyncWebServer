@@ -4,6 +4,24 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### CI / Build
+
+- update test report + coverage [skip ci] ([`e94326e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e94326e08b27b9ce3a670a1c9aea7f35c4dd2a17))
+- update CHANGELOG.md [skip ci] ([`f1a9d53`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1a9d53e293ea376295928fc377c20b27d60fa0a))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`01218da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01218dacbe8081205b7d3e395c53d3a1e6fe37aa))
+
+### Testing
+
+- raise branch/line coverage across 24 codecs (parallel sweep) ([`60229aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/60229aae63721fcbfb3e76a4d444c9c2edeea8ea))
+
+## [6.24.1] - 2026-07-16
+
+<details>
+<summary><b>Show Changelog for version 6.24.1 - 2026-07-16</b></summary>
+
 ### Bug Fixes
 
 - revert ssh_aesgcm ctx const to unbreak the ESP32/Arduino build ([`89ef6c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89ef6c56cb3c971abb2868f2bebaa8bdb6ab8d87))
@@ -158,6 +176,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - flatten deep nesting via helper extraction (S134) ([`d190778`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1907780d8985884d36a0d17dfb54d9bd15fa306))
 - flatten deep nesting via guard clauses + small extractions (S134) ([`2fbb3e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fbb3e43026aa94fae7ebc03b7e836dbe0845386))
 - fix S912 BLOCKER + constant macros -> constexpr ([`f8343b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8343b80289081b2d2e650145ef56c43cf57b778))
+
+</details>
 
 ## [6.24.0] - 2026-07-16
 
