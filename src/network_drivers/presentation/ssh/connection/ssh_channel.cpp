@@ -265,7 +265,7 @@ int ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_p
         return -1; // channel pool full
 
     const char *type = "forwarded-tcpip";
-    size_t tl = 15, ca = strlen(conn_addr), oa = strlen(orig_addr);
+    size_t tl = 15, ca = strnlen(conn_addr, cap), oa = strnlen(orig_addr, cap);
     // byte || string(type) || u32 sender || u32 window || u32 maxpkt || string(conn_addr)
     //   || u32 conn_port || string(orig_addr) || u32 orig_port  (RFC 4254 §7.2)
     size_t need = 1 + (4 + tl) + 12 + (4 + ca) + 4 + (4 + oa) + 4;

@@ -44,8 +44,8 @@ static const char *const KEX_MLKEM768 = "mlkem768x25519-sha256"; // PQ/T hybrid 
 #endif
 static const char *const HOSTKEY_RSA_SHA256 = "rsa-sha2-256";
 static const char *const HOSTKEY_RSA_SHA512 = "rsa-sha2-512";
-static const char *const HOSTKEY_ED = "ssh-ed25519";
-static const char *const HOSTKEY_ECDSA = "ecdsa-sha2-nistp256";
+static const char HOSTKEY_ED[] = "ssh-ed25519";
+static const char HOSTKEY_ECDSA[] = "ecdsa-sha2-nistp256";
 static const char *const ALG_CIPHER = "aes256-ctr";
 static const char *const ALG_CIPHER_GCM = "aes256-gcm@openssh.com";
 // Advertised cipher preference (OpenSSH's default order): chacha20-poly1305@openssh.com (AEAD)
@@ -175,7 +175,7 @@ static void build_hostkey_list(char *out, size_t cap)
     {
         if (!cand[k].ok)
             continue;
-        size_t l = strlen(out);
+        size_t l = strnlen(out, cap);
         snprintf(out + l, cap - l, "%s%s", l ? "," : "", cand[k].name);
     }
 }
@@ -219,7 +219,7 @@ void w_u32(Writer &w, uint32_t v)
 // Write an SSH name-list: uint32 length + comma-separated names.
 void w_namelist(Writer &w, const char *list)
 {
-    uint32_t n = (uint32_t)strlen(list);
+    uint32_t n = (uint32_t)strnlen(list, w.cap);
     w_u32(w, n);
     w_bytes(w, list, n);
 }
@@ -259,7 +259,7 @@ void w_mpint(Writer &w, const uint8_t *be, size_t len)
 // list [list, list+len).
 static bool namelist_contains(const uint8_t *list, uint32_t len, const char *want)
 {
-    size_t wl = strlen(want);
+    size_t wl = strnlen(want, (size_t)len + 1);
     uint32_t start = 0;
     for (uint32_t i = 0; i <= len; i++)
     {
@@ -319,7 +319,7 @@ void ssh_transport_init(uint8_t i)
 
 int ssh_transport_server_banner(uint8_t *out, size_t *out_len, size_t cap)
 {
-    size_t vlen = strlen(SSH_SERVER_VERSION);
+    size_t vlen = sizeof(SSH_SERVER_VERSION) - 1;
     if (vlen + 2 > cap)
         return -1;
     memcpy(out, SSH_SERVER_VERSION, vlen);
@@ -664,11 +664,11 @@ static int compute_exchange_hash(uint8_t i, bool pub_is_string, const uint8_t *c
 
     SshSha256Ctx ctx;
     ssh_sha256_init(&ctx);
-    hash_string(&ctx, (const uint8_t *)s->v_c, s->v_c_len); // V_C
-    hash_string(&ctx, (const uint8_t *)v_s, strlen(v_s));   // V_S
-    hash_string(&ctx, s->i_c, s->i_c_len);                  // I_C
-    hash_string(&ctx, s->i_s, s->i_s_len);                  // I_S
-    hash_string(&ctx, ks, ks_len);                          // K_S
+    hash_string(&ctx, (const uint8_t *)s->v_c, s->v_c_len);                  // V_C
+    hash_string(&ctx, (const uint8_t *)v_s, sizeof(SSH_SERVER_VERSION) - 1); // V_S
+    hash_string(&ctx, s->i_c, s->i_c_len);                                   // I_C
+    hash_string(&ctx, s->i_s, s->i_s_len);                                   // I_S
+    hash_string(&ctx, ks, ks_len);                                           // K_S
     if (pub_is_string)
     {
         hash_string(&ctx, cpub, cpub_len); // Q_C
@@ -777,7 +777,7 @@ static int encode_hostkey(uint8_t i, uint8_t *ks, size_t *ks_len, size_t cap)
     if (ssh_sess[i].hostkey_alg == SshHostkeyAlg::SSH_HOSTKEY_ED25519)
     {
         Writer w = {ks, cap, 0, true};
-        w_string(w, (const uint8_t *)HOSTKEY_ED, strlen(HOSTKEY_ED));
+        w_string(w, (const uint8_t *)HOSTKEY_ED, sizeof(HOSTKEY_ED) - 1);
         w_string(w, s_sshtr.ed_pub, 32);
         if (!w.ok)     // GCOVR_EXCL_LINE  the ed25519 blob (~51B) always fits the RSA-sized ks buffer
             return -1; // GCOVR_EXCL_LINE
@@ -787,7 +787,7 @@ static int encode_hostkey(uint8_t i, uint8_t *ks, size_t *ks_len, size_t cap)
     if (ssh_sess[i].hostkey_alg == SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256)
     {
         Writer w = {ks, cap, 0, true};
-        w_string(w, (const uint8_t *)HOSTKEY_ECDSA, strlen(HOSTKEY_ECDSA));
+        w_string(w, (const uint8_t *)HOSTKEY_ECDSA, sizeof(HOSTKEY_ECDSA) - 1);
         w_string(w, (const uint8_t *)"nistp256", 8); // RFC 5656 curve identifier
         w_string(w, s_sshtr.ecdsa_pub, SSH_ECDSA_P256_PUB_LEN);
         if (!w.ok)     // GCOVR_EXCL_LINE  the ecdsa blob (~104B) always fits the RSA-sized ks buffer
@@ -852,7 +852,7 @@ static int build_kex_reply(uint8_t i, const uint8_t *ks, size_t ks_len, const ui
         w_mpint(w, spub, spub_len); // f (mpint)
     else
         w_string(w, spub, spub_len); // Q_S (curve25519) or S_REPLY (hybrid), a raw string
-    uint32_t nl = (uint32_t)strlen(sig_name);
+    uint32_t nl = (uint32_t)strnlen(sig_name, w.cap);
     w_u32(w, 4 + nl + 4 + (uint32_t)sig_len); // signature blob length
     w_string(w, (const uint8_t *)sig_name, nl);
     w_string(w, sig, sig_len);

@@ -314,7 +314,7 @@ int ssh_auth_build_success(uint8_t *out, size_t *out_len, size_t cap)
 // be accepted, send a signature" probe response (RFC 4252 §7).
 static int build_pk_ok(const SshAuthReq *req, uint8_t *out, size_t *out_len, size_t cap)
 {
-    uint32_t al = (uint32_t)strlen(req->pk_algo);
+    uint32_t al = (uint32_t)strnlen(req->pk_algo, sizeof(req->pk_algo));
     if (cap < (size_t)1 + 4 + al + 4 + req->pk_blob_len)
         return -1;
     size_t o = 0;
