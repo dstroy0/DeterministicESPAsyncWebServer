@@ -38,7 +38,7 @@ static size_t put_field(uint8_t *p, const uint8_t *data, size_t len)
 }
 static inline size_t put_str(uint8_t *p, const char *s)
 {
-    return put_field(p, (const uint8_t *)s, s ? strlen(s) : 0);
+    return put_field(p, (const uint8_t *)s, s ? strnlen(s, DETWS_MQTT_BUF_SIZE) : 0);
 }
 
 size_t mqtt_encode_remlen(uint8_t *out, uint32_t len)
@@ -134,13 +134,13 @@ size_t mqtt_build_connect(uint8_t *out, size_t cap, const MqttConnectOpts *opts)
 
     // Payload: client id, [will topic, will msg], [user], [pass]. Bounds-check
     // each field against the body scratch as we go.
-    size_t need = 2 + strlen(opts->client_id);
+    size_t need = 2 + strnlen(opts->client_id, DETWS_MQTT_BUF_SIZE);
     if (opts->will_topic)
-        need += 2 + strlen(opts->will_topic) + 2 + opts->will_len;
+        need += 2 + strnlen(opts->will_topic, DETWS_MQTT_BUF_SIZE) + 2 + opts->will_len;
     if (opts->user)
-        need += 2 + strlen(opts->user);
+        need += 2 + strnlen(opts->user, DETWS_MQTT_BUF_SIZE);
     if (opts->pass)
-        need += 2 + strlen(opts->pass);
+        need += 2 + strnlen(opts->pass, DETWS_MQTT_BUF_SIZE);
     if (n + need > sizeof(body))
         return 0;
 
@@ -168,7 +168,7 @@ size_t mqtt_build_publish(uint8_t *out, size_t cap, const char *topic, const uin
     for (const char *t = topic; *t; t++)
         if (*t == '+' || *t == '#')
             return 0;
-    size_t tlen = strlen(topic);
+    size_t tlen = strnlen(topic, DETWS_MQTT_BUF_SIZE);
     size_t blen = 2 + tlen + (qos > 0 ? 2 : 0) + payload_len;
     uint8_t body[DETWS_MQTT_BUF_SIZE];
     if (blen > sizeof(body))
@@ -196,7 +196,7 @@ size_t mqtt_build_subscribe(uint8_t *out, size_t cap, uint16_t packet_id, const 
 {
     if (!out || !topic || qos > 2)
         return 0;
-    size_t tlen = strlen(topic);
+    size_t tlen = strnlen(topic, DETWS_MQTT_BUF_SIZE);
     uint8_t body[DETWS_MQTT_BUF_SIZE];
     size_t blen = 2 + 2 + tlen + 1;
     if (blen > sizeof(body))
@@ -214,7 +214,7 @@ size_t mqtt_build_unsubscribe(uint8_t *out, size_t cap, uint16_t packet_id, cons
 {
     if (!out || !topic)
         return 0;
-    size_t tlen = strlen(topic);
+    size_t tlen = strnlen(topic, DETWS_MQTT_BUF_SIZE);
     uint8_t body[DETWS_MQTT_BUF_SIZE];
     size_t blen = 2 + 2 + tlen;
     if (blen > sizeof(body))

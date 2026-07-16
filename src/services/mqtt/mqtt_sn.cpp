@@ -79,7 +79,7 @@ size_t mqttsn_build_connect(uint8_t *buf, size_t cap, uint8_t flags, uint16_t du
 {
     if (!buf || !client_id)
         return 0;
-    size_t idlen = strlen(client_id);
+    size_t idlen = strnlen(client_id, cap);
     size_t total, p = frame_header(buf, cap, MQTTSN_CONNECT, 1 + 1 + 2 + idlen, &total);
     if (!p)
         return 0;
@@ -95,7 +95,7 @@ size_t mqttsn_build_register(uint8_t *buf, size_t cap, uint16_t topic_id, uint16
 {
     if (!buf || !topic_name)
         return 0;
-    size_t nlen = strlen(topic_name);
+    size_t nlen = strnlen(topic_name, cap);
     size_t total, p = frame_header(buf, cap, MQTTSN_REGISTER, 2 + 2 + nlen, &total);
     if (!p)
         return 0;
@@ -159,7 +159,7 @@ size_t mqttsn_build_subscribe_name(uint8_t *buf, size_t cap, uint8_t flags, uint
 {
     if (!buf || !topic_name)
         return 0;
-    size_t nlen = strlen(topic_name);
+    size_t nlen = strnlen(topic_name, cap);
     size_t total, p = frame_header(buf, cap, MQTTSN_SUBSCRIBE, 1 + 2 + nlen, &total);
     if (!p)
         return 0;
@@ -188,7 +188,7 @@ size_t mqttsn_build_pingreq(uint8_t *buf, size_t cap, const char *client_id)
 {
     if (!buf)
         return 0;
-    size_t idlen = client_id ? strlen(client_id) : 0;
+    size_t idlen = client_id ? strnlen(client_id, cap) : 0;
     size_t total, p = frame_header(buf, cap, MQTTSN_PINGREQ, idlen, &total);
     if (!p)
         return 0;
