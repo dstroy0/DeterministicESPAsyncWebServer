@@ -214,6 +214,31 @@ static bool cc_match(DetwsCacheControl *cc, const char *name, size_t nlen, const
     return true;
 }
 
+// Parse one comma-separated directive starting at *i (advancing past it) and apply it; returns true
+// if a known directive matched.
+static bool cache_parse_one_directive(const char *s, size_t len, size_t *i, DetwsCacheControl *cc)
+{
+    while (*i < len && (s[*i] == ',' || s[*i] == ' ' || s[*i] == '\t'))
+        (*i)++; // skip separators / OWS
+    if (*i >= len)
+        return false;
+    size_t start = *i;
+    while (*i < len && s[*i] != ',')
+        (*i)++; // to the next comma
+    size_t end = *i;
+    while (end > start && (s[end - 1] == ' ' || s[end - 1] == '\t'))
+        end--; // trim trailing OWS
+    size_t eq = start;
+    while (eq < end && s[eq] != '=')
+        eq++;
+    size_t nlen = (eq < end ? eq : end) - start;
+    while (nlen > 0 && (s[start + nlen - 1] == ' ' || s[start + nlen - 1] == '\t'))
+        nlen--; // trim trailing OWS from name
+    const char *val = (eq < end) ? s + eq + 1 : nullptr;
+    size_t vlen = (eq < end) ? end - (eq + 1) : 0;
+    return nlen && cc_match(cc, s + start, nlen, val, vlen);
+}
+
 bool cache_control_parse(const char *s, size_t len, DetwsCacheControl *cc)
 {
     cache_control_init(cc);
@@ -223,27 +248,7 @@ bool cache_control_parse(const char *s, size_t len, DetwsCacheControl *cc)
     size_t i = 0;
     while (i < len)
     {
-        while (i < len && (s[i] == ',' || s[i] == ' ' || s[i] == '\t'))
-            i++; // skip separators / OWS
-        if (i >= len)
-            break;
-        size_t start = i;
-        while (i < len && s[i] != ',')
-            i++; // to the next comma
-        size_t end = i;
-        while (end > start && (s[end - 1] == ' ' || s[end - 1] == '\t'))
-            end--; // trim trailing OWS
-
-        size_t eq = start;
-        while (eq < end && s[eq] != '=')
-            eq++;
-        size_t nlen = (eq < end ? eq : end) - start;
-        while (nlen > 0 && (s[start + nlen - 1] == ' ' || s[start + nlen - 1] == '\t'))
-            nlen--; // trim trailing OWS from name
-        const char *val = (eq < end) ? s + eq + 1 : nullptr;
-        size_t vlen = (eq < end) ? end - (eq + 1) : 0;
-
-        if (nlen && cc_match(cc, s + start, nlen, val, vlen))
+        if (cache_parse_one_directive(s, len, &i, cc))
             found = true;
     }
     return found;

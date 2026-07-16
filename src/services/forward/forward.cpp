@@ -306,25 +306,11 @@ bool det_forward_add_rule(uint8_t src_if, uint8_t dst_if, det_fwd_action action,
     return false; // table full
 }
 
-uint8_t det_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len)
+// First matching policy route decides the frame (send to its egress only, or drop) - the same
+// precedence and guarantees as a rule. *handled=false means no route matched; run normal fan-out.
+static uint8_t forward_policy_route(uint8_t src_if, const uint8_t *data, uint16_t len, bool *handled)
 {
-    s_fwd.stats.frames_in++;
-    if (!acl_permits(s_fwd, src_if, data, len)) // ingress ACL runs before any forwarding rule
-    {
-        s_fwd.stats.acl_denied++;
-        return 0;
-    }
-#if DETWS_FWD_INSPECT
-    // Opt-in inspection hook: an app callback observes/filters the frame before routing.
-    if (s_fwd.inspector &&
-        s_fwd.inspector(src_if, data, len, s_fwd.inspect_ctx) == det_fwd_verdict::DET_FWD_INSPECT_DROP)
-    {
-        s_fwd.stats.inspect_dropped++;
-        return 0;
-    }
-#endif
-    // Policy routes take precedence over the src->dst fan-out: the first matching route sends
-    // the frame only to its chosen egress and ends the decision (same guarantees as a rule).
+    *handled = true;
     for (uint8_t i = 0; i < DETWS_FWD_MAX_ROUTES; i++)
     {
         route &rt = s_fwd.routes[i];
@@ -354,6 +340,33 @@ uint8_t det_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len)
         s_fwd.stats.send_fail++;
         return 0;
     }
+    *handled = false;
+    return 0;
+}
+
+uint8_t det_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len)
+{
+    s_fwd.stats.frames_in++;
+    if (!acl_permits(s_fwd, src_if, data, len)) // ingress ACL runs before any forwarding rule
+    {
+        s_fwd.stats.acl_denied++;
+        return 0;
+    }
+#if DETWS_FWD_INSPECT
+    // Opt-in inspection hook: an app callback observes/filters the frame before routing.
+    if (s_fwd.inspector &&
+        s_fwd.inspector(src_if, data, len, s_fwd.inspect_ctx) == det_fwd_verdict::DET_FWD_INSPECT_DROP)
+    {
+        s_fwd.stats.inspect_dropped++;
+        return 0;
+    }
+#endif
+    // Policy routes take precedence over the src->dst fan-out: the first matching route sends
+    // the frame only to its chosen egress and ends the decision (same guarantees as a rule).
+    bool routed = false;
+    uint8_t verdict = forward_policy_route(src_if, data, len, &routed);
+    if (routed)
+        return verdict;
     uint8_t n = 0;
     for (uint8_t i = 0; i < DETWS_FWD_MAX_IFACES; i++)
     {
