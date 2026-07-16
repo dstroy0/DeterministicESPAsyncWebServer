@@ -429,6 +429,84 @@ void process_ack(DtlsConn *c, const uint8_t *body, size_t len)
     }
     flight_disarm(c);
 }
+
+// One-record outcome for the dtls_conn_process datagram walk.
+enum class DtlsRecStep
+{
+    NEXT,  // record consumed; keep walking the datagram
+    STOP,  // malformed/short record; stop walking (leave the rest)
+    FATAL, // fatal error already recorded via fail(); caller returns -1
+};
+
+// Process one ciphertext (epoch-2) record at dgram[*off], advancing *off past a well-formed record.
+DtlsRecStep process_ciphertext_record(DtlsConn *c, const uint8_t *dgram, size_t len, size_t *off, uint8_t *out,
+                                      size_t out_cap, size_t *out_len)
+{
+    size_t rlen = ciphertext_record_len(dgram + *off, len - *off, c->cid_negotiated ? c->local_cid_len : 0);
+    if (!rlen)
+        return DtlsRecStep::STOP; // malformed header; stop walking the datagram
+    if (!c->ep2_ready)
+    {
+        fail(c, ALERT_UNEXPECTED_MESSAGE);
+        return DtlsRecStep::FATAL;
+    }
+    uint8_t inner[DTLS_CONN_REASM_CAP + DTLS_TAG_LEN];
+    DtlsCiphertext info;
+    uint64_t next = c->replay_ep2.seeded ? c->replay_ep2.highest + 1 : 0;
+    if (!dtls_ciphertext_unprotect(&c->ep2_cli, next, dgram + *off, rlen, inner, sizeof(inner), &info,
+                                   c->cid_negotiated ? c->local_cid : nullptr,
+                                   c->cid_negotiated ? c->local_cid_len : 0))
+    {
+        fail(c, ALERT_DECRYPT_ERROR);
+        return DtlsRecStep::FATAL;
+    }
+    *off += rlen;
+    if (!dtls_replay_check(&c->replay_ep2, info.seq))
+        return DtlsRecStep::NEXT; // replay: drop, but keep processing the datagram
+    dtls_replay_mark(&c->replay_ep2, info.seq);
+    bool is_hs = (info.content_type == DTLS_CT_HANDSHAKE);
+    if (is_hs)
+        c->rx_ep2_seq = info.seq; // the client Finished's record number, for the completion ACK
+    if (info.content_type == DTLS_CT_ACK)
+        process_ack(c, inner, info.pt_len); // the client acknowledged our flight
+    else if (is_hs && drive_handshake(c, inner, info.pt_len, out, out_cap, out_len) < 0)
+        return DtlsRecStep::FATAL;
+    return DtlsRecStep::NEXT;
+}
+
+// Process one plaintext (epoch-0) record at dgram[*off], advancing *off past a well-formed record.
+DtlsRecStep process_plaintext_record(DtlsConn *c, const uint8_t *dgram, size_t len, size_t *off, uint8_t *out,
+                                     size_t out_cap, size_t *out_len)
+{
+    DtlsPlaintext pt;
+    size_t rlen = dtls_plaintext_parse(dgram + *off, len - *off, &pt);
+    if (!rlen)
+        return DtlsRecStep::STOP;
+    *off += rlen;
+    if (pt.content_type == DTLS_CT_HANDSHAKE && drive_handshake(c, pt.fragment, pt.frag_len, out, out_cap, out_len) < 0)
+        return DtlsRecStep::FATAL;
+    return DtlsRecStep::NEXT;
+}
+
+// Once the client Finished completes the handshake, acknowledge it so the client stops retransmitting
+// its final flight (RFC 9147 §5.8.3). The ACK is a content-type-26 record in the highest available epoch
+// (3, application), covering the epoch-2 Finished record (§7). Sent at most once.
+void maybe_send_completion_ack(DtlsConn *c, uint8_t *out, size_t out_cap, size_t *out_len)
+{
+    if (!dtls_conn_established(c) || c->hs_ack_sent)
+        return;
+    DtlsRecordNumber rn = {2, c->rx_ep2_seq};
+    uint8_t ack_body[2 + 16];
+    size_t bl = dtls_ack_build(&rn, 1, ack_body, sizeof(ack_body));
+    size_t rec = dtls_ciphertext_protect(&c->ep3_srv, c->tx_seq_ep3++, DTLS_CT_ACK, ack_body, bl, out + *out_len,
+                                         out_cap - *out_len, c->cid_negotiated ? c->peer_cid : nullptr,
+                                         c->cid_negotiated ? c->peer_cid_len : 0);
+    if (rec)
+    {
+        *out_len += rec;
+        c->hs_ack_sent = true;
+    }
+}
 } // namespace
 
 void dtls_conn_init(DtlsConn *c, const DtlsServerConfig *cfg, const uint8_t *peer_addr, size_t peer_addr_len)
@@ -458,63 +536,16 @@ int dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *ou
     size_t off = 0;
     while (off < len)
     {
-        uint8_t b0 = dgram[off];
-        if (is_ciphertext(b0))
-        {
-            size_t rlen = ciphertext_record_len(dgram + off, len - off, c->cid_negotiated ? c->local_cid_len : 0);
-            if (!rlen)
-                break; // malformed header; stop walking the datagram
-            if (!c->ep2_ready)
-                return fail(c, ALERT_UNEXPECTED_MESSAGE);
-            uint8_t inner[DTLS_CONN_REASM_CAP + DTLS_TAG_LEN];
-            DtlsCiphertext info;
-            uint64_t next = c->replay_ep2.seeded ? c->replay_ep2.highest + 1 : 0;
-            if (!dtls_ciphertext_unprotect(&c->ep2_cli, next, dgram + off, rlen, inner, sizeof(inner), &info,
-                                           c->cid_negotiated ? c->local_cid : nullptr,
-                                           c->cid_negotiated ? c->local_cid_len : 0))
-                return fail(c, ALERT_DECRYPT_ERROR);
-            off += rlen;
-            if (!dtls_replay_check(&c->replay_ep2, info.seq))
-                continue; // replay: drop, but keep processing the datagram
-            dtls_replay_mark(&c->replay_ep2, info.seq);
-            bool is_hs = (info.content_type == DTLS_CT_HANDSHAKE);
-            if (is_hs)
-                c->rx_ep2_seq = info.seq; // the client Finished's record number, for the completion ACK
-            if (info.content_type == DTLS_CT_ACK)
-                process_ack(c, inner, info.pt_len); // the client acknowledged our flight
-            else if (is_hs && drive_handshake(c, inner, info.pt_len, out, out_cap, &out_len) < 0)
-                return -1;
-        }
-        else
-        {
-            DtlsPlaintext pt;
-            size_t rlen = dtls_plaintext_parse(dgram + off, len - off, &pt);
-            if (!rlen)
-                break;
-            off += rlen;
-            if (pt.content_type == DTLS_CT_HANDSHAKE &&
-                drive_handshake(c, pt.fragment, pt.frag_len, out, out_cap, &out_len) < 0)
-                return -1;
-        }
+        DtlsRecStep step = is_ciphertext(dgram[off])
+                               ? process_ciphertext_record(c, dgram, len, &off, out, out_cap, &out_len)
+                               : process_plaintext_record(c, dgram, len, &off, out, out_cap, &out_len);
+        if (step == DtlsRecStep::FATAL)
+            return -1;
+        if (step == DtlsRecStep::STOP)
+            break;
     }
 
-    // Once the client Finished completes the handshake, acknowledge it so the client stops
-    // retransmitting its final flight (RFC 9147 §5.8.3). The ACK is a content-type-26 record in the
-    // highest available epoch (3, application), covering the epoch-2 Finished record (§7).
-    if (dtls_conn_established(c) && !c->hs_ack_sent)
-    {
-        DtlsRecordNumber rn = {2, c->rx_ep2_seq};
-        uint8_t ack_body[2 + 16];
-        size_t bl = dtls_ack_build(&rn, 1, ack_body, sizeof(ack_body));
-        size_t rec = dtls_ciphertext_protect(&c->ep3_srv, c->tx_seq_ep3++, DTLS_CT_ACK, ack_body, bl, out + out_len,
-                                             out_cap - out_len, c->cid_negotiated ? c->peer_cid : nullptr,
-                                             c->cid_negotiated ? c->peer_cid_len : 0);
-        if (rec)
-        {
-            out_len += rec;
-            c->hs_ack_sent = true;
-        }
-    }
+    maybe_send_completion_ack(c, out, out_cap, &out_len);
     return (int)out_len;
 }
 
