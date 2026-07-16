@@ -1299,7 +1299,11 @@
     "SSLKEYLOGFILE",
     "codepoints",
     "reimplementation",
-    "coaps"
+    "coaps",
+    "FMCW",
+    "HMMD",
+    "MMBR",
+    "Waveshare"
   ],
   "ignorePaths": [
     "node_modules/**",

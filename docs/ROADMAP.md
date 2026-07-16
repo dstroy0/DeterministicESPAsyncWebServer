@@ -1471,3 +1471,39 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       cut it by roughly an order of magnitude. Not worth it at SSE's per-event cadence, but a real win for a
       high-rate broadcast fan-out (many subscribers, high push rate). Gate on the existing `test_sse_format`
       byte-exact tests + the `/bench` figure.
+
+### Radar presence sensor drivers (mmWave + Doppler)
+
+> Two more presence radars for the EM / radar presence + motion section above (LD2410 is the shipped
+> reference codec): a framed-UART mmWave module and a bare-GPIO Doppler module - opposite ends of the
+> presence-sensing cost/capability range. Both bridge northbound to the web stack like the other sensor
+> drivers; a device reads them over UART / GPIO and publishes presence.
+
+- [ ] **Waveshare HMMD 24 GHz mmWave presence sensor** (M) - human micro-motion detection (moving /
+      standing / stationary body plus a target distance gate) built on the **S3KM1110** 24 GHz FMCW radar
+      SoC behind a **PY32F003** MCU, exposed over a 3.3V UART (default **115200** baud) plus a GPIO presence
+      pin ([waveshare.com/wiki/HMMD_mmWave_Sensor](https://www.waveshare.com/wiki/HMMD_mmWave_Sensor)). Add
+      `DETWS_ENABLE_HMMD` / `services/hmmd`: a pure, host-tested **little-endian** frame codec - the default
+      ON/OFF + distance-gate report parse and a byte-by-byte resyncing stream reassembler (mirror the
+      `Ld2410Stream` reassembler), plus the command encoders (read firmware version `0x0000`, serial number
+      `0x0011`, register `0x0002`, parameter config `0x0008`). Bridge presence / distance northbound exactly
+      like LD2410. Test = captured-frame vectors both directions (`native_hmmd`); the sensor's GPIO OUT pin
+      shares the debounced presence bridge below.
+- [ ] **RCWL-0516 microwave Doppler presence sensor** (S) - the low-cost ~3.18 GHz Doppler motion module
+      (RCWL-9196 controller + MMBR941M RF amp): no data protocol at all - a single 3.3V **OUT** pin that
+      latches HIGH for ~2 s on any moving reflector and returns LOW when idle. This is the analog-Doppler end
+      of the presence path already noted in the EM / radar section. Add `DETWS_ENABLE_RCWL0516` /
+      `services/rcwl0516`: a tiny debounced edge-detect + hold-time state machine over one GPIO (pure,
+      host-testable by injecting pin levels against a fake clock via `detws_millis`), surfaced to the web
+      stack as a boolean presence event - the same one-GPIO presence facade the HMMD OUT pin and other
+      bare-output detectors (PIR, HB100) can reuse.
+- [ ] **HLK-LD2410B (Bluetooth variant of the shipped LD2410)** (S) - the LD2410**B** is HiLink's
+      BLE-equipped build of the same 24 GHz FMCW presence radar, speaking the **same `FD FC FB FA` framed
+      UART protocol** the shipped `services/ld2410` codec already builds and parses
+      ([datasheet](https://en.ai-thinker.com/Uploads/file/20231016/20231016032622_13559.pdf)). So this is a
+      **verification + thin extension** of the existing driver, not a new codec: confirm the LD2410B report /
+      ACK frames decode byte-for-byte with `ld2410_parse_report` + the `Ld2410Stream` reassembler (add
+      captured-frame vectors to `native_ld2410`), document it as a supported part, and add the few
+      LD2410B-only config commands (Bluetooth enable / permission, MAC query) to the `FD FC FB FA` command
+      encoders. The BLE control channel itself is out of scope for the wired driver - the UART report / config
+      path is the shared surface.
