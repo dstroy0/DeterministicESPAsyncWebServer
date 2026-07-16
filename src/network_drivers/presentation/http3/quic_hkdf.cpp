@@ -62,8 +62,11 @@ void quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], const 
     // out well under 255 (longest is "tls13 client in" = 15); the context is a Transcript-Hash (<= 32)
     // for Derive-Secret and empty for packet-protection keys. A fixed 2 + 1 + 255 + 1 + 255 scratch
     // buffer covers every caller.
-    size_t prefix_len = strlen(label_prefix);
-    size_t label_len = strlen(label);
+    // Bound the scans: the combined label is opaque<7..255> (RFC 8446 sec 7.1), so cap prefix+label at
+    // 255 - this both fits the reserved region below and keeps the single length byte from wrapping,
+    // even if a caller ever passed a non-NUL-terminated string.
+    size_t prefix_len = strnlen(label_prefix, 255);
+    size_t label_len = strnlen(label, 255 - prefix_len);
     uint8_t info[2 + 1 + 255 + 1 + 255];
     size_t p = 0;
     info[p++] = (uint8_t)(out_len >> 8);

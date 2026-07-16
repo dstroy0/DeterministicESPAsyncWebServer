@@ -240,9 +240,9 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     char etag[40];
     snprintf(etag, sizeof(etag), "\"%x-%lx\"", (unsigned)file_size, (unsigned long)mtime);
 
-    char lastmod_line[56];
-    lastmod_line[0] = '\0';
     char lm_date[40];
+    char lastmod_line[17 + sizeof(lm_date)]; // "Last-Modified: " + date + "\r\n" + NUL
+    lastmod_line[0] = '\0';
     http_rfc1123(mtime, lm_date, sizeof(lm_date));
     if (lm_date[0])
         snprintf(lastmod_line, sizeof(lastmod_line), "Last-Modified: %s\r\n", lm_date);
