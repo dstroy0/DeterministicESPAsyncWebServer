@@ -91,6 +91,46 @@ void put_json_str(Buf *b, const char *s)
     }
     put(b, "\"");
 }
+
+// Parse "bytes=<s>-<e>" (either bound optional) from a Range header. Fills the out-params and returns
+// true, or returns false for a malformed / multi-range / non-bytes header. *have_start / *have_end flag
+// which bounds were present; resolving them against the resource size is the caller's job.
+bool parse_range_spec(const char *range_header, bool *have_start, bool *have_end, uint32_t *s, uint32_t *e)
+{
+    const char *p = range_header;
+    while (*p == ' ' || *p == '\t')
+        p++;
+    if (strncmp(p, "bytes=", 6) != 0)
+        return false;
+    p += 6;
+    if (strchr(p, ',')) // multi-range: unsupported
+        return false;
+
+    *have_start = false;
+    *have_end = false;
+    *s = 0;
+    *e = 0;
+    if (*p >= '0' && *p <= '9')
+    {
+        if (!read_u32(&p, s))
+            return false;
+        *have_start = true;
+    }
+    if (*p != '-')
+        return false;
+    p++;
+    if (*p >= '0' && *p <= '9')
+    {
+        if (!read_u32(&p, e))
+            return false;
+        *have_end = true;
+    }
+    while (*p == ' ' || *p == '\t')
+        p++;
+    if (*p != '\0' && *p != '\r' && *p != '\n')
+        return false;
+    return true;
+}
 } // namespace
 
 DeliveryVerdict detws_delivery_swr(uint32_t age_s, uint32_t max_age_s, uint32_t swr_s)
@@ -125,37 +165,12 @@ int detws_delivery_range(const char *range_header, uint32_t total, uint32_t *sta
 {
     if (!range_header || !start || !end || total == 0)
         return 0;
-    const char *p = range_header;
-    while (*p == ' ' || *p == '\t')
-        p++;
-    if (strncmp(p, "bytes=", 6) != 0)
-        return 0;
-    p += 6;
-    if (strchr(p, ',')) // multi-range: unsupported
-        return 0;
 
     bool have_start = false;
     bool have_end = false;
     uint32_t s = 0;
     uint32_t e = 0;
-    if (*p >= '0' && *p <= '9')
-    {
-        if (!read_u32(&p, &s))
-            return 0;
-        have_start = true;
-    }
-    if (*p != '-')
-        return 0;
-    p++;
-    if (*p >= '0' && *p <= '9')
-    {
-        if (!read_u32(&p, &e))
-            return 0;
-        have_end = true;
-    }
-    while (*p == ' ' || *p == '\t')
-        p++;
-    if (*p != '\0' && *p != '\r' && *p != '\n')
+    if (!parse_range_spec(range_header, &have_start, &have_end, &s, &e))
         return 0;
 
     uint32_t rs = 0;

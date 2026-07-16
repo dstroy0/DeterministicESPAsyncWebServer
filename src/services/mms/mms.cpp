@@ -85,6 +85,30 @@ size_t int_content(uint32_t v, uint8_t *buf)
         buf[k++] = tmp[t - 1 - i];
     return k;
 }
+
+// Decode a BER definite length at pdu[at]. Sets *value and *hdr (octets the length field spans: 1 for
+// short form, 1+nb for long form). Returns false for an out-of-bounds field or an unsupported long form
+// (nb outside 1..2). Only short/2-byte lengths occur in the PDUs this codec accepts.
+bool ber_len(const uint8_t *pdu, size_t len, size_t at, size_t *value, size_t *hdr)
+{
+    if (at >= len)
+        return false;
+    size_t v = pdu[at];
+    if (v & 0x80)
+    {
+        size_t nb = v & 0x7F;
+        if (nb == 0 || nb > 2 || at + 1 + nb > len)
+            return false;
+        v = 0;
+        for (size_t i = 0; i < nb; i++)
+            v = (v << 8) | pdu[at + 1 + i];
+        *hdr = 1 + nb;
+    }
+    else
+        *hdr = 1;
+    *value = v;
+    return true;
+}
 } // namespace
 
 size_t detws_mms_read_request(uint32_t invoke_id, const char *item_name, uint8_t *out, size_t cap)
@@ -173,19 +197,11 @@ bool detws_mms_parse(const uint8_t *pdu, size_t len, MmsPdu *out)
         return false;
     // Decode the outer length.
     size_t off = 1;
-    size_t body_len = pdu[off];
-    if (body_len & 0x80)
-    {
-        size_t nb = body_len & 0x7F;
-        if (nb == 0 || nb > 2 || off + 1 + nb > len)
-            return false;
-        body_len = 0;
-        for (size_t i = 0; i < nb; i++)
-            body_len = (body_len << 8) | pdu[off + 1 + i];
-        off += 1 + nb;
-    }
-    else
-        off += 1;
+    size_t body_len = 0;
+    size_t lhdr = 0;
+    if (!ber_len(pdu, len, off, &body_len, &lhdr))
+        return false;
+    off += lhdr;
     if (off + body_len > len)
         return false;
 
@@ -206,18 +222,10 @@ bool detws_mms_parse(const uint8_t *pdu, size_t len, MmsPdu *out)
     {
         out->service_tag = pdu[p];
         size_t sp = p + 1;
-        size_t slen = pdu[sp];
-        size_t hdr = 1;
-        if (slen & 0x80)
-        {
-            size_t nb = slen & 0x7F;
-            if (nb == 0 || nb > 2 || sp + 1 + nb > len)
-                return false;
-            slen = 0;
-            for (size_t i = 0; i < nb; i++)
-                slen = (slen << 8) | pdu[sp + 1 + i];
-            hdr = 1 + nb;
-        }
+        size_t slen = 0;
+        size_t hdr = 0;
+        if (!ber_len(pdu, len, sp, &slen, &hdr))
+            return false;
         if (sp + hdr + slen > len)
             return false;
         out->service_body = pdu + sp + hdr;
