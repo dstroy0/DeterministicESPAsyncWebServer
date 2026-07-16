@@ -666,7 +666,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L6    | `JWT`               |             1.5 KB |          16.3 KB |
 | L6    | `AUTH_LOCKOUT`      |           < 0.5 KB |          15.8 KB |
 | L7    | `WS_CLIENT`         |            76.6 KB |          53.1 KB |
-| L7    | `ETAG`              |        0.0-73.8 KB |      0.0-16.5 KB |
+| L7    | `ETAG`              |        0.0-73.7 KB |      0.0-16.5 KB |
 | L7    | `WEBDAV`            |       26.2-66.6 KB |     38.2-38.7 KB |
 | L7    | `VFS`               |            41.9 KB |          19.6 KB |
 | L7    | `RANGE`             |        0.6-41.0 KB |      0.0-15.2 KB |
@@ -690,7 +690,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `PROVISIONING`      |             6.8 KB |          16.7 KB |
 | L7    | `DNS_RESOLVER`      |             5.2 KB |          16.5 KB |
 | L7    | `COAP`              |             4.9 KB |          17.7 KB |
-| L7    | `OTA`               |             4.5 KB |          35.1 KB |
+| L7    | `OTA`               |             4.6 KB |          35.1 KB |
 | L7    | `CONFIG_IO`         |             4.2 KB |          15.3 KB |
 | L7    | `CONFIG_STORE`      |             4.2 KB |          15.3 KB |
 | L7    | `GRAPHQL`           |             4.2 KB |          19.5 KB |
