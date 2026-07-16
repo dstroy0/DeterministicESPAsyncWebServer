@@ -34,7 +34,7 @@ from each example's `pio ci` size report and aggregated into
 | `ENOCEAN+GATEWAY`                                                                                         | Foundation/13.EnOceanGateway            | 262.4 KB (20.5%) | 21.3 KB (6.7%)   |
 | `ESPNOW`                                                                                                  | L7-Application/53.EspNow                | 714.2 KB (55.8%) | 42.6 KB (13.3%)  |
 | `ETAG`                                                                                                    | L7-Application/09.ETag                  | 809.0 KB (63.2%) | 81.1 KB (25.4%)  |
-| `ETHERNET`                                                                                                | Foundation/19.Ethernet                  | 772.5 KB (60.4%) | 79.9 KB (25.0%)  |
+| `ETHERNET`                                                                                                | Foundation/19.Ethernet                  | 772.6 KB (60.4%) | 79.9 KB (25.0%)  |
 | `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | Foundation/23.EthernetW5500             | 772.6 KB (60.4%) | 79.9 KB (25.0%)  |
 | `GPIO_MAP`                                                                                                | L7-Application/38.GpioMap               | 738.8 KB (57.7%) | 79.9 KB (25.0%)  |
 | `GRAPHQL`                                                                                                 | L7-Application/52.GraphQL               | 739.4 KB (57.8%) | 84.2 KB (26.3%)  |
@@ -77,7 +77,7 @@ from each example's `pio ci` size report and aggregated into
 | `PROVISIONING`                                                                                            | L7-Application/17.Provisioning          | 742.0 KB (58.0%) | 81.4 KB (25.4%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`                                                                               | L7-Application/47.RadioPower            | 734.7 KB (57.4%) | 79.9 KB (25.0%)  |
 | `RANGE`                                                                                                   | L7-Application/12.Range                 | 776.2 KB (60.6%) | 79.9 KB (25.0%)  |
-| `RELAY`                                                                                                   | L7-Application/70.PortForward           | 744.3 KB (58.2%) | 113.7 KB (35.5%) |
+| `RELAY`                                                                                                   | L7-Application/70.PortForward           | 744.4 KB (58.2%) | 113.7 KB (35.5%) |
 | `RTC+TIME_SOURCE+NTP`                                                                                     | L7-Application/61.Rtc                   | 748.7 KB (58.5%) | 44.3 KB (13.8%)  |
 | `SEN0192`                                                                                                 | L7-Application/77.Sen0192               | 263.5 KB (20.6%) | 21.0 KB (6.6%)   |
 | `SHT3X`                                                                                                   | L7-Application/64.Sht3x                 | 280.2 KB (21.9%) | 21.3 KB (6.7%)   |
