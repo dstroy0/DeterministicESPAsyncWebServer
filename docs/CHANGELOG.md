@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`cfcab44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cfcab44c821a53938d885ed2521e26fab06b5ca4))
+- update CHANGELOG.md [skip ci] ([`cecba7a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cecba7acb685f4618fe72e074b156d93c350a396))
 - update test report + coverage [skip ci] ([`6d910dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d910dd3b902808c21ae1530db5e9e993878fea9))
 - update CHANGELOG.md [skip ci] ([`f5a3366`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5a33662559fff84bb71be0e03bfe8ff9135d08c))
 
@@ -15,6 +17,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- flatten deep nesting via guard clauses + small extractions (S134) ([`2fbb3e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fbb3e43026aa94fae7ebc03b7e836dbe0845386))
 - fix S912 BLOCKER + constant macros -> constexpr ([`f8343b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8343b80289081b2d2e650145ef56c43cf57b778))
 
 ## [6.24.0] - 2026-07-16
