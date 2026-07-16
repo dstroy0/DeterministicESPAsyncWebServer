@@ -73,8 +73,8 @@
     "example": "L7-Application/78.CoapSecure",
     "flags": "-DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_DTLS=1",
     "board": "esp32dev",
-    "flash_bytes": 779205,
-    "ram_bytes": 102816
+    "flash_bytes": 779521,
+    "ram_bytes": 102864
   },
   "CONFIG_STORE+CONFIG_IO": {
     "example": "L7-Application/42.ConfigExport",
