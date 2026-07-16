@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.22.0] - 2026-07-16
+
+<details>
+<summary><b>Show Changelog for version 6.22.0 - 2026-07-16</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`bf52eeb`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf52eeb060c6cfe4abb3a2bd86ad965342a63c70))
+- update CHANGELOG.md [skip ci] ([`09c125e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09c125e3fa7704566af9c73c4bd7b83e327e8eee))
+
+### Changes
+
+- Bump version: 6.21.0 → 6.22.0 ([`eb399e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb399e1d27f3a3e23dd7771edf08908d29323855))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3565409`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/356540984e1a9863217e27a9124cb169f2ccdc20))
+
+### Features
+
+- CoAP-over-DTLS bridge (RFC 7252 sec 9) ([`21db473`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/21db473fcb1f4989bbe818d03d95bfc3b0d86bfb))
+
+</details>
+
 ## [6.21.0] - 2026-07-16
 
 <details>
