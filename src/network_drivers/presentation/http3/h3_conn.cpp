@@ -109,6 +109,50 @@ void append(H3Stream *st, const uint8_t *data, size_t len)
     st->buf_len += len;
 }
 
+// Read the leading stream-type varint of a uni stream and set st->role; consumes it from the buffer.
+// Returns false if more bytes are needed (nothing consumed).
+bool h3_classify_uni_stream(H3Stream *st)
+{
+    uint64_t type = 0;
+    size_t c = 0;
+    if (!quic_varint_decode(st->buf, st->buf_len, &type, &c))
+        return false; // need more bytes for the varint
+    st->type_read = true;
+    if (type == 0x00)
+        st->role = H3StreamRole::H3_ROLE_CONTROL;
+    else if (type == 0x02)
+        st->role = H3StreamRole::H3_ROLE_QPACK_ENC;
+    else if (type == 0x03)
+        st->role = H3StreamRole::H3_ROLE_QPACK_DEC;
+    else
+        st->role = H3StreamRole::H3_ROLE_OTHER_UNI;
+    memmove(st->buf, st->buf + c, st->buf_len - c);
+    st->buf_len -= c;
+    return true;
+}
+
+// Parse whatever complete frames the control stream holds (SETTINGS first), consuming them.
+void h3_consume_control(H3Conn *h3, H3Stream *st)
+{
+    size_t off = 0;
+    while (off < st->buf_len)
+    {
+        H3Frame fr;
+        if (!h3_frame_parse(st->buf + off, st->buf_len - off, &fr))
+            break;
+        if (off + fr.header_len + fr.length > st->buf_len)
+            break;
+        if (fr.type == H3FrameType::H3_SETTINGS)
+        {
+            h3_settings_defaults(&h3->peer_settings);
+            h3_parse_settings(st->buf + off + fr.header_len, (size_t)fr.length, &h3->peer_settings);
+        }
+        off += fr.header_len + (size_t)fr.length;
+    }
+    memmove(st->buf, st->buf + off, st->buf_len - off);
+    st->buf_len -= off;
+}
+
 void on_stream_data(void *app, QuicConn *, uint64_t stream_id, const uint8_t *data, size_t len, bool fin)
 {
     H3Conn *h3 = (H3Conn *)app;
@@ -124,43 +168,13 @@ void on_stream_data(void *app, QuicConn *, uint64_t stream_id, const uint8_t *da
     // A unidirectional stream begins with a stream-type varint; classify it once.
     if (st->role != H3StreamRole::H3_ROLE_REQUEST && !st->type_read && st->buf_len >= 1)
     {
-        uint64_t type = 0;
-        size_t c = 0;
-        if (!quic_varint_decode(st->buf, st->buf_len, &type, &c))
+        if (!h3_classify_uni_stream(st))
             return; // need more bytes for the varint
-        st->type_read = true;
-        if (type == 0x00)
-            st->role = H3StreamRole::H3_ROLE_CONTROL;
-        else if (type == 0x02)
-            st->role = H3StreamRole::H3_ROLE_QPACK_ENC;
-        else if (type == 0x03)
-            st->role = H3StreamRole::H3_ROLE_QPACK_DEC;
-        else
-            st->role = H3StreamRole::H3_ROLE_OTHER_UNI;
-        memmove(st->buf, st->buf + c, st->buf_len - c);
-        st->buf_len -= c;
     }
 
     if (st->role == H3StreamRole::H3_ROLE_CONTROL)
     {
-        // The control stream carries SETTINGS first; parse whatever complete frames we have.
-        size_t off = 0;
-        while (off < st->buf_len)
-        {
-            H3Frame fr;
-            if (!h3_frame_parse(st->buf + off, st->buf_len - off, &fr))
-                break;
-            if (off + fr.header_len + fr.length > st->buf_len)
-                break;
-            if (fr.type == H3FrameType::H3_SETTINGS)
-            {
-                h3_settings_defaults(&h3->peer_settings);
-                h3_parse_settings(st->buf + off + fr.header_len, (size_t)fr.length, &h3->peer_settings);
-            }
-            off += fr.header_len + (size_t)fr.length;
-        }
-        memmove(st->buf, st->buf + off, st->buf_len - off);
-        st->buf_len -= off;
+        h3_consume_control(h3, st);
         return;
     }
     if (st->role != H3StreamRole::H3_ROLE_REQUEST)

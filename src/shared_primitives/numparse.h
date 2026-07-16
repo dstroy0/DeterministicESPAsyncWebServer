@@ -63,6 +63,38 @@ inline unsigned long det_strtoul(const char *s, const char **end)
     return v;
 }
 
+// Parse the fractional part after a '.', advancing p and accumulating into val.
+inline void det_strtod_frac(const char *&p, double &val, bool &any)
+{
+    p++; // consume '.'
+    double scale = 1.0;
+    while (det_np_digit(*p))
+    {
+        scale *= 10.0;
+        val += (double)(*p++ - '0') / scale;
+        any = true;
+    }
+}
+
+// Apply a trailing exponent (e[+/-]NNN) to val, advancing p past it.
+inline void det_strtod_exp(const char *&p, double &val)
+{
+    p++; // consume 'e'/'E'
+    bool eneg = false;
+    if (*p == '+' || *p == '-')
+        eneg = (*p++ == '-');
+    int ex = 0;
+    while (det_np_digit(*p))
+    {
+        ex = (ex < 400) ? ex * 10 + (*p - '0') : ex; // clamp: 10^400 overflows the double to inf
+        p++;
+    }
+    double m = 1.0;
+    for (int k = 0; k < ex; k++)
+        m *= 10.0;
+    val = eneg ? val / m : val * m;
+}
+
 /** @brief Parse a double (integer[.frac][e[+/-]exp]); sets @p end (or to @p s if none). */
 inline double det_strtod(const char *s, const char **end)
 {
@@ -80,34 +112,9 @@ inline double det_strtod(const char *s, const char **end)
         any = true;
     }
     if (*p == '.')
-    {
-        p++;
-        double scale = 1.0;
-        while (det_np_digit(*p))
-        {
-            scale *= 10.0;
-            val += (double)(*p++ - '0') / scale;
-            any = true;
-        }
-    }
+        det_strtod_frac(p, val, any);
     if (any && (*p == 'e' || *p == 'E'))
-    {
-        p++;
-        bool eneg = false;
-        if (*p == '+' || *p == '-')
-            eneg = (*p++ == '-');
-        int ex = 0;
-        while (det_np_digit(*p))
-        {
-            if (ex < 400) // clamp: 10^400 overflows the double to inf, and bounds the loop below
-                ex = ex * 10 + (*p - '0');
-            p++;
-        }
-        double m = 1.0;
-        for (int k = 0; k < ex; k++)
-            m *= 10.0;
-        val = eneg ? val / m : val * m;
-    }
+        det_strtod_exp(p, val);
     if (end)
         *end = any ? p : s;
     return neg ? -val : val;

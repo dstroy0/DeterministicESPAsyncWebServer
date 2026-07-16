@@ -194,6 +194,34 @@ int send_hello_retry(DtlsConn *c, const Tls13ClientHello *ch, const uint8_t *ch1
     return 0;
 }
 
+// After a HelloRetryRequest, the retry ClientHello must echo a valid cookie (proving the client's
+// address) before we spend the handshake's asymmetric crypto (RFC 9147 §5.1). No HRR -> nothing to check.
+bool dtls_hrr_cookie_ok(DtlsConn *c, const Tls13ClientHello *ch)
+{
+    if (!c->hrr_sent)
+        return true;
+    uint8_t payload[1];
+    size_t plen = 0;
+    return ch->cookie &&
+           dtls_cookie_verify(c->cfg.cookie_key, detws_millis(), DTLS_HRR_COOKIE_MAX_AGE_MS, c->peer_addr,
+                              c->peer_addr_len, ch->cookie, ch->cookie_len, payload, sizeof(payload), &plen);
+}
+
+// Connection-id negotiation (RFC 9146 / RFC 9147 §9): if the client offered a CID we can hold, store it
+// (placed in records we send it) and choose our own CID from the fresh ServerHello random (unique per
+// connection) for the records the client sends us.
+void dtls_negotiate_conn_id(DtlsConn *c, const Tls13ClientHello *ch)
+{
+    if (!ch->has_conn_id || ch->conn_id_len > DTLS_CID_MAX)
+        return;
+    c->cid_negotiated = true;
+    c->peer_cid_len = (uint8_t)ch->conn_id_len;
+    if (ch->conn_id_len)
+        memcpy(c->peer_cid, ch->conn_id, ch->conn_id_len);
+    c->local_cid_len = DTLS_CONN_LOCAL_CID_LEN;
+    memcpy(c->local_cid, c->cfg.server_random, DTLS_CONN_LOCAL_CID_LEN);
+}
+
 // Consume a ClientHello and emit the whole server flight (ServerHello + the epoch-2 encrypted
 // messages), installing handshake and application keys. Mirrors quic_tls process_client_hello. If the
 // client did not offer an X25519 key_share, this instead sends a HelloRetryRequest and returns to wait
@@ -226,28 +254,10 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
 
     // A key_share is present. If it followed our HelloRetryRequest, the client must echo the cookie,
     // authenticating its address before we spend the handshake's asymmetric crypto (§5.1).
-    if (c->hrr_sent)
-    {
-        uint8_t payload[1];
-        size_t plen = 0;
-        if (!ch.cookie ||
-            !dtls_cookie_verify(c->cfg.cookie_key, detws_millis(), DTLS_HRR_COOKIE_MAX_AGE_MS, c->peer_addr,
-                                c->peer_addr_len, ch.cookie, ch.cookie_len, payload, sizeof(payload), &plen))
-            return fail(c, ALERT_HANDSHAKE_FAILURE);
-    }
+    if (!dtls_hrr_cookie_ok(c, &ch))
+        return fail(c, ALERT_HANDSHAKE_FAILURE);
 
-    // Connection id negotiation (RFC 9146 / RFC 9147 §9): if the client offered a connection_id we can
-    // hold, accept it - store the client's CID (placed in records we send it) and choose our own CID from
-    // the fresh ServerHello random (unique per connection) for the records the client sends us.
-    if (ch.has_conn_id && ch.conn_id_len <= DTLS_CID_MAX)
-    {
-        c->cid_negotiated = true;
-        c->peer_cid_len = (uint8_t)ch.conn_id_len;
-        if (ch.conn_id_len)
-            memcpy(c->peer_cid, ch.conn_id, ch.conn_id_len);
-        c->local_cid_len = DTLS_CONN_LOCAL_CID_LEN;
-        memcpy(c->local_cid, c->cfg.server_random, DTLS_CONN_LOCAL_CID_LEN);
-    }
+    dtls_negotiate_conn_id(c, &ch);
 
     // X25519 shared secret and the server's key_share.
     uint8_t ecdhe[32];
