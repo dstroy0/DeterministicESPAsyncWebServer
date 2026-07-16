@@ -128,6 +128,7 @@ struct DtlsConn
     bool hrr_sent;                         ///< a HelloRetryRequest was sent; the next ClientHello is the retry (§5.1)
     uint16_t next_recv_msg_seq;            ///< handshake message_seq expected next from the client
     DtlsReplayWindow replay_ep2;           ///< anti-replay window for inbound epoch-2 records
+    DtlsReplayWindow replay_ep3;           ///< anti-replay window for inbound epoch-3 (application) records
     uint64_t rx_ep2_seq;                   ///< sequence number of the last inbound epoch-2 record (the client Finished)
     bool hs_ack_sent;                      ///< the client Finished has been acknowledged (RFC 9147 §5.8.3 / §7)
     uint8_t peer_addr[DTLS_PEER_ADDR_MAX]; ///< serialized peer address the HRR cookie is bound to (§5.1)
@@ -203,6 +204,24 @@ const DtlsRecordKeys *dtls_conn_app_write_keys(const DtlsConn *c);
 
 /** @brief Application-epoch (epoch 3) client read keys - unprotect inbound application records. */
 const DtlsRecordKeys *dtls_conn_app_read_keys(const DtlsConn *c);
+
+/**
+ * @brief Decrypt one inbound epoch-3 application record into @p out (RFC 9147 §4).
+ *
+ * Only valid once established. Enforces the epoch-3 anti-replay window (§4.5.1) and that the record's
+ * true content type is application_data. A replayed, too-old, or non-application record yields false.
+ *
+ * @return true and sets @p *out_len on success; false if the connection is not established, the record
+ *         fails to open, it is a replay, or it is not application data.
+ */
+bool dtls_conn_open_app(DtlsConn *c, const uint8_t *rec, size_t rec_len, uint8_t *out, size_t out_cap, size_t *out_len);
+
+/**
+ * @brief Seal @p data as one outbound epoch-3 application record (RFC 9147 §4), advancing the shared
+ *        epoch-3 send sequence so it never collides with the handshake-completion ACK.
+ * @return record bytes written to @p out, or 0 if not established or on overflow.
+ */
+size_t dtls_conn_seal_app(DtlsConn *c, const uint8_t *data, size_t len, uint8_t *out, size_t out_cap);
 
 #endif // DETWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_DTLS_CONN_H

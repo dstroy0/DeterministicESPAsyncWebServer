@@ -85,7 +85,6 @@ int main(int argc, char **argv)
     fprintf(stderr, "listening udp/%u cert_len=%zu\n", port, cert_len);
 
     uint8_t dgram[8192], out[8192];
-    uint64_t app_rx_next = 0, app_tx_seq = 0;
     int pre_flights =
         0; // server flights sent before establishment; >= 2 means a HelloRetryRequest preceded ServerHello
     sockaddr_in peer;
@@ -122,25 +121,20 @@ int main(int argc, char **argv)
         }
         else
         {
-            // epoch-3 application data: unprotect and echo back.
-            const DtlsRecordKeys *rk = dtls_conn_app_read_keys(&conn);
-            const DtlsRecordKeys *wk = dtls_conn_app_write_keys(&conn);
+            // epoch-3 application data: decrypt and echo back, exercising the same seal/open helpers a
+            // CoAP-over-DTLS front-end uses (dtls_conn_open_app / dtls_conn_seal_app - a shared epoch-3
+            // send sequence, so the echo never collides with the handshake-completion ACK).
             uint8_t inner[8192];
-            DtlsCiphertext info;
-            if (dtls_ciphertext_unprotect(rk, app_rx_next, dgram, (size_t)n, inner, sizeof inner, &info))
+            size_t plen_in = 0;
+            if (dtls_conn_open_app(&conn, dgram, (size_t)n, inner, sizeof inner, &plen_in))
             {
-                app_rx_next = info.seq + 1;
-                if (info.content_type == DTLS_CT_APPLICATION_DATA)
-                {
-                    fprintf(stderr, "APPDATA RX %zu bytes: %.*s\n", info.pt_len, (int)info.pt_len, inner);
-                    uint8_t rec[8192];
-                    size_t rn = dtls_ciphertext_protect(wk, app_tx_seq++, DTLS_CT_APPLICATION_DATA, inner, info.pt_len,
-                                                        rec, sizeof rec);
-                    if (rn)
-                        sendto(fd, rec, rn, 0, (sockaddr *)&peer, plen);
-                    fprintf(stderr, "APPDATA echoed %zu bytes; INTEROP OK\n", info.pt_len);
-                    fflush(stderr);
-                }
+                fprintf(stderr, "APPDATA RX %zu bytes: %.*s\n", plen_in, (int)plen_in, inner);
+                uint8_t rec[8192];
+                size_t rn = dtls_conn_seal_app(&conn, inner, plen_in, rec, sizeof rec);
+                if (rn)
+                    sendto(fd, rec, rn, 0, (sockaddr *)&peer, plen);
+                fprintf(stderr, "APPDATA echoed %zu bytes; INTEROP OK\n", plen_in);
+                fflush(stderr);
             }
         }
     }

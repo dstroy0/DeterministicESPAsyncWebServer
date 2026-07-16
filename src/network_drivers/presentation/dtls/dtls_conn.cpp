@@ -416,6 +416,7 @@ void dtls_conn_init(DtlsConn *c, const DtlsServerConfig *cfg, const uint8_t *pee
     }
     ssh_sha256_init(&c->transcript);
     dtls_replay_init(&c->replay_ep2);
+    dtls_replay_init(&c->replay_ep3);
     c->next_recv_msg_seq = 0;
     dtls_hs_reasm_init(&c->reasm, 0, c->reasm_buf + 4, DTLS_CONN_REASM_CAP);
 }
@@ -535,6 +536,31 @@ const DtlsRecordKeys *dtls_conn_app_write_keys(const DtlsConn *c)
 const DtlsRecordKeys *dtls_conn_app_read_keys(const DtlsConn *c)
 {
     return c->ep3_ready ? &c->ep3_cli : nullptr;
+}
+
+bool dtls_conn_open_app(DtlsConn *c, const uint8_t *rec, size_t rec_len, uint8_t *out, size_t out_cap, size_t *out_len)
+{
+    if (!dtls_conn_established(c))
+        return false;
+    DtlsCiphertext info;
+    uint64_t next = c->replay_ep3.seeded ? c->replay_ep3.highest + 1 : 0;
+    if (!dtls_ciphertext_unprotect(&c->ep3_cli, next, rec, rec_len, out, out_cap, &info))
+        return false;
+    if (!dtls_replay_check(&c->replay_ep3, info.seq))
+        return false; // replay or too old
+    dtls_replay_mark(&c->replay_ep3, info.seq);
+    if (info.content_type != DTLS_CT_APPLICATION_DATA)
+        return false;
+    *out_len = info.pt_len;
+    return true;
+}
+
+size_t dtls_conn_seal_app(DtlsConn *c, const uint8_t *data, size_t len, uint8_t *out, size_t out_cap)
+{
+    if (!dtls_conn_established(c))
+        return 0;
+    // tx_seq_ep3 is shared with the completion ACK, so app records never reuse its sequence number.
+    return dtls_ciphertext_protect(&c->ep3_srv, c->tx_seq_ep3++, DTLS_CT_APPLICATION_DATA, data, len, out, out_cap);
 }
 
 #endif // DETWS_ENABLE_DTLS
