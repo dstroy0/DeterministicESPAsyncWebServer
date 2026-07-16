@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`7a95249`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7a952492e6d5243287949f557071e8872d4426cd))
 - update CHANGELOG.md [skip ci] ([`b900ad6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b900ad682391963d274dccbf66470eaac44d137b))
 - update test report + coverage [skip ci] ([`59f6cae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/59f6caeb7431e1445aa0be2e9b48a0b2aca5bf85))
 - update CHANGELOG.md [skip ci] ([`3e54b80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e54b80dd45d43b43602207811b2775d7926b1d0))
@@ -50,6 +51,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`69e1c9f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/69e1c9fcd5709036081d6040bfbe76c338a5d61b))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`71c6567`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/71c65672b525bb9b570dd4e867e2528d8a7d89dc))
 - update ESP32 build footprints [skip ci] ([`1764e9a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1764e9aea28390d6595a50992bcc90bdd1373470))
 - update ESP32 build footprints [skip ci] ([`d383011`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d3830110a0090afd9eaeb733e366527bdef3a914))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5aa1709`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5aa1709950868c6f0b9c044d448df051d8b0d470))
@@ -78,6 +81,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- bound strlen->strnlen across transport/auth/channel ([`fe97d6f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fe97d6fd2c65f64428c400057f2d78056effe91c))
 - bound strlen->strnlen in binary encoders ([`07ff6f4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/07ff6f43d408973b7bb115f6e2e94e64da603acd))
 - bound strlen->strnlen in packet builders ([`708fa6a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/708fa6aab2a8547f383346e8e76c7f21ac9c676e))
 - split recv_packet + build_frames (S3776 cc 35/50) ([`11db81a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/11db81a0d0ec33c579b5c5ecfb0ce3dd100eab74))
