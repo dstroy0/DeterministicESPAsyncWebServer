@@ -276,6 +276,78 @@
     "output": ".pio/build/native_coap/src/services/coap/coap.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/dtls/dtls_conn.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/dtls/dtls_conn.cpp",
+    "directory": "@ROOT@",
+    "file": "src/network_drivers/presentation/dtls/dtls_conn.cpp",
+    "output": ".pio/build/native_coaps/src/network_drivers/presentation/dtls/dtls_conn.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/dtls/dtls_handshake.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/dtls/dtls_handshake.cpp",
+    "directory": "@ROOT@",
+    "file": "src/network_drivers/presentation/dtls/dtls_handshake.cpp",
+    "output": ".pio/build/native_coaps/src/network_drivers/presentation/dtls/dtls_handshake.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/dtls/dtls_record.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/dtls/dtls_record.cpp",
+    "directory": "@ROOT@",
+    "file": "src/network_drivers/presentation/dtls/dtls_record.cpp",
+    "output": ".pio/build/native_coaps/src/network_drivers/presentation/dtls/dtls_record.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/http3/quic_aead.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_aead.cpp",
+    "directory": "@ROOT@",
+    "file": "src/network_drivers/presentation/http3/quic_aead.cpp",
+    "output": ".pio/build/native_coaps/src/network_drivers/presentation/http3/quic_aead.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/http3/quic_hkdf.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_hkdf.cpp",
+    "directory": "@ROOT@",
+    "file": "src/network_drivers/presentation/http3/quic_hkdf.cpp",
+    "output": ".pio/build/native_coaps/src/network_drivers/presentation/http3/quic_hkdf.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/http3/tls13_kdf.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/tls13_kdf.cpp",
+    "directory": "@ROOT@",
+    "file": "src/network_drivers/presentation/http3/tls13_kdf.cpp",
+    "output": ".pio/build/native_coaps/src/network_drivers/presentation/http3/tls13_kdf.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/http3/tls13_msg.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/tls13_msg.cpp",
+    "directory": "@ROOT@",
+    "file": "src/network_drivers/presentation/http3/tls13_msg.cpp",
+    "output": ".pio/build/native_coaps/src/network_drivers/presentation/http3/tls13_msg.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_curve25519.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp",
+    "directory": "@ROOT@",
+    "file": "src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp",
+    "output": ".pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_curve25519.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_ed25519.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp",
+    "directory": "@ROOT@",
+    "file": "src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp",
+    "output": ".pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_ed25519.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp",
+    "directory": "@ROOT@",
+    "file": "src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp",
+    "output": ".pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp",
+    "directory": "@ROOT@",
+    "file": "src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp",
+    "output": ".pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/services/coap/coaps.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/services/coap/coaps.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/coap/coaps.cpp",
+    "output": ".pio/build/native_coaps/src/services/coap/coaps.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_config_io/src/services/config_io/config_io.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_CONFIG_STORE=1 -DDETWS_ENABLE_CONFIG_IO=1 -Itest/mocks -Itest/support -Isrc src/services/config_io/config_io.cpp",
     "directory": "@ROOT@",
     "file": "src/services/config_io/config_io.cpp",
@@ -300,40 +372,10 @@
     "output": ".pio/build/native_cotp/src/services/cotp/cotp.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/http3/quic_aead.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_aead.cpp",
-    "directory": "@ROOT@",
-    "file": "src/network_drivers/presentation/http3/quic_aead.cpp",
-    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/http3/quic_aead.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/http3/quic_hkdf.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_hkdf.cpp",
-    "directory": "@ROOT@",
-    "file": "src/network_drivers/presentation/http3/quic_hkdf.cpp",
-    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/http3/quic_hkdf.o"
-  },
-  {
     "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_chacha20.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp",
     "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_chacha20.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_curve25519.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp",
-    "directory": "@ROOT@",
-    "file": "src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp",
-    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_curve25519.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_ed25519.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp",
-    "directory": "@ROOT@",
-    "file": "src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp",
-    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_ed25519.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp",
-    "directory": "@ROOT@",
-    "file": "src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp",
-    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp",
@@ -346,12 +388,6 @@
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp",
     "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_poly1305.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp",
-    "directory": "@ROOT@",
-    "file": "src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp",
-    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_sha512.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_csrf/src/services/csrf/csrf.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_CSRF=1 -Itest/mocks -Itest/support -Isrc src/services/csrf/csrf.cpp",
@@ -484,36 +520,6 @@
     "directory": "@ROOT@",
     "file": "src/services/dshot/dshot.cpp",
     "output": ".pio/build/native_dshot/src/services/dshot/dshot.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_dtls/src/network_drivers/presentation/dtls/dtls_record.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/dtls/dtls_record.cpp",
-    "directory": "@ROOT@",
-    "file": "src/network_drivers/presentation/dtls/dtls_record.cpp",
-    "output": ".pio/build/native_dtls/src/network_drivers/presentation/dtls/dtls_record.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_dtls/src/network_drivers/presentation/http3/tls13_kdf.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/tls13_kdf.cpp",
-    "directory": "@ROOT@",
-    "file": "src/network_drivers/presentation/http3/tls13_kdf.cpp",
-    "output": ".pio/build/native_dtls/src/network_drivers/presentation/http3/tls13_kdf.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_dtls_conn/src/network_drivers/presentation/dtls/dtls_conn.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/dtls/dtls_conn.cpp",
-    "directory": "@ROOT@",
-    "file": "src/network_drivers/presentation/dtls/dtls_conn.cpp",
-    "output": ".pio/build/native_dtls_conn/src/network_drivers/presentation/dtls/dtls_conn.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_dtls_conn/src/network_drivers/presentation/dtls/dtls_handshake.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/dtls/dtls_handshake.cpp",
-    "directory": "@ROOT@",
-    "file": "src/network_drivers/presentation/dtls/dtls_handshake.cpp",
-    "output": ".pio/build/native_dtls_conn/src/network_drivers/presentation/dtls/dtls_handshake.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_dtls_conn/src/network_drivers/presentation/http3/tls13_msg.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/tls13_msg.cpp",
-    "directory": "@ROOT@",
-    "file": "src/network_drivers/presentation/http3/tls13_msg.cpp",
-    "output": ".pio/build/native_dtls_conn/src/network_drivers/presentation/http3/tls13_msg.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_enip/src/services/enip/enip.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_ENIP=1 -Itest/mocks -Itest/support -Isrc src/services/enip/enip.cpp",

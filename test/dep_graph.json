@@ -22,6 +22,7 @@
 "native_cloudevents",
 "native_coap",
 "native_coap_observe",
+"native_coaps",
 "native_compliance",
 "native_config_io",
 "native_config_store",
@@ -367,24 +368,30 @@
 "native_ws_deflate"
 ],
 "src/network_drivers/presentation/dtls/dtls_conn.cpp": [
+"native_coaps",
 "native_dtls_conn"
 ],
 "src/network_drivers/presentation/dtls/dtls_conn.h": [
+"native_coaps",
 "native_dtls_conn"
 ],
 "src/network_drivers/presentation/dtls/dtls_handshake.cpp": [
+"native_coaps",
 "native_dtls_conn",
 "native_dtls_hs"
 ],
 "src/network_drivers/presentation/dtls/dtls_handshake.h": [
+"native_coaps",
 "native_dtls_conn",
 "native_dtls_hs"
 ],
 "src/network_drivers/presentation/dtls/dtls_record.cpp": [
+"native_coaps",
 "native_dtls",
 "native_dtls_conn"
 ],
 "src/network_drivers/presentation/dtls/dtls_record.h": [
+"native_coaps",
 "native_dtls",
 "native_dtls_conn"
 ],
@@ -469,6 +476,7 @@
 "native_quic_server"
 ],
 "src/network_drivers/presentation/http3/quic_aead.cpp": [
+"native_coaps",
 "native_crypto_kat",
 "native_dtls",
 "native_dtls_conn",
@@ -482,6 +490,7 @@
 "native_quic_tls_pqc"
 ],
 "src/network_drivers/presentation/http3/quic_aead.h": [
+"native_coaps",
 "native_crypto_kat",
 "native_dtls",
 "native_dtls_conn",
@@ -545,6 +554,7 @@
 "native_quic_server"
 ],
 "src/network_drivers/presentation/http3/quic_hkdf.cpp": [
+"native_coaps",
 "native_crypto_kat",
 "native_dtls",
 "native_dtls_conn",
@@ -559,6 +569,7 @@
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/quic_hkdf.h": [
+"native_coaps",
 "native_crypto_kat",
 "native_dtls",
 "native_dtls_conn",
@@ -668,6 +679,7 @@
 "native_quic_varint"
 ],
 "src/network_drivers/presentation/http3/tls13_kdf.cpp": [
+"native_coaps",
 "native_dtls",
 "native_dtls_conn",
 "native_h3_conn",
@@ -680,6 +692,7 @@
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/tls13_kdf.h": [
+"native_coaps",
 "native_dtls",
 "native_dtls_conn",
 "native_h3_conn",
@@ -692,6 +705,7 @@
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/tls13_msg.cpp": [
+"native_coaps",
 "native_dtls_conn",
 "native_dtls_tls13",
 "native_h3_conn",
@@ -704,6 +718,7 @@
 "native_tls13_msg"
 ],
 "src/network_drivers/presentation/http3/tls13_msg.h": [
+"native_coaps",
 "native_dtls_conn",
 "native_dtls_tls13",
 "native_h3_conn",
@@ -1068,6 +1083,7 @@
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_curve25519.cpp": [
+"native_coaps",
 "native_crypto_kat",
 "native_dtls_conn",
 "native_dtls_tls13",
@@ -1087,6 +1103,7 @@
 "native_tls13_msg"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_curve25519.h": [
+"native_coaps",
 "native_crypto_kat",
 "native_dtls_conn",
 "native_dtls_tls13",
@@ -1122,6 +1139,7 @@
 "native_ssh_pqc"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_ed25519.cpp": [
+"native_coaps",
 "native_crypto_kat",
 "native_dtls_conn",
 "native_dtls_tls13",
@@ -1141,6 +1159,7 @@
 "native_tls13_msg"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_ed25519.h": [
+"native_coaps",
 "native_crypto_kat",
 "native_dtls_conn",
 "native_dtls_tls13",
@@ -1160,6 +1179,7 @@
 "native_tls13_msg"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_fe25519.h": [
+"native_coaps",
 "native_crypto_kat",
 "native_dtls_conn",
 "native_dtls_tls13",
@@ -1179,6 +1199,7 @@
 "native_tls13_msg"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.cpp": [
+"native_coaps",
 "native_crypto_kat",
 "native_csrf",
 "native_dtls",
@@ -1204,6 +1225,7 @@
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h": [
+"native_coaps",
 "native_crypto_kat",
 "native_csrf",
 "native_dtls",
@@ -1281,6 +1303,7 @@
 "src/network_drivers/presentation/ssh/crypto/ssh_sha256.cpp": [
 "native_app",
 "native_audit_log",
+"native_coaps",
 "native_crypto_kat",
 "native_csrf",
 "native_diag",
@@ -1314,6 +1337,7 @@
 "src/network_drivers/presentation/ssh/crypto/ssh_sha256.h": [
 "native_app",
 "native_audit_log",
+"native_coaps",
 "native_crypto_kat",
 "native_csrf",
 "native_diag",
@@ -1345,6 +1369,7 @@
 "native_webdav_handler"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_sha512.cpp": [
+"native_coaps",
 "native_crypto_kat",
 "native_dtls_conn",
 "native_dtls_tls13",
@@ -1365,6 +1390,7 @@
 "native_tls13_msg"
 ],
 "src/network_drivers/presentation/ssh/crypto/ssh_sha512.h": [
+"native_coaps",
 "native_crypto_kat",
 "native_dtls_conn",
 "native_dtls_tls13",
@@ -1708,6 +1734,7 @@
 "src/network_drivers/transport/udp.cpp": [
 "native_coap",
 "native_coap_observe",
+"native_coaps",
 "native_pentest",
 "native_snmp",
 "native_snmp_v3",
@@ -1717,6 +1744,7 @@
 "src/network_drivers/transport/udp.h": [
 "native_coap",
 "native_coap_observe",
+"native_coaps",
 "native_pentest",
 "native_snmp",
 "native_snmp_v3",
@@ -1903,6 +1931,7 @@
 "native_app",
 "native_audit_log",
 "native_coap_observe",
+"native_coaps",
 "native_diag",
 "native_dtls_conn",
 "native_failsafe",
@@ -1930,12 +1959,20 @@
 "src/services/coap/coap.cpp": [
 "native_coap",
 "native_coap_observe",
+"native_coaps",
 "native_pentest"
 ],
 "src/services/coap/coap.h": [
 "native_coap",
 "native_coap_observe",
+"native_coaps",
 "native_pentest"
+],
+"src/services/coap/coaps.cpp": [
+"native_coaps"
+],
+"src/services/coap/coaps.h": [
+"native_coaps"
 ],
 "src/services/config_io/config_io.cpp": [
 "native_config_io"
@@ -3040,6 +3077,7 @@
 "native_zwave"
 ],
 "src/shared_primitives/aes_sbox.h": [
+"native_coaps",
 "native_crypto_kat",
 "native_dtls",
 "native_dtls_conn",
@@ -3175,6 +3213,7 @@
 "native_audit_log",
 "native_cloudevents",
 "native_coap_observe",
+"native_coaps",
 "native_compliance",
 "native_diag",
 "native_dtls_conn",
