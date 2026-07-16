@@ -82,7 +82,7 @@ size_t opcua_client_hello(const char *endpoint_url, uint8_t *out, size_t cap)
     ua_w_u32(&w, DETWS_OPCUA_BUF); // SendBufferSize
     ua_w_u32(&w, 0);               // MaxMessageSize (no limit)
     ua_w_u32(&w, 0);               // MaxChunkCount
-    ua_w_string(&w, endpoint_url, endpoint_url ? (int32_t)strlen(endpoint_url) : -1);
+    ua_w_string(&w, endpoint_url, endpoint_url ? (int32_t)strnlen(endpoint_url, w.cap) : -1);
     return cw_patch(&w);
 }
 
@@ -95,7 +95,7 @@ size_t opcua_client_open(OpcUaClient *c, uint8_t *out, size_t cap)
     ua_w_u8(&w, 'F');
     ua_w_u32(&w, 0); // size placeholder
     ua_w_u32(&w, 0); // SecureChannelId (0 = request a new channel)
-    ua_w_string(&w, OPCUA_POLICY_NONE_URI, (int32_t)strlen(OPCUA_POLICY_NONE_URI));
+    ua_w_string(&w, OPCUA_POLICY_NONE_URI, (int32_t)(sizeof(OPCUA_POLICY_NONE_URI) - 1));
     ua_w_string(&w, nullptr, -1);  // SenderCertificate
     ua_w_string(&w, nullptr, -1);  // ReceiverCertificateThumbprint
     ua_w_u32(&w, ++c->seq);        // SequenceNumber
@@ -114,10 +114,10 @@ size_t opcua_client_get_endpoints(OpcUaClient *c, const char *endpoint_url, uint
 {
     UaWriter w = {out, cap, 0, true};
     cw_msg(c, &w, OPCUA_ID_GET_ENDPOINTS_REQ);
-    cw_request_header(c, &w, false);                                                  // GetEndpoints needs no session
-    ua_w_string(&w, endpoint_url, endpoint_url ? (int32_t)strlen(endpoint_url) : -1); // EndpointUrl
-    ua_w_i32(&w, -1);                                                                 // LocaleIds[] (null)
-    ua_w_i32(&w, -1);                                                                 // ProfileUris[] (null)
+    cw_request_header(c, &w, false); // GetEndpoints needs no session
+    ua_w_string(&w, endpoint_url, endpoint_url ? (int32_t)strnlen(endpoint_url, w.cap) : -1); // EndpointUrl
+    ua_w_i32(&w, -1);                                                                         // LocaleIds[] (null)
+    ua_w_i32(&w, -1);                                                                         // ProfileUris[] (null)
     return cw_patch(&w);
 }
 
@@ -128,20 +128,20 @@ size_t opcua_client_create_session(OpcUaClient *c, const char *session_name, con
     cw_msg(c, &w, OPCUA_ID_CREATE_SESSION_REQ);
     cw_request_header(c, &w, false);
     // ClientDescription (ApplicationDescription).
-    ua_w_string(&w, "urn:det:opcua:client", 20);                                      // ApplicationUri
-    ua_w_string(&w, "urn:det:opcua", 13);                                             // ProductUri
-    ua_w_localizedtext(&w, nullptr, "DetOpcUaClient");                                // ApplicationName
-    ua_w_u32(&w, 1);                                                                  // ApplicationType = Client
-    ua_w_string(&w, nullptr, -1);                                                     // GatewayServerUri
-    ua_w_string(&w, nullptr, -1);                                                     // DiscoveryProfileUri
-    ua_w_i32(&w, -1);                                                                 // DiscoveryUrls[] (null)
-    ua_w_string(&w, nullptr, -1);                                                     // ServerUri
-    ua_w_string(&w, endpoint_url, endpoint_url ? (int32_t)strlen(endpoint_url) : -1); // EndpointUrl
-    ua_w_string(&w, session_name, session_name ? (int32_t)strlen(session_name) : -1); // SessionName
-    ua_w_string(&w, nullptr, -1);                                                     // ClientNonce (ByteString)
-    ua_w_string(&w, nullptr, -1);                                                     // ClientCertificate
-    ua_w_f64(&w, 1200000.0);                                                          // RequestedSessionTimeout
-    ua_w_u32(&w, 0);                                                                  // MaxResponseMessageSize
+    ua_w_string(&w, "urn:det:opcua:client", 20);       // ApplicationUri
+    ua_w_string(&w, "urn:det:opcua", 13);              // ProductUri
+    ua_w_localizedtext(&w, nullptr, "DetOpcUaClient"); // ApplicationName
+    ua_w_u32(&w, 1);                                   // ApplicationType = Client
+    ua_w_string(&w, nullptr, -1);                      // GatewayServerUri
+    ua_w_string(&w, nullptr, -1);                      // DiscoveryProfileUri
+    ua_w_i32(&w, -1);                                  // DiscoveryUrls[] (null)
+    ua_w_string(&w, nullptr, -1);                      // ServerUri
+    ua_w_string(&w, endpoint_url, endpoint_url ? (int32_t)strnlen(endpoint_url, w.cap) : -1); // EndpointUrl
+    ua_w_string(&w, session_name, session_name ? (int32_t)strnlen(session_name, w.cap) : -1); // SessionName
+    ua_w_string(&w, nullptr, -1); // ClientNonce (ByteString)
+    ua_w_string(&w, nullptr, -1); // ClientCertificate
+    ua_w_f64(&w, 1200000.0);      // RequestedSessionTimeout
+    ua_w_u32(&w, 0);              // MaxResponseMessageSize
     return cw_patch(&w);
 }
 

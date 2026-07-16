@@ -440,7 +440,7 @@ size_t opcua_build_open_response(const OpcUaOpenChannel *req, uint32_t channel_i
 
     // Asymmetric security header (SecurityPolicy None: null sender cert + thumbprint).
     ua_w_u32(&w, channel_id);
-    ua_w_string(&w, OPCUA_POLICY_NONE_URI, (int32_t)strlen(OPCUA_POLICY_NONE_URI));
+    ua_w_string(&w, OPCUA_POLICY_NONE_URI, (int32_t)(sizeof(OPCUA_POLICY_NONE_URI) - 1));
     ua_w_string(&w, nullptr, -1); // SenderCertificate
     ua_w_string(&w, nullptr, -1); // ReceiverCertificateThumbprint
 
@@ -544,7 +544,7 @@ bool opcua_parse_msg(const uint8_t *msg, size_t len, OpcUaMsg *out)
 
 // Transport profile URI for UA-TCP / UA-SecureConversation / UA Binary: an OPC UA
 // spec identifier string, never dereferenced as a URL.
-static const char *const OPCUA_TRANSPORT_URI =
+static const char OPCUA_TRANSPORT_URI[] =
     "http://opcfoundation.org/UA-Profile/Transport/uatcp-uasc-uabinary"; // NOSONAR
 
 // The server-identity defaults (DETWS_DETWS_OPCUA_DEFAULT_ENDPOINT / _APP_URI / _APP_NAME) live in
@@ -585,27 +585,27 @@ void ua_w_endpoint_description(UaWriter *w, const OpcUaServerInfo *info)
     const char *auri = (info && info->application_uri) ? info->application_uri : DETWS_OPCUA_DEFAULT_APP_URI;
     const char *aname = (info && info->application_name) ? info->application_name : DETWS_OPCUA_DEFAULT_APP_NAME;
 
-    ua_w_string(w, url, (int32_t)strlen(url)); // EndpointUrl
+    ua_w_string(w, url, (int32_t)strnlen(url, w->cap)); // EndpointUrl
     // Server (ApplicationDescription).
-    ua_w_string(w, auri, (int32_t)strlen(auri)); // ApplicationUri
-    ua_w_string(w, "urn:det:opcua", 13);         // ProductUri
-    ua_w_localizedtext(w, nullptr, aname);       // ApplicationName
-    ua_w_u32(w, 0);                              // ApplicationType = Server
-    ua_w_string(w, nullptr, -1);                 // GatewayServerUri
-    ua_w_string(w, nullptr, -1);                 // DiscoveryProfileUri
-    ua_w_i32(w, -1);                             // DiscoveryUrls[] (null)
-    ua_w_string(w, nullptr, -1);                 // ServerCertificate (ByteString, null)
-    ua_w_u32(w, 1);                              // MessageSecurityMode = None
-    ua_w_string(w, OPCUA_POLICY_NONE_URI, (int32_t)strlen(OPCUA_POLICY_NONE_URI)); // SecurityPolicyUri
+    ua_w_string(w, auri, (int32_t)strnlen(auri, w->cap)); // ApplicationUri
+    ua_w_string(w, "urn:det:opcua", 13);                  // ProductUri
+    ua_w_localizedtext(w, nullptr, aname);                // ApplicationName
+    ua_w_u32(w, 0);                                       // ApplicationType = Server
+    ua_w_string(w, nullptr, -1);                          // GatewayServerUri
+    ua_w_string(w, nullptr, -1);                          // DiscoveryProfileUri
+    ua_w_i32(w, -1);                                      // DiscoveryUrls[] (null)
+    ua_w_string(w, nullptr, -1);                          // ServerCertificate (ByteString, null)
+    ua_w_u32(w, 1);                                       // MessageSecurityMode = None
+    ua_w_string(w, OPCUA_POLICY_NONE_URI, (int32_t)(sizeof(OPCUA_POLICY_NONE_URI) - 1)); // SecurityPolicyUri
     // UserIdentityTokens[] - one Anonymous policy.
     ua_w_i32(w, 1);
-    ua_w_string(w, "anonymous", 9);                                            // UserTokenPolicy.PolicyId
-    ua_w_u32(w, 0);                                                            // TokenType = Anonymous
-    ua_w_string(w, nullptr, -1);                                               // IssuedTokenType
-    ua_w_string(w, nullptr, -1);                                               // IssuerEndpointUrl
-    ua_w_string(w, nullptr, -1);                                               // SecurityPolicyUri
-    ua_w_string(w, OPCUA_TRANSPORT_URI, (int32_t)strlen(OPCUA_TRANSPORT_URI)); // TransportProfileUri
-    ua_w_u8(w, 0);                                                             // SecurityLevel (Byte)
+    ua_w_string(w, "anonymous", 9);                                                  // UserTokenPolicy.PolicyId
+    ua_w_u32(w, 0);                                                                  // TokenType = Anonymous
+    ua_w_string(w, nullptr, -1);                                                     // IssuedTokenType
+    ua_w_string(w, nullptr, -1);                                                     // IssuerEndpointUrl
+    ua_w_string(w, nullptr, -1);                                                     // SecurityPolicyUri
+    ua_w_string(w, OPCUA_TRANSPORT_URI, (int32_t)(sizeof(OPCUA_TRANSPORT_URI) - 1)); // TransportProfileUri
+    ua_w_u8(w, 0);                                                                   // SecurityLevel (Byte)
 }
 
 size_t opcua_build_create_session_response(const OpcUaMsg *req, uint32_t session_id, uint32_t auth_token,
@@ -932,7 +932,7 @@ void opcua_set_write_handler(OpcUaWriteHandler fn)
 void ua_w_qualifiedname(UaWriter *w, uint16_t ns, const char *name)
 {
     ua_w_u16(w, ns);
-    ua_w_string(w, name, name ? (int32_t)strlen(name) : -1);
+    ua_w_string(w, name, name ? (int32_t)strnlen(name, w->cap) : -1);
 }
 
 void ua_w_localizedtext(UaWriter *w, const char *locale, const char *text)
@@ -944,9 +944,9 @@ void ua_w_localizedtext(UaWriter *w, const char *locale, const char *text)
         mask |= 0x02; // Text present
     ua_w_u8(w, mask);
     if (locale)
-        ua_w_string(w, locale, (int32_t)strlen(locale)); // GCOVR_EXCL_LINE  dead: no caller passes a locale
+        ua_w_string(w, locale, (int32_t)strnlen(locale, w->cap)); // GCOVR_EXCL_LINE  dead: no caller passes a locale
     if (text)
-        ua_w_string(w, text, (int32_t)strlen(text));
+        ua_w_string(w, text, (int32_t)strnlen(text, w->cap));
 }
 
 void ua_w_reference(UaWriter *w, const OpcUaReference *ref)
