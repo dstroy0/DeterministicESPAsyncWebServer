@@ -54,7 +54,7 @@ from each example's `pio ci` size report and aggregated into
 | `MODBUS`                                                                                                  | L7-Application/30.ModbusTcp             | 736.3 KB (57.5%) | 80.1 KB (25.0%)  |
 | `MODBUS+MODBUS_MASTER`                                                                                    | L7-Application/43.ModbusScan            | 736.6 KB (57.5%) | 80.1 KB (25.0%)  |
 | `MPR121`                                                                                                  | L7-Application/63.Mpr121                | 280.9 KB (21.9%) | 21.3 KB (6.7%)   |
-| `MQTT`                                                                                                    | L7-Application/24.MqttClient            | 718.9 KB (56.2%) | 63.8 KB (19.9%)  |
+| `MQTT`                                                                                                    | L7-Application/24.MqttClient            | 719.1 KB (56.2%) | 63.8 KB (19.9%)  |
 | `MSGPACK`                                                                                                 | L6-Presentation/14.MsgPack              | 738.1 KB (57.7%) | 79.9 KB (25.0%)  |
 | `NRF24+GATEWAY`                                                                                           | Foundation/12.Nrf24Gateway              | 269.6 KB (21.1%) | 21.2 KB (6.6%)   |
 | `NTP`                                                                                                     | L7-Application/18.SNTP                  | 759.7 KB (59.4%) | 82.4 KB (25.7%)  |

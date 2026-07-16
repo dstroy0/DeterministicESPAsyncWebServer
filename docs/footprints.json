@@ -325,7 +325,7 @@
     "example": "L7-Application/24.MqttClient",
     "flags": "-DDETWS_ENABLE_MQTT=1",
     "board": "esp32dev",
-    "flash_bytes": 736117,
+    "flash_bytes": 736341,
     "ram_bytes": 65320
   },
   "MSGPACK": {
