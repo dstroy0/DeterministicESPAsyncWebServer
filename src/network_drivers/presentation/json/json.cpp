@@ -323,7 +323,8 @@ static const char *json_find_value(const char *json, const char *key)
         return nullptr;
     p++; // into the object
 
-    size_t keylen = strlen(key);
+    constexpr size_t key_max = 256; // member names the server looks up are short; bound the needle defensively
+    size_t keylen = strnlen(key, key_max);
     while (true)
     {
         p = skip_ws(p);

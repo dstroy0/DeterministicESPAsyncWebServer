@@ -123,7 +123,7 @@ void msgpack_str_n(MsgpackWriter *w, const char *s, size_t len)
 
 void msgpack_str(MsgpackWriter *w, const char *s)
 {
-    msgpack_str_n(w, s, s ? strlen(s) : 0);
+    msgpack_str_n(w, s, s ? strnlen(s, w->cap + 1) : 0);
 }
 
 void msgpack_bytes(MsgpackWriter *w, const uint8_t *data, size_t len)

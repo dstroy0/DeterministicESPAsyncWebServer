@@ -101,7 +101,7 @@ bool csrf_verify(const char *token)
         return false;
 
     const char *sig = dot + 1;
-    if (strlen(sig) != CSRF_SIG_BYTES * 2)
+    if (strnlen(sig, CSRF_SIG_BYTES * 2 + 1) != CSRF_SIG_BYTES * 2)
         return false;
 
     char expect[CSRF_SIG_BYTES * 2 + 1];

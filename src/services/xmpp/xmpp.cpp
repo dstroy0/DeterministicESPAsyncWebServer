@@ -17,7 +17,7 @@ namespace
 // Append a literal to out[*n], bounded. Returns false on overflow.
 bool put(char *out, size_t cap, size_t *n, const char *s)
 {
-    size_t sl = strlen(s);
+    size_t sl = strnlen(s, cap + 1);
     if (*n + sl >= cap)
         return false;
     memcpy(out + *n, s, sl);
@@ -165,7 +165,7 @@ size_t detws_xmpp_attr(const char *xml, size_t len, const char *attr, char *out,
 {
     if (!xml || !attr || !out || cap == 0)
         return 0;
-    size_t al = strlen(attr);
+    size_t al = strnlen(attr, len + 1);
     // Search only within the first start tag (up to the first '>').
     size_t end = 0;
     while (end < len && xml[end] != '>')

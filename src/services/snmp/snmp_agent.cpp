@@ -174,7 +174,7 @@ bool snmp_agent_add_string(const uint32_t *oid, size_t oid_len, const char *valu
         return false;
     e->val.type = (uint8_t)SnmpTag::BER_OCTET_STRING;
     e->val.str = value;
-    e->val.str_len = value ? strlen(value) : 0;
+    e->val.str_len = value ? strnlen(value, SNMP_MSG_BUF_SIZE) : 0;
     e->setter = setter;
     return true;
 }
@@ -375,7 +375,7 @@ static void snmp_apply_set_all(size_t nvb, bool v2c, long *err_status, long *err
 
 static bool community_eq(const char *stored, const char *p, size_t len)
 {
-    return stored[0] != '\0' && strlen(stored) == len && memcmp(stored, p, len) == 0;
+    return stored[0] != '\0' && strnlen(stored, len + 1) == len && memcmp(stored, p, len) == 0;
 }
 
 static size_t encode_pdu(long request_id, long err_status, long err_index, const OutVb *out, size_t nout, uint8_t *buf,

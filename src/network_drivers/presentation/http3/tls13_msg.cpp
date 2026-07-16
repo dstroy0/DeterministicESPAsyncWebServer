@@ -531,10 +531,10 @@ size_t tls13_build_certificate(uint8_t *out, size_t cap, const uint8_t *cert_der
 size_t tls13_cert_verify_content(uint8_t *out, size_t cap, const uint8_t transcript_hash[32], bool is_server)
 {
     // RFC 8446 sec 4.4.3: 64 spaces || context string || 0x00 || transcript hash.
-    static const char *SRV = "TLS 1.3, server CertificateVerify";
-    static const char *CLI = "TLS 1.3, client CertificateVerify";
+    static const char SRV[] = "TLS 1.3, server CertificateVerify";
+    static const char CLI[] = "TLS 1.3, client CertificateVerify";
     const char *ctx = is_server ? SRV : CLI;
-    size_t ctx_len = strlen(ctx);
+    size_t ctx_len = is_server ? sizeof(SRV) - 1 : sizeof(CLI) - 1;
     size_t total = 64 + ctx_len + 1 + 32;
     if (total > cap)
         return 0;

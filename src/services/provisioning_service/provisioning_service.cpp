@@ -25,7 +25,7 @@ bool detws_prov_form_field(const char *body, const char *key, char *out, size_t 
     if (!body || !key || !out || cap == 0)
         return false;
 
-    size_t klen = strlen(key);
+    size_t klen = strnlen(key, cap); // a form field name longer than the value buffer cannot yield a value
     const char *val = nullptr;
     for (const char *p = body; *p; p++)
     {

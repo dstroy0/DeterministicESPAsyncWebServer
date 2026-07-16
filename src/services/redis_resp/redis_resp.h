@@ -71,7 +71,7 @@ struct RespReply
  * @brief Encode a command (array of bulk strings) into @p buf.
  *
  * @param args     argument byte pointers (argv).
- * @param arg_lens per-arg byte lengths, or nullptr to use strlen() on each arg.
+ * @param arg_lens per-arg byte lengths, or nullptr to measure each NUL-terminated arg.
  * @param argc     number of arguments.
  * @return bytes written (excluding any NUL), or 0 on overflow / bad input.
  */

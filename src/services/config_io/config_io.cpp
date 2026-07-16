@@ -38,7 +38,7 @@ bool field_type(const DetwsCfgField *fields, size_t n, const char *key, DetwsCfg
 // Append "<key>=<val>\n" to out at *pos, overflow-safe. Returns false on overflow.
 bool append_kv(char *out, size_t cap, size_t *pos, const char *key, const char *val)
 {
-    size_t kn = strlen(key), vn = strlen(val);
+    size_t kn = strnlen(key, cap + 1), vn = strnlen(val, cap + 1);
     size_t need = kn + 1 + vn + 1; // key '=' val '\n'
     if (*pos + need >= cap)        // keep room for the null terminator
         return false;

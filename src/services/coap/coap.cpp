@@ -456,7 +456,7 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
         for (size_t i = 0; i < s_coap.res_count; i++)
         {
             const char *rpath = s_coap.res[i].path;
-            size_t plen = strlen(rpath);
+            size_t plen = strnlen(rpath, sizeof(s_coap.pl));
             size_t need = (pl ? 1u : 0u) + 2u + plen; // optional ',' + '<' + path + '>'
             if (pl + need > sizeof(s_coap.pl))
                 break; // listing exceeds the payload buffer; truncate at a resource boundary

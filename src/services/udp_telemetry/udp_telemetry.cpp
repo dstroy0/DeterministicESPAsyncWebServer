@@ -24,7 +24,7 @@ static void line_append(DetwsLine *l, const char *s)
 {
     if (l->overflow)
         return;
-    size_t n = strlen(s);
+    size_t n = strnlen(s, l->cap + 1);
     if (l->pos + n >= l->cap) // keep room for the null terminator
     {
         l->overflow = true;

@@ -57,7 +57,7 @@ int ram_find(const char *name)
 
 int ram_create(const char *name)
 {
-    if (strlen(name) >= DETWS_VFS_NAME_MAX)
+    if (strnlen(name, DETWS_VFS_NAME_MAX + 1) >= DETWS_VFS_NAME_MAX)
         return -1;
     for (int i = 0; i < DETWS_VFS_RAM_FILES; i++)
         if (!s_vfs.rf[i].used)
@@ -162,7 +162,7 @@ bool ram_remove(const char *path)
 
 bool ram_rename(const char *from, const char *to)
 {
-    if (!from || !to || strlen(to) >= DETWS_VFS_NAME_MAX)
+    if (!from || !to || strnlen(to, DETWS_VFS_NAME_MAX + 1) >= DETWS_VFS_NAME_MAX)
         return false;
     int f = ram_find(from);
     if (f < 0)

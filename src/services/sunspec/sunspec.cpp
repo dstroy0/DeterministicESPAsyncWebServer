@@ -162,7 +162,7 @@ bool sunspec_write_string(SunSpecWriter *w, const char *s, size_t nregs)
         w->error = true;
         return false;
     }
-    size_t slen = strlen(s);
+    size_t slen = strnlen(s, field);
     for (size_t i = 0; i < field; i++)
         w->buf[w->pos + i] = (i < slen) ? (uint8_t)s[i] : 0; // NUL-pad the remainder
     w->pos += field;

@@ -30,7 +30,7 @@ DetwsSpaAction detws_spa_route(const char *path, const char *api_prefix)
 
     if (api_prefix && api_prefix[0])
     {
-        size_t pl = strlen(api_prefix);
+        size_t pl = strnlen(api_prefix, MAX_PATH_LEN + 1);
         if (strncmp(path, api_prefix, pl) == 0)
             return DetwsSpaAction::DETWS_SPA_PASSTHROUGH; // "/api/..." -> handlers
     }

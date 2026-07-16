@@ -42,7 +42,7 @@ size_t nmea0183_build(char *buf, size_t cap, const char *body)
 {
     if (!buf || !body)
         return 0;
-    size_t blen = strlen(body);
+    size_t blen = strnlen(body, cap);
     size_t total = 1 + blen + 1 + 2 + 2; // '$' + body + '*' + HH + CRLF
     if (cap < total + 1)                 // + NUL
         return 0;

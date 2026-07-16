@@ -104,7 +104,7 @@ bool auth_ok(const NtripRequest *req, const char *expect)
         return true; // open access
     if (!req->auth_b64)
         return false;
-    size_t el = strlen(expect);
+    size_t el = strnlen(expect, req->auth_b64_len + 1);
     if (el != req->auth_b64_len)
         return false;
     return memcmp(req->auth_b64, expect, el) == 0;
@@ -227,7 +227,7 @@ bool det_ntrip_caster_add_mount(uint8_t listener_id, const NtripMount *mount, co
 {
     if (!mount || !mount->mountpoint)
         return false;
-    size_t nl = strlen(mount->mountpoint);
+    size_t nl = strnlen(mount->mountpoint, DETWS_NTRIP_MOUNT_MAX + 1);
     if (nl == 0 || nl >= DETWS_NTRIP_MOUNT_MAX)
         return false;
     int idx = -1;

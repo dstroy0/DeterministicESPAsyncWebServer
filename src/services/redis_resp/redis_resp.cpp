@@ -48,7 +48,7 @@ size_t resp_encode_command(char *buf, size_t cap, const char *const *args, const
     {
         if (!args[i])
             return 0;
-        size_t alen = arg_lens ? arg_lens[i] : strlen(args[i]);
+        size_t alen = arg_lens ? arg_lens[i] : strnlen(args[i], cap);
         if (!put_len_prefix(buf, cap, &pos, '$', alen))
             return 0;
         if (pos + alen + 2 >= cap) // arg body + trailing CRLF (reserve NUL room)

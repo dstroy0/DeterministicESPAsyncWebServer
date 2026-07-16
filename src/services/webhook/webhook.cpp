@@ -19,7 +19,7 @@ namespace
 {
 bool put(char *out, size_t cap, size_t *pos, const char *s)
 {
-    size_t n = strlen(s);
+    size_t n = strnlen(s, cap + 1);
     if (*pos + n >= cap)
         return false;
     memcpy(out + *pos, s, n);
@@ -111,7 +111,7 @@ int detws_webhook_post(const char *url, const char *json)
     if (!url || !json)
         return (int)HttpClientError::HTTP_CLIENT_ERR_URL;
     HttpClientResult r;
-    return http_post(url, DET_MIME_JSON, (const uint8_t *)json, strlen(json), &r);
+    return http_post(url, DET_MIME_JSON, (const uint8_t *)json, strnlen(json, DETWS_HTTP_CLIENT_BUF_SIZE), &r);
 }
 
 #else // http_client not enabled in this build

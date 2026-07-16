@@ -29,7 +29,8 @@ static char *extract_quoted_param(char *src, const char *key)
     char *p = strstr(src, key);
     if (!p)
         return nullptr;
-    p += strlen(key);
+    constexpr size_t key_max = 32; // param keys are short literals ("name=", "filename=")
+    p += strnlen(key, key_max);
     if (*p != '"')
         return nullptr;
     p++; // skip opening quote

@@ -158,7 +158,7 @@ static const char *control_value_ptr(const char *s, const char *key)
     const char *p = strstr(s, pat);
     if (!p)
         return nullptr;
-    p += strlen(pat);
+    p += strnlen(pat, sizeof(pat));
     while (*p == ' ' || *p == '\t')
         p++;
     if (*p != ':')

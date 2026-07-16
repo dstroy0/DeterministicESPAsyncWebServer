@@ -95,7 +95,8 @@ size_t snmp_notify_build_v2c(uint8_t *out, size_t cap, const char *community, ui
     ber_enc_init(&e, out, cap);
     size_t msg = ber_seq_begin(&e, (uint8_t)SnmpTag::BER_SEQUENCE);
     ber_put_integer(&e, 1); // version: SNMPv2c
-    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)community, strlen(community));
+    ber_put_octet_string(&e, (uint8_t)SnmpTag::BER_OCTET_STRING, (const uint8_t *)community,
+                         strnlen(community, SNMP_COMMUNITY_MAX + 1));
     snmp_notify_build_pdu(&e, pdu_tag, request_id, trap_oid, trap_oid_len, uptime_ticks, vbs, n);
     ber_seq_end(&e, msg);
     return e.ok ? e.len : 0;

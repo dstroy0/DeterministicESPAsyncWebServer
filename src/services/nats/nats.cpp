@@ -30,7 +30,7 @@ static void put_str(Buf *b, const char *s)
                            // string
         return;
     }
-    size_t n = strlen(s);
+    size_t n = strnlen(s, b->cap + 1);
     if (b->pos + n > b->cap)
     {
         b->ok = false;
@@ -202,7 +202,7 @@ static bool parse_uint(const char *s, size_t n, size_t *out)
 // True when the verb token at buf matches op (and is followed by a space or end-of-token).
 static bool verb_is(const char *buf, size_t line_len, const char *op)
 {
-    size_t n = strlen(op);
+    size_t n = strnlen(op, line_len + 1);
     if (line_len < n)
         return false;
     if (memcmp(buf, op, n) != 0)

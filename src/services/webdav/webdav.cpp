@@ -62,7 +62,7 @@ int webdav_depth(const char *depth_hdr, int dflt)
 // NUL terminator intact) when it would overflow.
 static bool app(char *buf, size_t cap, size_t *len, const char *s)
 {
-    size_t n = strlen(s);
+    size_t n = strnlen(s, cap + 1);
     if (*len + n + 1 > cap)
         return false;
     memcpy(buf + *len, s, n);
@@ -101,7 +101,7 @@ size_t webdav_xml_escape(char *dst, size_t cap, const char *src)
         }
         if (rep)
         {
-            size_t rn = strlen(rep);
+            size_t rn = strnlen(rep, cap + 1);
             if (o + rn + 1 > cap)
                 break;
             memcpy(dst + o, rep, rn);

@@ -101,7 +101,7 @@ bool lwm2m_tlv_write_string(Lwm2mTlvWriter *w, uint16_t id, const char *s)
 {
     if (!s)
         return false;
-    return lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, (const uint8_t *)s, strlen(s));
+    return lwm2m_tlv_write(w, LWM2M_TLV_RESOURCE, id, (const uint8_t *)s, strnlen(s, w->cap + 1));
 }
 
 bool lwm2m_tlv_write_float(Lwm2mTlvWriter *w, uint16_t id, double v)

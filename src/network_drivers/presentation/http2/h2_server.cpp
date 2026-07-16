@@ -83,11 +83,11 @@ void cb_header(void *app, uint32_t, const char *n, size_t nl, const char *v, siz
         const char *q = (const char *)memchr(v, '?', vl);
         size_t plen = q ? (size_t)(q - v) : vl;
         set_field(r->path, sizeof r->path, v, plen);
-        r->path_idx = strlen(r->path);
+        r->path_idx = strnlen(r->path, sizeof r->path);
         if (q)
         {
             set_field(r->query, sizeof r->query, q + 1, vl - plen - 1);
-            r->query_idx = strlen(r->query);
+            r->query_idx = strnlen(r->query, sizeof r->query);
         }
     }
     else if (nl == 10 && memcmp(n, ":authority", 10) == 0)

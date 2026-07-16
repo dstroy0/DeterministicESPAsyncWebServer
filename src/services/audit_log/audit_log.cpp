@@ -240,8 +240,8 @@ int detws_audit_format(const DetwsAuditEntry *e, char *out, size_t cap)
     pos = json_escape(out, pos, cap, e->msg);
     if (pos > cap)
         return 0;
-    const char *mid = "\",\"hash\":\"";
-    size_t mid_len = strlen(mid);
+    static const char mid[] = "\",\"hash\":\"";
+    size_t mid_len = sizeof(mid) - 1;
     if (pos + mid_len > cap)
         return 0;
     memcpy(out + pos, mid, mid_len);

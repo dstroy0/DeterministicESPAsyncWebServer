@@ -27,10 +27,14 @@ static inline void snmp_wipe(void *p, size_t n)
 // RFC 3414 §2.6 key localization (SHA-256)
 // ---------------------------------------------------------------------------
 
+// RFC 3414 passphrases are >= 8 chars with no formal upper bound; cap the localization input
+// defensively (well above any real passphrase) so a non-terminated password cannot over-read.
+static constexpr size_t SNMP_USM_PASS_MAX = 256;
+
 void snmp_usm_localize_key(const char *password, const uint8_t *engine_id, size_t engine_id_len,
                            uint8_t key_out[SNMP_USM_KEY_LEN])
 {
-    size_t pwlen = password ? strlen(password) : 0;
+    size_t pwlen = password ? strnlen(password, SNMP_USM_PASS_MAX) : 0;
     if (pwlen == 0)
     {
         memset(key_out, 0, SNMP_USM_KEY_LEN);

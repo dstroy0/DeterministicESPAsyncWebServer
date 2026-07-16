@@ -37,7 +37,7 @@ size_t grpcweb_frame_message(uint8_t *buf, size_t cap, const uint8_t *msg, size_
 // Append a NUL-terminated string at *pos with bounds check; advance *pos. False on overflow.
 static bool put_str(uint8_t *buf, size_t cap, size_t *pos, const char *s)
 {
-    size_t n = strlen(s);
+    size_t n = strnlen(s, cap + 1);
     if (*pos + n > cap)
         return false;
     memcpy(buf + *pos, s, n);

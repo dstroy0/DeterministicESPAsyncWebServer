@@ -64,7 +64,7 @@ void base64_encode(const uint8_t *src, size_t src_len, char *dst)
 
 size_t base64_decode(const char *src, uint8_t *dst, size_t dst_cap)
 {
-    size_t src_len = strlen(src);
+    size_t src_len = strnlen(src, ((dst_cap + 2) / 3) * 4 + 4); // max base64 length decoding within dst_cap
     size_t olen;
     // Pass the caller's true capacity; mbedtls returns BUFFER_TOO_SMALL (mapped to 0) rather than overrun.
     int ret = mbedtls_base64_decode(dst, dst_cap, &olen, (const unsigned char *)src, src_len);

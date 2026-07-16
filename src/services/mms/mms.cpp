@@ -115,7 +115,7 @@ size_t detws_mms_read_request(uint32_t invoke_id, const char *item_name, uint8_t
 {
     if (!out || !item_name)
         return 0;
-    size_t name_len = strlen(item_name);
+    size_t name_len = strnlen(item_name, 128 + 1);
     if (name_len > 128)
         return 0;
 

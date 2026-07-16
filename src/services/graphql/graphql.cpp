@@ -459,7 +459,7 @@ void w_raw(Writer &w, const char *s, size_t len)
 }
 void w_str(Writer &w, const char *s)
 {
-    w_raw(w, s, strlen(s));
+    w_raw(w, s, strnlen(s, w.cap + 1));
 }
 void w_json_str(Writer &w, const char *s)
 {
@@ -528,7 +528,7 @@ void emit_field(Writer &w, int idx, int path_len)
         }
         s_gql.path[plen++] = '.';
     }
-    int nl = (int)strlen(node->name);
+    int nl = (int)strnlen(node->name, DETWS_GQL_PATH_MAX);
     if (plen + nl >= DETWS_GQL_PATH_MAX)
     {
         w.ovf = true;

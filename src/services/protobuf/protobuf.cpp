@@ -134,7 +134,7 @@ bool pb_string(PbWriter *w, uint32_t field, const char *s)
         w->error = true;
         return false;
     }
-    return pb_bytes(w, field, (const uint8_t *)s, strlen(s));
+    return pb_bytes(w, field, (const uint8_t *)s, strnlen(s, w->cap + 1));
 }
 
 size_t pb_writer_finish(PbWriter *w)

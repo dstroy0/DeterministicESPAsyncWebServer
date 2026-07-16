@@ -23,7 +23,7 @@ namespace
 // Send an entire C string; returns true only if every byte went out.
 bool send_str(SmtpSendFn send, void *ctx, const char *s)
 {
-    size_t n = strlen(s);
+    size_t n = strnlen(s, DETWS_SMTP_LINE_MAX + 1);
     return n == 0 || send(ctx, (const uint8_t *)s, n) == (int)n;
 }
 
@@ -87,7 +87,7 @@ int auth_send_b64(SmtpSendFn send, SmtpRecvFn recv, void *ctx, const char *secre
 {
     char line[DETWS_SMTP_LINE_MAX];
     char b64[DETWS_SMTP_LINE_MAX];
-    size_t slen = strlen(secret);
+    size_t slen = strnlen(secret, sizeof(b64));
     if (((slen + 2) / 3) * 4 + 3 >= sizeof(b64)) // b64 + CRLF must fit
         return (int)SmtpResult::SMTP_ERR_OVERFLOW;
     base64_encode((const uint8_t *)secret, slen, b64);

@@ -82,7 +82,7 @@ bool ber_int(uint8_t *out, size_t cap, size_t *n, uint8_t tag, uint32_t v)
 
 bool ber_str(uint8_t *out, size_t cap, size_t *n, uint8_t tag, const char *s)
 {
-    return tlv(out, cap, n, tag, (const uint8_t *)(s ? s : ""), s ? strlen(s) : 0);
+    return tlv(out, cap, n, tag, (const uint8_t *)(s ? s : ""), s ? strnlen(s, cap + 1) : 0);
 }
 
 bool ber_bool(uint8_t *out, size_t cap, size_t *n, uint8_t tag, bool v)

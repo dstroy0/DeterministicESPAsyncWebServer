@@ -242,8 +242,11 @@ bool h3_conn_respond(H3Conn *h3, uint64_t stream_id, int status, const char *con
     st3[3] = '\0';
     bp += qpack_encode_header(block + bp, sizeof(block) - bp, ":status", 7, st3, 3);
     if (content_type)
-        bp +=
-            qpack_encode_header(block + bp, sizeof(block) - bp, "content-type", 12, content_type, strlen(content_type));
+        // Cap above the largest content-type that can fit this block even at QPACK-Huffman's best
+        // 5-bit/char (~sizeof block * 8/5), so an over-long value trips the encode's reject below
+        // instead of being truncated into a fittable length (see the matching h2_conn note).
+        bp += qpack_encode_header(block + bp, sizeof(block) - bp, "content-type", 12, content_type,
+                                  strnlen(content_type, sizeof(block) * 2));
     char clen[16];
     size_t cl = 0;
     {

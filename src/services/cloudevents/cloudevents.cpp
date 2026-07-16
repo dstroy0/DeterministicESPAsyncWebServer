@@ -59,7 +59,7 @@ size_t cloudevents_build_json(char *buf, size_t cap, const CloudEvent *ce)
     }
 
     w.end_object();
-    return w.ok() ? strlen(buf) : 0;
+    return w.ok() ? strnlen(buf, cap) : 0;
 }
 
 bool cloudevents_from_headers(const HttpReq *req, CloudEvent *out)

@@ -77,7 +77,7 @@ int detws_gpio_json(const DetwsGpioPin *pins, uint8_t count, char *out, size_t c
 // false if the field is absent or has no digits.
 static bool form_field_uint(const char *body, size_t len, const char *name, unsigned *out)
 {
-    size_t nlen = strlen(name);
+    size_t nlen = strnlen(name, len + 1);
     for (size_t i = 0; i + nlen + 1 <= len; i++)
     {
         bool at_field = (i == 0) || body[i - 1] == '&';

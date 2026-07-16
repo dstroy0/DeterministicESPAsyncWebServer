@@ -92,7 +92,7 @@ int detws_log_dump(char *out, size_t cap)
     for (uint16_t i = 0; i < s_log.count; i++)
     {
         const char *line = s_log.lines[(s_log.head + i) % DETWS_LOG_LINES];
-        size_t n = strlen(line);
+        size_t n = strnlen(line, cap);
         size_t need = n + (i + 1 < s_log.count ? 1 : 0); // +1 for the '\n' separator
         if (pos + need >= cap)                           // keep room for the null terminator
         {

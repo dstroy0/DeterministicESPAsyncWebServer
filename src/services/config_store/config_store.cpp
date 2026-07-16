@@ -43,7 +43,7 @@ bool detws_config_set_str(const char *key, const char *val)
 {
     if (!val)
         return false;
-    return s_cfg.prefs.putString(key, val) == strlen(val);
+    return s_cfg.prefs.putString(key, val) == strnlen(val, DETWS_CONFIG_VAL_MAX + 1);
 }
 
 size_t detws_config_get_str(const char *key, char *out, size_t out_cap, const char *def)
@@ -52,7 +52,7 @@ size_t detws_config_get_str(const char *key, char *out, size_t out_cap, const ch
         return 0;
     if (!s_cfg.prefs.isKey(key))
     {
-        size_t n = def ? strlen(def) : 0;
+        size_t n = def ? strnlen(def, out_cap) : 0;
         if (n > out_cap - 1)
             n = out_cap - 1;
         if (n)
@@ -118,7 +118,7 @@ ConfigStoreCtx s_cfg;
 
 bool key_ok(const char *key)
 {
-    return key && key[0] && strlen(key) < DETWS_CONFIG_KEY_MAX;
+    return key && key[0] && strnlen(key, DETWS_CONFIG_KEY_MAX + 1) < DETWS_CONFIG_KEY_MAX;
 }
 
 // Returns a mutable entry (callers mutate it), so it takes the owner by non-const reference.
@@ -179,7 +179,7 @@ size_t detws_config_get_str(const char *key, char *out, size_t out_cap, const ch
         return 0;
     Entry *e = key_ok(key) ? find(s_cfg, key) : nullptr;
     const char *src = e ? (const char *)e->val : (def ? def : "");
-    size_t n = strlen(src);
+    size_t n = strnlen(src, out_cap);
     if (n > out_cap - 1)
         n = out_cap - 1;
     memcpy(out, src, n);

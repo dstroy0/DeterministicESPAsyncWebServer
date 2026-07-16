@@ -18,7 +18,7 @@ void put(DetwsMtcStreams *s, const char *text)
 {
     if (!s->ok || !text) // null text is a no-op: harden the helper itself, not just every call site
         return;
-    size_t tl = strlen(text);
+    size_t tl = strnlen(text, s->cap + 1);
     if (s->len + tl >= s->cap)
     {
         s->ok = false;

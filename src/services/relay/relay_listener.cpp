@@ -210,7 +210,7 @@ bool det_relay_publish(uint8_t listener_id, const char *origin_host, uint16_t or
 {
     if (!origin_host)
         return false;
-    size_t hl = strlen(origin_host);
+    size_t hl = strnlen(origin_host, DETWS_RELAY_HOST_MAX + 1);
     if (hl == 0 || hl >= DETWS_RELAY_HOST_MAX)
         return false;
     int idx = -1;

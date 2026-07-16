@@ -51,7 +51,8 @@ static bool ota_check_auth(HttpReq *req)
         return false;
     size_t ulen = (size_t)(colon - (const char *)decoded);
     const char *pass = colon + 1;
-    return (ulen == strlen(s_ota.user)) && (memcmp(decoded, s_ota.user, ulen) == 0) && (strcmp(pass, s_ota.pass) == 0);
+    return (ulen == strnlen(s_ota.user, sizeof(s_ota.user))) && (memcmp(decoded, s_ota.user, ulen) == 0) &&
+           (strcmp(pass, s_ota.pass) == 0);
 }
 
 /// @brief Stream-begin hook: accept POST @p s_ota.path; begin Update if authorized.

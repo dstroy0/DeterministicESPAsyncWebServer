@@ -234,7 +234,8 @@ bool stomp_header(const StompFrame *f, const char *name, const char **val, size_
 {
     if (!f || !name)
         return false;
-    size_t nlen = strlen(name);
+    constexpr size_t name_max = 128; // STOMP header names are short; bound the needle defensively
+    size_t nlen = strnlen(name, name_max);
     for (size_t i = 0; i < f->header_count; i++)
         if (f->headers[i].key_len == nlen && memcmp(f->headers[i].key, name, nlen) == 0)
         {

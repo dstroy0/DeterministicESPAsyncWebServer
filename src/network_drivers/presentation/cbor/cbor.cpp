@@ -94,7 +94,7 @@ void cbor_text_n(CborWriter *w, const char *s, size_t len)
 
 void cbor_text(CborWriter *w, const char *s)
 {
-    cbor_text_n(w, s, s ? strlen(s) : 0);
+    cbor_text_n(w, s, s ? strnlen(s, w->cap + 1) : 0);
 }
 
 void cbor_bool(CborWriter *w, bool b)

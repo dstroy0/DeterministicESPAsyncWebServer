@@ -57,7 +57,7 @@ void put(Buf *b, const char *s)
 {
     if (!b->ok)
         return;
-    size_t sl = strlen(s);
+    size_t sl = strnlen(s, b->cap + 1);
     if (b->len + sl >= b->cap)
     {
         b->ok = false;

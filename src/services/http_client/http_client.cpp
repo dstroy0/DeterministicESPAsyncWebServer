@@ -78,7 +78,7 @@ bool http_client_parse_url(const char *url, bool *is_https, char *host, size_t h
     }
     else
     {
-        size_t plen = strlen(p);
+        size_t plen = strnlen(p, path_cap + 1);
         if (plen >= path_cap)
             return false;
         memcpy(path, p, plen + 1);
@@ -131,7 +131,7 @@ size_t http_client_build_request(const char *method, const char *host, uint16_t 
 // returns a pointer to the value (past "name:" and spaces) or nullptr.
 static const char *find_header(const uint8_t *buf, const uint8_t *end, const char *name)
 {
-    size_t nlen = strlen(name);
+    size_t nlen = strnlen(name, (size_t)(end - buf) + 1);
     const uint8_t *p = buf;
     while (p + nlen + 1 < end)
     {

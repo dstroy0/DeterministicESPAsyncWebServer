@@ -248,13 +248,13 @@ static void broadcast(const char *s, size_t n)
 void telnet_print(const char *s)
 {
     if (s)
-        broadcast(s, strlen(s));
+        broadcast(s, strnlen(s, TELNET_BUF_SIZE)); // line-oriented console, same cap as telnet_printf
 }
 
 void telnet_println(const char *s)
 {
     if (s)
-        broadcast(s, strlen(s));
+        broadcast(s, strnlen(s, TELNET_BUF_SIZE));
     broadcast("\r\n", 2);
 }
 
