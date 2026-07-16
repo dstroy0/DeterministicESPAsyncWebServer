@@ -82,7 +82,7 @@ from each example's `pio ci` size report and aggregated into
 | `SEN0192`                                                                                                 | L7-Application/77.Sen0192               | 263.5 KB (20.6%) | 21.0 KB (6.6%)   |
 | `SHT3X`                                                                                                   | L7-Application/64.Sht3x                 | 280.2 KB (21.9%) | 21.3 KB (6.7%)   |
 | `SIGFOX`                                                                                                  | Foundation/15.SigfoxUplink              | 261.7 KB (20.4%) | 21.0 KB (6.6%)   |
-| `SMB`                                                                                                     | L7-Application/68.SmbFileClient         | 724.9 KB (56.6%) | 63.7 KB (19.9%)  |
+| `SMB`                                                                                                     | L7-Application/68.SmbFileClient         | 725.0 KB (56.6%) | 63.7 KB (19.9%)  |
 | `SMTP`                                                                                                    | L7-Application/57.SmtpAlert             | 717.4 KB (56.0%) | 59.7 KB (18.6%)  |
 | `SNMP`                                                                                                    | L7-Application/14.SNMP                  | 743.2 KB (58.1%) | 92.0 KB (28.7%)  |
 | `SNMP+SNMP_TRAP`                                                                                          | L7-Application/26.SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |
