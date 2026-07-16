@@ -4,8 +4,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- remediate CI code-scan findings (2 blockers + smells) ([`32c86b7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/32c86b75243df6631b762dabcba297d288d9881d))
+
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`5374a73`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5374a7389482fdcf34d35739ca37db312e3436f1))
+- update CHANGELOG.md [skip ci] ([`b9cad35`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b9cad35ee02b0d61b93cb53162e0f815d920b3cb))
 - update test report + coverage [skip ci] ([`ac86f4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ac86f4a5ad5f4c238ba7cd36e8c179bd2f2f44ea))
 - update CHANGELOG.md [skip ci] ([`159fc38`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/159fc388fc2fe7b70df761609abee9585a5ab989))
 - update CHANGELOG.md [skip ci] ([`dc4f445`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dc4f4454d4625c2660480dee8c549ce7465bf64f))
@@ -62,6 +68,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`3aaef75`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3aaef75c030bff87be2389947f53b1ab667ef35b))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`95adde6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/95adde6254f4afec373a7ed7d6e37978357c896c))
 - update ESP32 build footprints [skip ci] ([`edc87b2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/edc87b28cd3e171cd10cf5a81ef684d4dfe4fe02))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`39e4cb9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/39e4cb92a3d6ba75fe6f00f16be6a46acf9e7d88))
 - update ESP32 build footprints [skip ci] ([`a9ae62e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a9ae62e2deb6be525faad992ac34c545fbbac79f))
@@ -102,6 +110,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- purge auto keyword from src/, use explicit types ([`0f1b4c4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f1b4c4c1ee8fb90b8709bcaa23663c0c421fb57))
 - bound strlen->strnlen ([`0d2c617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d2c6173d9d735b3f7528deb58f2f15cf4adeda5))
 - bound strlen->strnlen in handshake/send ([`1ccd303`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ccd30359fa09e568cf2aca6413ccbb1976fe49a))
 - bound strlen->strnlen on static tables ([`015b9c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/015b9c5b43b1e4394bfb01440db1f2c5051e4e5d))
