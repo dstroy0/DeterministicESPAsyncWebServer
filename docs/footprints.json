@@ -69,6 +69,13 @@
     "flash_bytes": 729365,
     "ram_bytes": 46104
   },
+  "COAP+DTLS": {
+    "example": "L7-Application/78.CoapSecure",
+    "flags": "-DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_DTLS=1",
+    "board": "esp32dev",
+    "flash_bytes": 779029,
+    "ram_bytes": 102816
+  },
   "CONFIG_STORE+CONFIG_IO": {
     "example": "L7-Application/42.ConfigExport",
     "flags": "-DDETWS_ENABLE_CONFIG_STORE=1 -DDETWS_ENABLE_CONFIG_IO=1",
