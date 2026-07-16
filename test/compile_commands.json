@@ -1582,5 +1582,11 @@
     "directory": "@ROOT@",
     "file": "src/services/zwave/zwave.cpp",
     "output": ".pio/build/native_zwave/src/services/zwave/zwave.o"
+  },
+  {
+    "command": "/usr/bin/g++ -o .pio/build/native_coaps_server/src/services/coap/coaps_server.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/services/coap/coaps_server.cpp",
+    "directory": "@ROOT@",
+    "file": "src/services/coap/coaps_server.cpp",
+    "output": ".pio/build/native_coaps_server/src/services/coap/coaps_server.o"
   }
 ]

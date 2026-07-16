@@ -1,8 +1,8 @@
 # Test Report
 
-**Generated:** 2026-07-16 03:09:42
+**Generated:** 2026-07-16 03:17:37
 **Command:** `pio test` over 234 auto-discovered native envs (excludes native_pentest, native_codeql)
-**Result:** ✅ 3238 passed - 267s
+**Result:** ✅ 3243 passed - 267s
 
 ---
 
@@ -264,8 +264,8 @@
 | `test_dtls_record`       | `native_dtls`           |    10 |   ✅   | 00:00:00.923 |
 | `test_dtls_handshake`    | `native_dtls_hs`        |    15 |   ✅   | 00:00:00.846 |
 | `test_dtls_tls13`        | `native_dtls_tls13`     |     6 |   ✅   | 00:00:00.671 |
-| `test_dtls_conn`         | `native_dtls_conn`      |     8 |   ✅   | 00:00:01.071 |
-| `test_coaps`             | `native_coaps`          |     2 |   ✅   | 00:00:03.771 |
+| `test_dtls_conn`         | `native_dtls_conn`      |     8 |   ✅   | 00:00:01.165 |
+| `test_coaps`             | `native_coaps`          |     2 |   ✅   | 00:00:02.691 |
 | `test_tls13_kdf`         | `native_tls13_kdf`      |     5 |   ✅   | 00:00:00.851 |
 | `test_quic_tp`           | `native_quic_tp`        |     8 |   ✅   | 00:00:00.793 |
 | `test_tls13_msg`         | `native_tls13_msg`      |    11 |   ✅   | 00:00:00.734 |
@@ -279,6 +279,7 @@
 | `test_ssh_chachapoly`    | `native_ssh_chachapoly` |     4 |   ✅   | 00:00:00.828 |
 | `test_ssh_aesgcm`        | `native_ssh_aesgcm`     |     3 |   ✅   | 00:00:00.792 |
 | `test_ssh_ecdsa`         | `native_ssh_ecdsa`      |    10 |   ✅   | 00:00:02.915 |
+| `test_coaps_server`      | `native_coaps_server`   |     5 |   ✅   | 00:00:01.069 |
 
 ---
 
@@ -7281,6 +7282,25 @@ _NIST P-256 native software-path tests (ecdsa-sha2-nistp256 signatures + ecdh-sh
 |   8 | `test_ecdh_rfc5903_shared_secret`      |   ✅   | Ecdh rfc5903 shared secret      |
 |   9 | `test_ecdh_rfc5903_pubkeys`            |   ✅   | Ecdh rfc5903 pubkeys            |
 |  10 | `test_ecdh_rejects_bad_point`          |   ✅   | Ecdh rejects bad point          |
+
+</details>
+
+---
+
+## test_coaps_server - native_coaps_server - ✅ 5 passed
+
+<details>
+<summary><b>Expand Suite Details</b></summary>
+
+_CoAP-over-DTLS server front-end (coaps_server.h): the per-peer DtlsConn pool + ingest/poll seam._
+
+|   # | Test                                 | Status | Description                   |
+| --: | :----------------------------------- | :----: | :---------------------------- |
+|   1 | `test_server_single_peer`            |   ✅   | Server single peer            |
+|   2 | `test_two_peers_routing`             |   ✅   | Two peers routing             |
+|   3 | `test_idle_reap`                     |   ✅   | Idle reap                     |
+|   4 | `test_pto_retransmit_driven_by_poll` |   ✅   | Pto retransmit driven by poll |
+|   5 | `test_cid_address_migration`         |   ✅   | Cid address migration         |
 
 </details>
 
