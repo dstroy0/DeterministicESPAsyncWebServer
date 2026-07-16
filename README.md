@@ -646,11 +646,12 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 
 | Layer | Feature             | Flash (best-worst) | RAM (best-worst) |
 | ----- | ------------------- | -----------------: | ---------------: |
-| Core  | `ETHERNET`          |            37.4 KB |          15.3 KB |
+| Core  | `ETHERNET`          |            37.5 KB |          15.3 KB |
 | Core  | `BUS_CAPTURE`       |            17.9 KB |         < 0.5 KB |
 | Core  | `FORWARD`           |            17.9 KB |         < 0.5 KB |
 | Core  | `PROMISC`           |            11.5 KB |         < 0.5 KB |
 | Core  | `IPV6`              |             1.9 KB |          15.2 KB |
+| Core  | `DIAG`              |             1.6 KB |          11.1 KB |
 | L4    | `IP_ALLOWLIST`      |             0.8 KB |          15.2 KB |
 | L4    | `KEEPALIVE`         |           < 0.5 KB |          15.2 KB |
 | L4    | `PER_IP_THROTTLE`   |           < 0.5 KB |          15.6 KB |
@@ -660,9 +661,9 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L6    | `TLS`               |           100.6 KB |          54.5 KB |
 | L6    | `WS_DEFLATE`        |         4.1-7.9 KB |      8.0-23.2 KB |
 | L6    | `WEB_TERMINAL`      |         0.0-4.2 KB |      0.0-15.3 KB |
-| L6    | `MSGPACK`           |             3.0 KB |          15.3 KB |
+| L6    | `MSGPACK`           |             3.1 KB |          15.3 KB |
 | L6    | `CBOR`              |             1.8 KB |          15.3 KB |
-| L6    | `JWT`               |             1.6 KB |          16.3 KB |
+| L6    | `JWT`               |             1.7 KB |          16.3 KB |
 | L6    | `AUTH_LOCKOUT`      |             0.5 KB |          15.8 KB |
 | L7    | `WS_CLIENT`         |            76.6 KB |          53.1 KB |
 | L7    | `ETAG`              |        0.0-73.9 KB |      0.0-16.5 KB |
@@ -683,13 +684,13 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `OAUTH2`            |            11.9 KB |          37.5 KB |
 | L7    | `WEBHOOK`           |             9.8 KB |          34.5 KB |
 | L7    | `RELAY`             |             9.2 KB |          49.0 KB |
+| L7    | `SNMP`              |             8.2 KB |          27.3 KB |
 | L7    | `TELEMETRY`         |             8.1 KB |          15.5 KB |
-| L7    | `SNMP`              |             8.1 KB |          27.3 KB |
 | L7    | `OPCUA`             |         6.8-7.5 KB |     10.0-25.3 KB |
 | L7    | `PROVISIONING`      |             6.9 KB |          16.7 KB |
 | L7    | `DNS_RESOLVER`      |             5.3 KB |          16.5 KB |
 | L7    | `COAP`              |             5.0 KB |          17.7 KB |
-| L7    | `OTA`               |             4.6 KB |          35.1 KB |
+| L7    | `OTA`               |             4.7 KB |          35.1 KB |
 | L7    | `CONFIG_IO`         |             4.3 KB |          15.3 KB |
 | L7    | `CONFIG_STORE`      |             4.3 KB |          15.3 KB |
 | L7    | `GRAPHQL`           |             4.3 KB |          19.5 KB |
@@ -703,10 +704,9 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `MODBUS`            |             1.2 KB |          15.5 KB |
 | L7    | `CSRF`              |             1.0 KB |          15.3 KB |
 | L7    | `LOGBUF`            |             0.9 KB |          18.3 KB |
-| L7    | `TOTP`              |             0.6 KB |          15.2 KB |
+| L7    | `TOTP`              |             0.7 KB |          15.2 KB |
 | L7    | `OTA_ROLLBACK`      |             0.5 KB |          15.2 KB |
 | L7    | `PARTITION_MONITOR` |           < 0.5 KB |          15.2 KB |
-| L7    | `DIAG`              |           < 0.5 KB |          15.2 KB |
 | L7    | `GUARDRAILS`        |           < 0.5 KB |          15.2 KB |
 | L7    | `DEVICE_ID`         |           < 0.5 KB |          15.2 KB |
 | L7    | `RADIO_POWER`       |           < 0.5 KB |          15.2 KB |
