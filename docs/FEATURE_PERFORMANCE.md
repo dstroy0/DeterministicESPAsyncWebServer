@@ -429,6 +429,80 @@ accelerator on the S3 (see the MODMULT bullet); the host figures are the softwar
   **not** an option here: the S3 FPU is single-precision only (`__FP_FAST_FMAF32`, no double), and a
   floating-point curve25519 needs ~51-bit limb products, so the integer path is the only viable one.
 
+### All self-implemented crypto primitives (device CCOUNT sweep)
+
+Every cryptographic primitive the library implements itself (not the mbedtls TLS record path), timed on an
+**ESP32-S3 @ 240 MHz** with the Xtensa cycle counter (`ESP.getCycleCount()` reads CCOUNT). Each op is warmed
+once then averaged over N iterations on a high-priority core-1 task; N is sized per op so the total stays
+under the 32-bit CCOUNT wrap (2^32 cyc ≈ 17.9 s) - the one trap here (a too-large N silently wraps and
+reports a fraction of the true cost). Reproducible firmware: [`pentesting/rig_firmware/src/main_cryptobench.cpp`](../pentesting/rig_firmware/src/main_cryptobench.cpp),
+env `rig_s3_cryptobench` (stock `espressif32@6.13.0`, arduino 2.x / mbedtls v2, `-Og`). The KEX/signature
+figures agree with the independently measured numbers in the SSH section above to ~1% (x25519 23.1 vs 23.2 ms,
+ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates the harness.
+
+**Bulk primitives (per 1 KiB, sorted by throughput):**
+
+| Primitive                       | Backend           | S3 cyc / KiB | ns / byte |  MB/s |
+| ------------------------------- | ----------------- | -----------: | --------: | ----: |
+| `ssh_aes256ctr`                 | HW AES            |       10,909 |      44.4 |  22.5 |
+| `ssh_sha256`                    | HW SHA            |       12,859 |      52.3 |  19.1 |
+| `ssh_sha512`                    | HW SHA            |       17,149 |      69.8 |  14.3 |
+| `ssh_poly1305`                  | SW                |       31,452 |     128.0 |   7.8 |
+| `ssh_hmac_sha256`               | HW SHA            |       31,994 |     130.2 |   7.7 |
+| `ssh_hmac_sha512`               | HW SHA            |       43,628 |     177.5 |   5.6 |
+| `ssh_chacha20`                  | SW                |      108,919 |     443.2 |   2.3 |
+| `ssh_chachapoly` encrypt (AEAD) | SW                |      154,194 |     627.4 |   1.6 |
+| `ssh_aesgcm` seal (AES-256-GCM) | HW AES + SW GHASH |    3,828,352 |    15,578 | 0.064 |
+| `quic_aes128_gcm` seal          | HW AES + SW GHASH |    3,847,542 |    15,656 | 0.064 |
+| `dtls_record` protect (DTLS1.3) | HW AES + SW GHASH |    3,886,668 |    15,815 | 0.063 |
+
+**One-shot primitives (KEX, KDF, signatures; sorted by cost):**
+
+| Primitive                          | Backend             | S3 cyc / op | time / op |
+| ---------------------------------- | ------------------- | ----------: | --------: |
+| `fe_mul` (256-bit field multiply)  | HW MODMULT          |       1,377 |   5.74 us |
+| `ssh_gf_mul` (field mul, fallback) | SW radix-2^16       |       9,212 |   38.4 us |
+| `quic_hkdf_extract`                | HW SHA              |      25,044 |    104 us |
+| `quic_hkdf_expand_label`(16)       | HW SHA              |      25,946 |    108 us |
+| `tls13_kdf_expand_label`(16)       | HW SHA              |      25,910 |    108 us |
+| `ssh_rsa_2048_verify` (SHA-256)    | HW MPI              |   3,959,764 |   16.5 ms |
+| `ssh_x25519` scalarmult (KEX)      | HW MODMULT          |   5,547,625 |   23.1 ms |
+| `mlkem768_encaps` (ML-KEM-768)     | SW NTT              |   5,645,995 |   23.5 ms |
+| `ssh_ed25519_verify`               | HW MODMULT + HW SHA |  20,228,267 |   84.3 ms |
+| `ssh_ed25519_sign`                 | HW MODMULT + HW SHA |  20,309,986 |   84.6 ms |
+| `ssh_ecdsa_p256_ecdh` (KEX)        | HW MPI              |  33,710,078 |  140.5 ms |
+| `ssh_ecdsa_p256_sign`              | HW MPI              |  35,081,946 |  146.2 ms |
+| `bn_expmod_group14` (DH-2048)      | HW MPI              |  43,543,754 |  181.4 ms |
+| `ssh_ecdsa_p256_verify`            | HW MPI              |  69,939,476 |  291.4 ms |
+| `ssh_rsa_2048_sign` (SHA-256)      | HW MPI              | 105,704,723 |  440.4 ms |
+
+- **AES-GCM is GHASH-bound, and GHASH is pure software.** AES-256-CTR runs at **22.5 MB/s** on the HW AES
+  block, but AES-256-GCM seals the same 1 KiB **~350x slower** (0.064 MB/s). The AES ciphertext is the same
+  ~11 K cycles; the other ~3.82 M cycles/KiB is the GHASH GF(2^128) authenticator, done as a table-less
+  bitwise multiply (~3,700 cyc/byte). The QUIC and DTLS 1.3 record layers (AES-128-GCM) share the exact same
+  GHASH and land at the same ~0.063 MB/s. So the **AEAD record-layer throughput ceiling on this chip is GHASH,
+  not AES** - a Shoup 4-bit-table GHASH (or the S3 SIMD `ee.vmulas` GF-multiply, like the curve25519 win) is
+  the obvious next optimization for any bulk AES-GCM transfer. For an SSH bulk transfer, `chacha20-poly1305`
+  (1.6 MB/s, all software) is already **25x faster than aes256-gcm** here and is negotiated first; AES-256-CTR
+  (22.5 MB/s) is faster still where an AEAD is not required.
+- **Prefer Ed25519 host keys over RSA.** An `ssh-ed25519` host-key signature is **84.6 ms**; an RSA-2048
+  signature is **440 ms** (5.2x slower - the private-key CRT modexp). RSA _verify_ is cheap (16.5 ms, public
+  exponent 65537), but the server pays the _sign_ cost on every handshake, so RSA host keys add ~0.36 s to
+  each SSH/connection setup versus Ed25519.
+- **ECDSA P-256 is the slowest of the elliptic-curve options** (sign 146 ms, verify 291 ms, ECDH 140 ms):
+  mbedtls's generic short-Weierstrass ladder does not get the dedicated `fe25519` MODMULT treatment that
+  X25519/Ed25519 do, so curve25519 (23 ms KEX / 85 ms sign) is 6x cheaper. Offer P-256 only for interop.
+- **classic DH is expensive:** `diffie-hellman-group14` is a 2048-bit modexp at **181 ms** - another reason
+  `curve25519-sha256` (23 ms) is the preferred, first-offered KEX.
+- **PQC is affordable:** ML-KEM-768 encapsulation is **23.5 ms** in pure software (SW NTT), about the cost of
+  one X25519. The `mlkem768x25519` hybrid KEX therefore roughly doubles the KEX field-crypto time (~46 ms) -
+  a small fixed add on top of a handshake already dominated by the host-key signature.
+- **The HKDF/KDF layer is cheap** (~104-108 us each): three HMAC-SHA256 calls on the HW SHA engine. TLS 1.3 /
+  QUIC / DTLS all key-schedule through the same `expand_label` at this cost.
+- **HW SHA is ~19 MB/s** (SHA-256); HMAC halves it (two hash passes plus key blocks). ChaCha20 and Poly1305
+  are pure software (`~2.3` / `~7.8` MB/s) - the record layer's ~1.6 MB/s chacha20-poly1305 ceiling is the sum
+  of a ChaCha20 keystream and a Poly1305 tag.
+
 ### MQTT 3.1.1 client codec (DETWS_ENABLE_MQTT)
 
 The device is an MQTT client; these are its pure packet build/parse hot ops - `mqtt_build_connect` /

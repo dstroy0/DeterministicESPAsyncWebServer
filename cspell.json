@@ -1314,7 +1314,9 @@
     "WIRELESSHART",
     "WLAN",
     "codesys",
-    "superframe"
+    "superframe",
+    "Shoup",
+    "cryptobench"
   ],
   "ignorePaths": [
     "node_modules/**",
