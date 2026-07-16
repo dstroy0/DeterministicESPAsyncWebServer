@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.20.0] - 2026-07-16
+
+<details>
+<summary><b>Show Changelog for version 6.20.0 - 2026-07-16</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`60bf454`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/60bf454d5e77a92c50ff779de58bb51786061827))
+- update CHANGELOG.md [skip ci] ([`ee9d255`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ee9d25517057ace87eadf974201087cf79d50965))
+
+### Changes
+
+- Bump version: 6.19.0 → 6.20.0 ([`d33cd72`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d33cd728e9847691b98dfbeb5f687090cd04742e))
+- bound HKDF label scan with strnlen; fix Last-Modified truncation ([`bf785d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf785d1d2de6c396db8a319502fa8c6bf33e4a55))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`86585ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/86585ef592052f50b1d839d4abf315e33558d436))
+
+### Features
+
+- HelloRetryRequest group renegotiation, verified against wolfSSL ([`334e14d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/334e14d4c4736a5e8024e326cb04d89f35e66be1))
+
+</details>
+
 ## [6.19.0] - 2026-07-15
 
 <details>
