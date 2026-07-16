@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`0873006`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0873006477c7811506ed5a5f895869b6ac7b1982))
+- update CHANGELOG.md [skip ci] ([`45011d4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45011d4447adb97a572d95e15c0b783beb680449))
 - update test report + coverage [skip ci] ([`fdda38a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fdda38a69e3137c8577453d91d0d9c4b2cfaa2dd))
 - update CHANGELOG.md [skip ci] ([`aa18889`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aa188890e9f293ab58b6569b7764945f0f9b613e))
 - update test report + coverage [skip ci] ([`e94326e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e94326e08b27b9ce3a670a1c9aea7f35c4dd2a17))
@@ -16,6 +18,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - benchmark all self-implemented crypto on ESP32-S3 (CCOUNT) ([`215e5ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/215e5ef3d112329f9bc14e3122629eaa7d116158))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f433155`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f433155a0426b602f8b332ba9524eb72e1e54a0e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`01218da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01218dacbe8081205b7d3e395c53d3a1e6fe37aa))
+
+### Performance
+
+- 4-bit table GHASH for AES-GCM (~7x faster on ESP32-S3) ([`b9f51e2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b9f51e2d24c5b0a958e1893c8241e601dbb666fa))
 
 ### Testing
 
