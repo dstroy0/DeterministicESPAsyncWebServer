@@ -18,12 +18,22 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include "services/clock.h"
 #include <stdint.h>
 #include <string.h>
 #include <unity.h>
 
+// Controllable clock so the retransmission-timer tests can advance time deterministically.
+static uint32_t g_ms = 0;
+static uint32_t test_clock()
+{
+    return g_ms;
+}
+
 void setUp()
 {
+    g_ms = 0;
+    detws_set_clock(test_clock, 1000); // 1000 ticks/s -> detws_millis() == g_ms
 }
 void tearDown()
 {
@@ -356,6 +366,21 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
     TEST_ASSERT_EQUAL_MEMORY(cli_app_read.iv, srv_app_write->iv, 12);
     TEST_ASSERT_EQUAL_MEMORY(cli_app_write.key, srv_app_read->key, 16);
     TEST_ASSERT_EQUAL_MEMORY(cli_app_write.iv, srv_app_read->iv, 12);
+
+    // A retransmitted client Finished (its ACK was lost) must draw a fresh ACK, not a fatal error
+    // (RFC 9147 §5.8.3): re-send the same Finished in a new record and expect another ACK.
+    uint8_t cfin_rec2[128];
+    size_t cfr2 =
+        dtls_ciphertext_protect(&cli_write, 1, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec2, sizeof(cfin_rec2));
+    uint8_t out3[64];
+    int r3 = dtls_conn_process(conn, cfin_rec2, cfr2, out3, sizeof(out3));
+    TEST_ASSERT_TRUE(r3 > 0);
+    TEST_ASSERT_TRUE(dtls_conn_established(conn));
+    uint8_t ack_pt3[64];
+    DtlsCiphertext ackinfo3;
+    TEST_ASSERT_TRUE(
+        dtls_ciphertext_unprotect(&cli_app_read, 1, out3, (size_t)r3, ack_pt3, sizeof(ack_pt3), &ackinfo3));
+    TEST_ASSERT_EQUAL_UINT8(DTLS_CT_ACK, ackinfo3.content_type);
 }
 
 static void server_cfg(DtlsServerConfig *cfg, const uint8_t server_ed_pub[32])
@@ -545,12 +570,148 @@ static void test_reject_no_tls13(void)
     TEST_ASSERT_EQUAL_UINT8(70, dtls_conn_alert(&conn)); // protocol_version
 }
 
+// Drive a fresh connection from ClientHello to WAIT_FINISHED; return the server flight and seed the
+// client transcript @p tr through the ClientHello. Shared by the retransmission-timer tests.
+static int drive_server_flight(DtlsConn *conn, DtlsServerConfig *cfg, SshSha256Ctx *tr, uint8_t *flight,
+                               size_t flight_cap)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    dtls_conn_init(conn, cfg, nullptr, 0);
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello(ch, client_pub);
+    ssh_sha256_init(tr);
+    ssh_sha256_update(tr, ch, ch_len);
+    uint8_t ch_frag[300];
+    size_t ch_fl = dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
+                                      sizeof(ch_frag));
+    uint8_t ch_rec[320];
+    size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
+    return dtls_conn_process(conn, ch_rec, ch_rl, flight, flight_cap);
+}
+
+// The retransmission timer (RFC 9147 §5.8): after the server flight, the timer is armed at the initial
+// PTO; once it elapses the whole flight is re-sent with fresh record sequence numbers, and the client
+// completes the handshake from that retransmission.
+static void test_pto_retransmit_and_recovery(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    SshSha256Ctx tr;
+    uint8_t flight[2048];
+    int fl = drive_server_flight(&conn, &cfg, &tr, flight, sizeof(flight));
+    TEST_ASSERT_TRUE(fl > 0);
+
+    TEST_ASSERT_EQUAL_INT((int)DTLS_PTO_INITIAL_MS, dtls_conn_timeout_ms(&conn)); // armed at the initial PTO
+
+    uint8_t rflight[2048];
+    TEST_ASSERT_EQUAL_INT(0, dtls_conn_on_timeout(&conn, rflight, sizeof(rflight))); // not due yet -> no-op
+
+    g_ms += DTLS_PTO_INITIAL_MS;
+    int rfl = dtls_conn_on_timeout(&conn, rflight, sizeof(rflight));
+    TEST_ASSERT_TRUE(rfl > 0);                                                          // whole flight retransmitted
+    TEST_ASSERT_EQUAL_INT((int)(DTLS_PTO_INITIAL_MS * 2), dtls_conn_timeout_ms(&conn)); // backed off to 2x
+
+    // The retransmission is a valid, completable server flight (fresh record seqs); completing it also
+    // disarms the timer.
+    complete_handshake_from_flight(&conn, tr, 1, rflight, (size_t)rfl);
+    TEST_ASSERT_EQUAL_INT(-1, dtls_conn_timeout_ms(&conn));
+}
+
+// The timer doubles each retransmission up to the cap, and the handshake is abandoned after the
+// retransmission ceiling (RFC 9147 §5.8.1).
+static void test_pto_backoff_and_giveup(void)
+{
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    SshSha256Ctx tr;
+    uint8_t flight[2048], rflight[2048];
+    TEST_ASSERT_TRUE(drive_server_flight(&conn, &cfg, &tr, flight, sizeof(flight)) > 0);
+
+    uint32_t expect = DTLS_PTO_INITIAL_MS;
+    TEST_ASSERT_EQUAL_INT((int)expect, dtls_conn_timeout_ms(&conn));
+    for (int i = 0; i < DTLS_MAX_RETRANSMITS; i++)
+    {
+        g_ms += DTLS_PTO_MAX_MS + 1000; // well past any PTO
+        TEST_ASSERT_TRUE(dtls_conn_on_timeout(&conn, rflight, sizeof(rflight)) > 0);
+        expect = expect >= DTLS_PTO_MAX_MS / 2 ? DTLS_PTO_MAX_MS : expect * 2;
+        TEST_ASSERT_EQUAL_INT((int)expect, dtls_conn_timeout_ms(&conn)); // doubled, capped at the max
+    }
+    g_ms += DTLS_PTO_MAX_MS + 1000;
+    TEST_ASSERT_EQUAL_INT(-1, dtls_conn_on_timeout(&conn, rflight, sizeof(rflight)));          // ceiling: give up
+    TEST_ASSERT_EQUAL_INT(-1, dtls_conn_timeout_ms(&conn));                                    // FAILED: no timer
+    TEST_ASSERT_EQUAL_INT(-1, dtls_conn_process(&conn, rflight, 1, rflight, sizeof(rflight))); // and rejects input
+}
+
+// A client ACK covering the whole server flight stops retransmission (RFC 9147 §5.8.3).
+static void test_pto_ack_cancels_retransmit(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    SshSha256Ctx tr;
+    uint8_t flight[2048];
+    int fl = drive_server_flight(&conn, &cfg, &tr, flight, sizeof(flight));
+    TEST_ASSERT_TRUE(fl > 0);
+    TEST_ASSERT_TRUE(dtls_conn_timeout_ms(&conn) >= 0); // armed
+
+    // Derive the client's epoch-2 write keys from the ServerHello, as a real client would.
+    DtlsPlaintext pt;
+    TEST_ASSERT_TRUE(dtls_plaintext_parse(flight, (size_t)fl, &pt) > 0);
+    uint8_t sh[512];
+    size_t sh_len = frag_to_tls(pt.fragment, pt.frag_len, sh);
+    TEST_ASSERT_TRUE(sh_len > 0);
+    uint8_t server_pub[32];
+    TEST_ASSERT_TRUE(sh_keyshare(sh, sh_len, server_pub));
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello(ch, client_pub);
+    SshSha256Ctx t;
+    ssh_sha256_init(&t);
+    ssh_sha256_update(&t, ch, ch_len);
+    ssh_sha256_update(&t, sh, sh_len);
+    uint8_t h[32];
+    ssh_sha256_final(&t, h);
+    uint8_t ecdhe[32];
+    ssh_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
+    Tls13KeySchedule cks;
+    tls13_ks_early(&DTLS13_KDF, &cks);
+    tls13_ks_handshake(&cks, ecdhe, h, 32);
+    DtlsRecordKeys cli_write;
+    dtls_record_keys_derive(&cli_write, DtlsCipher::AES_128_GCM_SHA256, 2, cks.client_hs_traffic);
+
+    // ACK the whole flight: ServerHello (epoch 0, seq 0) + the four epoch-2 messages (seq 0..3).
+    DtlsRecordNumber rns[5] = {{0, 0}, {2, 0}, {2, 1}, {2, 2}, {2, 3}};
+    uint8_t ack_body[2 + 5 * 16];
+    size_t bl = dtls_ack_build(rns, 5, ack_body, sizeof(ack_body));
+    TEST_ASSERT_TRUE(bl > 0);
+    uint8_t ack_rec[160];
+    size_t ar = dtls_ciphertext_protect(&cli_write, 0, DTLS_CT_ACK, ack_body, bl, ack_rec, sizeof(ack_rec));
+    TEST_ASSERT_TRUE(ar > 0);
+
+    uint8_t out[64];
+    dtls_conn_process(&conn, ack_rec, ar, out, sizeof(out));
+    TEST_ASSERT_EQUAL_INT(-1, dtls_conn_timeout_ms(&conn)); // the ACK stopped the retransmission timer
+}
+
 int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_full_handshake);
     RUN_TEST(test_hrr_group_renegotiation);
     RUN_TEST(test_hrr_retry_without_cookie_rejected);
+    RUN_TEST(test_pto_retransmit_and_recovery);
+    RUN_TEST(test_pto_backoff_and_giveup);
+    RUN_TEST(test_pto_ack_cancels_retransmit);
     RUN_TEST(test_reject_no_tls13);
     return UNITY_END();
 }

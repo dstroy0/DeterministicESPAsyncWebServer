@@ -71,34 +71,83 @@ void snapshot(const SshSha256Ctx *ctx, uint8_t out[SSH_SHA256_DIGEST_LEN])
     ssh_sha256_final(&copy, out);
 }
 
-// Wrap one TLS handshake message (@p tls_msg, 4-byte TLS header + body) in a DTLS handshake header
-// and a record for @p epoch, appending it to @p out. The message_seq is taken from the connection's
-// running counter, so an optional HelloRetryRequest shifts every later message up by one without the
-// call sites knowing. Epoch 0 is a DTLSPlaintext record; epoch 2 is AEAD-protected with @p keys. One
-// message per record (this phase).
-bool emit_handshake(DtlsConn *c, const uint8_t *tls_msg, size_t tls_len, uint16_t epoch, const DtlsRecordKeys *keys,
-                    uint8_t *out, size_t out_cap, size_t *out_len)
+// Begin a new outbound flight (RFC 9147 §5.8): drop whatever was buffered for the previous one.
+void flight_reset(DtlsConn *c)
 {
-    if (tls_len < 4)
+    c->flight_count = 0;
+    c->flight_len = 0;
+}
+
+// Append one TLS handshake message (@p tls_msg, 4-byte TLS header + body) to the current flight: wrap
+// it in a DTLS handshake header (message_seq from the running counter, so an optional HelloRetryRequest
+// shifts every later message up by one) and buffer the fragment for (re)transmission. @p epoch is 0
+// (DTLSPlaintext) or 2 (DTLSCiphertext). Records are not built here - that happens in flight_transmit,
+// so a retransmission can use fresh record sequence numbers.
+bool flight_add(DtlsConn *c, uint16_t epoch, const uint8_t *tls_msg, size_t tls_len)
+{
+    if (tls_len < 4 || c->flight_count >= DTLS_FLIGHT_MSGS)
         return false;
     uint8_t msg_type = tls_msg[0];
     uint32_t body_len = (uint32_t)(tls_len - 4);
     uint16_t msg_seq = c->tx_msg_seq++;
-    size_t flen =
-        dtls_hs_frag_build(msg_type, msg_seq, body_len, 0, tls_msg + 4, body_len, c->fragbuf, sizeof(c->fragbuf));
+    size_t flen = dtls_hs_frag_build(msg_type, msg_seq, body_len, 0, tls_msg + 4, body_len,
+                                     c->flight_buf + c->flight_len, sizeof(c->flight_buf) - c->flight_len);
     if (!flen)
         return false;
-    size_t rn;
-    if (epoch == 0)
-        rn = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, c->tx_seq_ep0++, c->fragbuf, flen, out + *out_len,
-                                  out_cap - *out_len);
-    else
-        rn = dtls_ciphertext_protect(keys, c->tx_seq_ep2++, DTLS_CT_HANDSHAKE, c->fragbuf, flen, out + *out_len,
-                                     out_cap - *out_len);
-    if (!rn)
-        return false;
-    *out_len += rn;
+    c->flight_msgs[c->flight_count].off = c->flight_len;
+    c->flight_msgs[c->flight_count].len = (uint16_t)flen;
+    c->flight_msgs[c->flight_count].epoch = (uint8_t)epoch;
+    c->flight_count++;
+    c->flight_len = (uint16_t)(c->flight_len + flen);
     return true;
+}
+
+// Protect the buffered flight into @p out with FRESH record sequence numbers (RFC 9147 §5.8: a
+// retransmission MUST use new sequence numbers - reusing one would repeat an AEAD nonce and be dropped
+// by the peer's replay window). Records the record number of each message's transmission for ACK
+// matching. Used for both the initial send and every retransmission.
+bool flight_transmit(DtlsConn *c, uint8_t *out, size_t out_cap, size_t *out_len)
+{
+    for (uint8_t i = 0; i < c->flight_count; i++)
+    {
+        const uint8_t *frag = c->flight_buf + c->flight_msgs[i].off;
+        size_t flen = c->flight_msgs[i].len;
+        uint8_t epoch = c->flight_msgs[i].epoch;
+        uint64_t seq;
+        size_t rn;
+        if (epoch == 0)
+        {
+            seq = c->tx_seq_ep0++;
+            rn = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, seq, frag, flen, out + *out_len, out_cap - *out_len);
+        }
+        else
+        {
+            seq = c->tx_seq_ep2++;
+            rn = dtls_ciphertext_protect(&c->ep2_srv, seq, DTLS_CT_HANDSHAKE, frag, flen, out + *out_len,
+                                         out_cap - *out_len);
+        }
+        if (!rn)
+            return false;
+        *out_len += rn;
+        c->flight_rec[i].epoch = epoch;
+        c->flight_rec[i].seq = seq;
+    }
+    return true;
+}
+
+// Arm the retransmission timer after (re)sending a flight that expects a peer reply (RFC 9147 §5.8).
+void flight_arm(DtlsConn *c)
+{
+    c->awaiting_reply = true;
+    c->retransmits = 0;
+    c->pto_ms = DTLS_PTO_INITIAL_MS;
+    c->flight_sent_ms = detws_millis();
+}
+
+// Stop the retransmission timer: the expected reply arrived, or the flight was acknowledged.
+void flight_disarm(DtlsConn *c)
+{
+    c->awaiting_reply = false;
 }
 
 // Emit a HelloRetryRequest (RFC 9147 §5.1, RFC 8446 §4.1.4) asking the client to retry with an
@@ -133,8 +182,10 @@ int send_hello_retry(DtlsConn *c, const Tls13ClientHello *ch, const uint8_t *ch1
     if (!n)
         return fail(c, ALERT_INTERNAL_ERROR);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!emit_handshake(c, c->msgbuf, n, 0, nullptr, out, out_cap, out_len))
+    flight_reset(c);
+    if (!flight_add(c, 0, c->msgbuf, n) || !flight_transmit(c, out, out_cap, out_len))
         return fail(c, ALERT_INTERNAL_ERROR);
+    flight_arm(c); // await ClientHello2
     c->hrr_sent = true;
     return 0;
 }
@@ -189,13 +240,15 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
 
     ssh_sha256_update(&c->transcript, msg, msg_len); // transcript: ClientHello (CH2 when an HRR preceded it)
 
+    flight_reset(c); // this ClientHello starts a fresh server flight (ServerHello..Finished)
+
     // ServerHello (epoch 0, plaintext).
     size_t n = tls13_build_server_hello(c->msgbuf, sizeof(c->msgbuf), c->cfg.server_random, ch.session_id,
                                         ch.session_id_len, server_share, 32, TLS_GROUP_X25519, /*dtls=*/true);
     if (!n)
         return fail(c, ALERT_INTERNAL_ERROR);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!emit_handshake(c, c->msgbuf, n, 0, nullptr, out, out_cap, out_len))
+    if (!flight_add(c, 0, c->msgbuf, n))
         return fail(c, ALERT_INTERNAL_ERROR);
 
     // Handshake-traffic keys from Transcript-Hash(..ServerHello).
@@ -210,7 +263,7 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     // EncryptedExtensions.
     n = tls13_build_encrypted_extensions_empty(c->msgbuf, sizeof(c->msgbuf));
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!emit_handshake(c, c->msgbuf, n, 2, &c->ep2_srv, out, out_cap, out_len))
+    if (!flight_add(c, 2, c->msgbuf, n))
         return fail(c, ALERT_INTERNAL_ERROR);
 
     // Certificate.
@@ -218,7 +271,7 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     if (!n)
         return fail(c, ALERT_INTERNAL_ERROR);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!emit_handshake(c, c->msgbuf, n, 2, &c->ep2_srv, out, out_cap, out_len))
+    if (!flight_add(c, 2, c->msgbuf, n))
         return fail(c, ALERT_INTERNAL_ERROR);
 
     // CertificateVerify signs Transcript-Hash(..Certificate).
@@ -227,7 +280,7 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     if (!n)
         return fail(c, ALERT_INTERNAL_ERROR);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!emit_handshake(c, c->msgbuf, n, 2, &c->ep2_srv, out, out_cap, out_len))
+    if (!flight_add(c, 2, c->msgbuf, n))
         return fail(c, ALERT_INTERNAL_ERROR);
 
     // Server Finished over Transcript-Hash(..CertificateVerify).
@@ -236,7 +289,7 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     tls13_finished_mac(&DTLS13_KDF, c->ks.server_hs_traffic, hash, verify);
     n = tls13_build_finished(c->msgbuf, sizeof(c->msgbuf), verify);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!emit_handshake(c, c->msgbuf, n, 2, &c->ep2_srv, out, out_cap, out_len))
+    if (!flight_add(c, 2, c->msgbuf, n))
         return fail(c, ALERT_INTERNAL_ERROR);
 
     // Application-traffic keys from Transcript-Hash(..server Finished); this hash also verifies the
@@ -247,6 +300,9 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     dtls_record_keys_derive(&c->ep3_cli, DtlsCipher::AES_128_GCM_SHA256, 3, c->ks.client_ap_traffic);
     c->ep3_ready = true;
 
+    if (!flight_transmit(c, out, out_cap, out_len)) // protect the whole flight now that ep2 keys exist
+        return fail(c, ALERT_INTERNAL_ERROR);
+    flight_arm(c); // await the client Finished
     c->state = DtlsConnState::WAIT_FINISHED;
     c->next_recv_msg_seq = (uint16_t)(ch_seq + 1);
     dtls_hs_reasm_init(&c->reasm, c->next_recv_msg_seq, c->reasm_buf + 4, DTLS_CONN_REASM_CAP);
@@ -267,6 +323,10 @@ int handle_client_finished(DtlsConn *c, const uint8_t *msg, size_t msg_len)
         return fail(c, ALERT_DECRYPT_ERROR);
     ssh_sha256_update(&c->transcript, msg, msg_len);
     c->state = DtlsConnState::DONE;
+    flight_disarm(c); // the reply arrived; stop retransmitting the server flight
+    // Re-arm the reassembler for the same message_seq so a retransmitted Finished (its ACK was lost)
+    // completes again and we re-acknowledge it, instead of being rejected as unexpected (RFC 9147 §5.8.3).
+    dtls_hs_reasm_init(&c->reasm, c->next_recv_msg_seq, c->reasm_buf + 4, DTLS_CONN_REASM_CAP);
     return 0;
 }
 
@@ -276,6 +336,13 @@ int dispatch_message(DtlsConn *c, const uint8_t *tls_msg, size_t tls_len, uint8_
         return handle_client_hello(c, tls_msg, tls_len, out, out_cap, out_len);
     if (c->state == DtlsConnState::WAIT_FINISHED && tls_msg[0] == TlsHs::TLS_HS_FINISHED)
         return handle_client_finished(c, tls_msg, tls_len);
+    if (c->state == DtlsConnState::DONE && tls_msg[0] == TlsHs::TLS_HS_FINISHED)
+    {
+        c->hs_ack_sent = false; // a retransmitted client Finished (our ACK was lost): re-acknowledge it
+        dtls_hs_reasm_init(&c->reasm, c->next_recv_msg_seq, c->reasm_buf + 4,
+                           DTLS_CONN_REASM_CAP); // accept the next one too
+        return 0;
+    }
     return fail(c, ALERT_UNEXPECTED_MESSAGE);
 }
 
@@ -306,6 +373,32 @@ int drive_handshake(DtlsConn *c, const uint8_t *payload, size_t plen, uint8_t *o
         }
     }
     return 0;
+}
+
+// A client ACK (RFC 9147 §7) for the outstanding flight: if it acknowledges every message of the last
+// transmission, the peer has the whole flight, so stop retransmitting (§5.8.3). A partial ACK is
+// ignored here - the timer simply retransmits the whole flight, which is always correct.
+void process_ack(DtlsConn *c, const uint8_t *body, size_t len)
+{
+    if (!c->awaiting_reply)
+        return;
+    DtlsRecordNumber acked[16];
+    size_t count = 0;
+    if (!dtls_ack_parse(body, len, acked, 16, &count))
+        return;
+    for (uint8_t i = 0; i < c->flight_count; i++)
+    {
+        bool found = false;
+        for (size_t j = 0; j < count; j++)
+            if (acked[j].epoch == c->flight_rec[i].epoch && acked[j].seq == c->flight_rec[i].seq)
+            {
+                found = true;
+                break;
+            }
+        if (!found)
+            return; // a flight record is still unacknowledged; keep the timer running
+    }
+    flight_disarm(c);
 }
 } // namespace
 
@@ -352,10 +445,14 @@ int dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *ou
             if (!dtls_replay_check(&c->replay_ep2, info.seq))
                 continue; // replay: drop, but keep processing the datagram
             dtls_replay_mark(&c->replay_ep2, info.seq);
-            c->rx_ep2_seq = info.seq; // the client Finished's record number, for the completion ACK
-            if (info.content_type == DTLS_CT_HANDSHAKE &&
-                drive_handshake(c, inner, info.pt_len, out, out_cap, &out_len) < 0)
-                return -1;
+            if (info.content_type == DTLS_CT_ACK)
+                process_ack(c, inner, info.pt_len); // the client acknowledged our flight
+            else if (info.content_type == DTLS_CT_HANDSHAKE)
+            {
+                c->rx_ep2_seq = info.seq; // the client Finished's record number, for the completion ACK
+                if (drive_handshake(c, inner, info.pt_len, out, out_cap, &out_len) < 0)
+                    return -1;
+            }
         }
         else
         {
@@ -386,6 +483,37 @@ int dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *ou
             c->hs_ack_sent = true;
         }
     }
+    return (int)out_len;
+}
+
+int dtls_conn_timeout_ms(const DtlsConn *c)
+{
+    if (!c->awaiting_reply || c->state == DtlsConnState::FAILED || c->state == DtlsConnState::DONE)
+        return -1;
+    // Wrap-safe remaining time: (deadline - now) as a signed delta, clamped at 0 (already due).
+    int32_t remaining = (int32_t)(c->flight_sent_ms + c->pto_ms - detws_millis());
+    return remaining > 0 ? remaining : 0;
+}
+
+int dtls_conn_on_timeout(DtlsConn *c, uint8_t *out, size_t out_cap)
+{
+    if (!c->awaiting_reply || c->state == DtlsConnState::FAILED || c->state == DtlsConnState::DONE)
+        return 0;
+    if ((int32_t)(detws_millis() - (c->flight_sent_ms + c->pto_ms)) < 0)
+        return 0; // not yet due (spurious / early wake-up)
+    if (c->retransmits >= DTLS_MAX_RETRANSMITS)
+    {
+        // Peer is gone; abandon the handshake. No alert - there is nobody to receive it.
+        c->state = DtlsConnState::FAILED;
+        c->awaiting_reply = false;
+        return -1;
+    }
+    size_t out_len = 0;
+    if (!flight_transmit(c, out, out_cap, &out_len))
+        return -1;
+    c->retransmits++;
+    c->pto_ms = c->pto_ms >= DTLS_PTO_MAX_MS / 2 ? DTLS_PTO_MAX_MS : c->pto_ms * 2; // §5.8.1 backoff, capped
+    c->flight_sent_ms = detws_millis();
     return (int)out_len;
 }
 

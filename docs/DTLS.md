@@ -22,9 +22,9 @@ HTTP/3 - no second TLS stack.
 > through a **HelloRetryRequest** group renegotiation. This is the one-round-trip full handshake
 > (`TLS_AES_128_GCM_SHA256` / X25519 / Ed25519, no PSK / 0-RTT / client auth); a client that does not
 > offer an X25519 key_share up front is answered with an HRR carrying an address-bound cookie and
-> renegotiates the group (§5.1). The remaining refinements are full **ACK/timeout retransmission**
-> (§5.8) beyond the Finished acknowledgement, and a **CoAP-over-DTLS** front-end. Each layer is a
-> complete, independently tested unit.
+> renegotiates the group (§5.1). Lost flights are recovered by a **retransmission timer** with
+> exponential backoff (§5.8), and inbound **ACKs** cancel it. The remaining work is a
+> **CoAP-over-DTLS** front-end. Each layer is a complete, independently tested unit.
 
 ## The record layer
 
@@ -144,7 +144,11 @@ derived secret would fail the AEAD open, the signature check, or the key compari
 drives the **HelloRetryRequest** path: a ClientHello with no X25519 key_share draws an HRR, and the
 retry that echoes the cookie completes the handshake over the `message_hash || HRR || ClientHello2`
 transcript; a retry that omits the cookie is rejected. A ClientHello that does not offer TLS 1.3 is
-rejected with the right alert.
+rejected with the right alert. The **retransmission timer** (§5.8) is driven off a controllable clock:
+the flight is re-sent with fresh record sequence numbers once the PTO elapses and the client completes
+the handshake from that retransmission, the timeout doubles up to the cap and abandons the handshake at
+the retransmit ceiling, an ACK covering the flight stops the timer, and a retransmitted client Finished
+is re-acknowledged.
 
 Most importantly, the handshake is checked against a **real reference implementation**: the wolfSSL
 DTLS 1.3 client completes a handshake and an application-data exchange with the server
@@ -159,22 +163,22 @@ schedule, so the record layer and the handshake cannot disagree on it.
 
 ## Standards
 
-| Area                           | Standard                  | Status                                                                                                        |
-| ------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| DTLSPlaintext / DTLSCiphertext | RFC 9147 §4               | Implemented - unified header build/parse, DTLSPlaintext build/parse                                           |
-| Record AEAD (AEAD_AES_128_GCM) | RFC 9147 §4.2, SP 800-38D | Implemented - TLS 1.3 nonce (§4.2.2), header-as-AAD; reuses `quic_aead`                                       |
-| Sequence-number encryption     | RFC 9147 §4.2.3           | Implemented - `AES-ECB(sn_key, ct[0..15])` mask; `sn` key via HKDF-Expand-Label                               |
-| Sequence-number reconstruction | RFC 9147 §4.2.2           | Implemented - closest-to-expected (RFC 9000 App. A.3)                                                         |
-| Anti-replay window             | RFC 9147 §4.5.1           | Implemented - 64-record sliding window                                                                        |
-| Record-key derivation          | RFC 8446 §7.3, RFC 5869   | Implemented - `key` / `iv` / `sn` = HKDF-Expand-Label(traffic secret)                                         |
-| Key-schedule label prefix      | RFC 9147 §5.9             | Implemented - `dtls13` (not `tls13 `), a `Tls13Kdf` variant bound to the schedule                             |
-| Handshake header + reassembly  | RFC 9147 §5.2, §5.4       | Implemented - 12-byte header build/parse, overlap-tolerant reassembly                                         |
-| ACK message                    | RFC 9147 §7               | Implemented - content type 26; the client Finished is acknowledged (§5.8.3)                                   |
-| HelloRetryRequest cookie       | RFC 9147 §5.1             | Implemented - stateless HMAC-SHA256 cookie binding the client address, minted + verified by the state machine |
-| Server handshake state machine | RFC 9147 §5-6             | Implemented - full 1-RTT handshake, epoch 0→2→3; **wolfSSL DTLS 1.3 interop**                                 |
-| HelloRetryRequest exchange     | RFC 9147 §5.1             | Implemented - group renegotiation to X25519; cookie round-trip + message_hash transcript; **wolfSSL interop** |
-| ACK / timeout retransmission   | RFC 9147 §5.8             | **Roadmap** - full loss recovery beyond the Finished ACK (replay window ready)                                |
-| Connection ID                  | RFC 9147 §9               | **Roadmap** - negotiated via extension; CID records are rejected for now                                      |
+| Area                           | Standard                  | Status                                                                                                                     |
+| ------------------------------ | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| DTLSPlaintext / DTLSCiphertext | RFC 9147 §4               | Implemented - unified header build/parse, DTLSPlaintext build/parse                                                        |
+| Record AEAD (AEAD_AES_128_GCM) | RFC 9147 §4.2, SP 800-38D | Implemented - TLS 1.3 nonce (§4.2.2), header-as-AAD; reuses `quic_aead`                                                    |
+| Sequence-number encryption     | RFC 9147 §4.2.3           | Implemented - `AES-ECB(sn_key, ct[0..15])` mask; `sn` key via HKDF-Expand-Label                                            |
+| Sequence-number reconstruction | RFC 9147 §4.2.2           | Implemented - closest-to-expected (RFC 9000 App. A.3)                                                                      |
+| Anti-replay window             | RFC 9147 §4.5.1           | Implemented - 64-record sliding window                                                                                     |
+| Record-key derivation          | RFC 8446 §7.3, RFC 5869   | Implemented - `key` / `iv` / `sn` = HKDF-Expand-Label(traffic secret)                                                      |
+| Key-schedule label prefix      | RFC 9147 §5.9             | Implemented - `dtls13` (not `tls13 `), a `Tls13Kdf` variant bound to the schedule                                          |
+| Handshake header + reassembly  | RFC 9147 §5.2, §5.4       | Implemented - 12-byte header build/parse, overlap-tolerant reassembly                                                      |
+| ACK message                    | RFC 9147 §7               | Implemented - content type 26; the client Finished is acknowledged (§5.8.3)                                                |
+| HelloRetryRequest cookie       | RFC 9147 §5.1             | Implemented - stateless HMAC-SHA256 cookie binding the client address, minted + verified by the state machine              |
+| Server handshake state machine | RFC 9147 §5-6             | Implemented - full 1-RTT handshake, epoch 0→2→3; **wolfSSL DTLS 1.3 interop**                                              |
+| HelloRetryRequest exchange     | RFC 9147 §5.1             | Implemented - group renegotiation to X25519; cookie round-trip + message_hash transcript; **wolfSSL interop**              |
+| ACK / timeout retransmission   | RFC 9147 §5.8             | Implemented - PTO timer (exponential backoff, capped, retransmit ceiling), ACK cancellation, retransmitted-Finished re-ACK |
+| Connection ID                  | RFC 9147 §9               | **Roadmap** - negotiated via extension; CID records are rejected for now                                                   |
 
 The handshake DTLS carries is the TLS 1.3 already documented for HTTP/3
 (`TLS_AES_128_GCM_SHA256` + X25519 + Ed25519); see [SSH.md](SSH.md) for the shared crypto

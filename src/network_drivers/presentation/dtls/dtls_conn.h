@@ -56,6 +56,28 @@
 /** @brief Largest serialized peer address the HelloRetryRequest cookie binds (IPv6 16 + port 2). */
 #define DTLS_PEER_ADDR_MAX 18
 
+/** @brief Most handshake messages in one outbound flight (ServerHello + EE + Cert + CV + Finished). */
+#define DTLS_FLIGHT_MSGS 6
+
+/** @brief Buffer for the current flight's DTLS handshake fragments, so it can be retransmitted with
+ *         fresh record sequence numbers. Sized for the Certificate-dominated server flight. */
+#define DTLS_FLIGHT_CAP (DTLS_CONN_MSG_CAP + 512)
+
+/** @brief Retransmission timer (RFC 9147 §5.8.1): initial PTO, its cap, and the retransmission ceiling
+ *         after which the handshake is abandoned. Times are in the units of @ref detws_millis (ms). */
+#define DTLS_PTO_INITIAL_MS 1000u
+#define DTLS_PTO_MAX_MS 60000u
+#define DTLS_MAX_RETRANSMITS 8
+
+/** @brief One buffered outbound handshake message: where its DTLS fragment sits in @ref DtlsConn.flight_buf
+ *         and which epoch protects it. */
+struct DtlsFlightMsg
+{
+    uint16_t off;  ///< byte offset of the fragment in flight_buf
+    uint16_t len;  ///< fragment length
+    uint8_t epoch; ///< 0 (DTLSPlaintext) or 2 (DTLSCiphertext)
+};
+
 /** @brief Handshake progress. */
 enum class DtlsConnState : uint8_t
 {
@@ -111,10 +133,21 @@ struct DtlsConn
     uint8_t peer_addr[DTLS_PEER_ADDR_MAX]; ///< serialized peer address the HRR cookie is bound to (§5.1)
     uint8_t peer_addr_len;                 ///< bytes of @ref peer_addr in use (0 = no address bound)
 
-    DtlsHsReasm reasm;                                    ///< inbound handshake reassembler
-    uint8_t reasm_buf[4 + DTLS_CONN_REASM_CAP];           ///< TLS message = 4-byte header [0..3] + body [4..]
-    uint8_t msgbuf[DTLS_CONN_MSG_CAP];                    ///< scratch for one outbound TLS message
-    uint8_t fragbuf[DTLS_CONN_MSG_CAP + DTLS_HS_HDR_LEN]; ///< scratch for its DTLS handshake fragment
+    // Retransmission (RFC 9147 §5.8): the current outbound flight, buffered as fragments so it can be
+    // re-sent with fresh record sequence numbers, plus the exponential-backoff timer state.
+    DtlsFlightMsg flight_msgs[DTLS_FLIGHT_MSGS];   ///< the flight's messages (index into @ref flight_buf)
+    DtlsRecordNumber flight_rec[DTLS_FLIGHT_MSGS]; ///< record numbers of each message's last transmission (for ACKs)
+    uint8_t flight_count;                          ///< messages in the current flight
+    uint16_t flight_len;                           ///< bytes used in @ref flight_buf
+    bool awaiting_reply;     ///< a flight is outstanding and a peer reply is expected (timer runs)
+    uint8_t retransmits;     ///< times the current flight has been retransmitted
+    uint32_t pto_ms;         ///< current retransmission timeout (doubles each retransmit)
+    uint32_t flight_sent_ms; ///< detws_millis() when the flight was last (re)transmitted
+
+    DtlsHsReasm reasm;                          ///< inbound handshake reassembler
+    uint8_t reasm_buf[4 + DTLS_CONN_REASM_CAP]; ///< TLS message = 4-byte header [0..3] + body [4..]
+    uint8_t msgbuf[DTLS_CONN_MSG_CAP];          ///< scratch for one outbound TLS message
+    uint8_t flight_buf[DTLS_FLIGHT_CAP];        ///< the current flight's DTLS handshake fragments, for retransmission
 };
 
 /**
@@ -138,6 +171,26 @@ void dtls_conn_init(DtlsConn *c, const DtlsServerConfig *cfg, const uint8_t *pee
  *         (then @c state is FAILED and @ref dtls_conn_alert gives the reason).
  */
 int dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *out, size_t out_cap);
+
+/**
+ * @brief Milliseconds (in @ref detws_millis units) until the retransmission timer fires, or -1 if no
+ *        timer is running (no flight is outstanding, or the handshake is done or failed).
+ *
+ * The transport-neutral core keeps no timer of its own; the caller polls this to schedule a wake-up and
+ * calls @ref dtls_conn_on_timeout when it expires (RFC 9147 §5.8). 0 means the timer is already due.
+ */
+int dtls_conn_timeout_ms(const DtlsConn *c);
+
+/**
+ * @brief Fire the retransmission timer: re-send the outstanding flight into @p out with fresh record
+ *        sequence numbers and double the timeout (RFC 9147 §5.8.1 exponential backoff).
+ *
+ * Retransmits only if the PTO has actually elapsed, so a spurious/early call is a no-op (returns 0).
+ * After @ref DTLS_MAX_RETRANSMITS attempts the handshake is abandoned (state becomes FAILED, returns -1).
+ *
+ * @return bytes written to @p out (0 if nothing was due), or -1 if the retransmission ceiling was hit.
+ */
+int dtls_conn_on_timeout(DtlsConn *c, uint8_t *out, size_t out_cap);
 
 /** @brief True once the handshake has completed and the application-traffic keys are installed. */
 bool dtls_conn_established(const DtlsConn *c);
