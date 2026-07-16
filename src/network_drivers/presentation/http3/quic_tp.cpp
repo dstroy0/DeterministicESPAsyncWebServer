@@ -106,6 +106,81 @@ bool copy_cid(const uint8_t *val, size_t len, uint8_t *dst, uint8_t *dst_len, bo
     *has = true;
     return true;
 }
+
+// Apply a connection-ID transport parameter. *handled is set true if id names a CID param (whether or
+// not the copy succeeded); false leaves it for another category. Returns false only on a bad value.
+bool quic_tp_apply_cid(uint64_t id, const uint8_t *val, size_t vlen, QuicTransportParams *tp, bool *handled)
+{
+    *handled = true;
+    switch (id)
+    {
+    case QuicTp::QUIC_TP_ORIGINAL_DCID:
+        return copy_cid(val, vlen, tp->original_dcid, &tp->original_dcid_len, &tp->has_original_dcid);
+    case QuicTp::QUIC_TP_INITIAL_SCID:
+        return copy_cid(val, vlen, tp->initial_scid, &tp->initial_scid_len, &tp->has_initial_scid);
+    case QuicTp::QUIC_TP_RETRY_SCID:
+        return copy_cid(val, vlen, tp->retry_scid, &tp->retry_scid_len, &tp->has_retry_scid);
+    default:
+        *handled = false;
+        return true;
+    }
+}
+
+// Apply a varint-valued transport parameter with its RFC 9000 range checks. *handled is set as above.
+bool quic_tp_apply_varint(uint64_t id, const uint8_t *val, size_t vlen, QuicTransportParams *tp, bool *handled)
+{
+    *handled = true;
+    switch (id)
+    {
+    case QuicTp::QUIC_TP_MAX_IDLE_TIMEOUT:
+        return value_varint(val, vlen, &tp->max_idle_timeout);
+    case QuicTp::QUIC_TP_MAX_UDP_PAYLOAD_SIZE:
+        return value_varint(val, vlen, &tp->max_udp_payload_size) && tp->max_udp_payload_size >= 1200;
+    case QuicTp::QUIC_TP_INITIAL_MAX_DATA:
+        return value_varint(val, vlen, &tp->initial_max_data);
+    case QuicTp::QUIC_TP_INITIAL_MAX_SD_BIDI_LOCAL:
+        return value_varint(val, vlen, &tp->initial_max_sd_bidi_local);
+    case QuicTp::QUIC_TP_INITIAL_MAX_SD_BIDI_REMOTE:
+        return value_varint(val, vlen, &tp->initial_max_sd_bidi_remote);
+    case QuicTp::QUIC_TP_INITIAL_MAX_SD_UNI:
+        return value_varint(val, vlen, &tp->initial_max_sd_uni);
+    case QuicTp::QUIC_TP_INITIAL_MAX_STREAMS_BIDI:
+        return value_varint(val, vlen, &tp->initial_max_streams_bidi);
+    case QuicTp::QUIC_TP_INITIAL_MAX_STREAMS_UNI:
+        return value_varint(val, vlen, &tp->initial_max_streams_uni);
+    case QuicTp::QUIC_TP_ACK_DELAY_EXPONENT:
+        return value_varint(val, vlen, &tp->ack_delay_exponent) && tp->ack_delay_exponent <= 20;
+    case QuicTp::QUIC_TP_MAX_ACK_DELAY:
+        return value_varint(val, vlen, &tp->max_ack_delay) && tp->max_ack_delay < (1u << 14);
+    case QuicTp::QUIC_TP_ACTIVE_CID_LIMIT:
+        return value_varint(val, vlen, &tp->active_connection_id_limit) && tp->active_connection_id_limit >= 2;
+    default:
+        *handled = false;
+        return true;
+    }
+}
+
+// Dispatch one parsed transport parameter to tp; false on a malformed / out-of-range value. Unknown
+// (GREASE) IDs are silently ignored, matching RFC 9000 §7.4.1.
+bool quic_tp_apply(uint64_t id, const uint8_t *val, size_t vlen, QuicTransportParams *tp)
+{
+    bool handled = false;
+    if (!quic_tp_apply_cid(id, val, vlen, tp, &handled))
+        return false;
+    if (handled)
+        return true;
+    if (!quic_tp_apply_varint(id, val, vlen, tp, &handled))
+        return false;
+    if (handled)
+        return true;
+    if (id == QuicTp::QUIC_TP_DISABLE_ACTIVE_MIGRATION)
+    {
+        if (vlen != 0)
+            return false;
+        tp->disable_active_migration = true;
+    }
+    return true; // unknown / GREASE: skip
+}
 } // namespace
 
 bool quic_tp_parse(const uint8_t *buf, size_t len, QuicTransportParams *tp)
@@ -138,72 +213,8 @@ bool quic_tp_parse(const uint8_t *buf, size_t len, QuicTransportParams *tp)
             seen |= bit;
         }
 
-        switch (id)
-        {
-        case QuicTp::QUIC_TP_ORIGINAL_DCID:
-            if (!copy_cid(val, vlen, tp->original_dcid, &tp->original_dcid_len, &tp->has_original_dcid))
-                return false;
-            break;
-        case QuicTp::QUIC_TP_INITIAL_SCID:
-            if (!copy_cid(val, vlen, tp->initial_scid, &tp->initial_scid_len, &tp->has_initial_scid))
-                return false;
-            break;
-        case QuicTp::QUIC_TP_RETRY_SCID:
-            if (!copy_cid(val, vlen, tp->retry_scid, &tp->retry_scid_len, &tp->has_retry_scid))
-                return false;
-            break;
-        case QuicTp::QUIC_TP_MAX_IDLE_TIMEOUT:
-            if (!value_varint(val, vlen, &tp->max_idle_timeout))
-                return false;
-            break;
-        case QuicTp::QUIC_TP_MAX_UDP_PAYLOAD_SIZE:
-            if (!value_varint(val, vlen, &tp->max_udp_payload_size) || tp->max_udp_payload_size < 1200)
-                return false;
-            break;
-        case QuicTp::QUIC_TP_INITIAL_MAX_DATA:
-            if (!value_varint(val, vlen, &tp->initial_max_data))
-                return false;
-            break;
-        case QuicTp::QUIC_TP_INITIAL_MAX_SD_BIDI_LOCAL:
-            if (!value_varint(val, vlen, &tp->initial_max_sd_bidi_local))
-                return false;
-            break;
-        case QuicTp::QUIC_TP_INITIAL_MAX_SD_BIDI_REMOTE:
-            if (!value_varint(val, vlen, &tp->initial_max_sd_bidi_remote))
-                return false;
-            break;
-        case QuicTp::QUIC_TP_INITIAL_MAX_SD_UNI:
-            if (!value_varint(val, vlen, &tp->initial_max_sd_uni))
-                return false;
-            break;
-        case QuicTp::QUIC_TP_INITIAL_MAX_STREAMS_BIDI:
-            if (!value_varint(val, vlen, &tp->initial_max_streams_bidi))
-                return false;
-            break;
-        case QuicTp::QUIC_TP_INITIAL_MAX_STREAMS_UNI:
-            if (!value_varint(val, vlen, &tp->initial_max_streams_uni))
-                return false;
-            break;
-        case QuicTp::QUIC_TP_ACK_DELAY_EXPONENT:
-            if (!value_varint(val, vlen, &tp->ack_delay_exponent) || tp->ack_delay_exponent > 20)
-                return false;
-            break;
-        case QuicTp::QUIC_TP_MAX_ACK_DELAY:
-            if (!value_varint(val, vlen, &tp->max_ack_delay) || tp->max_ack_delay >= (1u << 14))
-                return false;
-            break;
-        case QuicTp::QUIC_TP_ACTIVE_CID_LIMIT:
-            if (!value_varint(val, vlen, &tp->active_connection_id_limit) || tp->active_connection_id_limit < 2)
-                return false;
-            break;
-        case QuicTp::QUIC_TP_DISABLE_ACTIVE_MIGRATION:
-            if (vlen != 0)
-                return false;
-            tp->disable_active_migration = true;
-            break;
-        default:
-            break; // unknown / GREASE: skip
-        }
+        if (!quic_tp_apply(id, val, vlen, tp))
+            return false;
     }
     return true;
 }
