@@ -1586,3 +1586,28 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       manager can consume, and a backoff / channel-blacklist policy. `DETWS_ENABLE_COEXISTENCE` /
       `services/coexistence`: the reporting data model + the channel-plan policy engine (pure, host-tested);
       the actual RF scan feeds it from the radio driver.
+
+### Seamless Wi-Fi roaming (IEEE 802.11r / k / v)
+
+> Real-time and functional-safety traffic cannot tolerate a multi-second reassociation when the device
+> roams between plant-floor access points. The ESP32 Wi-Fi firmware / supplicant already provides the
+> 802.11r/k/v primitives; the library's job is to enable + configure them and add the roaming _decision_
+> layer that uses them, holding the DSCP-EF safety flows (above) alive across a handover.
+
+- [ ] **802.11r Fast BSS Transition (FT)** (M) - pre-authenticate / pre-derive the PTK with the target AP
+      before roaming so reassociation completes in **< 50 ms** (no full 4-way handshake on the new AP). On
+      ESP32 the FT key hierarchy (PMK-R0 / PMK-R1) + FT handshake live in the Wi-Fi supplicant, so this is
+      enable + configure (`DETWS_ENABLE_FAST_ROAM`; PSK or WPA2/3-Enterprise FT), expose the handover timing,
+      and keep the safety flows pinned across the transition. Measure the handover on the S3 rig against the
+      50 ms budget.
+- [ ] **802.11k Radio Resource Measurement (neighbor reports)** (S) - request the AP's neighbor report (the
+      candidate BSSIDs + channels) so the device targets a roam without a full off-channel scan, and surface
+      that list to the decision layer below. `DETWS_ENABLE_RRM`.
+- [ ] **802.11v BSS Transition Management (BTM)** (S) - accept and act on network-suggested roams (BTM
+      Request -> Response) so the infrastructure can steer the device to a better AP before its signal drops,
+      feeding the hint into the decision layer. `DETWS_ENABLE_BTM`.
+- [ ] **Predictive roaming decision layer** (M) - the policy that fuses 802.11k neighbor reports + 802.11v
+      BTM hints + the RSSI trend to pick and execute an 802.11r fast transition _before_ the current link
+      degrades, not after it drops - the piece that turns the three primitives into seamless roaming. Pure,
+      host-testable logic (feed it synthetic RSSI / neighbor / BTM inputs, assert the roam trigger + target);
+      the actual association is the supplicant's. `services/roaming`.
