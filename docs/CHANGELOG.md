@@ -6,12 +6,15 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`55520d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/55520d30b9959a657fdad883ccf7dc0d12f6eaae))
+- update CHANGELOG.md [skip ci] ([`abc9ed5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/abc9ed5109dcb06e7c4eb3a72d9a147982d4c5f1))
 - update CHANGELOG.md [skip ci] ([`525d04e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/525d04e13fc3949f226a763de335505d83fc2a4b))
 - update CHANGELOG.md [skip ci] ([`ab5246d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab5246df59b090b045731cd3521fa8d608365568))
 - update CHANGELOG.md [skip ci] ([`28ca3b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28ca3b0f93e06b6560db371576b1c6fea92e8ef5))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`746cea6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/746cea6faeb8b13d173675eb549f0328b27230f7))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4599007`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45990076f22e86c8e74a7d44a579ba5722d23bfb))
 - add seamless Wi-Fi roaming (802.11r/k/v) + predictive decision layer ([`b86834b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b86834b773c5c770f09d1905208c67896d7884fb))
 - add industrial functional-safety (IEC 61784-3), security (ODVA CIP Security, PI PROFINET Security) + wireless/QoS (WirelessHART, RFC 2474 DiffServ, IEC 62657-2) profiles ([`6070891`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/607089171079781f70738d6445808bd45a646d4b))
@@ -21,6 +24,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- connection ID handshake negotiation (RFC 9146 / RFC 9147 sec 9) ([`f791650`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f791650fe5576ba75581ecdb723b99b7efa33744))
 - record-layer connection ID support (RFC 9146 / RFC 9147 sec 9) ([`bfa1379`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfa1379f4d19a8d09c511fe99edd5ab3d0aec5b6))
 
 ## [6.23.0] - 2026-07-16
