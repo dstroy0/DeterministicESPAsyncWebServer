@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`7ac65a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7ac65a576a9248dfd0de0567f03cf9583df3e500))
+- update CHANGELOG.md [skip ci] ([`fd78524`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd7852494361e767801650cd942e53161e04888a))
 - update test report + coverage [skip ci] ([`51879f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/51879f03d4621ee275ba2ec4cb9facad2030062c))
 - update CHANGELOG.md [skip ci] ([`3c8f961`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c8f961377bc961d1be93cec9f7326e056c52adc))
 - update test report + coverage [skip ci] ([`50197c7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50197c72d682e1112d85eb6d885ac52773b65636))
@@ -32,6 +34,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`01de263`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01de263ef6997867a9b3f30e2c7a36f639e408c7))
+- update ESP32 build footprints [skip ci] ([`4876198`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4876198b553fa0c756f9f56fedf24e24521a9044))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`792ecde`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/792ecdeac8829b61142c41d33e35c20d631dcf5d))
 - update ESP32 build footprints [skip ci] ([`99d88af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99d88af6d46724368d111bf12a342d8897eb88de))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ef0fa4d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef0fa4daa1ff590c56a1d22515b4de8b45796273))
@@ -49,6 +53,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- reduce cognitive complexity S3776 in quic_tp_parse ([`bab1b3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bab1b3f23fdc2ca801e4fb4ef1733308c846ee32))
 - reduce cognitive complexity S3776 in smb_client ([`c99a943`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c99a943b58d26164204cf130cf1ea9629a54a0e2))
 - reduce cognitive complexity S3776 in ssh_auth/redis_resp ([`0ce1fc5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ce1fc518e56cc980fc86179d5dd7079a2147204))
 - reduce cognitive complexity S3776 in mms/http_delivery ([`e1b66d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1b66d108b2e50d9a6145fde3f8d18a0dae193ff))
