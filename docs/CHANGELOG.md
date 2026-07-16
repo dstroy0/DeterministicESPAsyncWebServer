@@ -2,6 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`6d910dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d910dd3b902808c21ae1530db5e9e993878fea9))
+- update CHANGELOG.md [skip ci] ([`f5a3366`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f5a33662559fff84bb71be0e03bfe8ff9135d08c))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d893280`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d893280c13d26a915d18b15c8f2c882b088a0a65))
+
+### Refactor
+
+- fix S912 BLOCKER + constant macros -> constexpr ([`f8343b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8343b80289081b2d2e650145ef56c43cf57b778))
+
 ## [6.24.0] - 2026-07-16
 
 <details>
