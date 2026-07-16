@@ -671,7 +671,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `VFS`               |            41.9 KB |          19.6 KB |
 | L7    | `RANGE`             |        0.6-41.1 KB |      0.0-15.2 KB |
 | L7    | `UPLOAD`            |            41.0 KB |          24.3 KB |
-| L7    | `OPCUA_CLIENT`      |        6.8-29.6 KB |     10.0-29.0 KB |
+| L7    | `OPCUA_CLIENT`      |        6.8-29.9 KB |     10.0-29.0 KB |
 | L7    | `IFACE_BRIDGE`      |            26.8 KB |          16.0 KB |
 | L7    | `NTP`               |            24.5 KB |          17.7 KB |
 | L7    | `MDNS`              |            24.4 KB |          17.1 KB |
@@ -686,7 +686,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `RELAY`             |             9.2 KB |          49.0 KB |
 | L7    | `SNMP`              |             8.1 KB |          27.3 KB |
 | L7    | `TELEMETRY`         |             8.0 KB |          15.5 KB |
-| L7    | `OPCUA`             |         6.8-7.2 KB |     10.0-25.3 KB |
+| L7    | `OPCUA`             |         6.8-7.5 KB |     10.0-25.3 KB |
 | L7    | `PROVISIONING`      |             6.8 KB |          16.7 KB |
 | L7    | `DNS_RESOLVER`      |             5.2 KB |          16.5 KB |
 | L7    | `COAP`              |             5.0 KB |          17.7 KB |
