@@ -1507,3 +1507,82 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       LD2410B-only config commands (Bluetooth enable / permission, MAC query) to the `FD FC FB FA` command
       encoders. The BLE control channel itself is out of scope for the wired driver - the UART report / config
       path is the shared surface.
+
+### Functional-safety & industrial-standards profiles (IEC 61784-3, ODVA)
+
+> The "black channel" functional-safety communication profiles (IEC 61784-3) layer a SIL2/SIL3-capable
+> safety protocol - its own CRC signature, a monitoring / consecutive counter (detects lost, repeated,
+> inserted, or reordered frames), a watchdog timeout, and a per-connection authentication - _on top_ of a
+> standard, non-safe fieldbus, treating the transport as an untrusted pipe (so the underlying network needs
+> no safety certification). The base fieldbuses these ride on are already shipped here as pure codecs
+> (`services/profinet`, `profibus`, `enip`, `cip`, `iolink`), so each safety profile is a black-channel
+> Safety-PDU codec on top and stays a **pure, host-testable codec** - the device carries and validates the
+> safety frames; the safety PLC / logic solver owns the SIL claim. All follow
+> [[implement-protocols-faithfully]] against the published specs + a real reference peer.
+
+- [ ] **IEC 61784-3 black-channel Safety Communication Layer (SCL)** (M) - the shared mechanism the four
+      profiles below all specialize: the residual-error model (CRC signature over safety data + a virtual /
+      actual consecutive number + a receive watchdog), sized so the probability of an undetected corrupt
+      frame meets SIL 3. Land the common primitives once (`services/safety_scl`): a CRC-signature helper, a
+      monitoring-counter state machine, and a watchdog/timeout guard, then have each profile's codec compose
+      them. Pure + host-tested against per-profile vectors.
+- [ ] **PROFIsafe (IEC 61784-3-3, PI)** (M) - the SIL3 safety layer over the shipped PROFINET / PROFIBUS
+      codecs. `DETWS_ENABLE_PROFISAFE` / `services/profisafe`: the Safety-PDU (F-I/O data + status/control
+      byte + consecutive number + CRC2 signature), the F-Parameters (F_Dest_Add / F_WD_Time ...) with their
+      CRC1, and the host/device watchdog timing. Pure codec; host-tested and interop-checked against a
+      PROFIsafe reference (e.g. a Siemens F-host / codesys-safety).
+- [ ] **CIP Safety (IEC 61784-3-2, ODVA)** (M) - the SIL3 safety extension of CIP over the shipped
+      EtherNet/IP + CIP codecs. `DETWS_ENABLE_CIP_SAFETY` / `services/cip_safety`: the safety I/O message
+      (Base + Extended format: Mode Byte, Actual + Complemented data, Time Stamp, CRC-S1/S3/S5), the Time
+      Coordination exchange, and the safety connection (`SafetyOpen` / `SafetyClose`) producer/consumer time
+      expectation. Pure codec; interop vs an ODVA CIP Safety originator.
+- [ ] **FSoE / Fail Safe over EtherCAT (IEC 61784-3-12, ETG)** (L) - the SIL3 safety layer over EtherCAT.
+      `DETWS_ENABLE_FSOE` / `services/fsoe`: the FSoE frame (Command + SafeData + a CRC per data slot +
+      Connection-ID / sequence), the FSoE connection state machine (Reset -> Session -> Connection ->
+      Parameter -> Data), and the watchdog. **Gated on an EtherCAT (mailbox) base transport first** - EtherCAT
+      is noted but not yet shipped (see the field-device roadmap above); FSoE itself is black-channel so it
+      host-tests standalone against ETG.5100 vectors.
+- [ ] **IO-Link Safety (IO-Link Community)** (M) - functional safety over the shipped IO-Link (SDCI,
+      IEC 61131-9) codec. `DETWS_ENABLE_IOLINK_SAFETY` / `services/iolink_safety`: the OSSDe signal handling
+      plus the safety-PDU over IO-Link process data / ISDU (CRC + counter + watchdog, FS-Master / FS-Device
+      roles). Pure codec; host-tested against the IO-Link Safety test spec vectors.
+- [ ] **ODVA CIP Security (CIP Networks Library Vol 8)** (L) - the ODVA _security_ (not safety) profile for
+      EtherNet/IP: device authentication + integrity + confidentiality via **TLS (EtherNet/IP TCP) and DTLS
+      (UDP I/O)** with X.509 identities, plus the CIP Security object model (the EtherNet/IP Security,
+      Certificate Management, and QoS objects). Reuses the crypto already in this library - the mbedTLS TLS
+      transport and the hand-rolled **DTLS 1.3** stack ([[dtls13-initiative]]) + Ed25519 / X.509 - so this is
+      mostly the CIP object plumbing binding those to `services/enip`. `DETWS_ENABLE_CIP_SECURITY` /
+      `services/cip_security`; interop vs an ODVA CIP Security stack.
+- [ ] **PI (PROFIBUS & PROFINET International) - PROFINET Security** (L) - PI is the steward of the shipped
+      PROFINET / PROFIBUS codecs and the PROFIsafe profile above; its security counterpart to ODVA's CIP
+      Security is **PROFINET Security** (the Security Class 1/2/3 model: integrity + authenticity via a
+      per-frame SecurityControl header + MAC, then confidentiality, with certificate / 802.1X device
+      identity). `DETWS_ENABLE_PROFINET_SECURITY` / extend `services/profinet`: the SecurityControl +
+      integrity-MAC frame wrapping and the certificate-based identity, reusing the library's crypto
+      (HMAC / AES-GCM, X.509). Interop vs a PROFINET Security controller.
+
+### Industrial wireless & QoS (WirelessHART, DiffServ, IEC 62657-2)
+
+> Wireless industrial traffic - especially the functional-safety frames above - needs prioritized,
+> coexistence-managed delivery. These items give the device the transport-side QoS and the wireless
+> profiles a plant floor expects.
+
+- [ ] **WirelessHART (IEC 62591)** (L) - the 2.4 GHz IEEE 802.15.4 TDMA channel-hopping mesh that carries the
+      HART application layer, on top of the shipped `services/hart` command codec (FieldComm Group). Scope the
+      realistic slice: the WirelessHART command set (network-manager / device commands) + the network
+      management data (superframe / link / route reports) as a pure codec over HART; the full TSMP-style TDMA
+      MAC + channel-hopping schedule is radio-firmware territory (like the other 802.15.4 radios) and is
+      called out as HW-gated. `DETWS_ENABLE_WIRELESSHART` / `services/wirelesshart`.
+- [ ] **DiffServ QoS marking (RFC 2474)** (S) - set the 6-bit DSCP in the IP header (the RFC 2474 DS field)
+      on outbound traffic so safety / real-time packets carry the Expedited-Forwarding class (EF, DSCP 46) and
+      the Wi-Fi driver / AP maps them into the top 802.11e WMM access categories (AC_VO voice, AC_VI video)
+      instead of best-effort. A small transport-layer addition: a per-listener / per-connection DSCP setting
+      plumbed through `det_udp` / `det_conn` to lwIP's `ip_tos` / the `IP_TOS` socket option, with a policy
+      that tags the functional-safety and CIP / PROFIsafe flows EF by default. Host-testable by asserting the
+      TOS byte on the emitted datagram; `DETWS_ENABLE_QOS_DSCP`.
+- [ ] **Wireless coexistence management (IEC 62657-2)** (M) - adhere to IEC 62657-2 so the device behaves in
+      a crowded industrial 2.4 / 5 GHz band shared by WLAN, WirelessHART, ISA100, Bluetooth, and Zigbee:
+      coexistence-aware channel selection plus a spectrum-use / interference report a central coexistence
+      manager can consume, and a backoff / channel-blacklist policy. `DETWS_ENABLE_COEXISTENCE` /
+      `services/coexistence`: the reporting data model + the channel-plan policy engine (pure, host-tested);
+      the actual RF scan feeds it from the radio driver.

@@ -1303,7 +1303,18 @@
     "FMCW",
     "HMMD",
     "MMBR",
-    "Waveshare"
+    "Waveshare",
+    "DSCP",
+    "FSOE",
+    "Isafe",
+    "PROFISAFE",
+    "Serv",
+    "TDMA",
+    "TSMP",
+    "WIRELESSHART",
+    "WLAN",
+    "codesys",
+    "superframe"
   ],
   "ignorePaths": [
     "node_modules/**",
