@@ -173,21 +173,20 @@ size_t detws_xmpp_attr(const char *xml, size_t len, const char *attr, char *out,
     for (size_t i = 0; i + al + 2 < end; i++)
     {
         // match  <space>attr=  (leading space avoids a substring hit inside another attr name)
-        if ((i == 0 || xml[i - 1] == ' ') && strncmp(xml + i, attr, al) == 0 && xml[i + al] == '=')
+        if (!((i == 0 || xml[i - 1] == ' ') && strncmp(xml + i, attr, al) == 0 && xml[i + al] == '='))
+            continue;
+        char q = xml[i + al + 1];
+        if (q != '"' && q != '\'')
+            return 0;
+        size_t j = i + al + 2, k = 0;
+        while (j < end && xml[j] != q)
         {
-            char q = xml[i + al + 1];
-            if (q != '"' && q != '\'')
+            if (k + 1 >= cap)
                 return 0;
-            size_t j = i + al + 2, k = 0;
-            while (j < end && xml[j] != q)
-            {
-                if (k + 1 >= cap)
-                    return 0;
-                out[k++] = xml[j++];
-            }
-            out[k] = '\0';
-            return k;
+            out[k++] = xml[j++];
         }
+        out[k] = '\0';
+        return k;
     }
     return 0;
 }

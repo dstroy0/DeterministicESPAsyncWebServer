@@ -79,6 +79,20 @@ int detws_config_export(const char *ns, const DetwsCfgField *fields, size_t n, c
     return (int)pos;
 }
 
+// Set one key=val pair against the field table; returns true iff a matching field was found and its
+// setter accepted the value. Extracted so the import loop stays flat (one dispatch, no nested type switch).
+static bool config_apply_field(const DetwsCfgField *fields, size_t n, const char *key, const char *val)
+{
+    DetwsCfgType t;
+    if (!field_type(fields, n, key, &t))
+        return false;
+    if (t == DetwsCfgType::DETWS_CFG_U32)
+        return detws_config_set_u32(key, (uint32_t)det_strtoul(val, nullptr));
+    if (t == DetwsCfgType::DETWS_CFG_STR)
+        return detws_config_set_str(key, val);
+    return false;
+}
+
 int detws_config_import(const char *ns, const DetwsCfgField *fields, size_t n, const char *text, size_t len)
 {
     if (!text || !fields || !detws_config_begin(ns))
@@ -98,34 +112,23 @@ int detws_config_import(const char *ns, const DetwsCfgField *fields, size_t n, c
         while (eq < eol && text[eq] != '=')
             eq++;
 
-        if (eq < eol) // a '=' was found
+        if (eq >= eol) // no '=' on this line
         {
-            size_t klen = eq - i;
-            size_t vlen = eol - (eq + 1);
-            if (klen > 0 && klen < KEY_MAX && vlen < VAL_MAX)
-            {
-                char key[KEY_MAX];
-                char val[VAL_MAX];
-                memcpy(key, text + i, klen);
-                key[klen] = '\0';
-                memcpy(val, text + eq + 1, vlen);
-                val[vlen] = '\0';
-
-                DetwsCfgType t;
-                if (field_type(fields, n, key, &t))
-                {
-                    if (t == DetwsCfgType::DETWS_CFG_U32)
-                    {
-                        if (detws_config_set_u32(key, (uint32_t)det_strtoul(val, nullptr)))
-                            count++;
-                    }
-                    else if (t == DetwsCfgType::DETWS_CFG_STR)
-                    {
-                        if (detws_config_set_str(key, val))
-                            count++;
-                    }
-                }
-            }
+            i = eol + 1;
+            continue;
+        }
+        size_t klen = eq - i;
+        size_t vlen = eol - (eq + 1);
+        if (klen > 0 && klen < KEY_MAX && vlen < VAL_MAX)
+        {
+            char key[KEY_MAX];
+            char val[VAL_MAX];
+            memcpy(key, text + i, klen);
+            key[klen] = '\0';
+            memcpy(val, text + eq + 1, vlen);
+            val[vlen] = '\0';
+            if (config_apply_field(fields, n, key, val))
+                count++;
         }
         i = eol + 1; // skip the newline
     }

@@ -188,12 +188,8 @@ static bool inm_matches(const char *inm, const char *etag)
         if (tag[0] == '"')
         {
             const char *end = strchr(tag + 1, '"');
-            if (end)
-            {
-                size_t tlen = (size_t)(end - tag + 1);
-                if (tlen == etlen && strncmp(tag, etag, etlen) == 0)
-                    return true;
-            }
+            if (end && (size_t)(end - tag + 1) == etlen && strncmp(tag, etag, etlen) == 0)
+                return true;
         }
         const char *comma = strchr(p, ',');
         if (!comma)

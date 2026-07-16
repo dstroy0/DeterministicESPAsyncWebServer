@@ -130,12 +130,10 @@ bool ntrip_request_parse(const char *buf, size_t len, NtripRequest *out)
         if (ci_prefix(line, lend, "ntrip-version:"))
         {
             const char *v = line + 14;
-            for (; v + 2 < lend; v++)
-                if (v[0] == '2' && v[1] == '.' && v[2] == '0') // "Ntrip/2.0"
-                {
-                    out->version = NtripVersion::NTRIP_V2;
-                    break;
-                }
+            while (v + 2 < lend && !(v[0] == '2' && v[1] == '.' && v[2] == '0'))
+                v++;
+            if (v + 2 < lend) // found "Ntrip/2.0"
+                out->version = NtripVersion::NTRIP_V2;
         }
         else if (ci_prefix(line, lend, "authorization:"))
         {

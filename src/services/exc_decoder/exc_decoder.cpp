@@ -106,6 +106,20 @@ void put_int(DetSb *b, int v)
     o[k] = '\0';
     det_sb_put(b, o);
 }
+
+// Parse a run of decimal digits at @p p into a small non-negative int, clamped to avoid signed-overflow
+// UB on absurd input (core ids / counts are tiny). Extracted to keep the callers' scan loops flat.
+int parse_small_int(const char *p)
+{
+    int n = 0;
+    while (*p >= '0' && *p <= '9')
+    {
+        if (n < 100000)
+            n = n * 10 + (*p - '0');
+        p++;
+    }
+    return n;
+}
 } // namespace
 
 bool detws_exc_parse(const char *text, ExcInfo *out)
@@ -139,16 +153,7 @@ bool detws_exc_parse(const char *text, ExcInfo *out)
     {
         const char *p = skip_ws(co + 5);
         if (*p >= '0' && *p <= '9')
-        {
-            int n = 0;
-            while (*p >= '0' && *p <= '9')
-            {
-                if (n < 100000) // clamp: a core id is tiny; avoid signed-overflow UB on a huge number
-                    n = n * 10 + (*p - '0');
-                p++;
-            }
-            out->core = n;
-        }
+            out->core = parse_small_int(p); // clamped inside; avoids signed-overflow UB on a huge number
     }
 
     // EXCVADDR (faulting data address).

@@ -98,16 +98,14 @@ uint32_t detws_failsafe_check_at(uint32_t now)
         DetwsLifeline &l = s_fs.lines[i];
         if (!l.armed)
             continue;
-        if (detws_lifeline_overdue(now, l.last_feed_ms, l.deadline_ms))
-        {
-            mask |= (1u << i);
-            if (!l.breached) // fire once per stuck episode
-            {
-                l.breached = true;
-                if (s_fs.cb)
-                    s_fs.cb(i, l.name, s_fs.cb_arg);
-            }
-        }
+        if (!detws_lifeline_overdue(now, l.last_feed_ms, l.deadline_ms))
+            continue;
+        mask |= (1u << i);
+        if (l.breached) // fire once per stuck episode
+            continue;
+        l.breached = true;
+        if (s_fs.cb)
+            s_fs.cb(i, l.name, s_fs.cb_arg);
     }
     return mask;
 }

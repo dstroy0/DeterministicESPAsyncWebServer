@@ -67,21 +67,20 @@ size_t detws_utmc_parse_request(const char *xml, size_t len, char *out, size_t c
     size_t kl = 4;
     for (size_t i = 0; i + kl < len; i++)
     {
-        if (memcmp(xml + i, key, kl) == 0)
+        if (memcmp(xml + i, key, kl) != 0)
+            continue;
+        size_t j = i + kl;
+        size_t k = 0;
+        while (j < len && xml[j] != '"')
         {
-            size_t j = i + kl;
-            size_t k = 0;
-            while (j < len && xml[j] != '"')
-            {
-                if (k + 1 >= cap)
-                    return 0;
-                out[k++] = xml[j++];
-            }
-            if (j >= len) // unterminated
+            if (k + 1 >= cap)
                 return 0;
-            out[k] = '\0';
-            return k;
+            out[k++] = xml[j++];
         }
+        if (j >= len) // unterminated
+            return 0;
+        out[k] = '\0';
+        return k;
     }
     return 0;
 }

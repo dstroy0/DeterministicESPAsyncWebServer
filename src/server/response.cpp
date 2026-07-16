@@ -44,26 +44,26 @@ static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, bo
         {
             const char *end = strstr(p + 2, "}}");
             size_t nlen = end ? (size_t)(end - (p + 2)) : 0;
-            if (end && nlen <= 32)
+            if (!end || nlen > 32)
             {
-                char name[33];
-                memcpy(name, p + 2, nlen);
-                name[nlen] = '\0';
-                const char *val = resolver ? resolver(name) : nullptr;
-                if (!val)
-                    val = "";
-                size_t vlen = strnlen(val, 0xFFFF);
-                total += vlen;
-                if (emit && vlen)
-                    det_conn_send(slot, val, (u16_t)vlen);
-                p = end + 2;
+                // Unterminated or over-long placeholder: emit "{{" literally.
+                total += 2;
+                if (emit)
+                    det_conn_send(slot, "{{", 2);
+                p += 2;
                 continue;
             }
-            // Unterminated or over-long placeholder: emit "{{" literally.
-            total += 2;
-            if (emit)
-                det_conn_send(slot, "{{", 2);
-            p += 2;
+            char name[33];
+            memcpy(name, p + 2, nlen);
+            name[nlen] = '\0';
+            const char *val = resolver ? resolver(name) : nullptr;
+            if (!val)
+                val = "";
+            size_t vlen = strnlen(val, 0xFFFF);
+            total += vlen;
+            if (emit && vlen)
+                det_conn_send(slot, val, (u16_t)vlen);
+            p = end + 2;
             continue;
         }
 

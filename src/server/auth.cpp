@@ -51,33 +51,34 @@ static bool digest_field(const char *hdr, const char *key, char *out, size_t out
     {
         bool left_ok = (p == hdr) || p[-1] == ' ' || p[-1] == ',';
         const char *after = p + klen;
-        if (left_ok && *after == '=')
+        if (!left_ok || *after != '=')
         {
-            after++;
-            const char *vs;
-            const char *ve;
-            if (*after == '"')
-            {
-                vs = after + 1;
-                ve = strchr(vs, '"');
-                if (!ve)
-                    return false;
-            }
-            else
-            {
-                vs = after;
-                ve = vs;
-                while (*ve && *ve != ',' && *ve != ' ')
-                    ve++;
-            }
-            size_t vlen = (size_t)(ve - vs);
-            if (vlen > out_size - 1)
-                vlen = out_size - 1;
-            memcpy(out, vs, vlen);
-            out[vlen] = '\0';
-            return true;
+            p = after;
+            continue;
         }
-        p = after;
+        after++;
+        const char *vs;
+        const char *ve;
+        if (*after == '"')
+        {
+            vs = after + 1;
+            ve = strchr(vs, '"');
+            if (!ve)
+                return false;
+        }
+        else
+        {
+            vs = after;
+            ve = vs;
+            while (*ve && *ve != ',' && *ve != ' ')
+                ve++;
+        }
+        size_t vlen = (size_t)(ve - vs);
+        if (vlen > out_size - 1)
+            vlen = out_size - 1;
+        memcpy(out, vs, vlen);
+        out[vlen] = '\0';
+        return true;
     }
     return false;
 }
