@@ -492,6 +492,12 @@
     "output": ".pio/build/native_dtls/src/network_drivers/presentation/dtls/dtls_record.o"
   },
   {
+    "command": "/usr/bin/g++ -o .pio/build/native_dtls/src/network_drivers/presentation/http3/tls13_kdf.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/tls13_kdf.cpp",
+    "directory": "@ROOT@",
+    "file": "src/network_drivers/presentation/http3/tls13_kdf.cpp",
+    "output": ".pio/build/native_dtls/src/network_drivers/presentation/http3/tls13_kdf.o"
+  },
+  {
     "command": "/usr/bin/g++ -o .pio/build/native_dtls_conn/src/network_drivers/presentation/dtls/dtls_conn.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/dtls/dtls_conn.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/dtls/dtls_conn.cpp",
@@ -502,12 +508,6 @@
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/dtls/dtls_handshake.cpp",
     "output": ".pio/build/native_dtls_conn/src/network_drivers/presentation/dtls/dtls_handshake.o"
-  },
-  {
-    "command": "/usr/bin/g++ -o .pio/build/native_dtls_conn/src/network_drivers/presentation/http3/tls13_kdf.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/tls13_kdf.cpp",
-    "directory": "@ROOT@",
-    "file": "src/network_drivers/presentation/http3/tls13_kdf.cpp",
-    "output": ".pio/build/native_dtls_conn/src/network_drivers/presentation/http3/tls13_kdf.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_dtls_conn/src/network_drivers/presentation/http3/tls13_msg.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/tls13_msg.cpp",

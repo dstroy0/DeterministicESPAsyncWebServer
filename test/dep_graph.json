@@ -668,6 +668,7 @@
 "native_quic_varint"
 ],
 "src/network_drivers/presentation/http3/tls13_kdf.cpp": [
+"native_dtls",
 "native_dtls_conn",
 "native_h3_conn",
 "native_h3_e2e",
@@ -679,6 +680,7 @@
 "native_tls13_kdf"
 ],
 "src/network_drivers/presentation/http3/tls13_kdf.h": [
+"native_dtls",
 "native_dtls_conn",
 "native_h3_conn",
 "native_h3_e2e",
