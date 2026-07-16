@@ -12,6 +12,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`f266cea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f266cea2cd89dfe444f6a120152eb4ee7f21129b))
+- update CHANGELOG.md [skip ci] ([`3751657`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37516572efb49fc47fbd45dcc72b2268f0bb2f24))
 - update test report + coverage [skip ci] ([`3f6c18a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3f6c18ae1427b1d6a90907137a97d0bf31899ff5))
 - update CHANGELOG.md [skip ci] ([`983570b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/983570b522653407c560739bb173bf0903521bdc))
 - update test report + coverage [skip ci] ([`065355c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/065355c6d8b2b8de0ed3824c881e2df98ba3bc69))
@@ -119,6 +121,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- bound every strlen with strnlen across src/ (no unbounded strlen) ([`a05e315`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a05e3151375cea66c1f93fde4e8550582856bd6a))
 - purge auto keyword from src/, use explicit types ([`0f1b4c4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0f1b4c4c1ee8fb90b8709bcaa23663c0c421fb57))
 - bound strlen->strnlen ([`0d2c617`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0d2c6173d9d735b3f7528deb58f2f15cf4adeda5))
 - bound strlen->strnlen in handshake/send ([`1ccd303`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1ccd30359fa09e568cf2aca6413ccbb1976fe49a))
