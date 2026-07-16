@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`fd6a8f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fd6a8f7a876dd7cd9a61bfe4eea4de4fae891e61))
+- update CHANGELOG.md [skip ci] ([`03d5b37`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/03d5b37001b2869516ab279a13dd4963bebc1d5d))
 - update test report + coverage [skip ci] ([`cfcab44`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cfcab44c821a53938d885ed2521e26fab06b5ca4))
 - update CHANGELOG.md [skip ci] ([`cecba7a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cecba7acb685f4618fe72e074b156d93c350a396))
 - update test report + coverage [skip ci] ([`6d910dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d910dd3b902808c21ae1530db5e9e993878fea9))
@@ -13,10 +15,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`1cc3914`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1cc391495a1c8a0e31e495f9e7b78a3f6c923b0c))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d893280`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d893280c13d26a915d18b15c8f2c882b088a0a65))
 
 ### Refactor
 
+- flatten deep nesting via helper extraction (S134) ([`d190778`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d1907780d8985884d36a0d17dfb54d9bd15fa306))
 - flatten deep nesting via guard clauses + small extractions (S134) ([`2fbb3e4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2fbb3e43026aa94fae7ebc03b7e836dbe0845386))
 - fix S912 BLOCKER + constant macros -> constexpr ([`f8343b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8343b80289081b2d2e650145ef56c43cf57b778))
 
