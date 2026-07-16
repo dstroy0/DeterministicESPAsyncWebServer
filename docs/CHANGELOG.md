@@ -12,6 +12,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`d12c10a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d12c10a4d63139a05795bff6b089b4b09bb8499d))
 - update CHANGELOG.md [skip ci] ([`4f39ece`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f39ece763705716a51a8b45a295249591b8b658))
 - update test report + coverage [skip ci] ([`f266cea`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f266cea2cd89dfe444f6a120152eb4ee7f21129b))
 - update CHANGELOG.md [skip ci] ([`3751657`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/37516572efb49fc47fbd45dcc72b2268f0bb2f24))
@@ -73,10 +74,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Changes
 
+- Bump version: 6.24.0 → 6.24.1 ([`fa78a68`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fa78a686c80109101f8ed64c4e8a9f75064d6f39))
 - bound the 4 header/body strlen scans (strnlen sweep) ([`c4d44a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c4d44a756e8777d6adbde8143ba5296201c10fd1))
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`7033a2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7033a2f71e5a1733f5f48af31e7bbd35edc95e50))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`89fffad`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/89fffad7a456a90789c2ee745a4498ebc9b3d337))
 - update ESP32 build footprints [skip ci] ([`11d5f4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/11d5f4bf280ce9db5f032f4f29168ae5f73f5fcd))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`9bb027f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9bb027fdb23058df08d4224a265278cc8fb2f1a3))
