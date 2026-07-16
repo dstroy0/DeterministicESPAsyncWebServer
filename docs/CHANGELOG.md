@@ -2,10 +2,15 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.24.0] - 2026-07-16
+
+<details>
+<summary><b>Show Changelog for version 6.24.0 - 2026-07-16</b></summary>
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`e6cb4f3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e6cb4f39acebc7e9051434c4cc52c9d98c6a18ed))
+- update CHANGELOG.md [skip ci] ([`0160d2e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0160d2e5989131a2dd153baf2c5a3cf72203d0e9))
 - update test report + coverage [skip ci] ([`bf69627`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf69627ce098b8472d8736e3b902970e9d4b7e7d))
 - update CHANGELOG.md [skip ci] ([`ea02cb9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ea02cb927c70c908463000be1120f218c6ed395b))
 - update test report + coverage [skip ci] ([`55520d3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/55520d30b9959a657fdad883ccf7dc0d12f6eaae))
@@ -14,8 +19,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update CHANGELOG.md [skip ci] ([`ab5246d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab5246df59b090b045731cd3521fa8d608365568))
 - update CHANGELOG.md [skip ci] ([`28ca3b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28ca3b0f93e06b6560db371576b1c6fea92e8ef5))
 
+### Changes
+
+- Bump version: 6.23.0 → 6.24.0 ([`a58b542`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a58b542591bb9bf3e393e093b6330a70abce21f1))
+
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`2634b87`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2634b870a563adff9c26ed7188eae739cbe40709))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6bc2b09`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6bc2b0971e33e9fe3bb5aaa9325d0a23d54b360d))
 - update ESP32 build footprints [skip ci] ([`746cea6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/746cea6faeb8b13d173675eb549f0328b27230f7))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4599007`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45990076f22e86c8e74a7d44a579ba5722d23bfb))
@@ -30,6 +40,12 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - route by connection ID + address migration (RFC 9146 / RFC 9147 sec 9) ([`cda96e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cda96e104d187c3bffba197482aec052301eb3b9))
 - connection ID handshake negotiation (RFC 9146 / RFC 9147 sec 9) ([`f791650`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f791650fe5576ba75581ecdb723b99b7efa33744))
 - record-layer connection ID support (RFC 9146 / RFC 9147 sec 9) ([`bfa1379`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfa1379f4d19a8d09c511fe99edd5ab3d0aec5b6))
+
+### Testing
+
+- wolfSSL --cid interop verifies connection ID conformance (RFC 9146) ([`514bad4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/514bad4a9024dfd283535fc3b930f75cf9924a64))
+
+</details>
 
 ## [6.23.0] - 2026-07-16
 
