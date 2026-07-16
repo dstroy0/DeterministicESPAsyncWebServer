@@ -73,7 +73,7 @@
     "example": "L7-Application/78.CoapSecure",
     "flags": "-DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_DTLS=1",
     "board": "esp32dev",
-    "flash_bytes": 779521,
+    "flash_bytes": 779789,
     "ram_bytes": 102864
   },
   "CONFIG_STORE+CONFIG_IO": {
@@ -367,7 +367,7 @@
     "example": "L7-Application/76.NtripCaster",
     "flags": "-DDETWS_ENABLE_NTRIP_CASTER=1",
     "board": "esp32dev",
-    "flash_bytes": 770365,
+    "flash_bytes": 770357,
     "ram_bytes": 84700
   },
   "OAUTH2+HTTP_CLIENT": {
@@ -535,7 +535,7 @@
     "example": "L7-Application/14.SNMP",
     "flags": "-DDETWS_ENABLE_SNMP=1",
     "board": "esp32dev",
-    "flash_bytes": 761025,
+    "flash_bytes": 761021,
     "ram_bytes": 94184
   },
   "SNMP+SNMP_TRAP": {
