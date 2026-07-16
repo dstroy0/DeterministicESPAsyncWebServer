@@ -33,7 +33,7 @@ from each example's `pio ci` size report and aggregated into
 | `DNS_SERVER`                                                                                              | L7-Application/60.DnsServer             | 708.7 KB (55.4%) | 44.9 KB (14.0%)  |
 | `ENOCEAN+GATEWAY`                                                                                         | Foundation/13.EnOceanGateway            | 262.4 KB (20.5%) | 21.3 KB (6.7%)   |
 | `ESPNOW`                                                                                                  | L7-Application/53.EspNow                | 714.2 KB (55.8%) | 42.6 KB (13.3%)  |
-| `ETAG`                                                                                                    | L7-Application/09.ETag                  | 809.0 KB (63.2%) | 81.1 KB (25.4%)  |
+| `ETAG`                                                                                                    | L7-Application/09.ETag                  | 808.9 KB (63.2%) | 81.1 KB (25.4%)  |
 | `ETHERNET`                                                                                                | Foundation/19.Ethernet                  | 772.6 KB (60.4%) | 79.9 KB (25.0%)  |
 | `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | Foundation/23.EthernetW5500             | 772.6 KB (60.4%) | 79.9 KB (25.0%)  |
 | `GPIO_MAP`                                                                                                | L7-Application/38.GpioMap               | 738.8 KB (57.7%) | 79.9 KB (25.0%)  |
@@ -66,7 +66,7 @@ from each example's `pio ci` size report and aggregated into
 | `OPCUA`                                                                                                   | L7-Application/55.OpcUa                 | 742.4 KB (58.0%) | 89.9 KB (28.1%)  |
 | `OPCUA+OPCUA_CLIENT`                                                                                      | L7-Application/56.OpcUaClient           | 764.8 KB (59.7%) | 93.7 KB (29.3%)  |
 | `OPCUA+UMATI`                                                                                             | L7-Application/72.Umati                 | 748.9 KB (58.5%) | 90.0 KB (28.1%)  |
-| `OTA`                                                                                                     | L7-Application/16.OTA                   | 739.7 KB (57.8%) | 99.7 KB (31.2%)  |
+| `OTA`                                                                                                     | L7-Application/16.OTA                   | 739.8 KB (57.8%) | 99.7 KB (31.2%)  |
 | `OTA_ROLLBACK`                                                                                            | L7-Application/44.OtaRollback           | 735.6 KB (57.5%) | 79.9 KB (25.0%)  |
 | `PARTITION_MONITOR`                                                                                       | L7-Application/37.PartitionMonitor      | 735.3 KB (57.4%) | 79.9 KB (25.0%)  |
 | `PCA9685`                                                                                                 | L7-Application/65.Pca9685               | 277.9 KB (21.7%) | 21.3 KB (6.7%)   |
@@ -123,7 +123,7 @@ from each example's `pio ci` size report and aggregated into
 | `core/03.Expert`                                                                                          | Foundation/03.Expert                    | 737.3 KB (57.6%) | 79.9 KB (25.0%)  |
 | `core/03.InterfaceFilter`                                                                                 | L7-Application/03.InterfaceFilter       | 736.2 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/03.Multipart`                                                                                       | L6-Presentation/03.Multipart            | 735.7 KB (57.5%) | 79.9 KB (25.0%)  |
-| `core/04.BasicAuth`                                                                                       | L6-Presentation/04.BasicAuth            | 734.6 KB (57.4%) | 79.9 KB (25.0%)  |
+| `core/04.BasicAuth`                                                                                       | L6-Presentation/04.BasicAuth            | 734.7 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/04.Middleware`                                                                                      | L7-Application/04.Middleware            | 735.2 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/04.Sysadmin`                                                                                        | Foundation/04.Sysadmin                  | 748.2 KB (58.5%) | 79.9 KB (25.0%)  |
 | `core/05.DigestAuth`                                                                                      | L6-Presentation/05.DigestAuth           | 734.8 KB (57.4%) | 79.9 KB (25.0%)  |

@@ -178,7 +178,7 @@
     "example": "L7-Application/09.ETag",
     "flags": "-DDETWS_ENABLE_ETAG=1",
     "board": "esp32dev",
-    "flash_bytes": 828365,
+    "flash_bytes": 828337,
     "ram_bytes": 83088
   },
   "ETHERNET": {
@@ -332,7 +332,7 @@
     "example": "L6-Presentation/14.MsgPack",
     "flags": "-DDETWS_ENABLE_MSGPACK=1",
     "board": "esp32dev",
-    "flash_bytes": 755845,
+    "flash_bytes": 755853,
     "ram_bytes": 81856
   },
   "NRF24+GATEWAY": {
@@ -409,7 +409,7 @@
     "example": "L7-Application/16.OTA",
     "flags": "-DDETWS_ENABLE_OTA=1 -DMAX_CONNS=4",
     "board": "esp32dev",
-    "flash_bytes": 757501,
+    "flash_bytes": 757509,
     "ram_bytes": 102128
   },
   "OTA_ROLLBACK": {
@@ -437,7 +437,7 @@
     "example": "L4-Transport/05.PerIpThrottle",
     "flags": "-DDETWS_ENABLE_PER_IP_THROTTLE=1",
     "board": "esp32dev",
-    "flash_bytes": 752549,
+    "flash_bytes": 752557,
     "ram_bytes": 82224
   },
   "PN532+GATEWAY": {
@@ -808,7 +808,7 @@
     "example": "L6-Presentation/04.BasicAuth",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 752281,
+    "flash_bytes": 752289,
     "ram_bytes": 81776
   },
   "core/04.Middleware": {
@@ -850,7 +850,7 @@
     "example": "L7-Application/07.ResponseHeaders",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 752745,
+    "flash_bytes": 752753,
     "ram_bytes": 81776
   },
   "core/08.ServerSentEvents": {
@@ -864,7 +864,7 @@
     "example": "L7-Application/08.Templating",
     "flags": "",
     "board": "esp32dev",
-    "flash_bytes": 754013,
+    "flash_bytes": 754021,
     "ram_bytes": 81824
   },
   "core/09.WebSocket": {
