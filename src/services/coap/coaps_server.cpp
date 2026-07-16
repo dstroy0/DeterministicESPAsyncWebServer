@@ -1,0 +1,336 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file coaps_server.cpp
+ * @brief CoAP-over-DTLS server front-end - implementation. See coaps_server.h.
+ */
+
+#include "services/coap/coaps_server.h"
+
+#if DETWS_ENABLE_DTLS && DETWS_ENABLE_COAP
+
+#include "network_drivers/presentation/dtls/dtls_conn.h"
+#include "services/clock.h"         // detws_millis() - idle-reap clock (the DTLS PTO uses it internally too)
+#include "services/coap/coaps.h"    // coaps_process()
+#include "shared_primitives/ring.h" // DetAtomic (SPSC ingest-ring cursors)
+#include <string.h>
+
+#if defined(ARDUINO)
+#include "network_drivers/transport/udp.h"
+#endif
+
+namespace
+{
+// Largest inbound datagram buffered: a ClientHello, a client Finished, or one CoAP application record
+// (CoAP messages fit a single datagram, RFC 7252 §4.6). The server's outbound flight is larger but is
+// sent straight out, never buffered here.
+#ifndef DETWS_COAPS_MAX_DATAGRAM
+#define DETWS_COAPS_MAX_DATAGRAM 1500
+#endif
+// Scratch for one poll's outbound datagram: a full server flight (ServerHello..Finished) or a sealed
+// CoAP response. The Certificate-dominated flight is the largest thing written here.
+#define DETWS_COAPS_OUT_CAP 2048
+// The HelloRetryRequest cookie binds the peer's IPv4 address (4) + port (2); the transport is IPv4.
+#define DETWS_COAPS_PEER_SER 6
+
+// One buffered inbound datagram (payload + the peer it arrived from).
+struct CoapsIngest
+{
+    uint8_t data[DETWS_COAPS_MAX_DATAGRAM];
+    uint16_t len;
+    char ip[16];
+    uint16_t port;
+};
+
+// One pool slot: a DTLS connection plus the per-connection key material its config points at (so the
+// config's pointers outlive the DtlsConn) and the peer to reply to.
+struct CoapsSlot
+{
+    bool used;
+    DtlsConn conn;
+    DtlsServerConfig cfg; ///< per-slot config; its ephemeral/random pointers reference the buffers below
+    uint8_t eph[32];      ///< fresh X25519 ephemeral private key for this handshake
+    uint8_t srand[32];    ///< fresh ServerHello random for this handshake
+    char peer_ip[16];
+    uint16_t peer_port;
+    uint32_t last_ms; ///< detws_millis() of the last inbound datagram (idle-reaping clock)
+};
+
+// The DtlsConn pool + the ingest ring, owned by one instance (internal linkage). Kept separate from
+// the DRAM control state below so the large buffers group together (and could move to PSRAM like the
+// HTTP/3 pool if a large pool were ever wanted). One named owner, unreachable cross-TU.
+struct CoapsServerPoolCtx
+{
+    CoapsSlot pool[DETWS_COAPS_MAX_CONNS];
+    CoapsIngest ring[DETWS_COAPS_INGEST_RING];
+};
+CoapsServerPoolCtx s_cpool;
+
+// All CoAPs-server control state, owned by one instance (internal linkage): the ingest-ring cursors,
+// the server identity + randomness source, the bound port / running flag, and (host) the outbound
+// sink. One named owner, unreachable cross-TU.
+struct CoapsServerCtx
+{
+    DetAtomic<size_t> ring_head; ///< producer (udp / ingest) advances
+    DetAtomic<size_t> ring_tail; ///< consumer (poll) advances
+    const uint8_t *cert_der = nullptr;
+    size_t cert_len = 0;
+    uint8_t ed25519_seed[32];
+    uint8_t cookie_key[32];
+    void (*rng)(uint8_t *out, size_t len) = nullptr;
+    uint16_t port = 0;
+    bool running = false;
+#if !defined(ARDUINO)
+    CoapsServerOutFn out_sink = nullptr;
+    void *out_ctx = nullptr;
+#endif
+};
+CoapsServerCtx s_coaps;
+
+void copy_str(char *dst, size_t cap, const char *src)
+{
+    size_t n = 0;
+    if (src)
+        while (src[n] && n + 1 < cap)
+        {
+            dst[n] = src[n];
+            n++;
+        }
+    dst[n] = 0;
+}
+
+// Serialize an IPv4 dotted-quad @p ip + @p port into the address the HelloRetryRequest cookie binds, so
+// a cookie minted for one peer is worthless to another (RFC 9147 §5.1). Returns false on a malformed
+// address (then no address is bound and the peer simply cannot take the HRR path).
+bool serialize_peer(const char *ip, uint16_t port, uint8_t out[DETWS_COAPS_PEER_SER])
+{
+    uint32_t oct = 0;
+    int octets = 0, ndig = 0, idx = 0;
+    for (const char *p = ip;; p++)
+    {
+        if (*p >= '0' && *p <= '9')
+        {
+            oct = oct * 10 + (uint32_t)(*p - '0');
+            if (oct > 255 || ++ndig > 3)
+                return false;
+        }
+        else if (*p == '.' || *p == 0)
+        {
+            if (ndig == 0)
+                return false;
+            out[idx++] = (uint8_t)oct;
+            octets++;
+            oct = 0;
+            ndig = 0;
+            if (*p == 0)
+                break;
+        }
+        else
+            return false;
+    }
+    if (octets != 4)
+        return false;
+    out[4] = (uint8_t)(port >> 8);
+    out[5] = (uint8_t)(port & 0xFF);
+    return true;
+}
+
+void server_send(const char *ip, uint16_t port, const uint8_t *data, size_t len)
+{
+#if defined(ARDUINO)
+    det_udp_listener_sendto(s_coaps.port, ip, port, data, len);
+#else
+    if (s_coaps.out_sink)
+        s_coaps.out_sink(s_coaps.out_ctx, data, len, ip, port);
+#endif
+}
+
+// --- ingest ring (SPSC: one producer fills, coaps_server_poll consumes) ------------------------
+bool ring_push(const uint8_t *dg, size_t len, const char *ip, uint16_t port)
+{
+    if (len == 0 || len > DETWS_COAPS_MAX_DATAGRAM)
+        return false;
+    size_t head = s_coaps.ring_head;
+    size_t next = (head + 1) % DETWS_COAPS_INGEST_RING;
+    if (next == (size_t)s_coaps.ring_tail)
+        return false; // ring full: drop (DTLS recovers via retransmission)
+    CoapsIngest *e = &s_cpool.ring[head];
+    memcpy(e->data, dg, len);
+    e->len = (uint16_t)len;
+    copy_str(e->ip, sizeof e->ip, ip);
+    e->port = port;
+    s_coaps.ring_head = next; // publish after the record is fully written
+    return true;
+}
+
+bool ring_pop(CoapsIngest *out)
+{
+    size_t tail = s_coaps.ring_tail;
+    if (tail == (size_t)s_coaps.ring_head)
+        return false;
+    *out = s_cpool.ring[tail];
+    s_coaps.ring_tail = (tail + 1) % DETWS_COAPS_INGEST_RING;
+    return true;
+}
+
+// --- slot pool (keyed by peer address; DTLS has no connection id in the datagram) --------------
+CoapsSlot *slot_by_peer(const char *ip, uint16_t port)
+{
+    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+    {
+        CoapsSlot *s = &s_cpool.pool[i];
+        if (s->used && s->peer_port == port && strcmp(s->peer_ip, ip) == 0)
+            return s;
+    }
+    return nullptr;
+}
+
+CoapsSlot *alloc_slot()
+{
+    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+        if (!s_cpool.pool[i].used)
+        {
+            CoapsSlot *s = &s_cpool.pool[i];
+            memset(s, 0, sizeof *s);
+            s->used = true;
+            return s;
+        }
+    return nullptr;
+}
+
+// Open a connection for a datagram from a peer with no existing slot.
+CoapsSlot *open_conn(const char *ip, uint16_t port)
+{
+    CoapsSlot *s = alloc_slot();
+    if (!s)
+        return nullptr;
+    s_coaps.rng(s->eph, sizeof s->eph);     // fresh X25519 ephemeral private key
+    s_coaps.rng(s->srand, sizeof s->srand); // fresh ServerHello random
+    s->cfg.cert_der = s_coaps.cert_der;
+    s->cfg.cert_len = s_coaps.cert_len;
+    s->cfg.ed25519_seed = s_coaps.ed25519_seed;
+    s->cfg.ephemeral_priv = s->eph;
+    s->cfg.server_random = s->srand;
+    s->cfg.cookie_key = s_coaps.cookie_key;
+    uint8_t paddr[DETWS_COAPS_PEER_SER];
+    bool ok = serialize_peer(ip, port, paddr);
+    dtls_conn_init(&s->conn, &s->cfg, ok ? paddr : nullptr, ok ? sizeof paddr : 0);
+    copy_str(s->peer_ip, sizeof s->peer_ip, ip);
+    s->peer_port = port;
+    return s;
+}
+
+#if defined(ARDUINO)
+void udp_ingest_cb(const uint8_t *data, size_t len, DetUdpPeer *peer, void * /*ctx*/)
+{
+    char ip[16];
+    uint16_t port = 0;
+    if (!det_udp_peer_addr(peer, ip, sizeof ip, &port))
+        return;
+    ring_push(data, len, ip, port);
+}
+#endif
+} // namespace
+
+bool coaps_server_begin(uint16_t port, const CoapsServerConfig *cfg)
+{
+    if (!cfg || !cfg->rng || !cfg->cert_der || cfg->cert_len == 0)
+        return false;
+    s_coaps.cert_der = cfg->cert_der;
+    s_coaps.cert_len = cfg->cert_len;
+    memcpy(s_coaps.ed25519_seed, cfg->ed25519_seed, sizeof s_coaps.ed25519_seed);
+    memcpy(s_coaps.cookie_key, cfg->cookie_key, sizeof s_coaps.cookie_key);
+    s_coaps.rng = cfg->rng;
+    s_coaps.port = port ? port : DETWS_COAPS_PORT;
+    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+        s_cpool.pool[i].used = false;
+    s_coaps.ring_head = 0;
+    s_coaps.ring_tail = 0;
+    s_coaps.running = true;
+#if defined(ARDUINO)
+    return det_udp_listen(s_coaps.port, udp_ingest_cb, nullptr);
+#else
+    return true; // host: fed through coaps_server_ingest()
+#endif
+}
+
+void coaps_server_poll()
+{
+    if (!s_coaps.running)
+        return;
+    uint32_t now = detws_millis();
+    uint8_t out[DETWS_COAPS_OUT_CAP];
+
+    // Drain queued datagrams: route each to its peer's slot (opening one for a new peer) and drive the
+    // handshake / CoAP exchange through the bridge.
+    CoapsIngest ig;
+    while (ring_pop(&ig))
+    {
+        CoapsSlot *s = slot_by_peer(ig.ip, ig.port);
+        if (!s)
+            s = open_conn(ig.ip, ig.port);
+        if (!s)
+            continue; // pool full: drop (the peer retransmits / DTLS PTO recovers)
+        s->last_ms = now;
+        int n = coaps_process(&s->conn, ig.data, ig.len, out, sizeof out);
+        if (n > 0)
+            server_send(s->peer_ip, s->peer_port, out, (size_t)n);
+        else if (n < 0)
+            s->used = false; // fatal handshake error: free the slot
+    }
+
+    // Fire the retransmission timer for any outstanding flight, then reap closed / idle connections.
+    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+    {
+        CoapsSlot *s = &s_cpool.pool[i];
+        if (!s->used)
+            continue;
+        if (dtls_conn_timeout_ms(&s->conn) == 0) // 0 == due now (-1 == no timer, >0 == still pending)
+        {
+            int n = dtls_conn_on_timeout(&s->conn, out, sizeof out);
+            if (n > 0)
+                server_send(s->peer_ip, s->peer_port, out, (size_t)n);
+            else if (n < 0)
+            {
+                s->used = false; // retransmission ceiling hit: abandon the handshake
+                continue;
+            }
+        }
+        if ((uint32_t)(now - s->last_ms) >= DETWS_COAPS_IDLE_MS) // wrap-safe idle delta
+            s->used = false;
+    }
+}
+
+uint8_t coaps_server_active_conns()
+{
+    uint8_t n = 0;
+    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+        if (s_cpool.pool[i].used)
+            n++;
+    return n;
+}
+
+void coaps_server_stop()
+{
+    s_coaps.running = false;
+    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+        s_cpool.pool[i].used = false;
+    s_coaps.ring_head = 0;
+    s_coaps.ring_tail = 0;
+}
+
+#if !defined(ARDUINO)
+void coaps_server_set_out_sink(CoapsServerOutFn fn, void *ctx)
+{
+    s_coaps.out_sink = fn;
+    s_coaps.out_ctx = ctx;
+}
+
+bool coaps_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port)
+{
+    return ring_push(datagram, len, ip, port);
+}
+#endif
+
+#endif // DETWS_ENABLE_DTLS && DETWS_ENABLE_COAP

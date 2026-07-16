@@ -1,0 +1,459 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+//
+// CoAP-over-DTLS server front-end (coaps_server.h): the per-peer DtlsConn pool + ingest/poll seam.
+// An in-test DTLS 1.3 client drives the server entirely through coaps_server_ingest() (datagrams in)
+// and an output sink (datagrams out) - never touching the server's DtlsConn directly - so it exercises
+// exactly the front-end's jobs: routing a datagram to the right connection by peer address, running the
+// handshake + CoAP exchange through coaps_process(), driving the retransmission timer from the poll, and
+// reaping idle connections. The DTLS/CoAP crypto correctness itself is covered by test_dtls_conn and
+// test_coaps; here the client is just a vehicle to reach and use an established connection.
+
+#include "network_drivers/presentation/dtls/dtls_conn.h"
+#include "network_drivers/presentation/dtls/dtls_handshake.h"
+#include "network_drivers/presentation/dtls/dtls_record.h"
+#include "network_drivers/presentation/http3/tls13_kdf.h"
+#include "network_drivers/presentation/http3/tls13_msg.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
+#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include "services/clock.h"
+#include "services/coap/coap.h"
+#include "services/coap/coaps_server.h"
+#include <stdint.h>
+#include <string.h>
+#include <unity.h>
+
+// ---- fixed test key material (deterministic; matches test_coaps / test_dtls_conn) ----
+static const uint8_t SERVER_ED_SEED[32] = {1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16,
+                                           17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32};
+static const uint8_t CLIENT_X25519_PRIV[32] = {0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                                               0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                                               0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22};
+static const uint8_t SERVER_COOKIE_KEY[32] = {0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
+                                              0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f, 0x70, 0x71,
+                                              0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b};
+
+// A GET /temp resource that replies 2.05 Content "hi".
+static void h_temp(const CoapRequest *req, CoapResponse *resp)
+{
+    (void)req;
+    resp->code = (uint8_t)CoapResponseCode::COAP_RSP_CONTENT;
+    memcpy(resp->payload, "hi", 2);
+    resp->payload_len = 2;
+    resp->content_format = CoapContentFormat::COAP_CF_TEXT;
+}
+
+// ---- simulation clock (drives the DTLS PTO + idle reaping deterministically) ----
+static uint32_t g_ms = 0;
+static uint32_t test_clock()
+{
+    return g_ms;
+}
+
+// ---- server randomness: a counter, so each connection's ephemeral/random differ ----
+static uint8_t g_rng_ctr = 0;
+static void test_rng(uint8_t *out, size_t len)
+{
+    for (size_t i = 0; i < len; i++)
+        out[i] = g_rng_ctr++;
+}
+
+// ---- outbound-datagram capture queue (the host stand-in for the wire) ----
+struct OutDg
+{
+    uint8_t buf[2048];
+    size_t len;
+    char ip[16];
+    uint16_t port;
+};
+static OutDg g_out[16];
+static int g_out_n = 0;
+static void out_reset()
+{
+    g_out_n = 0;
+}
+static void out_sink(void *, const uint8_t *dg, size_t len, const char *ip, uint16_t port)
+{
+    if (g_out_n >= (int)(sizeof g_out / sizeof g_out[0]) || len > sizeof g_out[0].buf)
+        return;
+    OutDg *o = &g_out[g_out_n++];
+    memcpy(o->buf, dg, len);
+    o->len = len;
+    size_t k = 0;
+    while (ip[k] && k < sizeof o->ip - 1)
+    {
+        o->ip[k] = ip[k];
+        k++;
+    }
+    o->ip[k] = 0;
+    o->port = port;
+}
+// Pull the first captured datagram addressed to ip:port out of the queue.
+static bool take_out_for(const char *ip, uint16_t port, OutDg *dst)
+{
+    for (int i = 0; i < g_out_n; i++)
+        if (g_out[i].port == port && strcmp(g_out[i].ip, ip) == 0)
+        {
+            *dst = g_out[i];
+            for (int j = i; j + 1 < g_out_n; j++)
+                g_out[j] = g_out[j + 1];
+            g_out_n--;
+            return true;
+        }
+    return false;
+}
+
+static uint8_t g_server_cert[32]; // Ed25519 public key used as the raw leaf "certificate" (as in test_coaps)
+
+void setUp()
+{
+    coap_server_init();
+    coap_server_add_resource("/temp", CoapMethodMask::COAP_ALLOW_GET, h_temp);
+    detws_set_clock(test_clock, 1000);
+    g_ms = 0;
+    g_rng_ctr = 0;
+    out_reset();
+
+    ssh_ed25519_pubkey(g_server_cert, SERVER_ED_SEED);
+    CoapsServerConfig cfg;
+    memset(&cfg, 0, sizeof cfg);
+    cfg.cert_der = g_server_cert;
+    cfg.cert_len = 32;
+    memcpy(cfg.ed25519_seed, SERVER_ED_SEED, 32);
+    memcpy(cfg.cookie_key, SERVER_COOKIE_KEY, 32);
+    cfg.rng = test_rng;
+    TEST_ASSERT_TRUE(coaps_server_begin(DETWS_COAPS_PORT, &cfg));
+    coaps_server_set_out_sink(out_sink, nullptr);
+}
+void tearDown()
+{
+    coaps_server_stop();
+    detws_set_clock(nullptr, 0);
+}
+
+// ---- minimal DTLS 1.3 client (offers X25519 directly, no HRR) ----
+struct Buf
+{
+    uint8_t *p;
+    size_t n;
+};
+static void b8(Buf *b, uint8_t v)
+{
+    b->p[b->n++] = v;
+}
+static void b16(Buf *b, uint16_t v)
+{
+    b8(b, (uint8_t)(v >> 8));
+    b8(b, (uint8_t)v);
+}
+static void bmem(Buf *b, const uint8_t *m, size_t k)
+{
+    memcpy(b->p + b->n, m, k);
+    b->n += k;
+}
+
+static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32])
+{
+    Buf b = {out, 0};
+    b8(&b, 0x01); // client_hello
+    size_t len_at = b.n;
+    b8(&b, 0);
+    b8(&b, 0);
+    b8(&b, 0);       // 24-bit body length (patched)
+    b16(&b, 0x0303); // legacy_version
+    for (int i = 0; i < 32; i++)
+        b8(&b, (uint8_t)(0x30 + i)); // random
+    b8(&b, 0x00);                    // session_id: empty
+    b8(&b, 0x00);                    // legacy_cookie: empty (DTLS)
+    b16(&b, 0x0002);
+    b16(&b, 0x1301); // cipher_suites: TLS_AES_128_GCM_SHA256
+    b8(&b, 0x01);
+    b8(&b, 0x00); // compression: null
+    size_t ext_len_at = b.n;
+    b16(&b, 0);
+    b16(&b, 0x002b); // supported_versions: DTLS 1.3
+    b16(&b, 0x0003);
+    b8(&b, 0x02);
+    b16(&b, 0xFEFC);
+    b16(&b, 0x000a); // supported_groups: x25519
+    b16(&b, 0x0004);
+    b16(&b, 0x0002);
+    b16(&b, 0x001d);
+    b16(&b, 0x000d); // signature_algorithms: ed25519
+    b16(&b, 0x0004);
+    b16(&b, 0x0002);
+    b16(&b, 0x0807);
+    b16(&b, 0x0033); // key_share: x25519
+    b16(&b, 0x0026);
+    b16(&b, 0x0024);
+    b16(&b, 0x001d);
+    b16(&b, 0x0020);
+    bmem(&b, client_pub, 32);
+    uint16_t ext_len = (uint16_t)(b.n - ext_len_at - 2);
+    out[ext_len_at] = (uint8_t)(ext_len >> 8);
+    out[ext_len_at + 1] = (uint8_t)ext_len;
+    uint32_t body = (uint32_t)(b.n - len_at - 3);
+    out[len_at] = (uint8_t)(body >> 16);
+    out[len_at + 1] = (uint8_t)(body >> 8);
+    out[len_at + 2] = (uint8_t)body;
+    return b.n;
+}
+
+static bool sh_keyshare(const uint8_t *sh, size_t len, uint8_t pub[32])
+{
+    if (len < 44)
+        return false;
+    size_t o = 4 + 2 + 32;
+    uint8_t sid = sh[o++];
+    o += sid;
+    o += 2 + 1;
+    if (o + 2 > len)
+        return false;
+    size_t ext_end = o + 2 + ((sh[o] << 8) | sh[o + 1]);
+    o += 2;
+    while (o + 4 <= ext_end && ext_end <= len)
+    {
+        uint16_t et = (uint16_t)((sh[o] << 8) | sh[o + 1]);
+        uint16_t el = (uint16_t)((sh[o + 2] << 8) | sh[o + 3]);
+        o += 4;
+        if (et == 0x0033 && el >= 4 + 32)
+        {
+            memcpy(pub, sh + o + 4, 32);
+            return true;
+        }
+        o += el;
+    }
+    return false;
+}
+
+static size_t frag_to_tls(const uint8_t *payload, size_t plen, uint8_t *tls_out)
+{
+    DtlsHsHeader hh;
+    if (!dtls_hs_header_parse(payload, plen, &hh) || hh.frag_offset != 0 || hh.frag_length != hh.length)
+        return 0;
+    tls_out[0] = hh.msg_type;
+    tls_out[1] = (uint8_t)(hh.length >> 16);
+    tls_out[2] = (uint8_t)(hh.length >> 8);
+    tls_out[3] = (uint8_t)hh.length;
+    memcpy(tls_out + 4, hh.fragment, hh.length);
+    return 4 + hh.length;
+}
+
+static size_t ct_record_len(const uint8_t *rec, size_t avail)
+{
+    size_t seq_len = (rec[0] & 0x08) ? 2 : 1;
+    size_t o = 1 + seq_len + 2;
+    size_t enc = ((size_t)rec[1 + seq_len] << 8) | rec[1 + seq_len + 1];
+    return (o + enc <= avail) ? o + enc : 0;
+}
+
+// Complete the handshake for peer ip:port through the front-end seam and hand back the client's
+// application-traffic keys. Asserts each step so a failure pinpoints the stage.
+static void client_handshake(const char *ip, uint16_t port, DtlsRecordKeys *cli_app_write, DtlsRecordKeys *cli_app_read)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello(ch, client_pub);
+    SshSha256Ctx tr;
+    ssh_sha256_init(&tr);
+    ssh_sha256_update(&tr, ch, ch_len);
+    uint8_t ch_frag[300];
+    size_t ch_fl = dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
+                                      sizeof(ch_frag));
+    uint8_t ch_rec[320];
+    size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
+    TEST_ASSERT_TRUE(coaps_server_ingest(ch_rec, ch_rl, ip, port));
+    coaps_server_poll();
+
+    OutDg fldg;
+    TEST_ASSERT_TRUE(take_out_for(ip, port, &fldg)); // the server flight
+    const uint8_t *flight = fldg.buf;
+    size_t fl = fldg.len;
+
+    size_t off = 0;
+    DtlsPlaintext pt;
+    size_t rl = dtls_plaintext_parse(flight, fl, &pt);
+    TEST_ASSERT_TRUE(rl > 0);
+    off += rl;
+    uint8_t sh[512];
+    size_t sh_len = frag_to_tls(pt.fragment, pt.frag_len, sh);
+    TEST_ASSERT_TRUE(sh_len > 0);
+    ssh_sha256_update(&tr, sh, sh_len);
+    uint8_t server_pub[32];
+    TEST_ASSERT_TRUE(sh_keyshare(sh, sh_len, server_pub));
+
+    uint8_t ecdhe[32];
+    ssh_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
+    Tls13KeySchedule cks;
+    uint8_t hh[32];
+    SshSha256Ctx tmp = tr;
+    ssh_sha256_final(&tmp, hh);
+    tls13_ks_early(&DTLS13_KDF, &cks);
+    tls13_ks_handshake(&cks, ecdhe, hh, 32);
+    DtlsRecordKeys srv_read;
+    dtls_record_keys_derive(&srv_read, DtlsCipher::AES_128_GCM_SHA256, 2, cks.server_hs_traffic);
+
+    uint64_t exp_seq = 0;
+    while (off < fl)
+    {
+        size_t crl = ct_record_len(flight + off, fl - off);
+        TEST_ASSERT_TRUE(crl > 0);
+        uint8_t inner[512];
+        DtlsCiphertext info;
+        TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&srv_read, exp_seq, flight + off, crl, inner, sizeof(inner), &info));
+        exp_seq = info.seq + 1;
+        off += crl;
+        uint8_t msg[512];
+        size_t mlen = frag_to_tls(inner, info.pt_len, msg);
+        TEST_ASSERT_TRUE(mlen > 0);
+        ssh_sha256_update(&tr, msg, mlen);
+    }
+
+    uint8_t h_sfin[32];
+    SshSha256Ctx s2 = tr;
+    ssh_sha256_final(&s2, h_sfin);
+    tls13_ks_master(&cks, h_sfin);
+    uint8_t cfin_verify[32];
+    tls13_finished_mac(&DTLS13_KDF, cks.client_hs_traffic, h_sfin, cfin_verify);
+    uint8_t cfin[64];
+    size_t cfin_len = tls13_build_finished(cfin, sizeof(cfin), cfin_verify);
+    DtlsRecordKeys cli_write;
+    dtls_record_keys_derive(&cli_write, DtlsCipher::AES_128_GCM_SHA256, 2, cks.client_hs_traffic);
+    uint8_t cfin_frag[80];
+    size_t cff = dtls_hs_frag_build(cfin[0], 1, (uint32_t)(cfin_len - 4), 0, cfin + 4, (uint32_t)(cfin_len - 4),
+                                    cfin_frag, sizeof(cfin_frag));
+    uint8_t cfin_rec[128];
+    size_t cfr = dtls_ciphertext_protect(&cli_write, 0, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec, sizeof(cfin_rec));
+    TEST_ASSERT_TRUE(coaps_server_ingest(cfin_rec, cfr, ip, port));
+    coaps_server_poll();
+
+    // The server acknowledges the client Finished with an epoch-3 ACK (seq 0); pull and discard it so
+    // the CoAP response that follows is epoch-3 seq 1 on the wire.
+    OutDg ackdg;
+    take_out_for(ip, port, &ackdg);
+
+    dtls_record_keys_derive(cli_app_read, DtlsCipher::AES_128_GCM_SHA256, 3, cks.server_ap_traffic);
+    dtls_record_keys_derive(cli_app_write, DtlsCipher::AES_128_GCM_SHA256, 3, cks.client_ap_traffic);
+}
+
+// Seal a CoAP CON GET /temp as one epoch-3 client application record (client send-seq @p cseq).
+static size_t client_get_temp(DtlsRecordKeys *w, uint64_t cseq, uint8_t *out, size_t cap)
+{
+    const uint8_t coap_get[] = {0x40, 0x01, 0x12, 0x34, 0xB4, 't', 'e', 'm', 'p'};
+    return dtls_ciphertext_protect(w, cseq, DTLS_CT_APPLICATION_DATA, coap_get, sizeof(coap_get), out, cap);
+}
+
+// Decrypt the server's response record (epoch-3 send-seq 1, after the completion ACK) and assert it is
+// the piggybacked 2.05 Content "hi".
+static void assert_coap_205(DtlsRecordKeys *r, const OutDg *dg)
+{
+    uint8_t coap_resp[256];
+    DtlsCiphertext info;
+    TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(r, 1, dg->buf, dg->len, coap_resp, sizeof(coap_resp), &info));
+    TEST_ASSERT_EQUAL_UINT8(DTLS_CT_APPLICATION_DATA, info.content_type);
+    TEST_ASSERT_TRUE(info.pt_len >= 6);
+    TEST_ASSERT_EQUAL_UINT8(0x60, coap_resp[0] & 0xF0); // Ver 1, Type ACK
+    TEST_ASSERT_EQUAL_UINT8(0x45, coap_resp[1]);        // 2.05 Content
+    TEST_ASSERT_EQUAL_UINT8(0x12, coap_resp[2]);        // MID hi
+    TEST_ASSERT_EQUAL_UINT8(0x34, coap_resp[3]);        // MID lo
+    TEST_ASSERT_EQUAL_MEMORY("hi", coap_resp + info.pt_len - 2, 2);
+}
+
+// A single peer: handshake through the pool, then a CoAP GET is decrypted, answered, and re-sealed.
+static void test_server_single_peer(void)
+{
+    DtlsRecordKeys w, r;
+    client_handshake("10.0.0.5", 40001, &w, &r);
+    TEST_ASSERT_EQUAL_UINT8(1, coaps_server_active_conns());
+
+    uint8_t rec[128];
+    size_t n = client_get_temp(&w, 0, rec, sizeof(rec));
+    TEST_ASSERT_TRUE(coaps_server_ingest(rec, n, "10.0.0.5", 40001));
+    coaps_server_poll();
+
+    OutDg dg;
+    TEST_ASSERT_TRUE(take_out_for("10.0.0.5", 40001, &dg));
+    assert_coap_205(&r, &dg);
+}
+
+// Two peers at different addresses each get their own connection; requests injected in the same poll are
+// routed to the right slot (a mis-route would decrypt under the wrong keys and fail the AEAD open).
+static void test_two_peers_routing(void)
+{
+    DtlsRecordKeys wA, rA, wB, rB;
+    client_handshake("10.0.0.5", 40001, &wA, &rA);
+    client_handshake("10.0.0.6", 40002, &wB, &rB);
+    TEST_ASSERT_EQUAL_UINT8(2, coaps_server_active_conns());
+
+    uint8_t recA[128], recB[128];
+    size_t nA = client_get_temp(&wA, 0, recA, sizeof(recA));
+    size_t nB = client_get_temp(&wB, 0, recB, sizeof(recB));
+    TEST_ASSERT_TRUE(coaps_server_ingest(recB, nB, "10.0.0.6", 40002));
+    TEST_ASSERT_TRUE(coaps_server_ingest(recA, nA, "10.0.0.5", 40001));
+    coaps_server_poll();
+
+    OutDg dgA, dgB;
+    TEST_ASSERT_TRUE(take_out_for("10.0.0.5", 40001, &dgA));
+    TEST_ASSERT_TRUE(take_out_for("10.0.0.6", 40002, &dgB));
+    assert_coap_205(&rA, &dgA);
+    assert_coap_205(&rB, &dgB);
+}
+
+// A connection with no inbound datagram for DETWS_COAPS_IDLE_MS is reclaimed by the poll.
+static void test_idle_reap(void)
+{
+    DtlsRecordKeys w, r;
+    client_handshake("10.0.0.5", 40001, &w, &r);
+    TEST_ASSERT_EQUAL_UINT8(1, coaps_server_active_conns());
+
+    g_ms += DETWS_COAPS_IDLE_MS + 1;
+    coaps_server_poll();
+    TEST_ASSERT_EQUAL_UINT8(0, coaps_server_active_conns());
+}
+
+// The poll drives the DTLS retransmission timer: a lost client reply leaves the server flight
+// outstanding, and once the PTO elapses the poll re-sends it (RFC 9147 §5.8) - not before.
+static void test_pto_retransmit_driven_by_poll(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello(ch, client_pub);
+    uint8_t ch_frag[300];
+    size_t ch_fl = dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
+                                      sizeof(ch_frag));
+    uint8_t ch_rec[320];
+    size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
+    TEST_ASSERT_TRUE(coaps_server_ingest(ch_rec, ch_rl, "10.0.0.7", 40003));
+    coaps_server_poll();
+
+    OutDg f1;
+    TEST_ASSERT_TRUE(take_out_for("10.0.0.7", 40003, &f1)); // original flight, PTO timer now armed
+
+    // Before the PTO elapses a poll must not retransmit.
+    g_ms += DTLS_PTO_INITIAL_MS - 1;
+    coaps_server_poll();
+    OutDg none;
+    TEST_ASSERT_FALSE(take_out_for("10.0.0.7", 40003, &none));
+
+    // At the PTO the poll fires the timer and the flight is re-sent (fresh record sequence numbers).
+    g_ms += 1;
+    coaps_server_poll();
+    OutDg f2;
+    TEST_ASSERT_TRUE(take_out_for("10.0.0.7", 40003, &f2));
+    TEST_ASSERT_TRUE(f2.len > 0);
+    TEST_ASSERT_EQUAL_UINT8(1, coaps_server_active_conns()); // still handshaking, not reaped
+}
+
+int main(int, char **)
+{
+    UNITY_BEGIN();
+    RUN_TEST(test_server_single_peer);
+    RUN_TEST(test_two_peers_routing);
+    RUN_TEST(test_idle_reap);
+    RUN_TEST(test_pto_retransmit_driven_by_poll);
+    return UNITY_END();
+}
