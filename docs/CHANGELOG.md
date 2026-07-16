@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`59f6cae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/59f6caeb7431e1445aa0be2e9b48a0b2aca5bf85))
+- update CHANGELOG.md [skip ci] ([`3e54b80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e54b80dd45d43b43602207811b2775d7926b1d0))
 - update test report + coverage [skip ci] ([`088a160`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/088a160587ad1b26be0fd096ea7335eeaab11a6b))
 - update CHANGELOG.md [skip ci] ([`e5b8133`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e5b813352e1d25a36587cae09464988e85ea4e13))
 - update test report + coverage [skip ci] ([`3e867e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e867e5a1f0d08613f531e2ac6f8a3f5d06c0663))
@@ -47,6 +49,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`5aa1709`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5aa1709950868c6f0b9c044d448df051d8b0d470))
 - update ESP32 build footprints [skip ci] ([`e2a4f8f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e2a4f8ffbfabd9f47112bb4bf238a02c408914b0))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`aa86a33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/aa86a335309a1440776eb4c406c7639a7105f934))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ad33972`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad33972ce1e3dfdbebd6b021b9b8b62ef31ed555))
@@ -72,6 +75,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- bound strlen->strnlen in packet builders ([`708fa6a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/708fa6aab2a8547f383346e8e76c7f21ac9c676e))
 - split recv_packet + build_frames (S3776 cc 35/50) ([`11db81a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/11db81a0d0ec33c579b5c5ecfb0ce3dd100eab74))
 - split dtls_conn_process datagram walk (S3776 cc 54->~8) ([`7c3a3e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7c3a3e9899d8f117f7382ecc5b4b16618054bd44))
 - split match_and_execute router (S3776 cc 61->~16) ([`07e13e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/07e13e364beecc8073eccecd581bf501df444d8d))
