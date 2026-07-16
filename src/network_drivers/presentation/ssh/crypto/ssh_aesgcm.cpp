@@ -240,7 +240,7 @@ inline void inc32(uint8_t ctr[16])
 
 // GCTR (NIST SP 800-38D sec 6.5): out = in XOR AES-CTR keystream starting from counter @p ctr,
 // advanced in place. @p in / @p out may alias.
-void gctr(SshAesGcmCtx *ctx, uint8_t ctr[16], const uint8_t *in, size_t len, uint8_t *out)
+void gctr(const SshAesGcmCtx *ctx, uint8_t ctr[16], const uint8_t *in, size_t len, uint8_t *out)
 {
     uint8_t ks[16];
     size_t off = 0;
@@ -260,8 +260,8 @@ void gctr(SshAesGcmCtx *ctx, uint8_t ctr[16], const uint8_t *in, size_t len, uin
 // Compute J0 (96-bit nonce), the GHASH tag over aad || cipher, and the tag for one GCM operation.
 // @p cipher is the ciphertext to authenticate (== output for seal, == input for open). Writes j0[16]
 // (for the caller to derive the CTR start) and the 16-byte tag.
-void gcm_core(SshAesGcmCtx *ctx, const uint8_t nonce[12], const uint8_t *aad, size_t aad_len, const uint8_t *cipher,
-              size_t cipher_len, uint8_t j0[16], uint8_t tag[16])
+void gcm_core(const SshAesGcmCtx *ctx, const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
+              const uint8_t *cipher, size_t cipher_len, uint8_t j0[16], uint8_t tag[16])
 {
     // 96-bit nonce: J0 = nonce || 0^31 || 1.
     memcpy(j0, nonce, 12);

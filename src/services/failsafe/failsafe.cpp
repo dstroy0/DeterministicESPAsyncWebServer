@@ -151,7 +151,7 @@ int detws_failsafe_json_at(uint32_t now, char *out, size_t cap)
         fs_put(out, cap, &n, "\",\"overdue\":");
         fs_put(out, cap, &n, detws_lifeline_overdue(now, l.last_feed_ms, l.deadline_ms) ? "true" : "false");
         fs_put(out, cap, &n, ",\"age_ms\":");
-        fs_put_u32(out, cap, &n, (uint32_t)(now - l.last_feed_ms));
+        fs_put_u32(out, cap, &n, now - l.last_feed_ms);
         fs_put(out, cap, &n, ",\"deadline_ms\":");
         fs_put_u32(out, cap, &n, l.deadline_ms);
         fs_put(out, cap, &n, "}");

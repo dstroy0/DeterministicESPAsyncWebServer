@@ -196,7 +196,7 @@ int send_hello_retry(DtlsConn *c, const Tls13ClientHello *ch, const uint8_t *ch1
 
 // After a HelloRetryRequest, the retry ClientHello must echo a valid cookie (proving the client's
 // address) before we spend the handshake's asymmetric crypto (RFC 9147 §5.1). No HRR -> nothing to check.
-bool dtls_hrr_cookie_ok(DtlsConn *c, const Tls13ClientHello *ch)
+bool dtls_hrr_cookie_ok(const DtlsConn *c, const Tls13ClientHello *ch)
 {
     if (!c->hrr_sent)
         return true;

@@ -247,7 +247,7 @@ bool skip_initial_token(const uint8_t *dg, size_t len, size_t *off)
 
 // Parse one packet's (long or short) header, filling the fields needed to locate + unprotect it.
 // Returns false on a malformed header or an unsupported type/version (drop the packet).
-bool parse_packet_header(QuicConn *qc, const uint8_t *dg, size_t len, bool is_long, int *level, size_t *pn_offset,
+bool parse_packet_header(const QuicConn *qc, const uint8_t *dg, size_t len, bool is_long, int *level, size_t *pn_offset,
                          size_t *pkt_len, uint64_t *payload_length)
 {
     if (!is_long)
@@ -371,7 +371,7 @@ size_t build_ack_frame(QuicPnSpace *s, uint8_t *buf, size_t cap)
 
 // Append the CRYPTO flight for INITIAL/HANDSHAKE (ServerHello / EE..Finished); returns bytes written,
 // sets *ae when it emits an ack-eliciting CRYPTO frame.
-size_t build_crypto_frame(QuicConn *qc, int level, QuicPnSpace *s, uint8_t *buf, size_t cap, bool *ae)
+size_t build_crypto_frame(const QuicConn *qc, int level, QuicPnSpace *s, uint8_t *buf, size_t cap, bool *ae)
 {
     if (level != QuicEnc::QUIC_ENC_INITIAL && level != QuicEnc::QUIC_ENC_HANDSHAKE)
         return 0;
