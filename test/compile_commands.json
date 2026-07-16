@@ -1,87 +1,87 @@
 [
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/network_drivers/network/ip.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/network_drivers/network/ip.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/network/ip.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/network/ip.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/network/ip.cpp",
-    "output": ".pio/build/native_upload/src/network_drivers/network/ip.o"
+    "output": ".pio/build/native/src/network_drivers/network/ip.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/network_drivers/presentation/base64/base64.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/base64/base64.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/base64/base64.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/base64/base64.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/base64/base64.cpp",
-    "output": ".pio/build/native_upload/src/network_drivers/presentation/base64/base64.o"
+    "output": ".pio/build/native/src/network_drivers/presentation/base64/base64.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/network_drivers/presentation/http_parser/http_parser.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http_parser/http_parser.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/http_parser/http_parser.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http_parser/http_parser.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/http_parser/http_parser.cpp",
-    "output": ".pio/build/native_upload/src/network_drivers/presentation/http_parser/http_parser.o"
+    "output": ".pio/build/native/src/network_drivers/presentation/http_parser/http_parser.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/network_drivers/presentation/multipart/multipart.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/multipart/multipart.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/multipart/multipart.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/multipart/multipart.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/multipart/multipart.cpp",
-    "output": ".pio/build/native_upload/src/network_drivers/presentation/multipart/multipart.o"
+    "output": ".pio/build/native/src/network_drivers/presentation/multipart/multipart.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/network_drivers/presentation/presentation.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/presentation.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/presentation.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/presentation.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/presentation.cpp",
-    "output": ".pio/build/native_upload/src/network_drivers/presentation/presentation.o"
+    "output": ".pio/build/native/src/network_drivers/presentation/presentation.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/network_drivers/presentation/sha1/sha1.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/sha1/sha1.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/sha1/sha1.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/sha1/sha1.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/sha1/sha1.cpp",
-    "output": ".pio/build/native_upload/src/network_drivers/presentation/sha1/sha1.o"
+    "output": ".pio/build/native/src/network_drivers/presentation/sha1/sha1.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/network_drivers/presentation/sse/sse.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/sse/sse.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/sse/sse.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/sse/sse.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/sse/sse.cpp",
-    "output": ".pio/build/native_upload/src/network_drivers/presentation/sse/sse.o"
+    "output": ".pio/build/native/src/network_drivers/presentation/sse/sse.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/network_drivers/presentation/websocket/websocket.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/websocket/websocket.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/presentation/websocket/websocket.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/websocket/websocket.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/websocket/websocket.cpp",
-    "output": ".pio/build/native_upload/src/network_drivers/presentation/websocket/websocket.o"
+    "output": ".pio/build/native/src/network_drivers/presentation/websocket/websocket.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/network_drivers/session/proto_builtins.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/proto_builtins.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/session/proto_builtins.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/proto_builtins.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/session/proto_builtins.cpp",
-    "output": ".pio/build/native_upload/src/network_drivers/session/proto_builtins.o"
+    "output": ".pio/build/native/src/network_drivers/session/proto_builtins.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/session/scratch.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_SSH_MAX_CHANNELS=3 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/scratch.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/session/scratch.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/scratch.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/session/scratch.cpp",
-    "output": ".pio/build/native_ssh/src/network_drivers/session/scratch.o"
+    "output": ".pio/build/native/src/network_drivers/session/scratch.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/network_drivers/session/session.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/session.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/session/session.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/session.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/session/session.cpp",
-    "output": ".pio/build/native_upload/src/network_drivers/session/session.o"
+    "output": ".pio/build/native/src/network_drivers/session/session.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/session/worker.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_SSH_MAX_CHANNELS=3 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/worker.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/session/worker.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/worker.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/session/worker.cpp",
-    "output": ".pio/build/native_ssh/src/network_drivers/session/worker.o"
+    "output": ".pio/build/native/src/network_drivers/session/worker.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/network_drivers/transport/listener.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/listener.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/transport/listener.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/listener.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/transport/listener.cpp",
-    "output": ".pio/build/native_upload/src/network_drivers/transport/listener.o"
+    "output": ".pio/build/native/src/network_drivers/transport/listener.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/network_drivers/transport/tcp.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/tcp.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native/src/network_drivers/transport/tcp.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/tcp.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/transport/tcp.cpp",
-    "output": ".pio/build/native_upload/src/network_drivers/transport/tcp.o"
+    "output": ".pio/build/native/src/network_drivers/transport/tcp.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_ads/src/services/ads/ads.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_ADS=1 -Itest/mocks -Itest/support -Isrc src/services/ads/ads.cpp",
@@ -102,10 +102,10 @@
     "output": ".pio/build/native_amqp/src/services/amqp/amqp.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/dwserver.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/dwserver.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_app/src/dwserver.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1 -DDETWS_ENABLE_ETAG=1 -DDETWS_ENABLE_WEB_TERMINAL=1 -DDETWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/dwserver.cpp",
     "directory": "@ROOT@",
     "file": "src/dwserver.cpp",
-    "output": ".pio/build/native_upload/src/dwserver.o"
+    "output": ".pio/build/native_app/src/dwserver.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_app/src/network_drivers/application/web_assets.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1 -DDETWS_ENABLE_ETAG=1 -DDETWS_ENABLE_WEB_TERMINAL=1 -DDETWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/application/web_assets.cpp",
@@ -114,58 +114,58 @@
     "output": ".pio/build/native_app/src/network_drivers/application/web_assets.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_docstore/src/network_drivers/presentation/json/json.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_WAL=1 -DDETWS_ENABLE_DBM=1 -DDETWS_ENABLE_DOCSTORE=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/json/json.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_app/src/network_drivers/presentation/json/json.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1 -DDETWS_ENABLE_ETAG=1 -DDETWS_ENABLE_WEB_TERMINAL=1 -DDETWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/json/json.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/json/json.cpp",
-    "output": ".pio/build/native_docstore/src/network_drivers/presentation/json/json.o"
+    "output": ".pio/build/native_app/src/network_drivers/presentation/json/json.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_sha256.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_sha256.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_app/src/network_drivers/presentation/ssh/crypto/ssh_sha256.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1 -DDETWS_ENABLE_ETAG=1 -DDETWS_ENABLE_WEB_TERMINAL=1 -DDETWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_sha256.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_sha256.cpp",
-    "output": ".pio/build/native_coaps/src/network_drivers/presentation/ssh/crypto/ssh_sha256.o"
+    "output": ".pio/build/native_app/src/network_drivers/presentation/ssh/crypto/ssh_sha256.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/server/auth.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/server/auth.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_app/src/server/auth.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1 -DDETWS_ENABLE_ETAG=1 -DDETWS_ENABLE_WEB_TERMINAL=1 -DDETWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/server/auth.cpp",
     "directory": "@ROOT@",
     "file": "src/server/auth.cpp",
-    "output": ".pio/build/native_upload/src/server/auth.o"
+    "output": ".pio/build/native_app/src/server/auth.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/server/file_serving.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/server/file_serving.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_app/src/server/file_serving.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1 -DDETWS_ENABLE_ETAG=1 -DDETWS_ENABLE_WEB_TERMINAL=1 -DDETWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/server/file_serving.cpp",
     "directory": "@ROOT@",
     "file": "src/server/file_serving.cpp",
-    "output": ".pio/build/native_upload/src/server/file_serving.o"
+    "output": ".pio/build/native_app/src/server/file_serving.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/server/middleware.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/server/middleware.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_app/src/server/middleware.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1 -DDETWS_ENABLE_ETAG=1 -DDETWS_ENABLE_WEB_TERMINAL=1 -DDETWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/server/middleware.cpp",
     "directory": "@ROOT@",
     "file": "src/server/middleware.cpp",
-    "output": ".pio/build/native_upload/src/server/middleware.o"
+    "output": ".pio/build/native_app/src/server/middleware.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/server/regex.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/server/regex.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_app/src/server/regex.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1 -DDETWS_ENABLE_ETAG=1 -DDETWS_ENABLE_WEB_TERMINAL=1 -DDETWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/server/regex.cpp",
     "directory": "@ROOT@",
     "file": "src/server/regex.cpp",
-    "output": ".pio/build/native_upload/src/server/regex.o"
+    "output": ".pio/build/native_app/src/server/regex.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/server/response.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/server/response.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_app/src/server/response.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1 -DDETWS_ENABLE_ETAG=1 -DDETWS_ENABLE_WEB_TERMINAL=1 -DDETWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/server/response.cpp",
     "directory": "@ROOT@",
     "file": "src/server/response.cpp",
-    "output": ".pio/build/native_upload/src/server/response.o"
+    "output": ".pio/build/native_app/src/server/response.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/server/webdav.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/server/webdav.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_app/src/server/webdav.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1 -DDETWS_ENABLE_ETAG=1 -DDETWS_ENABLE_WEB_TERMINAL=1 -DDETWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/server/webdav.cpp",
     "directory": "@ROOT@",
     "file": "src/server/webdav.cpp",
-    "output": ".pio/build/native_upload/src/server/webdav.o"
+    "output": ".pio/build/native_app/src/server/webdav.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_upload/src/server/websocket_sse.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_UPLOAD=1 -DBODY_BUF_SIZE=64 -Itest/mocks -Itest/support -Isrc src/server/websocket_sse.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_app/src/server/websocket_sse.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1 -DDETWS_ENABLE_ETAG=1 -DDETWS_ENABLE_WEB_TERMINAL=1 -DDETWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/server/websocket_sse.cpp",
     "directory": "@ROOT@",
     "file": "src/server/websocket_sse.cpp",
-    "output": ".pio/build/native_upload/src/server/websocket_sse.o"
+    "output": ".pio/build/native_app/src/server/websocket_sse.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_app/src/services/ntp_service/ntp_service.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1 -DDETWS_ENABLE_ETAG=1 -DDETWS_ENABLE_WEB_TERMINAL=1 -DDETWS_HTTP_EMIT_DATE=1 -Itest/mocks -Itest/support -Isrc src/services/ntp_service/ntp_service.cpp",
@@ -222,10 +222,10 @@
     "output": ".pio/build/native_c37118/src/services/c37118/c37118.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_cia402/src/services/canopen/canopen.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_CIA402=1 -DDETWS_ENABLE_CANOPEN=1 -Itest/mocks -Itest/support -Isrc src/services/canopen/canopen.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_canopen/src/services/canopen/canopen.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_CANOPEN=1 -Itest/mocks -Itest/support -Isrc src/services/canopen/canopen.cpp",
     "directory": "@ROOT@",
     "file": "src/services/canopen/canopen.cpp",
-    "output": ".pio/build/native_cia402/src/services/canopen/canopen.o"
+    "output": ".pio/build/native_canopen/src/services/canopen/canopen.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_cbor/src/network_drivers/presentation/cbor/cbor.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_CBOR=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/cbor/cbor.cpp",
@@ -264,16 +264,16 @@
     "output": ".pio/build/native_cloudevents/src/services/cloudevents/cloudevents.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/transport/udp.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/udp.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_coap/src/network_drivers/transport/udp.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1 -DDETWS_COAP_BLOCK_SZX_MAX=2 -DDETWS_COAP_BLOCK1_MAX=128 -Itest/mocks -Itest/support -Isrc src/network_drivers/transport/udp.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/transport/udp.cpp",
-    "output": ".pio/build/native_coaps/src/network_drivers/transport/udp.o"
+    "output": ".pio/build/native_coap/src/network_drivers/transport/udp.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/services/coap/coap.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/services/coap/coap.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_coap/src/services/coap/coap.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1 -DDETWS_COAP_BLOCK_SZX_MAX=2 -DDETWS_COAP_BLOCK1_MAX=128 -Itest/mocks -Itest/support -Isrc src/services/coap/coap.cpp",
     "directory": "@ROOT@",
     "file": "src/services/coap/coap.cpp",
-    "output": ".pio/build/native_coaps/src/services/coap/coap.o"
+    "output": ".pio/build/native_coap/src/services/coap/coap.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_coaps/src/network_drivers/presentation/dtls/dtls_conn.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DTLS=1 -DDETWS_ENABLE_COAP=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/dtls/dtls_conn.cpp",
@@ -378,22 +378,22 @@
     "output": ".pio/build/native_cotp/src/services/cotp/cotp.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_chacha20.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_SSH_MAX_CHANNELS=3 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_chacha20.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_chacha20.cpp",
-    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_chacha20.o"
+    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_chacha20.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_SSH_MAX_CHANNELS=3 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.cpp",
-    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.o"
+    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_poly1305.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_SSH_MAX_CHANNELS=3 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_poly1305.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_poly1305.cpp",
-    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_poly1305.o"
+    "output": ".pio/build/native_crypto_kat/src/network_drivers/presentation/ssh/crypto/ssh_poly1305.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_csrf/src/services/csrf/csrf.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_CSRF=1 -Itest/mocks -Itest/support -Isrc src/services/csrf/csrf.cpp",
@@ -408,22 +408,22 @@
     "output": ".pio/build/native_dashboard/src/services/dashboard/dashboard.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_docstore/src/services/dbm/dbm.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_WAL=1 -DDETWS_ENABLE_DBM=1 -DDETWS_ENABLE_DOCSTORE=1 -Itest/mocks -Itest/support -Isrc src/services/dbm/dbm.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_dbm/src/services/dbm/dbm.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_WAL=1 -DDETWS_ENABLE_DBM=1 -Itest/mocks -Itest/support -Isrc src/services/dbm/dbm.cpp",
     "directory": "@ROOT@",
     "file": "src/services/dbm/dbm.cpp",
-    "output": ".pio/build/native_docstore/src/services/dbm/dbm.o"
+    "output": ".pio/build/native_dbm/src/services/dbm/dbm.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_docstore/src/services/wal/wal.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_WAL=1 -DDETWS_ENABLE_DBM=1 -DDETWS_ENABLE_DOCSTORE=1 -Itest/mocks -Itest/support -Isrc src/services/wal/wal.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_dbm/src/services/wal/wal.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_WAL=1 -DDETWS_ENABLE_DBM=1 -Itest/mocks -Itest/support -Isrc src/services/wal/wal.cpp",
     "directory": "@ROOT@",
     "file": "src/services/wal/wal.cpp",
-    "output": ".pio/build/native_docstore/src/services/wal/wal.o"
+    "output": ".pio/build/native_dbm/src/services/wal/wal.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_docstore/src/services/wal/wal_store.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_WAL=1 -DDETWS_ENABLE_DBM=1 -DDETWS_ENABLE_DOCSTORE=1 -Itest/mocks -Itest/support -Isrc src/services/wal/wal_store.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_dbm/src/services/wal/wal_store.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_WAL=1 -DDETWS_ENABLE_DBM=1 -Itest/mocks -Itest/support -Isrc src/services/wal/wal_store.cpp",
     "directory": "@ROOT@",
     "file": "src/services/wal/wal_store.cpp",
-    "output": ".pio/build/native_docstore/src/services/wal/wal_store.o"
+    "output": ".pio/build/native_dbm/src/services/wal/wal_store.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_dds/src/services/dds/dds.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_DDS=1 -Itest/mocks -Itest/support -Isrc src/services/dds/dds.cpp",
@@ -438,10 +438,10 @@
     "output": ".pio/build/native_deflate/src/network_drivers/presentation/deflate/deflate.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_ssh_comp/src/network_drivers/presentation/inflate/inflate.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_SSH=1 -DDETWS_ENABLE_SSH_ZLIB=1 -DDETWS_ENABLE_WS_DEFLATE=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/inflate/inflate.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_deflate/src/network_drivers/presentation/inflate/inflate.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_WS_DEFLATE=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/inflate/inflate.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/inflate/inflate.cpp",
-    "output": ".pio/build/native_ssh_comp/src/network_drivers/presentation/inflate/inflate.o"
+    "output": ".pio/build/native_deflate/src/network_drivers/presentation/inflate/inflate.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_det_arena/src/network_drivers/session/arena.o -c -std=c++14 -DPLATFORMIO=60119 -Itest/mocks -Itest/support -Isrc src/network_drivers/session/arena.cpp",
@@ -690,22 +690,22 @@
     "output": ".pio/build/native_h3_conn/src/network_drivers/presentation/http3/quic_conn.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_quic_crypto/src/network_drivers/presentation/http3/quic_crypto.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_crypto.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_h3_conn/src/network_drivers/presentation/http3/quic_crypto.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_crypto.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/http3/quic_crypto.cpp",
-    "output": ".pio/build/native_quic_crypto/src/network_drivers/presentation/http3/quic_crypto.o"
+    "output": ".pio/build/native_h3_conn/src/network_drivers/presentation/http3/quic_crypto.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_quic_frame/src/network_drivers/presentation/http3/quic_frame.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_frame.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_h3_conn/src/network_drivers/presentation/http3/quic_frame.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_frame.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/http3/quic_frame.cpp",
-    "output": ".pio/build/native_quic_frame/src/network_drivers/presentation/http3/quic_frame.o"
+    "output": ".pio/build/native_h3_conn/src/network_drivers/presentation/http3/quic_frame.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_quic_crypto/src/network_drivers/presentation/http3/quic_packet.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_packet.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_h3_conn/src/network_drivers/presentation/http3/quic_packet.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_packet.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/http3/quic_packet.cpp",
-    "output": ".pio/build/native_quic_crypto/src/network_drivers/presentation/http3/quic_packet.o"
+    "output": ".pio/build/native_h3_conn/src/network_drivers/presentation/http3/quic_packet.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_h3_conn/src/network_drivers/presentation/http3/quic_tls.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_tls.cpp",
@@ -720,10 +720,10 @@
     "output": ".pio/build/native_h3_conn/src/network_drivers/presentation/http3/quic_tp.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_quic_frame/src/network_drivers/presentation/http3/quic_varint.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_varint.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_h3_conn/src/network_drivers/presentation/http3/quic_varint.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_varint.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/http3/quic_varint.cpp",
-    "output": ".pio/build/native_quic_frame/src/network_drivers/presentation/http3/quic_varint.o"
+    "output": ".pio/build/native_h3_conn/src/network_drivers/presentation/http3/quic_varint.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_h3_server/src/network_drivers/presentation/http3/quic_server.o -c -std=c++14 -DPLATFORMIO=60119 -DBODY_BUF_SIZE=512 -DDETWS_ENFORCE_HOST_HEADER=0 -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1 -DDETWS_ENABLE_ETAG=1 -DDETWS_ENABLE_WEB_TERMINAL=1 -DDETWS_HTTP_EMIT_DATE=1 -DDETWS_ENABLE_HTTP3=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/http3/quic_server.cpp",
@@ -900,10 +900,10 @@
     "output": ".pio/build/native_mms/src/services/mms/mms.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_modbus_master/src/services/modbus/modbus.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_MODBUS=1 -DDETWS_ENABLE_MODBUS_MASTER=1 -Itest/mocks -Itest/support -Isrc src/services/modbus/modbus.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_modbus/src/services/modbus/modbus.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_MODBUS=1 -DDETWS_ENABLE_MODBUS_RTU=1 -Itest/mocks -Itest/support -Isrc src/services/modbus/modbus.cpp",
     "directory": "@ROOT@",
     "file": "src/services/modbus/modbus.cpp",
-    "output": ".pio/build/native_modbus_master/src/services/modbus/modbus.o"
+    "output": ".pio/build/native_modbus/src/services/modbus/modbus.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_modbus_master/src/services/modbus/modbus_master.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_MODBUS=1 -DDETWS_ENABLE_MODBUS_MASTER=1 -Itest/mocks -Itest/support -Isrc src/services/modbus/modbus_master.cpp",
@@ -1014,16 +1014,16 @@
     "output": ".pio/build/native_ocit/src/services/ocit/ocit.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_bignum.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_SSH_MAX_CHANNELS=3 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_bignum.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_oidc/src/network_drivers/presentation/ssh/crypto/ssh_bignum.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_OIDC=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_bignum.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_bignum.cpp",
-    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_bignum.o"
+    "output": ".pio/build/native_oidc/src/network_drivers/presentation/ssh/crypto/ssh_bignum.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_rsa.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_SSH_MAX_CHANNELS=3 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_rsa.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_oidc/src/network_drivers/presentation/ssh/crypto/ssh_rsa.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_OIDC=1 -Itest/mocks -Itest/support -Isrc src/network_drivers/presentation/ssh/crypto/ssh_rsa.cpp",
     "directory": "@ROOT@",
     "file": "src/network_drivers/presentation/ssh/crypto/ssh_rsa.cpp",
-    "output": ".pio/build/native_ssh/src/network_drivers/presentation/ssh/crypto/ssh_rsa.o"
+    "output": ".pio/build/native_oidc/src/network_drivers/presentation/ssh/crypto/ssh_rsa.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_oidc/src/services/oidc/oidc.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_OIDC=1 -Itest/mocks -Itest/support -Isrc src/services/oidc/oidc.cpp",
@@ -1074,34 +1074,34 @@
     "output": ".pio/build/native_pentest/src/services/redis_resp/redis_resp.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_smb/src/services/smb/ntlm.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_SMB=1 -Itest/mocks -Itest/support -Isrc src/services/smb/ntlm.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_pentest/src/services/smb/ntlm.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_MODBUS=1 -DDETWS_ENABLE_MODBUS_MASTER=1 -DDETWS_ENABLE_TOTP=1 -DDETWS_ENABLE_MULTIPART=1 -DDETWS_ENABLE_CBOR=1 -DDETWS_ENABLE_MSGPACK=1 -DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1 -DDETWS_COAP_BLOCK_SZX_MAX=2 -DDETWS_COAP_BLOCK1_MAX=128 -DDETWS_ENABLE_SNMP=1 -DDETWS_ENABLE_SQLITE=1 -DDETWS_ENABLE_REDIS=1 -DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_GRAPHQL=1 -DDETWS_ENABLE_DNS_SERVER=1 -DDETWS_ENABLE_DNP3=1 -DDETWS_ENABLE_STOMP=1 -DDETWS_ENABLE_SMB=1 -DDETWS_ENABLE_DNC=1 -DDETWS_ENABLE_FTP=1 -DDETWS_ENABLE_FINS=1 -DDETWS_ENABLE_MELSEC=1 -DDETWS_ENABLE_CIP=1 -DDETWS_ENABLE_ENIP=1 -DDETWS_ENABLE_DF1=1 -DDETWS_ENABLE_BACNET=1 -DDETWS_ENABLE_COTP=1 -DDETWS_ENABLE_C37118=1 -DDETWS_ENABLE_JWT=1 -DDETWS_ENABLE_DIRECTNET=1 -DDETWS_ENABLE_CCLINK=1 -DDETWS_ENABLE_AMQP=1 -DDETWS_ENABLE_MMS=1 -DDETWS_ENABLE_DDS=1 -Itest/mocks -Itest/support -Isrc src/services/smb/ntlm.cpp",
     "directory": "@ROOT@",
     "file": "src/services/smb/ntlm.cpp",
-    "output": ".pio/build/native_smb/src/services/smb/ntlm.o"
+    "output": ".pio/build/native_pentest/src/services/smb/ntlm.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_smb/src/services/smb/ntlmssp.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_SMB=1 -Itest/mocks -Itest/support -Isrc src/services/smb/ntlmssp.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_pentest/src/services/smb/ntlmssp.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_MODBUS=1 -DDETWS_ENABLE_MODBUS_MASTER=1 -DDETWS_ENABLE_TOTP=1 -DDETWS_ENABLE_MULTIPART=1 -DDETWS_ENABLE_CBOR=1 -DDETWS_ENABLE_MSGPACK=1 -DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1 -DDETWS_COAP_BLOCK_SZX_MAX=2 -DDETWS_COAP_BLOCK1_MAX=128 -DDETWS_ENABLE_SNMP=1 -DDETWS_ENABLE_SQLITE=1 -DDETWS_ENABLE_REDIS=1 -DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_GRAPHQL=1 -DDETWS_ENABLE_DNS_SERVER=1 -DDETWS_ENABLE_DNP3=1 -DDETWS_ENABLE_STOMP=1 -DDETWS_ENABLE_SMB=1 -DDETWS_ENABLE_DNC=1 -DDETWS_ENABLE_FTP=1 -DDETWS_ENABLE_FINS=1 -DDETWS_ENABLE_MELSEC=1 -DDETWS_ENABLE_CIP=1 -DDETWS_ENABLE_ENIP=1 -DDETWS_ENABLE_DF1=1 -DDETWS_ENABLE_BACNET=1 -DDETWS_ENABLE_COTP=1 -DDETWS_ENABLE_C37118=1 -DDETWS_ENABLE_JWT=1 -DDETWS_ENABLE_DIRECTNET=1 -DDETWS_ENABLE_CCLINK=1 -DDETWS_ENABLE_AMQP=1 -DDETWS_ENABLE_MMS=1 -DDETWS_ENABLE_DDS=1 -Itest/mocks -Itest/support -Isrc src/services/smb/ntlmssp.cpp",
     "directory": "@ROOT@",
     "file": "src/services/smb/ntlmssp.cpp",
-    "output": ".pio/build/native_smb/src/services/smb/ntlmssp.o"
+    "output": ".pio/build/native_pentest/src/services/smb/ntlmssp.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_smb/src/services/smb/smb2.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_SMB=1 -Itest/mocks -Itest/support -Isrc src/services/smb/smb2.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_pentest/src/services/smb/smb2.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_MODBUS=1 -DDETWS_ENABLE_MODBUS_MASTER=1 -DDETWS_ENABLE_TOTP=1 -DDETWS_ENABLE_MULTIPART=1 -DDETWS_ENABLE_CBOR=1 -DDETWS_ENABLE_MSGPACK=1 -DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1 -DDETWS_COAP_BLOCK_SZX_MAX=2 -DDETWS_COAP_BLOCK1_MAX=128 -DDETWS_ENABLE_SNMP=1 -DDETWS_ENABLE_SQLITE=1 -DDETWS_ENABLE_REDIS=1 -DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_GRAPHQL=1 -DDETWS_ENABLE_DNS_SERVER=1 -DDETWS_ENABLE_DNP3=1 -DDETWS_ENABLE_STOMP=1 -DDETWS_ENABLE_SMB=1 -DDETWS_ENABLE_DNC=1 -DDETWS_ENABLE_FTP=1 -DDETWS_ENABLE_FINS=1 -DDETWS_ENABLE_MELSEC=1 -DDETWS_ENABLE_CIP=1 -DDETWS_ENABLE_ENIP=1 -DDETWS_ENABLE_DF1=1 -DDETWS_ENABLE_BACNET=1 -DDETWS_ENABLE_COTP=1 -DDETWS_ENABLE_C37118=1 -DDETWS_ENABLE_JWT=1 -DDETWS_ENABLE_DIRECTNET=1 -DDETWS_ENABLE_CCLINK=1 -DDETWS_ENABLE_AMQP=1 -DDETWS_ENABLE_MMS=1 -DDETWS_ENABLE_DDS=1 -Itest/mocks -Itest/support -Isrc src/services/smb/smb2.cpp",
     "directory": "@ROOT@",
     "file": "src/services/smb/smb2.cpp",
-    "output": ".pio/build/native_smb/src/services/smb/smb2.o"
+    "output": ".pio/build/native_pentest/src/services/smb/smb2.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_smb/src/services/smb/smb_md.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_SMB=1 -Itest/mocks -Itest/support -Isrc src/services/smb/smb_md.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_pentest/src/services/smb/smb_md.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_MODBUS=1 -DDETWS_ENABLE_MODBUS_MASTER=1 -DDETWS_ENABLE_TOTP=1 -DDETWS_ENABLE_MULTIPART=1 -DDETWS_ENABLE_CBOR=1 -DDETWS_ENABLE_MSGPACK=1 -DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1 -DDETWS_COAP_BLOCK_SZX_MAX=2 -DDETWS_COAP_BLOCK1_MAX=128 -DDETWS_ENABLE_SNMP=1 -DDETWS_ENABLE_SQLITE=1 -DDETWS_ENABLE_REDIS=1 -DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_GRAPHQL=1 -DDETWS_ENABLE_DNS_SERVER=1 -DDETWS_ENABLE_DNP3=1 -DDETWS_ENABLE_STOMP=1 -DDETWS_ENABLE_SMB=1 -DDETWS_ENABLE_DNC=1 -DDETWS_ENABLE_FTP=1 -DDETWS_ENABLE_FINS=1 -DDETWS_ENABLE_MELSEC=1 -DDETWS_ENABLE_CIP=1 -DDETWS_ENABLE_ENIP=1 -DDETWS_ENABLE_DF1=1 -DDETWS_ENABLE_BACNET=1 -DDETWS_ENABLE_COTP=1 -DDETWS_ENABLE_C37118=1 -DDETWS_ENABLE_JWT=1 -DDETWS_ENABLE_DIRECTNET=1 -DDETWS_ENABLE_CCLINK=1 -DDETWS_ENABLE_AMQP=1 -DDETWS_ENABLE_MMS=1 -DDETWS_ENABLE_DDS=1 -Itest/mocks -Itest/support -Isrc src/services/smb/smb_md.cpp",
     "directory": "@ROOT@",
     "file": "src/services/smb/smb_md.cpp",
-    "output": ".pio/build/native_smb/src/services/smb/smb_md.o"
+    "output": ".pio/build/native_pentest/src/services/smb/smb_md.o"
   },
   {
-    "command": "/usr/bin/g++ -o .pio/build/native_smb/src/services/smb/spnego.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_SMB=1 -Itest/mocks -Itest/support -Isrc src/services/smb/spnego.cpp",
+    "command": "/usr/bin/g++ -o .pio/build/native_pentest/src/services/smb/spnego.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_MODBUS=1 -DDETWS_ENABLE_MODBUS_MASTER=1 -DDETWS_ENABLE_TOTP=1 -DDETWS_ENABLE_MULTIPART=1 -DDETWS_ENABLE_CBOR=1 -DDETWS_ENABLE_MSGPACK=1 -DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1 -DDETWS_COAP_BLOCK_SZX_MAX=2 -DDETWS_COAP_BLOCK1_MAX=128 -DDETWS_ENABLE_SNMP=1 -DDETWS_ENABLE_SQLITE=1 -DDETWS_ENABLE_REDIS=1 -DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_GRAPHQL=1 -DDETWS_ENABLE_DNS_SERVER=1 -DDETWS_ENABLE_DNP3=1 -DDETWS_ENABLE_STOMP=1 -DDETWS_ENABLE_SMB=1 -DDETWS_ENABLE_DNC=1 -DDETWS_ENABLE_FTP=1 -DDETWS_ENABLE_FINS=1 -DDETWS_ENABLE_MELSEC=1 -DDETWS_ENABLE_CIP=1 -DDETWS_ENABLE_ENIP=1 -DDETWS_ENABLE_DF1=1 -DDETWS_ENABLE_BACNET=1 -DDETWS_ENABLE_COTP=1 -DDETWS_ENABLE_C37118=1 -DDETWS_ENABLE_JWT=1 -DDETWS_ENABLE_DIRECTNET=1 -DDETWS_ENABLE_CCLINK=1 -DDETWS_ENABLE_AMQP=1 -DDETWS_ENABLE_MMS=1 -DDETWS_ENABLE_DDS=1 -Itest/mocks -Itest/support -Isrc src/services/smb/spnego.cpp",
     "directory": "@ROOT@",
     "file": "src/services/smb/spnego.cpp",
-    "output": ".pio/build/native_smb/src/services/smb/spnego.o"
+    "output": ".pio/build/native_pentest/src/services/smb/spnego.o"
   },
   {
     "command": "/usr/bin/g++ -o .pio/build/native_pentest/src/services/snmp/snmp_agent.o -c -std=c++14 -DPLATFORMIO=60119 -DDETWS_ENABLE_MODBUS=1 -DDETWS_ENABLE_MODBUS_MASTER=1 -DDETWS_ENABLE_TOTP=1 -DDETWS_ENABLE_MULTIPART=1 -DDETWS_ENABLE_CBOR=1 -DDETWS_ENABLE_MSGPACK=1 -DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1 -DDETWS_COAP_BLOCK_SZX_MAX=2 -DDETWS_COAP_BLOCK1_MAX=128 -DDETWS_ENABLE_SNMP=1 -DDETWS_ENABLE_SQLITE=1 -DDETWS_ENABLE_REDIS=1 -DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_GRAPHQL=1 -DDETWS_ENABLE_DNS_SERVER=1 -DDETWS_ENABLE_DNP3=1 -DDETWS_ENABLE_STOMP=1 -DDETWS_ENABLE_SMB=1 -DDETWS_ENABLE_DNC=1 -DDETWS_ENABLE_FTP=1 -DDETWS_ENABLE_FINS=1 -DDETWS_ENABLE_MELSEC=1 -DDETWS_ENABLE_CIP=1 -DDETWS_ENABLE_ENIP=1 -DDETWS_ENABLE_DF1=1 -DDETWS_ENABLE_BACNET=1 -DDETWS_ENABLE_COTP=1 -DDETWS_ENABLE_C37118=1 -DDETWS_ENABLE_JWT=1 -DDETWS_ENABLE_DIRECTNET=1 -DDETWS_ENABLE_CCLINK=1 -DDETWS_ENABLE_AMQP=1 -DDETWS_ENABLE_MMS=1 -DDETWS_ENABLE_DDS=1 -Itest/mocks -Itest/support -Isrc src/services/snmp/snmp_agent.cpp",
