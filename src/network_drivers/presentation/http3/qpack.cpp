@@ -190,11 +190,12 @@ size_t qpack_encode_header(uint8_t *out, size_t cap, const char *name, size_t na
     int name_idx = -1, full_idx = -1;
     for (int i = 0; i < 99; i++)
     {
-        if (strlen(QPACK_STATIC[i][0]) == name_len && memcmp(QPACK_STATIC[i][0], name, name_len) == 0)
+        if (strnlen(QPACK_STATIC[i][0], name_len + 1) == name_len && memcmp(QPACK_STATIC[i][0], name, name_len) == 0)
         {
             if (name_idx < 0)
                 name_idx = i;
-            if (strlen(QPACK_STATIC[i][1]) == value_len && memcmp(QPACK_STATIC[i][1], value, value_len) == 0)
+            if (strnlen(QPACK_STATIC[i][1], value_len + 1) == value_len &&
+                memcmp(QPACK_STATIC[i][1], value, value_len) == 0)
             {
                 full_idx = i;
                 break;
@@ -271,7 +272,7 @@ bool qpack_decode(const uint8_t *block, size_t len, char *scratch, size_t scratc
             pos += c;
             const char *nm = QPACK_STATIC[idx][0];
             const char *vl = QPACK_STATIC[idx][1];
-            if (!emit(ctx, nm, strlen(nm), vl, strlen(vl)))
+            if (!emit(ctx, nm, strnlen(nm, scratch_cap + 1), vl, strnlen(vl, scratch_cap + 1)))
                 return false;
         }
         else if ((b & 0xC0) == 0x40)
@@ -284,7 +285,7 @@ bool qpack_decode(const uint8_t *block, size_t len, char *scratch, size_t scratc
             if (!is_static || idx >= 99) // dynamic name reference
                 return false;
             const char *nm = QPACK_STATIC[idx][0];
-            size_t nlen = strlen(nm);
+            size_t nlen = strnlen(nm, scratch_cap + 1);
             if (nlen > scratch_cap)
                 return false;
             memcpy(scratch, nm, nlen);
