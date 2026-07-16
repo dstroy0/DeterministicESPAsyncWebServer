@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`4e5c5e5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4e5c5e57aa733d5c4a8dd0b0981adadc8fbac948))
+- update CHANGELOG.md [skip ci] ([`5bde343`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5bde343655da27b6aa92fd87dcd82856cc83b1ef))
 - update test report + coverage [skip ci] ([`80e356c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/80e356c9e17a43abbed79b2c34a55f69d4305271))
 - update CHANGELOG.md [skip ci] ([`28c2c8b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28c2c8bd4056ccfda50c04626463607afdc836f9))
 - update CHANGELOG.md [skip ci] ([`97d2b62`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/97d2b6266d91b53b5eb052b25e5a1b1154ea26df))
@@ -89,6 +91,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- bound strlen->strnlen in JWT/JWKS parsing ([`96786ff`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/96786ff386d79e94e187ed1a4c48f6d41e07284d))
 - bound strlen->strnlen in h2/h3 field mapping ([`4a79cf7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4a79cf700b696161076a50af1723708bedb49699))
 - bound strlen->strnlen in topic builder ([`c2ff76f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c2ff76ffc50bbd2a124f773b05773847b22b2004))
 - bound strlen->strnlen in path handling ([`085c184`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/085c18496e186bd888c1410331555463161a1ad7))
