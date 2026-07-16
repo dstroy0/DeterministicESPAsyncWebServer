@@ -105,8 +105,8 @@ size_t statsd_format(char *out, size_t cap, const char *name, const char *value,
 
     size_t pos = 0;
     char t = (char)type;
-    if (!app(out, cap, &pos, name, strlen(name)) || !app(out, cap, &pos, ":", 1) ||
-        !app(out, cap, &pos, value, strlen(value)) || !app(out, cap, &pos, "|", 1))
+    if (!app(out, cap, &pos, name, strnlen(name, cap)) || !app(out, cap, &pos, ":", 1) ||
+        !app(out, cap, &pos, value, strnlen(value, cap)) || !app(out, cap, &pos, "|", 1))
         return 0;
     if (type == StatsdType::STATSD_TIMING)
     {
@@ -120,7 +120,7 @@ size_t statsd_format(char *out, size_t cap, const char *name, const char *value,
     size_t rn = rate_str(rbuf, rate);
     if (rn && (!app(out, cap, &pos, "|@", 2) || !app(out, cap, &pos, rbuf, rn)))
         return 0;
-    if (tags && tags[0] && (!app(out, cap, &pos, "|#", 2) || !app(out, cap, &pos, tags, strlen(tags))))
+    if (tags && tags[0] && (!app(out, cap, &pos, "|#", 2) || !app(out, cap, &pos, tags, strnlen(tags, cap))))
         return 0;
 
     out[pos] = '\0';
