@@ -1296,6 +1296,178 @@ static void send_too_many_requests(uint8_t slot_id, uint32_t retry_after_s)
 }
 #endif // DETWS_ENABLE_AUTH_LOCKOUT
 
+bool DetWebServer::route_admits(const Route *r, uint8_t slot_id, HttpReq *req)
+{
+    if (!r->is_active)
+        return false;
+    bool matched = r->is_regex   ? regex_match(r->path, req->path)
+                   : r->is_param ? match_path_params(r->path, req->path, req)
+                                 : path_matches(r->path, r->is_wildcard, req->path);
+    if (!matched)
+        return false;
+    // Per-route interface gate: a route bound to STA/AP is invisible on the
+    // other interface (falls through to other routes / 404).
+    if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != det_conn_iface(slot_id))
+        return false;
+    return true;
+}
+
+#if DETWS_ENABLE_CSRF
+bool DetWebServer::csrf_gate(uint8_t slot_id, HttpReq *req, HttpMethod method)
+{
+    // Built-in token endpoint: GET /csrf issues a signed token (also set as the
+    // csrf cookie) for clients to echo in X-CSRF-Token on state-changing requests.
+    if (method == HttpMethod::HTTP_GET && strcmp(req->path, "/csrf") == 0)
+    {
+        char tok[CSRF_TOKEN_BUF];
+        if (csrf_issue(tok, sizeof(tok)) > 0)
+        {
+            set_cookie(slot_id, "csrf", tok, "Path=/; SameSite=Strict");
+            char body[CSRF_TOKEN_BUF + 16];
+            snprintf(body, sizeof(body), "{\"token\":\"%s\"}", tok);
+            send(slot_id, 200, DET_MIME_JSON, body);
+        }
+        else
+        {
+            send(slot_id, 500, DET_MIME_TEXT_PLAIN, "CSRF unavailable");
+        }
+        return true;
+    }
+
+    // Enforce CSRF on every state-changing method: require a valid signed
+    // X-CSRF-Token header (GET / HEAD / OPTIONS are exempt - not state-changing).
+    if (method == HttpMethod::HTTP_POST || method == HttpMethod::HTTP_PUT || method == HttpMethod::HTTP_PATCH ||
+        method == HttpMethod::HTTP_DELETE)
+    {
+        const char *tok = http_get_header(req, "X-CSRF-Token");
+        if (!tok || !csrf_verify(tok))
+        {
+            send(slot_id, 403, DET_MIME_TEXT_PLAIN, "CSRF token missing or invalid");
+            return true;
+        }
+    }
+    return false;
+}
+#endif // DETWS_ENABLE_CSRF
+
+#if DETWS_ENABLE_WEBSOCKET
+void DetWebServer::handle_ws_route(uint8_t slot_id, HttpReq *req, HttpMethod method, const Route *r)
+{
+    const char *upgrade_hdr = http_get_header(req, "Upgrade");
+    // RFC 6455 4.2.1: a valid handshake needs Upgrade: websocket AND a Connection
+    // header that includes the "Upgrade" token.
+    bool is_ws_upgrade = (method == HttpMethod::HTTP_GET) && upgrade_hdr &&
+                         (strcasecmp(upgrade_hdr, "websocket") == 0) &&
+                         conn_has_token(http_get_header(req, "Connection"), "upgrade");
+    if (!is_ws_upgrade)
+    {
+        send(slot_id, 400, DET_MIME_TEXT_PLAIN, "WebSocket upgrade required");
+        return;
+    }
+    // RFC 6455 §4.2.1: only version 13 is supported; otherwise 426.
+    const char *ws_ver = http_get_header(req, "Sec-WebSocket-Version");
+    if (!ws_ver || strcmp(ws_ver, "13") != 0)
+    {
+        ws_send_version_required(slot_id);
+        return;
+    }
+    // A failed upgrade here means a malformed/oversized Sec-WebSocket-Key (a
+    // client error, RFC 6455 4.2.1), so answer 400 rather than 503.
+    if (!ws_do_upgrade(slot_id, req, r->ws_connect))
+        send(slot_id, 400, DET_MIME_TEXT_PLAIN, "Bad WebSocket handshake");
+}
+#endif // DETWS_ENABLE_WEBSOCKET
+
+#if DETWS_ENABLE_AUTH
+bool DetWebServer::authorize_request(uint8_t slot_id, HttpReq *req, const Route *r)
+{
+#if DETWS_ENABLE_AUTH_LOCKOUT
+    DetIp cip = lockout_client_ip(slot_id);
+    uint32_t now = (uint32_t)millis();
+    uint32_t remain = auth_lockout_remaining_ms(&cip, now);
+    if (remain > 0)
+    {
+        // Address is locked out: 429 + Retry-After, no credential check.
+        send_too_many_requests(slot_id, (remain + 999) / 1000);
+        return false;
+    }
+#endif
+    bool stale = false;
+    bool ok = r->auth_digest ? check_digest_auth(slot_id, req, r, &stale) : check_basic_auth(slot_id, req, r);
+#if DETWS_ENABLE_AUTH_LOCKOUT
+    // A stale-nonce retry carries valid credentials, so it is not a failed
+    // attempt: don't count it toward the lockout (nor reset the counter).
+    if (ok)
+        auth_lockout_succeed(&cip);
+    else if (!stale)
+        auth_lockout_fail(&cip, now);
+#endif
+    if (!ok)
+    {
+        send_unauth(slot_id, r, stale);
+        return false;
+    }
+    return true;
+}
+#endif // DETWS_ENABLE_AUTH
+
+bool DetWebServer::dispatch_matched_route(uint8_t slot_id, HttpReq *req, HttpMethod method, Route *r,
+                                          bool *path_matched, char *allow_buf, size_t allow_cap)
+{
+#if DETWS_ENABLE_WEBSOCKET
+    if (r->type == RouteType::ROUTE_WS)
+    {
+        handle_ws_route(slot_id, req, method, r);
+        return true;
+    }
+#endif // DETWS_ENABLE_WEBSOCKET
+
+#if DETWS_ENABLE_SSE
+    if (r->type == RouteType::ROUTE_SSE)
+    {
+        if (!sse_do_upgrade(slot_id, req, r->sse_connect))
+            send(slot_id, 503, DET_MIME_TEXT_PLAIN, "Service Unavailable");
+        return true;
+    }
+#endif // DETWS_ENABLE_SSE
+
+#if DETWS_ENABLE_FILE_SERVING
+    if (r->type == RouteType::ROUTE_STATIC)
+    {
+        // Static mounts answer GET (and HEAD via GET); other methods → 405.
+        if (method != HttpMethod::HTTP_GET && method != HttpMethod::HTTP_HEAD)
+        {
+            *path_matched = true;
+            allow_append(allow_buf, allow_cap, "GET");
+            allow_append(allow_buf, allow_cap, "HEAD");
+            return false;
+        }
+        serve_static_request(slot_id, req, r);
+        return true;
+    }
+#endif // DETWS_ENABLE_FILE_SERVING
+
+    // RouteType::ROUTE_HTTP - a HEAD request is served by the GET handler with the
+    // response body suppressed (RFC 7231 §4.3.2).
+    bool method_ok = (r->method == method) || (method == HttpMethod::HTTP_HEAD && r->method == HttpMethod::HTTP_GET);
+    if (!method_ok)
+    {
+        // Path matches but method differs - record it for a 405 + Allow.
+        *path_matched = true;
+        allow_append(allow_buf, allow_cap, method_name(r->method));
+        // A GET route also answers HEAD, so advertise it in Allow.
+        if (r->method == HttpMethod::HTTP_GET)
+            allow_append(allow_buf, allow_cap, "HEAD");
+        return false;
+    }
+#if DETWS_ENABLE_AUTH
+    if (r->auth_required && !authorize_request(slot_id, req, r))
+        return true; // 401/429 already sent
+#endif               // DETWS_ENABLE_AUTH
+    r->callback(slot_id, req);
+    return true;
+}
+
 void DetWebServer::match_and_execute(uint8_t slot_id)
 {
     HttpReq *req = &http_pool[slot_id];
@@ -1329,37 +1501,8 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
     }
 
 #if DETWS_ENABLE_CSRF
-    // Built-in token endpoint: GET /csrf issues a signed token (also set as the
-    // csrf cookie) for clients to echo in X-CSRF-Token on state-changing requests.
-    if (method == HttpMethod::HTTP_GET && strcmp(req->path, "/csrf") == 0)
-    {
-        char tok[CSRF_TOKEN_BUF];
-        if (csrf_issue(tok, sizeof(tok)) > 0)
-        {
-            set_cookie(slot_id, "csrf", tok, "Path=/; SameSite=Strict");
-            char body[CSRF_TOKEN_BUF + 16];
-            snprintf(body, sizeof(body), "{\"token\":\"%s\"}", tok);
-            send(slot_id, 200, DET_MIME_JSON, body);
-        }
-        else
-        {
-            send(slot_id, 500, DET_MIME_TEXT_PLAIN, "CSRF unavailable");
-        }
+    if (csrf_gate(slot_id, req, method))
         return;
-    }
-
-    // Enforce CSRF on every state-changing method: require a valid signed
-    // X-CSRF-Token header (GET / HEAD / OPTIONS are exempt - not state-changing).
-    if (method == HttpMethod::HTTP_POST || method == HttpMethod::HTTP_PUT || method == HttpMethod::HTTP_PATCH ||
-        method == HttpMethod::HTTP_DELETE)
-    {
-        const char *tok = http_get_header(req, "X-CSRF-Token");
-        if (!tok || !csrf_verify(tok))
-        {
-            send(slot_id, 403, DET_MIME_TEXT_PLAIN, "CSRF token missing or invalid");
-            return;
-        }
-    }
 #endif
 
     // RFC 7230 §3.3.1: reject Transfer-Encoding
@@ -1376,15 +1519,6 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
         return;
     }
 
-#if DETWS_ENABLE_WEBSOCKET
-    const char *upgrade_hdr = http_get_header(req, "Upgrade");
-    // RFC 6455 4.2.1: a valid handshake needs Upgrade: websocket AND a Connection
-    // header that includes the "Upgrade" token.
-    bool is_ws_upgrade = (method == HttpMethod::HTTP_GET) && upgrade_hdr &&
-                         (strcasecmp(upgrade_hdr, "websocket") == 0) &&
-                         conn_has_token(http_get_header(req, "Connection"), "upgrade");
-#endif
-
     // For RFC 7231 §6.5.5: if a path matches but no method does, answer 405
     // with an Allow header listing the methods registered for that path.
     bool path_matched = false;
@@ -1394,114 +1528,10 @@ void DetWebServer::match_and_execute(uint8_t slot_id)
     for (uint8_t i = 0; i < _route_count; i++)
     {
         Route *r = &_routes[i];
-        if (!r->is_active)
+        if (!route_admits(r, slot_id, req))
             continue;
-        bool matched = r->is_regex   ? regex_match(r->path, req->path)
-                       : r->is_param ? match_path_params(r->path, req->path, req)
-                                     : path_matches(r->path, r->is_wildcard, req->path);
-        if (!matched)
-            continue;
-
-        // Per-route interface gate: a route bound to STA/AP is invisible on the
-        // other interface (falls through to other routes / 404).
-        if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != det_conn_iface(slot_id))
-            continue;
-
-#if DETWS_ENABLE_WEBSOCKET
-        if (r->type == RouteType::ROUTE_WS)
-        {
-            if (!is_ws_upgrade)
-            {
-                send(slot_id, 400, DET_MIME_TEXT_PLAIN, "WebSocket upgrade required");
-                return;
-            }
-            // RFC 6455 §4.2.1: only version 13 is supported; otherwise 426.
-            const char *ws_ver = http_get_header(req, "Sec-WebSocket-Version");
-            if (!ws_ver || strcmp(ws_ver, "13") != 0)
-            {
-                ws_send_version_required(slot_id);
-                return;
-            }
-            // A failed upgrade here means a malformed/oversized Sec-WebSocket-Key (a
-            // client error, RFC 6455 4.2.1), so answer 400 rather than 503.
-            if (!ws_do_upgrade(slot_id, req, r->ws_connect))
-                send(slot_id, 400, DET_MIME_TEXT_PLAIN, "Bad WebSocket handshake");
+        if (dispatch_matched_route(slot_id, req, method, r, &path_matched, allow_buf, sizeof(allow_buf)))
             return;
-        }
-#endif // DETWS_ENABLE_WEBSOCKET
-
-#if DETWS_ENABLE_SSE
-        if (r->type == RouteType::ROUTE_SSE)
-        {
-            if (!sse_do_upgrade(slot_id, req, r->sse_connect))
-                send(slot_id, 503, DET_MIME_TEXT_PLAIN, "Service Unavailable");
-            return;
-        }
-#endif // DETWS_ENABLE_SSE
-
-#if DETWS_ENABLE_FILE_SERVING
-        if (r->type == RouteType::ROUTE_STATIC)
-        {
-            // Static mounts answer GET (and HEAD via GET); other methods → 405.
-            if (method != HttpMethod::HTTP_GET && method != HttpMethod::HTTP_HEAD)
-            {
-                path_matched = true;
-                allow_append(allow_buf, sizeof(allow_buf), "GET");
-                allow_append(allow_buf, sizeof(allow_buf), "HEAD");
-                continue;
-            }
-            serve_static_request(slot_id, req, r);
-            return;
-        }
-#endif // DETWS_ENABLE_FILE_SERVING
-
-        // RouteType::ROUTE_HTTP - a HEAD request is served by the GET handler with the
-        // response body suppressed (RFC 7231 §4.3.2).
-        bool method_ok =
-            (r->method == method) || (method == HttpMethod::HTTP_HEAD && r->method == HttpMethod::HTTP_GET);
-        if (!method_ok)
-        {
-            // Path matches but method differs - record it for a 405 + Allow.
-            path_matched = true;
-            allow_append(allow_buf, sizeof(allow_buf), method_name(r->method));
-            // A GET route also answers HEAD, so advertise it in Allow.
-            if (r->method == HttpMethod::HTTP_GET)
-                allow_append(allow_buf, sizeof(allow_buf), "HEAD");
-            continue;
-        }
-#if DETWS_ENABLE_AUTH
-        if (r->auth_required)
-        {
-#if DETWS_ENABLE_AUTH_LOCKOUT
-            DetIp cip = lockout_client_ip(slot_id);
-            uint32_t now = (uint32_t)millis();
-            uint32_t remain = auth_lockout_remaining_ms(&cip, now);
-            if (remain > 0)
-            {
-                // Address is locked out: 429 + Retry-After, no credential check.
-                send_too_many_requests(slot_id, (remain + 999) / 1000);
-                return;
-            }
-#endif
-            bool stale = false;
-            bool ok = r->auth_digest ? check_digest_auth(slot_id, req, r, &stale) : check_basic_auth(slot_id, req, r);
-#if DETWS_ENABLE_AUTH_LOCKOUT
-            // A stale-nonce retry carries valid credentials, so it is not a failed
-            // attempt: don't count it toward the lockout (nor reset the counter).
-            if (ok)
-                auth_lockout_succeed(&cip);
-            else if (!stale)
-                auth_lockout_fail(&cip, now);
-#endif
-            if (!ok)
-            {
-                send_unauth(slot_id, r, stale);
-                return;
-            }
-        }
-#endif // DETWS_ENABLE_AUTH
-        r->callback(slot_id, req);
-        return;
     }
 
     // Path existed but the method was not allowed (RFC 7231 §6.5.5).
