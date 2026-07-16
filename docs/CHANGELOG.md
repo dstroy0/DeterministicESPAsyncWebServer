@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`50197c7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/50197c72d682e1112d85eb6d885ac52773b65636))
+- update CHANGELOG.md [skip ci] ([`567cc75`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/567cc75176d9b26708abec5c1c2a6b2a9dc50f3f))
 - update test report + coverage [skip ci] ([`f8afe7e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f8afe7efdd2376a2534cc1ae327860b3d8a483a7))
 - update CHANGELOG.md [skip ci] ([`3a64b2f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a64b2f450b72bdaf21043683b71aa4d84370c37))
 - update test report + coverage [skip ci] ([`1f6a19f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1f6a19f43bc109e3c3bd3d8ef80d3ce5e5570ef9))
@@ -28,6 +30,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`99d88af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/99d88af6d46724368d111bf12a342d8897eb88de))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`ef0fa4d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ef0fa4daa1ff590c56a1d22515b4de8b45796273))
 - update ESP32 build footprints [skip ci] ([`00086b7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/00086b75f3b643cca85bc54221e6f73daaf78a6e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8a83c30`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a83c30d2001561e4675b25653bcbdf48459e3b6))
@@ -43,6 +46,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- reduce cognitive complexity S3776 in ssh_auth/redis_resp ([`0ce1fc5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0ce1fc518e56cc980fc86179d5dd7079a2147204))
 - reduce cognitive complexity S3776 in mms/http_delivery ([`e1b66d1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e1b66d108b2e50d9a6145fde3f8d18a0dae193ff))
 - reduce cognitive complexity S3776 in ntrip/json/exc_decoder ([`87fb60f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87fb60fda3d8e364707947d57de0a4e8921dd7d9))
 - reduce cognitive complexity in forward/httpcache (S3776) ([`c76c6ac`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c76c6acd5b87b0b32f6d069bbfdac093c81967f2))
