@@ -650,25 +650,26 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | Core  | `BUS_CAPTURE`       |            17.9 KB |         < 0.5 KB |
 | Core  | `FORWARD`           |            17.9 KB |         < 0.5 KB |
 | Core  | `PROMISC`           |            11.5 KB |         < 0.5 KB |
-| Core  | `IPV6`              |             1.8 KB |          15.2 KB |
-| L4    | `IP_ALLOWLIST`      |             0.7 KB |          15.2 KB |
+| Core  | `IPV6`              |             1.9 KB |          15.2 KB |
+| Core  | `DIAG`              |             1.6 KB |          11.1 KB |
+| L4    | `IP_ALLOWLIST`      |             0.8 KB |          15.2 KB |
 | L4    | `KEEPALIVE`         |           < 0.5 KB |          15.2 KB |
 | L4    | `PER_IP_THROTTLE`   |           < 0.5 KB |          15.6 KB |
 | L4    | `ACCEPT_THROTTLE`   |           < 0.5 KB |          15.2 KB |
-| L5    | `SSH`               |       66.6-73.2 KB |     21.8-41.4 KB |
+| L5    | `SSH`               |       66.6-73.3 KB |     21.8-41.4 KB |
 | L5    | `TELNET`            |             1.6 KB |          15.7 KB |
 | L6    | `TLS`               |           100.6 KB |          54.5 KB |
 | L6    | `WS_DEFLATE`        |         4.0-7.9 KB |      8.0-23.2 KB |
 | L6    | `WEB_TERMINAL`      |         0.0-4.1 KB |      0.0-15.3 KB |
 | L6    | `MSGPACK`           |             2.9 KB |          15.3 KB |
-| L6    | `CBOR`              |             1.7 KB |          15.3 KB |
-| L6    | `JWT`               |             1.5 KB |          16.3 KB |
+| L6    | `CBOR`              |             1.8 KB |          15.3 KB |
+| L6    | `JWT`               |             1.6 KB |          16.3 KB |
 | L6    | `AUTH_LOCKOUT`      |           < 0.5 KB |          15.8 KB |
 | L7    | `WS_CLIENT`         |            76.6 KB |          53.1 KB |
 | L7    | `ETAG`              |        0.0-73.7 KB |      0.0-16.5 KB |
 | L7    | `WEBDAV`            |       26.2-66.6 KB |     38.2-38.7 KB |
 | L7    | `VFS`               |            41.9 KB |          19.6 KB |
-| L7    | `RANGE`             |        0.6-41.0 KB |      0.0-15.2 KB |
+| L7    | `RANGE`             |        0.6-41.1 KB |      0.0-15.2 KB |
 | L7    | `UPLOAD`            |            40.9 KB |          24.3 KB |
 | L7    | `OPCUA_CLIENT`      |        6.8-29.6 KB |     10.0-29.0 KB |
 | L7    | `IFACE_BRIDGE`      |            26.8 KB |          16.0 KB |
@@ -683,12 +684,12 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `OAUTH2`            |            11.9 KB |          37.5 KB |
 | L7    | `WEBHOOK`           |             9.7 KB |          34.5 KB |
 | L7    | `RELAY`             |             9.2 KB |          49.0 KB |
+| L7    | `SNMP`              |             8.1 KB |          27.3 KB |
 | L7    | `TELEMETRY`         |             8.0 KB |          15.5 KB |
-| L7    | `SNMP`              |             8.0 KB |          27.3 KB |
 | L7    | `OPCUA`             |         6.8-7.2 KB |     10.0-25.3 KB |
 | L7    | `PROVISIONING`      |             6.8 KB |          16.7 KB |
 | L7    | `DNS_RESOLVER`      |             5.2 KB |          16.5 KB |
-| L7    | `COAP`              |             4.9 KB |          17.7 KB |
+| L7    | `COAP`              |             5.0 KB |          17.7 KB |
 | L7    | `OTA`               |             4.6 KB |          35.1 KB |
 | L7    | `CONFIG_IO`         |             4.2 KB |          15.3 KB |
 | L7    | `CONFIG_STORE`      |             4.2 KB |          15.3 KB |
@@ -706,7 +707,6 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `TOTP`              |             0.5 KB |          15.2 KB |
 | L7    | `OTA_ROLLBACK`      |           < 0.5 KB |          15.2 KB |
 | L7    | `PARTITION_MONITOR` |           < 0.5 KB |          15.2 KB |
-| L7    | `DIAG`              |           < 0.5 KB |          15.2 KB |
 | L7    | `GUARDRAILS`        |           < 0.5 KB |          15.2 KB |
 | L7    | `DEVICE_ID`         |           < 0.5 KB |          15.2 KB |
 | L7    | `RADIO_POWER`       |           < 0.5 KB |          15.2 KB |
