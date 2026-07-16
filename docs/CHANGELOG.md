@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.21.0] - 2026-07-16
+
+<details>
+<summary><b>Show Changelog for version 6.21.0 - 2026-07-16</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`6d49ac3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6d49ac3c1aa278e663c2640d68bc3af5ea2618e7))
+- update CHANGELOG.md [skip ci] ([`168d8ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/168d8ae1c11ce159a50dc8a89de7f73746c7070f))
+
+### Changes
+
+- Bump version: 6.20.0 → 6.21.0 ([`1bf6d13`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1bf6d1360982df315564a423759afd48d5c5b049))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`1b0ef33`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1b0ef33ad01d65d11ffb79d9aacb2f630b71c9da))
+
+### Features
+
+- PTO retransmission timer (RFC 9147 sec 5.8) ([`ae6ca0b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ae6ca0b622a9f89c2a2bbaf4d080ca3227b0f09a))
+
+</details>
+
 ## [6.20.0] - 2026-07-16
 
 <details>
