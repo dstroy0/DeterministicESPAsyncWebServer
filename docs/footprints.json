@@ -623,10 +623,10 @@
     "ram_bytes": 105988
   },
   "TLS+TLS_ARENA_SIZE": {
-    "example": "L6-Presentation/07.SecureWebSocket",
+    "example": "L4-Transport/03.HTTPS",
     "flags": "-DDETWS_ENABLE_TLS=1 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768",
     "board": "esp32dev",
-    "flash_bytes": 856465,
+    "flash_bytes": 856653,
     "ram_bytes": 105652
   },
   "TLS+TLS_RESUMPTION": {

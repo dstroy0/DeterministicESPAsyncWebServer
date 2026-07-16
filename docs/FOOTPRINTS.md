@@ -97,7 +97,7 @@ from each example's `pio ci` size report and aggregated into
 | `TLS`                                                                                                     | L6-Presentation/07.SecureWebSocket      | 835.8 KB (65.3%) | 119.2 KB (37.2%) |
 | `TLS+MTLS`                                                                                                | L4-Transport/04.mTLS                    | 836.7 KB (65.4%) | 119.5 KB (37.3%) |
 | `TLS+MTLS+TLS_ARENA_SIZE`                                                                                 | L4-Transport/04.mTLS                    | 837.4 KB (65.4%) | 103.5 KB (32.3%) |
-| `TLS+TLS_ARENA_SIZE`                                                                                      | L6-Presentation/07.SecureWebSocket      | 836.4 KB (65.3%) | 103.2 KB (32.2%) |
+| `TLS+TLS_ARENA_SIZE`                                                                                      | L4-Transport/03.HTTPS                   | 836.6 KB (65.4%) | 103.2 KB (32.2%) |
 | `TLS+TLS_RESUMPTION`                                                                                      | L4-Transport/06.TlsResumption           | 836.6 KB (65.4%) | 119.3 KB (37.3%) |
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE`                                                                       | L4-Transport/06.TlsResumption           | 837.2 KB (65.4%) | 103.3 KB (32.3%) |
 | `TOTP`                                                                                                    | L7-Application/45.Totp                  | 735.7 KB (57.5%) | 79.9 KB (25.0%)  |
