@@ -234,6 +234,58 @@ bool process_frames(QuicConn *qc, int level, const uint8_t *p, size_t len, bool 
     return true;
 }
 
+// Skip an Initial packet's Token field (RFC 9000 sec 17.2.2), advancing *off. False if malformed.
+bool skip_initial_token(const uint8_t *dg, size_t len, size_t *off)
+{
+    uint64_t tok_len = 0;
+    size_t c = 0;
+    if (!quic_varint_decode(dg + *off, len - *off, &tok_len, &c))
+        return false;
+    *off += c + (size_t)tok_len;
+    return *off <= len;
+}
+
+// Parse one packet's (long or short) header, filling the fields needed to locate + unprotect it.
+// Returns false on a malformed header or an unsupported type/version (drop the packet).
+bool parse_packet_header(QuicConn *qc, const uint8_t *dg, size_t len, bool is_long, int *level, size_t *pn_offset,
+                         size_t *pkt_len, uint64_t *payload_length)
+{
+    if (!is_long)
+    {
+        // Short header: DCID length is our locally chosen scid_len; the packet runs to datagram end.
+        *level = QuicEnc::QUIC_ENC_APP;
+        *pn_offset = 1 + qc->scid_len;
+        if (*pn_offset >= len)
+            return false;
+        *payload_length = len - *pn_offset;
+        *pkt_len = len;
+        return true;
+    }
+
+    QuicLongHeader h;
+    if (!quic_parse_long_header(dg, len, &h))
+        return false;
+    if (h.version == 0 || h.version != QUIC_VERSION_1)
+        return false; // Version Negotiation is a client concern; unknown versions are dropped
+    if (h.type == QuicLongPacket::QUIC_LP_INITIAL)
+        *level = QuicEnc::QUIC_ENC_INITIAL;
+    else if (h.type == QuicLongPacket::QUIC_LP_HANDSHAKE)
+        *level = QuicEnc::QUIC_ENC_HANDSHAKE;
+    else
+        return false; // 0-RTT / Retry not supported
+
+    size_t off = h.hdr_len;
+    if (*level == QuicEnc::QUIC_ENC_INITIAL && !skip_initial_token(dg, len, &off))
+        return false;
+    size_t c = 0;
+    if (!quic_varint_decode(dg + off, len - off, payload_length, &c))
+        return false;
+    off += c;
+    *pn_offset = off;
+    *pkt_len = *pn_offset + (size_t)*payload_length;
+    return *pkt_len <= len;
+}
+
 // Decrypt and process one packet at datagram offset; returns bytes consumed (0 to stop the datagram).
 size_t recv_packet(QuicConn *qc, const uint8_t *dg, size_t len)
 {
@@ -241,55 +293,12 @@ size_t recv_packet(QuicConn *qc, const uint8_t *dg, size_t len)
         return 0; // GCOVR_EXCL_LINE  quic_conn_recv's loop only calls this with off<len, so len-off>=1
     bool is_long = quic_is_long_header(dg[0]);
 
-    int level;
-    size_t pn_offset;
-    size_t pkt_len; // total on-wire bytes of this packet
-    uint64_t payload_length;
-
-    if (is_long)
-    {
-        QuicLongHeader h;
-        if (!quic_parse_long_header(dg, len, &h))
-            return 0;
-        if (h.version == 0 || h.version != QUIC_VERSION_1)
-            return 0; // Version Negotiation is a client concern; unknown versions are dropped
-        if (h.type == QuicLongPacket::QUIC_LP_INITIAL)
-            level = QuicEnc::QUIC_ENC_INITIAL;
-        else if (h.type == QuicLongPacket::QUIC_LP_HANDSHAKE)
-            level = QuicEnc::QUIC_ENC_HANDSHAKE;
-        else
-            return 0; // 0-RTT / Retry not supported
-
-        size_t off = h.hdr_len;
-        if (level == QuicEnc::QUIC_ENC_INITIAL)
-        {
-            uint64_t tok_len = 0;
-            size_t c = 0;
-            if (!quic_varint_decode(dg + off, len - off, &tok_len, &c))
-                return 0;
-            off += c + (size_t)tok_len; // skip the token
-            if (off > len)
-                return 0;
-        }
-        size_t c = 0;
-        if (!quic_varint_decode(dg + off, len - off, &payload_length, &c))
-            return 0;
-        off += c;
-        pn_offset = off;
-        pkt_len = pn_offset + (size_t)payload_length;
-        if (pkt_len > len)
-            return 0;
-    }
-    else
-    {
-        // Short header: DCID length is our locally chosen scid_len; the packet runs to datagram end.
-        level = QuicEnc::QUIC_ENC_APP;
-        pn_offset = 1 + qc->scid_len;
-        if (pn_offset >= len)
-            return 0;
-        payload_length = len - pn_offset;
-        pkt_len = len;
-    }
+    int level = 0;
+    size_t pn_offset = 0;
+    size_t pkt_len = 0; // total on-wire bytes of this packet
+    uint64_t payload_length = 0;
+    if (!parse_packet_header(qc, dg, len, is_long, &level, &pn_offset, &pkt_len, &payload_length))
+        return 0;
 
     const QuicPacketKeys *keys = open_keys(qc, level);
     if (!keys)
@@ -349,6 +358,85 @@ bool quic_conn_recv(QuicConn *qc, const uint8_t *datagram, size_t len)
 // --- Sending ---------------------------------------------------------------------------------
 namespace
 {
+// Append the owed ACK frame for space @p s (RFC 9000 sec 13.2); returns bytes written.
+size_t build_ack_frame(QuicPnSpace *s, uint8_t *buf, size_t cap)
+{
+    if (!s->ack_eliciting_rx || !s->have_rx)
+        return 0;
+    size_t n = quic_build_ack(buf, cap, s->largest_rx, 0, s->largest_rx);
+    if (n)
+        s->ack_eliciting_rx = false;
+    return n;
+}
+
+// Append the CRYPTO flight for INITIAL/HANDSHAKE (ServerHello / EE..Finished); returns bytes written,
+// sets *ae when it emits an ack-eliciting CRYPTO frame.
+size_t build_crypto_frame(QuicConn *qc, int level, QuicPnSpace *s, uint8_t *buf, size_t cap, bool *ae)
+{
+    if (level != QuicEnc::QUIC_ENC_INITIAL && level != QuicEnc::QUIC_ENC_HANDSHAKE)
+        return 0;
+    size_t flen = 0;
+    const uint8_t *flight = quic_tls_flight(&qc->tls, level, &flen);
+    if (!flight || s->crypto_tx_off >= flen)
+        return 0;
+    size_t remain = flen - (size_t)s->crypto_tx_off;
+    // Leave room for the CRYPTO frame header (type + offset + length varints, <= 1+8+8).
+    size_t room = (cap > 20) ? (cap - 20) : 0;
+    size_t take = remain < room ? remain : room;
+    if (!take)
+        return 0;
+    size_t n = quic_build_crypto(buf, cap, s->crypto_tx_off, flight + s->crypto_tx_off, take);
+    if (n)
+    {
+        s->crypto_tx_off += take;
+        *ae = true;
+    }
+    return n;
+}
+
+// Append 1-RTT extras (HANDSHAKE_DONE + stream data) at APP level; returns bytes written, sets *ae.
+size_t build_app_frames(QuicConn *qc, int level, uint8_t *buf, size_t cap, bool *ae)
+{
+    if (level != QuicEnc::QUIC_ENC_APP)
+        return 0;
+    size_t p = 0;
+    if (qc->handshake_done_queued)
+    {
+        size_t n = quic_build_handshake_done(buf + p, cap - p);
+        if (n)
+        {
+            p += n;
+            qc->handshake_done_queued = false;
+            qc->handshake_done_sent = true;
+            *ae = true;
+        }
+    }
+    for (size_t i = 0; i < DETWS_QUIC_MAX_STREAMS; i++)
+    {
+        QuicStream *st = &qc->streams[i];
+        if (st->id == UINT64_MAX)
+            continue;
+        bool more = st->tx_sent < st->tx_have;
+        bool fin_due = st->tx_fin && !st->tx_fin_sent && st->tx_sent == st->tx_have;
+        if (!more && !fin_due)
+            continue;
+        size_t room = (cap - p > 24) ? (cap - p - 24) : 0;
+        size_t remain = st->tx_have - st->tx_sent;
+        size_t take = remain < room ? remain : room;
+        bool fin = st->tx_fin && (st->tx_sent + take == st->tx_have);
+        size_t n = quic_build_stream(buf + p, cap - p, st->id, st->tx_off, st->tx + st->tx_sent, take, fin);
+        if (n)
+        {
+            p += n;
+            st->tx_off += take;
+            st->tx_sent += take;
+            st->tx_fin_sent = st->tx_fin_sent || fin;
+            *ae = true;
+        }
+    }
+    return p;
+}
+
 // Build the frame payload for one encryption level into buf; returns its length (0 = nothing to send).
 // @p ae is set true if the payload carries an ack-eliciting frame (CRYPTO / STREAM / HANDSHAKE_DONE),
 // which arms loss recovery for this space.
@@ -364,77 +452,9 @@ size_t build_frames(QuicConn *qc, int level, uint8_t *buf, size_t cap, bool *ae)
     if (qc->close_queued && !qc->close_sent)
         return quic_build_connection_close(buf, cap, qc->close_error, qc->close_frame_type, nullptr, 0);
 
-    // ACK first, if we owe one.
-    if (s->ack_eliciting_rx && s->have_rx)
-    {
-        size_t n = quic_build_ack(buf + p, cap - p, s->largest_rx, 0, s->largest_rx);
-        if (n)
-        {
-            p += n;
-            s->ack_eliciting_rx = false;
-        }
-    }
-
-    // CRYPTO flight for this level (Initial = ServerHello, Handshake = EE..Finished).
-    if (level == QuicEnc::QUIC_ENC_INITIAL || level == QuicEnc::QUIC_ENC_HANDSHAKE)
-    {
-        size_t flen = 0;
-        const uint8_t *flight = quic_tls_flight(&qc->tls, level, &flen);
-        if (flight && s->crypto_tx_off < flen)
-        {
-            size_t remain = flen - (size_t)s->crypto_tx_off;
-            // Leave room for the CRYPTO frame header (type + offset + length varints, <= 1+8+8).
-            size_t room = (cap - p > 20) ? (cap - p - 20) : 0;
-            size_t take = remain < room ? remain : room;
-            size_t n =
-                take ? quic_build_crypto(buf + p, cap - p, s->crypto_tx_off, flight + s->crypto_tx_off, take) : 0;
-            if (n)
-            {
-                p += n;
-                s->crypto_tx_off += take;
-                *ae = true;
-            }
-        }
-    }
-
-    // 1-RTT extras: HANDSHAKE_DONE and stream data.
-    if (level == QuicEnc::QUIC_ENC_APP)
-    {
-        if (qc->handshake_done_queued)
-        {
-            size_t n = quic_build_handshake_done(buf + p, cap - p);
-            if (n)
-            {
-                p += n;
-                qc->handshake_done_queued = false;
-                qc->handshake_done_sent = true;
-                *ae = true;
-            }
-        }
-        for (size_t i = 0; i < DETWS_QUIC_MAX_STREAMS; i++)
-        {
-            QuicStream *st = &qc->streams[i];
-            if (st->id == UINT64_MAX)
-                continue;
-            bool more = st->tx_sent < st->tx_have;
-            bool fin_due = st->tx_fin && !st->tx_fin_sent && st->tx_sent == st->tx_have;
-            if (!more && !fin_due)
-                continue;
-            size_t room = (cap - p > 24) ? (cap - p - 24) : 0;
-            size_t remain = st->tx_have - st->tx_sent;
-            size_t take = remain < room ? remain : room;
-            bool fin = st->tx_fin && (st->tx_sent + take == st->tx_have);
-            size_t n = quic_build_stream(buf + p, cap - p, st->id, st->tx_off, st->tx + st->tx_sent, take, fin);
-            if (n)
-            {
-                p += n;
-                st->tx_off += take;
-                st->tx_sent += take;
-                st->tx_fin_sent = st->tx_fin_sent || fin;
-                *ae = true;
-            }
-        }
-    }
+    p += build_ack_frame(s, buf + p, cap - p); // ACK first, if we owe one
+    p += build_crypto_frame(qc, level, s, buf + p, cap - p, ae);
+    p += build_app_frames(qc, level, buf + p, cap - p, ae);
     return p;
 }
 
