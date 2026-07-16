@@ -6,10 +6,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`ab5246d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ab5246df59b090b045731cd3521fa8d608365568))
 - update CHANGELOG.md [skip ci] ([`28ca3b0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28ca3b0f93e06b6560db371576b1c6fea92e8ef5))
 
 ### Documentation
 
+- add seamless Wi-Fi roaming (802.11r/k/v) + predictive decision layer ([`b86834b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b86834b773c5c770f09d1905208c67896d7884fb))
+- add industrial functional-safety (IEC 61784-3), security (ODVA CIP Security, PI PROFINET Security) + wireless/QoS (WirelessHART, RFC 2474 DiffServ, IEC 62657-2) profiles ([`6070891`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/607089171079781f70738d6445808bd45a646d4b))
+- update ESP32 build footprints [skip ci] ([`27ee02c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/27ee02c3c33dfe77a1591435f47c62ff6f5ce3c5))
 - add HMMD / RCWL-0516 / LD2410B radar presence sensor drivers ([`45c8dec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/45c8dec8f0341047181a2cc01869aabe4e3d6b16))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`db1b9cd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/db1b9cddaf760423bdc803e976aaa37865fc47de))
 
