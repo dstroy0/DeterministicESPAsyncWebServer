@@ -44,7 +44,6 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
 
 - **CDN caching tier** - edge cache + cache key/invalidation + range-aware delivery + mesh distribution
   (origin-side `Cache-Control` helpers are **done**; the tier itself is a design/scope-with-user piece).
-- **Industrial_ESPIDF/** - create the directory + its CMake (use the library as an ESP-IDF component).
 - **More niche pure codecs** from old manuals (as they are named / requested - not invented).
 - **Docs** - chart the docs build + automation; full staleness audit; theming (palette/alignment);
   a teacher switch to disable the sandbox; live theme preview.
@@ -118,7 +117,7 @@ Ideas and intentions captured from the [Working Thread discussion](https://githu
 - [ ] Write more niche pure codecs from old manuals - the ones wanted a while ago but never put down on paper.
 - [x] W5500 SPI Ethernet driver, to support non-RMII ESP32s like the S3. _(done, HW-verified on an ESP32-S3 + WIZnet W5500 over HSPI: raw VERSIONR=0x04, then DHCP IP + HTTP served over the wired link. Pins CS7/SCK12/MISO13/MOSI11/RST6/INT5; needs arduino-esp32 3.x + PSRAM=opi on an N16R8. **v5.101.0:** streamed 200 MB byte-exact with a flat heap; added `DETWS_ETH_W5500_SPI_MHZ` (default 20) + a clock-vs-throughput sweep - SPI-bound ~7.2 Mbit/s @20 MHz, ~8.2 @24, plateau ~8.3 @30; reliable-sustained ~24 MHz on breadboard wiring. The earlier "large-transfer crash" was marginal SPI signal integrity, not a library defect - see BUGS.md.)_
 - [ ] Radio-as-a-plugin: strip an ESP to bare metal and do (very legal) radio things as a server plugin.
-- [ ] `Industrial_ESPIDF/`: create the directory and write the CMake for it.
+- [x] `Industrial_ESPIDF/`: create the directory and write the CMake for it. _(done: `examples/esp-idf/Industrial_ESPIDF` - an industrial edge gateway (HTTP dashboard + Modbus TCP slave + SNMP agent) built with `idf.py`. The top `CMakeLists.txt` turns the feature flags on for the whole build with `add_compile_definitions(DETWS_ENABLE_MODBUS=1 DETWS_ENABLE_SNMP=1)` before `project()` - the ESP-IDF equivalent of build_opt.h. esp32dev compile+link verified (Flash 58%, RAM 29%).)_
 
 ### Embedded data stores (SD card)
 

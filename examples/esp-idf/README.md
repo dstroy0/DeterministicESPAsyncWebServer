@@ -27,10 +27,16 @@ CONFIG_FREERTOS_HZ=1000     # Arduino needs a 1 kHz tick
 CONFIG_AUTOSTART_ARDUINO=y  # runs setup()/loop() like an .ino sketch
 ```
 
-## Build the example in this repo
+## Build the examples in this repo
 
-The [`minimal/`](minimal/) project builds the library straight from this checkout (no download of
-the library itself):
+Two projects here build the library straight from this checkout (no download of the library itself):
+
+- [`minimal/`](minimal/) - a one-route web server, the smallest possible sketch.
+- [`Industrial_ESPIDF/`](Industrial_ESPIDF/) - an **industrial edge gateway**: a web dashboard **plus** a
+  Modbus TCP slave **plus** an SNMP agent, one device fronting a control network. It also shows how to
+  turn `DETWS_ENABLE_*` features on for an `idf.py` build (`add_compile_definitions`, see below).
+
+Build `minimal/` (the industrial one is identical, just `cd` into its folder instead):
 
 ```sh
 cd examples/esp-idf/minimal
