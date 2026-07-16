@@ -438,6 +438,57 @@ static bool read_namelist(const uint8_t *p, size_t len, size_t *off, const uint8
     return true;
 }
 
+// Negotiate the key-exchange method from the client's kex_algorithms name-list, in our preference order
+// (PQC hybrid first when enabled; RSA group first when prefer_rsa). false = no mutual method.
+static bool negotiate_kex(const uint8_t *list, uint32_t nlen, SshKexAlg *out)
+{
+    AlgCand<SshKexAlg> kc[5];
+    int nk = 0;
+#if DETWS_ENABLE_PQC_KEX
+    kc[nk++] = {KEX_MLKEM768, SshKexAlg::SSH_KEX_MLKEM768_X25519, true}; // hybrid first (PQC-preferred)
+#endif
+    if (s_sshtr.prefer_rsa)
+    {
+        kc[nk++] = {KEX_DH, SshKexAlg::SSH_KEX_DH_GROUP14, true};
+        kc[nk++] = {KEX_ECDH_NISTP256, SshKexAlg::SSH_KEX_ECDH_NISTP256, true};
+        kc[nk++] = {KEX_C25519, SshKexAlg::SSH_KEX_CURVE25519, true};
+        kc[nk++] = {KEX_C25519_LIBSSH, SshKexAlg::SSH_KEX_CURVE25519, true};
+    }
+    else
+    {
+        kc[nk++] = {KEX_C25519, SshKexAlg::SSH_KEX_CURVE25519, true};
+        kc[nk++] = {KEX_C25519_LIBSSH, SshKexAlg::SSH_KEX_CURVE25519, true};
+        kc[nk++] = {KEX_ECDH_NISTP256, SshKexAlg::SSH_KEX_ECDH_NISTP256, true};
+        kc[nk++] = {KEX_DH, SshKexAlg::SSH_KEX_DH_GROUP14, true};
+    }
+    return negotiate_alg(list, nlen, kc, nk, out);
+}
+
+// Negotiate the host-key algorithm, restricted to keys we actually hold. rsa-sha2-512/256 share the one
+// RSA key (RFC 8332), ecdsa-sha2-nistp256 is a distinct P-256 key. false = no mutual algorithm.
+static bool negotiate_hostkey(const uint8_t *list, uint32_t nlen, SshHostkeyAlg *out)
+{
+    const bool rsa = hostkey_rsa_available();
+    const bool ed = ssh_hostkey_ed25519_available();
+    const bool ec = ssh_hostkey_ecdsa_available();
+    AlgCand<SshHostkeyAlg> hc[4];
+    if (s_sshtr.prefer_rsa)
+    {
+        hc[0] = {HOSTKEY_RSA_SHA512, SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512, rsa};
+        hc[1] = {HOSTKEY_RSA_SHA256, SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA256, rsa};
+        hc[2] = {HOSTKEY_ECDSA, SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256, ec};
+        hc[3] = {HOSTKEY_ED, SshHostkeyAlg::SSH_HOSTKEY_ED25519, ed};
+    }
+    else
+    {
+        hc[0] = {HOSTKEY_ED, SshHostkeyAlg::SSH_HOSTKEY_ED25519, ed};
+        hc[1] = {HOSTKEY_ECDSA, SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256, ec};
+        hc[2] = {HOSTKEY_RSA_SHA512, SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512, rsa};
+        hc[3] = {HOSTKEY_RSA_SHA256, SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA256, rsa};
+    }
+    return negotiate_alg(list, nlen, hc, 4, out);
+}
+
 int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
 {
     if (i >= MAX_SSH_CONNS)
@@ -463,57 +514,13 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
         return -1;
     // RFC 8308: if the client offers ext-info-c we will send SSH_MSG_EXT_INFO.
     s->ext_info_c = namelist_contains(list, nlen, EXT_INFO_C);
-    {
-        AlgCand<SshKexAlg> kc[5];
-        int nk = 0;
-#if DETWS_ENABLE_PQC_KEX
-        kc[nk++] = {KEX_MLKEM768, SshKexAlg::SSH_KEX_MLKEM768_X25519, true}; // hybrid first (PQC-preferred)
-#endif
-        if (s_sshtr.prefer_rsa)
-        {
-            kc[nk++] = {KEX_DH, SshKexAlg::SSH_KEX_DH_GROUP14, true};
-            kc[nk++] = {KEX_ECDH_NISTP256, SshKexAlg::SSH_KEX_ECDH_NISTP256, true};
-            kc[nk++] = {KEX_C25519, SshKexAlg::SSH_KEX_CURVE25519, true};
-            kc[nk++] = {KEX_C25519_LIBSSH, SshKexAlg::SSH_KEX_CURVE25519, true};
-        }
-        else
-        {
-            kc[nk++] = {KEX_C25519, SshKexAlg::SSH_KEX_CURVE25519, true};
-            kc[nk++] = {KEX_C25519_LIBSSH, SshKexAlg::SSH_KEX_CURVE25519, true};
-            kc[nk++] = {KEX_ECDH_NISTP256, SshKexAlg::SSH_KEX_ECDH_NISTP256, true};
-            kc[nk++] = {KEX_DH, SshKexAlg::SSH_KEX_DH_GROUP14, true};
-        }
-        if (!negotiate_alg(list, nlen, kc, nk, &s->kex_alg))
-            return -1; // no mutual KEX
-    }
+    if (!negotiate_kex(list, nlen, &s->kex_alg))
+        return -1; // no mutual KEX
     // server_host_key_algorithms: negotiate, restricted to keys we actually hold.
     if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
-    {
-        // rsa-sha2-512 and rsa-sha2-256 are the same "ssh-rsa" key with a different
-        // signature hash (RFC 8332); both gated on the one RSA host key. 512 first.
-        // ecdsa-sha2-nistp256 (RFC 5656) is a distinct P-256 host key.
-        const bool rsa = hostkey_rsa_available();
-        const bool ed = ssh_hostkey_ed25519_available();
-        const bool ec = ssh_hostkey_ecdsa_available();
-        AlgCand<SshHostkeyAlg> hc[4];
-        if (s_sshtr.prefer_rsa)
-        {
-            hc[0] = {HOSTKEY_RSA_SHA512, SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512, rsa};
-            hc[1] = {HOSTKEY_RSA_SHA256, SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA256, rsa};
-            hc[2] = {HOSTKEY_ECDSA, SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256, ec};
-            hc[3] = {HOSTKEY_ED, SshHostkeyAlg::SSH_HOSTKEY_ED25519, ed};
-        }
-        else
-        {
-            hc[0] = {HOSTKEY_ED, SshHostkeyAlg::SSH_HOSTKEY_ED25519, ed};
-            hc[1] = {HOSTKEY_ECDSA, SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256, ec};
-            hc[2] = {HOSTKEY_RSA_SHA512, SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA512, rsa};
-            hc[3] = {HOSTKEY_RSA_SHA256, SshHostkeyAlg::SSH_HOSTKEY_RSA_SHA256, rsa};
-        }
-        if (!negotiate_alg(list, nlen, hc, 4, &s->hostkey_alg))
-            return -1; // no mutual host-key algorithm
-    }
+    if (!negotiate_hostkey(list, nlen, &s->hostkey_alg))
+        return -1; // no mutual host-key algorithm
     // encryption c2s / s2c: negotiate chacha20-poly1305@openssh.com or aes256-gcm@openssh.com (both
     // AEADs) or aes256-ctr, in that preference order.
     const AlgCand<decltype(SSH_CIPHER_AES256CTR)> cc[3] = {

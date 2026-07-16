@@ -75,61 +75,68 @@ static char re_read_atom(const char *&q, const char *end)
     return c;
 }
 
+// Match a backslash-escape class (\d \D \w \W \s \S) or an escaped literal against ch.
+static bool re_match_escape(char e, char ch)
+{
+    switch (e)
+    {
+    case 'd':
+        return ch >= '0' && ch <= '9';
+    case 'D':
+        return !(ch >= '0' && ch <= '9');
+    case 'w':
+        return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_';
+    case 'W':
+        return !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_');
+    case 's':
+        return ch == ' ' || ch == '\t';
+    case 'S':
+        return !(ch == ' ' || ch == '\t');
+    default:
+        return ch == e; // escaped literal (\. \* \\ ...)
+    }
+}
+
+// Match a '[...]' character class (optional '^' negation, a-z ranges) at [p, p+len) against ch.
+static bool re_match_class(const char *p, size_t len, char ch)
+{
+    const char *q = p + 1;
+    const char *end = p + len - 1; // points at the closing ']'
+    bool neg = false;
+    if (q < end && *q == '^')
+    {
+        neg = true;
+        q++;
+    }
+    bool m = false;
+    while (q < end)
+    {
+        char lo = re_read_atom(q, end);
+        if (q < end && *q == '-' && (q + 1) < end && q[1] != ']')
+        {
+            q++; // consume '-'
+            char hi = re_read_atom(q, end);
+            m = re_class_member(lo, hi, ch) || m;
+        }
+        else if (ch == lo)
+        {
+            m = true;
+        }
+    }
+    return neg ? !m : m;
+}
+
 // Does the atom [p, p+len) match the single character ch (ch != '\0')?
 static bool re_atom_matches(const char *p, size_t len, char ch)
 {
     if (ch == '\0')
         return false;
     if (*p == '\\')
-    {
-        char e = p[1];
-        switch (e)
-        {
-        case 'd':
-            return ch >= '0' && ch <= '9';
-        case 'D':
-            return !(ch >= '0' && ch <= '9');
-        case 'w':
-            return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_';
-        case 'W':
-            return !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_');
-        case 's':
-            return ch == ' ' || ch == '\t';
-        case 'S':
-            return !(ch == ' ' || ch == '\t');
-        default:
-            return ch == e; // escaped literal (\. \* \\ ...)
-        }
-    }
+        return re_match_escape(p[1], ch);
     if (*p == '.')
         return true;
     if (*p == '[')
-    {
-        const char *q = p + 1;
-        const char *end = p + len - 1; // points at the closing ']'
-        bool neg = false;
-        if (q < end && *q == '^')
-        {
-            neg = true;
-            q++;
-        }
-        bool m = false;
-        while (q < end)
-        {
-            char lo = re_read_atom(q, end);
-            if (q < end && *q == '-' && (q + 1) < end && q[1] != ']')
-            {
-                q++; // consume '-'
-                char hi = re_read_atom(q, end);
-                m = re_class_member(lo, hi, ch) || m;
-            }
-            else if (ch == lo)
-            {
-                m = true;
-            }
-        }
-        return neg ? !m : m;
-    }
+        return re_match_class(p, len, ch);
     return ch == *p; // literal
 }
 
