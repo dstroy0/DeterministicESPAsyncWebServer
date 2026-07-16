@@ -12,6 +12,7 @@
 
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
+#include "services/clock.h" // detws_millis() stamps / checks the HelloRetryRequest cookie freshness
 #include <string.h>
 
 namespace
@@ -23,6 +24,10 @@ const uint8_t ALERT_DECODE_ERROR = 50;
 const uint8_t ALERT_DECRYPT_ERROR = 51;
 const uint8_t ALERT_PROTOCOL_VERSION = 70;
 const uint8_t ALERT_INTERNAL_ERROR = 80;
+
+// HelloRetryRequest cookie freshness window: the client must echo the cookie within this many
+// milliseconds of it being minted (RFC 9147 §5.1). detws_millis() supplies both timestamps.
+const uint64_t DTLS_HRR_COOKIE_MAX_AGE_MS = 60000;
 
 // The record-layer demux (RFC 9147 §4): a first byte 0b001xxxxx is a DTLSCiphertext unified header.
 bool is_ciphertext(uint8_t b0)
@@ -67,15 +72,18 @@ void snapshot(const SshSha256Ctx *ctx, uint8_t out[SSH_SHA256_DIGEST_LEN])
 }
 
 // Wrap one TLS handshake message (@p tls_msg, 4-byte TLS header + body) in a DTLS handshake header
-// (message @p msg_seq) and a record for @p epoch, appending it to @p out. Epoch 0 is a DTLSPlaintext
-// record; epoch 2 is AEAD-protected with @p keys. One message per record (this phase).
-bool emit_handshake(DtlsConn *c, const uint8_t *tls_msg, size_t tls_len, uint16_t msg_seq, uint16_t epoch,
-                    const DtlsRecordKeys *keys, uint8_t *out, size_t out_cap, size_t *out_len)
+// and a record for @p epoch, appending it to @p out. The message_seq is taken from the connection's
+// running counter, so an optional HelloRetryRequest shifts every later message up by one without the
+// call sites knowing. Epoch 0 is a DTLSPlaintext record; epoch 2 is AEAD-protected with @p keys. One
+// message per record (this phase).
+bool emit_handshake(DtlsConn *c, const uint8_t *tls_msg, size_t tls_len, uint16_t epoch, const DtlsRecordKeys *keys,
+                    uint8_t *out, size_t out_cap, size_t *out_len)
 {
     if (tls_len < 4)
         return false;
     uint8_t msg_type = tls_msg[0];
     uint32_t body_len = (uint32_t)(tls_len - 4);
+    uint16_t msg_seq = c->tx_msg_seq++;
     size_t flen =
         dtls_hs_frag_build(msg_type, msg_seq, body_len, 0, tls_msg + 4, body_len, c->fragbuf, sizeof(c->fragbuf));
     if (!flen)
@@ -93,8 +101,48 @@ bool emit_handshake(DtlsConn *c, const uint8_t *tls_msg, size_t tls_len, uint16_
     return true;
 }
 
+// Emit a HelloRetryRequest (RFC 9147 §5.1, RFC 8446 §4.1.4) asking the client to retry with an
+// X25519 key_share, binding a stateless return-routability cookie to the peer address. Per RFC 8446
+// §4.4.1 the transcript is restarted as the synthetic message_hash(ClientHello1) before the HRR is
+// folded in, so the eventual transcript is message_hash || HRR || ClientHello2 || ServerHello || ...
+int send_hello_retry(DtlsConn *c, const Tls13ClientHello *ch, const uint8_t *ch1, size_t ch1_len, uint8_t *out,
+                     size_t out_cap, size_t *out_len)
+{
+    uint8_t ch1_hash[SSH_SHA256_DIGEST_LEN];
+    SshSha256Ctx h;
+    ssh_sha256_init(&h);
+    ssh_sha256_update(&h, ch1, ch1_len);
+    ssh_sha256_final(&h, ch1_hash);
+
+    ssh_sha256_init(&c->transcript); // restart: message_hash(Hash(CH1)) replaces ClientHello1
+    size_t n = tls13_build_message_hash(c->msgbuf, sizeof(c->msgbuf), ch1_hash);
+    if (!n)
+        return fail(c, ALERT_INTERNAL_ERROR);
+    ssh_sha256_update(&c->transcript, c->msgbuf, n); // transcript only; message_hash is never sent
+
+    // Stateless cookie with an empty payload: this connection keeps its own transcript across the
+    // retry, so the cookie only has to prove return-routability and bind the client address.
+    uint8_t cookie[DTLS_COOKIE_MAX];
+    size_t clen = dtls_cookie_make(c->cfg.cookie_key, detws_millis(), nullptr, 0, c->peer_addr, c->peer_addr_len,
+                                   cookie, sizeof(cookie));
+    if (!clen)
+        return fail(c, ALERT_INTERNAL_ERROR);
+
+    n = tls13_build_hello_retry_request(c->msgbuf, sizeof(c->msgbuf), ch->session_id, ch->session_id_len,
+                                        TLS_GROUP_X25519, cookie, clen, /*dtls=*/true);
+    if (!n)
+        return fail(c, ALERT_INTERNAL_ERROR);
+    ssh_sha256_update(&c->transcript, c->msgbuf, n);
+    if (!emit_handshake(c, c->msgbuf, n, 0, nullptr, out, out_cap, out_len))
+        return fail(c, ALERT_INTERNAL_ERROR);
+    c->hrr_sent = true;
+    return 0;
+}
+
 // Consume a ClientHello and emit the whole server flight (ServerHello + the epoch-2 encrypted
-// messages), installing handshake and application keys. Mirrors quic_tls process_client_hello.
+// messages), installing handshake and application keys. Mirrors quic_tls process_client_hello. If the
+// client did not offer an X25519 key_share, this instead sends a HelloRetryRequest and returns to wait
+// for the client's second ClientHello (RFC 9147 §5.1).
 int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t *out, size_t out_cap, size_t *out_len)
 {
     Tls13ClientHello ch;
@@ -102,8 +150,36 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
         return fail(c, ALERT_DECODE_ERROR);
     if (!ch.offers_tls13)
         return fail(c, ALERT_PROTOCOL_VERSION);
-    if (!ch.offers_ed25519 || !ch.has_key_share || !ch.offers_x25519)
+    if (!ch.offers_ed25519 || !ch.offers_x25519)
         return fail(c, ALERT_HANDSHAKE_FAILURE);
+
+    uint16_t ch_seq = c->reasm.msg_seq; // the message_seq this ClientHello arrived as
+
+    // Group negotiation (RFC 8446 §4.1.4): the client offered X25519 but sent no X25519 key_share.
+    // Answer with a HelloRetryRequest and await the retry - but only once (a retry that still lacks
+    // the share is fatal, so a malicious client cannot loop us).
+    if (!ch.has_key_share)
+    {
+        if (c->hrr_sent)
+            return fail(c, ALERT_HANDSHAKE_FAILURE);
+        if (send_hello_retry(c, &ch, msg, msg_len, out, out_cap, out_len) < 0)
+            return -1;
+        c->next_recv_msg_seq = (uint16_t)(ch_seq + 1);
+        dtls_hs_reasm_init(&c->reasm, c->next_recv_msg_seq, c->reasm_buf + 4, DTLS_CONN_REASM_CAP);
+        return 0;
+    }
+
+    // A key_share is present. If it followed our HelloRetryRequest, the client must echo the cookie,
+    // authenticating its address before we spend the handshake's asymmetric crypto (§5.1).
+    if (c->hrr_sent)
+    {
+        uint8_t payload[1];
+        size_t plen = 0;
+        if (!ch.cookie ||
+            !dtls_cookie_verify(c->cfg.cookie_key, detws_millis(), DTLS_HRR_COOKIE_MAX_AGE_MS, c->peer_addr,
+                                c->peer_addr_len, ch.cookie, ch.cookie_len, payload, sizeof(payload), &plen))
+            return fail(c, ALERT_HANDSHAKE_FAILURE);
+    }
 
     // X25519 shared secret and the server's key_share.
     uint8_t ecdhe[32];
@@ -111,18 +187,18 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     ssh_x25519(ecdhe, c->cfg.ephemeral_priv, ch.client_x25519);
     ssh_x25519_base(server_share, c->cfg.ephemeral_priv);
 
-    ssh_sha256_update(&c->transcript, msg, msg_len); // transcript: ClientHello
+    ssh_sha256_update(&c->transcript, msg, msg_len); // transcript: ClientHello (CH2 when an HRR preceded it)
 
-    // ServerHello (epoch 0, plaintext), message_seq 0.
+    // ServerHello (epoch 0, plaintext).
     size_t n = tls13_build_server_hello(c->msgbuf, sizeof(c->msgbuf), c->cfg.server_random, ch.session_id,
                                         ch.session_id_len, server_share, 32, TLS_GROUP_X25519, /*dtls=*/true);
     if (!n)
         return fail(c, ALERT_INTERNAL_ERROR);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!emit_handshake(c, c->msgbuf, n, 0, 0, nullptr, out, out_cap, out_len))
+    if (!emit_handshake(c, c->msgbuf, n, 0, nullptr, out, out_cap, out_len))
         return fail(c, ALERT_INTERNAL_ERROR);
 
-    // Handshake-traffic keys from Transcript-Hash(ClientHello..ServerHello).
+    // Handshake-traffic keys from Transcript-Hash(..ServerHello).
     uint8_t hash[SSH_SHA256_DIGEST_LEN];
     snapshot(&c->transcript, hash);
     tls13_ks_early(&DTLS13_KDF, &c->ks);
@@ -131,40 +207,40 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     dtls_record_keys_derive(&c->ep2_cli, DtlsCipher::AES_128_GCM_SHA256, 2, c->ks.client_hs_traffic);
     c->ep2_ready = true;
 
-    // EncryptedExtensions, message_seq 1.
+    // EncryptedExtensions.
     n = tls13_build_encrypted_extensions_empty(c->msgbuf, sizeof(c->msgbuf));
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!emit_handshake(c, c->msgbuf, n, 1, 2, &c->ep2_srv, out, out_cap, out_len))
+    if (!emit_handshake(c, c->msgbuf, n, 2, &c->ep2_srv, out, out_cap, out_len))
         return fail(c, ALERT_INTERNAL_ERROR);
 
-    // Certificate, message_seq 2.
+    // Certificate.
     n = tls13_build_certificate(c->msgbuf, sizeof(c->msgbuf), c->cfg.cert_der, c->cfg.cert_len);
     if (!n)
         return fail(c, ALERT_INTERNAL_ERROR);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!emit_handshake(c, c->msgbuf, n, 2, 2, &c->ep2_srv, out, out_cap, out_len))
+    if (!emit_handshake(c, c->msgbuf, n, 2, &c->ep2_srv, out, out_cap, out_len))
         return fail(c, ALERT_INTERNAL_ERROR);
 
-    // CertificateVerify signs Transcript-Hash(ClientHello..Certificate), message_seq 3.
+    // CertificateVerify signs Transcript-Hash(..Certificate).
     snapshot(&c->transcript, hash);
     n = tls13_build_cert_verify(c->msgbuf, sizeof(c->msgbuf), hash, c->cfg.ed25519_seed);
     if (!n)
         return fail(c, ALERT_INTERNAL_ERROR);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!emit_handshake(c, c->msgbuf, n, 3, 2, &c->ep2_srv, out, out_cap, out_len))
+    if (!emit_handshake(c, c->msgbuf, n, 2, &c->ep2_srv, out, out_cap, out_len))
         return fail(c, ALERT_INTERNAL_ERROR);
 
-    // Server Finished over Transcript-Hash(ClientHello..CertificateVerify), message_seq 4.
+    // Server Finished over Transcript-Hash(..CertificateVerify).
     snapshot(&c->transcript, hash);
     uint8_t verify[SSH_SHA256_DIGEST_LEN];
     tls13_finished_mac(&DTLS13_KDF, c->ks.server_hs_traffic, hash, verify);
     n = tls13_build_finished(c->msgbuf, sizeof(c->msgbuf), verify);
     ssh_sha256_update(&c->transcript, c->msgbuf, n);
-    if (!emit_handshake(c, c->msgbuf, n, 4, 2, &c->ep2_srv, out, out_cap, out_len))
+    if (!emit_handshake(c, c->msgbuf, n, 2, &c->ep2_srv, out, out_cap, out_len))
         return fail(c, ALERT_INTERNAL_ERROR);
 
-    // Application-traffic keys from Transcript-Hash(ClientHello..server Finished); this hash also
-    // verifies the client's Finished.
+    // Application-traffic keys from Transcript-Hash(..server Finished); this hash also verifies the
+    // client's Finished.
     snapshot(&c->transcript, c->hs_finished_hash);
     tls13_ks_master(&c->ks, c->hs_finished_hash);
     dtls_record_keys_derive(&c->ep3_srv, DtlsCipher::AES_128_GCM_SHA256, 3, c->ks.server_ap_traffic);
@@ -172,8 +248,8 @@ int handle_client_hello(DtlsConn *c, const uint8_t *msg, size_t msg_len, uint8_t
     c->ep3_ready = true;
 
     c->state = DtlsConnState::WAIT_FINISHED;
-    c->next_recv_msg_seq = 1;
-    dtls_hs_reasm_init(&c->reasm, 1, c->reasm_buf + 4, DTLS_CONN_REASM_CAP);
+    c->next_recv_msg_seq = (uint16_t)(ch_seq + 1);
+    dtls_hs_reasm_init(&c->reasm, c->next_recv_msg_seq, c->reasm_buf + 4, DTLS_CONN_REASM_CAP);
     return 0;
 }
 
@@ -233,11 +309,18 @@ int drive_handshake(DtlsConn *c, const uint8_t *payload, size_t plen, uint8_t *o
 }
 } // namespace
 
-void dtls_conn_init(DtlsConn *c, const DtlsServerConfig *cfg)
+void dtls_conn_init(DtlsConn *c, const DtlsServerConfig *cfg, const uint8_t *peer_addr, size_t peer_addr_len)
 {
     memset(c, 0, sizeof(*c));
     c->cfg = *cfg;
     c->state = DtlsConnState::START;
+    if (peer_addr && peer_addr_len)
+    {
+        if (peer_addr_len > DTLS_PEER_ADDR_MAX)
+            peer_addr_len = DTLS_PEER_ADDR_MAX;
+        memcpy(c->peer_addr, peer_addr, peer_addr_len);
+        c->peer_addr_len = (uint8_t)peer_addr_len;
+    }
     ssh_sha256_init(&c->transcript);
     dtls_replay_init(&c->replay_ep2);
     c->next_recv_msg_seq = 0;

@@ -21,9 +21,12 @@
  *   epoch 2  Finished ->
  *   epoch 3  application data (CoAP) protected with the app-traffic keys
  *
- * This first phase is the happy path: it assumes each handshake message fits one record and does not
- * yet do the HelloRetryRequest cookie exchange or ACK/timeout retransmission (RFC 9147 §5.1, §5.8,
- * §7). Those are follow-on increments; the framing they need already exists in dtls_handshake.
+ * Each handshake message fits one record in this profile. When the client does not offer an X25519
+ * key_share up front, the server answers the first ClientHello with a HelloRetryRequest carrying a
+ * stateless, address-bound cookie and renegotiates the group to X25519 (RFC 9147 §5.1); the second
+ * ClientHello must echo the cookie before any asymmetric crypto is spent. Full ACK/timeout
+ * retransmission (§5.8, §7) beyond the Finished acknowledgement is a follow-on increment; the framing
+ * it needs already exists in dtls_handshake.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -50,6 +53,9 @@
  *         in this phase, so the certificate plus framing must fit one record). */
 #define DTLS_CONN_MSG_CAP 1024
 
+/** @brief Largest serialized peer address the HelloRetryRequest cookie binds (IPv6 16 + port 2). */
+#define DTLS_PEER_ADDR_MAX 18
+
 /** @brief Handshake progress. */
 enum class DtlsConnState : uint8_t
 {
@@ -73,6 +79,7 @@ struct DtlsServerConfig
     const uint8_t *ed25519_seed;   ///< 32-byte Ed25519 signing seed (matches @c cert_der)
     const uint8_t *ephemeral_priv; ///< 32-byte X25519 server ephemeral private key (fresh per handshake)
     const uint8_t *server_random;  ///< 32-byte ServerHello random (fresh per handshake)
+    const uint8_t *cookie_key;     ///< 32-byte server-wide secret keying the HelloRetryRequest cookie MAC (§5.1)
 };
 
 /** @brief One DTLS 1.3 server handshake. Owns all per-connection state; no heap. */
@@ -92,13 +99,17 @@ struct DtlsConn
     bool ep3_ready;                                  ///< epoch 3 keys installed
     uint8_t hs_finished_hash[SSH_SHA256_DIGEST_LEN]; ///< Transcript-Hash(CH..server Finished)
 
-    uint64_t tx_seq_ep0;         ///< next outbound record sequence number, epoch 0
-    uint64_t tx_seq_ep2;         ///< next outbound record sequence number, epoch 2
-    uint64_t tx_seq_ep3;         ///< next outbound record sequence number, epoch 3
-    uint16_t next_recv_msg_seq;  ///< handshake message_seq expected next from the client
-    DtlsReplayWindow replay_ep2; ///< anti-replay window for inbound epoch-2 records
-    uint64_t rx_ep2_seq;         ///< sequence number of the last inbound epoch-2 record (the client Finished)
-    bool hs_ack_sent;            ///< the client Finished has been acknowledged (RFC 9147 §5.8.3 / §7)
+    uint64_t tx_seq_ep0;                   ///< next outbound record sequence number, epoch 0
+    uint64_t tx_seq_ep2;                   ///< next outbound record sequence number, epoch 2
+    uint64_t tx_seq_ep3;                   ///< next outbound record sequence number, epoch 3
+    uint16_t tx_msg_seq;                   ///< next outbound handshake message_seq (advances across an optional HRR)
+    bool hrr_sent;                         ///< a HelloRetryRequest was sent; the next ClientHello is the retry (§5.1)
+    uint16_t next_recv_msg_seq;            ///< handshake message_seq expected next from the client
+    DtlsReplayWindow replay_ep2;           ///< anti-replay window for inbound epoch-2 records
+    uint64_t rx_ep2_seq;                   ///< sequence number of the last inbound epoch-2 record (the client Finished)
+    bool hs_ack_sent;                      ///< the client Finished has been acknowledged (RFC 9147 §5.8.3 / §7)
+    uint8_t peer_addr[DTLS_PEER_ADDR_MAX]; ///< serialized peer address the HRR cookie is bound to (§5.1)
+    uint8_t peer_addr_len;                 ///< bytes of @ref peer_addr in use (0 = no address bound)
 
     DtlsHsReasm reasm;                                    ///< inbound handshake reassembler
     uint8_t reasm_buf[4 + DTLS_CONN_REASM_CAP];           ///< TLS message = 4-byte header [0..3] + body [4..]
@@ -106,8 +117,15 @@ struct DtlsConn
     uint8_t fragbuf[DTLS_CONN_MSG_CAP + DTLS_HS_HDR_LEN]; ///< scratch for its DTLS handshake fragment
 };
 
-/** @brief Initialize a connection for a new handshake. @p cfg is copied (its pointers must outlive @p c). */
-void dtls_conn_init(DtlsConn *c, const DtlsServerConfig *cfg);
+/**
+ * @brief Initialize a connection for a new handshake. @p cfg is copied (its pointers must outlive @p c).
+ *
+ * @param peer_addr      serialized peer address (e.g. IP || port) the HelloRetryRequest cookie binds,
+ *                       so a cookie minted for one peer is worthless to another (RFC 9147 §5.1). May
+ *                       be NULL / 0 when no HRR is expected (the one-round-trip happy path).
+ * @param peer_addr_len  length of @p peer_addr; clamped to @ref DTLS_PEER_ADDR_MAX.
+ */
+void dtls_conn_init(DtlsConn *c, const DtlsServerConfig *cfg, const uint8_t *peer_addr, size_t peer_addr_len);
 
 /**
  * @brief Feed one inbound datagram; append any response records to @p out.

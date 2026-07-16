@@ -8,6 +8,31 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## DTLS 1.3 HelloRetryRequest carried the TLS version codepoints (0x0303 / 0x0304) instead of DTLS (0xFEFD / 0xFEFC)
+
+- **Status:** FIXED (2026-07-15). Found by **real-peer interop** the moment the HelloRetryRequest path was first
+  driven end-to-end (wolfSSL DTLS 1.3 client leading with a non-X25519 group; `test/servers/dtls_wolfssl`). The
+  HRR builder shipped in v6.17.0 but was never wired into the state machine until the HRR group renegotiation
+  landed, so no released version ever sent an HRR - the bug was latent in unexercised code.
+- **Symptom:** with the client offering only a non-X25519 key_share, the server correctly answered with a
+  HelloRetryRequest, but wolfSSL rejected it with a protocol_version alert (`-326`, record layer version error).
+  The direct one-round-trip path (client offers X25519 up front) worked, because its first server message is a
+  ServerHello - which _did_ use the DTLS codepoints - while the HRR did not.
+- **Root cause:** `tls13_build_server_hello` already took a `dtls` flag to emit `legacy_version` `0xFEFD` and
+  `supported_versions` `0xFEFC` (RFC 9147 §5.3), but `tls13_build_hello_retry_request` - a separate builder for
+  the same ServerHello structure - hard-coded `0x0303` / `0x0304`. The byte-exact HRR KAT (`native_dtls_tls13`)
+  had pinned those TLS codepoints, so it stayed green: another self-referential KAT that shared the mistake.
+- **Fix:** `tls13_build_hello_retry_request` gained the same `dtls` flag (`0xFEFD` / `0xFEFC` when set); the
+  DTLS state machine passes `dtls=true`, and the HRR KAT was recomputed with the DTLS codepoints. Verified
+  end-to-end: wolfSSL now completes the full handshake **through a HelloRetryRequest** and an application-data
+  round trip (`HANDSHAKE OK (via HelloRetryRequest)` ... `INTEROP OK`).
+- **Lesson:** exactly [the same lesson as the entry below](#dtls-13-used-the-tls-13-tls13--hkdf-label-prefix-instead-of-dtls13-plus-two-dtls-clienthelloversion-bugs) -
+  a self-KAT proves self-consistency, not conformance. The moment a new code path (the HRR) was exercised
+  against a real peer, it surfaced a deviation the green KAT had frozen in. Wire up real-peer interop for
+  _every_ path, not just the happy one.
+
+---
+
 ## DTLS 1.3 used the TLS 1.3 "tls13 " HKDF label prefix instead of "dtls13" (plus two DTLS ClientHello/version bugs)
 
 - **Status:** FIXED (2026-07-15). Three DTLS-vs-TLS conformance bugs found by the first **real-peer interop**

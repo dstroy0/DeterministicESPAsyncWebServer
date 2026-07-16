@@ -164,10 +164,13 @@ extern const uint8_t tls13_hrr_random[32];
  * @param session_id      legacy_session_id_echo (the client's, echoed verbatim; may be NULL if len 0).
  * @param selected_group  the NamedGroup the server wants the client's key_share for.
  * @param cookie          the return-routability cookie the client must echo (may be NULL if len 0).
+ * @param dtls            true to emit the DTLS 1.3 version codepoints (0xFEFD / 0xFEFC, RFC 9147 §5.3);
+ *                        false for the TLS 1.3 ones (0x0303 / 0x0304).
  * @return bytes written, or 0 on overflow.
  */
 size_t tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8_t *session_id, uint8_t session_id_len,
-                                       uint16_t selected_group, const uint8_t *cookie, size_t cookie_len);
+                                       uint16_t selected_group, const uint8_t *cookie, size_t cookie_len,
+                                       bool dtls = false);
 
 /**
  * @brief Build an EncryptedExtensions (RFC 8446 §4.3.1) with an empty extension list - the DTLS

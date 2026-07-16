@@ -6,7 +6,9 @@
 // 1.3 key schedule to deprotect the server flight, VERIFIES the server's CertificateVerify signature
 // and Finished MAC over the real transcript, sends its own Finished, and confirms both sides install
 // identical application-traffic keys. If any transcript byte, epoch, nonce, or key were wrong the
-// AEAD open, the signature check, or the key comparison would fail.
+// AEAD open, the signature check, or the key comparison would fail. A second case drives the
+// HelloRetryRequest path (RFC 9147 §5.1): a ClientHello with no X25519 key_share triggers an HRR with
+// a cookie, and the retry that echoes it completes the same full handshake.
 
 #include "network_drivers/presentation/dtls/dtls_conn.h"
 #include "network_drivers/presentation/dtls/dtls_handshake.h"
@@ -39,6 +41,10 @@ static const uint8_t SERVER_RANDOM[32] = {0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x
 static const uint8_t CLIENT_X25519_PRIV[32] = {0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
                                                0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
                                                0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22};
+static const uint8_t SERVER_COOKIE_KEY[32] = {0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
+                                              0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f, 0x70, 0x71,
+                                              0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a, 0x7b};
+static const uint8_t TEST_PEER_ADDR[6] = {192, 168, 1, 50, 0xC3, 0x50}; // IPv4 192.168.1.50 : port 50000
 
 // ---- a tiny byte writer ----
 struct Buf
@@ -61,9 +67,12 @@ static void bmem(Buf *b, const uint8_t *m, size_t k)
     b->n += k;
 }
 
-// Build a ClientHello (TLS message, 4-byte header + body) offering TLS 1.3 / X25519 / Ed25519 and a
-// key_share for @p client_pub. Returns its length.
-static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32])
+// Build a ClientHello (TLS message, 4-byte header + body) offering TLS 1.3 / X25519 / Ed25519. When
+// @p with_keyshare is true it carries an X25519 key_share for @p client_pub; otherwise it advertises
+// X25519 in supported_groups but sends no share (the HelloRetryRequest trigger). A non-NULL @p cookie
+// is echoed in a cookie extension (RFC 8446 §4.2.2), as a client does on its post-HRR retry.
+static size_t build_client_hello_ex(uint8_t *out, const uint8_t client_pub[32], bool with_keyshare,
+                                    const uint8_t *cookie, size_t cookie_len)
 {
     Buf b = {out, 0};
     b8(&b, 0x01); // client_hello
@@ -97,13 +106,24 @@ static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32])
     b16(&b, 0x0004);
     b16(&b, 0x0002);
     b16(&b, 0x0807);
-    // key_share: x25519 entry
-    b16(&b, 0x0033);
-    b16(&b, 0x0026); // ext body: client_shares(2) + entry(2+2+32)
-    b16(&b, 0x0024); // client_shares length
-    b16(&b, 0x001d); // group x25519
-    b16(&b, 0x0020); // key length 32
-    bmem(&b, client_pub, 32);
+    if (with_keyshare)
+    {
+        // key_share: x25519 entry
+        b16(&b, 0x0033);
+        b16(&b, 0x0026); // ext body: client_shares(2) + entry(2+2+32)
+        b16(&b, 0x0024); // client_shares length
+        b16(&b, 0x001d); // group x25519
+        b16(&b, 0x0020); // key length 32
+        bmem(&b, client_pub, 32);
+    }
+    if (cookie && cookie_len)
+    {
+        // cookie { opaque cookie<1..2^16-1> } (RFC 8446 §4.2.2)
+        b16(&b, 0x002c);
+        b16(&b, (uint16_t)(cookie_len + 2));
+        b16(&b, (uint16_t)cookie_len);
+        bmem(&b, cookie, cookie_len);
+    }
     uint16_t ext_len = (uint16_t)(b.n - ext_len_at - 2);
     out[ext_len_at] = (uint8_t)(ext_len >> 8);
     out[ext_len_at + 1] = (uint8_t)ext_len;
@@ -112,6 +132,11 @@ static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32])
     out[len_at + 1] = (uint8_t)(body >> 8);
     out[len_at + 2] = (uint8_t)body;
     return b.n;
+}
+
+static size_t build_client_hello(uint8_t *out, const uint8_t client_pub[32])
+{
+    return build_client_hello_ex(out, client_pub, /*with_keyshare=*/true, nullptr, 0);
 }
 
 // Pull the 32-byte X25519 key_share out of a ServerHello (walks its extensions for type 0x0033).
@@ -142,6 +167,39 @@ static bool sh_keyshare(const uint8_t *sh, size_t len, uint8_t pub[32])
     return false;
 }
 
+// Pull the cookie out of a HelloRetryRequest (a ServerHello walked for the 0x002c cookie extension,
+// whose body is opaque cookie<1..2^16-1>). Returns the inner cookie bytes and length.
+static bool hrr_cookie(const uint8_t *sh, size_t len, uint8_t *cookie_out, size_t *cookie_len)
+{
+    if (len < 44)
+        return false;
+    size_t o = 4 + 2 + 32;
+    uint8_t sid = sh[o++];
+    o += sid;
+    o += 2 + 1;
+    if (o + 2 > len)
+        return false;
+    size_t ext_end = o + 2 + ((sh[o] << 8) | sh[o + 1]);
+    o += 2;
+    while (o + 4 <= ext_end && ext_end <= len)
+    {
+        uint16_t et = (uint16_t)((sh[o] << 8) | sh[o + 1]);
+        uint16_t el = (uint16_t)((sh[o + 2] << 8) | sh[o + 3]);
+        o += 4;
+        if (et == 0x002c && el >= 2)
+        {
+            size_t cl = (size_t)((sh[o] << 8) | sh[o + 1]); // inner cookie length
+            if (cl + 2 > el || o + 2 + cl > len)
+                return false;
+            memcpy(cookie_out, sh + o + 2, cl);
+            *cookie_len = cl;
+            return true;
+        }
+        o += el;
+    }
+    return false;
+}
+
 // One DTLS handshake message per record in this phase: strip the 12-byte DTLS handshake header from a
 // record payload and rebuild the TLS handshake message (4-byte header + body). Returns TLS msg length.
 static size_t frag_to_tls(const uint8_t *payload, size_t plen, uint8_t *tls_out)
@@ -165,47 +223,18 @@ static size_t ct_record_len(const uint8_t *rec, size_t avail)
     return (o + enc <= avail) ? o + enc : 0;
 }
 
-// The full handshake, driven from the client side.
-static void test_full_handshake(void)
+// Given the server's flight (its response to the client's final ClientHello) and the client transcript
+// @p tr already updated through that final ClientHello, deprotect and verify the whole flight, send the
+// client Finished (handshake message_seq @p cfin_msg_seq), and assert both sides install identical
+// application-traffic keys. @p tr is taken by value so the caller's copy is untouched. Shared by the
+// one-round-trip and HelloRetryRequest paths (they differ only in the transcript prefix and message_seq).
+static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint16_t cfin_msg_seq,
+                                           const uint8_t *flight, size_t fl)
 {
-    uint8_t client_pub[32];
-    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
-    uint8_t server_ed_pub[32];
-    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
-
-    DtlsServerConfig cfg;
-    cfg.cert_der = server_ed_pub; // the "certificate" is the raw Ed25519 public key for this test
-    cfg.cert_len = 32;
-    cfg.ed25519_seed = SERVER_ED_SEED;
-    cfg.ephemeral_priv = SERVER_X25519_PRIV;
-    cfg.server_random = SERVER_RANDOM;
-
-    DtlsConn conn;
-    dtls_conn_init(&conn, &cfg);
-
-    // --- client flight 1: ClientHello (epoch 0) ---
-    uint8_t ch[256];
-    size_t ch_len = build_client_hello(ch, client_pub);
-
-    SshSha256Ctx tr; // client transcript
-    ssh_sha256_init(&tr);
-    ssh_sha256_update(&tr, ch, ch_len);
-
-    uint8_t ch_frag[300];
-    size_t ch_fl = dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
-                                      sizeof(ch_frag));
-    uint8_t ch_rec[320];
-    size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
-
-    uint8_t flight[2048];
-    int fl = dtls_conn_process(&conn, ch_rec, ch_rl, flight, sizeof(flight));
-    TEST_ASSERT_TRUE(fl > 0); // server produced its flight
-
-    // --- parse the server flight ---
     size_t off = 0;
     // record 0: ServerHello (DTLSPlaintext, epoch 0)
     DtlsPlaintext pt;
-    size_t rl = dtls_plaintext_parse(flight + off, (size_t)fl - off, &pt);
+    size_t rl = dtls_plaintext_parse(flight + off, fl - off, &pt);
     TEST_ASSERT_TRUE(rl > 0);
     off += rl;
     uint8_t sh[512];
@@ -216,13 +245,13 @@ static void test_full_handshake(void)
     uint8_t server_pub[32];
     TEST_ASSERT_TRUE(sh_keyshare(sh, sh_len, server_pub));
 
-    // client handshake key schedule from Transcript-Hash(CH..SH)
+    // client handshake key schedule from Transcript-Hash(..SH)
     uint8_t ecdhe[32];
     ssh_x25519(ecdhe, CLIENT_X25519_PRIV, server_pub);
     Tls13KeySchedule cks;
     uint8_t h[32];
     SshSha256Ctx tmp = tr;
-    ssh_sha256_final(&tmp, h); // H(CH..SH)
+    ssh_sha256_final(&tmp, h);
     tls13_ks_early(&DTLS13_KDF, &cks);
     tls13_ks_handshake(&cks, ecdhe, h, 32);
 
@@ -234,9 +263,9 @@ static void test_full_handshake(void)
     bool have_cert = false;
     uint64_t exp_seq = 0;
     int seen_fin = 0;
-    while (off < (size_t)fl)
+    while (off < fl)
     {
-        size_t crl = ct_record_len(flight + off, (size_t)fl - off);
+        size_t crl = ct_record_len(flight + off, fl - off);
         TEST_ASSERT_TRUE(crl > 0);
         uint8_t inner[512];
         DtlsCiphertext info;
@@ -249,10 +278,10 @@ static void test_full_handshake(void)
         size_t mlen = frag_to_tls(inner, info.pt_len, msg);
         TEST_ASSERT_TRUE(mlen > 0);
 
-        if (msg[0] == 15) // CertificateVerify: verify BEFORE hashing it in, over H(CH..Certificate)
+        if (msg[0] == 15) // CertificateVerify: verify BEFORE hashing it in, over H(..Certificate)
         {
             TEST_ASSERT_TRUE(have_cert);
-            uint8_t h_ch_cert[32]; // transcript now holds CH..Certificate (CV not yet hashed in)
+            uint8_t h_ch_cert[32];
             SshSha256Ctx sc = tr;
             ssh_sha256_final(&sc, h_ch_cert);
             uint8_t content[160]; // 64*0x20 + 33-byte context + 0x00 + 32-byte hash = 130
@@ -261,7 +290,7 @@ static void test_full_handshake(void)
             const uint8_t *sig = msg + 4 + 2 + 2; // algorithm(2) + signature length(2)
             TEST_ASSERT_TRUE(ssh_ed25519_verify(cert_pub, content, clen, sig));
         }
-        if (msg[0] == 20) // server Finished: verify over H(CH..CertificateVerify)
+        if (msg[0] == 20) // server Finished: verify over H(..CertificateVerify)
         {
             uint8_t hcv[32];
             SshSha256Ctx s = tr;
@@ -282,7 +311,7 @@ static void test_full_handshake(void)
     }
     TEST_ASSERT_TRUE(seen_fin);
 
-    // --- client Finished over Transcript-Hash(CH..server Finished) ---
+    // --- client Finished over Transcript-Hash(..server Finished) ---
     uint8_t h_sfin[32];
     SshSha256Ctx s2 = tr;
     ssh_sha256_final(&s2, h_sfin);
@@ -297,15 +326,15 @@ static void test_full_handshake(void)
     dtls_record_keys_derive(&cli_write, DtlsCipher::AES_128_GCM_SHA256, 2, cks.client_hs_traffic);
 
     uint8_t cfin_frag[80];
-    size_t cff = dtls_hs_frag_build(cfin[0], 1, (uint32_t)(cfin_len - 4), 0, cfin + 4, (uint32_t)(cfin_len - 4),
-                                    cfin_frag, sizeof(cfin_frag));
+    size_t cff = dtls_hs_frag_build(cfin[0], cfin_msg_seq, (uint32_t)(cfin_len - 4), 0, cfin + 4,
+                                    (uint32_t)(cfin_len - 4), cfin_frag, sizeof(cfin_frag));
     uint8_t cfin_rec[128];
     size_t cfr = dtls_ciphertext_protect(&cli_write, 0, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec, sizeof(cfin_rec));
 
     uint8_t out2[64];
-    int r2 = dtls_conn_process(&conn, cfin_rec, cfr, out2, sizeof(out2));
+    int r2 = dtls_conn_process(conn, cfin_rec, cfr, out2, sizeof(out2));
     TEST_ASSERT_TRUE(r2 > 0); // the server acknowledges the client Finished (RFC 9147 §5.8.3)
-    TEST_ASSERT_TRUE(dtls_conn_established(&conn));
+    TEST_ASSERT_TRUE(dtls_conn_established(conn));
 
     // --- both sides agree on the application-traffic keys ---
     DtlsRecordKeys cli_app_read;  // client reads server app data (from server_ap_traffic)
@@ -319,14 +348,172 @@ static void test_full_handshake(void)
     TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&cli_app_read, 0, out2, (size_t)r2, ack_pt, sizeof(ack_pt), &ackinfo));
     TEST_ASSERT_EQUAL_UINT8(DTLS_CT_ACK, ackinfo.content_type);
 
-    const DtlsRecordKeys *srv_app_write = dtls_conn_app_write_keys(&conn); // server->client
-    const DtlsRecordKeys *srv_app_read = dtls_conn_app_read_keys(&conn);   // client->server
+    const DtlsRecordKeys *srv_app_write = dtls_conn_app_write_keys(conn); // server->client
+    const DtlsRecordKeys *srv_app_read = dtls_conn_app_read_keys(conn);   // client->server
     TEST_ASSERT_NOT_NULL(srv_app_write);
     TEST_ASSERT_NOT_NULL(srv_app_read);
     TEST_ASSERT_EQUAL_MEMORY(cli_app_read.key, srv_app_write->key, 16);
     TEST_ASSERT_EQUAL_MEMORY(cli_app_read.iv, srv_app_write->iv, 12);
     TEST_ASSERT_EQUAL_MEMORY(cli_app_write.key, srv_app_read->key, 16);
     TEST_ASSERT_EQUAL_MEMORY(cli_app_write.iv, srv_app_read->iv, 12);
+}
+
+static void server_cfg(DtlsServerConfig *cfg, const uint8_t server_ed_pub[32])
+{
+    cfg->cert_der = server_ed_pub; // the "certificate" is the raw Ed25519 public key for this test
+    cfg->cert_len = 32;
+    cfg->ed25519_seed = SERVER_ED_SEED;
+    cfg->ephemeral_priv = SERVER_X25519_PRIV;
+    cfg->server_random = SERVER_RANDOM;
+    cfg->cookie_key = SERVER_COOKIE_KEY;
+}
+
+// The full one-round-trip handshake, driven from the client side.
+static void test_full_handshake(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    dtls_conn_init(&conn, &cfg, nullptr, 0); // no HRR expected on the happy path
+
+    // --- client flight 1: ClientHello (epoch 0) ---
+    uint8_t ch[256];
+    size_t ch_len = build_client_hello(ch, client_pub);
+
+    SshSha256Ctx tr; // client transcript
+    ssh_sha256_init(&tr);
+    ssh_sha256_update(&tr, ch, ch_len);
+
+    uint8_t ch_frag[300];
+    size_t ch_fl = dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), ch_frag,
+                                      sizeof(ch_frag));
+    uint8_t ch_rec[320];
+    size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
+
+    uint8_t flight[2048];
+    int fl = dtls_conn_process(&conn, ch_rec, ch_rl, flight, sizeof(flight));
+    TEST_ASSERT_TRUE(fl > 0); // server produced its flight
+
+    complete_handshake_from_flight(&conn, tr, /*cfin_msg_seq=*/1, flight, (size_t)fl);
+}
+
+// The HelloRetryRequest path (RFC 9147 §5.1): a ClientHello that offers X25519 but sends no key_share
+// draws an HRR with a cookie; the retry echoes the cookie and its X25519 share, and the same full
+// handshake completes over the message_hash || HRR || ClientHello2 || ... transcript (RFC 8446 §4.4.1).
+static void test_hrr_group_renegotiation(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    dtls_conn_init(&conn, &cfg, TEST_PEER_ADDR, sizeof(TEST_PEER_ADDR));
+
+    // --- client flight 1: ClientHello with NO key_share (message_seq 0) ---
+    uint8_t ch1[256];
+    size_t ch1_len = build_client_hello_ex(ch1, client_pub, /*with_keyshare=*/false, nullptr, 0);
+    uint8_t f1[300];
+    size_t f1l =
+        dtls_hs_frag_build(ch1[0], 0, (uint32_t)(ch1_len - 4), 0, ch1 + 4, (uint32_t)(ch1_len - 4), f1, sizeof(f1));
+    uint8_t r1[320];
+    size_t r1l = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, f1, f1l, r1, sizeof(r1));
+
+    uint8_t hrr_flight[512];
+    int hf = dtls_conn_process(&conn, r1, r1l, hrr_flight, sizeof(hrr_flight));
+    TEST_ASSERT_TRUE(hf > 0);
+    TEST_ASSERT_FALSE(dtls_conn_established(&conn)); // just an HRR so far
+
+    // --- the server flight is a single epoch-0 plaintext HelloRetryRequest ---
+    DtlsPlaintext pt;
+    size_t rl = dtls_plaintext_parse(hrr_flight, (size_t)hf, &pt);
+    TEST_ASSERT_TRUE(rl > 0);
+    uint8_t hrr[512];
+    size_t hrr_len = frag_to_tls(pt.fragment, pt.frag_len, hrr);
+    TEST_ASSERT_TRUE(hrr_len > 0);
+    TEST_ASSERT_EQUAL_UINT8(0x02, hrr[0]);                       // ServerHello handshake type
+    TEST_ASSERT_EQUAL_MEMORY(tls13_hrr_random, hrr + 4 + 2, 32); // the HRR magic random marks it an HRR
+    uint8_t cookie[DTLS_COOKIE_MAX];
+    size_t cookie_len = 0;
+    TEST_ASSERT_TRUE(hrr_cookie(hrr, hrr_len, cookie, &cookie_len));
+    TEST_ASSERT_TRUE(cookie_len > 0);
+
+    // --- client transcript for the HRR path: message_hash(Hash(CH1)) || HRR || CH2 (RFC 8446 §4.4.1) ---
+    uint8_t ch1_hash[32];
+    SshSha256Ctx h1;
+    ssh_sha256_init(&h1);
+    ssh_sha256_update(&h1, ch1, ch1_len);
+    ssh_sha256_final(&h1, ch1_hash);
+
+    SshSha256Ctx tr;
+    ssh_sha256_init(&tr);
+    uint8_t mh[36];
+    size_t mhl = tls13_build_message_hash(mh, sizeof(mh), ch1_hash);
+    TEST_ASSERT_TRUE(mhl > 0);
+    ssh_sha256_update(&tr, mh, mhl);
+    ssh_sha256_update(&tr, hrr, hrr_len);
+
+    // --- client flight 2: ClientHello with the X25519 share and the echoed cookie (message_seq 1) ---
+    uint8_t ch2[320];
+    size_t ch2_len = build_client_hello_ex(ch2, client_pub, /*with_keyshare=*/true, cookie, cookie_len);
+    ssh_sha256_update(&tr, ch2, ch2_len);
+
+    uint8_t f2[380];
+    size_t f2l =
+        dtls_hs_frag_build(ch2[0], 1, (uint32_t)(ch2_len - 4), 0, ch2 + 4, (uint32_t)(ch2_len - 4), f2, sizeof(f2));
+    uint8_t r2[420];
+    size_t r2l = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 1, f2, f2l, r2, sizeof(r2));
+
+    uint8_t flight[2048];
+    int fl = dtls_conn_process(&conn, r2, r2l, flight, sizeof(flight));
+    TEST_ASSERT_TRUE(fl > 0); // the full server flight
+
+    complete_handshake_from_flight(&conn, tr, /*cfin_msg_seq=*/2, flight, (size_t)fl);
+}
+
+// After an HRR, a retry that carries the X25519 share but omits (or corrupts) the cookie is rejected:
+// the server refuses to spend the handshake before the client's address is proven (RFC 9147 §5.1).
+static void test_hrr_retry_without_cookie_rejected(void)
+{
+    uint8_t client_pub[32];
+    ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
+    uint8_t server_ed_pub[32];
+    ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
+
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
+    DtlsConn conn;
+    dtls_conn_init(&conn, &cfg, TEST_PEER_ADDR, sizeof(TEST_PEER_ADDR));
+
+    // CH1 without a key_share -> HRR.
+    uint8_t ch1[256];
+    size_t ch1_len = build_client_hello_ex(ch1, client_pub, /*with_keyshare=*/false, nullptr, 0);
+    uint8_t f1[300];
+    size_t f1l =
+        dtls_hs_frag_build(ch1[0], 0, (uint32_t)(ch1_len - 4), 0, ch1 + 4, (uint32_t)(ch1_len - 4), f1, sizeof(f1));
+    uint8_t r1[320];
+    size_t r1l = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, f1, f1l, r1, sizeof(r1));
+    uint8_t hrr_flight[512];
+    TEST_ASSERT_TRUE(dtls_conn_process(&conn, r1, r1l, hrr_flight, sizeof(hrr_flight)) > 0);
+
+    // CH2 with a key_share but NO cookie (message_seq 1) -> handshake_failure.
+    uint8_t ch2[320];
+    size_t ch2_len = build_client_hello_ex(ch2, client_pub, /*with_keyshare=*/true, nullptr, 0);
+    uint8_t f2[380];
+    size_t f2l =
+        dtls_hs_frag_build(ch2[0], 1, (uint32_t)(ch2_len - 4), 0, ch2 + 4, (uint32_t)(ch2_len - 4), f2, sizeof(f2));
+    uint8_t r2[420];
+    size_t r2l = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 1, f2, f2l, r2, sizeof(r2));
+    uint8_t out[2048];
+    TEST_ASSERT_EQUAL_INT(-1, dtls_conn_process(&conn, r2, r2l, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(40, dtls_conn_alert(&conn)); // handshake_failure
 }
 
 // A ClientHello that does not offer TLS 1.3 is rejected with a protocol_version alert.
@@ -336,9 +523,10 @@ static void test_reject_no_tls13(void)
     ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
     uint8_t server_ed_pub[32];
     ssh_ed25519_pubkey(server_ed_pub, SERVER_ED_SEED);
-    DtlsServerConfig cfg = {server_ed_pub, 32, SERVER_ED_SEED, SERVER_X25519_PRIV, SERVER_RANDOM};
+    DtlsServerConfig cfg;
+    server_cfg(&cfg, server_ed_pub);
     DtlsConn conn;
-    dtls_conn_init(&conn, &cfg);
+    dtls_conn_init(&conn, &cfg, nullptr, 0);
 
     uint8_t ch[256];
     size_t ch_len = build_client_hello(ch, client_pub);
@@ -361,6 +549,8 @@ int main(int, char **)
 {
     UNITY_BEGIN();
     RUN_TEST(test_full_handshake);
+    RUN_TEST(test_hrr_group_renegotiation);
+    RUN_TEST(test_hrr_retry_without_cookie_rejected);
     RUN_TEST(test_reject_no_tls13);
     return UNITY_END();
 }

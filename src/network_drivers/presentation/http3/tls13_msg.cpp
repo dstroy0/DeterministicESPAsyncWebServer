@@ -393,7 +393,7 @@ const uint8_t tls13_hrr_random[32] = {0xCF, 0x21, 0xAD, 0x74, 0xE5, 0x9A, 0x61, 
                                       0x8C, 0x5E, 0x07, 0x9E, 0x09, 0xE2, 0xC8, 0xA8, 0x33, 0x9C};
 
 size_t tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8_t *session_id, uint8_t session_id_len,
-                                       uint16_t selected_group, const uint8_t *cookie, size_t cookie_len)
+                                       uint16_t selected_group, const uint8_t *cookie, size_t cookie_len, bool dtls)
 {
     if (cookie_len > 0xFFFD)
         return 0; // cookie extension body (cookie_len + 2) must fit a uint16
@@ -401,7 +401,10 @@ size_t tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8_t *
     w_u8(&w, TlsHs::TLS_HS_SERVER_HELLO);
     size_t hs_len = w_mark(&w, 3);
 
-    w_u16(&w, 0x0303); // legacy_version
+    // legacy_version and the supported_versions selection use the DTLS codepoints for DTLS 1.3
+    // (0xFEFD / 0xFEFC, RFC 9147 §5.3), the TLS ones (0x0303 / 0x0304) otherwise - a HelloRetryRequest
+    // is a ServerHello, so it carries the same version fields.
+    w_u16(&w, dtls ? TLS_LEGACY_VERSION_DTLS : (uint16_t)0x0303); // legacy_version
     w_bytes(&w, tls13_hrr_random, 32);
     w_u8(&w, session_id_len);
     w_bytes(&w, session_id, session_id_len);
@@ -409,10 +412,10 @@ size_t tls13_build_hello_retry_request(uint8_t *out, size_t cap, const uint8_t *
     w_u8(&w, 0x00); // legacy_compression_method
 
     size_t ext_len = w_mark(&w, 2);
-    // supported_versions -> selected 0x0304.
+    // supported_versions -> the selected version.
     w_u16(&w, TlsExt::TLS_EXT_SUPPORTED_VERSIONS);
     w_u16(&w, 2);
-    w_u16(&w, TLS_VERSION_1_3);
+    w_u16(&w, dtls ? TLS_VERSION_DTLS_1_3 : TLS_VERSION_1_3);
     // key_share (HelloRetryRequest form) -> just the selected group (RFC 8446 §4.2.8).
     w_u16(&w, TlsExt::TLS_EXT_KEY_SHARE);
     w_u16(&w, 2);

@@ -58,16 +58,20 @@ int main(int argc, char **argv)
     rand_bytes(eph, 32);
     rand_bytes(srand, 32);
 
+    static const uint8_t cookie_key[32] = {0}; // fixed HRR cookie secret is fine for a one-shot test peer
     DtlsServerConfig cfg;
     cfg.cert_der = cert;
     cfg.cert_len = cert_len;
     cfg.ed25519_seed = seed;
     cfg.ephemeral_priv = eph;
     cfg.server_random = srand;
+    cfg.cookie_key = cookie_key;
     DtlsConn conn;
-    dtls_conn_init(&conn, &cfg);
+    bool inited = false; // the HRR cookie binds the peer address, so init once the first datagram reveals it
 
     int fd = socket(AF_INET, SOCK_DGRAM, 0);
+    int one = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof one); // don't wedge on a just-exited prior run
     sockaddr_in a;
     memset(&a, 0, sizeof a);
     a.sin_family = AF_INET;
@@ -82,6 +86,8 @@ int main(int argc, char **argv)
 
     uint8_t dgram[8192], out[8192];
     uint64_t app_rx_next = 0, app_tx_seq = 0;
+    int pre_flights =
+        0; // server flights sent before establishment; >= 2 means a HelloRetryRequest preceded ServerHello
     sockaddr_in peer;
     socklen_t plen;
     for (;;)
@@ -90,6 +96,15 @@ int main(int argc, char **argv)
         ssize_t n = recvfrom(fd, dgram, sizeof dgram, 0, (sockaddr *)&peer, &plen);
         if (n <= 0)
             continue;
+        if (!inited)
+        {
+            // Bind the HRR cookie to this peer's IPv4 address + port.
+            uint8_t paddr[6];
+            memcpy(paddr, &peer.sin_addr.s_addr, 4);
+            memcpy(paddr + 4, &peer.sin_port, 2);
+            dtls_conn_init(&conn, &cfg, paddr, sizeof paddr);
+            inited = true;
+        }
         if (!dtls_conn_established(&conn))
         {
             int r = dtls_conn_process(&conn, dgram, (size_t)n, out, sizeof out);
@@ -101,7 +116,9 @@ int main(int argc, char **argv)
             if (r > 0)
                 sendto(fd, out, (size_t)r, 0, (sockaddr *)&peer, plen);
             if (dtls_conn_established(&conn))
-                fprintf(stderr, "HANDSHAKE OK\n");
+                fprintf(stderr, "HANDSHAKE OK%s\n", pre_flights >= 2 ? " (via HelloRetryRequest)" : "");
+            else if (r > 0)
+                pre_flights++;
         }
         else
         {

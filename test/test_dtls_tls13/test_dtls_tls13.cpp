@@ -24,9 +24,10 @@ static const uint8_t HRR_MAGIC[32] = {0xCF, 0x21, 0xAD, 0x74, 0xE5, 0x9A, 0x61, 
                                       0x02, 0x1E, 0x65, 0xB8, 0x91, 0xC2, 0xA2, 0x11, 0x16, 0x7A, 0xBB,
                                       0x8C, 0x5E, 0x07, 0x9E, 0x09, 0xE2, 0xC8, 0xA8, 0x33, 0x9C};
 
-// The whole HelloRetryRequest for (session_id="", group=X25519, cookie=AA BB CC DD), byte-for-byte.
+// The whole DTLS 1.3 HelloRetryRequest for (session_id="", group=X25519, cookie=AA BB CC DD),
+// byte-for-byte. DTLS carries the 0xFEFD / 0xFEFC version codepoints (RFC 9147 §5.3), not 0x0303 / 0x0304.
 static const uint8_t HRR_WIRE[66] = {0x02, 0x00, 0x00, 0x3e,                         // server_hello, length 62
-                                     0x03, 0x03,                                     // legacy_version
+                                     0xFE, 0xFD,                                     // legacy_version (DTLS 1.2)
                                      0xCF, 0x21, 0xAD, 0x74, 0xE5, 0x9A, 0x61, 0x11, // \_ HRR magic random ...
                                      0xBE, 0x1D, 0x8C, 0x02, 0x1E, 0x65, 0xB8, 0x91, //
                                      0xC2, 0xA2, 0x11, 0x16, 0x7A, 0xBB, 0x8C, 0x5E, //
@@ -35,7 +36,7 @@ static const uint8_t HRR_WIRE[66] = {0x02, 0x00, 0x00, 0x3e,                    
                                      0x13, 0x01,                         // cipher_suite TLS_AES_128_GCM_SHA256
                                      0x00,                               // legacy_compression_method
                                      0x00, 0x16,                         // extensions length 22
-                                     0x00, 0x2b, 0x00, 0x02, 0x03, 0x04, // supported_versions -> 0x0304
+                                     0x00, 0x2b, 0x00, 0x02, 0xFE, 0xFC, // supported_versions -> DTLS 1.3 (0xFEFC)
                                      0x00, 0x33, 0x00, 0x02, 0x00, 0x1d, // key_share (HRR) -> selected_group X25519
                                      0x00, 0x2c, 0x00, 0x06, 0x00, 0x04, 0xAA, 0xBB,
                                      0xCC, 0xDD}; // cookie -> AA BB CC DD
@@ -50,7 +51,8 @@ static void test_hrr_build_kat(void)
 {
     const uint8_t cookie[4] = {0xAA, 0xBB, 0xCC, 0xDD};
     uint8_t out[128];
-    size_t n = tls13_build_hello_retry_request(out, sizeof(out), nullptr, 0, TLS_GROUP_X25519, cookie, sizeof(cookie));
+    size_t n = tls13_build_hello_retry_request(out, sizeof(out), nullptr, 0, TLS_GROUP_X25519, cookie, sizeof(cookie),
+                                               /*dtls=*/true);
     TEST_ASSERT_EQUAL_size_t(sizeof(HRR_WIRE), n);
     TEST_ASSERT_EQUAL_MEMORY(HRR_WIRE, out, sizeof(HRR_WIRE));
     // The random field carries the magic, i.e. this ServerHello is a HelloRetryRequest.
@@ -62,8 +64,8 @@ static void test_hrr_echoes_session_id(void)
     const uint8_t sid[4] = {0xDE, 0xAD, 0xBE, 0xEF};
     const uint8_t cookie[2] = {0x01, 0x02};
     uint8_t out[128];
-    size_t n =
-        tls13_build_hello_retry_request(out, sizeof(out), sid, sizeof(sid), TLS_GROUP_X25519, cookie, sizeof(cookie));
+    size_t n = tls13_build_hello_retry_request(out, sizeof(out), sid, sizeof(sid), TLS_GROUP_X25519, cookie,
+                                               sizeof(cookie), /*dtls=*/true);
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_UINT8(sizeof(sid), out[38]);        // legacy_session_id_echo length
     TEST_ASSERT_EQUAL_MEMORY(sid, out + 39, sizeof(sid)); // echoed verbatim

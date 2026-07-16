@@ -20,15 +20,24 @@ test/servers/dtls_wolfssl/run_interop.sh
 Expected output:
 
 ```
+>> running interop [HRR (default groups)] on udp/11150
+HANDSHAKE OK (via HelloRetryRequest)
+APPDATA RX 14 bytes: hello wolfssl!
+APPDATA echoed 14 bytes; INTEROP OK
+>> PASS [HRR (default groups)]
+>> running interop [direct X25519 (-t)] on udp/11150
 HANDSHAKE OK
 APPDATA RX 14 bytes: hello wolfssl!
 APPDATA echoed 14 bytes; INTEROP OK
->> PASS
+>> PASS [direct X25519 (-t)]
+>> ALL PASS
 ```
 
-The script, on first run, builds wolfSSL, generates a throwaway Ed25519 certificate, compiles the
-harness, and runs the exchange. Overrides via env: `WOLFSSL_VERSION`, `DTLS_INTEROP_PORT`,
-`DTLS_INTEROP_WORK`.
+The client runs twice: once with wolfSSL's default groups (it leads with a non-X25519 key_share, so
+the server answers with a HelloRetryRequest and renegotiates the group to X25519), and once with `-t`
+(X25519 offered up front) for the one-round-trip path. The script, on first run, builds wolfSSL,
+generates a throwaway Ed25519 certificate, compiles the harness, and runs the exchange. Overrides via
+env: `WOLFSSL_VERSION`, `DTLS_INTEROP_PORT`, `DTLS_INTEROP_WORK`.
 
 ## Building wolfSSL with DTLS 1.3 (what the script does)
 
@@ -45,10 +54,11 @@ make -j"$(nproc)"
 # -> examples/client/client
 ```
 
-The client flags used: `-u` (DTLS over UDP), `-v 4` (DTLS 1.3), `-t` (X25519 key exchange — our
-server supports only X25519 and does not yet send a HelloRetryRequest to renegotiate the group),
-`-d` (skip cert-chain verification of the throwaway self-signed cert; the CertificateVerify
-signature is still checked against the cert's public key).
+The client flags used: `-u` (DTLS over UDP), `-v 4` (DTLS 1.3), `-d` (skip cert-chain verification of
+the throwaway self-signed cert; the CertificateVerify signature is still checked against the cert's
+public key). `-t` (offer an X25519 key_share up front) is used only for the second, one-round-trip
+run; the first run omits it so wolfSSL leads with its default group and the server renegotiates to
+X25519 with a HelloRetryRequest (RFC 9147 §5.1).
 
 ## What this caught
 
