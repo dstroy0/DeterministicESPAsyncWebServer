@@ -54,6 +54,20 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
   families against real third-party peers; expand it to exercise EVERY shipped feature/protocol against
   a real reference implementation (per-feature interop driver + a real peer/broker), so every codec is
   proven on the wire, not just host-mocked. Detail under **Test coverage**.
+- **Per-variant crypto HW acceleration (ESP32-P4 / ESP32-C3)** - the crypto fast paths are S3-tuned
+  (RSA/MPI MODMULT for curve25519 / Ed25519 / P-256, PIE-vector `ssh_gf` fallback). Extend them to the
+  other variants against each chip's TRM (peripherals differ - verify capability flags, do not assume):
+  - **ESP32-P4** - has a dedicated **ECC accelerator** (hardware point multiply for NIST P-192 / P-256)
+    and an **ECDSA** peripheral: route `ssh_ecdsa` P-256 sign / verify / ECDH through the ECC HW (faster
+    than the MODMULT emulation, and moves the constant-time guarantee into silicon). The P4 also has
+    **hardware AES-GCM** (`SOC_AES_SUPPORT_GCM`), which would replace the software 4-bit-table GHASH and
+    lift the AES-256-GCM record-layer ceiling. curve25519 / Ed25519 stay on the MPI MODMULT (the ECC HW
+    is NIST-prime only, not the 2^255-19 field).
+  - **ESP32-C3** - RISC-V single core with an RSA/MPI accelerator (to 3072-bit) but **no** ECC block, PIE
+    vector, or HW-GCM: gate the S3 MODMULT paths (`DETWS_FE25519_MPI_HW`, `DETWS_ECDSA_MPI_HW`) on the C3
+    too after confirming its `soc/hwcrypto_reg.h` MODMULT register sequence matches; GHASH stays the 4-bit
+    table, the `ssh_gf` SIMD path is unavailable. Consider the DS peripheral for eFuse-backed RSA.
+  - Each is HW-gated + KAT'd on the real chip (rig KAT self-check pattern), like the S3 work.
 
 ### PARTIAL (`[~]` - shipped, remainder noted)
 

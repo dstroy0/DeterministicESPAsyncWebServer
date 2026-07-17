@@ -7,16 +7,15 @@
  */
 
 #include "network_drivers/presentation/ssh/crypto/ssh_chacha20.h"
+#include "shared_primitives/crypto_opt.h"
 
 // ChaCha20 is a hot, pure-integer (add/xor/rotate) keystream generator. The ESP32-S3 has no usable
 // vector path (its PIE unit has only a *saturating* 32-bit add, `ee.vadds.s32`; ChaCha needs modular
 // wrap-around, so it cannot be vectorized). The real lever is optimization level: the library ships at
-// the arduino framework's -Os, and ChaCha runs ~2.36x faster at -O2 (measured on-device, CCOUNT). Force
-// -O2 for just this translation unit so the cipher is fast regardless of the consumer's size-optimized
-// build. Byte-exact (no logic change); the SIMD investigation is in docs/FEATURE_PERFORMANCE.md.
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC optimize("O2")
-#endif
+// the arduino framework's -Os, and ChaCha runs ~2.36x faster at -O2 (measured on-device, CCOUNT). It is
+// constant-time by structure (no secret-dependent branches), so forcing a higher level is side-channel
+// safe - see the caveats in crypto_opt.h. Byte-exact; the SIMD investigation is in docs/FEATURE_PERFORMANCE.md.
+DETWS_CRYPTO_HOT
 
 namespace
 {

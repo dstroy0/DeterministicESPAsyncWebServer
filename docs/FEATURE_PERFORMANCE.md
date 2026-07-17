@@ -412,7 +412,11 @@ accelerator on the S3 (see the MODMULT bullet); the host figures are the softwar
   vector assembly plus already-`int32` C glue, neither of which the optimizer can improve, so the shipped `-Og`
   figures **are** the production crypto numbers (unlike the pure-C protocol codecs, which gain ~15-30% at `-O2`).
   The MODMULT X25519 is likewise hardware-bound (the accelerator, not the C glue, is the floor), so `-O2` is a
-  no-op there too.
+  no-op there too. The pure-C ciphers that _do_ benefit (ChaCha20, Poly1305 - ~2x) force a higher level per
+  translation unit via `DETWS_CRYPTO_HOT` ([`shared_primitives/crypto_opt.h`](../src/shared_primitives/crypto_opt.h),
+  configurable `DETWS_CRYPTO_OPT_LEVEL` = 2 default / 3 / 0), applied **only** to code that is constant-time by
+  structure; the mask-select scalar-mult paths are deliberately left at `-Os` (they are HW-dominated and cranking
+  the optimizer risks defeating their constant-time property for no speedup).
 - **Where the handshake time goes - and the SIMD acceleration target.** The radix-2^16 field multiply
   `ssh_gf_mul` is **13,308 cycles / 55.4 us** on the S3 in scalar form (a 16x16 schoolbook = 256 multiply-accumulates). At
   ~2,600 field multiplies per X25519 (255 ladder steps x ~10 mul/sq + the reduction) it is essentially the

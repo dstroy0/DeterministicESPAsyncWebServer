@@ -1322,7 +1322,8 @@
     "Batina",
     "Renes",
     "CIOS",
-    "mults"
+    "mults",
+    "hwcrypto"
   ],
   "ignorePaths": [
     "node_modules/**",
