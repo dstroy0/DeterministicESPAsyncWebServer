@@ -4,17 +4,61 @@
 /**
  * @file ssh_ecdsa.cpp
  * @brief ECDSA over NIST P-256 for ecdsa-sha2-nistp256 (RFC 5656 / FIPS 186-4).
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * THREE BUILD PATHS
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * ESP32-S3 (Arduino): a self-contained P-256 whose every 256-bit field / scalar multiply is one
+ *   modular multiply on the RSA/MPI hardware accelerator (the same engine ssh_fe25519.h drives for
+ *   X25519 / Ed25519) - the MODMULT is modulus-generic, so it serves both the field domain (mod p)
+ *   and the scalar domain (mod n) by swapping the {M, m', R^2} constants. Point arithmetic uses the
+ *   exception-free complete formulas (Renes-Costello-Batina 2016, EFD add/dbl-2015-rcb, a = -3) driven by
+ *   a constant-time 4-bit fixed-window scalar multiply (uniform op sequence, full-table masked select, no
+ *   input-dependent branches). Signing is RFC 6979 deterministic, so the on-device output is byte-exact to
+ *   the published vectors (same KATs as native). This is the production path (DETWS_ECDSA_MPI_HW); sign /
+ *   verify / ecdh run ~2.7-2.9x faster than the mbedTLS ECP path it replaces on non-S3 targets.
+ *
+ * Native: the identical complete-formula / RFC 6979 code, but each field multiply is a software
+ *   schoolbook product reduced bit-serially. Only fp_mul differs from the S3 path, so the native KATs
+ *   validate the exact point / scalar arithmetic the accelerator runs. Test-only, not in firmware.
+ *
+ * Other Arduino (classic ESP32 etc.): mbedTLS (mbedtls_ecdsa_*, mbedtls_ecp_*) - hardware big-integer
+ *   math and side-channel hardening, signing with the ESP32 hardware RNG. The MODMULT register layout is
+ *   an S3 specialization, so non-S3 targets keep the portable mbedTLS path (no perf regression).
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * WIRE FORMATS (assembled by the SSH transport/auth layers, not here)
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Public-key blob:  string("ecdsa-sha2-nistp256") || string("nistp256") || string(Q), Q = 0x04||X||Y.
+ * Signature blob:   string("ecdsa-sha2-nistp256") || string( mpint(r) || mpint(s) ); this module
+ *   exposes raw r||s (32+32 big-endian) and the layers mpint-wrap them.
+ * ECDH shared secret (RFC 5656 sec 4): K = X coordinate of d*Q_peer, raw 32-byte big-endian.
+ *
+ * @author  Douglas Quigg (dstroy0)
+ * @date    2026
  */
 
 #include "network_drivers/presentation/ssh/crypto/ssh_ecdsa.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <string.h>
 
+#ifdef ARDUINO
+#include "sdkconfig.h" // CONFIG_IDF_TARGET_ESP32S3 - selects the MODMULT field layer
+#endif
+
+// The S3 field/scalar layer drives the RSA peripheral through mbedTLS's port (esp_mpi_*), which only
+// exists in the on-device toolchain and whose MODMULT register map is an S3 specialization.
+#if defined(ARDUINO) && defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3
+#define DETWS_ECDSA_MPI_HW 1
+#endif
+
 // ---------------------------------------------------------------------------
-// Arduino - mbedTLS path (production, hardware-accelerated, side-channel hardened)
+// Other Arduino (non-S3) - mbedTLS path (portable, hardware-accelerated)
 // ---------------------------------------------------------------------------
 
-#ifdef ARDUINO
+#if defined(ARDUINO) && !defined(DETWS_ECDSA_MPI_HW)
 
 #include <esp_random.h> // esp_fill_random() for the ECDSA nonce / blinding RNG
 #include <mbedtls/ecdh.h>
@@ -146,30 +190,51 @@ bool ssh_ecdsa_p256_ecdh(uint8_t shared_x[SSH_ECDSA_P256_COORD_LEN], const uint8
     return ok;
 }
 
-// ---------------------------------------------------------------------------
-// Native - self-contained software P-256 (test-only; not compiled into firmware)
-// ---------------------------------------------------------------------------
-
-#else
+#else // ---- S3 HW-MODMULT path, or native software path (shared complete-formula P-256) ----
 
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 
+#ifdef DETWS_ECDSA_MPI_HW
+#include "soc/hwcrypto_reg.h" // RSA/MPI accelerator register map (MODMULT)
+#include "soc/soc.h"          // DR_REG_RSA_BASE
+extern "C"
+{
+    void esp_mpi_enable_hardware_hw_op(void);  // mbedTLS port: acquire the MPI lock + clock/power the peripheral
+    void esp_mpi_disable_hardware_hw_op(void); // release the lock + power down
+}
+#define SSH_RSA_REG(a) (*(volatile uint32_t *)(a))
+#endif
+
 namespace
 {
-// ---- 256-bit little-endian field/scalar arithmetic ----
-// Elements are 8 x uint32 limbs, limb 0 least-significant.
+// ---- 256-bit little-endian field / scalar arithmetic ----
+// Values are eight uint32 limbs (limb 0 least significant), held canonical (< the domain modulus).
 
 // P-256 domain parameters (little-endian words).
-const uint32_t P256_P[8] = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000,
-                            0x00000000, 0x00000000, 0x00000001, 0xFFFFFFFF};
-const uint32_t P256_N[8] = {0xFC632551, 0xF3B9CAC2, 0xA7179E84, 0xBCE6FAAD,
-                            0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0xFFFFFFFF};
-const uint32_t P256_B[8] = {0x27D2604B, 0x3BCE3C3E, 0xCC53B0F6, 0x651D06B0,
-                            0x769886BC, 0xB3EBBD55, 0xAA3A93E7, 0x5AC635D8};
-const uint32_t P256_GX[8] = {0xD898C296, 0xF4A13945, 0x2DEB33A0, 0x77037D81,
-                             0x63A440F2, 0xF8BCE6E5, 0xE12C4247, 0x6B17D1F2};
-const uint32_t P256_GY[8] = {0x37BF51F5, 0xCBB64068, 0x6B315ECE, 0x2BCE3357,
-                             0x7C0F9E16, 0x8EE7EB4A, 0xFE1A7F9B, 0x4FE342E2};
+const uint32_t P256_P[8] = {0xffffffffu, 0xffffffffu, 0xffffffffu, 0x00000000u,
+                            0x00000000u, 0x00000000u, 0x00000001u, 0xffffffffu};
+const uint32_t P256_N[8] = {0xfc632551u, 0xf3b9cac2u, 0xa7179e84u, 0xbce6faadu,
+                            0xffffffffu, 0xffffffffu, 0x00000000u, 0xffffffffu};
+const uint32_t P256_B[8] = {0x27d2604bu, 0x3bce3c3eu, 0xcc53b0f6u, 0x651d06b0u,
+                            0x769886bcu, 0xb3ebbd55u, 0xaa3a93e7u, 0x5ac635d8u};
+const uint32_t P256_B3[8] = {0x777720e2u, 0xb36ab4bau, 0x64fb12e2u, 0x2f571411u,
+                             0x63c99435u, 0x1bc33800u, 0xfeafbbb6u, 0x1052a18au}; // 3b mod p
+
+// R = 2^256. Montgomery constants for the MODMULT (m' = -M^-1 mod 2^32, R^2 mod M); scratchpad/p256_verify.py.
+const uint32_t P256_P_R2[8] = {0x00000003u, 0x00000000u, 0xffffffffu, 0xfffffffbu,
+                               0xfffffffeu, 0xffffffffu, 0xfffffffdu, 0x00000004u};
+const uint32_t P256_N_R2[8] = {0xbe79eea2u, 0x83244c95u, 0x49bd6fa6u, 0x4699799cu,
+                               0x2b6bec59u, 0x2845b239u, 0xf3d95620u, 0x66e12d94u};
+
+// A field/scalar domain: its modulus and (S3) the two MODMULT constants.
+struct Fp
+{
+    const uint32_t *m;
+    uint32_t mprime;
+    const uint32_t *r2;
+};
+const Fp FP = {P256_P, 0x00000001u, P256_P_R2}; // field domain (mod p): m' = 1 since p ends in 0xffffffff
+const Fp FN = {P256_N, 0xee00bc4fu, P256_N_R2}; // scalar domain (mod n)
 
 void fp_set(uint32_t r[8], const uint32_t a[8])
 {
@@ -208,61 +273,92 @@ uint32_t sub_raw(uint32_t r[8], const uint32_t a[8], const uint32_t b[8])
     }
     return (uint32_t)brw;
 }
-// r = a + b (mod m), inputs < m.
-void fp_addm(uint32_t r[8], const uint32_t a[8], const uint32_t b[8], const uint32_t m[8])
+// r = a + b (mod m); a,b < m -> one conditional subtract of m. Constant-time.
+void fp_add(uint32_t r[8], const uint32_t a[8], const uint32_t b[8], const Fp *F)
 {
-    uint32_t s[9];
+    uint32_t s[8];
     uint64_t c = 0;
     for (int i = 0; i < 8; i++)
     {
-        uint64_t t = (uint64_t)a[i] + b[i] + c;
-        s[i] = (uint32_t)t;
-        c = t >> 32;
+        c += (uint64_t)a[i] + b[i];
+        s[i] = (uint32_t)c;
+        c >>= 32;
     }
-    s[8] = (uint32_t)c;
-    // if s >= m (9-limb vs 8-limb m), subtract m.
-    bool ge = s[8] != 0;
-    if (!ge)
+    uint32_t carry = (uint32_t)c; // a+b may be a 257-bit value
+    uint32_t t[8];
+    uint64_t b2 = 0;
+    for (int i = 0; i < 8; i++)
     {
-        ge = true;
-        for (int k = 7; k >= 0; k--)
-            if (s[k] != m[k])
-            {
-                ge = s[k] > m[k];
-                break;
-            }
+        uint64_t v = (uint64_t)s[i] - F->m[i] - b2;
+        t[i] = (uint32_t)v;
+        b2 = (v >> 32) & 1u;
     }
-    if (ge)
-    {
-        uint64_t brw = 0;
-        for (int k = 0; k < 8; k++)
-        {
-            uint64_t t = (uint64_t)s[k] - m[k] - brw;
-            s[k] = (uint32_t)t;
-            brw = (t >> 32) & 1u;
-        }
-    }
-    for (int k = 0; k < 8; k++)
-        r[k] = s[k];
+    // keep s if (s - m) borrowed and there was no carry out of the add; else take s - m.
+    uint32_t take_t = carry | (uint32_t)(1u - b2); // 1 -> s>=m, use t
+    uint32_t mask = (uint32_t)(-(int32_t)take_t);
+    for (int i = 0; i < 8; i++)
+        r[i] = (t[i] & mask) | (s[i] & ~mask);
 }
-// r = a - b (mod m), inputs < m.
-void fp_subm(uint32_t r[8], const uint32_t a[8], const uint32_t b[8], const uint32_t m[8])
+// r = a - b (mod m); a,b < m -> conditional add of m on borrow. Constant-time.
+void fp_sub(uint32_t r[8], const uint32_t a[8], const uint32_t b[8], const Fp *F)
 {
     uint32_t t[8];
-    if (sub_raw(t, a, b))
+    uint32_t borrow = sub_raw(t, a, b); // 1 if a < b
+    uint32_t mask = (uint32_t)(-(int32_t)borrow);
+    uint64_t c = 0;
+    for (int i = 0; i < 8; i++)
     {
-        uint32_t c = 0; // borrow: add m back
-        uint64_t cc = 0;
-        for (int i = 0; i < 8; i++)
-        {
-            uint64_t v = (uint64_t)t[i] + m[i] + cc;
-            t[i] = (uint32_t)v;
-            cc = v >> 32;
-        }
-        (void)c;
+        c += (uint64_t)t[i] + (F->m[i] & mask);
+        r[i] = (uint32_t)c;
+        c >>= 32;
     }
-    fp_set(r, t);
 }
+// Reduce a single value a in [0, 2m) into [0, m): subtract m once if a >= m. Constant-time.
+void fp_reduce_once(uint32_t r[8], const uint32_t a[8], const uint32_t m[8])
+{
+    uint32_t t[8];
+    uint32_t borrow = sub_raw(t, a, m); // 1 -> a < m, keep a
+    uint32_t mask = (uint32_t)(-(int32_t)borrow);
+    for (int i = 0; i < 8; i++)
+        r[i] = (a[i] & mask) | (t[i] & ~mask);
+}
+
+#ifdef DETWS_ECDSA_MPI_HW
+// z = x*y mod F->m on the S3 RSA accelerator. Requires ecdsa_hw_on() first. Preloading R^2 into the result
+// block makes MODMULT return the plain residue (the esp_mpi_mul_mpi_mod convention). Output canonical (< m).
+void fp_mul(uint32_t z[8], const uint32_t x[8], const uint32_t y[8], const Fp *F) // safe if z aliases x/y
+{
+    volatile uint32_t *M = (volatile uint32_t *)RSA_MEM_M_BLOCK_BASE;
+    volatile uint32_t *X = (volatile uint32_t *)RSA_MEM_X_BLOCK_BASE;
+    volatile uint32_t *Y = (volatile uint32_t *)RSA_MEM_Y_BLOCK_BASE;
+    volatile uint32_t *Z = (volatile uint32_t *)RSA_MEM_Z_BLOCK_BASE;
+    SSH_RSA_REG(RSA_LENGTH_REG) = 8 - 1; // mode = words - 1
+    SSH_RSA_REG(RSA_M_DASH_REG) = F->mprime;
+    for (int i = 0; i < 8; i++)
+    {
+        M[i] = F->m[i];
+        X[i] = x[i];
+        Y[i] = y[i];
+        Z[i] = F->r2[i]; // r = R^2 mod m -> plain (non-Montgomery) output
+    }
+    SSH_RSA_REG(RSA_CLEAR_INTERRUPT_REG) = 1;
+    SSH_RSA_REG(RSA_MOD_MULT_START_REG) = 1;
+    while (SSH_RSA_REG(RSA_QUERY_INTERRUPT_REG) == 0)
+        ;
+    SSH_RSA_REG(RSA_CLEAR_INTERRUPT_REG) = 1;
+    for (int i = 0; i < 8; i++)
+        z[i] = Z[i];
+}
+void ecdsa_hw_on()
+{
+    esp_mpi_enable_hardware_hw_op();    // lock + clock/power the peripheral
+    SSH_RSA_REG(RSA_INTERRUPT_REG) = 0; // poll only, no completion IRQ
+}
+void ecdsa_hw_off()
+{
+    esp_mpi_disable_hardware_hw_op(); // release the lock + power down
+}
+#else
 // acc[0..7] >= m[0..7]? Compares the low 8 limbs from the most significant down.
 bool reduce_low8_ge(const uint32_t acc[8], const uint32_t m[8])
 {
@@ -271,7 +367,7 @@ bool reduce_low8_ge(const uint32_t acc[8], const uint32_t m[8])
             return acc[k] > m[k];
     return true; // all limbs equal
 }
-// Reduce a 512-bit product mod m (bit-serial, MSB to LSB). Correct but slow; native is test-only.
+// Reduce a 512-bit product mod m (bit-serial, MSB to LSB). Correct but slow; the native path is test-only.
 void reduce_mod(uint32_t r[8], const uint32_t prod[16], const uint32_t m[8])
 {
     uint32_t acc[9];
@@ -305,8 +401,8 @@ void reduce_mod(uint32_t r[8], const uint32_t prod[16], const uint32_t m[8])
     for (int k = 0; k < 8; k++)
         r[k] = acc[k];
 }
-// r = (a * b) mod m.
-void fp_mul(uint32_t r[8], const uint32_t a[8], const uint32_t b[8], const uint32_t m[8])
+// z = (x * y) mod F->m (software schoolbook + reduction).
+void fp_mul(uint32_t z[8], const uint32_t x[8], const uint32_t y[8], const Fp *F)
 {
     uint32_t prod[16];
     for (int k = 0; k < 16; k++)
@@ -316,7 +412,7 @@ void fp_mul(uint32_t r[8], const uint32_t a[8], const uint32_t b[8], const uint3
         uint64_t carry = 0;
         for (int j = 0; j < 8; j++)
         {
-            uint64_t t = (uint64_t)prod[i + j] + (uint64_t)a[i] * b[j] + carry;
+            uint64_t t = (uint64_t)prod[i + j] + (uint64_t)x[i] * y[j] + carry;
             prod[i + j] = (uint32_t)t;
             carry = t >> 32;
         }
@@ -329,38 +425,48 @@ void fp_mul(uint32_t r[8], const uint32_t a[8], const uint32_t b[8], const uint3
             k++;
         }
     }
-    reduce_mod(r, prod, m);
+    reduce_mod(z, prod, F->m);
 }
-void fp_sqr(uint32_t r[8], const uint32_t a[8], const uint32_t m[8])
+void ecdsa_hw_on()
 {
-    fp_mul(r, a, a, m);
 }
-// r = a^(m-2) mod m  (Fermat inverse; m prime).
-void fp_inv(uint32_t r[8], const uint32_t a[8], const uint32_t m[8])
+void ecdsa_hw_off()
+{
+}
+#endif
+
+void fp_sqr(uint32_t r[8], const uint32_t a[8], const Fp *F)
+{
+    fp_mul(r, a, a, F);
+}
+// r = a*x mod p where the curve a = p - 3, i.e. r = -3x. Two adds + a negate instead of a MODMULT.
+// Alias-safe (r may be x). Only the field domain has this a, so it is hard-wired to FP.
+void fp_mul_by_a(uint32_t r[8], const uint32_t x[8])
+{
+    uint32_t tx[8];
+    fp_add(tx, x, x, &FP);
+    fp_add(tx, tx, x, &FP); // 3x
+    const uint32_t zero[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+    fp_sub(r, zero, tx, &FP); // -3x
+}
+// r = a^(m-2) mod m (Fermat inverse; m prime). Fixed public exponent -> constant-time in a.
+void fp_inv(uint32_t r[8], const uint32_t a[8], const Fp *F)
 {
     const uint32_t two[8] = {2, 0, 0, 0, 0, 0, 0, 0};
     uint32_t e[8];
-    sub_raw(e, m, two); // e = m - 2
+    sub_raw(e, F->m, two); // e = m - 2
     uint32_t res[8] = {1, 0, 0, 0, 0, 0, 0, 0};
     uint32_t base[8];
     fp_set(base, a);
     for (int i = 0; i < 256; i++)
     {
         if ((e[i >> 5] >> (i & 31)) & 1u)
-            fp_mul(res, res, base, m);
-        fp_mul(base, base, base, m);
+            fp_mul(res, res, base, F);
+        fp_mul(base, base, base, F);
     }
     fp_set(r, res);
 }
-// Reduce a single 256-bit value < 2m into [0, m).
-void fp_reduce_once(uint32_t r[8], const uint32_t a[8], const uint32_t m[8])
-{
-    uint32_t t[8];
-    if (sub_raw(t, a, m))
-        fp_set(r, a);
-    else
-        fp_set(r, t);
-}
+
 void load_be(uint32_t r[8], const uint8_t b[32])
 {
     for (int i = 0; i < 8; i++)
@@ -381,190 +487,207 @@ void store_be(uint8_t b[32], const uint32_t r[8])
     }
 }
 
-// ---- Jacobian point arithmetic on y^2 = x^3 - 3x + b over F_p ----
-struct Jac
+// ---- Point arithmetic: complete formulas on y^2 = x^3 - 3x + b, projective (X:Y:Z), x=X/Z, y=Y/Z ----
+// Exception-free for all inputs on the prime-order curve (RCB 2016), so the constant-time ladder needs no
+// special cases. Identity is (0:1:0). Every field op is mod p (FP).
+
+struct Pt
 {
     uint32_t X[8];
     uint32_t Y[8];
-    uint32_t Z[8]; // point at infinity iff Z == 0
+    uint32_t Z[8];
 };
 
-void fp_mul2(uint32_t r[8], const uint32_t a[8])
+// Base point G (affine, Z = 1).
+const Pt P256_G = {
+    {0xd898c296u, 0xf4a13945u, 0x2deb33a0u, 0x77037d81u, 0x63a440f2u, 0xf8bce6e5u, 0xe12c4247u, 0x6b17d1f2u},
+    {0x37bf51f5u, 0xcbb64068u, 0x6b315eceu, 0x2bce3357u, 0x7c0f9e16u, 0x8ee7eb4au, 0xfe1a7f9bu, 0x4fe342e2u},
+    {1u, 0, 0, 0, 0, 0, 0, 0}};
+
+bool pt_is_infinity(const Pt *p)
 {
-    fp_addm(r, a, a, P256_P);
+    return fp_is_zero(p->Z);
+}
+void pt_set_infinity(Pt *p)
+{
+    fp_zero(p->X);
+    fp_zero(p->Y);
+    p->Y[0] = 1;
+    fp_zero(p->Z);
+}
+void pt_from_affine(Pt *p, const uint32_t x[8], const uint32_t y[8])
+{
+    fp_set(p->X, x);
+    fp_set(p->Y, y);
+    fp_zero(p->Z);
+    p->Z[0] = 1;
+}
+// (x, y) = (X/Z, Y/Z). Caller ensures p is not the identity.
+void pt_to_affine(uint32_t x[8], uint32_t y[8], const Pt *p)
+{
+    uint32_t zi[8];
+    fp_inv(zi, p->Z, &FP);
+    fp_mul(x, p->X, zi, &FP);
+    fp_mul(y, p->Y, zi, &FP);
 }
 
-// R = 2*P  (a = -3 optimized doubling; alias-safe).
-void jac_double(Jac *R, const Jac *P)
+// r = a + b (EFD add-2015-rcb, a = -3). Alias-safe: all reads land in locals before *r is written.
+void pt_add(Pt *r, const Pt *a, const Pt *b)
 {
-    if (fp_is_zero(P->Z))
-    {
-        *R = *P;
-        return;
-    }
-    uint32_t delta[8];
-    uint32_t gamma[8];
-    uint32_t beta[8];
-    uint32_t alpha[8];
     uint32_t t0[8];
     uint32_t t1[8];
-    fp_sqr(delta, P->Z, P256_P);       // delta = Z^2
-    fp_sqr(gamma, P->Y, P256_P);       // gamma = Y^2
-    fp_mul(beta, P->X, gamma, P256_P); // beta = X*gamma
-    fp_subm(t0, P->X, delta, P256_P);  // X - delta
-    fp_addm(t1, P->X, delta, P256_P);  // X + delta
-    fp_mul(t0, t0, t1, P256_P);        // (X-delta)(X+delta)
-    fp_addm(alpha, t0, t0, P256_P);
-    fp_addm(alpha, alpha, t0, P256_P); // alpha = 3*(X-delta)(X+delta)
-
+    uint32_t t2[8];
+    uint32_t t3[8];
+    uint32_t t4[8];
+    uint32_t t5[8];
     uint32_t x3[8];
     uint32_t y3[8];
     uint32_t z3[8];
-    uint32_t eight_beta[8];
-    fp_mul2(eight_beta, beta);
-    fp_mul2(eight_beta, eight_beta);
-    fp_mul2(eight_beta, eight_beta);     // 8*beta
-    fp_sqr(x3, alpha, P256_P);           // alpha^2
-    fp_subm(x3, x3, eight_beta, P256_P); // X3 = alpha^2 - 8*beta
-
-    fp_addm(z3, P->Y, P->Z, P256_P); // Y+Z
-    fp_sqr(z3, z3, P256_P);          // (Y+Z)^2
-    fp_subm(z3, z3, gamma, P256_P);
-    fp_subm(z3, z3, delta, P256_P); // Z3 = (Y+Z)^2 - gamma - delta
-
-    uint32_t four_beta[8];
-    fp_mul2(four_beta, beta);
-    fp_mul2(four_beta, four_beta);             // 4*beta
-    fp_subm(four_beta, four_beta, x3, P256_P); // 4*beta - X3
-    fp_mul(y3, alpha, four_beta, P256_P);      // alpha*(4*beta - X3)
-    uint32_t g2[8];
-    fp_sqr(g2, gamma, P256_P); // gamma^2
-    fp_mul2(g2, g2);
-    fp_mul2(g2, g2);
-    fp_mul2(g2, g2);             // 8*gamma^2
-    fp_subm(y3, y3, g2, P256_P); // Y3 = alpha*(4*beta - X3) - 8*gamma^2
-
-    fp_set(R->X, x3);
-    fp_set(R->Y, y3);
-    fp_set(R->Z, z3);
+    fp_mul(t0, a->X, b->X, &FP);
+    fp_mul(t1, a->Y, b->Y, &FP);
+    fp_mul(t2, a->Z, b->Z, &FP);
+    fp_add(t3, a->X, a->Y, &FP);
+    fp_add(t4, b->X, b->Y, &FP);
+    fp_mul(t3, t3, t4, &FP);
+    fp_add(t4, t0, t1, &FP);
+    fp_sub(t3, t3, t4, &FP);
+    fp_add(t4, a->X, a->Z, &FP);
+    fp_add(t5, b->X, b->Z, &FP);
+    fp_mul(t4, t4, t5, &FP);
+    fp_add(t5, t0, t2, &FP);
+    fp_sub(t4, t4, t5, &FP);
+    fp_add(t5, a->Y, a->Z, &FP);
+    fp_add(x3, b->Y, b->Z, &FP);
+    fp_mul(t5, t5, x3, &FP);
+    fp_add(x3, t1, t2, &FP);
+    fp_sub(t5, t5, x3, &FP);
+    fp_mul_by_a(z3, t4);
+    fp_mul(x3, P256_B3, t2, &FP);
+    fp_add(z3, x3, z3, &FP);
+    fp_sub(x3, t1, z3, &FP);
+    fp_add(z3, t1, z3, &FP);
+    fp_mul(y3, x3, z3, &FP);
+    fp_add(t1, t0, t0, &FP);
+    fp_add(t1, t1, t0, &FP);
+    fp_mul_by_a(t2, t2);
+    fp_mul(t4, P256_B3, t4, &FP);
+    fp_add(t1, t1, t2, &FP);
+    fp_sub(t2, t0, t2, &FP);
+    fp_mul_by_a(t2, t2);
+    fp_add(t4, t4, t2, &FP);
+    fp_mul(t0, t1, t4, &FP);
+    fp_add(y3, y3, t0, &FP);
+    fp_mul(t0, t5, t4, &FP);
+    fp_mul(x3, t3, x3, &FP);
+    fp_sub(x3, x3, t0, &FP);
+    fp_mul(t0, t3, t1, &FP);
+    fp_mul(z3, t5, z3, &FP);
+    fp_add(z3, z3, t0, &FP);
+    fp_set(r->X, x3);
+    fp_set(r->Y, y3);
+    fp_set(r->Z, z3);
 }
 
-// R = P + Q  (general Jacobian addition; alias-safe).
-void jac_add(Jac *R, const Jac *P, const Jac *Q)
+// r = 2*a (EFD dbl-2015-rcb, a = -3). Alias-safe.
+void pt_dbl(Pt *r, const Pt *a)
 {
-    if (fp_is_zero(P->Z))
-    {
-        *R = *Q;
-        return;
-    }
-    if (fp_is_zero(Q->Z))
-    {
-        *R = *P;
-        return;
-    }
-    uint32_t z1z1[8];
-    uint32_t z2z2[8];
-    uint32_t u1[8];
-    uint32_t u2[8];
-    uint32_t s1[8];
-    uint32_t s2[8];
-    uint32_t t[8];
-    fp_sqr(z1z1, P->Z, P256_P);
-    fp_sqr(z2z2, Q->Z, P256_P);
-    fp_mul(u1, P->X, z2z2, P256_P); // U1 = X1*Z2^2
-    fp_mul(u2, Q->X, z1z1, P256_P); // U2 = X2*Z1^2
-    fp_mul(s1, P->Y, Q->Z, P256_P);
-    fp_mul(s1, s1, z2z2, P256_P); // S1 = Y1*Z2^3
-    fp_mul(s2, Q->Y, P->Z, P256_P);
-    fp_mul(s2, s2, z1z1, P256_P); // S2 = Y2*Z1^3
+    uint32_t t0[8];
+    uint32_t t1[8];
+    uint32_t t2[8];
+    uint32_t t3[8];
+    uint32_t x3[8];
+    uint32_t y3[8];
+    uint32_t z3[8];
+    fp_sqr(t0, a->X, &FP);
+    fp_sqr(t1, a->Y, &FP);
+    fp_sqr(t2, a->Z, &FP);
+    fp_mul(t3, a->X, a->Y, &FP);
+    fp_add(t3, t3, t3, &FP);
+    fp_mul(z3, a->X, a->Z, &FP);
+    fp_add(z3, z3, z3, &FP);
+    fp_mul_by_a(x3, z3);
+    fp_mul(y3, P256_B3, t2, &FP);
+    fp_add(y3, x3, y3, &FP);
+    fp_sub(x3, t1, y3, &FP);
+    fp_add(y3, t1, y3, &FP);
+    fp_mul(y3, x3, y3, &FP);
+    fp_mul(x3, t3, x3, &FP);
+    fp_mul(z3, P256_B3, z3, &FP);
+    fp_mul_by_a(t2, t2);
+    fp_sub(t3, t0, t2, &FP);
+    fp_mul_by_a(t3, t3);
+    fp_add(t3, t3, z3, &FP);
+    fp_add(z3, t0, t0, &FP);
+    fp_add(t0, z3, t0, &FP);
+    fp_add(t0, t0, t2, &FP);
+    fp_mul(t0, t0, t3, &FP);
+    fp_add(y3, y3, t0, &FP);
+    fp_mul(t2, a->Y, a->Z, &FP);
+    fp_add(t2, t2, t2, &FP);
+    fp_mul(t0, t2, t3, &FP);
+    fp_sub(x3, x3, t0, &FP);
+    fp_mul(z3, t2, t1, &FP);
+    fp_add(z3, z3, z3, &FP);
+    fp_add(z3, z3, z3, &FP);
+    fp_set(r->X, x3);
+    fp_set(r->Y, y3);
+    fp_set(r->Z, z3);
+}
 
-    uint32_t h[8];
-    uint32_t rr[8];
-    fp_subm(h, u2, u1, P256_P);  // H = U2 - U1
-    fp_subm(rr, s2, s1, P256_P); // S2 - S1
-    if (fp_is_zero(h))
+// dst = table[idx], scanning all 16 entries so the access pattern is independent of the (secret) idx.
+void pt_table_select(Pt *dst, const Pt table[16], uint32_t idx)
+{
+    fp_zero(dst->X);
+    fp_zero(dst->Y);
+    fp_zero(dst->Z);
+    for (uint32_t e = 0; e < 16; e++)
     {
-        if (fp_is_zero(rr))
+        uint32_t x = e ^ idx;
+        uint32_t nz = (x | (0u - x)) >> 31;  // 1 if e != idx, else 0
+        uint32_t mask = (uint32_t)(nz - 1u); // 0xffffffff if e == idx, else 0
+        for (int i = 0; i < 8; i++)
         {
-            jac_double(R, P);
-            return;
+            dst->X[i] |= table[e].X[i] & mask;
+            dst->Y[i] |= table[e].Y[i] & mask;
+            dst->Z[i] |= table[e].Z[i] & mask;
         }
-        fp_zero(R->Z); // P == -Q -> infinity
-        return;
     }
-    fp_addm(rr, rr, rr, P256_P); // r = 2*(S2 - S1)
-
-    uint32_t i[8];
-    uint32_t j[8];
-    uint32_t v[8];
-    fp_mul2(i, h);
-    fp_sqr(i, i, P256_P);     // I = (2H)^2
-    fp_mul(j, h, i, P256_P);  // J = H*I
-    fp_mul(v, u1, i, P256_P); // V = U1*I
-
-    uint32_t x3[8];
-    uint32_t y3[8];
-    uint32_t z3[8];
-    fp_sqr(x3, rr, P256_P); // r^2
-    fp_subm(x3, x3, j, P256_P);
-    fp_mul2(t, v);
-    fp_subm(x3, x3, t, P256_P); // X3 = r^2 - J - 2V
-
-    fp_subm(y3, v, x3, P256_P);
-    fp_mul(y3, rr, y3, P256_P); // r*(V - X3)
-    fp_mul(t, s1, j, P256_P);
-    fp_mul2(t, t);              // 2*S1*J
-    fp_subm(y3, y3, t, P256_P); // Y3 = r*(V - X3) - 2*S1*J
-
-    fp_addm(z3, P->Z, Q->Z, P256_P);
-    fp_sqr(z3, z3, P256_P);
-    fp_subm(z3, z3, z1z1, P256_P);
-    fp_subm(z3, z3, z2z2, P256_P);
-    fp_mul(z3, z3, h, P256_P); // Z3 = ((Z1+Z2)^2 - Z1^2 - Z2^2)*H
-
-    fp_set(R->X, x3);
-    fp_set(R->Y, y3);
-    fp_set(R->Z, z3);
 }
 
-// R = k*P  (double-and-add, MSB->LSB; not constant-time - native test path only).
-void jac_scalar_mul(Jac *R, const uint32_t k[8], const Jac *P)
+// r = k * p, k a 256-bit little-endian scalar. Constant-time 4-bit fixed window: a uniform op sequence
+// (256 doublings + 64 additions + a data-independent table build) with the only secret-dependent step a
+// full-table masked select - no input-dependent branches, and the complete formulas are exception-free.
+// The 16-entry table (~1.5 KB) is on the stack, live only in this shallow phase (well under the SSH KEX
+// peak), so it is reentrant across worker tasks. Used for secret scalars.
+void pt_scalarmul(Pt *r, const uint32_t k[8], const Pt *p)
 {
-    Jac acc;
-    fp_zero(acc.X);
-    fp_zero(acc.Y);
-    fp_zero(acc.Z); // infinity
-    for (int bit = 255; bit >= 0; bit--)
+    Pt table[16]; // table[i] = i * p; table[0] = identity
+    pt_set_infinity(&table[0]);
+    table[1] = *p;
+    for (int i = 2; i < 16; i++)
     {
-        jac_double(&acc, &acc);
-        if ((k[bit >> 5] >> (bit & 31)) & 1u)
-            jac_add(&acc, &acc, P);
+        if (i & 1)
+            pt_add(&table[i], &table[i - 1], p);
+        else
+            pt_dbl(&table[i], &table[i / 2]);
     }
-    *R = acc;
+    Pt acc;
+    pt_set_infinity(&acc);
+    for (int w = 63; w >= 0; w--) // 64 nibbles, most significant first (Horner)
+    {
+        pt_dbl(&acc, &acc);
+        pt_dbl(&acc, &acc);
+        pt_dbl(&acc, &acc);
+        pt_dbl(&acc, &acc); // acc *= 16
+        uint32_t idx = (k[w >> 3] >> ((w & 7) * 4)) & 0xfu;
+        Pt sel;
+        pt_table_select(&sel, table, idx);
+        pt_add(&acc, &acc, &sel);
+    }
+    *r = acc;
 }
 
-// Convert Jacobian to affine (x, y). Caller must ensure P is not the infinity point.
-void jac_to_affine(uint32_t x[8], uint32_t y[8], const Jac *P)
-{
-    uint32_t zinv[8];
-    uint32_t zinv2[8];
-    uint32_t zinv3[8];
-    fp_inv(zinv, P->Z, P256_P);
-    fp_sqr(zinv2, zinv, P256_P);
-    fp_mul(zinv3, zinv2, zinv, P256_P);
-    fp_mul(x, P->X, zinv2, P256_P);
-    fp_mul(y, P->Y, zinv3, P256_P);
-}
-
-void jac_set_affine(Jac *P, const uint32_t x[8], const uint32_t y[8])
-{
-    fp_set(P->X, x);
-    fp_set(P->Y, y);
-    fp_zero(P->Z);
-    P->Z[0] = 1;
-}
-
-// Check (x, y) is on y^2 = x^3 - 3x + b (mod p).
+// Check (x, y) is on y^2 = x^3 - 3x + b (mod p) and both coordinates are in range. Requires ecdsa_hw_on().
 bool on_curve(const uint32_t x[8], const uint32_t y[8])
 {
     if (fp_cmp(x, P256_P) >= 0 || fp_cmp(y, P256_P) >= 0)
@@ -572,19 +695,19 @@ bool on_curve(const uint32_t x[8], const uint32_t y[8])
     uint32_t lhs[8];
     uint32_t rhs[8];
     uint32_t t[8];
-    fp_sqr(lhs, y, P256_P); // y^2
-    fp_sqr(rhs, x, P256_P);
-    fp_mul(rhs, rhs, x, P256_P); // x^3
-    fp_addm(t, x, x, P256_P);
-    fp_addm(t, t, x, P256_P);     // 3x
-    fp_subm(rhs, rhs, t, P256_P); // x^3 - 3x
-    fp_addm(rhs, rhs, P256_B, P256_P);
+    fp_sqr(lhs, y, &FP); // y^2
+    fp_sqr(rhs, x, &FP);
+    fp_mul(rhs, rhs, x, &FP); // x^3
+    fp_add(t, x, x, &FP);
+    fp_add(t, t, x, &FP);     // 3x
+    fp_sub(rhs, rhs, t, &FP); // x^3 - 3x
+    fp_add(rhs, rhs, P256_B, &FP);
     return fp_cmp(lhs, rhs) == 0;
 }
 
 // ---- RFC 6979 deterministic nonce (HMAC-SHA256 DRBG, hlen = qlen = 256) ----
 
-// out = HMAC-SHA256(key(32), a || tag_present?tag : nothing || extra1 || extra2).
+// out = HMAC-SHA256(key, V || (tag>=0 ? tag||x||e : nothing)).
 void hmac_cat(uint8_t out[32], const uint8_t key[32], const uint8_t *v, size_t vlen, const int tag, const uint8_t *x,
               const uint8_t *e)
 {
@@ -604,27 +727,27 @@ void hmac_cat(uint8_t out[32], const uint8_t key[32], const uint8_t *v, size_t v
 }
 
 // One RFC 6979 candidate k: if it yields a valid r and s, write the 64-byte signature and return true.
-bool ecdsa_try_sign(const uint32_t k[8], const Jac *G, const uint32_t d[8], const uint32_t e[8], uint8_t sig[64])
+bool ecdsa_try_sign(const uint32_t k[8], const uint32_t d[8], const uint32_t e[8], uint8_t sig[64])
 {
     if (fp_is_zero(k) || fp_cmp(k, P256_N) >= 0)
         return false;
-    Jac R;
-    jac_scalar_mul(&R, k, G);
-    if (fp_is_zero(R.Z))
+    Pt R;
+    pt_scalarmul(&R, k, &P256_G);
+    if (pt_is_infinity(&R))
         return false;
     uint32_t rx[8];
     uint32_t ry[8];
-    jac_to_affine(rx, ry, &R);
+    pt_to_affine(rx, ry, &R);
     uint32_t r[8];
-    fp_reduce_once(r, rx, P256_N); // r = Rx mod n
+    fp_reduce_once(r, rx, P256_N); // r = Rx mod n (Rx < p < 2n -> one subtract)
     if (fp_is_zero(r))
         return false;
     uint32_t kinv[8];
     uint32_t s[8];
-    fp_inv(kinv, k, P256_N);
-    fp_mul(s, r, d, P256_N);    // r*d
-    fp_addm(s, s, e, P256_N);   // e + r*d
-    fp_mul(s, kinv, s, P256_N); // k^-1 (e + r*d)
+    fp_inv(kinv, k, &FN);
+    fp_mul(s, r, d, &FN);    // r*d
+    fp_add(s, s, e, &FN);    // e + r*d
+    fp_mul(s, kinv, s, &FN); // k^-1 (e + r*d)
     if (fp_is_zero(s))
         return false;
     store_be(sig, r);
@@ -632,7 +755,7 @@ bool ecdsa_try_sign(const uint32_t k[8], const Jac *G, const uint32_t d[8], cons
     return true;
 }
 
-// ECDSA core: sign hash e_bytes (32) with scalar d, deterministic k per RFC 6979.
+// ECDSA core: sign hash h1 (32) with scalar d, deterministic k per RFC 6979. Requires ecdsa_hw_on().
 bool ecdsa_sign_core(uint8_t sig[64], const uint8_t h1[32], const uint32_t d[8])
 {
     uint32_t e[8];
@@ -649,26 +772,19 @@ bool ecdsa_sign_core(uint8_t sig[64], const uint8_t h1[32], const uint32_t d[8])
     uint8_t K[32];
     memset(V, 0x01, 32);
     memset(K, 0x00, 32);
-    // RFC 6979 first pass: rekey K from V, tag byte 0x00, x_oct and h_oct, then refresh V from K.
     hmac_cat(K, K, V, 32, 0x00, x_oct, h_oct);
     hmac_cat(V, K, V, 32, -1, nullptr, nullptr);
-    // RFC 6979 second pass: rekey K from V, tag byte 0x01, x_oct and h_oct, then refresh V from K.
     hmac_cat(K, K, V, 32, 0x01, x_oct, h_oct);
     hmac_cat(V, K, V, 32, -1, nullptr, nullptr);
 
-    Jac G;
-    jac_set_affine(&G, P256_GX, P256_GY);
-
     for (int guard = 0; guard < 64; guard++)
     {
-        // T = HMAC_K(V) (exactly 32 bytes -> one block).
-        hmac_cat(V, K, V, 32, -1, nullptr, nullptr);
+        hmac_cat(V, K, V, 32, -1, nullptr, nullptr); // T = HMAC_K(V), one block
         uint32_t k[8];
         load_be(k, V); // bits2int(T)
-        if (ecdsa_try_sign(k, &G, d, e, sig))
+        if (ecdsa_try_sign(k, d, e, sig))
             return true;
-        // Retry: K = HMAC_K(V || 0x00); V = HMAC_K(V).
-        uint8_t buf[33];
+        uint8_t buf[33]; // retry: K = HMAC_K(V || 0x00); V = HMAC_K(V)
         memcpy(buf, V, 32);
         buf[32] = 0x00;
         ssh_hmac_sha256(K, 32, buf, 33, K);
@@ -685,19 +801,22 @@ bool ssh_ecdsa_p256_pubkey(uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t pr
     load_be(d, priv);
     if (fp_is_zero(d) || fp_cmp(d, P256_N) >= 0)
         return false;
-    Jac G;
-    Jac Q;
-    jac_set_affine(&G, P256_GX, P256_GY);
-    jac_scalar_mul(&Q, d, &G);
-    if (fp_is_zero(Q.Z))
-        return false;
-    uint32_t qx[8];
-    uint32_t qy[8];
-    jac_to_affine(qx, qy, &Q);
-    pub[0] = 0x04;
-    store_be(pub + 1, qx);
-    store_be(pub + 33, qy);
-    return true;
+
+    ecdsa_hw_on();
+    Pt Q;
+    pt_scalarmul(&Q, d, &P256_G);
+    bool ok = !pt_is_infinity(&Q);
+    if (ok)
+    {
+        uint32_t qx[8];
+        uint32_t qy[8];
+        pt_to_affine(qx, qy, &Q);
+        pub[0] = 0x04;
+        store_be(pub + 1, qx);
+        store_be(pub + 33, qy);
+    }
+    ecdsa_hw_off();
+    return ok;
 }
 
 bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg, size_t mlen,
@@ -709,7 +828,11 @@ bool ssh_ecdsa_p256_sign(uint8_t sig[SSH_ECDSA_P256_SIG_LEN], const uint8_t *msg
         return false;
     uint8_t h1[SSH_SHA256_DIGEST_LEN];
     ssh_sha256(msg, mlen, h1);
-    return ecdsa_sign_core(sig, h1, d);
+
+    ecdsa_hw_on();
+    bool ok = ecdsa_sign_core(sig, h1, d);
+    ecdsa_hw_off();
+    return ok;
 }
 
 bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint8_t *msg, size_t mlen,
@@ -721,8 +844,6 @@ bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint
     uint32_t qy[8];
     load_be(qx, pub + 1);
     load_be(qy, pub + 33);
-    if (!on_curve(qx, qy))
-        return false;
 
     uint32_t r[8];
     uint32_t s[8];
@@ -738,31 +859,39 @@ bool ssh_ecdsa_p256_verify(const uint8_t pub[SSH_ECDSA_P256_PUB_LEN], const uint
     load_be(etmp, h1);
     fp_reduce_once(e, etmp, P256_N);
 
-    uint32_t w[8];
-    uint32_t u1[8];
-    uint32_t u2[8];
-    fp_inv(w, s, P256_N);
-    fp_mul(u1, e, w, P256_N);
-    fp_mul(u2, r, w, P256_N);
+    ecdsa_hw_on();
+    bool ok = on_curve(qx, qy);
+    if (ok)
+    {
+        uint32_t w[8];
+        uint32_t u1[8];
+        uint32_t u2[8];
+        fp_inv(w, s, &FN);
+        fp_mul(u1, e, w, &FN);
+        fp_mul(u2, r, w, &FN);
 
-    Jac G;
-    Jac Q;
-    Jac Rg;
-    Jac Rq;
-    Jac R;
-    jac_set_affine(&G, P256_GX, P256_GY);
-    jac_set_affine(&Q, qx, qy);
-    jac_scalar_mul(&Rg, u1, &G);
-    jac_scalar_mul(&Rq, u2, &Q);
-    jac_add(&R, &Rg, &Rq);
-    if (fp_is_zero(R.Z))
-        return false;
-    uint32_t rx[8];
-    uint32_t ry[8];
-    uint32_t rxn[8];
-    jac_to_affine(rx, ry, &R);
-    fp_reduce_once(rxn, rx, P256_N);
-    return fp_cmp(rxn, r) == 0;
+        Pt Q;
+        Pt Rg;
+        Pt Rq;
+        Pt R;
+        pt_from_affine(&Q, qx, qy);
+        pt_scalarmul(&Rg, u1, &P256_G);
+        pt_scalarmul(&Rq, u2, &Q);
+        pt_add(&R, &Rg, &Rq);
+        if (pt_is_infinity(&R))
+            ok = false;
+        else
+        {
+            uint32_t rx[8];
+            uint32_t ry[8];
+            uint32_t rxn[8];
+            pt_to_affine(rx, ry, &R);
+            fp_reduce_once(rxn, rx, P256_N);
+            ok = fp_cmp(rxn, r) == 0;
+        }
+    }
+    ecdsa_hw_off();
+    return ok;
 }
 
 bool ssh_ecdsa_p256_ecdh(uint8_t shared_x[SSH_ECDSA_P256_COORD_LEN], const uint8_t peer_pub[SSH_ECDSA_P256_PUB_LEN],
@@ -774,23 +903,31 @@ bool ssh_ecdsa_p256_ecdh(uint8_t shared_x[SSH_ECDSA_P256_COORD_LEN], const uint8
     uint32_t qy[8];
     load_be(qx, peer_pub + 1);
     load_be(qy, peer_pub + 33);
-    if (!on_curve(qx, qy)) // rejects off-curve / out-of-range peer points
-        return false;
     uint32_t d[8];
     load_be(d, priv);
     if (fp_is_zero(d) || fp_cmp(d, P256_N) >= 0)
         return false;
-    Jac Q;
-    Jac R;
-    jac_set_affine(&Q, qx, qy);
-    jac_scalar_mul(&R, d, &Q);
-    if (fp_is_zero(R.Z)) // d*Q is the identity -> invalid shared secret
-        return false;
-    uint32_t rx[8];
-    uint32_t ry[8];
-    jac_to_affine(rx, ry, &R);
-    store_be(shared_x, rx); // K = X coordinate (big-endian)
-    return true;
+
+    ecdsa_hw_on();
+    bool ok = on_curve(qx, qy); // rejects off-curve / out-of-range peer points
+    if (ok)
+    {
+        Pt Q;
+        Pt R;
+        pt_from_affine(&Q, qx, qy);
+        pt_scalarmul(&R, d, &Q);
+        if (pt_is_infinity(&R)) // d*Q is the identity -> invalid shared secret
+            ok = false;
+        else
+        {
+            uint32_t rx[8];
+            uint32_t ry[8];
+            pt_to_affine(rx, ry, &R);
+            store_be(shared_x, rx); // K = X coordinate (big-endian)
+        }
+    }
+    ecdsa_hw_off();
+    return ok;
 }
 
-#endif // ARDUINO
+#endif // ARDUINO path selection

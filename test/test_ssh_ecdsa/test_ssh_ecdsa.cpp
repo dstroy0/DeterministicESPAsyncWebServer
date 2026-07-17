@@ -143,6 +143,39 @@ static void test_ecdsa_roundtrip_other_key(void)
     TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, (const uint8_t *)"other message", 13, sig));
 }
 
+// Stress the scalar multiplication across many distinct secret scalars: pubkey -> sign -> verify must
+// round-trip and a one-bit tamper must be rejected, for 48 deterministic pseudo-random keys/messages.
+// A fixed-window ladder has index/table-zero edge cases the two KAT vectors alone would not exercise.
+static void test_ecdsa_random_roundtrip_stress(void)
+{
+    uint64_t st = 0x9e3779b97f4a7c15ULL; // deterministic xorshift64 (reproducible, no RNG dependency)
+    auto next = [&st]() -> uint8_t {
+        st ^= st << 13;
+        st ^= st >> 7;
+        st ^= st << 17;
+        return (uint8_t)(st >> 24);
+    };
+    for (int iter = 0; iter < 48; iter++)
+    {
+        uint8_t priv[32];
+        for (int i = 0; i < 32; i++)
+            priv[i] = next();
+        priv[0] &= 0x7F; // keep d < n (n's top byte is 0xFF, so clearing the MSB is sufficient and non-zero)
+        priv[31] |= 0x01;
+
+        uint8_t pub[65];
+        TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(pub, priv));
+        uint8_t msg[24];
+        for (int i = 0; i < 24; i++)
+            msg[i] = next();
+        uint8_t sig[64];
+        TEST_ASSERT_TRUE(ssh_ecdsa_p256_sign(sig, msg, sizeof(msg), priv));
+        TEST_ASSERT_TRUE(ssh_ecdsa_p256_verify(pub, msg, sizeof(msg), sig));
+        sig[iter % 64] ^= (uint8_t)(1u << (iter % 8)); // flip one bit somewhere in r||s
+        TEST_ASSERT_FALSE(ssh_ecdsa_p256_verify(pub, msg, sizeof(msg), sig));
+    }
+}
+
 // Invalid keys are rejected.
 static void test_ecdsa_pubkey_rejects_bad_scalar(void)
 {
@@ -243,6 +276,7 @@ int main(int, char **)
     RUN_TEST(test_ecdsa_verify_valid);
     RUN_TEST(test_ecdsa_verify_rejects_tamper);
     RUN_TEST(test_ecdsa_roundtrip_other_key);
+    RUN_TEST(test_ecdsa_random_roundtrip_stress);
     RUN_TEST(test_ecdsa_pubkey_rejects_bad_scalar);
     RUN_TEST(test_ecdh_rfc5903_shared_secret);
     RUN_TEST(test_ecdh_rfc5903_pubkeys);

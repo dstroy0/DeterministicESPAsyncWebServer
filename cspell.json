@@ -1318,7 +1318,9 @@
     "Shoup",
     "cryptobench",
     "vadd",
-    "vadds"
+    "vadds",
+    "Batina",
+    "Renes"
   ],
   "ignorePaths": [
     "node_modules/**",

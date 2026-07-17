@@ -468,12 +468,12 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
 | `ssh_rsa_2048_verify` (SHA-256)    | HW MPI              |   3,959,764 |   16.5 ms |
 | `ssh_x25519` scalarmult (KEX)      | HW MODMULT          |   5,547,625 |   23.1 ms |
 | `mlkem768_encaps` (ML-KEM-768)     | SW NTT              |   5,645,995 |   23.5 ms |
+| `ssh_ecdsa_p256_ecdh` (KEX)        | HW MODMULT          |  12,269,174 |   51.1 ms |
+| `ssh_ecdsa_p256_sign`              | HW MODMULT          |  13,064,925 |   54.4 ms |
 | `ssh_ed25519_verify`               | HW MODMULT + HW SHA |  20,228,267 |   84.3 ms |
 | `ssh_ed25519_sign`                 | HW MODMULT + HW SHA |  20,309,986 |   84.6 ms |
-| `ssh_ecdsa_p256_ecdh` (KEX)        | HW MPI              |  33,710,078 |  140.5 ms |
-| `ssh_ecdsa_p256_sign`              | HW MPI              |  35,081,946 |  146.2 ms |
+| `ssh_ecdsa_p256_verify`            | HW MODMULT          |  24,774,465 |  103.2 ms |
 | `bn_expmod_group14` (DH-2048)      | HW MPI              |  43,543,754 |  181.4 ms |
-| `ssh_ecdsa_p256_verify`            | HW MPI              |  69,939,476 |  291.4 ms |
 | `ssh_rsa_2048_sign` (SHA-256)      | HW MPI              | 105,704,723 |  440.4 ms |
 
 - **AES-GCM is GHASH-bound, and GHASH is software (now 4-bit-table, ~7x faster).** AES-256-CTR runs at
@@ -495,9 +495,16 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
   signature is **440 ms** (5.2x slower - the private-key CRT modexp). RSA _verify_ is cheap (16.5 ms, public
   exponent 65537), but the server pays the _sign_ cost on every handshake, so RSA host keys add ~0.36 s to
   each SSH/connection setup versus Ed25519.
-- **ECDSA P-256 is the slowest of the elliptic-curve options** (sign 146 ms, verify 291 ms, ECDH 140 ms):
-  mbedtls's generic short-Weierstrass ladder does not get the dedicated `fe25519` MODMULT treatment that
-  X25519/Ed25519 do, so curve25519 (23 ms KEX / 85 ms sign) is 6x cheaper. Offer P-256 only for interop.
+- **ECDSA P-256 now rides the same RSA/MPI MODMULT as curve25519** (sign **54 ms**, verify **103 ms**, ECDH
+  **51 ms** - **~2.7-2.9x** the old mbedtls ECP path, which measured 146 / 291 / 140 ms). A self-contained
+  P-256 ([`ssh_ecdsa.cpp`](../src/network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp)) does every field
+  and scalar multiply as one 256-bit MODMULT - the accelerator is modulus-generic, so the same engine serves
+  the field (mod p) and the scalar ring (mod n) by swapping the `{M, m', R^2}` constants. Point math uses
+  exception-free complete (Renes-Costello-Batina) formulas under a constant-time 4-bit-window ladder, the
+  curve `a = -3` multiply is folded to `-3x` (two adds, no MODMULT), and signing is RFC 6979 deterministic
+  so the on-device output is byte-exact to the published KATs. It is still ~2x curve25519 (23 ms KEX / 85 ms
+  sign) because a short-Weierstrass complete addition needs ~17 field muls vs the Montgomery ladder's
+  handful, so curve25519 stays the first-offered, cheapest option; P-256 is offered for interop.
 - **classic DH is expensive:** `diffie-hellman-group14` is a 2048-bit modexp at **181 ms** - another reason
   `curve25519-sha256` (23 ms) is the preferred, first-offered KEX.
 - **PQC is affordable:** ML-KEM-768 encapsulation is **23.5 ms** in pure software (SW NTT), about the cost of
