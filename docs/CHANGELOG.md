@@ -4,8 +4,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- example server.begin(80); mark CDN tier HW-verified ([`3e32f4b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3e32f4b3503d3ef5dfb8f7368fad24e637255b3e))
+
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`28c91e3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/28c91e307adfae6059bc3cf497b8060b9fea2ec4))
+- update CHANGELOG.md [skip ci] ([`63dd73a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/63dd73a88f364aad3adbac32789d853a8a4e1441))
 - update test report + coverage [skip ci] ([`6c20915`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c20915d45ce47390a755d9c013208ff63e3e71e))
 - update CHANGELOG.md [skip ci] ([`5be9f0b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5be9f0b9e3fc63ca22b8f35ecefeb8a3b100c6ef))
 - update CHANGELOG.md [skip ci] ([`974c967`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/974c96707fd981efd087c56fce18026e1ae958f8))
@@ -30,6 +36,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`2c60714`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2c607140517d539fd0a7d57577deeea0de2bcc8a))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`49ae16e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/49ae16e45ed38a2c7ad976dab78fe653e417d7c5))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`61e4be5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61e4be5ca7979464d93fd310bfdbd70c0ee0ff9e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`323f2f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/323f2f155ebeb023070f57927eaf8e6115df82b1))
 - update ESP32 build footprints [skip ci] ([`a7478f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7478f0c90081386079c6d4a9e8dd6c65bce7a1b))
