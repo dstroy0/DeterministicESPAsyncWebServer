@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **238 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **239 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -134,6 +134,7 @@ The native test matrix has **238 environments**, one per feature, generated from
 | `native_dtls_hs` | `ETWS_ENABLE_DTLS=1` | `test_dtls_handshake` | DTLS 1.3 handshake framing + reliability (network_drivers/presentation/dtls/dtls_handshake, RFC 9147 sec 5 + 7): the 12-byte DTLS handshake header, overlap-tolerant message reassembly, the ACK message... |
 | `native_dtls_tls13` | `ETWS_ENABLE_DTLS=1` | `test_dtls_tls13` | TLS 1.3 messages the DTLS 1.3 handshake adds to tls13_msg (RFC 8446 sec 4.1.4 / 4.4.1), compiled for the DTLS path (DETWS_ENABLE_DTLS, not HTTP/3): the HelloRetryRequest builder, the cookie extension ... |
 | `native_edge_cache` | `ETWS_ENABLE_HTTP_CACHE=1`, `ETWS_ENABLE_HTTP_CLIENT=1`, `ETWS_ENABLE_EDGE_CACHE=1` | `test_edge_cache`, `test_edge_fetch` | CDN edge-cache engine (services/edge_cache): the pure freshness/validator core (response header-field access, HTTP-date parsing over IMF-fixdate / RFC 850 / asctime, RFC 9111 lifetime + Expires-Date +... |
+| `native_edge_cache_sd` | `ETWS_ENABLE_WAL=1`, `ETWS_ENABLE_DBM=1`, `ETWS_DBM_VAL_MAX=1024`, `ETWS_ENABLE_HTTP_CACHE=1`, `ETWS_ENABLE_HTTP_CLIENT=1`, `ETWS_ENABLE_EDGE_CACHE=1` | `test_edge_cache_sd` | CDN edge-cache L2 SD-persistence tier (services/edge_cache/edge_cache_sd): the entry <-> dbm-value serialization roundtrip (all response metadata, Vary variants, binary and max-size bodies), the spill... |
 | `native_enip` | `ETWS_ENABLE_ENIP=1` | `test_enip` | EtherNet/IP encapsulation codec (services/enip): the 24-octet header, RegisterSession + SendRRData builders (Common Packet Format), and the SendRRData reply extractor. |
 | `native_enocean` | `ETWS_ENABLE_ENOCEAN=1`, `ETWS_ENOCEAN_MAX_DATA=16` | `test_enocean` | EnOcean ESP3 serial codec (services/enocean), v5 radio plugin: the CRC-8 (poly 0x07) against known answers, a build -> parse round trip, malformed framing (bad sync / header CRC / data CRC), incomplet... |
 | `native_espnow` | `ETWS_ENABLE_ESPNOW=1` | `test_espnow` | ESP-NOW peer messaging (services/espnow) - the envelope codec + peer registry are host-tested here; the esp_now radio binding is ESP32-only. |
@@ -528,7 +529,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3188 test cases** across **258 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3203 test cases** across **259 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -7840,6 +7841,185 @@ A thorough directory of all **3188 test cases** across **258 suites**. Expand a 
       * <code>Assert true (detws_dshot_bit_ns(300, false) &gt; 0)</code>
       * <code>Assert true (detws_dshot_bit_ns(1200, true) &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_dshot_bit_ns(999, true));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_edge_cache_sd (15 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serialize_roundtrip_all_fields</b> &mdash; <i>Serialize roundtrip all fields</i></summary>
+
+    * **Objective**: Serialize roundtrip all fields
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (edge_sd_deserialize(g_scratch, n, &out))</code>
+      * <code>Assert equal string (in.key, out.key)</code>
+      * <code>Assert equal int (in.status, out.status)</code>
+      * <code>Assert equal string (in.content_type, out.content_type)</code>
+      * <code>Assert equal string (in.etag, out.etag)</code>
+      * <code>Assert equal string (in.last_modified, out.last_modified)</code>
+      * <code>Assert equal string (in.content_encoding, out.content_encoding)</code>
+      * <code>Assert equal string (in.vary_names, out.vary_names)</code>
+      * <code>Assert equal string (in.vary_vals, out.vary_vals)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(in.body_len, out.body_len);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(in.body, out.body, in.body_len);</code>
+      * <code>Assert true (digest_eq(in.digest, out.digest))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serialize_max_body</b> &mdash; <i>Serialize max body</i></summary>
+
+    * **Objective**: Serialize max body
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert true (edge_sd_deserialize(g_scratch, n, &out))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(DETWS_EDGE_BODY_MAX, out.body_len);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(body, out.body, DETWS_EDGE_BODY_MAX);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_serialize_too_small_scratch_fails</b> &mdash; <i>Serialize too small scratch fails</i></summary>
+
+    * **Objective**: Serialize too small scratch fails
+    * **Assertions**:
+      * <code>Assert equal uint (0, edge_sd_serialize(&in, tiny, sizeof(tiny)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_deserialize_corrupt_fails_closed</b> &mdash; <i>Deserialize corrupt fails closed</i></summary>
+
+    * **Objective**: Deserialize corrupt fails closed
+    * **Assertions**:
+      * <code>Assert true (n &gt; 0)</code>
+      * <code>Assert false (edge_sd_deserialize(g_scratch, n, &out))</code>
+      * <code>Assert false (edge_sd_deserialize(g_scratch, 2, &out))</code>
+      * <code>Assert false (edge_sd_deserialize(g_scratch, n - 3, &out))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_put_get_roundtrip</b> &mdash; <i>A digest that was never stored misses.</i></summary>
+
+    * **Objective**: A digest that was never stored misses.
+    * **Assertions**:
+      * <code>Assert true (edge_sd_put(&g_db, &in, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert true (edge_sd_get(&g_db, in.digest, &out, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert equal string (canon, out.key)</code>
+      * <code>Assert equal string ("\\"a1\\"", out.etag)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(9, out.body_len);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY("payload-A", out.body, 9);</code>
+      * <code>Assert false (edge_sd_get(&g_db, in2.digest, &out, g_scratch, sizeof(g_scratch)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_no_validator_not_spilled</b> &mdash; <i>No validator not spilled</i></summary>
+
+    * **Objective**: No validator not spilled
+    * **Assertions**:
+      * <code>Assert false (edge_sd_put(&g_db, &in, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert false (edge_sd_get(&g_db, in.digest, &out, g_scratch, sizeof(g_scratch)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_oversize_body_stays_l1_only</b> &mdash; <i>A body whose serialized size exceeds DETWS_DBM_VAL_MAX must not be spilled (stays L1-only).</i></summary>
+
+    * **Objective**: A body whose serialized size exceeds DETWS_DBM_VAL_MAX must not be spilled (stays L1-only).
+    * **Assertions**:
+      * <code>Assert true (serialized &gt; DETWS_DBM_VAL_MAX)</code>
+      * <code>Assert false (edge_sd_put(&g_db, &in, g_scratch, sizeof(g_scratch)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_spill_on_evict_and_promote</b> &mdash; <i>Fill every L1 slot, then one more: the LRU victim (the first inserted) is evicted -> spilled to L2.</i></summary>
+
+    * **Objective**: Fill every L1 slot, then one more: the LRU victim (the first inserted) is evicted -> spilled to L2.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, g_spills); // nothing evicted yet</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, g_spills); // the LRU victim spilled</code>
+      * <code>Assert true (edge_sd_get(&g_db, first_digest, &out, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert equal string (first_canon, out.key)</code>
+      * <code>Assert equal string ("\\"e0\\"", out.etag)</code>
+      * <code>Assert false (edge_sd_get(&g_db, last_digest, &out, g_scratch, sizeof(g_scratch)))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_transient_entry_not_spilled</b> &mdash; <i>Fill the store with transient (empty-key) entries; evicting one must NOT fire the write-back hook.</i></summary>
+
+    * **Objective**: Fill the store with transient (empty-key) entries; evicting one must NOT fire the write-back hook.
+    * **Assertions**:
+      * <code>Assert not null (e)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, g_spills); // empty-key victims are never offered to on_evict</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_survives_reboot</b> &mdash; <i>Survives reboot</i></summary>
+
+    * **Objective**: Survives reboot
+    * **Assertions**:
+      * <code>Assert true (edge_sd_put(&g_db, &in, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert true (detws_dbm_sync(&g_db))</code>
+      * <code>Assert true (reboot())</code>
+      * <code>Assert true (edge_sd_get(&g_db, in.digest, &out, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert equal string (canon, out.key)</code>
+      * <code>Assert equal string ("\\"p9\\"", out.etag)</code>
+      * <code>Assert equal string ("Wed, 01 Jan 2025 00:00:00 GMT", out.last_modified)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(10, out.body_len);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY("survive-me", out.body, 10);</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_del</b> &mdash; <i>Del</i></summary>
+
+    * **Objective**: Del
+    * **Assertions**:
+      * <code>Assert true (edge_sd_put(&g_db, &in, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert true (edge_sd_del(&g_db, in.digest))</code>
+      * <code>Assert false (edge_sd_get(&g_db, in.digest, &out, g_scratch, sizeof(g_scratch)))</code>
+      * <code>Assert false (edge_sd_del(&g_db, in.digest))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_purge_prefix</b> &mdash; <i>Purge prefix</i></summary>
+
+    * **Objective**: Purge prefix
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, edge_sd_purge_prefix(&g_db, "/cdn/", g_scratch, sizeof(g_scratch)));</code>
+      * <code>Assert false (has_path("/cdn/a"))</code>
+      * <code>Assert false (has_path("/cdn/b"))</code>
+      * <code>Assert true (has_path("/other/c"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_purge_prefix_multipass</b> &mdash; <i>More than the internal batch size, to exercise the collect-delete-reiterate loop.</i></summary>
+
+    * **Objective**: More than the internal batch size, to exercise the collect-delete-reiterate loop.
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)N, edge_sd_purge_prefix(&g_db, "/cdn/", g_scratch, sizeof(g_scratch)));</code>
+      * <code>Assert false (has_path(path))</code>
+      * <code>Assert true (has_path("/keep/one"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_purge_all</b> &mdash; <i>Purge all</i></summary>
+
+    * **Objective**: Purge all
+    * **Assertions**:
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, edge_sd_purge_all(&g_db));</code>
+      * <code>Assert false (has_path("/cdn/a"))</code>
+      * <code>Assert false (has_path("/x/y"))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_shared_dbm_foreign_value_untouched</b> &mdash; <i>A foreign (non-edge) value under a 32-byte key: purge_all must skip it (peek_canon guards on version).</i></summary>
+
+    * **Objective**: A foreign (non-edge) value under a 32-byte key: purge_all must skip it (peek_canon guards on version).
+    * **Assertions**:
+      * <code>Assert true (detws_dbm_put(&g_db, (const char *)foreign_key, 32, foreign_val, sizeof(foreign_val)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, edge_sd_purge_all(&g_db)); // only the edge value</code>
+      * <code>Assert false (has_path("/cdn/mine"))</code>
+      * <code>Assert equal int (16, detws_dbm_get(&g_db, (const char *)foreign_key, 32, out, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(foreign_val, out, 16); // foreign value intact</code>
   </details>
 
 </details>

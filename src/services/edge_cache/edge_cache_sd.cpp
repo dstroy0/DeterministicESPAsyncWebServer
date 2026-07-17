@@ -1,0 +1,236 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file edge_cache_sd.cpp
+ * @brief CDN edge-cache tier - L2 SD persistence. See edge_cache_sd.h.
+ */
+
+#include "services/edge_cache/edge_cache_sd.h"
+
+#if DETWS_ENABLE_EDGE_CACHE && DETWS_ENABLE_DBM
+
+#include <string.h>
+
+// The L2 key is the entry's SHA-256 digest, which must fit a dbm key exactly.
+static_assert(DETWS_DBM_KEY_MAX >= 32, "edge cache L2 uses a 32-byte SHA-256 digest as the dbm key");
+
+namespace
+{
+constexpr uint8_t EDGE_SD_VERSION = 1;
+
+void put_u16(uint8_t *p, uint16_t v)
+{
+    p[0] = (uint8_t)(v & 0xFF);
+    p[1] = (uint8_t)(v >> 8);
+}
+uint16_t get_u16(const uint8_t *p)
+{
+    return (uint16_t)((uint16_t)p[0] | ((uint16_t)p[1] << 8));
+}
+
+// Append a u16 length prefix + the NUL-terminated string @p s. False (no write) on overflow.
+bool put_str(uint8_t *out, size_t cap, size_t *pos, const char *s)
+{
+    size_t sl = strlen(s);
+    if (sl > 0xFFFFu || *pos + 2 + sl > cap)
+        return false;
+    put_u16(out + *pos, (uint16_t)sl);
+    *pos += 2;
+    memcpy(out + *pos, s, sl);
+    *pos += sl;
+    return true;
+}
+
+// Read a u16-prefixed string into @p out (NUL-terminated). False if short or it would not fit (no truncation).
+bool get_str(const uint8_t *buf, size_t len, size_t *pos, char *out, size_t out_cap)
+{
+    if (*pos + 2 > len)
+        return false;
+    uint16_t sl = get_u16(buf + *pos);
+    *pos += 2;
+    if (*pos + sl > len || sl >= out_cap)
+        return false;
+    memcpy(out, buf + *pos, sl);
+    out[sl] = '\0';
+    *pos += sl;
+    return true;
+}
+
+// The path portion of a canonical key "METHOD\nhost\npath[\nquery]" (after the 2nd '\n'), or nullptr.
+const char *canon_path(const char *canon)
+{
+    int nl = 0;
+    for (const char *p = canon; *p; p++)
+        if (*p == '\n' && ++nl == 2)
+            return p + 1;
+    return nullptr;
+}
+
+// True if @p buf is a valid edge serialization; if so copies its canonical key into @p canon_out.
+bool peek_canon(const uint8_t *buf, size_t len, char *canon_out, size_t cap)
+{
+    if (len < 3 || buf[0] != EDGE_SD_VERSION)
+        return false;
+    size_t pos = 3; // version(1) + status(2)
+    return get_str(buf, len, &pos, canon_out, cap);
+}
+
+// Batch of L2 keys collected during an iteration for deletion afterward (dbm forbids delete-in-iterate).
+constexpr int EDGE_SD_PURGE_BATCH = 8;
+struct CollectCtx
+{
+    DetwsDbm *db;
+    const char *prefix; // nullptr = match every edge entry
+    size_t plen;
+    uint8_t *scratch;
+    size_t scratch_cap;
+    uint8_t batch[EDGE_SD_PURGE_BATCH][32];
+    int count;
+    bool full; // hit the batch cap: another pass is needed
+};
+
+bool collect_cb(const char *key, uint16_t key_len, void *vctx)
+{
+    CollectCtx *c = (CollectCtx *)vctx;
+    if (key_len != 32)
+        return true; // not an edge digest key (shared dbm) - leave it be
+    long n = detws_dbm_get(c->db, key, key_len, c->scratch, c->scratch_cap);
+    if (n <= 0)
+        return true;
+    char canon[DETWS_EDGE_KEY_MAX];
+    if (!peek_canon(c->scratch, (size_t)n, canon, sizeof(canon)))
+        return true; // not an edge value - do not touch it
+    if (c->prefix)
+    {
+        const char *path = canon_path(canon);
+        if (!path || strncmp(path, c->prefix, c->plen) != 0)
+            return true; // path does not match the purge prefix
+    }
+    if (c->count >= EDGE_SD_PURGE_BATCH)
+    {
+        c->full = true;
+        return false; // stop this pass; the caller deletes the batch then re-iterates
+    }
+    memcpy(c->batch[c->count++], key, 32);
+    return true;
+}
+
+uint32_t purge_matching(DetwsDbm *db, const char *prefix, uint8_t *scratch, size_t scratch_cap)
+{
+    uint32_t total = 0;
+    for (;;)
+    {
+        CollectCtx c;
+        c.db = db;
+        c.prefix = prefix;
+        c.plen = prefix ? strlen(prefix) : 0;
+        c.scratch = scratch;
+        c.scratch_cap = scratch_cap;
+        c.count = 0;
+        c.full = false;
+        detws_dbm_iterate(db, collect_cb, &c);
+        for (int i = 0; i < c.count; i++)
+            if (detws_dbm_del(db, (const char *)c.batch[i], 32))
+                total++;
+        if (!c.full)
+            break; // visited everything that matched
+    }
+    return total;
+}
+} // namespace
+
+size_t edge_sd_serialize(const EdgeEntry *e, uint8_t *out, size_t cap)
+{
+    if (!e || !out || cap < 3)
+        return 0;
+    size_t pos = 0;
+    out[pos++] = EDGE_SD_VERSION;
+    put_u16(out + pos, (uint16_t)e->status);
+    pos += 2;
+    if (!put_str(out, cap, &pos, e->key) || !put_str(out, cap, &pos, e->content_type) ||
+        !put_str(out, cap, &pos, e->etag) || !put_str(out, cap, &pos, e->last_modified) ||
+        !put_str(out, cap, &pos, e->content_encoding) || !put_str(out, cap, &pos, e->vary_names) ||
+        !put_str(out, cap, &pos, e->vary_vals))
+        return 0;
+    if (pos + 2 + e->body_len > cap)
+        return 0;
+    put_u16(out + pos, e->body_len);
+    pos += 2;
+    memcpy(out + pos, e->body, e->body_len);
+    pos += e->body_len;
+    return pos;
+}
+
+bool edge_sd_deserialize(const uint8_t *buf, size_t len, EdgeEntry *e)
+{
+    if (!buf || !e || len < 3 || buf[0] != EDGE_SD_VERSION)
+        return false;
+    size_t pos = 1;
+    e->status = get_u16(buf + pos);
+    pos += 2;
+    if (!get_str(buf, len, &pos, e->key, sizeof(e->key)) ||
+        !get_str(buf, len, &pos, e->content_type, sizeof(e->content_type)) ||
+        !get_str(buf, len, &pos, e->etag, sizeof(e->etag)) ||
+        !get_str(buf, len, &pos, e->last_modified, sizeof(e->last_modified)) ||
+        !get_str(buf, len, &pos, e->content_encoding, sizeof(e->content_encoding)) ||
+        !get_str(buf, len, &pos, e->vary_names, sizeof(e->vary_names)) ||
+        !get_str(buf, len, &pos, e->vary_vals, sizeof(e->vary_vals)))
+        return false;
+    if (pos + 2 > len)
+        return false;
+    uint16_t bl = get_u16(buf + pos);
+    pos += 2;
+    if (bl > DETWS_EDGE_BODY_MAX || pos + bl > len)
+        return false;
+    memcpy(e->body, buf + pos, bl);
+    e->body_len = bl;
+    edge_key_digest(e->key, strlen(e->key), e->digest); // re-derive the digest from the restored key
+    return true;
+}
+
+bool edge_sd_put(DetwsDbm *db, const EdgeEntry *e, uint8_t *scratch, size_t scratch_cap)
+{
+    if (!db || !e || !scratch)
+        return false;
+    if (!edge_entry_has_validator(e))
+        return false; // only spill what a cheap 304 can refresh after a reboot
+    size_t n = edge_sd_serialize(e, scratch, scratch_cap);
+    if (n == 0 || n > DETWS_DBM_VAL_MAX)
+        return false; // too large for the L2 value bound -> stays L1-only
+    return detws_dbm_put(db, (const char *)e->digest, 32, scratch, (uint32_t)n);
+}
+
+bool edge_sd_get(DetwsDbm *db, const uint8_t digest[32], EdgeEntry *e, uint8_t *scratch, size_t scratch_cap)
+{
+    if (!db || !digest || !e || !scratch)
+        return false;
+    long n = detws_dbm_get(db, (const char *)digest, 32, scratch, scratch_cap);
+    if (n < 0)
+        return false;
+    return edge_sd_deserialize(scratch, (size_t)n, e);
+}
+
+bool edge_sd_del(DetwsDbm *db, const uint8_t digest[32])
+{
+    return db && digest && detws_dbm_del(db, (const char *)digest, 32);
+}
+
+uint32_t edge_sd_purge_prefix(DetwsDbm *db, const char *path_prefix, uint8_t *scratch, size_t scratch_cap)
+{
+    if (!db || !path_prefix || !scratch)
+        return 0;
+    return purge_matching(db, path_prefix, scratch, scratch_cap);
+}
+
+uint32_t edge_sd_purge_all(DetwsDbm *db)
+{
+    if (!db)
+        return 0;
+    // purge_all still verifies each value is an edge serialization before deleting, so a shared dbm is safe;
+    // that needs a scratch buffer to read each value into.
+    uint8_t scratch[EDGE_SD_VALUE_MAX];
+    return purge_matching(db, nullptr, scratch, sizeof(scratch));
+}
+
+#endif // DETWS_ENABLE_EDGE_CACHE && DETWS_ENABLE_DBM

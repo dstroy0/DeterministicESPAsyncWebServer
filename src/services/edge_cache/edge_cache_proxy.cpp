@@ -17,6 +17,9 @@
 #include "network_drivers/transport/tcp.h"                        // det_conn_active
 #include "services/clock.h"                                       // detws_millis
 #include "services/edge_cache/edge_fetch.h"
+#if DETWS_ENABLE_DBM
+#include "services/edge_cache/edge_cache_sd.h" // L2 SD tier
+#endif
 #include "services/http_client/http_client.h" // http_client_parse_url
 #include "shared_primitives/mime.h"           // DET_MIME_TEXT_PLAIN
 #include <stdio.h>
@@ -68,8 +71,22 @@ struct EdgeCacheProxyCtx
     EdgeServeCursor serve[MAX_CONNS];
     EdgeFetchTransport transport;
     char reqbuf[MAX_PATH_LEN + MAX_QUERY_LEN + 256]; // scratch for one origin request line (freed by send)
+#if DETWS_ENABLE_DBM
+    DetwsDbm *l2;                      // the persistent L2 tier (nullptr = L1-only)
+    uint8_t sd_buf[EDGE_SD_VALUE_MAX]; // serialize/deserialize scratch for one L2 value
+#endif
 };
 EdgeCacheProxyCtx s_ctx;
+
+#if DETWS_ENABLE_DBM
+// L1 write-back hook: spill an evicted victim to L2 (edge_sd_put skips no-validator / oversize entries).
+void edge_on_evict(void *ctx, const EdgeEntry *victim)
+{
+    (void)ctx;
+    if (s_ctx.l2 && edge_sd_put(s_ctx.l2, victim, s_ctx.sd_buf, sizeof(s_ctx.sd_buf)))
+        s_ctx.store.stats.l2_spills++;
+}
+#endif
 
 // --- det_client transport seam -------------------------------------------------------------------
 int t_open(void *c, const char *host, uint16_t port, uint32_t timeout)
@@ -337,6 +354,32 @@ bool start_fetch(uint8_t slot, HttpReq *req, EdgeRouteMap *m, const char *canon,
     return true;
 }
 
+#if DETWS_ENABLE_DBM
+// Promote a reboot-surviving entry from L2 into a fresh L1 slot, forced stale so the caller revalidates it
+// (the monotonic insert time is meaningless across a reboot). @return the promoted entry, or nullptr.
+EdgeEntry *try_promote_l2(const char *canon, uint32_t now)
+{
+    uint8_t digest[32];
+    edge_key_digest(canon, strlen(canon), digest);
+    EdgeEntry *e = edge_store_alloc(&s_ctx.store, canon, ""); // may evict + write-back an L1 victim first
+    if (!e)
+        return nullptr;
+    if (!edge_sd_get(s_ctx.l2, digest, e, s_ctx.sd_buf, sizeof(s_ctx.sd_buf)) || strcmp(e->key, canon) != 0)
+    {
+        edge_store_free_entry(&s_ctx.store, e); // L2 miss or digest collision -> not promoted
+        return nullptr;
+    }
+    e->lifetime_s = 0; // force stale: freshness is untrustworthy across a reboot -> caller revalidates
+    e->initial_age = 0;
+    e->date_epoch = e->expires_epoch = -1;
+    e->age_hdr = 0;
+    e->insert_ms = now;
+    e->last_used_ms = now;
+    s_ctx.store.stats.l2_promotes++;
+    return e;
+}
+#endif
+
 // The cache middleware: fresh hit -> serve; stale/miss -> start an async origin fetch (suspend); else
 // fall through (fail open).
 MwResult edge_cache_mw(uint8_t slot, HttpReq *req)
@@ -368,6 +411,10 @@ MwResult edge_cache_mw(uint8_t slot, HttpReq *req)
         serve_hit(slot, e, now, "HIT");
         return MwResult::MW_HALT;
     }
+#if DETWS_ENABLE_DBM
+    if (!e && s_ctx.l2) // L1 miss: try promoting a reboot-surviving entry from L2 (force-stale -> revalidate)
+        e = try_promote_l2(canon, now);
+#endif
     s_ctx.store.stats.misses++;
     EdgeEntry *reval = (e && edge_entry_has_validator(e)) ? e : nullptr;
     if (!start_fetch(slot, req, m, canon, reval, now))
@@ -438,6 +485,10 @@ void det_edge_cache_enable(DetWebServer &server)
     s_ctx.transport.closed = t_closed;
     s_ctx.transport.close = t_close;
     s_ctx.transport.ctx = nullptr;
+#if DETWS_ENABLE_DBM
+    s_ctx.store.on_evict = s_ctx.l2 ? edge_on_evict : nullptr; // re-arm write-back after edge_store_init
+    s_ctx.store.evict_ctx = nullptr;
+#endif
     if (!s_ctx.registered)
     {
         server.use(edge_cache_mw);
@@ -445,6 +496,15 @@ void det_edge_cache_enable(DetWebServer &server)
         s_ctx.registered = true;
     }
 }
+
+#if DETWS_ENABLE_DBM
+void det_edge_cache_bind_sd(DetwsDbm *dbm)
+{
+    s_ctx.l2 = dbm;
+    s_ctx.store.on_evict = dbm ? edge_on_evict : nullptr;
+    s_ctx.store.evict_ctx = nullptr;
+}
+#endif
 
 bool det_edge_cache_map(const char *path_prefix, const char *origin_base_url)
 {
@@ -478,18 +538,44 @@ bool det_edge_cache_map(const char *path_prefix, const char *origin_base_url)
 void det_edge_cache_reset(void)
 {
     edge_store_init(&s_ctx.store);
+#if DETWS_ENABLE_DBM
+    if (s_ctx.l2)
+    {
+        edge_sd_purge_all(s_ctx.l2);
+        s_ctx.store.on_evict = edge_on_evict; // edge_store_init cleared it - re-arm the write-back hook
+    }
+#endif
     for (int i = 0; i < DETWS_EDGE_MAP_MAX; i++)
         s_ctx.maps[i].used = false;
 }
 
 bool det_edge_cache_purge(const char *canonical_key)
 {
-    return canonical_key && edge_store_purge(&s_ctx.store, canonical_key) > 0;
+    if (!canonical_key)
+        return false;
+    bool purged = edge_store_purge(&s_ctx.store, canonical_key) > 0;
+#if DETWS_ENABLE_DBM
+    if (s_ctx.l2)
+    {
+        uint8_t digest[32];
+        edge_key_digest(canonical_key, strlen(canonical_key), digest);
+        if (edge_sd_del(s_ctx.l2, digest))
+            purged = true;
+    }
+#endif
+    return purged;
 }
 
 uint32_t det_edge_cache_purge_prefix(const char *path_prefix)
 {
-    return path_prefix ? edge_store_purge_prefix(&s_ctx.store, path_prefix) : 0;
+    if (!path_prefix)
+        return 0;
+    uint32_t n = edge_store_purge_prefix(&s_ctx.store, path_prefix);
+#if DETWS_ENABLE_DBM
+    if (s_ctx.l2)
+        n += edge_sd_purge_prefix(s_ctx.l2, path_prefix, s_ctx.sd_buf, sizeof(s_ctx.sd_buf));
+#endif
+    return n;
 }
 
 void det_edge_cache_stats(EdgeCacheStats *out)

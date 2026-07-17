@@ -106,8 +106,19 @@ GET /cache/stats for counters; POST /cache/purge to invalidate /cdn/
   S3 / PSRAM board, bump both up for a bigger, more useful cache.
 - **`Vary`.** Responses that `Vary` on request headers (e.g. `Accept-Encoding`)
   are cached as separate variants and matched per request; `Vary: *` is uncached.
-- **Persistence (SD).** With `DETWS_ENABLE_DBM` the RAM tier can spill to an SD /
-  flash tier that survives a reboot (follow-up increment).
+- **Persistence (SD).** Build with `-DDETWS_ENABLE_DBM=1 -DDETWS_ENABLE_WAL=1` and
+  the sketch mounts a WAL-backed dbm store on an SD card and binds it as an **L2
+  tier**: an entry evicted from the RAM (L1) tier spills to SD, and after a reboot
+  the log is replayed so the cached set survives. A persisted entry is served by
+  revalidating it once (a cheap conditional GET → `304`) rather than re-downloading,
+  because its freshness can't be trusted across a reboot. Only entries carrying a
+  validator (`ETag` / `Last-Modified`) are spilled - those are exactly the ones a
+  `304` can refresh. Raise `DETWS_DBM_VAL_MAX` toward `DETWS_EDGE_BODY_MAX + ~470`
+  so full-size bodies fit one SD record; larger entries just stay L1-only. Watch
+  `l2_spills` / `l2_promotes` in `GET /cache/stats`. The dbm index is fixed RAM
+  (`DETWS_DBM_SLOTS` keys); on a classic ESP32 the default 256 will not fit
+  alongside the cache + SD driver, so lower it (e.g. `-DDETWS_DBM_SLOTS=32`) or use
+  an S3 / PSRAM board.
 
 ## Build and run (PlatformIO)
 

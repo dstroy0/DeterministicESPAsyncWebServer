@@ -30,6 +30,16 @@
 #include <Arduino.h>
 #include <WiFi.h>
 
+// --- Optional L2 (SD) persistence tier: set DETWS_ENABLE_DBM=1 (with an SD card) to keep the cached set
+// across a reboot. Evicted L1 entries spill to a dbm store on the WAL; a reboot replays the log and the
+// first request for a persisted URL revalidates it with a cheap conditional GET instead of re-downloading.
+#if DETWS_ENABLE_DBM
+#include "services/dbm/dbm.h"
+#include "services/wal/wal_fs.h"
+#include "services/wal/wal_store.h"
+#include <SD.h>
+#endif
+
 // --- CHANGE ME: your WiFi ---
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
@@ -39,18 +49,46 @@ static const char *ORIGIN = "http://192.168.1.60:8000";
 
 DetWebServer server;
 
+#if DETWS_ENABLE_DBM
+// L2 persistence: a dbm store on a WAL file on the SD card. The file stays open for the store's lifetime.
+static constexpr uint64_t L2_WAL_BYTES = 512 * 1024; // backing file size (holds the persisted cache set)
+static fs::File g_wal_file;
+static WalStore g_wal;
+static DetwsDbm g_l2;
+
+// Mount (or format) the WAL file on SD, open the dbm over it, and bind it as the cache's L2 tier.
+static bool setup_l2()
+{
+    if (!SD.begin())
+        return false;
+    if (!wal_fs_prealloc(SD, "/edgecache.wal", L2_WAL_BYTES))
+        return false;
+    g_wal_file = SD.open("/edgecache.wal", "r+"); // random read+write, no truncation
+    if (!g_wal_file)
+        return false;
+    WalDev dev = wal_fs_dev(&g_wal_file, L2_WAL_BYTES);
+    if (!wal_store_mount(&g_wal, &dev) && !wal_store_format(&g_wal, &dev)) // recover, else initialize
+        return false;
+    if (!detws_dbm_open(&g_l2, &g_wal)) // rebuild the index by replaying the log (this is reboot recovery)
+        return false;
+    det_edge_cache_bind_sd(&g_l2);
+    return true;
+}
+#endif
+
 // GET /cache/stats - the cache counters as JSON (not itself cached: it is outside the /cdn/ prefix).
 static void handle_stats(uint8_t slot, HttpReq *req)
 {
     (void)req;
     EdgeCacheStats st;
     det_edge_cache_stats(&st);
-    char body[224];
+    char body[288];
     snprintf(body, sizeof(body),
              "{\"hits\":%u,\"misses\":%u,\"revalidations\":%u,\"replaces\":%u,\"stores\":%u,\"evictions\":%u,"
-             "\"purges\":%u}",
+             "\"purges\":%u,\"l2_spills\":%u,\"l2_promotes\":%u}",
              (unsigned)st.hits, (unsigned)st.misses, (unsigned)st.revalidations_304, (unsigned)st.replaces_200,
-             (unsigned)st.stores, (unsigned)st.evictions, (unsigned)st.purges);
+             (unsigned)st.stores, (unsigned)st.evictions, (unsigned)st.purges, (unsigned)st.l2_spills,
+             (unsigned)st.l2_promotes);
     server.send(slot, 200, "application/json", body);
 }
 
@@ -82,6 +120,9 @@ void setup()
     // Cache everything under /cdn/ from the origin, then enable the cache on the server.
     det_edge_cache_map("/cdn/", ORIGIN);
     det_edge_cache_enable(server);
+#if DETWS_ENABLE_DBM
+    Serial.println(setup_l2() ? "L2 SD tier: mounted (cache survives reboot)" : "L2 SD tier: unavailable (no SD?)");
+#endif
     server.on("/cache/stats", HttpMethod::HTTP_GET, handle_stats);
     server.on("/cache/purge", HttpMethod::HTTP_POST, handle_purge);
     server.begin(80); // serve HTTP on port 80 (begin() with no port opens no listener)
@@ -94,4 +135,13 @@ void setup()
 void loop()
 {
     server.handle(); // the server poll loop drives the async origin fetch + the cached send
+#if DETWS_ENABLE_DBM
+    // Make L2 spills durable on a cadence (batched appends are checkpointed in bulk, per the WAL design).
+    static uint32_t last_sync = 0;
+    if (millis() - last_sync > 5000)
+    {
+        last_sync = millis();
+        detws_dbm_sync(&g_l2);
+    }
+#endif
 }

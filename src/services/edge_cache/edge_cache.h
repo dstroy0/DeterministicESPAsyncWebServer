@@ -136,12 +136,23 @@ struct EdgeCacheStats
     uint64_t bytes_stored;
 };
 
+/**
+ * @brief Write-back hook fired with the LRU victim just before ::edge_store_alloc recycles its slot.
+ *
+ * Lets the L2 SD tier (edge_cache_sd) spill an evicted entry to persistent storage without the pure
+ * engine ever depending on dbm: the glue installs the callback, the engine only calls it. @p victim is
+ * still fully populated (not yet unlinked). Transient passthrough entries (empty key) are not offered.
+ */
+typedef void (*EdgeEvictFn)(void *ctx, const EdgeEntry *victim);
+
 /** @brief The L1 store: a fixed pool of entries with an intrusive MRU..LRU list. */
 struct EdgeCacheStore
 {
     EdgeEntry entries[DETWS_EDGE_CACHE_SLOTS];
     uint16_t lru_head, lru_tail; ///< head = MRU, tail = LRU (EDGE_LRU_NONE when empty)
     EdgeCacheStats stats;
+    EdgeEvictFn on_evict; ///< nullptr = no L2 write-back; else called with each evicted victim
+    void *evict_ctx;      ///< opaque context passed to on_evict
 };
 
 /** @brief Reset a store to empty. */

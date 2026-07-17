@@ -3360,6 +3360,11 @@
 #ifndef DETWS_EDGE_DEFAULT_TTL_S
 #define DETWS_EDGE_DEFAULT_TTL_S 60 // fallback freshness when no directive and no wall clock
 #endif
+// L2 (SD) tier: when DETWS_ENABLE_DBM is also set, the edge cache spills evicted entries to a dbm store
+// (edge_cache_sd) so the cached set survives a reboot. Each entry serializes to ~ its body plus ~470 B of
+// response metadata; for a full-body spill, DETWS_DBM_VAL_MAX must be >= that size (>= DETWS_EDGE_BODY_MAX
+// + ~470). Entries that do not fit simply stay L1-only, so a small DETWS_DBM_VAL_MAX is safe but persists
+// less. The L2 key is the 32-byte cache-key digest, so DETWS_DBM_KEY_MAX must be >= 32 (its default).
 
 /**
  * @brief Opt-in SMB2 client (DETWS_ENABLE_SMB).

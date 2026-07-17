@@ -421,6 +421,9 @@ EdgeEntry *edge_store_alloc(EdgeCacheStore *s, const char *canon, const char *va
         if (s->lru_tail == EDGE_LRU_NONE)
             return nullptr; // DETWS_EDGE_CACHE_SLOTS == 0
         slot = s->lru_tail;
+        // Offer the still-populated victim to the L2 write-back hook (skip transient passthrough slots).
+        if (s->on_evict && s->entries[slot].key[0] != '\0')
+            s->on_evict(s->evict_ctx, &s->entries[slot]);
         store_free(s, slot);
         s->stats.evictions++;
     }

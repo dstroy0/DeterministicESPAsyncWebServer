@@ -82,6 +82,28 @@
       ],
       "tests": ["test_edge_cache", "test_edge_fetch"]
     },
+    "native_edge_cache_sd": {
+      "desc": "CDN edge-cache L2 SD-persistence tier (services/edge_cache/edge_cache_sd): the entry <->\ndbm-value serialization roundtrip (all response metadata, Vary variants, binary and max-size bodies),\nthe spill/promote/del/purge API over a dbm on a RAM-backed WalDev, the L1 store's on_evict write-back\nhook, the storeability gates (no-validator and oversize entries stay L1-only), reboot survival via\nremount + index replay, and that a shared dbm's foreign values are never touched. DETWS_DBM_VAL_MAX is\nsized below a full entry so the oversize-stays-L1 path is exercised. Pure host tests.",
+      "flags": [
+        "-DDETWS_ENABLE_WAL=1",
+        "-DDETWS_ENABLE_DBM=1",
+        "-DDETWS_DBM_VAL_MAX=1024",
+        "-DDETWS_ENABLE_HTTP_CACHE=1",
+        "-DDETWS_ENABLE_HTTP_CLIENT=1",
+        "-DDETWS_ENABLE_EDGE_CACHE=1"
+      ],
+      "src": [
+        "+<services/wal/wal.cpp>",
+        "+<services/wal/wal_store.cpp>",
+        "+<services/dbm/dbm.cpp>",
+        "+<services/httpcache/httpcache.cpp>",
+        "+<services/http_client/http_client.cpp>",
+        "+<services/edge_cache/edge_cache.cpp>",
+        "+<services/edge_cache/edge_cache_sd.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
+      ],
+      "tests": ["test_edge_cache_sd"]
+    },
     "native_det_primitives": {
       "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 det_strtol/strtoul/strtof\nnumber parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h).\nHeader-only; pure host tests.",
       "flags": [],

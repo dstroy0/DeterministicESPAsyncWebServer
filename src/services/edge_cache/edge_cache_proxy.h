@@ -43,7 +43,20 @@ void det_edge_cache_enable(DetWebServer &server);
  */
 bool det_edge_cache_map(const char *path_prefix, const char *origin_base_url);
 
-/** @brief Clear the L1 store and all route maps. */
+#if DETWS_ENABLE_DBM
+struct DetwsDbm;
+/**
+ * @brief Bind an L2 persistent tier: an opened dbm handle (on a mounted WAL store, SD-backed on device)
+ *        the cache spills evicted L1 entries to and promotes them back from - so the cached set survives
+ *        a reboot. Pass nullptr to detach. Call after ::det_edge_cache_enable.
+ *
+ * Only entries carrying a validator are spilled (a promoted entry is force-revalidated, since the
+ * monotonic clock resets across a reboot). The dbm should be dedicated to the cache.
+ */
+void det_edge_cache_bind_sd(DetwsDbm *dbm);
+#endif
+
+/** @brief Clear the L1 store, the L2 store (if bound), and all route maps. */
 void det_edge_cache_reset(void);
 
 /** @brief Invalidate a single canonical key. @return true if an entry was purged. */
