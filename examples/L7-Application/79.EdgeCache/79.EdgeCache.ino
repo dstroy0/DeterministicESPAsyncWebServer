@@ -84,7 +84,7 @@ void setup()
     det_edge_cache_enable(server);
     server.on("/cache/stats", HttpMethod::HTTP_GET, handle_stats);
     server.on("/cache/purge", HttpMethod::HTTP_POST, handle_purge);
-    server.begin();
+    server.begin(80); // serve HTTP on port 80 (begin() with no port opens no listener)
 
     Serial.printf("edge cache in front of %s\n", ORIGIN);
     Serial.printf("GET http://%s/cdn/<path> - X-Cache: MISS then HIT\n", WiFi.localIP().toString().c_str());

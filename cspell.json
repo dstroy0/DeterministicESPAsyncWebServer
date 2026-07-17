@@ -1324,7 +1324,9 @@
     "CIOS",
     "mults",
     "hwcrypto",
-    "mountpoints"
+    "mountpoints",
+    "asctime",
+    "storeability"
   ],
   "ignorePaths": [
     "node_modules/**",

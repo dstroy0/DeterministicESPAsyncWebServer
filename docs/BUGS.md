@@ -8,6 +8,23 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## 79.EdgeCache example opened no HTTP listener - server.begin() with no port
+
+- **Status:** FIXED (2026-07-17). Found by the **first HW bring-up** of the edge cache on an ESP32-S3: the
+  board joined WiFi and its TCP stack was alive (it RST'd port 80), but nothing served - `:80` was refused.
+- **Symptom:** `GET /cdn/<path>` got a connection refusal; the board pinged fine and actively refused `:80`.
+  A serial DIAG confirmed the edge cache itself was configured (`map=1`, `begin=1` listeners) but no HTTP
+  port was open.
+- **Root cause:** the example called `server.begin()` with no port and no prior `server.listen()`. `begin()`
+  with no argument requires a registered listener (else it returns `DETWS_ERR_NO_LISTENERS` and starts
+  nothing); the single-HTTP-port form is `server.begin(80)`. A library-contract slip in the example, not a
+  library defect.
+- **Fix:** `server.begin(80)` in `examples/L7-Application/79.EdgeCache`. Re-flashed; the full
+  MISS -> HIT -> REVALIDATED(304) -> purge path then passed byte-exact against a real origin. Exactly the
+  class of whole-firmware integration bug that host mock-seam tests miss and a real HW run catches.
+
+---
+
 ## native_codeql (all-flags) test_dispatch::test_get_route_advertises_head_in_allow fails - hidden by CI
 
 - **Status:** OPEN (found 2026-07-16). Surfaced by the new WSL native test env actually _running_ the
