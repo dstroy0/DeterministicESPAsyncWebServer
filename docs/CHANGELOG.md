@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.27.0] - 2026-07-17
+
+<details>
+<summary><b>Show Changelog for version 6.27.0 - 2026-07-17</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`6a7e2e6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6a7e2e6a3af52bfa3cd8944afdf0e6c61973da11))
+- update CHANGELOG.md [skip ci] ([`8c52307`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8c52307675a209a45a58b333b3f68b10c12b3759))
+
+### Changes
+
+- Bump version: 6.26.0 → 6.27.0 ([`6b534e0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6b534e09d3c0098813a09e96907b9df8745ca77b))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`df97b80`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df97b80505e5dedf792b02571b44da668cfd9095))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`709ff49`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/709ff499acabeb34bd3e710e187881d5514c4b75))
+
+### Features
+
+- serve Range / 206 Partial Content from a cached body ([`34931a5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34931a520eb012ef476bf41b40911aac499332c8))
+
+</details>
+
 ## [6.26.0] - 2026-07-17
 
 <details>
