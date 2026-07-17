@@ -29,9 +29,10 @@ from each example's `pio ci` size report and aggregated into
 | `DMA+PREEMPT_QUEUE+FORWARD+DMA_SIMULATE`                                                                  | Foundation/09.InterfaceForward          | 264.5 KB (20.7%) | 28.4 KB (8.9%)   |
 | `DMA+PREEMPT_QUEUE+GATEWAY+DMA_SIMULATE`                                                                  | Foundation/10.RadioGateway              | 264.2 KB (20.6%) | 28.0 KB (8.8%)   |
 | `DNC`                                                                                                     | L7-Application/69.EthernetDnc           | 716.7 KB (56.0%) | 59.7 KB (18.6%)  |
-| `DNS_RESOLVER`                                                                                            | L7-Application/48.DnsResolver           | 740.6 KB (57.9%) | 81.1 KB (25.3%)  |
+| `DNS_RESOLVER`                                                                                            | L7-Application/48.DnsResolver           | 740.6 KB (57.9%) | 81.1 KB (25.4%)  |
 | `DNS_SERVER`                                                                                              | L7-Application/60.DnsServer             | 708.7 KB (55.4%) | 44.9 KB (14.0%)  |
-| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT`                                                                       | L7-Application/79.EdgeCache             | 755.6 KB (59.0%) | 116.1 KB (36.3%) |
+| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT`                                                                       | L7-Application/79.EdgeCache             | 755.5 KB (59.0%) | 116.5 KB (36.4%) |
+| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH`                                                             | L7-Application/80.MeshCache             | 760.2 KB (59.4%) | 121.3 KB (37.9%) |
 | `ENOCEAN+GATEWAY`                                                                                         | Foundation/13.EnOceanGateway            | 262.4 KB (20.5%) | 21.3 KB (6.7%)   |
 | `ESPNOW`                                                                                                  | L7-Application/53.EspNow                | 714.2 KB (55.8%) | 42.6 KB (13.3%)  |
 | `ETAG`                                                                                                    | L7-Application/09.ETag                  | 809.1 KB (63.2%) | 81.1 KB (25.4%)  |
@@ -62,11 +63,11 @@ from each example's `pio ci` size report and aggregated into
 | `NTP+TIME_SOURCE`                                                                                         | L7-Application/31.TimeSourceFallback    | 755.4 KB (59.0%) | 81.4 KB (25.5%)  |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP`                                                                     | L7-Application/58.NtpServer             | 730.6 KB (57.1%) | 45.6 KB (14.2%)  |
 | `NTRIP_CASTER`                                                                                            | L7-Application/76.NtripCaster           | 752.5 KB (58.8%) | 82.7 KB (25.8%)  |
-| `OAUTH2+HTTP_CLIENT`                                                                                      | L7-Application/54.OAuth2                | 747.3 KB (58.4%) | 102.1 KB (31.9%) |
+| `OAUTH2+HTTP_CLIENT`                                                                                      | L7-Application/54.OAuth2                | 747.3 KB (58.4%) | 102.2 KB (31.9%) |
 | `OIDC`                                                                                                    | L7-Application/50.OidcAuth              | 748.2 KB (58.5%) | 97.5 KB (30.5%)  |
 | `OPCUA`                                                                                                   | L7-Application/55.OpcUa                 | 742.7 KB (58.0%) | 89.9 KB (28.1%)  |
 | `OPCUA+OPCUA_CLIENT`                                                                                      | L7-Application/56.OpcUaClient           | 765.1 KB (59.8%) | 93.7 KB (29.3%)  |
-| `OPCUA+UMATI`                                                                                             | L7-Application/72.Umati                 | 749.2 KB (58.5%) | 90.0 KB (28.1%)  |
+| `OPCUA+UMATI`                                                                                             | L7-Application/72.Umati                 | 749.2 KB (58.5%) | 90.1 KB (28.1%)  |
 | `OTA`                                                                                                     | L7-Application/16.OTA                   | 739.9 KB (57.8%) | 99.7 KB (31.2%)  |
 | `OTA_ROLLBACK`                                                                                            | L7-Application/44.OtaRollback           | 735.7 KB (57.5%) | 79.9 KB (25.0%)  |
 | `PARTITION_MONITOR`                                                                                       | L7-Application/37.PartitionMonitor      | 735.4 KB (57.5%) | 79.9 KB (25.0%)  |
