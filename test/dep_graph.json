@@ -54,6 +54,7 @@
 "native_dtls_tls13",
 "native_edge_cache",
 "native_edge_cache_sd",
+"native_edge_mesh",
 "native_enip",
 "native_enocean",
 "native_espnow",
@@ -1337,6 +1338,7 @@
 "native_dtls_hs",
 "native_edge_cache",
 "native_edge_cache_sd",
+"native_edge_mesh",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1374,6 +1376,7 @@
 "native_dtls_hs",
 "native_edge_cache",
 "native_edge_cache_sd",
+"native_edge_mesh",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1992,6 +1995,7 @@
 "native_dtls_conn",
 "native_edge_cache",
 "native_edge_cache_sd",
+"native_edge_mesh",
 "native_failsafe",
 "native_h3_server",
 "native_http_client",
@@ -2197,23 +2201,34 @@
 ],
 "src/services/edge_cache/edge_cache.cpp": [
 "native_edge_cache",
-"native_edge_cache_sd"
+"native_edge_cache_sd",
+"native_edge_mesh"
 ],
 "src/services/edge_cache/edge_cache.h": [
 "native_edge_cache",
-"native_edge_cache_sd"
+"native_edge_cache_sd",
+"native_edge_mesh"
 ],
 "src/services/edge_cache/edge_cache_sd.cpp": [
-"native_edge_cache_sd"
+"native_edge_cache_sd",
+"native_edge_mesh"
 ],
 "src/services/edge_cache/edge_cache_sd.h": [
-"native_edge_cache_sd"
+"native_edge_cache_sd",
+"native_edge_mesh"
 ],
 "src/services/edge_cache/edge_fetch.cpp": [
 "native_edge_cache"
 ],
 "src/services/edge_cache/edge_fetch.h": [
-"native_edge_cache"
+"native_edge_cache",
+"native_edge_mesh"
+],
+"src/services/edge_cache/edge_mesh.cpp": [
+"native_edge_mesh"
+],
+"src/services/edge_cache/edge_mesh.h": [
+"native_edge_mesh"
 ],
 "src/services/enip/enip.cpp": [
 "native_enip",
@@ -2364,11 +2379,13 @@
 "src/services/http_client/http_client.cpp": [
 "native_edge_cache",
 "native_edge_cache_sd",
+"native_edge_mesh",
 "native_http_client"
 ],
 "src/services/http_client/http_client.h": [
 "native_edge_cache",
 "native_edge_cache_sd",
+"native_edge_mesh",
 "native_http_client"
 ],
 "src/services/http_delivery/http_delivery.cpp": [
@@ -2380,11 +2397,13 @@
 "src/services/httpcache/httpcache.cpp": [
 "native_edge_cache",
 "native_edge_cache_sd",
+"native_edge_mesh",
 "native_httpcache"
 ],
 "src/services/httpcache/httpcache.h": [
 "native_edge_cache",
 "native_edge_cache_sd",
+"native_edge_mesh",
 "native_httpcache"
 ],
 "src/services/hw_health/hw_health.cpp": [
@@ -3278,6 +3297,7 @@
 "native_diag",
 "native_edge_cache",
 "native_edge_cache_sd",
+"native_edge_mesh",
 "native_h3_server",
 "native_http_client",
 "native_keepalive",
@@ -3296,6 +3316,7 @@
 "native_docstore",
 "native_edge_cache",
 "native_edge_cache_sd",
+"native_edge_mesh",
 "native_gnss_survey",
 "native_h3_server",
 "native_http_client",
@@ -3367,6 +3388,7 @@
 "native_dtls_conn",
 "native_edge_cache",
 "native_edge_cache_sd",
+"native_edge_mesh",
 "native_failsafe",
 "native_h3_server",
 "native_http_client",
