@@ -2,6 +2,29 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.26.0] - 2026-07-17
+
+<details>
+<summary><b>Show Changelog for version 6.26.0 - 2026-07-17</b></summary>
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`2ecbb86`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2ecbb86e7f3ae7318ce10737b1c06bdc7a4cdef9))
+
+### Changes
+
+- Bump version: 6.25.0 → 6.26.0 ([`3c7e8c7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3c7e8c77505d787eeb2a28314e47572ea07cbe42))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`31d8831`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31d8831ae42d4f23f4cdc4d50415c61adea4c72b))
+
+### Features
+
+- L2 SD persistence tier (dbm/WAL spill + promote + reboot survival) ([`560ab00`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/560ab0020c5c763255cf85adbfca61c01f320fea))
+
+</details>
+
 ## [6.25.0] - 2026-07-17
 
 <details>
