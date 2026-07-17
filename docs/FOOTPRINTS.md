@@ -77,7 +77,7 @@ from each example's `pio ci` size report and aggregated into
 | `PROMISC+FORWARD+ETHERNET`                                                                                | Foundation/21.WifiCapture               | 746.7 KB (58.3%) | 46.4 KB (14.5%)  |
 | `PROVISIONING`                                                                                            | L7-Application/17.Provisioning          | 742.1 KB (58.0%) | 81.4 KB (25.4%)  |
 | `RADIO_POWER+RADIO_WIFI_PS`                                                                               | L7-Application/47.RadioPower            | 734.8 KB (57.4%) | 79.9 KB (25.0%)  |
-| `RANGE`                                                                                                   | L7-Application/12.Range                 | 776.3 KB (60.6%) | 79.9 KB (25.0%)  |
+| `RANGE`                                                                                                   | L7-Application/12.Range                 | 776.4 KB (60.7%) | 79.9 KB (25.0%)  |
 | `RELAY`                                                                                                   | L7-Application/70.PortForward           | 744.5 KB (58.2%) | 113.7 KB (35.5%) |
 | `RTC+TIME_SOURCE+NTP`                                                                                     | L7-Application/61.Rtc                   | 748.7 KB (58.5%) | 44.3 KB (13.8%)  |
 | `SEN0192`                                                                                                 | L7-Application/77.Sen0192               | 263.5 KB (20.6%) | 21.0 KB (6.6%)   |
