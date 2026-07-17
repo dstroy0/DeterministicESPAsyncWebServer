@@ -1321,7 +1321,8 @@
     "vadds",
     "Batina",
     "Renes",
-    "CIOS"
+    "CIOS",
+    "mults"
   ],
   "ignorePaths": [
     "node_modules/**",

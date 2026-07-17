@@ -121,6 +121,9 @@ static const fe ED_Y_FE = {0x66666658, 0x66666666, 0x66666666, 0x66666666,
 static const fe ED_I_FE = {0x4a0ea0b0, 0xc4ee1b27, 0xad2fe478, 0x2f431806,
                            0x3dfbd7a7, 0x2b4d0099, 0x4fc1df0b, 0x2b832480}; // sqrt(-1) mod p
 
+// Fixed-base comb table ED_COMB[i][j] = (j+1) * 256^i * B (extended X, Y, T; Z = 1), in flash.
+#include "network_drivers/presentation/ssh/crypto/ssh_ed25519_comb_table.h"
+
 // p += q (twisted-Edwards addition, RFC 8032 §5.1.4). Safe when q aliases p (point doubling): every read of
 // q happens before any write of p. Requires ssh_fe_hw_enable() (the fe_mul/fe_sq run on the accelerator).
 static void edf_add(fe p[4], fe q[4])
@@ -191,15 +194,84 @@ static void edf_scalarmult(fe p[4], fe q[4], const uint8_t *s)
     }
 }
 
-// p = s * B (base-point scalar mult).
+// Constant-time select of the comb entry for a signed 4-bit digit into extended point t (Z = 1).
+// Scans all 8 entries of group idx (the address depends only on the public idx, not the secret digit),
+// selects |digit|, and conditionally negates when digit < 0. digit in [-8, 8]; digit == 0 -> identity.
+static void edf_comb_select(fe t[4], int idx, int digit)
+{
+    int32_t sign = digit >> 31;                        // -1 if digit < 0, else 0
+    uint32_t babs = (uint32_t)((digit ^ sign) - sign); // |digit| in 0..8
+    fe_0(t[0]);
+    fe_1(t[1]);
+    fe_1(t[2]); // Z = 1
+    fe_0(t[3]);
+    for (uint32_t j = 0; j < 8; j++)
+    {
+        uint32_t x = babs ^ (j + 1);
+        uint32_t nz = (x | (0u - x)) >> 31;  // 1 if babs != j+1
+        uint32_t mask = (uint32_t)(nz - 1u); // 0xffffffff if babs == j+1, else 0
+        for (int k = 0; k < 8; k++)
+        {
+            t[0][k] = (t[0][k] & ~mask) | (ED_COMB[idx][j][0][k] & mask); // X
+            t[1][k] = (t[1][k] & ~mask) | (ED_COMB[idx][j][1][k] & mask); // Y
+            t[3][k] = (t[3][k] & ~mask) | (ED_COMB[idx][j][2][k] & mask); // T
+        }
+    }
+    // Conditional negate: -(X, Y, Z, T) = (-X, Y, Z, -T).
+    uint32_t neg = (uint32_t)sign;
+    fe zero;
+    fe negx;
+    fe negt;
+    fe_0(zero);
+    fe_sub(negx, zero, t[0]);
+    fe_sub(negt, zero, t[3]);
+    for (int k = 0; k < 8; k++)
+    {
+        t[0][k] = (t[0][k] & ~neg) | (negx[k] & neg);
+        t[3][k] = (t[3][k] & ~neg) | (negt[k] & neg);
+    }
+}
+
+// p = s * B via a constant-time signed 4-bit fixed-base comb (ref10 layout), s is 32 bytes LE.
+// The doublings are baked into ED_COMB (each group i holds 256^i * B multiples), so this is ~64
+// additions + 4 doublings instead of the 255-add / 255-double variable-base ladder - several times
+// cheaper. Both the Ed25519 sign scalar-mults (A = a*B, R = r*B) go through here.
 static void edf_scalarbase(fe p[4], const uint8_t *s)
 {
-    fe q[4];
-    fe_copy(q[0], ED_X_FE);
-    fe_copy(q[1], ED_Y_FE);
-    fe_1(q[2]);
-    fe_mul(q[3], ED_X_FE, ED_Y_FE);
-    edf_scalarmult(p, q, s);
+    signed char e[64]; // 64 signed 4-bit digits of s (ref10 recoding)
+    for (int i = 0; i < 32; i++)
+    {
+        e[2 * i] = (signed char)(s[i] & 15);
+        e[2 * i + 1] = (signed char)((s[i] >> 4) & 15);
+    }
+    int carry = 0;
+    for (int i = 0; i < 63; i++)
+    {
+        e[i] = (signed char)(e[i] + carry);
+        carry = (e[i] + 8) >> 4;
+        e[i] = (signed char)(e[i] - (carry << 4));
+    }
+    e[63] = (signed char)(e[63] + carry);
+
+    fe_0(p[0]);
+    fe_1(p[1]);
+    fe_1(p[2]);
+    fe_0(p[3]);
+    fe t[4];
+    for (int i = 1; i < 64; i += 2) // odd nibbles (weight 16 * 256^(i/2))
+    {
+        edf_comb_select(t, i >> 1, e[i]);
+        edf_add(p, t);
+    }
+    edf_add(p, p); // * 16 so the odd sum aligns with the even nibbles
+    edf_add(p, p);
+    edf_add(p, p);
+    edf_add(p, p);
+    for (int i = 0; i < 64; i += 2) // even nibbles (weight 256^(i/2))
+    {
+        edf_comb_select(t, i >> 1, e[i]);
+        edf_add(p, t);
+    }
 }
 
 // Decode a point and negate it (r = -A); returns 0 on success, -1 if the encoding is not a valid point.
