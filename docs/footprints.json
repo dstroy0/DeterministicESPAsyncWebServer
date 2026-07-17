@@ -17,7 +17,7 @@
     "example": "L7-Application/66.Ads1115",
     "flags": "-DDETWS_ENABLE_ADS1115=1",
     "board": "esp32dev",
-    "flash_bytes": 286841,
+    "flash_bytes": 286921,
     "ram_bytes": 21800
   },
   "AUDIT_LOG": {
@@ -143,14 +143,14 @@
     "example": "L7-Application/69.EthernetDnc",
     "flags": "-DDETWS_ENABLE_DNC=1",
     "board": "esp32dev",
-    "flash_bytes": 733829,
+    "flash_bytes": 733857,
     "ram_bytes": 61112
   },
   "DNS_RESOLVER": {
     "example": "L7-Application/48.DnsResolver",
     "flags": "-DDETWS_ENABLE_DNS_RESOLVER=1",
     "board": "esp32dev",
-    "flash_bytes": 758317,
+    "flash_bytes": 758329,
     "ram_bytes": 83064
   },
   "DNS_SERVER": {
@@ -164,8 +164,8 @@
     "example": "L7-Application/79.EdgeCache",
     "flags": "-DDETWS_ENABLE_EDGE_CACHE=1 -DDETWS_ENABLE_HTTP_CACHE=1 -DDETWS_ENABLE_HTTP_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 773593,
-    "ram_bytes": 118848
+    "flash_bytes": 773697,
+    "ram_bytes": 118864
   },
   "ENOCEAN+GATEWAY": {
     "example": "Foundation/13.EnOceanGateway",
@@ -227,14 +227,14 @@
     "example": "L7-Application/23.HttpClient",
     "flags": "-DDETWS_ENABLE_HTTP_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 734501,
+    "flash_bytes": 734573,
     "ram_bytes": 63160
   },
   "HTTP_CLIENT+WEBHOOK": {
     "example": "L7-Application/46.Webhook",
     "flags": "-DDETWS_ENABLE_HTTP_CLIENT=1 -DDETWS_ENABLE_WEBHOOK=1",
     "board": "esp32dev",
-    "flash_bytes": 762985,
+    "flash_bytes": 763053,
     "ram_bytes": 101536
   },
   "IFACE_BRIDGE": {
@@ -325,14 +325,14 @@
     "example": "L7-Application/63.Mpr121",
     "flags": "-DDETWS_ENABLE_MPR121=1",
     "board": "esp32dev",
-    "flash_bytes": 287609,
-    "ram_bytes": 21800
+    "flash_bytes": 287693,
+    "ram_bytes": 21808
   },
   "MQTT": {
     "example": "L7-Application/24.MqttClient",
     "flags": "-DDETWS_ENABLE_MQTT=1",
     "board": "esp32dev",
-    "flash_bytes": 736341,
+    "flash_bytes": 736413,
     "ram_bytes": 65320
   },
   "MSGPACK": {
@@ -381,7 +381,7 @@
     "example": "L7-Application/54.OAuth2",
     "flags": "-DDETWS_ENABLE_OAUTH2=1 -DDETWS_ENABLE_HTTP_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 765217,
+    "flash_bytes": 765285,
     "ram_bytes": 104600
   },
   "OIDC": {
@@ -416,7 +416,7 @@
     "example": "L7-Application/16.OTA",
     "flags": "-DDETWS_ENABLE_OTA=1 -DMAX_CONNS=4",
     "board": "esp32dev",
-    "flash_bytes": 757625,
+    "flash_bytes": 757669,
     "ram_bytes": 102128
   },
   "OTA_ROLLBACK": {
@@ -472,7 +472,7 @@
     "example": "L7-Application/17.Provisioning",
     "flags": "-DDETWS_ENABLE_PROVISIONING=1",
     "board": "esp32dev",
-    "flash_bytes": 759961,
+    "flash_bytes": 760021,
     "ram_bytes": 83348
   },
   "RADIO_POWER+RADIO_WIFI_PS": {
@@ -493,7 +493,7 @@
     "example": "L7-Application/70.PortForward",
     "flags": "-DDETWS_ENABLE_RELAY=1",
     "board": "esp32dev",
-    "flash_bytes": 762337,
+    "flash_bytes": 762365,
     "ram_bytes": 116392
   },
   "RTC+TIME_SOURCE+NTP": {
@@ -514,7 +514,7 @@
     "example": "L7-Application/64.Sht3x",
     "flags": "-DDETWS_ENABLE_SHT3X=1",
     "board": "esp32dev",
-    "flash_bytes": 286909,
+    "flash_bytes": 287029,
     "ram_bytes": 21800
   },
   "SIGFOX": {
@@ -528,14 +528,14 @@
     "example": "L7-Application/68.SmbFileClient",
     "flags": "-DDETWS_ENABLE_SMB=1",
     "board": "esp32dev",
-    "flash_bytes": 742441,
+    "flash_bytes": 742469,
     "ram_bytes": 65208
   },
   "SMTP": {
     "example": "L7-Application/57.SmtpAlert",
     "flags": "-DDETWS_ENABLE_SMTP=1",
     "board": "esp32dev",
-    "flash_bytes": 734637,
+    "flash_bytes": 734705,
     "ram_bytes": 61112
   },
   "SNMP": {
@@ -717,7 +717,7 @@
     "example": "L7-Application/25.WebSocketClient",
     "flags": "-DDETWS_ENABLE_WS_CLIENT=1 -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_WS_CLIENT_TLS=1 -DDETWS_WS_CLIENT_BUF_SIZE=768 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768",
     "board": "esp32dev",
-    "flash_bytes": 831785,
+    "flash_bytes": 831925,
     "ram_bytes": 107236
   },
   "WS_DEFLATE": {
