@@ -2,7 +2,34 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [6.28.0] - 2026-07-17
+
+<details>
+<summary><b>Show Changelog for version 6.28.0 - 2026-07-17</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`2e25855`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2e25855cf99cb961786431a5c9d11748dfbaf620))
+- update CHANGELOG.md [skip ci] ([`c2d1b39`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c2d1b39e05af705aad1dcf09bf104e3bbd1415a1))
+
+### Changes
+
+- Bump version: 6.27.1 → 6.28.0 ([`957ec9b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/957ec9bf175a337261fd42aed0dfd11e9f51ff43))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`8a6d287`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8a6d28719e9b4505b8cb1bf732938233549e04d4))
+
+### Features
+
+- HTTPS upstream origins over TLS; dwsdelay() replaces bare delay() in src/ ([`c62861d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c62861daa94fe057b5f6ce5404b24c5191aada9d))
+
+</details>
+
+## [6.27.1] - 2026-07-17
+
+<details>
+<summary><b>Show Changelog for version 6.27.1 - 2026-07-17</b></summary>
 
 ### Bug Fixes
 
@@ -21,6 +48,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 - update ESP32 build footprints [skip ci] ([`dddfe37`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dddfe37dc9e2c33e86acb0b4548a702a654a13ff))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f2d6a4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f2d6a4a5a3854db7e83be70ca765baa2618649f0))
+
+</details>
 
 ## [6.27.0] - 2026-07-17
 
