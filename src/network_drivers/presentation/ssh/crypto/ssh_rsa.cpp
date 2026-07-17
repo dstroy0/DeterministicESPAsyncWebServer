@@ -46,6 +46,8 @@ SshRsaPubKey ssh_host_pubkey;
 
 #include <Preferences.h> // ESP-IDF NVS wrapper
 #include <esp_random.h>  // esp_fill_random() for the RSA blinding RNG
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h> // serialise signs on the shared cached key context
 #include <mbedtls/md.h>
 #include <mbedtls/pk.h>
 #include <mbedtls/rsa.h>
@@ -60,10 +62,28 @@ static int ssh_mbedtls_rng(void *ctx, unsigned char *buf, size_t len)
     return 0;
 }
 
-// Load the NVS DER blob into a stack buffer, parse it with mbedtls, and
-// extract n and e into ssh_host_pubkey.
+// Cached RSA host-key signer. Re-parsing the PKCS#8 key per handshake also re-ran mbedtls's first-use
+// blinding setup (a software r^-1 mod n), ~170 ms wasted on every sign; the parsed context caches the
+// blinding state (Vf/Vi), so keeping it resident means each sign pays only the CRT modexp (~440 -> ~270 ms
+// on an ESP32-S3). The private key therefore stays in RAM for the server lifetime (as an SSH host key
+// normally does); the mutex serialises signs because mbedtls mutates the blinding values per operation, so
+// two worker cores must not enter mbedtls_pk_sign on the shared context at once. Loaded once at startup by
+// ssh_rsa_load_pubkey() (called from the sketch's setup(), single-threaded).
+struct SshRsaCtx
+{
+    mbedtls_pk_context pk;  ///< parsed host key + cached blinding state
+    SemaphoreHandle_t lock; ///< serialises signs on the shared context
+    bool ready;             ///< pk holds a valid parsed key
+};
+static SshRsaCtx s_rsa;
+
+// Load the NVS DER blob, parse it once into the cached signer context, and extract n and e into
+// ssh_host_pubkey. Idempotent (re-parses / frees any previously loaded key), so calling it again reloads.
 int ssh_rsa_load_pubkey(void)
 {
+    if (!s_rsa.lock)
+        s_rsa.lock = xSemaphoreCreateMutex();
+
     Preferences prefs;
     if (!prefs.begin("ssh_host_key", true))
         return -1;
@@ -78,27 +98,32 @@ int ssh_rsa_load_pubkey(void)
     prefs.getBytes("priv_der", der, der_len);
     prefs.end();
 
-    mbedtls_pk_context pk;
-    mbedtls_pk_init(&pk);
-    int rc = mbedtls_pk_parse_key(&pk, der, der_len, nullptr, 0
+    // (Re)parse into the persistent context. Free any prior key first.
+    if (s_rsa.ready)
+    {
+        mbedtls_pk_free(&s_rsa.pk);
+        s_rsa.ready = false;
+    }
+    mbedtls_pk_init(&s_rsa.pk);
+    int rc = mbedtls_pk_parse_key(&s_rsa.pk, der, der_len, nullptr, 0
 #if MBEDTLS_VERSION_MAJOR >= 3
                                   ,
-                                  nullptr, 0
+                                  ssh_mbedtls_rng, nullptr
 #endif
     );
-    // Wipe the DER stack buffer whether or not parse succeeded.
+    // Wipe the DER stack buffer whether or not parse succeeded; the parsed key stays in s_rsa.pk.
     ssh_wipe(der, der_len);
 
     if (rc != 0)
     {
-        mbedtls_pk_free(&pk);
+        mbedtls_pk_free(&s_rsa.pk);
         return -1;
     }
 
-    mbedtls_rsa_context *rsa = mbedtls_pk_rsa(pk);
+    mbedtls_rsa_context *rsa = mbedtls_pk_rsa(s_rsa.pk);
     if (mbedtls_rsa_get_len(rsa) != SSH_RSA_KEY_BYTES)
     {
-        mbedtls_pk_free(&pk);
+        mbedtls_pk_free(&s_rsa.pk);
         return -1;
     }
 
@@ -109,57 +134,25 @@ int ssh_rsa_load_pubkey(void)
     mbedtls_mpi_init(&e_mpi);
     mbedtls_rsa_export(rsa, &n_mpi, nullptr, nullptr, nullptr, &e_mpi);
     mbedtls_mpi_write_binary(&n_mpi, ssh_host_pubkey.n, SSH_RSA_KEY_BYTES);
-    uint32_t e_val = (uint32_t)mbedtls_mpi_get_bit(&e_mpi, 0) | ((uint32_t)mbedtls_mpi_get_bit(&e_mpi, 16) << 16);
-    // Full e value
     mbedtls_mpi_write_binary(&e_mpi, ssh_host_pubkey.e_bytes + 4 - sizeof(ssh_host_pubkey.e_bytes),
                              sizeof(ssh_host_pubkey.e_bytes));
     mbedtls_mpi_free(&n_mpi);
     mbedtls_mpi_free(&e_mpi);
-    mbedtls_pk_free(&pk);
 
+    s_rsa.ready = true;
     ssh_host_pubkey.loaded = true;
-    (void)e_val;
     return 0;
 }
 
 int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint8_t sig[SSH_RSA_SIG_BYTES])
 {
-    // 1. Load private key from NVS directly into a stack-local context.
-    //    mbedtls_pk_context / mbedtls_rsa_context heap-allocate their MPI
-    //    limbs internally; we free them immediately after signing.
-    Preferences prefs;
-    if (!prefs.begin("ssh_host_key", true))
+    // Reuse the key parsed once at startup. Lazy-load as a fallback if the sketch never did (e.g. a sign
+    // before ssh_rsa_load_pubkey()); load runs single-threaded at boot so first-use here is the edge case.
+    if (!s_rsa.ready && ssh_rsa_load_pubkey() != 0)
         return -1;
 
-    uint8_t der[SSH_RSA_KEY_DER_MAX];
-    size_t der_len = prefs.getBytesLength("priv_der");
-    if (der_len == 0 || der_len > SSH_RSA_KEY_DER_MAX)
-    {
-        prefs.end();
-        return -1;
-    }
-    prefs.getBytes("priv_der", der, der_len);
-    prefs.end();
-
-    mbedtls_pk_context pk;
-    mbedtls_pk_init(&pk);
-    int rc = mbedtls_pk_parse_key(&pk, der, der_len, nullptr, 0
-#if MBEDTLS_VERSION_MAJOR >= 3
-                                  ,
-                                  nullptr, 0
-#endif
-    );
-    ssh_wipe(der, der_len); // wipe the stack DER copy immediately
-    if (rc != 0)
-    {
-        mbedtls_pk_free(&pk);
-        return -1;
-    }
-
-    // 2. Hash the message, then sign the digest. mbedtls_pk_sign() does NOT hash
-    //    its input - it PKCS#1-pads the supplied digest - so for rsa-sha2-256/512
-    //    (RFC 8332) we must pass SHA-256(msg) / SHA-512(msg), not msg itself.
-    //    (Passing msg here would sign DigestInfo||msg and be rejected by a peer.)
+    // Hash the message, then sign the digest. mbedtls_pk_sign() does NOT hash its input - it PKCS#1-pads
+    // the supplied digest - so for rsa-sha2-256/512 (RFC 8332) we pass SHA-256(msg) / SHA-512(msg), not msg.
     const bool sha512 = (hash == SshRsaHash::SHA512);
     const mbedtls_md_type_t md = sha512 ? MBEDTLS_MD_SHA512 : MBEDTLS_MD_SHA256;
     const size_t dlen = sha512 ? SSH_SHA512_DIGEST_LEN : SSH_SHA256_DIGEST_LEN;
@@ -169,14 +162,18 @@ int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint8_t si
     else
         ssh_sha256(msg, msg_len, digest);
 
+    // Serialise: mbedtls mutates the context's blinding state (Vf/Vi) on each private op.
+    if (s_rsa.lock)
+        xSemaphoreTake(s_rsa.lock, portMAX_DELAY);
     size_t sig_len = 0;
 #if MBEDTLS_VERSION_MAJOR >= 3
-    rc = mbedtls_pk_sign(&pk, md, digest, dlen, sig, SSH_RSA_SIG_BYTES, &sig_len, ssh_mbedtls_rng, nullptr);
+    int rc = mbedtls_pk_sign(&s_rsa.pk, md, digest, dlen, sig, SSH_RSA_SIG_BYTES, &sig_len, ssh_mbedtls_rng, nullptr);
 #else
-    rc = mbedtls_pk_sign(&pk, md, digest, dlen, sig, &sig_len, ssh_mbedtls_rng, nullptr);
+    int rc = mbedtls_pk_sign(&s_rsa.pk, md, digest, dlen, sig, &sig_len, ssh_mbedtls_rng, nullptr);
 #endif
+    if (s_rsa.lock)
+        xSemaphoreGive(s_rsa.lock);
     ssh_wipe(digest, sizeof(digest));
-    mbedtls_pk_free(&pk); // frees all MPI limb memory (private key)
 
     return (rc == 0 && sig_len == SSH_RSA_SIG_BYTES) ? 0 : -1;
 }

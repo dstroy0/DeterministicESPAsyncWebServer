@@ -474,7 +474,7 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
 | `ssh_ed25519_sign`                 | HW MODMULT + HW SHA |  20,309,986 |   84.6 ms |
 | `ssh_ecdsa_p256_verify`            | HW MODMULT          |  24,774,465 |  103.2 ms |
 | `bn_expmod_group14` (DH-2048)      | HW MPI              |  43,543,754 |  181.4 ms |
-| `ssh_rsa_2048_sign` (SHA-256)      | HW MPI              | 105,704,723 |  440.4 ms |
+| `ssh_rsa_2048_sign` (SHA-256)      | HW MPI (CRT+cached) |  64,699,824 |  269.6 ms |
 
 - **AES-GCM is GHASH-bound, and GHASH is software (now 4-bit-table, ~7x faster).** AES-256-CTR runs at
   **22.5 MB/s** on the HW AES block, but AES-256-GCM authenticates (GHASH) in software, so it is far slower.
@@ -492,9 +492,16 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
   software) is still faster than aes256-gcm and is negotiated first; AES-256-CTR (22.5 MB/s) is faster still
   where an AEAD is not required.
 - **Prefer Ed25519 host keys over RSA.** An `ssh-ed25519` host-key signature is **84.6 ms**; an RSA-2048
-  signature is **440 ms** (5.2x slower - the private-key CRT modexp). RSA _verify_ is cheap (16.5 ms, public
-  exponent 65537), but the server pays the _sign_ cost on every handshake, so RSA host keys add ~0.36 s to
-  each SSH/connection setup versus Ed25519.
+  signature is **270 ms** (3.2x slower). RSA _verify_ is cheap (16.5 ms, public exponent 65537), but the
+  server pays the _sign_ cost on every handshake. The RSA sign was **440 ms** until the host key was cached:
+  `ssh_rsa_sign` used to re-read and re-parse the NVS key on every call, and re-parsing threw away mbedTLS's
+  per-context blinding state so it re-ran the ~167 ms first-use blinding init (`r^-1 mod n`) every sign. On a
+  device-CCOUNT breakdown the 440 ms split as ~3 ms NVS read + 0.2 ms parse + 270 ms CRT modexp + **167 ms
+  wasted blinding re-init**. Parsing the key once at startup and reusing the context ([`ssh_rsa.cpp`](../src/network_drivers/presentation/ssh/crypto/ssh_rsa.cpp),
+  `SshRsaCtx`, mutex-guarded) drops the sign to **270 ms** with blinding fully preserved. The residual 270 ms
+  is already CRT (two 1024-bit half-exponentiations) on the RSA/MPI hardware accelerator (Montgomery in
+  silicon), so it is not reducible in software - the modexp is not the software big-integer multiply that
+  Xtensa-assembly / CIOS tricks target, it is a hardware peripheral.
 - **ECDSA P-256 now rides the same RSA/MPI MODMULT as curve25519** (sign **54 ms**, verify **103 ms**, ECDH
   **51 ms** - **~2.7-2.9x** the old mbedtls ECP path, which measured 146 / 291 / 140 ms). A self-contained
   P-256 ([`ssh_ecdsa.cpp`](../src/network_drivers/presentation/ssh/crypto/ssh_ecdsa.cpp)) does every field

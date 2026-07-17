@@ -1320,7 +1320,8 @@
     "vadd",
     "vadds",
     "Batina",
-    "Renes"
+    "Renes",
+    "CIOS"
   ],
   "ignorePaths": [
     "node_modules/**",
