@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`13fed58`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/13fed58a633a6cc6bef11632d1da3622c6e0ac56))
 - update CHANGELOG.md [skip ci] ([`0213cdc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0213cdcb0c591924d1204aa18aba028a972bda5f))
 - update test report + coverage [skip ci] ([`accbb40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/accbb4067ab653c002873d67c8cecb3c4f525ff8))
 - update CHANGELOG.md [skip ci] ([`52f5cbe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/52f5cbe7208dd2d2081bbf30215378c9c61cd0b1))
@@ -26,6 +27,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`323f2f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/323f2f155ebeb023070f57927eaf8e6115df82b1))
+- update ESP32 build footprints [skip ci] ([`a7478f0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7478f0c90081386079c6d4a9e8dd6c65bce7a1b))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`eb79494`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb7949450bb24453f211113b935afc6d8d9719e6))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`29308ca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/29308ca26d9eb636792b8fac9c21374c29f5cdb8))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3a45865`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a45865af9c92948f1cfb6d70cf57951d9294731))
@@ -41,6 +44,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- conditional revalidation helpers ([`35f31a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/35f31a1ac83c4f79936fdeb846ecf25b39c3a67d))
 - async origin-fetch engine ([`a7a6209`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7a620936979e9fdd9925acfe8046519e7d5ed7b))
 - pure engine - freshness, cache key, L1 store ([`8334f72`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8334f7246bd4da710a9fa331f8a1ec250a65fba3))
 
