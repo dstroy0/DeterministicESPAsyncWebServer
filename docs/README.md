@@ -760,7 +760,11 @@ src/
 │   ├── dns_server/  (dns_server.h, dns_server.cpp)
 │   ├── docstore/  (docstore.h, docstore.cpp)
 │   ├── dshot/  (dshot.h, dshot.cpp)
-│   ├── edge_cache/  (edge_cache.h, edge_cache.cpp)
+│   ├── edge_cache/
+│   │   ├── edge_cache.cpp
+│   │   ├── edge_cache.h
+│   │   ├── edge_fetch.cpp
+│   │   └── edge_fetch.h
 │   ├── enip/  (enip.h, enip.cpp)
 │   ├── enocean/  (enocean.h, enocean.cpp)
 │   ├── espnow/  (espnow.h, espnow.cpp)

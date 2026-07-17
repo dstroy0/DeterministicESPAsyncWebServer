@@ -587,7 +587,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 </picture>
 </a>
 
-> Not drawn (so the tree stays uncrossed): **`DETWS_ENABLE_HTTP_CLIENT_TLS`, `DETWS_ENABLE_MQTT_TLS`, `DETWS_ENABLE_WS_CLIENT_TLS`** also need `DETWS_ENABLE_TLS`.
+> Not drawn (so the tree stays uncrossed): **`DETWS_ENABLE_EDGE_CACHE`** also need `DETWS_ENABLE_HTTP_CLIENT`; **`DETWS_ENABLE_HTTP_CLIENT_TLS`, `DETWS_ENABLE_MQTT_TLS`, `DETWS_ENABLE_WS_CLIENT_TLS`** also need `DETWS_ENABLE_TLS`.
 
 <details><summary><b>Auto-derived flags</b> - enabling the left flag turns the right one on for you; do not set it yourself.</summary>
 
@@ -621,7 +621,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 
 </details>
 
-_25 hard dependencies, 3 PSRAM gates, 15 derived flags._
+_26 hard dependencies, 3 PSRAM gates, 15 derived flags._
 
 <!-- END GENERATED FLAG DEPS -->
 
