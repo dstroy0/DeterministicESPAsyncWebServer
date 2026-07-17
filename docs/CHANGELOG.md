@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.29.0] - 2026-07-17
+
+<details>
+<summary><b>Show Changelog for version 6.29.0 - 2026-07-17</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`25882a7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/25882a7496a131d300f9ffbc15648148d3eef5de))
+- update CHANGELOG.md [skip ci] ([`d0ad6f2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d0ad6f23e2a58520651c55d49c67093010de11b4))
+
+### Changes
+
+- Bump version: 6.28.0 → 6.29.0 ([`47b0645`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/47b06455e0f2974d46dc98c83af873e9d18a33a0))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`b5bd5e9`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b5bd5e94da7a7a9f0f8fd0267dc88c63557cf9c4))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`7bd963a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7bd963a1d45645bcd74b3d362198a57310b91a22))
+
+### Features
+
+- mesh sibling-cache distribution (DETWS_ENABLE_EDGE_MESH) ([`9761f11`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9761f117be89bd29e69bcccf94c4939398677657))
+
+</details>
+
 ## [6.28.0] - 2026-07-17
 
 <details>
