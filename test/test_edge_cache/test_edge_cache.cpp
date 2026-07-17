@@ -266,6 +266,18 @@ static void test_store_purge()
     TEST_ASSERT_EQUAL_UINT32(0, edge_store_purge(&g_store, "GET\nh\n/nope"));   // miss no-op
 }
 
+static void test_store_free_entry()
+{
+    edge_store_init(&g_store);
+    EdgeEntry *a = edge_store_alloc(&g_store, "GET\nh\n/a", "");
+    edge_store_alloc(&g_store, "GET\nh\n/b", "");
+    edge_store_free_entry(&g_store, a);
+    TEST_ASSERT_NULL(edge_store_lookup(&g_store, "GET\nh\n/a", "", 1));
+    TEST_ASSERT_NOT_NULL(edge_store_lookup(&g_store, "GET\nh\n/b", "", 1));
+    EdgeEntry *c = edge_store_alloc(&g_store, "GET\nh\n/c", ""); // the freed slot is reusable
+    TEST_ASSERT_EQUAL_PTR(a, c);
+}
+
 static void test_store_find_vary()
 {
     static const MockHdr gz_hdr[] = {{"accept-encoding", "gzip"}};
@@ -407,6 +419,7 @@ int main()
     RUN_TEST(test_store_lru_evict);
     RUN_TEST(test_store_ttl_sweep);
     RUN_TEST(test_store_purge);
+    RUN_TEST(test_store_free_entry);
     RUN_TEST(test_store_find_vary);
     RUN_TEST(test_entry_freshness_resolution);
     RUN_TEST(test_storeability);

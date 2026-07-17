@@ -115,7 +115,7 @@ struct EdgeEntry
     char content_type[64];                ///< Content-Type to replay
     char etag[64];                        ///< validator (quotes included), "" if none
     char last_modified[40];               ///< Last-Modified (RFC 1123), "" if none
-    char stored_hdrs[DETWS_EDGE_HDR_MAX]; ///< extra end-to-end headers to replay (CRLF-framed)
+    char content_encoding[32];            ///< Content-Encoding to replay (e.g. gzip), "" if none
     int64_t date_epoch;                   ///< origin Date (-1 absent)
     int64_t expires_epoch;                ///< origin Expires (-1 absent)
     int32_t age_hdr;                      ///< origin Age at store (>=0)
@@ -193,6 +193,9 @@ uint32_t edge_store_purge(EdgeCacheStore *s, const char *canon);
 
 /** @brief Purge every entry whose request path begins with @p prefix. @return count purged. */
 uint32_t edge_store_purge_prefix(EdgeCacheStore *s, const char *prefix);
+
+/** @brief Unlink @p e and free its slot (no stat bump). Used to release a transient passthrough entry. */
+void edge_store_free_entry(EdgeCacheStore *s, EdgeEntry *e);
 
 // --- storeability (RFC 9111 sec 3) ---------------------------------------------------------------
 

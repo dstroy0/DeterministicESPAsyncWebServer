@@ -557,6 +557,16 @@ uint32_t edge_store_purge_prefix(EdgeCacheStore *s, const char *prefix)
     return n;
 }
 
+void edge_store_free_entry(EdgeCacheStore *s, EdgeEntry *e)
+{
+    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+        if (&s->entries[i] == e)
+        {
+            store_free(s, i);
+            return;
+        }
+}
+
 bool edge_is_storeable(int status, const char *method, const DetwsCacheControl *cc, const char *vary_header,
                        size_t body_len)
 {

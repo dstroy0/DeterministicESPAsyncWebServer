@@ -97,4 +97,17 @@ const struct ProtoHandler *http_proto_handler(void);
  */
 void http_proto_set_poll(void (*fn)(uint8_t slot));
 
+#if DETWS_ENABLE_EDGE_CACHE
+/**
+ * @brief Install the edge-cache per-slot fetch pump (defined in dwserver.cpp, called first in
+ *        http_poll_slot).
+ *
+ * A cache miss / stale-entry revalidation suspends the client request and drives a non-blocking origin
+ * fetch from the slot's poll. @p fn returns true while it is servicing an in-flight fetch for the slot,
+ * so the HTTP pipeline is skipped until the fetch completes and starts the cached response. Nullable
+ * (unset = no-op). Installed by det_edge_cache_enable(); see services/edge_cache/edge_cache_proxy.
+ */
+void detws_http_set_edge_poll(bool (*fn)(uint8_t slot));
+#endif
+
 #endif

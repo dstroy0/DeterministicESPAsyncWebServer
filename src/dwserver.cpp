@@ -1062,8 +1062,24 @@ void DetWebServer::service_once(int worker_id)
 // http_proto_set_poll) so the worker dispatch loop pumps HTTP through the same uniform seam as every
 // other protocol - no HTTP special case in the loop. Runs the file/chunk send pumps, the WebSocket +
 // SSE drains, the keep-alive re-parse, and dispatches a completed request into this server's routes.
+#if DETWS_ENABLE_EDGE_CACHE
+// Edge-cache async-fetch pump seam (see detws_http_set_edge_poll / services/edge_cache/edge_cache_proxy):
+// a cache miss suspends the client request and drives the non-blocking origin fetch from this slot's poll.
+static bool (*s_edge_poll)(uint8_t slot) = nullptr;
+void detws_http_set_edge_poll(bool (*fn)(uint8_t slot))
+{
+    s_edge_poll = fn;
+}
+#endif
+
 void DetWebServer::http_poll_slot(uint8_t i)
 {
+#if DETWS_ENABLE_EDGE_CACHE
+    // An edge-cache origin fetch in flight for this slot owns it: pump the fetch and skip the rest of the
+    // HTTP pipeline until it completes (and hands off to send_chunked for the cached response).
+    if (s_edge_poll && s_edge_poll(i))
+        return;
+#endif
 #if DETWS_ENABLE_FILE_SERVING
     // A file response in flight owns the slot: page out the next window and
     // skip the rest of the pipeline until the whole body has been sent.

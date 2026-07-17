@@ -3331,16 +3331,13 @@
 #error "DETWS_ENABLE_EDGE_CACHE requires DETWS_ENABLE_HTTP_CLIENT (it fetches the upstream origin)"
 #endif
 #ifndef DETWS_EDGE_CACHE_SLOTS
-#define DETWS_EDGE_CACHE_SLOTS 8 // L1 RAM entries (each holds one cached object; bounded, no heap)
+#define DETWS_EDGE_CACHE_SLOTS 4 // L1 RAM entries (each holds one cached object; bump up on PSRAM)
 #endif
 #ifndef DETWS_EDGE_BODY_MAX
-#define DETWS_EDGE_BODY_MAX 4096 // largest cacheable body in bytes (per L1 entry)
+#define DETWS_EDGE_BODY_MAX 2048 // largest cacheable body in bytes (per L1 entry; bump up on PSRAM)
 #endif
 #ifndef DETWS_EDGE_KEY_MAX
 #define DETWS_EDGE_KEY_MAX 128 // largest canonical cache key (method\nhost\npath[\nquery])
-#endif
-#ifndef DETWS_EDGE_HDR_MAX
-#define DETWS_EDGE_HDR_MAX 256 // stored end-to-end response headers replayed on a hit
 #endif
 #ifndef DETWS_EDGE_VARY_MAX
 #define DETWS_EDGE_VARY_MAX 64 // stored Vary field-name list / captured request values (each)
@@ -3355,7 +3352,7 @@
 #define DETWS_EDGE_FETCH_SLOTS 2 // concurrent in-flight origin fetches (<= DETWS_CLIENT_CONNS)
 #endif
 #ifndef DETWS_EDGE_FETCH_BUF
-#define DETWS_EDGE_FETCH_BUF 5120 // per-fetch origin-response accumulation buffer (>= body max + headers)
+#define DETWS_EDGE_FETCH_BUF 2560 // per-fetch origin-response accumulation buffer (>= body max + headers)
 #endif
 #ifndef DETWS_EDGE_FETCH_TIMEOUT_MS
 #define DETWS_EDGE_FETCH_TIMEOUT_MS 8000 // origin fetch deadline before fail-open
