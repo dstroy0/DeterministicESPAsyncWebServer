@@ -647,6 +647,7 @@ src/
 │   │   │   │   ├── ssh_ecdsa.h
 │   │   │   │   ├── ssh_ed25519.cpp
 │   │   │   │   ├── ssh_ed25519.h
+│   │   │   │   ├── ssh_ed25519_comb_table.h
 │   │   │   │   ├── ssh_fe25519.h
 │   │   │   │   ├── ssh_hmac_sha256.cpp
 │   │   │   │   ├── ssh_hmac_sha256.h
@@ -1123,8 +1124,8 @@ Feature Tables workflow from `docs/footprints.json`.
 | `VFS` | `L7-Application/51.Vfs` | 795,973 | 86,304 |
 | `WEBDAV` | `L7-Application/29.WebDav` | 821,069 | 105,352 |
 | `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/29.WebDav` | 821,761 | 90,856 |
-| `SSH` | `L5-Session/03.SSHHostKey` | 828,229 | 109,156 |
 | `ETAG` | `L7-Application/09.ETag` | 828,489 | 83,088 |
+| `SSH` | `L5-Session/03.SSHHostKey` | 828,645 | 109,156 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/25.WebSocketClient` | 831,745 | 123,620 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/25.WebSocketClient` | 831,785 | 107,236 |
