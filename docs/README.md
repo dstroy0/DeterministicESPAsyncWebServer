@@ -763,6 +763,8 @@ src/
 │   ├── edge_cache/
 │   │   ├── edge_cache.cpp
 │   │   ├── edge_cache.h
+│   │   ├── edge_cache_proxy.cpp
+│   │   ├── edge_cache_proxy.h
 │   │   ├── edge_fetch.cpp
 │   │   └── edge_fetch.h
 │   ├── enip/  (enip.h, enip.cpp)
