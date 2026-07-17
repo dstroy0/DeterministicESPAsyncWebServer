@@ -53,6 +53,7 @@
 "native_dtls_hs",
 "native_dtls_tls13",
 "native_edge_cache",
+"native_edge_cache_sd",
 "native_enip",
 "native_enocean",
 "native_espnow",
@@ -1335,6 +1336,7 @@
 "native_dtls_conn",
 "native_dtls_hs",
 "native_edge_cache",
+"native_edge_cache_sd",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -1371,6 +1373,7 @@
 "native_dtls_conn",
 "native_dtls_hs",
 "native_edge_cache",
+"native_edge_cache_sd",
 "native_h3_conn",
 "native_h3_e2e",
 "native_h3_server",
@@ -2058,11 +2061,13 @@
 ],
 "src/services/dbm/dbm.cpp": [
 "native_dbm",
-"native_docstore"
+"native_docstore",
+"native_edge_cache_sd"
 ],
 "src/services/dbm/dbm.h": [
 "native_dbm",
-"native_docstore"
+"native_docstore",
+"native_edge_cache_sd"
 ],
 "src/services/dds/dds.cpp": [
 "native_dds",
@@ -2161,10 +2166,18 @@
 "native_dshot"
 ],
 "src/services/edge_cache/edge_cache.cpp": [
-"native_edge_cache"
+"native_edge_cache",
+"native_edge_cache_sd"
 ],
 "src/services/edge_cache/edge_cache.h": [
-"native_edge_cache"
+"native_edge_cache",
+"native_edge_cache_sd"
+],
+"src/services/edge_cache/edge_cache_sd.cpp": [
+"native_edge_cache_sd"
+],
+"src/services/edge_cache/edge_cache_sd.h": [
+"native_edge_cache_sd"
 ],
 "src/services/edge_cache/edge_fetch.cpp": [
 "native_edge_cache"
@@ -2320,10 +2333,12 @@
 ],
 "src/services/http_client/http_client.cpp": [
 "native_edge_cache",
+"native_edge_cache_sd",
 "native_http_client"
 ],
 "src/services/http_client/http_client.h": [
 "native_edge_cache",
+"native_edge_cache_sd",
 "native_http_client"
 ],
 "src/services/http_delivery/http_delivery.cpp": [
@@ -2334,10 +2349,12 @@
 ],
 "src/services/httpcache/httpcache.cpp": [
 "native_edge_cache",
+"native_edge_cache_sd",
 "native_httpcache"
 ],
 "src/services/httpcache/httpcache.h": [
 "native_edge_cache",
+"native_edge_cache_sd",
 "native_httpcache"
 ],
 "src/services/hw_health/hw_health.cpp": [
@@ -3031,21 +3048,25 @@
 "src/services/wal/wal.cpp": [
 "native_dbm",
 "native_docstore",
+"native_edge_cache_sd",
 "native_wal"
 ],
 "src/services/wal/wal.h": [
 "native_dbm",
 "native_docstore",
+"native_edge_cache_sd",
 "native_wal"
 ],
 "src/services/wal/wal_store.cpp": [
 "native_dbm",
 "native_docstore",
+"native_edge_cache_sd",
 "native_wal"
 ],
 "src/services/wal/wal_store.h": [
 "native_dbm",
 "native_docstore",
+"native_edge_cache_sd",
 "native_wal"
 ],
 "src/services/wamp/wamp.cpp": [
@@ -3226,6 +3247,7 @@
 "native_app",
 "native_diag",
 "native_edge_cache",
+"native_edge_cache_sd",
 "native_h3_server",
 "native_http_client",
 "native_keepalive",
@@ -3243,6 +3265,7 @@
 "native_diag",
 "native_docstore",
 "native_edge_cache",
+"native_edge_cache_sd",
 "native_gnss_survey",
 "native_h3_server",
 "native_http_client",
