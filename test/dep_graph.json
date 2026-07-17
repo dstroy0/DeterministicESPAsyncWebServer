@@ -3151,6 +3151,15 @@
 "native_j1939",
 "native_nmea2000"
 ],
+"src/shared_primitives/crypto_opt.h": [
+"native_crypto_kat",
+"native_ssh",
+"native_ssh_chachapoly",
+"native_ssh_comp",
+"native_ssh_conn",
+"native_ssh_hardened",
+"native_ssh_pqc"
+],
 "src/shared_primitives/ghash.h": [
 "native_coaps",
 "native_coaps_server",
