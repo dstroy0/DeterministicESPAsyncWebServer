@@ -180,6 +180,7 @@ CATEGORY_MEMBERS = {
         "CORS",
         "Dashboard",
         "Edge Cache",
+        "Edge Cache Mesh",
         "ETag",
         "File Serving",
         "HTTP Cache",

@@ -8,12 +8,9 @@
 
 #include "services/edge_cache/edge_cache_sd.h"
 
-#if DETWS_ENABLE_EDGE_CACHE && DETWS_ENABLE_DBM
+#if DETWS_ENABLE_EDGE_CACHE
 
 #include <string.h>
-
-// The L2 key is the entry's SHA-256 digest, which must fit a dbm key exactly.
-static_assert(DETWS_DBM_KEY_MAX >= 32, "edge cache L2 uses a 32-byte SHA-256 digest as the dbm key");
 
 namespace
 {
@@ -56,7 +53,64 @@ bool get_str(const uint8_t *buf, size_t len, size_t *pos, char *out, size_t out_
     *pos += sl;
     return true;
 }
+} // namespace
 
+size_t edge_sd_serialize(const EdgeEntry *e, uint8_t *out, size_t cap)
+{
+    if (!e || !out || cap < 3)
+        return 0;
+    size_t pos = 0;
+    out[pos++] = EDGE_SD_VERSION;
+    put_u16(out + pos, (uint16_t)e->status);
+    pos += 2;
+    if (!put_str(out, cap, &pos, e->key) || !put_str(out, cap, &pos, e->content_type) ||
+        !put_str(out, cap, &pos, e->etag) || !put_str(out, cap, &pos, e->last_modified) ||
+        !put_str(out, cap, &pos, e->content_encoding) || !put_str(out, cap, &pos, e->vary_names) ||
+        !put_str(out, cap, &pos, e->vary_vals))
+        return 0;
+    if (pos + 2 + e->body_len > cap)
+        return 0;
+    put_u16(out + pos, e->body_len);
+    pos += 2;
+    memcpy(out + pos, e->body, e->body_len);
+    pos += e->body_len;
+    return pos;
+}
+
+bool edge_sd_deserialize(const uint8_t *buf, size_t len, EdgeEntry *e)
+{
+    if (!buf || !e || len < 3 || buf[0] != EDGE_SD_VERSION)
+        return false;
+    size_t pos = 1;
+    e->status = get_u16(buf + pos);
+    pos += 2;
+    if (!get_str(buf, len, &pos, e->key, sizeof(e->key)) ||
+        !get_str(buf, len, &pos, e->content_type, sizeof(e->content_type)) ||
+        !get_str(buf, len, &pos, e->etag, sizeof(e->etag)) ||
+        !get_str(buf, len, &pos, e->last_modified, sizeof(e->last_modified)) ||
+        !get_str(buf, len, &pos, e->content_encoding, sizeof(e->content_encoding)) ||
+        !get_str(buf, len, &pos, e->vary_names, sizeof(e->vary_names)) ||
+        !get_str(buf, len, &pos, e->vary_vals, sizeof(e->vary_vals)))
+        return false;
+    if (pos + 2 > len)
+        return false;
+    uint16_t bl = get_u16(buf + pos);
+    pos += 2;
+    if (bl > DETWS_EDGE_BODY_MAX || pos + bl > len)
+        return false;
+    memcpy(e->body, buf + pos, bl);
+    e->body_len = bl;
+    edge_key_digest(e->key, strlen(e->key), e->digest); // re-derive the digest from the restored key
+    return true;
+}
+
+#if DETWS_ENABLE_DBM
+
+// The L2 key is the entry's SHA-256 digest, which must fit a dbm key exactly.
+static_assert(DETWS_DBM_KEY_MAX >= 32, "edge cache L2 uses a 32-byte SHA-256 digest as the dbm key");
+
+namespace
+{
 // The path portion of a canonical key "METHOD\nhost\npath[\nquery]" (after the 2nd '\n'), or nullptr.
 const char *canon_path(const char *canon)
 {
@@ -140,55 +194,6 @@ uint32_t purge_matching(DetwsDbm *db, const char *prefix, uint8_t *scratch, size
 }
 } // namespace
 
-size_t edge_sd_serialize(const EdgeEntry *e, uint8_t *out, size_t cap)
-{
-    if (!e || !out || cap < 3)
-        return 0;
-    size_t pos = 0;
-    out[pos++] = EDGE_SD_VERSION;
-    put_u16(out + pos, (uint16_t)e->status);
-    pos += 2;
-    if (!put_str(out, cap, &pos, e->key) || !put_str(out, cap, &pos, e->content_type) ||
-        !put_str(out, cap, &pos, e->etag) || !put_str(out, cap, &pos, e->last_modified) ||
-        !put_str(out, cap, &pos, e->content_encoding) || !put_str(out, cap, &pos, e->vary_names) ||
-        !put_str(out, cap, &pos, e->vary_vals))
-        return 0;
-    if (pos + 2 + e->body_len > cap)
-        return 0;
-    put_u16(out + pos, e->body_len);
-    pos += 2;
-    memcpy(out + pos, e->body, e->body_len);
-    pos += e->body_len;
-    return pos;
-}
-
-bool edge_sd_deserialize(const uint8_t *buf, size_t len, EdgeEntry *e)
-{
-    if (!buf || !e || len < 3 || buf[0] != EDGE_SD_VERSION)
-        return false;
-    size_t pos = 1;
-    e->status = get_u16(buf + pos);
-    pos += 2;
-    if (!get_str(buf, len, &pos, e->key, sizeof(e->key)) ||
-        !get_str(buf, len, &pos, e->content_type, sizeof(e->content_type)) ||
-        !get_str(buf, len, &pos, e->etag, sizeof(e->etag)) ||
-        !get_str(buf, len, &pos, e->last_modified, sizeof(e->last_modified)) ||
-        !get_str(buf, len, &pos, e->content_encoding, sizeof(e->content_encoding)) ||
-        !get_str(buf, len, &pos, e->vary_names, sizeof(e->vary_names)) ||
-        !get_str(buf, len, &pos, e->vary_vals, sizeof(e->vary_vals)))
-        return false;
-    if (pos + 2 > len)
-        return false;
-    uint16_t bl = get_u16(buf + pos);
-    pos += 2;
-    if (bl > DETWS_EDGE_BODY_MAX || pos + bl > len)
-        return false;
-    memcpy(e->body, buf + pos, bl);
-    e->body_len = bl;
-    edge_key_digest(e->key, strlen(e->key), e->digest); // re-derive the digest from the restored key
-    return true;
-}
-
 bool edge_sd_put(DetwsDbm *db, const EdgeEntry *e, uint8_t *scratch, size_t scratch_cap)
 {
     if (!db || !e || !scratch)
@@ -233,4 +238,6 @@ uint32_t edge_sd_purge_all(DetwsDbm *db)
     return purge_matching(db, nullptr, scratch, sizeof(scratch));
 }
 
-#endif // DETWS_ENABLE_EDGE_CACHE && DETWS_ENABLE_DBM
+#endif // DETWS_ENABLE_DBM
+
+#endif // DETWS_ENABLE_EDGE_CACHE

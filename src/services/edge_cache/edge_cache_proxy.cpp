@@ -27,6 +27,10 @@
 #include "network_drivers/tls/tls.h" // det_tls_csess_* (TLS upstream origin fetch)
 #include <mbedtls/ssl.h>             // MBEDTLS_ERR_SSL_WANT_READ / WANT_WRITE
 #endif
+#if DETWS_ENABLE_EDGE_MESH
+#include "network_drivers/session/proto_handler.h" // ProtoHandler / proto_register (PROTO_MESH serving)
+#include "services/edge_cache/edge_mesh.h"         // mesh sibling-cache codec + peer-query engine
+#endif
 #include <stdio.h>
 #include <string.h>
 
@@ -41,6 +45,15 @@ struct EdgeRouteMap
     bool https; ///< fetch this origin over TLS (DETWS_ENABLE_EDGE_ORIGIN_TLS)
 };
 
+#if DETWS_ENABLE_EDGE_MESH
+// A fetch runs the mesh phase (query siblings) first on a full miss, then falls to the origin.
+enum class EdgeFetchPhase : uint8_t
+{
+    MESH,
+    ORIGIN,
+};
+#endif
+
 struct EdgeFetchSlot
 {
     bool used;
@@ -50,6 +63,16 @@ struct EdgeFetchSlot
     EdgeEntry *reval_entry;              // the stale entry being revalidated (nullptr for a plain miss)
     const EdgeFetchTransport *transport; // plaintext or TLS transport, chosen per route at start_fetch
     char canon[DETWS_EDGE_KEY_MAX];
+    EdgeRouteMap *route;     // the origin route (stable in s_ctx.maps) - lets the origin fetch begin later
+    char path[MAX_PATH_LEN]; // request path/query captured at mw time (http_pool[slot] is reused by poll time)
+    char query[MAX_QUERY_LEN];
+#if DETWS_ENABLE_EDGE_MESH
+    EdgeFetchPhase phase;
+    EdgeMeshFetch mf;
+    uint8_t peer_idx;                // sibling currently being queried
+    uint8_t mreq[EDGE_MESH_REQ_MAX]; // the mesh request, built once (reused across peers)
+    size_t mreq_len;
+#endif
 };
 
 struct EdgePending
@@ -65,6 +88,28 @@ struct EdgeServeCursor
     EdgeEntry *entry;
     uint32_t off, end;
 };
+
+#if DETWS_ENABLE_EDGE_MESH
+// A configured sibling peer to query on a local miss.
+struct MeshPeer
+{
+    bool used;
+    char host[DETWS_MESH_HOST_MAX];
+    uint16_t port;
+};
+
+// One in-flight inbound peer-serve connection: accumulate the request, answer from the local cache, page out.
+struct MeshConn
+{
+    bool active;
+    uint8_t conn_slot;
+    uint16_t req_len; // request bytes accumulated
+    uint8_t reqbuf[EDGE_MESH_REQ_MAX];
+    bool responded; // the whole response is built (out_len) and paging out
+    uint16_t out_off, out_len;
+    uint8_t outbuf[EDGE_MESH_RESP_MAX];
+};
+#endif
 
 // The single owned file-static: all of this subsystem's mutable state.
 struct EdgeCacheProxyCtx
@@ -92,6 +137,12 @@ struct EdgeCacheProxyCtx
 #if DETWS_ENABLE_DBM
     DetwsDbm *l2;                      // the persistent L2 tier (nullptr = L1-only)
     uint8_t sd_buf[EDGE_SD_VALUE_MAX]; // serialize/deserialize scratch for one L2 value
+#endif
+#if DETWS_ENABLE_EDGE_MESH
+    MeshPeer peers[DETWS_MESH_MAX_PEERS]; // static sibling list queried on a full miss
+    MeshConn mesh_conns[DETWS_MESH_MAX_CONNS];
+    char mesh_hdrs[DETWS_MESH_HDRS_MAX]; // scratch: a served request's header snapshot (serve is single-threaded)
+    bool mesh_registered;                // the PROTO_MESH serving handler is installed
 #endif
 };
 EdgeCacheProxyCtx s_ctx;
@@ -453,8 +504,12 @@ void on_fetch_done(uint8_t slot, EdgeFetchSlot *fs, uint32_t now)
 MwResult edge_cache_mw(uint8_t slot, HttpReq *req);
 bool edge_cache_poll(uint8_t slot);
 
-bool start_fetch(uint8_t slot, HttpReq *req, EdgeRouteMap *m, const char *canon, EdgeEntry *reval, uint32_t now)
+// Build + begin the origin fetch for @p fs from its captured route/path/query (so it can begin either
+// immediately at mw time or later, after the mesh phase exhausts its peers). Picks the plaintext or TLS
+// transport; a revalidation adds the conditional headers. @return false if no fetch could start (fail open).
+bool begin_origin_fetch(EdgeFetchSlot *fs, uint32_t now)
 {
+    EdgeRouteMap *m = fs->route;
     const EdgeFetchTransport *tport = &s_ctx.transport;
 #if DETWS_ENABLE_EDGE_ORIGIN_TLS
     if (m->https)
@@ -464,18 +519,14 @@ bool start_fetch(uint8_t slot, HttpReq *req, EdgeRouteMap *m, const char *canon,
         tport = &s_ctx.transport_tls;
     }
 #endif
-    int fi = alloc_fetch();
-    if (fi < 0)
-        return false;
-    EdgeFetchSlot *fs = &s_ctx.fetches[fi];
     char cond[192];
     cond[0] = '\0';
-    if (reval)
-        edge_build_conditional(reval, cond, sizeof(cond));
+    if (fs->reval_entry)
+        edge_build_conditional(fs->reval_entry, cond, sizeof(cond));
     int rl =
         snprintf(s_ctx.reqbuf, sizeof(s_ctx.reqbuf),
                  "GET %s%s%s HTTP/1.1\r\nHost: %s\r\nUser-Agent: DetWebServer-EdgeCache\r\nConnection: close\r\n%s\r\n",
-                 req->path, req->query[0] ? "?" : "", req->query, m->origin_host, cond);
+                 fs->path, fs->query[0] ? "?" : "", fs->query, m->origin_host, cond);
     if (rl <= 0 || (size_t)rl >= sizeof(s_ctx.reqbuf))
         return false;
     edge_fetch_begin(&fs->f, tport, m->origin_host, m->origin_port, s_ctx.reqbuf, (size_t)rl, now);
@@ -484,12 +535,143 @@ bool start_fetch(uint8_t slot, HttpReq *req, EdgeRouteMap *m, const char *canon,
         edge_fetch_end(&fs->f, tport);
         return false;
     }
-    fs->used = true;
+    fs->transport = tport;
+    return true;
+}
+
+#if DETWS_ENABLE_EDGE_MESH
+int mesh_peer_count()
+{
+    int n = 0;
+    for (int i = 0; i < DETWS_MESH_MAX_PEERS; i++)
+        if (s_ctx.peers[i].used)
+            n++;
+    return n;
+}
+
+// The @p n-th used peer in slot order, or nullptr.
+MeshPeer *mesh_peer_nth(int n)
+{
+    for (int i = 0; i < DETWS_MESH_MAX_PEERS; i++)
+        if (s_ctx.peers[i].used && n-- == 0)
+            return &s_ctx.peers[i];
+    return nullptr;
+}
+
+// Snapshot the request headers as `name RS value US ...` so a peer can re-run the Vary matcher. Headers past
+// the cap are dropped (at worst a safe mesh miss, never wrong content).
+void mesh_snapshot_headers(const HttpReq *req, char *out, size_t cap)
+{
+    size_t pos = 0;
+    out[0] = '\0';
+    for (uint8_t i = 0; i < req->header_count; i++)
+    {
+        const char *k = req->headers[i].key;
+        const char *v = req->headers[i].val;
+        size_t kl = strlen(k);
+        size_t vl = strlen(v);
+        if (pos + kl + 1 + vl + 1 >= cap)
+            break;
+        memcpy(out + pos, k, kl);
+        pos += kl;
+        out[pos++] = '\x1e';
+        memcpy(out + pos, v, vl);
+        pos += vl;
+        out[pos++] = '\x1f';
+    }
+    out[pos] = '\0';
+}
+
+// The peer query reuses the slot's origin response buffer (the mesh and origin phases never run together).
+static_assert(DETWS_EDGE_FETCH_BUF >= EDGE_MESH_RESP_MAX,
+              "DETWS_EDGE_FETCH_BUF must hold a mesh response (>= EDGE_MESH_RESP_MAX); raise it or lower "
+              "DETWS_EDGE_BODY_MAX");
+
+// Begin the mesh query against the peer at fs->peer_idx. @return false if there is no such peer.
+bool mesh_begin_peer(EdgeFetchSlot *fs, uint32_t now)
+{
+    MeshPeer *p = mesh_peer_nth(fs->peer_idx);
+    if (!p)
+        return false;
+    edge_mesh_fetch_begin(&fs->mf, &s_ctx.transport, p->host, p->port, fs->mreq, fs->mreq_len, fs->f.buf,
+                          sizeof(fs->f.buf), now);
+    return true;
+}
+
+// A peer HIT: rehydrate the entry into a fresh L1 slot, verify it matches the request, and serve it as fresh
+// (age propagated). @return true if it was served; false (freeing the slot) if corrupt / wrong / already stale.
+bool mesh_store_and_serve(uint8_t slot, EdgeFetchSlot *fs, uint32_t now)
+{
+    EdgeEntry *e = edge_store_alloc(&s_ctx.store, fs->canon, "");
+    if (!e)
+        return false;
+    if (!edge_mesh_deserialize_entry(fs->mf.buf + fs->mf.entry_off, fs->mf.entry_len, e, now) ||
+        strcmp(e->key, fs->canon) != 0 || !edge_entry_fresh(e, now))
+    {
+        edge_store_free_entry(&s_ctx.store, e);
+        return false;
+    }
+    s_ctx.store.stats.bytes_stored += e->body_len;
+    serve_hit(slot, e, now, "MESH");
+    return true;
+}
+
+// The current peer query ended without a served hit: try the next sibling, else begin the origin fetch.
+// @return true if the slot still owns work (mesh continues or origin began); false = give up.
+bool mesh_advance_or_origin(EdgeFetchSlot *fs, uint32_t now)
+{
+    fs->peer_idx++;
+    if (mesh_begin_peer(fs, now))
+        return true; // querying the next sibling (still MESH phase)
+    s_ctx.store.stats.mesh_misses++;
+    if (begin_origin_fetch(fs, now))
+    {
+        fs->phase = EdgeFetchPhase::ORIGIN;
+        return true;
+    }
+    return false;
+}
+#endif // DETWS_ENABLE_EDGE_MESH
+
+bool start_fetch(uint8_t slot, HttpReq *req, EdgeRouteMap *m, const char *canon, EdgeEntry *reval, uint32_t now)
+{
+    int fi = alloc_fetch();
+    if (fi < 0)
+        return false;
+    EdgeFetchSlot *fs = &s_ctx.fetches[fi];
     fs->client_slot = slot;
     fs->revalidate = (reval != nullptr);
     fs->reval_entry = reval;
-    fs->transport = tport;
+    fs->route = m;
     memcpy(fs->canon, canon, strlen(canon) + 1);
+    strncpy(fs->path, req->path, sizeof(fs->path) - 1);
+    fs->path[sizeof(fs->path) - 1] = '\0';
+    strncpy(fs->query, req->query, sizeof(fs->query) - 1);
+    fs->query[sizeof(fs->query) - 1] = '\0';
+
+#if DETWS_ENABLE_EDGE_MESH
+    // On a full miss (not a revalidation) with >= 1 sibling, query the mesh before the origin.
+    if (!reval && mesh_peer_count() > 0)
+    {
+        uint8_t digest[32];
+        edge_key_digest(canon, strlen(canon), digest);
+        mesh_snapshot_headers(req, s_ctx.mesh_hdrs, sizeof(s_ctx.mesh_hdrs));
+        fs->mreq_len = edge_mesh_build_request(digest, canon, s_ctx.mesh_hdrs, fs->mreq, sizeof(fs->mreq));
+        fs->peer_idx = 0;
+        if (fs->mreq_len > 0 && mesh_begin_peer(fs, now))
+        {
+            fs->phase = EdgeFetchPhase::MESH;
+            fs->used = true;
+            s_ctx.pending[slot].active = true;
+            s_ctx.pending[slot].fetch_idx = (uint8_t)fi;
+            return true;
+        }
+    }
+    fs->phase = EdgeFetchPhase::ORIGIN;
+#endif
+    if (!begin_origin_fetch(fs, now))
+        return false; // fs->used stays false -> the slot is reclaimed
+    fs->used = true;
     s_ctx.pending[slot].active = true;
     s_ctx.pending[slot].fetch_idx = (uint8_t)fi;
     return true;
@@ -571,17 +753,49 @@ MwResult edge_cache_mw(uint8_t slot, HttpReq *req)
     return MwResult::MW_HALT;     // client request suspended until the fetch completes
 }
 
-// Per-slot poll hook: drive an in-flight origin fetch, then serve. Returns true while it owns the slot.
+// Per-slot poll hook: drive an in-flight sibling query then origin fetch, then serve. Returns true while it
+// owns the slot.
 bool edge_cache_poll(uint8_t slot)
 {
     if (slot >= MAX_CONNS || !s_ctx.pending[slot].active)
         return false;
     uint8_t fi = s_ctx.pending[slot].fetch_idx;
     EdgeFetchSlot *fs = &s_ctx.fetches[fi];
-    const EdgeFetchTransport *tport = fs->transport; // the transport chosen for this fetch (plaintext or TLS)
     uint32_t now = detws_millis();
 
-    if (!det_conn_active(slot)) // client vanished mid-fetch: abort
+#if DETWS_ENABLE_EDGE_MESH
+    if (fs->phase == EdgeFetchPhase::MESH)
+    {
+        if (!det_conn_active(slot)) // client vanished mid-query: abort
+        {
+            edge_mesh_fetch_end(&fs->mf, &s_ctx.transport);
+            fs->used = false;
+            s_ctx.pending[slot].active = false;
+            return true;
+        }
+        EdgeMeshStatus ms = edge_mesh_fetch_pump(&fs->mf, &s_ctx.transport, now);
+        if (ms == EdgeMeshStatus::PENDING)
+            return true; // still querying this sibling
+        bool served = (ms == EdgeMeshStatus::HIT) && mesh_store_and_serve(slot, fs, now);
+        edge_mesh_fetch_end(&fs->mf, &s_ctx.transport);
+        if (served)
+        {
+            s_ctx.store.stats.mesh_hits++;
+            fs->used = false;
+            s_ctx.pending[slot].active = false;
+            return true;
+        }
+        if (mesh_advance_or_origin(fs, now)) // try the next sibling, else begin the origin fetch
+            return true;
+        s_ctx.server->send(slot, 502, DET_MIME_TEXT_PLAIN, "Bad Gateway"); // no sibling + origin start failed
+        fs->used = false;
+        s_ctx.pending[slot].active = false;
+        return true;
+    }
+#endif
+
+    const EdgeFetchTransport *tport = fs->transport; // the transport chosen for this fetch (plaintext or TLS)
+    if (!det_conn_active(slot))                      // client vanished mid-fetch: abort
     {
         edge_fetch_end(&fs->f, tport);
         fs->used = false;
@@ -610,6 +824,200 @@ bool edge_cache_poll(uint8_t slot)
     s_ctx.pending[slot].active = false;
     return true;
 }
+
+#if DETWS_ENABLE_EDGE_MESH
+// --- PROTO_MESH serving side: answer a sibling's query from the LOCAL cache only (one hop, never recurses to
+//     this node's own origin or peers, so the fleet cannot loop) -------------------------------------------
+
+// Case-insensitive compare of the first @p n bytes (header names).
+bool mesh_name_eq(const char *a, const char *b, size_t n)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        char ca = a[i];
+        char cb = b[i];
+        if (ca >= 'A' && ca <= 'Z')
+            ca = (char)(ca - 'A' + 'a');
+        if (cb >= 'A' && cb <= 'Z')
+            cb = (char)(cb - 'A' + 'a');
+        if (ca != cb)
+            return false;
+    }
+    return true;
+}
+
+// EdgeHdrLookup over a request-header snapshot blob (`name RS value US ...`); ctx is a MeshLookupCtx. The
+// returned pointer is valid until the next call (edge_vary_serialize copies each value before re-looking up).
+struct MeshLookupCtx
+{
+    const char *blob;
+    char valbuf[MAX_VAL_LEN];
+};
+const char *mesh_hdr_lookup(void *ctx, const char *name)
+{
+    MeshLookupCtx *lc = (MeshLookupCtx *)ctx;
+    size_t nl = strlen(name);
+    const char *p = lc->blob;
+    while (*p)
+    {
+        const char *rs = strchr(p, '\x1e');
+        if (!rs)
+            break;
+        const char *us = strchr(rs + 1, '\x1f');
+        if (!us)
+            break;
+        if ((size_t)(rs - p) == nl && mesh_name_eq(p, name, nl))
+        {
+            size_t vl = (size_t)(us - (rs + 1));
+            if (vl >= sizeof(lc->valbuf))
+                vl = sizeof(lc->valbuf) - 1;
+            memcpy(lc->valbuf, rs + 1, vl);
+            lc->valbuf[vl] = '\0';
+            return lc->valbuf;
+        }
+        p = us + 1;
+    }
+    return nullptr;
+}
+
+MeshConn *mesh_conn_by_slot(uint8_t slot)
+{
+    for (int i = 0; i < DETWS_MESH_MAX_CONNS; i++)
+        if (s_ctx.mesh_conns[i].active && s_ctx.mesh_conns[i].conn_slot == slot)
+            return &s_ctx.mesh_conns[i];
+    return nullptr;
+}
+
+// Build the response for a parsed request into mc->outbuf: a HIT carrying a fresh local variant, else a MISS.
+void mesh_answer(MeshConn *mc, const uint8_t digest[32], const char *canon, uint32_t now)
+{
+    bool hit = false;
+    uint8_t verify[32];
+    edge_key_digest(canon, strlen(canon), verify);
+    if (memcmp(verify, digest, 32) == 0) // integrity: the canonical key must hash to the advertised digest
+    {
+        MeshLookupCtx lc;
+        lc.blob = s_ctx.mesh_hdrs;
+        EdgeEntry *e = edge_store_find(&s_ctx.store, canon, mesh_hdr_lookup, &lc, now);
+        if (e && edge_entry_fresh(e, now))
+        {
+            long age = edge_current_age(e->initial_age, e->insert_ms, now);
+            if (age < 0)
+                age = 0;
+            // Serialize the entry directly after the 6-byte response header to avoid a large stack temp.
+            size_t fn = edge_mesh_serialize_entry(e, age, mc->outbuf + 6, sizeof(mc->outbuf) - 6);
+            if (fn > 0 && fn <= 0xFFFFu)
+            {
+                mc->outbuf[0] = EDGE_MESH_MAGIC0;
+                mc->outbuf[1] = EDGE_MESH_MAGIC1;
+                mc->outbuf[2] = EDGE_MESH_VERSION;
+                mc->outbuf[3] = 1; // HIT
+                mc->outbuf[4] = (uint8_t)(fn & 0xFF);
+                mc->outbuf[5] = (uint8_t)(fn >> 8);
+                mc->out_len = (uint16_t)(6 + fn);
+                hit = true;
+            }
+        }
+    }
+    if (!hit)
+        mc->out_len = (uint16_t)edge_mesh_build_response(false, nullptr, 0, mc->outbuf, sizeof(mc->outbuf));
+    mc->out_off = 0;
+    mc->responded = true;
+}
+
+void mesh_serve_end(MeshConn *mc)
+{
+    mc->active = false;
+    det_conn_close(mc->conn_slot);
+}
+
+// Drive one serve connection: accumulate the request, answer it, then page the response out with backpressure.
+void mesh_serve_pump(MeshConn *mc)
+{
+    uint8_t slot = mc->conn_slot;
+    if (!mc->responded)
+    {
+        if (det_conn_available(slot) && mc->req_len < sizeof(mc->reqbuf))
+            mc->req_len += (uint16_t)det_conn_read(slot, mc->reqbuf + mc->req_len, sizeof(mc->reqbuf) - mc->req_len);
+        uint8_t digest[32];
+        char canon[DETWS_EDGE_KEY_MAX];
+        EdgeMeshParse p = edge_mesh_parse_request(mc->reqbuf, mc->req_len, digest, canon, sizeof(canon),
+                                                  s_ctx.mesh_hdrs, sizeof(s_ctx.mesh_hdrs));
+        if (p == EdgeMeshParse::INCOMPLETE)
+        {
+            if (mc->req_len >= sizeof(mc->reqbuf))
+                mesh_serve_end(mc); // full buffer, still short -> junk, drop
+            return;                 // otherwise wait for more
+        }
+        if (p != EdgeMeshParse::HIT)
+        {
+            mesh_serve_end(mc); // malformed
+            return;
+        }
+        mesh_answer(mc, digest, canon, detws_millis());
+    }
+    while (mc->out_off < mc->out_len)
+    {
+        u16_t room = det_conn_sndbuf(slot);
+        if (room == 0)
+            return; // backpressure; retry next poll
+        uint16_t remaining = (uint16_t)(mc->out_len - mc->out_off);
+        u16_t n = remaining < room ? remaining : room;
+        if (!det_conn_send(slot, mc->outbuf + mc->out_off, n))
+            return; // retry next poll
+        mc->out_off = (uint16_t)(mc->out_off + n);
+    }
+    // Whole response queued: flush it out, then dwell in CONN_CLOSING until the peer ACKs (a plain
+    // det_conn_close would RST and discard the response the peer has not read yet). det_conn_send already
+    // COPY'd the bytes into the TCP buffer and the graceful finalize does not call on_close, so free the
+    // MeshConn now - the transport owns the drain from here.
+    det_conn_flush(slot);
+    det_conn_begin_close(slot);
+    mc->active = false;
+}
+
+void mesh_on_accept(uint8_t slot)
+{
+    for (int i = 0; i < DETWS_MESH_MAX_CONNS; i++)
+        if (!s_ctx.mesh_conns[i].active)
+        {
+            MeshConn *mc = &s_ctx.mesh_conns[i];
+            mc->active = true;
+            mc->conn_slot = slot;
+            mc->req_len = 0;
+            mc->responded = false;
+            mc->out_off = 0;
+            mc->out_len = 0;
+            return;
+        }
+    det_conn_close(slot); // no free serve slot
+}
+
+void mesh_on_data(uint8_t slot)
+{
+    MeshConn *mc = mesh_conn_by_slot(slot);
+    if (mc)
+        mesh_serve_pump(mc);
+}
+
+void mesh_on_poll(uint8_t slot)
+{
+    if (!det_conn_active(slot))
+        return;
+    MeshConn *mc = mesh_conn_by_slot(slot);
+    if (mc)
+        mesh_serve_pump(mc);
+}
+
+void mesh_on_close(uint8_t slot)
+{
+    MeshConn *mc = mesh_conn_by_slot(slot);
+    if (mc)
+        mc->active = false; // the transport owns the closing slot
+}
+
+const ProtoHandler s_mesh_handler = {mesh_on_accept, mesh_on_data, mesh_on_close, mesh_on_poll};
+#endif // DETWS_ENABLE_EDGE_MESH
 } // namespace
 
 // --- public API ----------------------------------------------------------------------------------
@@ -651,6 +1059,10 @@ void det_edge_cache_enable(DetWebServer &server)
 #if DETWS_ENABLE_DBM
     s_ctx.store.on_evict = s_ctx.l2 ? edge_on_evict : nullptr; // re-arm write-back after edge_store_init
     s_ctx.store.evict_ctx = nullptr;
+#endif
+#if DETWS_ENABLE_EDGE_MESH
+    for (int i = 0; i < DETWS_MESH_MAX_CONNS; i++)
+        s_ctx.mesh_conns[i].active = false;
 #endif
     if (!s_ctx.registered)
     {
@@ -712,6 +1124,35 @@ void det_edge_cache_set_origin_pin(const uint8_t sha256[32])
 }
 #endif
 
+#if DETWS_ENABLE_EDGE_MESH
+bool det_edge_cache_add_peer(const char *host, uint16_t port)
+{
+    if (!host)
+        return false;
+    size_t hl = strnlen(host, DETWS_MESH_HOST_MAX + 1);
+    if (hl == 0 || hl >= DETWS_MESH_HOST_MAX)
+        return false;
+    for (int i = 0; i < DETWS_MESH_MAX_PEERS; i++)
+        if (!s_ctx.peers[i].used)
+        {
+            memcpy(s_ctx.peers[i].host, host, hl + 1);
+            s_ctx.peers[i].port = port;
+            s_ctx.peers[i].used = true;
+            return true;
+        }
+    return false; // peer table full
+}
+
+void det_edge_cache_mesh_serve(void)
+{
+    if (!s_ctx.mesh_registered)
+    {
+        proto_register(ConnProto::PROTO_MESH, &s_mesh_handler);
+        s_ctx.mesh_registered = true;
+    }
+}
+#endif // DETWS_ENABLE_EDGE_MESH
+
 void det_edge_cache_reset(void)
 {
     edge_store_init(&s_ctx.store);
@@ -724,6 +1165,10 @@ void det_edge_cache_reset(void)
 #endif
     for (int i = 0; i < DETWS_EDGE_MAP_MAX; i++)
         s_ctx.maps[i].used = false;
+#if DETWS_ENABLE_EDGE_MESH
+    for (int i = 0; i < DETWS_MESH_MAX_PEERS; i++)
+        s_ctx.peers[i].used = false;
+#endif
 }
 
 bool det_edge_cache_purge(const char *canonical_key)

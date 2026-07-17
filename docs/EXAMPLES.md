@@ -1,6 +1,6 @@
 # Examples
 
-The library ships 127 runnable examples under [examples/](../examples), grouped by
+The library ships 128 runnable examples under [examples/](../examples), grouped by
 the OSI layer the feature lives at and numbered within each group. **Each example
 has its own README** with a detailed walkthrough, the build flags it needs, how
 to build and run it, and the full source reproduced with teaching comments - so
@@ -185,6 +185,7 @@ Routing, protocols, services, and clients:
 [76.NtripCaster](../examples/L7-Application/76.NtripCaster) ·
 [77.Sen0192](../examples/L7-Application/77.Sen0192) ·
 [78.CoapSecure](../examples/L7-Application/78.CoapSecure) ·
-[79.EdgeCache](../examples/L7-Application/79.EdgeCache)
+[79.EdgeCache](../examples/L7-Application/79.EdgeCache) ·
+[80.MeshCache](../examples/L7-Application/80.MeshCache)
 
 <!-- END GENERATED EXAMPLE INDEX -->

@@ -3380,6 +3380,43 @@
 // less. The L2 key is the 32-byte cache-key digest, so DETWS_DBM_KEY_MAX must be >= 32 (its default).
 
 /**
+ * @brief Opt-in mesh (sibling-cache) distribution for the edge cache (DETWS_ENABLE_EDGE_MESH).
+ *
+ * Lets a fleet of edge nodes share one warm cache: on a full local miss, a node queries its configured
+ * sibling peers (over a plaintext ConnProto::PROTO_MESH TCP link) before hitting the origin, and pulls a
+ * fresh copy from whichever peer has it - so the origin is fetched once per fleet, not once per node. Pull
+ * (read-through) only: no push, no invalidation protocol, no consistency window - a stale sibling copy
+ * self-expires by its own TTL and the requester re-checks freshness on arrival. The transfer carries the
+ * object plus its freshness/age (RFC 9111 age propagation), so a sibling-fresh object serves for its
+ * remaining lifetime with zero origin contact. A serving node answers only from its local store (one hop,
+ * never re-querying its own origin/peers, so the fleet cannot loop). Peers are a static list
+ * (det_edge_cache_add_peer); auto-discovery is a follow-up. Zero heap. Default off.
+ */
+#ifndef DETWS_ENABLE_EDGE_MESH
+#define DETWS_ENABLE_EDGE_MESH 0
+#endif
+#if DETWS_ENABLE_EDGE_MESH && !DETWS_ENABLE_EDGE_CACHE
+#error "DETWS_ENABLE_EDGE_MESH requires DETWS_ENABLE_EDGE_CACHE"
+#endif
+#ifndef DETWS_MESH_MAX_PEERS
+#define DETWS_MESH_MAX_PEERS 4 // sibling peers queried on a local miss (tried in series, first hit wins)
+#endif
+#ifndef DETWS_MESH_MAX_CONNS
+#define DETWS_MESH_MAX_CONNS 1 // concurrent inbound peer-serve connections (a small fleet queries serially)
+#endif
+#ifndef DETWS_MESH_QUERY_MS
+#define DETWS_MESH_QUERY_MS 300 // per-peer query deadline before moving on (miss) / to the origin
+#endif
+#ifndef DETWS_MESH_HOST_MAX
+#define DETWS_MESH_HOST_MAX 64 // largest sibling peer host string
+#endif
+#ifndef DETWS_MESH_HDRS_MAX
+#define DETWS_MESH_HDRS_MAX                                                                                            \
+    384 // request-header snapshot carried to a peer so it can match Vary variants
+        // (headers past the cap are dropped -> at worst a safe mesh miss, never wrong content)
+#endif
+
+/**
  * @brief Opt-in SMB2 client (DETWS_ENABLE_SMB).
  *
  * services/smb is an SMB2 client (MS-SMB2) so a device can read/write files on a Windows share -
@@ -5358,6 +5395,7 @@ enum class ConnProto : uint8_t
     PROTO_RELAY = 7,        ///< TCP relay / DNAT (DETWS_ENABLE_RELAY): bridge to an origin det_client connection.
     PROTO_BRIDGE = 8,       ///< address:port -> hardware bus (DETWS_ENABLE_IFACE_BRIDGE): UART/SPI/I2C device server.
     PROTO_NTRIP_CASTER = 9, ///< NTRIP caster (DETWS_ENABLE_NTRIP_CASTER): serves RTCM3 corrections to rovers.
+    PROTO_MESH = 10, ///< Edge-cache sibling link (DETWS_ENABLE_EDGE_MESH): answers a peer's content-addressed query.
 };
 
 /**
@@ -5905,10 +5943,10 @@ enum class DetIface : uint8_t
 // -- Core: protocol dispatch + shared outbound transport (always built) --
 /** @brief Size of the protocol-handler dispatch table; must exceed the largest ConnProto id. */
 #ifndef DETWS_PROTO_MAX
-#define DETWS_PROTO_MAX 10
+#define DETWS_PROTO_MAX 11
 #endif
 // proto_register / proto_get index this table by ConnProto id, so it must be wide enough for every id.
-static_assert((unsigned)ConnProto::PROTO_NTRIP_CASTER < DETWS_PROTO_MAX,
+static_assert((unsigned)ConnProto::PROTO_MESH < DETWS_PROTO_MAX,
               "DETWS_PROTO_MAX must exceed the largest ConnProto id");
 /** @brief Number of simultaneous outbound client connections (BSS pool size). */
 #ifndef DETWS_CLIENT_CONNS

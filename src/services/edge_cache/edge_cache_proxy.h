@@ -70,7 +70,26 @@ struct DetwsDbm;
 void det_edge_cache_bind_sd(DetwsDbm *dbm);
 #endif
 
-/** @brief Clear the L1 store, the L2 store (if bound), and all route maps. */
+#if DETWS_ENABLE_EDGE_MESH
+/**
+ * @brief Add a sibling peer to query on a full local miss before hitting the origin (mesh sibling cache).
+ *
+ * On a cold miss the cache asks each configured peer (in order, first hit wins) over a plaintext
+ * ConnProto::PROTO_MESH link and, if a peer holds a fresh copy, pulls and serves it (age propagated) without
+ * hitting the origin. @p host is a sibling's address, @p port the port it serves PROTO_MESH on. @return false
+ * if the peer table is full or @p host is empty / too long. Pull-only: no push, no invalidation.
+ */
+bool det_edge_cache_add_peer(const char *host, uint16_t port);
+
+/**
+ * @brief Serve sibling queries: register the PROTO_MESH handler so this node answers a peer's content-addressed
+ *        request from its LOCAL cache (one hop - never re-queries this node's own origin or peers). Open the
+ *        port first with `server.listen(port, ConnProto::PROTO_MESH)`. Call once.
+ */
+void det_edge_cache_mesh_serve(void);
+#endif
+
+/** @brief Clear the L1 store, the L2 store (if bound), all route maps, and (mesh) the peer list. */
 void det_edge_cache_reset(void);
 
 /** @brief Invalidate a single canonical key. @return true if an entry was purged. */

@@ -8,6 +8,31 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Edge-cache mesh serving node RST'd the response before it drained (immediate close)
+
+- **Status:** FIXED (2026-07-17). Found by the **two-rig HW bring-up** of the new mesh sibling cache
+  (`DETWS_ENABLE_EDGE_MESH`) on two ESP32-S3s - the exact whole-firmware path host mock-seam tests cannot
+  reach (the mock transport does not model TCP flush/close).
+- **Symptom:** node B's cold miss for an object node A had cached always fell through to the origin
+  (`X-Cache: MISS`, `mesh_misses` incremented, the origin logged a hit from B) instead of pulling from A
+  (`X-Cache: MESH`). A hand-crafted valid mesh request to A over `:7645` got the connection **reset with 0
+  bytes** (`WinError 10054`) - so A built a response but it never reached the peer.
+- **Root cause:** the `PROTO_MESH` serve pump queued the whole response with `det_conn_send` (which
+  `tcp_write`s with `TCP_WRITE_FLAG_COPY`) and then immediately called `det_conn_close` - the **immediate**
+  teardown, which `tcp_close`s and, if the FIN cannot queue, `tcp_abort`s (RST), discarding the just-queued
+  response the peer had not read yet. The requester then saw a closed connection with no complete frame →
+  `MESH_FAIL` → treated as a miss → origin fallthrough.
+- **Fix:** after queuing the full response, `det_conn_flush(slot)` (tcp_output) then `det_conn_begin_close(slot)`
+    - the graceful dwell that holds the slot in `CONN_CLOSING` until the peer ACKs, finalizing from the sent
+      callback once the TX drains (the same sequence `websocket_sse` uses for its response-then-close). The
+      `closing_finalize` path does not dispatch the proto `on_close`, and `det_conn_send` already COPY'd the
+      bytes, so the `MeshConn` is freed proactively right after `begin_close`. Re-flashed both rigs: B's cold miss
+      now serves `X-Cache: MESH` byte-exact from A with `Age` propagated, the origin is fetched exactly once (by
+      A), and fall-through / symmetry / loop-free all pass. Classic HW-only integration bug (green host tests, a
+      real RST on the wire).
+
+---
+
 ## Edge-cache Range on a MISS lost the client's Range header (stale http_pool[slot])
 
 - **Status:** FIXED (2026-07-17). Found by the **HW MISS+Range test** of the new Range/206-from-cache

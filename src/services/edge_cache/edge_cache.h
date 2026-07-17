@@ -133,6 +133,7 @@ struct EdgeCacheStats
 {
     uint32_t hits, misses, revalidations_304, replaces_200;
     uint32_t stores, evictions, purges, l2_spills, l2_promotes;
+    uint32_t mesh_hits, mesh_misses; ///< sibling pulls served (DETWS_ENABLE_EDGE_MESH) / peer queries that missed
     uint64_t bytes_stored;
 };
 

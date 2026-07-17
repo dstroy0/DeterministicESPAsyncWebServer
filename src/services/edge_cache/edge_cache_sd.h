@@ -31,9 +31,11 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_EDGE_CACHE && DETWS_ENABLE_DBM
+// The entry serialize/deserialize below is the shared byte codec for an EdgeEntry (used by both the L2 SD
+// tier and the mesh sibling link), so it compiles whenever the edge cache is on; the dbm-backed put/get/purge
+// helpers further down need the persistence tier and stay gated on DETWS_ENABLE_DBM.
+#if DETWS_ENABLE_EDGE_CACHE
 
-#include "services/dbm/dbm.h"
 #include "services/edge_cache/edge_cache.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -67,6 +69,10 @@ size_t edge_sd_serialize(const EdgeEntry *e, uint8_t *out, size_t cap);
  */
 bool edge_sd_deserialize(const uint8_t *buf, size_t len, EdgeEntry *e);
 
+#if DETWS_ENABLE_DBM
+
+#include "services/dbm/dbm.h"
+
 /**
  * @brief Write @p e back to the L2 store (keyed by its digest), using @p scratch to serialize.
  * @return true if it was spilled; false if @p e carries no validator, or its serialization does not fit
@@ -92,6 +98,8 @@ uint32_t edge_sd_purge_prefix(DetwsDbm *db, const char *path_prefix, uint8_t *sc
 /** @brief Drop every L2 entry. @return the number purged. */
 uint32_t edge_sd_purge_all(DetwsDbm *db);
 
-#endif // DETWS_ENABLE_EDGE_CACHE && DETWS_ENABLE_DBM
+#endif // DETWS_ENABLE_DBM
+
+#endif // DETWS_ENABLE_EDGE_CACHE
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_EDGE_CACHE_SD_H

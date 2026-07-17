@@ -106,6 +106,24 @@
       ],
       "tests": ["test_edge_cache_sd"]
     },
+    "native_edge_mesh": {
+      "desc": "CDN edge-cache mesh sibling-cache codec (services/edge_cache/edge_mesh): the request/response\nwire frames (build + tri-state accumulating parse over partial reads, magic/version/opcode validation),\nthe freshness-carrying entry frame (the shared edge_sd body plus a timing trailer) round-tripped\nbyte-exact, RFC 9111 age propagation (a peer's corrected age transfers so the receiver stays fresh for\nthe remaining lifetime and its Age keeps growing), and the async peer-query engine reaching HIT / MISS /\nFAILED (timeout, peer close, malformed) over a scripted mock transport seam. Pure host tests.",
+      "flags": [
+        "-DDETWS_ENABLE_HTTP_CACHE=1",
+        "-DDETWS_ENABLE_HTTP_CLIENT=1",
+        "-DDETWS_ENABLE_EDGE_CACHE=1",
+        "-DDETWS_ENABLE_EDGE_MESH=1"
+      ],
+      "src": [
+        "+<services/httpcache/httpcache.cpp>",
+        "+<services/http_client/http_client.cpp>",
+        "+<services/edge_cache/edge_cache.cpp>",
+        "+<services/edge_cache/edge_cache_sd.cpp>",
+        "+<services/edge_cache/edge_mesh.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
+      ],
+      "tests": ["test_edge_mesh"]
+    },
     "native_det_primitives": {
       "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 det_strtol/strtoul/strtof\nnumber parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h).\nHeader-only; pure host tests.",
       "flags": [],
