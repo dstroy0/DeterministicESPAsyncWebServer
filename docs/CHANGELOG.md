@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`6c20915`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6c20915d45ce47390a755d9c013208ff63e3e71e))
+- update CHANGELOG.md [skip ci] ([`5be9f0b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5be9f0b9e3fc63ca22b8f35ecefeb8a3b100c6ef))
 - update CHANGELOG.md [skip ci] ([`974c967`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/974c96707fd981efd087c56fce18026e1ae958f8))
 - update CHANGELOG.md [skip ci] ([`13fed58`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/13fed58a633a6cc6bef11632d1da3622c6e0ac56))
 - update CHANGELOG.md [skip ci] ([`0213cdc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0213cdcb0c591924d1204aa18aba028a972bda5f))
@@ -46,6 +48,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Features
 
+- server glue + example (middleware, async fetch, serve) ([`e824986`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e824986d1630852f83cda4f05efb21a15959b71b))
 - Vary-aware store lookup ([`e7f6a78`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e7f6a78c98f0debb64581c0824b28f299d2b41dd))
 - conditional revalidation helpers ([`35f31a1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/35f31a1ac83c4f79936fdeb846ecf25b39c3a67d))
 - async origin-fetch engine ([`a7a6209`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a7a620936979e9fdd9925acfe8046519e7d5ed7b))
