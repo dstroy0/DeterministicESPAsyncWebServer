@@ -266,6 +266,39 @@ static void test_store_purge()
     TEST_ASSERT_EQUAL_UINT32(0, edge_store_purge(&g_store, "GET\nh\n/nope"));   // miss no-op
 }
 
+static void test_store_find_vary()
+{
+    static const MockHdr gz_hdr[] = {{"accept-encoding", "gzip"}};
+    static const MockHdr br_hdr[] = {{"accept-encoding", "br"}};
+
+    edge_store_init(&g_store);
+    // two variants of the same resource, keyed by Accept-Encoding
+    EdgeEntry *gz = edge_store_alloc(&g_store, "GET\nh\n/a", "");
+    strcpy(gz->vary_names, "Accept-Encoding");
+    g_hdrs = gz_hdr;
+    g_hdr_count = 1;
+    edge_vary_serialize("Accept-Encoding", mock_lookup, nullptr, gz->vary_vals, sizeof(gz->vary_vals));
+
+    EdgeEntry *br = edge_store_alloc(&g_store, "GET\nh\n/a", "");
+    strcpy(br->vary_names, "Accept-Encoding");
+    g_hdrs = br_hdr;
+    edge_vary_serialize("Accept-Encoding", mock_lookup, nullptr, br->vary_vals, sizeof(br->vary_vals));
+
+    g_hdrs = gz_hdr; // a gzip request selects the gzip variant
+    TEST_ASSERT_EQUAL_PTR(gz, edge_store_find(&g_store, "GET\nh\n/a", mock_lookup, nullptr, 1));
+    g_hdrs = br_hdr; // a br request selects the br variant
+    TEST_ASSERT_EQUAL_PTR(br, edge_store_find(&g_store, "GET\nh\n/a", mock_lookup, nullptr, 1));
+    g_hdrs = nullptr; // identity (no Accept-Encoding) matches neither variant
+    g_hdr_count = 0;
+    TEST_ASSERT_NULL(edge_store_find(&g_store, "GET\nh\n/a", mock_lookup, nullptr, 1));
+
+    // an entry with no Vary matches any request
+    EdgeEntry *plain = edge_store_alloc(&g_store, "GET\nh\n/b", "");
+    g_hdrs = gz_hdr;
+    g_hdr_count = 1;
+    TEST_ASSERT_EQUAL_PTR(plain, edge_store_find(&g_store, "GET\nh\n/b", mock_lookup, nullptr, 1));
+}
+
 static void test_entry_freshness_resolution()
 {
     edge_store_init(&g_store);
@@ -374,6 +407,7 @@ int main()
     RUN_TEST(test_store_lru_evict);
     RUN_TEST(test_store_ttl_sweep);
     RUN_TEST(test_store_purge);
+    RUN_TEST(test_store_find_vary);
     RUN_TEST(test_entry_freshness_resolution);
     RUN_TEST(test_storeability);
     RUN_TEST(test_build_conditional);

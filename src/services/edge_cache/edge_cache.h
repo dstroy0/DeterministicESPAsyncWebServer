@@ -109,6 +109,7 @@ struct EdgeEntry
     bool used;
     char key[DETWS_EDGE_KEY_MAX];         ///< canonical key (collision-safe exact compare)
     uint8_t digest[32];                   ///< ssh_sha256(key) - the L2 dbm key
+    char vary_names[DETWS_EDGE_VARY_MAX]; ///< the response Vary header value (field-name list), "" if none
     char vary_vals[DETWS_EDGE_VARY_MAX];  ///< serialized request Vary values at store time (secondary key)
     int status;                           ///< stored response status (200)
     char content_type[64];                ///< Content-Type to replay
@@ -160,6 +161,15 @@ EdgeEntry *edge_store_alloc(EdgeCacheStore *s, const char *canon, const char *va
  * @return the entry, or nullptr on a miss. Freshness is the caller's decision (see ::edge_entry_fresh).
  */
 EdgeEntry *edge_store_lookup(EdgeCacheStore *s, const char *canon, const char *vary_key, uint32_t now_ms);
+
+/**
+ * @brief Vary-aware lookup: find the entry for @p canon whose stored `Vary` field-name list, serialized
+ *        against the current request (via @p lookup), matches the values seen at store time.
+ *
+ * This resolves the secondary key the caller cannot precompute (the Vary names come from the stored
+ * response). @return the matching variant (touched to MRU), or nullptr.
+ */
+EdgeEntry *edge_store_find(EdgeCacheStore *s, const char *canon, EdgeHdrLookup lookup, void *ctx, uint32_t now_ms);
 
 /** @brief Resolve and store an entry's freshness (lifetime with heuristic / default fallback + age). */
 void edge_entry_set_freshness(EdgeEntry *e, const DetwsCacheControl *cc, bool shared, int64_t date_epoch,

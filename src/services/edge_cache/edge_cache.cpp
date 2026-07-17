@@ -460,6 +460,28 @@ EdgeEntry *edge_store_lookup(EdgeCacheStore *s, const char *canon, const char *v
     return nullptr;
 }
 
+EdgeEntry *edge_store_find(EdgeCacheStore *s, const char *canon, EdgeHdrLookup lookup, void *ctx, uint32_t now_ms)
+{
+    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    {
+        EdgeEntry *e = &s->entries[i];
+        if (!e->used || strcmp(e->key, canon) != 0)
+            continue;
+        char cur[DETWS_EDGE_VARY_MAX];
+        // re-serialize the current request against this variant's Vary names (empty names -> "")
+        if (!edge_vary_serialize(e->vary_names, lookup, ctx, cur, sizeof(cur)))
+            continue;
+        if (strcmp(cur, e->vary_vals) == 0)
+        {
+            lru_unlink(s, i);
+            lru_push_front(s, i);
+            e->last_used_ms = now_ms;
+            return e;
+        }
+    }
+    return nullptr;
+}
+
 void edge_entry_set_freshness(EdgeEntry *e, const DetwsCacheControl *cc, bool shared, int64_t date_epoch,
                               int64_t expires_epoch, int64_t last_modified_epoch, int32_t age_hdr,
                               int64_t response_time_epoch, uint32_t now_ms)
