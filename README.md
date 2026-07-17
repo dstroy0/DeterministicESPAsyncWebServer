@@ -669,7 +669,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `ETAG`              |        0.0-73.9 KB |      0.0-16.5 KB |
 | L7    | `WEBDAV`            |       26.2-66.6 KB |     38.2-38.7 KB |
 | L7    | `VFS`               |            42.1 KB |          19.6 KB |
-| L7    | `RANGE`             |        0.6-41.1 KB |      0.0-15.2 KB |
+| L7    | `RANGE`             |        0.6-41.2 KB |      0.0-15.2 KB |
 | L7    | `UPLOAD`            |            41.0 KB |          24.3 KB |
 | L7    | `OPCUA_CLIENT`      |        6.8-29.9 KB |     10.0-29.0 KB |
 | L7    | `IFACE_BRIDGE`      |            26.9 KB |          16.0 KB |
