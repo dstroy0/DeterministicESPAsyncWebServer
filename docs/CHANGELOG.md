@@ -2,6 +2,26 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### Bug Fixes
+
+- make the dispatch 405/Allow tests CSRF-aware (native_codeql) ([`619ab3f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/619ab3fc26627f2db3d27f9db1a51a2402b4bb06))
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`f3f10e7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f3f10e74a970a00859f94881e849049cdc098ec5))
+- update CHANGELOG.md [skip ci] ([`9ad9aa2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9ad9aa275714153ea25674069b81199489bc6d97))
+
+### Changes
+
+- Bump version: 6.27.0 → 6.27.1 ([`4bbeac5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4bbeac56e05d9e9800c45db39dfb74976a2350fb))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`dddfe37`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/dddfe37dc9e2c33e86acb0b4548a702a654a13ff))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f2d6a4a`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f2d6a4a5a3854db7e83be70ca765baa2618649f0))
+
 ## [6.27.0] - 2026-07-17
 
 <details>
