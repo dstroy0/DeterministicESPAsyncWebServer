@@ -3327,6 +3327,9 @@
 #if DETWS_ENABLE_EDGE_CACHE && !DETWS_ENABLE_HTTP_CACHE
 #error "DETWS_ENABLE_EDGE_CACHE requires DETWS_ENABLE_HTTP_CACHE"
 #endif
+#if DETWS_ENABLE_EDGE_CACHE && !DETWS_ENABLE_HTTP_CLIENT
+#error "DETWS_ENABLE_EDGE_CACHE requires DETWS_ENABLE_HTTP_CLIENT (it fetches the upstream origin)"
+#endif
 #ifndef DETWS_EDGE_CACHE_SLOTS
 #define DETWS_EDGE_CACHE_SLOTS 8 // L1 RAM entries (each holds one cached object; bounded, no heap)
 #endif
