@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`1141abc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1141abc11b25608efffac73b2ca5ff4e1564db27))
 - update test report + coverage [skip ci] ([`cedf8b7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cedf8b783885c9cf96b18400b80d675f44b8a7a8))
 - update CHANGELOG.md [skip ci] ([`5dbd9fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5dbd9fa34c9ef095c7659283eb41dc756bf9993e))
 - update test report + coverage [skip ci] ([`95e2ec3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/95e2ec375b130e1f18b1be306b843495c9777467))
@@ -22,6 +23,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3a45865`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a45865af9c92948f1cfb6d70cf57951d9294731))
 - update ESP32 build footprints [skip ci] ([`38a4ffc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38a4ffc2a91c7f08ca9ad5a311f93db78b2e1a84))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`09a3734`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09a3734c247182cbbcea942cc1a9a1c525e3d232))
 - update ESP32 build footprints [skip ci] ([`3709033`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3709033ae49b3640bf0914e3b27263e36e63ce9e))
@@ -34,6 +36,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Performance
 
+- configurable per-TU opt-level macro + P4/C3 HW-accel roadmap ([`9d23f2c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9d23f2ce64effc92a605c7703ef80ed9a89c1a78))
 - Ed25519 fixed-base comb - sign 85->19ms (4.4x) on the S3 ([`eb91081`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb91081246ad3abf87922265f1d91ae1ff16e257))
 - cache the RSA host-key context - 440->270ms sign (1.63x) ([`bba73a4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bba73a408c71fc42e510ba83a6ea83033e20caf5))
 - route SSH P-256 (ECDSA/ECDH) through the S3 HW MODMULT (~2.7-2.9x) ([`6794933`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6794933ea255f62e15f0babb001445b8a74bcc1e))
