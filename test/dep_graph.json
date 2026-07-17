@@ -1812,6 +1812,26 @@
 "native_upload",
 "native_webdav_handler"
 ],
+"src/server/http_range.cpp": [
+"native_app",
+"native_diag",
+"native_edge_cache",
+"native_h3_server",
+"native_keepalive",
+"native_range",
+"native_upload",
+"native_webdav_handler"
+],
+"src/server/http_range.h": [
+"native_app",
+"native_diag",
+"native_edge_cache",
+"native_h3_server",
+"native_keepalive",
+"native_range",
+"native_upload",
+"native_webdav_handler"
+],
 "src/server/middleware.cpp": [
 "native_app",
 "native_diag",
