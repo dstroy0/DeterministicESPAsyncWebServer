@@ -194,6 +194,24 @@ uint32_t edge_store_purge_prefix(EdgeCacheStore *s, const char *prefix);
 bool edge_is_storeable(int status, const char *method, const DetwsCacheControl *cc, const char *vary_header,
                        size_t body_len);
 
+// --- conditional revalidation (RFC 9111 sec 4.3) -------------------------------------------------
+
+/**
+ * @brief Build the conditional-request header lines for revalidating @p e (`If-None-Match` from its
+ *        ETag and/or `If-Modified-Since` from its Last-Modified), into @p out.
+ * @return bytes written (0 if the entry carries no validator, or on overflow).
+ */
+size_t edge_build_conditional(const EdgeEntry *e, char *out, size_t cap);
+
+/**
+ * @brief Apply an origin `304 Not Modified` to a stored entry: recompute its freshness from the 304
+ *        response headers and adopt any validators it carried, keeping the stored body (RFC 9111 4.3.4).
+ *
+ * @p new_hdrs / @p hdr_len are the 304 response head; @p response_time_epoch is when it arrived (-1 with
+ * no wall clock); @p now_ms is the monotonic clock.
+ */
+void edge_apply_304(EdgeEntry *e, const char *new_hdrs, size_t hdr_len, int64_t response_time_epoch, uint32_t now_ms);
+
 #endif // DETWS_ENABLE_EDGE_CACHE
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_EDGE_CACHE_H

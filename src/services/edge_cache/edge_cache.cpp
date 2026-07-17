@@ -551,4 +551,75 @@ bool edge_is_storeable(int status, const char *method, const DetwsCacheControl *
     return true;
 }
 
+// --- conditional revalidation --------------------------------------------------------------------
+
+namespace
+{
+// Append "<name>: <value>\r\n" to out[*pos..cap). False (and no write) on overflow.
+bool hdr_line(char *out, size_t *pos, size_t cap, const char *name, const char *value)
+{
+    return k_append(out, pos, cap, name, false) && k_append(out, pos, cap, ": ", false) &&
+           k_append(out, pos, cap, value, false) && k_append(out, pos, cap, "\r\n", false);
+}
+} // namespace
+
+size_t edge_build_conditional(const EdgeEntry *e, char *out, size_t cap)
+{
+    if (!out || cap == 0)
+        return 0;
+    size_t pos = 0;
+    if (e->etag[0] && !hdr_line(out, &pos, cap, "If-None-Match", e->etag))
+        return 0;
+    if (e->last_modified[0] && !hdr_line(out, &pos, cap, "If-Modified-Since", e->last_modified))
+        return 0;
+    out[pos] = '\0';
+    return pos;
+}
+
+void edge_apply_304(EdgeEntry *e, const char *new_hdrs, size_t hdr_len, int64_t response_time_epoch, uint32_t now_ms)
+{
+    char v[128];
+    DetwsCacheControl cc;
+    if (edge_header_value(new_hdrs, hdr_len, "Cache-Control", v, sizeof(v)))
+        cache_control_parse(v, strlen(v), &cc);
+    else
+        cache_control_init(&cc);
+
+    int64_t date = -1;
+    if (edge_header_value(new_hdrs, hdr_len, "Date", v, sizeof(v)))
+        date = edge_parse_http_date(v, strlen(v));
+    int64_t expires = -1;
+    if (edge_header_value(new_hdrs, hdr_len, "Expires", v, sizeof(v)))
+        expires = edge_parse_http_date(v, strlen(v));
+
+    int32_t age = 0;
+    if (edge_header_value(new_hdrs, hdr_len, "Age", v, sizeof(v)))
+    {
+        long a = 0;
+        bool any = false;
+        for (const char *p = v; *p >= '0' && *p <= '9'; p++)
+        {
+            a = a * 10 + (*p - '0');
+            any = true;
+        }
+        if (any)
+            age = (int32_t)a;
+    }
+
+    // Adopt any validators the 304 carried (RFC 9111 4.3.4: the newer representation metadata wins).
+    if (edge_header_value(new_hdrs, hdr_len, "ETag", v, sizeof(v)) && strlen(v) < sizeof(e->etag))
+        memcpy(e->etag, v, strlen(v) + 1);
+    int64_t last_mod = -1;
+    if (edge_header_value(new_hdrs, hdr_len, "Last-Modified", v, sizeof(v)))
+    {
+        last_mod = edge_parse_http_date(v, strlen(v));
+        if (strlen(v) < sizeof(e->last_modified))
+            memcpy(e->last_modified, v, strlen(v) + 1);
+    }
+    else if (e->last_modified[0])
+        last_mod = edge_parse_http_date(e->last_modified, strlen(e->last_modified));
+
+    edge_entry_set_freshness(e, &cc, true, date, expires, last_mod, age, response_time_epoch, now_ms);
+}
+
 #endif // DETWS_ENABLE_EDGE_CACHE

@@ -313,6 +313,47 @@ static void test_storeability()
     TEST_ASSERT_FALSE(edge_is_storeable(200, "GET", &cc, nullptr, DETWS_EDGE_BODY_MAX + 1)); // oversize
 }
 
+// --- conditional revalidation --------------------------------------------------------------------
+
+static void test_build_conditional()
+{
+    edge_store_init(&g_store);
+    EdgeEntry *e = edge_store_alloc(&g_store, "GET\nh\n/a", "");
+    strcpy(e->etag, "\"v1\"");
+    strcpy(e->last_modified, "Sun, 06 Nov 1994 08:49:37 GMT");
+    char out[128];
+    size_t n = edge_build_conditional(e, out, sizeof(out));
+    TEST_ASSERT_EQUAL_STRING("If-None-Match: \"v1\"\r\nIf-Modified-Since: Sun, 06 Nov 1994 08:49:37 GMT\r\n", out);
+    TEST_ASSERT_EQUAL_UINT(strlen(out), n);
+
+    EdgeEntry *no_val = edge_store_alloc(&g_store, "GET\nh\n/b", "");
+    TEST_ASSERT_EQUAL_UINT(0, edge_build_conditional(no_val, out, sizeof(out))); // no validator
+}
+
+static void test_apply_304()
+{
+    edge_store_init(&g_store);
+    DetwsCacheControl s10;
+    cache_control_init(&s10);
+    s10.max_age = 10;
+    EdgeEntry *e = edge_store_alloc(&g_store, "GET\nh\n/a", "");
+    e->status = 200;
+    e->body_len = 3;
+    memcpy(e->body, "abc", 3);
+    strcpy(e->etag, "\"v1\"");
+    edge_entry_set_freshness(e, &s10, true, -1, -1, -1, 0, -1, 1000);
+    TEST_ASSERT_FALSE(edge_entry_fresh(e, 21000)); // stale 20 s later
+
+    // origin answers the revalidation with 304 + a fresh max-age and a stronger validator
+    const char *r304 = "HTTP/1.1 304 Not Modified\r\nETag: \"v2\"\r\nCache-Control: max-age=100\r\n\r\n";
+    edge_apply_304(e, r304, strlen(r304), -1, 21000);
+    TEST_ASSERT_TRUE(edge_entry_fresh(e, 21000));         // refreshed
+    TEST_ASSERT_TRUE(edge_entry_fresh(e, 21000 + 99000)); // for the new lifetime
+    TEST_ASSERT_EQUAL_STRING("\"v2\"", e->etag);          // validator adopted
+    TEST_ASSERT_EQUAL_MEMORY("abc", e->body, 3);          // body kept
+    TEST_ASSERT_EQUAL_INT32(100, (int32_t)e->lifetime_s);
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -335,5 +376,7 @@ int main()
     RUN_TEST(test_store_purge);
     RUN_TEST(test_entry_freshness_resolution);
     RUN_TEST(test_storeability);
+    RUN_TEST(test_build_conditional);
+    RUN_TEST(test_apply_304);
     return UNITY_END();
 }
