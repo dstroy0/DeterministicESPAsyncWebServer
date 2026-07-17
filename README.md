@@ -591,7 +591,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 </picture>
 </a>
 
-> Not drawn (so the tree stays uncrossed): **`DETWS_ENABLE_RANGE`** also need `DETWS_ENABLE_FILE_SERVING`; **`DETWS_ENABLE_EDGE_CACHE`** also need `DETWS_ENABLE_HTTP_CLIENT`; **`DETWS_ENABLE_EDGE_ORIGIN_TLS`, `DETWS_ENABLE_HTTP_CLIENT_TLS`, `DETWS_ENABLE_MQTT_TLS`, `DETWS_ENABLE_WS_CLIENT_TLS`** also need `DETWS_ENABLE_TLS`.
+> Not drawn (so the tree stays uncrossed): **`DETWS_ENABLE_RANGE`** also need `DETWS_ENABLE_EDGE_CACHE`; **`DETWS_ENABLE_EDGE_CACHE`** also need `DETWS_ENABLE_HTTP_CLIENT`; **`DETWS_ENABLE_EDGE_ORIGIN_TLS`, `DETWS_ENABLE_HTTP_CLIENT_TLS`, `DETWS_ENABLE_MQTT_TLS`, `DETWS_ENABLE_WS_CLIENT_TLS`** also need `DETWS_ENABLE_TLS`.
 
 <details><summary><b>Auto-derived flags</b> - enabling the left flag turns the right one on for you; do not set it yourself.</summary>
 
@@ -626,7 +626,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 
 </details>
 
-_29 hard dependencies, 3 PSRAM gates, 16 derived flags._
+_30 hard dependencies, 3 PSRAM gates, 16 derived flags._
 
 <!-- END GENERATED FLAG DEPS -->
 
@@ -680,7 +680,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `IFACE_BRIDGE`      |            26.9 KB |          16.0 KB |
 | L7    | `NTP`               |            24.6 KB |          17.7 KB |
 | L7    | `MDNS`              |            24.4 KB |          17.1 KB |
-| L7    | `EDGE_CACHE`        |            20.3 KB |          51.4 KB |
+| L7    | `EDGE_CACHE`        |            20.4 KB |          51.4 KB |
 | L7    | `TIME_SOURCE`       |            20.2 KB |          16.8 KB |
 | L7    | `DASHBOARD`         |            19.9 KB |          15.6 KB |
 | L7    | `ADS`               |            18.6 KB |         < 0.5 KB |
@@ -688,13 +688,13 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `RTC`               |            13.5 KB |         < 0.5 KB |
 | L7    | `OIDC`              |            13.0 KB |          32.8 KB |
 | L7    | `OAUTH2`            |            12.1 KB |          37.5 KB |
-| L7    | `WEBHOOK`           |             9.9 KB |          34.5 KB |
+| L7    | `WEBHOOK`           |            10.0 KB |          34.5 KB |
 | L7    | `RELAY`             |             9.3 KB |          49.0 KB |
 | L7    | `SNMP`              |             8.2 KB |          27.3 KB |
 | L7    | `TELEMETRY`         |             8.2 KB |          15.5 KB |
 | L7    | `OPCUA`             |         6.8-7.5 KB |     10.0-25.3 KB |
-| L7    | `PROVISIONING`      |             6.9 KB |          16.7 KB |
-| L7    | `DNS_RESOLVER`      |             5.3 KB |          16.5 KB |
+| L7    | `PROVISIONING`      |             7.0 KB |          16.7 KB |
+| L7    | `DNS_RESOLVER`      |             5.4 KB |          16.5 KB |
 | L7    | `COAP`              |             5.0 KB |          17.7 KB |
 | L7    | `OTA`               |             4.7 KB |          35.1 KB |
 | L7    | `CONFIG_IO`         |             4.4 KB |          15.3 KB |

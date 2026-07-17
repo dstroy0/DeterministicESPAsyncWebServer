@@ -774,7 +774,9 @@ src/
 │   │   ├── edge_cache_sd.cpp
 │   │   ├── edge_cache_sd.h
 │   │   ├── edge_fetch.cpp
-│   │   └── edge_fetch.h
+│   │   ├── edge_fetch.h
+│   │   ├── edge_mesh.cpp
+│   │   └── edge_mesh.h
 │   ├── enip/  (enip.h, enip.cpp)
 │   ├── enocean/  (enocean.h, enocean.cpp)
 │   ├── espnow/  (espnow.h, espnow.cpp)
@@ -1038,10 +1040,10 @@ Feature Tables workflow from `docs/footprints.json`.
 | `NRF24+GATEWAY` | `Foundation/12.Nrf24Gateway` | 276,105 | 21,680 |
 | `LORA+GATEWAY` | `Foundation/11.LoRaGateway` | 276,329 | 21,688 |
 | `PCA9685` | `L7-Application/65.Pca9685` | 284,601 | 21,800 |
-| `ADS1115` | `L7-Application/66.Ads1115` | 286,841 | 21,800 |
-| `SHT3X` | `L7-Application/64.Sht3x` | 286,909 | 21,800 |
+| `ADS1115` | `L7-Application/66.Ads1115` | 286,921 | 21,800 |
 | `INA219` | `L7-Application/67.Ina219` | 287,001 | 21,800 |
-| `MPR121` | `L7-Application/63.Mpr121` | 287,609 | 21,800 |
+| `SHT3X` | `L7-Application/64.Sht3x` | 287,029 | 21,800 |
+| `MPR121` | `L7-Application/63.Mpr121` | 287,693 | 21,808 |
 | `PN532+GATEWAY` | `Foundation/14.NfcGateway` | 288,129 | 21,920 |
 | `core/23.EthernetW5500` | `Foundation/23.EthernetW5500` | 469,573 | 73,672 |
 | `DNS_SERVER` | `L7-Application/60.DnsServer` | 725,677 | 45,976 |
@@ -1051,11 +1053,11 @@ Feature Tables workflow from `docs/footprints.json`.
 | `STATSD` | `L7-Application/59.StatsdMetrics` | 728,425 | 45,088 |
 | `COAP+COAP_OBSERVE` | `L7-Application/27.CoapObserve` | 729,369 | 46,104 |
 | `ESPNOW` | `L7-Application/53.EspNow` | 731,293 | 43,576 |
-| `DNC` | `L7-Application/69.EthernetDnc` | 733,829 | 61,112 |
-| `HTTP_CLIENT` | `L7-Application/23.HttpClient` | 734,501 | 63,160 |
-| `SMTP` | `L7-Application/57.SmtpAlert` | 734,637 | 61,112 |
-| `MQTT` | `L7-Application/24.MqttClient` | 736,341 | 65,320 |
-| `SMB` | `L7-Application/68.SmbFileClient` | 742,441 | 65,208 |
+| `DNC` | `L7-Application/69.EthernetDnc` | 733,857 | 61,112 |
+| `HTTP_CLIENT` | `L7-Application/23.HttpClient` | 734,573 | 63,160 |
+| `SMTP` | `L7-Application/57.SmtpAlert` | 734,705 | 61,112 |
+| `MQTT` | `L7-Application/24.MqttClient` | 736,413 | 65,320 |
+| `SMB` | `L7-Application/68.SmbFileClient` | 742,469 | 65,208 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/58.NtpServer` | 748,109 | 46,668 |
 | `ACCEPT_THROTTLE` | `L4-Transport/02.AcceptThrottle` | 752,169 | 81,784 |
 | `core/71.MediaStreaming` | `L7-Application/71.MediaStreaming` | 752,269 | 81,776 |
@@ -1107,18 +1109,18 @@ Feature Tables workflow from `docs/footprints.json`.
 | `WEB_TERMINAL` | `L6-Presentation/10.WebTerminal` | 757,169 | 81,864 |
 | `GRAPHQL` | `L7-Application/52.GraphQL` | 757,285 | 86,192 |
 | `CONFIG_STORE+CONFIG_IO` | `L7-Application/42.ConfigExport` | 757,329 | 81,844 |
-| `OTA` | `L7-Application/16.OTA` | 757,625 | 102,128 |
+| `OTA` | `L7-Application/16.OTA` | 757,669 | 102,128 |
 | `COAP` | `L7-Application/13.CoAP` | 758,001 | 84,296 |
-| `DNS_RESOLVER` | `L7-Application/48.DnsResolver` | 758,317 | 83,064 |
-| `PROVISIONING` | `L7-Application/17.Provisioning` | 759,961 | 83,348 |
+| `DNS_RESOLVER` | `L7-Application/48.DnsResolver` | 758,329 | 83,064 |
+| `PROVISIONING` | `L7-Application/17.Provisioning` | 760,021 | 83,348 |
 | `OPCUA` | `L7-Application/55.OpcUa` | 760,497 | 92,064 |
 | `core/02.Advanced` | `Foundation/02.Advanced` | 761,093 | 81,888 |
 | `TELEMETRY` | `L7-Application/34.Telemetry` | 761,201 | 82,100 |
 | `SNMP` | `L7-Application/14.SNMP` | 761,237 | 94,184 |
-| `RELAY` | `L7-Application/70.PortForward` | 762,337 | 116,392 |
-| `HTTP_CLIENT+WEBHOOK` | `L7-Application/46.Webhook` | 762,985 | 101,536 |
+| `RELAY` | `L7-Application/70.PortForward` | 762,365 | 116,392 |
+| `HTTP_CLIENT+WEBHOOK` | `L7-Application/46.Webhook` | 763,053 | 101,536 |
 | `PROMISC+FORWARD+ETHERNET` | `Foundation/21.WifiCapture` | 764,637 | 47,520 |
-| `OAUTH2+HTTP_CLIENT` | `L7-Application/54.OAuth2` | 765,217 | 104,600 |
+| `OAUTH2+HTTP_CLIENT` | `L7-Application/54.OAuth2` | 765,285 | 104,600 |
 | `OIDC` | `L7-Application/50.OidcAuth` | 766,149 | 99,824 |
 | `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 766,301 | 81,792 |
 | `RTC+TIME_SOURCE+NTP` | `L7-Application/61.Rtc` | 766,653 | 45,372 |
@@ -1128,7 +1130,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `ADS` | `L7-Application/73.AdsClient` | 771,933 | 45,440 |
 | `DASHBOARD` | `L7-Application/35.Dashboard` | 773,173 | 82,152 |
 | `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 773,549 | 83,396 |
-| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT` | `L7-Application/79.EdgeCache` | 773,593 | 118,848 |
+| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT` | `L7-Application/79.EdgeCache` | 773,697 | 118,864 |
 | `MDNS` | `L7-Application/15.mDNS` | 777,813 | 83,680 |
 | `NTP` | `L7-Application/18.SNTP` | 778,073 | 84,328 |
 | `IFACE_BRIDGE` | `L7-Application/75.InterfaceBridge` | 780,393 | 82,624 |
@@ -1146,7 +1148,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `SSH` | `L5-Session/03.SSHHostKey` | 828,645 | 109,156 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/25.WebSocketClient` | 831,745 | 123,620 |
-| `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/25.WebSocketClient` | 831,785 | 107,236 |
+| `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/25.WebSocketClient` | 831,925 | 107,236 |
 | `TLS` | `L6-Presentation/07.SecureWebSocket` | 855,873 | 122,020 |
 | `TLS+TLS_ARENA_SIZE` | `L6-Presentation/07.SecureWebSocket` | 856,485 | 105,652 |
 | `TLS+TLS_RESUMPTION` | `L4-Transport/06.TlsResumption` | 856,693 | 122,180 |
@@ -1265,6 +1267,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_DSHOT` | `0` | Opt-in DShot ESC throttle protocol codec. |
 | `DETWS_ENABLE_DTLS` | `0` | DTLS 1.3 datagram security (RFC 9147) - the record layer. |
 | `DETWS_ENABLE_EDGE_CACHE` | `0` | Opt-in CDN edge-cache tier (DETWS_ENABLE_EDGE_CACHE, requires HTTP_CACHE). |
+| `DETWS_ENABLE_EDGE_MESH` | `0` | Opt-in mesh (sibling-cache) distribution for the edge cache. |
 | `DETWS_ENABLE_EDGE_ORIGIN_TLS` | `0` |  |
 | `DETWS_ENABLE_ENIP` | `0` | EtherNet/IP encapsulation codec (`services/enip`). |
 | `DETWS_ENABLE_ENOCEAN` | `0` | Enable the EnOcean ESP3 serial codec (default off). |
@@ -1579,7 +1582,7 @@ guards at compile time.
 | `DETWS_PQ_INTERNAL_PRIORITY` | `8` | Base FreeRTOS priority for the internal preempting lanes (DMA / forwarding / device access). |
 | `DETWS_PQ_ITEM_SIZE` | `32` | Bytes per preempting-queue item (the posted item must fit). |
 | `DETWS_PQ_STACK` | `4096` | Stack (bytes) for each preempting-queue processing task (ESP32). |
-| `DETWS_PROTO_MAX` | `10` | Size of the protocol-handler dispatch table; must exceed the largest ConnProto id. |
+| `DETWS_PROTO_MAX` | `11` | Size of the protocol-handler dispatch table; must exceed the largest ConnProto id. |
 | `DETWS_RADIO_MAX_TX_DBM` | `0` | Max TX power cap in dBm (2..20); 0 = leave the platform default. |
 | `DETWS_RADIO_WIFI_PS` | `0` | WiFi modem-sleep mode: 0 = none (max perf), 1 = min modem, 2 = max modem. |
 | `DETWS_RELAY_BUF` | `2048` | Per-direction relay buffer size (bytes) for services/relay. |
