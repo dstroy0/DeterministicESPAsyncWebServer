@@ -4796,16 +4796,16 @@
 #endif
 
 /**
- * @brief HTTP Range requests / 206 Partial Content for served files.
+ * @brief HTTP Range requests / 206 Partial Content (requires DETWS_ENABLE_FILE_SERVING or
+ *        DETWS_ENABLE_EDGE_CACHE).
  *
- * Default off. When set (requires DETWS_ENABLE_FILE_SERVING), serve_file() /
- * serve_static() honor a single-range `Range: bytes=...` request header: they
- * answer `206 Partial Content` with a `Content-Range` header and stream only the
- * requested bytes (seeking the file to the start offset), advertise
- * `Accept-Ranges: bytes` on full responses, and answer an unsatisfiable range
- * with `416 Range Not Satisfiable`. This enables resumable downloads and media
- * seeking. Multi-range (multipart/byteranges) requests are not supported - the
- * server falls back to a full 200 response, which is RFC 7233 §3.1 compliant.
+ * Default off. When set, serve_file() / serve_static() and the CDN edge cache honor a single-range
+ * `Range: bytes=...` request header: they answer `206 Partial Content` with a `Content-Range` header
+ * and stream only the requested bytes (file serving seeks the file; the edge cache windows the cached
+ * body), advertise `Accept-Ranges: bytes` on full responses, and answer an unsatisfiable range with
+ * `416 Range Not Satisfiable`. This enables resumable downloads and media seeking. Multi-range
+ * (multipart/byteranges) requests are not supported - the server falls back to a full 200 response,
+ * which is RFC 7233 §3.1 compliant. The parser is shared (server/http_range.h).
  */
 #ifndef DETWS_ENABLE_RANGE
 #define DETWS_ENABLE_RANGE 0
@@ -5714,8 +5714,9 @@ enum class DetIface : uint8_t
 #error "DeterministicESPAsyncWebServer: DETWS_KEEPALIVE_MAX_REQUESTS must be >= 1 when DETWS_ENABLE_KEEPALIVE is set"
 #endif
 
-#if DETWS_ENABLE_RANGE && !DETWS_ENABLE_FILE_SERVING
-#error "DeterministicESPAsyncWebServer: DETWS_ENABLE_RANGE requires DETWS_ENABLE_FILE_SERVING"
+#if DETWS_ENABLE_RANGE && !DETWS_ENABLE_FILE_SERVING && !DETWS_ENABLE_EDGE_CACHE
+#error                                                                                                                 \
+    "DeterministicESPAsyncWebServer: DETWS_ENABLE_RANGE requires DETWS_ENABLE_FILE_SERVING or DETWS_ENABLE_EDGE_CACHE"
 #endif
 
 #if DETWS_ENABLE_MTLS && !DETWS_ENABLE_TLS

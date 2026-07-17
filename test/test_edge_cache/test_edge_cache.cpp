@@ -4,6 +4,7 @@
 // Pure host tests for the CDN edge-cache engine (services/edge_cache): response header-field access,
 // HTTP-date parsing, RFC 9111 freshness, and the cache key + digest + Vary secondary key.
 
+#include "server/http_range.h" // http_parse_byte_range (Range/206 serving from the cache)
 #include "services/edge_cache/edge_cache.h"
 #include "services/httpcache/httpcache.h"
 #include <stdio.h>
@@ -399,6 +400,69 @@ static void test_apply_304()
     TEST_ASSERT_EQUAL_INT32(100, (int32_t)e->lifetime_s);
 }
 
+// --- Range parsing (http_parse_byte_range) - the math behind serving 206 Partial Content from a cached
+// body. Return: 0 = no usable range (full 200), 1 = satisfiable [start,end], -1 = unsatisfiable (416). ---
+
+void test_range_explicit_and_open_ended()
+{
+    size_t s = 0;
+    size_t e = 0;
+    // bytes=A-B -> inclusive window.
+    TEST_ASSERT_EQUAL_INT(1, http_parse_byte_range("bytes=10-40", 100, &s, &e));
+    TEST_ASSERT_EQUAL_UINT(10, s);
+    TEST_ASSERT_EQUAL_UINT(40, e);
+    // bytes=A- -> A to the last byte.
+    TEST_ASSERT_EQUAL_INT(1, http_parse_byte_range("bytes=90-", 100, &s, &e));
+    TEST_ASSERT_EQUAL_UINT(90, s);
+    TEST_ASSERT_EQUAL_UINT(99, e);
+    // end past EOF clamps to the last byte.
+    TEST_ASSERT_EQUAL_INT(1, http_parse_byte_range("bytes=10-9999", 100, &s, &e));
+    TEST_ASSERT_EQUAL_UINT(10, s);
+    TEST_ASSERT_EQUAL_UINT(99, e);
+    // the whole body.
+    TEST_ASSERT_EQUAL_INT(1, http_parse_byte_range("bytes=0-99", 100, &s, &e));
+    TEST_ASSERT_EQUAL_UINT(0, s);
+    TEST_ASSERT_EQUAL_UINT(99, e);
+}
+
+void test_range_suffix()
+{
+    size_t s = 0;
+    size_t e = 0;
+    // bytes=-N -> the last N bytes.
+    TEST_ASSERT_EQUAL_INT(1, http_parse_byte_range("bytes=-20", 100, &s, &e));
+    TEST_ASSERT_EQUAL_UINT(80, s);
+    TEST_ASSERT_EQUAL_UINT(99, e);
+    // N >= size -> the whole body.
+    TEST_ASSERT_EQUAL_INT(1, http_parse_byte_range("bytes=-500", 100, &s, &e));
+    TEST_ASSERT_EQUAL_UINT(0, s);
+    TEST_ASSERT_EQUAL_UINT(99, e);
+}
+
+void test_range_unsatisfiable()
+{
+    size_t s = 0;
+    size_t e = 0;
+    TEST_ASSERT_EQUAL_INT(-1, http_parse_byte_range("bytes=100-200", 100, &s, &e)); // start past EOF
+    TEST_ASSERT_EQUAL_INT(-1, http_parse_byte_range("bytes=50-10", 100, &s, &e));   // start > end
+    TEST_ASSERT_EQUAL_INT(-1, http_parse_byte_range("bytes=-0", 100, &s, &e));      // last 0 bytes
+    TEST_ASSERT_EQUAL_INT(-1, http_parse_byte_range("bytes=-", 100, &s, &e));       // "-" alone
+    TEST_ASSERT_EQUAL_INT(-1, http_parse_byte_range("bytes=0-0", 0, &s, &e));       // empty body
+    // Overflow saturates (never wraps) -> resolves as past-EOF -> unsatisfiable.
+    TEST_ASSERT_EQUAL_INT(-1, http_parse_byte_range("bytes=99999999999999999999-", 100, &s, &e));
+}
+
+void test_range_ignored_forms()
+{
+    size_t s = 0;
+    size_t e = 0;
+    TEST_ASSERT_EQUAL_INT(0, http_parse_byte_range(nullptr, 100, &s, &e));            // absent
+    TEST_ASSERT_EQUAL_INT(0, http_parse_byte_range("bytes=0-10,20-30", 100, &s, &e)); // multi-range -> full 200
+    TEST_ASSERT_EQUAL_INT(0, http_parse_byte_range("items=0-10", 100, &s, &e));       // wrong unit
+    TEST_ASSERT_EQUAL_INT(0, http_parse_byte_range("bytes=10", 100, &s, &e));         // no dash -> malformed
+    TEST_ASSERT_EQUAL_INT(0, http_parse_byte_range("bytes=10-40x", 100, &s, &e));     // trailing garbage
+}
+
 int main()
 {
     UNITY_BEGIN();
@@ -425,5 +489,9 @@ int main()
     RUN_TEST(test_storeability);
     RUN_TEST(test_build_conditional);
     RUN_TEST(test_apply_304);
+    RUN_TEST(test_range_explicit_and_open_ended);
+    RUN_TEST(test_range_suffix);
+    RUN_TEST(test_range_unsatisfiable);
+    RUN_TEST(test_range_ignored_forms);
     return UNITY_END();
 }

@@ -20,6 +20,7 @@
 #if DETWS_ENABLE_DBM
 #include "services/edge_cache/edge_cache_sd.h" // L2 SD tier
 #endif
+#include "server/http_range.h"                // http_parse_byte_range (Range/206 support)
 #include "services/http_client/http_client.h" // http_client_parse_url
 #include "shared_primitives/mime.h"           // DET_MIME_TEXT_PLAIN
 #include <stdio.h>
@@ -71,6 +72,12 @@ struct EdgeCacheProxyCtx
     EdgeServeCursor serve[MAX_CONNS];
     EdgeFetchTransport transport;
     char reqbuf[MAX_PATH_LEN + MAX_QUERY_LEN + 256]; // scratch for one origin request line (freed by send)
+#if DETWS_ENABLE_RANGE
+    // The client's Range header, captured per slot at middleware time. serve_hit runs for a miss/stale
+    // entry from the poll loop *after* the async fetch has reused http_pool[slot], so the original request
+    // is no longer readable there - the window must be resolved against this captured copy.
+    char range_hdr[MAX_CONNS][48];
+#endif
 #if DETWS_ENABLE_DBM
     DetwsDbm *l2;                      // the persistent L2 tier (nullptr = L1-only)
     uint8_t sd_buf[EDGE_SD_VALUE_MAX]; // serialize/deserialize scratch for one L2 value
@@ -164,7 +171,8 @@ size_t edge_chunk_source(uint8_t *buf, size_t cap, void *ctx)
     return n;
 }
 
-// Serve a real cache entry (200), replaying its validators + Age, tagged with @p xcache.
+// Serve a cache entry, replaying its validators + Age, tagged with @p xcache. A client `Range` request
+// (DETWS_ENABLE_RANGE) is answered with a 206 window (or 416 if unsatisfiable); otherwise a full 200.
 void serve_hit(uint8_t slot, EdgeEntry *e, uint32_t now, const char *xcache)
 {
     EdgeServeCursor *c = &s_ctx.serve[slot];
@@ -172,6 +180,38 @@ void serve_hit(uint8_t slot, EdgeEntry *e, uint32_t now, const char *xcache)
     c->entry = e;
     c->off = 0;
     c->end = e->body_len;
+    int status = 200;
+
+#if DETWS_ENABLE_RANGE
+    const char *range = s_ctx.range_hdr[slot]; // captured at mw time (http_pool[slot] is stale post-fetch)
+    if (range[0])
+    {
+        size_t rs = 0;
+        size_t re = 0;
+        int rr = http_parse_byte_range(range, e->body_len, &rs, &re);
+        if (rr < 0) // syntactically valid but unsatisfiable -> 416, no body window served
+        {
+            char cr[48];
+            snprintf(cr, sizeof(cr), "bytes */%u", (unsigned)e->body_len);
+            s_ctx.server->add_response_header(slot, "Content-Range", cr);
+            c->active = false;
+            c->entry = nullptr;
+            s_ctx.server->send(slot, 416, DET_MIME_TEXT_PLAIN, "Range Not Satisfiable");
+            return;
+        }
+        if (rr > 0) // satisfiable -> 206 with just the requested window [rs, re]
+        {
+            status = 206;
+            c->off = (uint32_t)rs;
+            c->end = (uint32_t)re + 1;
+            char cr[48];
+            snprintf(cr, sizeof(cr), "bytes %u-%u/%u", (unsigned)rs, (unsigned)re, (unsigned)e->body_len);
+            s_ctx.server->add_response_header(slot, "Content-Range", cr);
+        }
+    }
+    s_ctx.server->add_response_header(slot, "Accept-Ranges", "bytes"); // advertise range support
+#endif
+
     s_ctx.server->add_response_header(slot, "X-Cache", xcache);
     if (e->etag[0])
         s_ctx.server->add_response_header(slot, "ETag", e->etag);
@@ -186,7 +226,7 @@ void serve_hit(uint8_t slot, EdgeEntry *e, uint32_t now, const char *xcache)
     snprintf(agebuf, sizeof(agebuf), "%ld", age);
     s_ctx.server->add_response_header(slot, "Age", agebuf);
     const char *ct = e->content_type[0] ? e->content_type : "application/octet-stream";
-    s_ctx.server->send_chunked(slot, 200, ct, edge_chunk_source, c);
+    s_ctx.server->send_chunked(slot, status, ct, edge_chunk_source, c);
 }
 
 // Serve a non-cacheable / non-200 origin response through a transient unindexed store slot, so the
@@ -403,6 +443,14 @@ MwResult edge_cache_mw(uint8_t slot, HttpReq *req)
     if (edge_key_canon("GET", host, req->path, req->query, /*include_query=*/true, canon, sizeof(canon)) == 0)
         return MwResult::MW_NEXT; // key too long -> uncacheable, fail open
 
+#if DETWS_ENABLE_RANGE
+    // Capture the Range header now, while http_pool[slot] is the client request: a miss serves from the
+    // poll after the async fetch has reused that buffer, so serve_hit resolves the window against this copy.
+    const char *rh = http_get_header(req, "Range");
+    strncpy(s_ctx.range_hdr[slot], rh ? rh : "", sizeof(s_ctx.range_hdr[slot]) - 1);
+    s_ctx.range_hdr[slot][sizeof(s_ctx.range_hdr[slot]) - 1] = '\0';
+#endif
+
     uint32_t now = detws_millis();
     EdgeEntry *e = edge_store_find(&s_ctx.store, canon, req_lookup, req, now);
     if (e && edge_entry_fresh(e, now))
@@ -478,6 +526,9 @@ void det_edge_cache_enable(DetWebServer &server)
         s_ctx.pending[i].active = false;
         s_ctx.serve[i].active = false;
         s_ctx.serve[i].entry = nullptr;
+#if DETWS_ENABLE_RANGE
+        s_ctx.range_hdr[i][0] = '\0';
+#endif
     }
     s_ctx.transport.open = t_open;
     s_ctx.transport.send = t_send;

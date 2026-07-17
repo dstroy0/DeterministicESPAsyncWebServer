@@ -8,6 +8,31 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
+## Edge-cache Range on a MISS lost the client's Range header (stale http_pool[slot])
+
+- **Status:** FIXED (2026-07-17). Found by the **HW MISS+Range test** of the new Range/206-from-cache
+  feature on an ESP32-S3 - the exact integration path host tests cannot reach.
+- **Symptom:** a `Range: bytes=15-35` request against a **cold** cache returned the **full 200** body
+  (83 bytes, `HTTP/1.0`, `X-Cache: MISS`) instead of a `206` window. A fresh-**HIT** Range request worked
+  (byte-exact `206`), so range parsing/serving was correct - only the miss path lost the range.
+- **Root cause:** `serve_hit` read the `Range` header from `http_pool[slot]`. On a fresh hit that runs
+  synchronously in dispatch while `http_pool[slot]` is still the client request. But a miss/stale entry is
+  served from the **poll loop after the async origin fetch**, by which point `http_pool[slot]` has been
+  reset/reused (the tell: the miss response was `HTTP/1.0` - `send_chunked`'s version fallback fires because
+  `http_pool[slot].version` is no longer `HTTP_11`), so `Range` (and the version) were gone.
+- **Fix:** capture the client `Range` header at **middleware time** (when `http_pool[slot]` is valid) into a
+  per-slot owned buffer `EdgeCacheProxyCtx::range_hdr[MAX_CONNS][48]`, and resolve the window against that in
+  `serve_hit`. Re-flashed: a cold-MISS `Range: bytes=15-35` now returns `206` + `Content-Range: bytes
+15-35/83` + the byte-exact 21-byte window, and HIT/416/HEAD/`Accept-Ranges` all stay byte-exact.
+- **Related (pre-existing, not fixed here):** the same `http_pool[slot]`-goes-stale-after-the-async-fetch
+  root cause means a miss response is emitted as `HTTP/1.0` (`Connection: close` instead of keep-alive), and
+  `store_response`'s `Vary`-value capture reads the stale request - so a `Vary` response cached on a miss
+  stores an empty/garbage secondary key (it degrades to always-miss-and-refetch for that variant; never
+  serves wrong content). Both are latent efficiency issues present since the RAM tier and want a holistic
+  fix (preserve or snapshot the client request across the suspend); tracked in TODO.md.
+
+---
+
 ## 79.EdgeCache example opened no HTTP listener - server.begin() with no port
 
 - **Status:** FIXED (2026-07-17). Found by the **first HW bring-up** of the edge cache on an ESP32-S3: the

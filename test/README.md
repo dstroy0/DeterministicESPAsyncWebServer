@@ -133,7 +133,7 @@ The native test matrix has **239 environments**, one per feature, generated from
 | `native_dtls_conn` | `ETWS_ENABLE_DTLS=1` | `test_dtls_conn` | DTLS 1.3 server handshake state machine (network_drivers/presentation/dtls/dtls_conn, RFC 9147 sec 5-6): the one-round-trip full handshake (TLS_AES_128_GCM_SHA256 / X25519 / Ed25519) over the DTLS rec... |
 | `native_dtls_hs` | `ETWS_ENABLE_DTLS=1` | `test_dtls_handshake` | DTLS 1.3 handshake framing + reliability (network_drivers/presentation/dtls/dtls_handshake, RFC 9147 sec 5 + 7): the 12-byte DTLS handshake header, overlap-tolerant message reassembly, the ACK message... |
 | `native_dtls_tls13` | `ETWS_ENABLE_DTLS=1` | `test_dtls_tls13` | TLS 1.3 messages the DTLS 1.3 handshake adds to tls13_msg (RFC 8446 sec 4.1.4 / 4.4.1), compiled for the DTLS path (DETWS_ENABLE_DTLS, not HTTP/3): the HelloRetryRequest builder, the cookie extension ... |
-| `native_edge_cache` | `ETWS_ENABLE_HTTP_CACHE=1`, `ETWS_ENABLE_HTTP_CLIENT=1`, `ETWS_ENABLE_EDGE_CACHE=1` | `test_edge_cache`, `test_edge_fetch` | CDN edge-cache engine (services/edge_cache): the pure freshness/validator core (response header-field access, HTTP-date parsing over IMF-fixdate / RFC 850 / asctime, RFC 9111 lifetime + Expires-Date +... |
+| `native_edge_cache` | `ETWS_ENABLE_HTTP_CACHE=1`, `ETWS_ENABLE_HTTP_CLIENT=1`, `ETWS_ENABLE_EDGE_CACHE=1`, `ETWS_ENABLE_RANGE=1` | `test_edge_cache`, `test_edge_fetch` | CDN edge-cache engine (services/edge_cache): the pure freshness/validator core (response header-field access, HTTP-date parsing over IMF-fixdate / RFC 850 / asctime, RFC 9111 lifetime + Expires-Date +... |
 | `native_edge_cache_sd` | `ETWS_ENABLE_WAL=1`, `ETWS_ENABLE_DBM=1`, `ETWS_DBM_VAL_MAX=1024`, `ETWS_ENABLE_HTTP_CACHE=1`, `ETWS_ENABLE_HTTP_CLIENT=1`, `ETWS_ENABLE_EDGE_CACHE=1` | `test_edge_cache_sd` | CDN edge-cache L2 SD-persistence tier (services/edge_cache/edge_cache_sd): the entry <-> dbm-value serialization roundtrip (all response metadata, Vary variants, binary and max-size bodies), the spill... |
 | `native_enip` | `ETWS_ENABLE_ENIP=1` | `test_enip` | EtherNet/IP encapsulation codec (services/enip): the 24-octet header, RegisterSession + SendRRData builders (Common Packet Format), and the SendRRData reply extractor. |
 | `native_enocean` | `ETWS_ENABLE_ENOCEAN=1`, `ETWS_ENOCEAN_MAX_DATA=16` | `test_enocean` | EnOcean ESP3 serial codec (services/enocean), v5 radio plugin: the CRC-8 (poly 0x07) against known answers, a build -> parse round trip, malformed framing (bad sync / header CRC / data CRC), incomplet... |
@@ -529,7 +529,7 @@ We test session and socket race conditions by interleaved function calling:
 
 <!-- BEGIN GENERATED test-directory (run test/gen_test_readme.py) -->
 
-A thorough directory of all **3203 test cases** across **259 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
+A thorough directory of all **3207 test cases** across **260 suites**. Expand a suite to see its test cases, and a test case to see its objective and assertions.
 
 <details>
 <summary><b>test_accept_gate (13 tests)</b></summary>
@@ -7841,6 +7841,68 @@ A thorough directory of all **3203 test cases** across **259 suites**. Expand a 
       * <code>Assert true (detws_dshot_bit_ns(300, false) &gt; 0)</code>
       * <code>Assert true (detws_dshot_bit_ns(1200, true) &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_dshot_bit_ns(999, true));</code>
+  </details>
+
+</details>
+
+<details>
+<summary><b>test_edge_cache (4 tests)</b></summary>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_range_explicit_and_open_ended</b> &mdash; <i>bytes=A-B -> inclusive window.</i></summary>
+
+    * **Objective**: bytes=A-B -> inclusive window.
+    * **Assertions**:
+      * <code>Assert equal int (1, http_parse_byte_range("bytes=10-40", 100, &s, &e))</code>
+      * <code>Assert equal uint (10, s)</code>
+      * <code>Assert equal uint (40, e)</code>
+      * <code>Assert equal int (1, http_parse_byte_range("bytes=90-", 100, &s, &e))</code>
+      * <code>Assert equal uint (90, s)</code>
+      * <code>Assert equal uint (99, e)</code>
+      * <code>Assert equal int (1, http_parse_byte_range("bytes=10-9999", 100, &s, &e))</code>
+      * <code>Assert equal uint (10, s)</code>
+      * <code>Assert equal uint (99, e)</code>
+      * <code>Assert equal int (1, http_parse_byte_range("bytes=0-99", 100, &s, &e))</code>
+      * <code>Assert equal uint (0, s)</code>
+      * <code>Assert equal uint (99, e)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_range_suffix</b> &mdash; <i>bytes=-N -> the last N bytes.</i></summary>
+
+    * **Objective**: bytes=-N -> the last N bytes.
+    * **Assertions**:
+      * <code>Assert equal int (1, http_parse_byte_range("bytes=-20", 100, &s, &e))</code>
+      * <code>Assert equal uint (80, s)</code>
+      * <code>Assert equal uint (99, e)</code>
+      * <code>Assert equal int (1, http_parse_byte_range("bytes=-500", 100, &s, &e))</code>
+      * <code>Assert equal uint (0, s)</code>
+      * <code>Assert equal uint (99, e)</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_range_unsatisfiable</b> &mdash; <i>Overflow saturates (never wraps) -> resolves as past-EOF -> unsatisfiable.</i></summary>
+
+    * **Objective**: Overflow saturates (never wraps) -> resolves as past-EOF -> unsatisfiable.
+    * **Assertions**:
+      * <code>Assert equal int (-1, http_parse_byte_range("bytes=100-200", 100, &s, &e))</code>
+      * <code>Assert equal int (-1, http_parse_byte_range("bytes=50-10", 100, &s, &e))</code>
+      * <code>Assert equal int (-1, http_parse_byte_range("bytes=-0", 100, &s, &e))</code>
+      * <code>Assert equal int (-1, http_parse_byte_range("bytes=-", 100, &s, &e))</code>
+      * <code>Assert equal int (-1, http_parse_byte_range("bytes=0-0", 0, &s, &e))</code>
+      * <code>Assert equal int (-1, http_parse_byte_range("bytes=99999999999999999999-", 100, &s, &e))</code>
+  </details>
+
+  <details style="margin-left: 20px;">
+    <summary><b>test_range_ignored_forms</b> &mdash; <i>Range ignored forms</i></summary>
+
+    * **Objective**: Range ignored forms
+    * **Assertions**:
+      * <code>Assert equal int (0, http_parse_byte_range(nullptr, 100, &s, &e))</code>
+      * <code>Assert equal int (0, http_parse_byte_range("bytes=0-10,20-30", 100, &s, &e))</code>
+      * <code>Assert equal int (0, http_parse_byte_range("items=0-10", 100, &s, &e))</code>
+      * <code>Assert equal int (0, http_parse_byte_range("bytes=10", 100, &s, &e))</code>
+      * <code>Assert equal int (0, http_parse_byte_range("bytes=10-40x", 100, &s, &e))</code>
   </details>
 
 </details>

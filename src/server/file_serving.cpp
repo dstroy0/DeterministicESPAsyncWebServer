@@ -16,6 +16,7 @@
 #include "dwserver.h"
 #include "network_drivers/transport/tcp.h" // conn_pool, det_conn_*, TcpConn/ConnState
 #include "server/dwserver_internal.h"
+#include "server/http_range.h"      // http_parse_byte_range (shared with the edge cache)
 #include "shared_primitives/mime.h" // mime_type, DET_MIME_*
 #include <stdio.h>                  // snprintf, sscanf
 #include <string.h>                 // strncasecmp, strchr, strstr, strncmp, strnlen
@@ -24,85 +25,6 @@
 // ---------------------------------------------------------------------------
 // File serving
 // ---------------------------------------------------------------------------
-
-#if DETWS_ENABLE_RANGE
-// Parse a single-range `Range: bytes=...` header value against a resource of
-// @p size bytes. Supported forms: "bytes=A-B", "bytes=A-" (A to end) and
-// "bytes=-N" (last N bytes). Returns:
-//   0  no usable Range header (caller sends a full 200) - absent, malformed, or
-//      a multi-range request (RFC 7233 §3.1 permits ignoring it),
-//   1  a satisfiable range (writes inclusive [*out_start, *out_end]),
-//  -1  a syntactically valid but unsatisfiable range (caller sends 416).
-static int parse_byte_range(const char *hdr, size_t size, size_t *out_start, size_t *out_end)
-{
-    if (!hdr)
-        return 0;
-    // Require the "bytes=" unit (case-insensitive).
-    if (strncasecmp(hdr, "bytes=", 6) != 0)
-        return 0;
-    const char *p = hdr + 6;
-    while (*p == ' ')
-        p++;
-    if (strchr(p, ',')) // multi-range not supported -> fall back to full 200
-        return 0;
-
-    bool have_start = false;
-    bool have_end = false;
-    size_t start = 0;
-    size_t end = 0;
-    const size_t SZMAX = (size_t)-1;
-    if (*p >= '0' && *p <= '9')
-    {
-        have_start = true;
-        while (*p >= '0' && *p <= '9')
-        {
-            size_t d = (size_t)(*p++ - '0');
-            // Saturate on overflow: a start past SIZE_MAX is past EOF -> 416, never wraps.
-            start = (start > (SZMAX - d) / 10) ? SZMAX : start * 10 + d;
-        }
-    }
-    if (*p != '-')
-        return 0; // malformed
-    p++;
-    if (*p >= '0' && *p <= '9')
-    {
-        have_end = true;
-        end = 0;
-        while (*p >= '0' && *p <= '9')
-        {
-            size_t d = (size_t)(*p++ - '0');
-            end = (end > (SZMAX - d) / 10) ? SZMAX : end * 10 + d; // saturate -> clamps to last byte
-        }
-    }
-    while (*p == ' ')
-        p++;
-    if (*p != '\0')
-        return 0; // trailing garbage -> ignore the header
-
-    if (!have_start)
-    {
-        // Suffix form "bytes=-N": the last N bytes.
-        if (!have_end || end == 0)
-            return -1; // "-" alone, or "-0" -> unsatisfiable
-        if (size == 0)
-            return -1;
-        start = (end >= size) ? 0 : (size - end);
-        end = size - 1;
-    }
-    else
-    {
-        if (start >= size)
-            return -1; // start past EOF -> unsatisfiable
-        if (!have_end || end >= size)
-            end = size - 1; // open-ended or clamped to last byte
-        if (start > end)
-            return -1;
-    }
-    *out_start = start;
-    *out_end = end;
-    return 1;
-}
-#endif // DETWS_ENABLE_RANGE
 
 #if DETWS_ENABLE_FILE_SERVING
 // HTTP-date helpers (shared by file serving's Last-Modified / If-Modified-Since and
@@ -275,7 +197,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     accept_ranges = "Accept-Ranges: bytes\r\n"; // advertise range support on every file response
     size_t r_start = 0;
     size_t r_end = 0;
-    int rr = parse_byte_range(http_get_header(&http_pool[slot_id], "Range"), file_size, &r_start, &r_end);
+    int rr = http_parse_byte_range(http_get_header(&http_pool[slot_id], "Range"), file_size, &r_start, &r_end);
     if (rr < 0)
     {
         // Unsatisfiable range -> 416 with Content-Range: bytes */<size>.

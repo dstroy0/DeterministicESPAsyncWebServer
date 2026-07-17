@@ -67,17 +67,19 @@
       "tests": ["test_httpcache"]
     },
     "native_edge_cache": {
-      "desc": "CDN edge-cache engine (services/edge_cache): the pure freshness/validator core (response\nheader-field access, HTTP-date parsing over IMF-fixdate / RFC 850 / asctime, RFC 9111 lifetime +\nExpires-Date + heuristic + corrected age, the canonical cache key + SHA-256 digest + Vary secondary\nkey, and the L1 LRU/TTL store + storeability rules), plus the async origin-fetch engine (completion\ndetection over Content-Length / chunked / connection-close, and the state machine over a mock transport\nseam). Pure host tests.",
+      "desc": "CDN edge-cache engine (services/edge_cache): the pure freshness/validator core (response\nheader-field access, HTTP-date parsing over IMF-fixdate / RFC 850 / asctime, RFC 9111 lifetime +\nExpires-Date + heuristic + corrected age, the canonical cache key + SHA-256 digest + Vary secondary\nkey, and the L1 LRU/TTL store + storeability rules), plus the async origin-fetch engine (completion\ndetection over Content-Length / chunked / connection-close, and the state machine over a mock transport\nseam), plus the shared single-range `Range: bytes=...` parser (http_parse_byte_range) that backs serving\n206 Partial Content windows from a cached body. Pure host tests.",
       "flags": [
         "-DDETWS_ENABLE_HTTP_CACHE=1",
         "-DDETWS_ENABLE_HTTP_CLIENT=1",
-        "-DDETWS_ENABLE_EDGE_CACHE=1"
+        "-DDETWS_ENABLE_EDGE_CACHE=1",
+        "-DDETWS_ENABLE_RANGE=1"
       ],
       "src": [
         "+<services/httpcache/httpcache.cpp>",
         "+<services/http_client/http_client.cpp>",
         "+<services/edge_cache/edge_cache.cpp>",
         "+<services/edge_cache/edge_fetch.cpp>",
+        "+<server/http_range.cpp>",
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
       ],
       "tests": ["test_edge_cache", "test_edge_fetch"]
@@ -472,6 +474,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
+        "+<server/http_range.cpp>",
         "+<server/auth.cpp>",
         "+<server/response.cpp>",
         "+<server/websocket_sse.cpp>",
@@ -531,6 +534,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
+        "+<server/http_range.cpp>",
         "+<server/auth.cpp>",
         "+<server/response.cpp>",
         "+<server/websocket_sse.cpp>",
@@ -1177,6 +1181,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
+        "+<server/http_range.cpp>",
         "+<server/auth.cpp>",
         "+<server/response.cpp>",
         "+<server/websocket_sse.cpp>",
@@ -1207,6 +1212,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
+        "+<server/http_range.cpp>",
         "+<server/auth.cpp>",
         "+<server/response.cpp>",
         "+<server/websocket_sse.cpp>",
@@ -1397,6 +1403,7 @@
         "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>",
         "+<dwserver.cpp>",
         "+<server/file_serving.cpp>",
+        "+<server/http_range.cpp>",
         "+<server/auth.cpp>",
         "+<server/response.cpp>",
         "+<server/websocket_sse.cpp>",

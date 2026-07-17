@@ -106,6 +106,17 @@ GET /cache/stats for counters; POST /cache/purge to invalidate /cdn/
   S3 / PSRAM board, bump both up for a bigger, more useful cache.
 - **`Vary`.** Responses that `Vary` on request headers (e.g. `Accept-Encoding`)
   are cached as separate variants and matched per request; `Vary: *` is uncached.
+- **Range / `206`.** Build with `-DDETWS_ENABLE_RANGE=1` and a cached object serves
+  a `Range: bytes=...` request as `206 Partial Content` with a `Content-Range`
+  header, streaming just the requested window; every full hit then advertises
+  `Accept-Ranges: bytes`, and an unsatisfiable range answers `416`. Single-range
+  only (a multi-range request falls back to a full `200`, per RFC 7233 §3.1).
+
+    ```bash
+    curl -r 10-40  http://<board>/cdn/test.txt   # -> 206, Content-Range: bytes 10-40/<len>
+    curl -r 999999- http://<board>/cdn/test.txt  # -> 416 Range Not Satisfiable
+    ```
+
 - **Persistence (SD).** Build with `-DDETWS_ENABLE_DBM=1 -DDETWS_ENABLE_WAL=1` and
   the sketch mounts a WAL-backed dbm store on an SD card and binds it as an **L2
   tier**: an entry evicted from the RAM (L1) tier spills to SD, and after a reboot
