@@ -217,7 +217,7 @@ A compile-time menu grouped by the OSI layer each feature lives at, alphabetized
   <td align="center"><a href="FEATURES.md#chunked-responses" title="Streaming / chunked responses of unbounded length in constant memory via send_chunked(). Always on.">Chunked Responses</a></td>
   <td align="center"><a href="FEATURES.md#cors" title="Cross-origin resource sharing with automatic preflight handling. Always on.">CORS</a></td>
   <td align="center"><a href="FEATURES.md#dashboard" title="Real-time SVG dashboard (DASHBOARD; requires SSE). Default off. Serves a self-contained, hand-rolled SVG dashboard page whose widgets are declared in a fixed compile-time DetwsWidget table (zero-heap, deterministic). The page fetches the widget layout as JSON and subscribes to an SSE stream of live values; detws_dashboard_set() + detws_dashboard_publish() push the current readings. The widget-table -&gt; JSON serializers are host-testable; WebSocket controls are a follow-up.">Dashboard</a></td>
-  <td align="center"><a href="FEATURES.md#edge-cache" title="Opt-in CDN edge-cache tier (requires HTTP Cache). Default off. services/edge_cache is the caching reverse-proxy edge that services/httpcache is the origin-side groundwork for: the device sits in front of a remote upstream origin, fetches a response once, and serves subsequent hits from a bounded local store - honoring `Cache-Control` / `Expires` / `ETag` / `Last-Modified`, revalidating stale entries with conditional requests (`If-None-Match` / `If-Modified-Since` -&gt; 304), and serving `Range` / `206 Partial Content` straight from the cache with the existing constant-memory send-pump. A two-tier store: bounded RAM (L1, hot, LRU + TTL) plus an optional dbm/WAL-backed SD tier (L2, persistent across reboot, when DBM is enabled). A miss or a stale-entry revalidation fetches the origin asynchronously - the client request is suspended and resumed from the server poll loop, so the worker never stalls - and every failure path (miss, full cache, origin down, oversize) fails open to the origin. The deterministic cache key is method + host + path (+ optional query), with a SHA-256 digest for the L2 key and `Vary` handled as a secondary key; explicit purge (single + prefix/wildcard) and stats round it out. Registered as a middleware via `det_edge_cache_enable(server)` + `det_edge_cache_map(prefix, origin)`; zero heap, all buffers fixed. The freshness/validator/key/store logic is pure and host-tested (native_edge_cache); the async origin fetch + serve are HW-verified against a real origin; the L2 SD tier's entry serialization, spill/promote, reboot survival, and purge are host-tested over a RAM WalDev (native_edge_cache_sd) via `det_edge_cache_bind_sd`.">Edge Cache</a></td>
+  <td align="center"><a href="FEATURES.md#edge-cache" title="Opt-in CDN edge-cache tier (requires HTTP Cache). Default off. services/edge_cache is the caching reverse-proxy edge that services/httpcache is the origin-side groundwork for: the device sits in front of a remote upstream origin, fetches a response once, and serves subsequent hits from a bounded local store - honoring `Cache-Control` / `Expires` / `ETag` / `Last-Modified`, revalidating stale entries with conditional requests (`If-None-Match` / `If-Modified-Since` -&gt; 304), and serving `Range` / `206 Partial Content` straight from the cache with the existing constant-memory send-pump. A two-tier store: bounded RAM (L1, hot, LRU + TTL) plus an optional dbm/WAL-backed SD tier (L2, persistent across reboot, when DBM is enabled). A miss or a stale-entry revalidation fetches the origin asynchronously - the client request is suspended and resumed from the server poll loop, so the worker never stalls - and every failure path (miss, full cache, origin down, oversize) fails open to the origin. The deterministic cache key is method + host + path (+ optional query), with a SHA-256 digest for the L2 key and `Vary` handled as a secondary key; explicit purge (single + prefix/wildcard) and stats round it out. Registered as a middleware via `det_edge_cache_enable(server)` + `det_edge_cache_map(prefix, origin)`; zero heap, all buffers fixed. The freshness/validator/key/store logic is pure and host-tested (native_edge_cache); the async origin fetch + serve are HW-verified against a real origin; the L2 SD tier's entry serialization, spill/promote, reboot survival, and purge are host-tested over a RAM WalDev (native_edge_cache_sd) via `det_edge_cache_bind_sd`. When `DETWS_ENABLE_RANGE` is set, a cached object also answers a single-range `Range` request with `206 Partial Content` + `Content-Range` (or `416`) and advertises `Accept-Ranges: bytes`, streaming just the window through the same shared parser (server/http_range) the file server uses.">Edge Cache</a></td>
   <td align="center"><a href="FEATURES.md#etag" title="Conditional GET via ETag for served files. When set, serve_file()/serve_static() emit a strong `ETag` (derived from the file size + last-modified time) and answer a matching `If-None-Match` with `304 Not Modified`, saving bandwidth on repeat fetches of static assets.">ETag</a></td>
 </tr>
 <tr>
@@ -704,6 +704,8 @@ src/
 │   ├── auth.cpp
 │   ├── dwserver_internal.h
 │   ├── file_serving.cpp
+│   ├── http_range.cpp
+│   ├── http_range.h
 │   ├── middleware.cpp
 │   ├── regex.cpp
 │   ├── response.cpp
@@ -1121,8 +1123,8 @@ Feature Tables workflow from `docs/footprints.json`.
 | `BUS_CAPTURE+FORWARD+ETHERNET` | `Foundation/22.CanCapture` | 771,165 | 45,516 |
 | `ADS` | `L7-Application/73.AdsClient` | 771,933 | 45,440 |
 | `DASHBOARD` | `L7-Application/35.Dashboard` | 773,173 | 82,152 |
-| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT` | `L7-Application/79.EdgeCache` | 773,509 | 118,840 |
 | `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 773,549 | 83,396 |
+| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT` | `L7-Application/79.EdgeCache` | 773,593 | 118,848 |
 | `MDNS` | `L7-Application/15.mDNS` | 777,813 | 83,680 |
 | `NTP` | `L7-Application/18.SNTP` | 778,073 | 84,328 |
 | `IFACE_BRIDGE` | `L7-Application/75.InterfaceBridge` | 780,393 | 82,624 |
@@ -1362,7 +1364,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_PSRAM_POOL` | `0` | Opt-in buffer placement policy (DRAM vs PSRAM) + SPI DMA ping-pong manager. |
 | `DETWS_ENABLE_RADIO_POWER` | `0` | Opt-in radio power controls. |
 | `DETWS_ENABLE_RADIO_SNIFF` | `0` | Opt-in receive-only radio channel sniffer to pcap. |
-| `DETWS_ENABLE_RANGE` | `0` | HTTP Range requests / 206 Partial Content for served files. |
+| `DETWS_ENABLE_RANGE` | `0` | HTTP Range requests / 206 Partial Content (requires DETWS_ENABLE_FILE_SERVING or DETWS_ENABLE_EDGE_CACHE). |
 | `DETWS_ENABLE_RAWL2` | `0` | Opt-in raw Layer-2 Ethernet frame codec. |
 | `DETWS_ENABLE_REDIS` | `0` | Redis RESP2 wire codec (`services/redis_resp`). |
 | `DETWS_ENABLE_REDIS` | `0` | Redis RESP2 wire codec (`services/redis_resp`). |

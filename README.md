@@ -297,7 +297,7 @@ Steady state, the `chacha20-poly1305@openssh.com` record layer runs at **~1.5 MB
   <td align="center"><a href="docs/FEATURES.md#chunked-responses" title="Streaming / chunked responses of unbounded length in constant memory via send_chunked(). Always on.">Chunked Responses</a></td>
   <td align="center"><a href="docs/FEATURES.md#cors" title="Cross-origin resource sharing with automatic preflight handling. Always on.">CORS</a></td>
   <td align="center"><a href="docs/FEATURES.md#dashboard" title="Real-time SVG dashboard (DASHBOARD; requires SSE). Default off. Serves a self-contained, hand-rolled SVG dashboard page whose widgets are declared in a fixed compile-time DetwsWidget table (zero-heap, deterministic). The page fetches the widget layout as JSON and subscribes to an SSE stream of live values; detws_dashboard_set() + detws_dashboard_publish() push the current readings. The widget-table -&gt; JSON serializers are host-testable; WebSocket controls are a follow-up.">Dashboard</a></td>
-  <td align="center"><a href="docs/FEATURES.md#edge-cache" title="Opt-in CDN edge-cache tier (requires HTTP Cache). Default off. services/edge_cache is the caching reverse-proxy edge that services/httpcache is the origin-side groundwork for: the device sits in front of a remote upstream origin, fetches a response once, and serves subsequent hits from a bounded local store - honoring `Cache-Control` / `Expires` / `ETag` / `Last-Modified`, revalidating stale entries with conditional requests (`If-None-Match` / `If-Modified-Since` -&gt; 304), and serving `Range` / `206 Partial Content` straight from the cache with the existing constant-memory send-pump. A two-tier store: bounded RAM (L1, hot, LRU + TTL) plus an optional dbm/WAL-backed SD tier (L2, persistent across reboot, when DBM is enabled). A miss or a stale-entry revalidation fetches the origin asynchronously - the client request is suspended and resumed from the server poll loop, so the worker never stalls - and every failure path (miss, full cache, origin down, oversize) fails open to the origin. The deterministic cache key is method + host + path (+ optional query), with a SHA-256 digest for the L2 key and `Vary` handled as a secondary key; explicit purge (single + prefix/wildcard) and stats round it out. Registered as a middleware via `det_edge_cache_enable(server)` + `det_edge_cache_map(prefix, origin)`; zero heap, all buffers fixed. The freshness/validator/key/store logic is pure and host-tested (native_edge_cache); the async origin fetch + serve are HW-verified against a real origin; the L2 SD tier's entry serialization, spill/promote, reboot survival, and purge are host-tested over a RAM WalDev (native_edge_cache_sd) via `det_edge_cache_bind_sd`.">Edge Cache</a></td>
+  <td align="center"><a href="docs/FEATURES.md#edge-cache" title="Opt-in CDN edge-cache tier (requires HTTP Cache). Default off. services/edge_cache is the caching reverse-proxy edge that services/httpcache is the origin-side groundwork for: the device sits in front of a remote upstream origin, fetches a response once, and serves subsequent hits from a bounded local store - honoring `Cache-Control` / `Expires` / `ETag` / `Last-Modified`, revalidating stale entries with conditional requests (`If-None-Match` / `If-Modified-Since` -&gt; 304), and serving `Range` / `206 Partial Content` straight from the cache with the existing constant-memory send-pump. A two-tier store: bounded RAM (L1, hot, LRU + TTL) plus an optional dbm/WAL-backed SD tier (L2, persistent across reboot, when DBM is enabled). A miss or a stale-entry revalidation fetches the origin asynchronously - the client request is suspended and resumed from the server poll loop, so the worker never stalls - and every failure path (miss, full cache, origin down, oversize) fails open to the origin. The deterministic cache key is method + host + path (+ optional query), with a SHA-256 digest for the L2 key and `Vary` handled as a secondary key; explicit purge (single + prefix/wildcard) and stats round it out. Registered as a middleware via `det_edge_cache_enable(server)` + `det_edge_cache_map(prefix, origin)`; zero heap, all buffers fixed. The freshness/validator/key/store logic is pure and host-tested (native_edge_cache); the async origin fetch + serve are HW-verified against a real origin; the L2 SD tier's entry serialization, spill/promote, reboot survival, and purge are host-tested over a RAM WalDev (native_edge_cache_sd) via `det_edge_cache_bind_sd`. When `DETWS_ENABLE_RANGE` is set, a cached object also answers a single-range `Range` request with `206 Partial Content` + `Content-Range` (or `416`) and advertises `Accept-Ranges: bytes`, streaming just the window through the same shared parser (server/http_range) the file server uses.">Edge Cache</a></td>
   <td align="center"><a href="docs/FEATURES.md#etag" title="Conditional GET via ETag for served files. When set, serve_file()/serve_static() emit a strong `ETag` (derived from the file size + last-modified time) and answer a matching `If-None-Match` with `304 Not Modified`, saving bandwidth on repeat fetches of static assets.">ETag</a></td>
 </tr>
 <tr>
@@ -587,7 +587,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 </picture>
 </a>
 
-> Not drawn (so the tree stays uncrossed): **`DETWS_ENABLE_EDGE_CACHE`** also need `DETWS_ENABLE_HTTP_CLIENT`; **`DETWS_ENABLE_HTTP_CLIENT_TLS`, `DETWS_ENABLE_MQTT_TLS`, `DETWS_ENABLE_WS_CLIENT_TLS`** also need `DETWS_ENABLE_TLS`.
+> Not drawn (so the tree stays uncrossed): **`DETWS_ENABLE_RANGE`** also need `DETWS_ENABLE_FILE_SERVING`; **`DETWS_ENABLE_EDGE_CACHE`** also need `DETWS_ENABLE_HTTP_CLIENT`; **`DETWS_ENABLE_HTTP_CLIENT_TLS`, `DETWS_ENABLE_MQTT_TLS`, `DETWS_ENABLE_WS_CLIENT_TLS`** also need `DETWS_ENABLE_TLS`.
 
 <details><summary><b>Auto-derived flags</b> - enabling the left flag turns the right one on for you; do not set it yourself.</summary>
 
@@ -621,7 +621,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 
 </details>
 
-_26 hard dependencies, 3 PSRAM gates, 15 derived flags._
+_27 hard dependencies, 3 PSRAM gates, 15 derived flags._
 
 <!-- END GENERATED FLAG DEPS -->
 
@@ -675,8 +675,8 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `IFACE_BRIDGE`      |            26.9 KB |          16.0 KB |
 | L7    | `NTP`               |            24.6 KB |          17.7 KB |
 | L7    | `MDNS`              |            24.4 KB |          17.1 KB |
+| L7    | `EDGE_CACHE`        |            20.3 KB |          51.4 KB |
 | L7    | `TIME_SOURCE`       |            20.2 KB |          16.8 KB |
-| L7    | `EDGE_CACHE`        |            20.2 KB |          51.4 KB |
 | L7    | `DASHBOARD`         |            19.9 KB |          15.6 KB |
 | L7    | `ADS`               |            18.6 KB |         < 0.5 KB |
 | L7    | `NTRIP_CASTER`      |            17.3 KB |          18.1 KB |
