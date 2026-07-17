@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`accbb40`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/accbb4067ab653c002873d67c8cecb3c4f525ff8))
+- update CHANGELOG.md [skip ci] ([`52f5cbe`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/52f5cbe7208dd2d2081bbf30215378c9c61cd0b1))
 - update CHANGELOG.md [skip ci] ([`1141abc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1141abc11b25608efffac73b2ca5ff4e1564db27))
 - update test report + coverage [skip ci] ([`cedf8b7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cedf8b783885c9cf96b18400b80d675f44b8a7a8))
 - update CHANGELOG.md [skip ci] ([`5dbd9fa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5dbd9fa34c9ef095c7659283eb41dc756bf9993e))
@@ -23,6 +25,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`29308ca`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/29308ca26d9eb636792b8fac9c21374c29f5cdb8))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`3a45865`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a45865af9c92948f1cfb6d70cf57951d9294731))
 - update ESP32 build footprints [skip ci] ([`38a4ffc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/38a4ffc2a91c7f08ca9ad5a311f93db78b2e1a84))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`09a3734`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/09a3734c247182cbbcea942cc1a9a1c525e3d232))
@@ -33,6 +36,10 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - benchmark all self-implemented crypto on ESP32-S3 (CCOUNT) ([`215e5ef`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/215e5ef3d112329f9bc14e3122629eaa7d116158))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`f433155`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f433155a0426b602f8b332ba9524eb72e1e54a0e))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`01218da`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/01218dacbe8081205b7d3e395c53d3a1e6fe37aa))
+
+### Features
+
+- pure engine - freshness, cache key, L1 store ([`8334f72`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/8334f7246bd4da710a9fa331f8a1ec250a65fba3))
 
 ### Performance
 
