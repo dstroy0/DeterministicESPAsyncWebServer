@@ -1262,6 +1262,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_DSHOT` | `0` | Opt-in DShot ESC throttle protocol codec. |
 | `DETWS_ENABLE_DTLS` | `0` | DTLS 1.3 datagram security (RFC 9147) - the record layer. |
 | `DETWS_ENABLE_EDGE_CACHE` | `0` | Opt-in CDN edge-cache tier (DETWS_ENABLE_EDGE_CACHE, requires HTTP_CACHE). |
+| `DETWS_ENABLE_EDGE_ORIGIN_TLS` | `0` |  |
 | `DETWS_ENABLE_ENIP` | `0` | EtherNet/IP encapsulation codec (`services/enip`). |
 | `DETWS_ENABLE_ENOCEAN` | `0` | Enable the EnOcean ESP3 serial codec (default off). |
 | `DETWS_ENABLE_ESPNOW` | `0` | ESP-NOW peer messaging. |
