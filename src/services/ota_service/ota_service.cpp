@@ -7,6 +7,7 @@
  */
 
 #include "ota_service.h"
+#include "services/clock.h" // dwsdelay
 
 #if DETWS_ENABLE_OTA && defined(ARDUINO)
 
@@ -111,7 +112,7 @@ static void ota_handle(uint8_t slot_id, HttpReq *req)
         return;
     }
     s_ota.server->send(slot_id, 200, DET_MIME_TEXT_PLAIN, "OK - rebooting");
-    delay(150); // let the response flush before the reboot
+    dwsdelay(150); // let the response flush before the reboot
     ESP.restart();
 }
 

@@ -32,7 +32,7 @@ CONFIG_H = os.path.join(ROOT, "src", "ServerConfig.h")
 # wave once drifted out of the feature grid unnoticed).
 INTERNAL_FLAGS = {
     "DETWS_ENABLE_STREAM_BODY",  # = OTA || UPLOAD || WEBDAV (shared parser machinery)
-    "DETWS_ENABLE_CLIENT_TLS",  # = HTTP_CLIENT_TLS || MQTT_TLS || WS_CLIENT_TLS
+    "DETWS_ENABLE_CLIENT_TLS",  # = HTTP_CLIENT_TLS || MQTT_TLS || WS_CLIENT_TLS || EDGE_ORIGIN_TLS
 }
 
 BEGIN = "<!-- BEGIN GENERATED FEATURE TABLES (docs/utilities/gen_feature_tables.py) -->"

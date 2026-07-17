@@ -8,6 +8,7 @@
  */
 
 #include "services/http_client/http_client.h"
+#include "services/clock.h" // dwsdelay
 
 #if DETWS_ENABLE_HTTP_CLIENT
 
@@ -254,7 +255,7 @@ int http_client_parse_response(uint8_t *buf, size_t len, size_t *body_off, size_
 #if defined(ARDUINO)
 
 #include "network_drivers/transport/client.h" // shared outbound TCP client (L4)
-#include <Arduino.h>                          // delay() / millis()
+#include <Arduino.h>                          // millis()
 
 #if DETWS_ENABLE_HTTP_CLIENT_TLS
 #include "network_drivers/tls/tls.h"
@@ -377,7 +378,7 @@ static int http_request(const char *method, const char *url, const char *content
             if (det_client_is_closed(s_http.cid) && det_client_available(s_http.cid) == 0)
                 break;
             if (n == 0)
-                delay(5);
+                dwsdelay(5);
         }
     }
 

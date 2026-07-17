@@ -3330,6 +3330,19 @@
 #if DETWS_ENABLE_EDGE_CACHE && !DETWS_ENABLE_HTTP_CLIENT
 #error "DETWS_ENABLE_EDGE_CACHE requires DETWS_ENABLE_HTTP_CLIENT (it fetches the upstream origin)"
 #endif
+// Opt-in TLS upstream origins: when set, a mapped `https://` origin is fetched over the shared client-TLS
+// session (det_tls_csess) instead of being rejected. One outbound TLS origin fetch at a time (the session is
+// a singleton, shared with MQTTS/wss); the handshake blocks the worker briefly at connect (like the MQTT/WS
+// clients). Needs the TLS engine + the ~48 KB arena - an S3 / PSRAM board is recommended.
+#ifndef DETWS_ENABLE_EDGE_ORIGIN_TLS
+#define DETWS_ENABLE_EDGE_ORIGIN_TLS 0
+#endif
+#if DETWS_ENABLE_EDGE_ORIGIN_TLS && !DETWS_ENABLE_EDGE_CACHE
+#error "DETWS_ENABLE_EDGE_ORIGIN_TLS requires DETWS_ENABLE_EDGE_CACHE"
+#endif
+#if DETWS_ENABLE_EDGE_ORIGIN_TLS && !DETWS_ENABLE_TLS
+#error "DETWS_ENABLE_EDGE_ORIGIN_TLS requires DETWS_ENABLE_TLS (the client-TLS engine)"
+#endif
 #ifndef DETWS_EDGE_CACHE_SLOTS
 #define DETWS_EDGE_CACHE_SLOTS 4 // L1 RAM entries (each holds one cached object; bump up on PSRAM)
 #endif
@@ -4466,13 +4479,15 @@
 #endif
 
 /**
- * @brief Internal: client-side TLS engine is compiled (HTTPS client, MQTTS, and/or wss client).
+ * @brief Internal: client-side TLS engine is compiled (HTTPS client, MQTTS, wss client, and/or a TLS edge-cache
+ * origin).
  *
  * The outbound HTTP client (one-shot exchange) and the MQTT / WebSocket clients
- * (persistent sessions) share the same client mbedTLS code in det_tls - the
- * CA/pin trust config, the BIO typedefs, and the session API - gated by this.
+ * and the edge cache's TLS origin fetch (persistent sessions) share the same
+ * client mbedTLS code in det_tls - the CA/pin trust config, the BIO typedefs,
+ * and the session API - gated by this.
  */
-#if DETWS_ENABLE_HTTP_CLIENT_TLS || DETWS_ENABLE_MQTT_TLS || DETWS_ENABLE_WS_CLIENT_TLS
+#if DETWS_ENABLE_HTTP_CLIENT_TLS || DETWS_ENABLE_MQTT_TLS || DETWS_ENABLE_WS_CLIENT_TLS || DETWS_ENABLE_EDGE_ORIGIN_TLS
 #define DETWS_ENABLE_CLIENT_TLS 1
 #else
 #define DETWS_ENABLE_CLIENT_TLS 0

@@ -8,6 +8,7 @@
  */
 
 #include "services/mqtt/mqtt.h"
+#include "services/clock.h" // dwsdelay
 
 #if DETWS_ENABLE_MQTT
 
@@ -724,7 +725,7 @@ bool mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttConne
         }
         int h;
         while ((h = det_tls_csess_handshake()) == 0 && !s_mqtt.closed && (int32_t)(deadline - millis()) > 0)
-            delay(5);
+            dwsdelay(5);
         if (h != 1)
         {
             MQ_DBG("[mqtt] TLS handshake failed (%d)\n", h);
@@ -745,7 +746,7 @@ bool mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttConne
     while (!s_mqtt.mqtt_up && s_mqtt.connack_code < 0 && !s_mqtt.closed && (int32_t)(deadline - millis()) > 0)
     {
         process_rx();
-        delay(5);
+        dwsdelay(5);
     }
     if (!s_mqtt.mqtt_up)
     {

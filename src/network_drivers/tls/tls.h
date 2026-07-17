@@ -139,7 +139,7 @@ int det_tls_peer_subject(uint8_t slot, char *out, size_t out_len);
  * Performs a TLS 1.2+ client handshake (SNI = @p host, server cert not verified -
  * see note), writes @p req, then reads the decrypted response into @p out until
  * the peer closes or @p out fills. Uses the shared static arena (installs the
- * allocator if the server side has not). Yields with delay() while waiting, up to
+ * allocator if the server side has not). Yields with dwsdelay() while waiting, up to
  * @p deadline_ms (millis() timestamp).
  *
  * NOTE: server authentication is OFF by default (no trust store on the device);
@@ -182,6 +182,10 @@ void det_tls_client_clear_verify();
 
 /** @brief Begin a client TLS session to @p host over the given BIO. @return false on setup failure. */
 bool det_tls_csess_begin(const char *host, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn);
+
+/** @brief True while a client TLS session is live (begun, not yet ended). The session is a singleton shared
+ * across all client-TLS users, so a would-be caller checks this to avoid tearing down an active session. */
+bool det_tls_csess_active();
 
 /** @brief Advance the handshake. @return 1 established (CA/pin checked), 0 pending, <0 fatal. */
 int det_tls_csess_handshake();
@@ -271,6 +275,10 @@ static inline void det_tls_client_clear_verify()
 {
 }
 static inline bool det_tls_csess_begin(const char *, det_tls_bio_send_fn, det_tls_bio_recv_fn)
+{
+    return false;
+}
+static inline bool det_tls_csess_active()
 {
     return false;
 }

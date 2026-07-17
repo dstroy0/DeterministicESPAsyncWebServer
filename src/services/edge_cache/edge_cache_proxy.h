@@ -37,11 +37,25 @@ void det_edge_cache_enable(DetWebServer &server);
 /**
  * @brief Map a request path prefix to an upstream origin (e.g. "/cdn/" -> "http://origin.local").
  *
- * A cacheable GET/HEAD under @p path_prefix is fetched from the origin host + the full request path.
- * v1 is plaintext-origin only (an `https://` base is rejected). @return false if the map table is full,
- * an argument overflows, or the origin URL is https / malformed.
+ * A cacheable GET/HEAD under @p path_prefix is fetched from the origin host + the full request path. An
+ * `https://` origin is fetched over TLS when DETWS_ENABLE_EDGE_ORIGIN_TLS is set, otherwise rejected.
+ * @return false if the map table is full, an argument overflows, or the origin URL is https (TLS off) /
+ * malformed.
  */
 bool det_edge_cache_map(const char *path_prefix, const char *origin_base_url);
+
+#if DETWS_ENABLE_EDGE_ORIGIN_TLS
+/**
+ * @brief Set the CA used to verify a TLS (`https://`) origin (PEM incl. NUL, or DER). Without a CA the
+ *        origin fetch is encrypt-only (no authentication - MITM-able); a CA switches to full chain +
+ *        hostname verification. NOTE: the client-TLS trust store is shared, so this CA also applies to
+ *        MQTTS / wss / the HTTP client. Pass nullptr to clear. Call before the first https fetch.
+ */
+void det_edge_cache_set_origin_ca(const uint8_t *ca_pem, size_t len);
+
+/** @brief Pin the origin cert by the SHA-256 of its DER (32 bytes); nullptr clears. Also shared client-wide. */
+void det_edge_cache_set_origin_pin(const uint8_t sha256[32]);
+#endif
 
 #if DETWS_ENABLE_DBM
 struct DetwsDbm;

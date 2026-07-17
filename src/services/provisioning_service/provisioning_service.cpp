@@ -10,6 +10,7 @@
  */
 
 #include "provisioning_service.h"
+#include "services/clock.h" // dwsdelay
 #include "shared_primitives/hex.h"
 #include "shared_primitives/mime.h"
 #include <string.h>
@@ -195,7 +196,7 @@ static void prov_save_handler(uint8_t slot_id, HttpReq *req)
     prefs.putString(DETWS_PROV_KEY_PSK, psk);
     prefs.end();
     s_prov.server->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_PROV_SAVED_HTML);
-    delay(500);
+    dwsdelay(500);
     ESP.restart();
 }
 

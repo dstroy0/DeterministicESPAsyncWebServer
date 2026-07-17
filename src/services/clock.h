@@ -76,6 +76,34 @@ inline uint32_t detws_millis(void)
     return millis();
 }
 
+/**
+ * @brief Block for at least @p ms milliseconds - the library's single delay primitive.
+ *
+ * `src/` never calls the platform `delay()` directly; every wait goes through this so timing stays
+ * centralized and portable. On device it yields to the RTOS one tick at a time until @p ms has elapsed on
+ * the monotonic clock (so it sleeps the task and feeds the watchdog, never starving the scheduler); on host
+ * it spins on the same clock. Measured against ::detws_millis, so a custom clock governs it too.
+ */
+inline void dwsdelay(uint32_t ms)
+{
+#ifdef ARDUINO
+    if (ms == 0)
+    {
+        vTaskDelay(0); // a bare cooperative yield
+        return;
+    }
+    uint32_t start = detws_millis();
+    while (detws_millis() - start < ms)
+        vTaskDelay(1); // one RTOS tick: sleeps the task (the core can idle) and feeds the watchdog
+#else
+    uint32_t start = detws_millis();
+    while (detws_millis() - start < ms)
+    {
+        // host: spin on the monotonic clock (device-only code paths call this; host tests do not sleep here)
+    }
+#endif
+}
+
 // ---------------------------------------------------------------------------
 // Microsecond time base (v5 clock-awareness): ISR timestamps + sub-ms latency
 // ---------------------------------------------------------------------------

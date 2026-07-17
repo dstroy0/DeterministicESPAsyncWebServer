@@ -13,12 +13,13 @@
  */
 
 #include "network_drivers/tls/tls.h"
+#include "services/clock.h" // dwsdelay
 
 #if DETWS_ENABLE_TLS && defined(ARDUINO)
 
 #include "lwip/tcp.h"
 #include "network_drivers/transport/tcp.h"
-#include <Arduino.h>    // millis(), delay() for the blocking client loop
+#include <Arduino.h>    // millis() for the blocking client loop
 #include <esp_system.h> // esp_fill_random (HW CSPRNG)
 #include <string.h>
 
@@ -762,7 +763,7 @@ int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint
                 ret = -1;
                 break;
             }
-            delay(5);
+            dwsdelay(5);
         }
         if (ret != 0)
         {
@@ -796,7 +797,7 @@ int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint
                 break;
             if ((int32_t)(deadline_ms - millis()) <= 0)
                 break;
-            delay(5);
+            dwsdelay(5);
         }
         if (sent < reqlen)
             break;
@@ -815,7 +816,7 @@ int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint
             {
                 if ((int32_t)(deadline_ms - millis()) <= 0)
                     break;
-                delay(5);
+                dwsdelay(5);
                 continue;
             }
             break; // 0 / PEER_CLOSE_NOTIFY / fatal -> response complete
@@ -895,6 +896,11 @@ bool det_tls_csess_begin(const char *host, det_tls_bio_send_fn send_fn, det_tls_
     return true;
 }
 
+bool det_tls_csess_active()
+{
+    return s_csess.active;
+}
+
 int det_tls_csess_handshake()
 {
     if (!s_csess.active)
@@ -948,7 +954,7 @@ int det_tls_csess_write(const uint8_t *data, size_t len)
         {
             if (++guard > 64)
                 break; // send buffer stuck; report a short write
-            delay(2);
+            dwsdelay(2);
             continue;
         }
         return -1;

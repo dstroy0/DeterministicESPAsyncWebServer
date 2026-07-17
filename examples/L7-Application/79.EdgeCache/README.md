@@ -106,6 +106,15 @@ GET /cache/stats for counters; POST /cache/purge to invalidate /cdn/
   S3 / PSRAM board, bump both up for a bigger, more useful cache.
 - **`Vary`.** Responses that `Vary` on request headers (e.g. `Accept-Encoding`)
   are cached as separate variants and matched per request; `Vary: *` is uncached.
+- **HTTPS origins.** Build with `-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_EDGE_ORIGIN_TLS=1`
+  and map an `https://` origin - it is fetched over TLS (S3 / PSRAM recommended: the
+  TLS engine adds a ~48 KB arena). Verification is **off by default** (encrypt-only,
+  no authentication); call `det_edge_cache_set_origin_ca(pem, len)` to verify the
+  origin's chain + hostname, or `det_edge_cache_set_origin_pin(sha256)` to pin it.
+  One TLS origin fetch runs at a time (the client-TLS session is shared with
+  MQTTS / wss). Note: the trust store is shared across all client-TLS users, and on
+  the espressif32-default mbedtls v2 an **IP-address** origin must use a CN-matching
+  cert (IP-address SANs are not matched; DNS-named origins work normally).
 - **Range / `206`.** Build with `-DDETWS_ENABLE_RANGE=1` and a cached object serves
   a `Range: bytes=...` request as `206 Partial Content` with a `Content-Range`
   header, streaming just the requested window; every full hit then advertises

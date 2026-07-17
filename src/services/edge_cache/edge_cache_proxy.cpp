@@ -23,6 +23,10 @@
 #include "server/http_range.h"                // http_parse_byte_range (Range/206 support)
 #include "services/http_client/http_client.h" // http_client_parse_url
 #include "shared_primitives/mime.h"           // DET_MIME_TEXT_PLAIN
+#if DETWS_ENABLE_EDGE_ORIGIN_TLS
+#include "network_drivers/tls/tls.h" // det_tls_csess_* (TLS upstream origin fetch)
+#include <mbedtls/ssl.h>             // MBEDTLS_ERR_SSL_WANT_READ / WANT_WRITE
+#endif
 #include <stdio.h>
 #include <string.h>
 
@@ -34,6 +38,7 @@ struct EdgeRouteMap
     char prefix[MAX_PATH_LEN];
     char origin_host[DETWS_EDGE_ORIGIN_URL_MAX];
     uint16_t origin_port;
+    bool https; ///< fetch this origin over TLS (DETWS_ENABLE_EDGE_ORIGIN_TLS)
 };
 
 struct EdgeFetchSlot
@@ -42,7 +47,8 @@ struct EdgeFetchSlot
     EdgeFetch f;
     uint8_t client_slot;
     bool revalidate;
-    EdgeEntry *reval_entry; // the stale entry being revalidated (nullptr for a plain miss)
+    EdgeEntry *reval_entry;              // the stale entry being revalidated (nullptr for a plain miss)
+    const EdgeFetchTransport *transport; // plaintext or TLS transport, chosen per route at start_fetch
     char canon[DETWS_EDGE_KEY_MAX];
 };
 
@@ -71,6 +77,11 @@ struct EdgeCacheProxyCtx
     EdgePending pending[MAX_CONNS];
     EdgeServeCursor serve[MAX_CONNS];
     EdgeFetchTransport transport;
+#if DETWS_ENABLE_EDGE_ORIGIN_TLS
+    EdgeFetchTransport transport_tls; // TLS binding over det_tls_csess, used for https routes
+    int tls_cid;                      // underlying det_client cid of the in-flight TLS fetch (singleton session)
+    bool tls_peer_closed;             // latched when the TLS session reports closed / errored
+#endif
     char reqbuf[MAX_PATH_LEN + MAX_QUERY_LEN + 256]; // scratch for one origin request line (freed by send)
 #if DETWS_ENABLE_RANGE
     // The client's Range header, captured per slot at middleware time. serve_hit runs for a miss/stale
@@ -121,6 +132,86 @@ void t_close(void *c, int cid)
     (void)c;
     det_client_close(cid);
 }
+
+#if DETWS_ENABLE_EDGE_ORIGIN_TLS
+// --- TLS transport seam (det_tls_csess layered over det_client) -----------------------------------
+// The client TLS session is a singleton, so the underlying cid + peer-closed latch live in the owned Ctx
+// (one TLS fetch at a time, enforced by det_tls_csess_active() in start_fetch). The BIO callbacks move
+// ciphertext over det_client's wire ring for that cid - the same bridge the MQTT/WS clients use.
+int edge_tls_bio_send(void *ctx, const unsigned char *buf, size_t len)
+{
+    (void)ctx;
+    size_t cap = len > 0xFFFF ? 0xFFFF : len;
+    return det_client_send(s_ctx.tls_cid, buf, cap) ? (int)cap : MBEDTLS_ERR_SSL_WANT_WRITE;
+}
+int edge_tls_bio_recv(void *ctx, unsigned char *buf, size_t len)
+{
+    (void)ctx;
+    size_t n = det_client_read(s_ctx.tls_cid, buf, len);
+    if (n == 0)
+        return det_client_is_closed(s_ctx.tls_cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
+    return (int)n;
+}
+
+int t_tls_open(void *c, const char *host, uint16_t port, uint32_t timeout)
+{
+    (void)c;
+    s_ctx.tls_cid = det_client_open(host, port, timeout);
+    if (s_ctx.tls_cid < 0)
+        return -1;
+    s_ctx.tls_peer_closed = false;
+    if (!det_tls_csess_begin(host, edge_tls_bio_send, edge_tls_bio_recv))
+    {
+        det_client_close(s_ctx.tls_cid);
+        s_ctx.tls_cid = -1;
+        return -1;
+    }
+    // Block through the handshake at connect - the same brief block the MQTT/WS clients take (and that the
+    // plaintext det_client_open already takes on DNS+connect). edge_fetch_begin sends the request
+    // synchronously right after open returns, so the session must be established first. dwsdelay() yields to
+    // the network stack between handshake flights so the peer's records arrive.
+    uint32_t deadline = detws_millis() + timeout;
+    int h = 0;
+    while ((h = det_tls_csess_handshake()) == 0 && !det_client_is_closed(s_ctx.tls_cid) &&
+           (int32_t)(deadline - detws_millis()) > 0)
+        dwsdelay(5);
+    if (h != 1)
+    {
+        det_tls_csess_end();
+        det_client_close(s_ctx.tls_cid);
+        s_ctx.tls_cid = -1;
+        return -1;
+    }
+    return s_ctx.tls_cid;
+}
+bool t_tls_send(void *c, int cid, const void *d, size_t l)
+{
+    (void)c;
+    (void)cid;
+    return det_tls_csess_write((const uint8_t *)d, l) == (int)l;
+}
+size_t t_tls_read(void *c, int cid, uint8_t *b, size_t cap)
+{
+    (void)c;
+    (void)cid;
+    int n = det_tls_csess_read(b, cap);
+    if (n < 0)
+        s_ctx.tls_peer_closed = true; // close_notify / decrypt error -> report closed via t_tls_closed
+    return n > 0 ? (size_t)n : 0;
+}
+bool t_tls_closed(void *c, int cid)
+{
+    (void)c;
+    return s_ctx.tls_peer_closed || det_client_is_closed(cid);
+}
+void t_tls_close(void *c, int cid)
+{
+    (void)c;
+    det_tls_csess_end();
+    det_client_close(cid);
+    s_ctx.tls_cid = -1;
+}
+#endif // DETWS_ENABLE_EDGE_ORIGIN_TLS
 
 // Request-header lookup used to (re)serialize the Vary secondary key; ctx is the client HttpReq.
 const char *req_lookup(void *ctx, const char *name)
@@ -364,6 +455,15 @@ bool edge_cache_poll(uint8_t slot);
 
 bool start_fetch(uint8_t slot, HttpReq *req, EdgeRouteMap *m, const char *canon, EdgeEntry *reval, uint32_t now)
 {
+    const EdgeFetchTransport *tport = &s_ctx.transport;
+#if DETWS_ENABLE_EDGE_ORIGIN_TLS
+    if (m->https)
+    {
+        if (det_tls_csess_active())
+            return false; // the shared client-TLS session is busy -> fail open (never tear down a live one)
+        tport = &s_ctx.transport_tls;
+    }
+#endif
     int fi = alloc_fetch();
     if (fi < 0)
         return false;
@@ -378,16 +478,17 @@ bool start_fetch(uint8_t slot, HttpReq *req, EdgeRouteMap *m, const char *canon,
                  req->path, req->query[0] ? "?" : "", req->query, m->origin_host, cond);
     if (rl <= 0 || (size_t)rl >= sizeof(s_ctx.reqbuf))
         return false;
-    edge_fetch_begin(&fs->f, &s_ctx.transport, m->origin_host, m->origin_port, s_ctx.reqbuf, (size_t)rl, now);
+    edge_fetch_begin(&fs->f, tport, m->origin_host, m->origin_port, s_ctx.reqbuf, (size_t)rl, now);
     if (fs->f.st == EdgeFetchStatus::FAILED)
     {
-        edge_fetch_end(&fs->f, &s_ctx.transport);
+        edge_fetch_end(&fs->f, tport);
         return false;
     }
     fs->used = true;
     fs->client_slot = slot;
     fs->revalidate = (reval != nullptr);
     fs->reval_entry = reval;
+    fs->transport = tport;
     memcpy(fs->canon, canon, strlen(canon) + 1);
     s_ctx.pending[slot].active = true;
     s_ctx.pending[slot].fetch_idx = (uint8_t)fi;
@@ -477,17 +578,18 @@ bool edge_cache_poll(uint8_t slot)
         return false;
     uint8_t fi = s_ctx.pending[slot].fetch_idx;
     EdgeFetchSlot *fs = &s_ctx.fetches[fi];
+    const EdgeFetchTransport *tport = fs->transport; // the transport chosen for this fetch (plaintext or TLS)
     uint32_t now = detws_millis();
 
     if (!det_conn_active(slot)) // client vanished mid-fetch: abort
     {
-        edge_fetch_end(&fs->f, &s_ctx.transport);
+        edge_fetch_end(&fs->f, tport);
         fs->used = false;
         s_ctx.pending[slot].active = false;
         return true;
     }
 
-    EdgeFetchStatus st = edge_fetch_pump(&fs->f, &s_ctx.transport, now);
+    EdgeFetchStatus st = edge_fetch_pump(&fs->f, tport, now);
     if (st == EdgeFetchStatus::PENDING)
         return true; // still receiving; owns the slot
 
@@ -503,7 +605,7 @@ bool edge_cache_poll(uint8_t slot)
     {
         s_ctx.server->send(slot, 502, DET_MIME_TEXT_PLAIN, "Bad Gateway");
     }
-    edge_fetch_end(&fs->f, &s_ctx.transport);
+    edge_fetch_end(&fs->f, tport);
     fs->used = false;
     s_ctx.pending[slot].active = false;
     return true;
@@ -536,6 +638,16 @@ void det_edge_cache_enable(DetWebServer &server)
     s_ctx.transport.closed = t_closed;
     s_ctx.transport.close = t_close;
     s_ctx.transport.ctx = nullptr;
+#if DETWS_ENABLE_EDGE_ORIGIN_TLS
+    s_ctx.transport_tls.open = t_tls_open;
+    s_ctx.transport_tls.send = t_tls_send;
+    s_ctx.transport_tls.read = t_tls_read;
+    s_ctx.transport_tls.closed = t_tls_closed;
+    s_ctx.transport_tls.close = t_tls_close;
+    s_ctx.transport_tls.ctx = nullptr;
+    s_ctx.tls_cid = -1;
+    s_ctx.tls_peer_closed = false;
+#endif
 #if DETWS_ENABLE_DBM
     s_ctx.store.on_evict = s_ctx.l2 ? edge_on_evict : nullptr; // re-arm write-back after edge_store_init
     s_ctx.store.evict_ctx = nullptr;
@@ -569,8 +681,10 @@ bool det_edge_cache_map(const char *path_prefix, const char *origin_base_url)
     char ignore_path[256];
     if (!http_client_parse_url(origin_base_url, &https, host, sizeof(host), &port, ignore_path, sizeof(ignore_path)))
         return false;
+#if !DETWS_ENABLE_EDGE_ORIGIN_TLS
     if (https)
-        return false; // v1: plaintext origins only (TLS origin is a follow-up)
+        return false; // plaintext origins only unless DETWS_ENABLE_EDGE_ORIGIN_TLS is set
+#endif
     for (int i = 0; i < DETWS_EDGE_MAP_MAX; i++)
     {
         if (s_ctx.maps[i].used)
@@ -580,11 +694,23 @@ bool det_edge_cache_map(const char *path_prefix, const char *origin_base_url)
         strncpy(s_ctx.maps[i].origin_host, host, sizeof(s_ctx.maps[i].origin_host) - 1);
         s_ctx.maps[i].origin_host[sizeof(s_ctx.maps[i].origin_host) - 1] = '\0';
         s_ctx.maps[i].origin_port = port;
+        s_ctx.maps[i].https = https;
         s_ctx.maps[i].used = true;
         return true;
     }
     return false; // map table full
 }
+
+#if DETWS_ENABLE_EDGE_ORIGIN_TLS
+void det_edge_cache_set_origin_ca(const uint8_t *ca_pem, size_t len)
+{
+    det_tls_client_set_ca(ca_pem, len); // shared client-TLS trust store (also used by MQTTS/wss/HTTP client)
+}
+void det_edge_cache_set_origin_pin(const uint8_t sha256[32])
+{
+    det_tls_client_set_pin(sha256);
+}
+#endif
 
 void det_edge_cache_reset(void)
 {

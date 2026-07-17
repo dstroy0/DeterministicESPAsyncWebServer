@@ -8,6 +8,7 @@
 
 #include "services/sht3x/sht3x.h"
 #include "ServerConfig.h"
+#include "services/clock.h" // dwsdelay
 
 #if DETWS_ENABLE_SHT3X
 
@@ -82,7 +83,7 @@ bool sht3x_begin(uint8_t addr)
     s_sht.addr = addr ? addr : (uint8_t)DETWS_SHT3X_I2C_ADDR;
     detws_i2c_begin();
     bool ok = send_cmd(SHT3X_CMD_SOFT_RESET);
-    delay(2); // soft reset completes in < 1.5 ms
+    dwsdelay(2); // soft reset completes in < 1.5 ms
     return ok;
 }
 
@@ -90,7 +91,7 @@ bool sht3x_read(int32_t *temp_mc, int32_t *rh_mpct)
 {
     if (!send_cmd(SHT3X_CMD_SINGLE_HIGH))
         return false;
-    delay(20); // a high-repeatability measurement completes in < 15 ms
+    dwsdelay(20); // a high-repeatability measurement completes in < 15 ms
     if (Wire.requestFrom((int)s_sht.addr, 6) != 6)
         return false;
     uint8_t r[6];

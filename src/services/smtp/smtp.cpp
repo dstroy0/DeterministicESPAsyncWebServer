@@ -11,6 +11,7 @@
 
 #include "services/smtp/smtp.h"
 #include "ServerConfig.h"
+#include "services/clock.h" // dwsdelay
 
 #if DETWS_ENABLE_SMTP
 
@@ -292,7 +293,7 @@ int cl_recv(void *ctx, uint8_t *buf, size_t cap)
             return (int)n;
         if (det_client_is_closed(x->cid) && det_client_available(x->cid) == 0)
             return -1;
-        delay(5);
+        dwsdelay(5);
     }
     return -1; // timeout
 }
@@ -328,7 +329,7 @@ int tls_recv(void *ctx, uint8_t *buf, size_t cap)
             return n;
         if (n < 0 && n != MBEDTLS_ERR_SSL_WANT_READ && n != MBEDTLS_ERR_SSL_WANT_WRITE)
             return -1;
-        delay(5);
+        dwsdelay(5);
     }
     return -1; // timeout
 }
@@ -357,7 +358,7 @@ SmtpResult smtp_send(const SmtpConfig *cfg, const SmtpMessage *msg)
         }
         int h;
         while ((h = det_tls_csess_handshake()) == 0 && (int32_t)(x.deadline - millis()) > 0)
-            delay(5);
+            dwsdelay(5);
         if (h != 1) // 1 = established; 0 = still pending at timeout; <0 = fatal
         {
             det_tls_csess_end();

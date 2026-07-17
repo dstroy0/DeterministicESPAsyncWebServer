@@ -132,7 +132,7 @@ bool detws_dns_resolve(const char *host, uint32_t *out_ip)
 
     uint32_t deadline = detws_millis() + DETWS_DNS_TIMEOUT_MS;
     while (!s_dr.done && (int32_t)(deadline - detws_millis()) > 0)
-        delay(5);
+        dwsdelay(5);
 
     if (!s_dr.ok)
         return false;

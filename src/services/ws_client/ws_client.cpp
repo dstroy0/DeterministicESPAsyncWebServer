@@ -8,6 +8,7 @@
  */
 
 #include "services/ws_client/ws_client.h"
+#include "services/clock.h" // dwsdelay
 
 #if DETWS_ENABLE_WS_CLIENT
 
@@ -500,7 +501,7 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
         }
         int h;
         while ((h = det_tls_csess_handshake()) == 0 && !s_wsc.closed && (int32_t)(deadline - millis()) > 0)
-            delay(5);
+            dwsdelay(5);
         if (h != 1)
         {
             WSC_DBG("[wsc] TLS handshake h=%d closed=%d\n", h, (int)s_wsc.closed);
@@ -549,7 +550,7 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
             }
         }
         if (!done)
-            delay(5);
+            dwsdelay(5);
     }
     if (!done || !ws_client_check_response(hs, hl, expect))
     {

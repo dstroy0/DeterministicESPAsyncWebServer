@@ -12,6 +12,7 @@
 
 #include "services/mpr121/mpr121.h"
 #include "ServerConfig.h"
+#include "services/clock.h" // dwsdelay
 
 #if DETWS_ENABLE_MPR121
 
@@ -133,7 +134,7 @@ bool mpr121_begin(uint8_t addr)
         return false;
     if (!wr(seq[0], seq[1])) // soft reset first; then let the chip settle
         return false;
-    delay(1);
+    dwsdelay(1);
     for (size_t i = 2; i + 1 < n; i += 2)
         if (!wr(seq[i], seq[i + 1]))
             return false;

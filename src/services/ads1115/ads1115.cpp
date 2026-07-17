@@ -8,6 +8,7 @@
 
 #include "services/ads1115/ads1115.h"
 #include "ServerConfig.h"
+#include "services/clock.h" // dwsdelay
 
 #if DETWS_ENABLE_ADS1115
 
@@ -114,7 +115,7 @@ bool ads1115_read_raw(uint8_t channel, uint8_t gain, int16_t *raw)
         return false;
     // Single-shot conversion time tracks the data rate (~1000/SPS ms); wait it out plus a 1 ms margin.
     static const uint16_t ads1115_sps[8] = {8, 16, 32, 64, 128, 250, 475, 860};
-    delay(1000u / ads1115_sps[dr] + 1);
+    dwsdelay(1000u / ads1115_sps[dr] + 1);
     uint16_t v = 0;
     if (!rd16(ADS1115_REG_CONVERSION, &v))
         return false;

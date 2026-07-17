@@ -25,7 +25,7 @@
 #include "services/clock.h"                     // detws_millis()
 #include "services/dns_resolver/dns_resolver.h" // shared host->IP resolve (one DNS owner)
 #include "shared_primitives/ring.h"             // shared DetAtomic + SPSC ring drain (same primitive as the server)
-#include <Arduino.h>                            // delay()
+#include <Arduino.h>                            // millis()
 #include <string.h>
 
 struct ClientConn
@@ -233,7 +233,7 @@ int det_client_open(const char *host, uint16_t port, uint32_t timeout_ms)
         return -3; // connect issue
     }
     while (!c->connected && !c->closed && (int32_t)(deadline - detws_millis()) > 0)
-        delay(5);
+        dwsdelay(5);
     if (!c->connected)
     {
         det_client_close(cid);
