@@ -164,8 +164,8 @@
     "example": "L7-Application/79.EdgeCache",
     "flags": "-DDETWS_ENABLE_EDGE_CACHE=1 -DDETWS_ENABLE_HTTP_CACHE=1 -DDETWS_ENABLE_HTTP_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 773509,
-    "ram_bytes": 118840
+    "flash_bytes": 773593,
+    "ram_bytes": 118848
   },
   "ENOCEAN+GATEWAY": {
     "example": "Foundation/13.EnOceanGateway",
