@@ -71,7 +71,7 @@ To isolate our application code from physical hardware and the operating system'
 
 <!-- BEGIN GENERATED test-environments (edit test/test_matrix.json, run test/gen_test_readme.py) -->
 
-The native test matrix has **237 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
+The native test matrix has **238 environments**, one per feature, generated from [test_matrix.json](test_matrix.json) into [platformio.ini](../platformio.ini) by [gen_test_envs.py](gen_test_envs.py). Each compiles a strict per-feature slice of `src/` with its own flags and runs that feature's suite in isolation, so "this feature builds and tests on its own" stays guaranteed.
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
@@ -133,6 +133,7 @@ The native test matrix has **237 environments**, one per feature, generated from
 | `native_dtls_conn` | `ETWS_ENABLE_DTLS=1` | `test_dtls_conn` | DTLS 1.3 server handshake state machine (network_drivers/presentation/dtls/dtls_conn, RFC 9147 sec 5-6): the one-round-trip full handshake (TLS_AES_128_GCM_SHA256 / X25519 / Ed25519) over the DTLS rec... |
 | `native_dtls_hs` | `ETWS_ENABLE_DTLS=1` | `test_dtls_handshake` | DTLS 1.3 handshake framing + reliability (network_drivers/presentation/dtls/dtls_handshake, RFC 9147 sec 5 + 7): the 12-byte DTLS handshake header, overlap-tolerant message reassembly, the ACK message... |
 | `native_dtls_tls13` | `ETWS_ENABLE_DTLS=1` | `test_dtls_tls13` | TLS 1.3 messages the DTLS 1.3 handshake adds to tls13_msg (RFC 8446 sec 4.1.4 / 4.4.1), compiled for the DTLS path (DETWS_ENABLE_DTLS, not HTTP/3): the HelloRetryRequest builder, the cookie extension ... |
+| `native_edge_cache` | `ETWS_ENABLE_HTTP_CACHE=1`, `ETWS_ENABLE_EDGE_CACHE=1` | `test_edge_cache` | CDN edge-cache pure engine (services/edge_cache): the raw response header-field access + HTTP-date parsing (IMF-fixdate / RFC 850 / asctime) that httpcache lacks, RFC 9111 freshness (lifetime, Expires... |
 | `native_enip` | `ETWS_ENABLE_ENIP=1` | `test_enip` | EtherNet/IP encapsulation codec (services/enip): the 24-octet header, RegisterSession + SendRRData builders (Common Packet Format), and the SendRRData reply extractor. |
 | `native_enocean` | `ETWS_ENABLE_ENOCEAN=1`, `ETWS_ENOCEAN_MAX_DATA=16` | `test_enocean` | EnOcean ESP3 serial codec (services/enocean), v5 radio plugin: the CRC-8 (poly 0x07) against known answers, a build -> parse round trip, malformed framing (bad sync / header CRC / data CRC), incomplet... |
 | `native_espnow` | `ETWS_ENABLE_ESPNOW=1` | `test_espnow` | ESP-NOW peer messaging (services/espnow) - the envelope codec + peer registry are host-tested here; the esp_now radio binding is ESP32-only. |

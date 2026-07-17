@@ -179,6 +179,7 @@ CATEGORY_MEMBERS = {
         "Chunked Responses",
         "CORS",
         "Dashboard",
+        "Edge Cache",
         "ETag",
         "File Serving",
         "HTTP Cache",

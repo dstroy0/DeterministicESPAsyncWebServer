@@ -3310,6 +3310,58 @@
 #endif
 
 /**
+ * @brief Opt-in CDN edge-cache tier (DETWS_ENABLE_EDGE_CACHE, requires HTTP_CACHE).
+ *
+ * services/edge_cache is the caching reverse-proxy edge that services/httpcache is the origin-side
+ * groundwork for: a device sits in front of a remote upstream origin, fetches a response once, and
+ * serves subsequent hits from a bounded local store - honoring `Cache-Control` / `Expires` / `ETag` /
+ * `Last-Modified`, revalidating stale entries with conditional requests (`If-None-Match` /
+ * `If-Modified-Since` -> 304), and serving `Range` / `206` straight from the cache. A two-tier store:
+ * bounded RAM (L1, hot) plus an optional dbm/WAL-backed SD tier (L2, persistent, when DETWS_ENABLE_DBM
+ * is set). Misses/revalidations fetch the origin asynchronously (the client request is suspended and
+ * resumed from the poll loop, never stalling the worker) and always fail open. Zero heap. Default off.
+ */
+#ifndef DETWS_ENABLE_EDGE_CACHE
+#define DETWS_ENABLE_EDGE_CACHE 0
+#endif
+#if DETWS_ENABLE_EDGE_CACHE && !DETWS_ENABLE_HTTP_CACHE
+#error "DETWS_ENABLE_EDGE_CACHE requires DETWS_ENABLE_HTTP_CACHE"
+#endif
+#ifndef DETWS_EDGE_CACHE_SLOTS
+#define DETWS_EDGE_CACHE_SLOTS 8 // L1 RAM entries (each holds one cached object; bounded, no heap)
+#endif
+#ifndef DETWS_EDGE_BODY_MAX
+#define DETWS_EDGE_BODY_MAX 4096 // largest cacheable body in bytes (per L1 entry)
+#endif
+#ifndef DETWS_EDGE_KEY_MAX
+#define DETWS_EDGE_KEY_MAX 128 // largest canonical cache key (method\nhost\npath[\nquery])
+#endif
+#ifndef DETWS_EDGE_HDR_MAX
+#define DETWS_EDGE_HDR_MAX 256 // stored end-to-end response headers replayed on a hit
+#endif
+#ifndef DETWS_EDGE_VARY_MAX
+#define DETWS_EDGE_VARY_MAX 64 // stored Vary field-name list / captured request values (each)
+#endif
+#ifndef DETWS_EDGE_MAP_MAX
+#define DETWS_EDGE_MAP_MAX 4 // path-prefix -> origin route mappings
+#endif
+#ifndef DETWS_EDGE_ORIGIN_URL_MAX
+#define DETWS_EDGE_ORIGIN_URL_MAX 128 // largest origin base URL in a route mapping
+#endif
+#ifndef DETWS_EDGE_FETCH_SLOTS
+#define DETWS_EDGE_FETCH_SLOTS 2 // concurrent in-flight origin fetches (<= DETWS_CLIENT_CONNS)
+#endif
+#ifndef DETWS_EDGE_FETCH_BUF
+#define DETWS_EDGE_FETCH_BUF 5120 // per-fetch origin-response accumulation buffer (>= body max + headers)
+#endif
+#ifndef DETWS_EDGE_FETCH_TIMEOUT_MS
+#define DETWS_EDGE_FETCH_TIMEOUT_MS 8000 // origin fetch deadline before fail-open
+#endif
+#ifndef DETWS_EDGE_DEFAULT_TTL_S
+#define DETWS_EDGE_DEFAULT_TTL_S 60 // fallback freshness when no directive and no wall clock
+#endif
+
+/**
  * @brief Opt-in SMB2 client (DETWS_ENABLE_SMB).
  *
  * services/smb is an SMB2 client (MS-SMB2) so a device can read/write files on a Windows share -

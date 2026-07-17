@@ -1323,7 +1323,8 @@
     "Renes",
     "CIOS",
     "mults",
-    "hwcrypto"
+    "hwcrypto",
+    "mountpoints"
   ],
   "ignorePaths": [
     "node_modules/**",

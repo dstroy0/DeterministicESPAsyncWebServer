@@ -66,6 +66,16 @@
       "src": ["+<services/httpcache/httpcache.cpp>"],
       "tests": ["test_httpcache"]
     },
+    "native_edge_cache": {
+      "desc": "CDN edge-cache pure engine (services/edge_cache): the raw response header-field access +\nHTTP-date parsing (IMF-fixdate / RFC 850 / asctime) that httpcache lacks, RFC 9111 freshness (lifetime,\nExpires-Date, the heuristic, and corrected age over the monotonic clock), and the canonical cache key +\nSHA-256 digest + Vary secondary-key serialization. Pure host tests.",
+      "flags": ["-DDETWS_ENABLE_HTTP_CACHE=1", "-DDETWS_ENABLE_EDGE_CACHE=1"],
+      "src": [
+        "+<services/httpcache/httpcache.cpp>",
+        "+<services/edge_cache/edge_cache.cpp>",
+        "+<network_drivers/presentation/ssh/crypto/ssh_sha256.cpp>"
+      ],
+      "tests": ["test_edge_cache"]
+    },
     "native_det_primitives": {
       "desc": "Shared no-stdlib primitives (shared_primitives): the base-10 det_strtol/strtoul/strtof\nnumber parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h).\nHeader-only; pure host tests.",
       "flags": [],

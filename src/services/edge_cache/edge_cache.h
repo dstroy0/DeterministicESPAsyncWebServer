@@ -1,0 +1,199 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file edge_cache.h
+ * @brief CDN edge-cache tier - pure engine (DETWS_ENABLE_EDGE_CACHE).
+ *
+ * The caching reverse-proxy edge that services/httpcache is the origin-side groundwork for. This
+ * header is the pure, host-testable core: the response header-field access and HTTP-date math that
+ * httpcache lacks, RFC 9111 freshness (lifetime + age), and the deterministic cache key + SHA-256
+ * digest + `Vary` secondary key. No sockets, no DetWebServer, no heap - the socket glue
+ * (edge_cache_proxy) and the L2 SD tier (edge_cache_sd) layer on top.
+ *
+ * @author  Douglas Quigg (dstroy0)
+ * @date    2026
+ */
+
+#ifndef DETERMINISTICESPASYNCWEBSERVER_EDGE_CACHE_H
+#define DETERMINISTICESPASYNCWEBSERVER_EDGE_CACHE_H
+
+#include "ServerConfig.h"
+
+#if DETWS_ENABLE_EDGE_CACHE
+
+#include "services/httpcache/httpcache.h" // DetwsCacheControl, cache_freshness_lifetime
+#include <stddef.h>
+#include <stdint.h>
+
+// --- raw response header-block field access ------------------------------------------------------
+
+/**
+ * @brief Copy the value of header @p name from a raw HTTP response head (status line + CRLF headers)
+ *        into @p out, OWS-trimmed and NUL-terminated.
+ *
+ * Case-insensitive name match; the first occurrence wins. Fails (returns false, @p out emptied) if the
+ * header is absent or its value would not fit @p out_cap (never truncates a validator).
+ */
+bool edge_header_value(const char *hdrs, size_t len, const char *name, char *out, size_t out_cap);
+
+// --- HTTP-date <-> epoch (RFC 9110 sec 5.6.7: IMF-fixdate, obsolete RFC 850, asctime) -------------
+
+/** @brief Parse an HTTP-date to epoch seconds (UTC), or return -1 if it does not parse. */
+int64_t edge_parse_http_date(const char *s, size_t len);
+
+// --- freshness (RFC 9111 sec 4.2) ----------------------------------------------------------------
+
+/**
+ * @brief Freshness lifetime in seconds, or -1 when none is explicit (caller applies a heuristic).
+ *
+ * Wraps ::cache_freshness_lifetime and computes its `Expires - Date` from the two response epochs
+ * locally (a difference of two origin-supplied times - valid with no local wall clock). @p date_epoch
+ * and @p expires_epoch are -1 when the header was absent.
+ */
+long edge_freshness_lifetime(const DetwsCacheControl *cc, bool shared, int64_t date_epoch, int64_t expires_epoch);
+
+/**
+ * @brief Heuristic freshness (RFC 9111 sec 4.2.2): 10% of (Date - Last-Modified), or -1 if either
+ *        epoch is absent / not ordered.
+ */
+long edge_heuristic_lifetime(int64_t date_epoch, int64_t last_modified_epoch);
+
+/**
+ * @brief Corrected initial age at store time (RFC 9111 sec 4.2.3).
+ *
+ * @p response_time_epoch < 0 (no wall clock) falls back to @p age_hdr alone; @p age_hdr < 0 is 0.
+ */
+long edge_initial_age(int32_t age_hdr, int64_t date_epoch, int64_t response_time_epoch);
+
+/** @brief Current age = @p initial_age + resident time, taken from the monotonic clock (wrap-safe). */
+long edge_current_age(long initial_age, uint32_t insert_ms, uint32_t now_ms);
+
+/** @brief Fresh iff a lifetime is known (>= 0) and the current age has not reached it. */
+bool edge_is_fresh_at(long lifetime, long current_age);
+
+// --- cache key + digest + Vary -------------------------------------------------------------------
+
+/**
+ * @brief Build the canonical cache key `METHOD "\n" host "\n" path [ "\n" query ]` (host lowercased)
+ *        into @p out.
+ *
+ * @return the key length (excluding NUL), or 0 if it would overflow @p out_cap (caller treats 0 as
+ *         non-cacheable and fails open).
+ */
+size_t edge_key_canon(const char *method, const char *host, const char *path, const char *query, bool include_query,
+                      char *out, size_t out_cap);
+
+/** @brief SHA-256 of the canonical key -> @p digest[32] (doubles as the L2 dbm key). */
+void edge_key_digest(const char *canon, size_t len, uint8_t digest[32]);
+
+/** @brief Request-header lookup used to build the Vary secondary key; return nullptr when absent. */
+typedef const char *(*EdgeHdrLookup)(void *ctx, const char *name);
+
+/**
+ * @brief Serialize a request's values for each field-name in a response `Vary` header into @p out
+ *        (a stable, order-preserving key for the Vary secondary match).
+ *
+ * Two requests select the same stored variant iff their serialized strings are equal. An empty / absent
+ * Vary writes "" and returns true. Returns false if Vary is "*" (uncacheable) or it would overflow.
+ */
+bool edge_vary_serialize(const char *vary_header, EdgeHdrLookup lookup, void *ctx, char *out, size_t out_cap);
+
+// --- L1 RAM store: entries, LRU, TTL, purge ------------------------------------------------------
+
+#define EDGE_LRU_NONE 0xFFFFu
+
+/** @brief One cached object (fixed-size, zero-heap). */
+struct EdgeEntry
+{
+    bool used;
+    char key[DETWS_EDGE_KEY_MAX];         ///< canonical key (collision-safe exact compare)
+    uint8_t digest[32];                   ///< ssh_sha256(key) - the L2 dbm key
+    char vary_vals[DETWS_EDGE_VARY_MAX];  ///< serialized request Vary values at store time (secondary key)
+    int status;                           ///< stored response status (200)
+    char content_type[64];                ///< Content-Type to replay
+    char etag[64];                        ///< validator (quotes included), "" if none
+    char last_modified[40];               ///< Last-Modified (RFC 1123), "" if none
+    char stored_hdrs[DETWS_EDGE_HDR_MAX]; ///< extra end-to-end headers to replay (CRLF-framed)
+    int64_t date_epoch;                   ///< origin Date (-1 absent)
+    int64_t expires_epoch;                ///< origin Expires (-1 absent)
+    int32_t age_hdr;                      ///< origin Age at store (>=0)
+    long lifetime_s;                      ///< resolved freshness lifetime (always >=0)
+    long initial_age;                     ///< corrected initial age at store
+    uint32_t insert_ms;                   ///< monotonic store time (TTL/age base)
+    uint32_t last_used_ms;                ///< recency
+    uint16_t lru_prev, lru_next;          ///< intrusive LRU indices (EDGE_LRU_NONE = end)
+    uint16_t body_len;
+    uint8_t body[DETWS_EDGE_BODY_MAX];
+};
+
+/** @brief Cache observability counters. */
+struct EdgeCacheStats
+{
+    uint32_t hits, misses, revalidations_304, replaces_200;
+    uint32_t stores, evictions, purges, l2_spills, l2_promotes;
+    uint64_t bytes_stored;
+};
+
+/** @brief The L1 store: a fixed pool of entries with an intrusive MRU..LRU list. */
+struct EdgeCacheStore
+{
+    EdgeEntry entries[DETWS_EDGE_CACHE_SLOTS];
+    uint16_t lru_head, lru_tail; ///< head = MRU, tail = LRU (EDGE_LRU_NONE when empty)
+    EdgeCacheStats stats;
+};
+
+/** @brief Reset a store to empty. */
+void edge_store_init(EdgeCacheStore *s);
+
+/**
+ * @brief Reserve a slot for @p canon / @p vary_key, evicting the LRU entry if the pool is full.
+ *
+ * The returned entry has its key/digest/vary set, is marked used, and is linked at the MRU end; the
+ * caller fills status/body/validators/freshness. Returns nullptr only if @p canon would not fit
+ * `DETWS_EDGE_KEY_MAX` (non-cacheable). Bumps `stores` (and `evictions` if it displaced an entry).
+ */
+EdgeEntry *edge_store_alloc(EdgeCacheStore *s, const char *canon, const char *vary_key);
+
+/**
+ * @brief Find the entry for @p canon whose stored Vary values equal @p vary_key; touch it to MRU.
+ * @return the entry, or nullptr on a miss. Freshness is the caller's decision (see ::edge_entry_fresh).
+ */
+EdgeEntry *edge_store_lookup(EdgeCacheStore *s, const char *canon, const char *vary_key, uint32_t now_ms);
+
+/** @brief Resolve and store an entry's freshness (lifetime with heuristic / default fallback + age). */
+void edge_entry_set_freshness(EdgeEntry *e, const DetwsCacheControl *cc, bool shared, int64_t date_epoch,
+                              int64_t expires_epoch, int64_t last_modified_epoch, int32_t age_hdr,
+                              int64_t response_time_epoch, uint32_t now_ms);
+
+/** @brief True if the entry carries a validator (ETag or Last-Modified) usable for revalidation. */
+bool edge_entry_has_validator(const EdgeEntry *e);
+
+/** @brief True if the entry is still fresh at @p now_ms. */
+bool edge_entry_fresh(const EdgeEntry *e, uint32_t now_ms);
+
+/**
+ * @brief Drop entries that are both stale AND unrevalidatable (no validator) - pure dead weight.
+ * @return the number evicted. Revalidatable stale entries are kept (they can still 304-refresh).
+ */
+uint32_t edge_store_sweep(EdgeCacheStore *s, uint32_t now_ms);
+
+/** @brief Purge every variant stored under the exact canonical key @p canon. @return count purged. */
+uint32_t edge_store_purge(EdgeCacheStore *s, const char *canon);
+
+/** @brief Purge every entry whose request path begins with @p prefix. @return count purged. */
+uint32_t edge_store_purge_prefix(EdgeCacheStore *s, const char *prefix);
+
+// --- storeability (RFC 9111 sec 3) ---------------------------------------------------------------
+
+/**
+ * @brief May a response be stored? GET + 200 + not no-store/private + not `Vary: *` + body fits.
+ *
+ * @p vary_header may be nullptr. Authorization handling is the caller's (private requests bypass first).
+ */
+bool edge_is_storeable(int status, const char *method, const DetwsCacheControl *cc, const char *vary_header,
+                       size_t body_len);
+
+#endif // DETWS_ENABLE_EDGE_CACHE
+
+#endif // DETERMINISTICESPASYNCWEBSERVER_EDGE_CACHE_H

@@ -1,0 +1,554 @@
+// Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+/**
+ * @file edge_cache.cpp
+ * @brief CDN edge-cache tier - pure engine. See edge_cache.h.
+ */
+
+#include "services/edge_cache/edge_cache.h"
+
+#if DETWS_ENABLE_EDGE_CACHE
+
+#include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
+#include <string.h>
+
+namespace
+{
+char lc(char c)
+{
+    return (c >= 'A' && c <= 'Z') ? (char)(c + 32) : c;
+}
+
+// Read a run of decimal digits at *pp into @p out; advance *pp. False if no digit is present.
+bool rd_uint(const char **pp, int *out)
+{
+    const char *p = *pp;
+    if (*p < '0' || *p > '9')
+        return false;
+    int v = 0;
+    while (*p >= '0' && *p <= '9')
+    {
+        v = v * 10 + (*p - '0');
+        p++;
+    }
+    *pp = p;
+    *out = v;
+    return true;
+}
+
+// Read a 3-letter month abbreviation at *pp -> 1..12; advance past it. False if unrecognized.
+bool rd_month(const char **pp, int *out)
+{
+    static const char MONTHS[] = "janfebmaraprmayjunjulaugsepoctnovdec";
+    const char *p = *pp;
+    char a = lc(p[0]);
+    char b = lc(p[1]);
+    char c = lc(p[2]);
+    for (int m = 0; m < 12; m++)
+        if (a == MONTHS[m * 3] && b == MONTHS[m * 3 + 1] && c == MONTHS[m * 3 + 2])
+        {
+            *pp = p + 3;
+            *out = m + 1;
+            return true;
+        }
+    return false;
+}
+
+// Read "hh:mm:ss" at *pp; advance past it.
+bool rd_time(const char **pp, int *hh, int *mm, int *ss)
+{
+    const char *p = *pp;
+    if (!rd_uint(&p, hh) || *p != ':')
+        return false;
+    p++;
+    if (!rd_uint(&p, mm) || *p != ':')
+        return false;
+    p++;
+    if (!rd_uint(&p, ss))
+        return false;
+    *pp = p;
+    return true;
+}
+
+// Days since 1970-01-01 for a proleptic-Gregorian y-m-d (Howard Hinnant's civil algorithm).
+int64_t days_from_civil(int y, int m, int d)
+{
+    y -= (m <= 2);
+    int64_t era = (y >= 0 ? y : y - 399) / 400;
+    int64_t yoe = y - era * 400;                                  // [0, 399]
+    int64_t doy = (153 * (m + (m > 2 ? -3 : 9)) + 2) / 5 + d - 1; // [0, 365]
+    int64_t doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;          // [0, 146096]
+    return era * 146097 + doe - 719468;
+}
+
+// Append @p s to out[*pos..cap), optionally lowercased. False (and no write) on overflow.
+bool k_append(char *out, size_t *pos, size_t cap, const char *s, bool lower)
+{
+    size_t p = *pos;
+    for (const char *q = s; *q; q++)
+    {
+        if (p + 1 >= cap) // leave room for the terminating NUL
+            return false;
+        out[p++] = lower ? lc(*q) : *q;
+    }
+    *pos = p;
+    return true;
+}
+} // namespace
+
+bool edge_header_value(const char *hdrs, size_t len, const char *name, char *out, size_t out_cap)
+{
+    if (!hdrs || !name || !out || out_cap == 0)
+        return false;
+    out[0] = '\0';
+    size_t namelen = strlen(name);
+    const char *p = hdrs;
+    const char *end = hdrs + len;
+    // Skip the status line.
+    while (p < end && *p != '\n')
+        p++;
+    if (p < end)
+        p++;
+    while (p < end)
+    {
+        if (*p == '\r' || *p == '\n') // blank line: end of the header block
+            break;
+        const char *le = p;
+        while (le < end && *le != '\n')
+            le++;
+        const char *lend = le; // exclusive; drop a trailing CR
+        if (lend > p && lend[-1] == '\r')
+            lend--;
+        const char *colon = p;
+        while (colon < lend && *colon != ':')
+            colon++;
+        if (colon < lend && (size_t)(colon - p) == namelen)
+        {
+            bool match = true;
+            for (size_t i = 0; i < namelen; i++)
+                if (lc(p[i]) != lc(name[i]))
+                {
+                    match = false;
+                    break;
+                }
+            if (match)
+            {
+                const char *v = colon + 1;
+                while (v < lend && (*v == ' ' || *v == '\t'))
+                    v++;
+                const char *ve = lend;
+                while (ve > v && (ve[-1] == ' ' || ve[-1] == '\t'))
+                    ve--;
+                size_t vl = (size_t)(ve - v);
+                if (vl >= out_cap)
+                    return false; // never truncate a validator
+                for (size_t i = 0; i < vl; i++)
+                    out[i] = v[i];
+                out[vl] = '\0';
+                return true;
+            }
+        }
+        p = (le < end) ? le + 1 : end;
+    }
+    return false;
+}
+
+int64_t edge_parse_http_date(const char *s, size_t len)
+{
+    if (!s)
+        return -1;
+    char buf[64];
+    while (len && (*s == ' ' || *s == '\t')) // trim leading OWS
+    {
+        s++;
+        len--;
+    }
+    if (len == 0 || len >= sizeof(buf))
+        return -1;
+    memcpy(buf, s, len);
+    buf[len] = '\0';
+
+    int mday = 0;
+    int mon = 0;
+    int year = 0;
+    int hh = 0;
+    int mm = 0;
+    int ss = 0;
+    const char *comma = strchr(buf, ',');
+    if (comma)
+    {
+        // IMF-fixdate "Sun, 06 Nov 1994 08:49:37 GMT" or RFC 850 "Sunday, 06-Nov-94 08:49:37 GMT".
+        const char *p = comma + 1;
+        while (*p == ' ')
+            p++;
+        if (!rd_uint(&p, &mday))
+            return -1;
+        bool rfc850 = (*p == '-');
+        if (*p == '-' || *p == ' ')
+            p++;
+        else
+            return -1;
+        if (!rd_month(&p, &mon))
+            return -1;
+        if (*p == '-')
+            p++;
+        else
+            while (*p == ' ')
+                p++;
+        if (!rd_uint(&p, &year))
+            return -1;
+        if (rfc850 && year < 100) // 2-digit year window (RFC 6265-style)
+            year += (year < 70) ? 2000 : 1900;
+        while (*p == ' ')
+            p++;
+        if (!rd_time(&p, &hh, &mm, &ss))
+            return -1;
+    }
+    else
+    {
+        // asctime "Sun Nov  6 08:49:37 1994".
+        const char *p = buf;
+        while (*p && *p != ' ')
+            p++;
+        while (*p == ' ')
+            p++;
+        if (!rd_month(&p, &mon))
+            return -1;
+        while (*p == ' ')
+            p++;
+        if (!rd_uint(&p, &mday))
+            return -1;
+        while (*p == ' ')
+            p++;
+        if (!rd_time(&p, &hh, &mm, &ss))
+            return -1;
+        while (*p == ' ')
+            p++;
+        if (!rd_uint(&p, &year))
+            return -1;
+    }
+
+    if (mon < 1 || mon > 12 || mday < 1 || mday > 31 || hh > 23 || mm > 59 || ss > 60)
+        return -1;
+    int64_t days = days_from_civil(year, mon, mday);
+    return days * 86400 + (int64_t)hh * 3600 + (int64_t)mm * 60 + ss;
+}
+
+long edge_freshness_lifetime(const DetwsCacheControl *cc, bool shared, int64_t date_epoch, int64_t expires_epoch)
+{
+    long expires_minus_date = -1;
+    if (date_epoch >= 0 && expires_epoch >= 0)
+        expires_minus_date = (long)(expires_epoch - date_epoch);
+    return cache_freshness_lifetime(cc, shared, expires_minus_date);
+}
+
+long edge_heuristic_lifetime(int64_t date_epoch, int64_t last_modified_epoch)
+{
+    if (date_epoch < 0 || last_modified_epoch < 0 || last_modified_epoch >= date_epoch)
+        return -1;
+    return (long)((date_epoch - last_modified_epoch) / 10); // RFC 9111 sec 4.2.2 (10%)
+}
+
+long edge_initial_age(int32_t age_hdr, int64_t date_epoch, int64_t response_time_epoch)
+{
+    long apparent = 0;
+    if (date_epoch >= 0 && response_time_epoch >= 0 && response_time_epoch > date_epoch)
+        apparent = (long)(response_time_epoch - date_epoch);
+    long corrected = (age_hdr > 0) ? (long)age_hdr : 0;
+    return (apparent > corrected) ? apparent : corrected;
+}
+
+long edge_current_age(long initial_age, uint32_t insert_ms, uint32_t now_ms)
+{
+    uint32_t resident_ms = now_ms - insert_ms; // unsigned: wrap-safe
+    return initial_age + (long)(resident_ms / 1000u);
+}
+
+bool edge_is_fresh_at(long lifetime, long current_age)
+{
+    return lifetime >= 0 && current_age < lifetime;
+}
+
+size_t edge_key_canon(const char *method, const char *host, const char *path, const char *query, bool include_query,
+                      char *out, size_t out_cap)
+{
+    if (!method || !host || !path || !out || out_cap == 0)
+        return 0;
+    size_t pos = 0;
+    if (!k_append(out, &pos, out_cap, method, false))
+        return 0;
+    if (!k_append(out, &pos, out_cap, "\n", false) || !k_append(out, &pos, out_cap, host, true))
+        return 0;
+    if (!k_append(out, &pos, out_cap, "\n", false) || !k_append(out, &pos, out_cap, path, false))
+        return 0;
+    if (include_query && query && query[0])
+    {
+        if (!k_append(out, &pos, out_cap, "\n", false) || !k_append(out, &pos, out_cap, query, false))
+            return 0;
+    }
+    out[pos] = '\0';
+    return pos;
+}
+
+void edge_key_digest(const char *canon, size_t len, uint8_t digest[32])
+{
+    ssh_sha256((const uint8_t *)canon, len, digest);
+}
+
+bool edge_vary_serialize(const char *vary_header, EdgeHdrLookup lookup, void *ctx, char *out, size_t out_cap)
+{
+    if (!out || out_cap == 0)
+        return false;
+    out[0] = '\0';
+    if (!vary_header)
+        return true; // no Vary -> empty key
+    size_t pos = 0;
+    const char *p = vary_header;
+    while (*p)
+    {
+        while (*p == ' ' || *p == '\t' || *p == ',')
+            p++;
+        if (!*p)
+            break;
+        // one field-name token
+        char name[48];
+        size_t nl = 0;
+        while (*p && *p != ',' && *p != ' ' && *p != '\t')
+        {
+            if (*p == '*') // Vary: * -> uncacheable
+                return false;
+            if (nl + 1 < sizeof(name))
+                name[nl++] = lc(*p);
+            p++;
+        }
+        name[nl] = '\0';
+        if (nl == 0)
+            continue;
+        const char *val = lookup ? lookup(ctx, name) : nullptr;
+        // Emit "name\x1e value \x1f" so distinct names cannot alias and a present-but-empty value is
+        // distinguished from an absent one only by the name being recorded regardless.
+        if (!k_append(out, &pos, out_cap, name, false) || !k_append(out, &pos, out_cap, "\x1e", false))
+            return false;
+        if (val && !k_append(out, &pos, out_cap, val, false))
+            return false;
+        if (!k_append(out, &pos, out_cap, "\x1f", false))
+            return false;
+    }
+    out[pos] = '\0';
+    return true;
+}
+
+// --- L1 store ------------------------------------------------------------------------------------
+
+namespace
+{
+void lru_unlink(EdgeCacheStore *s, uint16_t i)
+{
+    EdgeEntry *e = &s->entries[i];
+    if (e->lru_prev != EDGE_LRU_NONE)
+        s->entries[e->lru_prev].lru_next = e->lru_next;
+    else
+        s->lru_head = e->lru_next;
+    if (e->lru_next != EDGE_LRU_NONE)
+        s->entries[e->lru_next].lru_prev = e->lru_prev;
+    else
+        s->lru_tail = e->lru_prev;
+    e->lru_prev = e->lru_next = EDGE_LRU_NONE;
+}
+
+void lru_push_front(EdgeCacheStore *s, uint16_t i)
+{
+    EdgeEntry *e = &s->entries[i];
+    e->lru_prev = EDGE_LRU_NONE;
+    e->lru_next = s->lru_head;
+    if (s->lru_head != EDGE_LRU_NONE)
+        s->entries[s->lru_head].lru_prev = i;
+    s->lru_head = i;
+    if (s->lru_tail == EDGE_LRU_NONE)
+        s->lru_tail = i;
+}
+
+void store_free(EdgeCacheStore *s, uint16_t i)
+{
+    lru_unlink(s, i);
+    s->entries[i].used = false;
+}
+
+// The path portion of a canonical key "METHOD\nhost\npath[\nquery]" (after the 2nd '\n'), or nullptr.
+const char *key_path(const char *key)
+{
+    int nl = 0;
+    for (const char *p = key; *p; p++)
+        if (*p == '\n' && ++nl == 2)
+            return p + 1;
+    return nullptr;
+}
+
+bool vary_is_star(const char *vary_header)
+{
+    if (!vary_header)
+        return false;
+    for (const char *p = vary_header; *p; p++)
+        if (*p == '*')
+            return true;
+    return false;
+}
+} // namespace
+
+void edge_store_init(EdgeCacheStore *s)
+{
+    memset(s, 0, sizeof(*s));
+    s->lru_head = s->lru_tail = EDGE_LRU_NONE;
+    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+        s->entries[i].lru_prev = s->entries[i].lru_next = EDGE_LRU_NONE;
+}
+
+EdgeEntry *edge_store_alloc(EdgeCacheStore *s, const char *canon, const char *vary_key)
+{
+    size_t klen = strlen(canon);
+    if (klen >= sizeof(s->entries[0].key))
+        return nullptr; // key too long -> non-cacheable
+    uint16_t slot = EDGE_LRU_NONE;
+    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+        if (!s->entries[i].used)
+        {
+            slot = i;
+            break;
+        }
+    if (slot == EDGE_LRU_NONE)
+    {
+        if (s->lru_tail == EDGE_LRU_NONE)
+            return nullptr; // DETWS_EDGE_CACHE_SLOTS == 0
+        slot = s->lru_tail;
+        store_free(s, slot);
+        s->stats.evictions++;
+    }
+    EdgeEntry *e = &s->entries[slot];
+    memset(e, 0, sizeof(*e));
+    e->lru_prev = e->lru_next = EDGE_LRU_NONE;
+    e->used = true;
+    memcpy(e->key, canon, klen);
+    e->key[klen] = '\0';
+    edge_key_digest(canon, klen, e->digest);
+    size_t vl = vary_key ? strlen(vary_key) : 0;
+    if (vl >= sizeof(e->vary_vals))
+        vl = sizeof(e->vary_vals) - 1;
+    if (vary_key)
+        memcpy(e->vary_vals, vary_key, vl);
+    e->vary_vals[vl] = '\0';
+    e->date_epoch = e->expires_epoch = -1;
+    lru_push_front(s, slot);
+    s->stats.stores++;
+    return e;
+}
+
+EdgeEntry *edge_store_lookup(EdgeCacheStore *s, const char *canon, const char *vary_key, uint32_t now_ms)
+{
+    const char *vk = vary_key ? vary_key : "";
+    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    {
+        EdgeEntry *e = &s->entries[i];
+        if (e->used && strcmp(e->key, canon) == 0 && strcmp(e->vary_vals, vk) == 0)
+        {
+            lru_unlink(s, i);
+            lru_push_front(s, i);
+            e->last_used_ms = now_ms;
+            return e;
+        }
+    }
+    return nullptr;
+}
+
+void edge_entry_set_freshness(EdgeEntry *e, const DetwsCacheControl *cc, bool shared, int64_t date_epoch,
+                              int64_t expires_epoch, int64_t last_modified_epoch, int32_t age_hdr,
+                              int64_t response_time_epoch, uint32_t now_ms)
+{
+    long lifetime = edge_freshness_lifetime(cc, shared, date_epoch, expires_epoch);
+    if (lifetime < 0)
+        lifetime = edge_heuristic_lifetime(date_epoch, last_modified_epoch);
+    if (lifetime < 0)
+        lifetime = DETWS_EDGE_DEFAULT_TTL_S;
+    e->lifetime_s = lifetime;
+    e->initial_age = edge_initial_age(age_hdr, date_epoch, response_time_epoch);
+    e->insert_ms = now_ms;
+    e->date_epoch = date_epoch;
+    e->expires_epoch = expires_epoch;
+    e->age_hdr = (age_hdr > 0) ? age_hdr : 0;
+}
+
+bool edge_entry_has_validator(const EdgeEntry *e)
+{
+    return e->etag[0] != '\0' || e->last_modified[0] != '\0';
+}
+
+bool edge_entry_fresh(const EdgeEntry *e, uint32_t now_ms)
+{
+    return edge_is_fresh_at(e->lifetime_s, edge_current_age(e->initial_age, e->insert_ms, now_ms));
+}
+
+uint32_t edge_store_sweep(EdgeCacheStore *s, uint32_t now_ms)
+{
+    uint32_t n = 0;
+    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    {
+        EdgeEntry *e = &s->entries[i];
+        if (e->used && !edge_entry_has_validator(e) && !edge_entry_fresh(e, now_ms))
+        {
+            store_free(s, i);
+            s->stats.evictions++;
+            n++;
+        }
+    }
+    return n;
+}
+
+uint32_t edge_store_purge(EdgeCacheStore *s, const char *canon)
+{
+    uint32_t n = 0;
+    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+        if (s->entries[i].used && strcmp(s->entries[i].key, canon) == 0)
+        {
+            store_free(s, i);
+            s->stats.purges++;
+            n++;
+        }
+    return n;
+}
+
+uint32_t edge_store_purge_prefix(EdgeCacheStore *s, const char *prefix)
+{
+    size_t plen = strlen(prefix);
+    uint32_t n = 0;
+    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    {
+        if (!s->entries[i].used)
+            continue;
+        const char *path = key_path(s->entries[i].key);
+        if (path && strncmp(path, prefix, plen) == 0)
+        {
+            store_free(s, i);
+            s->stats.purges++;
+            n++;
+        }
+    }
+    return n;
+}
+
+bool edge_is_storeable(int status, const char *method, const DetwsCacheControl *cc, const char *vary_header,
+                       size_t body_len)
+{
+    if (!method || strcmp(method, "GET") != 0)
+        return false;
+    if (status != 200)
+        return false; // v1: only 200 (other cacheable-by-default statuses are a follow-up)
+    if (cc && (cc->no_store || cc->cc_private))
+        return false;
+    if (vary_is_star(vary_header))
+        return false;
+    if (body_len > DETWS_EDGE_BODY_MAX)
+        return false;
+    return true;
+}
+
+#endif // DETWS_ENABLE_EDGE_CACHE
