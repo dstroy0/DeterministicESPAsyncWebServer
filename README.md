@@ -621,7 +621,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 
 </details>
 
-_24 hard dependencies, 3 PSRAM gates, 15 derived flags._
+_25 hard dependencies, 3 PSRAM gates, 15 derived flags._
 
 <!-- END GENERATED FLAG DEPS -->
 

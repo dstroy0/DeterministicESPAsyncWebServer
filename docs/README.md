@@ -760,6 +760,7 @@ src/
 │   ├── dns_server/  (dns_server.h, dns_server.cpp)
 │   ├── docstore/  (docstore.h, docstore.cpp)
 │   ├── dshot/  (dshot.h, dshot.cpp)
+│   ├── edge_cache/  (edge_cache.h, edge_cache.cpp)
 │   ├── enip/  (enip.h, enip.cpp)
 │   ├── enocean/  (enocean.h, enocean.cpp)
 │   ├── espnow/  (espnow.h, espnow.cpp)
@@ -1248,6 +1249,7 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_DOCSTORE` | `0` | Opt-in local JSON document store on the WAL (DETWS_ENABLE_DOCSTORE, requires DBM + WAL). |
 | `DETWS_ENABLE_DSHOT` | `0` | Opt-in DShot ESC throttle protocol codec. |
 | `DETWS_ENABLE_DTLS` | `0` | DTLS 1.3 datagram security (RFC 9147) - the record layer. |
+| `DETWS_ENABLE_EDGE_CACHE` | `0` | Opt-in CDN edge-cache tier (DETWS_ENABLE_EDGE_CACHE, requires HTTP_CACHE). |
 | `DETWS_ENABLE_ENIP` | `0` | EtherNet/IP encapsulation codec (`services/enip`). |
 | `DETWS_ENABLE_ENOCEAN` | `0` | Enable the EnOcean ESP3 serial codec (default off). |
 | `DETWS_ENABLE_ESPNOW` | `0` | ESP-NOW peer messaging. |
