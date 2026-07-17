@@ -955,6 +955,7 @@ src/
 │   ├── aes_sbox.h
 │   ├── bytes.h
 │   ├── can.h
+│   ├── crypto_opt.h
 │   ├── ghash.h
 │   ├── hex.h
 │   ├── http_date.h
