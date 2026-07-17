@@ -6,8 +6,12 @@
 //   §6.5.5 - known path, wrong method → 405 Method Not Allowed + Allow header
 
 #include "dwserver.h"
+#include <stdio.h>
 #include <string.h>
 #include <unity.h>
+#if DETWS_ENABLE_CSRF
+#include "services/csrf/csrf.h" // supply a valid token so an unsafe method reaches method dispatch
+#endif
 
 static DetWebServer server;
 static bool handler_called = false;
@@ -45,6 +49,14 @@ void setUp()
     ws_init();
     sse_init();
     tcp_capture_reset();
+#if DETWS_ENABLE_CSRF
+    // With CSRF compiled in, state-changing methods are gated before dispatch; set a secret so a valid
+    // token can be issued (csrf_issue/verify no-op without one), letting the unsafe-method tests below
+    // reach the 405/Allow method dispatch as a legitimate token-bearing client would.
+    static const uint8_t csrf_key[16] = {0x53, 0x65, 0x63, 0x72, 0x65, 0x74, 0x4b, 0x65,
+                                         0x79, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36};
+    csrf_set_secret(csrf_key, sizeof(csrf_key));
+#endif
 }
 
 void tearDown()
@@ -57,6 +69,22 @@ static void feed_and_handle(uint8_t slot, const char *req_str)
     push_str(slot, req_str);
     http_parse(slot);
     server.handle();
+}
+
+// Feed an unsafe-method (POST/DELETE/...) request. Under DETWS_ENABLE_CSRF such a method is gated before
+// dispatch, so attach a valid token to let the request reach the 405/Allow method dispatch (as a real
+// token-bearing client would); with CSRF off the request line is plain.
+static void feed_unsafe(uint8_t slot, const char *method, const char *path)
+{
+    char reqbuf[256];
+#if DETWS_ENABLE_CSRF
+    char tok[CSRF_TOKEN_BUF];
+    csrf_issue(tok, sizeof(tok));
+    snprintf(reqbuf, sizeof(reqbuf), "%s %s HTTP/1.1\r\nX-CSRF-Token: %s\r\n\r\n", method, path, tok);
+#else
+    snprintf(reqbuf, sizeof(reqbuf), "%s %s HTTP/1.1\r\n\r\n", method, path);
+#endif
+    feed_and_handle(slot, reqbuf);
 }
 
 // ---- §6.5.5 405 Method Not Allowed ----------------------------------------
@@ -72,7 +100,7 @@ void test_method_mismatch_returns_405()
 void test_405_includes_allow_header()
 {
     server.on("/res", HttpMethod::HTTP_POST, handle_ok);
-    feed_and_handle(0, "DELETE /res HTTP/1.1\r\n\r\n");
+    feed_unsafe(0, "DELETE", "/res");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Allow: POST"));
 }
 
@@ -132,7 +160,7 @@ void test_head_runs_get_handler_without_body()
 void test_get_route_advertises_head_in_allow()
 {
     server.on("/res", HttpMethod::HTTP_GET, handle_ok);
-    feed_and_handle(0, "POST /res HTTP/1.1\r\n\r\n");
+    feed_unsafe(0, "POST", "/res");
     const char *resp = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(resp, "405"));
     TEST_ASSERT_NOT_NULL(strstr(resp, "GET"));

@@ -50,21 +50,26 @@ Status key: **OPEN** (found, not fixed) - **FIXED** (fixed, validated) - **SHIPP
 
 ---
 
-## native_codeql (all-flags) test_dispatch::test_get_route_advertises_head_in_allow fails - hidden by CI
+## native_codeql (all-flags) test_dispatch 405/Allow tests fail - CSRF gate, hidden by CI
 
-- **Status:** OPEN (found 2026-07-16). Surfaced by the new WSL native test env actually _running_ the
+- **Status:** FIXED (2026-07-17). Found 2026-07-16 by the WSL native env actually _running_ the
   `native_codeql` suite. **CI never caught it** because the CodeQL workflow builds `native_codeql` with
-  `pio test --without-testing` (compile-only, to trace the build) - its test assertions have never executed
-  in CI. Confirmed pre-existing on committed `main` (fails identically with all local changes stashed), so it
-  is unrelated to the SonarCloud remediation in flight.
+  `pio test --without-testing` (compile-only, to trace the build) - its assertions have never executed in CI.
 - **Symptom:** under the all-feature-flags `native_codeql` config, `test_get_route_advertises_head_in_allow`
-  (POST to a GET-only route → expect `405` with `GET`/`HEAD` in Allow) finds no `405` in the captured response,
-  and the env reports ERRORED. The narrower `test_head_on_post_only_route_405` and `test_correct_method_still_dispatches`
-  pass, so ordinary method dispatch works; only this all-flags path diverges.
-- **Root cause:** TBD. Likely a feature-flag interaction (a module enabled only in the all-flags build intercepts
-  the request) or shared `server`/slot state carried between tests in this config. Passes in the per-feature envs.
-- **Next:** re-run `native_codeql` in isolation, bisect the enabled flags / add a per-test server reset, then fix.
-  Also worth making CI actually run (not just compile) at least a smoke of `native_codeql` so this can't hide again.
+  (POST to a GET-only route → expect `405` + `GET`/`HEAD` in Allow) and `test_405_includes_allow_header`
+  (DELETE to a POST-only route → expect `Allow: POST`) both failed (`Expected Non-NULL`), while the same tests
+  driven with **GET** (`test_method_mismatch_returns_405`, `test_405_allow_lists_all_methods_for_path`) and
+  `HEAD` passed.
+- **Root cause:** a **feature-flag interaction, not a dispatch bug** - the all-flags build enables
+  `DETWS_ENABLE_CSRF`, and `csrf_gate` (dwserver.cpp) runs _before_ the route loop and rejects any un-tokened
+  state-changing method (`POST`/`PUT`/`PATCH`/`DELETE`) with `403`, so those requests never reach the
+  §6.5.5 405/Allow dispatch. `GET`/`HEAD`/`OPTIONS` are CSRF-exempt, so they still 405. This is the intended,
+  fail-closed security behavior (don't leak a path's allowed methods to an un-tokened request); the **test**
+  simply didn't account for CSRF being on.
+- **Fix:** the two unsafe-method tests now attach a valid `X-CSRF-Token` (via `feed_unsafe` + a suite-level
+  `csrf_set_secret` in `setUp`, both `#if DETWS_ENABLE_CSRF`), so a legitimate token-bearing request reaches
+  the 405/Allow dispatch; with CSRF off the request line is plain. Verified: `native_codeql:test_dispatch`
+  11/11 (was 2 failed) and `native_app:test_dispatch` (CSRF off) still green.
 
 ---
 
