@@ -15,9 +15,10 @@
 
 #if DETWS_ENABLE_GPIO_MAP
 
-#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "shared_primitives/fmtbuf.h"
 
 const char *detws_gpio_dir_name(DetwsGpioDir dir)
 {
@@ -36,20 +37,6 @@ const char *detws_gpio_dir_name(DetwsGpioDir dir)
     }
 }
 
-static int json_append(char *out, size_t cap, size_t *pos, const char *fmt, ...)
-{
-    if (*pos >= cap)
-        return -1;
-    va_list ap;
-    va_start(ap, fmt);
-    int w = vsnprintf(out + *pos, cap - *pos, fmt, ap);
-    va_end(ap);
-    if (w < 0 || (size_t)w >= cap - *pos)
-        return -1;
-    *pos += (size_t)w;
-    return 0;
-}
-
 int detws_gpio_json(const DetwsGpioPin *pins, uint8_t count, char *out, size_t cap)
 {
     if (!out || cap == 0)
@@ -58,17 +45,17 @@ int detws_gpio_json(const DetwsGpioPin *pins, uint8_t count, char *out, size_t c
     if (!pins)
         return 0;
     size_t pos = 0;
-    if (json_append(out, cap, &pos, "{\"pins\":[") != 0)
+    if (det_fmt_append(out, cap, &pos, "{\"pins\":[") != 0)
         return 0;
     for (uint8_t i = 0; i < count; i++)
     {
         const DetwsGpioPin *p = &pins[i];
-        if (json_append(out, cap, &pos, "%s{\"pin\":%u,\"label\":\"%s\",\"dir\":\"%s\",\"level\":%u}", i ? "," : "",
-                        (unsigned)p->pin, p->label ? p->label : "", detws_gpio_dir_name(p->dir),
-                        p->level ? 1u : 0u) != 0)
+        if (det_fmt_append(out, cap, &pos, "%s{\"pin\":%u,\"label\":\"%s\",\"dir\":\"%s\",\"level\":%u}", i ? "," : "",
+                           (unsigned)p->pin, p->label ? p->label : "", detws_gpio_dir_name(p->dir),
+                           p->level ? 1u : 0u) != 0)
             return 0;
     }
-    if (json_append(out, cap, &pos, "]}") != 0)
+    if (det_fmt_append(out, cap, &pos, "]}") != 0)
         return 0;
     return (int)pos;
 }

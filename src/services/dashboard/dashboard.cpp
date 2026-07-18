@@ -15,8 +15,8 @@
 
 #if DETWS_ENABLE_DASHBOARD
 
+#include "shared_primitives/fmtbuf.h"
 #include "shared_primitives/numparse.h"
-#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -55,22 +55,6 @@ static const char *widget_type_name(DetwsWidgetType t)
     }
 }
 
-// Append a formatted fragment at *pos; return -1 (leaving the buffer truncated) if
-// it would not fit, so callers fail closed rather than overflow.
-static int json_append(char *out, size_t cap, size_t *pos, const char *fmt, ...)
-{
-    if (*pos >= cap)
-        return -1;
-    va_list ap;
-    va_start(ap, fmt);
-    int w = vsnprintf(out + *pos, cap - *pos, fmt, ap);
-    va_end(ap);
-    if (w < 0 || (size_t)w >= cap - *pos)
-        return -1;
-    *pos += (size_t)w;
-    return 0;
-}
-
 void detws_dashboard_configure(const DetwsWidget *widgets, uint8_t count)
 {
     s_dash.widgets = widgets;
@@ -102,18 +86,18 @@ int detws_dashboard_layout_json(char *out, size_t cap)
     if (!s_dash.widgets)
         return 0;
     size_t pos = 0;
-    if (json_append(out, cap, &pos, "[") != 0)
+    if (det_fmt_append(out, cap, &pos, "[") != 0)
         return 0;
     for (uint8_t i = 0; i < s_dash.count; i++)
     {
         const DetwsWidget *w = &s_dash.widgets[i];
-        if (json_append(out, cap, &pos,
-                        "%s{\"type\":\"%s\",\"label\":\"%s\",\"key\":\"%s\",\"min\":%g,\"max\":%g,\"unit\":\"%s\"}",
-                        i ? "," : "", widget_type_name(w->type), w->label ? w->label : "", w->key ? w->key : "",
-                        (double)w->min, (double)w->max, w->unit ? w->unit : "") != 0)
+        if (det_fmt_append(out, cap, &pos,
+                           "%s{\"type\":\"%s\",\"label\":\"%s\",\"key\":\"%s\",\"min\":%g,\"max\":%g,\"unit\":\"%s\"}",
+                           i ? "," : "", widget_type_name(w->type), w->label ? w->label : "", w->key ? w->key : "",
+                           (double)w->min, (double)w->max, w->unit ? w->unit : "") != 0)
             return 0;
     }
-    if (json_append(out, cap, &pos, "]") != 0)
+    if (det_fmt_append(out, cap, &pos, "]") != 0)
         return 0;
     return (int)pos;
 }
@@ -126,15 +110,15 @@ int detws_dashboard_values_json(char *out, size_t cap)
     if (!s_dash.widgets)
         return 0;
     size_t pos = 0;
-    if (json_append(out, cap, &pos, "{") != 0)
+    if (det_fmt_append(out, cap, &pos, "{") != 0)
         return 0;
     for (uint8_t i = 0; i < s_dash.count; i++)
     {
-        if (json_append(out, cap, &pos, "%s\"%s\":%g", i ? "," : "", s_dash.widgets[i].key ? s_dash.widgets[i].key : "",
-                        (double)s_dash.values[i]) != 0)
+        if (det_fmt_append(out, cap, &pos, "%s\"%s\":%g", i ? "," : "",
+                           s_dash.widgets[i].key ? s_dash.widgets[i].key : "", (double)s_dash.values[i]) != 0)
             return 0;
     }
-    if (json_append(out, cap, &pos, "}") != 0)
+    if (det_fmt_append(out, cap, &pos, "}") != 0)
         return 0;
     return (int)pos;
 }

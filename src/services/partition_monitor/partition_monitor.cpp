@@ -14,7 +14,7 @@
 
 #if DETWS_ENABLE_PARTITION_MONITOR
 
-#include <stdarg.h>
+#include "shared_primitives/fmtbuf.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -55,20 +55,6 @@ const char *detws_partition_kind(uint8_t type, uint8_t subtype)
     }
 }
 
-static int json_append(char *out, size_t cap, size_t *pos, const char *fmt, ...)
-{
-    if (*pos >= cap)
-        return -1;
-    va_list ap;
-    va_start(ap, fmt);
-    int w = vsnprintf(out + *pos, cap - *pos, fmt, ap);
-    va_end(ap);
-    if (w < 0 || (size_t)w >= cap - *pos)
-        return -1;
-    *pos += (size_t)w;
-    return 0;
-}
-
 int detws_partition_json(const DetwsPartitionInfo *parts, uint8_t count, char *out, size_t cap)
 {
     if (!out || cap == 0)
@@ -77,20 +63,20 @@ int detws_partition_json(const DetwsPartitionInfo *parts, uint8_t count, char *o
     if (!parts)
         return 0;
     size_t pos = 0;
-    if (json_append(out, cap, &pos, "{\"partitions\":[") != 0)
+    if (det_fmt_append(out, cap, &pos, "{\"partitions\":[") != 0)
         return 0;
     for (uint8_t i = 0; i < count; i++)
     {
         const DetwsPartitionInfo *p = &parts[i];
-        if (json_append(out, cap, &pos,
-                        "%s{\"label\":\"%s\",\"kind\":\"%s\",\"type\":%u,\"subtype\":%u,\"addr\":%u,\"size\":%u,"
-                        "\"running\":%s}",
-                        i ? "," : "", p->label, detws_partition_kind(p->type, p->subtype), (unsigned)p->type,
-                        (unsigned)p->subtype, (unsigned)p->address, (unsigned)p->size,
-                        p->running ? "true" : "false") != 0)
+        if (det_fmt_append(out, cap, &pos,
+                           "%s{\"label\":\"%s\",\"kind\":\"%s\",\"type\":%u,\"subtype\":%u,\"addr\":%u,\"size\":%u,"
+                           "\"running\":%s}",
+                           i ? "," : "", p->label, detws_partition_kind(p->type, p->subtype), (unsigned)p->type,
+                           (unsigned)p->subtype, (unsigned)p->address, (unsigned)p->size,
+                           p->running ? "true" : "false") != 0)
             return 0;
     }
-    if (json_append(out, cap, &pos, "]}") != 0)
+    if (det_fmt_append(out, cap, &pos, "]}") != 0)
         return 0;
     return (int)pos;
 }
