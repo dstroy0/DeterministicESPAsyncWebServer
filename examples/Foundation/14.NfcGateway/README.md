@@ -9,7 +9,7 @@ ubiquitous NXP **PN532** over I2C. Scanning a tag becomes a northbound event: th
 is enveloped and published.
 
 ```
-tag scan --PN532/I2C--> pn532_parse_frame() -> UID -> det_gw_uplink()
+tag scan --PN532/I2C--> pn532_parse_frame() -> UID -> det_gateway_uplink()
                                                        |
                                     envelope + topic  nfc/0/<target>
                                                        |

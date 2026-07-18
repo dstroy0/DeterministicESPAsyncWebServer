@@ -9,7 +9,7 @@ simulated feed, this drives an actual **Semtech SX127x / RFM95-96** over SPI and
 its frames to the [gateway](../10.RadioGateway/README.md).
 
 ```
-RFM95 RX --SPI--> lora_recv() --> lora_frame_parse() --> det_gw_uplink()
+RFM95 RX --SPI--> lora_recv() --> lora_frame_parse() --> det_gateway_uplink()
                                                               |
                                            envelope + topic  lora/0/<from>
                                                               |
@@ -33,7 +33,7 @@ lora_set_rx(&bus);               // listen
 int n = lora_recv(&bus, buf, sizeof(buf), &rssi);   // -> a frame, or -1
 lora_header h; const uint8_t *payload; uint16_t plen;
 lora_frame_parse(buf, n, &h, &payload, &plen);
-det_gw_uplink(0, h.from, payload, plen, rssi);      // bridge northbound
+det_gateway_uplink(0, h.from, payload, plen, rssi);      // bridge northbound
 ```
 
 A **downlink** (a northbound command) is the mirror: `lora_frame_build()` then

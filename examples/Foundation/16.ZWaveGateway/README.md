@@ -9,7 +9,7 @@ Silicon Labs 500 / 700-series controller speaking its **Serial API** over UART. 
 reports, we pull the source node id + payload and publish it northbound.
 
 ```
-Z-Wave mesh --UART--> zwave_parse_frame() --> node + payload -> det_gw_uplink()
+Z-Wave mesh --UART--> zwave_parse_frame() --> node + payload -> det_gateway_uplink()
                                                                      |
                                               envelope + topic  zwave/0/<node>
                                                                      |
@@ -26,7 +26,7 @@ int n = zwave_parse_frame(buf, len, &type, &cmd, &pd, &pdlen);  // >0 / need-mor
 if (n > 0) {
     Serial2.write((uint8_t)ZWAVE_ACK);              // acknowledge the frame
     if (cmd == 0x04 /* ApplicationCommandHandler */)
-        det_gw_uplink(0, pd[1] /* node */, &pd[3], pdlen - 3, 0);
+        det_gateway_uplink(0, pd[1] /* node */, &pd[3], pdlen - 3, 0);
 }
 ```
 

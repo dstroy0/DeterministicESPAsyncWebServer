@@ -11,7 +11,7 @@ plain register read/write, the nRF24 uses an **SPI command protocol** and a sepa
 **CE** pin, so its `nrf_bus` carries an SPI transfer plus a CE callback.
 
 ```
-nRF24 RX --SPI--> nrf24_recv() -> pipe + payload -> det_gw_uplink(port, pipe, ...)
+nRF24 RX --SPI--> nrf24_recv() -> pipe + payload -> det_gateway_uplink(port, pipe, ...)
                                                            |
                                         envelope + topic  nrf24/0/<pipe>
                                                            |
@@ -20,7 +20,7 @@ nRF24 RX --SPI--> nrf24_recv() -> pipe + payload -> det_gw_uplink(port, pipe, ..
 
 The nRF24 does its own **hardware addressing**: a received frame's source is the **pipe
 number** it arrived on, so there is no in-payload header (no codec) - the pipe is the
-address handed to `det_gw_uplink()`. Payloads are a **static width**
+address handed to `det_gateway_uplink()`. Payloads are a **static width**
 (`DETWS_NRF24_PAYLOAD`, default 32); a short send is zero-padded.
 
 ```cpp
@@ -30,7 +30,7 @@ nrf24_set_rx(&bus);
 
 uint8_t buf[DETWS_NRF24_PAYLOAD]; uint8_t pipe;
 int n = nrf24_recv(&bus, buf, sizeof(buf), &pipe);   // -> a frame, or -1
-det_gw_uplink(0, pipe, buf, n, 0);                   // pipe = source address
+det_gateway_uplink(0, pipe, buf, n, 0);                   // pipe = source address
 ```
 
 ## Wiring (ESP32 <-> nRF24L01+)

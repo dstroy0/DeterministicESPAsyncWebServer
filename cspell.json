@@ -1337,7 +1337,9 @@
     "longname",
     "longnames",
     "malforming",
-    "secsh"
+    "secsh",
+    "bitio",
+    "fmtbuf"
   ],
   "ignorePaths": [
     "node_modules/**",

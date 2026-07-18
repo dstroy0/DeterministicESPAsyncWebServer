@@ -17,7 +17,7 @@
  * caller supplies it as a register table (a TI SmartRF Studio export); the driver resets the chip, writes
  * that table, sets the channel, and verifies the VERSION status register talks back. Packets use variable
  * length mode (a leading length byte) with appended RSSI/LQI status. Bridge received payloads northbound
- * with det_gw_uplink. The register/strobe/FIFO protocol is host-testable against a mock; the RF link
+ * with det_gateway_uplink. The register/strobe/FIFO protocol is host-testable against a mock; the RF link
  * needs the module.
  */
 

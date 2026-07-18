@@ -5,7 +5,7 @@
 // node reports (an ApplicationCommandHandler frame), we pull the source node id + payload
 // and publish it northbound. Each data frame is acknowledged with a single ACK byte.
 //
-//   Z-Wave mesh --UART--> zwave_parse_frame() --> node + payload -> det_gw_uplink()
+//   Z-Wave mesh --UART--> zwave_parse_frame() --> node + payload -> det_gateway_uplink()
 //                                                                        |
 //                                                 envelope + topic  zwave/0/<node>
 //                                                                        |
@@ -30,10 +30,10 @@ static uint16_t g_len = 0;
 // FUNC_ID_APPLICATION_COMMAND_HANDLER: a node sent an application command.
 static const uint8_t FUNC_APP_CMD_HANDLER = 0x04;
 
-static bool northbound_publish(const det_gw_msg *m, void *)
+static bool northbound_publish(const det_gateway_msg *m, void *)
 {
     char topic[48];
-    det_gw_topic(m, topic, sizeof(topic));
+    det_gateway_topic(m, topic, sizeof(topic));
     Serial.printf("PUBLISH %s  (%u bytes)\n", topic, m->len);
     return true;
 }
@@ -50,13 +50,13 @@ void setup()
     Serial2.begin(115200, SERIAL_8N1, PIN_RX, PIN_TX);
     delay(300);
 
-    det_gw_reset();
-    det_gw_port_config p = {};
+    det_gateway_reset();
+    det_gateway_port_config p = {};
     p.port_id = RADIO_PORT;
-    p.kind = det_gw_kind::DET_GW_ZWAVE;
-    det_gw_add_port(&p);
-    det_gw_set_uplink(northbound_publish, nullptr);
-    det_gw_set_topic_prefix("zwave");
+    p.kind = det_gateway_kind::DET_GW_ZWAVE;
+    det_gateway_add_port(&p);
+    det_gateway_set_uplink_cb(northbound_publish, nullptr);
+    det_gateway_set_topic_prefix("zwave");
 
     uint8_t frame[8];
     uint16_t n = zwave_build_frame(zwave_type::ZWAVE_REQ, 0x15, nullptr, 0, frame, sizeof(frame)); // GetVersion
@@ -95,7 +95,7 @@ void loop()
         if (cmd == FUNC_APP_CMD_HANDLER && pdlen >= 3)
         {
             uint8_t node = pd[1];
-            det_gw_uplink(RADIO_PORT, node, &pd[3], (uint16_t)(pdlen - 3), 0);
+            det_gateway_uplink(RADIO_PORT, node, &pd[3], (uint16_t)(pdlen - 3), 0);
         }
         drop_front((uint16_t)n);
     }

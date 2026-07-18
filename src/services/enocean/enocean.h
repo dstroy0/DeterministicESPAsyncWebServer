@@ -15,7 +15,7 @@
  * CRC-8, polynomial 0x07, init 0). esp3_parse() frames one telegram out of a byte stream,
  * resynchronising on a bad sync / CRC, and esp3_build() assembles one. This is the radio-
  * plugin codec for the gateway: an inbound RADIO_ERP1 telegram carries a sender id (its
- * source address) and payload; bridge it northbound with det_gw_uplink(). Pure - you feed
+ * source address) and payload; bridge it northbound with det_gateway_uplink(). Pure - you feed
  * it the UART bytes - so it is fully host-testable. See example 13.EnOceanGateway.
  *
  * @author  Douglas Quigg (dstroy0)

@@ -5,9 +5,9 @@
  * @file gateway.cpp
  * @brief Radio / wireless gateway bridge - implementation.
  *
- * A static port table; det_gw_uplink() envelopes a received frame and publishes it through
- * the installed northbound callback (per-port rate-capped, fail-closed), det_gw_downlink()
- * routes a command to a port's transmit callback, and det_gw_topic() formats a routing key.
+ * A static port table; det_gateway_uplink() envelopes a received frame and publishes it through
+ * the installed northbound callback (per-port rate-capped, fail-closed), det_gateway_downlink()
+ * routes a command to a port's transmit callback, and det_gateway_topic() formats a routing key.
  * Zero heap.
  */
 
@@ -25,13 +25,13 @@ namespace
 {
 struct port
 {
-    det_gw_tx_fn tx;
+    det_gateway_tx_fn tx;
     void *ctx;
     uint32_t window_start; // ms of the current uplink rate window
     uint16_t rate_cap;     // uplink frames per second (0 = unlimited)
     uint16_t count;        // uplinks in the current window
     uint8_t id;
-    det_gw_kind kind;
+    det_gateway_kind kind;
     bool used;
 };
 
@@ -41,11 +41,11 @@ struct port
 struct GatewayCtx
 {
     port ports[DETWS_GW_MAX_PORTS];
-    det_gw_uplink_fn uplink = nullptr;
+    det_gateway_uplink_fn uplink = nullptr;
     void *uplink_ctx = nullptr;
     const char *prefix = DETWS_GW_DEFAULT_PREFIX;
     uint32_t seq = 0;
-    det_gw_stats stats;
+    det_gateway_stats stats;
 #ifndef ARDUINO
     uint32_t now_ms = 0; // host test clock (real builds use detws_millis())
 #endif
@@ -116,7 +116,7 @@ bool put_u32(char *buf, uint16_t *pos, uint16_t cap, uint32_t v)
 }
 } // namespace
 
-void det_gw_reset(void)
+void det_gateway_reset(void)
 {
     memset(s_gw.ports, 0, sizeof(s_gw.ports));
     s_gw.uplink = nullptr;
@@ -126,7 +126,7 @@ void det_gw_reset(void)
     memset(&s_gw.stats, 0, sizeof(s_gw.stats));
 }
 
-bool det_gw_add_port(const det_gw_port_config *cfg)
+bool det_gateway_add_port(const det_gateway_port_config *cfg)
 {
     if (!cfg || find_port(s_gw, cfg->port_id))
         return false;
@@ -147,18 +147,18 @@ bool det_gw_add_port(const det_gw_port_config *cfg)
     return false; // table full
 }
 
-void det_gw_set_uplink(det_gw_uplink_fn fn, void *ctx)
+void det_gateway_set_uplink_cb(det_gateway_uplink_fn fn, void *ctx)
 {
     s_gw.uplink = fn;
     s_gw.uplink_ctx = ctx;
 }
 
-void det_gw_set_topic_prefix(const char *prefix)
+void det_gateway_set_topic_prefix(const char *prefix)
 {
     s_gw.prefix = prefix ? prefix : DETWS_GW_DEFAULT_PREFIX;
 }
 
-bool det_gw_uplink(uint8_t port_id, uint16_t src_addr, const uint8_t *payload, uint16_t len, int16_t rssi)
+bool det_gateway_uplink(uint8_t port_id, uint16_t src_addr, const uint8_t *payload, uint16_t len, int16_t rssi)
 {
     s_gw.stats.up_in++;
     port *p = find_port(s_gw, port_id);
@@ -167,7 +167,7 @@ bool det_gw_uplink(uint8_t port_id, uint16_t src_addr, const uint8_t *payload, u
         s_gw.stats.up_dropped++;
         return false;
     }
-    det_gw_msg msg;
+    det_gateway_msg msg;
     msg.payload = payload;
     msg.seq = s_gw.seq++;
     msg.len = len;
@@ -184,7 +184,7 @@ bool det_gw_uplink(uint8_t port_id, uint16_t src_addr, const uint8_t *payload, u
     return false;
 }
 
-bool det_gw_downlink(uint8_t port_id, uint16_t dst_addr, const uint8_t *payload, uint16_t len)
+bool det_gateway_downlink(uint8_t port_id, uint16_t dst_addr, const uint8_t *payload, uint16_t len)
 {
     s_gw.stats.down_in++;
     port *p = find_port(s_gw, port_id);
@@ -197,7 +197,7 @@ bool det_gw_downlink(uint8_t port_id, uint16_t dst_addr, const uint8_t *payload,
     return true;
 }
 
-uint16_t det_gw_topic(const det_gw_msg *msg, char *buf, uint16_t buflen)
+uint16_t det_gateway_topic(const det_gateway_msg *msg, char *buf, uint16_t buflen)
 {
     if (!msg || !buf || buflen == 0)
         return 0;
@@ -220,14 +220,14 @@ uint16_t det_gw_topic(const det_gw_msg *msg, char *buf, uint16_t buflen)
     return pos;
 }
 
-void det_gw_get_stats(det_gw_stats *out)
+void det_gateway_get_stats(det_gateway_stats *out)
 {
     if (out)
         *out = s_gw.stats;
 }
 
 #if !defined(ARDUINO)
-void det_gw_test_set_now(uint32_t ms)
+void det_gateway_test_set_now(uint32_t ms)
 {
     s_gw.now_ms = ms;
 }

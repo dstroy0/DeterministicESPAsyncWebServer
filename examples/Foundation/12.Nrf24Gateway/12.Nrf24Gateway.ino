@@ -5,7 +5,7 @@
 // an SPI transfer plus a CE-set callback - the only board-specific code. Its hardware pipes
 // address the frame, so the "source" is the pipe number (no in-payload codec).
 //
-//   nRF24 RX --SPI--> nrf24_recv() -> pipe + payload -> det_gw_uplink(port, pipe, ...)
+//   nRF24 RX --SPI--> nrf24_recv() -> pipe + payload -> det_gateway_uplink(port, pipe, ...)
 //                                                              |
 //                                           envelope + topic  nrf24/0/<pipe>
 //                                                              |
@@ -41,11 +41,11 @@ static void nrf_ce(bool level, void *)
 }
 static nrf_bus g_bus = {nrf_spi, nrf_ce, nullptr};
 
-// Northbound publish (the uplink sink): a real build calls mqtt.publish(det_gw_topic(m), ...).
-static bool northbound_publish(const det_gw_msg *m, void *)
+// Northbound publish (the uplink sink): a real build calls mqtt.publish(det_gateway_topic(m), ...).
+static bool northbound_publish(const det_gateway_msg *m, void *)
 {
     char topic[48];
-    det_gw_topic(m, topic, sizeof(topic));
+    det_gateway_topic(m, topic, sizeof(topic));
     Serial.printf("PUBLISH %s  (%u bytes)\n", topic, m->len);
     return true;
 }
@@ -85,14 +85,14 @@ void setup()
         return;
     }
 
-    det_gw_reset();
-    det_gw_port_config p = {};
+    det_gateway_reset();
+    det_gateway_port_config p = {};
     p.port_id = RADIO_PORT;
-    p.kind = det_gw_kind::DET_GW_NRF24;
+    p.kind = det_gateway_kind::DET_GW_NRF24;
     p.tx = radio_tx;
-    det_gw_add_port(&p);
-    det_gw_set_uplink(northbound_publish, nullptr);
-    det_gw_set_topic_prefix("nrf24");
+    det_gateway_add_port(&p);
+    det_gateway_set_uplink_cb(northbound_publish, nullptr);
+    det_gateway_set_topic_prefix("nrf24");
 
     nrf24_set_rx(&g_bus);
     Serial.println("nRF24 gateway: RX -> pipe/payload -> publish (nrf24/0/<pipe>)");
@@ -104,6 +104,6 @@ void loop()
     uint8_t pipe = 0;
     int n = nrf24_recv(&g_bus, buf, sizeof(buf), &pipe);
     if (n > 0)
-        det_gw_uplink(RADIO_PORT, pipe, buf, (uint16_t)n, 0); // pipe = source address
+        det_gateway_uplink(RADIO_PORT, pipe, buf, (uint16_t)n, 0); // pipe = source address
     delay(2);
 }

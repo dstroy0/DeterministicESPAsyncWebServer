@@ -5,7 +5,7 @@
 // Thread mesh is bridged to IP and the web. This decodes the HDLC-lite frames and bridges
 // the spinel payload of each one northbound.
 //
-//   Thread RCP --UART--> spinel_frame_decode() --> spinel payload -> det_gw_uplink()
+//   Thread RCP --UART--> spinel_frame_decode() --> spinel payload -> det_gateway_uplink()
 //                                                                         |
 //                                                  envelope + topic  thread/0/<tid>
 //                                                                         |
@@ -28,10 +28,10 @@ static const int PIN_RX = 16, PIN_TX = 17; // UART2 to the Thread RCP
 static uint8_t g_buf[1024];
 static uint16_t g_len = 0;
 
-static bool northbound_publish(const det_gw_msg *m, void *)
+static bool northbound_publish(const det_gateway_msg *m, void *)
 {
     char topic[48];
-    det_gw_topic(m, topic, sizeof(topic));
+    det_gateway_topic(m, topic, sizeof(topic));
     Serial.printf("PUBLISH %s  (%u bytes)\n", topic, m->len);
     return true;
 }
@@ -48,13 +48,13 @@ void setup()
     Serial2.begin(115200, SERIAL_8N1, PIN_RX, PIN_TX);
     delay(300);
 
-    det_gw_reset();
-    det_gw_port_config p = {};
+    det_gateway_reset();
+    det_gateway_port_config p = {};
     p.port_id = RADIO_PORT;
-    p.kind = det_gw_kind::DET_GW_THREAD;
-    det_gw_add_port(&p);
-    det_gw_set_uplink(northbound_publish, nullptr);
-    det_gw_set_topic_prefix("thread");
+    p.kind = det_gateway_kind::DET_GW_THREAD;
+    det_gateway_add_port(&p);
+    det_gateway_set_uplink_cb(northbound_publish, nullptr);
+    det_gateway_set_topic_prefix("thread");
 
     // Reset the NCP: spinel RESET command (header 0x80 | CMD_RESET 0x01).
     const uint8_t reset[2] = {0x80, 0x01};
@@ -87,7 +87,7 @@ void loop()
         if (plen > 0)
         {
             uint16_t tid = payload[0] & 0x0F;
-            det_gw_uplink(RADIO_PORT, tid, payload, plen, 0);
+            det_gateway_uplink(RADIO_PORT, tid, payload, plen, 0);
         }
         drop_front((uint16_t)n);
     }

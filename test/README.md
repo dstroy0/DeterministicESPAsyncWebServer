@@ -9686,12 +9686,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Uplink envelopes and publishes
     * **Assertions**:
-      * <code>Assert true (add_port(0, det_gw_kind::DET_GW_LORA, 0, false))</code>
-      * <code>Assert true (det_gw_uplink(0, 0x42, hi, 2, -50))</code>
+      * <code>Assert true (add_port(0, det_gateway_kind::DET_GW_LORA, 0, false))</code>
+      * <code>Assert true (det_gateway_uplink(0, 0x42, hi, 2, -50))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_up.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x42, g_up[0].src_addr);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, g_up[0].port_id);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(det_gw_kind::DET_GW_LORA, g_up[0].kind);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(det_gateway_kind::DET_GW_LORA, g_up[0].kind);</code>
       * <code>TEST_ASSERT_EQUAL_INT16(-50, g_up[0].rssi);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, g_up[0].seq);</code>
       * <code>Assert equal memory (hi, g_up[0].payload.data(), 2)</code>
@@ -9703,7 +9703,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Uplink no sink drops
     * **Assertions**:
-      * <code>Assert false (det_gw_uplink(0, 1, x, 1, 0))</code>
+      * <code>Assert false (det_gateway_uplink(0, 1, x, 1, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().up_dropped);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, stats().up_published);</code>
   </details>
@@ -9713,7 +9713,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Uplink unknown port drops
     * **Assertions**:
-      * <code>Assert false (det_gw_uplink(9, 1, x, 1, 0))</code>
+      * <code>Assert false (det_gateway_uplink(9, 1, x, 1, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().up_dropped);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, g_up.size());</code>
   </details>
@@ -9723,12 +9723,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Uplink rate cap
     * **Assertions**:
-      * <code>Assert true (det_gw_uplink(0, 1, x, 1, 0))</code>
-      * <code>Assert true (det_gw_uplink(0, 1, x, 1, 0))</code>
-      * <code>Assert false (det_gw_uplink(0, 1, x, 1, 0))</code>
+      * <code>Assert true (det_gateway_uplink(0, 1, x, 1, 0))</code>
+      * <code>Assert true (det_gateway_uplink(0, 1, x, 1, 0))</code>
+      * <code>Assert false (det_gateway_uplink(0, 1, x, 1, 0))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, g_up.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().up_dropped);</code>
-      * <code>Assert true (det_gw_uplink(0, 1, x, 1, 0))</code>
+      * <code>Assert true (det_gateway_uplink(0, 1, x, 1, 0))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, g_up.size());</code>
   </details>
 
@@ -9737,7 +9737,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Uplink sink refusal counted
     * **Assertions**:
-      * <code>Assert false (det_gw_uplink(0, 1, x, 1, 0))</code>
+      * <code>Assert false (det_gateway_uplink(0, 1, x, 1, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().up_dropped);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, stats().up_published);</code>
   </details>
@@ -9747,7 +9747,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Downlink transmits
     * **Assertions**:
-      * <code>Assert true (det_gw_downlink(0, 0x10, cmd, 3))</code>
+      * <code>Assert true (det_gateway_downlink(0, 0x10, cmd, 3))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_down.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, g_down[0].port_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x10, g_down[0].dst);</code>
@@ -9760,8 +9760,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Downlink no tx or unknown port drops
     * **Assertions**:
-      * <code>Assert false (det_gw_downlink(0, 1, x, 1))</code>
-      * <code>Assert false (det_gw_downlink(9, 1, x, 1))</code>
+      * <code>Assert false (det_gateway_downlink(0, 1, x, 1))</code>
+      * <code>Assert false (det_gateway_downlink(9, 1, x, 1))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2, stats().down_dropped);</code>
   </details>
 
@@ -9770,7 +9770,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Downlink tx refusal counted
     * **Assertions**:
-      * <code>Assert false (det_gw_downlink(0, 1, x, 1))</code>
+      * <code>Assert false (det_gateway_downlink(0, 1, x, 1))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().down_dropped);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, stats().down_sent);</code>
   </details>
@@ -9783,7 +9783,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert equal string ("gw/2/66", buf)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(7, n);</code>
       * <code>Assert equal string ("lora/2/66", buf)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gw_topic(&m, tiny, sizeof(tiny))); // too small -&gt; 0</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gateway_topic(&m, tiny, sizeof(tiny))); // too small -&gt; 0</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9791,13 +9791,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Add port validation and table full
     * **Assertions**:
-      * <code>Assert false (det_gw_add_port(nullptr))</code>
-      * <code>Assert true (add_port(0, det_gw_kind::DET_GW_LORA, 0, false))</code>
-      * <code>Assert false (add_port(0, det_gw_kind::DET_GW_LORA, 0, false))</code>
-      * <code>Assert true (add_port(1, det_gw_kind::DET_GW_NRF24, 0, false))</code>
-      * <code>Assert true (add_port(2, det_gw_kind::DET_GW_ZIGBEE, 0, false))</code>
-      * <code>Assert true (add_port(3, det_gw_kind::DET_GW_BLE, 0, false))</code>
-      * <code>Assert false (add_port(4, det_gw_kind::DET_GW_LORA, 0, false)); // table full (DETWS_GW_MAX_PORTS = 4)</code>
+      * <code>Assert false (det_gateway_add_port(nullptr))</code>
+      * <code>Assert true (add_port(0, det_gateway_kind::DET_GW_LORA, 0, false))</code>
+      * <code>Assert false (add_port(0, det_gateway_kind::DET_GW_LORA, 0, false))</code>
+      * <code>Assert true (add_port(1, det_gateway_kind::DET_GW_NRF24, 0, false))</code>
+      * <code>Assert true (add_port(2, det_gateway_kind::DET_GW_ZIGBEE, 0, false))</code>
+      * <code>Assert true (add_port(3, det_gateway_kind::DET_GW_BLE, 0, false))</code>
+      * <code>Assert false (add_port(4, det_gateway_kind::DET_GW_LORA, 0, false)); // table full (DETWS_GW_MAX_PORTS = 4)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9815,10 +9815,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Topic zero and overflow steps
     * **Assertions**:
-      * <code>Assert true (det_gw_topic(&m, buf, sizeof(buf)) &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gw_topic(nullptr, buf, sizeof(buf))); // null msg</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gw_topic(&m, buf, 0));                // zero buflen</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gw_topic(&m, buf, cap));</code>
+      * <code>Assert true (det_gateway_topic(&m, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gateway_topic(nullptr, buf, sizeof(buf))); // null msg</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gateway_topic(&m, buf, 0));                // zero buflen</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gateway_topic(&m, buf, cap));</code>
   </details>
 
 </details>

@@ -19,7 +19,7 @@
  *     bus and portable across whatever SPI peripheral you wire the module to.
  *
  * Wiring to the gateway (see example 11.LoRaGateway): poll lora_recv(); on a frame,
- * lora_frame_parse() then det_gw_uplink(port, header.from, payload, len, rssi). A downlink
+ * lora_frame_parse() then det_gateway_uplink(port, header.from, payload, len, rssi). A downlink
  * builds a frame with lora_frame_build() and lora_send()s it. The codec + register protocol
  * are verified on the host; the RF link itself needs the module.
  *

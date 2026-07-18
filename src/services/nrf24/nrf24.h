@@ -16,7 +16,7 @@
  * frame's "source" is the pipe number it arrived on - there is no in-payload header and
  * therefore no separate codec. It uses a **static payload width** (DETWS_NRF24_PAYLOAD):
  * every frame is that many bytes (a short send is zero-padded). Bridge received payloads
- * northbound with det_gw_uplink(port, pipe, payload, width, 0). The register/command
+ * northbound with det_gateway_uplink(port, pipe, payload, width, 0). The register/command
  * protocol is host-testable against a mock; the RF link needs the module.
  *
  * @author  Douglas Quigg (dstroy0)

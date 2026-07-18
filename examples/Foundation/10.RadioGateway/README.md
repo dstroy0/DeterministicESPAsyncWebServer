@@ -10,7 +10,7 @@ The capstone of the v5 ingest pipeline: a **wireless gateway**. A southbound rad
 device **bridges** them to the web stack - MQTT / HTTP / WebSocket.
 
 ```
-radio RX --DMA--> callback --post--> FORWARD lane --> codec --> det_gw_uplink()
+radio RX --DMA--> callback --post--> FORWARD lane --> codec --> det_gateway_uplink()
                                                                      |
                                             envelope + topic  lora/<port>/<addr>
                                                                      |
@@ -33,24 +33,24 @@ Register each radio as a **port** (with an optional transmit callback for downli
 install the **uplink** - the northbound publish:
 
 ```cpp
-det_gw_port_config p = {};
+det_gateway_port_config p = {};
 p.port_id = 0; p.kind = DET_GW_LORA; p.tx = radio_tx; // tx = the radio's send()
-det_gw_add_port(&p);
-det_gw_set_uplink(northbound_publish, nullptr);       // e.g. mqtt.publish(...)
-det_gw_set_topic_prefix("lora");
+det_gateway_add_port(&p);
+det_gateway_set_uplink_cb(northbound_publish, nullptr);       // e.g. mqtt.publish(...)
+det_gateway_set_topic_prefix("lora");
 
 // a frame arrived from node 0x42 on port 0:
-det_gw_uplink(0, 0x42, payload, len, rssi);           // -> publishes lora/0/66
+det_gateway_uplink(0, 0x42, payload, len, rssi);           // -> publishes lora/0/66
 ```
 
-- **Envelope**: each uplink builds a `det_gw_msg` with the source address, port, RSSI,
-  and a sequence number. `det_gw_topic()` formats a routing key `<prefix>/<port>/<addr>`.
-- **Downlink**: `det_gw_downlink(port, dst_addr, payload, len)` transmits a northbound
+- **Envelope**: each uplink builds a `det_gateway_msg` with the source address, port, RSSI,
+  and a sequence number. `det_gateway_topic()` formats a routing key `<prefix>/<port>/<addr>`.
+- **Downlink**: `det_gateway_downlink(port, dst_addr, payload, len)` transmits a northbound
   command back out the radio via the port's transmit callback.
 - **Rate cap**: a per-port `rate_cap` (frames/second) throttles a chatty radio; excess is
   dropped, not blocked.
 - **Fail-closed**: no installed sink, an unknown port, an exceeded cap, or a callback
-  refusing drops the frame and is counted (`det_gw_get_stats()`), never blocks.
+  refusing drops the frame and is counted (`det_gateway_get_stats()`), never blocks.
 
 The radio TX and the northbound publish are **callbacks**, so this runs with no radio
 hardware: the sketch feeds simulated frames through the DMA simulator and prints the

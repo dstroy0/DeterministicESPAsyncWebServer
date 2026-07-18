@@ -12,7 +12,7 @@ chip driver here - the module does the RF, so the "driver" is purely the **ESP3 
 codec**.
 
 ```
-TCM310 --UART--> esp3_parse() --> RADIO_ERP1 sender + payload -> det_gw_uplink()
+TCM310 --UART--> esp3_parse() --> RADIO_ERP1 sender + payload -> det_gateway_uplink()
                                                                        |
                                                 envelope + topic  enocean/0/<sender>
                                                                        |
@@ -28,7 +28,7 @@ esp3_packet pkt;
 int n = esp3_parse(buf, len, &pkt);   // >0 = a telegram, 0 = need more, -1 = drop a byte
 if (n > 0 && pkt.type == ESP3_RADIO_ERP1) {
     const uint8_t *sender = pkt.data + pkt.data_len - 5;  // 4-byte id + status
-    det_gw_uplink(0, (sender[2] << 8) | sender[3], pkt.data, pkt.data_len - 5, 0);
+    det_gateway_uplink(0, (sender[2] << 8) | sender[3], pkt.data, pkt.data_len - 5, 0);
 }
 ```
 

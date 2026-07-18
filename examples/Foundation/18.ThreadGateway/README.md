@@ -10,7 +10,7 @@ OpenThread **radio co-processor** (RCP - an nRF52840 / EFR32), which speaks **sp
 payload northbound - the basis of a Thread / Matter border router.
 
 ```
-Thread RCP --UART--> spinel_frame_decode() --> spinel payload -> det_gw_uplink()
+Thread RCP --UART--> spinel_frame_decode() --> spinel payload -> det_gateway_uplink()
                                                                       |
                                                envelope + topic  thread/0/<tid>
                                                                       |
@@ -24,7 +24,7 @@ bytes, and terminates with a Flag `0x7E`. `services/thread` does the framing:
 uint8_t payload[256]; uint16_t plen;
 int n = spinel_frame_decode(buf, len, payload, sizeof(payload), &plen);  // >0 / need-more / -1
 if (n > 0)
-    det_gw_uplink(0, tid, payload, plen, 0);
+    det_gateway_uplink(0, tid, payload, plen, 0);
 ```
 
 `spinel_frame_encode()` builds a frame the same way (this sketch sends a spinel RESET at

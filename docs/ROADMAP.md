@@ -135,7 +135,7 @@ codecs. (ESP32 Wi-Fi / classic + BLE are already on-chip; everything below is an
 external module we wire to a bus.)
 
 The **generic gateway framework is shipped** (`DETWS_ENABLE_GATEWAY`, `services/gateway`):
-ports, address-aware northbound enveloping + topic (`det_gw_uplink` / `det_gw_topic`),
+ports, address-aware northbound enveloping + topic (`det_gateway_uplink` / `det_gateway_topic`),
 bidirectional up/down-link, a per-port rate cap, and stats - all fail-closed and zero-heap,
 HW-verified end to end over DMA + the FORWARD lane. Each radio below is now a per-module
 **codec + driver** (frame parse, SPI/UART register access) plugged into that framework's

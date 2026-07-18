@@ -5,7 +5,7 @@
 // hardware-specific code (a few SPI transfers); everything above - the RadioHead frame
 // codec, the gateway envelope + publish, the downlink - is portable.
 //
-//   RFM95 RX --SPI--> lora_recv() --> lora_frame_parse() --> det_gw_uplink()
+//   RFM95 RX --SPI--> lora_recv() --> lora_frame_parse() --> det_gateway_uplink()
 //                                                                 |
 //                                              envelope + topic  lora/0/<from>
 //                                                                 |
@@ -50,11 +50,11 @@ static lora_bus g_bus = {spi_read, spi_write, nullptr};
 
 static uint8_t g_tx_id = 0;
 
-// Northbound publish (the uplink sink): a real build calls mqtt.publish(det_gw_topic(m), ...).
-static bool northbound_publish(const det_gw_msg *m, void *)
+// Northbound publish (the uplink sink): a real build calls mqtt.publish(det_gateway_topic(m), ...).
+static bool northbound_publish(const det_gateway_msg *m, void *)
 {
     char topic[48];
-    det_gw_topic(m, topic, sizeof(topic));
+    det_gateway_topic(m, topic, sizeof(topic));
     Serial.printf("PUBLISH %s  (%u bytes, rssi %d)\n", topic, m->len, m->rssi);
     return true;
 }
@@ -104,14 +104,14 @@ void setup()
         return;
     }
 
-    det_gw_reset();
-    det_gw_port_config p = {};
+    det_gateway_reset();
+    det_gateway_port_config p = {};
     p.port_id = RADIO_PORT;
-    p.kind = det_gw_kind::DET_GW_LORA;
+    p.kind = det_gateway_kind::DET_GW_LORA;
     p.tx = radio_tx;
-    det_gw_add_port(&p);
-    det_gw_set_uplink(northbound_publish, nullptr);
-    det_gw_set_topic_prefix("lora");
+    det_gateway_add_port(&p);
+    det_gateway_set_uplink_cb(northbound_publish, nullptr);
+    det_gateway_set_topic_prefix("lora");
 
     lora_set_rx(&g_bus);
     Serial.println("LoRa gateway: SX127x RX -> codec -> publish (lora/0/<from>)");
@@ -129,7 +129,7 @@ void loop()
         const uint8_t *payload = nullptr;
         uint16_t plen = 0;
         if (lora_frame_parse(buf, (uint16_t)n, &h, &payload, &plen))
-            det_gw_uplink(RADIO_PORT, h.from, payload, plen, rssi); // bridge northbound
+            det_gateway_uplink(RADIO_PORT, h.from, payload, plen, rssi); // bridge northbound
     }
     delay(5);
 }

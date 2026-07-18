@@ -10,7 +10,7 @@ Silicon Labs **EmberZNet** network co-processor (NCP), which speaks **EZSP** ove
 DATA frame carrying an EZSP callback (an incoming Zigbee message) is bridged northbound.
 
 ```
-Zigbee NCP --UART--> ash_frame_decode() --> EZSP payload -> det_gw_uplink()
+Zigbee NCP --UART--> ash_frame_decode() --> EZSP payload -> det_gateway_uplink()
                                                                  |
                                           envelope + topic  zigbee/0/<node>
                                                                  |
@@ -24,7 +24,7 @@ bytes, and terminates with a Flag `0x7E`. `services/zigbee` does the framing:
 uint8_t control, payload[128]; uint16_t plen;
 int n = ash_frame_decode(buf, len, &control, payload, sizeof(payload), &plen);
 if (n > 0 && (control & 0x80) == 0 /* DATA frame */)
-    det_gw_uplink(0, node, payload, plen, 0);
+    det_gateway_uplink(0, node, payload, plen, 0);
 ```
 
 `ash_frame_encode()` builds a frame the same way (this sketch sends an ASH `RST` at boot).

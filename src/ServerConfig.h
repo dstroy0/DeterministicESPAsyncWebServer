@@ -381,10 +381,10 @@
 //
 // The generic gateway pattern: a southbound radio (LoRa / nRF24 / Zigbee / ... reached
 // over SPI / I2C / UART) is a "port"; a frame it receives (data-ready ISR -> DMA -> the
-// FORWARD lane -> a per-radio codec) is handed to det_gw_uplink(), which envelopes it with
+// FORWARD lane -> a per-radio codec) is handed to det_gateway_uplink(), which envelopes it with
 // its source node address / port / RSSI and publishes it northbound through the uplink
 // callback (wire it to MQTT / HTTP / WebSocket / UDP). A northbound command goes the other
-// way through det_gw_downlink() to the port's transmit callback. The radio TX + the
+// way through det_gateway_downlink() to the port's transmit callback. The radio TX + the
 // northbound publish are callbacks (the seam a real radio driver / protocol binding plugs
 // into), so the bridge is host- and device-testable with no radio. Static tables (zero
 // heap). See services/gateway/gateway.h.
@@ -399,7 +399,7 @@
 #define DETWS_GW_MAX_PORTS 4
 #endif
 
-/** @brief Default northbound topic prefix (overridable at runtime via det_gw_set_topic_prefix). */
+/** @brief Default northbound topic prefix (overridable at runtime via det_gateway_set_topic_prefix). */
 #ifndef DETWS_GW_DEFAULT_PREFIX
 #define DETWS_GW_DEFAULT_PREFIX "gw"
 #endif
@@ -416,7 +416,7 @@
 // RadioHead-compatible 4-byte frame header (to / from / id / flags) codec, and an SX127x
 // register driver over a caller-supplied register-access bus (so the SPI + chip-select
 // wiring is the integration's, and the register protocol is host-testable with a mock
-// bus). Bridge received frames northbound with det_gw_uplink(); the actual RF link needs
+// bus). Bridge received frames northbound with det_gateway_uplink(); the actual RF link needs
 // the module to verify. See services/lora/lora.h.
 
 /** @brief Enable the LoRa (SX127x) radio codec + driver (default off). */
@@ -442,7 +442,7 @@
 // driver runs over a caller-supplied SPI transfer + CE bus (nrf_bus). Its hardware pipe
 // addressing means the "source address" of a received frame is the pipe number - no
 // in-payload header, so there is no separate codec. Bridge received payloads northbound
-// with det_gw_uplink(port, pipe, ...); the RF link needs the module to verify.
+// with det_gateway_uplink(port, pipe, ...); the RF link needs the module to verify.
 // See services/nrf24/nrf24.h.
 
 /** @brief Enable the nRF24L01+ radio driver (default off). */
