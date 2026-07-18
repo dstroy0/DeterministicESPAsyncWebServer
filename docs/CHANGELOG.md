@@ -2,6 +2,25 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.0.4] - 2026-07-18
+
+<details>
+<summary><b>Show Changelog for version 7.0.4 - 2026-07-18</b></summary>
+
+### Bug Fixes
+
+- absolute example links so GitHub Pages stops 404-ing ([`bf82d97`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bf82d97dad1c9a2dc05522292e12427be2bbde19))
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`1e542ec`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1e542ecf290b10d6fed566cf115903f760193667))
+
+### Changes
+
+- Bump version: 7.0.3 → 7.0.4 ([`5d3f6ae`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5d3f6aef2dfbd22bbf725a318ffcca7bdc0fee74))
+
+</details>
+
 ## [7.0.3] - 2026-07-18
 
 <details>
