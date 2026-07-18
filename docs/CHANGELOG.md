@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`d9a23af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9a23afb378bec74d24fb05392e63a3fd7b6d1f3))
 - update CHANGELOG.md [skip ci] ([`bfe85b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfe85b67280a846bd4aec7ecdb10d89d2be45886))
 
 ### Documentation
@@ -14,6 +15,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- normalize mqtt/coap/dtls/h2/webdav/dnc/iface_bridge to det_* (7.0.0 prep) ([`df62eaf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df62eaf0308308cf39853c9b00566b833683ab7f))
 - normalize dns/mdns/quic/tls-client-session to det_* (7.0.0 prep) ([`251fc4f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/251fc4f39403b35b6b8a88f8277f7c59d357012f))
 - normalize gateway API to det_gateway_* (7.0.0 prep) ([`a951a18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a951a185b6d86414efe7ad1b27c5c467cf7579f6))
 
