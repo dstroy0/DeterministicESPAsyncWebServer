@@ -563,8 +563,15 @@
     "example": "L5-Session/03.SSHHostKey",
     "flags": "-DDETWS_ENABLE_SSH=1",
     "board": "esp32dev",
-    "flash_bytes": 828645,
+    "flash_bytes": 828741,
     "ram_bytes": 109156
+  },
+  "SSH+FILE_SERVING+SSH_SFTP+SSH_SCP": {
+    "example": "L5-Session/04.SSHSftp",
+    "flags": "-DDETWS_ENABLE_SSH=1 -DDETWS_ENABLE_FILE_SERVING=1 -DDETWS_ENABLE_SSH_SFTP=1 -DDETWS_ENABLE_SSH_SCP=1",
+    "board": "esp32dev",
+    "flash_bytes": 880945,
+    "ram_bytes": 118508
   },
   "STATS": {
     "example": "L7-Application/22.Stats",
