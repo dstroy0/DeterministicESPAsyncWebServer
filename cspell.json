@@ -1344,7 +1344,12 @@
     "bdet",
     "behaviour",
     "behavioural",
-    "tunables"
+    "tunables",
+    "ESPTOOLPY",
+    "FLASHSIZE",
+    "HWACCEL",
+    "mbflash",
+    "mbpsram"
   ],
   "ignorePaths": [
     "node_modules/**",

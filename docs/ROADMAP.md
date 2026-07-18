@@ -1632,15 +1632,18 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
 > PSRAM + 8/16 MB flash inherits those same cramped numbers - a board with 30x the RAM is capped to the
 > lowest common denominator. Fix the defaults, not each example.
 
-- [ ] **Capability-tiered default profiles** (M) - add a central `src/board_profile.h` that derives a
-      `DWS_BOARD_TIER` at compile time from the SoC macros already available (`CONFIG_IDF_TARGET_ESP32` /
-      `ESP32S3` / `ESP32C3` ..., `BOARD_HAS_PSRAM` / `CONFIG_SPIRAM`, flash-size macros) - e.g. `CLASSIC`
-      (no PSRAM, ~120 KB DRAM budget), `S3` (larger internal RAM), `PSRAM` (external RAM available). Each
-      sizing macro that is today a flat constant instead selects its default from a small per-tier table
-      (conservative for `CLASSIC`, generous for `PSRAM`), while the `#ifndef` guard stays so an explicit
-      `-D` or `build_opt.h` override always wins. Net effect: a classic board keeps the numbers that let it
-      link, an S3/PSRAM board automatically gets a cache/buffer set matched to its memory, and examples stop
-      needing to hand-shrink tunables for the common case.
+- [~] **Per-variant default profiles** (M) - **framework shipped** (`src/board_profiles/`): `board_profile.h`
+  selects, along three independent axes, per-variant default files, each guarded by `#ifndef` so a `-D` /
+  `build_opt.h` override always wins. Axes: **chip** (`classic_defaults.h` / `s3_defaults.h` /
+  `c6_defaults.h` / `p4_defaults.h`, auto-selected from `CONFIG_IDF_TARGET_*`, holding HW-specific switches +
+  chip-appropriate defaults), **PSRAM size** (`8/16/32mbpsram.h`), and **flash size** (`8/16/32mbflash.h`) -
+  PSRAM/flash are their own axes because a chip ships in several configs (set `-DDWS_PSRAM_MB` / `-DDWS_FLASH_MB`,
+  auto-filled from `CONFIG_SPIRAM_SIZE` / `CONFIG_ESPTOOLPY_FLASHSIZE_*` on ESP-IDF). Precedence: user -D >
+  PSRAM > flash > chip > classic floor. Classic ESP32 keeps its exact historical numbers (no regression);
+  larger variants auto-scale. Piloted on the edge-cache + mesh pools; **remaining:** migrate more sizing knobs
+  (TLS arena / MAX_TLS_CONNS / MFL, packet + handle buffers, connection tables) into the profiles, wire the
+  HW-specific switches (e.g. `DWS_HAS_CRYPTO_HWACCEL`) into the crypto paths that today check `CONFIG_IDF_TARGET_*`
+  directly, and populate the flash-size axis once a flash-backed default exists.
 - [ ] **Prune the per-example `build_opt.h` shrink hacks** (S) - once the tiered defaults land, revisit the
       examples that manually dial tunables down (80.MeshCache and any others carrying a "sized down to fit
       classic-ESP32 DRAM" note) and drop the override where the `CLASSIC`-tier default already fits, so the

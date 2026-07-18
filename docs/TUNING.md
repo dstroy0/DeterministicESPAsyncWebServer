@@ -53,6 +53,47 @@ spec-mandated PDU/field widths, and the deflate/inflate scratch sizes a `static_
 pins to the table layout). Changing those breaks on-the-wire conformance, so they are
 not exposed as knobs.
 
+## Board profiles (per-variant defaults)
+
+The sizing defaults above are not one flat set. They used to be, tuned to fit the
+smallest classic-ESP32 DRAM ceiling, so a board with far more RAM or flash silently
+inherited the same cramped numbers. Instead, [`src/board_profiles/`](../src/board_profiles/)
+layers defaults along three independent axes, selected in [`board_profile.h`](../src/board_profiles/board_profile.h)
+(included first thing in `ServerConfig.h`):
+
+- **chip** - `classic_defaults.h` / `s3_defaults.h` / `c6_defaults.h` / `p4_defaults.h`.
+  Auto-selected from the SoC target macro (`CONFIG_IDF_TARGET_*`); classic ESP32 and
+  host builds use the classic floor. Holds HW-specific switches and chip-appropriate
+  defaults (internal SRAM, core count, crypto HW acceleration).
+- **PSRAM size** - `8mbpsram.h` / `16mbpsram.h` / `32mbpsram.h`. A given chip ships with
+  or without PSRAM, so this is its own axis. Scales the RAM-backed pools up.
+- **flash size** - `8mbflash.h` / `16mbflash.h` / `32mbflash.h`. Likewise independent; for
+  flash-backed sizing.
+
+Every profile default is `#ifndef`-guarded, so precedence is _first definition wins_:
+
+```
+your -D / build_opt.h override  >  PSRAM profile  >  flash profile  >  chip profile  >  classic floor
+```
+
+Nothing here overrides a value you set yourself, and the classic ESP32 gets exactly the
+historical numbers, so no existing board regresses - larger variants just stop being
+capped to the smallest one. Piloted so far: the edge-cache and mesh pools
+(`DWS_EDGE_CACHE_SLOTS`, `DWS_EDGE_BODY_MAX`, `DWS_EDGE_FETCH_SLOTS`, `DWS_MESH_MAX_PEERS`,
+`DWS_MESH_MAX_CONNS`); more sizing knobs migrate into the profiles over time.
+
+The chip is detected automatically. PSRAM and flash size can't be read reliably from the
+Arduino core, so set them for your board (they default to "none / smallest"):
+
+```ini
+; platformio.ini - an S3 with 8 MB PSRAM and 16 MB flash
+build_flags = -DDWS_PSRAM_MB=8 -DDWS_FLASH_MB=16
+```
+
+ESP-IDF builds fill both in automatically from `CONFIG_SPIRAM_SIZE` /
+`CONFIG_ESPTOOLPY_FLASHSIZE_*`. You can still pin any individual knob with a `-D` override,
+which always wins over the profile.
+
 ## Measured behavior (ESP32, esp32dev, COM3)
 
 **Event latency is decoupled from the idle-sweep cadence.** With WiFi power-save

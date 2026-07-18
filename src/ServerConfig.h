@@ -37,6 +37,11 @@
 
 #include <stdint.h>
 
+// Per-variant default sizing (chip / PSRAM / flash profiles). Included before the sizing
+// defaults below so a board profile can raise them for a larger target; your -D / build_opt.h
+// overrides still win (every profile default is #ifndef-guarded).
+#include "board_profiles/board_profile.h"
+
 // ---------------------------------------------------------------------------
 // Compile-time capacity constants (affect static array sizes)
 // ---------------------------------------------------------------------------
@@ -3343,12 +3348,8 @@
 #if DWS_ENABLE_EDGE_ORIGIN_TLS && !DWS_ENABLE_TLS
 #error "DWS_ENABLE_EDGE_ORIGIN_TLS requires DWS_ENABLE_TLS (the client-TLS engine)"
 #endif
-#ifndef DWS_EDGE_CACHE_SLOTS
-#define DWS_EDGE_CACHE_SLOTS 4 // L1 RAM entries (each holds one cached object; bump up on PSRAM)
-#endif
-#ifndef DWS_EDGE_BODY_MAX
-#define DWS_EDGE_BODY_MAX 2048 // largest cacheable body in bytes (per L1 entry; bump up on PSRAM)
-#endif
+// DWS_EDGE_CACHE_SLOTS and DWS_EDGE_BODY_MAX come from board_profiles/ (classic floor, raised
+// per chip/PSRAM by board_profile.h above); override with -D as usual.
 #ifndef DWS_EDGE_KEY_MAX
 #define DWS_EDGE_KEY_MAX 128 // largest canonical cache key (method\nhost\npath[\nquery])
 #endif
@@ -3361,9 +3362,7 @@
 #ifndef DWS_EDGE_ORIGIN_URL_MAX
 #define DWS_EDGE_ORIGIN_URL_MAX 128 // largest origin base URL in a route mapping
 #endif
-#ifndef DWS_EDGE_FETCH_SLOTS
-#define DWS_EDGE_FETCH_SLOTS 2 // concurrent in-flight origin fetches (<= DWS_CLIENT_CONNS)
-#endif
+// DWS_EDGE_FETCH_SLOTS comes from board_profiles/ (classic floor, raised per chip/PSRAM).
 #ifndef DWS_EDGE_FETCH_BUF
 #define DWS_EDGE_FETCH_BUF 2560 // per-fetch origin-response accumulation buffer (>= body max + headers)
 #endif
@@ -3398,12 +3397,8 @@
 #if DWS_ENABLE_EDGE_MESH && !DWS_ENABLE_EDGE_CACHE
 #error "DWS_ENABLE_EDGE_MESH requires DWS_ENABLE_EDGE_CACHE"
 #endif
-#ifndef DWS_MESH_MAX_PEERS
-#define DWS_MESH_MAX_PEERS 4 // sibling peers queried on a local miss (tried in series, first hit wins)
-#endif
-#ifndef DWS_MESH_MAX_CONNS
-#define DWS_MESH_MAX_CONNS 1 // concurrent inbound peer-serve connections (a small fleet queries serially)
-#endif
+// DWS_MESH_MAX_PEERS and DWS_MESH_MAX_CONNS come from board_profiles/ (classic floor, raised
+// per chip/PSRAM).
 #ifndef DWS_MESH_QUERY_MS
 #define DWS_MESH_QUERY_MS 300 // per-peer query deadline before moving on (miss) / to the origin
 #endif
