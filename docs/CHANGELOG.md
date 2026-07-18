@@ -2,6 +2,21 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [Unreleased]
+
+### CI / Build
+
+- update CHANGELOG.md [skip ci] ([`bfe85b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfe85b67280a846bd4aec7ecdb10d89d2be45886))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c366d49`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c366d4991ee18c75ad84719468660838a380286e))
+
+### Refactor
+
+- normalize dns/mdns/quic/tls-client-session to det_* (7.0.0 prep) ([`251fc4f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/251fc4f39403b35b6b8a88f8277f7c59d357012f))
+- normalize gateway API to det_gateway_* (7.0.0 prep) ([`a951a18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a951a185b6d86414efe7ad1b27c5c467cf7579f6))
+
 ## [6.30.1] - 2026-07-18
 
 <details>
