@@ -41,7 +41,7 @@ from each example's `pio ci` size report and aggregated into
 | `GPIO_MAP`                                                                                                | L7-Application/38.GpioMap               | 739.0 KB (57.7%) | 79.9 KB (25.0%)  |
 | `GRAPHQL`                                                                                                 | L7-Application/52.GraphQL               | 739.5 KB (57.8%) | 84.2 KB (26.3%)  |
 | `GUARDRAILS`                                                                                              | L7-Application/40.Guardrails            | 735.2 KB (57.4%) | 79.9 KB (25.0%)  |
-| `HTTP_CLIENT`                                                                                             | L7-Application/23.HttpClient            | 717.4 KB (56.0%) | 61.7 KB (19.3%)  |
+| `HTTP_CLIENT`                                                                                             | L7-Application/23.HttpClient            | 717.3 KB (56.0%) | 61.7 KB (19.3%)  |
 | `HTTP_CLIENT+WEBHOOK`                                                                                     | L7-Application/46.Webhook               | 745.2 KB (58.2%) | 99.2 KB (31.0%)  |
 | `IFACE_BRIDGE`                                                                                            | L7-Application/75.InterfaceBridge       | 762.1 KB (59.5%) | 80.7 KB (25.2%)  |
 | `INA219`                                                                                                  | L7-Application/67.Ina219                | 280.3 KB (21.9%) | 21.3 KB (6.7%)   |
@@ -62,7 +62,7 @@ from each example's `pio ci` size report and aggregated into
 | `NTP`                                                                                                     | L7-Application/18.SNTP                  | 759.8 KB (59.4%) | 82.4 KB (25.7%)  |
 | `NTP+TIME_SOURCE`                                                                                         | L7-Application/31.TimeSourceFallback    | 755.4 KB (59.0%) | 81.4 KB (25.5%)  |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP`                                                                     | L7-Application/58.NtpServer             | 730.6 KB (57.1%) | 45.6 KB (14.2%)  |
-| `NTRIP_CASTER`                                                                                            | L7-Application/76.NtripCaster           | 752.5 KB (58.8%) | 82.7 KB (25.8%)  |
+| `NTRIP_CASTER`                                                                                            | L7-Application/76.NtripCaster           | 752.4 KB (58.8%) | 82.7 KB (25.8%)  |
 | `OAUTH2+HTTP_CLIENT`                                                                                      | L7-Application/54.OAuth2                | 747.3 KB (58.4%) | 102.2 KB (31.9%) |
 | `OIDC`                                                                                                    | L7-Application/50.OidcAuth              | 748.2 KB (58.5%) | 97.5 KB (30.5%)  |
 | `OPCUA`                                                                                                   | L7-Application/55.OpcUa                 | 742.7 KB (58.0%) | 89.9 KB (28.1%)  |
@@ -119,7 +119,7 @@ from each example's `pio ci` size report and aggregated into
 | `core/01.Basic`                                                                                           | Foundation/01.Basic                     | 736.7 KB (57.6%) | 79.9 KB (25.0%)  |
 | `core/01.ChunkedResponse`                                                                                 | L7-Application/01.ChunkedResponse       | 735.4 KB (57.5%) | 79.9 KB (25.0%)  |
 | `core/01.FormParams`                                                                                      | L6-Presentation/01.FormParams           | 735.5 KB (57.5%) | 79.9 KB (25.0%)  |
-| `core/02.Advanced`                                                                                        | Foundation/02.Advanced                  | 743.3 KB (58.1%) | 80.0 KB (25.0%)  |
+| `core/02.Advanced`                                                                                        | Foundation/02.Advanced                  | 743.2 KB (58.1%) | 80.0 KB (25.0%)  |
 | `core/02.CORS`                                                                                            | L7-Application/02.CORS                  | 734.7 KB (57.4%) | 79.9 KB (25.0%)  |
 | `core/02.Json`                                                                                            | L6-Presentation/02.Json                 | 738.7 KB (57.7%) | 79.9 KB (25.0%)  |
 | `core/02.SSHCryptoSelfTest`                                                                               | L5-Session/02.SSHCryptoSelfTest         | 263.2 KB (20.6%) | 21.0 KB (6.6%)   |
