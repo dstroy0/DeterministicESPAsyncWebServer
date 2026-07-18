@@ -5126,7 +5126,7 @@
  * `ssh_forward` owner does the I/O via the outbound client transport (det_client),
  * so it needs `DETWS_CLIENT_CONNS >= DETWS_SSH_FWD_MAX` and a channel pool
  * (`DETWS_SSH_MAX_CHANNELS > 1`) to be useful. Forwarding is still opt-in at
- * runtime: nothing is forwarded until the application calls `ssh_forward_begin()`.
+ * runtime: nothing is forwarded until the application calls `det_ssh_forward_begin()`.
  * Off = the channel codec refuses every `direct-tcpip` open (no open relay).
  */
 #ifndef DETWS_SSH_PORT_FORWARD
@@ -5160,7 +5160,7 @@
  * ports on the device; each binding consumes one `listener_pool[]` slot, so
  * `MAX_LISTENERS` must have that much headroom above the app's own listeners.
  * Remote forwarding shares `DETWS_SSH_PORT_FORWARD` (compiled in) and is inert
- * until `ssh_forward_begin()`.
+ * until `det_ssh_forward_begin()`.
  */
 #ifndef DETWS_SSH_RFWD_MAX
 #define DETWS_SSH_RFWD_MAX 1

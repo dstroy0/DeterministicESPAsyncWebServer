@@ -7,7 +7,7 @@
  *
  * Binds the pure SFTP v3 codec (services/sftp) to an SSH session channel: accumulates SSH_FXP_* request
  * packets from the channel byte stream, executes them against an fs::FS mount, and frames responses back with
- * ssh_conn_send. A large WRITE is streamed straight to the file (never buffered whole); a READ returns a short
+ * det_ssh_conn_send. A large WRITE is streamed straight to the file (never buffered whole); a READ returns a short
  * DATA (the client re-requests). A fixed handle table holds open files/dirs. Every path is checked for `..`
  * traversal (server/fs_path.h) before touching the filesystem.
  */
@@ -17,14 +17,14 @@
 #if DETWS_ENABLE_SSH_SFTP
 
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h" // callbacks + setters
-#include "network_drivers/presentation/ssh/connection/ssh_conn.h"    // ssh_conn_send / ssh_conn_close_channel
+#include "network_drivers/presentation/ssh/connection/ssh_conn.h"    // det_ssh_conn_send / det_ssh_conn_close_channel
 #include "server/fs_path.h"
 #include "services/sftp/sftp.h"
 #include <string.h>
 
 namespace
 {
-// Leave headroom below one SSH packet for the CHANNEL_DATA framing, so ssh_conn_send never rejects a response.
+// Leave headroom below one SSH packet for the CHANNEL_DATA framing, so det_ssh_conn_send never rejects a response.
 constexpr size_t SFTP_RESP_CAP = SSH_PKT_BUF_SIZE - 16;
 // Worst-case one READDIR NAME entry (filename + longname + attrs), used to stash an entry that did not fit.
 constexpr size_t SFTP_ENTRY_MAX = DETWS_SFTP_PATH_MAX + 320;
@@ -136,7 +136,7 @@ int resolve(const uint8_t *path, uint32_t plen, char *out, size_t cap)
 void send_resp(SftpSession *s, size_t n)
 {
     if (n > 0)
-        ssh_conn_send(s->slot, s->channel, s_sftp.out, n);
+        det_ssh_conn_send(s->slot, s->channel, s_sftp.out, n);
 }
 void send_status(SftpSession *s, uint32_t id, uint32_t code, const char *msg)
 {
@@ -663,7 +663,7 @@ void sftp_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t le
         size_t space = sizeof(s->acc) - s->acc_len;
         if (space == 0)
         {
-            ssh_conn_close_channel(slot, s->channel); // a non-WRITE packet too big to buffer
+            det_ssh_conn_close_channel(slot, s->channel); // a non-WRITE packet too big to buffer
             s->active = false;
             return;
         }
@@ -674,7 +674,7 @@ void sftp_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t le
         len -= take;
         if (!process_acc(s))
         {
-            ssh_conn_close_channel(slot, s->channel);
+            det_ssh_conn_close_channel(slot, s->channel);
             s->active = false;
             return;
         }
@@ -694,8 +694,8 @@ void det_ssh_sftp_begin(fs::FS &fs, const char *root)
     }
     if (!s_sftp.registered)
     {
-        ssh_channel_set_sftp_open_cb(sftp_on_open);
-        ssh_channel_set_sftp_data_cb(sftp_on_data);
+        det_ssh_channel_set_sftp_open_cb(sftp_on_open);
+        det_ssh_channel_set_sftp_data_cb(sftp_on_data);
         s_sftp.registered = true;
     }
 }

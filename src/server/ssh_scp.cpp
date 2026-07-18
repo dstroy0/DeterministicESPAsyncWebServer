@@ -57,7 +57,7 @@ SshScpCtx s_scp;
 
 void ack(ScpConn *c, uint8_t byte)
 {
-    ssh_conn_send(c->slot, c->channel, &byte, 1);
+    det_ssh_conn_send(c->slot, c->channel, &byte, 1);
 }
 void err_ack(ScpConn *c, const char *msg)
 {
@@ -68,7 +68,7 @@ void err_ack(ScpConn *c, const char *msg)
         ml = sizeof(buf) - 3;
     memcpy(buf + 1, msg, ml);
     buf[1 + ml] = '\n';
-    ssh_conn_send(c->slot, c->channel, buf, 2 + ml);
+    det_ssh_conn_send(c->slot, c->channel, buf, 2 + ml);
 }
 void scp_end(ScpConn *c)
 {
@@ -76,7 +76,7 @@ void scp_end(ScpConn *c)
         c->file.close();
     c->file = fs::File();
     c->active = false;
-    ssh_conn_close_channel(c->slot, c->channel);
+    det_ssh_conn_close_channel(c->slot, c->channel);
 }
 
 void scp_on_open(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd_len)
@@ -230,8 +230,8 @@ void det_ssh_scp_begin(fs::FS &fs, const char *root)
     }
     if (!s_scp.registered)
     {
-        ssh_channel_set_scp_open_cb(scp_on_open);
-        ssh_channel_set_scp_data_cb(scp_on_data);
+        det_ssh_channel_set_scp_open_cb(scp_on_open);
+        det_ssh_channel_set_scp_data_cb(scp_on_data);
         s_scp.registered = true;
     }
 }

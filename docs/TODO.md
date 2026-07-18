@@ -752,33 +752,33 @@ shipped work:
       default 1 = the original single channel): up to N concurrent channels per
       connection, each with its own id / window / peer state, every inbound
       `CHANNEL_*` routed to its channel by the recipient id, and the data callback /
-      `ssh_conn_send` tagged with the channel id. **direct-tcpip** (`ssh -L`) channels
+      `det_ssh_conn_send` tagged with the channel id. **direct-tcpip** (`ssh -L`) channels
       now parse + route through a normalized forwarding seam: a channel carries a
       `type` (session / direct-tcpip), `CHANNEL_OPEN` "direct-tcpip" extracts the
-      target host:port and consults `ssh_channel_set_forward_open_cb` (opt-in; absent
+      target host:port and consults `det_ssh_channel_set_forward_open_cb` (opt-in; absent
       = administratively prohibited, refused = connect-failed, accepted = confirmed),
-      and forward-channel data routes to `ssh_channel_set_forward_data_cb` instead of
+      and forward-channel data routes to `det_ssh_channel_set_forward_data_cb` instead of
       the session callback. Host-tested (`test_ssh_channel`: independent routing,
       pool-full -> resource shortage, unknown-type, forward open accept/refuse,
       forward-data routing). The **forward owner** (`ssh_forward`, behind
       `DETWS_SSH_PORT_FORWARD`) does the actual outbound TCP via the `det_client`
       transport and bridges bytes both ways - no I/O in the codec - with an optional
       target policy, a per-poll target->client pump bounded by the channel window,
-      and EOF+CLOSE propagation; `ssh_conn_close_channel` sends a server-initiated
+      and EOF+CLOSE propagation; `det_ssh_conn_close_channel` sends a server-initiated
       close as two packets. ESP32 build + link verified.
       **Global requests** (RFC 4254 §4) now have a real handler
       ([`ssh_global_request_handle`](@ref ssh_global_request_handle)): an unrecognized
       request answers `REQUEST_FAILURE` when `want_reply` is set (never `UNIMPLEMENTED` -
       that was a client-keepalive interop bug, see docs/BUGS.md), and **`tcpip-forward` /
       `cancel-tcpip-forward`** (`ssh -R`) route to an opt-in remote-forward seam
-      (`ssh_channel_set_rforward_open_cb` / `_cancel_cb`) that replies `REQUEST_SUCCESS`
+      (`det_ssh_channel_set_rforward_open_cb` / `_cancel_cb`) that replies `REQUEST_SUCCESS`
       (echoing the allocated port for a port-0 bind, §7.1) when an owner accepts. Host-tested
       (`test_ssh_channel`, +7). **`forwarded-tcpip` (`ssh -R`) now fully works**: the owner
       (`ssh_forward`, behind `DETWS_SSH_PORT_FORWARD`) allocates a real listener via the new
       **tcpip_thread-marshaled** `listener_add_dynamic` / `listener_stop_dynamic` (a dynamic
       listener created from the SSH worker task must marshal its raw lwIP `tcp_bind`/`tcp_listen`
       onto tcpip_thread), routes each accepted connection through a `PROTO_SSH_RFWD` handler that
-      opens a server-initiated `forwarded-tcpip` channel (`ssh_channel_open_forwarded` +
+      opens a server-initiated `forwarded-tcpip` channel (`det_ssh_channel_open_forwarded` +
       CONFIRMATION/FAILURE handling) and bridges bytes both ways with per-poll window-bounded
       pumps; listeners + bridges are torn down on cancel and on SSH disconnect. Host-tested
       (`test_ssh_channel`: open/confirm/failure/inbound-routing) and **HW-verified end-to-end on
@@ -804,7 +804,7 @@ shipped work:
       equals the single-block derive and K2 chains correctly.
 
 - [x] **Session rekeying (RFC 4253 §9).** _(done)_ A server-initiated re-key now fires from
-      `ssh_conn_poll()` when either the volume budget (`SSH_REKEY_PACKET_THRESHOLD`, a packet-count
+      `det_ssh_conn_poll()` when either the volume budget (`SSH_REKEY_PACKET_THRESHOLD`, a packet-count
       proxy for ~1 GB) or the time budget (`SSH_REKEY_TIME_MS`, default 1 h) since the last KEX is
       spent, on an authenticated channel that is not already re-keying: it emits a fresh KEXINIT via the
       existing `ssh_transport_begin_rekey()`, and the KEXINIT dispatch carries it to completion (session
@@ -1220,15 +1220,15 @@ Operator / sysadmin:
       [skip ci]`), so it tracks each cycle without a manual pass.
 
 - [x] **Add an SSH usage example** _(done)_ - `examples/34.SSH/34.SSH.ino`:
-      enables SSH, loads the host key from NVS ([`ssh_rsa_load_pubkey()`](@ref ssh_rsa_load_pubkey)), installs
+      enables SSH, loads the host key from NVS ([`det_ssh_rsa_load_pubkey()`](@ref det_ssh_rsa_load_pubkey)), installs
       password + publickey auth callbacks and a channel data callback that echoes
-      via the new [`ssh_conn_send()`](@ref ssh_conn_send) helper, listens on [`PROTO_SSH`](@ref PROTO_SSH). Required a
-      small public outbound API (`ssh_conn_send()`, `ssh_conn.*`) since the
+      via the new [`det_ssh_conn_send()`](@ref det_ssh_conn_send) helper, listens on [`PROTO_SSH`](@ref PROTO_SSH). Required a
+      small public outbound API (`det_ssh_conn_send()`, `ssh_conn.*`) since the
       dispatcher's emit path was internal-only.
 
 - [x] **Publish RSA host-key provisioning docs** _(done)_ - `docs/SSH.md`
       now has a "Host key provisioning" section: `openssl genrsa` →
       `pkcs8 -topk8 -outform DER`, embed + write to NVS (`ssh_host_key/priv_der`)
-      with `Preferences`, and `ssh_rsa_load_pubkey()` at boot.
+      with `Preferences`, and `det_ssh_rsa_load_pubkey()` at boot.
 
 </details>

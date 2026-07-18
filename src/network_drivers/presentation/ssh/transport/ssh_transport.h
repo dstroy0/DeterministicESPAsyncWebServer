@@ -216,10 +216,10 @@ bool ssh_kex_prefer_rsa(void);
  * The RSA host key (loaded via ssh_rsa) and this may both be present; negotiation picks
  * one per ssh_kex_set_prefer_rsa(). If neither is installed the handshake cannot complete.
  */
-void ssh_hostkey_ed25519_set(const uint8_t seed[32]);
+void det_ssh_hostkey_ed25519_set(const uint8_t seed[32]);
 
 /** @brief True if an ssh-ed25519 host key has been installed. */
-bool ssh_hostkey_ed25519_available(void);
+bool det_ssh_hostkey_ed25519_available(void);
 
 /**
  * @brief Install an ecdsa-sha2-nistp256 host key from its 32-byte P-256 private scalar.
@@ -228,10 +228,10 @@ bool ssh_hostkey_ed25519_available(void);
  * the public point. May coexist with the RSA and ssh-ed25519 host keys; negotiation picks one
  * per ssh_kex_set_prefer_rsa(). An invalid scalar (0 or >= the group order) is ignored.
  */
-void ssh_hostkey_ecdsa_set(const uint8_t priv[32]);
+void det_ssh_hostkey_ecdsa_set(const uint8_t priv[32]);
 
 /** @brief True if an ecdsa-sha2-nistp256 host key has been installed. */
-bool ssh_hostkey_ecdsa_available(void);
+bool det_ssh_hostkey_ecdsa_available(void);
 
 /**
  * @brief Generate the server ephemeral for the negotiated KEX method (call after parse).
@@ -323,8 +323,8 @@ int ssh_kexdh_build_reply(const uint8_t *ks, size_t ks_len, const uint8_t *f_be,
  * KEX the exchange hash is saved as the session id. K is wiped from the stack before
  * returning.
  *
- * Requires ssh_kex_generate(i) and a host key (ssh_rsa_load_pubkey() and/or
- * ssh_hostkey_ed25519_set()) to have been called.
+ * Requires ssh_kex_generate(i) and a host key (det_ssh_rsa_load_pubkey() and/or
+ * det_ssh_hostkey_ed25519_set()) to have been called.
  *
  * @param[in]  i          SSH slot.
  * @param[in]  payload    KEXDH_INIT payload.

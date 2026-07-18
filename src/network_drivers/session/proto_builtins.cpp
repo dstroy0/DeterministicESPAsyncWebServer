@@ -14,7 +14,7 @@
  * the dispatcher.
  *
  * (The SSH remote-forward listener, ConnProto::PROTO_SSH_RFWD, is intentionally NOT here: it is a
- * runtime opt-in that self-registers from ssh_forward_begin().)
+ * runtime opt-in that self-registers from det_ssh_forward_begin().)
  */
 
 #include "proto_handler.h"

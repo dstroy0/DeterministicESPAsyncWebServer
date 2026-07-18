@@ -39,59 +39,59 @@ struct SshChannelCtx
 };
 static SshChannelCtx s_chcb;
 
-void ssh_channel_set_data_cb(SshChannelDataCb cb)
+void det_ssh_channel_set_data_cb(SshChannelDataCb cb)
 {
     s_chcb.data_cb = cb;
 }
 
 #if DETWS_ENABLE_SSH_SFTP
-void ssh_channel_set_sftp_open_cb(SshSftpOpenCb cb)
+void det_ssh_channel_set_sftp_open_cb(SshSftpOpenCb cb)
 {
     s_chcb.sftp_open_cb = cb;
 }
-void ssh_channel_set_sftp_data_cb(SshSftpDataCb cb)
+void det_ssh_channel_set_sftp_data_cb(SshSftpDataCb cb)
 {
     s_chcb.sftp_data_cb = cb;
 }
 #endif
 
 #if DETWS_ENABLE_SSH_SCP
-void ssh_channel_set_scp_open_cb(SshScpOpenCb cb)
+void det_ssh_channel_set_scp_open_cb(SshScpOpenCb cb)
 {
     s_chcb.scp_open_cb = cb;
 }
-void ssh_channel_set_scp_data_cb(SshScpDataCb cb)
+void det_ssh_channel_set_scp_data_cb(SshScpDataCb cb)
 {
     s_chcb.scp_data_cb = cb;
 }
 #endif
 
-void ssh_channel_set_forward_open_cb(SshForwardOpenCb cb)
+void det_ssh_channel_set_forward_open_cb(SshForwardOpenCb cb)
 {
     s_chcb.forward_open_cb = cb;
 }
 
-void ssh_channel_set_forward_data_cb(SshForwardDataCb cb)
+void det_ssh_channel_set_forward_data_cb(SshForwardDataCb cb)
 {
     s_chcb.forward_data_cb = cb;
 }
 
-void ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb)
+void det_ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb)
 {
     s_chcb.rfwd_open_cb = cb;
 }
 
-void ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb)
+void det_ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb)
 {
     s_chcb.rfwd_cancel_cb = cb;
 }
 
-void ssh_channel_set_forward_confirm_cb(SshForwardConfirmCb cb)
+void det_ssh_channel_set_forward_confirm_cb(SshForwardConfirmCb cb)
 {
     s_chcb.forward_confirm_cb = cb;
 }
 
-void ssh_channel_init(uint8_t i)
+void det_ssh_channel_init(uint8_t i)
 {
     if (i >= MAX_SSH_CONNS)
         return;
@@ -284,8 +284,8 @@ int ssh_global_request_handle(uint8_t i, const uint8_t *payload, size_t len, uin
 // Server-initiated CHANNEL_OPEN (forwarded-tcpip, ssh -R) + its CONFIRM / FAILURE
 // ---------------------------------------------------------------------------
 
-int ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
-                               uint16_t orig_port, uint8_t *out, size_t *out_len, size_t cap)
+int det_ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
+                                   uint16_t orig_port, uint8_t *out, size_t *out_len, size_t cap)
 {
     *out_len = 0;
     if (i >= MAX_SSH_CONNS || !conn_addr || !orig_addr)
@@ -336,7 +336,7 @@ int ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_p
     return slot;
 }
 
-int ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_t len)
+int det_ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_t len)
 {
     // byte || recipient(our local id) || sender(peer id) || window || max packet.
     if (i >= MAX_SSH_CONNS || len < 17 || payload[0] != SSH_MSG_CHANNEL_OPEN_CONFIRM)
@@ -354,7 +354,7 @@ int ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_t le
     return 0;
 }
 
-int ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_t len)
+int det_ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_t len)
 {
     // byte || recipient(our local id) || reason || desc || lang.
     if (i >= MAX_SSH_CONNS || len < 5 || payload[0] != SSH_MSG_CHANNEL_OPEN_FAILURE)
@@ -370,7 +370,8 @@ int ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_t le
     return 0;
 }
 
-int ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap)
+int det_ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+                                size_t cap)
 {
     if (i >= MAX_SSH_CONNS || len < 1 || payload[0] != SSH_MSG_CHANNEL_OPEN)
         return -1;
@@ -435,7 +436,8 @@ int ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8
 // CHANNEL_REQUEST → SUCCESS / FAILURE
 // ---------------------------------------------------------------------------
 
-int ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap)
+int det_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+                                   size_t cap)
 {
     *out_len = 0;
     if (i >= MAX_SSH_CONNS || len < 1 || payload[0] != SSH_MSG_CHANNEL_REQUEST)
@@ -507,7 +509,8 @@ int ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, ui
 // CHANNEL_DATA (inbound) + flow control
 // ---------------------------------------------------------------------------
 
-int ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap)
+int det_ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+                                size_t cap)
 {
     *out_len = 0;
     if (i >= MAX_SSH_CONNS || len < 1 || payload[0] != SSH_MSG_CHANNEL_DATA)
@@ -578,8 +581,8 @@ int ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8
 // CHANNEL_DATA (outbound)
 // ---------------------------------------------------------------------------
 
-int ssh_channel_build_data(uint8_t i, uint32_t channel, const uint8_t *data, size_t len, uint8_t *out, size_t *out_len,
-                           size_t cap)
+int det_ssh_channel_build_data(uint8_t i, uint32_t channel, const uint8_t *data, size_t len, uint8_t *out,
+                               size_t *out_len, size_t cap)
 {
     SshChannel *c = (i < MAX_SSH_CONNS) ? chan_by_id(i, channel) : nullptr;
     if (!c)
@@ -602,7 +605,7 @@ int ssh_channel_build_data(uint8_t i, uint32_t channel, const uint8_t *data, siz
 // WINDOW_ADJUST (inbound)
 // ---------------------------------------------------------------------------
 
-int ssh_channel_handle_window_adjust(uint8_t i, const uint8_t *payload, size_t len)
+int det_ssh_channel_handle_window_adjust(uint8_t i, const uint8_t *payload, size_t len)
 {
     if (i >= MAX_SSH_CONNS || len < 9 || payload[0] != SSH_MSG_CHANNEL_WINDOW_ADJUST)
         return -1;
@@ -636,14 +639,15 @@ static int build_close_chan(SshChannel *c, uint8_t *out, size_t *out_len, size_t
     return 0;
 }
 
-int ssh_channel_build_close(uint8_t i, uint32_t channel, uint8_t *out, size_t *out_len, size_t cap)
+int det_ssh_channel_build_close(uint8_t i, uint32_t channel, uint8_t *out, size_t *out_len, size_t cap)
 {
     if (i >= MAX_SSH_CONNS)
         return -1;
     return build_close_chan(chan_by_id(i, channel), out, out_len, cap);
 }
 
-int ssh_channel_handle_close(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap)
+int det_ssh_channel_handle_close(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+                                 size_t cap)
 {
     *out_len = 0;
     if (i >= MAX_SSH_CONNS || len < 5 || payload[0] != SSH_MSG_CHANNEL_CLOSE)

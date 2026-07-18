@@ -19,7 +19,7 @@
 void setUp()
 {
     ssh_transport_init(0);
-    ssh_auth_set_password_cb(nullptr);
+    det_ssh_auth_set_password_cb(nullptr);
 }
 void tearDown()
 {
@@ -47,7 +47,7 @@ void test_password_refused_even_with_correct_callback()
 {
     // Even a callback that accepts everything must not authenticate, because
     // the password method is compiled out.
-    ssh_auth_set_password_cb(always_ok);
+    det_ssh_auth_set_password_cb(always_ok);
     uint8_t pkt[128];
     size_t n = 0;
     pkt[n++] = SSH_MSG_USERAUTH_REQUEST;
@@ -59,7 +59,7 @@ void test_password_refused_even_with_correct_callback()
 
     uint8_t out[64];
     size_t olen = 0;
-    TEST_ASSERT_EQUAL_INT(0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)));
     TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, out[0]);
     TEST_ASSERT_FALSE(ssh_sess[0].authed);
 }
@@ -68,7 +68,7 @@ void test_failure_advertises_publickey_only()
 {
     uint8_t out[64];
     size_t olen = 0;
-    TEST_ASSERT_EQUAL_INT(0, ssh_auth_build_failure(out, &olen, sizeof(out), false));
+    TEST_ASSERT_EQUAL_INT(0, det_ssh_auth_build_failure(out, &olen, sizeof(out), false));
     // name-list at out[1..]: must contain "publickey" and not "password".
     bool has_pk = false, has_pw = false;
     for (size_t k = 0; k + 9 <= olen; k++)

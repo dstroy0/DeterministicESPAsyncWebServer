@@ -29698,10 +29698,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Service request errors
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_auth_handle_service_request(p, 1, out, &olen, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_auth_handle_service_request(p, 0, out, &olen, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_auth_handle_service_request(p, 1, out, &olen, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_auth_handle_service_request(p, n, out, &olen, 3))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_handle_service_request(p, 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_handle_service_request(p, 0, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_handle_service_request(p, 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_handle_service_request(p, n, out, &olen, 3))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29709,9 +29709,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: build_pk_ok via a pubkey probe with a tiny output buffer.
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_auth_build_failure(out, &olen, 2, false))</code>
-      * <code>Assert equal int (-1, ssh_auth_build_success(out, &olen, 0))</code>
-      * <code>Assert equal int (-1, ssh_auth_handle_request(0, pkt, pn, out, &olen, 4))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_build_failure(out, &olen, 2, false))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_build_success(out, &olen, 0))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_handle_request(0, pkt, pn, out, &olen, 4))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29719,22 +29719,22 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: password: boolean missing, then password string missing.
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, 1, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, 0, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, 1, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, 1, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, 0, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, 1, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29742,7 +29742,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: empty blob: type string cannot be read.
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, pn, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, pn, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
@@ -29756,7 +29756,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pubkey oversized signed prefix
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
   </details>
 
@@ -29765,8 +29765,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Handle request index and parse guards
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_auth_handle_request(MAX_SSH_CONNS, p, 1, out, &olen, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_auth_handle_request(0, p, 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_handle_request(MAX_SSH_CONNS, p, 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_handle_request(0, p, 1, out, &olen, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29774,7 +29774,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Service request accept
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_handle_service_request(pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_service_request(pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_SERVICE_ACCEPT, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(12, sl);</code>
       * <code>Assert equal memory ("ssh-userauth", out + 5, 12)</code>
@@ -29785,7 +29785,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Service request rejects unknown
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_auth_handle_service_request(pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_auth_handle_service_request(pkt, n, out, &olen, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29793,7 +29793,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse password request
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_parse_request(pkt, n, &req))</code>
+      * <code>Assert equal int (0, det_ssh_auth_parse_request(pkt, n, &req))</code>
       * <code>Assert true (req.is_password)</code>
       * <code>Assert equal string ("alice", req.user)</code>
       * <code>Assert equal string ("ssh-connection", req.service)</code>
@@ -29806,7 +29806,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse none request
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_parse_request(pkt, n, &req))</code>
+      * <code>Assert equal int (0, det_ssh_auth_parse_request(pkt, n, &req))</code>
       * <code>Assert false (req.is_password)</code>
       * <code>Assert equal string ("bob", req.user)</code>
   </details>
@@ -29816,7 +29816,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Handle request success
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, ssh_sess[0].phase)</code>
@@ -29827,7 +29827,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Failure advertises the "password" method.
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert false (ssh_sess[0].authed)</code>
       * <code>Assert true (adv)</code>
@@ -29838,7 +29838,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Handle none request fails without auth
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert false (ssh_sess[0].authed)</code>
   </details>
@@ -29848,7 +29848,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No callback installed → all credentials rejected.
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
   </details>
 
@@ -29857,7 +29857,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pubkey probe returns pk ok
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_PK_OK, out[0])</code>
       * <code>Assert false (ssh_sess[0].authed)</code>
   </details>
@@ -29867,7 +29867,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pubkey valid signature succeeds
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, ssh_sess[0].phase)</code>
@@ -29879,7 +29879,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Install the private key into the native RSA sign fixture, e = 65537.
     * **Assertions**:
       * <code>Assert equal int (0, ssh_rsa_sign(sd, sn, SshRsaHash::SHA512, sig))</code>
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
   </details>
@@ -29891,7 +29891,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (ssh_ecdsa_p256_pubkey(q, d))</code>
       * <code>Assert true (ssh_ecdsa_p256_sign(raw, sd, sn, d))</code>
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
   </details>
@@ -29901,10 +29901,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build the signed prefix, prepend string(session_id), sign the whole thing.
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert false (ssh_sess[0].authed)</code>
   </details>
@@ -29914,7 +29914,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pubkey tampered signature fails
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert false (ssh_sess[0].authed)</code>
   </details>
@@ -29924,7 +29924,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pubkey unauthorized key fails
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
   </details>
 
@@ -29994,14 +29994,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Chan slot and msgtype guards
     * **Assertions**:
       * <code>Assert equal int (-1, ssh_global_request_handle(0, z, sizeof(z), out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_open(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_open_confirm(MAX_SSH_CONNS, z, 17))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_open_failure(0, z, 5))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_request(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_data(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_window_adjust(0, z, 9))</code>
-      * <code>Assert equal int (-1, ssh_channel_build_close(MAX_SSH_CONNS, 0, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_close(0, z, 5, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_open(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_open_confirm(MAX_SSH_CONNS, z, 17))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_open_failure(0, z, 5))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_request(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_data(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_window_adjust(0, z, 9))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_build_close(MAX_SSH_CONNS, 0, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_close(0, z, 5, out, &ol, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30009,13 +30009,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Chan malformed payloads
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_channel_handle_open(0, over, sizeof(over), out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_open(0, shortpkt, n, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_open(0, dt, n, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_data(0, dp, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_open(0, over, sizeof(over), out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_open(0, shortpkt, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_open(0, dt, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_data(0, dp, n, out, &ol, sizeof(out)))</code>
       * <code>Assert equal int (-1, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)))</code>
       * <code>Assert equal int (-1, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)))</code>
   </details>
@@ -30025,8 +30025,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Chan open cap guards
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_channel_handle_open(0, unk, n, out, &ol, 10)); // unknown type -&gt; failure cap&lt;17 (143)</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_open(0, ses, n, out, &ol, 10)); // session -&gt; confirm cap&lt;17 (157)</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_open(0, unk, n, out, &ol, 10)); // unknown type -&gt; failure cap&lt;17 (143)</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_open(0, ses, n, out, &ol, 10)); // session -&gt; confirm cap&lt;17 (157)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30034,12 +30034,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: While a slot is free: null address (262) and a too-small buffer (273).
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_channel_open_forwarded(0, nullptr, 80, "x", 90, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_channel_open_forwarded(0, "10.0.0.1", 80, "1.2.3.4", 90, out, &ol, 10))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_request(0, rq, n, out, &ol, 3)); // want_reply cap&lt;5 (439)</code>
+      * <code>Assert equal int (-1, det_ssh_channel_open_forwarded(0, nullptr, 80, "x", 90, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_open_forwarded(0, "10.0.0.1", 80, "1.2.3.4", 90, out, &ol, 10))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_request(0, rq, n, out, &ol, 3)); // want_reply cap&lt;5 (439)</code>
       * <code>TEST_ASSERT_EQUAL_INT(-1,</code>
-      * <code>Assert equal int (-1, ssh_channel_build_close(0, 99, out, &ol, sizeof(out)));               // null chan (553)</code>
-      * <code>Assert equal int (-1, ssh_channel_open_forwarded(0, "10.0.0.1", 80, "1.2.3.4", 90, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_build_close(0, 99, out, &ol, sizeof(out)));               // null chan (553)</code>
+      * <code>Assert equal int (-1, det_ssh_channel_open_forwarded(0, "10.0.0.1", 80, "1.2.3.4", 90, out, &ol, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30068,7 +30068,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Open unknown type fails
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_FAILURE, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(3u, rd_u32(out + 5)); // unknown channel type</code>
       * <code>Assert false (ssh_chan[0][0].open)</code>
@@ -30079,7 +30079,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Forwarding is opt-in: with no open callback installed it is refused.
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_FAILURE, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1u, rd_u32(out + 5)); // administratively prohibited</code>
       * <code>Assert false (ssh_chan[0][0].open)</code>
@@ -30090,7 +30090,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Direct tcpip accept confirms
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_CONFIRM, out[0])</code>
       * <code>Assert true (ssh_chan[0][id].open)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(SshChanType::SSH_CHAN_DIRECT_TCPIP, ssh_chan[0][id].type);</code>
@@ -30105,7 +30105,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Direct tcpip refused connect failed
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_FAILURE, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2u, rd_u32(out + 5)); // connect failed</code>
       * <code>Assert false (ssh_chan[0][0].open)</code>
@@ -30116,7 +30116,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Forward data routes to forward cb
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_data(0, dpkt, dn, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, dpkt, dn, out, &olen, sizeof(out)))</code>
       * <code>Assert equal int (1, fwd_data_count)</code>
       * <code>Assert equal int (0, data_cb_count)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(id, fwd_data_channel);</code>
@@ -30128,7 +30128,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Shell request success with reply
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1));</code>
   </details>
@@ -30138,7 +30138,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unknown request failure
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_FAILURE, out[0])</code>
   </details>
 
@@ -30147,7 +30147,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Request no reply produces nothing
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)olen);</code>
   </details>
 
@@ -30156,7 +30156,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Inbound data invokes callback
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal int (1, data_cb_count)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(id, last_channel);</code>
       * <code>Assert equal int (5, (int)last_data_len)</code>
@@ -30168,7 +30168,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Inbound data window replenish
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_WINDOW_ADJUST, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1)); // peer channel</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(SSH_CHAN_WINDOW, ssh_chan[0][id].local_window);</code>
@@ -30179,7 +30179,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Inbound data exceeding window rejected
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30187,7 +30187,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Outbound data frames and decrements window
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_build_data(0, id, (const uint8_t *)"abc", 3, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_build_data(0, id, (const uint8_t *)"abc", 3, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_DATA, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1)); // peer channel</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(3, rd_u32(out + 5)); // data length</code>
@@ -30200,7 +30200,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Outbound data exceeding peer window rejected
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_channel_build_data(0, id, (const uint8_t *)"abc", 3, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_build_data(0, id, (const uint8_t *)"abc", 3, out, &olen, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30208,7 +30208,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Window adjust grows peer window
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_window_adjust(0, pkt, sizeof(pkt)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_window_adjust(0, pkt, sizeof(pkt)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(600, ssh_chan[0][id].peer_window);</code>
   </details>
 
@@ -30217,7 +30217,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build close emits eof and close
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_build_close(0, id, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_build_close(0, id, out, &olen, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(10, (uint32_t)olen);</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_EOF, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1));</code>
@@ -30231,7 +30231,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Inbound close routes to channel
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_close(0, pkt, 5, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_close(0, pkt, 5, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_EOF, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1));</code>
       * <code>Assert false (ssh_chan[0][id].open)</code>
@@ -30247,18 +30247,18 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (ssh_chan[0][b].open)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, ssh_chan[0][a].peer_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(7, ssh_chan[0][b].peer_id);</code>
-      * <code>Assert equal int (0, ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(b, last_channel);</code>
       * <code>Assert equal memory ("to-b", last_data, 4)</code>
-      * <code>Assert equal int (0, ssh_channel_build_data(0, a, (const uint8_t *)"x", 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_build_data(0, a, (const uint8_t *)"x", 1, out, &olen, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1));</code>
-      * <code>Assert equal int (0, ssh_channel_build_data(0, b, (const uint8_t *)"y", 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_build_data(0, b, (const uint8_t *)"y", 1, out, &olen, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(7, rd_u32(out + 1));</code>
-      * <code>Assert equal int (0, ssh_channel_build_close(0, a, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_build_close(0, a, out, &olen, sizeof(out)))</code>
       * <code>Assert false (ssh_chan[0][a].open)</code>
       * <code>Assert true (ssh_chan[0][b].open)</code>
-      * <code>Assert equal int (0, ssh_channel_build_data(0, b, (const uint8_t *)"z", 1, out, &olen, sizeof(out)))</code>
-      * <code>Assert equal int (-1, ssh_channel_build_data(0, a, (const uint8_t *)"z", 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_build_data(0, b, (const uint8_t *)"z", 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_build_data(0, a, (const uint8_t *)"z", 1, out, &olen, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30266,7 +30266,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: One past the pool: CHANNEL_OPEN_FAILURE (resource shortage).
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_FAILURE, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(4u, rd_u32(out + 5)); // reason 4 = resource shortage</code>
   </details>
@@ -30276,7 +30276,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Data to unknown channel rejected
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30375,7 +30375,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Now that it is open, the server can frame outbound data toward the peer window.
     * **Assertions**:
       * <code>Assert true (ch &gt;= 0)</code>
-      * <code>Assert equal int (0, ssh_channel_handle_open_confirm(0, pkt, n))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_open_confirm(0, pkt, n))</code>
       * <code>Assert equal int (1, confirm_count)</code>
       * <code>Assert true (confirm_ok)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)ch, confirm_channel);</code>
@@ -30390,7 +30390,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: The freed slot is reusable: a session open may now claim the same channel id.
     * **Assertions**:
       * <code>Assert true (ch &gt;= 0)</code>
-      * <code>Assert equal int (0, ssh_channel_handle_open_failure(0, pkt, 17))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_open_failure(0, pkt, 17))</code>
       * <code>Assert equal int (1, confirm_count)</code>
       * <code>Assert false (confirm_ok)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)ch, sess);</code>
@@ -30401,8 +30401,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Forwarded confirm unknown rejected
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_channel_handle_open_confirm(0, pkt, n))</code>
-      * <code>Assert equal int (-1, ssh_channel_handle_open_failure(0, pkt, 17))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_open_confirm(0, pkt, n))</code>
+      * <code>Assert equal int (-1, det_ssh_channel_handle_open_failure(0, pkt, 17))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30411,8 +30411,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Forwarded inbound data routes to forward cb
     * **Assertions**:
       * <code>Assert true (ch &gt;= 0)</code>
-      * <code>Assert equal int (0, ssh_channel_handle_open_confirm(0, cpkt, 17))</code>
-      * <code>Assert equal int (0, ssh_channel_handle_data(0, pkt, n, dout, &dolen, sizeof(dout)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_open_confirm(0, cpkt, 17))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, pkt, n, dout, &dolen, sizeof(dout)))</code>
       * <code>Assert equal int (1, fwd_data_count)</code>
       * <code>Assert equal int (0, data_cb_count)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)ch, fwd_data_channel);</code>
@@ -30424,11 +30424,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Sftp subsystem routes
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, out[0])</code>
       * <code>Assert equal int (1, sftp_open_count)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(id, sftp_open_channel);</code>
-      * <code>Assert equal int (0, ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)))</code>
       * <code>Assert equal int (1, sftp_data_count)</code>
       * <code>Assert equal int (0, data_cb_count)</code>
       * <code>Assert equal memory ("FXP", sftp_data_buf, 3)</code>
@@ -30439,7 +30439,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unknown subsystem refused
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_FAILURE, out[0])</code>
   </details>
 
@@ -30448,11 +30448,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Scp exec routes
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, out[0])</code>
       * <code>Assert equal int (1, scp_open_count)</code>
       * <code>Assert equal memory ("scp -t /gcode/part.nc", scp_cmd, scp_cmd_len)</code>
-      * <code>Assert equal int (0, ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)))</code>
       * <code>Assert equal int (1, scp_data_count)</code>
   </details>
 
@@ -30545,9 +30545,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Conn outbound arena exhausted
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_conn_send(j, 0, data, sizeof(data)))</code>
-      * <code>Assert equal int (-1, ssh_conn_close_channel(j, 0))</code>
-      * <code>Assert equal int (-1, ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_send(j, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_close_channel(j, 0))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30555,8 +30555,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Conn outbound pkt send fails
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_conn_send(j, 0, data, sizeof(data)))</code>
-      * <code>Assert equal int (-1, ssh_conn_close_channel(j, 0))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_send(j, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_close_channel(j, 0))</code>
       * <code>TEST_ASSERT_EQUAL_INT(-1,</code>
   </details>
 
@@ -30617,12 +30617,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Send entrypoints reject
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_conn_send(250, 0, data, sizeof(data)))</code>
-      * <code>Assert equal int (-1, ssh_conn_close_channel(250, 0))</code>
-      * <code>Assert equal int (-1, ssh_conn_open_forwarded(250, "h", 22, "o", 1))</code>
-      * <code>Assert equal int (-1, ssh_conn_send(j, 0, data, sizeof(data)))</code>
-      * <code>Assert equal int (-1, ssh_conn_close_channel(j, 0))</code>
-      * <code>Assert equal int (-1, ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_send(250, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_close_channel(250, 0))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_open_forwarded(250, "h", 22, "o", 1))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_send(j, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_close_channel(j, 0))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30638,11 +30638,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The channel slot is free again -> a server-initiated forwarded-tcpip open succeeds.
     * **Assertions**:
-      * <code>Assert equal int (5, ssh_conn_send(j, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (5, det_ssh_conn_send(j, 0, data, sizeof(data)))</code>
       * <code>Assert true (tcp_captured_len() &gt; 0)</code>
-      * <code>Assert equal int (0, ssh_conn_close_channel(j, 0))</code>
+      * <code>Assert equal int (0, det_ssh_conn_close_channel(j, 0))</code>
       * <code>Assert true (tcp_captured_len() &gt; 0)</code>
-      * <code>Assert true (ssh_conn_open_forwarded(j, "10.0.0.1", 80, "192.168.0.9", 5000) &gt;= 0)</code>
+      * <code>Assert true (det_ssh_conn_open_forwarded(j, "10.0.0.1", 80, "192.168.0.9", 5000) &gt;= 0)</code>
       * <code>Assert true (tcp_captured_len() &gt; 0)</code>
   </details>
 
@@ -30651,9 +30651,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The sole channel slot is occupied -> no room for a server-initiated forward.
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_conn_close_channel(j, 0))</code>
-      * <code>Assert equal int (-1, ssh_conn_send(j, 0, data, sizeof(data)))</code>
-      * <code>Assert equal int (-1, ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_close_channel(j, 0))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_send(j, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, det_ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30853,7 +30853,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Even a callback that accepts everything must not authenticate, because
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert false (ssh_sess[0].authed)</code>
   </details>
@@ -30863,7 +30863,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: name-list at out[1..]: must contain "publickey" and not "password".
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_auth_build_failure(out, &olen, sizeof(out), false))</code>
+      * <code>Assert equal int (0, det_ssh_auth_build_failure(out, &olen, sizeof(out), false))</code>
       * <code>Assert true (has_pk)</code>
       * <code>Assert false (has_pw)</code>
   </details>
@@ -30935,7 +30935,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh dispatch bad slot
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_server_dispatch(MAX_SSH_CONNS, p[0], p, 1))</code>
+      * <code>Assert equal int (-1, det_ssh_server_dispatch(MAX_SSH_CONNS, p[0], p, 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30943,7 +30943,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh kexinit parse fail
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_server_dispatch(0, p[0], p, sizeof(p)))</code>
+      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, p[0], p, sizeof(p)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30951,9 +30951,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh kexdh guards
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
-      * <code>Assert equal int (-1, ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
+      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30961,7 +30961,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh service request fail
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
+      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30969,8 +30969,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh userauth guards
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_server_dispatch(0, p[0], p, sizeof(p)))</code>
-      * <code>Assert equal int (-1, ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
+      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, p[0], p, sizeof(p)))</code>
+      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30978,7 +30978,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh postauth authed guard
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_server_dispatch(0, mts[j], p, sizeof(p)))</code>
+      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, mts[j], p, sizeof(p)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30986,7 +30986,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh postauth handler fails
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_server_dispatch(0, mts[j], p, sizeof(p)))</code>
+      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, mts[j], p, sizeof(p)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30994,8 +30994,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh open confirm failure authed
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_server_dispatch(0, c[0], c, sizeof(c)))</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, f[0], f, sizeof(f)))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, c[0], c, sizeof(c)))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, f[0], f, sizeof(f)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -31003,7 +31003,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh global request reply
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_server_dispatch(0, p[0], p, n))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, p[0], p, n))</code>
       * <code>Assert equal int (1, emt_n)</code>
   </details>
 
@@ -31012,8 +31012,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh window adjust and eof
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_server_dispatch(0, w[0], w, sizeof(w)))</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, e[0], e, sizeof(e)))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, w[0], w, sizeof(w)))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, e[0], e, sizeof(e)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -31065,35 +31065,35 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Banner exchange already done out-of-band; seed V_C and enter KEXINIT.
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal int (1, emt_n)</code>
       * <code>Assert equal (SSH_MSG_KEXINIT, emt_type[0])</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_DH_INIT, s-&gt;phase)</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal int (2, emt_n)</code>
       * <code>Assert equal (SSH_MSG_KEXDH_REPLY, emt_type[0])</code>
       * <code>Assert equal (SSH_MSG_NEWKEYS, emt_type[1])</code>
       * <code>Assert true (ssh_keys[0].active)</code>
       * <code>Assert true (ssh_pkt[0].enc_out)</code>
       * <code>Assert false (ssh_pkt[0].enc_in)</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, nk, &nk, 1))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, nk, &nk, 1))</code>
       * <code>Assert true (ssh_pkt[0].enc_in && ssh_pkt[0].enc_out)</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_SERVICE, s-&gt;phase)</code>
       * <code>Assert equal int (1, emt_n)</code>
       * <code>Assert equal (SSH_MSG_EXT_INFO, emt_type[0])</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_SERVICE_ACCEPT, emt_type[0])</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_AUTH, s-&gt;phase)</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, emt_type[0])</code>
       * <code>Assert true (s-&gt;authed)</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, s-&gt;phase)</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_CONFIRM, emt_type[0])</code>
       * <code>Assert true (ssh_chan[0][0].open)</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, emt_type[0])</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal int (1, chan_data_count)</code>
       * <code>Assert equal int (2, (int)chan_data_len)</code>
       * <code>Assert equal memory ("hi", chan_data, 2)</code>
@@ -31118,9 +31118,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Extinfo not sent without ext info c
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, nk, &nk, 1))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, nk, &nk, 1))</code>
       * <code>Assert false (ssh_sess[0].ext_info_c)</code>
       * <code>Assert equal int (0, emt_n)</code>
   </details>
@@ -31130,7 +31130,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Inbound ext info ignored
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_server_dispatch(0, SSH_MSG_EXT_INFO, pkt, 1))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, SSH_MSG_EXT_INFO, pkt, 1))</code>
       * <code>Assert equal int (0, emt_n)</code>
   </details>
 
@@ -31149,7 +31149,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Channel open before auth rejected
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -31157,7 +31157,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Service request before newkeys rejected
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert not equal (SshPhase::SSH_PHASE_AUTH, s-&gt;phase)</code>
   </details>
 
@@ -31166,7 +31166,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Disconnect closes
     * **Assertions**:
-      * <code>Assert equal int (-1, ssh_server_dispatch(0, pkt[0], pkt, 1))</code>
+      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, pkt[0], pkt, 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -31174,7 +31174,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ignore is noop
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, 1))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, 1))</code>
       * <code>Assert equal int (0, emt_n)</code>
   </details>
 
@@ -31183,11 +31183,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The first SSH_MAX_AUTH_ATTEMPTS-1 failures keep the connection open.
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, emt_type[0])</code>
       * <code>Assert false (s-&gt;authed)</code>
       * <code>Assert equal int (SSH_MAX_AUTH_ATTEMPTS - 1, s-&gt;auth_failures)</code>
-      * <code>Assert equal int (-1, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal int (2, emt_n)</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, emt_type[0])</code>
       * <code>Assert equal (SSH_MSG_DISCONNECT, emt_type[1])</code>
@@ -31198,9 +31198,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Auth success after failures
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, emt_type[0])</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, emt_type[0])</code>
       * <code>Assert true (s-&gt;authed)</code>
       * <code>Assert equal int (1, s-&gt;auth_failures)</code>
@@ -31211,7 +31211,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unimplemented reply for unknown message
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_server_dispatch(0, pkt[0], pkt, 1))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, 1))</code>
       * <code>Assert equal (SSH_MSG_UNIMPLEMENTED, emt_type[0])</code>
       * <code>Assert equal int (5, (int)emt_last_len)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(6, seq); // rejected packet = seq_no_recv - 1</code>
@@ -31222,8 +31222,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Open a channel so the close path has something to close (peer id 21).
     * **Assertions**:
-      * <code>Assert equal int (0, ssh_channel_handle_open(0, op, on, obuf, &ol, sizeof(obuf)))</code>
-      * <code>Assert equal int (0, ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, pkt, 5))</code>
+      * <code>Assert equal int (0, det_ssh_channel_handle_open(0, op, on, obuf, &ol, sizeof(obuf)))</code>
+      * <code>Assert equal int (0, det_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, pkt, 5))</code>
       * <code>Assert equal int (2, emt_n)</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_EOF, emt_type[0])</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_CLOSE, emt_type[1])</code>
@@ -31438,7 +31438,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Kexinit parse selects ecdsa
     * **Assertions**:
-      * <code>Assert true (ssh_hostkey_ecdsa_available())</code>
+      * <code>Assert true (det_ssh_hostkey_ecdsa_available())</code>
       * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
       * <code>Assert equal (SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256, ssh_sess[0].hostkey_alg)</code>
   </details>

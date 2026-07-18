@@ -61,7 +61,7 @@ extern SshChannel ssh_chan[MAX_SSH_CONNS][DETWS_SSH_MAX_CHANNELS];
 typedef void (*SshChannelDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
 
 /** @brief Install the inbound-data callback (session channels). */
-void ssh_channel_set_data_cb(SshChannelDataCb cb);
+void det_ssh_channel_set_data_cb(SshChannelDataCb cb);
 
 /**
  * @brief "direct-tcpip" forward request: a client asked the server to open a TCP
@@ -81,10 +81,10 @@ typedef int (*SshForwardOpenCb)(uint8_t slot, uint32_t channel, const char *host
 typedef void (*SshForwardDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
 
 /** @brief Install the direct-tcpip forward open-policy callback (opt-in). */
-void ssh_channel_set_forward_open_cb(SshForwardOpenCb cb);
+void det_ssh_channel_set_forward_open_cb(SshForwardOpenCb cb);
 
 /** @brief Install the direct-tcpip forward inbound-data callback. */
-void ssh_channel_set_forward_data_cb(SshForwardDataCb cb);
+void det_ssh_channel_set_forward_data_cb(SshForwardDataCb cb);
 
 /**
  * @brief "tcpip-forward" remote-forward request (ssh -R): the client asks the server
@@ -103,29 +103,29 @@ typedef int (*SshRemoteForwardOpenCb)(uint8_t slot, const char *bind_addr, size_
 typedef int (*SshRemoteForwardCancelCb)(uint8_t slot, const char *bind_addr, size_t addr_len, uint16_t bind_port);
 
 /** @brief Install the remote-forward (ssh -R) open-policy callback (opt-in). */
-void ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb);
+void det_ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb);
 
 /** @brief Install the remote-forward (ssh -R) cancel callback (opt-in). */
-void ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb);
+void det_ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb);
 
 /**
  * @brief Result of the client's reply to a server-initiated forwarded-tcpip channel:
  *        @p ok = true on CHANNEL_OPEN_CONFIRMATION (the bridge may start), false on
  *        CHANNEL_OPEN_FAILURE (the owner tears the bridge down). @p channel is the
- *        local id returned by ssh_channel_open_forwarded().
+ *        local id returned by det_ssh_channel_open_forwarded().
  */
 typedef void (*SshForwardConfirmCb)(uint8_t slot, uint32_t channel, bool ok);
 
 /** @brief Install the forwarded-tcpip open-confirmation callback (opt-in, ssh -R). */
-void ssh_channel_set_forward_confirm_cb(SshForwardConfirmCb cb);
+void det_ssh_channel_set_forward_confirm_cb(SshForwardConfirmCb cb);
 
 #if DETWS_ENABLE_SSH_SFTP
 /** @brief A `subsystem "sftp"` request was accepted on @p channel; the binding starts an SFTP session. */
 typedef void (*SshSftpOpenCb)(uint8_t slot, uint32_t channel);
 /** @brief Inbound bytes on an SFTP channel (the raw SSH_FXP_* stream) - kept out of the session data cb. */
 typedef void (*SshSftpDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
-void ssh_channel_set_sftp_open_cb(SshSftpOpenCb cb);
-void ssh_channel_set_sftp_data_cb(SshSftpDataCb cb);
+void det_ssh_channel_set_sftp_open_cb(SshSftpOpenCb cb);
+void det_ssh_channel_set_sftp_data_cb(SshSftpDataCb cb);
 #endif
 
 #if DETWS_ENABLE_SSH_SCP
@@ -133,8 +133,8 @@ void ssh_channel_set_sftp_data_cb(SshSftpDataCb cb);
 typedef void (*SshScpOpenCb)(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd_len);
 /** @brief Inbound bytes on an SCP channel (the RCP protocol stream). */
 typedef void (*SshScpDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
-void ssh_channel_set_scp_open_cb(SshScpOpenCb cb);
-void ssh_channel_set_scp_data_cb(SshScpDataCb cb);
+void det_ssh_channel_set_scp_open_cb(SshScpOpenCb cb);
+void det_ssh_channel_set_scp_data_cb(SshScpDataCb cb);
 #endif
 
 /**
@@ -149,8 +149,8 @@ void ssh_channel_set_scp_data_cb(SshScpDataCb cb);
  *         small). On success the caller emits @p out and, on the eventual confirm,
  *         bridges bytes on the returned channel.
  */
-int ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
-                               uint16_t orig_port, uint8_t *out, size_t *out_len, size_t cap);
+int det_ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
+                                   uint16_t orig_port, uint8_t *out, size_t *out_len, size_t cap);
 
 /**
  * @brief Handle SSH_MSG_CHANNEL_OPEN_CONFIRMATION for a channel we opened (ssh -R).
@@ -159,7 +159,7 @@ int ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_p
  * window / max-packet, and marks it open. Fires the confirm callback (@p ok = true).
  * @return 0 on success, -1 if malformed or no matching pending channel.
  */
-int ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_t len);
+int det_ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_t len);
 
 /**
  * @brief Handle SSH_MSG_CHANNEL_OPEN_FAILURE for a channel we opened (ssh -R).
@@ -167,7 +167,7 @@ int ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_t le
  * Frees the pending channel and fires the confirm callback (@p ok = false).
  * @return 0 on success, -1 if malformed or no matching pending channel.
  */
-int ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_t len);
+int det_ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_t len);
 
 /**
  * @brief Handle SSH_MSG_GLOBAL_REQUEST (RFC 4254 §4).
@@ -186,7 +186,7 @@ int ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_t le
 int ssh_global_request_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap);
 
 /** @brief Reset channel state for slot @p i. */
-void ssh_channel_init(uint8_t i);
+void det_ssh_channel_init(uint8_t i);
 
 /**
  * @brief Handle SSH_MSG_CHANNEL_OPEN and emit CHANNEL_OPEN_CONFIRMATION.
@@ -194,7 +194,8 @@ void ssh_channel_init(uint8_t i);
  * Accepts a "session" channel; any other type yields CHANNEL_OPEN_FAILURE.
  * @return 0 if a response was produced, -1 if malformed.
  */
-int ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap);
+int det_ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+                                size_t cap);
 
 /**
  * @brief Handle SSH_MSG_CHANNEL_REQUEST.
@@ -206,8 +207,8 @@ int ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8
  * CHANNEL_FAILURE is written to @p out and *@p out_len > 0; otherwise *@p out_len is 0.
  * @return 0 on success, -1 if malformed.
  */
-int ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
-                               size_t cap);
+int det_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+                                   size_t cap);
 
 /**
  * @brief Handle SSH_MSG_CHANNEL_DATA: bounds-check, update the window, and
@@ -215,7 +216,8 @@ int ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, ui
  *        CHANNEL_WINDOW_ADJUST is written to @p out (*@p out_len > 0).
  * @return 0 on success, -1 if malformed or channel not open.
  */
-int ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap);
+int det_ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+                                size_t cap);
 
 /**
  * @brief Build an SSH_MSG_CHANNEL_DATA message carrying @p data to the client on
@@ -223,27 +225,28 @@ int ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8
  * @return 0 on success, -1 if the channel is closed/unknown, the peer window is
  *         too small, or @p out is too small.
  */
-int ssh_channel_build_data(uint8_t i, uint32_t channel, const uint8_t *data, size_t len, uint8_t *out, size_t *out_len,
-                           size_t cap);
+int det_ssh_channel_build_data(uint8_t i, uint32_t channel, const uint8_t *data, size_t len, uint8_t *out,
+                               size_t *out_len, size_t cap);
 
 /**
  * @brief Handle SSH_MSG_CHANNEL_WINDOW_ADJUST (grows the peer window).
  * @return 0 on success, -1 if malformed.
  */
-int ssh_channel_handle_window_adjust(uint8_t i, const uint8_t *payload, size_t len);
+int det_ssh_channel_handle_window_adjust(uint8_t i, const uint8_t *payload, size_t len);
 
 /**
  * @brief Build SSH_MSG_CHANNEL_EOF + SSH_MSG_CHANNEL_CLOSE for channel @p channel
  *        and mark it closed.
  * @return 0 on success, -1 if the channel is closed/unknown or @p out is too small.
  */
-int ssh_channel_build_close(uint8_t i, uint32_t channel, uint8_t *out, size_t *out_len, size_t cap);
+int det_ssh_channel_build_close(uint8_t i, uint32_t channel, uint8_t *out, size_t *out_len, size_t cap);
 
 /**
  * @brief Handle an inbound SSH_MSG_CHANNEL_CLOSE: route to the recipient channel,
  *        reply with EOF + CLOSE, and mark it closed.
  * @return 0 if a response was produced, -1 if malformed or the channel is unknown.
  */
-int ssh_channel_handle_close(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap);
+int det_ssh_channel_handle_close(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+                                 size_t cap);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_CHANNEL_H

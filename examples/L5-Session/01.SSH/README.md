@@ -17,16 +17,16 @@ listeners):
 ```cpp
 server.listen(22, PROTO_SSH);
 int32_t result = server.begin();
-ssh_conn_setup();   // one-time wiring of the SSH dispatcher's outbound path (after begin)
+det_ssh_conn_setup();   // one-time wiring of the SSH dispatcher's outbound path (after begin)
 ```
 
-**The host key lives in NVS, not in RAM.** `ssh_rsa_load_pubkey()` loads only the
+**The host key lives in NVS, not in RAM.** `det_ssh_rsa_load_pubkey()` loads only the
 public half at startup; the private key is read per-signature into a stack buffer
 and wiped, so it is never held in static RAM. You must provision the DER key once
 per device (namespace `ssh_host_key`, key `priv_der`) - see `docs/SSH.md`:
 
 ```cpp
-if (ssh_rsa_load_pubkey() != 0) {
+if (det_ssh_rsa_load_pubkey() != 0) {
     Serial.println("No SSH host key in NVS - see docs/SSH.md (Host key provisioning)");
     return;
 }
@@ -37,13 +37,13 @@ public-key callback are installed before `begin()`; the server verifies the
 client's signature itself once your pubkey callback accepts the key:
 
 ```cpp
-ssh_auth_set_password_cb(ssh_password_auth);  // return true to accept user/pass
-ssh_auth_set_pubkey_cb(ssh_pubkey_auth);      // return true to accept (user, key blob)
-ssh_channel_set_data_cb(ssh_on_data);         // bytes from the client
+det_ssh_auth_set_password_cb(ssh_password_auth);  // return true to accept user/pass
+det_ssh_auth_set_pubkey_cb(ssh_pubkey_auth);      // return true to accept (user, key blob)
+det_ssh_channel_set_data_cb(ssh_on_data);         // bytes from the client
 ```
 
 **Channel echo.** The data callback receives the channel id the bytes arrived on
-and sends them back with `ssh_conn_send(slot, channel, data, len)` - the skeleton
+and sends them back with `det_ssh_conn_send(slot, channel, data, len)` - the skeleton
 for a remote console. With `DETWS_SSH_MAX_CHANNELS > 1` the client can open several
 channels over one connection and each is tagged by id.
 
@@ -52,16 +52,16 @@ channel + client-pool room) to let the board act as a local-forward tunnel: when
 client opens a `direct-tcpip` channel, the `ssh_forward` owner opens the outbound
 TCP connection through the client transport and bridges bytes both ways. It is
 opt-in twice over - compiled out by default, and inert until you call
-`ssh_forward_begin()` - because any authenticated client could otherwise make the
+`det_ssh_forward_begin()` - because any authenticated client could otherwise make the
 board connect anywhere (an open proxy). Restrict the reachable targets with a
 policy callback:
 
 ```cpp
-static bool ssh_forward_policy(const char *host, uint16_t port) {
+static bool det_ssh_forward_policy(const char *host, uint16_t port) {
     return port == 80 || port == 443;   // allow only outbound web
 }
-ssh_forward_set_policy_cb(ssh_forward_policy);
-ssh_forward_begin();                     // after ssh_conn_setup()
+det_ssh_forward_set_policy_cb(det_ssh_forward_policy);
+det_ssh_forward_begin();                     // after det_ssh_conn_setup()
 ```
 
 Then `ssh -L 8080:example.com:80 admin@<ip>` and `curl localhost:8080` reaches
@@ -122,11 +122,11 @@ explanatory comments:
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include "network_drivers/presentation/ssh/auth/ssh_auth.h"    // ssh_auth_set_*_cb
-#include "network_drivers/presentation/ssh/connection/ssh_channel.h" // ssh_channel_set_data_cb
-#include "network_drivers/presentation/ssh/connection/ssh_conn.h"    // ssh_conn_send / ssh_conn_setup
-#include "network_drivers/presentation/ssh/connection/ssh_forward.h" // ssh_forward_begin (ssh -L)
-#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"     // ssh_rsa_load_pubkey
+#include "network_drivers/presentation/ssh/auth/ssh_auth.h"    // det_ssh_auth_set_*_cb
+#include "network_drivers/presentation/ssh/connection/ssh_channel.h" // det_ssh_channel_set_data_cb
+#include "network_drivers/presentation/ssh/connection/ssh_conn.h"    // det_ssh_conn_send / det_ssh_conn_setup
+#include "network_drivers/presentation/ssh/connection/ssh_forward.h" // det_ssh_forward_begin (ssh -L)
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"     // det_ssh_rsa_load_pubkey
 #include <WiFi.h>
 
 static const char *SSID = "YOUR_SSID";
@@ -158,13 +158,13 @@ static bool ssh_pubkey_auth(const char *user, const uint8_t *blob, size_t blob_l
 
 static void ssh_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len)
 {
-    ssh_conn_send(slot, channel, data, len); // echo
+    det_ssh_conn_send(slot, channel, data, len); // echo
 }
 
 #if DETWS_SSH_PORT_FORWARD
 // Forward policy: which ssh -L targets are allowed (else an open proxy for any
 // authenticated client). Return true to permit a target.
-static bool ssh_forward_policy(const char *host, uint16_t port)
+static bool det_ssh_forward_policy(const char *host, uint16_t port)
 {
     return port == 80 || port == 443; // demo: allow only outbound web
 }
@@ -186,16 +186,16 @@ void setup()
 
     // Load the RSA host key's public half from NVS (the private key is read
     // per-signature into a stack buffer and wiped; never held in static RAM).
-    if (ssh_rsa_load_pubkey() != 0)
+    if (det_ssh_rsa_load_pubkey() != 0)
     {
         Serial.println("No SSH host key in NVS - see docs/SSH.md (Host key provisioning)");
         return;
     }
 
     // Install SSH callbacks before begin().
-    ssh_auth_set_password_cb(ssh_password_auth);
-    ssh_auth_set_pubkey_cb(ssh_pubkey_auth);
-    ssh_channel_set_data_cb(ssh_on_data);
+    det_ssh_auth_set_password_cb(ssh_password_auth);
+    det_ssh_auth_set_pubkey_cb(ssh_pubkey_auth);
+    det_ssh_channel_set_data_cb(ssh_on_data);
 
     // Listen for SSH on port 22 (and, optionally, HTTP on 80 alongside it).
     server.listen(22, PROTO_SSH);
@@ -207,12 +207,12 @@ void setup()
     }
 
     // One-time wiring of the SSH dispatcher's outbound path. Call after begin().
-    ssh_conn_setup();
+    det_ssh_conn_setup();
 
 #if DETWS_SSH_PORT_FORWARD
     // Enable ssh -L forwarding (opt-in; nothing is forwarded until this runs).
-    ssh_forward_set_policy_cb(ssh_forward_policy);
-    ssh_forward_begin();
+    det_ssh_forward_set_policy_cb(det_ssh_forward_policy);
+    det_ssh_forward_begin();
     Serial.println("SSH port forwarding enabled (ssh -L to ports 80/443)");
 #endif
 

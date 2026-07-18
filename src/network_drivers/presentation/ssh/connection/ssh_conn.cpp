@@ -70,31 +70,31 @@ static void ssh_emit(uint8_t i, const uint8_t *payload, size_t len)
 // ssh_pkt_recv handler: dispatch one decrypted message, remember fatal results.
 static void ssh_msg_handler(uint8_t i, uint8_t msg_type, const uint8_t *payload, size_t len)
 {
-    if (ssh_server_dispatch(i, msg_type, payload, len) < 0)
+    if (det_ssh_server_dispatch(i, msg_type, payload, len) < 0)
         s_sshc.close[i] = true;
 }
 
-void ssh_conn_setup()
+void det_ssh_conn_setup()
 {
     ensure_init();
-    ssh_server_set_emit_cb(ssh_emit);
+    det_ssh_server_set_emit_cb(ssh_emit);
 }
 
 // The SSH connection ProtoHandler (Layer 5 dispatch seam) - installed by proto_register_builtins()
 // via this accessor, so this module carries no dependency on the session layer.
-static const ProtoHandler s_ssh_handler = {ssh_conn_accept, ssh_conn_rx, ssh_conn_close, ssh_conn_poll};
+static const ProtoHandler s_ssh_handler = {det_ssh_conn_accept, det_ssh_conn_rx, det_ssh_conn_close, det_ssh_conn_poll};
 const ProtoHandler *ssh_proto_handler(void)
 {
     // Wire the dispatcher's binary-packet emit callback here, at the one seam every consumer must go
     // through to install SSH: a consumer that registers this handler can then never be left with the
     // emit callback unset. Without it the server sends its identification banner (emitted directly by
-    // ssh_conn_accept) but every framed SSH packet after it - KEXINIT, KEXDH_REPLY, everything - is
+    // det_ssh_conn_accept) but every framed SSH packet after it - KEXINIT, KEXDH_REPLY, everything - is
     // silently dropped, so the handshake stalls and the client is reset on the idle timeout. Idempotent.
-    ssh_conn_setup();
+    det_ssh_conn_setup();
     return &s_ssh_handler;
 }
 
-int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_t len)
+int det_ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_t len)
 {
     if (ssh_slot >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[ssh_slot] == 0xFF)
         return -1;
@@ -113,7 +113,7 @@ int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_
     if (!payload || !wire)
         return -1;
     size_t plen = 0;
-    if (ssh_channel_build_data(ssh_slot, channel, data, len, payload, &plen, SSH_PKT_BUF_SIZE) != 0)
+    if (det_ssh_channel_build_data(ssh_slot, channel, data, len, payload, &plen, SSH_PKT_BUF_SIZE) != 0)
         return -1;
     size_t wlen = 0;
     if (ssh_pkt_send(ssh_slot, payload, plen, wire, &wlen, wire_cap) != 0)
@@ -123,7 +123,7 @@ int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_
     return (int)len;
 }
 
-int ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel)
+int det_ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel)
 {
     if (ssh_slot >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[ssh_slot] == 0xFF)
         return -1;
@@ -133,7 +133,7 @@ int ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel)
 
     uint8_t close_msgs[10];
     size_t clen = 0;
-    if (ssh_channel_build_close(ssh_slot, channel, close_msgs, &clen, sizeof(close_msgs)) != 0 || clen != 10)
+    if (det_ssh_channel_build_close(ssh_slot, channel, close_msgs, &clen, sizeof(close_msgs)) != 0 || clen != 10)
         return -1;
 
     // close_msgs holds CHANNEL_EOF then CHANNEL_CLOSE; each is its own SSH message,
@@ -155,8 +155,8 @@ int ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel)
     return 0;
 }
 
-int ssh_conn_open_forwarded(uint8_t ssh_slot, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
-                            uint16_t orig_port)
+int det_ssh_conn_open_forwarded(uint8_t ssh_slot, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
+                                uint16_t orig_port)
 {
     if (ssh_slot >= MAX_SSH_CONNS || s_sshc.conn_for_ssh[ssh_slot] == 0xFF)
         return -1;
@@ -173,8 +173,8 @@ int ssh_conn_open_forwarded(uint8_t ssh_slot, const char *conn_addr, uint16_t co
     if (!payload || !wire)
         return -1;
     size_t plen = 0;
-    int ch = ssh_channel_open_forwarded(ssh_slot, conn_addr, conn_port, orig_addr, orig_port, payload, &plen,
-                                        SSH_PKT_BUF_SIZE);
+    int ch = det_ssh_channel_open_forwarded(ssh_slot, conn_addr, conn_port, orig_addr, orig_port, payload, &plen,
+                                            SSH_PKT_BUF_SIZE);
     if (ch < 0)
         return -1; // channel pool full / build failed
     size_t wlen = 0;
@@ -185,7 +185,7 @@ int ssh_conn_open_forwarded(uint8_t ssh_slot, const char *conn_addr, uint16_t co
     return ch;
 }
 
-void ssh_conn_poll(uint8_t conn_slot)
+void det_ssh_conn_poll(uint8_t conn_slot)
 {
     // The dispatch loop calls on_poll for every slot uniformly (no per-protocol gate); it used to poll
     // only ACTIVE slots, so keep that here to preserve behavior.
@@ -215,7 +215,7 @@ void ssh_conn_poll(uint8_t conn_slot)
     }
 
 #if DETWS_SSH_PORT_FORWARD
-    ssh_forward_pump(j);
+    det_ssh_forward_pump(j);
 #endif
 }
 
@@ -223,7 +223,7 @@ void ssh_conn_poll(uint8_t conn_slot)
 // Connection lifecycle
 // ---------------------------------------------------------------------------
 
-void ssh_conn_accept(uint8_t conn_slot)
+void det_ssh_conn_accept(uint8_t conn_slot)
 {
     ensure_init();
     TcpConn *conn = &conn_pool[conn_slot];
@@ -249,7 +249,7 @@ void ssh_conn_accept(uint8_t conn_slot)
 
     ssh_transport_init(j);
     ssh_pkt_init(j);
-    ssh_channel_init(j);
+    det_ssh_channel_init(j);
 #if DETWS_ENABLE_SSH_ZLIB
     ssh_comp_reset(j); // clear compression state for the new connection (not run on a re-key)
 #endif
@@ -267,10 +267,10 @@ void ssh_conn_accept(uint8_t conn_slot)
 static void close_conn(uint8_t conn_slot)
 {
     det_conn_close(conn_slot); // transport owns detach + slot reset + close
-    ssh_conn_close(conn_slot);
+    det_ssh_conn_close(conn_slot);
 }
 
-void ssh_conn_rx(uint8_t conn_slot)
+void det_ssh_conn_rx(uint8_t conn_slot)
 {
     TcpConn *conn = &conn_pool[conn_slot];
     uint8_t j = conn->proto_slot;
@@ -308,14 +308,14 @@ void ssh_conn_rx(uint8_t conn_slot)
         close_conn(conn_slot);
 }
 
-void ssh_conn_close(uint8_t conn_slot)
+void det_ssh_conn_close(uint8_t conn_slot)
 {
     TcpConn *conn = &conn_pool[conn_slot];
     uint8_t j = conn->proto_slot;
     if (j < MAX_SSH_CONNS)
     {
 #if DETWS_SSH_PORT_FORWARD
-        ssh_forward_reset(j); // close any forwarded TCP sockets this connection owned
+        det_ssh_forward_reset(j); // close any forwarded TCP sockets this connection owned
 #endif
         // Zero all key material and session state for this slot.
         ssh_keymat_wipe(j);

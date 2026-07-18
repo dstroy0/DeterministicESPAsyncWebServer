@@ -239,7 +239,7 @@ every public API method, every registered protocol, and every Layer-6 module on 
    `proto_register_builtins()` once, lazily, so the native harness still works before
    `begin()`. Adding a protocol = write its module + one guarded line in `proto_builtins.cpp`
     - never editing the dispatcher. (The SSH remote-forward listener still self-registers from
-      its own opt-in `ssh_forward_begin()`.)
+      its own opt-in `det_ssh_forward_begin()`.)
 
 2. **The HTTP TLS/h2/ws data-pump moved out of L5 - DONE.** `presentation.cpp` (Layer 6,
    already the HTTP-connection glue) now owns the HTTP `ProtoHandler`: `http_evt_{accept,

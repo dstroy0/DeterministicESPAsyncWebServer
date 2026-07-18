@@ -39,7 +39,7 @@ is compiled into the firmware and installed in one call:
 
 ```cpp
 #include "host_key.h"            // HOST_KEY_SEED[32], generated in step 1
-ssh_hostkey_ed25519_set(HOST_KEY_SEED);
+det_ssh_hostkey_ed25519_set(HOST_KEY_SEED);
 ```
 
 Simplest to get running; the key ships inside the image. Good for a fleet you
@@ -57,7 +57,7 @@ Preferences p; p.begin("ssh_host_key", false);
 p.putBytes("priv_der", HOST_KEY_DER, HOST_KEY_DER_LEN);
 p.end();
 // every boot after that:
-ssh_rsa_load_pubkey();           // loads only the public half
+det_ssh_rsa_load_pubkey();           // loads only the public half
 ```
 
 This keeps the key out of the firmware image and lets you rotate it without a

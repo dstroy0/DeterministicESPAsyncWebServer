@@ -174,7 +174,7 @@ void test_oidc_signed_claim_guards()
     _test_rsa_e[1] = 1;
     _test_rsa_e[2] = 0;
     _test_rsa_e[3] = 1; // e = 65537
-    ssh_rsa_load_pubkey();
+    det_ssh_rsa_load_pubkey();
 
     DetwsOidcKey key;
     key.loaded = true;

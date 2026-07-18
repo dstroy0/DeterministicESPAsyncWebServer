@@ -32,9 +32,9 @@ socket.
 - **`aes256-gcm@openssh.com`** encryption (RFC 5647) - AES-256-GCM AEAD, the second negotiated preference; the 4-byte packet length is sent in the clear as additional authenticated data, the packet body is sealed, and the 96-bit nonce's invocation counter advances per packet. AES block hardware-accelerated on ESP32 via mbedTLS (GHASH in software), software AES-256 for native tests; seal/open verified byte-for-byte against the NIST/McGrew AES-256-GCM Test Case 16 vector
 - **AES-256-CTR** encryption (RFC 4344) - the fallback cipher, hardware-accelerated on ESP32 via mbedTLS, software fallback for native tests
 - **HMAC-SHA2-256 / HMAC-SHA2-512** integrity (RFC 6668), including the encrypt-then-MAC variants **`hmac-sha2-256-etm@openssh.com`** / **`hmac-sha2-512-etm@openssh.com`** (OpenSSH's preferred MACs for the aes cipher; the length is authenticated in the clear and the MAC is verified before any decryption) - MAC-verify-before-use invariant; the chacha20-poly1305 AEAD carries its own implicit MAC. All HW-verified against OpenSSH on an ESP32-S3
-- **ssh-ed25519 host key** (RFC 8709 + RFC 8032) - Ed25519 signing over the exchange hash; installed from a 32-byte seed via `ssh_hostkey_ed25519_set()` alongside or instead of the RSA host key
+- **ssh-ed25519 host key** (RFC 8709 + RFC 8032) - Ed25519 signing over the exchange hash; installed from a 32-byte seed via `det_ssh_hostkey_ed25519_set()` alongside or instead of the RSA host key
 - **RSA-SHA2-512 / RSA-SHA2-256** host key (RFC 8332) - PKCS#1 v1.5 signing over the exchange hash; both hashes are backed by the one `ssh-rsa` key and negotiated as separate `server_host_key_algorithms` (rsa-sha2-512 preferred). Real on both platforms (ESP32 mbedTLS, native full-width modexp), HW-accelerated on ESP32
-- **ECDSA-SHA2-nistp256** host key (RFC 5656) - ECDSA over NIST P-256 (SHA-256), installed from a 32-byte private scalar via `ssh_hostkey_ecdsa_set()`. ESP32 uses mbedTLS (hardware-accelerated, side-channel-hardened); the native test path is a self-contained software P-256 with RFC 6979 deterministic signing, pinned byte-for-byte to the RFC 6979 A.2.5 (P-256/SHA-256) vectors
+- **ECDSA-SHA2-nistp256** host key (RFC 5656) - ECDSA over NIST P-256 (SHA-256), installed from a 32-byte private scalar via `det_ssh_hostkey_ecdsa_set()`. ESP32 uses mbedTLS (hardware-accelerated, side-channel-hardened); the native test path is a self-contained software P-256 with RFC 6979 deterministic signing, pinned byte-for-byte to the RFC 6979 A.2.5 (P-256/SHA-256) vectors
 - **Publickey authentication** (RFC 4252 §7) - client `rsa-sha2-512`, `rsa-sha2-256`, `ecdsa-sha2-nistp256` **and** `ssh-ed25519` signatures are verified for real on both platforms (the RSA hash is chosen from the client's signature-algorithm name); an application callback authorizes keys per user
 - **Password authentication** (RFC 4252 §8) - credentials checked via an application callback; the password is wiped from the stack after every attempt. Compile out with `DETWS_SSH_ALLOW_PASSWORD=0` for publickey-only hardening
 - **Session channel** (RFC 4254) - `shell`/`exec`/`pty-req` accepted; inbound channel data surfaced to the app as a raw byte stream, with RFC 4254 §5.2 window flow control
@@ -86,10 +86,10 @@ socket.
 Two methods are offered. The application installs callbacks:
 
 ```cpp
-ssh_auth_set_pubkey_cb([](const char *user, const uint8_t *blob, size_t len) {
+det_ssh_auth_set_pubkey_cb([](const char *user, const uint8_t *blob, size_t len) {
     return is_authorized_key(user, blob, len); // compare against your authorized_keys
 });
-ssh_auth_set_password_cb([](const char *user, const char *pass) {
+det_ssh_auth_set_password_cb([](const char *user, const char *pass) {
     return check_password(user, pass);
 });
 ```
@@ -143,7 +143,7 @@ per device:
    Embed `ssh_host.der` as a byte array (e.g. `xxd -i ssh_host.der`), flash the
    provisioning sketch once, then flash your real firmware.
 
-3. **At boot**, call [`ssh_rsa_load_pubkey()`](@ref ssh_rsa_load_pubkey) once (before accepting SSH) so the
+3. **At boot**, call [`det_ssh_rsa_load_pubkey()`](@ref det_ssh_rsa_load_pubkey) once (before accepting SSH) so the
    public half (n, e) is available for the host-key blob; the private key is read
    straight from NVS into a stack buffer for each signature and wiped immediately
    after (never held in static memory).

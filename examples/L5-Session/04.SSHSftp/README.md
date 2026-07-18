@@ -27,7 +27,7 @@ The SFTP subsystem and the SCP exec attach to the existing SSH channel layer.
   first boot); an **SD card** works too - open it with `SD.begin(...)` and pass
   `SD` instead of `LittleFS`.
 - An SSH **host key** provisioned in NVS (see `docs/SSH.md`, "Host key
-  provisioning") - the sketch loads it with `ssh_rsa_load_pubkey()`.
+  provisioning") - the sketch loads it with `det_ssh_rsa_load_pubkey()`.
 
 ## Configure + connect
 
@@ -93,7 +93,7 @@ recognized in the channel layer, which tags the channel and routes its data to
 the SFTP/SCP binding instead of the shell echo. The binding accumulates the
 channel byte stream into `SSH_FXP_*` (or rcp) records, executes each against the
 `fs::FS` mount - reusing the same file operations WebDAV and the static file
-server use - and frames responses back with `ssh_conn_send`. A large SFTP `WRITE`
+server use - and frames responses back with `det_ssh_conn_send`. A large SFTP `WRITE`
 (or an SCP upload) is streamed straight to the file as the fragments arrive, so a
 transfer is never bounded by a buffer. The wire codecs (`services/sftp`,
 `services/scp`) are pure and host-tested (`native_ssh_sftp`, `native_scp`); this

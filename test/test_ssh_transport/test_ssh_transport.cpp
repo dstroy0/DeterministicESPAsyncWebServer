@@ -200,7 +200,7 @@ void test_kexinit_parse_rejects_hostkey_we_lack()
 // curve25519-sha256 + ssh-ed25519 when the client offers both suites.
 void test_kexinit_parse_steers_to_curve_ed25519()
 {
-    ssh_hostkey_ed25519_set(BASELINE_ED25519_SEEDS[0]); // deterministic baseline host key
+    det_ssh_hostkey_ed25519_set(BASELINE_ED25519_SEEDS[0]); // deterministic baseline host key
     ssh_kex_set_prefer_rsa(false);
     uint8_t buf[SSH_KEXINIT_MAX];
     size_t n = build_client_kexinit(buf, "curve25519-sha256,diffie-hellman-group14-sha256", "ssh-ed25519,rsa-sha2-256",
@@ -281,8 +281,8 @@ void test_kexinit_parse_selects_ecdsa()
     uint8_t ec_priv[32];
     memset(ec_priv, 0, 32);
     ec_priv[31] = 0x42;
-    ssh_hostkey_ecdsa_set(ec_priv);
-    TEST_ASSERT_TRUE(ssh_hostkey_ecdsa_available());
+    det_ssh_hostkey_ecdsa_set(ec_priv);
+    TEST_ASSERT_TRUE(det_ssh_hostkey_ecdsa_available());
 
     uint8_t buf[SSH_KEXINIT_MAX];
     size_t n = build_client_kexinit(buf, "diffie-hellman-group14-sha256", "ecdsa-sha2-nistp256", "aes256-ctr",
@@ -295,7 +295,7 @@ void test_kexinit_parse_selects_ecdsa()
 // only it selects it (independent of the host-key type).
 void test_kexinit_parse_selects_ecdh_nistp256()
 {
-    ssh_hostkey_ed25519_set(BASELINE_ED25519_SEEDS[0]); // any host key so negotiation can complete
+    det_ssh_hostkey_ed25519_set(BASELINE_ED25519_SEEDS[0]); // any host key so negotiation can complete
     uint8_t buf[SSH_KEXINIT_MAX];
     size_t n = build_client_kexinit(buf, "ecdh-sha2-nistp256", "ssh-ed25519", "aes256-ctr", "hmac-sha2-256", "none");
     TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
@@ -526,7 +526,7 @@ static void setup_rsa_fixture()
     _test_rsa_e[1] = 0x01;
     _test_rsa_e[2] = 0x00;
     _test_rsa_e[3] = 0x01; // e = 65537
-    ssh_rsa_load_pubkey();
+    det_ssh_rsa_load_pubkey();
 }
 
 void test_kexdh_handle_produces_reply_and_installs_keys()
@@ -639,7 +639,7 @@ void test_kexdh_handle_curve25519_ed25519_end_to_end()
     {
         const uint8_t *seed = seeds[ki];
         ssh_transport_init(0);
-        ssh_hostkey_ed25519_set(seed);
+        det_ssh_hostkey_ed25519_set(seed);
         SshSession *s = &ssh_sess[0];
         s->kex_alg = SshKexAlg::SSH_KEX_CURVE25519;
         s->hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_ED25519;
@@ -730,7 +730,7 @@ void test_kexdh_handle_curve25519_rejects_low_order()
 {
     static const uint8_t zero_seed[32] = {0};
     ssh_transport_init(0);
-    ssh_hostkey_ed25519_set(zero_seed);
+    det_ssh_hostkey_ed25519_set(zero_seed);
     ssh_sess[0].kex_alg = SshKexAlg::SSH_KEX_CURVE25519;
     ssh_sess[0].hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_ED25519;
     ssh_sess[0].v_c_len = ssh_sess[0].i_c_len = ssh_sess[0].i_s_len = 0;
@@ -753,7 +753,7 @@ void test_kexdh_handle_ecdh_nistp256_end_to_end()
     uint8_t seed[32];
     throwaway_ed25519_seed(seed);
     ssh_transport_init(0);
-    ssh_hostkey_ed25519_set(seed);
+    det_ssh_hostkey_ed25519_set(seed);
     SshSession *s = &ssh_sess[0];
     s->kex_alg = SshKexAlg::SSH_KEX_ECDH_NISTP256;
     s->hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_ED25519;
@@ -846,7 +846,7 @@ void test_kexdh_handle_ecdh_nistp256_rejects_bad_point()
     uint8_t seed[32];
     throwaway_ed25519_seed(seed);
     ssh_transport_init(0);
-    ssh_hostkey_ed25519_set(seed);
+    det_ssh_hostkey_ed25519_set(seed);
     ssh_sess[0].kex_alg = SshKexAlg::SSH_KEX_ECDH_NISTP256;
     ssh_sess[0].hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_ED25519;
     ssh_sess[0].v_c_len = ssh_sess[0].i_c_len = ssh_sess[0].i_s_len = 0;
@@ -958,7 +958,7 @@ void test_kexdh_handle_ecdsa_end_to_end()
     uint8_t ec_priv[32];
     memset(ec_priv, 0, 32);
     ec_priv[31] = 0x07;
-    ssh_hostkey_ecdsa_set(ec_priv);
+    det_ssh_hostkey_ecdsa_set(ec_priv);
     uint8_t ec_pub[SSH_ECDSA_P256_PUB_LEN];
     TEST_ASSERT_TRUE(ssh_ecdsa_p256_pubkey(ec_pub, ec_priv));
 

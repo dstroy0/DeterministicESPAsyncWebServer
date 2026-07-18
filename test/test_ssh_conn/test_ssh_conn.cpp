@@ -8,7 +8,7 @@
 #include "lwip/tcp.h"
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h"
 #include "network_drivers/presentation/ssh/connection/ssh_conn.h"
-#include "network_drivers/presentation/ssh/connection/ssh_server.h" // ssh_server_set_emit_cb (emit-wiring regression)
+#include "network_drivers/presentation/ssh/connection/ssh_server.h" // det_ssh_server_set_emit_cb (emit-wiring regression)
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h"
 #include "network_drivers/presentation/ssh/transport/ssh_transport.h"
@@ -34,7 +34,7 @@ void setUp()
         conn_pool[i].proto = ConnProto::PROTO_SSH;
         conn_pool[i].proto_slot = DETWS_PROTO_SLOT_NONE;
     }
-    ssh_conn_setup();
+    det_ssh_conn_setup();
     // A host key must be available for host-key negotiation to succeed (RSA here).
     memset(_test_rsa_n, 0, 256);
     _test_rsa_n[0] = 0xFF;
@@ -45,13 +45,13 @@ void setUp()
     _test_rsa_e[1] = 0x01;
     _test_rsa_e[2] = 0x00;
     _test_rsa_e[3] = 0x01;
-    ssh_rsa_load_pubkey();
+    det_ssh_rsa_load_pubkey();
     tcp_capture_reset();
 }
 void tearDown()
 {
     // Release the SSH slot (mirrors a real disconnect) so it is free next test.
-    ssh_conn_close(0);
+    det_ssh_conn_close(0);
     tcp_capture_disable();
 }
 
@@ -118,7 +118,7 @@ static size_t frame_packet(uint8_t *out, const uint8_t *payload, size_t plen)
 
 void test_accept_sends_server_banner()
 {
-    ssh_conn_accept(0);
+    det_ssh_conn_accept(0);
     const char *resp = tcp_captured();
     TEST_ASSERT_TRUE(tcp_captured_len() >= 8);
     TEST_ASSERT_EQUAL_MEMORY("SSH-2.0-", resp, 8);
@@ -127,7 +127,7 @@ void test_accept_sends_server_banner()
 
 void test_banner_then_kexinit_advances_and_replies()
 {
-    ssh_conn_accept(0);
+    det_ssh_conn_accept(0);
     uint8_t j = conn_pool[0].proto_slot;
     tcp_capture_reset();
 
@@ -141,7 +141,7 @@ void test_banner_then_kexinit_advances_and_replies()
     size_t pktlen = frame_packet(pkt, payload, plen);
     push_bytes(0, pkt, pktlen);
 
-    ssh_conn_rx(0);
+    det_ssh_conn_rx(0);
 
     // The client identification string was captured.
     TEST_ASSERT_EQUAL_STRING("SSH-2.0-TestClient", ssh_sess[j].v_c);
@@ -153,7 +153,7 @@ void test_banner_then_kexinit_advances_and_replies()
 
 void test_poll_triggers_server_rekey()
 {
-    ssh_conn_accept(0);
+    det_ssh_conn_accept(0);
     uint8_t j = conn_pool[0].proto_slot;
     // An authenticated, open session that has spent its volume budget (packet-count proxy).
     ssh_sess[j].authed = true;
@@ -165,14 +165,14 @@ void test_poll_triggers_server_rekey()
     ssh_pkt[j].seq_no_send = SSH_REKEY_PACKET_THRESHOLD;
     tcp_capture_reset();
 
-    ssh_conn_poll(0);
+    det_ssh_conn_poll(0);
     // The server emitted a fresh KEXINIT and entered the re-key handshake (RFC 4253 §9).
     TEST_ASSERT_TRUE(tcp_captured_len() > 0);
     TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_KEXINIT, ssh_sess[j].phase);
 
     // A poll on an already-re-keying / under-budget session does not fire again.
     tcp_capture_reset();
-    ssh_conn_poll(0);
+    det_ssh_conn_poll(0);
     TEST_ASSERT_EQUAL(0, tcp_captured_len());
 }
 
@@ -183,16 +183,16 @@ void test_proto_handler_accessor()
 }
 
 // Regression (SSH KEX stall, HW-found 2026-07-11): installing the SSH handler must also wire the
-// dispatcher's binary-packet emit callback. Before the fix, ssh_conn_setup() had no production caller,
+// dispatcher's binary-packet emit callback. Before the fix, det_ssh_conn_setup() had no production caller,
 // so the server parsed the client KEXINIT but silently dropped its reply (emit callback null) and the
 // handshake died on the idle timeout. ssh_proto_handler() is the single install seam, so requesting it
 // must leave the emit path live even if the callback had been cleared.
 void test_proto_handler_wires_emit()
 {
-    ssh_server_set_emit_cb(nullptr); // simulate a dispatcher with no emit callback wired
-    (void)ssh_proto_handler();       // the one install seam must (re)wire it
+    det_ssh_server_set_emit_cb(nullptr); // simulate a dispatcher with no emit callback wired
+    (void)ssh_proto_handler();           // the one install seam must (re)wire it
 
-    ssh_conn_accept(0);
+    det_ssh_conn_accept(0);
     const char *banner = "SSH-2.0-TestClient\r\n";
     push_bytes(0, (const uint8_t *)banner, strlen(banner));
     uint8_t payload[700];
@@ -201,7 +201,7 @@ void test_proto_handler_wires_emit()
     size_t pktlen = frame_packet(pkt, payload, plen);
     push_bytes(0, pkt, pktlen);
     tcp_capture_reset();
-    ssh_conn_rx(0);
+    det_ssh_conn_rx(0);
     // The server's KEXINIT reply reached the socket: proves ssh_proto_handler() wired ssh_emit.
     TEST_ASSERT_TRUE(tcp_captured_len() > 0);
 }
@@ -211,41 +211,41 @@ void test_proto_handler_wires_emit()
 void test_send_entrypoints_reject()
 {
     uint8_t data[4] = {1, 2, 3, 4};
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_send(250, 0, data, sizeof(data)));
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_close_channel(250, 0));
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_open_forwarded(250, "h", 22, "o", 1));
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_send(250, 0, data, sizeof(data)));
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_close_channel(250, 0));
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_open_forwarded(250, "h", 22, "o", 1));
 
-    ssh_conn_accept(0);
+    det_ssh_conn_accept(0);
     uint8_t j = conn_pool[0].proto_slot;
     conn_pool[0].pcb = nullptr; // live SSH slot but the socket is gone
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_send(j, 0, data, sizeof(data)));
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_close_channel(j, 0));
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_open_forwarded(j, "h", 22, "o", 1));
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_send(j, 0, data, sizeof(data)));
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_close_channel(j, 0));
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_open_forwarded(j, "h", 22, "o", 1));
 }
 
 // poll and rx ignore a live conn that is not a mapped SSH session, and rx on an empty
 // ring reads nothing; a partial client banner leaves the session in the banner phase.
 void test_poll_rx_banner_guards()
 {
-    ssh_conn_poll(1); // conn 1 is ACTIVE but never accepted (proto_slot == NONE)
-    ssh_conn_rx(1);
+    det_ssh_conn_poll(1); // conn 1 is ACTIVE but never accepted (proto_slot == NONE)
+    det_ssh_conn_rx(1);
 
-    ssh_conn_accept(0);
-    ssh_conn_rx(0); // empty rx ring -> reads nothing
+    det_ssh_conn_accept(0);
+    det_ssh_conn_rx(0); // empty rx ring -> reads nothing
 
     const char *partial = "SSH-2.0-Incomplete"; // no CRLF yet
     push_bytes(0, (const uint8_t *)partial, strlen(partial));
-    ssh_conn_rx(0);
+    det_ssh_conn_rx(0);
     uint8_t j = conn_pool[0].proto_slot;
     TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_BANNER, ssh_sess[j].phase);
 }
 
-// With an open channel (white-box), ssh_conn_send frames CHANNEL_DATA to the socket;
-// ssh_conn_close_channel frames EOF+CLOSE; and ssh_conn_open_forwarded opens a
+// With an open channel (white-box), det_ssh_conn_send frames CHANNEL_DATA to the socket;
+// det_ssh_conn_close_channel frames EOF+CLOSE; and det_ssh_conn_open_forwarded opens a
 // server-initiated forwarded-tcpip channel.
 void test_conn_send_close_open_channel()
 {
-    ssh_conn_accept(0);
+    det_ssh_conn_accept(0);
     uint8_t j = conn_pool[0].proto_slot;
     ssh_chan[j][0].open = true;
     ssh_chan[j][0].local_id = 0;
@@ -255,17 +255,17 @@ void test_conn_send_close_open_channel()
 
     const uint8_t data[5] = {'h', 'e', 'l', 'l', 'o'};
     tcp_capture_reset();
-    TEST_ASSERT_EQUAL_INT(5, ssh_conn_send(j, 0, data, sizeof(data)));
+    TEST_ASSERT_EQUAL_INT(5, det_ssh_conn_send(j, 0, data, sizeof(data)));
     TEST_ASSERT_TRUE(tcp_captured_len() > 0);
 
-    ssh_chan[j][0].open = true; // ssh_conn_send left it open
+    ssh_chan[j][0].open = true; // det_ssh_conn_send left it open
     tcp_capture_reset();
-    TEST_ASSERT_EQUAL_INT(0, ssh_conn_close_channel(j, 0));
+    TEST_ASSERT_EQUAL_INT(0, det_ssh_conn_close_channel(j, 0));
     TEST_ASSERT_TRUE(tcp_captured_len() > 0);
 
     // The channel slot is free again -> a server-initiated forwarded-tcpip open succeeds.
     tcp_capture_reset();
-    TEST_ASSERT_TRUE(ssh_conn_open_forwarded(j, "10.0.0.1", 80, "192.168.0.9", 5000) >= 0);
+    TEST_ASSERT_TRUE(det_ssh_conn_open_forwarded(j, "10.0.0.1", 80, "192.168.0.9", 5000) >= 0);
     TEST_ASSERT_TRUE(tcp_captured_len() > 0);
 }
 
@@ -274,28 +274,28 @@ void test_conn_send_close_open_channel()
 // (sole) channel slot is already occupied.
 void test_send_channel_reject_paths()
 {
-    ssh_conn_accept(0);
+    det_ssh_conn_accept(0);
     uint8_t j = conn_pool[0].proto_slot;
 
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_close_channel(j, 0)); // channel 0 is not open -> build_close fails
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_close_channel(j, 0)); // channel 0 is not open -> build_close fails
 
     ssh_chan[j][0].open = true;
     ssh_chan[j][0].peer_window = 2;
     ssh_chan[j][0].peer_max_pkt = 100000;
     const uint8_t data[5] = {1, 2, 3, 4, 5};
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_send(j, 0, data, sizeof(data))); // 5 > peer_window 2
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_send(j, 0, data, sizeof(data))); // 5 > peer_window 2
 
     // The sole channel slot is occupied -> no room for a server-initiated forward.
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_open_forwarded(j, "h", 22, "o", 1));
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_open_forwarded(j, "h", 22, "o", 1));
 }
 
 // The only SSH slot (MAX_SSH_CONNS == 1) is consumed by the first accept; a second
 // connection has no capacity and is dropped without a slot assignment.
 void test_accept_no_ssh_capacity()
 {
-    ssh_conn_accept(0);
+    det_ssh_conn_accept(0);
     TEST_ASSERT_NOT_EQUAL(DETWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot);
-    ssh_conn_accept(1);
+    det_ssh_conn_accept(1);
     TEST_ASSERT_EQUAL(DETWS_PROTO_SLOT_NONE, conn_pool[1].proto_slot);
 }
 
@@ -303,34 +303,34 @@ void test_accept_no_ssh_capacity()
 void test_poll_ignores_inactive_conn()
 {
     conn_pool[2].state = ConnState::CONN_CLOSING;
-    ssh_conn_poll(2);
+    det_ssh_conn_poll(2);
     TEST_ASSERT_EQUAL(ConnState::CONN_CLOSING, (ConnState)conn_pool[2].state); // untouched
 }
 
-// A DISCONNECT after the banner is fatal: ssh_server_dispatch returns <0, so
-// ssh_msg_handler flags the slot and ssh_conn_rx tears the connection down.
+// A DISCONNECT after the banner is fatal: det_ssh_server_dispatch returns <0, so
+// ssh_msg_handler flags the slot and det_ssh_conn_rx tears the connection down.
 void test_rx_disconnect_tears_down()
 {
-    ssh_conn_accept(0);
+    det_ssh_conn_accept(0);
     const char *banner = "SSH-2.0-TestClient\r\n";
     push_bytes(0, (const uint8_t *)banner, strlen(banner));
     uint8_t disc[13] = {SSH_MSG_DISCONNECT, 0, 0, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0}; // reason 11, empty desc+lang
     uint8_t pkt[64];
     size_t pktlen = frame_packet(pkt, disc, sizeof(disc));
     push_bytes(0, pkt, pktlen);
-    ssh_conn_rx(0);
+    det_ssh_conn_rx(0);
     TEST_ASSERT_EQUAL(DETWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot); // slot released
 }
 
 // A client identification line that runs past SSH_VERSION_MAX with no CRLF is rejected
-// by recv_banner, and ssh_conn_rx closes the connection.
+// by recv_banner, and det_ssh_conn_rx closes the connection.
 void test_rx_overlong_banner_closes()
 {
-    ssh_conn_accept(0);
+    det_ssh_conn_accept(0);
     uint8_t longline[300];
     memset(longline, 'A', sizeof(longline)); // >= SSH_VERSION_MAX (256), no CRLF
     push_bytes(0, longline, sizeof(longline));
-    ssh_conn_rx(0);
+    det_ssh_conn_rx(0);
     TEST_ASSERT_EQUAL(DETWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot); // slot released
 }
 
@@ -346,7 +346,7 @@ static void drain_arena()
 // the wire/payload borrow returns null and the message is dropped.
 void test_conn_outbound_arena_exhausted()
 {
-    ssh_conn_accept(0);
+    det_ssh_conn_accept(0);
     uint8_t j = conn_pool[0].proto_slot;
     ssh_chan[j][0].open = true;
     ssh_chan[j][0].local_id = 0;
@@ -356,9 +356,9 @@ void test_conn_outbound_arena_exhausted()
     const uint8_t data[3] = {1, 2, 3};
 
     drain_arena();
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_send(j, 0, data, sizeof(data)));     // payload/wire alloc fails
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_close_channel(j, 0));                // wire alloc fails
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_open_forwarded(j, "h", 22, "o", 1)); // payload/wire alloc fails
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_send(j, 0, data, sizeof(data)));     // payload/wire alloc fails
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_close_channel(j, 0));                // wire alloc fails
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_open_forwarded(j, "h", 22, "o", 1)); // payload/wire alloc fails
     scratch_reset();
 }
 
@@ -366,7 +366,7 @@ void test_conn_outbound_arena_exhausted()
 // sequence number has reached the close threshold, RFC 4253 rekey/overflow guard).
 void test_conn_outbound_pkt_send_fails()
 {
-    ssh_conn_accept(0);
+    det_ssh_conn_accept(0);
     uint8_t j = conn_pool[0].proto_slot;
     ssh_chan[j][0].open = true;
     ssh_chan[j][0].local_id = 0;
@@ -376,31 +376,31 @@ void test_conn_outbound_pkt_send_fails()
     ssh_pkt[j].seq_no_send = SSH_SEQ_CLOSE_THRESHOLD;
     const uint8_t data[3] = {1, 2, 3};
 
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_send(j, 0, data, sizeof(data))); // build_data ok, pkt_send fails
-    ssh_chan[j][0].open = true;                                         // still open for the close
-    TEST_ASSERT_EQUAL_INT(-1, ssh_conn_close_channel(j, 0));            // build_close ok, pkt_send fails
-    ssh_chan[j][0].open = false;                                        // free the slot for a forwarded open
-    TEST_ASSERT_EQUAL_INT(-1,
-                          ssh_conn_open_forwarded(j, "10.0.0.1", 80, "192.168.0.9", 5000)); // open ok, pkt_send fails
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_send(j, 0, data, sizeof(data))); // build_data ok, pkt_send fails
+    ssh_chan[j][0].open = true;                                             // still open for the close
+    TEST_ASSERT_EQUAL_INT(-1, det_ssh_conn_close_channel(j, 0));            // build_close ok, pkt_send fails
+    ssh_chan[j][0].open = false;                                            // free the slot for a forwarded open
+    TEST_ASSERT_EQUAL_INT(
+        -1, det_ssh_conn_open_forwarded(j, "10.0.0.1", 80, "192.168.0.9", 5000)); // open ok, pkt_send fails
 }
 
 // The poll-driven server re-key emits via ssh_emit, which fails closed when the packet
 // layer refuses (sequence threshold) and when the arena is exhausted.
 void test_poll_rekey_emit_fails()
 {
-    ssh_conn_accept(0);
+    det_ssh_conn_accept(0);
     uint8_t j = conn_pool[0].proto_slot;
     ssh_sess[j].phase = SshPhase::SSH_PHASE_OPEN;
     ssh_pkt[j].kex_active = false;
     ssh_sess[j].last_kex_ms = 0;
     ssh_pkt[j].seq_no_send = SSH_SEQ_CLOSE_THRESHOLD; // rekey due; ssh_emit's pkt_send then fails
-    ssh_conn_poll(0);
+    det_ssh_conn_poll(0);
 
     ssh_sess[j].phase = SshPhase::SSH_PHASE_OPEN;
     ssh_pkt[j].kex_active = false;
     ssh_pkt[j].seq_no_send = SSH_REKEY_PACKET_THRESHOLD; // rekey due; ssh_emit's arena borrow then fails
     drain_arena();
-    ssh_conn_poll(0);
+    det_ssh_conn_poll(0);
     scratch_reset();
     TEST_PASS();
 }

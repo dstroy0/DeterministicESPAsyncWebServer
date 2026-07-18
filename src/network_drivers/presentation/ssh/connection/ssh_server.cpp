@@ -25,7 +25,7 @@ struct SshServerCtx
 };
 static SshServerCtx s_srv;
 
-void ssh_server_set_emit_cb(SshEmitCb cb)
+void det_ssh_server_set_emit_cb(SshEmitCb cb)
 {
     s_srv.emit_cb = cb;
 }
@@ -62,7 +62,7 @@ static void emit_auth_failure_disconnect(uint8_t i, uint8_t *buf)
     emit(i, buf, o);
 }
 
-int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, size_t len)
+int det_ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, size_t len)
 {
     if (i >= MAX_SSH_CONNS)
         return -1;
@@ -125,7 +125,7 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         // whole key exchange + host-key verification. Found by the pentest's ssh_msgtype_abuse.
         if (s->phase != SshPhase::SSH_PHASE_SERVICE)
             return -1;
-        if (ssh_auth_handle_service_request(payload, len, buf, &n, sizeof(buf)) != 0)
+        if (det_ssh_auth_handle_service_request(payload, len, buf, &n, sizeof(buf)) != 0)
             return -1;
         emit(i, buf, n);
         s->phase = SshPhase::SSH_PHASE_AUTH;
@@ -134,7 +134,7 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
     case SSH_MSG_USERAUTH_REQUEST:
         if (s->phase != SshPhase::SSH_PHASE_AUTH)
             return -1;
-        if (ssh_auth_handle_request(i, payload, len, buf, &n, sizeof(buf)) != 0)
+        if (det_ssh_auth_handle_request(i, payload, len, buf, &n, sizeof(buf)) != 0)
             return -1;
         emit(i, buf, n); // SUCCESS (→ phase OPEN), PK_OK probe, or FAILURE
 #if DETWS_ENABLE_SSH_ZLIB
@@ -170,7 +170,7 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
     case SSH_MSG_CHANNEL_OPEN:
         if (!s->authed)
             return -1;
-        if (ssh_channel_handle_open(i, payload, len, buf, &n, sizeof(buf)) != 0)
+        if (det_ssh_channel_handle_open(i, payload, len, buf, &n, sizeof(buf)) != 0)
             return -1;
         emit(i, buf, n);
         return 0;
@@ -180,20 +180,20 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         // the peer window and start the bridge. A stray confirm is ignored (not fatal).
         if (!s->authed)
             return -1;
-        ssh_channel_handle_open_confirm(i, payload, len);
+        det_ssh_channel_handle_open_confirm(i, payload, len);
         return 0;
 
     case SSH_MSG_CHANNEL_OPEN_FAILURE:
         // The client refused a server-initiated forwarded-tcpip open: tear the bridge down.
         if (!s->authed)
             return -1;
-        ssh_channel_handle_open_failure(i, payload, len);
+        det_ssh_channel_handle_open_failure(i, payload, len);
         return 0;
 
     case SSH_MSG_CHANNEL_REQUEST:
         if (!s->authed)
             return -1;
-        if (ssh_channel_handle_request(i, payload, len, buf, &n, sizeof(buf)) != 0)
+        if (det_ssh_channel_handle_request(i, payload, len, buf, &n, sizeof(buf)) != 0)
             return -1;
         emit(i, buf, n); // SUCCESS/FAILURE only when want_reply was set
         return 0;
@@ -201,13 +201,13 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
     case SSH_MSG_CHANNEL_DATA:
         if (!s->authed)
             return -1;
-        if (ssh_channel_handle_data(i, payload, len, buf, &n, sizeof(buf)) != 0)
+        if (det_ssh_channel_handle_data(i, payload, len, buf, &n, sizeof(buf)) != 0)
             return -1;
         emit(i, buf, n); // WINDOW_ADJUST when the receive window is replenished
         return 0;
 
     case SSH_MSG_CHANNEL_WINDOW_ADJUST:
-        ssh_channel_handle_window_adjust(i, payload, len);
+        det_ssh_channel_handle_window_adjust(i, payload, len);
         return 0;
 
     case SSH_MSG_CHANNEL_EOF:
@@ -218,7 +218,7 @@ int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, siz
         // message must travel in its own binary packet (RFC 4253 6): a strict peer
         // runs packet_check_eom() after every message and rejects two in one. Emit
         // the two halves as separate packets.
-        if (ssh_channel_handle_close(i, payload, len, buf, &n, sizeof(buf)) == 0 && n == 10)
+        if (det_ssh_channel_handle_close(i, payload, len, buf, &n, sizeof(buf)) == 0 && n == 10)
         {
             emit(i, buf, 5);     // CHANNEL_EOF
             emit(i, buf + 5, 5); // CHANNEL_CLOSE

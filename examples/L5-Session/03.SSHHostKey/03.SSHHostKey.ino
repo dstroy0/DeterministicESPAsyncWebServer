@@ -18,10 +18,10 @@
  *
  *   HOST_KEY_PROVISION 1  (default) - COMPILE TIME. The 32-byte Ed25519 seed in
  *       host_key.h is compiled into the firmware and installed with
- *       ssh_hostkey_ed25519_set(). Simplest; the key ships inside the image.
+ *       det_ssh_hostkey_ed25519_set(). Simplest; the key ships inside the image.
  *
  *   HOST_KEY_PROVISION 2  - RUNTIME SERVICE. The RSA-2048 private key lives in NVS
- *       (namespace "ssh_host_key", key "priv_der"); ssh_rsa_load_pubkey() loads its
+ *       (namespace "ssh_host_key", key "priv_der"); det_ssh_rsa_load_pubkey() loads its
  *       public half at boot and each signature reads the private key into a stack
  *       buffer and wipes it (never held in RAM). Write it once (see the block below,
  *       or docs/SSH.md "Host key provisioning"), then the firmware just loads it.
@@ -44,8 +44,8 @@
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h"
 #include "network_drivers/presentation/ssh/connection/ssh_conn.h"
-#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"          // ssh_rsa_load_pubkey (NVS path)
-#include "network_drivers/presentation/ssh/transport/ssh_transport.h" // ssh_hostkey_ed25519_set (embed path)
+#include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"          // det_ssh_rsa_load_pubkey (NVS path)
+#include "network_drivers/presentation/ssh/transport/ssh_transport.h" // det_ssh_hostkey_ed25519_set (embed path)
 #include <WiFi.h>
 
 #if HOST_KEY_PROVISION == 1
@@ -78,7 +78,7 @@ static bool ssh_password_auth(const char *user, const char *pass)
 
 static void ssh_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len)
 {
-    ssh_conn_send(slot, channel, data, len); // echo
+    det_ssh_conn_send(slot, channel, data, len); // echo
 }
 
 // Install the host key. Returns true on success. The two provisioning paths differ
@@ -87,7 +87,7 @@ static bool install_host_key()
 {
 #if HOST_KEY_PROVISION == 1
     // Compile-time: the seed is embedded in the firmware image.
-    ssh_hostkey_ed25519_set(HOST_KEY_SEED);
+    det_ssh_hostkey_ed25519_set(HOST_KEY_SEED);
     Serial.println("Host key: Ed25519, embedded at compile time");
     return true;
 #else
@@ -101,7 +101,7 @@ static bool install_host_key()
     Serial.println("Host key: wrote RSA DER to NVS (remove PROVISION_WRITE_ONCE and re-flash)");
 #endif
     // Normal boot: load the public half from NVS (private key stays out of RAM).
-    if (ssh_rsa_load_pubkey() != 0)
+    if (det_ssh_rsa_load_pubkey() != 0)
     {
         Serial.println("Host key: none in NVS - flash once with PROVISION_WRITE_ONCE (see docs/SSH.md)");
         return false;
@@ -128,8 +128,8 @@ void setup()
     if (!install_host_key())
         return;
 
-    ssh_auth_set_password_cb(ssh_password_auth);
-    ssh_channel_set_data_cb(ssh_on_data);
+    det_ssh_auth_set_password_cb(ssh_password_auth);
+    det_ssh_channel_set_data_cb(ssh_on_data);
 
     server.listen(22, ConnProto::PROTO_SSH);
     int32_t result = server.begin();
@@ -138,7 +138,7 @@ void setup()
         Serial.printf("begin() failed (error %d)\n", result);
         return;
     }
-    ssh_conn_setup();
+    det_ssh_conn_setup();
     Serial.println("SSH server started on port 22");
 }
 

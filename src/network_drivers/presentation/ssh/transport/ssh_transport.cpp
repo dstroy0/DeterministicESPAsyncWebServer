@@ -92,17 +92,17 @@ bool ssh_kex_prefer_rsa(void)
     return s_sshtr.prefer_rsa;
 }
 
-void ssh_hostkey_ed25519_set(const uint8_t seed[32])
+void det_ssh_hostkey_ed25519_set(const uint8_t seed[32])
 {
     memcpy(s_sshtr.ed_seed, seed, 32);
     ssh_ed25519_pubkey(s_sshtr.ed_pub, s_sshtr.ed_seed);
     s_sshtr.ed_have = true;
 }
-bool ssh_hostkey_ed25519_available(void)
+bool det_ssh_hostkey_ed25519_available(void)
 {
     return s_sshtr.ed_have;
 }
-void ssh_hostkey_ecdsa_set(const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
+void det_ssh_hostkey_ecdsa_set(const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
 {
     // Derive and cache the public point; reject an invalid scalar (leaves ecdsa_have false).
     if (!ssh_ecdsa_p256_pubkey(s_sshtr.ecdsa_pub, priv))
@@ -110,7 +110,7 @@ void ssh_hostkey_ecdsa_set(const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
     memcpy(s_sshtr.ecdsa_priv, priv, SSH_ECDSA_P256_PRIV_LEN);
     s_sshtr.ecdsa_have = true;
 }
-bool ssh_hostkey_ecdsa_available(void)
+bool det_ssh_hostkey_ecdsa_available(void)
 {
     return s_sshtr.ecdsa_have;
 }
@@ -148,8 +148,8 @@ static void build_hostkey_list(char *out, size_t cap)
     // Both rsa-sha2-512 and rsa-sha2-256 are backed by the one "ssh-rsa" host key
     // (RFC 8332): advertise 512 before 256 (OpenSSH's order). Filter to keys we hold.
     const bool rsa = hostkey_rsa_available();
-    const bool ed = ssh_hostkey_ed25519_available();
-    const bool ec = ssh_hostkey_ecdsa_available();
+    const bool ed = det_ssh_hostkey_ed25519_available();
+    const bool ec = det_ssh_hostkey_ecdsa_available();
     struct HostkeyCand
     {
         const char *name;
@@ -469,8 +469,8 @@ static bool negotiate_kex(const uint8_t *list, uint32_t nlen, SshKexAlg *out)
 static bool negotiate_hostkey(const uint8_t *list, uint32_t nlen, SshHostkeyAlg *out)
 {
     const bool rsa = hostkey_rsa_available();
-    const bool ed = ssh_hostkey_ed25519_available();
-    const bool ec = ssh_hostkey_ecdsa_available();
+    const bool ed = det_ssh_hostkey_ed25519_available();
+    const bool ec = det_ssh_hostkey_ecdsa_available();
     AlgCand<SshHostkeyAlg> hc[4];
     if (s_sshtr.prefer_rsa)
     {

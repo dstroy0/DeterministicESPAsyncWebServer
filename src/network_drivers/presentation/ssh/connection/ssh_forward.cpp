@@ -142,7 +142,7 @@ static SshRFwdBridge *rbridge_by_channel(uint8_t ssh_slot, uint32_t channel)
 }
 
 // Move accepted-socket bytes to the client over the SSH channel. Read only what the
-// channel peer window (and max packet) allow so ssh_conn_send never has to reject
+// channel peer window (and max packet) allow so det_ssh_conn_send never has to reject
 // bytes already pulled from the ring; bounded per poll so one tunnel cannot starve
 // the others. Leftover bytes stay in the rx ring (backpressure) for the next poll.
 static void rbridge_pump_to_client(SshRFwdBridge *br)
@@ -167,7 +167,7 @@ static void rbridge_pump_to_client(SshRFwdBridge *br)
         size_t n = det_conn_read(br->conn_slot, buf, budget);
         if (n == 0)
             break;
-        if (ssh_conn_send(br->ssh_slot, br->channel, buf, n) < 0)
+        if (det_ssh_conn_send(br->ssh_slot, br->channel, buf, n) < 0)
             break; // channel gone: retry next poll
     }
 }
@@ -308,7 +308,8 @@ static void rfwd_on_accept(uint8_t conn_slot)
         det_ip_format(&rip, orig, sizeof(orig));
     // Open the forwarded-tcpip channel back to the client, echoing the requested bind
     // address as the "address that was connected".
-    int ch = ssh_conn_open_forwarded(b->ssh_slot, b->bind_addr[0] ? b->bind_addr : "0.0.0.0", b->bind_port, orig, 0);
+    int ch =
+        det_ssh_conn_open_forwarded(b->ssh_slot, b->bind_addr[0] ? b->bind_addr : "0.0.0.0", b->bind_port, orig, 0);
     if (ch < 0)
     {
         det_conn_close(conn_slot); // SSH connection gone or channel pool full
@@ -333,7 +334,7 @@ static void rfwd_on_close(uint8_t conn_slot)
     SshRFwdBridge *br = rbridge_by_conn(conn_slot);
     if (!br)
         return;
-    ssh_conn_close_channel(br->ssh_slot, br->channel); // tell the client EOF + CLOSE
+    det_ssh_conn_close_channel(br->ssh_slot, br->channel); // tell the client EOF + CLOSE
     br->active = false;
 }
 
@@ -358,12 +359,12 @@ static void rfwd_on_poll(uint8_t conn_slot)
 
 static const ProtoHandler s_rfwd_handler = {rfwd_on_accept, rfwd_on_data, rfwd_on_close, rfwd_on_poll};
 
-void ssh_forward_set_policy_cb(SshForwardPolicyCb cb)
+void det_ssh_forward_set_policy_cb(SshForwardPolicyCb cb)
 {
     s_fwd.policy = cb;
 }
 
-void ssh_forward_begin()
+void det_ssh_forward_begin()
 {
     for (int i = 0; i < DETWS_SSH_FWD_MAX; i++)
         s_fwd.fwd[i].active = false;
@@ -371,17 +372,17 @@ void ssh_forward_begin()
         s_rfwd.rbind[i].active = false;
     for (int i = 0; i < DETWS_SSH_RFWD_BRIDGE_MAX; i++)
         s_rfwd.rbridge[i].active = false;
-    ssh_channel_set_forward_open_cb(on_forward_open);
-    ssh_channel_set_forward_data_cb(on_forward_data);
+    det_ssh_channel_set_forward_open_cb(on_forward_open);
+    det_ssh_channel_set_forward_data_cb(on_forward_data);
     // Remote forwarding (ssh -R): the request/cancel seam, the open-confirmation
     // callback, and the accept handler for connections on a forwarded port.
-    ssh_channel_set_rforward_open_cb(on_rforward_open);
-    ssh_channel_set_rforward_cancel_cb(on_rforward_cancel);
-    ssh_channel_set_forward_confirm_cb(on_forward_confirm);
+    det_ssh_channel_set_rforward_open_cb(on_rforward_open);
+    det_ssh_channel_set_rforward_cancel_cb(on_rforward_cancel);
+    det_ssh_channel_set_forward_confirm_cb(on_forward_confirm);
     proto_register(ConnProto::PROTO_SSH_RFWD, &s_rfwd_handler);
 }
 
-void ssh_forward_pump(uint8_t ssh_slot)
+void det_ssh_forward_pump(uint8_t ssh_slot)
 {
     uint8_t buf[DETWS_SSH_FWD_CHUNK];
     for (int i = 0; i < DETWS_SSH_FWD_MAX; i++)
@@ -422,21 +423,21 @@ void ssh_forward_pump(uint8_t ssh_slot)
             size_t n = det_client_read(f->cid, buf, budget);
             if (n == 0)
                 break;
-            if (ssh_conn_send(ssh_slot, f->channel, buf, n) < 0)
+            if (det_ssh_conn_send(ssh_slot, f->channel, buf, n) < 0)
                 break; // sized to the window, so this should send; retry next poll
         }
 
         // Target closed (FIN) and fully drained: EOF + CLOSE to the client, free.
         if (det_client_is_closed(f->cid) && det_client_available(f->cid) == 0)
         {
-            ssh_conn_close_channel(ssh_slot, f->channel);
+            det_ssh_conn_close_channel(ssh_slot, f->channel);
             det_client_close(f->cid);
             f->active = false;
         }
     }
 }
 
-void ssh_forward_reset(uint8_t ssh_slot)
+void det_ssh_forward_reset(uint8_t ssh_slot)
 {
     // direct-tcpip (ssh -L): close outbound target sockets this connection owned.
     for (int i = 0; i < DETWS_SSH_FWD_MAX; i++)

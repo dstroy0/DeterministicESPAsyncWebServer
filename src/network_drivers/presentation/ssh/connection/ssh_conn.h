@@ -25,7 +25,7 @@
  * forgotten. Idempotent. Until it runs, the dispatcher's emit callback is null and
  * every framed SSH packet after the plaintext banner is silently dropped.
  */
-void ssh_conn_setup();
+void det_ssh_conn_setup();
 
 /** @brief The SSH connection ProtoHandler (accessor; installed by the builtins list, no session dep). */
 struct ProtoHandler;
@@ -38,7 +38,7 @@ const struct ProtoHandler *ssh_proto_handler(void);
  * state, and sends the server identification banner. If no SSH slot is free
  * the connection is aborted.
  */
-void ssh_conn_accept(uint8_t conn_slot);
+void det_ssh_conn_accept(uint8_t conn_slot);
 
 /**
  * @brief Drain @p conn_slot's receive ring buffer through the SSH stack.
@@ -48,25 +48,25 @@ void ssh_conn_accept(uint8_t conn_slot);
  * responses are written to the socket. Closes the connection if the protocol
  * signals a fatal condition.
  */
-void ssh_conn_rx(uint8_t conn_slot);
+void det_ssh_conn_rx(uint8_t conn_slot);
 
 /**
  * @brief Tear down SSH state for @p conn_slot (disconnect / error).
  */
-void ssh_conn_close(uint8_t conn_slot);
+void det_ssh_conn_close(uint8_t conn_slot);
 
 /**
  * @brief Send application data to the client over an SSH channel.
  *
  * Frames @p data as SSH_MSG_CHANNEL_DATA on channel @p channel, encrypts+MACs it,
  * and writes it to the socket. @p ssh_slot and @p channel are the values passed to
- * the data callback registered via ssh_channel_set_data_cb(). A single call sends
+ * the data callback registered via det_ssh_channel_set_data_cb(). A single call sends
  * at most one channel-data message (bounded by the peer's flow-control window).
  *
  * @return Number of bytes sent, or -1 on error (bad slot, channel closed/unknown,
  *         peer window/packet limit, or no active connection).
  */
-int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_t len);
+int det_ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_t len);
 
 /**
  * @brief Close an SSH channel from the server side: frame CHANNEL_EOF and
@@ -76,7 +76,7 @@ int ssh_conn_send(uint8_t ssh_slot, uint32_t channel, const uint8_t *data, size_
  * @return 0 on success, -1 on error (bad slot, channel closed/unknown, no
  *         active connection, or scratch exhausted).
  */
-int ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel);
+int det_ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel);
 
 /**
  * @brief Open a server-initiated "forwarded-tcpip" channel to the client (ssh -R):
@@ -89,14 +89,14 @@ int ssh_conn_close_channel(uint8_t ssh_slot, uint32_t channel);
  * @return the local channel id (>= 0), or -1 (no active connection, channel pool full,
  *         or scratch exhausted). Used by the remote-forward owner.
  */
-int ssh_conn_open_forwarded(uint8_t ssh_slot, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
-                            uint16_t orig_port);
+int det_ssh_conn_open_forwarded(uint8_t ssh_slot, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
+                                uint16_t orig_port);
 
 /**
  * @brief Per-loop poll hook for an SSH connection (registered as the SSH protocol
  *        handler's on_poll). Drives the port-forwarding pump; a no-op when
  *        forwarding is compiled out.
  */
-void ssh_conn_poll(uint8_t conn_slot);
+void det_ssh_conn_poll(uint8_t conn_slot);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_CONN_H

@@ -484,7 +484,7 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
     - [x] **`ecdsa-sha2-nistp256`** host key + client auth _(shipped)_ - ECDSA over NIST P-256 (RFC 5656,
           SHA-256). New `ssh/crypto/ssh_ecdsa`: ESP32 mbedTLS (HW, side-channel-hardened); native is a
           self-contained software P-256 (field/Jacobian point math) with RFC 6979 deterministic signing, so
-          the sign path is byte-exact against the RFC 6979 A.2.5 vectors. Installed via `ssh_hostkey_ecdsa_set()`;
+          the sign path is byte-exact against the RFC 6979 A.2.5 vectors. Installed via `det_ssh_hostkey_ecdsa_set()`;
           negotiated in `server_host_key_algorithms` + `server-sig-algs`; the KEXDH reply carries the P-256 blob
           and an `mpint(r)||mpint(s)` signature; client-auth verifies. KAT + e2e KEXDH + genuine client-auth
           all tested. _(aes128-gcm skipped: 256 is the ESP32-relevant one.)_

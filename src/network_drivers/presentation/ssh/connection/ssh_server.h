@@ -34,7 +34,7 @@
 typedef void (*SshEmitCb)(uint8_t slot, const uint8_t *payload, size_t len);
 
 /** @brief Install the outbound-message callback. */
-void ssh_server_set_emit_cb(SshEmitCb cb);
+void det_ssh_server_set_emit_cb(SshEmitCb cb);
 
 /**
  * @brief Dispatch one decrypted inbound SSH message for slot @p i.
@@ -48,6 +48,6 @@ void ssh_server_set_emit_cb(SshEmitCb cb);
  * @param[in] len      Payload length.
  * @return 0 if handled, -1 if the connection must be closed.
  */
-int ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, size_t len);
+int det_ssh_server_dispatch(uint8_t i, uint8_t msg_type, const uint8_t *payload, size_t len);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_SERVER_H
