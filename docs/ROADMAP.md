@@ -1621,3 +1621,31 @@ then apply **"squirty"** styling over it for a polished, modern docs site.
       degrades, not after it drops - the piece that turns the three primitives into seamless roaming. Pure,
       host-testable logic (feed it synthetic RSSI / neighbor / BTM inputs, assert the roam trigger + target);
       the actual association is the supplicant's. `services/roaming`.
+
+### Per-variant default sizing (don't kneecap larger boards)
+
+> Every `DWS_*` sizing tunable (edge-cache slots, mesh peers, TLS arena / `MAX_TLS_CONNS` / MFL, packet
+> and handle buffers, connection tables) currently resolves to a **single flat `#ifndef` default chosen to
+> fit the smallest classic ESP32's ~120 KB `dram0_0_seg` ceiling**. That makes a heavy feature overflow DRAM
+> on a classic board, so examples have to hand-dial the tunables down in `build_opt.h` (as 80.MeshCache does:
+> `DWS_EDGE_CACHE_SLOTS=2` / `FETCH_SLOTS=1` / `MESH_MAX_PEERS=1`). The side effect is that an ESP32-S3 with 8 MB
+> PSRAM + 8/16 MB flash inherits those same cramped numbers - a board with 30x the RAM is capped to the
+> lowest common denominator. Fix the defaults, not each example.
+
+- [ ] **Capability-tiered default profiles** (M) - add a central `src/board_profile.h` that derives a
+      `DWS_BOARD_TIER` at compile time from the SoC macros already available (`CONFIG_IDF_TARGET_ESP32` /
+      `ESP32S3` / `ESP32C3` ..., `BOARD_HAS_PSRAM` / `CONFIG_SPIRAM`, flash-size macros) - e.g. `CLASSIC`
+      (no PSRAM, ~120 KB DRAM budget), `S3` (larger internal RAM), `PSRAM` (external RAM available). Each
+      sizing macro that is today a flat constant instead selects its default from a small per-tier table
+      (conservative for `CLASSIC`, generous for `PSRAM`), while the `#ifndef` guard stays so an explicit
+      `-D` or `build_opt.h` override always wins. Net effect: a classic board keeps the numbers that let it
+      link, an S3/PSRAM board automatically gets a cache/buffer set matched to its memory, and examples stop
+      needing to hand-shrink tunables for the common case.
+- [ ] **Prune the per-example `build_opt.h` shrink hacks** (S) - once the tiered defaults land, revisit the
+      examples that manually dial tunables down (80.MeshCache and any others carrying a "sized down to fit
+      classic-ESP32 DRAM" note) and drop the override where the `CLASSIC`-tier default already fits, so the
+      example shows the real intended configuration on each board instead of the lowest-common-denominator one.
+- [ ] **CI: assert both ends of the range** (S) - keep the Arduino Build classic-ESP32 `dram0_0_seg` link
+      check (the guard that caught MeshCache) and add an S3/PSRAM build of the same heavy examples asserting
+      the larger-tier defaults actually took effect (link succeeds and uses the bigger sizes), so a future
+      change can't silently re-flatten the profiles or regress the classic-board ceiling.

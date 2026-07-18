@@ -186,8 +186,8 @@ size_t build_entry(fs::File &c, uint8_t *ent, size_t cap)
     dws_sftp_format_longname(c.isDirectory(), a.permissions, a.size, a.mtime, base, ln, sizeof(ln));
     SftpWriter w;
     dws_sftp_wr_init(&w, ent, cap); // reserves a 4-byte length prefix we discard below
-    dws_sftp_wr_string(&w, base, (uint32_t)strlen(base));
-    dws_sftp_wr_string(&w, ln, (uint32_t)strlen(ln));
+    dws_sftp_wr_string(&w, base, (uint32_t)strnlen(base, SFTP_ENTRY_MAX));
+    dws_sftp_wr_string(&w, ln, (uint32_t)strnlen(ln, sizeof(ln)));
     dws_sftp_wr_attrs(&w, &a);
     if (w.ovf)
         return 0;

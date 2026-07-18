@@ -46,7 +46,7 @@ struct DWSUdpPeer;
  * @param peer  reply token (valid only during this call).
  * @param ctx   the opaque context passed to dws_udp_listen().
  */
-typedef void (*DWSUdpHandler)(const uint8_t *data, size_t len, struct DWSUdpPeer *peer, void *ctx);
+typedef void (*DWSUdpHandler)(const uint8_t *data, size_t len, const struct DWSUdpPeer *peer, void *ctx);
 
 /**
  * @brief Bind a UDP port and route incoming datagrams to @p handler.

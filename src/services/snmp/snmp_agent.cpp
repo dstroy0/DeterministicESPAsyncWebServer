@@ -681,7 +681,7 @@ struct SnmpUdpCtx
 SnmpUdpCtx s_snmp_udp;
 } // namespace
 
-static void dws_snmp_udp_handler(const uint8_t *data, size_t len, struct DWSUdpPeer *peer, void *ctx)
+static void dws_snmp_udp_handler(const uint8_t *data, size_t len, const struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
     size_t rn = dws_snmp_agent_process(data, len, s_snmp_udp.tx, sizeof(s_snmp_udp.tx));

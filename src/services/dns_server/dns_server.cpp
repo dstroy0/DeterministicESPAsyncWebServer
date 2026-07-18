@@ -198,7 +198,7 @@ void dws_dns_server_clear()
 
 namespace
 {
-void dws_dns_server_udp_handler(const uint8_t *data, size_t len, struct DWSUdpPeer *peer, void *ctx)
+void dws_dns_server_udp_handler(const uint8_t *data, size_t len, const struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
     uint8_t resp[DWS_DNS_NAME_MAX + 32]; // header + question + one A answer

@@ -68,7 +68,7 @@ struct NtpServerCtx
 NtpServerCtx s_ntp;
 
 // UDP handler: answer each request from the current time (silent if we have none).
-void dws_ntp_server_udp_handler(const uint8_t *data, size_t len, struct DWSUdpPeer *peer, void *ctx)
+void dws_ntp_server_udp_handler(const uint8_t *data, size_t len, const struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
     uint32_t unix_secs = dws_time_now();

@@ -63,9 +63,7 @@ void err_ack(ScpConn *c, const char *msg)
 {
     uint8_t buf[96];
     buf[0] = SCP_ACK_ERROR;
-    size_t ml = strlen(msg);
-    if (ml > sizeof(buf) - 3)
-        ml = sizeof(buf) - 3;
+    size_t ml = strnlen(msg, sizeof(buf) - 3);
     memcpy(buf + 1, msg, ml);
     buf[1 + ml] = '\n';
     dws_ssh_conn_send(c->slot, c->channel, buf, 2 + ml);
@@ -97,7 +95,7 @@ void dws_scp_on_open(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd
     ScpMode mode = dws_scp_parse_cmd(cmd, cmd_len, path, sizeof(path));
     if (mode == ScpMode::SINK)
     {
-        size_t pl = strlen(path);
+        size_t pl = strnlen(path, sizeof(path));
         c->dest_is_dir = (pl > 0 && path[pl - 1] == '/');
         strncpy(c->dest, path, sizeof(c->dest) - 1);
         c->dest[sizeof(c->dest) - 1] = '\0';

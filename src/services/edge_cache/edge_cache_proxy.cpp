@@ -276,7 +276,7 @@ EdgeRouteMap *map_match(const char *path)
     {
         if (!s_ctx.maps[i].used)
             continue;
-        size_t pl = strlen(s_ctx.maps[i].prefix);
+        size_t pl = strnlen(s_ctx.maps[i].prefix, sizeof(s_ctx.maps[i].prefix));
         if (strncmp(path, s_ctx.maps[i].prefix, pl) == 0)
             return &s_ctx.maps[i];
     }
@@ -427,8 +427,9 @@ void store_response(uint8_t slot, EdgeFetchSlot *fs, HttpReq *req, const DWSCach
     edge_header_value(head, head_len, "Content-Encoding", e->content_encoding, sizeof(e->content_encoding));
     edge_header_value(head, head_len, "ETag", e->etag, sizeof(e->etag));
     edge_header_value(head, head_len, "Last-Modified", e->last_modified, sizeof(e->last_modified));
-    if (vary_hdr[0] && strlen(vary_hdr) < sizeof(e->vary_names))
-        memcpy(e->vary_names, vary_hdr, strlen(vary_hdr) + 1);
+    size_t vhl = strnlen(vary_hdr, sizeof(e->vary_names));
+    if (vary_hdr[0] && vhl < sizeof(e->vary_names))
+        memcpy(e->vary_names, vary_hdr, vhl + 1);
 
     size_t bl = f->body_len;
     if (bl > DWS_EDGE_BODY_MAX)
@@ -443,11 +444,11 @@ void store_response(uint8_t slot, EdgeFetchSlot *fs, HttpReq *req, const DWSCach
     int32_t age = 0;
     char v[64];
     if (edge_header_value(head, head_len, "Date", v, sizeof(v)))
-        date = edge_parse_http_date(v, strlen(v));
+        date = edge_parse_http_date(v, strnlen(v, sizeof(v)));
     if (edge_header_value(head, head_len, "Expires", v, sizeof(v)))
-        expires = edge_parse_http_date(v, strlen(v));
+        expires = edge_parse_http_date(v, strnlen(v, sizeof(v)));
     if (e->last_modified[0])
-        last_mod = edge_parse_http_date(e->last_modified, strlen(e->last_modified));
+        last_mod = edge_parse_http_date(e->last_modified, strnlen(e->last_modified, sizeof(e->last_modified)));
     if (edge_header_value(head, head_len, "Age", v, sizeof(v)))
     {
         long a = 0;
@@ -480,7 +481,7 @@ void on_fetch_done(uint8_t slot, EdgeFetchSlot *fs, uint32_t now)
         cache_control_init(&cc);
         char v[128];
         if (edge_header_value(head, head_len, "Cache-Control", v, sizeof(v)))
-            cache_control_parse(v, strlen(v), &cc);
+            cache_control_parse(v, strnlen(v, sizeof(v)), &cc);
         char vary_hdr[DWS_EDGE_VARY_MAX];
         vary_hdr[0] = '\0';
         edge_header_value(head, head_len, "Vary", vary_hdr, sizeof(vary_hdr));
@@ -567,8 +568,8 @@ void mesh_snapshot_headers(const HttpReq *req, char *out, size_t cap)
     {
         const char *k = req->headers[i].key;
         const char *v = req->headers[i].val;
-        size_t kl = strlen(k);
-        size_t vl = strlen(v);
+        size_t kl = strnlen(k, MAX_KEY_LEN);
+        size_t vl = strnlen(v, MAX_VAL_LEN);
         if (pos + kl + 1 + vl + 1 >= cap)
             break;
         memcpy(out + pos, k, kl);
@@ -642,7 +643,7 @@ bool start_fetch(uint8_t slot, HttpReq *req, EdgeRouteMap *m, const char *canon,
     fs->revalidate = (reval != nullptr);
     fs->reval_entry = reval;
     fs->route = m;
-    memcpy(fs->canon, canon, strlen(canon) + 1);
+    memcpy(fs->canon, canon, strnlen(canon, sizeof(fs->canon) - 1) + 1);
     strncpy(fs->path, req->path, sizeof(fs->path) - 1);
     fs->path[sizeof(fs->path) - 1] = '\0';
     strncpy(fs->query, req->query, sizeof(fs->query) - 1);
@@ -653,7 +654,7 @@ bool start_fetch(uint8_t slot, HttpReq *req, EdgeRouteMap *m, const char *canon,
     if (!reval && mesh_peer_count() > 0)
     {
         uint8_t digest[32];
-        edge_key_digest(canon, strlen(canon), digest);
+        edge_key_digest(canon, strnlen(canon, DWS_EDGE_KEY_MAX), digest);
         mesh_snapshot_headers(req, s_ctx.mesh_hdrs, sizeof(s_ctx.mesh_hdrs));
         fs->mreq_len = edge_mesh_build_request(digest, canon, s_ctx.mesh_hdrs, fs->mreq, sizeof(fs->mreq));
         fs->peer_idx = 0;
@@ -682,7 +683,7 @@ bool start_fetch(uint8_t slot, HttpReq *req, EdgeRouteMap *m, const char *canon,
 EdgeEntry *try_promote_l2(const char *canon, uint32_t now)
 {
     uint8_t digest[32];
-    edge_key_digest(canon, strlen(canon), digest);
+    edge_key_digest(canon, strnlen(canon, DWS_EDGE_KEY_MAX), digest);
     EdgeEntry *e = edge_store_alloc(&s_ctx.store, canon, ""); // may evict + write-back an L1 victim first
     if (!e)
         return nullptr;
@@ -855,7 +856,7 @@ struct MeshLookupCtx
 const char *mesh_hdr_lookup(void *ctx, const char *name)
 {
     MeshLookupCtx *lc = (MeshLookupCtx *)ctx;
-    size_t nl = strlen(name);
+    size_t nl = strnlen(name, MAX_KEY_LEN);
     const char *p = lc->blob;
     while (*p)
     {
@@ -892,7 +893,7 @@ void mesh_answer(MeshConn *mc, const uint8_t digest[32], const char *canon, uint
 {
     bool hit = false;
     uint8_t verify[32];
-    edge_key_digest(canon, strlen(canon), verify);
+    edge_key_digest(canon, strnlen(canon, DWS_EDGE_KEY_MAX), verify);
     if (memcmp(verify, digest, 32) == 0) // integrity: the canonical key must hash to the advertised digest
     {
         MeshLookupCtx lc;
@@ -1084,7 +1085,7 @@ bool dws_edge_cache_map(const char *path_prefix, const char *origin_base_url)
 {
     if (!path_prefix || !origin_base_url)
         return false;
-    if (strlen(path_prefix) >= sizeof(s_ctx.maps[0].prefix))
+    if (strnlen(path_prefix, sizeof(s_ctx.maps[0].prefix)) >= sizeof(s_ctx.maps[0].prefix))
         return false;
     bool https = false;
     char host[DWS_EDGE_ORIGIN_URL_MAX];
@@ -1179,7 +1180,7 @@ bool dws_edge_cache_purge(const char *canonical_key)
     if (s_ctx.l2)
     {
         uint8_t digest[32];
-        edge_key_digest(canonical_key, strlen(canonical_key), digest);
+        edge_key_digest(canonical_key, strnlen(canonical_key, DWS_EDGE_KEY_MAX), digest);
         if (edge_sd_del(s_ctx.l2, digest))
             purged = true;
     }

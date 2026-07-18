@@ -713,7 +713,7 @@ void dws_coap_notify(const char *path)
     }
 }
 
-static void coap_udp_handler(const uint8_t *data, size_t len, struct DWSUdpPeer *peer, void *ctx)
+static void coap_udp_handler(const uint8_t *data, size_t len, const struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
     char ip[16];
@@ -766,7 +766,7 @@ void dws_coap_server_begin(uint16_t port)
 
 #else // Observe disabled: the basic request/response handler
 
-static void coap_udp_handler(const uint8_t *data, size_t len, struct DWSUdpPeer *peer, void *ctx)
+static void coap_udp_handler(const uint8_t *data, size_t len, const struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
     size_t rn = dws_coap_server_process(data, len, s_coap.tx, sizeof(s_coap.tx));

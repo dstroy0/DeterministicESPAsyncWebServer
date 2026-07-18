@@ -236,7 +236,7 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
 // that require it; the caller must disconnect). One function per cipher mode keeps each within the nesting
 // and cognitive-complexity budget that the single inline switch blew past.
 
-static int ssh_recv_chachapoly(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg_handler_t handler)
+static int ssh_recv_chachapoly(uint8_t i, SshPacketState *s, const SshKeyMat *km, ssh_msg_handler_t handler)
 {
     // chacha20-poly1305@openssh.com. Keyed by the sequence number, so decrypting the
     // length is stateless/repeatable - no cipher-state peek/restore is needed.
@@ -528,7 +528,7 @@ static int ssh_recv_ctr_emac(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_ms
     return 1;
 }
 
-static int ssh_recv_plain(uint8_t i, SshPacketState *s, SshKeyMat *km, ssh_msg_handler_t handler)
+static int ssh_recv_plain(uint8_t i, SshPacketState *s, const SshKeyMat *km, ssh_msg_handler_t handler)
 {
     (void)km; // no keys before NEWKEYS
     // Unencrypted path (during initial handshake / before NEWKEYS).
