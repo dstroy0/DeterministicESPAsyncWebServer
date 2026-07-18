@@ -999,12 +999,12 @@ src/
 ├── web/
 │   ├── favicons/  (288 generated files)
 │   ├── input/
-│   │   ├── DETWS_DASHBOARD_PAGE.html
-│   │   ├── DETWS_METRICS_PROM.txt
-│   │   ├── DETWS_PROV_FORM.html
-│   │   ├── DETWS_PROV_SAVED_HTML.html
-│   │   ├── DETWS_STATS_JSON.json
-│   │   └── DETWS_TERMINAL_PAGE.html
+│   │   ├── DWS_DASHBOARD_PAGE.html
+│   │   ├── DWS_METRICS_PROM.txt
+│   │   ├── DWS_PROV_FORM.html
+│   │   ├── DWS_PROV_SAVED_HTML.html
+│   │   ├── DWS_STATS_JSON.json
+│   │   └── DWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
 │   │   ├── build_assets.py
@@ -1088,7 +1088,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `core/07.ResponseHeaders` | `L7-Application/07.ResponseHeaders` | 752,869 | 81,784 |
 | `core/04.Middleware` | `L7-Application/04.Middleware` | 752,961 | 81,784 |
 | `core/08.ServerSentEvents` | `L6-Presentation/08.ServerSentEvents` | 752,969 | 81,792 |
-| `DIAG` | `L7-Application/20.Diagnostics` | 753,009 | 81,784 |
+| `DIAG` | `L7-Application/20.Diagnostics` | 753,025 | 81,784 |
 | `core/36.NetEgress` | `L7-Application/36.NetEgress` | 753,037 | 81,784 |
 | `PARTITION_MONITOR` | `L7-Application/37.PartitionMonitor` | 753,065 | 81,792 |
 | `core/01.ChunkedResponse` | `L7-Application/01.ChunkedResponse` | 753,065 | 81,792 |
@@ -1115,7 +1115,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `core/03.Expert` | `Foundation/03.Expert` | 755,053 | 81,808 |
 | `SYSLOG` | `L7-Application/19.Syslog` | 755,741 | 83,640 |
 | `MSGPACK` | `L6-Presentation/14.MsgPack` | 756,017 | 81,864 |
-| `STATS+METRICS` | `L7-Application/21.PrometheusMetrics` | 756,309 | 81,928 |
+| `STATS+METRICS` | `L7-Application/21.PrometheusMetrics` | 756,325 | 81,928 |
 | `core/02.Json` | `L6-Presentation/02.Json` | 756,433 | 81,792 |
 | `GPIO_MAP` | `L7-Application/38.GpioMap` | 756,701 | 81,848 |
 | `WS_DEFLATE` | `L6-Presentation/11.WebSocketCompression` | 757,009 | 89,984 |
