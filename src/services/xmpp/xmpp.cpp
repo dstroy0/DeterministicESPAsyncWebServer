@@ -8,7 +8,7 @@
 
 #include "services/xmpp/xmpp.h"
 
-#if DETWS_ENABLE_XMPP
+#if DWS_ENABLE_XMPP
 
 #include <string.h>
 
@@ -84,7 +84,7 @@ size_t finish(char *out, size_t n, bool ok)
 }
 } // namespace
 
-size_t detws_xmpp_escape(const char *in, size_t in_len, char *out, size_t cap)
+size_t dws_xmpp_escape(const char *in, size_t in_len, char *out, size_t cap)
 {
     if (!in || !out)
         return 0;
@@ -98,7 +98,7 @@ size_t detws_xmpp_escape(const char *in, size_t in_len, char *out, size_t cap)
     return finish(out, n, true);
 }
 
-size_t detws_xmpp_stream_open(const char *from, const char *to, char *out, size_t cap)
+size_t dws_xmpp_stream_open(const char *from, const char *to, char *out, size_t cap)
 {
     size_t n = 0;
     bool ok =
@@ -108,7 +108,7 @@ size_t detws_xmpp_stream_open(const char *from, const char *to, char *out, size_
     return finish(out, n, ok);
 }
 
-size_t detws_xmpp_message(const char *to, const char *from, const char *type, const char *body, char *out, size_t cap)
+size_t dws_xmpp_message(const char *to, const char *from, const char *type, const char *body, char *out, size_t cap)
 {
     size_t n = 0;
     bool ok = put(out, cap, &n, "<message") && put_attr(out, cap, &n, "to", to) &&
@@ -119,14 +119,14 @@ size_t detws_xmpp_message(const char *to, const char *from, const char *type, co
     return finish(out, n, ok);
 }
 
-size_t detws_xmpp_presence(const char *type, char *out, size_t cap)
+size_t dws_xmpp_presence(const char *type, char *out, size_t cap)
 {
     size_t n = 0;
     bool ok = put(out, cap, &n, "<presence") && put_attr(out, cap, &n, "type", type) && put(out, cap, &n, "/>");
     return finish(out, n, ok);
 }
 
-size_t detws_xmpp_iq(const char *type, const char *id, const char *child_xml, char *out, size_t cap)
+size_t dws_xmpp_iq(const char *type, const char *id, const char *child_xml, char *out, size_t cap)
 {
     size_t n = 0;
     bool ok = put(out, cap, &n, "<iq") && put_attr(out, cap, &n, "type", type) && put_attr(out, cap, &n, "id", id) &&
@@ -137,7 +137,7 @@ size_t detws_xmpp_iq(const char *type, const char *id, const char *child_xml, ch
     return finish(out, n, ok);
 }
 
-size_t detws_xmpp_stanza_name(const char *xml, size_t len, char *out, size_t cap)
+size_t dws_xmpp_stanza_name(const char *xml, size_t len, char *out, size_t cap)
 {
     if (!xml || !out || cap == 0)
         return 0;
@@ -161,7 +161,7 @@ size_t detws_xmpp_stanza_name(const char *xml, size_t len, char *out, size_t cap
     return 0;
 }
 
-size_t detws_xmpp_attr(const char *xml, size_t len, const char *attr, char *out, size_t cap)
+size_t dws_xmpp_attr(const char *xml, size_t len, const char *attr, char *out, size_t cap)
 {
     if (!xml || !attr || !out || cap == 0)
         return 0;
@@ -191,4 +191,4 @@ size_t detws_xmpp_attr(const char *xml, size_t len, const char *attr, char *out,
     return 0;
 }
 
-#endif // DETWS_ENABLE_XMPP
+#endif // DWS_ENABLE_XMPP

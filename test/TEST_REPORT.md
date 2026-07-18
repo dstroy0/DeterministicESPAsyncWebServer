@@ -685,12 +685,12 @@ _Unit tests for the shared no-stdlib primitives: the base-10 number parsers_
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the DetIp address core (network_drivers/network/det_ip): RFC 4291 text_
+_Unit tests for the DWSIp address core (network_drivers/network/dws_ip): RFC 4291 text_
 
 |   # | Test                                          | Status | Description                                                                 |
 | --: | :-------------------------------------------- | :----: | :-------------------------------------------------------------------------- |
 |   1 | `test_v4_round_trip`                          |   ✅   | V4 round trip                                                               |
-|   2 | `test_from_v6_bytes`                          |   ✅   | 2001:db8::1 as raw network-order bytes -> DetIp -> canonical text.          |
+|   2 | `test_from_v6_bytes`                          |   ✅   | 2001:db8::1 as raw network-order bytes -> DWSIp -> canonical text.          |
 |   3 | `test_is_unspecified`                         |   ✅   | Is unspecified                                                              |
 |   4 | `test_prefix_match`                           |   ✅   | IPv4 CIDR containment (the allowlist primitive - full address, no hashing). |
 |   5 | `test_v6_canonical_5952`                      |   ✅   | RFC 5952: lower-case, no leading zeros, longest zero run -> "::".           |
@@ -699,7 +699,7 @@ _Unit tests for the DetIp address core (network_drivers/network/det_ip): RFC 429
 |   8 | `test_classify_v6`                            |   ✅   | Classify v6                                                                 |
 |   9 | `test_reject_malformed`                       |   ✅   | Reject malformed                                                            |
 |  10 | `test_equal_and_from_v4`                      |   ✅   | Equal and from v4                                                           |
-|  11 | `test_ip_classify_equal_cidr_and_parse_edges` |   ✅   | classify: null and a DetIpFamily::DET_IP_NONE address are UNSPECIFIED.      |
+|  11 | `test_ip_classify_equal_cidr_and_parse_edges` |   ✅   | classify: null and a DWSIpFamily::DWS_IP_NONE address are UNSPECIFIED.      |
 
 </details>
 
@@ -710,7 +710,7 @@ _Unit tests for the DetIp address core (network_drivers/network/det_ip): RFC 429
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the unified double-ended arena (network_drivers/session/det_arena):_
+_Unit tests for the unified double-ended arena (network_drivers/session/dws_arena):_
 
 |   # | Test                                          | Status | Description                                                                             |
 | --: | :-------------------------------------------- | :----: | :-------------------------------------------------------------------------------------- |
@@ -1469,7 +1469,7 @@ _Unit and stress tests for the Server-Sent Events connection pool (sse.h/cpp)._
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Transport observability (DETWS_ENABLE_OBSERVABILITY): the det_conn_on_event_
+_Transport observability (DWS_ENABLE_OBSERVABILITY): the dws_conn_on_event_
 
 |   # | Test                                                          | Status | Description                                                             |
 | --: | :------------------------------------------------------------ | :----: | :---------------------------------------------------------------------- |
@@ -1481,7 +1481,7 @@ _Transport observability (DETWS_ENABLE_OBSERVABILITY): the det_conn_on_event_
 |   6 | `test_recv_fin_counts_remote_close`                           |   ✅   | Recv fin counts remote close                                            |
 |   7 | `test_err_cb_counts_error_close`                              |   ✅   | Err cb counts error close                                               |
 |   8 | `test_timeout_sweep_counts_timeout`                           |   ✅   | Timeout sweep counts timeout                                            |
-|   9 | `test_local_close_counts_local`                               |   ✅   | det_conn_close(slot) reads the slot's pcb, frees the slot, and counts a |
+|   9 | `test_local_close_counts_local`                               |   ✅   | dws_conn_close(slot) reads the slot's pcb, frees the slot, and counts a |
 |  10 | `test_abort_slot_counts_abort_and_frees`                      |   ✅   | Abort slot counts abort and frees                                       |
 |  11 | `test_abort_slot_noop_on_free_slot`                           |   ✅   | Abort slot noop on free slot                                            |
 |  12 | `test_backpressure_counts_when_ring_full`                     |   ✅   | Backpressure counts when ring full                                      |
@@ -1527,7 +1527,7 @@ _Unit tests for the accept-time connection gates (network_drivers/transport/list
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Tests the parser's streaming-body hook (DETWS_ENABLE_OTA): a body larger than_
+_Tests the parser's streaming-body hook (DWS_ENABLE_OTA): a body larger than_
 
 |   # | Test                                    | Status | Description                      |
 | --: | :-------------------------------------- | :----: | :------------------------------- |
@@ -1544,7 +1544,7 @@ _Tests the parser's streaming-body hook (DETWS_ENABLE_OTA): a body larger than_
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for detws_prov_form_field(): the x-www-form-urlencoded field_
+_Unit tests for dws_prov_form_field(): the x-www-form-urlencoded field_
 
 |   # | Test                           | Status | Description                                                                                      |
 | --: | :----------------------------- | :----: | :----------------------------------------------------------------------------------------------- |
@@ -1846,7 +1846,7 @@ _End-to-end test of the mlkem768x25519-sha256 SSH hybrid key exchange (draft-iet
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Built with DETWS_SSH_ALLOW_PASSWORD=0: verifies password authentication is_
+_Built with DWS_SSH_ALLOW_PASSWORD=0: verifies password authentication is_
 
 |   # | Test                                               | Status | Description                                                            |
 | --: | :------------------------------------------------- | :----: | :--------------------------------------------------------------------- |
@@ -2092,7 +2092,7 @@ _Dispatch-level RFC 7231 compliance:_
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the WebSocket web-serial terminal (DETWS_ENABLE_WEB_TERMINAL):_
+_Unit tests for the WebSocket web-serial terminal (DWS_ENABLE_WEB_TERMINAL):_
 
 |   # | Test                                        | Status | Description                                                  |
 | --: | :------------------------------------------ | :----: | :----------------------------------------------------------- |
@@ -2178,7 +2178,7 @@ _Unit tests for send_template() {{name}} placeholder substitution._
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for bounded regex routes (DetWebServer::on_regex())._
+_Unit tests for bounded regex routes (DWS::on_regex())._
 
 |   # | Test                                            | Status | Description                                                                 |
 | --: | :---------------------------------------------- | :----: | :-------------------------------------------------------------------------- |
@@ -2205,7 +2205,7 @@ _Unit tests for bounded regex routes (DetWebServer::on_regex())._
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for per-route STA/AP interface filters (DetWebServer::on(..., DetIface))._
+_Unit tests for per-route STA/AP interface filters (DWS::on(..., DWSIface))._
 
 |   # | Test                                          | Status | Description                                                               |
 | --: | :-------------------------------------------- | :----: | :------------------------------------------------------------------------ |
@@ -2497,7 +2497,7 @@ _Host tests for the WebDAV request handler's recursive filesystem operations_
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Exercises the runtime build-flag reporter (server.diag() / DETWS_ENABLE_DIAG):_
+_Exercises the runtime build-flag reporter (server.diag() / DWS_ENABLE_DIAG):_
 
 |   # | Test                               | Status | Description                 |
 | --: | :--------------------------------- | :----: | :-------------------------- |
@@ -2655,7 +2655,7 @@ _Telnet server test: drives a ConnProto::PROTO_TELNET connection through the rea
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the CoAP server core (det_coap_server_process). Each test encodes a_
+_Unit tests for the CoAP server core (dws_coap_server_process). Each test encodes a_
 
 |   # | Test                                       | Status | Description                                                                         |
 | --: | :----------------------------------------- | :----: | :---------------------------------------------------------------------------------- |
@@ -2713,7 +2713,7 @@ _Unit tests for the CoAP server core (det_coap_server_process). Each test encode
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the CoAP server core (det_coap_server_process). Each test encodes a_
+_Unit tests for the CoAP server core (dws_coap_server_process). Each test encodes a_
 
 |   # | Test                                       | Status | Description                                                                         |
 | --: | :----------------------------------------- | :----: | :---------------------------------------------------------------------------------- |
@@ -3047,7 +3047,7 @@ _Unit tests for the preempting work queue (services/preempt_queue) host core: th
 |   1 | `test_start_validates_and_runs`            |   ✅   | Start validates and runs                                                    |
 |   2 | `test_fifo_order`                          |   ✅   | Fifo order                                                                  |
 |   3 | `test_urgent_goes_to_front`                |   ✅   | Urgent goes to front                                                        |
-|   4 | `test_fail_closed_when_full`               |   ✅   | The test env sizes DETWS_PQ_DEPTH = 4.                                      |
+|   4 | `test_fail_closed_when_full`               |   ✅   | The test env sizes DWS_PQ_DEPTH = 4.                                        |
 |   5 | `test_high_water_tracks_peak`              |   ✅   | High water tracks peak                                                      |
 |   6 | `test_from_isr_enqueues`                   |   ✅   | From isr enqueues                                                           |
 |   7 | `test_drain_empties_and_reuses`            |   ✅   | Drain empties and reuses                                                    |
@@ -3213,18 +3213,18 @@ _Unit tests for the nRF24L01+ driver (services/nrf24) against a mock chip that e
 
 _Unit tests for the EnOcean ESP3 codec (services/enocean): the CRC-8 (poly 0x07) against_
 
-|   # | Test                                   | Status | Description                                                                       |
-| --: | :------------------------------------- | :----: | :-------------------------------------------------------------------------------- |
-|   1 | `test_crc8_known_answers`              |   ✅   | Crc8 known answers                                                                |
-|   2 | `test_build_then_parse_round_trip`     |   ✅   | Build then parse round trip                                                       |
-|   3 | `test_parse_rejects_bad_sync`          |   ✅   | Parse rejects bad sync                                                            |
-|   4 | `test_parse_rejects_bad_header_crc`    |   ✅   | Parse rejects bad header crc                                                      |
-|   5 | `test_parse_rejects_bad_data_crc`      |   ✅   | Parse rejects bad data crc                                                        |
-|   6 | `test_parse_needs_more_bytes`          |   ✅   | Parse needs more bytes                                                            |
-|   7 | `test_parse_rejects_over_length`       |   ✅   | A header claiming data_len 100 (> DETWS_ENOCEAN_MAX_DATA = 16) is rejected early. |
-|   8 | `test_parse_resynchronises_after_junk` |   ✅   | Parse resynchronises after junk                                                   |
-|   9 | `test_build_bounds`                    |   ✅   | Build bounds                                                                      |
-|  10 | `test_esp3_parse_null_guard`           |   ✅   | Esp3 parse null guard                                                             |
+|   # | Test                                   | Status | Description                                                                     |
+| --: | :------------------------------------- | :----: | :------------------------------------------------------------------------------ |
+|   1 | `test_crc8_known_answers`              |   ✅   | Crc8 known answers                                                              |
+|   2 | `test_build_then_parse_round_trip`     |   ✅   | Build then parse round trip                                                     |
+|   3 | `test_parse_rejects_bad_sync`          |   ✅   | Parse rejects bad sync                                                          |
+|   4 | `test_parse_rejects_bad_header_crc`    |   ✅   | Parse rejects bad header crc                                                    |
+|   5 | `test_parse_rejects_bad_data_crc`      |   ✅   | Parse rejects bad data crc                                                      |
+|   6 | `test_parse_needs_more_bytes`          |   ✅   | Parse needs more bytes                                                          |
+|   7 | `test_parse_rejects_over_length`       |   ✅   | A header claiming data_len 100 (> DWS_ENOCEAN_MAX_DATA = 16) is rejected early. |
+|   8 | `test_parse_resynchronises_after_junk` |   ✅   | Parse resynchronises after junk                                                 |
+|   9 | `test_build_bounds`                    |   ✅   | Build bounds                                                                    |
+|  10 | `test_esp3_parse_null_guard`           |   ✅   | Esp3 parse null guard                                                           |
 
 </details>
 
@@ -3246,7 +3246,7 @@ _Unit tests for the PN532 NFC frame codec (services/pn532): the normal-informati
 |   5 | `test_parse_rejects_bad_lcs`                 |   ✅   | Parse rejects bad lcs                                                    |
 |   6 | `test_parse_rejects_bad_dcs`                 |   ✅   | Parse rejects bad dcs                                                    |
 |   7 | `test_parse_needs_more_bytes`                |   ✅   | Parse needs more bytes                                                   |
-|   8 | `test_parse_rejects_over_length`             |   ✅   | frame_len 20 (> DETWS_PN532_MAX_DATA + 1 = 9) is rejected early.         |
+|   8 | `test_parse_rejects_over_length`             |   ✅   | frame_len 20 (> DWS_PN532_MAX_DATA + 1 = 9) is rejected early.           |
 |   9 | `test_ack_frame`                             |   ✅   | Ack frame                                                                |
 |  10 | `test_build_bounds`                          |   ✅   | Build bounds                                                             |
 |  11 | `test_frame_parse_and_ack_guards`            |   ✅   | Frame parse and ack guards                                               |
@@ -3291,7 +3291,7 @@ _Unit tests for the Z-Wave Serial API frame codec (services/zwave): the data-fra
 |   4 | `test_parse_rejects_bad_sof`       |   ✅   | Parse rejects bad sof                                                                |
 |   5 | `test_parse_rejects_bad_checksum`  |   ✅   | Parse rejects bad checksum                                                           |
 |   6 | `test_parse_needs_more_bytes`      |   ✅   | Parse needs more bytes                                                               |
-|   7 | `test_parse_rejects_over_length`   |   ✅   | frame_len 80 (> DETWS_ZWAVE_MAX_DATA + 3 = 19) is rejected early.                    |
+|   7 | `test_parse_rejects_over_length`   |   ✅   | frame_len 80 (> DWS_ZWAVE_MAX_DATA + 3 = 19) is rejected early.                      |
 |   8 | `test_control_bytes`               |   ✅   | Control bytes                                                                        |
 |   9 | `test_build_bounds`                |   ✅   | Build bounds                                                                         |
 
@@ -4440,7 +4440,7 @@ _Host tests for the umati (OPC UA for Machine Tools, OPC 40501-1) MachineTool mo
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_HTTP/1.1 keep-alive (DETWS_ENABLE_KEEPALIVE). Each test drives one or more_
+_HTTP/1.1 keep-alive (DWS_ENABLE_KEEPALIVE). Each test drives one or more_
 
 |   # | Test                                     | Status | Description                                                                |
 | --: | :--------------------------------------- | :----: | :------------------------------------------------------------------------- |
@@ -4453,7 +4453,7 @@ _HTTP/1.1 keep-alive (DETWS_ENABLE_KEEPALIVE). Each test drives one or more_
 |   7 | `test_two_sequential_requests_same_slot` |   ✅   | Two sequential requests same slot                                          |
 |   8 | `test_pipelined_requests`                |   ✅   | Two requests delivered in one shot: the proactive drain in handle() must   |
 |   9 | `test_404_still_keeps_alive`             |   ✅   | A well-formed request to an unknown path is a normal response, not an      |
-|  10 | `test_max_requests_cap_closes`           |   ✅   | DETWS_KEEPALIVE_MAX_REQUESTS=3: the 3rd response closes the connection.    |
+|  10 | `test_max_requests_cap_closes`           |   ✅   | DWS_KEEPALIVE_MAX_REQUESTS=3: the 3rd response closes the connection.      |
 |  11 | `test_fresh_connection_resets_count`     |   ✅   | Run a slot up to the cap, then re-open it (new connection) and confirm the |
 
 </details>
@@ -4465,7 +4465,7 @@ _HTTP/1.1 keep-alive (DETWS_ENABLE_KEEPALIVE). Each test drives one or more_
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_HTTP Range requests / 206 Partial Content (DETWS_ENABLE_RANGE). Each test_
+_HTTP Range requests / 206 Partial Content (DWS_ENABLE_RANGE). Each test_
 
 |   # | Test                                               | Status | Description                                 |
 | --: | :------------------------------------------------- | :----: | :------------------------------------------ |
@@ -5142,7 +5142,7 @@ _Unit tests for the JWT HS256 verifier. The reference token below was produced_
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Streaming file upload (DETWS_ENABLE_UPLOAD): a POST body is streamed straight_
+_Streaming file upload (DWS_ENABLE_UPLOAD): a POST body is streamed straight_
 
 |   # | Test                                   | Status | Description                     |
 | --: | :------------------------------------- | :----: | :------------------------------ |
@@ -6785,13 +6785,13 @@ _Host tests for services/psram_pool: DRAM/PSRAM placement policy + DMA ping-pong
 
 _Host tests for services/happy_eyeballs: RFC 6724 ordering + RFC 8305 family interleave + attempt gate._
 
-|   # | Test                               | Status | Description                                                                                      |
-| --: | :--------------------------------- | :----: | :----------------------------------------------------------------------------------------------- |
-|   1 | `test_pref_order`                  |   ✅   | Global outranks link-local outranks loopback; within global, native v6 outranks v4.              |
-|   2 | `test_order_and_interleave`        |   ✅   | Two global v6 + one global v4, given v4-first: sort puts v6 ahead, interleave alternates.        |
-|   3 | `test_order_single_family`         |   ✅   | All v4: interleave is a no-op, order stays preference-sorted (global before private).            |
-|   4 | `test_attempt_due`                 |   ✅   | Attempt due                                                                                      |
-|   5 | `test_pref_scopes_and_order_edges` |   ✅   | Exercise the multicast + unspecified scope arms of detws_he_pref (values are det_ip-classified). |
+|   # | Test                               | Status | Description                                                                                    |
+| --: | :--------------------------------- | :----: | :--------------------------------------------------------------------------------------------- |
+|   1 | `test_pref_order`                  |   ✅   | Global outranks link-local outranks loopback; within global, native v6 outranks v4.            |
+|   2 | `test_order_and_interleave`        |   ✅   | Two global v6 + one global v4, given v4-first: sort puts v6 ahead, interleave alternates.      |
+|   3 | `test_order_single_family`         |   ✅   | All v4: interleave is a no-op, order stays preference-sorted (global before private).          |
+|   4 | `test_attempt_due`                 |   ✅   | Attempt due                                                                                    |
+|   5 | `test_pref_scopes_and_order_edges` |   ✅   | Exercise the multicast + unspecified scope arms of dws_he_pref (values are dws_ip-classified). |
 
 </details>
 
@@ -7047,16 +7047,16 @@ _Unit tests for schema-driven config export/restore (services/config_io) over_
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Phase 2 core-partitioning invariant (built with DETWS_WORKER_COUNT=2): a worker_
+_Phase 2 core-partitioning invariant (built with DWS_WORKER_COUNT=2): a worker_
 
-|   # | Test                                           | Status | Description                                                                                   |
-| --: | :--------------------------------------------- | :----: | :-------------------------------------------------------------------------------------------- |
-|   1 | `test_worker_count_is_two`                     |   ✅   | Worker count is two                                                                           |
-|   2 | `test_check_timeouts_reaps_only_owned_slots`   |   ✅   | Check timeouts reaps only owned slots                                                         |
-|   3 | `test_pool_init_defaults_owner_zero`           |   ✅   | Pool init defaults owner zero                                                                 |
-|   4 | `test_worker_self_id_roundtrip`                |   ✅   | detws_worker_set_self binds the calling context's worker id; detws_worker_self reads it back. |
-|   5 | `test_host_worker_lifecycle_is_noops`          |   ✅   | On host there is no worker task: start/stop/wake are no-ops and running() stays false.        |
-|   6 | `test_host_defer_runs_inline_and_rejects_null` |   ✅   | On host the caller and pipeline are the same thread, so detws_defer runs the callback inline  |
+|   # | Test                                           | Status | Description                                                                                |
+| --: | :--------------------------------------------- | :----: | :----------------------------------------------------------------------------------------- |
+|   1 | `test_worker_count_is_two`                     |   ✅   | Worker count is two                                                                        |
+|   2 | `test_check_timeouts_reaps_only_owned_slots`   |   ✅   | Check timeouts reaps only owned slots                                                      |
+|   3 | `test_pool_init_defaults_owner_zero`           |   ✅   | Pool init defaults owner zero                                                              |
+|   4 | `test_worker_self_id_roundtrip`                |   ✅   | dws_worker_set_self binds the calling context's worker id; dws_worker_self reads it back.  |
+|   5 | `test_host_worker_lifecycle_is_noops`          |   ✅   | On host there is no worker task: start/stop/wake are no-ops and running() stays false.     |
+|   6 | `test_host_defer_runs_inline_and_rejects_null` |   ✅   | On host the caller and pipeline are the same thread, so dws_defer runs the callback inline |
 
 </details>
 
@@ -7067,7 +7067,7 @@ _Phase 2 core-partitioning invariant (built with DETWS_WORKER_COUNT=2): a worker
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the pluggable monotonic clock (services/det_clock): the platform_
+_Unit tests for the pluggable monotonic clock (services/dws_clock): the platform_
 
 |   # | Test                                    | Status | Description                      |
 | --: | :-------------------------------------- | :----: | :------------------------------- |
@@ -7088,7 +7088,7 @@ _Unit tests for the pluggable monotonic clock (services/det_clock): the platform
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Concurrency proof for the cross-thread slot fields (DetAtomic state / rx_head /_
+_Concurrency proof for the cross-thread slot fields (DWSAtomic state / rx_head /_
 
 |   # | Test                         | Status | Description           |
 | --: | :--------------------------- | :----: | :-------------------- |
@@ -7104,7 +7104,7 @@ _Concurrency proof for the cross-thread slot fields (DetAtomic state / rx_head /
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Concurrency proof for the cross-thread slot fields (DetAtomic state / rx_head /_
+_Concurrency proof for the cross-thread slot fields (DWSAtomic state / rx_head /_
 
 |   # | Test                         | Status | Description           |
 | --: | :--------------------------- | :----: | :-------------------- |
@@ -7590,7 +7590,7 @@ _HTTP/3 server-glue test: the same end-to-end flow as test_h3_e2e (a QUIC client
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_HTTP/3 dispatch-bridge test: proves an HTTP/3 request served by a *real DetWebServer route*. A_
+_HTTP/3 dispatch-bridge test: proves an HTTP/3 request served by a *real DWS route*. A_
 
 |   # | Test                              | Status | Description                |
 | --: | :-------------------------------- | :----: | :------------------------- |

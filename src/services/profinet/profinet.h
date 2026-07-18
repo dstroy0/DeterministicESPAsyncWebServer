@@ -3,7 +3,7 @@
 
 /**
  * @file profinet.h
- * @brief PROFINET DCP (Discovery and Configuration Protocol) frame codec (DETWS_ENABLE_PROFINET).
+ * @brief PROFINET DCP (Discovery and Configuration Protocol) frame codec (DWS_ENABLE_PROFINET).
  *
  * DCP is how PROFINET IO-Devices are discovered and named on the wire before an IO connection exists.
  * It rides raw L2 (ethertype 0x8892, PROFINET RT; see services/rawl2) with a fixed 10-octet frame header
@@ -25,7 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_PROFINET
+#if DWS_ENABLE_PROFINET
 
 struct Pn
 {
@@ -52,8 +52,8 @@ struct Pn
  * @brief Build a DCP frame header into @p out (>= 10 bytes). @return 10, or 0 if it will not fit.
  * @param data_length the total length of the DCP blocks that follow (filled into the header).
  */
-size_t detws_pn_dcp_header(uint16_t frame_id, uint8_t service_id, uint8_t service_type, uint32_t xid,
-                           uint16_t data_length, uint8_t *out, size_t cap);
+size_t dws_pn_dcp_header(uint16_t frame_id, uint8_t service_id, uint8_t service_type, uint32_t xid,
+                         uint16_t data_length, uint8_t *out, size_t cap);
 
 /**
  * @brief Append a DCP block `[option][suboption][blockLength][value...]` (no blockInfo).
@@ -61,8 +61,8 @@ size_t detws_pn_dcp_header(uint16_t frame_id, uint8_t service_id, uint8_t servic
  *
  * DCP blocks are padded to an even length with a 0x00 filler octet that is NOT counted in blockLength.
  */
-size_t detws_pn_dcp_block(uint8_t option, uint8_t suboption, const uint8_t *value, size_t value_len, uint8_t *out,
-                          size_t cap);
+size_t dws_pn_dcp_block(uint8_t option, uint8_t suboption, const uint8_t *value, size_t value_len, uint8_t *out,
+                        size_t cap);
 
 /** @brief A parsed DCP frame header. */
 struct PnDcpHeader
@@ -75,16 +75,16 @@ struct PnDcpHeader
 };
 
 /** @brief Parse the 10-octet DCP header. @return true if @p len >= 10. */
-bool detws_pn_dcp_parse_header(const uint8_t *frame, size_t len, PnDcpHeader *out);
+bool dws_pn_dcp_parse_header(const uint8_t *frame, size_t len, PnDcpHeader *out);
 
-/** @brief One DCP block surfaced by detws_pn_dcp_walk. */
+/** @brief One DCP block surfaced by dws_pn_dcp_walk. */
 typedef void (*DetwsPnDcpBlockCb)(uint8_t option, uint8_t suboption, const uint8_t *value, size_t value_len, void *arg);
 
 /**
  * @brief Walk the DCP blocks after the header (@p blocks points at header+10, @p len = dataLength).
  * @return true if every block fits; invokes @p cb per block (value excludes the even-pad filler).
  */
-bool detws_pn_dcp_walk(const uint8_t *blocks, size_t len, DetwsPnDcpBlockCb cb, void *arg);
+bool dws_pn_dcp_walk(const uint8_t *blocks, size_t len, DetwsPnDcpBlockCb cb, void *arg);
 
-#endif // DETWS_ENABLE_PROFINET
+#endif // DWS_ENABLE_PROFINET
 #endif // DETERMINISTICESPASYNCWEBSERVER_PROFINET_H

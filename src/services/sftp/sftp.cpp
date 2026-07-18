@@ -8,7 +8,7 @@
 
 #include "services/sftp/sftp.h"
 
-#if DETWS_ENABLE_SSH_SFTP
+#if DWS_ENABLE_SSH_SFTP
 
 #include <stdio.h>
 #include <string.h>
@@ -328,4 +328,4 @@ size_t sftp_format_longname(bool is_dir, uint32_t perms, uint64_t size, uint32_t
     return ((size_t)n < cap) ? (size_t)n : (cap ? cap - 1 : 0);
 }
 
-#endif // DETWS_ENABLE_SSH_SFTP
+#endif // DWS_ENABLE_SSH_SFTP

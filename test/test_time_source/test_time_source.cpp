@@ -29,7 +29,7 @@ static uint32_t ntp_fn()
 
 void setUp()
 {
-    detws_time_source_reset();
+    dws_time_source_reset();
     g_gps = g_rtc = g_ntp = 0;
     g_gps_calls = g_rtc_calls = g_ntp_calls = 0;
 }
@@ -39,88 +39,88 @@ void tearDown()
 
 void test_single_source()
 {
-    TEST_ASSERT_TRUE(detws_time_source_add("ntp", 1, ntp_fn));
+    TEST_ASSERT_TRUE(dws_time_source_add("ntp", 1, ntp_fn));
     g_ntp = 1000;
-    TEST_ASSERT_EQUAL_UINT32(1000, detws_time_now());
-    TEST_ASSERT_EQUAL_STRING("ntp", detws_time_source_active());
+    TEST_ASSERT_EQUAL_UINT32(1000, dws_time_now());
+    TEST_ASSERT_EQUAL_STRING("ntp", dws_time_source_active());
 }
 
 void test_priority_order_lowest_value_wins()
 {
-    detws_time_source_add("ntp", 2, ntp_fn);
-    detws_time_source_add("gps", 0, gps_fn); // highest priority
-    detws_time_source_add("rtc", 1, rtc_fn);
+    dws_time_source_add("ntp", 2, ntp_fn);
+    dws_time_source_add("gps", 0, gps_fn); // highest priority
+    dws_time_source_add("rtc", 1, rtc_fn);
     g_ntp = 100;
     g_gps = 200;
     g_rtc = 300;
-    TEST_ASSERT_EQUAL_UINT32(200, detws_time_now()); // gps (priority 0)
-    TEST_ASSERT_EQUAL_STRING("gps", detws_time_source_active());
+    TEST_ASSERT_EQUAL_UINT32(200, dws_time_now()); // gps (priority 0)
+    TEST_ASSERT_EQUAL_STRING("gps", dws_time_source_active());
 }
 
 void test_falls_back_when_primary_unavailable()
 {
-    detws_time_source_add("gps", 0, gps_fn);
-    detws_time_source_add("rtc", 1, rtc_fn);
+    dws_time_source_add("gps", 0, gps_fn);
+    dws_time_source_add("rtc", 1, rtc_fn);
     g_gps = 0; // gps has no fix
     g_rtc = 555;
-    TEST_ASSERT_EQUAL_UINT32(555, detws_time_now());
-    TEST_ASSERT_EQUAL_STRING("rtc", detws_time_source_active());
+    TEST_ASSERT_EQUAL_UINT32(555, dws_time_now());
+    TEST_ASSERT_EQUAL_STRING("rtc", dws_time_source_active());
 }
 
 void test_all_unavailable_returns_zero()
 {
-    detws_time_source_add("gps", 0, gps_fn);
-    detws_time_source_add("rtc", 1, rtc_fn);
-    TEST_ASSERT_EQUAL_UINT32(0, detws_time_now());
-    TEST_ASSERT_NULL(detws_time_source_active());
+    dws_time_source_add("gps", 0, gps_fn);
+    dws_time_source_add("rtc", 1, rtc_fn);
+    TEST_ASSERT_EQUAL_UINT32(0, dws_time_now());
+    TEST_ASSERT_NULL(dws_time_source_active());
 }
 
 void test_first_valid_short_circuits()
 {
-    detws_time_source_add("gps", 0, gps_fn);
-    detws_time_source_add("rtc", 1, rtc_fn);
+    dws_time_source_add("gps", 0, gps_fn);
+    dws_time_source_add("rtc", 1, rtc_fn);
     g_gps = 42;
     g_rtc = 99;
-    TEST_ASSERT_EQUAL_UINT32(42, detws_time_now());
+    TEST_ASSERT_EQUAL_UINT32(42, dws_time_now());
     TEST_ASSERT_EQUAL_INT(1, g_gps_calls); // gps queried
     TEST_ASSERT_EQUAL_INT(0, g_rtc_calls); // rtc never queried (gps already valid)
 }
 
 void test_fallback_queries_in_priority_order()
 {
-    detws_time_source_add("gps", 0, gps_fn);
-    detws_time_source_add("rtc", 1, rtc_fn);
-    detws_time_source_add("ntp", 2, ntp_fn);
+    dws_time_source_add("gps", 0, gps_fn);
+    dws_time_source_add("rtc", 1, rtc_fn);
+    dws_time_source_add("ntp", 2, ntp_fn);
     g_gps = 0;
     g_rtc = 7;
     g_ntp = 8;
-    TEST_ASSERT_EQUAL_UINT32(7, detws_time_now());
+    TEST_ASSERT_EQUAL_UINT32(7, dws_time_now());
     TEST_ASSERT_EQUAL_INT(1, g_gps_calls); // tried, invalid
     TEST_ASSERT_EQUAL_INT(1, g_rtc_calls); // tried, valid -> stop
     TEST_ASSERT_EQUAL_INT(0, g_ntp_calls); // never reached
-    TEST_ASSERT_EQUAL_STRING("rtc", detws_time_source_active());
+    TEST_ASSERT_EQUAL_STRING("rtc", dws_time_source_active());
 }
 
 void test_table_full_rejects()
 {
-    for (int i = 0; i < DETWS_TIME_SOURCE_MAX; i++)
-        TEST_ASSERT_TRUE(detws_time_source_add("s", (uint8_t)i, rtc_fn));
-    TEST_ASSERT_FALSE(detws_time_source_add("overflow", 9, rtc_fn));
+    for (int i = 0; i < DWS_TIME_SOURCE_MAX; i++)
+        TEST_ASSERT_TRUE(dws_time_source_add("s", (uint8_t)i, rtc_fn));
+    TEST_ASSERT_FALSE(dws_time_source_add("overflow", 9, rtc_fn));
 }
 
 void test_null_fn_rejected()
 {
-    TEST_ASSERT_FALSE(detws_time_source_add("bad", 0, nullptr));
+    TEST_ASSERT_FALSE(dws_time_source_add("bad", 0, nullptr));
 }
 
 void test_reset_clears_sources()
 {
-    detws_time_source_add("ntp", 0, ntp_fn);
+    dws_time_source_add("ntp", 0, ntp_fn);
     g_ntp = 5;
-    TEST_ASSERT_EQUAL_UINT32(5, detws_time_now());
-    detws_time_source_reset();
-    TEST_ASSERT_EQUAL_UINT32(0, detws_time_now());
-    TEST_ASSERT_NULL(detws_time_source_active());
+    TEST_ASSERT_EQUAL_UINT32(5, dws_time_now());
+    dws_time_source_reset();
+    TEST_ASSERT_EQUAL_UINT32(0, dws_time_now());
+    TEST_ASSERT_NULL(dws_time_source_active());
 }
 
 void test_http_date_from_active_source()
@@ -128,13 +128,13 @@ void test_http_date_from_active_source()
     // The HTTP Date header draws from the registry: no valid source -> nothing; a source with a
     // valid epoch -> the RFC 7231 IMF-fixdate for it. Null out / zero cap are rejected.
     char buf[40];
-    TEST_ASSERT_EQUAL_UINT(0, detws_time_http_date(buf, sizeof(buf)));
-    detws_time_source_add("rtc", 0, rtc_fn);
+    TEST_ASSERT_EQUAL_UINT(0, dws_time_http_date(buf, sizeof(buf)));
+    dws_time_source_add("rtc", 0, rtc_fn);
     g_rtc = 784111777; // Sun, 06 Nov 1994 08:49:37 GMT
-    TEST_ASSERT_TRUE(detws_time_http_date(buf, sizeof(buf)) > 0);
+    TEST_ASSERT_TRUE(dws_time_http_date(buf, sizeof(buf)) > 0);
     TEST_ASSERT_EQUAL_STRING("Sun, 06 Nov 1994 08:49:37 GMT", buf);
-    TEST_ASSERT_EQUAL_UINT(0, detws_time_http_date(nullptr, sizeof(buf)));
-    TEST_ASSERT_EQUAL_UINT(0, detws_time_http_date(buf, 0));
+    TEST_ASSERT_EQUAL_UINT(0, dws_time_http_date(nullptr, sizeof(buf)));
+    TEST_ASSERT_EQUAL_UINT(0, dws_time_http_date(buf, 0));
 }
 
 int main()

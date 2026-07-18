@@ -3,7 +3,7 @@
 
 /**
  * @file profibus.h
- * @brief PROFIBUS-DP FDL telegram codec (DETWS_ENABLE_PROFIBUS).
+ * @brief PROFIBUS-DP FDL telegram codec (DWS_ENABLE_PROFIBUS).
  *
  * PROFIBUS-DP is the Siemens RS-485 master/slave fieldbus (the DP-V0 cyclic I/O exchange). Its FDL data
  * link uses fixed telegram formats delimited by a start byte (SD):
@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_PROFIBUS
+#if DWS_ENABLE_PROFIBUS
 
 // PROFIBUS telegram delimiters + Frame Control values: wire bytes, so integer constants in a struct.
 struct Profibus
@@ -43,12 +43,12 @@ struct Profibus
 };
 
 /** @brief PROFIBUS FCS: arithmetic sum (mod 256) of @p len bytes (DA + SA + FC + data). */
-uint8_t detws_pb_fcs(const uint8_t *bytes, size_t len);
+uint8_t dws_pb_fcs(const uint8_t *bytes, size_t len);
 
 /**
  * @brief Build an SD1 (no-data) telegram: SD1 DA SA FC FCS ED. @return 6, or 0 on overflow.
  */
-size_t detws_pb_build_sd1(uint8_t da, uint8_t sa, uint8_t fc, uint8_t *out, size_t cap);
+size_t dws_pb_build_sd1(uint8_t da, uint8_t sa, uint8_t fc, uint8_t *out, size_t cap);
 
 /**
  * @brief Build an SD2 (variable-data) telegram: SD2 LE LEr SD2 DA SA FC data FCS ED.
@@ -56,8 +56,8 @@ size_t detws_pb_build_sd1(uint8_t da, uint8_t sa, uint8_t fc, uint8_t *out, size
  * @param data_len 0..246 (the DP process data).
  * @return the telegram length (6 + 3 + data_len... = 9 + data_len), or 0 on overflow / bad args.
  */
-size_t detws_pb_build_sd2(uint8_t da, uint8_t sa, uint8_t fc, const uint8_t *data, size_t data_len, uint8_t *out,
-                          size_t cap);
+size_t dws_pb_build_sd2(uint8_t da, uint8_t sa, uint8_t fc, const uint8_t *data, size_t data_len, uint8_t *out,
+                        size_t cap);
 
 /** @brief A parsed PROFIBUS telegram (data points into the input, null for SD1). */
 struct PbTelegram
@@ -71,7 +71,7 @@ struct PbTelegram
 };
 
 /** @brief Validate + parse an SD1 or SD2 telegram (FCS + ED checked). @return true if well-formed. */
-bool detws_pb_parse(const uint8_t *frame, size_t len, PbTelegram *out);
+bool dws_pb_parse(const uint8_t *frame, size_t len, PbTelegram *out);
 
-#endif // DETWS_ENABLE_PROFIBUS
+#endif // DWS_ENABLE_PROFIBUS
 #endif // DETERMINISTICESPASYNCWEBSERVER_PROFIBUS_H

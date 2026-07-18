@@ -8,11 +8,11 @@
 
 #include "services/mbplus/mbplus.h"
 
-#if DETWS_ENABLE_MBPLUS
+#if DWS_ENABLE_MBPLUS
 
 #include <string.h>
 
-uint16_t detws_mbplus_crc(const uint8_t *bytes, size_t len)
+uint16_t dws_mbplus_crc(const uint8_t *bytes, size_t len)
 {
     // CRC-16/X-25: reflected poly 0x8408, init 0xFFFF, xorout 0xFFFF.
     uint16_t crc = 0xFFFF;
@@ -25,8 +25,8 @@ uint16_t detws_mbplus_crc(const uint8_t *bytes, size_t len)
     return (uint16_t)~crc;
 }
 
-size_t detws_mbplus_build(uint8_t address, uint8_t control, const uint8_t *payload, size_t payload_len, uint8_t *out,
-                          size_t cap)
+size_t dws_mbplus_build(uint8_t address, uint8_t control, const uint8_t *payload, size_t payload_len, uint8_t *out,
+                        size_t cap)
 {
     if (!out || (payload_len && !payload) || address < 1 || address > Mbplus::MBPLUS_MAX_STATION)
         return 0;
@@ -43,14 +43,14 @@ size_t detws_mbplus_build(uint8_t address, uint8_t control, const uint8_t *paylo
         memcpy(out + i, payload, payload_len);
         i += payload_len;
     }
-    uint16_t crc = detws_mbplus_crc(out + body, (i - body)); // over addr..last payload
-    out[i++] = (uint8_t)crc;                                 // CRC low byte first
+    uint16_t crc = dws_mbplus_crc(out + body, (i - body)); // over addr..last payload
+    out[i++] = (uint8_t)crc;                               // CRC low byte first
     out[i++] = (uint8_t)(crc >> 8);
     out[i++] = Mbplus::MBPLUS_FLAG;
     return i;
 }
 
-bool detws_mbplus_parse(const uint8_t *frame, size_t len, MbPlusFrame *out)
+bool dws_mbplus_parse(const uint8_t *frame, size_t len, MbPlusFrame *out)
 {
     // Min: 7E addr ctrl CRClo CRChi 7E = 6 bytes.
     if (!frame || !out || len < 6)
@@ -61,7 +61,7 @@ bool detws_mbplus_parse(const uint8_t *frame, size_t len, MbPlusFrame *out)
     size_t body_end = len - 1;     // index of the trailing flag
     size_t crc_pos = body_end - 2; // low byte of the CRC
     size_t covered = crc_pos - 1;  // number of bytes (addr..payload) the CRC covers
-    uint16_t want = detws_mbplus_crc(frame + 1, covered);
+    uint16_t want = dws_mbplus_crc(frame + 1, covered);
     uint16_t got = (uint16_t)(frame[crc_pos] | (frame[crc_pos + 1] << 8));
     if (want != got)
         return false;
@@ -72,11 +72,11 @@ bool detws_mbplus_parse(const uint8_t *frame, size_t len, MbPlusFrame *out)
     return true;
 }
 
-uint8_t detws_mbplus_next_token(uint8_t current, uint8_t max_station)
+uint8_t dws_mbplus_next_token(uint8_t current, uint8_t max_station)
 {
     if (max_station < 1)
         return 1;
     return (current >= max_station) ? 1 : (uint8_t)(current + 1);
 }
 
-#endif // DETWS_ENABLE_MBPLUS
+#endif // DWS_ENABLE_MBPLUS

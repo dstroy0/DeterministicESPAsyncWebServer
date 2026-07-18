@@ -15,7 +15,7 @@
  *
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
- *     build_flags = -DDETWS_ENABLE_UPLOAD=1 -DRX_BUF_SIZE=2048
+ *     build_flags = -DDWS_ENABLE_UPLOAD=1 -DRX_BUF_SIZE=2048
  * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.) The upload
  * sink shares the parser streaming hook with OTA - enable one or the other, not both.
  *
@@ -25,7 +25,7 @@
  * stall. The default 1024 is fine for ordinary requests but too small here.
  */
 
-#define DETWS_ENABLE_UPLOAD 1
+#define DWS_ENABLE_UPLOAD 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -38,7 +38,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 static const char *DEST = "/uploaded.bin";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -59,7 +59,7 @@ void setup()
     WiFi.setSleep(false);
 
     // POST /upload -> stream the body into DEST on LittleFS.
-    detws_upload_begin(server, "/upload", LittleFS, DEST);
+    dws_upload_begin(server, "/upload", LittleFS, DEST);
 
     // GET /file -> serve the stored file back.
     server.on("/file", HttpMethod::HTTP_GET,

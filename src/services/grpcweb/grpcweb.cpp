@@ -8,7 +8,7 @@
 
 #include "services/grpcweb/grpcweb.h"
 
-#if DETWS_ENABLE_GRPC_WEB
+#if DWS_ENABLE_GRPC_WEB
 
 #include <string.h>
 
@@ -134,4 +134,4 @@ bool grpcweb_trailer_status(const uint8_t *body, size_t len, int *status)
     return false;
 }
 
-#endif // DETWS_ENABLE_GRPC_WEB
+#endif // DWS_ENABLE_GRPC_WEB

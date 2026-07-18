@@ -25,7 +25,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include <stddef.h>
 #include <stdint.h>
@@ -58,5 +58,5 @@ size_t qpack_encode_header(uint8_t *out, size_t cap, const char *name, size_t na
  */
 bool qpack_decode(const uint8_t *block, size_t len, char *scratch, size_t scratch_cap, QpackEmitFn emit, void *ctx);
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_QPACK_H

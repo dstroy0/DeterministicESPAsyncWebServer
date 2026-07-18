@@ -3,25 +3,25 @@
 
 /**
  * @file auth.cpp
- * @brief HTTP authentication for DetWebServer: Basic (RFC 7617) and stateless Digest
+ * @brief HTTP authentication for DWS: Basic (RFC 7617) and stateless Digest
  *        (RFC 7616, SHA-256, qop=auth).
  *
  * Split out of dwserver.cpp (single-purpose server files). Holds the Basic credential check,
  * the Digest field parser, the keyed stateless-nonce mint/verify (no per-nonce server state),
- * and the 401 challenge builder. The route dispatcher (dwserver.cpp) calls these DetWebServer
+ * and the 401 challenge builder. The route dispatcher (dwserver.cpp) calls these DWS
  * methods when a matched route carries auth. Behaviour is identical to the pre-split code.
  */
 
 #include "dwserver.h"
 #include "network_drivers/presentation/base64/base64.h"         // base64_decode (Basic)
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h" // ssh_sha256, SSH_SHA256_DIGEST_LEN (Digest)
-#include "network_drivers/transport/tcp.h"                      // conn_pool, det_conn_send, TcpConn/ConnState
+#include "network_drivers/transport/tcp.h"                      // conn_pool, dws_conn_send, TcpConn/ConnState
 #include "server/dwserver_internal.h"                           // req_is_head, resp helpers
-#include "services/clock.h"                                     // detws_millis() for the stateless nonce
-#include "shared_primitives/hex.h"                              // det_hex_encode/decode
+#include "services/clock.h"                                     // dws_millis() for the stateless nonce
+#include "shared_primitives/hex.h"                              // dws_hex_encode/decode
 #include <stdio.h>
 #include <string.h>
-#if DETWS_ENABLE_AUTH
+#if DWS_ENABLE_AUTH
 #ifdef ARDUINO
 #include <esp_system.h> // esp_random() for the Digest keying secret
 #endif
@@ -30,13 +30,13 @@
 // Basic Auth helpers
 // ---------------------------------------------------------------------------
 
-#if DETWS_ENABLE_AUTH
+#if DWS_ENABLE_AUTH
 // One-shot SHA-256 of @p data, written as 64 lowercase hex chars + NUL.
 static void sha256_hex(const uint8_t *data, size_t len, char out[65])
 {
     uint8_t d[SSH_SHA256_DIGEST_LEN];
     ssh_sha256(data, len, d);
-    det_hex_encode(d, SSH_SHA256_DIGEST_LEN, out);
+    dws_hex_encode(d, SSH_SHA256_DIGEST_LEN, out);
 }
 
 // Extract the value of @p key from a Digest auth header into @p out.
@@ -83,7 +83,7 @@ static bool digest_field(const char *hdr, const char *key, char *out, size_t out
     return false;
 }
 
-void DetWebServer::regen_digest_secret()
+void DWS::regen_digest_secret()
 {
     // Seed a 128-bit keying secret from the hardware CSPRNG (esp_random() on
     // ESP32; a non-crypto mock on native test builds), folded through SHA-256 with
@@ -119,28 +119,28 @@ static uint32_t digest_nonce_mac(const uint8_t *secret, uint32_t issue, char *ma
     memcpy(material + 16, &issue, 4); // endian-symmetric: minted and verified the same way
     uint8_t d[SSH_SHA256_DIGEST_LEN];
     ssh_sha256(material, sizeof(material), d);
-    det_hex_encode(d, 16, mac_hex); // 16 bytes -> 32 hex chars + NUL
+    dws_hex_encode(d, 16, mac_hex); // 16 bytes -> 32 hex chars + NUL
     return issue;
 }
 
-void DetWebServer::make_digest_nonce(char *out, size_t cap)
+void DWS::make_digest_nonce(char *out, size_t cap)
 {
-    uint32_t issue = detws_millis();
+    uint32_t issue = dws_millis();
     char issue_hex[9];
-    det_hex_encode((const uint8_t *)&issue, 4, issue_hex); // 4 bytes -> 8 hex chars
+    dws_hex_encode((const uint8_t *)&issue, 4, issue_hex); // 4 bytes -> 8 hex chars
     char mac_hex[33];
     digest_nonce_mac(_digest_secret, issue, mac_hex);
     snprintf(out, cap, "%s.%s", issue_hex, mac_hex);
 }
 
-bool DetWebServer::verify_digest_nonce(const char *nonce, bool *expired)
+bool DWS::verify_digest_nonce(const char *nonce, bool *expired)
 {
     *expired = false;
     // Expected shape: 8 hex (issue) + '.' + 32 hex (MAC).
     if (strnlen(nonce, 42) != 8 + 1 + 32 || nonce[8] != '.')
         return false;
     uint32_t issue;
-    if (det_hex_decode(nonce, 8, (uint8_t *)&issue, 4) != 4)
+    if (dws_hex_decode(nonce, 8, (uint8_t *)&issue, 4) != 4)
         return false;
     char mac_hex[33];
     digest_nonce_mac(_digest_secret, issue, mac_hex);
@@ -151,15 +151,15 @@ bool DetWebServer::verify_digest_nonce(const char *nonce, bool *expired)
     for (int i = 0; i < 32; i++)
         diff |= (uint8_t)(mac_hex[i] ^ got[i]);
     if (diff != 0)
-        return false;                      // not a nonce this server minted
-    uint32_t age = detws_millis() - issue; // unsigned: tolerant of the 32-bit millis wrap
-    *expired = (age > DETWS_DIGEST_NONCE_LIFETIME_MS);
+        return false;                    // not a nonce this server minted
+    uint32_t age = dws_millis() - issue; // unsigned: tolerant of the 32-bit millis wrap
+    *expired = (age > DWS_DIGEST_NONCE_LIFETIME_MS);
     return true;
 }
 
-void DetWebServer::send_unauth(uint8_t slot_id, const Route *r, bool stale)
+void DWS::send_unauth(uint8_t slot_id, const Route *r, bool stale)
 {
-    if (!det_conn_active(slot_id))
+    if (!dws_conn_active(slot_id))
     {
         http_reset(slot_id);
         return;
@@ -199,12 +199,12 @@ void DetWebServer::send_unauth(uint8_t slot_id, const Route *r, bool stale)
     // when a protected route is hammered.
     if (!req_is_head(slot_id))
     {
-        det_conn_send(slot_id, header, (u16_t)hlen);
-        det_conn_send_flush(slot_id, body, (u16_t)(sizeof(body) - 1));
+        dws_conn_send(slot_id, header, (u16_t)hlen);
+        dws_conn_send_flush(slot_id, body, (u16_t)(sizeof(body) - 1));
     }
     else
     {
-        det_conn_send_flush(slot_id, header, (u16_t)hlen);
+        dws_conn_send_flush(slot_id, header, (u16_t)hlen);
     }
 
     resp_end(slot_id, 401, (int)(sizeof(body) - 1), keep, /*pre_flushed=*/true);
@@ -223,7 +223,7 @@ static bool ct_equal(const void *a, const void *b, size_t len)
     return diff == 0;
 }
 
-bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Route *r)
+bool DWS::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Route *r)
 {
     const char *auth_hdr = http_get_header(req, "Authorization");
     if (!auth_hdr || strncmp(auth_hdr, "Basic ", 6) != 0)
@@ -256,7 +256,7 @@ bool DetWebServer::check_basic_auth(uint8_t /*slot_id*/, HttpReq *req, const Rou
 // Validate an Authorization: Digest header (RFC 7616, SHA-256, qop=auth).
 // HA1 = SHA256(user:realm:pass), HA2 = SHA256(method:uri),
 // response = SHA256(HA1:nonce:nc:cnonce:qop:HA2).
-bool DetWebServer::check_digest_auth(uint8_t /*slot_id*/, HttpReq *req, const Route *r, bool *stale)
+bool DWS::check_digest_auth(uint8_t /*slot_id*/, HttpReq *req, const Route *r, bool *stale)
 {
     // Use the full-length Authorization capture (the scratch header value is
     // capped at MAX_VAL_LEN, far shorter than a Digest header).
@@ -329,4 +329,4 @@ bool DetWebServer::check_digest_auth(uint8_t /*slot_id*/, HttpReq *req, const Ro
     }
     return true;
 }
-#endif // DETWS_ENABLE_AUTH
+#endif // DWS_ENABLE_AUTH

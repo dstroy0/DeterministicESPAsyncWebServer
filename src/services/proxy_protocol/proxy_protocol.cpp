@@ -8,7 +8,7 @@
 
 #include "services/proxy_protocol/proxy_protocol.h"
 
-#if DETWS_ENABLE_PROXY_PROTOCOL
+#if DWS_ENABLE_PROXY_PROTOCOL
 
 #include <stdio.h> // snprintf for the v1 dotted-quad text
 #include <string.h>
@@ -207,4 +207,4 @@ size_t proxy_v2_build(uint8_t *buf, size_t cap, uint32_t src_addr, uint32_t dst_
     return total;
 }
 
-#endif // DETWS_ENABLE_PROXY_PROTOCOL
+#endif // DWS_ENABLE_PROXY_PROTOCOL

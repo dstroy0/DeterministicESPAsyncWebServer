@@ -179,7 +179,7 @@ void test_frag_reject_paths()
     TEST_ASSERT_EQUAL_INT(DeviceNetFragResult::DEVICENET_FRAG_IGNORED, devicenet_frag_feed(&rx, ack, sizeof(ack)));
 }
 
-// Accumulating fragments past DETWS_DEVICENET_MSG_MAX (256) overflows the reassembly
+// Accumulating fragments past DWS_DEVICENET_MSG_MAX (256) overflows the reassembly
 // buffer, so the middle/last append fails and the session resets.
 void test_frag_overflow()
 {

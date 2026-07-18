@@ -3,7 +3,7 @@
 
 /**
  * @file 55.OpcUa.ino
- * @brief OPC UA Binary server - SecureChannel + Session + Read/Write + Browse (DETWS_ENABLE_OPCUA).
+ * @brief OPC UA Binary server - SecureChannel + Session + Read/Write + Browse (DWS_ENABLE_OPCUA).
  *
  * Opens an OPC UA endpoint on TCP/4840. Implements the OPC UA Binary type codec,
  * UA-TCP (UACP) framing, the Hello/Acknowledge handshake, the SecureChannel
@@ -19,11 +19,11 @@
  * event loop - OPC UA is just another protocol on its own port.
  *
  * NOTE: enable it for the whole build. In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_OPCUA=1
+ *     build_flags = -DDWS_ENABLE_OPCUA=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_OPCUA 1
+#define DWS_ENABLE_OPCUA 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -33,7 +33,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static uint32_t setpoint = 100; // a writable variable, exposed at ns=1;i=10
 

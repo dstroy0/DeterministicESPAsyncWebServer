@@ -19,11 +19,11 @@
  * **Feature flags** - define any of these to 0 before including to strip
  * the feature from the build entirely:
  * @code
- *   #define DETWS_ENABLE_WEBSOCKET    0
- *   #define DETWS_ENABLE_SSE          0
- *   #define DETWS_ENABLE_MULTIPART    0
- *   #define DETWS_ENABLE_FILE_SERVING 0
- *   #define DETWS_ENABLE_AUTH         0
+ *   #define DWS_ENABLE_WEBSOCKET    0
+ *   #define DWS_ENABLE_SSE          0
+ *   #define DWS_ENABLE_MULTIPART    0
+ *   #define DWS_ENABLE_FILE_SERVING 0
+ *   #define DWS_ENABLE_AUTH         0
  *   #include <dwserver.h>
  * @endcode
  *
@@ -44,17 +44,17 @@
 #include "network_drivers/presentation/presentation.h"
 #include "network_drivers/session/session.h"
 #include "network_drivers/session/worker.h"
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/websocket/websocket.h"
 #endif
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
 #include "network_drivers/presentation/sse/sse.h"
 #endif
-#if DETWS_ENABLE_MULTIPART
+#if DWS_ENABLE_MULTIPART
 #include "network_drivers/presentation/multipart/multipart.h"
 #endif
 #include <Arduino.h>
-#if DETWS_ENABLE_FILE_SERVING
+#if DWS_ENABLE_FILE_SERVING
 #ifdef ARDUINO
 #include <FS.h>
 #else
@@ -69,7 +69,7 @@
 /**
  * @brief HTTP request methods supported by the router.
  *
- * Pass one of these values to DetWebServer::on() to bind a route to a
+ * Pass one of these values to DWS::on() to bind a route to a
  * specific method.  PATCH, HEAD, and OPTIONS were added in v1.0 alongside
  * CORS preflight support.
  */
@@ -93,7 +93,7 @@ enum class HttpMethod : uint8_t
  * @brief Callback signature for HTTP request handlers.
  *
  * The callback receives the connection slot index and a pointer to the
- * fully-parsed request.  Call DetWebServer::send() or DetWebServer::send_empty()
+ * fully-parsed request.  Call DWS::send() or DWS::send_empty()
  * from inside the callback to write a response.
  *
  * @param slot_id  Index into the connection pool (0 … MAX_CONNS-1).
@@ -116,7 +116,7 @@ typedef void (*Handler)(uint8_t slot_id, HttpReq *request);
 typedef const char *(*TemplateVar)(const char *name);
 
 /**
- * @brief Per-request access-log callback (see DetWebServer::on_request_log()).
+ * @brief Per-request access-log callback (see DWS::on_request_log()).
  *
  * Invoked once per response with the request method/path, the HTTP status code,
  * and the response body length in bytes. The strings are valid only for the
@@ -141,12 +141,12 @@ enum class MwResult : uint8_t
 };
 
 /**
- * @brief Composable pre-dispatch middleware (see DetWebServer::use()).
+ * @brief Composable pre-dispatch middleware (see DWS::use()).
  *
  * Each registered middleware runs - in registration order - on every request
  * before route matching, receiving the same `(slot_id, request)` pair a handler
  * does. A middleware may inspect the request, queue response headers
- * (DetWebServer::add_response_header()), short-circuit by sending a response and
+ * (DWS::add_response_header()), short-circuit by sending a response and
  * returning MwResult::MW_HALT, or fall through with MwResult::MW_NEXT. Middlewares reference the
  * application's server instance the same way handlers do (the global object), so
  * they can call send() / send_empty() to short-circuit.
@@ -157,7 +157,7 @@ enum class MwResult : uint8_t
  */
 typedef MwResult (*Middleware)(uint8_t slot_id, HttpReq *request);
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
 /**
  * @brief Callback fired when a WebSocket connection is established.
  *
@@ -181,9 +181,9 @@ typedef void (*WsMessageHandler)(uint8_t ws_id);
  * @param ws_id  Index into ws_pool[] (slot is still valid during callback).
  */
 typedef void (*WsCloseHandler)(uint8_t ws_id);
-#endif // DETWS_ENABLE_WEBSOCKET
+#endif // DWS_ENABLE_WEBSOCKET
 
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
 /**
  * @brief Callback fired when a new SSE client connects.
  *
@@ -192,7 +192,7 @@ typedef void (*WsCloseHandler)(uint8_t ws_id);
  * @param sse_id  Index into sse_pool[] for this connection.
  */
 typedef void (*SseConnectHandler)(uint8_t sse_id);
-#endif // DETWS_ENABLE_SSE
+#endif // DWS_ENABLE_SSE
 
 // ---------------------------------------------------------------------------
 // Route type discriminator
@@ -202,16 +202,16 @@ typedef void (*SseConnectHandler)(uint8_t sse_id);
 enum class RouteType : uint8_t
 {
     ROUTE_HTTP, ///< Standard HTTP request/response.
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     ROUTE_WS, ///< WebSocket upgrade route.
 #endif
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
     ROUTE_SSE, ///< Server-Sent Events route.
 #endif
-#if DETWS_ENABLE_FILE_SERVING
+#if DWS_ENABLE_FILE_SERVING
     ROUTE_STATIC, ///< Static-file subtree mount (serve_static()).
 #endif
-#if DETWS_ENABLE_WEBDAV
+#if DWS_ENABLE_WEBDAV
     ROUTE_DAV, ///< WebDAV subtree mount (dav()).
 #endif
 };
@@ -223,21 +223,21 @@ enum class RouteType : uint8_t
 /**
  * @brief Result codes for listen(), begin(), and restart().
  *
- * Success is a positive value (DetWebServerResult::DETWS_OK). Failures are distinct negative codes
+ * Success is a positive value (DWSResult::DWS_OK). Failures are distinct negative codes
  * so a caller can tell why startup failed.
  */
-enum class DetWebServerResult : int32_t
+enum class DWSResult : int32_t
 {
-    DETWS_OK = 1,                 ///< Success.
-    DETWS_ERR_NO_LISTENERS = -1,  ///< begin() called before any listen() / begin(port).
-    DETWS_ERR_LISTENER_FULL = -2, ///< listen(): listener pool (MAX_LISTENERS) is full.
-    DETWS_ERR_LISTEN_FAILED = -3  ///< A listener failed to open (bind/listen/lwIP error).
+    DWS_OK = 1,                 ///< Success.
+    DWS_ERR_NO_LISTENERS = -1,  ///< begin() called before any listen() / begin(port).
+    DWS_ERR_LISTENER_FULL = -2, ///< listen(): listener pool (MAX_LISTENERS) is full.
+    DWS_ERR_LISTEN_FAILED = -3  ///< A listener failed to open (bind/listen/lwIP error).
 };
 
 /**
  * @brief Internal route entry stored in the routing table.
  *
- * Populated by DetWebServer::on(), on_ws(), or on_sse().
+ * Populated by DWS::on(), on_ws(), or on_sse().
  * Application code does not interact with this struct directly.
  */
 struct Route
@@ -247,22 +247,22 @@ struct Route
     HttpMethod method;       ///< HTTP method (RouteType::ROUTE_HTTP only).
     Handler callback;        ///< HTTP handler (RouteType::ROUTE_HTTP only).
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     WsConnectHandler ws_connect; ///< Fired on upgrade success.
     WsMessageHandler ws_message; ///< Fired on each data frame.
     WsCloseHandler ws_close;     ///< Fired on close.
 #endif
 
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
     SseConnectHandler sse_connect; ///< Fired when client subscribes.
 #endif
 
-#if DETWS_ENABLE_FILE_SERVING
+#if DWS_ENABLE_FILE_SERVING
     fs::FS *static_fs;       ///< Filesystem for RouteType::ROUTE_STATIC (else nullptr).
     const char *static_root; ///< FS root prefix for RouteType::ROUTE_STATIC (must be a persistent string).
 #endif
 
-#if DETWS_ENABLE_AUTH
+#if DWS_ENABLE_AUTH
     bool auth_required;            ///< True when this route requires authentication.
     bool auth_digest;              ///< True for Digest auth; false for Basic.
     char auth_realm[MAX_AUTH_LEN]; ///< WWW-Authenticate realm string.
@@ -274,7 +274,7 @@ struct Route
     bool is_wildcard;      ///< `true` when path ends with `*`.
     bool is_param;         ///< `true` when the path contains a `:name` segment.
     bool is_regex;         ///< `true` when the path is a regex (see on_regex()).
-    DetIface iface_filter; ///< Interface gate; DetIface::DETIFACE_ANY (0) = match any interface.
+    DWSIface iface_filter; ///< Interface gate; DWSIface::DETIFACE_ANY (0) = match any interface.
 };
 
 // ---------------------------------------------------------------------------
@@ -283,12 +283,12 @@ struct Route
 
 struct tcp_pcb; // forward decl (full type pulled in via the transport layer)
 
-class DetWebServer;
+class DWS;
 
 /**
  * @brief Source callback that produces a chunked response body incrementally.
  *
- * Passed to DetWebServer::send_chunked() and called repeatedly - possibly across
+ * Passed to DWS::send_chunked() and called repeatedly - possibly across
  * several server loops, as the TCP send window drains - until it returns 0. Each
  * call writes up to @p cap bytes of the next body piece into @p buf and returns
  * the count; the HTTP chunk framing (size line + CRLFs + terminator) is added by
@@ -310,16 +310,16 @@ class DetWebServer;
 typedef size_t (*ChunkSource)(uint8_t *buf, size_t cap, void *ctx);
 
 // ---------------------------------------------------------------------------
-// DetWebServer - the main application class
+// DWS - the main application class
 // ---------------------------------------------------------------------------
 
 /**
- * @class DetWebServer
+ * @class DWS
  * @brief Single-port HTTP server with deterministic, zero-allocation execution.
  *
  * ## Typical usage
  * @code
- * DetWebServer server;
+ * DWS server;
  *
  * void handle_api(uint8_t slot_id, HttpReq *req) {
  *     server.send(slot_id, 200, "application/json", "{\"ok\":true}");
@@ -330,7 +330,7 @@ typedef size_t (*ChunkSource)(uint8_t *buf, size_t cap, void *ctx);
  *     server.on("/api/status", HttpMethod::HTTP_GET, handle_api);
  *     server.set_cors("*");
  *     int32_t result = server.begin(80);
- *     if (result < 0) { } // DetWebServerResult code: startup failed
+ *     if (result < 0) { } // DWSResult code: startup failed
  * }
  *
  * void loop() {
@@ -344,7 +344,7 @@ typedef size_t (*ChunkSource)(uint8_t *buf, size_t cap, void *ctx);
  * - Responses are sent synchronously and the TCP connection is closed
  *   immediately after every response (HTTP/1.0 close semantics).
  */
-class DetWebServer
+class DWS
 {
   private:
     Route _routes[MAX_ROUTES]; ///< Flat routing table; searched linearly.
@@ -354,7 +354,7 @@ class DetWebServer
     bool _cors_enabled;         ///< True after a non-empty set_cors() call.
     RequestLogCb _log_cb;       ///< Per-request access-log hook; may be null.
 
-#if DETWS_ENABLE_STATS
+#if DWS_ENABLE_STATS
     uint32_t _stat_requests; ///< Total responses sent.
     uint32_t _stat_2xx;      ///< Responses with a 2xx status.
     uint32_t _stat_4xx;      ///< Responses with a 4xx status.
@@ -391,12 +391,12 @@ class DetWebServer
      */
     char _extra_hdr[CONN_POOL_SLOTS][EXTRA_HDR_BUF_SIZE];
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
     // HTTP/3 leaf cert + seed and UDP port, held until begin() starts the QUIC server.
     const uint8_t *_h3_cert = nullptr;
     size_t _h3_cert_len = 0;
     uint8_t _h3_seed[32] = {0};
-    uint16_t _h3_port = DETWS_HTTP3_PORT;
+    uint16_t _h3_port = DWS_HTTP3_PORT;
     bool _h3_enabled = false;
 #endif
 
@@ -445,14 +445,14 @@ class DetWebServer
     /// @brief Record a response for stats + the access-log hook. Reads method/path from http_pool[slot_id].
     void note_response(uint8_t slot_id, int code, int body_len);
 
-#if DETWS_ENABLE_KEEPALIVE
+#if DWS_ENABLE_KEEPALIVE
     /**
      * @brief Decide whether the current response should keep the connection alive.
      *
      * Only a cleanly-parsed request (ParseState::PARSE_COMPLETE) is eligible: HTTP/1.1 keeps
      * alive unless the client sent `Connection: close`; HTTP/1.0 keeps alive only
      * with `Connection: keep-alive`. On a true return the slot's request tally is
-     * incremented; the DETWS_KEEPALIVE_MAX_REQUESTS-th request returns false so
+     * incremented; the DWS_KEEPALIVE_MAX_REQUESTS-th request returns false so
      * the connection is closed deliberately. Always false with keep-alive off.
      */
     bool keepalive_eval(uint8_t slot_id);
@@ -464,7 +464,7 @@ class DetWebServer
      *        response and resets the HTTP parser either way. Addresses the
      *        connection by slot alone; the transport resolves the pcb internally.
      *
-     * @param pre_flushed the caller already emitted the final bytes with det_conn_send_flush()
+     * @param pre_flushed the caller already emitted the final bytes with dws_conn_send_flush()
      *        (write+tcp_output coalesced into one marshal), so skip the redundant flush here.
      */
     void resp_end(uint8_t slot_id, int code, int body_len, bool keep, bool pre_flushed = false);
@@ -490,7 +490,7 @@ class DetWebServer
     /// drained.
     void chunk_send_pump(uint8_t slot_id);
 
-#if DETWS_ENABLE_AUTH
+#if DWS_ENABLE_AUTH
     /// @brief Validate the request's HTTP Basic credentials against route @p r. @return true if authorized.
     static bool check_basic_auth(uint8_t slot_id, HttpReq *req, const Route *r);
     /// @brief Validate an `Authorization: Digest` (RFC 7616, SHA-256, qop=auth) request against route @p r.
@@ -512,7 +512,7 @@ class DetWebServer
     bool verify_digest_nonce(const char *nonce, bool *expired);
 #endif
 
-#if DETWS_ENABLE_FILE_SERVING
+#if DWS_ENABLE_FILE_SERVING
     /// @brief Dispatch a RouteType::ROUTE_STATIC match: resolve the FS path and serve it (MIME/index/gzip).
     void serve_static_request(uint8_t slot_id, HttpReq *req, const Route *r);
     /// @brief Open @p fs_path and stream it as 200 with the given type and optional Content-Encoding.
@@ -522,14 +522,14 @@ class DetWebServer
     void file_send_pump(uint8_t slot_id);
 #endif
 
-#if DETWS_ENABLE_WEBDAV
+#if DWS_ENABLE_WEBDAV
     /// @brief If @p req matches a RouteType::ROUTE_DAV mount, handle it as WebDAV and return true.
     bool try_serve_dav(uint8_t slot_id, HttpReq *req);
     /// @brief Dispatch a WebDAV request against the mount @p r (resolves the FS path, then the method).
     void serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r);
     /// @brief Send a bodyless WebDAV status with optional extra header lines (each ending in CRLF).
     void dav_send_status(uint8_t slot_id, int code, const char *extra_headers);
-#if DETWS_ENABLE_STREAM_BODY
+#if DWS_ENABLE_STREAM_BODY
     /// @brief Stream-begin hook: if @p req is a PUT under a DAV mount, open the file and stream the body.
     bool dav_stream_put_begin(HttpReq *req);
     /// @brief Stream-data hook: write one body chunk to @p req's slot's DAV PUT file.
@@ -564,24 +564,24 @@ class DetWebServer
     bool dispatch_matched_route(uint8_t slot_id, HttpReq *req, HttpMethod method, Route *r, bool *path_matched,
                                 char *allow_buf, size_t allow_cap);
 
-#if DETWS_ENABLE_CSRF
+#if DWS_ENABLE_CSRF
     /// @brief Built-in CSRF gate: serve the `GET /csrf` token endpoint and enforce a valid
     ///        `X-CSRF-Token` on every state-changing method. @return true if a response was sent.
     bool csrf_gate(uint8_t slot_id, HttpReq *req, HttpMethod method);
 #endif
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     /// @brief Complete (or reject) a RouteType::ROUTE_WS handshake per RFC 6455 §4.2.1. Always responds.
     void handle_ws_route(uint8_t slot_id, HttpReq *req, HttpMethod method, const Route *r);
 #endif
 
-#if DETWS_ENABLE_AUTH
+#if DWS_ENABLE_AUTH
     /// @brief Enforce route @p r's auth (lockout gate + Digest/Basic credential check, with lockout
     ///        accounting). @return true if authorized; on failure the 401/429 is already sent.
     bool authorize_request(uint8_t slot_id, HttpReq *req, const Route *r);
 #endif
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     /// @brief Invoke the registered WS message handler for a completed frame on @p ws.
     void ws_dispatch_message(WsConn *ws);
     /// @brief Invoke the registered WS close handler for @p ws.
@@ -590,12 +590,12 @@ class DetWebServer
 
   public:
     /**
-     * @brief Construct a DetWebServer with an empty routing table.
+     * @brief Construct a DWS with an empty routing table.
      *
      * All route slots are marked inactive.  CORS is disabled.  The
      * not-found handler is null (falls back to built-in 404 response).
      */
-    DetWebServer();
+    DWS();
 
     /**
      * @brief Register a port to listen on when begin() is called.
@@ -617,7 +617,7 @@ class DetWebServer
      * @param port  TCP port to open.
      * @param proto Application protocol; defaults to ConnProto::PROTO_HTTP.
      * @return the listener id (a non-negative index) on success - pass it to
-     *         det_relay_publish() / det_ssh_forward_begin(); DetWebServerResult::DETWS_ERR_LISTENER_FULL if the pool is
+     *         dws_relay_publish() / dws_ssh_forward_begin(); DWSResult::DWS_ERR_LISTENER_FULL if the pool is
      * full.
      */
     int32_t listen(uint16_t port, ConnProto proto = ConnProto::PROTO_HTTP);
@@ -631,8 +631,8 @@ class DetWebServer
      * case use begin(port, cfg) instead.
      *
      * @param cfg  Optional runtime configuration.  Pass nullptr for defaults.
-     * @return DetWebServerResult::DETWS_OK on success; DetWebServerResult::DETWS_ERR_NO_LISTENERS if no ports were
-     *         registered; DetWebServerResult::DETWS_ERR_LISTEN_FAILED if a listener could not open.
+     * @return DWSResult::DWS_OK on success; DWSResult::DWS_ERR_NO_LISTENERS if no ports were
+     *         registered; DWSResult::DWS_ERR_LISTEN_FAILED if a listener could not open.
      */
     int32_t begin(const WebServerConfig *cfg = nullptr);
 
@@ -644,11 +644,11 @@ class DetWebServer
      *
      * @param port TCP port to listen on (typically 80).
      * @param cfg  Optional runtime configuration.  Pass nullptr for defaults.
-     * @return DetWebServerResult::DETWS_OK on success; a negative DetWebServerResult on failure.
+     * @return DWSResult::DWS_OK on success; a negative DWSResult on failure.
      */
     int32_t begin(uint16_t port, const WebServerConfig *cfg = nullptr);
 
-#if DETWS_ENABLE_TLS
+#if DWS_ENABLE_TLS
     /**
      * @brief Load the TLS server certificate + private key (call before begin).
      *
@@ -664,7 +664,7 @@ class DetWebServer
      * @brief Register a TLS (HTTPS) HTTP listener on @p port (typically 443).
      *
      * Like listen() but connections accepted here run a TLS handshake first.
-     * Call tls_cert() first, then begin(). @return DetWebServerResult::DETWS_OK or an error code.
+     * Call tls_cert() first, then begin(). @return DWSResult::DWS_OK or an error code.
      */
     int32_t listen_tls(uint16_t port);
 
@@ -679,13 +679,13 @@ class DetWebServer
      * @param key      Server private key.
      * @param key_len  Length incl. trailing NUL for PEM.
      * @param cfg      Optional runtime config.
-     * @return DetWebServerResult::DETWS_OK on success; a negative code, or DetWebServerResult::DETWS_ERR_LISTEN_FAILED
+     * @return DWSResult::DWS_OK on success; a negative code, or DWSResult::DWS_ERR_LISTEN_FAILED
      * if the TLS engine could not initialize.
      */
     int32_t begin_tls(uint16_t port, const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len,
                       const WebServerConfig *cfg = nullptr);
 
-#if DETWS_ENABLE_MTLS
+#if DWS_ENABLE_MTLS
     /**
      * @brief Require a verified client certificate (mTLS).
      *
@@ -714,10 +714,10 @@ class DetWebServer
      * @return subject length written, or <0 if there is no verified client cert.
      */
     int tls_client_subject(uint8_t slot_id, char *out, size_t out_len);
-#endif // DETWS_ENABLE_MTLS
-#endif // DETWS_ENABLE_TLS
+#endif // DWS_ENABLE_MTLS
+#endif // DWS_ENABLE_TLS
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
     /**
      * @brief Enable the HTTP/3 (QUIC) server: load its Ed25519 leaf certificate + key and choose the
      * UDP port. Call before begin(); begin() then binds the port and serves HTTP/3 through the same
@@ -727,16 +727,16 @@ class DetWebServer
      * Profile: TLS_AES_128_GCM_SHA256 + X25519 + Ed25519 (a client offering none of these is refused).
      */
     bool h3_cert(const uint8_t *cert_der, size_t cert_len, const uint8_t ed25519_seed[32],
-                 uint16_t port = DETWS_HTTP3_PORT);
+                 uint16_t port = DWS_HTTP3_PORT);
 
     /**
      * @brief Internal: run a completed HTTP/3 request through the shared route dispatcher on the
      * reserved conn-pool slot (called by the quic_server request trampoline, not by app code). The
-     * response routes back to @p stream_id on @p conn_id via send() -> det_quic_server_respond.
+     * response routes back to @p stream_id on @p conn_id via send() -> dws_quic_server_respond.
      */
     void dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, const char *method, const char *path,
                              const char *authority, const uint8_t *body, size_t body_len);
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3
 
     /**
      * @brief Gracefully stop the server.
@@ -782,7 +782,7 @@ class DetWebServer
      * @brief Register a route that only matches on a specific network interface.
      *
      * Identical to on(path, method, callback) but the route is invisible unless
-     * the request arrived on @p iface (DetIface::DETIFACE_STA or DetIface::DETIFACE_AP). A
+     * the request arrived on @p iface (DWSIface::DETIFACE_STA or DWSIface::DETIFACE_AP). A
      * non-matching interface falls through to other routes / 404, so you can,
      * e.g., expose a provisioning UI only on the softAP and the app API only on
      * the station link. Requires set_ap_ip() to have been called so connections
@@ -791,9 +791,9 @@ class DetWebServer
      * @param path     URL path pattern.
      * @param method   HTTP method.
      * @param callback Handler invoked on a match.
-     * @param iface    DetIface::DETIFACE_STA or DetIface::DETIFACE_AP (DetIface::DETIFACE_ANY = no filter).
+     * @param iface    DWSIface::DETIFACE_STA or DWSIface::DETIFACE_AP (DWSIface::DETIFACE_ANY = no filter).
      */
-    void on(const char *path, HttpMethod method, Handler callback, DetIface iface);
+    void on(const char *path, HttpMethod method, Handler callback, DWSIface iface);
 
     /**
      * @brief Register a route whose path is a regular expression.
@@ -821,16 +821,16 @@ class DetWebServer
     /**
      * @brief Tell the server the softAP IPv4 address for STA/AP route filtering.
      *
-     * Each accepted connection is tagged DetIface::DETIFACE_AP when its local IP equals
-     * @p ap_ip, else DetIface::DETIFACE_STA. Call once after starting the softAP, e.g.
+     * Each accepted connection is tagged DWSIface::DETIFACE_AP when its local IP equals
+     * @p ap_ip, else DWSIface::DETIFACE_STA. Call once after starting the softAP, e.g.
      * `server.set_ap_ip(WiFi.softAPIP())` (IPAddress converts to uint32_t).
-     * Without it, every connection is treated as DetIface::DETIFACE_STA.
+     * Without it, every connection is treated as DWSIface::DETIFACE_STA.
      *
      * @param ap_ip softAP IPv4 address in network byte order (0 to clear).
      */
     void set_ap_ip(uint32_t ap_ip);
 
-#if DETWS_ENABLE_AUTH
+#if DWS_ENABLE_AUTH
     /**
      * @brief Register a route handler protected by HTTP authentication.
      *
@@ -849,9 +849,9 @@ class DetWebServer
      */
     void on(const char *path, HttpMethod method, Handler callback, const char *realm, const char *user,
             const char *pass, bool digest = false);
-#endif // DETWS_ENABLE_AUTH
+#endif // DWS_ENABLE_AUTH
 
-#if DETWS_ENABLE_FILE_SERVING
+#if DWS_ENABLE_FILE_SERVING
     /**
      * @brief Serve a file from any Arduino-compatible filesystem.
      *
@@ -890,9 +890,9 @@ class DetWebServer
      * @param fs_root     Root directory on the filesystem (persistent string).
      */
     void serve_static(const char *url_prefix, fs::FS &file_sys, const char *fs_root);
-#endif // DETWS_ENABLE_FILE_SERVING
+#endif // DWS_ENABLE_FILE_SERVING
 
-#if DETWS_ENABLE_WEBDAV
+#if DWS_ENABLE_WEBDAV
     /**
      * @brief Mount a filesystem subtree as a WebDAV share (RFC 4918).
      *
@@ -903,8 +903,8 @@ class DetWebServer
      * mounted network drive can browse and edit files. The request path beyond
      * the prefix is appended to @p fs_root (paths containing `..` are rejected).
      *
-     * Limits (see DETWS_ENABLE_WEBDAV): PROPFIND builds a 207 into a
-     * DETWS_WEBDAV_BUF_SIZE buffer and lists at most DETWS_WEBDAV_MAX_ENTRIES
+     * Limits (see DWS_ENABLE_WEBDAV): PROPFIND builds a 207 into a
+     * DWS_WEBDAV_BUF_SIZE buffer and lists at most DWS_WEBDAV_MAX_ENTRIES
      * children; PUT buffers the body (bounded by BODY_BUF_SIZE); COPY handles
      * files (not collections); locks are advisory (issued, not enforced);
      * PROPPATCH is unsupported. Combine with per-route auth and HTTPS before
@@ -919,7 +919,7 @@ class DetWebServer
      * @param fs_root    Root directory on the filesystem (persistent string).
      */
     void dav(const char *url_prefix, fs::FS &file_sys, const char *fs_root);
-#endif // DETWS_ENABLE_WEBDAV
+#endif // DWS_ENABLE_WEBDAV
 
     /**
      * @brief Register a fallback handler for unmatched requests.
@@ -970,14 +970,14 @@ class DetWebServer
      * chain and route matching, so it bounds work under flood. State is a few
      * per-server counters (no heap, no per-IP table) - a global throttle suited
      * to a small device behind a trusted LAN. For connection-level flood defense
-     * see also `DETWS_ENABLE_ACCEPT_THROTTLE`.
+     * see also `DWS_ENABLE_ACCEPT_THROTTLE`.
      *
      * @param max_requests Requests allowed per window. Pass 0 to disable.
      * @param window_ms    Window length in milliseconds (must be > 0).
      */
     void enable_rate_limit(uint16_t max_requests, uint32_t window_ms);
 
-#if DETWS_ENABLE_STATS
+#if DWS_ENABLE_STATS
     /**
      * @brief Send a JSON runtime-stats snapshot and close the connection.
      *
@@ -992,7 +992,7 @@ class DetWebServer
     void stats(uint8_t slot_id);
 #endif
 
-#if DETWS_ENABLE_METRICS
+#if DWS_ENABLE_METRICS
     /**
      * @brief Respond with runtime metrics in Prometheus text exposition format.
      *
@@ -1035,7 +1035,7 @@ class DetWebServer
     /**
      * @brief Drive the server - call every Arduino `loop()` iteration.
      *
-     * On ESP32 `begin()` spawns the server worker task(s) (see DETWS_WORKER_COUNT),
+     * On ESP32 `begin()` spawns the server worker task(s) (see DWS_WORKER_COUNT),
      * which run the pipeline on their own core; `handle()` is then a no-op and your
      * `loop()` is free for application code. On host builds (and if no worker task
      * is running) `handle()` drives one service iteration inline, so existing
@@ -1063,7 +1063,7 @@ class DetWebServer
      *        driven by that worker's task, or by handle() when no task is running).
      *
      * Services only the connection slots owned by @p worker_id, so multiple workers
-     * run disjoint slot sets in parallel. At DETWS_WORKER_COUNT=1 worker 0 owns
+     * run disjoint slot sets in parallel. At DWS_WORKER_COUNT=1 worker 0 owns
      * every slot. Public so the worker task can invoke it; application code should
      * call handle() rather than this directly.
      */
@@ -1093,7 +1093,7 @@ class DetWebServer
      *
      * @return false if the slot is invalid or the worker's defer queue is full.
      */
-    bool defer(uint8_t slot, detws_deferred_fn fn, void *arg);
+    bool defer(uint8_t slot, dws_deferred_fn fn, void *arg);
 
     /**
      * @brief Send an HTTP response with a body and close the connection.
@@ -1240,20 +1240,20 @@ class DetWebServer
      */
     static const char *mime_type(const char *path);
 
-#if DETWS_ENABLE_DIAG
+#if DWS_ENABLE_DIAG
     /**
      * @brief Send the diagnostic JSON and close the connection.
      *
      * Responds with 200 application/json containing the compile-time feature
      * flags and all capacity constants.  Only available when
-     * DETWS_ENABLE_DIAG is set to 1 - disable before deploying to production.
+     * DWS_ENABLE_DIAG is set to 1 - disable before deploying to production.
      *
      * @param slot_id Connection slot index.
      */
     void diag(uint8_t slot_id);
 #endif
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     // -----------------------------------------------------------------------
     // WebSocket API
     // -----------------------------------------------------------------------
@@ -1301,9 +1301,9 @@ class DetWebServer
      * @param ws_id  Index into ws_pool[].
      */
     void ws_disconnect(uint8_t ws_id);
-#endif // DETWS_ENABLE_WEBSOCKET
+#endif // DWS_ENABLE_WEBSOCKET
 
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
     // -----------------------------------------------------------------------
     // Server-Sent Events API
     // -----------------------------------------------------------------------
@@ -1346,7 +1346,7 @@ class DetWebServer
      * @param id     Optional event ID.
      */
     void sse_broadcast(const char *path, const char *data, const char *event = nullptr, const char *id = nullptr);
-#endif // DETWS_ENABLE_SSE
+#endif // DWS_ENABLE_SSE
 };
 
 #endif

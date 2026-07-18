@@ -8,7 +8,7 @@
 
 #include "services/dshot/dshot.h"
 
-#if DETWS_ENABLE_DSHOT
+#if DWS_ENABLE_DSHOT
 
 namespace
 {
@@ -22,7 +22,7 @@ uint8_t dshot_crc(uint16_t v12, bool bidirectional)
 }
 } // namespace
 
-uint16_t detws_dshot_encode(uint16_t value11, bool telemetry, bool bidirectional)
+uint16_t dws_dshot_encode(uint16_t value11, bool telemetry, bool bidirectional)
 {
     value11 &= 0x07FF; // 11-bit value field
     uint16_t v12 = (uint16_t)((value11 << 1) | (telemetry ? 1 : 0));
@@ -30,7 +30,7 @@ uint16_t detws_dshot_encode(uint16_t value11, bool telemetry, bool bidirectional
     return (uint16_t)((v12 << 4) | crc);
 }
 
-bool detws_dshot_decode(uint16_t frame, uint16_t *value11, bool *telemetry, bool bidirectional)
+bool dws_dshot_decode(uint16_t frame, uint16_t *value11, bool *telemetry, bool bidirectional)
 {
     uint16_t v12 = (uint16_t)(frame >> 4);
     uint8_t got = (uint8_t)(frame & 0x0F);
@@ -43,7 +43,7 @@ bool detws_dshot_decode(uint16_t frame, uint16_t *value11, bool *telemetry, bool
     return true;
 }
 
-uint32_t detws_dshot_bit_ns(uint16_t rate_kbit, bool bit)
+uint32_t dws_dshot_bit_ns(uint16_t rate_kbit, bool bit)
 {
     uint32_t period_ns; // one bit-period, in ns, at rate_kbit kbit/s
     switch (rate_kbit)
@@ -67,25 +67,25 @@ uint32_t detws_dshot_bit_ns(uint16_t rate_kbit, bool bit)
     return bit ? (period_ns * 3 / 4) : (period_ns * 3 / 8);
 }
 
-uint32_t detws_esc_pwm_ns(uint16_t throttle_1000, DetwsEscPwm mode)
+uint32_t dws_esc_pwm_ns(uint16_t throttle_1000, DetwsEscPwm mode)
 {
     uint32_t lo;
     uint32_t hi; // pulse width range in ns
     switch (mode)
     {
-    case DetwsEscPwm::DETWS_ESC_ONESHOT125:
+    case DetwsEscPwm::DWS_ESC_ONESHOT125:
         lo = 125000;
         hi = 250000;
         break;
-    case DetwsEscPwm::DETWS_ESC_ONESHOT42:
+    case DetwsEscPwm::DWS_ESC_ONESHOT42:
         lo = 42000;
         hi = 84000;
         break;
-    case DetwsEscPwm::DETWS_ESC_MULTISHOT:
+    case DetwsEscPwm::DWS_ESC_MULTISHOT:
         lo = 5000;
         hi = 25000;
         break;
-    case DetwsEscPwm::DETWS_ESC_PWM:
+    case DetwsEscPwm::DWS_ESC_PWM:
     default:
         lo = 1000000;
         hi = 2000000;
@@ -97,4 +97,4 @@ uint32_t detws_esc_pwm_ns(uint16_t throttle_1000, DetwsEscPwm mode)
     return lo + (uint32_t)(((uint64_t)(hi - lo) * throttle_1000) / 1000);
 }
 
-#endif // DETWS_ENABLE_DSHOT
+#endif // DWS_ENABLE_DSHOT

@@ -6,7 +6,7 @@
  * @brief Zero-heap RFC 5424 syslog client over UDP.
  *
  * Ships device log lines to a remote syslog server as RFC 5424 UDP datagrams via
- * the transport-layer UDP service (det_udp_sendto). Split, like the other
+ * the transport-layer UDP service (dws_udp_sendto). Split, like the other
  * network services, into a pure host-testable formatter and an ESP32-only send:
  *
  *  - syslog_format() builds one RFC 5424 line into a caller buffer (no sockets,
@@ -27,7 +27,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SYSLOG
+#if DWS_ENABLE_SYSLOG
 
 /** @brief RFC 5424 §6.2.1 severity levels (numerically lower = more severe). */
 enum class SyslogSeverity : uint8_t
@@ -76,10 +76,10 @@ size_t syslog_format(char *out, size_t cap, SyslogFacility facility, SyslogSever
  * @brief Format @p msg at @p severity and send it to the configured server.
  *
  * @return true if the datagram was queued; false if not yet configured, the line
- *         overflowed DETWS_SYSLOG_MSG_MAX, or the send failed (host build).
+ *         overflowed DWS_SYSLOG_MSG_MAX, or the send failed (host build).
  */
 bool syslog_log(SyslogSeverity severity, const char *msg);
 
-#endif // DETWS_ENABLE_SYSLOG
+#endif // DWS_ENABLE_SYSLOG
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SYSLOG_H

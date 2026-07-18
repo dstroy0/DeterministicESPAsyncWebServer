@@ -31,13 +31,13 @@
 // ProtoHandler pointers. One named owner, unreachable from any other translation unit.
 struct SessionCtx
 {
-    const ProtoHandler *proto_handlers[DETWS_PROTO_MAX];
+    const ProtoHandler *proto_handlers[DWS_PROTO_MAX];
 };
 static SessionCtx s_session;
 
 void proto_register(ConnProto proto, const ProtoHandler *h)
 {
-    if ((unsigned)proto < DETWS_PROTO_MAX)
+    if ((unsigned)proto < DWS_PROTO_MAX)
         s_session.proto_handlers[(unsigned)proto] = h;
 }
 
@@ -51,7 +51,7 @@ const ProtoHandler *proto_get(ConnProto proto)
         proto_register_builtins();
     // No implicit fallback: a slot must carry an explicit, registered protocol.
     // ConnProto::PROTO_NONE and any unregistered protocol resolve to nullptr (event dropped).
-    return ((unsigned)proto < DETWS_PROTO_MAX) ? s_session.proto_handlers[(unsigned)proto] : nullptr;
+    return ((unsigned)proto < DWS_PROTO_MAX) ? s_session.proto_handlers[(unsigned)proto] : nullptr;
 }
 
 // Dispatch one drained event to its slot's protocol handler. Shared by the
@@ -99,7 +99,7 @@ void server_tick(int worker_id)
      */
     DeterministicAsyncTCP::check_timeouts(worker_id);
 
-#if DETWS_WORKER_COUNT > 1
+#if DWS_WORKER_COUNT > 1
     // Drain only this worker's queue: it is the sole consumer of its slots.
     QueueHandle_t q = listener_worker_queue(worker_id);
     if (!q)

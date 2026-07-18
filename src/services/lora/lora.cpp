@@ -13,7 +13,7 @@
 
 #include "services/lora/lora.h"
 
-#if DETWS_ENABLE_LORA
+#if DWS_ENABLE_LORA
 
 namespace
 {
@@ -91,7 +91,7 @@ bool lora_frame_parse(const uint8_t *raw, uint16_t len, lora_header *hdr, const 
 
 uint16_t lora_frame_build(const lora_header *hdr, const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap)
 {
-    if (!hdr || !out || len > DETWS_LORA_MAX_PAYLOAD || (uint32_t)len + 4 > cap)
+    if (!hdr || !out || len > DWS_LORA_MAX_PAYLOAD || (uint32_t)len + 4 > cap)
         return 0;
     out[0] = hdr->to;
     out[1] = hdr->from;
@@ -139,7 +139,7 @@ bool lora_init(const lora_bus *bus, const lora_config *cfg)
 
 bool lora_send(const lora_bus *bus, const uint8_t *frame, uint8_t len)
 {
-    if (!bus || !frame || len == 0 || len > DETWS_LORA_MAX_PAYLOAD + 4)
+    if (!bus || !frame || len == 0 || len > DWS_LORA_MAX_PAYLOAD + 4)
         return false;
     wr(bus, LoraReg::REG_OP_MODE, LoraMode::MODE_LORA | LoraMode::MODE_STDBY);
     wr(bus, LoraReg::REG_FIFO_ADDR_PTR, 0x00);
@@ -197,4 +197,4 @@ int lora_recv(const lora_bus *bus, uint8_t *buf, uint8_t cap, int16_t *rssi)
     return (int)n;
 }
 
-#endif // DETWS_ENABLE_LORA
+#endif // DWS_ENABLE_LORA

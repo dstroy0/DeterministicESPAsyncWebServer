@@ -2,7 +2,7 @@ API Reference
 =============
 
 Rendered from the Doxygen XML by Breathe. The primary public surface is the ``DetWebServer`` class; every
-opt-in feature is a ``DETWS_ENABLE_*`` build flag (default off) in ``DetWebServerConfig.h``, and the
+opt-in feature is a ``DWS_ENABLE_*`` build flag (default off) in ``DetWebServerConfig.h``, and the
 :doc:`configurator <index>` assembles a ``build_flags`` block from them.
 
 .. note::

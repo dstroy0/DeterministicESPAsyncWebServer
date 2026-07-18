@@ -25,7 +25,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP2
+#if DWS_ENABLE_HTTP2
 
 #include <stddef.h>
 #include <stdint.h>
@@ -50,14 +50,14 @@ struct HpackDynTable
     uint16_t ecount;   ///< number of live entries
     uint16_t rtail;    ///< byte ring: start of the oldest entry's bytes
     uint16_t rused;    ///< byte ring: bytes in use
-    HpackEntry ent[DETWS_HPACK_MAX_ENTRIES];
-    char ring[DETWS_HPACK_TABLE_BYTES];
+    HpackEntry ent[DWS_HPACK_MAX_ENTRIES];
+    char ring[DWS_HPACK_TABLE_BYTES];
 };
 
 /** @brief Callback invoked for each decoded header; return false to abort the decode. */
 typedef bool (*HpackEmitFn)(void *ctx, const char *name, size_t name_len, const char *value, size_t value_len);
 
-/** @brief Initialize a dynamic table to empty, max size @p max_bytes (0 = DETWS_HPACK_TABLE_BYTES). */
+/** @brief Initialize a dynamic table to empty, max size @p max_bytes (0 = DWS_HPACK_TABLE_BYTES). */
 void hpack_dyn_init(HpackDynTable *t, uint32_t max_bytes);
 
 /**
@@ -78,5 +78,5 @@ size_t hpack_encode_header(uint8_t *out, size_t cap, const char *name, size_t na
 
 // The prefix-integer and Huffman primitives moved to hpack_prim.h (shared with QPACK).
 
-#endif // DETWS_ENABLE_HTTP2
+#endif // DWS_ENABLE_HTTP2
 #endif // DETERMINISTICESPASYNCWEBSERVER_HPACK_H

@@ -26,24 +26,24 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/http3/h3_frame.h"
 #include "network_drivers/presentation/http3/quic_conn.h"
 #include <stddef.h>
 #include <stdint.h>
 
-#ifndef DETWS_H3_STREAM_BUF
-#define DETWS_H3_STREAM_BUF 2048 ///< per-request-stream reassembly buffer (HEADERS + DATA)
+#ifndef DWS_H3_STREAM_BUF
+#define DWS_H3_STREAM_BUF 2048 ///< per-request-stream reassembly buffer (HEADERS + DATA)
 #endif
-#ifndef DETWS_H3_METHOD_LEN
-#define DETWS_H3_METHOD_LEN 16 ///< captured :method length cap
+#ifndef DWS_H3_METHOD_LEN
+#define DWS_H3_METHOD_LEN 16 ///< captured :method length cap
 #endif
-#ifndef DETWS_H3_PATH_LEN
-#define DETWS_H3_PATH_LEN 256 ///< captured :path length cap
+#ifndef DWS_H3_PATH_LEN
+#define DWS_H3_PATH_LEN 256 ///< captured :path length cap
 #endif
-#ifndef DETWS_H3_AUTHORITY_LEN
-#define DETWS_H3_AUTHORITY_LEN 128 ///< captured :authority length cap
+#ifndef DWS_H3_AUTHORITY_LEN
+#define DWS_H3_AUTHORITY_LEN 128 ///< captured :authority length cap
 #endif
 
 struct H3Conn;
@@ -73,11 +73,11 @@ struct H3Stream
     H3StreamRole role; ///< stream role
     bool type_read;    ///< a unidirectional stream's type varint has been consumed
     bool responded;    ///< a response has been sent on this request stream
-    uint8_t buf[DETWS_H3_STREAM_BUF];
+    uint8_t buf[DWS_H3_STREAM_BUF];
     size_t buf_len;
-    char method[DETWS_H3_METHOD_LEN];
-    char path[DETWS_H3_PATH_LEN];
-    char authority[DETWS_H3_AUTHORITY_LEN];
+    char method[DWS_H3_METHOD_LEN];
+    char path[DWS_H3_PATH_LEN];
+    char authority[DWS_H3_AUTHORITY_LEN];
     bool have_headers; ///< a HEADERS frame has been decoded
     size_t body_off;   ///< where the accumulated body begins within buf (after the last HEADERS)
 };
@@ -91,7 +91,7 @@ struct H3Conn
     H3Settings peer_settings;
     bool control_opened;  ///< our control + QPACK streams have been opened
     uint64_t next_uni_id; ///< next server-initiated unidirectional stream id (3, 7, 11, ...)
-    H3Stream streams[DETWS_H3_MAX_STREAMS];
+    H3Stream streams[DWS_H3_MAX_STREAMS];
 };
 
 /**
@@ -111,5 +111,5 @@ void h3_conn_init(H3Conn *h3, QuicConn *qc, H3RequestFn on_request, void *app);
 bool h3_conn_respond(H3Conn *h3, uint64_t stream_id, int status, const char *content_type, const uint8_t *body,
                      size_t body_len);
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_H3_CONN_H

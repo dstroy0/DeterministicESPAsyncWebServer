@@ -8,7 +8,7 @@
 
 #include "services/edge_cache/edge_fetch.h"
 
-#if DETWS_ENABLE_EDGE_CACHE
+#if DWS_ENABLE_EDGE_CACHE
 
 #include "services/edge_cache/edge_cache.h"   // edge_header_value
 #include "services/http_client/http_client.h" // http_client_parse_response
@@ -130,7 +130,7 @@ void edge_fetch_begin(EdgeFetch *f, const EdgeFetchTransport *t, const char *hos
     f->cid = -1;
     f->start_ms = now_ms;
     f->st = EdgeFetchStatus::PENDING;
-    f->cid = t->open(t->ctx, host, port, DETWS_EDGE_FETCH_TIMEOUT_MS);
+    f->cid = t->open(t->ctx, host, port, DWS_EDGE_FETCH_TIMEOUT_MS);
     if (f->cid < 0)
     {
         f->st = EdgeFetchStatus::FAILED;
@@ -182,7 +182,7 @@ EdgeFetchStatus edge_fetch_pump(EdgeFetch *f, const EdgeFetchTransport *t, uint3
         f->st = EdgeFetchStatus::FAILED;
         return f->st;
     }
-    if ((uint32_t)(now_ms - f->start_ms) >= DETWS_EDGE_FETCH_TIMEOUT_MS)
+    if ((uint32_t)(now_ms - f->start_ms) >= DWS_EDGE_FETCH_TIMEOUT_MS)
     {
         f->st = EdgeFetchStatus::FAILED;
         return f->st;
@@ -199,4 +199,4 @@ void edge_fetch_end(EdgeFetch *f, const EdgeFetchTransport *t)
     }
 }
 
-#endif // DETWS_ENABLE_EDGE_CACHE
+#endif // DWS_ENABLE_EDGE_CACHE

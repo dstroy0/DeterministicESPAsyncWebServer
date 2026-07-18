@@ -8,31 +8,31 @@
 
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h"
 
-#if DETWS_ENABLE_SSH_ZLIB
+#if DWS_ENABLE_SSH_ZLIB
 
 #include "network_drivers/presentation/ssh/transport/ssh_zlib.h"
 #include <string.h>
 
 // The per-connection compressor holds a window-sized work buffer + a window-sized hash chain (tens
 // of KB); the pool does not fit internal DRAM alongside the SSH crypto stack, so it lives in PSRAM
-// (DETWS_SSH_ZLIB_IN_PSRAM). Same mechanism/caveat as the TLS arena and HTTP/2 pool: it needs a
+// (DWS_SSH_ZLIB_IN_PSRAM). Same mechanism/caveat as the TLS arena and HTTP/2 pool: it needs a
 // framework built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y (the stock arduino-esp32 core
 // ships it OFF, so EXT_RAM_BSS_ATTR would silently no-op); see tools/psram/README.md.
-#if DETWS_SSH_ZLIB_IN_PSRAM && defined(ARDUINO)
+#if DWS_SSH_ZLIB_IN_PSRAM && defined(ARDUINO)
 #include <esp_attr.h> // pulls in sdkconfig.h -> CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY
 #if !defined(CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY)
 #error                                                                                                                 \
-    "DETWS_SSH_ZLIB_IN_PSRAM needs a framework built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y. The stock arduino-esp32 core ships it OFF, so EXT_RAM_BSS_ATTR silently no-ops and the compressor pool would overflow internal DRAM. Rebuild the core (tools/psram/README.md) or unset DETWS_SSH_ZLIB_IN_PSRAM."
+    "DWS_SSH_ZLIB_IN_PSRAM needs a framework built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y. The stock arduino-esp32 core ships it OFF, so EXT_RAM_BSS_ATTR silently no-ops and the compressor pool would overflow internal DRAM. Rebuild the core (tools/psram/README.md) or unset DWS_SSH_ZLIB_IN_PSRAM."
 #endif
 #if defined(EXT_RAM_BSS_ATTR)
-#define DETWS_SSH_COMP_ATTR EXT_RAM_BSS_ATTR // IDF v5 / arduino-esp32 3.x
+#define DWS_SSH_COMP_ATTR EXT_RAM_BSS_ATTR // IDF v5 / arduino-esp32 3.x
 #elif defined(EXT_RAM_ATTR)
-#define DETWS_SSH_COMP_ATTR EXT_RAM_ATTR // IDF v4 / arduino-esp32 2.x
+#define DWS_SSH_COMP_ATTR EXT_RAM_ATTR // IDF v4 / arduino-esp32 2.x
 #else
-#define DETWS_SSH_COMP_ATTR
+#define DWS_SSH_COMP_ATTR
 #endif
 #else
-#define DETWS_SSH_COMP_ATTR
+#define DWS_SSH_COMP_ATTR
 #endif
 
 // Per-connection compression state (large buffers -> PSRAM; the flags are trivial).
@@ -56,7 +56,7 @@ struct SshCompCtx
 {
     SshCompState comp[MAX_SSH_CONNS];
 };
-static DETWS_SSH_COMP_ATTR SshCompCtx s_ssh_comp;
+static DWS_SSH_COMP_ATTR SshCompCtx s_ssh_comp;
 
 static void start_stream(SshCompState *c)
 {
@@ -109,4 +109,4 @@ int ssh_comp_s2c(uint8_t i, const uint8_t *src, size_t src_len, uint8_t *dst, si
     return ssh_deflate_packet(&s_ssh_comp.comp[i].z, src, src_len, dst, dst_cap, out_len);
 }
 
-#endif // DETWS_ENABLE_SSH_ZLIB
+#endif // DWS_ENABLE_SSH_ZLIB

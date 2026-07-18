@@ -30,7 +30,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/http3/quic_crypto.h"
 #include "network_drivers/presentation/http3/quic_tp.h"
@@ -56,7 +56,7 @@ struct QuicTlsConfig
     QuicTransportParams params; ///< the server's transport parameters (caller sets the CIDs)
     uint8_t ephemeral_priv[32]; ///< server X25519 private key
     uint8_t random[32];         ///< ServerHello random
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
     uint8_t mlkem_m[32]; ///< ML-KEM Encaps randomness (X25519MLKEM768 hybrid); fresh per handshake
 #endif
 };
@@ -90,13 +90,13 @@ struct QuicTls
 
     uint8_t hs_finished_hash[32]; ///< H(ClientHello..server Finished), to verify client Finished
 
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
     uint8_t flight_initial[1400]; ///< outbound Initial CRYPTO (ServerHello; hybrid key_share is ~1.1 KB)
 #else
     uint8_t flight_initial[256]; ///< outbound Initial CRYPTO (ServerHello)
 #endif
     size_t flight_initial_len;
-    uint8_t flight_hs[DETWS_H3_CRYPTO_BUF]; ///< outbound Handshake CRYPTO (EE..Finished)
+    uint8_t flight_hs[DWS_H3_CRYPTO_BUF]; ///< outbound Handshake CRYPTO (EE..Finished)
     size_t flight_hs_len;
 
     QuicTransportParams peer; ///< the client's parsed transport parameters
@@ -133,5 +133,5 @@ const QuicPacketKeys *quic_tls_keys(const QuicTls *qt, int level, bool is_server
 /** @brief The client's parsed transport parameters (valid once the ClientHello is processed). */
 const QuicTransportParams *quic_tls_peer_params(const QuicTls *qt);
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_TLS_H

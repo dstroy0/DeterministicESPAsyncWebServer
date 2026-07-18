@@ -3,11 +3,11 @@
 
 /**
  * @file 02.AcceptThrottle.ino
- * @brief Connection-flood defense via the accept-rate throttle (DETWS_ENABLE_ACCEPT_THROTTLE).
+ * @brief Connection-flood defense via the accept-rate throttle (DWS_ENABLE_ACCEPT_THROTTLE).
  *
  * When enabled, the accept callback rejects new connections once more than
- * DETWS_ACCEPT_THROTTLE_MAX have been accepted within
- * DETWS_ACCEPT_THROTTLE_WINDOW_MS (a global fixed window, two counters, no per-IP
+ * DWS_ACCEPT_THROTTLE_MAX have been accepted within
+ * DWS_ACCEPT_THROTTLE_WINDOW_MS (a global fixed window, two counters, no per-IP
  * table). It bounds connection churn (e.g. reconnect brute force) on top of the
  * bounded connection pool. There is no runtime API - it is purely a build-time
  * defense; this sketch just shows enabling it.
@@ -15,13 +15,13 @@
  * NOTE: this feature is compiled into the library only when the flag is set for
  * the whole build (a .ino #define does not reach the separately compiled
  * library). In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_ACCEPT_THROTTLE=1
- *                   -DDETWS_ACCEPT_THROTTLE_MAX=20
- *                   -DDETWS_ACCEPT_THROTTLE_WINDOW_MS=1000
+ *     build_flags = -DDWS_ENABLE_ACCEPT_THROTTLE=1
+ *                   -DDWS_ACCEPT_THROTTLE_MAX=20
+ *                   -DDWS_ACCEPT_THROTTLE_WINDOW_MS=1000
  * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_ACCEPT_THROTTLE 1
+#define DWS_ENABLE_ACCEPT_THROTTLE 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -30,7 +30,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

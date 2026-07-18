@@ -12,7 +12,7 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha512.h"
 #include "network_drivers/presentation/ssh/transport/ssh_keymat.h"
-#if DETWS_ENABLE_SSH_ZLIB
+#if DWS_ENABLE_SSH_ZLIB
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h"
 #include "network_drivers/presentation/ssh/transport/ssh_zlib.h" // ssh_deflate_bound
 #endif
@@ -124,7 +124,7 @@ int ssh_pkt_send(uint8_t i, const uint8_t *payload, size_t payload_len, uint8_t 
     if (s->seq_no_send >= SSH_SEQ_CLOSE_THRESHOLD)
         return -1;
 
-#if DETWS_ENABLE_SSH_ZLIB
+#if DWS_ENABLE_SSH_ZLIB
     // Compression (RFC 4253 §6.2) transforms the payload BEFORE padding/encryption, once the s2c
     // stream is active. The compressor is stateful (context takeover), so this call must be followed
     // by a full send - the same atomicity the stateful cipher below already requires. The wire buffer

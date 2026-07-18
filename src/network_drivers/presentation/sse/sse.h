@@ -62,7 +62,7 @@ extern SseConn sse_pool[MAX_SSE_CONNS];
 /**
  * @brief Initialize all SSE pool slots to inactive.
  *
- * Called once from DetWebServer::begin().
+ * Called once from DWS::begin().
  */
 void sse_init();
 
@@ -95,7 +95,7 @@ void sse_free(uint8_t slot_id);
  * Emits `event: <event>\n` (if event), `id: <id>\n` (if id), then
  * `data: <data>\n\n` per the WHATWG event-stream format.  data must not be
  * nullptr.  Pure: no connection state, so it is unit-testable and benchable
- * on its own; sse_write() wraps it with the det_conn_send() I/O.
+ * on its own; sse_write() wraps it with the dws_conn_send() I/O.
  *
  * @param buf    Destination buffer.
  * @param n      Size of @p buf.
@@ -112,7 +112,7 @@ int sse_format(char *buf, size_t n, const char *data, const char *event, const c
  * Formats and sends `event: ...\nid: ...\ndata: ...\n\n`.  Any optional
  * field may be nullptr to omit it.  data must not be nullptr.
  *
- * The caller must flush the connection afterwards (det_conn_flush()) if
+ * The caller must flush the connection afterwards (dws_conn_flush()) if
  * immediate delivery is needed.
  *
  * @param sse    SSE connection.

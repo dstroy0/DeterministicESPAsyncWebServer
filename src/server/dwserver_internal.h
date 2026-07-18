@@ -8,7 +8,7 @@
  *
  * These are NOT part of the public API - they are the handful of dwserver.cpp file-scope helpers
  * that a split-out handler still needs, promoted from `static` to external linkage so the pieces
- * link together. Everything else a handler needs is either a public DetWebServer method (declared
+ * link together. Everything else a handler needs is either a public DWS method (declared
  * in dwserver.h) or already an extern in the transport headers (e.g. conn_pool in tcp.h).
  */
 
@@ -38,12 +38,12 @@ bool regex_match(const char *pattern, const char *path);
 // Outbound-transfer continuations (owned by dwserver.cpp, shared with the split handlers)
 // ---------------------------------------------------------------------------
 
-#if DETWS_ENABLE_FILE_SERVING
+#if DWS_ENABLE_FILE_SERVING
 // Cross-loop file-send continuation. A file response larger than the TCP send
 // buffer cannot be blasted out in one dispatch (tcp_write returns ERR_MEM once the
 // window fills and the rest would be dropped). Instead serve_file_internal sends
 // the headers, opens the file, and hands it to this per-slot state; file_send_pump
-// pages out at most det_conn_sndbuf() bytes per worker loop and resumes on the next
+// pages out at most dws_conn_sndbuf() bytes per worker loop and resumes on the next
 // loop (woken promptly by the sent callback) as the window drains - no truncation,
 // no blocking the worker. One transfer per slot at a time.
 struct FileSend
@@ -76,7 +76,7 @@ struct ChunkSend
 // owner. Defined once in dwserver.cpp; the file_serving / chunked handler TUs reference it.
 struct SendCtx
 {
-#if DETWS_ENABLE_FILE_SERVING
+#if DWS_ENABLE_FILE_SERVING
     FileSend file[MAX_CONNS];
 #endif
     ChunkSend chunk[MAX_CONNS];
@@ -88,7 +88,7 @@ extern SendCtx s_send;
 // by the route dispatcher in dwserver.cpp when a matched route is a WS/SSE endpoint).
 // ---------------------------------------------------------------------------
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
 /** @brief Perform the RFC 6455 101 handshake and hand the slot to the WS frame parser. */
 bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_connect);
 
@@ -96,7 +96,7 @@ bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_connect);
 void ws_send_version_required(uint8_t slot_id);
 #endif
 
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
 /** @brief Send the SSE 200 headers and promote the slot to server-sent-events mode. */
 bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect);
 #endif

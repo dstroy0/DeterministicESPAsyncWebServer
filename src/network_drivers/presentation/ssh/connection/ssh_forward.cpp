@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/ssh/connection/ssh_forward.h"
 
-#if DETWS_SSH_PORT_FORWARD
+#if DWS_SSH_PORT_FORWARD
 
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h"
 #include "network_drivers/presentation/ssh/connection/ssh_conn.h"
@@ -30,25 +30,25 @@ struct SshFwd
     bool active;
     uint8_t ssh_slot;
     uint32_t channel; // local channel id (== ssh_chan row index)
-    int cid;          // det_client connection id
+    int cid;          // dws_client connection id
 };
 
 // All SSH local-forward (ssh -L) state, owned by one instance (internal linkage): the active
 // forward table and the policy callback. One named owner, unreachable cross-TU.
 struct SshFwdCtx
 {
-    SshFwd fwd[DETWS_SSH_FWD_MAX];
+    SshFwd fwd[DWS_SSH_FWD_MAX];
     SshForwardPolicyCb policy = nullptr;
 };
 static SshFwdCtx s_fwd;
 
 // Target -> client iterations per channel per poll: bounds the work each loop so
-// one busy tunnel cannot starve the others (DETWS_SSH_FWD_CHUNK bytes each).
+// one busy tunnel cannot starve the others (DWS_SSH_FWD_CHUNK bytes each).
 static const int kFwdBurst = 4;
 
 static int fwd_find_free()
 {
-    for (int i = 0; i < DETWS_SSH_FWD_MAX; i++)
+    for (int i = 0; i < DWS_SSH_FWD_MAX; i++)
         if (!s_fwd.fwd[i].active)
             return i;
     return -1;
@@ -56,7 +56,7 @@ static int fwd_find_free()
 
 static SshFwd *fwd_lookup(uint8_t ssh_slot, uint32_t channel)
 {
-    for (int i = 0; i < DETWS_SSH_FWD_MAX; i++)
+    for (int i = 0; i < DWS_SSH_FWD_MAX; i++)
         if (s_fwd.fwd[i].active && s_fwd.fwd[i].ssh_slot == ssh_slot && s_fwd.fwd[i].channel == channel)
             return &s_fwd.fwd[i];
     return nullptr;
@@ -74,9 +74,9 @@ struct SshRFwdBind
 {
     bool active;
     uint8_t ssh_slot;
-    uint8_t listener_idx;                   // slot in listener_pool[]
-    uint16_t bind_port;                     // port bound on the device
-    char bind_addr[DETWS_SSH_FWD_HOST_MAX]; // address the client requested (echoed in CHANNEL_OPEN)
+    uint8_t listener_idx;                 // slot in listener_pool[]
+    uint16_t bind_port;                   // port bound on the device
+    char bind_addr[DWS_SSH_FWD_HOST_MAX]; // address the client requested (echoed in CHANNEL_OPEN)
 };
 
 // One bridged connection: an accepted TCP socket glued to a forwarded-tcpip channel.
@@ -93,67 +93,67 @@ struct SshRFwdBridge
 // bindings and the accepted-connection bridges. One named owner, unreachable cross-TU.
 struct SshRFwdCtx
 {
-    SshRFwdBind rbind[DETWS_SSH_RFWD_MAX];
-    SshRFwdBridge rbridge[DETWS_SSH_RFWD_BRIDGE_MAX];
+    SshRFwdBind rbind[DWS_SSH_RFWD_MAX];
+    SshRFwdBridge rbridge[DWS_SSH_RFWD_BRIDGE_MAX];
 };
 static SshRFwdCtx s_rfwd;
 
 static int rbind_find_free()
 {
-    for (int i = 0; i < DETWS_SSH_RFWD_MAX; i++)
+    for (int i = 0; i < DWS_SSH_RFWD_MAX; i++)
         if (!s_rfwd.rbind[i].active)
             return i;
     return -1;
 }
 static SshRFwdBind *rbind_by_listener(uint8_t listener_idx)
 {
-    for (int i = 0; i < DETWS_SSH_RFWD_MAX; i++)
+    for (int i = 0; i < DWS_SSH_RFWD_MAX; i++)
         if (s_rfwd.rbind[i].active && s_rfwd.rbind[i].listener_idx == listener_idx)
             return &s_rfwd.rbind[i];
     return nullptr;
 }
 static SshRFwdBind *rbind_find(uint8_t ssh_slot, uint16_t port)
 {
-    for (int i = 0; i < DETWS_SSH_RFWD_MAX; i++)
+    for (int i = 0; i < DWS_SSH_RFWD_MAX; i++)
         if (s_rfwd.rbind[i].active && s_rfwd.rbind[i].ssh_slot == ssh_slot && s_rfwd.rbind[i].bind_port == port)
             return &s_rfwd.rbind[i];
     return nullptr;
 }
 static int rbridge_find_free()
 {
-    for (int i = 0; i < DETWS_SSH_RFWD_BRIDGE_MAX; i++)
+    for (int i = 0; i < DWS_SSH_RFWD_BRIDGE_MAX; i++)
         if (!s_rfwd.rbridge[i].active)
             return i;
     return -1;
 }
 static SshRFwdBridge *rbridge_by_conn(uint8_t conn_slot)
 {
-    for (int i = 0; i < DETWS_SSH_RFWD_BRIDGE_MAX; i++)
+    for (int i = 0; i < DWS_SSH_RFWD_BRIDGE_MAX; i++)
         if (s_rfwd.rbridge[i].active && s_rfwd.rbridge[i].conn_slot == conn_slot)
             return &s_rfwd.rbridge[i];
     return nullptr;
 }
 static SshRFwdBridge *rbridge_by_channel(uint8_t ssh_slot, uint32_t channel)
 {
-    for (int i = 0; i < DETWS_SSH_RFWD_BRIDGE_MAX; i++)
+    for (int i = 0; i < DWS_SSH_RFWD_BRIDGE_MAX; i++)
         if (s_rfwd.rbridge[i].active && s_rfwd.rbridge[i].ssh_slot == ssh_slot && s_rfwd.rbridge[i].channel == channel)
             return &s_rfwd.rbridge[i];
     return nullptr;
 }
 
 // Move accepted-socket bytes to the client over the SSH channel. Read only what the
-// channel peer window (and max packet) allow so det_ssh_conn_send never has to reject
+// channel peer window (and max packet) allow so dws_ssh_conn_send never has to reject
 // bytes already pulled from the ring; bounded per poll so one tunnel cannot starve
 // the others. Leftover bytes stay in the rx ring (backpressure) for the next poll.
 static void rbridge_pump_to_client(SshRFwdBridge *br)
 {
-    if (br->channel >= DETWS_SSH_MAX_CHANNELS)
+    if (br->channel >= DWS_SSH_MAX_CHANNELS)
         return;
     SshChannel *c = &ssh_chan[br->ssh_slot][br->channel];
-    uint8_t buf[DETWS_SSH_FWD_CHUNK];
+    uint8_t buf[DWS_SSH_FWD_CHUNK];
     for (int burst = 0; burst < 4; burst++)
     {
-        size_t avail = det_conn_available(br->conn_slot);
+        size_t avail = dws_conn_available(br->conn_slot);
         uint32_t win = c->peer_window;
         if (avail == 0 || win == 0 || !c->open)
             break;
@@ -164,10 +164,10 @@ static void rbridge_pump_to_client(SshRFwdBridge *br)
             budget = c->peer_max_pkt;
         if (budget > sizeof(buf))
             budget = sizeof(buf);
-        size_t n = det_conn_read(br->conn_slot, buf, budget);
+        size_t n = dws_conn_read(br->conn_slot, buf, budget);
         if (n == 0)
             break;
-        if (det_ssh_conn_send(br->ssh_slot, br->channel, buf, n) < 0)
+        if (dws_ssh_conn_send(br->ssh_slot, br->channel, buf, n) < 0)
             break; // channel gone: retry next poll
     }
 }
@@ -179,14 +179,14 @@ static int on_forward_open(uint8_t ssh_slot, uint32_t channel, const char *host,
     int idx = fwd_find_free();
     if (idx < 0)
         return -1; // no forward capacity
-    char hbuf[DETWS_SSH_FWD_HOST_MAX];
+    char hbuf[DWS_SSH_FWD_HOST_MAX];
     if (host_len == 0 || host_len >= sizeof(hbuf))
         return -1;
     memcpy(hbuf, host, host_len);
     hbuf[host_len] = 0;
     if (s_fwd.policy && !s_fwd.policy(hbuf, port))
-        return -1;                                                   // target administratively denied
-    int cid = det_client_open(hbuf, port, DETWS_SSH_FWD_CONNECT_MS); // blocks on DNS + connect
+        return -1;                                                 // target administratively denied
+    int cid = dws_client_open(hbuf, port, DWS_SSH_FWD_CONNECT_MS); // blocks on DNS + connect
     if (cid < 0)
         return -1; // -> CHANNEL_OPEN_FAILURE (connect failed)
     s_fwd.fwd[idx].active = true;
@@ -203,14 +203,14 @@ static void on_forward_data(uint8_t ssh_slot, uint32_t channel, const uint8_t *d
     SshFwd *f = fwd_lookup(ssh_slot, channel);
     if (f)
     {
-        det_client_send(f->cid, data, len);
+        dws_client_send(f->cid, data, len);
         return;
     }
     SshRFwdBridge *br = rbridge_by_channel(ssh_slot, channel);
     if (br && br->confirmed)
     {
-        det_conn_send(br->conn_slot, data, (u16_t)len);
-        det_conn_flush(br->conn_slot);
+        dws_conn_send(br->conn_slot, data, (u16_t)len);
+        dws_conn_flush(br->conn_slot);
     }
 }
 
@@ -276,7 +276,7 @@ static void on_forward_confirm(uint8_t ssh_slot, uint32_t channel, bool ok)
         br->confirmed = true; // bytes may now flow (pumped on the next poll)
     else
     {
-        det_conn_close(br->conn_slot); // client refused the tunnel: drop the accepted socket
+        dws_conn_close(br->conn_slot); // client refused the tunnel: drop the accepted socket
         br->active = false;
     }
 }
@@ -290,29 +290,29 @@ static void rfwd_on_accept(uint8_t conn_slot)
     SshRFwdBind *b = rbind_by_listener(conn_pool[conn_slot].listener_id);
     if (!b)
     {
-        det_conn_close(conn_slot); // no binding owns this listener (stale): drop
+        dws_conn_close(conn_slot); // no binding owns this listener (stale): drop
         return;
     }
     int idx = rbridge_find_free();
     if (idx < 0)
     {
-        det_conn_close(conn_slot); // bridge table full
+        dws_conn_close(conn_slot); // bridge table full
         return;
     }
     // Originator address (advisory, RFC 4254 §7.2); the peer port is not exposed by the
     // transport, so it is reported as 0.
-    char orig[DET_IP_STR_MAX];
+    char orig[DWS_IP_STR_MAX];
     orig[0] = 0;
-    DetIp rip;
-    if (det_conn_remote_addr(conn_slot, &rip))
-        det_ip_format(&rip, orig, sizeof(orig));
+    DWSIp rip;
+    if (dws_conn_remote_addr(conn_slot, &rip))
+        dws_ip_format(&rip, orig, sizeof(orig));
     // Open the forwarded-tcpip channel back to the client, echoing the requested bind
     // address as the "address that was connected".
     int ch =
-        det_ssh_conn_open_forwarded(b->ssh_slot, b->bind_addr[0] ? b->bind_addr : "0.0.0.0", b->bind_port, orig, 0);
+        dws_ssh_conn_open_forwarded(b->ssh_slot, b->bind_addr[0] ? b->bind_addr : "0.0.0.0", b->bind_port, orig, 0);
     if (ch < 0)
     {
-        det_conn_close(conn_slot); // SSH connection gone or channel pool full
+        dws_conn_close(conn_slot); // SSH connection gone or channel pool full
         return;
     }
     s_rfwd.rbridge[idx].active = true;
@@ -334,7 +334,7 @@ static void rfwd_on_close(uint8_t conn_slot)
     SshRFwdBridge *br = rbridge_by_conn(conn_slot);
     if (!br)
         return;
-    det_ssh_conn_close_channel(br->ssh_slot, br->channel); // tell the client EOF + CLOSE
+    dws_ssh_conn_close_channel(br->ssh_slot, br->channel); // tell the client EOF + CLOSE
     br->active = false;
 }
 
@@ -342,15 +342,15 @@ static void rfwd_on_poll(uint8_t conn_slot)
 {
     // The dispatch loop now polls every slot uniformly; it used to poll only ACTIVE slots, so preserve
     // that gate here (a closing/free forward slot has nothing to pump).
-    if (!det_conn_active(conn_slot))
+    if (!dws_conn_active(conn_slot))
         return;
     SshRFwdBridge *br = rbridge_by_conn(conn_slot);
     if (!br || !br->confirmed)
         return;
     // The client closed its side of the channel -> close the accepted socket.
-    if (br->channel < DETWS_SSH_MAX_CHANNELS && !ssh_chan[br->ssh_slot][br->channel].open)
+    if (br->channel < DWS_SSH_MAX_CHANNELS && !ssh_chan[br->ssh_slot][br->channel].open)
     {
-        det_conn_close(conn_slot);
+        dws_conn_close(conn_slot);
         br->active = false;
         return;
     }
@@ -359,40 +359,40 @@ static void rfwd_on_poll(uint8_t conn_slot)
 
 static const ProtoHandler s_rfwd_handler = {rfwd_on_accept, rfwd_on_data, rfwd_on_close, rfwd_on_poll};
 
-void det_ssh_forward_set_policy_cb(SshForwardPolicyCb cb)
+void dws_ssh_forward_set_policy_cb(SshForwardPolicyCb cb)
 {
     s_fwd.policy = cb;
 }
 
-void det_ssh_forward_begin()
+void dws_ssh_forward_begin()
 {
-    for (int i = 0; i < DETWS_SSH_FWD_MAX; i++)
+    for (int i = 0; i < DWS_SSH_FWD_MAX; i++)
         s_fwd.fwd[i].active = false;
-    for (int i = 0; i < DETWS_SSH_RFWD_MAX; i++)
+    for (int i = 0; i < DWS_SSH_RFWD_MAX; i++)
         s_rfwd.rbind[i].active = false;
-    for (int i = 0; i < DETWS_SSH_RFWD_BRIDGE_MAX; i++)
+    for (int i = 0; i < DWS_SSH_RFWD_BRIDGE_MAX; i++)
         s_rfwd.rbridge[i].active = false;
-    det_ssh_channel_set_forward_open_cb(on_forward_open);
-    det_ssh_channel_set_forward_data_cb(on_forward_data);
+    dws_ssh_channel_set_forward_open_cb(on_forward_open);
+    dws_ssh_channel_set_forward_data_cb(on_forward_data);
     // Remote forwarding (ssh -R): the request/cancel seam, the open-confirmation
     // callback, and the accept handler for connections on a forwarded port.
-    det_ssh_channel_set_rforward_open_cb(on_rforward_open);
-    det_ssh_channel_set_rforward_cancel_cb(on_rforward_cancel);
-    det_ssh_channel_set_forward_confirm_cb(on_forward_confirm);
+    dws_ssh_channel_set_rforward_open_cb(on_rforward_open);
+    dws_ssh_channel_set_rforward_cancel_cb(on_rforward_cancel);
+    dws_ssh_channel_set_forward_confirm_cb(on_forward_confirm);
     proto_register(ConnProto::PROTO_SSH_RFWD, &s_rfwd_handler);
 }
 
-void det_ssh_forward_pump(uint8_t ssh_slot)
+void dws_ssh_forward_pump(uint8_t ssh_slot)
 {
-    uint8_t buf[DETWS_SSH_FWD_CHUNK];
-    for (int i = 0; i < DETWS_SSH_FWD_MAX; i++)
+    uint8_t buf[DWS_SSH_FWD_CHUNK];
+    for (int i = 0; i < DWS_SSH_FWD_MAX; i++)
     {
         SshFwd *f = &s_fwd.fwd[i];
         if (!f->active || f->ssh_slot != ssh_slot)
             continue;
-        if (f->channel >= DETWS_SSH_MAX_CHANNELS) // defensive: stale binding
+        if (f->channel >= DWS_SSH_MAX_CHANNELS) // defensive: stale binding
         {
-            det_client_close(f->cid);
+            dws_client_close(f->cid);
             f->active = false;
             continue;
         }
@@ -401,7 +401,7 @@ void det_ssh_forward_pump(uint8_t ssh_slot)
         // Client closed its side of the channel: drop the target socket.
         if (!c->open)
         {
-            det_client_close(f->cid);
+            dws_client_close(f->cid);
             f->active = false;
             continue;
         }
@@ -409,7 +409,7 @@ void det_ssh_forward_pump(uint8_t ssh_slot)
         // Target -> client: forward what the peer window allows, bounded per poll.
         for (int burst = 0; burst < kFwdBurst; burst++)
         {
-            size_t avail = det_client_available(f->cid);
+            size_t avail = dws_client_available(f->cid);
             uint32_t win = c->peer_window;
             if (avail == 0 || win == 0)
                 break;
@@ -420,46 +420,46 @@ void det_ssh_forward_pump(uint8_t ssh_slot)
                 budget = c->peer_max_pkt;
             if (budget > sizeof(buf))
                 budget = sizeof(buf);
-            size_t n = det_client_read(f->cid, buf, budget);
+            size_t n = dws_client_read(f->cid, buf, budget);
             if (n == 0)
                 break;
-            if (det_ssh_conn_send(ssh_slot, f->channel, buf, n) < 0)
+            if (dws_ssh_conn_send(ssh_slot, f->channel, buf, n) < 0)
                 break; // sized to the window, so this should send; retry next poll
         }
 
         // Target closed (FIN) and fully drained: EOF + CLOSE to the client, free.
-        if (det_client_is_closed(f->cid) && det_client_available(f->cid) == 0)
+        if (dws_client_is_closed(f->cid) && dws_client_available(f->cid) == 0)
         {
-            det_ssh_conn_close_channel(ssh_slot, f->channel);
-            det_client_close(f->cid);
+            dws_ssh_conn_close_channel(ssh_slot, f->channel);
+            dws_client_close(f->cid);
             f->active = false;
         }
     }
 }
 
-void det_ssh_forward_reset(uint8_t ssh_slot)
+void dws_ssh_forward_reset(uint8_t ssh_slot)
 {
     // direct-tcpip (ssh -L): close outbound target sockets this connection owned.
-    for (int i = 0; i < DETWS_SSH_FWD_MAX; i++)
+    for (int i = 0; i < DWS_SSH_FWD_MAX; i++)
         if (s_fwd.fwd[i].active && s_fwd.fwd[i].ssh_slot == ssh_slot)
         {
-            det_client_close(s_fwd.fwd[i].cid);
+            dws_client_close(s_fwd.fwd[i].cid);
             s_fwd.fwd[i].active = false;
         }
     // remote (ssh -R): stop this connection's forwarded listeners and drop every
     // accepted socket it had bridged (the SSH channels go away with the connection).
-    for (int i = 0; i < DETWS_SSH_RFWD_MAX; i++)
+    for (int i = 0; i < DWS_SSH_RFWD_MAX; i++)
         if (s_rfwd.rbind[i].active && s_rfwd.rbind[i].ssh_slot == ssh_slot)
         {
             listener_stop_dynamic(s_rfwd.rbind[i].listener_idx);
             s_rfwd.rbind[i].active = false;
         }
-    for (int i = 0; i < DETWS_SSH_RFWD_BRIDGE_MAX; i++)
+    for (int i = 0; i < DWS_SSH_RFWD_BRIDGE_MAX; i++)
         if (s_rfwd.rbridge[i].active && s_rfwd.rbridge[i].ssh_slot == ssh_slot)
         {
-            det_conn_close(s_rfwd.rbridge[i].conn_slot);
+            dws_conn_close(s_rfwd.rbridge[i].conn_slot);
             s_rfwd.rbridge[i].active = false;
         }
 }
 
-#endif // DETWS_SSH_PORT_FORWARD
+#endif // DWS_SSH_PORT_FORWARD

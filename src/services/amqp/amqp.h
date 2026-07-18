@@ -3,7 +3,7 @@
 
 /**
  * @file amqp.h
- * @brief AMQP 0-9-1 frame codec (DETWS_ENABLE_AMQP) - zero-heap frame builder + parser for
+ * @brief AMQP 0-9-1 frame codec (DWS_ENABLE_AMQP) - zero-heap frame builder + parser for
  *        the RabbitMQ wire protocol, so a device can be an AMQP client over the shipped
  *        outbound client transport.
  *
@@ -28,7 +28,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_AMQP
+#if DWS_ENABLE_AMQP
 
 #include <stddef.h>
 #include <stdint.h>
@@ -76,6 +76,6 @@ bool amqp_parse_frame(const uint8_t *buf, size_t len, AmqpFrame *out, size_t *co
 bool amqp_parse_method(const uint8_t *payload, size_t payload_len, uint16_t *class_id, uint16_t *method_id,
                        const uint8_t **args, size_t *args_len);
 
-#endif // DETWS_ENABLE_AMQP
+#endif // DWS_ENABLE_AMQP
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_AMQP_H

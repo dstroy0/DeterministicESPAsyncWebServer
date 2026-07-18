@@ -3,15 +3,15 @@
 
 /**
  * @file 03.HTTPS.ino
- * @brief HTTPS via the deterministic static-pool mbedTLS engine (DETWS_ENABLE_TLS).
+ * @brief HTTPS via the deterministic static-pool mbedTLS engine (DWS_ENABLE_TLS).
  *
  * Serves the same routes over TLS on port 443. mbedTLS is pointed at a fixed BSS
- * arena (DETWS_TLS_ARENA_SIZE) through a custom allocator, so there is no heap
+ * arena (DWS_TLS_ARENA_SIZE) through a custom allocator, so there is no heap
  * use and the determinism guarantee holds. The RNG is the ESP32 hardware CSPRNG.
  *
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see, so for PlatformIO enable it for the whole build, e.g.:
- *     build_flags = -DDETWS_ENABLE_TLS=1
+ *     build_flags = -DDWS_ENABLE_TLS=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.) The `#define`
  * below alone does not reach the separately-compiled library .cpp.
  *
@@ -24,7 +24,7 @@
  * generate your own and keep the key secret.
  */
 
-#define DETWS_ENABLE_TLS 1
+#define DWS_ENABLE_TLS 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -54,7 +54,7 @@ AwEHoUQDQgAEHGSfVhJFHrMMzWyOZu/wrFPpz1RfblpT3pMVSSjJx7boWMWgbZvO
 -----END EC PRIVATE KEY-----
 )PEM";
 
-DetWebServer server;
+DWS server;
 
 void handle_root(uint8_t slot_id, HttpReq *req)
 {

@@ -54,7 +54,7 @@ struct SshAuthReq
 typedef bool (*SshPasswordCb)(const char *user, const char *password);
 
 /** @brief Install the password-verification callback (nullptr → all fail). */
-void det_ssh_auth_set_password_cb(SshPasswordCb cb);
+void dws_ssh_auth_set_password_cb(SshPasswordCb cb);
 
 /**
  * @brief Application callback that decides whether a public key is authorized
@@ -64,26 +64,26 @@ void det_ssh_auth_set_password_cb(SshPasswordCb cb);
 typedef bool (*SshPubkeyCb)(const char *user, const uint8_t *blob, size_t blob_len);
 
 /** @brief Install the publickey-authorization callback (nullptr → all fail). */
-void det_ssh_auth_set_pubkey_cb(SshPubkeyCb cb);
+void dws_ssh_auth_set_pubkey_cb(SshPubkeyCb cb);
 
 /**
  * @brief Handle SSH_MSG_SERVICE_REQUEST; emit SERVICE_ACCEPT for ssh-userauth.
  * @return 0 and writes SERVICE_ACCEPT to @p out, or -1 if the service is not
  *         "ssh-userauth" or the message is malformed.
  */
-int det_ssh_auth_handle_service_request(const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap);
+int dws_ssh_auth_handle_service_request(const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap);
 
 /**
  * @brief Parse an SSH_MSG_USERAUTH_REQUEST into @p req.
  * @return 0 on success, -1 if malformed.
  */
-int det_ssh_auth_parse_request(const uint8_t *payload, size_t len, SshAuthReq *req);
+int dws_ssh_auth_parse_request(const uint8_t *payload, size_t len, SshAuthReq *req);
 
 /** @brief Build SSH_MSG_USERAUTH_FAILURE advertising "password". */
-int det_ssh_auth_build_failure(uint8_t *out, size_t *out_len, size_t cap, bool partial);
+int dws_ssh_auth_build_failure(uint8_t *out, size_t *out_len, size_t cap, bool partial);
 
 /** @brief Build SSH_MSG_USERAUTH_SUCCESS. */
-int det_ssh_auth_build_success(uint8_t *out, size_t *out_len, size_t cap);
+int dws_ssh_auth_build_success(uint8_t *out, size_t *out_len, size_t cap);
 
 /**
  * @brief Handle a USERAUTH_REQUEST end-to-end for slot @p i.
@@ -95,7 +95,7 @@ int det_ssh_auth_build_success(uint8_t *out, size_t *out_len, size_t cap);
  * @return 0 if a response was produced (check the message type), -1 on parse
  *         error.
  */
-int det_ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+int dws_ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
                                 size_t cap);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_AUTH_H

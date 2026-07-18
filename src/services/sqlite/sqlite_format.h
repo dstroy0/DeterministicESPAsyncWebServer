@@ -3,7 +3,7 @@
 
 /**
  * @file sqlite_format.h
- * @brief Reader for the SQLite3 on-disk file format (DETWS_ENABLE_SQLITE).
+ * @brief Reader for the SQLite3 on-disk file format (DWS_ENABLE_SQLITE).
  *
  * This is **file-format access**, not the SQLite library: the documented database file structure
  * (https://www.sqlite.org/fileformat2.html) parsed by hand - the 100-byte database header, the b-tree
@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SQLITE
+#if DWS_ENABLE_SQLITE
 
 /**
  * @brief Decode a SQLite variable-length integer (1-9 bytes, big-endian; the high bit of each of the first
@@ -295,5 +295,5 @@ struct SqliteRow
 uint32_t sqlite_build_table_db(uint32_t page_size, const char *table_name, const char *create_sql,
                                const SqliteRow *rows, uint32_t nrows, uint8_t *out, uint32_t out_cap);
 
-#endif // DETWS_ENABLE_SQLITE
+#endif // DWS_ENABLE_SQLITE
 #endif // DETERMINISTICESPASYNCWEBSERVER_SQLITE_FORMAT_H

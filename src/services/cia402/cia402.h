@@ -3,7 +3,7 @@
 
 /**
  * @file cia402.h
- * @brief CiA 402 / IEC 61800-7-201 drive + motion profile (DETWS_ENABLE_CIA402) over CANopen.
+ * @brief CiA 402 / IEC 61800-7-201 drive + motion profile (DWS_ENABLE_CIA402) over CANopen.
  *
  * The standardised servo / stepper drive profile: the power state machine (Controlword 0x6040 /
  * Statusword 0x6041), the Modes of Operation, and the target/actual position-velocity-torque
@@ -24,7 +24,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_CIA402
+#if DWS_ENABLE_CIA402
 
 #include "services/canopen/canopen.h"
 #include <stddef.h>
@@ -193,6 +193,6 @@ size_t cia402_pack_command(uint8_t *buf, size_t cap, uint16_t controlword, int32
 /// (a typical CSP/PP TPDO map). Returns false if len < 6.
 bool cia402_unpack_status(const uint8_t *buf, size_t len, uint16_t *statusword, int32_t *actual);
 
-#endif // DETWS_ENABLE_CIA402
+#endif // DWS_ENABLE_CIA402
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_CIA402_H

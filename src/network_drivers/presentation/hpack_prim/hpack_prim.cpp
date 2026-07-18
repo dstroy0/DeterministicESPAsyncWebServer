@@ -11,7 +11,7 @@
 
 #include "network_drivers/presentation/hpack_prim/hpack_prim.h"
 
-#if DETWS_ENABLE_HTTP2 || DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP2 || DWS_ENABLE_HTTP3
 
 #include <string.h>
 
@@ -274,4 +274,4 @@ size_t hpack_encode_str(uint8_t *out, size_t cap, const char *s, size_t n)
     return hdr + n;
 }
 
-#endif // DETWS_ENABLE_HTTP2 || DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP2 || DWS_ENABLE_HTTP3

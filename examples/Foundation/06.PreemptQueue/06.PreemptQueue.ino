@@ -5,8 +5,8 @@
 // reading off the interrupt. Zero heap (static queue), fail-closed when full.
 //
 // Build flag (must be set for the whole build, not just this sketch):
-//   DETWS_ENABLE_PREEMPT_QUEUE=1
-// Optional sizing: DETWS_PQ_DEPTH, DETWS_PQ_ITEM_SIZE, DETWS_PQ_STACK.
+//   DWS_ENABLE_PREEMPT_QUEUE=1
+// Optional sizing: DWS_PQ_DEPTH, DWS_PQ_ITEM_SIZE, DWS_PQ_STACK.
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "esp_timer.h"
@@ -30,14 +30,14 @@ static void on_reading(const void *item, void *)
 static hw_timer_t *tmr = nullptr;
 static uint32_t g_seq = 0;
 
-// Keep the ISR tiny: timestamp + post. detws_pq_post_from_isr() is interrupt-safe
+// Keep the ISR tiny: timestamp + post. dws_pq_post_from_isr() is interrupt-safe
 // and asks the scheduler to switch to the high-priority task the moment we return.
 static void IRAM_ATTR sample_isr()
 {
     Reading r;
     r.t_us = esp_timer_get_time();
     r.value = g_seq++;
-    detws_pq_post_from_isr(&r);
+    dws_pq_post_from_isr(&r);
 }
 
 void setup()
@@ -50,7 +50,7 @@ void setup()
     cfg.priority = 6; // above loop(): a post preempts straight into on_reading
     cfg.core = 1;
     cfg.name = "sampler";
-    if (!detws_pq_start(&cfg))
+    if (!dws_pq_start(&cfg))
     {
         Serial.println("preempt queue failed to start");
         return;

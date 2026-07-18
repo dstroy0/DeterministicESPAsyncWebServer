@@ -8,7 +8,7 @@
 #include <string.h>
 #include <unity.h>
 
-static DetWebServer server;
+static DWS server;
 
 static int g_log_status;
 static int g_log_len;
@@ -192,7 +192,7 @@ static void h_with_hdr(uint8_t s, HttpReq *r)
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i] = {};

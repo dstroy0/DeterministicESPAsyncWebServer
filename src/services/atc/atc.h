@@ -3,7 +3,7 @@
 
 /**
  * @file atc.h
- * @brief ATC (Advanced Traffic Controller) field-I/O interop snapshot (DETWS_ENABLE_ATC).
+ * @brief ATC (Advanced Traffic Controller) field-I/O interop snapshot (DWS_ENABLE_ATC).
  *
  * The ATC standard moves traffic cabinets to a standard Linux engine with an ITS-Cabinet / ATC field-I/O
  * API (the FIO): the controller reads detector/input points and drives signal/output points through a
@@ -12,7 +12,7 @@
  * / NEMA-TS2 / gpio services) to an ATC engine over the existing HTTP surface, as a compact JSON snapshot.
  *
  * This is that snapshot codec: a fixed table of named field-I/O points (each an input or output bit or
- * byte) that `detws_atc_snapshot_json` serializes as `{"inputs":[...],"outputs":[...]}` for a GET, and a
+ * byte) that `dws_atc_snapshot_json` serializes as `{"inputs":[...],"outputs":[...]}` for a GET, and a
  * setter to drive an output point from an ATC command. Pure, zero heap, no stdlib, host-testable.
  */
 
@@ -23,7 +23,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_ATC
+#if DWS_ENABLE_ATC
 
 /** @brief One ATC field-I/O point. */
 struct AtcPoint
@@ -44,16 +44,16 @@ struct AtcFieldIo
  * @brief Serialize the field-I/O map as `{"inputs":[{"name":..,"value":..},...],"outputs":[...]}`.
  * @return length written (excl NUL), or 0 on overflow / bad args. Point names are JSON-escaped.
  */
-size_t detws_atc_snapshot_json(const AtcFieldIo *io, char *out, size_t cap);
+size_t dws_atc_snapshot_json(const AtcFieldIo *io, char *out, size_t cap);
 
 /**
  * @brief Drive an output point by name from an ATC command.
  * @return true if the named point exists and is an output (its value is set); false otherwise.
  */
-bool detws_atc_set_output(AtcFieldIo *io, const char *name, uint8_t value);
+bool dws_atc_set_output(AtcFieldIo *io, const char *name, uint8_t value);
 
 /** @brief Read a point's value by name; @p found (may be null) reports whether it existed. */
-uint8_t detws_atc_get(const AtcFieldIo *io, const char *name, bool *found);
+uint8_t dws_atc_get(const AtcFieldIo *io, const char *name, bool *found);
 
-#endif // DETWS_ENABLE_ATC
+#endif // DWS_ENABLE_ATC
 #endif // DETERMINISTICESPASYNCWEBSERVER_ATC_H

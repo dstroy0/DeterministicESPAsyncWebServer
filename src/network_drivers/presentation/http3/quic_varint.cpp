@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http3/quic_varint.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 size_t quic_varint_len(uint64_t value)
 {
@@ -51,4 +51,4 @@ bool quic_varint_decode(const uint8_t *in, size_t len, uint64_t *value, size_t *
     return true;
 }
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3

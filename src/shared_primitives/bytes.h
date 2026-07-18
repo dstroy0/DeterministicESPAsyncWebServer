@@ -29,7 +29,7 @@
 // --- write cursor: requires fields { uint8_t *buf; size_t cap; size_t pos; bool overflow; } ---
 
 /** @brief Bind a write cursor to @p buf (capacity @p cap) and reset it. */
-template <typename W> inline void det_bw_init(W *w, uint8_t *buf, size_t cap)
+template <typename W> inline void dws_bw_init(W *w, uint8_t *buf, size_t cap)
 {
     w->buf = buf;
     w->cap = cap;
@@ -38,38 +38,38 @@ template <typename W> inline void det_bw_init(W *w, uint8_t *buf, size_t cap)
 }
 
 /** @brief Bytes the payload needs so far (keeps counting past @p cap on overflow). */
-template <typename W> inline size_t det_bw_len(const W *w)
+template <typename W> inline size_t dws_bw_len(const W *w)
 {
     return w->pos;
 }
 
 /** @brief True while every write has fit in the buffer. */
-template <typename W> inline bool det_bw_ok(const W *w)
+template <typename W> inline bool dws_bw_ok(const W *w)
 {
     return !w->overflow;
 }
 
 /** @brief Append one byte; on overflow set the flag but keep counting @p pos. */
-template <typename W> inline void det_bw_put(W *w, uint8_t b)
+template <typename W> inline void dws_bw_put(W *w, uint8_t b)
 {
     if (w->pos < w->cap)
         w->buf[w->pos] = b;
     else
         w->overflow = true;
-    w->pos++; // keep counting so det_bw_len() reports the size the payload needs
+    w->pos++; // keep counting so dws_bw_len() reports the size the payload needs
 }
 
 /** @brief Append the low @p nbytes of @p val, big-endian (network order). */
-template <typename W> inline void det_bw_put_be(W *w, uint64_t val, int nbytes)
+template <typename W> inline void dws_bw_put_be(W *w, uint64_t val, int nbytes)
 {
     for (int s = (nbytes - 1) * 8; s >= 0; s -= 8)
-        det_bw_put(w, (uint8_t)(val >> s));
+        dws_bw_put(w, (uint8_t)(val >> s));
 }
 
 // --- read cursor: requires fields { const uint8_t *buf; size_t len; size_t pos; bool err; } ---
 
 /** @brief Bind a read cursor to @p buf (length @p len) at offset 0. */
-template <typename R> inline void det_br_init(R *r, const uint8_t *buf, size_t len)
+template <typename R> inline void dws_br_init(R *r, const uint8_t *buf, size_t len)
 {
     r->buf = buf;
     r->len = len;
@@ -78,7 +78,7 @@ template <typename R> inline void det_br_init(R *r, const uint8_t *buf, size_t l
 }
 
 /** @brief True while no malformed / out-of-bounds read has occurred. */
-template <typename R> inline bool det_br_ok(const R *r)
+template <typename R> inline bool dws_br_ok(const R *r)
 {
     return !r->err;
 }
@@ -91,7 +91,7 @@ template <typename R> inline bool det_br_ok(const R *r)
  * big-endian argument, so this consumes the tag + argument in one step. Sets the
  * sticky err and returns false if the read would run past the buffer.
  */
-template <typename R> inline bool det_br_take_be(R *r, size_t nbytes, uint64_t *out)
+template <typename R> inline bool dws_br_take_be(R *r, size_t nbytes, uint64_t *out)
 {
     if (r->pos + 1 + nbytes > r->len)
     {

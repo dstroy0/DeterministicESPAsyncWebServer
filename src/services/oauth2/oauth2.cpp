@@ -9,7 +9,7 @@
 #include "services/oauth2/oauth2.h"
 #include "shared_primitives/hex.h"
 
-#if DETWS_ENABLE_OAUTH2
+#if DWS_ENABLE_OAUTH2
 
 #include "network_drivers/presentation/json/json.h"
 #include <string.h>
@@ -67,8 +67,8 @@ void put_enc(Buf &b, const char *s)
                 return;
             }
             b.o[b.n++] = '%';
-            b.o[b.n++] = det_hex_digit((c >> 4) & 0xF, true);
-            b.o[b.n++] = det_hex_digit(c & 0xF, true);
+            b.o[b.n++] = dws_hex_digit((c >> 4) & 0xF, true);
+            b.o[b.n++] = dws_hex_digit(c & 0xF, true);
         }
     }
 }
@@ -91,8 +91,8 @@ int finish(Buf &b)
 }
 } // namespace
 
-int detws_oauth2_build_code_request(const char *code, const char *redirect_uri, const char *client_id,
-                                    const char *client_secret, const char *code_verifier, char *out, size_t cap)
+int dws_oauth2_build_code_request(const char *code, const char *redirect_uri, const char *client_id,
+                                  const char *client_secret, const char *code_verifier, char *out, size_t cap)
 {
     if (!code || !redirect_uri || !client_id || !out || cap == 0)
         return 0;
@@ -108,8 +108,8 @@ int detws_oauth2_build_code_request(const char *code, const char *redirect_uri, 
     return finish(b);
 }
 
-int detws_oauth2_build_refresh_request(const char *refresh_token, const char *client_id, const char *client_secret,
-                                       char *out, size_t cap)
+int dws_oauth2_build_refresh_request(const char *refresh_token, const char *client_id, const char *client_secret,
+                                     char *out, size_t cap)
 {
     if (!refresh_token || !client_id || !out || cap == 0)
         return 0;
@@ -122,7 +122,7 @@ int detws_oauth2_build_refresh_request(const char *refresh_token, const char *cl
     return finish(b);
 }
 
-bool detws_oauth2_parse_token_response(const char *json, DetwsOAuth2Tokens *out)
+bool dws_oauth2_parse_token_response(const char *json, DetwsOAuth2Tokens *out)
 {
     if (!json || !out)
         return false;
@@ -143,7 +143,7 @@ bool detws_oauth2_parse_token_response(const char *json, DetwsOAuth2Tokens *out)
     return true;
 }
 
-#if DETWS_ENABLE_HTTP_CLIENT
+#if DWS_ENABLE_HTTP_CLIENT
 
 #include "services/http_client/http_client.h"
 
@@ -154,47 +154,46 @@ namespace
 // unreachable cross-TU.
 struct Oauth2Ctx
 {
-    char body[DETWS_OAUTH2_BODY_BUF];
-    char resp[DETWS_OAUTH2_RESP_BUF];
+    char body[DWS_OAUTH2_BODY_BUF];
+    char resp[DWS_OAUTH2_RESP_BUF];
 };
 Oauth2Ctx s_oauth;
 
 int post_and_parse(Oauth2Ctx &c, const char *token_url, int body_len, DetwsOAuth2Tokens *out)
 {
     if (body_len <= 0)
-        return (int)DetwsOAuth2Result::DETWS_OAUTH2_ERR_BUILD;
+        return (int)DetwsOAuth2Result::DWS_OAUTH2_ERR_BUILD;
     HttpClientResult r;
     int st = http_post(token_url, "application/x-www-form-urlencoded", (const uint8_t *)c.body, (size_t)body_len, &r);
     if (st <= 0)
-        return (int)DetwsOAuth2Result::DETWS_OAUTH2_ERR_TRANSPORT;
+        return (int)DetwsOAuth2Result::DWS_OAUTH2_ERR_TRANSPORT;
     size_t k = r.body_len < sizeof(c.resp) - 1 ? r.body_len : sizeof(c.resp) - 1;
     if (r.body && k)
         memcpy(c.resp, r.body, k);
     c.resp[k] = '\0';
-    if (!detws_oauth2_parse_token_response(c.resp, out))
-        return st >= 400
-                   ? st
-                   : (int)DetwsOAuth2Result::DETWS_OAUTH2_ERR_RESPONSE; // surface the provider's 4xx, else generic
+    if (!dws_oauth2_parse_token_response(c.resp, out))
+        return st >= 400 ? st
+                         : (int)DetwsOAuth2Result::DWS_OAUTH2_ERR_RESPONSE; // surface the provider's 4xx, else generic
     return st;
 }
 } // namespace
 
-int detws_oauth2_exchange_code(const char *token_url, const char *code, const char *redirect_uri, const char *client_id,
-                               const char *client_secret, const char *code_verifier, DetwsOAuth2Tokens *out)
+int dws_oauth2_exchange_code(const char *token_url, const char *code, const char *redirect_uri, const char *client_id,
+                             const char *client_secret, const char *code_verifier, DetwsOAuth2Tokens *out)
 {
-    int n = detws_oauth2_build_code_request(code, redirect_uri, client_id, client_secret, code_verifier, s_oauth.body,
-                                            sizeof(s_oauth.body));
+    int n = dws_oauth2_build_code_request(code, redirect_uri, client_id, client_secret, code_verifier, s_oauth.body,
+                                          sizeof(s_oauth.body));
     return post_and_parse(s_oauth, token_url, n, out);
 }
 
-int detws_oauth2_refresh(const char *token_url, const char *refresh_token, const char *client_id,
-                         const char *client_secret, DetwsOAuth2Tokens *out)
+int dws_oauth2_refresh(const char *token_url, const char *refresh_token, const char *client_id,
+                       const char *client_secret, DetwsOAuth2Tokens *out)
 {
     int n =
-        detws_oauth2_build_refresh_request(refresh_token, client_id, client_secret, s_oauth.body, sizeof(s_oauth.body));
+        dws_oauth2_build_refresh_request(refresh_token, client_id, client_secret, s_oauth.body, sizeof(s_oauth.body));
     return post_and_parse(s_oauth, token_url, n, out);
 }
 
-#endif // DETWS_ENABLE_HTTP_CLIENT
+#endif // DWS_ENABLE_HTTP_CLIENT
 
-#endif // DETWS_ENABLE_OAUTH2
+#endif // DWS_ENABLE_OAUTH2

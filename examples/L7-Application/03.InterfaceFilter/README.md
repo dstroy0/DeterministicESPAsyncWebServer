@@ -61,10 +61,10 @@ reproduced verbatim with added explanatory comments:
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
-static const char *AP_SSID = "DetWS-Setup";
+static const char *AP_SSID = "DWS-Setup";
 static const char *AP_PASS = "configme123";
 
-DetWebServer server;
+DWS server;
 
 void handle_setup(uint8_t slot_id, HttpReq *req)
 {

@@ -1,4 +1,4 @@
-# 01.Basic - core DetWebServer walkthrough
+# 01.Basic - core DWS walkthrough
 
 **Layer:** Foundation (tutorial) · **Build flags:** none (core features only)
 
@@ -10,12 +10,12 @@ forever. Nothing here is optional or gated behind a feature flag: HTTP/1.1
 parsing, routing, query/header access, CORS, and the automatic error responses
 are always compiled in.
 
-**The shape of every sketch.** A DetWebServer program is three things: one global
+**The shape of every sketch.** A DWS program is three things: one global
 server object, a `setup()` that connects WiFi and registers routes before calling
 `begin()`, and a `loop()` that pumps the pipeline:
 
 ```cpp
-DetWebServer server; // one global; all state lives in BSS, no heap
+DWS server; // one global; all state lives in BSS, no heap
 
 void setup() { /* connect WiFi, register routes */ server.begin(80); }
 void loop()  { server.handle(); } // the heartbeat: every request flows through here
@@ -120,9 +120,9 @@ added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-// The main library header. Including it pulls in the DetWebServer class, the
+// The main library header. Including it pulls in the DWS class, the
 // HttpReq type, the HTTP_GET/HTTP_POST method constants, and the accessor
-// helpers (http_get_query / http_get_header). Any DETWS_ENABLE_* overrides must
+// helpers (http_get_query / http_get_header). Any DWS_ENABLE_* overrides must
 // be #defined BEFORE this include to take effect in the sketch.
 #include "dwserver.h"
 // init_wifi_physical() / wifi_ready(): the physical-layer (L1) WiFi bring-up
@@ -136,7 +136,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 // The server instance. One global object owns all connection state; every
 // buffer it uses lives in BSS, sized at compile time. There is no heap use.
-DetWebServer server;
+DWS server;
 
 // Simple application state shared across handlers. Single-threaded with respect
 // to handlers (they run from server.handle() in loop()), so no locking needed.

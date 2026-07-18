@@ -3,7 +3,7 @@
 
 /**
  * @file dma.h
- * @brief DMA peripheral ingest / egress (DETWS_ENABLE_DMA) - the v5 high-throughput
+ * @brief DMA peripheral ingest / egress (DWS_ENABLE_DMA) - the v5 high-throughput
  *        hardware-ingest path.
  *
  * A DMA channel moves bytes between a peripheral (UART / I2C / SPI) and a static
@@ -11,7 +11,7 @@
  * Two directions:
  *
  *   - RX (ingress): peripheral -> DMA -> buffer. On completion the channel emits a
- *     @ref det_dma_event whose `data`/`len` point at the just-filled buffer. RX is
+ *     @ref dws_dma_event whose `data`/`len` point at the just-filled buffer. RX is
  *     **double-buffered (ping-pong)**: the completed buffer is handed to the callback
  *     while the engine fills the other, so there is a full transfer of headroom to
  *     consume it before it is reused.
@@ -21,21 +21,21 @@
  *
  * The completion callback runs in ISR context on real silicon, so keep it tiny - the
  * intended pattern is to post the event into the preempting work queue
- * (services/preempt_queue) with detws_pq_post_from_isr(), letting a high-priority task
- * do the real work off the interrupt. det_dma stays decoupled from the queue: it just
+ * (services/preempt_queue) with dws_pq_post_from_isr(), letting a high-priority task
+ * do the real work off the interrupt. dws_dma stays decoupled from the queue: it just
  * hands you the event.
  *
- * **Simulator (DETWS_DMA_SIMULATE, default on).** With no physical loopback wire the
- * transfers run through an in-memory model of the peripheral: det_dma_sim_feed() injects
- * bytes as if they arrived on the RX line, det_dma_sim_capture() reads back what egress
+ * **Simulator (DWS_DMA_SIMULATE, default on).** With no physical loopback wire the
+ * transfers run through an in-memory model of the peripheral: dws_dma_sim_feed() injects
+ * bytes as if they arrived on the RX line, dws_dma_sim_capture() reads back what egress
  * DMA "transmitted", and a channel opened with `loopback` feeds its own TX egress into
- * its RX ingress (an internal jumper). det_dma_poll() advances the engine and fires the
+ * its RX ingress (an internal jumper). dws_dma_poll() advances the engine and fires the
  * completions. This exercises the entire ingress -> event -> (queue) -> handler and
  * produce -> egress pipeline identically on the host bench and on-device. It is the
- * shipped, tested backend; a real silicon driver plugs into det_dma_hw_* when the flag
+ * shipped, tested backend; a real silicon driver plugs into dws_dma_hw_* when the flag
  * is 0 (see docs/KNOWN_LIMITATIONS.md).
  *
- * Zero-heap: DETWS_DMA_CHANNELS channels, each with 2x DETWS_DMA_BUF_SIZE RX + one TX
+ * Zero-heap: DWS_DMA_CHANNELS channels, each with 2x DWS_DMA_BUF_SIZE RX + one TX
  * buffer + the simulator's ingress/egress staging, all static and compile-time sized.
  * Fail-closed: a submit onto a busy channel or a feed past the staging capacity returns
  * false rather than blocking or overrunning.
@@ -49,24 +49,24 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_DMA
+#if DWS_ENABLE_DMA
 
 #include <stddef.h>
 #include <stdint.h>
 
 /** @brief Peripheral a channel is bound to (informational; selects the real backend). */
-enum class det_dma_periph : uint8_t
+enum class dws_dma_periph : uint8_t
 {
-    DET_DMA_UART = 0,
-    DET_DMA_I2C = 1,
-    DET_DMA_SPI = 2,
+    DWS_DMA_UART = 0,
+    DWS_DMA_I2C = 1,
+    DWS_DMA_SPI = 2,
 };
 
 /** @brief Transfer direction carried on a completion event. */
-enum class det_dma_dir : uint8_t
+enum class dws_dma_dir : uint8_t
 {
-    DET_DMA_RX = 0, ///< ingress: peripheral -> buffer
-    DET_DMA_TX = 1, ///< egress:  buffer -> peripheral
+    DWS_DMA_RX = 0, ///< ingress: peripheral -> buffer
+    DWS_DMA_TX = 1, ///< egress:  buffer -> peripheral
 };
 
 /**
@@ -79,15 +79,15 @@ enum class det_dma_dir : uint8_t
  * reuse under load, so post the bytes, not this pointer. For TX, @ref data is nullptr and
  * @ref len is the number of bytes drained.
  */
-struct det_dma_event
+struct dws_dma_event
 {
     const uint8_t *data;   ///< RX: received bytes (into a ping-pong buffer); TX: nullptr
-    uint32_t t_ms;         ///< detws_millis() at completion (0 on host builds)
+    uint32_t t_ms;         ///< dws_millis() at completion (0 on host builds)
     uint16_t len;          ///< bytes transferred
     uint16_t seq;          ///< per-channel completion sequence (wraps)
-    uint8_t channel;       ///< channel id [0, DETWS_DMA_CHANNELS)
-    det_dma_periph periph; ///< det_dma_periph
-    det_dma_dir dir;       ///< det_dma_dir
+    uint8_t channel;       ///< channel id [0, DWS_DMA_CHANNELS)
+    dws_dma_periph periph; ///< dws_dma_periph
+    dws_dma_dir dir;       ///< dws_dma_dir
     uint8_t _pad;
 };
 
@@ -95,17 +95,17 @@ struct det_dma_event
  * @brief Called once per completed transfer (RX and TX). ISR context on real silicon,
  *        so keep it tiny (the canonical body posts @p ev to the preempting queue).
  * @param ev  the completion event (owned by the caller; copy what you need).
- * @param ctx the opaque pointer from @ref det_dma_config.
+ * @param ctx the opaque pointer from @ref dws_dma_config.
  */
-typedef void (*det_dma_cb)(const det_dma_event *ev, void *ctx);
+typedef void (*dws_dma_cb)(const dws_dma_event *ev, void *ctx);
 
-/** @brief Channel configuration passed to det_dma_open(). */
-struct det_dma_config
+/** @brief Channel configuration passed to dws_dma_open(). */
+struct dws_dma_config
 {
-    uint8_t channel;        ///< channel id [0, DETWS_DMA_CHANNELS).
-    det_dma_periph periph;  ///< det_dma_periph the channel drives.
+    uint8_t channel;        ///< channel id [0, DWS_DMA_CHANNELS).
+    dws_dma_periph periph;  ///< dws_dma_periph the channel drives.
     bool loopback;          ///< simulator: this channel's TX egress feeds its own RX ingress.
-    det_dma_cb on_complete; ///< completion callback (required).
+    dws_dma_cb on_complete; ///< completion callback (required).
     void *ctx;              ///< opaque, forwarded to @ref on_complete.
 };
 
@@ -113,46 +113,46 @@ struct det_dma_config
  * @brief Configure a channel and arm its RX transfer.
  * @return true if opened; false on a bad channel id / null callback / already open.
  */
-bool det_dma_open(const det_dma_config *cfg);
+bool dws_dma_open(const dws_dma_config *cfg);
 
 /**
- * @brief Submit bytes for egress DMA on channel @p ch (copies up to DETWS_DMA_BUF_SIZE).
+ * @brief Submit bytes for egress DMA on channel @p ch (copies up to DWS_DMA_BUF_SIZE).
  *
  * Fail-closed: returns false if a TX is still in flight on the channel (wait for its
  * TX-complete event), if the channel is closed, or on a null / oversize buffer.
  * @return true if the transfer was accepted.
  */
-bool det_dma_tx_submit(uint8_t ch, const uint8_t *buf, uint16_t len);
+bool dws_dma_tx_submit(uint8_t ch, const uint8_t *buf, uint16_t len);
 
 /** @brief Close a channel and drop any in-flight transfer / staged simulator bytes. */
-void det_dma_close(uint8_t ch);
+void dws_dma_close(uint8_t ch);
 
 /**
  * @brief Advance the simulator engine: drain egress, run loopback, complete RX/TX and
  *        fire the callbacks. No-op on the real silicon backend (ISRs drive completion).
  *        This is how the host and the on-device self-test step the pipeline.
  */
-void det_dma_poll(void);
+void dws_dma_poll(void);
 
-#if DETWS_DMA_SIMULATE
+#if DWS_DMA_SIMULATE
 
 /**
  * @brief Simulator: inject @p len bytes as if they arrived on channel @p ch's RX line.
- *        Delivered as one or more RX events on the next det_dma_poll().
+ *        Delivered as one or more RX events on the next dws_dma_poll().
  * @return true if staged; false if the ingress staging is full (fail-closed) or the
  *         channel is closed.
  */
-bool det_dma_sim_feed(uint8_t ch, const uint8_t *bytes, uint16_t len);
+bool dws_dma_sim_feed(uint8_t ch, const uint8_t *bytes, uint16_t len);
 
 /**
  * @brief Simulator: read back up to @p max bytes that channel @p ch transmitted via
  *        egress DMA. Consumes them from the capture buffer.
  * @return number of bytes copied into @p out.
  */
-uint16_t det_dma_sim_capture(uint8_t ch, uint8_t *out, uint16_t max);
+uint16_t dws_dma_sim_capture(uint8_t ch, uint8_t *out, uint16_t max);
 
-#endif // DETWS_DMA_SIMULATE
+#endif // DWS_DMA_SIMULATE
 
-#endif // DETWS_ENABLE_DMA
+#endif // DWS_ENABLE_DMA
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DET_DMA_H

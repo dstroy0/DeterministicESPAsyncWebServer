@@ -8,11 +8,11 @@
 
 #include "services/hart/hart.h"
 
-#if DETWS_ENABLE_HART
+#if DWS_ENABLE_HART
 
 #include <string.h>
 
-uint8_t detws_hart_checksum(const uint8_t *bytes, size_t len)
+uint8_t dws_hart_checksum(const uint8_t *bytes, size_t len)
 {
     uint8_t x = 0;
     for (size_t i = 0; i < len; i++)
@@ -20,8 +20,8 @@ uint8_t detws_hart_checksum(const uint8_t *bytes, size_t len)
     return x;
 }
 
-size_t detws_hart_build(uint8_t delimiter, const uint8_t *addr, size_t addr_len, uint8_t command, const uint8_t *data,
-                        size_t data_len, uint8_t *out, size_t cap)
+size_t dws_hart_build(uint8_t delimiter, const uint8_t *addr, size_t addr_len, uint8_t command, const uint8_t *data,
+                      size_t data_len, uint8_t *out, size_t cap)
 {
     if (addr_len != 1 && addr_len != 5)
         return 0;
@@ -43,12 +43,12 @@ size_t detws_hart_build(uint8_t delimiter, const uint8_t *addr, size_t addr_len,
         memcpy(out + i, data, data_len);
         i += data_len;
     }
-    out[i] = detws_hart_checksum(out, i); // XOR over delimiter..last data byte
+    out[i] = dws_hart_checksum(out, i); // XOR over delimiter..last data byte
     i++;
     return i;
 }
 
-bool detws_hart_parse(const uint8_t *frame, size_t len, HartFrame *out)
+bool dws_hart_parse(const uint8_t *frame, size_t len, HartFrame *out)
 {
     if (!frame || !out)
         return false;
@@ -64,7 +64,7 @@ bool detws_hart_parse(const uint8_t *frame, size_t len, HartFrame *out)
     if (len < expect)
         return false;
 
-    uint8_t want = detws_hart_checksum(frame, expect - 1);
+    uint8_t want = dws_hart_checksum(frame, expect - 1);
     if (want != frame[expect - 1])
         return false;
 
@@ -78,8 +78,8 @@ bool detws_hart_parse(const uint8_t *frame, size_t len, HartFrame *out)
     return true;
 }
 
-size_t detws_hartip_build_header(uint8_t msg_type, uint8_t msg_id, uint8_t status, uint16_t seq, uint16_t total_len,
-                                 uint8_t *out, size_t cap)
+size_t dws_hartip_build_header(uint8_t msg_type, uint8_t msg_id, uint8_t status, uint16_t seq, uint16_t total_len,
+                               uint8_t *out, size_t cap)
 {
     if (cap < HartIp::HARTIP_HEADER_LEN || !out)
         return 0;
@@ -94,4 +94,4 @@ size_t detws_hartip_build_header(uint8_t msg_type, uint8_t msg_id, uint8_t statu
     return HartIp::HARTIP_HEADER_LEN;
 }
 
-#endif // DETWS_ENABLE_HART
+#endif // DWS_ENABLE_HART

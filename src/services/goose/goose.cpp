@@ -8,7 +8,7 @@
 
 #include "services/goose/goose.h"
 
-#if DETWS_ENABLE_GOOSE
+#if DWS_ENABLE_GOOSE
 
 #include <string.h>
 
@@ -92,7 +92,7 @@ bool ber_bool(uint8_t *out, size_t cap, size_t *n, uint8_t tag, bool v)
 }
 } // namespace
 
-size_t detws_goose_pdu(const DetwsGoose *g, uint8_t *out, size_t cap)
+size_t dws_goose_pdu(const DetwsGoose *g, uint8_t *out, size_t cap)
 {
     if (!g || !out)
         return 0;
@@ -120,8 +120,8 @@ size_t detws_goose_pdu(const DetwsGoose *g, uint8_t *out, size_t cap)
     return hdr + content_len;
 }
 
-size_t detws_goose_frame(const uint8_t *dst, const uint8_t *src, uint16_t appid, const DetwsGoose *g, uint8_t *out,
-                         size_t cap)
+size_t dws_goose_frame(const uint8_t *dst, const uint8_t *src, uint16_t appid, const DetwsGoose *g, uint8_t *out,
+                       size_t cap)
 {
     if (!dst || !src || !g || !out || cap < 22)
         return 0;
@@ -138,7 +138,7 @@ size_t detws_goose_frame(const uint8_t *dst, const uint8_t *src, uint16_t appid,
     out[20] = 0;
     out[21] = 0;
 
-    size_t pdu = detws_goose_pdu(g, out + 22, cap - 22);
+    size_t pdu = dws_goose_pdu(g, out + 22, cap - 22);
     if (!pdu)
         return 0;
     uint16_t goose_len = (uint16_t)(8 + pdu); // GOOSE header (8) + APDU
@@ -147,4 +147,4 @@ size_t detws_goose_frame(const uint8_t *dst, const uint8_t *src, uint16_t appid,
     return 22 + pdu;
 }
 
-#endif // DETWS_ENABLE_GOOSE
+#endif // DWS_ENABLE_GOOSE

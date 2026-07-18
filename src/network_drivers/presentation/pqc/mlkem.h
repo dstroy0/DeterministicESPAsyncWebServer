@@ -28,7 +28,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
 
 #include <stddef.h>
 #include <stdint.h>
@@ -53,6 +53,6 @@
 bool mlkem768_encaps(const uint8_t ek[MLKEM768_EK_BYTES], const uint8_t m[MLKEM768_MSG_BYTES],
                      uint8_t ct[MLKEM768_CT_BYTES], uint8_t ss[MLKEM768_SS_BYTES]);
 
-#endif // DETWS_ENABLE_PQC_KEX
+#endif // DWS_ENABLE_PQC_KEX
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_PQC_MLKEM_H

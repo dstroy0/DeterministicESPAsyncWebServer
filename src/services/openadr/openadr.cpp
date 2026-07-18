@@ -8,7 +8,7 @@
 
 #include "services/openadr/openadr.h"
 
-#if DETWS_ENABLE_OPENADR
+#if DWS_ENABLE_OPENADR
 
 #include <string.h>
 
@@ -16,18 +16,18 @@
 
 namespace
 {
-void put_json_str(DetSb *b, const char *s)
+void put_json_str(DWSSb *b, const char *s)
 {
-    det_sb_put(b, "\"");
+    dws_sb_put(b, "\"");
     for (const char *p = s ? s : ""; *p; p++)
     {
         if (*p == '"' || *p == '\\')
         {
             char esc[3] = {'\\', *p, '\0'};
-            det_sb_put(b, esc);
+            dws_sb_put(b, esc);
         }
         else if (*p == '\n')
-            det_sb_put(b, "\\n");
+            dws_sb_put(b, "\\n");
         else
         {
             if (b->len + 1 >= b->cap)
@@ -38,10 +38,10 @@ void put_json_str(DetSb *b, const char *s)
             b->p[b->len++] = *p;
         }
     }
-    det_sb_put(b, "\"");
+    dws_sb_put(b, "\"");
 }
 
-void put_u64(DetSb *b, uint64_t v)
+void put_u64(DWSSb *b, uint64_t v)
 {
     char tmp[21];
     int n = 0;
@@ -54,15 +54,15 @@ void put_u64(DetSb *b, uint64_t v)
     for (int i = 0; i < n; i++)
         out[i] = tmp[n - 1 - i];
     out[n] = '\0';
-    det_sb_put(b, out);
+    dws_sb_put(b, out);
 }
 
 // Format a double with 3 decimal places (no stdlib). Rounds to milli-units; handles the sign.
-void put_double(DetSb *b, double v)
+void put_double(DWSSb *b, double v)
 {
     if (v < 0)
     {
-        det_sb_put(b, "-");
+        dws_sb_put(b, "-");
         v = -v;
     }
     // scale by 1000 and round.
@@ -70,62 +70,62 @@ void put_double(DetSb *b, double v)
     uint64_t whole = scaled / 1000;
     uint32_t frac = (uint32_t)(scaled % 1000);
     put_u64(b, whole);
-    det_sb_put(b, ".");
+    dws_sb_put(b, ".");
     // three digits, zero-padded.
     char f[4] = {(char)('0' + (frac / 100) % 10), (char)('0' + (frac / 10) % 10), (char)('0' + frac % 10), '\0'};
-    det_sb_put(b, f);
+    dws_sb_put(b, f);
 }
 } // namespace
 
-size_t detws_openadr_event(const char *program_id, const char *event_name, const OpenAdrInterval *intervals,
-                           size_t count, char *out, size_t cap)
+size_t dws_openadr_event(const char *program_id, const char *event_name, const OpenAdrInterval *intervals, size_t count,
+                         char *out, size_t cap)
 {
     if (!out || (count && !intervals))
         return 0;
-    DetSb b = {out, cap, 0, cap > 0};
-    det_sb_put(&b, "{\"objectType\":\"EVENT\",\"programID\":");
+    DWSSb b = {out, cap, 0, cap > 0};
+    dws_sb_put(&b, "{\"objectType\":\"EVENT\",\"programID\":");
     put_json_str(&b, program_id);
-    det_sb_put(&b, ",\"eventName\":");
+    dws_sb_put(&b, ",\"eventName\":");
     put_json_str(&b, event_name);
-    det_sb_put(&b, ",\"intervals\":[");
+    dws_sb_put(&b, ",\"intervals\":[");
     for (size_t i = 0; i < count; i++)
     {
         if (i)
-            det_sb_put(&b, ",");
-        det_sb_put(&b, "{\"id\":");
+            dws_sb_put(&b, ",");
+        dws_sb_put(&b, "{\"id\":");
         put_u64(&b, i);
-        det_sb_put(&b, ",\"interval\":{\"start\":");
+        dws_sb_put(&b, ",\"interval\":{\"start\":");
         put_u64(&b, intervals[i].start);
-        det_sb_put(&b, ",\"duration\":");
+        dws_sb_put(&b, ",\"duration\":");
         put_u64(&b, intervals[i].duration);
-        det_sb_put(&b, "},\"payloads\":[{\"type\":");
+        dws_sb_put(&b, "},\"payloads\":[{\"type\":");
         put_json_str(&b, intervals[i].type);
-        det_sb_put(&b, ",\"values\":[");
+        dws_sb_put(&b, ",\"values\":[");
         put_double(&b, intervals[i].value);
-        det_sb_put(&b, "]}]}");
+        dws_sb_put(&b, "]}]}");
     }
-    det_sb_put(&b, "]}");
-    return det_sb_finish(&b);
+    dws_sb_put(&b, "]}");
+    return dws_sb_finish(&b);
 }
 
-size_t detws_openadr_report(const char *program_id, const char *event_id, const char *resource_name, double value,
-                            uint32_t timestamp, char *out, size_t cap)
+size_t dws_openadr_report(const char *program_id, const char *event_id, const char *resource_name, double value,
+                          uint32_t timestamp, char *out, size_t cap)
 {
     if (!out)
         return 0;
-    DetSb b = {out, cap, 0, cap > 0};
-    det_sb_put(&b, "{\"objectType\":\"REPORT\",\"programID\":");
+    DWSSb b = {out, cap, 0, cap > 0};
+    dws_sb_put(&b, "{\"objectType\":\"REPORT\",\"programID\":");
     put_json_str(&b, program_id);
-    det_sb_put(&b, ",\"eventID\":");
+    dws_sb_put(&b, ",\"eventID\":");
     put_json_str(&b, event_id);
-    det_sb_put(&b, ",\"resources\":[{\"resourceName\":");
+    dws_sb_put(&b, ",\"resources\":[{\"resourceName\":");
     put_json_str(&b, resource_name);
-    det_sb_put(&b, ",\"intervals\":[{\"interval\":{\"start\":");
+    dws_sb_put(&b, ",\"intervals\":[{\"interval\":{\"start\":");
     put_u64(&b, timestamp);
-    det_sb_put(&b, "},\"payloads\":[{\"type\":\"READING\",\"values\":[");
+    dws_sb_put(&b, "},\"payloads\":[{\"type\":\"READING\",\"values\":[");
     put_double(&b, value);
-    det_sb_put(&b, "]}]}]}]}");
-    return det_sb_finish(&b);
+    dws_sb_put(&b, "]}]}]}]}");
+    return dws_sb_finish(&b);
 }
 
-#endif // DETWS_ENABLE_OPENADR
+#endif // DWS_ENABLE_OPENADR

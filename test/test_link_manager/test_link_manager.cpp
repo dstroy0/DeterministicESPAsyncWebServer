@@ -15,7 +15,7 @@ void setUp(void)
     g_ifaces[0] = {LinkKind::LINK_KIND_ETH, 20, false};
     g_ifaces[1] = {LinkKind::LINK_KIND_WIFI_STA, 10, false};
     g_ifaces[2] = {LinkKind::LINK_KIND_WIFI_AP, 5, false};
-    detws_link_init(&g_m, g_ifaces, 3);
+    dws_link_init(&g_m, g_ifaces, 3);
 }
 void tearDown(void)
 {
@@ -23,33 +23,33 @@ void tearDown(void)
 
 void test_init_none_up(void)
 {
-    TEST_ASSERT_EQUAL_INT(-1, detws_link_active(&g_m));
+    TEST_ASSERT_EQUAL_INT(-1, dws_link_active(&g_m));
 }
 
 void test_escalation_and_failover(void)
 {
     int from = 0, to = 0;
     // WiFi STA comes up first -> it becomes active.
-    TEST_ASSERT_TRUE(detws_link_set(&g_m, 1, true, &from, &to));
+    TEST_ASSERT_TRUE(dws_link_set(&g_m, 1, true, &from, &to));
     TEST_ASSERT_EQUAL_INT(-1, from);
     TEST_ASSERT_EQUAL_INT(1, to);
     // Ethernet comes up (higher priority) -> escalate to it.
-    TEST_ASSERT_TRUE(detws_link_set(&g_m, 0, true, &from, &to));
+    TEST_ASSERT_TRUE(dws_link_set(&g_m, 0, true, &from, &to));
     TEST_ASSERT_EQUAL_INT(1, from);
     TEST_ASSERT_EQUAL_INT(0, to);
     // softAP comes up (lower priority) -> no change.
-    TEST_ASSERT_FALSE(detws_link_set(&g_m, 2, true, &from, &to));
-    TEST_ASSERT_EQUAL_INT(0, detws_link_active(&g_m));
+    TEST_ASSERT_FALSE(dws_link_set(&g_m, 2, true, &from, &to));
+    TEST_ASSERT_EQUAL_INT(0, dws_link_active(&g_m));
     // Ethernet drops -> fail over to the next best up (WiFi STA).
-    TEST_ASSERT_TRUE(detws_link_set(&g_m, 0, false, &from, &to));
+    TEST_ASSERT_TRUE(dws_link_set(&g_m, 0, false, &from, &to));
     TEST_ASSERT_EQUAL_INT(0, from);
     TEST_ASSERT_EQUAL_INT(1, to);
     // WiFi STA drops too -> fail over to softAP.
-    TEST_ASSERT_TRUE(detws_link_set(&g_m, 1, false, &from, &to));
+    TEST_ASSERT_TRUE(dws_link_set(&g_m, 1, false, &from, &to));
     TEST_ASSERT_EQUAL_INT(2, to);
     // softAP drops -> nothing up.
-    TEST_ASSERT_TRUE(detws_link_set(&g_m, 2, false, &from, &to));
-    TEST_ASSERT_EQUAL_INT(-1, detws_link_active(&g_m));
+    TEST_ASSERT_TRUE(dws_link_set(&g_m, 2, false, &from, &to));
+    TEST_ASSERT_EQUAL_INT(-1, dws_link_active(&g_m));
 }
 
 void test_tie_break_lower_index(void)
@@ -57,15 +57,15 @@ void test_tie_break_lower_index(void)
     // Two interfaces at equal priority: the lower index wins.
     LinkIface pair[2] = {{LinkKind::LINK_KIND_ETH, 10, true}, {LinkKind::LINK_KIND_WIFI_STA, 10, true}};
     LinkManager m;
-    detws_link_init(&m, pair, 2);
-    TEST_ASSERT_EQUAL_INT(0, detws_link_active(&m));
+    dws_link_init(&m, pair, 2);
+    TEST_ASSERT_EQUAL_INT(0, dws_link_active(&m));
 }
 
 void test_out_of_range_no_change(void)
 {
-    detws_link_set(&g_m, 1, true, nullptr, nullptr);
+    dws_link_set(&g_m, 1, true, nullptr, nullptr);
     int from = 5, to = 5;
-    TEST_ASSERT_FALSE(detws_link_set(&g_m, 9, true, &from, &to));
+    TEST_ASSERT_FALSE(dws_link_set(&g_m, 9, true, &from, &to));
     TEST_ASSERT_EQUAL_INT(1, from);
     TEST_ASSERT_EQUAL_INT(1, to);
 }
@@ -73,18 +73,18 @@ void test_out_of_range_no_change(void)
 // select guards a null manager and a manager with a null interface table.
 void test_select_null_guards(void)
 {
-    TEST_ASSERT_EQUAL_INT(-1, detws_link_select(nullptr));
+    TEST_ASSERT_EQUAL_INT(-1, dws_link_select(nullptr));
     LinkManager m;
-    detws_link_init(&m, nullptr, 3); // null ifaces -> n forced to 0, active -1
-    TEST_ASSERT_EQUAL_INT(-1, detws_link_select(&m));
-    TEST_ASSERT_EQUAL_INT(-1, detws_link_active(&m));
+    dws_link_init(&m, nullptr, 3); // null ifaces -> n forced to 0, active -1
+    TEST_ASSERT_EQUAL_INT(-1, dws_link_select(&m));
+    TEST_ASSERT_EQUAL_INT(-1, dws_link_active(&m));
 }
 
 // init and active tolerate a null manager (no crash, active reports -1).
 void test_init_and_active_null(void)
 {
-    detws_link_init(nullptr, g_ifaces, 3); // must simply return
-    TEST_ASSERT_EQUAL_INT(-1, detws_link_active(nullptr));
+    dws_link_init(nullptr, g_ifaces, 3); // must simply return
+    TEST_ASSERT_EQUAL_INT(-1, dws_link_active(nullptr));
 }
 
 // set's failure paths still write from/to (or tolerate null out-pointers): null manager, null interface
@@ -93,21 +93,21 @@ void test_set_guard_paths(void)
 {
     int from = 7, to = 7;
     // Null manager: reports -1 for both previous and new active, returns false.
-    TEST_ASSERT_FALSE(detws_link_set(nullptr, 0, true, &from, &to));
+    TEST_ASSERT_FALSE(dws_link_set(nullptr, 0, true, &from, &to));
     TEST_ASSERT_EQUAL_INT(-1, from);
     TEST_ASSERT_EQUAL_INT(-1, to);
 
     // Null interface table: reports the manager's active (-1), returns false.
     LinkManager m;
-    detws_link_init(&m, nullptr, 3);
+    dws_link_init(&m, nullptr, 3);
     from = 7;
     to = 7;
-    TEST_ASSERT_FALSE(detws_link_set(&m, 0, true, &from, &to));
+    TEST_ASSERT_FALSE(dws_link_set(&m, 0, true, &from, &to));
     TEST_ASSERT_EQUAL_INT(-1, from);
     TEST_ASSERT_EQUAL_INT(-1, to);
 
     // Out-of-range index with null out-pointers: guard path must not dereference them.
-    TEST_ASSERT_FALSE(detws_link_set(&g_m, 9, true, nullptr, nullptr));
+    TEST_ASSERT_FALSE(dws_link_set(&g_m, 9, true, nullptr, nullptr));
 }
 
 int main(void)

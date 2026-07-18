@@ -3,7 +3,7 @@
 
 /**
  * @file 80.MeshCache.ino
- * @brief Share a warm edge cache across a fleet (DETWS_ENABLE_EDGE_MESH).
+ * @brief Share a warm edge cache across a fleet (DWS_ENABLE_EDGE_MESH).
  *
  * Two (or more) edge nodes form a sibling cache: on a cold local miss a node asks its configured peers
  * over a plaintext ConnProto::PROTO_MESH link before hitting the origin, and pulls a fresh copy from
@@ -13,20 +13,20 @@
  * own origin or peers, so the fleet cannot loop). Pull only: no push, no invalidation.
  *
  * This is the edge-cache example (79) plus three calls: server.listen(MESH_PORT, PROTO_MESH) opens the
- * sibling port, det_edge_cache_mesh_serve() answers peers from the local cache, and det_edge_cache_add_peer()
+ * sibling port, dws_edge_cache_mesh_serve() answers peers from the local cache, and dws_edge_cache_add_peer()
  * lists a sibling to query on a miss. Flash the SAME sketch to both boards, giving each the OTHER's IP as
  * PEER_IP. Warm node A (request GET /cdn/<path> from A), then request the same URL from node B: B reports
  * X-Cache: MESH and the origin never sees B.
  *
  * NOTE (PlatformIO): the cache is compiled into the *library*, so the flags must reach the whole build:
- * build_flags = -DDETWS_ENABLE_EDGE_CACHE=1 -DDETWS_ENABLE_HTTP_CACHE=1 -DDETWS_ENABLE_HTTP_CLIENT=1
- * -DDETWS_ENABLE_EDGE_MESH=1. In the Arduino IDE they are set for you in build_opt.h.
+ * build_flags = -DDWS_ENABLE_EDGE_CACHE=1 -DDWS_ENABLE_HTTP_CACHE=1 -DDWS_ENABLE_HTTP_CLIENT=1
+ * -DDWS_ENABLE_EDGE_MESH=1. In the Arduino IDE they are set for you in build_opt.h.
  */
 
-#define DETWS_ENABLE_EDGE_CACHE 1
-#define DETWS_ENABLE_HTTP_CACHE 1
-#define DETWS_ENABLE_HTTP_CLIENT 1
-#define DETWS_ENABLE_EDGE_MESH 1
+#define DWS_ENABLE_EDGE_CACHE 1
+#define DWS_ENABLE_HTTP_CACHE 1
+#define DWS_ENABLE_HTTP_CLIENT 1
+#define DWS_ENABLE_EDGE_MESH 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -45,14 +45,14 @@ static const char *ORIGIN = "http://192.168.1.60:8000";
 static const char *PEER_IP = "192.168.1.51";
 static const uint16_t MESH_PORT = 7645;
 
-DetWebServer server;
+DWS server;
 
 // GET /cache/stats - the cache counters as JSON (mesh_hits/mesh_misses show the sibling sharing at work).
 static void handle_stats(uint8_t slot, HttpReq *req)
 {
     (void)req;
     EdgeCacheStats st;
-    det_edge_cache_stats(&st);
+    dws_edge_cache_stats(&st);
     char body[320];
     snprintf(body, sizeof(body),
              "{\"hits\":%u,\"misses\":%u,\"mesh_hits\":%u,\"mesh_misses\":%u,\"revalidations\":%u,\"stores\":%u,"
@@ -66,7 +66,7 @@ static void handle_stats(uint8_t slot, HttpReq *req)
 static void handle_purge(uint8_t slot, HttpReq *req)
 {
     (void)req;
-    uint32_t n = det_edge_cache_purge_prefix("/cdn/");
+    uint32_t n = dws_edge_cache_purge_prefix("/cdn/");
     char body[48];
     snprintf(body, sizeof(body), "{\"purged\":%u}", (unsigned)n);
     server.send(slot, 200, "application/json", body);
@@ -88,15 +88,15 @@ void setup()
     WiFi.setSleep(false);
 
     // Cache everything under /cdn/ from the origin, then enable the cache on the server.
-    det_edge_cache_map("/cdn/", ORIGIN);
-    det_edge_cache_enable(server);
+    dws_edge_cache_map("/cdn/", ORIGIN);
+    dws_edge_cache_enable(server);
 
     // Mesh: open the sibling port, answer peers from the local cache, and list the other node as a peer.
     int32_t li = server.listen(MESH_PORT, ConnProto::PROTO_MESH);
     if (li < 0)
         Serial.println("mesh: could not open the sibling listener");
-    det_edge_cache_mesh_serve();
-    det_edge_cache_add_peer(PEER_IP, MESH_PORT);
+    dws_edge_cache_mesh_serve();
+    dws_edge_cache_add_peer(PEER_IP, MESH_PORT);
 
     server.on("/cache/stats", HttpMethod::HTTP_GET, handle_stats);
     server.on("/cache/purge", HttpMethod::HTTP_POST, handle_purge);

@@ -8,7 +8,7 @@
 
 #include "services/c37118/c37118.h"
 
-#if DETWS_ENABLE_C37118
+#if DWS_ENABLE_C37118
 
 #include <string.h>
 
@@ -37,24 +37,24 @@ size_t c37118_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint8_t versio
     size_t p = 0;
     buf[p++] = C37118_SYNC_LEADER;
     buf[p++] = (uint8_t)(((type & C37118_TYPE_MASK) << C37118_TYPE_SHIFT) | (version & C37118_VERSION_MASK));
-    p += det_wr16be(buf + p, (uint16_t)total);
-    p += det_wr16be(buf + p, idcode);
-    p += det_wr32be(buf + p, soc);
-    p += det_wr32be(buf + p, fracsec);
+    p += dws_wr16be(buf + p, (uint16_t)total);
+    p += dws_wr16be(buf + p, idcode);
+    p += dws_wr32be(buf + p, soc);
+    p += dws_wr32be(buf + p, fracsec);
     if (payload_len)
     {
         memcpy(buf + p, payload, payload_len);
         p += payload_len;
     }
     uint16_t crc = c37118_crc(buf, p); // over everything before CHK
-    p += det_wr16be(buf + p, crc);
+    p += dws_wr16be(buf + p, crc);
     return p;
 }
 
 size_t c37118_build_command(uint8_t *buf, size_t cap, uint16_t idcode, uint32_t soc, uint32_t fracsec, uint16_t cmd)
 {
     uint8_t payload[2];
-    det_wr16be(payload, cmd);
+    dws_wr16be(payload, cmd);
     return c37118_build_frame(buf, cap, C37118_TYPE_CMD, C37118_VERSION_2011, idcode, soc, fracsec, payload, 2);
 }
 
@@ -64,19 +64,19 @@ bool c37118_parse_frame(const uint8_t *buf, size_t len, C37118Frame *out)
         return false;
     if (buf[0] != C37118_SYNC_LEADER)
         return false;
-    uint16_t framesize = det_rd16be(buf + 2);
+    uint16_t framesize = dws_rd16be(buf + 2);
     if (framesize < C37118_MIN_FRAME || framesize > len)
         return false; // out of range / not fully buffered
     uint16_t want = c37118_crc(buf, (size_t)framesize - 2);
-    uint16_t got = det_rd16be(buf + framesize - 2);
+    uint16_t got = dws_rd16be(buf + framesize - 2);
     if (want != got)
         return false; // CHK mismatch
     out->type = (uint8_t)((buf[1] >> C37118_TYPE_SHIFT) & C37118_TYPE_MASK);
     out->version = (uint8_t)(buf[1] & C37118_VERSION_MASK);
     out->framesize = framesize;
-    out->idcode = det_rd16be(buf + 4);
-    out->soc = det_rd32be(buf + 6);
-    out->fracsec = det_rd32be(buf + 10);
+    out->idcode = dws_rd16be(buf + 4);
+    out->soc = dws_rd32be(buf + 6);
+    out->fracsec = dws_rd32be(buf + 10);
     out->data = buf + 14;
     out->data_len = (size_t)framesize - C37118_MIN_FRAME;
     return true;
@@ -87,8 +87,8 @@ bool c37118_parse_command(const C37118Frame *f, uint16_t *cmd)
     if (!f || f->type != C37118_TYPE_CMD || f->data_len < 2)
         return false;
     if (cmd)
-        *cmd = det_rd16be(f->data);
+        *cmd = dws_rd16be(f->data);
     return true;
 }
 
-#endif // DETWS_ENABLE_C37118
+#endif // DWS_ENABLE_C37118

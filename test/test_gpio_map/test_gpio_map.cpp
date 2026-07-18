@@ -18,21 +18,21 @@ void tearDown()
 
 void test_dir_name()
 {
-    TEST_ASSERT_EQUAL_STRING("in", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_IN));
-    TEST_ASSERT_EQUAL_STRING("in_pullup", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_IN_PULLUP));
-    TEST_ASSERT_EQUAL_STRING("in_pulldown", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_IN_PULLDOWN));
-    TEST_ASSERT_EQUAL_STRING("out", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_OUT));
-    TEST_ASSERT_EQUAL_STRING("in", detws_gpio_dir_name((DetwsGpioDir)99)); // unknown -> in
+    TEST_ASSERT_EQUAL_STRING("in", dws_gpio_dir_name(DetwsGpioDir::DWS_GPIO_IN));
+    TEST_ASSERT_EQUAL_STRING("in_pullup", dws_gpio_dir_name(DetwsGpioDir::DWS_GPIO_IN_PULLUP));
+    TEST_ASSERT_EQUAL_STRING("in_pulldown", dws_gpio_dir_name(DetwsGpioDir::DWS_GPIO_IN_PULLDOWN));
+    TEST_ASSERT_EQUAL_STRING("out", dws_gpio_dir_name(DetwsGpioDir::DWS_GPIO_OUT));
+    TEST_ASSERT_EQUAL_STRING("in", dws_gpio_dir_name((DetwsGpioDir)99)); // unknown -> in
 }
 
 void test_json()
 {
     DetwsGpioPin pins[2] = {
-        {2, "LED", DetwsGpioDir::DETWS_GPIO_OUT, 1},
-        {0, "BOOT", DetwsGpioDir::DETWS_GPIO_IN_PULLUP, 0},
+        {2, "LED", DetwsGpioDir::DWS_GPIO_OUT, 1},
+        {0, "BOOT", DetwsGpioDir::DWS_GPIO_IN_PULLUP, 0},
     };
     char buf[256];
-    int n = detws_gpio_json(pins, 2, buf, sizeof(buf));
+    int n = dws_gpio_json(pins, 2, buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_STRING("{\"pins\":[{\"pin\":2,\"label\":\"LED\",\"dir\":\"out\",\"level\":1},"
                              "{\"pin\":0,\"label\":\"BOOT\",\"dir\":\"in_pullup\",\"level\":0}]}",
@@ -42,32 +42,32 @@ void test_json()
 void test_json_empty()
 {
     char buf[64];
-    int n = detws_gpio_json(nullptr, 0, buf, sizeof(buf));
+    int n = dws_gpio_json(nullptr, 0, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_INT(0, n); // null table -> empty string, 0
 }
 
 void test_json_small_buffer_fails_closed()
 {
-    DetwsGpioPin pins[1] = {{2, "LED", DetwsGpioDir::DETWS_GPIO_OUT, 1}};
+    DetwsGpioPin pins[1] = {{2, "LED", DetwsGpioDir::DWS_GPIO_OUT, 1}};
     char buf[8];
-    TEST_ASSERT_EQUAL_INT(0, detws_gpio_json(pins, 1, buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_INT(0, dws_gpio_json(pins, 1, buf, sizeof(buf)));
 }
 
 void test_parse_set()
 {
     uint8_t pin = 0, level = 0;
     const char *b = "pin=2&level=1";
-    TEST_ASSERT_TRUE(detws_gpio_parse_set(b, strlen(b), &pin, &level));
+    TEST_ASSERT_TRUE(dws_gpio_parse_set(b, strlen(b), &pin, &level));
     TEST_ASSERT_EQUAL_UINT8(2, pin);
     TEST_ASSERT_EQUAL_UINT8(1, level);
 
     const char *b2 = "level=0&pin=13"; // order independent
-    TEST_ASSERT_TRUE(detws_gpio_parse_set(b2, strlen(b2), &pin, &level));
+    TEST_ASSERT_TRUE(dws_gpio_parse_set(b2, strlen(b2), &pin, &level));
     TEST_ASSERT_EQUAL_UINT8(13, pin);
     TEST_ASSERT_EQUAL_UINT8(0, level);
 
     const char *b3 = "pin=2&level=7"; // any nonzero level -> 1
-    TEST_ASSERT_TRUE(detws_gpio_parse_set(b3, strlen(b3), &pin, &level));
+    TEST_ASSERT_TRUE(dws_gpio_parse_set(b3, strlen(b3), &pin, &level));
     TEST_ASSERT_EQUAL_UINT8(1, level);
 }
 
@@ -75,11 +75,11 @@ void test_parse_set_rejects_partial()
 {
     uint8_t pin = 0, level = 0;
     const char *b = "pin=2"; // missing level
-    TEST_ASSERT_FALSE(detws_gpio_parse_set(b, strlen(b), &pin, &level));
+    TEST_ASSERT_FALSE(dws_gpio_parse_set(b, strlen(b), &pin, &level));
     const char *b2 = "level=1"; // missing pin
-    TEST_ASSERT_FALSE(detws_gpio_parse_set(b2, strlen(b2), &pin, &level));
+    TEST_ASSERT_FALSE(dws_gpio_parse_set(b2, strlen(b2), &pin, &level));
     const char *b3 = "pin=&level=1"; // no digits for pin
-    TEST_ASSERT_FALSE(detws_gpio_parse_set(b3, strlen(b3), &pin, &level));
+    TEST_ASSERT_FALSE(dws_gpio_parse_set(b3, strlen(b3), &pin, &level));
 }
 
 void test_parse_set_no_prefix_match()
@@ -87,27 +87,27 @@ void test_parse_set_no_prefix_match()
     // "spin=2" must not satisfy the "pin" field (field-boundary check).
     uint8_t pin = 0, level = 0;
     const char *b = "spin=2&level=1";
-    TEST_ASSERT_FALSE(detws_gpio_parse_set(b, strlen(b), &pin, &level));
+    TEST_ASSERT_FALSE(dws_gpio_parse_set(b, strlen(b), &pin, &level));
 }
 
 void test_is_output()
 {
     DetwsGpioPin pins[2] = {
-        {2, "LED", DetwsGpioDir::DETWS_GPIO_OUT, 0},
-        {0, "BOOT", DetwsGpioDir::DETWS_GPIO_IN_PULLUP, 0},
+        {2, "LED", DetwsGpioDir::DWS_GPIO_OUT, 0},
+        {0, "BOOT", DetwsGpioDir::DWS_GPIO_IN_PULLUP, 0},
     };
-    TEST_ASSERT_TRUE(detws_gpio_is_output(pins, 2, 2));
-    TEST_ASSERT_FALSE(detws_gpio_is_output(pins, 2, 0));  // input pin
-    TEST_ASSERT_FALSE(detws_gpio_is_output(pins, 2, 99)); // not in table
+    TEST_ASSERT_TRUE(dws_gpio_is_output(pins, 2, 2));
+    TEST_ASSERT_FALSE(dws_gpio_is_output(pins, 2, 0));  // input pin
+    TEST_ASSERT_FALSE(dws_gpio_is_output(pins, 2, 99)); // not in table
 }
 
 void test_host_gpio_stubs()
 {
     // Host build: the GPIO bind functions are no-ops (no digitalRead/Write).
     DetwsGpioPin pins[1] = {};
-    detws_gpio_begin_pins(pins, 1);
-    detws_gpio_read(pins, 1);
-    detws_gpio_write(0, 1);
+    dws_gpio_begin_pins(pins, 1);
+    dws_gpio_read(pins, 1);
+    dws_gpio_write(0, 1);
     TEST_PASS();
 }
 

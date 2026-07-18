@@ -1,7 +1,7 @@
 #pragma once
 // Mock filesystem for native unit tests.
 // Mimics the subset of the ESP32 Arduino fs::FS / fs::File API used by
-// DetWebServer::serve_file().
+// DWS::serve_file().
 
 #include <stddef.h>
 #include <stdint.h>

@@ -3,7 +3,7 @@
 
 /**
  * @file ldc1614.h
- * @brief TI LDC1614 inductance-to-digital field-sensing codec (DETWS_ENABLE_LDC1614).
+ * @brief TI LDC1614 inductance-to-digital field-sensing codec (DWS_ENABLE_LDC1614).
  *
  * The LDC1614 measures the resonant frequency of an external LC tank driven by a coil; a nearby
  * conductor changes the coil's effective inductance (eddy currents), moving that frequency - so the

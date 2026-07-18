@@ -3,7 +3,7 @@
 
 /**
  * @file ntcip.h
- * @brief NTCIP transportation-device object identifiers (DETWS_ENABLE_NTCIP).
+ * @brief NTCIP transportation-device object identifiers (DWS_ENABLE_NTCIP).
  *
  * NTCIP (National Transportation Communications for ITS Protocol) rides SNMP: an NTCIP device is an SNMP
  * agent whose MIB carries the NTCIP object definitions. Since this library already ships an SNMP agent
@@ -25,13 +25,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_NTCIP
+#if DWS_ENABLE_NTCIP
 
 /**
  * @brief NTCIP object roots under 1.3.6.1.4.1.1206.4.2 (private.enterprises.nema.transportation.devices).
  *
  * Each is the OID prefix of a scalar/column; the leaf/instance index is appended by
- * detws_ntcip_oid() (a scalar takes .0; a table column takes the row index).
+ * dws_ntcip_oid() (a scalar takes .0; a table column takes the row index).
  */
 extern const uint32_t NTCIP_1202_MAX_PHASES[]; ///< maxPhases (1202): number of phases. len via _len.
 extern const size_t NTCIP_1202_MAX_PHASES_LEN;
@@ -53,7 +53,7 @@ extern const size_t NTCIP_1203_DMS_MESSAGE_MULTI_LEN;
  * @param out_cap   its capacity (in arcs).
  * @return the total number of arcs written (root_len + 1), or 0 if it will not fit.
  */
-size_t detws_ntcip_oid(const uint32_t *root, size_t root_len, uint32_t index, uint32_t *out, size_t out_cap);
+size_t dws_ntcip_oid(const uint32_t *root, size_t root_len, uint32_t index, uint32_t *out, size_t out_cap);
 
-#endif // DETWS_ENABLE_NTCIP
+#endif // DWS_ENABLE_NTCIP
 #endif // DETERMINISTICESPASYNCWEBSERVER_NTCIP_H

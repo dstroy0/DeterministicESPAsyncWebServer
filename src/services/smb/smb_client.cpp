@@ -9,7 +9,7 @@
 
 #include "smb_client.h"
 
-#if DETWS_ENABLE_SMB
+#if DWS_ENABLE_SMB
 
 #include "ntlm.h"
 #include "ntlmssp.h"
@@ -99,12 +99,12 @@ static int recv_msg(SmbRecvFn recv, void *ctx, uint8_t *rx, size_t cap)
 // owned working set is correct; it is not reentrant across two concurrent SMB connections.
 struct SmbClientCtx
 {
-    uint8_t tx[DETWS_SMB_BUF];
-    uint8_t rx[DETWS_SMB_BUF];
-    uint8_t nt_resp[DETWS_SMB_BUF / 2];
-    uint8_t ntauth[DETWS_SMB_BUF / 2];
-    uint8_t sp2[DETWS_SMB_BUF / 2];
-    uint8_t utf16[DETWS_SMB_BUF / 2];
+    uint8_t tx[DWS_SMB_BUF];
+    uint8_t rx[DWS_SMB_BUF];
+    uint8_t nt_resp[DWS_SMB_BUF / 2];
+    uint8_t ntauth[DWS_SMB_BUF / 2];
+    uint8_t sp2[DWS_SMB_BUF / 2];
+    uint8_t utf16[DWS_SMB_BUF / 2];
 };
 static SmbClientCtx s_smb;
 
@@ -326,7 +326,7 @@ SmbResult smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size
     if (!h || !out || !out_len || !send || !recv)
         return SmbResult::SMB_ERR_ARG;
     *out_len = 0;
-    const size_t chunk_max = DETWS_SMB_BUF - 96; // room for the header + READ response body
+    const size_t chunk_max = DWS_SMB_BUF - 96; // room for the header + READ response body
     size_t total = 0;
     while (total < cap)
     {
@@ -369,7 +369,7 @@ SmbResult smb_write(SmbHandle *h, uint64_t offset, const uint8_t *data, size_t l
     if (!h || !data || !written || !send || !recv)
         return SmbResult::SMB_ERR_ARG;
     *written = 0;
-    const size_t chunk_max = DETWS_SMB_BUF - 128; // room for the header + WRITE request body
+    const size_t chunk_max = DWS_SMB_BUF - 128; // room for the header + WRITE request body
     size_t total = 0;
     while (total < len)
     {
@@ -402,4 +402,4 @@ SmbResult smb_write(SmbHandle *h, uint64_t offset, const uint8_t *data, size_t l
     return SmbResult::SMB_OK;
 }
 
-#endif // DETWS_ENABLE_SMB
+#endif // DWS_ENABLE_SMB

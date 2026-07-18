@@ -69,7 +69,7 @@ void ssh_aes256ctr_wipe(SshAesCtrCtx *ctx)
 
 void ssh_aes256ctr_init(SshAesCtrCtx *ctx, const uint8_t key[32], const uint8_t iv[16])
 {
-    det_aes_key_expand(key, 8, ctx->rk);
+    dws_aes_key_expand(key, 8, ctx->rk);
     memcpy(ctx->counter, iv, 16);
     memset(ctx->keystream, 0, 16);
     ctx->pos = 0;
@@ -77,7 +77,7 @@ void ssh_aes256ctr_init(SshAesCtrCtx *ctx, const uint8_t key[32], const uint8_t 
 
 static void aes_block_sw(SshAesCtrCtx *ctx)
 {
-    det_aes_encrypt_block(ctx->rk, 14, ctx->counter, ctx->keystream);
+    dws_aes_encrypt_block(ctx->rk, 14, ctx->counter, ctx->keystream);
     for (int j = 15; j >= 0; j--)
         if (++ctx->counter[j])
             break;

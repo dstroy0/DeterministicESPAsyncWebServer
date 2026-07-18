@@ -15,8 +15,8 @@
  * set (`s`). Optional sample rate (`|@0.1`) and DogStatsD tags (`|#env:prod,host:a`).
  *
  * The line builder (statsd_format) is pure and host-tested; the emit helpers format the value
- * and send via the transport UDP service (det_udp_sendto), so they are host-testable through
- * its capture seam too. Zero heap; gated by DETWS_ENABLE_STATSD.
+ * and send via the transport UDP service (dws_udp_sendto), so they are host-testable through
+ * its capture seam too. Zero heap; gated by DWS_ENABLE_STATSD.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -55,7 +55,7 @@ size_t statsd_format(char *out, size_t cap, const char *name, const char *value,
 /**
  * @brief Point the client at a collector and set optional global tags (added to every metric).
  * @param host        collector hostname/IP.
- * @param port        UDP port (0 selects DETWS_STATSD_PORT).
+ * @param port        UDP port (0 selects DWS_STATSD_PORT).
  * @param global_tags DogStatsD tags applied to every metric, or nullptr.
  */
 void statsd_begin(const char *host, uint16_t port, const char *global_tags);

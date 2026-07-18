@@ -25,7 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SSH_ZLIB
+#if DWS_ENABLE_SSH_ZLIB
 
 /** @brief Negotiated server-to-client compression algorithm. */
 enum class SshCompAlg : uint8_t
@@ -56,5 +56,5 @@ bool ssh_comp_s2c_active(uint8_t i);
  */
 int ssh_comp_s2c(uint8_t i, const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len);
 
-#endif // DETWS_ENABLE_SSH_ZLIB
+#endif // DWS_ENABLE_SSH_ZLIB
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_COMP_H

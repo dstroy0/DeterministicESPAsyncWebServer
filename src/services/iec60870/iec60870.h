@@ -3,7 +3,7 @@
 
 /**
  * @file iec60870.h
- * @brief IEC 60870-5-101 / -104 telecontrol (SCADA) codec (DETWS_ENABLE_IEC60870).
+ * @brief IEC 60870-5-101 / -104 telecontrol (SCADA) codec (DWS_ENABLE_IEC60870).
  *
  * The IEC 60870-5 utility-SCADA protocol in its two common transports:
  *  - **-104** over TCP: the APCI (`68 LEN` + 4 control octets) in its I / S / U formats,
@@ -28,7 +28,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_IEC60870
+#if DWS_ENABLE_IEC60870
 
 #include <stddef.h>
 #include <stdint.h>
@@ -158,5 +158,5 @@ struct Iec101Frame
 /** @brief Parse one -101 FT1.2 frame (validates start/stop, doubled length, sum checksum). */
 bool iec101_parse(const uint8_t *buf, size_t len, Iec101Frame *out, size_t *consumed);
 
-#endif // DETWS_ENABLE_IEC60870
+#endif // DWS_ENABLE_IEC60870
 #endif // DETERMINISTICESPASYNCWEBSERVER_IEC60870_H

@@ -3,7 +3,7 @@
 
 /**
  * @file vl53l0x.h
- * @brief ST VL53L0X / VL53L1X optical time-of-flight ranging codec (DETWS_ENABLE_VL53L0X).
+ * @brief ST VL53L0X / VL53L1X optical time-of-flight ranging codec (DWS_ENABLE_VL53L0X).
  *
  * The VL53L0X emits an infrared pulse and times the round-trip to a target, reporting distance in
  * millimeters - contactless ranging and gesture, bridged to the same telemetry sink as the other field

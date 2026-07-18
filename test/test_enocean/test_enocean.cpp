@@ -6,7 +6,7 @@
 // CRC / data CRC), incomplete telegrams, over-length rejection, and resynchronisation.
 // Pure host tests.
 //
-// The env sizes DETWS_ENOCEAN_MAX_DATA = 16.
+// The env sizes DWS_ENOCEAN_MAX_DATA = 16.
 
 #include "services/enocean/enocean.h"
 #include <string.h>
@@ -87,7 +87,7 @@ void test_parse_needs_more_bytes()
 
 void test_parse_rejects_over_length()
 {
-    // A header claiming data_len 100 (> DETWS_ENOCEAN_MAX_DATA = 16) is rejected early.
+    // A header claiming data_len 100 (> DWS_ENOCEAN_MAX_DATA = 16) is rejected early.
     uint8_t buf[8] = {ESP3_SYNC, 0x00, 100, 0x00, (uint8_t)esp3_type::ESP3_RADIO_ERP1, 0x00, 0x00, 0x00};
     TEST_ASSERT_EQUAL_INT(-1, esp3_parse(buf, sizeof(buf), nullptr));
 }

@@ -8,7 +8,7 @@
 
 #include "httpcache.h"
 
-#if DETWS_ENABLE_HTTP_CACHE
+#if DWS_ENABLE_HTTP_CACHE
 
 #include <string.h>
 
@@ -298,4 +298,4 @@ long cache_freshness_lifetime(const DetwsCacheControl *cc, bool shared, long exp
     return -1; // no explicit expiration - the caller applies a heuristic
 }
 
-#endif // DETWS_ENABLE_HTTP_CACHE
+#endif // DWS_ENABLE_HTTP_CACHE

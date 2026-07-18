@@ -1,6 +1,6 @@
 # 14.MsgPack - compact binary telemetry with MessagePack
 
-**Layer:** L6 Presentation · **Build flags:** `DETWS_ENABLE_MSGPACK`
+**Layer:** L6 Presentation · **Build flags:** `DWS_ENABLE_MSGPACK`
 
 ## What this example teaches
 
@@ -57,7 +57,7 @@ branch on it.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_MSGPACK=1" \
+  --project-option="build_flags=-DDWS_ENABLE_MSGPACK=1" \
   --lib="." examples/L6-Presentation/14.MsgPack/14.MsgPack.ino
 ```
 
@@ -76,7 +76,7 @@ added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_MSGPACK 1
+#define DWS_ENABLE_MSGPACK 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -86,7 +86,7 @@ added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // One MessagePack map {"heap","uptime","rssi"}, encoded into a ctx buffer and
 // paged out by the chunk source (the same pattern scales to an arbitrarily large body).

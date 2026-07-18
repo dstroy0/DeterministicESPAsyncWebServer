@@ -8,7 +8,7 @@
 
 #include "services/edge_cache/edge_mesh.h"
 
-#if DETWS_ENABLE_EDGE_MESH
+#if DWS_ENABLE_EDGE_MESH
 
 #include <string.h>
 
@@ -244,8 +244,7 @@ void edge_mesh_fetch_begin(EdgeMeshFetch *m, const EdgeFetchTransport *t, const 
         m->st = EdgeMeshStatus::FAILED;
         return;
     }
-    int cid =
-        t->open(t->ctx, host, port, DETWS_MESH_QUERY_MS); // blocking connect (LAN sibling), bounded by the timeout
+    int cid = t->open(t->ctx, host, port, DWS_MESH_QUERY_MS); // blocking connect (LAN sibling), bounded by the timeout
     if (cid < 0)
     {
         m->st = EdgeMeshStatus::FAILED;
@@ -269,7 +268,7 @@ EdgeMeshStatus edge_mesh_fetch_pump(EdgeMeshFetch *m, const EdgeFetchTransport *
         m->st = EdgeMeshStatus::FAILED;
         return m->st;
     }
-    if ((uint32_t)(now_ms - m->start_ms) > DETWS_MESH_QUERY_MS)
+    if ((uint32_t)(now_ms - m->start_ms) > DWS_MESH_QUERY_MS)
     {
         m->st = EdgeMeshStatus::FAILED; // query deadline
         return m->st;
@@ -309,4 +308,4 @@ void edge_mesh_fetch_end(EdgeMeshFetch *m, const EdgeFetchTransport *t)
     m->cid = -1;
 }
 
-#endif // DETWS_ENABLE_EDGE_MESH
+#endif // DWS_ENABLE_EDGE_MESH

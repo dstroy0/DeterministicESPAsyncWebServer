@@ -216,7 +216,7 @@ static void test_store_lru_evict()
 {
     edge_store_init(&g_store);
     char key[32];
-    for (int i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    for (int i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
     {
         snprintf(key, sizeof(key), "GET\nh\n/%d", i);
         TEST_ASSERT_NOT_NULL(edge_store_alloc(&g_store, key, ""));
@@ -328,7 +328,7 @@ static void test_entry_freshness_resolution()
 
     EdgeEntry *dflt = edge_store_alloc(&g_store, "GET\nh\n/b", "");
     edge_entry_set_freshness(dflt, &empty, true, -1, -1, -1, 0, -1, 1000); // no directive -> default TTL
-    TEST_ASSERT_EQUAL_INT32(DETWS_EDGE_DEFAULT_TTL_S, (int32_t)dflt->lifetime_s);
+    TEST_ASSERT_EQUAL_INT32(DWS_EDGE_DEFAULT_TTL_S, (int32_t)dflt->lifetime_s);
 
     EdgeEntry *heur = edge_store_alloc(&g_store, "GET\nh\n/c", "");
     edge_entry_set_freshness(heur, &empty, true, 1000000, -1, 1000000 - 1000, 0, -1, 1000); // 10% heuristic
@@ -349,14 +349,14 @@ static void test_storeability()
     pv.cc_private = true;
 
     TEST_ASSERT_TRUE(edge_is_storeable(200, "GET", &cc, nullptr, 100));
-    TEST_ASSERT_TRUE(edge_is_storeable(200, "GET", nullptr, "Accept-Encoding", DETWS_EDGE_BODY_MAX));
+    TEST_ASSERT_TRUE(edge_is_storeable(200, "GET", nullptr, "Accept-Encoding", DWS_EDGE_BODY_MAX));
     TEST_ASSERT_FALSE(edge_is_storeable(200, "POST", &cc, nullptr, 100)); // not GET
     TEST_ASSERT_FALSE(edge_is_storeable(404, "GET", &cc, nullptr, 100));  // not 200
     TEST_ASSERT_FALSE(edge_is_storeable(200, "GET", &ns, nullptr, 100));  // no-store
     TEST_ASSERT_FALSE(edge_is_storeable(200, "GET", &pv, nullptr, 100));  // private
     TEST_ASSERT_FALSE(edge_is_storeable(200, "GET", &cc, "*", 100));      // Vary: *
     TEST_ASSERT_FALSE(edge_is_storeable(200, "GET", &cc, "Accept-Encoding, *", 100));
-    TEST_ASSERT_FALSE(edge_is_storeable(200, "GET", &cc, nullptr, DETWS_EDGE_BODY_MAX + 1)); // oversize
+    TEST_ASSERT_FALSE(edge_is_storeable(200, "GET", &cc, nullptr, DWS_EDGE_BODY_MAX + 1)); // oversize
 }
 
 // --- conditional revalidation --------------------------------------------------------------------

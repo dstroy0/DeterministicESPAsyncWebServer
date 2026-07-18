@@ -24,8 +24,8 @@ its own little phone book.
 2. Edit the **name records** - the phone-book entries - to match your network:
 
     ```cpp
-    det_dns_server_add("printer.lan", 192, 168, 1, 50);   // name, then the four numbers of the IP
-    det_dns_server_add("nas.lan",     192, 168, 1, 60);
+    dws_dns_server_add("printer.lan", 192, 168, 1, 50);   // name, then the four numbers of the IP
+    dws_dns_server_add("nas.lan",     192, 168, 1, 60);
     ```
 
     (`esp32.lan` is added for you and points at the board itself.)
@@ -69,16 +69,16 @@ The feature lives in the library, so the flag must reach the whole build:
 ```bash
 pio ci examples/L7-Application/60.DnsServer \
   --board esp32dev --lib "." \
-  --project-option="build_flags=-DDETWS_ENABLE_DNS_SERVER=1"
+  --project-option="build_flags=-DDWS_ENABLE_DNS_SERVER=1"
 ```
 
 (The Arduino IDE reads the flag from `build_opt.h` beside the sketch automatically.)
 
 ## How it works (for the curious)
 
-`det_dns_server_add(name, a, b, c, d)` stores a `name -> IPv4` record in a small fixed table.
-`det_dns_server_begin()` binds UDP/53 through the library's transport UDP service; each query is
-handed to the pure `det_dns_server_build_response()`, which parses the question, looks the name up
+`dws_dns_server_add(name, a, b, c, d)` stores a `name -> IPv4` record in a small fixed table.
+`dws_dns_server_begin()` binds UDP/53 through the library's transport UDP service; each query is
+handed to the pure `dws_dns_server_build_response()`, which parses the question, looks the name up
 (case-insensitively), and - for an A/IN query that hits - appends one answer record (using DNS
 name compression: a 2-byte pointer back to the question). Misses return NXDOMAIN. Everything
 is fixed-buffer and heap-free, and the wire format is unit-tested on a PC (see

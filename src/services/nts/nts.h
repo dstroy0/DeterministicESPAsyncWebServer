@@ -3,19 +3,19 @@
 
 /**
  * @file nts.h
- * @brief Network Time Security (NTS, RFC 8915) wire codec (DETWS_ENABLE_NTS).
+ * @brief Network Time Security (NTS, RFC 8915) wire codec (DWS_ENABLE_NTS).
  *
  * NTS secures NTP against spoofing. It has two wire formats, both codified here:
  *
  *  - **NTS-KE** (Key Establishment, RFC 8915 sec 4), a short record exchange run over TLS 1.3 on port
  *    4460: TLV records `[critical|type : u16][body-length : u16][body]`. The client offers a next
  *    protocol (NTPv4) + an AEAD algorithm (AES-SIV-CMAC-256); the server returns cookies + the
- *    negotiated AEAD (+ optional server/port). `detws_nts_ke_record` / `_request` build the request and
- *    `detws_nts_ke_parse` walks a response, surfacing each record via a callback.
+ *    negotiated AEAD (+ optional server/port). `dws_nts_ke_record` / `_request` build the request and
+ *    `dws_nts_ke_parse` walks a response, surfacing each record via a callback.
  *
  *  - **NTS-protected NTP** (RFC 8915 sec 5), NTPv4 with RFC 7822 extension fields: the Unique
  *    Identifier, the NTS Cookie, and the NTS Authenticator-and-Encrypted-Extension-Fields (AEAD nonce +
- *    ciphertext). `detws_nts_ef` builds a padded extension field; `detws_nts_ef_unique_id` /
+ *    ciphertext). `dws_nts_ef` builds a padded extension field; `dws_nts_ef_unique_id` /
  *    `_cookie` are the common ones.
  *
  * Pure framing, zero heap, no stdlib, host-testable. The AES-SIV-CMAC-256 AEAD (RFC 5297) that protects
@@ -30,7 +30,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_NTS
+#if DWS_ENABLE_NTS
 
 /** @brief NTS-KE record types (RFC 8915 sec 4). The critical bit is 0x8000. */
 struct Nts
@@ -62,23 +62,22 @@ struct NtsEf
 extern const char NTS_EXPORTER_LABEL[]; ///< "EXPORTER-network-time-security".
 
 /** @brief Build one NTS-KE record `[critical|type][len][body]`. @return bytes written, or 0 if it won't fit. */
-size_t detws_nts_ke_record(bool critical, uint16_t type, const uint8_t *body, size_t body_len, uint8_t *out,
-                           size_t cap);
+size_t dws_nts_ke_record(bool critical, uint16_t type, const uint8_t *body, size_t body_len, uint8_t *out, size_t cap);
 
 /**
  * @brief Build the standard NTS-KE client request: Next Protocol (NTPv4), AEAD (AES-SIV-CMAC-256), End
  *        of Message - all critical. @return bytes written, or 0 if @p cap is too small.
  */
-size_t detws_nts_ke_request(uint8_t *out, size_t cap);
+size_t dws_nts_ke_request(uint8_t *out, size_t cap);
 
-/** @brief One record surfaced by detws_nts_ke_parse. */
+/** @brief One record surfaced by dws_nts_ke_parse. */
 typedef void (*DetwsNtsKeCb)(bool critical, uint16_t type, const uint8_t *body, size_t body_len, void *arg);
 
 /**
  * @brief Walk an NTS-KE record stream, invoking @p cb for each record.
  * @return true if the stream is well-formed and ends with an End-of-Message record.
  */
-bool detws_nts_ke_parse(const uint8_t *buf, size_t len, DetwsNtsKeCb cb, void *arg);
+bool dws_nts_ke_parse(const uint8_t *buf, size_t len, DetwsNtsKeCb cb, void *arg);
 
 /**
  * @brief Build an RFC 7822 extension field `[type][length][value][padding-to-4]`.
@@ -88,13 +87,13 @@ bool detws_nts_ke_parse(const uint8_t *buf, size_t len, DetwsNtsKeCb cb, void *a
  * @return the total field length written (a multiple of 4), or 0 if it won't fit. The Length field
  *         counts the type + length + value + padding, per RFC 7822.
  */
-size_t detws_nts_ef(uint16_t field_type, const uint8_t *value, size_t value_len, uint8_t *out, size_t cap);
+size_t dws_nts_ef(uint16_t field_type, const uint8_t *value, size_t value_len, uint8_t *out, size_t cap);
 
 /** @brief Build a Unique Identifier EF (>= 32 bytes of the caller's random, RFC 8915 sec 5.3). */
-size_t detws_nts_ef_unique_id(const uint8_t *nonce, size_t nonce_len, uint8_t *out, size_t cap);
+size_t dws_nts_ef_unique_id(const uint8_t *nonce, size_t nonce_len, uint8_t *out, size_t cap);
 
 /** @brief Build an NTS Cookie EF carrying @p cookie. */
-size_t detws_nts_ef_cookie(const uint8_t *cookie, size_t cookie_len, uint8_t *out, size_t cap);
+size_t dws_nts_ef_cookie(const uint8_t *cookie, size_t cookie_len, uint8_t *out, size_t cap);
 
-#endif // DETWS_ENABLE_NTS
+#endif // DWS_ENABLE_NTS
 #endif // DETERMINISTICESPASYNCWEBSERVER_NTS_H

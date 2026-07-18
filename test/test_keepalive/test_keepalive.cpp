@@ -1,17 +1,17 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// HTTP/1.1 keep-alive (DETWS_ENABLE_KEEPALIVE). Each test drives one or more
+// HTTP/1.1 keep-alive (DWS_ENABLE_KEEPALIVE). Each test drives one or more
 // requests through the real transport ring buffer + tcp_write capture mock and
 // checks (a) the Connection header emitted and (b) the slot lifecycle: a
 // kept-alive response leaves the slot ConnState::CONN_ACTIVE with its PCB attached; a close
-// response frees it. Built with DETWS_KEEPALIVE_MAX_REQUESTS=3 (see env).
+// response frees it. Built with DWS_KEEPALIVE_MAX_REQUESTS=3 (see env).
 
 #include "dwserver.h"
 #include <string.h>
 #include <unity.h>
 
-static DetWebServer server;
+static DWS server;
 static int handler_calls = 0;
 
 static void push_str(uint8_t slot, const char *s)
@@ -33,7 +33,7 @@ static void handle_ok(uint8_t slot_id, HttpReq *req)
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     server.on("/res", HttpMethod::HTTP_GET, handle_ok);
     handler_calls = 0;
     for (int i = 0; i < MAX_CONNS; i++)
@@ -150,7 +150,7 @@ void test_404_still_keeps_alive()
 
 void test_max_requests_cap_closes()
 {
-    // DETWS_KEEPALIVE_MAX_REQUESTS=3: the 3rd response closes the connection.
+    // DWS_KEEPALIVE_MAX_REQUESTS=3: the 3rd response closes the connection.
     feed_and_handle(0, "GET /res HTTP/1.1\r\n\r\n");
     TEST_ASSERT_EQUAL(ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state); // #1 keep
 

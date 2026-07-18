@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
 // End-to-end SSH server dispatcher test: drives a full handshake
-// (KEXINIT → KEXDH → NEWKEYS → userauth → channel) through det_ssh_server_dispatch
+// (KEXINIT → KEXDH → NEWKEYS → userauth → channel) through dws_ssh_server_dispatch
 // and checks the emitted messages and resulting state at each step.
 
 #include "network_drivers/presentation/ssh/auth/ssh_auth.h"
@@ -62,7 +62,7 @@ static bool pw_cb(const char *u, const char *p)
 void setUp()
 {
     ssh_transport_init(0);
-    det_ssh_channel_init(0);
+    dws_ssh_channel_init(0);
     emt_reset();
     chan_data_count = 0;
     chan_data_len = 0;
@@ -76,11 +76,11 @@ void setUp()
     _test_rsa_e[1] = 1;
     _test_rsa_e[2] = 0;
     _test_rsa_e[3] = 1;
-    det_ssh_rsa_load_pubkey();
+    dws_ssh_rsa_load_pubkey();
 
-    det_ssh_auth_set_password_cb(pw_cb);
-    det_ssh_channel_set_data_cb(on_chan_data);
-    det_ssh_server_set_emit_cb(rec_emit);
+    dws_ssh_auth_set_password_cb(pw_cb);
+    dws_ssh_channel_set_data_cb(on_chan_data);
+    dws_ssh_server_set_emit_cb(rec_emit);
 }
 void tearDown()
 {
@@ -167,7 +167,7 @@ void test_full_handshake_to_channel_data()
     uint8_t pkt[2048];
     size_t n = build_client_kexinit(pkt);
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL_INT(1, emt_n);
     TEST_ASSERT_EQUAL(SSH_MSG_KEXINIT, emt_type[0]);
     TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_DH_INIT, s->phase);
@@ -180,7 +180,7 @@ void test_full_handshake_to_channel_data()
     pkt[n++] = SSH_MSG_KEXDH_INIT;
     n += put_mpint(pkt + n, e_be, 256);
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL_INT(2, emt_n);
     TEST_ASSERT_EQUAL(SSH_MSG_KEXDH_REPLY, emt_type[0]);
     TEST_ASSERT_EQUAL(SSH_MSG_NEWKEYS, emt_type[1]);
@@ -193,7 +193,7 @@ void test_full_handshake_to_channel_data()
     //    KEXINIT advertised ext-info-c, the server now sends EXT_INFO (RFC 8308).
     uint8_t nk = SSH_MSG_NEWKEYS;
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, nk, &nk, 1));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, nk, &nk, 1));
     TEST_ASSERT_TRUE(ssh_pkt[0].enc_in && ssh_pkt[0].enc_out); // both directions now encrypted
     TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_SERVICE, s->phase);
     TEST_ASSERT_EQUAL_INT(1, emt_n);
@@ -204,7 +204,7 @@ void test_full_handshake_to_channel_data()
     pkt[n++] = SSH_MSG_SERVICE_REQUEST;
     n += put_string(pkt + n, "ssh-userauth");
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL(SSH_MSG_SERVICE_ACCEPT, emt_type[0]);
     TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_AUTH, s->phase);
 
@@ -217,7 +217,7 @@ void test_full_handshake_to_channel_data()
     pkt[n++] = 0;
     n += put_string(pkt + n, "s3cret");
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_SUCCESS, emt_type[0]);
     TEST_ASSERT_TRUE(s->authed);
     TEST_ASSERT_EQUAL(SshPhase::SSH_PHASE_OPEN, s->phase);
@@ -231,7 +231,7 @@ void test_full_handshake_to_channel_data()
     wr_u32(pkt + n + 8, 32768);
     n += 12;
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_OPEN_CONFIRM, emt_type[0]);
     TEST_ASSERT_TRUE(ssh_chan[0][0].open);
 
@@ -243,7 +243,7 @@ void test_full_handshake_to_channel_data()
     n += put_string(pkt + n, "shell");
     pkt[n++] = 1;
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_SUCCESS, emt_type[0]);
 
     // 8. CHANNEL_DATA → application callback receives the bytes.
@@ -253,7 +253,7 @@ void test_full_handshake_to_channel_data()
     n += 4;
     n += put_string(pkt + n, "hi");
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL_INT(1, chan_data_count);
     TEST_ASSERT_EQUAL_INT(2, (int)chan_data_len);
     TEST_ASSERT_EQUAL_MEMORY("hi", chan_data, 2);
@@ -272,7 +272,7 @@ void test_channel_open_before_auth_rejected()
     wr_u32(pkt + n + 4, 4096);
     wr_u32(pkt + n + 8, 32768);
     n += 12;
-    TEST_ASSERT_EQUAL_INT(-1, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
 }
 
 // Regression (pentest ssh_msgtype_abuse, HW-found 2026-07-11): a SERVICE_REQUEST before the key
@@ -287,21 +287,21 @@ void test_service_request_before_newkeys_rejected()
     pkt[n++] = SSH_MSG_SERVICE_REQUEST;
     n += put_string(pkt + n, "ssh-userauth");
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(-1, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_NOT_EQUAL(SshPhase::SSH_PHASE_AUTH, s->phase); // must NOT have advanced to userauth
 }
 
 void test_disconnect_closes()
 {
     uint8_t pkt[1] = {SSH_MSG_DISCONNECT};
-    TEST_ASSERT_EQUAL_INT(-1, det_ssh_server_dispatch(0, pkt[0], pkt, 1));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, pkt[0], pkt, 1));
 }
 
 void test_ignore_is_noop()
 {
     uint8_t pkt[1] = {SSH_MSG_IGNORE};
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, 1));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, 1));
     TEST_ASSERT_EQUAL_INT(0, emt_n);
 }
 
@@ -334,7 +334,7 @@ void test_auth_bruteforce_disconnect()
     for (int k = 0; k < SSH_MAX_AUTH_ATTEMPTS - 1; k++)
     {
         emt_reset();
-        TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+        TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
         TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, emt_type[0]);
         TEST_ASSERT_FALSE(s->authed);
     }
@@ -342,7 +342,7 @@ void test_auth_bruteforce_disconnect()
 
     // The final failure trips the limit: FAILURE then DISCONNECT, return -1.
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(-1, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL_INT(2, emt_n);
     TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, emt_type[0]);
     TEST_ASSERT_EQUAL(SSH_MSG_DISCONNECT, emt_type[1]);
@@ -359,12 +359,12 @@ void test_auth_success_after_failures()
     uint8_t pkt[128];
     size_t n = build_password_auth(pkt, "alice", "wrong");
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_FAILURE, emt_type[0]);
 
     n = build_password_auth(pkt, "alice", "s3cret");
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
     TEST_ASSERT_EQUAL(SSH_MSG_USERAUTH_SUCCESS, emt_type[0]);
     TEST_ASSERT_TRUE(s->authed);
     TEST_ASSERT_EQUAL_INT(1, s->auth_failures); // unchanged by the success
@@ -378,7 +378,7 @@ void test_unimplemented_reply_for_unknown_message()
     ssh_pkt[0].seq_no_recv = 7; // pretend recv() just processed packet #6
     emt_reset();
     uint8_t pkt[1] = {200}; // 200 is not a handled message type
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, 1));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, 1));
     TEST_ASSERT_EQUAL(SSH_MSG_UNIMPLEMENTED, emt_type[0]);
     TEST_ASSERT_EQUAL_INT(5, (int)emt_last_len);
     uint32_t seq = ((uint32_t)emt_last[1] << 24) | ((uint32_t)emt_last[2] << 16) | ((uint32_t)emt_last[3] << 8) |
@@ -402,13 +402,13 @@ void test_inbound_close_emits_eof_then_close_separately()
     on += 12;
     uint8_t obuf[64];
     size_t ol = 0;
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_channel_handle_open(0, op, on, obuf, &ol, sizeof(obuf)));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_channel_handle_open(0, op, on, obuf, &ol, sizeof(obuf)));
 
     uint8_t pkt[8];
     pkt[0] = SSH_MSG_CHANNEL_CLOSE;
     wr_u32(pkt + 1, 0); // recipient = local channel 0
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, pkt, 5));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, pkt, 5));
     TEST_ASSERT_EQUAL_INT(2, emt_n); // two distinct binary packets, not one
     TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_EOF, emt_type[0]);
     TEST_ASSERT_EQUAL(SSH_MSG_CHANNEL_CLOSE, emt_type[1]);
@@ -480,7 +480,7 @@ void test_extinfo_not_sent_without_ext_info_c()
 
     uint8_t pkt[2048];
     size_t n = build_client_kexinit(pkt, /*ext_info_c=*/false);
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
 
     uint8_t e_be[256];
     memset(e_be, 0, sizeof(e_be));
@@ -488,11 +488,11 @@ void test_extinfo_not_sent_without_ext_info_c()
     n = 0;
     pkt[n++] = SSH_MSG_KEXDH_INIT;
     n += put_mpint(pkt + n, e_be, 256);
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, n));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));
 
     uint8_t nk = SSH_MSG_NEWKEYS;
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, nk, &nk, 1));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, nk, &nk, 1));
     TEST_ASSERT_FALSE(ssh_sess[0].ext_info_c);
     TEST_ASSERT_EQUAL_INT(0, emt_n); // no EXT_INFO emitted
 }
@@ -502,7 +502,7 @@ void test_inbound_ext_info_ignored()
 {
     uint8_t pkt[1] = {SSH_MSG_EXT_INFO};
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, SSH_MSG_EXT_INFO, pkt, 1));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, SSH_MSG_EXT_INFO, pkt, 1));
     TEST_ASSERT_EQUAL_INT(0, emt_n);
 }
 
@@ -632,7 +632,7 @@ void test_ssh_pkt_encrypted_roundtrip_and_mac_fail()
 void test_ssh_dispatch_bad_slot()
 {
     uint8_t p[1] = {SSH_MSG_IGNORE};
-    TEST_ASSERT_EQUAL_INT(-1, det_ssh_server_dispatch(MAX_SSH_CONNS, p[0], p, 1));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(MAX_SSH_CONNS, p[0], p, 1));
 }
 
 // A KEXINIT whose payload is far too short fails negotiation.
@@ -640,7 +640,7 @@ void test_ssh_kexinit_parse_fail()
 {
     ssh_sess[0].phase = SshPhase::SSH_PHASE_KEXINIT;
     uint8_t p[4] = {SSH_MSG_KEXINIT, 0, 0, 0};
-    TEST_ASSERT_EQUAL_INT(-1, det_ssh_server_dispatch(0, p[0], p, sizeof(p)));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, p[0], p, sizeof(p)));
 }
 
 // KEXDH_INIT outside the DH_INIT phase is rejected; a malformed one in-phase fails the handler.
@@ -648,7 +648,7 @@ void test_ssh_kexdh_guards()
 {
     ssh_sess[0].phase = SshPhase::SSH_PHASE_KEXINIT; // not DH_INIT
     uint8_t bad[4] = {SSH_MSG_KEXDH_INIT, 0, 0, 0};
-    TEST_ASSERT_EQUAL_INT(-1, det_ssh_server_dispatch(0, bad[0], bad, sizeof(bad))); // wrong phase
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, bad[0], bad, sizeof(bad))); // wrong phase
 
     SshSession *s = &ssh_sess[0];
     strcpy(s->v_c, "SSH-2.0-T");
@@ -656,8 +656,8 @@ void test_ssh_kexdh_guards()
     s->phase = SshPhase::SSH_PHASE_KEXINIT;
     uint8_t pkt[2048];
     size_t n = build_client_kexinit(pkt);
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, pkt[0], pkt, n));            // -> DH_INIT
-    TEST_ASSERT_EQUAL_INT(-1, det_ssh_server_dispatch(0, bad[0], bad, sizeof(bad))); // handler fails
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, pkt[0], pkt, n));            // -> DH_INIT
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, bad[0], bad, sizeof(bad))); // handler fails
 }
 
 // SERVICE_REQUEST with a truncated service name fails.
@@ -665,7 +665,7 @@ void test_ssh_service_request_fail()
 {
     ssh_sess[0].phase = SshPhase::SSH_PHASE_SERVICE;
     uint8_t bad[2] = {SSH_MSG_SERVICE_REQUEST, 0};
-    TEST_ASSERT_EQUAL_INT(-1, det_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)));
 }
 
 // USERAUTH_REQUEST outside the AUTH phase is rejected; a truncated one in-phase fails the handler.
@@ -673,10 +673,10 @@ void test_ssh_userauth_guards()
 {
     ssh_sess[0].phase = SshPhase::SSH_PHASE_SERVICE; // not AUTH
     uint8_t p[2] = {SSH_MSG_USERAUTH_REQUEST, 0};
-    TEST_ASSERT_EQUAL_INT(-1, det_ssh_server_dispatch(0, p[0], p, sizeof(p)));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, p[0], p, sizeof(p)));
     ssh_sess[0].phase = SshPhase::SSH_PHASE_AUTH;
     uint8_t bad[3] = {SSH_MSG_USERAUTH_REQUEST, 0, 0};
-    TEST_ASSERT_EQUAL_INT(-1, det_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)));
+    TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)));
 }
 
 // Every post-auth connection message is rejected while unauthenticated.
@@ -688,7 +688,7 @@ void test_ssh_postauth_authed_guard()
     for (size_t j = 0; j < sizeof(mts) / sizeof(mts[0]); j++)
     {
         uint8_t p[8] = {mts[j], 0, 0, 0, 0};
-        TEST_ASSERT_EQUAL_INT(-1, det_ssh_server_dispatch(0, mts[j], p, sizeof(p)));
+        TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, mts[j], p, sizeof(p)));
     }
 }
 
@@ -700,7 +700,7 @@ void test_ssh_postauth_handler_fails()
     for (size_t j = 0; j < sizeof(mts) / sizeof(mts[0]); j++)
     {
         uint8_t p[2] = {mts[j], 0}; // too short for the handler to parse
-        TEST_ASSERT_EQUAL_INT(-1, det_ssh_server_dispatch(0, mts[j], p, sizeof(p)));
+        TEST_ASSERT_EQUAL_INT(-1, dws_ssh_server_dispatch(0, mts[j], p, sizeof(p)));
     }
 }
 
@@ -709,9 +709,9 @@ void test_ssh_open_confirm_failure_authed()
 {
     ssh_sess[0].authed = true;
     uint8_t c[9] = {SSH_MSG_CHANNEL_OPEN_CONFIRM, 0, 0, 0, 0, 0, 0, 0, 0};
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, c[0], c, sizeof(c)));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, c[0], c, sizeof(c)));
     uint8_t f[5] = {SSH_MSG_CHANNEL_OPEN_FAILURE, 0, 0, 0, 0};
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, f[0], f, sizeof(f)));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, f[0], f, sizeof(f)));
 }
 
 // A well-formed GLOBAL_REQUEST with want_reply is handled and answered (REQUEST_SUCCESS/FAILURE).
@@ -727,7 +727,7 @@ void test_ssh_global_request_reply()
     wr_u32(p + n, 8080);
     n += 4;
     emt_reset();
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, p[0], p, n));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, p[0], p, n));
     TEST_ASSERT_EQUAL_INT(1, emt_n); // a REQUEST_SUCCESS or REQUEST_FAILURE was emitted
 }
 
@@ -735,9 +735,9 @@ void test_ssh_global_request_reply()
 void test_ssh_window_adjust_and_eof()
 {
     uint8_t w[9] = {SSH_MSG_CHANNEL_WINDOW_ADJUST, 0, 0, 0, 0, 0, 0, 0, 10};
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, w[0], w, sizeof(w)));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, w[0], w, sizeof(w)));
     uint8_t e[5] = {SSH_MSG_CHANNEL_EOF, 0, 0, 0, 0};
-    TEST_ASSERT_EQUAL_INT(0, det_ssh_server_dispatch(0, e[0], e, sizeof(e)));
+    TEST_ASSERT_EQUAL_INT(0, dws_ssh_server_dispatch(0, e[0], e, sizeof(e)));
 }
 
 int main()

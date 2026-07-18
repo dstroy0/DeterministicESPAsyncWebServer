@@ -1,7 +1,7 @@
 # 10.RadioGateway - bridge a southbound radio to the northbound stack
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_DMA`,
-`DETWS_ENABLE_PREEMPT_QUEUE`, `DETWS_ENABLE_GATEWAY`, `DETWS_DMA_SIMULATE`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_DMA`,
+`DWS_ENABLE_PREEMPT_QUEUE`, `DWS_ENABLE_GATEWAY`, `DWS_DMA_SIMULATE`
 
 ## What this example teaches
 
@@ -10,7 +10,7 @@ The capstone of the v5 ingest pipeline: a **wireless gateway**. A southbound rad
 device **bridges** them to the web stack - MQTT / HTTP / WebSocket.
 
 ```
-radio RX --DMA--> callback --post--> FORWARD lane --> codec --> det_gateway_uplink()
+radio RX --DMA--> callback --post--> FORWARD lane --> codec --> dws_gateway_uplink()
                                                                      |
                                             envelope + topic  lora/<port>/<addr>
                                                                      |
@@ -33,31 +33,31 @@ Register each radio as a **port** (with an optional transmit callback for downli
 install the **uplink** - the northbound publish:
 
 ```cpp
-det_gateway_port_config p = {};
-p.port_id = 0; p.kind = DET_GW_LORA; p.tx = radio_tx; // tx = the radio's send()
-det_gateway_add_port(&p);
-det_gateway_set_uplink_cb(northbound_publish, nullptr);       // e.g. mqtt.publish(...)
-det_gateway_set_topic_prefix("lora");
+dws_gateway_port_config p = {};
+p.port_id = 0; p.kind = DWS_GW_LORA; p.tx = radio_tx; // tx = the radio's send()
+dws_gateway_add_port(&p);
+dws_gateway_set_uplink_cb(northbound_publish, nullptr);       // e.g. mqtt.publish(...)
+dws_gateway_set_topic_prefix("lora");
 
 // a frame arrived from node 0x42 on port 0:
-det_gateway_uplink(0, 0x42, payload, len, rssi);           // -> publishes lora/0/66
+dws_gateway_uplink(0, 0x42, payload, len, rssi);           // -> publishes lora/0/66
 ```
 
-- **Envelope**: each uplink builds a `det_gateway_msg` with the source address, port, RSSI,
-  and a sequence number. `det_gateway_topic()` formats a routing key `<prefix>/<port>/<addr>`.
-- **Downlink**: `det_gateway_downlink(port, dst_addr, payload, len)` transmits a northbound
+- **Envelope**: each uplink builds a `dws_gateway_msg` with the source address, port, RSSI,
+  and a sequence number. `dws_gateway_topic()` formats a routing key `<prefix>/<port>/<addr>`.
+- **Downlink**: `dws_gateway_downlink(port, dst_addr, payload, len)` transmits a northbound
   command back out the radio via the port's transmit callback.
 - **Rate cap**: a per-port `rate_cap` (frames/second) throttles a chatty radio; excess is
   dropped, not blocked.
 - **Fail-closed**: no installed sink, an unknown port, an exceeded cap, or a callback
-  refusing drops the frame and is counted (`det_gateway_get_stats()`), never blocks.
+  refusing drops the frame and is counted (`dws_gateway_get_stats()`), never blocks.
 
 The radio TX and the northbound publish are **callbacks**, so this runs with no radio
 hardware: the sketch feeds simulated frames through the DMA simulator and prints the
 publishes. A real build swaps the feed for the module's SPI RX and the publish for an
 MQTT client - the pipeline is unchanged.
 
-Storage is static (zero heap): `DETWS_GW_MAX_PORTS` ports.
+Storage is static (zero heap): `DWS_GW_MAX_PORTS` ports.
 
 ## Build-flag note
 
@@ -65,6 +65,6 @@ The flags must reach the library build, so pass them as build flags:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_DMA=1 -DDETWS_ENABLE_PREEMPT_QUEUE=1 -DDETWS_ENABLE_GATEWAY=1 -DDETWS_DMA_SIMULATE=1" \
+  --project-option="build_flags=-DDWS_ENABLE_DMA=1 -DDWS_ENABLE_PREEMPT_QUEUE=1 -DDWS_ENABLE_GATEWAY=1 -DDWS_DMA_SIMULATE=1" \
   --lib="." examples/Foundation/10.RadioGateway/10.RadioGateway.ino
 ```

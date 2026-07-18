@@ -3,14 +3,14 @@
 
 /**
  * @file wisun.h
- * @brief Wi-SUN FAN border-router connector (DETWS_ENABLE_WISUN).
+ * @brief Wi-SUN FAN border-router connector (DWS_ENABLE_WISUN).
  *
  * Wi-SUN FAN is an IPv6 / UDP / CoAP mesh, not a byte-level radio the ESP32 drives - the FAN radio is
  * terminated by a **border router / devboard** and each mesh node is reached as an ordinary IPv6 CoAP
  * endpoint. So the connector rides the existing IP stack: it keeps a table of the FAN nodes (their IPv6
- * `DetIp` addresses + join state) behind the border router, and builds the CoAP client requests to their
+ * `DWSIp` addresses + join state) behind the border router, and builds the CoAP client requests to their
  * resources (the CoAP service ships a *server*, so the client-request builder is here). The app sends the
- * built PDU to the node's address over `det_udp`; the specific devboard only sets which border router you
+ * built PDU to the node's address over `dws_udp`; the specific devboard only sets which border router you
  * point at, not this code.
  *
  * Pure: `wisun_build_coap` frames an RFC 7252 request (header + Uri-Path options + payload), the node
@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_WISUN
+#if DWS_ENABLE_WISUN
 
 /** @brief CoAP message type + method codes (RFC 7252) used by the connector. */
 struct WisunCoap
@@ -55,7 +55,7 @@ size_t wisun_build_coap(uint8_t type, uint8_t code, uint16_t msg_id, const uint8
 /** @brief One FAN mesh node behind the border router. */
 struct WisunNode
 {
-    DetIp addr;         ///< the node's IPv6 address on the mesh.
+    DWSIp addr;         ///< the node's IPv6 address on the mesh.
     bool joined;        ///< true once the node has joined the FAN.
     uint32_t last_seen; ///< tick of the last contact.
 };
@@ -63,23 +63,23 @@ struct WisunNode
 /** @brief The FAN connector state over a caller-owned node table. */
 struct WisunFan
 {
-    DetIp border_router; ///< the border router / devboard address.
+    DWSIp border_router; ///< the border router / devboard address.
     WisunNode *nodes;
     size_t count;
     size_t cap;
 };
 
 /** @brief Initialize the connector over caller storage. */
-void wisun_init(WisunFan *fan, const DetIp *border_router, WisunNode *storage, size_t cap);
+void wisun_init(WisunFan *fan, const DWSIp *border_router, WisunNode *storage, size_t cap);
 
 /**
  * @brief Register (or refresh) a node by address; sets joined + last_seen.
  * @return the node index, or -1 if the table is full / bad args.
  */
-int wisun_node_register(WisunFan *fan, const DetIp *addr, uint32_t now);
+int wisun_node_register(WisunFan *fan, const DWSIp *addr, uint32_t now);
 
 /** @brief Find a node by address. @p idx (may be null) receives the index. @return found. */
-bool wisun_node_find(const WisunFan *fan, const DetIp *addr, size_t *idx);
+bool wisun_node_find(const WisunFan *fan, const DWSIp *addr, size_t *idx);
 
 /** @brief Number of joined nodes. */
 size_t wisun_joined_count(const WisunFan *fan);
@@ -90,5 +90,5 @@ size_t wisun_joined_count(const WisunFan *fan);
  */
 size_t wisun_nodes_json(const WisunFan *fan, char *out, size_t cap);
 
-#endif // DETWS_ENABLE_WISUN
+#endif // DWS_ENABLE_WISUN
 #endif // DETERMINISTICESPASYNCWEBSERVER_WISUN_H

@@ -24,7 +24,7 @@
 #include "ServerConfig.h"
 
 // Shared by the HTTP/3 (QUIC) key schedule and the DTLS 1.3 record layer.
-#if (DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS)
+#if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS)
 
 #include <stddef.h>
 #include <stdint.h>
@@ -85,5 +85,5 @@ void quic_hkdf_expand_label_ctx(const uint8_t secret[QUIC_HKDF_HASH_LEN], const 
                                 size_t context_len, uint8_t *out, size_t out_len,
                                 const char *label_prefix = QUIC_HKDF_LABEL_PREFIX);
 
-#endif // DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS
+#endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_HKDF_H

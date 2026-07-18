@@ -3,13 +3,13 @@
 
 /**
  * @file edge_fetch.h
- * @brief CDN edge-cache tier - async origin-fetch engine (DETWS_ENABLE_EDGE_CACHE).
+ * @brief CDN edge-cache tier - async origin-fetch engine (DWS_ENABLE_EDGE_CACHE).
  *
  * A non-blocking origin fetch: open + send a request over a transport seam, accumulate the response
  * across poll loops into a bounded buffer, detect completion (Content-Length / chunked / connection
  * close), then parse it with the proven http_client codec. Pumped from the server poll loop so a miss
- * or revalidation never stalls the worker; the transport seam is det_client on the device and a mock in
- * host tests. Zero heap; the buffer is fixed (`DETWS_EDGE_FETCH_BUF`).
+ * or revalidation never stalls the worker; the transport seam is dws_client on the device and a mock in
+ * host tests. Zero heap; the buffer is fixed (`DWS_EDGE_FETCH_BUF`).
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -20,12 +20,12 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_EDGE_CACHE
+#if DWS_ENABLE_EDGE_CACHE
 
 #include <stddef.h>
 #include <stdint.h>
 
-/** @brief The origin transport, bound to det_client on the device and a mock in host tests. */
+/** @brief The origin transport, bound to dws_client on the device and a mock in host tests. */
 struct EdgeFetchTransport
 {
     int (*open)(void *ctx, const char *host, uint16_t port, uint32_t timeout_ms); ///< cid >= 0, or < 0 on failure
@@ -55,7 +55,7 @@ struct EdgeFetch
     int status;   ///< HTTP status (valid when DONE)
     size_t head_len;
     size_t body_off, body_len;
-    uint8_t buf[DETWS_EDGE_FETCH_BUF];
+    uint8_t buf[DWS_EDGE_FETCH_BUF];
 };
 
 /** @brief Open + send @p request; begin receiving. Sets @p st to PENDING, or FAILED on open/send error. */
@@ -64,7 +64,7 @@ void edge_fetch_begin(EdgeFetch *f, const EdgeFetchTransport *t, const char *hos
 
 /**
  * @brief Drain available bytes and advance. On DONE the response is parsed (chunked bodies decoded in
- *        place); honors `DETWS_EDGE_FETCH_TIMEOUT_MS`. @return the current status.
+ *        place); honors `DWS_EDGE_FETCH_TIMEOUT_MS`. @return the current status.
  */
 EdgeFetchStatus edge_fetch_pump(EdgeFetch *f, const EdgeFetchTransport *t, uint32_t now_ms);
 
@@ -78,6 +78,6 @@ void edge_fetch_end(EdgeFetch *f, const EdgeFetchTransport *t);
  */
 bool edge_resp_complete(const uint8_t *buf, size_t len, bool conn_closed, size_t *head_len);
 
-#endif // DETWS_ENABLE_EDGE_CACHE
+#endif // DWS_ENABLE_EDGE_CACHE
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_EDGE_FETCH_H

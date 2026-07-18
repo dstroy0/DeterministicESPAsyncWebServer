@@ -3,7 +3,7 @@
 
 /**
  * @file wal_store.h
- * @brief Durable write-ahead store: A/B superblock + checkpoint over a block-device seam (DETWS_ENABLE_WAL).
+ * @brief Durable write-ahead store: A/B superblock + checkpoint over a block-device seam (DWS_ENABLE_WAL).
  *
  * Increment 2 on top of the pure record codec in wal.h. It turns the codec into a mountable, power-loss-safe
  * append log on a fixed backing region (a preallocated file on any fs::FS - SD card or LittleFS - or any RAM
@@ -36,7 +36,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_WAL
+#if DWS_ENABLE_WAL
 
 /** @brief Superblock magic ("WSB1", little-endian). */
 #define WAL_SUPER_MAGIC 0x31425357u
@@ -138,5 +138,5 @@ static inline uint64_t wal_store_capacity(const WalStore *s)
     return s->data_cap;
 }
 
-#endif // DETWS_ENABLE_WAL
+#endif // DWS_ENABLE_WAL
 #endif // DETERMINISTICESPASYNCWEBSERVER_WAL_STORE_H

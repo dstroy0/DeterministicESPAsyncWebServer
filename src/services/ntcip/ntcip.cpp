@@ -8,7 +8,7 @@
 
 #include "services/ntcip/ntcip.h"
 
-#if DETWS_ENABLE_NTCIP
+#if DWS_ENABLE_NTCIP
 
 // Everything hangs under 1.3.6.1.4.1.1206.4.2 = iso.org.dod.internet.private.enterprises.nema(1206)
 // .transportation(4).devices(2). Under devices: .1 = protocols, .3 = global, and each device class has
@@ -39,7 +39,7 @@ const uint32_t NTCIP_1203_DMS_MESSAGE_MULTI[] = {1, 3, 6, 1, 4, 1, 1206, 4, 2, 3
 const size_t NTCIP_1203_DMS_MESSAGE_MULTI_LEN =
     sizeof(NTCIP_1203_DMS_MESSAGE_MULTI) / sizeof(NTCIP_1203_DMS_MESSAGE_MULTI[0]);
 
-size_t detws_ntcip_oid(const uint32_t *root, size_t root_len, uint32_t index, uint32_t *out, size_t out_cap)
+size_t dws_ntcip_oid(const uint32_t *root, size_t root_len, uint32_t index, uint32_t *out, size_t out_cap)
 {
     if (!root || !out || root_len == 0 || root_len + 1 > out_cap)
         return 0;
@@ -49,4 +49,4 @@ size_t detws_ntcip_oid(const uint32_t *root, size_t root_len, uint32_t index, ui
     return root_len + 1;
 }
 
-#endif // DETWS_ENABLE_NTCIP
+#endif // DWS_ENABLE_NTCIP

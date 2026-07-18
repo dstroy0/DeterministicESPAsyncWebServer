@@ -3,7 +3,7 @@
 
 /**
  * @file response.cpp
- * @brief Response building for DetWebServer: template rendering, chunked/streaming responses,
+ * @brief Response building for DWS: template rendering, chunked/streaming responses,
  *        response headers + cookies, MIME typing, and the stats / Prometheus-metrics endpoints.
  *
  * Split out of dwserver.cpp (single-purpose server files). The two-pass {{name}} template walk,
@@ -14,13 +14,13 @@
  */
 
 #include "dwserver.h"
-#include "network_drivers/transport/tcp.h" // conn_pool, det_conn_send, TcpConn/ConnState
+#include "network_drivers/transport/tcp.h" // conn_pool, dws_conn_send, TcpConn/ConnState
 #include "server/dwserver_internal.h"      // status_text, req_is_head, SendCtx s_send
-#include "shared_primitives/mime.h"        // DET_MIME_*, mime tables
+#include "shared_primitives/mime.h"        // DWS_MIME_*, mime tables
 #include <stdio.h>
 #include <string.h>
-#if DETWS_ENABLE_METRICS || DETWS_ENABLE_STATS
-#include "network_drivers/application/web_assets.h" // DETWS_STATS_JSON / DETWS_METRICS_PROM (generated)
+#if DWS_ENABLE_METRICS || DWS_ENABLE_STATS
+#include "network_drivers/application/web_assets.h" // DWS_STATS_JSON / DWS_METRICS_PROM (generated)
 #endif
 
 // ---------------------------------------------------------------------------
@@ -45,7 +45,7 @@ static void tmpl_take_placeholder(uint8_t slot, const char *&p, TemplateVar reso
         // Unterminated or over-long placeholder: emit "{{" literally.
         total += 2;
         if (emit)
-            det_conn_send(slot, "{{", 2);
+            dws_conn_send(slot, "{{", 2);
         p += 2;
         return;
     }
@@ -58,7 +58,7 @@ static void tmpl_take_placeholder(uint8_t slot, const char *&p, TemplateVar reso
     size_t vlen = strnlen(val, 0xFFFF);
     total += vlen;
     if (emit && vlen)
-        det_conn_send(slot, val, (u16_t)vlen);
+        dws_conn_send(slot, val, (u16_t)vlen);
     p = end + 2;
 }
 
@@ -82,17 +82,16 @@ static size_t tmpl_walk(uint8_t slot, const char *tmpl, TemplateVar resolver, bo
         size_t rlen = (size_t)(p - run);
         total += rlen;
         if (emit && rlen)
-            det_conn_send(slot, run, (u16_t)rlen);
+            dws_conn_send(slot, run, (u16_t)rlen);
     }
     return total;
 }
 
-void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_type, const char *tmpl,
-                                 TemplateVar resolver)
+void DWS::send_template(uint8_t slot_id, int code, const char *content_type, const char *tmpl, TemplateVar resolver)
 {
     if (slot_id >= MAX_CONNS)
         return;
-    if (!det_conn_active(slot_id))
+    if (!dws_conn_active(slot_id))
     {
         http_reset(slot_id);
         return;
@@ -114,7 +113,7 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
 
     bool head = req_is_head(slot_id);
 
-    det_conn_send(slot_id, header, (u16_t)hlen);
+    dws_conn_send(slot_id, header, (u16_t)hlen);
     // Pass 2: stream the rendered body (HEAD carries headers only).
     if (!head && body_len > 0)
         tmpl_walk(slot_id, tmpl, resolver, true);
@@ -134,11 +133,11 @@ void DetWebServer::send_template(uint8_t slot_id, int code, const char *content_
 // ChunkSource). One chunked response per slot at a time.
 // ---------------------------------------------------------------------------
 
-void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_type, ChunkSource source, void *ctx)
+void DWS::send_chunked(uint8_t slot_id, int code, const char *content_type, ChunkSource source, void *ctx)
 {
     if (slot_id >= MAX_CONNS)
         return;
-    if (!det_conn_active(slot_id))
+    if (!dws_conn_active(slot_id))
     {
         http_reset(slot_id);
         return;
@@ -172,7 +171,7 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
                         code, status_text(code), content_type);
     hlen = append_resp_trailer(header, sizeof(header), hlen, slot_id, cl);
 
-    det_conn_send(slot_id, header, (u16_t)hlen);
+    dws_conn_send(slot_id, header, (u16_t)hlen);
 
     // HEAD carries the headers but no body or terminator.
     if (req_is_head(slot_id) || !source)
@@ -194,13 +193,13 @@ void DetWebServer::send_chunked(uint8_t slot_id, int code, const char *content_t
 
 // Page a pending chunked response: pull pieces from the source and frame them into
 // the send window each worker loop, resuming on later loops as the window drains.
-void DetWebServer::chunk_send_pump(uint8_t slot_id)
+void DWS::chunk_send_pump(uint8_t slot_id)
 {
     ChunkSend &s = s_send.chunk[slot_id];
     if (!s.active)
         return;
 
-    if (!det_conn_active(slot_id))
+    if (!dws_conn_active(slot_id))
     {
         s.active = false; // connection gone mid-stream
         return;
@@ -208,22 +207,22 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
 
     // A body still being paged out is active, not idle: keep the CONN_TIMEOUT_MS idle sweep off
     // it so a transient send stall on a large stream cannot reap the slot mid-transfer.
-    det_conn_touch_active(slot_id);
+    dws_conn_touch_active(slot_id);
 
     // Frame each chunk in ONE buffer so it goes out in a single tcpip_thread round-trip (was three -
     // size line, body, CRLF - each a ~23 us marshal on-device). Reserve CHUNK_HDR_RESERVE bytes ahead
     // of the body for the "<hex>\r\n" size line and 2 after for the trailing CRLF, so the source writes
-    // the body in place and the whole "<hex>\r\n<body>\r\n" is one det_conn_send with no extra copy.
+    // the body in place and the whole "<hex>\r\n<body>\r\n" is one dws_conn_send with no extra copy.
     // FRAME reserves send-window room for that framing; the raw (HTTP/1.0) path sends the body verbatim.
     static const u16_t CHUNK_HDR_RESERVE = 8; // "<hex>\r\n" is <= 6 bytes for a chunk <= 0xFFFF
     const u16_t FRAME = s.raw ? 0 : 12;
     uint8_t framed[CHUNK_HDR_RESERVE + CHUNK_BUF_SIZE + 2];
     for (;;)
     {
-        u16_t avail = det_conn_sndbuf(slot_id);
+        u16_t avail = dws_conn_sndbuf(slot_id);
         if (avail <= FRAME)
         {
-            det_conn_flush(slot_id); // no room for a useful chunk; resume next loop
+            dws_conn_flush(slot_id); // no room for a useful chunk; resume next loop
             return;
         }
         size_t cap = (size_t)(avail - FRAME);
@@ -235,8 +234,8 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
         if (n == 0)
         {
             if (!s.raw)
-                det_conn_send(slot_id, "0\r\n\r\n", 5); // terminating chunk (1.1 only)
-            det_conn_flush(slot_id);
+                dws_conn_send(slot_id, "0\r\n\r\n", 5); // terminating chunk (1.1 only)
+            dws_conn_flush(slot_id);
             s.active = false;
             resp_end(slot_id, s.status, s.total, s.keep); // raw: keep==false -> connection close ends the body
             return;
@@ -246,7 +245,7 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
 
         if (s.raw)
         {
-            det_conn_send(slot_id, body, (u16_t)n); // close-delimited: no chunk framing
+            dws_conn_send(slot_id, body, (u16_t)n); // close-delimited: no chunk framing
         }
         else
         {
@@ -258,7 +257,7 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
             memcpy(start, sz, (size_t)sn);
             body[n] = '\r';
             body[n + 1] = '\n';
-            det_conn_send(slot_id, start, (u16_t)((size_t)sn + n + 2));
+            dws_conn_send(slot_id, start, (u16_t)((size_t)sn + n + 2));
         }
         s.total += (int)n;
     }
@@ -273,7 +272,7 @@ void DetWebServer::chunk_send_pump(uint8_t slot_id)
 // reaches the wire.
 // ---------------------------------------------------------------------------
 
-void DetWebServer::add_response_header(uint8_t slot_id, const char *name, const char *value)
+void DWS::add_response_header(uint8_t slot_id, const char *name, const char *value)
 {
     if (slot_id >= MAX_CONNS || name == nullptr || value == nullptr)
         return;
@@ -286,7 +285,7 @@ void DetWebServer::add_response_header(uint8_t slot_id, const char *name, const 
         buf[used] = '\0'; // would not fit: drop this header entirely
 }
 
-void DetWebServer::set_cookie(uint8_t slot_id, const char *name, const char *value, const char *attrs)
+void DWS::set_cookie(uint8_t slot_id, const char *name, const char *value, const char *attrs)
 {
     if (slot_id >= MAX_CONNS || name == nullptr || value == nullptr)
         return;
@@ -303,7 +302,7 @@ void DetWebServer::set_cookie(uint8_t slot_id, const char *name, const char *val
         buf[used] = '\0'; // would not fit: drop this cookie entirely
 }
 
-void DetWebServer::clear_response_headers(uint8_t slot_id)
+void DWS::clear_response_headers(uint8_t slot_id)
 {
     if (slot_id >= MAX_CONNS)
         return;
@@ -314,10 +313,10 @@ void DetWebServer::clear_response_headers(uint8_t slot_id)
 // MIME type lookup by extension
 // ---------------------------------------------------------------------------
 
-const char *DetWebServer::mime_type(const char *path)
+const char *DWS::mime_type(const char *path)
 {
     if (!path)
-        return DET_MIME_OCTET_STREAM;
+        return DWS_MIME_OCTET_STREAM;
 
     // Find the last '.' after the last '/'.
     const char *dot = nullptr;
@@ -329,7 +328,7 @@ const char *DetWebServer::mime_type(const char *path)
             dot = p;
     }
     if (!dot || dot[1] == '\0')
-        return DET_MIME_OCTET_STREAM;
+        return DWS_MIME_OCTET_STREAM;
     const char *ext = dot + 1;
 
     // Case-insensitive compare against a small static table.
@@ -338,9 +337,9 @@ const char *DetWebServer::mime_type(const char *path)
         const char *ext;
         const char *type;
     } table[] = {
-        {"html", DET_MIME_TEXT_HTML}, {"htm", DET_MIME_TEXT_HTML},  {"css", "text/css"},
-        {"js", DET_MIME_JAVASCRIPT},  {"mjs", DET_MIME_JAVASCRIPT}, {"json", DET_MIME_JSON},
-        {"xml", "application/xml"},   {"txt", DET_MIME_TEXT_PLAIN}, {"csv", "text/csv"},
+        {"html", DWS_MIME_TEXT_HTML}, {"htm", DWS_MIME_TEXT_HTML},  {"css", "text/css"},
+        {"js", DWS_MIME_JAVASCRIPT},  {"mjs", DWS_MIME_JAVASCRIPT}, {"json", DWS_MIME_JSON},
+        {"xml", "application/xml"},   {"txt", DWS_MIME_TEXT_PLAIN}, {"csv", "text/csv"},
         {"svg", "image/svg+xml"},     {"png", "image/png"},         {"jpg", "image/jpeg"},
         {"jpeg", "image/jpeg"},       {"gif", "image/gif"},         {"ico", "image/x-icon"},
         {"webp", "image/webp"},       {"wasm", "application/wasm"}, {"woff", "font/woff"},
@@ -367,15 +366,15 @@ const char *DetWebServer::mime_type(const char *path)
         if (eq && *a == '\0' && *b == '\0')
             return table[i].type;
     }
-    return DET_MIME_OCTET_STREAM;
+    return DWS_MIME_OCTET_STREAM;
 }
 
 // ---------------------------------------------------------------------------
 // Runtime stats endpoint
 // ---------------------------------------------------------------------------
 
-#if DETWS_ENABLE_STATS
-// The stats body is an editable template asset (src/web/input/DETWS_STATS_JSON.json)
+#if DWS_ENABLE_STATS
+// The stats body is an editable template asset (src/web/input/DWS_STATS_JSON.json)
 // rendered through the {{name}} engine, like /metrics - values are substituted by
 // name, with no printf-format coupling. Snapshot into statics just before the
 // (twice-invoked, size + emit) resolver runs.
@@ -410,9 +409,9 @@ static const char *stats_var(const char *name)
     return nullptr;
 }
 
-void DetWebServer::stats(uint8_t slot_id)
+void DWS::stats(uint8_t slot_id)
 {
-    int active = det_conn_active_count();
+    int active = dws_conn_active_count();
 
     unsigned long up = millis();
 #ifdef ARDUINO
@@ -429,13 +428,13 @@ void DetWebServer::stats(uint8_t slot_id)
     snprintf(s_stats.active, sizeof(s_stats.active), "%d", active);
     snprintf(s_stats.heap, sizeof(s_stats.heap), "%u", (unsigned)heap);
 
-    send_template(slot_id, 200, DET_MIME_JSON, DETWS_STATS_JSON, stats_var);
+    send_template(slot_id, 200, DWS_MIME_JSON, DWS_STATS_JSON, stats_var);
 }
-#endif // DETWS_ENABLE_STATS
+#endif // DWS_ENABLE_STATS
 
-#if DETWS_ENABLE_METRICS
+#if DWS_ENABLE_METRICS
 // The Prometheus exposition is an editable template asset (src/web/input/
-// DETWS_METRICS_PROM.txt) rendered through the {{name}} engine, so values are
+// DWS_METRICS_PROM.txt) rendered through the {{name}} engine, so values are
 // substituted by name (no printf format coupling). metrics() snapshots the live
 // values into these statics just before send_template(), which invokes the
 // resolver twice (size + emit) - deterministic because the snapshot is fixed.
@@ -482,9 +481,9 @@ static const char *metrics_var(const char *name)
     return nullptr;
 }
 
-void DetWebServer::metrics(uint8_t slot_id)
+void DWS::metrics(uint8_t slot_id)
 {
-    int active = det_conn_active_count();
+    int active = dws_conn_active_count();
 
     unsigned long up = millis();
 #ifdef ARDUINO
@@ -511,6 +510,6 @@ void DetWebServer::metrics(uint8_t slot_id)
     snprintf(s_metrics.heapsize, sizeof(s_metrics.heapsize), "%u", (unsigned)heap_size);
     snprintf(s_metrics.maxalloc, sizeof(s_metrics.maxalloc), "%u", (unsigned)max_alloc);
 
-    send_template(slot_id, 200, "text/plain; version=0.0.4; charset=utf-8", DETWS_METRICS_PROM, metrics_var);
+    send_template(slot_id, 200, "text/plain; version=0.0.4; charset=utf-8", DWS_METRICS_PROM, metrics_var);
 }
-#endif // DETWS_ENABLE_METRICS
+#endif // DWS_ENABLE_METRICS

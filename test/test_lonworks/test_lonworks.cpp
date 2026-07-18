@@ -23,14 +23,14 @@ void test_nv_pdu_roundtrip(void)
 {
     uint8_t value[2] = {0xAB, 0xCD};
     uint8_t out[8];
-    size_t n = detws_lon_build_nv(Lon::LON_MSG_NV_UPDATE, 0x1234, value, 2, out, sizeof(out));
+    size_t n = dws_lon_build_nv(Lon::LON_MSG_NV_UPDATE, 0x1234, value, 2, out, sizeof(out));
     // selector 0x1234 is 14-bit -> stored 0x12 0x34.
     const uint8_t expect[] = {Lon::LON_MSG_NV_UPDATE, 0x12, 0x34, 0xAB, 0xCD};
     TEST_ASSERT_EQUAL_size_t(5, n);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, n);
 
     LonNv nv;
-    TEST_ASSERT_TRUE(detws_lon_parse_nv(out, n, &nv));
+    TEST_ASSERT_TRUE(dws_lon_parse_nv(out, n, &nv));
     TEST_ASSERT_EQUAL_HEX8(Lon::LON_MSG_NV_UPDATE, nv.msg_code);
     TEST_ASSERT_EQUAL_UINT16(0x1234, nv.selector);
     TEST_ASSERT_EQUAL_size_t(2, nv.value_len);
@@ -41,41 +41,41 @@ void test_nv_selector_masked_to_14_bits(void)
 {
     // The top two bits of the selector byte are not part of the 14-bit value.
     uint8_t out[8];
-    detws_lon_build_nv(Lon::LON_MSG_NV_POLL, 0x3FFF, nullptr, 0, out, sizeof(out));
+    dws_lon_build_nv(Lon::LON_MSG_NV_POLL, 0x3FFF, nullptr, 0, out, sizeof(out));
     LonNv nv;
     // Simulate a peer that set reserved high bits.
     out[1] |= 0xC0;
-    TEST_ASSERT_TRUE(detws_lon_parse_nv(out, 3, &nv));
+    TEST_ASSERT_TRUE(dws_lon_parse_nv(out, 3, &nv));
     TEST_ASSERT_EQUAL_UINT16(0x3FFF, nv.selector);
     // Reject a selector > 14 bits at build.
-    TEST_ASSERT_EQUAL_size_t(0, detws_lon_build_nv(Lon::LON_MSG_NV_UPDATE, 0x4000, nullptr, 0, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_lon_build_nv(Lon::LON_MSG_NV_UPDATE, 0x4000, nullptr, 0, out, sizeof(out)));
 }
 
 void test_snvt_temp(void)
 {
     uint8_t enc[2];
-    detws_lon_snvt_temp_encode(25.0, enc);
+    dws_lon_snvt_temp_encode(25.0, enc);
     // (25 + 273.15) * 100 = 29815 = 0x747... check decode round-trip.
-    double c = detws_lon_snvt_temp_decode(enc);
+    double c = dws_lon_snvt_temp_decode(enc);
     TEST_ASSERT_TRUE(absd(c - 25.0) < 0.01);
     // 0 C -> 273.15 K -> 27315.
-    detws_lon_snvt_temp_encode(0.0, enc);
+    dws_lon_snvt_temp_encode(0.0, enc);
     TEST_ASSERT_EQUAL_UINT16(27315, (uint16_t)((enc[0] << 8) | enc[1]));
 }
 
 void test_snvt_switch(void)
 {
     uint8_t enc[2];
-    detws_lon_snvt_switch_encode(50.0, 1, enc);
+    dws_lon_snvt_switch_encode(50.0, 1, enc);
     TEST_ASSERT_EQUAL_UINT8(100, enc[0]); // 50% * 2 = 100
     TEST_ASSERT_EQUAL_UINT8(1, enc[1]);
     double pct = 0;
     uint8_t st = 0;
-    detws_lon_snvt_switch_decode(enc, &pct, &st);
+    dws_lon_snvt_switch_decode(enc, &pct, &st);
     TEST_ASSERT_TRUE(absd(pct - 50.0) < 0.01);
     TEST_ASSERT_EQUAL_UINT8(1, st);
     // Clamp at 100.5%.
-    detws_lon_snvt_switch_encode(200.0, 1, enc);
+    dws_lon_snvt_switch_encode(200.0, 1, enc);
     TEST_ASSERT_EQUAL_UINT8(201, enc[0]); // 100.5 * 2
 }
 
@@ -83,15 +83,15 @@ void test_snvt_clamps_and_guards()
 {
     uint8_t out[16];
     uint8_t val[2] = {0, 0};
-    TEST_ASSERT_EQUAL_size_t(0, detws_lon_build_nv(0x00, 0, val, sizeof(val), out, 2)); // cap too small
+    TEST_ASSERT_EQUAL_size_t(0, dws_lon_build_nv(0x00, 0, val, sizeof(val), out, 2)); // cap too small
     LonNv nv;
     uint8_t tiny[1] = {0};
-    TEST_ASSERT_FALSE(detws_lon_parse_nv(tiny, sizeof(tiny), &nv)); // too short
+    TEST_ASSERT_FALSE(dws_lon_parse_nv(tiny, sizeof(tiny), &nv)); // too short
     uint8_t t[2];
-    detws_lon_snvt_temp_encode(1e9, t);  // saturates at +32767
-    detws_lon_snvt_temp_encode(-1e9, t); // saturates at -32768
+    dws_lon_snvt_temp_encode(1e9, t);  // saturates at +32767
+    dws_lon_snvt_temp_encode(-1e9, t); // saturates at -32768
     uint8_t sw[2];
-    detws_lon_snvt_switch_encode(-5.0, 1, sw); // negative percent clamps to 0
+    dws_lon_snvt_switch_encode(-5.0, 1, sw); // negative percent clamps to 0
 }
 
 int main(void)

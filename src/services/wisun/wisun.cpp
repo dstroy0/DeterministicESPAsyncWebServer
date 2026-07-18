@@ -8,7 +8,7 @@
 
 #include "services/wisun/wisun.h"
 
-#if DETWS_ENABLE_WISUN
+#if DWS_ENABLE_WISUN
 
 #include <string.h>
 
@@ -122,7 +122,7 @@ size_t wisun_build_coap(uint8_t type, uint8_t code, uint16_t msg_id, const uint8
     return o;
 }
 
-void wisun_init(WisunFan *fan, const DetIp *border_router, WisunNode *storage, size_t cap)
+void wisun_init(WisunFan *fan, const DWSIp *border_router, WisunNode *storage, size_t cap)
 {
     if (!fan)
         return;
@@ -135,7 +135,7 @@ void wisun_init(WisunFan *fan, const DetIp *border_router, WisunNode *storage, s
     fan->count = 0;
 }
 
-int wisun_node_register(WisunFan *fan, const DetIp *addr, uint32_t now)
+int wisun_node_register(WisunFan *fan, const DWSIp *addr, uint32_t now)
 {
     if (!fan || !fan->nodes || !addr)
         return -1;
@@ -154,12 +154,12 @@ int wisun_node_register(WisunFan *fan, const DetIp *addr, uint32_t now)
     return (int)fan->count++;
 }
 
-bool wisun_node_find(const WisunFan *fan, const DetIp *addr, size_t *idx)
+bool wisun_node_find(const WisunFan *fan, const DWSIp *addr, size_t *idx)
 {
     if (!fan || !fan->nodes || !addr)
         return false;
     for (size_t i = 0; i < fan->count; i++)
-        if (det_ip_equal(&fan->nodes[i].addr, addr))
+        if (dws_ip_equal(&fan->nodes[i].addr, addr))
         {
             if (idx)
                 *idx = i;
@@ -183,25 +183,25 @@ size_t wisun_nodes_json(const WisunFan *fan, char *out, size_t cap)
 {
     if (!fan || !out || cap == 0)
         return 0;
-    DetSb b = {out, cap, 0, true};
-    det_sb_put(&b, "[");
+    DWSSb b = {out, cap, 0, true};
+    dws_sb_put(&b, "[");
     for (size_t i = 0; i < fan->count; i++)
     {
         if (i)
-            det_sb_put(&b, ",");
-        char astr[DET_IP_STR_MAX];
-        det_ip_format(&fan->nodes[i].addr, astr, sizeof(astr));
-        det_sb_put(&b, "{\"addr\":\"");
-        det_sb_put(&b, astr);
-        det_sb_put(&b, "\",\"joined\":");
-        det_sb_put(&b, fan->nodes[i].joined ? "true" : "false");
-        det_sb_put(&b, "}");
+            dws_sb_put(&b, ",");
+        char astr[DWS_IP_STR_MAX];
+        dws_ip_format(&fan->nodes[i].addr, astr, sizeof(astr));
+        dws_sb_put(&b, "{\"addr\":\"");
+        dws_sb_put(&b, astr);
+        dws_sb_put(&b, "\",\"joined\":");
+        dws_sb_put(&b, fan->nodes[i].joined ? "true" : "false");
+        dws_sb_put(&b, "}");
     }
-    det_sb_put(&b, "]");
+    dws_sb_put(&b, "]");
     if (!b.ok)
         return 0;
     out[b.len] = '\0';
     return b.len;
 }
 
-#endif // DETWS_ENABLE_WISUN
+#endif // DWS_ENABLE_WISUN

@@ -5,7 +5,7 @@
 
 The variable parts are read straight from the code so the picture cannot drift:
 
-  - the public `DetWebServer` API methods, from src/dwserver.h
+  - the public `DWS` API methods, from src/dwserver.h
     (access-specifier aware), bucketed into Register / Configure / Run / Respond;
   - the built-in application protocols, from the session registry
     src/network_drivers/session/proto_builtins.cpp (each `register_if(PROTO_x, ...)`);
@@ -76,8 +76,8 @@ def class_body(text, name):
 
 
 def public_methods():
-    """Parse the public method names of `class DetWebServer`, in bucket order."""
-    body = class_body(strip_comments(open(API_H, encoding="utf-8").read()), "DetWebServer")
+    """Parse the public method names of `class DWS`, in bucket order."""
+    body = class_body(strip_comments(open(API_H, encoding="utf-8").read()), "DWS")
     # Split the body into (access, chunk) regions; a class body defaults to private.
     parts = re.split(r"\b(public|private|protected)\s*:", body)
     regions = [("private", parts[0])] + [(parts[k], parts[k + 1]) for k in range(1, len(parts) - 1, 2)]
@@ -178,9 +178,9 @@ def mermaid(detailed=False):
     out.append('  cin(["A client sends a request<br/>browser / app / curl"])')
     out.append('  listen["Accept a connection<br/>listener_accept_cb"]')
     out.append('  ring[("Hold the bytes<br/>conn_pool + rx ring")]')
-    out.append('  udprx["Receive a datagram<br/>det_udp"]')
+    out.append('  udprx["Receive a datagram<br/>dws_udp"]')
     out.append(f'  seam{{{{"Which protocol?<br/>ProtoHandler seam<br/>{proto_short}"}}}}')
-    out.append('  tls["Decrypt + choose version<br/>det_tls + ALPN"]')
+    out.append('  tls["Decrypt + choose version<br/>dws_tls + ALPN"]')
     out.append('  parser["Read HTTP/1.1<br/>http_parser"]')
     out.append('  h2["Decode HTTP/2<br/>h2_conn"]')
     out.append('  h3["Decode HTTP/3<br/>quic_conn + h3_conn"]')
@@ -190,8 +190,8 @@ def mermaid(detailed=False):
     out.append('  handler>"YOUR HANDLER runs"]')
     out.append(f'  resp["{label("Build the response", api["Respond"], cap)}"]')
     out.append('  sink{{"Frame the reply per protocol<br/>resp_sink seam<br/>HTTP/1.1 / h2 / h3"}}')
-    out.append('  consend["Write bytes back<br/>det_conn_send"]')
-    out.append('  udptx["Send a datagram<br/>det_udp"]')
+    out.append('  consend["Write bytes back<br/>dws_conn_send"]')
+    out.append('  udptx["Send a datagram<br/>dws_udp"]')
     out.append('  cout(["The client gets the response"])')
     if detailed:
         # The full L6 module inventory on disk, six per line, hung off the presentation layer.

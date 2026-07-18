@@ -3,7 +3,7 @@
 
 /**
  * @file 68.SmbFileClient.ino
- * @brief Read a file off a Windows / Samba share with the SMB2 client (DETWS_ENABLE_SMB).
+ * @brief Read a file off a Windows / Samba share with the SMB2 client (DWS_ENABLE_SMB).
  *
  * At boot the board joins WiFi, connects to an SMB server on port 445, authenticates with
  * NTLMv2, opens a file on a share, prints the first chunk to Serial, and closes it. This is
@@ -13,16 +13,16 @@
  *
  * `smb_client` is written against a send/recv seam, so this sketch shows the one piece of glue
  * a real device needs: `cl_send` / `cl_recv` that move bytes over the shared outbound TCP
- * transport (`det_client`). Any transport works the same way.
+ * transport (`dws_client`). Any transport works the same way.
  *
  * Edit the lines marked "CHANGE ME" below, flash, and open Serial @ 115200.
  *
  * NOTE (PlatformIO): SMB is compiled into the *library*, so the flag must reach the whole
- * build: `build_flags = -DDETWS_ENABLE_SMB=1`. In the Arduino IDE it is already set for you in
+ * build: `build_flags = -DDWS_ENABLE_SMB=1`. In the Arduino IDE it is already set for you in
  * build_opt.h beside this sketch.
  */
 
-#define DETWS_ENABLE_SMB 1
+#define DWS_ENABLE_SMB 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -46,7 +46,7 @@ static const char *SMB_DOMAIN = "";                          // empty for a loca
 static const char *SMB_SHARE = "\\\\192.168.1.50\\programs"; // the UNC path to the share
 static const char *SMB_PATH = "PART001.NC";                  // the file on the share to read
 
-// The SMB engine's transport seam, bound to det_client. `deadline` bounds each recv wait.
+// The SMB engine's transport seam, bound to dws_client. `deadline` bounds each recv wait.
 struct SmbXport
 {
     int cid;
@@ -62,7 +62,7 @@ static int cl_send(void *ctx, const uint8_t *data, size_t len)
         size_t chunk = len - sent;
         if (chunk > 0xFFFF)
             chunk = 0xFFFF;
-        if (!det_client_send(x->cid, data + sent, chunk))
+        if (!dws_client_send(x->cid, data + sent, chunk))
             return -1;
         sent += chunk;
     }
@@ -74,10 +74,10 @@ static int cl_recv(void *ctx, uint8_t *buf, size_t cap)
     SmbXport *x = (SmbXport *)ctx;
     while ((int32_t)(x->deadline - millis()) > 0)
     {
-        size_t n = det_client_read(x->cid, buf, cap);
+        size_t n = dws_client_read(x->cid, buf, cap);
         if (n > 0)
             return (int)n;
-        if (det_client_is_closed(x->cid) && det_client_available(x->cid) == 0)
+        if (dws_client_is_closed(x->cid) && dws_client_available(x->cid) == 0)
             return -1;
         delay(5);
     }
@@ -86,7 +86,7 @@ static int cl_recv(void *ctx, uint8_t *buf, size_t cap)
 
 void read_program()
 {
-    int cid = det_client_open(SMB_HOST, SMB_PORT, 8000);
+    int cid = dws_client_open(SMB_HOST, SMB_PORT, 8000);
     if (cid < 0)
     {
         Serial.println("connect failed - is the server reachable on port 445?");
@@ -111,7 +111,7 @@ void read_program()
     if (rc != SmbResult::SMB_OK)
     {
         Serial.printf("smb_open failed (SmbResult %d) - see the README troubleshooting table\n", (int)rc);
-        det_client_close(cid);
+        dws_client_close(cid);
         return;
     }
     Serial.printf("opened %s (%llu bytes)\n", SMB_PATH, (unsigned long long)h.file_size);
@@ -136,7 +136,7 @@ void read_program()
 
     x.deadline = millis() + 8000;
     smb_close(&h, cl_send, cl_recv, &x);
-    det_client_close(cid);
+    dws_client_close(cid);
 }
 
 void setup()

@@ -51,7 +51,7 @@ static void sha1_block(uint32_t h[5], const uint8_t block[64])
     // XOR-and-rotate (the SHA-1 recurrence; the rotate-by-1 is what SHA-0 lacked).
     uint32_t w[80];
     for (int i = 0; i < 16; i++)
-        w[i] = det_rd32be(block + i * 4);
+        w[i] = dws_rd32be(block + i * 4);
     for (int i = 16; i < 80; i++)
         w[i] = rot32(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
 
@@ -134,7 +134,7 @@ void sha1(const uint8_t *data, size_t len, uint8_t digest[SHA1_DIGEST_LEN])
         sha1_block(h, pad + 64);
 
     for (int i = 0; i < 5; i++)
-        det_wr32be(digest + i * 4, h[i]);
+        dws_wr32be(digest + i * 4, h[i]);
 }
 
 #endif // ARDUINO

@@ -148,7 +148,7 @@ static int mock_send(void *c, const uint8_t *d, size_t n)
     if (!smb2_parse_header(msg, mlen, &h))
         return -1;
 
-    uint8_t resp[DETWS_SMB_BUF + 128];
+    uint8_t resp[DWS_SMB_BUF + 128];
     memset(resp, 0, sizeof(resp));
     size_t rlen = 0;
     uint8_t *b = resp + 64;
@@ -1001,7 +1001,7 @@ void test_write_recv_overflow()
     cn.resp[0] = 0x00;
     cn.resp[1] = 0x00;
     cn.resp[2] = 0x20;
-    cn.resp[3] = 0x00; // length 0x2000 = 8192 > DETWS_SMB_BUF (1024)
+    cn.resp[3] = 0x00; // length 0x2000 = 8192 > DWS_SMB_BUF (1024)
     cn.resp_len = 4;
     SmbHandle h = make_handle();
     uint8_t data[16] = {0};

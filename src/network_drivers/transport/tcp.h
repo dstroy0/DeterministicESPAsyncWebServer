@@ -15,7 +15,7 @@
  * | lwIP callbacks   | rx_head (to check full)| rx_buffer[], rx_head    |
  * | Arduino loop     | rx_buffer[], rx_tail   | rx_tail                 |
  *
- * `state`, `rx_head`, and `rx_tail` are `DetAtomic` (acquire/release): the
+ * `state`, `rx_head`, and `rx_tail` are `DWSAtomic` (acquire/release): the
  * single-producer / single-consumer ring buffer is correct without a mutex
  * because the release store of an index publishes the preceding buffer writes
  * and the acquire load observes them, on either core.
@@ -37,8 +37,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "lwip/tcp.h"
-#include "network_drivers/network/ip.h" // DetIp (family-tagged peer address)
-#include "shared_primitives/ring.h"     // DetAtomic + the shared SPSC ring drain primitive
+#include "network_drivers/network/ip.h" // DWSIp (family-tagged peer address)
+#include "shared_primitives/ring.h"     // DWSAtomic + the shared SPSC ring drain primitive
 #include <Arduino.h>
 #include <atomic>
 
@@ -71,13 +71,13 @@ enum class ConnState : uint8_t
 struct TcpConn
 {
     uint8_t id;                 ///< Fixed slot index (0 … MAX_CONNS-1).
-    DetAtomic<ConnState> state; ///< Lifecycle state; acquire/release for inter-task visibility.
+    DWSAtomic<ConnState> state; ///< Lifecycle state; acquire/release for inter-task visibility.
     struct tcp_pcb *pcb;        ///< lwIP PCB; null when slot is free.
     uint32_t last_activity_ms;  ///< `millis()` timestamp of last TX/RX event.
 
     uint8_t rx_buffer[RX_BUF_SIZE]; ///< Ring buffer storage.
-    DetAtomic<size_t> rx_head;      ///< Producer write index (lwIP/tcpip context).
-    DetAtomic<size_t> rx_tail;      ///< Consumer read index (worker context).
+    DWSAtomic<size_t> rx_head;      ///< Producer write index (lwIP/tcpip context).
+    DWSAtomic<size_t> rx_tail;      ///< Consumer read index (worker context).
     size_t rx_acked;                ///< rx_tail position last ACKed to lwIP (tcp_recved). Worker-only:
                                     ///< the window is reopened by exactly the bytes drained since, so it
                                     ///< tracks ring occupancy (ack-on-consume) rather than copy.
@@ -87,20 +87,20 @@ struct TcpConn
     ConnProto proto;     ///< Application protocol for this connection.
     uint8_t
         proto_slot; ///< Per-protocol session/pool index (0xFF = none): the SSH session, an MQTT/Modbus session, etc.
-    DetIface iface; ///< Interface this connection arrived on; set at accept time.
+    DWSIface iface; ///< Interface this connection arrived on; set at accept time.
     uint8_t tls;    ///< Non-zero when this connection is TLS (set at accept time).
-#if DETWS_ENABLE_HTTP2 || DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP2 || DWS_ENABLE_HTTP3
     /// Self-framing protocol response sink (Layer 5 TX seam): HTTP/2 installs it at ALPN, HTTP/3 at
     /// dispatch, so the response methods route through it instead of building an HTTP/1.1 message.
     /// Null means plain HTTP/1.1 (the default builder). Extends the ProtoHandler seam to the TX side.
     bool (*resp_sink)(uint8_t slot, int code, const char *content_type, const char *body, size_t len);
 #endif
-#if DETWS_ENABLE_HTTP2
+#if DWS_ENABLE_HTTP2
     uint8_t h2;         ///< Non-zero once this connection negotiated HTTP/2 (ALPN "h2").
     uint8_t h2_checked; ///< The post-handshake ALPN check ran (once per connection).
     uint32_t h2_stream; ///< Stream id of the request currently being dispatched (for the response).
 #endif
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
     uint8_t h3;          ///< Non-zero when this is the reserved HTTP/3 dispatch slot (no TCP pcb).
     uint32_t h3_conn_id; ///< quic_server connection id the response routes back to.
     uint64_t h3_stream;  ///< HTTP/3 request stream id the response is written on.
@@ -108,16 +108,16 @@ struct TcpConn
 };
 
 /** @brief Sentinel for TcpConn::proto_slot meaning "no per-protocol session bound". */
-#define DETWS_PROTO_SLOT_NONE 0xFFu
+#define DWS_PROTO_SLOT_NONE 0xFFu
 
 /**
  * @brief softAP IPv4 address (network byte order) for STA/AP interface tagging.
  *
- * Zero when no softAP is configured. Set via DetWebServer::set_ap_ip(); the
- * accept callback tags each connection DetIface::DETIFACE_AP when its local IP equals
- * this, else DetIface::DETIFACE_STA. Used by per-route interface filters.
+ * Zero when no softAP is configured. Set via DWS::set_ap_ip(); the
+ * accept callback tags each connection DWSIface::DETIFACE_AP when its local IP equals
+ * this, else DWSIface::DETIFACE_STA. Used by per-route interface filters.
  */
-extern uint32_t detws_ap_ip;
+extern uint32_t dws_ap_ip;
 
 /** @brief Static pool of connection contexts.  Defined in tcp.cpp.
  *  Sized CONN_POOL_SLOTS: MAX_CONNS TCP slots plus any reserved internal dispatch slot(s)
@@ -202,7 +202,7 @@ class DeterministicAsyncTCP
      * touching the slot.
      *
      * Only sweeps slots owned by @p worker_id, so each worker reaps just its own
-     * connections (no cross-worker writes). At DETWS_WORKER_COUNT=1 every slot is
+     * connections (no cross-worker writes). At DWS_WORKER_COUNT=1 every slot is
      * owned by worker 0, so it sweeps the whole pool as before.
      */
     static void check_timeouts(int worker_id = 0);
@@ -221,30 +221,30 @@ class DeterministicAsyncTCP
 // ---------------------------------------------------------------------------
 // The one send/flush/close path for all higher layers. Presentation (WebSocket,
 // SSE, SSH) and the HTTP application call these instead of touching lwIP, so the
-// transport layer stays the sole owner of TCP I/O. det_conn_send/flush are
+// transport layer stays the sole owner of TCP I/O. dws_conn_send/flush are
 // TLS-aware (route through the TLS record layer when the slot is a TLS conn);
-// with DETWS_ENABLE_TLS off they are byte-identical to tcp_write/tcp_output.
+// with DWS_ENABLE_TLS off they are byte-identical to tcp_write/tcp_output.
 
 /**
  * @brief Send @p len bytes on connection @p slot (copies @p data; TLS-aware).
  * @return true if the bytes were queued; false if the send buffer was full and
  *         the write was refused. A streaming producer should pace with
- *         det_conn_sndbuf() and resume on a later loop; existing fixed-size
+ *         dws_conn_sndbuf() and resume on a later loop; existing fixed-size
  *         senders may ignore the result.
  */
-bool det_conn_send(uint8_t slot, const void *data, u16_t len);
+bool dws_conn_send(uint8_t slot, const void *data, u16_t len);
 
 /**
  * @brief Send @p len bytes on @p slot and flush in a single tcpip_thread round-trip.
  *
- * The terminal-write analogue of det_conn_send(): the tcp_write and its tcp_output() run inside
+ * The terminal-write analogue of dws_conn_send(): the tcp_write and its tcp_output() run inside
  * one marshaled op, so a small single-shot response costs one ~23 us on-device marshal instead of
- * the det_conn_send()+det_conn_flush() pair (two). Use for the LAST write of a response whose body
+ * the dws_conn_send()+dws_conn_flush() pair (two). Use for the LAST write of a response whose body
  * is already fully buffered (send / send_empty / redirect); a streaming producer that pages across
- * loops must keep using det_conn_send() + a single trailing det_conn_flush(). TLS-identical to
- * det_conn_send (the record BIO already outputs per record). Same return contract as det_conn_send.
+ * loops must keep using dws_conn_send() + a single trailing dws_conn_flush(). TLS-identical to
+ * dws_conn_send (the record BIO already outputs per record). Same return contract as dws_conn_send.
  */
-bool det_conn_send_flush(uint8_t slot, const void *data, u16_t len);
+bool dws_conn_send_flush(uint8_t slot, const void *data, u16_t len);
 
 /**
  * @brief Bytes that can currently be queued for sending on @p slot.
@@ -255,10 +255,10 @@ bool det_conn_send_flush(uint8_t slot, const void *data, u16_t len);
  * plaintext is somewhat less (TLS record + cipher overhead). Returns 0 when
  * the slot has no pcb.
  */
-u16_t det_conn_sndbuf(uint8_t slot);
+u16_t dws_conn_sndbuf(uint8_t slot);
 
 /** @brief Flush queued bytes / finish the send on @p slot (TLS-aware). */
-void det_conn_flush(uint8_t slot);
+void dws_conn_flush(uint8_t slot);
 
 /**
  * @brief Refresh @p slot's idle-timeout timestamp while a response body is in flight.
@@ -269,7 +269,7 @@ void det_conn_flush(uint8_t slot);
  * larger than one TCP window. A genuinely dead peer is still reclaimed by lwIP's retransmission
  * timers (err callback), not this sweep.
  */
-void det_conn_touch_active(uint8_t slot);
+void dws_conn_touch_active(uint8_t slot);
 
 /**
  * @brief Reopen the TCP receive window by however much @p slot has drained.
@@ -285,7 +285,7 @@ void det_conn_touch_active(uint8_t slot);
  * (computes the delta vs rx_acked, marshals tcp_recved to tcpip_thread, advances
  * rx_acked). A no-op when nothing was drained or @p slot is not active.
  */
-void det_conn_ack_consumed(uint8_t slot);
+void dws_conn_ack_consumed(uint8_t slot);
 
 // ---------------------------------------------------------------------------
 // RX ring read API - the single way any layer drains received bytes.
@@ -293,7 +293,7 @@ void det_conn_ack_consumed(uint8_t slot);
 // Transport owns the ring; consumers (HTTP/WS/Telnet/SSH/TLS and the framed
 // services) must never index rx_buffer or advance rx_tail themselves - they call
 // these. Consuming functions advance rx_tail only; the window is reopened by the
-// worker's det_conn_ack_consumed() once per loop (one owner, no per-byte ACK).
+// worker's dws_conn_ack_consumed() once per loop (one owner, no per-byte ACK).
 // Single-consumer per slot (the owning worker), so no locking here. These are
 // inline because the byte path is hot and the ring internals live in this header.
 // ---------------------------------------------------------------------------
@@ -302,37 +302,37 @@ void det_conn_ack_consumed(uint8_t slot);
 // rx_buffer - the server transport never reimplements the ring math.
 
 /** @brief Bytes currently available to read from @p slot's ring. */
-static inline size_t det_conn_available(uint8_t slot)
+static inline size_t dws_conn_available(uint8_t slot)
 {
     const TcpConn *c = &conn_pool[slot];
-    return det_ring_available(c->rx_head, c->rx_tail, RX_BUF_SIZE);
+    return dws_ring_available(c->rx_head, c->rx_tail, RX_BUF_SIZE);
 }
 
 /** @brief Pop one byte into @p out; false if the ring is empty. */
-static inline bool det_conn_read_byte(uint8_t slot, uint8_t *out)
+static inline bool dws_conn_read_byte(uint8_t slot, uint8_t *out)
 {
     TcpConn *c = &conn_pool[slot];
-    return det_ring_read_byte(c->rx_buffer, RX_BUF_SIZE, c->rx_head, c->rx_tail, out);
+    return dws_ring_read_byte(c->rx_buffer, RX_BUF_SIZE, c->rx_head, c->rx_tail, out);
 }
 
 /** @brief Copy @p n bytes at @p off from the tail into @p dst WITHOUT consuming (lookahead). */
-static inline void det_conn_peek(uint8_t slot, size_t off, uint8_t *dst, size_t n)
+static inline void dws_conn_peek(uint8_t slot, size_t off, uint8_t *dst, size_t n)
 {
     const TcpConn *c = &conn_pool[slot];
-    det_ring_peek(c->rx_buffer, RX_BUF_SIZE, c->rx_tail, off, dst, n);
+    dws_ring_peek(c->rx_buffer, RX_BUF_SIZE, c->rx_tail, off, dst, n);
 }
 
 /** @brief Drop @p n bytes from the tail (advance past already-peeked data). */
-static inline void det_conn_consume(uint8_t slot, size_t n)
+static inline void dws_conn_consume(uint8_t slot, size_t n)
 {
-    det_ring_consume(conn_pool[slot].rx_tail, RX_BUF_SIZE, n);
+    dws_ring_consume(conn_pool[slot].rx_tail, RX_BUF_SIZE, n);
 }
 
 /** @brief Pop up to @p cap bytes into @p buf; returns the count read. */
-static inline size_t det_conn_read(uint8_t slot, uint8_t *buf, size_t cap)
+static inline size_t dws_conn_read(uint8_t slot, uint8_t *buf, size_t cap)
 {
     TcpConn *c = &conn_pool[slot];
-    return det_ring_read(c->rx_buffer, RX_BUF_SIZE, c->rx_head, c->rx_tail, buf, cap);
+    return dws_ring_read(c->rx_buffer, RX_BUF_SIZE, c->rx_head, c->rx_tail, buf, cap);
 }
 
 /**
@@ -342,22 +342,22 @@ static inline size_t det_conn_read(uint8_t slot, uint8_t *buf, size_t cap)
  * CONN_ACTIVE state check and the non-null pcb check the send / flush / close paths
  * require. Callers outside transport/ + tls/ must NOT test conn_pool[slot].state or
  * .pcb themselves - .pcb is a raw lwIP pointer, so poking it couples a higher layer to
- * the transport's internals. Guard a send with `if (!det_conn_active(slot)) return;`.
+ * the transport's internals. Guard a send with `if (!dws_conn_active(slot)) return;`.
  */
-static inline bool det_conn_active(uint8_t slot)
+static inline bool dws_conn_active(uint8_t slot)
 {
     const TcpConn *c = &conn_pool[slot];
     return c->state == ConnState::CONN_ACTIVE && c->pcb != nullptr;
 }
 
 /** @brief The network interface (STA / AP / ANY) @p slot's connection arrived on. */
-static inline DetIface det_conn_iface(uint8_t slot)
+static inline DWSIface dws_conn_iface(uint8_t slot)
 {
     return conn_pool[slot].iface;
 }
 
 /** @brief The id of the listener @p slot's connection was accepted on. */
-static inline uint8_t det_conn_listener_id(uint8_t slot)
+static inline uint8_t dws_conn_listener_id(uint8_t slot)
 {
     return conn_pool[slot].listener_id;
 }
@@ -368,7 +368,7 @@ static inline uint8_t det_conn_listener_id(uint8_t slot)
  * The connection pool owns this aggregate: callers (stats / metrics) ask transport for the
  * count instead of sweeping conn_pool[] and testing .state themselves.
  */
-uint8_t det_conn_active_count();
+uint8_t dws_conn_active_count();
 
 /**
  * @brief Write raw bytes straight to @p pcb (no TLS), context-safe.
@@ -380,7 +380,7 @@ uint8_t det_conn_active_count();
  * unsynchronized tcp_write from the main loop. Calls tcp_output() on success.
  * @return true if the bytes were queued; false on a full send buffer (ERR_MEM).
  */
-bool det_conn_raw_send(struct tcp_pcb *pcb, const void *data, u16_t len);
+bool dws_conn_raw_send(struct tcp_pcb *pcb, const void *data, u16_t len);
 
 /**
  * @brief Close connection @p slot gracefully (tcp_close), aborting if the FIN
@@ -390,25 +390,25 @@ bool det_conn_raw_send(struct tcp_pcb *pcb, const void *data, u16_t len);
  *        only the slot and never touch the raw tcp_pcb. A no-op if the slot has
  *        no live pcb.
  */
-void det_conn_close(uint8_t slot);
+void dws_conn_close(uint8_t slot);
 
 /**
  * @brief Begin a graceful close that dwells in ConnState::CONN_CLOSING until the peer ACKs.
  *
- * Unlike det_conn_close() (immediate teardown), this leaves the slot's PCB and
+ * Unlike dws_conn_close() (immediate teardown), this leaves the slot's PCB and
  * callbacks live and moves it ACTIVE -> ConnState::CONN_CLOSING. The slot finalizes (PCB
  * closed, slot freed) from the sent callback once the response has fully drained,
- * or from the idle sweep after DETWS_CLOSING_TIMEOUT_MS if the peer never ACKs.
- * The caller must already have queued (det_conn_send) + flushed the response.
+ * or from the idle sweep after DWS_CLOSING_TIMEOUT_MS if the peer never ACKs.
+ * The caller must already have queued (dws_conn_send) + flushed the response.
  * A no-op if the slot is not ConnState::CONN_ACTIVE (e.g. an error freed it mid-write).
  */
-void det_conn_begin_close(uint8_t slot_id);
+void dws_conn_begin_close(uint8_t slot_id);
 
 /** @brief Detach @p pcb from its slot's lwIP callbacks before the slot is freed. */
-void det_conn_detach(struct tcp_pcb *pcb);
+void dws_conn_detach(struct tcp_pcb *pcb);
 
 /** @brief Hard-abort @p pcb (RST) for a fatal condition; no graceful FIN. */
-void det_conn_abort(struct tcp_pcb *pcb);
+void dws_conn_abort(struct tcp_pcb *pcb);
 
 /**
  * @brief Hard-abort connection @p slot (RST) for a fatal condition. The transport
@@ -417,7 +417,7 @@ void det_conn_abort(struct tcp_pcb *pcb);
  *        abort - so callers pass only the slot and never touch the raw tcp_pcb. A
  *        no-op if the slot has no live pcb.
  */
-void det_conn_abort_slot(uint8_t slot);
+void dws_conn_abort_slot(uint8_t slot);
 
 /**
  * @brief Raw source IPv4 of the connection in @p slot, or 0 if the slot has no
@@ -425,17 +425,17 @@ void det_conn_abort_slot(uint8_t slot);
  *        identity key (e.g. for the auth lockout), not for display. Keeps the
  *        lwIP pcb access inside L4 so callers never reach into the pcb directly.
  */
-uint32_t det_conn_remote_ip(uint8_t slot);
+uint32_t dws_conn_remote_ip(uint8_t slot);
 
 /**
- * @brief The connected peer's address as a family-tagged ::DetIp (IPv4 or IPv6).
+ * @brief The connected peer's address as a family-tagged ::DWSIp (IPv4 or IPv6).
  *
- * Unlike det_conn_remote_ip() (which flattens to a v4 uint32 and cannot represent a v6 peer),
- * this reports the real address for a dual-stack build (DETWS_ENABLE_IPV6). Format it with
- * det_ip_format() or classify it with det_ip_classify().
+ * Unlike dws_conn_remote_ip() (which flattens to a v4 uint32 and cannot represent a v6 peer),
+ * this reports the real address for a dual-stack build (DWS_ENABLE_IPV6). Format it with
+ * dws_ip_format() or classify it with dws_ip_classify().
  * @return true if @p slot has an active connection whose address was written to @p out.
  */
-bool det_conn_remote_addr(uint8_t slot, DetIp *out);
+bool dws_conn_remote_addr(uint8_t slot, DWSIp *out);
 
 /**
  * @brief A stable per-peer 32-bit identity key for @p slot (the v4 address, or an FNV-1a hash of a
@@ -444,33 +444,33 @@ bool det_conn_remote_addr(uint8_t slot, DetIp *out);
  */
 #ifdef ARDUINO
 /**
- * @brief Convert a raw lwIP address to the portable family-tagged DetIp - for the accept callback,
+ * @brief Convert a raw lwIP address to the portable family-tagged DWSIp - for the accept callback,
  *        which has the pcb but no connection slot yet. ESP32 only (the parameter is an lwIP type).
  */
-void det_lwip_to_detip(const ip_addr_t *ra, DetIp *out);
+void dws_lwip_to_detip(const ip_addr_t *ra, DWSIp *out);
 #endif
 
 // ---------------------------------------------------------------------------
-// Observability (DETWS_ENABLE_OBSERVABILITY) - connection event hook + counters
+// Observability (DWS_ENABLE_OBSERVABILITY) - connection event hook + counters
 // ---------------------------------------------------------------------------
-#if DETWS_ENABLE_OBSERVABILITY
+#if DWS_ENABLE_OBSERVABILITY
 
 /** @brief Why a connection event fired (the reason for a transition or notice). */
-enum class DetConnReason : uint8_t
+enum class DWSConnReason : uint8_t
 {
-    DET_CONN_R_ACCEPT,       ///< New connection accepted (ConnState::CONN_FREE -> ConnState::CONN_ACTIVE).
-    DET_CONN_R_CLOSE_REMOTE, ///< Peer closed gracefully (FIN received).
-    DET_CONN_R_CLOSE_LOCAL,  ///< Application initiated the close.
-    DET_CONN_R_ERROR,        ///< lwIP reported a fatal error on the connection.
-    DET_CONN_R_TIMEOUT,      ///< Idle-timeout sweep reaped the slot.
-    DET_CONN_R_ABORT,        ///< Forced abort (server stop / pool reset).
-    DET_CONN_R_DRAINED,      ///< ConnState::CONN_CLOSING slot finished draining -> closed.
-    DET_CONN_R_BACKPRESSURE, ///< RX segment refused (ring full); no state change.
-    DET_CONN_R_DEFER_DROP    ///< Event queue full; an event was dropped (no state change).
+    DWS_CONN_R_ACCEPT,       ///< New connection accepted (ConnState::CONN_FREE -> ConnState::CONN_ACTIVE).
+    DWS_CONN_R_CLOSE_REMOTE, ///< Peer closed gracefully (FIN received).
+    DWS_CONN_R_CLOSE_LOCAL,  ///< Application initiated the close.
+    DWS_CONN_R_ERROR,        ///< lwIP reported a fatal error on the connection.
+    DWS_CONN_R_TIMEOUT,      ///< Idle-timeout sweep reaped the slot.
+    DWS_CONN_R_ABORT,        ///< Forced abort (server stop / pool reset).
+    DWS_CONN_R_DRAINED,      ///< ConnState::CONN_CLOSING slot finished draining -> closed.
+    DWS_CONN_R_BACKPRESSURE, ///< RX segment refused (ring full); no state change.
+    DWS_CONN_R_DEFER_DROP    ///< Event queue full; an event was dropped (no state change).
 };
 
 /** @brief Snapshot of the transport's lifetime counters (plus a live gauge). */
-struct DetConnCounters
+struct DWSConnCounters
 {
     uint32_t accepts;        ///< Connections accepted.
     uint32_t closes_remote;  ///< Closed by peer FIN.
@@ -491,32 +491,32 @@ struct DetConnCounters
  * not call back into the server from it. @p old_state == @p new_state for the
  * non-transition notices (backpressure, defer-drop).
  */
-typedef void (*DetConnEventCb)(uint8_t slot, ConnState old_state, ConnState new_state, DetConnReason reason);
+typedef void (*DWSConnEventCb)(uint8_t slot, ConnState old_state, ConnState new_state, DWSConnReason reason);
 
 /** @brief Register (or clear, with nullptr) the connection event callback. */
-void det_conn_on_event(DetConnEventCb cb);
+void dws_conn_on_event(DWSConnEventCb cb);
 
 /** @brief Read a consistent snapshot of the transport counters. */
-DetConnCounters det_conn_counters();
+DWSConnCounters dws_conn_counters();
 
 /** @brief Zero the cumulative counters (the live ConnState::CONN_CLOSING gauge is untouched). */
-void det_conn_counters_reset();
+void dws_conn_counters_reset();
 
 // Internal notify points (tcp.cpp), reached via the macros below so both
 // tcp.cpp and listener.cpp (accept) record through one path.
-void detws_obs_transition(uint8_t slot, ConnState olds, ConnState news, DetConnReason reason);
-void detws_obs_notice(uint8_t slot, ConnState st, DetConnReason reason);
-#define DETWS_OBS_TRANSITION(slot, olds, news, reason) detws_obs_transition((slot), (olds), (news), (reason))
-#define DETWS_OBS_NOTICE(slot, st, reason) detws_obs_notice((slot), (st), (reason))
+void dws_obs_transition(uint8_t slot, ConnState olds, ConnState news, DWSConnReason reason);
+void dws_obs_notice(uint8_t slot, ConnState st, DWSConnReason reason);
+#define DWS_OBS_TRANSITION(slot, olds, news, reason) dws_obs_transition((slot), (olds), (news), (reason))
+#define DWS_OBS_NOTICE(slot, st, reason) dws_obs_notice((slot), (st), (reason))
 
-#else // !DETWS_ENABLE_OBSERVABILITY
+#else // !DWS_ENABLE_OBSERVABILITY
 
-// Compile to nothing; the arguments (incl. DetConnReason names, only declared
+// Compile to nothing; the arguments (incl. DWSConnReason names, only declared
 // when the feature is on) are dropped unparsed by the preprocessor.
-#define DETWS_OBS_TRANSITION(slot, olds, news, reason) ((void)0)
-#define DETWS_OBS_NOTICE(slot, st, reason) ((void)0)
+#define DWS_OBS_TRANSITION(slot, olds, news, reason) ((void)0)
+#define DWS_OBS_NOTICE(slot, st, reason) ((void)0)
 
-#endif // DETWS_ENABLE_OBSERVABILITY
+#endif // DWS_ENABLE_OBSERVABILITY
 
 // ---------------------------------------------------------------------------
 // Per-connection lwIP callbacks (defined in tcp.cpp, used in listener.cpp)
@@ -548,7 +548,7 @@ void lowlevel_err_cb(void *arg, err_t err);
  * Forward declaration of listener_enqueue() to break the circular include.
  * See listener.h for the full documentation of this function.
  * Returns true if the event was queued, false if it was dropped (queue full or
- * inactive listener) - the transport observes drops as DetConnReason::DET_CONN_R_DEFER_DROP.
+ * inactive listener) - the transport observes drops as DWSConnReason::DWS_CONN_R_DEFER_DROP.
  */
 bool listener_enqueue(uint8_t listener_id, const TcpEvt *evt);
 

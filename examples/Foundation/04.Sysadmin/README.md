@@ -89,7 +89,7 @@ added comments.
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static const char *ADMIN_TOKEN = "admin123"; // expected X-Admin-Token value
 
@@ -227,7 +227,7 @@ void setup()
 {
     Serial.begin(115200);
     delay(1000);
-    Serial.println("\n--- DetWebServer SysAdmin Control Console ---");
+    Serial.println("\n--- DWS SysAdmin Control Console ---");
 
     init_wifi_physical(SSID, PASSWORD);
     while (!wifi_ready())

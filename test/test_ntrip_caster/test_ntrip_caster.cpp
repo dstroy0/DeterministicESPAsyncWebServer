@@ -100,7 +100,7 @@ void test_str_record_format()
     m.format_details = "1005(1),1006(10)";
     m.nav_system = "GPS";
     m.country = "USA";
-    m.generator = "DetWebServer";
+    m.generator = "DWS";
     m.lat_deg = 37.77;
     m.lon_deg = -122.42;
     m.nmea_required = false;
@@ -109,7 +109,7 @@ void test_str_record_format()
     size_t n = ntrip_build_str_record(rec, sizeof(rec), &m);
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_STRING("STR;BASE1;Lab roof;RTCM 3.3;1005(1),1006(10);0;GPS;none;USA;37.77;-122.42;0;0;"
-                             "DetWebServer;none;N;N;9600;",
+                             "DWS;none;N;N;9600;",
                              rec);
     // A well-formed STR record has 19 fields (18 semicolons).
     int semis = 0;
@@ -129,10 +129,10 @@ void test_str_record_defaults_and_negative_small_lon()
     char rec[192];
     size_t n = ntrip_build_str_record(rec, sizeof(rec), &m);
     TEST_ASSERT_TRUE(n > 0);
-    TEST_ASSERT_NOT_NULL(strstr(rec, ";GPS;"));          // nav-system default
-    TEST_ASSERT_NOT_NULL(strstr(rec, ";1005(1);"));      // format-details default
-    TEST_ASSERT_NOT_NULL(strstr(rec, ";DetWebServer;")); // generator default
-    TEST_ASSERT_NOT_NULL(strstr(rec, ";0.00;-0.05;"));   // lat/lon formatting incl. small negative
+    TEST_ASSERT_NOT_NULL(strstr(rec, ";GPS;"));        // nav-system default
+    TEST_ASSERT_NOT_NULL(strstr(rec, ";1005(1);"));    // format-details default
+    TEST_ASSERT_NOT_NULL(strstr(rec, ";DWS;"));        // generator default
+    TEST_ASSERT_NOT_NULL(strstr(rec, ";0.00;-0.05;")); // lat/lon formatting incl. small negative
 }
 
 // Read the Content-Length header value out of a response.
@@ -142,7 +142,7 @@ static long content_length_of(const char *resp)
     if (!h)
         return -1;
     const char *end = h;
-    return det_strtol(h + 15, &end);
+    return dws_strtol(h + 15, &end);
 }
 
 void test_sourcetable_has_records_and_correct_length()

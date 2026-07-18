@@ -12,7 +12,7 @@
 
 #include "services/partition_monitor/partition_monitor.h"
 
-#if DETWS_ENABLE_PARTITION_MONITOR
+#if DWS_ENABLE_PARTITION_MONITOR
 
 #include "shared_primitives/fmtbuf.h"
 #include <stdio.h>
@@ -20,7 +20,7 @@
 
 // esp_partition type/subtype constants (mirrors esp_partition_type_t/subtype_t so
 // the classifier stays pure and host-testable without the IDF headers).
-const char *detws_partition_kind(uint8_t type, uint8_t subtype)
+const char *dws_partition_kind(uint8_t type, uint8_t subtype)
 {
     if (type == 0) // ESP_PARTITION_TYPE_APP
     {
@@ -55,7 +55,7 @@ const char *detws_partition_kind(uint8_t type, uint8_t subtype)
     }
 }
 
-int detws_partition_json(const DetwsPartitionInfo *parts, uint8_t count, char *out, size_t cap)
+int dws_partition_json(const DetwsPartitionInfo *parts, uint8_t count, char *out, size_t cap)
 {
     if (!out || cap == 0)
         return 0;
@@ -63,20 +63,20 @@ int detws_partition_json(const DetwsPartitionInfo *parts, uint8_t count, char *o
     if (!parts)
         return 0;
     size_t pos = 0;
-    if (det_fmt_append(out, cap, &pos, "{\"partitions\":[") != 0)
+    if (dws_fmt_append(out, cap, &pos, "{\"partitions\":[") != 0)
         return 0;
     for (uint8_t i = 0; i < count; i++)
     {
         const DetwsPartitionInfo *p = &parts[i];
-        if (det_fmt_append(out, cap, &pos,
+        if (dws_fmt_append(out, cap, &pos,
                            "%s{\"label\":\"%s\",\"kind\":\"%s\",\"type\":%u,\"subtype\":%u,\"addr\":%u,\"size\":%u,"
                            "\"running\":%s}",
-                           i ? "," : "", p->label, detws_partition_kind(p->type, p->subtype), (unsigned)p->type,
+                           i ? "," : "", p->label, dws_partition_kind(p->type, p->subtype), (unsigned)p->type,
                            (unsigned)p->subtype, (unsigned)p->address, (unsigned)p->size,
                            p->running ? "true" : "false") != 0)
             return 0;
     }
-    if (det_fmt_append(out, cap, &pos, "]}") != 0)
+    if (dws_fmt_append(out, cap, &pos, "]}") != 0)
         return 0;
     return (int)pos;
 }
@@ -86,7 +86,7 @@ int detws_partition_json(const DetwsPartitionInfo *parts, uint8_t count, char *o
 #include <esp_ota_ops.h>
 #include <esp_partition.h>
 
-uint8_t detws_partition_collect(DetwsPartitionInfo *out, uint8_t max)
+uint8_t dws_partition_collect(DetwsPartitionInfo *out, uint8_t max)
 {
     if (!out || max == 0)
         return 0;
@@ -111,11 +111,11 @@ uint8_t detws_partition_collect(DetwsPartitionInfo *out, uint8_t max)
 
 #else // host build - no flash
 
-uint8_t detws_partition_collect(DetwsPartitionInfo *, uint8_t)
+uint8_t dws_partition_collect(DetwsPartitionInfo *, uint8_t)
 {
     return 0;
 }
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_PARTITION_MONITOR
+#endif // DWS_ENABLE_PARTITION_MONITOR

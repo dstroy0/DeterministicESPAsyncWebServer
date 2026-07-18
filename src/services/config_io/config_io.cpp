@@ -11,7 +11,7 @@
 
 #include "services/config_io/config_io.h"
 
-#if DETWS_ENABLE_CONFIG_IO
+#if DWS_ENABLE_CONFIG_IO
 
 #include "services/config_store/config_store.h"
 #include "shared_primitives/numparse.h"
@@ -53,22 +53,22 @@ bool append_kv(char *out, size_t cap, size_t *pos, const char *key, const char *
 }
 } // namespace
 
-int detws_config_export(const char *ns, const DetwsCfgField *fields, size_t n, char *out, size_t cap)
+int dws_config_export(const char *ns, const DetwsCfgField *fields, size_t n, char *out, size_t cap)
 {
     if (!out || cap == 0)
         return 0;
     out[0] = '\0';
-    if (!fields || !detws_config_begin(ns))
+    if (!fields || !dws_config_begin(ns))
         return 0;
 
     size_t pos = 0;
     for (size_t i = 0; i < n; i++)
     {
         char val[VAL_MAX];
-        if (fields[i].type == DetwsCfgType::DETWS_CFG_U32)
-            snprintf(val, sizeof(val), "%u", (unsigned)detws_config_get_u32(fields[i].key, 0));
+        if (fields[i].type == DetwsCfgType::DWS_CFG_U32)
+            snprintf(val, sizeof(val), "%u", (unsigned)dws_config_get_u32(fields[i].key, 0));
         else
-            detws_config_get_str(fields[i].key, val, sizeof(val), "");
+            dws_config_get_str(fields[i].key, val, sizeof(val), "");
 
         if (!append_kv(out, cap, &pos, fields[i].key, val))
         {
@@ -86,16 +86,16 @@ static bool config_apply_field(const DetwsCfgField *fields, size_t n, const char
     DetwsCfgType t;
     if (!field_type(fields, n, key, &t))
         return false;
-    if (t == DetwsCfgType::DETWS_CFG_U32)
-        return detws_config_set_u32(key, (uint32_t)det_strtoul(val, nullptr));
-    if (t == DetwsCfgType::DETWS_CFG_STR)
-        return detws_config_set_str(key, val);
+    if (t == DetwsCfgType::DWS_CFG_U32)
+        return dws_config_set_u32(key, (uint32_t)dws_strtoul(val, nullptr));
+    if (t == DetwsCfgType::DWS_CFG_STR)
+        return dws_config_set_str(key, val);
     return false;
 }
 
-int detws_config_import(const char *ns, const DetwsCfgField *fields, size_t n, const char *text, size_t len)
+int dws_config_import(const char *ns, const DetwsCfgField *fields, size_t n, const char *text, size_t len)
 {
-    if (!text || !fields || !detws_config_begin(ns))
+    if (!text || !fields || !dws_config_begin(ns))
         return 0;
 
     int count = 0;
@@ -135,4 +135,4 @@ int detws_config_import(const char *ns, const DetwsCfgField *fields, size_t n, c
     return count;
 }
 
-#endif // DETWS_ENABLE_CONFIG_IO
+#endif // DWS_ENABLE_CONFIG_IO

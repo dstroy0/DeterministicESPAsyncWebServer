@@ -3,7 +3,7 @@
 
 /**
  * @file 73.AdsClient.ino
- * @brief Beckhoff ADS client - read a TwinCAT PLC over AMS/TCP (DETWS_ENABLE_ADS).
+ * @brief Beckhoff ADS client - read a TwinCAT PLC over AMS/TCP (DWS_ENABLE_ADS).
  *
  * services/ads builds ADS/AMS requests and parses the responses; it is transport-
  * agnostic, so the app owns the socket. This sketch opens a plain Arduino WiFiClient
@@ -20,10 +20,10 @@
  * an AMS route on the PLC back to this device's AMSNetId (below) or the router will
  * reject the connection - see the README.
  *
- * Build flag (platformio.ini):  build_flags = -DDETWS_ENABLE_ADS=1
+ * Build flag (platformio.ini):  build_flags = -DDWS_ENABLE_ADS=1
  */
 
-#define DETWS_ENABLE_ADS 1
+#define DWS_ENABLE_ADS 1
 
 #include "dwserver.h" // library entry header (also sets the src/ include root)
 #include "network_drivers/physical/physical.h"

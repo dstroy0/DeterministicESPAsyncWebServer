@@ -16,16 +16,16 @@ void tearDown()
 
 void test_ps_names()
 {
-    TEST_ASSERT_EQUAL_STRING("none", detws_radio_ps_name(DetwsRadioPs::DETWS_PS_NONE));
-    TEST_ASSERT_EQUAL_STRING("min_modem", detws_radio_ps_name(DetwsRadioPs::DETWS_PS_MIN_MODEM));
-    TEST_ASSERT_EQUAL_STRING("max_modem", detws_radio_ps_name(DetwsRadioPs::DETWS_PS_MAX_MODEM));
-    TEST_ASSERT_EQUAL_STRING("none", detws_radio_ps_name(99)); // unknown -> none
+    TEST_ASSERT_EQUAL_STRING("none", dws_radio_ps_name(DetwsRadioPs::DWS_PS_NONE));
+    TEST_ASSERT_EQUAL_STRING("min_modem", dws_radio_ps_name(DetwsRadioPs::DWS_PS_MIN_MODEM));
+    TEST_ASSERT_EQUAL_STRING("max_modem", dws_radio_ps_name(DetwsRadioPs::DWS_PS_MAX_MODEM));
+    TEST_ASSERT_EQUAL_STRING("none", dws_radio_ps_name(99)); // unknown -> none
 }
 
 void test_apply_is_noop_on_host()
 {
-    detws_radio_power_apply(); // must not crash
-    TEST_ASSERT_EQUAL_UINT8(DetwsRadioPs::DETWS_PS_NONE, detws_radio_ps_get());
+    dws_radio_power_apply(); // must not crash
+    TEST_ASSERT_EQUAL_UINT8(DetwsRadioPs::DWS_PS_NONE, dws_radio_ps_get());
 }
 
 int main()

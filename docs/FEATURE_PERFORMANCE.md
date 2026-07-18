@@ -182,8 +182,8 @@ device costs of hot pure primitives on the auth and ETag/Digest paths - no netwo
 
 | Operation                               | ESP32-S3 cyc/op | ESP32-S3 ns/op |
 | --------------------------------------- | --------------: | -------------: |
-| `det_hex_encode` (16 B -> 32 hex)       |             462 |           1925 |
-| `det_hex_decode` (32 hex -> 16 B)       |             689 |           2870 |
+| `dws_hex_encode` (16 B -> 32 hex)       |             462 |           1925 |
+| `dws_hex_decode` (32 hex -> 16 B)       |             689 |           2870 |
 | `base64_decode` ("admin:admin", 16 ch)  |            5040 |          21000 |
 | `mime_type` (extension -> content-type) |             470 |           1958 |
 
@@ -200,7 +200,7 @@ device costs of hot pure primitives on the auth and ETag/Digest paths - no netwo
 - `mime_type` (path extension -> content-type, run on every file-serving response) is ~1.96 us - cheap; the
   content-type lookup is never the request-path bottleneck.
 
-### Server-Sent Events framing (DETWS_ENABLE_SSE)
+### Server-Sent Events framing (DWS_ENABLE_SSE)
 
 `sse_format()` builds one `event:`/`id:`/`data:` record (WHATWG event-stream format) into a buffer; it is
 the pure, transport-free hot op behind every `sse_send()` / `sse_broadcast()`. Host figures from
@@ -218,18 +218,18 @@ the pure, transport-free hot op behind every `sse_send()` / `sse_broadcast()`. H
   (noted in the ROADMAP perf items). The data-only shape (the common broadcast case) is ~3x cheaper on the
   host, so the device cost scales down similarly.
 
-### WebDAV 207 Multi-Status builder (DETWS_ENABLE_WEBDAV)
+### WebDAV 207 Multi-Status builder (DWS_ENABLE_WEBDAV)
 
-`det_webdav_ms_entry()` builds one `<response>` element (RFC 4918 Multi-Status) for a resource; it runs
+`dws_webdav_ms_entry()` builds one `<response>` element (RFC 4918 Multi-Status) for a resource; it runs
 once per directory child on every PROPFIND, and internally XML-escapes the href. Pure (no filesystem),
 so it benches standalone. Host figures from [`perf/bench_webdav.cpp`](../perf/bench_webdav.cpp); the
 device figure is the rig `/bench` CCOUNT op (N=20000 warm).
 
 | Operation                                 | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
 | ----------------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `det_webdav_ms_entry` (one file response) |      128.4 |    3161.2 |            4598 |          19158 |
+| `dws_webdav_ms_entry` (one file response) |      128.4 |    3161.2 |            4598 |          19158 |
 | PROPFIND Depth-1 body (8 children)        |     1223.2 |    2992.3 |               - |              - |
-| `det_webdav_xml_escape` (5 escapables)    |       67.0 |     582.3 |               - |              - |
+| `dws_webdav_xml_escape` (5 escapables)    |       67.0 |     582.3 |               - |              - |
 
 - One `<response>` costs ~19.2 us on the S3 - the heaviest of the presentation-layer builders (it
   escapes the href and does a hand-rolled itoa for the content length into a 512 B temp), but PROPFIND
@@ -240,9 +240,9 @@ device figure is the rig `/bench` CCOUNT op (N=20000 warm).
 - The real device PROPFIND latency is dominated by LittleFS directory enumeration; the XML build is cheap
   by comparison. A directory-listing cache (invalidated on PUT/DELETE/MKCOL/MOVE) would help a hot share.
 
-### CoAP server codec (DETWS_ENABLE_COAP)
+### CoAP server codec (DWS_ENABLE_COAP)
 
-`det_coap_server_process()` is the whole CoAP request→response path (RFC 7252): parse the 4-byte header +
+`dws_coap_server_process()` is the whole CoAP request→response path (RFC 7252): parse the 4-byte header +
 options, reconstruct the Uri-Path, dispatch against the resource table, and encode the piggybacked
 reply. Pure (no sockets, no heap). Host figures from [`perf/bench_coap.cpp`](../perf/bench_coap.cpp);
 the device figure is the rig `/bench` CCOUNT op (N=20000 warm), including the handler that renders the
@@ -250,8 +250,8 @@ the device figure is the rig `/bench` CCOUNT op (N=20000 warm), including the ha
 
 | Operation                                   | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
 | ------------------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `det_coap_server_process` GET /info         |       58.8 |     221.0 |            5331 |          22212 |
-| `det_coap_server_process` GET /a/b/c (3seg) |       29.6 |     338.3 |               - |              - |
+| `dws_coap_server_process` GET /info         |       58.8 |     221.0 |            5331 |          22212 |
+| `dws_coap_server_process` GET /a/b/c (3seg) |       29.6 |     338.3 |               - |              - |
 
 - A full CoAP GET round trip (parse + dispatch + encode, plus the handler's `snprintf` of the JSON body)
   is ~22 us on the S3. That is a complete datagram exchange, not a micro-codec, so it is the honest
@@ -259,7 +259,7 @@ the device figure is the rig `/bench` CCOUNT op (N=20000 warm), including the ha
   no connection setup. UDP + the fixed resource table make CoAP the cheapest of the request paths per
   transaction on this device.
 
-### SNMP agent codec (DETWS_ENABLE_SNMP)
+### SNMP agent codec (DWS_ENABLE_SNMP)
 
 `snmp_agent_process()` is the whole SNMP v1/v2c path (RFC 1157/3416): BER-decode the message + PDU,
 walk the MIB against the varbind OIDs, BER-encode the reply. Pure (no sockets, no heap). Host figures
@@ -280,7 +280,7 @@ from [`perf/bench_snmp.cpp`](../perf/bench_snmp.cpp); the device figure is the r
   the reply at its small MIB + fixed tx buffer, so it is **not a usable reflection/amplification vector**
   (unlike a full SNMP daemon over a large MIB). That bound is a determinism property, not a config knob.
 
-### OPC UA Binary codec (DETWS_ENABLE_OPCUA)
+### OPC UA Binary codec (DWS_ENABLE_OPCUA)
 
 The OPC UA server's hot ops (IEC 62541 / OPC UA Part 6): the UACP Hello/Acknowledge handshake
 (`opcua_parse_hello` + `opcua_build_ack`, run once per connection) and the per-node DataValue Variant
@@ -301,10 +301,10 @@ encode (`ua_w_datavalue`, the Read-service hot op). All pure little-endian codec
   nodes + references, not the encoding.
 - **Buffer-negotiation note (security):** the pentest `opcua_hello_buffer_abuse` sent a HELLO advertising
   4 GB Receive/Send/MaxMessage buffers; the ACK negotiated them **down to the server's fixed 8192 B**
-  (`DETWS_OPCUA_BUF`) with MaxChunkCount 1 - the server never honors the client's huge sizes, so a Hello
+  (`DWS_OPCUA_BUF`) with MaxChunkCount 1 - the server never honors the client's huge sizes, so a Hello
   cannot induce an over-allocation. That bound is structural (fixed buffers), not a tunable.
 
-### Modbus TCP slave codec (DETWS_ENABLE_MODBUS)
+### Modbus TCP slave codec (DWS_ENABLE_MODBUS)
 
 `modbus_process_adu()` is the whole Modbus TCP slave path (Modbus Application Protocol): parse the MBAP
 header, dispatch the function code against the coil/register data model, build the response ADU. Pure
@@ -342,7 +342,7 @@ op (inflate of a ~70 B JSON message).
   **refused it without allocating the expanded payload** - a WebSocket zip bomb cannot exhaust memory.
   The output cap is structural (a fixed message buffer), so the defense holds regardless of the ratio.
 
-### SSH server crypto (DETWS_ENABLE_SSH)
+### SSH server crypto (DWS_ENABLE_SSH)
 
 The SSH-2 server's hot cryptographic ops: the curve25519 KEX (an X25519 scalar multiplication for the
 ephemeral key and again for the shared secret), the ssh-ed25519 host-key signature over the exchange
@@ -396,7 +396,7 @@ accelerator on the S3 (see the MODMULT bullet); the host figures are the softwar
   tweetnacl MODMULT chains; no per-op pack/unpack because everything stays canonical - MODMULT output is provably
   `< p`, verified 0 / 5000). One modmul is **1,386 cycles vs the SIMD `gf_mul`'s 7,955 (5.8x), 9.6x vs scalar**,
   data-independent (constant-time). The X25519 Montgomery ladder and the Ed25519 extended-twisted-Edwards point
-  arithmetic share this `fe` layer (`ssh_fe25519.h`, `DETWS_FE25519_MPI_HW`); end to end **X25519 97.5 -> 22.65
+  arithmetic share this `fe` layer (`ssh_fe25519.h`, `DWS_FE25519_MPI_HW`); end to end **X25519 97.5 -> 22.65
   ms, ed25519_sign 380 -> 85.6 ms**, dropping the handshake crypto from ~0.58 s (SIMD) to **~0.13 s**. Byte-exact
   vs the software radix-2^16 ladder (RFC 7748 §5.2 / RFC 8032 §7.1 + Wycheproof, native tests) and **HW-verified
   by a live `curve25519-sha256` KEX with an `ssh-ed25519` host key against OpenSSH** on the rig (a wrong X25519
@@ -406,15 +406,15 @@ accelerator on the S3 (see the MODMULT bullet); the host figures are the softwar
   its run (a handshake is infrequent; per-multiply toggling would cost more than it saves). Guarded
   `#if defined(ARDUINO) && CONFIG_IDF_TARGET_ESP32S3`, with the SIMD/scalar `ssh_gf` ladder as the fallback.
   **HTTP/3 shares the same `ssh_x25519` + `ssh_ed25519`, so the QUIC handshake gets the win too.** The
-  reproducible probe lives in `pentesting/rig_firmware/src/main_ssh.cpp` under `DETWS_SSH_BENCH`.
+  reproducible probe lives in `pentesting/rig_firmware/src/main_ssh.cpp` under `DWS_SSH_BENCH`.
 - **`-O2` does not speed up the crypto (measured).** Rebuilt `rig_s3_ssh` at `-O2` (pre-MODMULT SIMD build):
   X25519 **97.3 ms**, ed25519_sign **380 ms** - identical to the `-Og` numbers. The ladder is hand-written
   vector assembly plus already-`int32` C glue, neither of which the optimizer can improve, so the shipped `-Og`
   figures **are** the production crypto numbers (unlike the pure-C protocol codecs, which gain ~15-30% at `-O2`).
   The MODMULT X25519 is likewise hardware-bound (the accelerator, not the C glue, is the floor), so `-O2` is a
   no-op there too. The pure-C ciphers that _do_ benefit (ChaCha20, Poly1305 - ~2x) force a higher level per
-  translation unit via `DETWS_CRYPTO_HOT` ([`shared_primitives/crypto_opt.h`](../src/shared_primitives/crypto_opt.h),
-  configurable `DETWS_CRYPTO_OPT_LEVEL` = 2 default / 3 / 0), applied **only** to code that is constant-time by
+  translation unit via `DWS_CRYPTO_HOT` ([`shared_primitives/crypto_opt.h`](../src/shared_primitives/crypto_opt.h),
+  configurable `DWS_CRYPTO_OPT_LEVEL` = 2 default / 3 / 0), applied **only** to code that is constant-time by
   structure; the mask-select scalar-mult paths are deliberately left at `-Os` (they are HW-dominated and cranking
   the optimizer risks defeating their constant-time property for no speedup).
 - **Where the handshake time goes - and the SIMD acceleration target.** The radix-2^16 field multiply
@@ -546,24 +546,24 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
   functions (byte-exact, RFC 8439 KATs unchanged) so the cipher is fast on any consumer's size-optimized
   build. AES-256-CTR (22.5 MB/s, HW) is still faster where an AEAD is not required.
 
-### MQTT 3.1.1 client codec (DETWS_ENABLE_MQTT)
+### MQTT 3.1.1 client codec (DWS_ENABLE_MQTT)
 
-The device is an MQTT client; these are its pure packet build/parse hot ops - `det_mqtt_build_connect` /
-`det_mqtt_build_publish` (TX) and `det_mqtt_parse_publish` (the inbound-message decode). Host figures from
+The device is an MQTT client; these are its pure packet build/parse hot ops - `dws_mqtt_build_connect` /
+`dws_mqtt_build_publish` (TX) and `dws_mqtt_parse_publish` (the inbound-message decode). Host figures from
 [`perf/bench_mqtt.cpp`](../perf/bench_mqtt.cpp); the device figure is the rig `/bench` CCOUNT op
-(`det_mqtt_build_publish`, QoS 1 to a telemetry topic).
+(`dws_mqtt_build_publish`, QoS 1 to a telemetry topic).
 
 | Operation                        | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
 | -------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `det_mqtt_build_connect`         |       24.6 |    1055.1 |               - |              - |
-| `det_mqtt_build_publish` (QoS 1) |       44.9 |    1446.9 |            1008 |           4200 |
-| `det_mqtt_parse_publish`         |       60.6 |    1073.4 |               - |              - |
+| `dws_mqtt_build_connect`         |       24.6 |    1055.1 |               - |              - |
+| `dws_mqtt_build_publish` (QoS 1) |       44.9 |    1446.9 |            1008 |           4200 |
+| `dws_mqtt_parse_publish`         |       60.6 |    1073.4 |               - |              - |
 
 - Building a PUBLISH is ~4.2 us on the S3 (a length-prefixed topic + the variable-length Remaining Length
   field + the payload copy) - cheap; an MQTT client can publish at a high rate without the encode being
   the limit. The network round trip and the broker, not the codec, set the publish throughput ceiling.
 
-### Redis RESP2/RESP3 codec (DETWS_ENABLE_REDIS)
+### Redis RESP2/RESP3 codec (DWS_ENABLE_REDIS)
 
 The Redis wire codec a device uses to talk to a Redis server: `resp_encode_command` (build an outbound
 command) and `resp_parse` (decode one value of a server reply - the untrusted-input cursor). Both pure.
@@ -580,7 +580,7 @@ Host figures from [`perf/bench_redis.cpp`](../perf/bench_redis.cpp); the device 
   and a deeply-nested reply cannot blow the stack). Encoding a command is comparably cheap. RESP is the
   lightest of the client codecs; the Redis round-trip cost is the network, not the parse.
 
-### FTP client wire codec (DETWS_ENABLE_FTP)
+### FTP client wire codec (DWS_ENABLE_FTP)
 
 The FTP control-channel codec a device uses to push/pull files (RFC 959 + RFC 2428): `ftp_build_command`
 (emit a `VERB<SP>ARG` line), `ftp_parse_reply` (scan a single- or multi-line 3-digit reply over a fixed
@@ -602,7 +602,7 @@ address). All pure (the two sockets are the application's). Host figures from
   channel, not the codec. HW-verified device-as-FTP-client against a real `pyftpdlib` server (11/11 interop
   checks, the STOR confirmed server-side).
 
-### SMTP client dialogue (DETWS_ENABLE_SMTP)
+### SMTP client dialogue (DWS_ENABLE_SMTP)
 
 The outbound SMTP client that sends a device alert email (RFC 5321): `smtp_run` drives the whole
 exchange - read the greeting, `EHLO`, optional `AUTH LOGIN`, `MAIL FROM` / `RCPT TO` / `DATA`, build the
@@ -620,14 +620,14 @@ device from the rig `/bench` `smtp_run` op.
   build with dot-stuffing - costs **~56 us** on the device (pure compute; the real send-alert latency is the
   ~7 network round trips). This is the heaviest single "client op" benched so far because it is an entire
   protocol exchange, not one codec call, yet it is still trivial next to the network. Every buffer is a
-  compile-time size (`DETWS_SMTP_REPLY_MAX` 512, `DETWS_SMTP_MSG_MAX` 2048), so a malicious server cannot
+  compile-time size (`DWS_SMTP_REPLY_MAX` 512, `DWS_SMTP_MSG_MAX` 2048), so a malicious server cannot
   grow the client's footprint (validated by the `smtp_malicious_server` attack). HW-verified
   device-as-SMTP-client against a real `aiosmtpd` server (6/6 interop, the message confirmed server-side).
 
-### syslog client formatter (DETWS_ENABLE_SYSLOG)
+### syslog client formatter (DWS_ENABLE_SYSLOG)
 
 The RFC 5424 syslog client formats one `<PRI>1 - HOSTNAME APP-NAME - - - MSG` line per log call and ships
-it as a UDP datagram (`det_udp_sendto`). `syslog_format` is the pure per-line hot op (no socket, no heap).
+it as a UDP datagram (`dws_udp_sendto`). `syslog_format` is the pure per-line hot op (no socket, no heap).
 Host from [`perf/bench_syslog.cpp`](../perf/bench_syslog.cpp); device from the rig `/bench` `syslog_format`
 op.
 
@@ -638,12 +638,12 @@ op.
 - At **~15 us** on the device the format is dominated by `snprintf` composing the header + four field
   substitutions (newlib `snprintf` is not cheap on Xtensa - it is ~10x the leaner hand-rolled codecs). Still
   trivial for a log line, and the datagram is fire-and-forget over UDP. The line is bounded to
-  `DETWS_SYSLOG_MSG_MAX` (256 B): an oversized message makes `syslog_format` return 0 and `syslog_log`
+  `DWS_SYSLOG_MSG_MAX` (256 B): an oversized message makes `syslog_format` return 0 and `syslog_log`
   refuse (no overflow, no giant datagram - validated by the `syslog_injection` attack, which held the bound
   at an 80 B datagram for a 2 KB input). HW-verified device-as-syslog-client against a UDP collector (7/7
   interop; PRI/VERSION/HOSTNAME/APP-NAME/MSG validated as RFC 5424).
 
-### NTP server (DETWS_ENABLE_NTP_SERVER)
+### NTP server (DWS_ENABLE_NTP_SERVER)
 
 The device answers NTP requests on UDP/123 from its own clock (RFC 5905 server mode).
 `ntp_server_build_response` is the per-query hot op: it validates the 48-octet request, echoes the client's
@@ -663,7 +663,7 @@ op.
   malformed/oversized packets handled without a crash. HW-verified against the real `ntplib` client (6/6
   interop: mode 4, stratum, origin echo, LOCL ref-id, a plausible epoch).
 
-### NTS framing, RFC 8915 (DETWS_ENABLE_NTS)
+### NTS framing, RFC 8915 (DWS_ENABLE_NTS)
 
 Network Time Security wraps NTP with a TLS-1.3 key-establishment exchange (NTS-KE on :4460) and per-packet
 authenticated extension fields. These are the pure framing hot ops - no TLS, no AEAD, no socket - from
@@ -684,28 +684,28 @@ request. The AES-SIV-CMAC-256 AEAD + the TLS-exporter key derivation sit on top 
   (host ~19 ns), from the rig `/bench` op. So key establishment parses in a microsecond; interop against a
   real NTS client and a malformed-record attack remain the open NTS coverage.
 
-### DNS server (DETWS_ENABLE_DNS_SERVER)
+### DNS server (DWS_ENABLE_DNS_SERVER)
 
 An authoritative DNS server on UDP/53 answers A/IN queries from a fixed table (NXDOMAIN otherwise).
-`det_dns_server_build_response` is the per-query hot op: it parses the first question, resolves the name via a
+`dws_dns_server_build_response` is the per-query hot op: it parses the first question, resolves the name via a
 callback, and appends one compressed A answer (or NXDOMAIN / NOTIMP). Pure (no clock, no socket). Host from
 [`perf/bench_dns.cpp`](../perf/bench_dns.cpp); device from the rig `/bench` op.
 
 | Operation                               | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
 | --------------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `det_dns_server_build_response` (hit)   |       26.8 |     971.4 |             420 |           1750 |
-| `det_dns_server_build_response` (NXDOM) |       25.4 |    1022.1 |               - |              - |
+| `dws_dns_server_build_response` (hit)   |       26.8 |     971.4 |             420 |           1750 |
+| `dws_dns_server_build_response` (NXDOM) |       25.4 |    1022.1 |               - |              - |
 
 - A **~1.75 us** query on the device (parse the question labels + emit a 16-octet answer). The security
   shape matters more than the speed: DNS is the #1 reflection/amplification vector, and this server closes
   both doors - it is **authoritative-only** (an unconfigured name gets NXDOMAIN, never resolved, so it is
   **not an open resolver**) and an A answer is only **~1.6x** the query (no amplification, vs the 10-50x of a
   real reflector). It also **rejects compression pointers in the question** (`len & 0xC0` -> drop), so the
-  classic compression-pointer parser loop cannot fire. The `det_dns_server_abuse` attack confirmed
+  classic compression-pointer parser loop cannot fire. The `dws_dns_server_abuse` attack confirmed
   `open_resolver=False`, `max_amp=1.64x`, and 14 malformed/pointer/opcode cases handled with the server up.
   HW-verified against the real `dnspython` client (11/11 interop: three A records + AA flag + NXDOMAIN).
 
-### NATS client codec (DETWS_ENABLE_NATS)
+### NATS client codec (DWS_ENABLE_NATS)
 
 The text pub/sub codec a device uses to talk to a NATS server: `nats_build_pub` (publish) and `nats_parse`
 (decode one inbound server frame - INFO/MSG/PING/+OK/-ERR, the untrusted-input hot op). Both pure. Host from
@@ -724,7 +724,7 @@ The text pub/sub codec a device uses to talk to a NATS server: `nats_build_pub` 
   PUB delivered to an independent subscriber through the broker); the `nats_malicious_server` attack held all
   10 malformed-frame personalities.
 
-### STOMP 1.2 frame codec (DETWS_ENABLE_STOMP)
+### STOMP 1.2 frame codec (DWS_ENABLE_STOMP)
 
 The STOMP 1.2 frame codec a device uses to talk to a message broker: `stomp_build_frame` (emit a
 SEND/SUBSCRIBE) and `stomp_parse_frame` (decode one inbound frame - command + headers + content-length body,
@@ -739,15 +739,15 @@ from the rig `/bench` `stomp_parse_frame` op.
 - `stomp_parse_frame` decodes one frame per call at **~9.6 us** on the device (scan the command + header
   lines, then take the body by `content-length`, which is bounded against the buffer - a declared length past
   the buffered bytes returns "need more" and a length that does not land on the terminating NUL is rejected,
-  so a content-length lie can never over-read; the header count is capped at `DETWS_STOMP_MAX_HEADERS`).
+  so a content-length lie can never over-read; the header count is capped at `DWS_STOMP_MAX_HEADERS`).
   Building a frame escapes the header octets. HW-verified device-as-STOMP-client against an independent STOMP
   1.2 broker (7/7 interop: CONNECT/SUBSCRIBE/SEND and the SEND captured server-side); the
   `stomp_malicious_broker` attack held all 10 malformed-frame personalities.
 
-### StatsD metrics client (DETWS_ENABLE_STATSD)
+### StatsD metrics client (DWS_ENABLE_STATSD)
 
 The StatsD line client the device uses to push metrics: `statsd_format` builds one `name:value|type[|@rate]
-[|#tags]` line and the emit helpers `det_udp_sendto` it (fire-and-forget UDP). `statsd_format` is the pure
+[|#tags]` line and the emit helpers `dws_udp_sendto` it (fire-and-forget UDP). `statsd_format` is the pure
 per-metric hot op. Host from [`perf/bench_statsd.cpp`](../perf/bench_statsd.cpp); device from the rig
 `/bench` `statsd_format` op.
 
@@ -756,12 +756,12 @@ per-metric hot op. Host from [`perf/bench_statsd.cpp`](../perf/bench_statsd.cpp)
 | `statsd_format` (counter + tags) |       47.4 |     971.4 |            1052 |           4383 |
 
 - A **~4.4 us** metric on the device (hand-rolled integer/rate rendering, then a bounded assemble - no
-  `printf`). The line is capped at `DETWS_STATSD_LINE_MAX` (256 B): an oversized name/value/tags makes
+  `printf`). The line is capped at `DWS_STATSD_LINE_MAX` (256 B): an oversized name/value/tags makes
   `statsd_format` return 0 and the metric is dropped (no overflow, no giant datagram - validated by the
   `statsd_injection` attack, which held the bound at a 51 B datagram for a 2 KB name). HW-verified
   device-as-StatsD-client against a UDP collector (5/5 interop; name/value/type validated).
 
-### JWT HS256 bearer-auth verify (DETWS_ENABLE_JWT)
+### JWT HS256 bearer-auth verify (DWS_ENABLE_JWT)
 
 The per-request bearer-token check the device runs to authenticate a caller: `jwt_verify_hs256` splits the
 compact JWT, enforces `alg == HS256` (rejecting `alg=none` / RS256 / HS384 before any HMAC), HMAC-SHA256s the
@@ -782,7 +782,7 @@ signing input, base64url-encodes the MAC, and constant-time compares it. Host fr
   extra dots, oversized) with a genuinely valid token as the positive control. HW-verified against the real
   `PyJWT` library (6/6 interop: valid accepted, wrong-secret rejected, expired rejected by the `exp` check).
 
-### TLS handshake (DETWS_ENABLE_TLS)
+### TLS handshake (DWS_ENABLE_TLS)
 
 Unlike the codecs above, TLS is not a pure host op - it is an mbedTLS handshake terminated on the device from
 its 48 KB static BSS arena (zero heap, no `malloc`), so the meaningful number is the **device-side wall time**
@@ -808,7 +808,7 @@ rig on an ESP32-S3. Cipher suite `ECDHE-ECDSA-AES256-GCM-SHA384` (P-256), self-s
   signature - which is why the curve preference is the whole win and a P-256 field-math rewrite would not
   help (mbedTLS already uses the HW MPI for the NIST reduction, and it is precompiled in the core anyway).
 - Still ~0.5 s per _full_ handshake, so the practical guidance stands: **keep connections alive** and/or
-  enable `DETWS_ENABLE_TLS_RESUMPTION` (RFC 5077 tickets) so a returning client skips the ECDHE+ECDSA cost
+  enable `DWS_ENABLE_TLS_RESUMPTION` (RFC 5077 tickets) so a returning client skips the ECDHE+ECDSA cost
   entirely. **Measured resumed handshake: ~54 ms (full 509 ms -> resumed 48-57 ms, ~10x)**, HW-verified with
   OpenSSL reporting `Reused` (session saved with `-sess_out`, resumed with `-sess_in`, against the rig built
   with resumption on). Stacked with the curve preference, a returning client goes from the original ~1000 ms
@@ -823,7 +823,7 @@ rig on an ESP32-S3. Cipher suite `ECDHE-ECDSA-AES256-GCM-SHA384` (P-256), self-s
   Bringing this up found and fixed two hardware-only bugs (a tcpip_thread self-deadlock and an RX ring smaller
   than a modern ClientHello) - see [BUGS.md](BUGS.md).
 
-### HTTP/2 over TLS (DETWS_ENABLE_HTTP2, PSRAM)
+### HTTP/2 over TLS (DWS_ENABLE_HTTP2, PSRAM)
 
 HTTP/2 rides the TLS handshake (ALPN `h2`) and adds the binary framing + HPACK + a per-connection stream
 engine whose ~28 KB-per-conn pool lives in PSRAM. Measured device-as-server on the ESP32-S3 from a real h2
@@ -846,7 +846,7 @@ client (Python `httpx`, backed by the `h2` library) against the PSRAM h2 rig.
   `h2_abuse` attack is held (rapid-reset / CONTINUATION-flood / HPACK-bomb / PING-flood, 0 findings). Bring-up
   fixed a core-locking `tcp_write` assert on the IDF-5.5 PSRAM core - see [BUGS.md](BUGS.md).
 
-### HTTP/3 over QUIC (DETWS_ENABLE_HTTP3, PSRAM)
+### HTTP/3 over QUIC (DWS_ENABLE_HTTP3, PSRAM)
 
 HTTP/3 runs the whole QUIC + TLS-1.3 stack in the library (no mbedTLS): X25519 key exchange, an Ed25519
 CertificateVerify, AES-128-GCM packet protection, and QPACK, with the QuicConn/H3Conn pool + ingest ring in
@@ -861,7 +861,7 @@ h3 rig.
 - The **~0.95 s** cold connect is the heaviest of the three transports (TLS 1.2 ~0.9 s, h2 cold ~0.45 s): the
   QUIC handshake adds an Ed25519 signature over the transcript on top of the X25519 exchange (the same
   `ssh_x25519` / `ssh_ed25519` path, ~10.5 KB of stack). Both now run their field arithmetic on the RSA/MPI
-  hardware accelerator on the S3 (`DETWS_FE25519_MPI_HW`: X25519 97.5 -> 22.65 ms, ed25519_sign 380 -> 85.6 ms;
+  hardware accelerator on the S3 (`DWS_FE25519_MPI_HW`: X25519 97.5 -> 22.65 ms, ed25519_sign 380 -> 85.6 ms;
   see the SSH crypto section), which should cut the QUIC handshake's crypto (one X25519 + one Ed25519 sign) from
   ~0.46 s to ~0.11 s - re-measuring the cold-connect figure on a rebuilt h3 rig is a follow-up. Once up, a
   connection serves about **two**
@@ -981,7 +981,7 @@ Each transfer is **byte-verified** (sha256 or FNV-1a compared to the source). HW
 bugs the host mock-seam tests could not (a stubbed client transport, an `smb_open` stack overflow, a
 `listen()` that returned the wrong id, and the relay throughput issue below) - see docs/BUGS.md.
 
-### DNP3 data-link codec, IEEE 1815 (DETWS_ENABLE_DNP3)
+### DNP3 data-link codec, IEEE 1815 (DWS_ENABLE_DNP3)
 
 The SCADA / utility-outstation link layer: a CRC-16/DNP (poly 0x3D65, reflected) over the header block and
 every 16-octet data block, a zero-heap frame builder, and a CRC-validating de-blocking parser. Pure (no
@@ -1001,7 +1001,7 @@ socket). Host from [`perf/bench_dnp3.cpp`](../perf/bench_dnp3.cpp).
   ...) to get a bench - **all are implemented codecs**; their device us/op + interop + attack are the real
   remaining coverage work.
 
-### BACnet/IP BVLC + NPDU codec, ASHRAE 135 (DETWS_ENABLE_BACNET)
+### BACnet/IP BVLC + NPDU codec, ASHRAE 135 (DWS_ENABLE_BACNET)
 
 The building-automation network layer over UDP/47808: the BVLC envelope (Annex J - type/function/length) and
 the NPDU (Clause 6 - version/NPCI-control + optional DNET/DLEN/DADR + SNET/SLEN/SADR + hop count), build +
@@ -1020,7 +1020,7 @@ validate/slice. Pure (no socket). Host from [`perf/bench_bacnet.cpp`](../perf/be
   attack HELD on HW (12 malformed BVLC/NPDU datagrams - bad type/version, length lies, DLEN/SLEN over-runs,
   truncation - all rejected, a valid one still parses).
 
-### S7comm codec, Siemens S7 / ISO-on-TCP (DETWS_ENABLE_S7COMM)
+### S7comm codec, Siemens S7 / ISO-on-TCP (DWS_ENABLE_S7COMM)
 
 The Siemens S7 application layer (over ISO-on-TCP / RFC 1006, TCP/102): the client Setup-Communication +
 Read-Var (S7-ANY pointer) request builders and the response-header parser (protocol id 0x32 / ROSCTR /
@@ -1038,7 +1038,7 @@ param + data lengths). Pure (no socket). Host from [`perf/bench_s7comm.cpp`](../
   (11 malformed PDUs - bad protocol id / ROSCTR, param/data length lies, truncated + Ack_Data-truncated
   headers - all rejected, a valid PDU still parses).
 
-### IEC 60870-5-104 codec, SCADA telecontrol (DETWS_ENABLE_IEC60870)
+### IEC 60870-5-104 codec, SCADA telecontrol (DWS_ENABLE_IEC60870)
 
 The utility telecontrol protocol over TCP: the -104 APCI (`68 LEN` + 4 control octets, I/S/U formats) and
 the ASDU header (type id / SQ / count / cause-of-transmission / common address). Pure (no socket). Host
@@ -1061,7 +1061,7 @@ from [`perf/bench_iec60870.cpp`](../perf/bench_iec60870.cpp).
   refused by the 256 B body cap; free heap flat across repeat runs after the warm-up first-touch). Interop still
   needs the IEC-60870 **app/role layer** (interrogation + spontaneous reporting) built on the codec.
 
-### IEC 61850 MMS codec (DETWS_ENABLE_MMS)
+### IEC 61850 MMS codec (DWS_ENABLE_MMS)
 
 The client/server core of IEC 61850 (MMS / ISO 9506 over ISO-on-TCP/102): the confirmed-request Read builder
 (a nested BER encoding of the ACSI ObjectName for a Data Object reference), the confirmed-response Read-data
@@ -1083,7 +1083,7 @@ listOfVariable > objectName` BER structure around the ObjectName VisibleString (
   the SCADA family); interop needs the IEC-61850 **ACSI app layer** (the object model + report control blocks)
   on top of the codec.
 
-### IEC 61850 GOOSE publisher codec (DETWS_ENABLE_GOOSE)
+### IEC 61850 GOOSE publisher codec (DWS_ENABLE_GOOSE)
 
 GOOSE (Generic Object Oriented Substation Event) is the fast raw-L2 multicast IEC 61850 uses for protection
 trips: an Ethernet frame (ethertype 0x88B8) + an 8-octet GOOSE header + the BER `IECGoosePdu` (11 control
@@ -1103,7 +1103,7 @@ fields - gocbRef / stNum / sqNum / allData / ...). Pure (no socket). Host from
   op (build-into-buffer, no transmit) is the remaining increment; full interop needs a raw-L2 multicast
   subscriber and an Ethernet PHY (hardware the rig does not yet have).
 
-### EtherNet/IP codec (DETWS_ENABLE_ENIP)
+### EtherNet/IP codec (DWS_ENABLE_ENIP)
 
 EtherNet/IP (CIP encapsulation over TCP/44818): the 24-octet encapsulation header (command / length /
 session-handle / status / sender-context / options) + command data, plus the RegisterSession handshake and
@@ -1123,7 +1123,7 @@ SendRRData (which carries the CIP message). Pure (no socket). Host from
   `/bench` op + that attack are the next ENIP increments; interop needs a CIP object model + a peer (e.g.
   cpppo / an OpENer target) on top of the encapsulation codec.
 
-### PROFINET DCP codec (DETWS_ENABLE_PROFINET)
+### PROFINET DCP codec (DWS_ENABLE_PROFINET)
 
 PROFINET DCP (Discovery and Configuration Protocol, the raw-L2 device-discovery/naming layer): the 10-octet
 DCP header (frameID / service / xid / dataLength), the header parser, and the block walker over
@@ -1142,7 +1142,7 @@ DCP header (frameID / service / xid / dataLength), the header parser, and the bl
   `/bench` op + a `profinet_dcp_fuzz` attack are the next increments; full interop needs a raw-L2 DCP peer
   (e.g. a PROFINET discovery tool) + an Ethernet PHY.
 
-### PID control law (DETWS_ENABLE_CONTROL)
+### PID control law (DWS_ENABLE_CONTROL)
 
 The single-precision-float PID: derivative-on-measurement + optional low-pass, output clamp,
 anti-windup by conditional integration, feed-forward. Measured on a real **ESP32-S3 @ 240 MHz** by
@@ -1182,10 +1182,10 @@ The PID's only divide is the derivative's `/dt`, so eliminating it is the whole 
   control loop itself in IRAM. Host-tested for correctness (`native_control`); tune the gains
   offline with [`tools/pid_tune.py`](../tools/pid_tune.py).
 
-### Port-forward / DNAT relay (DETWS_ENABLE_RELAY)
+### Port-forward / DNAT relay (DWS_ENABLE_RELAY)
 
 The board fronts a port and relays every byte to an internal origin (`server.listen(p, PROTO_RELAY)` +
-`det_relay_publish()`). Measured by fetching a file **through** the ESP32 (RPi -> ESP32:8080 -> RPi:8000)
+`dws_relay_publish()`). Measured by fetching a file **through** the ESP32 (RPi -> ESP32:8080 -> RPi:8000)
 and sha256-verifying it:
 
 | Transfer |  Time | Throughput | Byte-exact |
@@ -1206,11 +1206,11 @@ keep-awake note below.)
 **The first on-device run only managed ~0.4 Mbps**, and the fix came straight out of that number (the host
 mock never exercises the real send path). Two causes:
 
-- `a_send` forwarded to the inbound socket **all-or-nothing**: a whole `DETWS_RELAY_BUF` chunk rarely fits
+- `a_send` forwarded to the inbound socket **all-or-nothing**: a whole `DWS_RELAY_BUF` chunk rarely fits
   `tcp_sndbuf` in one shot, so a "full or nothing" send forwarded **zero** bytes and stalled. Naively
   raising the buffer to 2 KB made it _worse_ (~0.2 Mbps) for the same reason. The fix sends as much as the
-  send window currently allows (`det_conn_sndbuf`), partial.
-- `service()` pumped **one 512 B step per poll**. It now drains up to `DETWS_RELAY_DRAIN_MAX` passes, so one
+  send window currently allows (`dws_conn_sndbuf`), partial.
+- `service()` pumped **one 512 B step per poll**. It now drains up to `DWS_RELAY_DRAIN_MAX` passes, so one
   poll forwards the whole buffered origin RX ring instead of a single chunk.
 
 Together: **~0.4 -> ~1.8 Mbps (~4.5x)**, byte-exact. The remaining ceiling is the classic
@@ -1232,17 +1232,17 @@ is byte-exact and stable to hundreds of MB, so it will not corrupt a firmware im
 is **not** a bulk media pipe - a 200 MB pull is minutes, and the WiFi double-hop halves the radio's usable
 rate. Keep the front port off untrusted networks (the relay authenticates nothing on the inbound side).
 
-### Radio keep-awake during transfers (DETWS_ENABLE_RADIO_POWER)
+### Radio keep-awake during transfers (DWS_ENABLE_RADIO_POWER)
 
 Modem sleep (the default `WIFI_PS_MIN_MODEM`) parks the radio between DTIM beacons to save power, which is
-exactly what dropped a byte mid-transfer on the first 200 MB run. `detws_radio_busy_hold()` /
-`detws_radio_busy_release()` are reference-counted: the first hold forces `WIFI_PS_NONE`, the last release
-restores the configured `DETWS_RADIO_WIFI_PS`. The relay holds one while any bridge is active, so a
+exactly what dropped a byte mid-transfer on the first 200 MB run. `dws_radio_busy_hold()` /
+`dws_radio_busy_release()` are reference-counted: the first hold forces `WIFI_PS_NONE`, the last release
+restores the configured `DWS_RADIO_WIFI_PS`. The relay holds one while any bridge is active, so a
 port-forward keeps the radio awake for the whole transfer and lets power saving resume when idle - no
 per-app tuning. **Practicality:** on a battery device you still get modem-sleep power savings at rest; you
 only pay the awake current while actually moving bytes, which is the right trade for reliability.
 
-### SMB2 client (DETWS_ENABLE_SMB)
+### SMB2 client (DWS_ENABLE_SMB)
 
 Reads a file off a Windows / Samba share with real **NTLMv2** auth (NEGOTIATE -> two-round SESSION_SETUP
 -> TREE_CONNECT -> CREATE -> READ). On device it authenticated against Samba 4.13 and read the test file
@@ -1255,7 +1255,7 @@ config blob - off the shop file server, where correctness and NTLMv2 interop mat
 The client drives one sequential dialogue at a time (not reentrant across two concurrent SMB connections),
 which is exactly how a device fetches a program before a run.
 
-### Ethernet DNC (DETWS_ENABLE_DNC)
+### Ethernet DNC (DWS_ENABLE_DNC)
 
 Drip-feeds a G-code program to a controller's raw TCP program port with XON/XOFF pacing. On device it
 streamed a program to a capture sink and the received bytes were **byte-exact** (FNV-1a matched) with
@@ -1266,7 +1266,7 @@ trailer.
 point is **correct framing + flow control**, not throughput - a fast sender just overruns the machine. The
 XON/XOFF pause path is the feature; the byte-exact framing is what keeps the controller from faulting.
 
-### W5500 SPI Ethernet throughput (DETWS_ETH_W5500)
+### W5500 SPI Ethernet throughput (DWS_ETH_W5500)
 
 Wired Ethernet over a W5500 SPI PHY (arduino-esp32 3.x `esp_eth`). A large body is streamed with
 `send_chunked` (constant memory, one `tcp_write` per chunk within the send window). **Throughput is
@@ -1295,7 +1295,7 @@ cap real throughput near ~8 Mbit/s regardless of the 100 Mbit line.
 | 80 MHz    |      - |     - | link down (chip ID mis-read)     |
 
 **Throughput scales with the clock to ~24 MHz, then plateaus at the W5500's internal ~8.3 Mbit/s ceiling
-around 30 MHz** - faster SPI buys no more throughput, only less margin. `DETWS_ETH_W5500_SPI_MHZ` sets the
+around 30 MHz** - faster SPI buys no more throughput, only less margin. `DWS_ETH_W5500_SPI_MHZ` sets the
 clock (default 20).
 
 #### Sustained reliability (longer streams need more margin than bursts)

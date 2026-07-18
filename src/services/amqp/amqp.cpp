@@ -8,7 +8,7 @@
 
 #include "services/amqp/amqp.h"
 
-#if DETWS_ENABLE_AMQP
+#if DWS_ENABLE_AMQP
 
 #include <string.h>
 
@@ -28,8 +28,8 @@ static size_t write_frame_header(uint8_t *buf, uint8_t type, uint16_t channel, u
 {
     size_t p = 0;
     buf[p++] = type;
-    p += det_wr16be(buf + p, channel);
-    p += det_wr32be(buf + p, size);
+    p += dws_wr16be(buf + p, channel);
+    p += dws_wr32be(buf + p, size);
     return p; // 7
 }
 
@@ -62,8 +62,8 @@ size_t amqp_build_method(uint8_t *buf, size_t cap, uint16_t channel, uint16_t cl
         return 0;
     // Write directly into buf (no temp): header, then the method payload, then the 0xCE end.
     size_t p = write_frame_header(buf, AMQP_FRAME_METHOD, channel, (uint32_t)payload_len);
-    p += det_wr16be(buf + p, class_id);
-    p += det_wr16be(buf + p, method_id);
+    p += dws_wr16be(buf + p, class_id);
+    p += dws_wr16be(buf + p, method_id);
     if (args_len)
     {
         memcpy(buf + p, args, args_len);
@@ -82,7 +82,7 @@ bool amqp_parse_frame(const uint8_t *buf, size_t len, AmqpFrame *out, size_t *co
 {
     if (!buf || !out || len < AMQP_FRAME_OVERHEAD)
         return false;
-    uint32_t size = det_rd32be(buf + 3);
+    uint32_t size = dws_rd32be(buf + 3);
     // Compare against the remaining capacity without adding (a 32-bit size_t would wrap if we
     // computed 8 + size first), so an attacker-controlled size can't slip past the bound.
     if (size > len - AMQP_FRAME_OVERHEAD)
@@ -91,7 +91,7 @@ bool amqp_parse_frame(const uint8_t *buf, size_t len, AmqpFrame *out, size_t *co
     if (buf[7 + size] != AMQP_FRAME_END)
         return false; // missing / corrupt frame terminator
     out->type = buf[0];
-    out->channel = det_rd16be(buf + 1);
+    out->channel = dws_rd16be(buf + 1);
     out->payload = buf + 7;
     out->payload_len = size;
     if (consumed)
@@ -105,9 +105,9 @@ bool amqp_parse_method(const uint8_t *payload, size_t payload_len, uint16_t *cla
     if (!payload || payload_len < 4)
         return false;
     if (class_id)
-        *class_id = det_rd16be(payload);
+        *class_id = dws_rd16be(payload);
     if (method_id)
-        *method_id = det_rd16be(payload + 2);
+        *method_id = dws_rd16be(payload + 2);
     if (args)
         *args = payload + 4;
     if (args_len)
@@ -115,4 +115,4 @@ bool amqp_parse_method(const uint8_t *payload, size_t payload_len, uint16_t *cla
     return true;
 }
 
-#endif // DETWS_ENABLE_AMQP
+#endif // DWS_ENABLE_AMQP

@@ -17,7 +17,7 @@
 #include <string.h>
 #include <unity.h>
 
-static DetWebServer server;
+static DWS server;
 static bool handler_called = false;
 
 static void push_str(uint8_t slot, const char *s)
@@ -57,7 +57,7 @@ static void handle_missing(uint8_t slot_id, HttpReq *req)
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     handler_called = false;
 
     for (int i = 0; i < MAX_CONNS; i++)
@@ -243,7 +243,7 @@ void test_multiple_content_types()
         cur_ctype = cases[i].ctype;
         cur_path = cases[i].path;
 
-        server = DetWebServer();
+        server = DWS();
         conn_pool[0] = {};
         conn_pool[0].id = 0;
         conn_pool[0].state = ConnState::CONN_ACTIVE;

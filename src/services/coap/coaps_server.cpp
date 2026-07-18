@@ -8,12 +8,12 @@
 
 #include "services/coap/coaps_server.h"
 
-#if DETWS_ENABLE_DTLS && DETWS_ENABLE_COAP
+#if DWS_ENABLE_DTLS && DWS_ENABLE_COAP
 
 #include "network_drivers/presentation/dtls/dtls_conn.h"
-#include "services/clock.h"         // detws_millis() - idle-reap clock (the DTLS PTO uses it internally too)
-#include "services/coap/coaps.h"    // det_coaps_process()
-#include "shared_primitives/ring.h" // DetAtomic (SPSC ingest-ring cursors)
+#include "services/clock.h"         // dws_millis() - idle-reap clock (the DTLS PTO uses it internally too)
+#include "services/coap/coaps.h"    // dws_coaps_process()
+#include "shared_primitives/ring.h" // DWSAtomic (SPSC ingest-ring cursors)
 #include <string.h>
 
 #if defined(ARDUINO)
@@ -25,19 +25,19 @@ namespace
 // Largest inbound datagram buffered: a ClientHello, a client Finished, or one CoAP application record
 // (CoAP messages fit a single datagram, RFC 7252 §4.6). The server's outbound flight is larger but is
 // sent straight out, never buffered here.
-#ifndef DETWS_COAPS_MAX_DATAGRAM
-#define DETWS_COAPS_MAX_DATAGRAM 1500
+#ifndef DWS_COAPS_MAX_DATAGRAM
+#define DWS_COAPS_MAX_DATAGRAM 1500
 #endif
 // Scratch for one poll's outbound datagram: a full server flight (ServerHello..Finished) or a sealed
 // CoAP response. The Certificate-dominated flight is the largest thing written here.
-constexpr size_t DETWS_COAPS_OUT_CAP = 2048;
+constexpr size_t DWS_COAPS_OUT_CAP = 2048;
 // The HelloRetryRequest cookie binds the peer's IPv4 address (4) + port (2); the transport is IPv4.
-constexpr size_t DETWS_COAPS_PEER_SER = 6;
+constexpr size_t DWS_COAPS_PEER_SER = 6;
 
 // One buffered inbound datagram (payload + the peer it arrived from).
 struct CoapsIngest
 {
-    uint8_t data[DETWS_COAPS_MAX_DATAGRAM];
+    uint8_t data[DWS_COAPS_MAX_DATAGRAM];
     uint16_t len;
     char ip[16];
     uint16_t port;
@@ -54,7 +54,7 @@ struct CoapsSlot
     uint8_t srand[32];    ///< fresh ServerHello random for this handshake
     char peer_ip[16];
     uint16_t peer_port;
-    uint32_t last_ms; ///< detws_millis() of the last inbound datagram (idle-reaping clock)
+    uint32_t last_ms; ///< dws_millis() of the last inbound datagram (idle-reaping clock)
 };
 
 // The DtlsConn pool + the ingest ring, owned by one instance (internal linkage). Kept separate from
@@ -62,8 +62,8 @@ struct CoapsSlot
 // HTTP/3 pool if a large pool were ever wanted). One named owner, unreachable cross-TU.
 struct CoapsServerPoolCtx
 {
-    CoapsSlot pool[DETWS_COAPS_MAX_CONNS];
-    CoapsIngest ring[DETWS_COAPS_INGEST_RING];
+    CoapsSlot pool[DWS_COAPS_MAX_CONNS];
+    CoapsIngest ring[DWS_COAPS_INGEST_RING];
 };
 CoapsServerPoolCtx s_cpool;
 
@@ -72,8 +72,8 @@ CoapsServerPoolCtx s_cpool;
 // sink. One named owner, unreachable cross-TU.
 struct CoapsServerCtx
 {
-    DetAtomic<size_t> ring_head; ///< producer (udp / ingest) advances
-    DetAtomic<size_t> ring_tail; ///< consumer (poll) advances
+    DWSAtomic<size_t> ring_head; ///< producer (udp / ingest) advances
+    DWSAtomic<size_t> ring_tail; ///< consumer (poll) advances
     const uint8_t *cert_der = nullptr;
     size_t cert_len = 0;
     uint8_t ed25519_seed[32];
@@ -103,7 +103,7 @@ void copy_str(char *dst, size_t cap, const char *src)
 // Serialize an IPv4 dotted-quad @p ip + @p port into the address the HelloRetryRequest cookie binds, so
 // a cookie minted for one peer is worthless to another (RFC 9147 §5.1). Returns false on a malformed
 // address (then no address is bound and the peer simply cannot take the HRR path).
-bool serialize_peer(const char *ip, uint16_t port, uint8_t out[DETWS_COAPS_PEER_SER])
+bool serialize_peer(const char *ip, uint16_t port, uint8_t out[DWS_COAPS_PEER_SER])
 {
     uint32_t oct = 0;
     int octets = 0;
@@ -142,20 +142,20 @@ bool serialize_peer(const char *ip, uint16_t port, uint8_t out[DETWS_COAPS_PEER_
 void server_send(const char *ip, uint16_t port, const uint8_t *data, size_t len)
 {
 #if defined(ARDUINO)
-    det_udp_listener_sendto(s_coaps.port, ip, port, data, len);
+    dws_udp_listener_sendto(s_coaps.port, ip, port, data, len);
 #else
     if (s_coaps.out_sink)
         s_coaps.out_sink(s_coaps.out_ctx, data, len, ip, port);
 #endif
 }
 
-// --- ingest ring (SPSC: one producer fills, det_coaps_server_poll consumes) ------------------------
+// --- ingest ring (SPSC: one producer fills, dws_coaps_server_poll consumes) ------------------------
 bool ring_push(const uint8_t *dg, size_t len, const char *ip, uint16_t port)
 {
-    if (len == 0 || len > DETWS_COAPS_MAX_DATAGRAM)
+    if (len == 0 || len > DWS_COAPS_MAX_DATAGRAM)
         return false;
     size_t head = s_coaps.ring_head;
-    size_t next = (head + 1) % DETWS_COAPS_INGEST_RING;
+    size_t next = (head + 1) % DWS_COAPS_INGEST_RING;
     if (next == (size_t)s_coaps.ring_tail)
         return false; // ring full: drop (DTLS recovers via retransmission)
     CoapsIngest *e = &s_cpool.ring[head];
@@ -173,14 +173,14 @@ bool ring_pop(CoapsIngest *out)
     if (tail == (size_t)s_coaps.ring_head)
         return false;
     *out = s_cpool.ring[tail];
-    s_coaps.ring_tail = (tail + 1) % DETWS_COAPS_INGEST_RING;
+    s_coaps.ring_tail = (tail + 1) % DWS_COAPS_INGEST_RING;
     return true;
 }
 
 // --- slot pool (keyed by peer address, or by connection id once one is negotiated) -------------
 CoapsSlot *slot_by_peer(const char *ip, uint16_t port)
 {
-    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+    for (uint8_t i = 0; i < DWS_COAPS_MAX_CONNS; i++)
     {
         CoapsSlot *s = &s_cpool.pool[i];
         if (s->used && s->peer_port == port && strcmp(s->peer_ip, ip) == 0)
@@ -195,12 +195,12 @@ CoapsSlot *slot_by_peer(const char *ip, uint16_t port)
 CoapsSlot *slot_by_cid(const uint8_t *cid, size_t avail)
 {
     uint8_t sc[DTLS_CID_MAX];
-    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+    for (uint8_t i = 0; i < DWS_COAPS_MAX_CONNS; i++)
     {
         CoapsSlot *s = &s_cpool.pool[i];
         if (!s->used)
             continue;
-        size_t sl = det_dtls_conn_local_cid(&s->conn, sc);
+        size_t sl = dws_dtls_conn_local_cid(&s->conn, sc);
         if (sl && sl <= avail && memcmp(cid, sc, sl) == 0)
             return s;
     }
@@ -209,7 +209,7 @@ CoapsSlot *slot_by_cid(const uint8_t *cid, size_t avail)
 
 CoapsSlot *alloc_slot()
 {
-    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+    for (uint8_t i = 0; i < DWS_COAPS_MAX_CONNS; i++)
         if (!s_cpool.pool[i].used)
         {
             CoapsSlot *s = &s_cpool.pool[i];
@@ -234,20 +234,20 @@ CoapsSlot *open_conn(const char *ip, uint16_t port)
     s->cfg.ephemeral_priv = s->eph;
     s->cfg.server_random = s->srand;
     s->cfg.cookie_key = s_coaps.cookie_key;
-    uint8_t paddr[DETWS_COAPS_PEER_SER];
+    uint8_t paddr[DWS_COAPS_PEER_SER];
     bool ok = serialize_peer(ip, port, paddr);
-    det_dtls_conn_init(&s->conn, &s->cfg, ok ? paddr : nullptr, ok ? sizeof paddr : 0);
+    dws_dtls_conn_init(&s->conn, &s->cfg, ok ? paddr : nullptr, ok ? sizeof paddr : 0);
     copy_str(s->peer_ip, sizeof s->peer_ip, ip);
     s->peer_port = port;
     return s;
 }
 
 #if defined(ARDUINO)
-void udp_ingest_cb(const uint8_t *data, size_t len, DetUdpPeer *peer, void * /*ctx*/)
+void udp_ingest_cb(const uint8_t *data, size_t len, DWSUdpPeer *peer, void * /*ctx*/)
 {
     char ip[16];
     uint16_t port = 0;
-    if (!det_udp_peer_addr(peer, ip, sizeof ip, &port))
+    if (!dws_udp_peer_addr(peer, ip, sizeof ip, &port))
         return;
     ring_push(data, len, ip, port);
 }
@@ -275,7 +275,7 @@ void coaps_route_datagram(const CoapsIngest *ig, uint32_t now, uint8_t *out, siz
         s->peer_port = ig->port;
     }
     s->last_ms = now;
-    int n = det_coaps_process(&s->conn, ig->data, ig->len, out, out_cap);
+    int n = dws_coaps_process(&s->conn, ig->data, ig->len, out, out_cap);
     if (n > 0)
         server_send(s->peer_ip, s->peer_port, out, (size_t)n);
     else if (n < 0)
@@ -288,9 +288,9 @@ void coaps_service_slot(CoapsSlot *s, uint32_t now, uint8_t *out, size_t out_cap
 {
     if (!s->used)
         return;
-    if (det_dtls_conn_timeout_ms(&s->conn) == 0) // 0 == due now (-1 == no timer, >0 == still pending)
+    if (dws_dtls_conn_timeout_ms(&s->conn) == 0) // 0 == due now (-1 == no timer, >0 == still pending)
     {
-        int n = det_dtls_conn_on_timeout(&s->conn, out, out_cap);
+        int n = dws_dtls_conn_on_timeout(&s->conn, out, out_cap);
         if (n > 0)
             server_send(s->peer_ip, s->peer_port, out, (size_t)n);
         else if (n < 0)
@@ -299,12 +299,12 @@ void coaps_service_slot(CoapsSlot *s, uint32_t now, uint8_t *out, size_t out_cap
             return;
         }
     }
-    if (now - s->last_ms >= DETWS_COAPS_IDLE_MS) // wrap-safe idle delta (uint32_t arithmetic)
+    if (now - s->last_ms >= DWS_COAPS_IDLE_MS) // wrap-safe idle delta (uint32_t arithmetic)
         s->used = false;
 }
 } // namespace
 
-bool det_coaps_server_begin(uint16_t port, const CoapsServerConfig *cfg)
+bool dws_coaps_server_begin(uint16_t port, const CoapsServerConfig *cfg)
 {
     if (!cfg || !cfg->rng || !cfg->cert_der || cfg->cert_len == 0)
         return false;
@@ -313,25 +313,25 @@ bool det_coaps_server_begin(uint16_t port, const CoapsServerConfig *cfg)
     memcpy(s_coaps.ed25519_seed, cfg->ed25519_seed, sizeof s_coaps.ed25519_seed);
     memcpy(s_coaps.cookie_key, cfg->cookie_key, sizeof s_coaps.cookie_key);
     s_coaps.rng = cfg->rng;
-    s_coaps.port = port ? port : DETWS_COAPS_PORT;
-    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+    s_coaps.port = port ? port : DWS_COAPS_PORT;
+    for (uint8_t i = 0; i < DWS_COAPS_MAX_CONNS; i++)
         s_cpool.pool[i].used = false;
     s_coaps.ring_head = 0;
     s_coaps.ring_tail = 0;
     s_coaps.running = true;
 #if defined(ARDUINO)
-    return det_udp_listen(s_coaps.port, udp_ingest_cb, nullptr);
+    return dws_udp_listen(s_coaps.port, udp_ingest_cb, nullptr);
 #else
-    return true; // host: fed through det_coaps_server_ingest()
+    return true; // host: fed through dws_coaps_server_ingest()
 #endif
 }
 
-void det_coaps_server_poll()
+void dws_coaps_server_poll()
 {
     if (!s_coaps.running)
         return;
-    uint32_t now = detws_millis();
-    uint8_t out[DETWS_COAPS_OUT_CAP];
+    uint32_t now = dws_millis();
+    uint8_t out[DWS_COAPS_OUT_CAP];
 
     // Drain queued datagrams: route each to its peer's slot (opening one for a new peer) and drive the
     // handshake / CoAP exchange through the bridge.
@@ -340,39 +340,39 @@ void det_coaps_server_poll()
         coaps_route_datagram(&ig, now, out, sizeof out);
 
     // Fire the retransmission timer for any outstanding flight, then reap closed / idle connections.
-    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+    for (uint8_t i = 0; i < DWS_COAPS_MAX_CONNS; i++)
         coaps_service_slot(&s_cpool.pool[i], now, out, sizeof out);
 }
 
-uint8_t det_coaps_server_active_conns()
+uint8_t dws_coaps_server_active_conns()
 {
     uint8_t n = 0;
-    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+    for (uint8_t i = 0; i < DWS_COAPS_MAX_CONNS; i++)
         if (s_cpool.pool[i].used)
             n++;
     return n;
 }
 
-void det_coaps_server_stop()
+void dws_coaps_server_stop()
 {
     s_coaps.running = false;
-    for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
+    for (uint8_t i = 0; i < DWS_COAPS_MAX_CONNS; i++)
         s_cpool.pool[i].used = false;
     s_coaps.ring_head = 0;
     s_coaps.ring_tail = 0;
 }
 
 #if !defined(ARDUINO)
-void det_coaps_server_set_out_sink_cb(CoapsServerOutFn fn, void *ctx)
+void dws_coaps_server_set_out_sink_cb(CoapsServerOutFn fn, void *ctx)
 {
     s_coaps.out_sink = fn;
     s_coaps.out_ctx = ctx;
 }
 
-bool det_coaps_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port)
+bool dws_coaps_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port)
 {
     return ring_push(datagram, len, ip, port);
 }
 #endif
 
-#endif // DETWS_ENABLE_DTLS && DETWS_ENABLE_COAP
+#endif // DWS_ENABLE_DTLS && DWS_ENABLE_COAP

@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Unit tests for per-route STA/AP interface filters (DetWebServer::on(..., DetIface)).
+// Unit tests for per-route STA/AP interface filters (DWS::on(..., DWSIface)).
 // The connection's interface is normally stamped at accept time from its local
 // IP; here we set conn_pool[slot].iface directly to exercise the routing gate.
 
@@ -10,7 +10,7 @@
 #include <string.h>
 #include <unity.h>
 
-static DetWebServer server;
+static DWS server;
 static bool g_called;
 
 static void push_str(uint8_t slot, const char *s)
@@ -48,7 +48,7 @@ static void h_sta(uint8_t slot, HttpReq *req)
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i] = {};
@@ -62,7 +62,7 @@ void setUp()
     sse_init();
     tcp_capture_reset();
     g_called = false;
-    detws_ap_ip = 0;
+    dws_ap_ip = 0;
 }
 
 void tearDown()
@@ -71,7 +71,7 @@ void tearDown()
 }
 
 // Arm slot 0 with a given ingress interface, then dispatch one request.
-static const char *do_req(DetIface iface, const char *req_str)
+static const char *do_req(DWSIface iface, const char *req_str)
 {
     conn_pool[0] = {};
     conn_pool[0].id = 0;
@@ -93,45 +93,45 @@ static const char *do_req(DetIface iface, const char *req_str)
 
 void test_ap_only_matches_on_ap()
 {
-    server.on("/cfg", HttpMethod::HTTP_GET, h_ok, DetIface::DETIFACE_AP);
-    const char *r = do_req(DetIface::DETIFACE_AP, "GET /cfg HTTP/1.1\r\n\r\n");
+    server.on("/cfg", HttpMethod::HTTP_GET, h_ok, DWSIface::DETIFACE_AP);
+    const char *r = do_req(DWSIface::DETIFACE_AP, "GET /cfg HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r, "200 OK"));
 }
 
 void test_ap_only_hidden_on_sta()
 {
-    server.on("/cfg", HttpMethod::HTTP_GET, h_ok, DetIface::DETIFACE_AP);
-    const char *r = do_req(DetIface::DETIFACE_STA, "GET /cfg HTTP/1.1\r\n\r\n");
+    server.on("/cfg", HttpMethod::HTTP_GET, h_ok, DWSIface::DETIFACE_AP);
+    const char *r = do_req(DWSIface::DETIFACE_STA, "GET /cfg HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(g_called); // route invisible on STA
     TEST_ASSERT_NOT_NULL(strstr(r, "404 Not Found"));
 }
 
 void test_sta_only_matches_on_sta()
 {
-    server.on("/api", HttpMethod::HTTP_GET, h_ok, DetIface::DETIFACE_STA);
-    const char *r = do_req(DetIface::DETIFACE_STA, "GET /api HTTP/1.1\r\n\r\n");
+    server.on("/api", HttpMethod::HTTP_GET, h_ok, DWSIface::DETIFACE_STA);
+    const char *r = do_req(DWSIface::DETIFACE_STA, "GET /api HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r, "200 OK"));
 }
 
 void test_sta_only_hidden_on_ap()
 {
-    server.on("/api", HttpMethod::HTTP_GET, h_ok, DetIface::DETIFACE_STA);
-    const char *r = do_req(DetIface::DETIFACE_AP, "GET /api HTTP/1.1\r\n\r\n");
+    server.on("/api", HttpMethod::HTTP_GET, h_ok, DWSIface::DETIFACE_STA);
+    const char *r = do_req(DWSIface::DETIFACE_AP, "GET /api HTTP/1.1\r\n\r\n");
     TEST_ASSERT_FALSE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r, "404 Not Found"));
 }
 
 void test_unfiltered_route_matches_any_interface()
 {
-    server.on("/x", HttpMethod::HTTP_GET, h_ok); // DetIface::DETIFACE_ANY
-    const char *r1 = do_req(DetIface::DETIFACE_AP, "GET /x HTTP/1.1\r\n\r\n");
+    server.on("/x", HttpMethod::HTTP_GET, h_ok); // DWSIface::DETIFACE_ANY
+    const char *r1 = do_req(DWSIface::DETIFACE_AP, "GET /x HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r1, "200 OK"));
 
     g_called = false;
-    const char *r2 = do_req(DetIface::DETIFACE_STA, "GET /x HTTP/1.1\r\n\r\n");
+    const char *r2 = do_req(DWSIface::DETIFACE_STA, "GET /x HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_called);
     TEST_ASSERT_NOT_NULL(strstr(r2, "200 OK"));
 }
@@ -140,10 +140,10 @@ void test_same_path_two_interfaces_picks_correct()
 {
     // Same path bound to different interfaces; the request's interface decides.
     g_ap_hit = g_sta_hit = false;
-    server.on("/p", HttpMethod::HTTP_GET, h_ap, DetIface::DETIFACE_AP);
-    server.on("/p", HttpMethod::HTTP_GET, h_sta, DetIface::DETIFACE_STA);
+    server.on("/p", HttpMethod::HTTP_GET, h_ap, DWSIface::DETIFACE_AP);
+    server.on("/p", HttpMethod::HTTP_GET, h_sta, DWSIface::DETIFACE_STA);
 
-    const char *r = do_req(DetIface::DETIFACE_STA, "GET /p HTTP/1.1\r\n\r\n");
+    const char *r = do_req(DWSIface::DETIFACE_STA, "GET /p HTTP/1.1\r\n\r\n");
     TEST_ASSERT_TRUE(g_sta_hit);
     TEST_ASSERT_FALSE(g_ap_hit);
     TEST_ASSERT_NOT_NULL(strstr(r, "sta"));
@@ -152,9 +152,9 @@ void test_same_path_two_interfaces_picks_correct()
 void test_set_ap_ip_updates_global()
 {
     server.set_ap_ip(0x0104A8C0u); // 192.168.4.1 in network byte order
-    TEST_ASSERT_EQUAL_UINT32(0x0104A8C0u, detws_ap_ip);
+    TEST_ASSERT_EQUAL_UINT32(0x0104A8C0u, dws_ap_ip);
     server.set_ap_ip(0);
-    TEST_ASSERT_EQUAL_UINT32(0u, detws_ap_ip);
+    TEST_ASSERT_EQUAL_UINT32(0u, dws_ap_ip);
 }
 
 int main()

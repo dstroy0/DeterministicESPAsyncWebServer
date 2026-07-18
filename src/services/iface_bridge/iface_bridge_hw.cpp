@@ -9,16 +9,16 @@
 
 #include "services/iface_bridge/iface_bridge_hw.h"
 
-#if DETWS_ENABLE_IFACE_BRIDGE
+#if DWS_ENABLE_IFACE_BRIDGE
 
 #include "network_drivers/session/proto_handler.h"
 #include "network_drivers/transport/tcp.h"
-#include "services/clock.h" // detws_millis() pluggable monotonic clock
+#include "services/clock.h" // dws_millis() pluggable monotonic clock
 
 // The Arduino bus headers MUST be included at global scope: pulling them into the anonymous namespace
 // below would make `SPI` / `Wire` anonymous-namespace symbols with no definition (link failure).
 #if defined(ARDUINO)
-#include "services/i2c.h" // detws_i2c_begin (the shared I2C bus owner)
+#include "services/i2c.h" // dws_i2c_begin (the shared I2C bus owner)
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
@@ -41,7 +41,7 @@ struct BridgeBind
 // the single file-scope mutable to be a `*Ctx` instance).
 struct BridgeGlueCtx
 {
-    BridgeBind binds[DETWS_BRIDGE_MAX_RULES];
+    BridgeBind binds[DWS_BRIDGE_MAX_RULES];
     bool registered; ///< the PROTO_BRIDGE handler is installed
     bool spi_begun;  ///< SPI.begin() has run (once, shared bus)
 };
@@ -49,8 +49,8 @@ BridgeGlueCtx s_ctx;
 
 const BridgeRule *rule_for_slot(uint8_t slot)
 {
-    uint8_t lid = det_conn_listener_id(slot);
-    for (int i = 0; i < DETWS_BRIDGE_MAX_RULES; i++)
+    uint8_t lid = dws_conn_listener_id(slot);
+    for (int i = 0; i < DWS_BRIDGE_MAX_RULES; i++)
         if (s_ctx.binds[i].active && s_ctx.binds[i].listener_id == lid)
             return s_ctx.binds[i].rule;
     return nullptr;
@@ -105,7 +105,7 @@ void bus_begin(const BridgeTarget *t)
         }
         break;
     case BridgeBus::i2c:
-        detws_i2c_begin();
+        dws_i2c_begin();
         break;
     }
 }
@@ -153,8 +153,8 @@ bool bus_txn(const BridgeTarget *t, const uint8_t *wbuf, uint16_t wlen, uint8_t 
         if (wlen)
             s->write(wbuf, wlen);
         uint16_t got = 0;
-        uint32_t deadline = detws_millis() + DETWS_BRIDGE_UART_TXN_MS;
-        while (got < rlen && (int32_t)(detws_millis() - deadline) < 0)
+        uint32_t deadline = dws_millis() + DWS_BRIDGE_UART_TXN_MS;
+        while (got < rlen && (int32_t)(dws_millis() - deadline) < 0)
             while (got < rlen && s->available())
                 rbuf[got++] = (uint8_t)s->read();
         for (; got < rlen; got++)
@@ -171,9 +171,9 @@ void stream_sock_to_uart(uint8_t slot, const BridgeTarget *t)
     HardwareSerial *s = uart_for(t->unit);
     if (!s)
         return;
-    uint8_t buf[DETWS_BRIDGE_STREAM_CHUNK];
+    uint8_t buf[DWS_BRIDGE_STREAM_CHUNK];
     size_t n = 0;
-    while ((n = det_conn_read(slot, buf, sizeof buf)) > 0)
+    while ((n = dws_conn_read(slot, buf, sizeof buf)) > 0)
         s->write(buf, n);
 }
 
@@ -183,14 +183,14 @@ void stream_uart_to_sock(uint8_t slot, const BridgeTarget *t)
     HardwareSerial *s = uart_for(t->unit);
     if (!s)
         return;
-    uint8_t buf[DETWS_BRIDGE_STREAM_CHUNK];
+    uint8_t buf[DWS_BRIDGE_STREAM_CHUNK];
     while (s->available() > 0)
     {
         size_t n = 0;
         while (n < sizeof buf && s->available())
             buf[n++] = (uint8_t)s->read();
-        if (n && det_conn_active(slot))
-            det_conn_send(slot, buf, (u16_t)n);
+        if (n && dws_conn_active(slot))
+            dws_conn_send(slot, buf, (u16_t)n);
     }
 }
 
@@ -217,42 +217,42 @@ void stream_uart_to_sock(uint8_t, const BridgeTarget *)
 // owner of the frame format; consumes only once a frame is fully buffered (partial frames wait for more).
 void service_txn(uint8_t slot, const BridgeTarget *t)
 {
-    uint8_t frame[DETWS_BRIDGE_TXN_HDR + DETWS_BRIDGE_TXN_MAX];
-    uint8_t rbuf[DETWS_BRIDGE_TXN_MAX];
+    uint8_t frame[DWS_BRIDGE_TXN_HDR + DWS_BRIDGE_TXN_MAX];
+    uint8_t rbuf[DWS_BRIDGE_TXN_MAX];
     for (;;)
     {
-        size_t avail = det_conn_available(slot);
-        if (avail < DETWS_BRIDGE_TXN_HDR)
+        size_t avail = dws_conn_available(slot);
+        if (avail < DWS_BRIDGE_TXN_HDR)
             return; // header not yet complete
-        uint8_t hdr[DETWS_BRIDGE_TXN_HDR];
-        det_conn_peek(slot, 0, hdr, DETWS_BRIDGE_TXN_HDR);
+        uint8_t hdr[DWS_BRIDGE_TXN_HDR];
+        dws_conn_peek(slot, 0, hdr, DWS_BRIDGE_TXN_HDR);
         uint16_t wlen = (uint16_t)((hdr[0] << 8) | hdr[1]);
         uint16_t rlen = (uint16_t)((hdr[2] << 8) | hdr[3]);
-        if (wlen > DETWS_BRIDGE_TXN_MAX || rlen > DETWS_BRIDGE_TXN_MAX)
+        if (wlen > DWS_BRIDGE_TXN_MAX || rlen > DWS_BRIDGE_TXN_MAX)
         {
-            det_conn_close(slot); // frame exceeds the configured cap - protocol error
+            dws_conn_close(slot); // frame exceeds the configured cap - protocol error
             return;
         }
-        size_t need = (size_t)DETWS_BRIDGE_TXN_HDR + wlen;
+        size_t need = (size_t)DWS_BRIDGE_TXN_HDR + wlen;
         if (avail < need)
             return; // write payload not fully buffered yet
-        det_conn_peek(slot, 0, frame, need);
+        dws_conn_peek(slot, 0, frame, need);
         uint16_t pw = 0;
         uint16_t pr = 0;
         const uint8_t *wd = nullptr;
-        if (det_iface_bridge_txn_parse(frame, need, &pw, &pr, &wd) != need)
+        if (dws_iface_bridge_txn_parse(frame, need, &pw, &pr, &wd) != need)
         {
-            det_conn_close(slot); // codec disagreed with the header - drop the connection
+            dws_conn_close(slot); // codec disagreed with the header - drop the connection
             return;
         }
-        det_conn_consume(slot, need);
+        dws_conn_consume(slot, need);
         if (!bus_txn(t, wd, pw, rbuf, pr))
         {
-            det_conn_close(slot); // bus fault
+            dws_conn_close(slot); // bus fault
             return;
         }
-        if (pr && det_conn_active(slot))
-            det_conn_send(slot, rbuf, pr);
+        if (pr && dws_conn_active(slot))
+            dws_conn_send(slot, rbuf, pr);
     }
 }
 
@@ -263,7 +263,7 @@ void service_txn(uint8_t slot, const BridgeTarget *t)
 void bridge_on_accept(uint8_t slot)
 {
     if (!rule_for_slot(slot))
-        det_conn_close(slot); // no rule published for this listener
+        dws_conn_close(slot); // no rule published for this listener
 }
 
 void bridge_on_data(uint8_t slot)
@@ -271,7 +271,7 @@ void bridge_on_data(uint8_t slot)
     const BridgeRule *r = rule_for_slot(slot);
     if (!r)
     {
-        det_conn_close(slot);
+        dws_conn_close(slot);
         return;
     }
     if (r->target.mode == BridgeMode::stream)
@@ -282,7 +282,7 @@ void bridge_on_data(uint8_t slot)
 
 void bridge_on_poll(uint8_t slot)
 {
-    if (!det_conn_active(slot))
+    if (!dws_conn_active(slot))
         return;
     const BridgeRule *r = rule_for_slot(slot);
     if (!r || r->target.mode != BridgeMode::stream)
@@ -300,17 +300,17 @@ const ProtoHandler s_bridge_handler = {bridge_on_accept, bridge_on_data, bridge_
 
 } // namespace
 
-bool det_iface_bridge_publish(uint8_t listener_id, uint16_t port, BridgeProto proto, const BridgeTarget *target)
+bool dws_iface_bridge_publish(uint8_t listener_id, uint16_t port, BridgeProto proto, const BridgeTarget *target)
 {
     if (!target)
         return false;
-    if (!det_iface_bridge_map(nullptr, port, proto, target)) // store + validate + dedupe in the pure table
+    if (!dws_iface_bridge_map(nullptr, port, proto, target)) // store + validate + dedupe in the pure table
         return false;
-    const BridgeRule *rule = det_iface_bridge_find(port, proto);
+    const BridgeRule *rule = dws_iface_bridge_find(port, proto);
     if (!rule)
         return false;
     int idx = -1;
-    for (int i = 0; i < DETWS_BRIDGE_MAX_RULES; i++)
+    for (int i = 0; i < DWS_BRIDGE_MAX_RULES; i++)
         if (!s_ctx.binds[i].active)
         {
             idx = i;
@@ -330,11 +330,11 @@ bool det_iface_bridge_publish(uint8_t listener_id, uint16_t port, BridgeProto pr
     return true;
 }
 
-void det_iface_bridge_listener_reset(void)
+void dws_iface_bridge_listener_reset(void)
 {
-    for (int i = 0; i < DETWS_BRIDGE_MAX_RULES; i++)
+    for (int i = 0; i < DWS_BRIDGE_MAX_RULES; i++)
         s_ctx.binds[i].active = false;
-    det_iface_bridge_clear();
+    dws_iface_bridge_clear();
 }
 
-#endif // DETWS_ENABLE_IFACE_BRIDGE
+#endif // DWS_ENABLE_IFACE_BRIDGE

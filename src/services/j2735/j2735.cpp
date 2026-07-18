@@ -8,7 +8,7 @@
 
 #include "services/j2735/j2735.h"
 
-#if DETWS_ENABLE_J2735
+#if DWS_ENABLE_J2735
 
 void uper_writer_init(UperWriter *w, uint8_t *buf, size_t cap)
 {
@@ -118,7 +118,7 @@ int64_t uper_get_cint(UperReader *r, int64_t lo, int64_t hi)
     return lo + (int64_t)off;
 }
 
-size_t detws_j2735_bsm_core_encode(const J2735BsmCore *c, uint8_t *out, size_t cap)
+size_t dws_j2735_bsm_core_encode(const J2735BsmCore *c, uint8_t *out, size_t cap)
 {
     if (!c || !out)
         return 0;
@@ -135,7 +135,7 @@ size_t detws_j2735_bsm_core_encode(const J2735BsmCore *c, uint8_t *out, size_t c
     return uper_writer_finish(&w);
 }
 
-bool detws_j2735_bsm_core_decode(const uint8_t *in, size_t len, J2735BsmCore *c)
+bool dws_j2735_bsm_core_decode(const uint8_t *in, size_t len, J2735BsmCore *c)
 {
     if (!in || !c)
         return false;
@@ -152,7 +152,7 @@ bool detws_j2735_bsm_core_decode(const uint8_t *in, size_t len, J2735BsmCore *c)
     return r.ok;
 }
 
-size_t detws_j2735_spat_encode(const J2735MovementState *states, size_t count, uint8_t *out, size_t cap)
+size_t dws_j2735_spat_encode(const J2735MovementState *states, size_t count, uint8_t *out, size_t cap)
 {
     if (!out || (count && !states) || count > 31)
         return 0;
@@ -169,8 +169,8 @@ size_t detws_j2735_spat_encode(const J2735MovementState *states, size_t count, u
     return uper_writer_finish(&w);
 }
 
-bool detws_j2735_spat_decode(const uint8_t *in, size_t len, J2735MovementState *out_states, size_t max_states,
-                             size_t *out_count)
+bool dws_j2735_spat_decode(const uint8_t *in, size_t len, J2735MovementState *out_states, size_t max_states,
+                           size_t *out_count)
 {
     if (!in || !out_states || !out_count)
         return false;
@@ -192,8 +192,8 @@ bool detws_j2735_spat_decode(const uint8_t *in, size_t len, J2735MovementState *
     return true;
 }
 
-size_t detws_j2735_map_encode(const J2735MapIntersection *isect, const J2735Lane *lanes, size_t count, uint8_t *out,
-                              size_t cap)
+size_t dws_j2735_map_encode(const J2735MapIntersection *isect, const J2735Lane *lanes, size_t count, uint8_t *out,
+                            size_t cap)
 {
     if (!isect || !out || (count && !lanes) || count > 31)
         return 0;
@@ -213,8 +213,8 @@ size_t detws_j2735_map_encode(const J2735MapIntersection *isect, const J2735Lane
     return uper_writer_finish(&w);
 }
 
-bool detws_j2735_map_decode(const uint8_t *in, size_t len, J2735MapIntersection *isect, J2735Lane *out_lanes,
-                            size_t max_lanes, size_t *out_count)
+bool dws_j2735_map_decode(const uint8_t *in, size_t len, J2735MapIntersection *isect, J2735Lane *out_lanes,
+                          size_t max_lanes, size_t *out_count)
 {
     if (!in || !isect || !out_lanes || !out_count)
         return false;
@@ -239,4 +239,4 @@ bool detws_j2735_map_decode(const uint8_t *in, size_t len, J2735MapIntersection 
     return true;
 }
 
-#endif // DETWS_ENABLE_J2735
+#endif // DWS_ENABLE_J2735

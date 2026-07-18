@@ -13,8 +13,8 @@
  *
  * coaps_server owns a small pool of DTLS connections keyed by peer address, binds UDP/5684 through the
  * transport layer, and (once a peer's handshake completes) hands each decrypted CoAP request to the
- * same det_coap_server_process() the plaintext server uses - so the resource table is registered exactly
- * once with det_coap_server_add_resource(). det_coaps_server_poll() drives the handshakes, the DTLS
+ * same dws_coap_server_process() the plaintext server uses - so the resource table is registered exactly
+ * once with dws_coap_server_add_resource(). dws_coaps_server_poll() drives the handshakes, the DTLS
  * retransmission timer, and idle-connection reaping; call it every loop iteration.
  *
  * The profile is TLS_AES_128_GCM_SHA256 + X25519 + an Ed25519 server certificate. The sketch ships a
@@ -32,13 +32,13 @@
  *
  * NOTE: optional services are gated by compile flags the *library* sources must also see. The
  * `#define`s below document intent, but for PlatformIO enable them for the whole build, e.g.:
- *     build_flags = -DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_DTLS=1
+ *     build_flags = -DDWS_ENABLE_COAP=1 -DDWS_ENABLE_DTLS=1
  * (Arduino IDE: already set for you in build_opt.h beside this sketch, so it builds as-is.) A define in
  * the sketch alone does not reach the separately-compiled library .cpp.
  */
 
-#define DETWS_ENABLE_COAP 1
-#define DETWS_ENABLE_DTLS 1
+#define DWS_ENABLE_COAP 1
+#define DWS_ENABLE_DTLS 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -80,7 +80,7 @@ static const uint8_t COAPS_ED25519_SEED[32] = {
     0x3f, 0x40, 0x41, 0x31, 0x43, 0x53, 0x58, 0x58, 0x49, 0xaf, 0x03, 0x2b, 0x33, 0xef, 0x6d, 0x6a,
 };
 
-DetWebServer server;
+DWS server;
 static int g_led_state = 0;
 
 // The DTLS server's per-handshake randomness (X25519 ephemeral + ServerHello random): the hardware CSPRNG.
@@ -150,10 +150,10 @@ void setup()
     WiFi.setSleep(false);
 
     // Build the resource table once (shared by every transport), then start the DTLS front-end on 5684.
-    det_coap_server_reset();
-    det_coap_server_add_resource("/info", CoapMethodMask::COAP_ALLOW_GET, coap_info);
-    det_coap_server_add_resource("/led", CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_PUT, coap_led);
-    det_coap_server_add_resource("/hello", CoapMethodMask::COAP_ALLOW_GET, coap_hello);
+    dws_coap_server_reset();
+    dws_coap_server_add_resource("/info", CoapMethodMask::COAP_ALLOW_GET, coap_info);
+    dws_coap_server_add_resource("/led", CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_PUT, coap_led);
+    dws_coap_server_add_resource("/hello", CoapMethodMask::COAP_ALLOW_GET, coap_hello);
 
     CoapsServerConfig cfg;
     memset(&cfg, 0, sizeof cfg);
@@ -162,10 +162,10 @@ void setup()
     memcpy(cfg.ed25519_seed, COAPS_ED25519_SEED, sizeof cfg.ed25519_seed);
     esp_fill_random(cfg.cookie_key, sizeof cfg.cookie_key); // fresh HelloRetryRequest cookie secret per boot
     cfg.rng = coaps_rng;
-    if (det_coaps_server_begin(DETWS_COAPS_PORT, &cfg))
+    if (dws_coaps_server_begin(DWS_COAPS_PORT, &cfg))
         Serial.println("CoAPs (DTLS 1.3) server listening on UDP/5684 (try: coap-client -m get coaps://<ip>/info)");
     else
-        Serial.println("det_coaps_server_begin() failed (UDP bind)");
+        Serial.println("dws_coaps_server_begin() failed (UDP bind)");
 
     int32_t result = server.begin(80);
     if (result < 0)
@@ -174,6 +174,6 @@ void setup()
 
 void loop()
 {
-    det_coaps_server_poll(); // drive DTLS handshakes, the retransmission timer, and idle-connection reaping
+    dws_coaps_server_poll(); // drive DTLS handshakes, the retransmission timer, and idle-connection reaping
     server.handle();         // the TCP server (CoAPs itself runs off lwIP UDP callbacks + this poll)
 }

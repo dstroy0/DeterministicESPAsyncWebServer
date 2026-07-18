@@ -3,7 +3,7 @@
 
 /**
  * @file upload_service.h
- * @brief Streaming file upload to an Arduino FS (DETWS_ENABLE_UPLOAD).
+ * @brief Streaming file upload to an Arduino FS (DWS_ENABLE_UPLOAD).
  *
  * Registers a POST route whose request body is streamed straight into a file on
  * a filesystem (LittleFS / SPIFFS / SD) in FILE_CHUNK_SIZE pieces - the upload
@@ -11,7 +11,7 @@
  * mechanism OTA uses), so it is zero-heap and bounded.
  *
  * One upload at a time (the device runs a single loop task). Only one streaming
- * sink can be installed, so DETWS_ENABLE_UPLOAD and DETWS_ENABLE_OTA share the
+ * sink can be installed, so DWS_ENABLE_UPLOAD and DWS_ENABLE_OTA share the
  * parser hook - register whichever you need (not both on the same build).
  */
 
@@ -20,12 +20,12 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_UPLOAD
+#if DWS_ENABLE_UPLOAD
 
 #include <FS.h>
 #include <stddef.h>
 
-class DetWebServer;
+class DWS;
 
 /**
  * @brief Register a streaming-upload endpoint.
@@ -39,11 +39,11 @@ class DetWebServer;
  * @param fs        target filesystem (LittleFS / SPIFFS / SD).
  * @param dest_path destination file path (e.g. "/uploads/data.bin").
  */
-void detws_upload_begin(DetWebServer &server, const char *path, fs::FS &fs, const char *dest_path);
+void dws_upload_begin(DWS &server, const char *path, fs::FS &fs, const char *dest_path);
 
 /** @brief Bytes written by the most recent upload (for handlers / tests). */
-size_t detws_upload_last_size();
+size_t dws_upload_last_size();
 
-#endif // DETWS_ENABLE_UPLOAD
+#endif // DWS_ENABLE_UPLOAD
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_UPLOAD_SERVICE_H

@@ -1,6 +1,6 @@
 # 73.AdsClient - read a TwinCAT PLC over Beckhoff ADS
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_ADS`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_ADS`
 
 ## What this example teaches
 
@@ -53,7 +53,7 @@ real PLC. Before it will connect:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_ADS=1" \
+  --project-option="build_flags=-DDWS_ENABLE_ADS=1" \
   --lib="." examples/L7-Application/73.AdsClient/73.AdsClient.ino
 ```
 

@@ -3,21 +3,21 @@
 
 /**
  * @file 40.Guardrails.ino
- * @brief Runtime heap/stack guardrails (DETWS_ENABLE_GUARDRAILS).
+ * @brief Runtime heap/stack guardrails (DWS_ENABLE_GUARDRAILS).
  *
  * Installs a breach callback and checks the guardrails once a second: free heap,
  * heap low-water, largest free block (fragmentation), and this task's remaining
- * stack. When any crosses its DETWS_GUARDRAIL_* floor the callback fires so the
+ * stack. When any crosses its DWS_GUARDRAIL_* floor the callback fires so the
  * app can shed load / drop to a safe state / reboot before exhaustion bites. The
  * live snapshot is also served as JSON at GET /health.
  *
  * NOTE: enable it for the whole build (a .ino #define does not reach the
  * separately compiled library). In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_GUARDRAILS=1
+ *     build_flags = -DDWS_ENABLE_GUARDRAILS=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_GUARDRAILS 1
+#define DWS_ENABLE_GUARDRAILS 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -27,7 +27,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static void on_breach(uint8_t breaches, const DetwsHealth *h)
 {
@@ -46,13 +46,13 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    detws_guardrails_begin(on_breach);
+    dws_guardrails_begin(on_breach);
 
     server.on("/health", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         DetwsHealth h;
-        detws_guardrails_sample(&h);
+        dws_guardrails_sample(&h);
         char buf[128];
-        detws_health_json(&h, buf, sizeof(buf));
+        dws_health_json(&h, buf, sizeof(buf));
         server.send(id, 200, "application/json", buf);
     });
     server.begin(80);
@@ -64,6 +64,6 @@ void loop()
     if (millis() - last >= 1000)
     {
         last = millis();
-        detws_guardrails_check(); // fires on_breach() if any floor is crossed
+        dws_guardrails_check(); // fires on_breach() if any floor is crossed
     }
 }

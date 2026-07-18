@@ -58,7 +58,7 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // Test page: open a WebSocket to /ws, append messages, send on Enter.
 static const char PAGE[] = "<!doctype html><meta charset=utf-8><title>WS echo</title>"

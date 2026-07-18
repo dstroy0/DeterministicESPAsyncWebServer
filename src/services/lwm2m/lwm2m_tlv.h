@@ -3,7 +3,7 @@
 
 /**
  * @file lwm2m_tlv.h
- * @brief OMA LwM2M TLV codec (DETWS_ENABLE_LWM2M) - zero-heap writer + cursor reader for the
+ * @brief OMA LwM2M TLV codec (DWS_ENABLE_LWM2M) - zero-heap writer + cursor reader for the
  *        `application/vnd.oma.lwm2m+tlv` resource encoding, carried over the shipped CoAP
  *        service for LwM2M device management.
  *
@@ -29,7 +29,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_LWM2M
+#if DWS_ENABLE_LWM2M
 
 #include <stddef.h>
 #include <stdint.h>
@@ -94,6 +94,6 @@ bool lwm2m_tlv_read(const uint8_t *buf, size_t len, size_t *pos, Lwm2mTlv *out);
 /** @brief Decode a TLV integer value (1/2/4/8 octets, big-endian two's complement). */
 bool lwm2m_tlv_value_int(const uint8_t *value, size_t len, int64_t *out);
 
-#endif // DETWS_ENABLE_LWM2M
+#endif // DWS_ENABLE_LWM2M
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_LWM2M_TLV_H

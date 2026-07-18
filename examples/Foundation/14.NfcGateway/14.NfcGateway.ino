@@ -4,7 +4,7 @@
 // hardware-specific code is the I2C carry of the frame bytes; the PN532 command-frame
 // protocol (build a command, verify the ACK, parse the response) is services/pn532.
 //
-//   tag scan --PN532/I2C--> pn532_parse_frame() -> UID -> det_gateway_uplink()
+//   tag scan --PN532/I2C--> pn532_parse_frame() -> UID -> dws_gateway_uplink()
 //                                                          |
 //                                       envelope + topic  nfc/0/<target>
 //                                                          |
@@ -12,7 +12,7 @@
 //
 // Needs a PN532 on I2C to actually read; the frame codec is host-tested in test/test_pn532.
 //
-// Build flags (whole build): DETWS_ENABLE_PN532=1 DETWS_ENABLE_GATEWAY=1
+// Build flags (whole build): DWS_ENABLE_PN532=1 DWS_ENABLE_GATEWAY=1
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/gateway/gateway.h"
@@ -63,10 +63,10 @@ static int pn532_command(const uint8_t *cmd, uint8_t cmd_len, uint8_t *resp, uin
     return pn532_parse_frame(resp, (uint16_t)r, &tfi, pdata, pdata_len) > 0 ? 0 : -1;
 }
 
-static bool northbound_publish(const det_gateway_msg *m, void *)
+static bool northbound_publish(const dws_gateway_msg *m, void *)
 {
     char topic[48];
-    det_gateway_topic(m, topic, sizeof(topic));
+    dws_gateway_topic(m, topic, sizeof(topic));
     Serial.printf("PUBLISH %s  (UID %u bytes)\n", topic, m->len);
     return true;
 }
@@ -77,13 +77,13 @@ void setup()
     Wire.begin();
     delay(300);
 
-    det_gateway_reset();
-    det_gateway_port_config p = {};
+    dws_gateway_reset();
+    dws_gateway_port_config p = {};
     p.port_id = RADIO_PORT;
-    p.kind = det_gateway_kind::DET_GW_NFC;
-    det_gateway_add_port(&p);
-    det_gateway_set_uplink_cb(northbound_publish, nullptr);
-    det_gateway_set_topic_prefix("nfc");
+    p.kind = dws_gateway_kind::DWS_GW_NFC;
+    dws_gateway_add_port(&p);
+    dws_gateway_set_uplink_cb(northbound_publish, nullptr);
+    dws_gateway_set_topic_prefix("nfc");
 
     const uint8_t getver[1] = {0x02}; // GetFirmwareVersion
     uint8_t resp[32];
@@ -109,7 +109,7 @@ void loop()
         // Response PData: 4B | NbTg | Tg | SENS_RES(2) | SEL_RES | IDLen | NFCID...
         uint8_t id_len = pd[6];
         if (7u + id_len <= pdlen)
-            det_gateway_uplink(RADIO_PORT, pd[2], &pd[7], id_len, 0); // pd[2] = target number
+            dws_gateway_uplink(RADIO_PORT, pd[2], &pd[7], id_len, 0); // pd[2] = target number
     }
     delay(500);
 }

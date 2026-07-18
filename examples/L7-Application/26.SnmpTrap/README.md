@@ -1,6 +1,6 @@
 # 26.SnmpTrap - the agent pushes SNMP traps to a manager
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_SNMP`, `DETWS_ENABLE_SNMP_TRAP` (optional `DETWS_ENABLE_SNMP_V3`)
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_SNMP`, `DWS_ENABLE_SNMP_TRAP` (optional `DWS_ENABLE_SNMP_V3`)
 
 ## What this example teaches
 
@@ -26,13 +26,13 @@ bool ok = snmp_trap_v2c(MANAGER, TRAP_PORT, "public",
 `snmp_trap_v2c(manager, port, community, trap_oid, trap_oid_len, varbinds, n)`
 sends one notification with `n` attached varbinds. Point `MANAGER` at your trap
 receiver (for example `snmptrapd` on UDP/162). For SNMPv3 traps, add
-`-DDETWS_ENABLE_SNMP_V3=1` and call `snmp_trap_v3` instead.
+`-DDWS_ENABLE_SNMP_V3=1` and call `snmp_trap_v3` instead.
 
 ## Build and run
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_SNMP=1 -DDETWS_ENABLE_SNMP_TRAP=1" \
+  --project-option="build_flags=-DDWS_ENABLE_SNMP=1 -DDWS_ENABLE_SNMP_TRAP=1" \
   --lib="." examples/L7-Application/26.SnmpTrap/26.SnmpTrap.ino
 ```
 
@@ -50,8 +50,8 @@ added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_SNMP 1
-#define DETWS_ENABLE_SNMP_TRAP 1
+#define DWS_ENABLE_SNMP 1
+#define DWS_ENABLE_SNMP_TRAP 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"

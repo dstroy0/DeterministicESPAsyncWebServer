@@ -1,6 +1,6 @@
 # 14.SNMP - a zero-heap SNMP agent
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_SNMP` (optional `DETWS_ENABLE_SNMP_V3`)
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_SNMP` (optional `DWS_ENABLE_SNMP_V3`)
 
 ## What this example teaches
 
@@ -35,7 +35,7 @@ bool set_led(const SnmpValue *in) {
 }
 ```
 
-**Optional SNMPv3 (USM).** Adding `-DDETWS_ENABLE_SNMP_V3=1` enables an authPriv
+**Optional SNMPv3 (USM).** Adding `-DDWS_ENABLE_SNMP_V3=1` enables an authPriv
 user (HMAC-SHA-256 auth + AES-128 privacy): `snmp_v3_init` / `snmp_v3_set_boots` /
 `snmp_v3_set_user`. For outbound trap notifications, see
 [26.SnmpTrap](../26.SnmpTrap).
@@ -44,7 +44,7 @@ user (HMAC-SHA-256 auth + AES-128 privacy): `snmp_v3_init` / `snmp_v3_set_boots`
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_SNMP=1" \
+  --project-option="build_flags=-DDWS_ENABLE_SNMP=1" \
   --lib="." examples/L7-Application/14.SNMP/14.SNMP.ino
 ```
 
@@ -63,7 +63,7 @@ explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_SNMP 1
+#define DWS_ENABLE_SNMP 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -71,9 +71,9 @@ explanatory comments:
 #include <WiFi.h>
 
 // SNMPv3 (USM) is an additional gated layer. Enable it for the whole build with
-//     build_flags = -DDETWS_ENABLE_SNMP=1 -DDETWS_ENABLE_SNMP_V3=1
+//     build_flags = -DDWS_ENABLE_SNMP=1 -DDWS_ENABLE_SNMP_V3=1
 // then query with authPriv (HMAC-SHA-256 auth + AES-128 privacy).
-#if DETWS_ENABLE_SNMP_V3
+#if DWS_ENABLE_SNMP_V3
 #include "services/snmp/snmp_v3.h"
 #endif
 
@@ -84,7 +84,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 #define LED_BUILTIN 2
 #endif
 
-DetWebServer server;
+DWS server;
 
 // Private enterprise subtree: 1.3.6.1.4.1.49374
 static const uint32_t OID_FREE_HEAP[] = {1, 3, 6, 1, 4, 1, 49374, 10, 0}; // Gauge32, read-only
@@ -130,7 +130,7 @@ void setup()
     snmp_agent_add_dynamic(OID_FREE_HEAP, 9, SNMP_GAUGE32, get_free_heap);
     snmp_agent_add_integer(OID_LED, 9, 0, set_led); // writable
 
-#if DETWS_ENABLE_SNMP_V3
+#if DWS_ENABLE_SNMP_V3
     // SNMPv3 USM: a single authPriv user (HMAC-SHA-256 + AES-128). For a unique
     // engine ID, derive it from the chip MAC; persist/increment engineBoots in NVS.
     snmp_v3_init(nullptr, 0);

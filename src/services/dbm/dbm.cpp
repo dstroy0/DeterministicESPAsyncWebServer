@@ -8,7 +8,7 @@
 
 #include "services/dbm/dbm.h"
 
-#if DETWS_ENABLE_DBM
+#if DWS_ENABLE_DBM
 
 #include <string.h>
 
@@ -53,7 +53,7 @@ uint64_t key_hash(const char *key, uint16_t len)
 // Find a live slot for (hash,key). Linear probe, stopping at the first empty. -1 if absent.
 int find_live(DetwsDbm *db, uint64_t hash, const char *key, uint16_t key_len)
 {
-    const size_t n = DETWS_DBM_SLOTS;
+    const size_t n = DWS_DBM_SLOTS;
     size_t start = (size_t)(hash % n);
     for (size_t i = 0; i < n; i++)
     {
@@ -71,7 +71,7 @@ int find_live(DetwsDbm *db, uint64_t hash, const char *key, uint16_t key_len)
 // Sets *is_new when the returned slot is not already this key. -1 if the table has no room for a new key.
 int reserve(DetwsDbm *db, uint64_t hash, const char *key, uint16_t key_len, bool *is_new)
 {
-    const size_t n = DETWS_DBM_SLOTS;
+    const size_t n = DWS_DBM_SLOTS;
     size_t start = (size_t)(hash % n);
     int first_free = -1;
     for (size_t i = 0; i < n; i++)
@@ -118,7 +118,7 @@ void replay_cb(uint64_t seq, uint64_t data_off, const uint8_t *payload, uint32_t
     uint8_t op = payload[0];
     uint16_t klen = get_u16(payload + 1);
     uint32_t vlen = get_u32(payload + 3);
-    if (klen == 0 || klen > DETWS_DBM_KEY_MAX)
+    if (klen == 0 || klen > DWS_DBM_KEY_MAX)
         return;
     if (DBM_HDR + (size_t)klen + vlen > len)
         return; // truncated / malformed payload
@@ -155,19 +155,19 @@ void replay_cb(uint64_t seq, uint64_t data_off, const uint8_t *payload, uint32_t
 }
 } // namespace
 
-bool detws_dbm_open(DetwsDbm *db, WalStore *wal)
+bool dws_dbm_open(DetwsDbm *db, WalStore *wal)
 {
     memset(db, 0, sizeof(*db));
     db->wal = wal;
     ReplayCtx rc = {db, false};
-    uint8_t scratch[WAL_RECORD_HEADER + DBM_HDR + DETWS_DBM_KEY_MAX + DETWS_DBM_VAL_MAX];
+    uint8_t scratch[WAL_RECORD_HEADER + DBM_HDR + DWS_DBM_KEY_MAX + DWS_DBM_VAL_MAX];
     wal_store_scan(wal, replay_cb, &rc, scratch, sizeof(scratch));
     return !rc.overflow;
 }
 
-bool detws_dbm_put(DetwsDbm *db, const char *key, uint16_t key_len, const uint8_t *val, uint32_t val_len)
+bool dws_dbm_put(DetwsDbm *db, const char *key, uint16_t key_len, const uint8_t *val, uint32_t val_len)
 {
-    if (key_len == 0 || key_len > DETWS_DBM_KEY_MAX || val_len > DETWS_DBM_VAL_MAX)
+    if (key_len == 0 || key_len > DWS_DBM_KEY_MAX || val_len > DWS_DBM_VAL_MAX)
         return false;
     uint64_t h = key_hash(key, key_len);
     bool is_new = false;
@@ -175,7 +175,7 @@ bool detws_dbm_put(DetwsDbm *db, const char *key, uint16_t key_len, const uint8_
     if (slot < 0)
         return false; // index full: do not append an orphan record
 
-    uint8_t rec[DBM_HDR + DETWS_DBM_KEY_MAX + DETWS_DBM_VAL_MAX];
+    uint8_t rec[DBM_HDR + DWS_DBM_KEY_MAX + DWS_DBM_VAL_MAX];
     rec[0] = 0;
     put_u16(rec + 1, key_len);
     put_u32(rec + 3, val_len);
@@ -198,7 +198,7 @@ bool detws_dbm_put(DetwsDbm *db, const char *key, uint16_t key_len, const uint8_
     return true;
 }
 
-long detws_dbm_get(DetwsDbm *db, const char *key, uint16_t key_len, uint8_t *buf, size_t cap)
+long dws_dbm_get(DetwsDbm *db, const char *key, uint16_t key_len, uint8_t *buf, size_t cap)
 {
     uint64_t h = key_hash(key, key_len);
     int slot = find_live(db, h, key, key_len);
@@ -212,13 +212,13 @@ long detws_dbm_get(DetwsDbm *db, const char *key, uint16_t key_len, uint8_t *buf
     return (long)s->val_len;
 }
 
-bool detws_dbm_del(DetwsDbm *db, const char *key, uint16_t key_len)
+bool dws_dbm_del(DetwsDbm *db, const char *key, uint16_t key_len)
 {
     uint64_t h = key_hash(key, key_len);
     int slot = find_live(db, h, key, key_len);
     if (slot < 0)
         return false;
-    uint8_t rec[DBM_HDR + DETWS_DBM_KEY_MAX];
+    uint8_t rec[DBM_HDR + DWS_DBM_KEY_MAX];
     rec[0] = 1;
     put_u16(rec + 1, key_len);
     put_u32(rec + 3, 0);
@@ -230,25 +230,25 @@ bool detws_dbm_del(DetwsDbm *db, const char *key, uint16_t key_len)
     return true;
 }
 
-bool detws_dbm_contains(DetwsDbm *db, const char *key, uint16_t key_len)
+bool dws_dbm_contains(DetwsDbm *db, const char *key, uint16_t key_len)
 {
     return find_live(db, key_hash(key, key_len), key, key_len) >= 0;
 }
 
-uint32_t detws_dbm_count(DetwsDbm *db)
+uint32_t dws_dbm_count(DetwsDbm *db)
 {
     return db->count;
 }
 
-bool detws_dbm_sync(DetwsDbm *db)
+bool dws_dbm_sync(DetwsDbm *db)
 {
     return wal_store_checkpoint(db->wal);
 }
 
-uint32_t detws_dbm_iterate(DetwsDbm *db, DetwsDbmIterCb cb, void *ctx)
+uint32_t dws_dbm_iterate(DetwsDbm *db, DetwsDbmIterCb cb, void *ctx)
 {
     uint32_t visited = 0;
-    for (uint32_t i = 0; i < DETWS_DBM_SLOTS; i++)
+    for (uint32_t i = 0; i < DWS_DBM_SLOTS; i++)
     {
         DetwsDbmSlot *s = &db->slots[i];
         if (s->state != 1)
@@ -260,10 +260,10 @@ uint32_t detws_dbm_iterate(DetwsDbm *db, DetwsDbmIterCb cb, void *ctx)
     return visited;
 }
 
-uint64_t detws_dbm_live_bytes(DetwsDbm *db)
+uint64_t dws_dbm_live_bytes(DetwsDbm *db)
 {
     uint64_t bytes = 0;
-    for (uint32_t i = 0; i < DETWS_DBM_SLOTS; i++)
+    for (uint32_t i = 0; i < DWS_DBM_SLOTS; i++)
     {
         const DetwsDbmSlot *s = &db->slots[i];
         if (s->state == 1)
@@ -272,12 +272,12 @@ uint64_t detws_dbm_live_bytes(DetwsDbm *db)
     return bytes;
 }
 
-bool detws_dbm_compact(DetwsDbm *db, WalStore *dst)
+bool dws_dbm_compact(DetwsDbm *db, WalStore *dst)
 {
     // Copy each live key (latest value, no tombstones) into the fresh destination. Read the value straight
     // from the old log so this needs no per-key RAM beyond one record buffer, the same the put path uses.
-    uint8_t rec[DBM_HDR + DETWS_DBM_KEY_MAX + DETWS_DBM_VAL_MAX];
-    for (uint32_t i = 0; i < DETWS_DBM_SLOTS; i++)
+    uint8_t rec[DBM_HDR + DWS_DBM_KEY_MAX + DWS_DBM_VAL_MAX];
+    for (uint32_t i = 0; i < DWS_DBM_SLOTS; i++)
     {
         const DetwsDbmSlot *s = &db->slots[i];
         if (s->state != 1)
@@ -294,7 +294,7 @@ bool detws_dbm_compact(DetwsDbm *db, WalStore *dst)
     }
     if (!wal_store_checkpoint(dst))
         return false;
-    return detws_dbm_open(db, dst); // rebind to the compacted log + rebuild the index with fresh offsets
+    return dws_dbm_open(db, dst); // rebind to the compacted log + rebuild the index with fresh offsets
 }
 
-#endif // DETWS_ENABLE_DBM
+#endif // DWS_ENABLE_DBM

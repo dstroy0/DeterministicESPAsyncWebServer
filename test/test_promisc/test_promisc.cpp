@@ -137,19 +137,19 @@ void test_reject_short()
 
 void test_pcap_headers()
 {
-    uint8_t g[DET_PCAP_GLOBAL_HDR_LEN];
-    TEST_ASSERT_EQUAL_UINT(DET_PCAP_GLOBAL_HDR_LEN, det_pcap_global_header(g, sizeof(g), DET_DLT_IEEE802_11));
+    uint8_t g[DWS_PCAP_GLOBAL_HDR_LEN];
+    TEST_ASSERT_EQUAL_UINT(DWS_PCAP_GLOBAL_HDR_LEN, dws_pcap_global_header(g, sizeof(g), DWS_DLT_IEEE802_11));
     // Magic 0xa1b2c3d4 little-endian, and link type 105 (DLT_IEEE802_11) at offset 20.
     TEST_ASSERT_EQUAL_HEX8(0xd4, g[0]);
     TEST_ASSERT_EQUAL_HEX8(0xc3, g[1]);
     TEST_ASSERT_EQUAL_HEX8(0xb2, g[2]);
     TEST_ASSERT_EQUAL_HEX8(0xa1, g[3]);
     TEST_ASSERT_EQUAL_HEX8(105, g[20]);
-    TEST_ASSERT_EQUAL_UINT(0, det_pcap_global_header(g, 10, DET_DLT_IEEE802_11)); // too small
+    TEST_ASSERT_EQUAL_UINT(0, dws_pcap_global_header(g, 10, DWS_DLT_IEEE802_11)); // too small
 
-    uint8_t r[DET_PCAP_REC_HDR_LEN];
-    TEST_ASSERT_EQUAL_UINT(DET_PCAP_REC_HDR_LEN,
-                           det_pcap_record_header(r, sizeof(r), 0x11223344, 0x55667788, 100, 120));
+    uint8_t r[DWS_PCAP_REC_HDR_LEN];
+    TEST_ASSERT_EQUAL_UINT(DWS_PCAP_REC_HDR_LEN,
+                           dws_pcap_record_header(r, sizeof(r), 0x11223344, 0x55667788, 100, 120));
     TEST_ASSERT_EQUAL_HEX8(0x44, r[0]); // ts_sec little-endian
     TEST_ASSERT_EQUAL_HEX8(0x11, r[3]);
     TEST_ASSERT_EQUAL_HEX8(100, r[8]);  // caplen

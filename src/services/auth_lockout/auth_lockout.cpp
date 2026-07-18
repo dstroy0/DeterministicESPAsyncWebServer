@@ -3,25 +3,25 @@
 
 /**
  * @file auth_lockout.cpp
- * @brief Per-peer brute-force lockout state machine (DETWS_ENABLE_AUTH_LOCKOUT).
+ * @brief Per-peer brute-force lockout state machine (DWS_ENABLE_AUTH_LOCKOUT).
  *
- * A bounded BSS table of buckets keyed by the source address (a DetIp, so IPv4 and IPv6 peers are
+ * A bounded BSS table of buckets keyed by the source address (a DWSIp, so IPv4 and IPv6 peers are
  * each their own bucket - never a lossy hash that a colliding address could poison). Each bucket
  * holds the consecutive-failure count and, once the threshold is crossed, the start and duration
- * of the current lockout (exponential backoff, capped). Compiled only when DETWS_ENABLE_AUTH_LOCKOUT
+ * of the current lockout (exponential backoff, capped). Compiled only when DWS_ENABLE_AUTH_LOCKOUT
  * is set; the host unit tests enable it.
  */
 
 #include "auth_lockout.h"
 
-#if DETWS_ENABLE_AUTH_LOCKOUT
+#if DWS_ENABLE_AUTH_LOCKOUT
 
 namespace
 {
 
 struct LockoutBucket
 {
-    DetIp addr;             ///< source address (family DetIpFamily::DET_IP_NONE marks an empty bucket).
+    DWSIp addr;             ///< source address (family DWSIpFamily::DWS_IP_NONE marks an empty bucket).
     uint32_t lock_start_ms; ///< millis() when the current lockout began.
     uint32_t lock_ms;       ///< current lockout duration (0 = not locked).
     uint32_t last_ms;       ///< millis() of the last recorded failure (LRU eviction).
@@ -32,15 +32,15 @@ struct LockoutBucket
 // so it is one named owner, unreachable from any other translation unit.
 struct LockoutCtx
 {
-    LockoutBucket buckets[DETWS_AUTH_LOCKOUT_SLOTS];
+    LockoutBucket buckets[DWS_AUTH_LOCKOUT_SLOTS];
 };
 LockoutCtx s_lock;
 
 // Returns a mutable bucket (callers mutate it), so it takes the owner by non-const reference.
-LockoutBucket *find_bucket(LockoutCtx &c, const DetIp *ip)
+LockoutBucket *find_bucket(LockoutCtx &c, const DWSIp *ip)
 {
-    for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
-        if (c.buckets[i].addr.family != DetIpFamily::DET_IP_NONE && det_ip_equal(&c.buckets[i].addr, ip))
+    for (int i = 0; i < DWS_AUTH_LOCKOUT_SLOTS; i++)
+        if (c.buckets[i].addr.family != DWSIpFamily::DWS_IP_NONE && dws_ip_equal(&c.buckets[i].addr, ip))
             return &c.buckets[i];
     return nullptr;
 }
@@ -53,9 +53,9 @@ bool bucket_locked(const LockoutBucket *b, uint32_t now_ms)
 
 } // namespace
 
-uint32_t auth_lockout_remaining_ms(const DetIp *ip, uint32_t now_ms)
+uint32_t auth_lockout_remaining_ms(const DWSIp *ip, uint32_t now_ms)
 {
-    if (det_ip_is_unspecified(ip))
+    if (dws_ip_is_unspecified(ip))
         return 0; // untrackable source -> never reported as locked
     LockoutBucket *b = find_bucket(s_lock, ip);
     if (!b || b->lock_ms == 0)
@@ -66,9 +66,9 @@ uint32_t auth_lockout_remaining_ms(const DetIp *ip, uint32_t now_ms)
     return b->lock_ms - elapsed;
 }
 
-void auth_lockout_fail(const DetIp *ip, uint32_t now_ms)
+void auth_lockout_fail(const DWSIp *ip, uint32_t now_ms)
 {
-    if (det_ip_is_unspecified(ip))
+    if (dws_ip_is_unspecified(ip))
         return; // untrackable source
 
     LockoutBucket *b = find_bucket(s_lock, ip);
@@ -80,9 +80,9 @@ void auth_lockout_fail(const DetIp *ip, uint32_t now_ms)
         // lockout by flooding from other addresses).
         int slot = -1;
         int lru = 0;
-        for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
+        for (int i = 0; i < DWS_AUTH_LOCKOUT_SLOTS; i++)
         {
-            if (s_lock.buckets[i].addr.family == DetIpFamily::DET_IP_NONE)
+            if (s_lock.buckets[i].addr.family == DWSIpFamily::DWS_IP_NONE)
             {
                 slot = i;
                 break;
@@ -107,37 +107,37 @@ void auth_lockout_fail(const DetIp *ip, uint32_t now_ms)
     if (b->fails < 0xFFFF)
         b->fails++;
 
-    if (b->fails >= DETWS_AUTH_LOCKOUT_THRESHOLD)
+    if (b->fails >= DWS_AUTH_LOCKOUT_THRESHOLD)
     {
         // Exponential backoff: base << (fails - threshold), capped at max. Step the
         // double so the shift can never overflow: the cap is hit (and the loop
         // breaks) before dur could exceed MAX_MS, and the config caps MAX_MS at
         // 0x80000000 so the surviving dur << 1 always fits in a uint32.
-        uint32_t dur = DETWS_AUTH_LOCKOUT_BASE_MS;
-        for (uint16_t n = (uint16_t)(b->fails - DETWS_AUTH_LOCKOUT_THRESHOLD); n > 0; n--)
+        uint32_t dur = DWS_AUTH_LOCKOUT_BASE_MS;
+        for (uint16_t n = (uint16_t)(b->fails - DWS_AUTH_LOCKOUT_THRESHOLD); n > 0; n--)
         {
-            if (dur >= DETWS_AUTH_LOCKOUT_MAX_MS)
+            if (dur >= DWS_AUTH_LOCKOUT_MAX_MS)
             {
-                dur = DETWS_AUTH_LOCKOUT_MAX_MS;
+                dur = DWS_AUTH_LOCKOUT_MAX_MS;
                 break;
             }
             dur <<= 1;
         }
-        if (dur > DETWS_AUTH_LOCKOUT_MAX_MS)
-            dur = DETWS_AUTH_LOCKOUT_MAX_MS;
+        if (dur > DWS_AUTH_LOCKOUT_MAX_MS)
+            dur = DWS_AUTH_LOCKOUT_MAX_MS;
         b->lock_ms = dur;
         b->lock_start_ms = now_ms;
     }
 }
 
-void auth_lockout_succeed(const DetIp *ip)
+void auth_lockout_succeed(const DWSIp *ip)
 {
-    if (det_ip_is_unspecified(ip))
+    if (dws_ip_is_unspecified(ip))
         return;
     LockoutBucket *b = find_bucket(s_lock, ip);
     if (b)
     {
-        b->addr.family = DetIpFamily::DET_IP_NONE;
+        b->addr.family = DWSIpFamily::DWS_IP_NONE;
         b->fails = 0;
         b->lock_ms = 0;
         b->lock_start_ms = 0;
@@ -147,9 +147,9 @@ void auth_lockout_succeed(const DetIp *ip)
 
 void auth_lockout_reset(void)
 {
-    for (int i = 0; i < DETWS_AUTH_LOCKOUT_SLOTS; i++)
+    for (int i = 0; i < DWS_AUTH_LOCKOUT_SLOTS; i++)
     {
-        s_lock.buckets[i].addr.family = DetIpFamily::DET_IP_NONE;
+        s_lock.buckets[i].addr.family = DWSIpFamily::DWS_IP_NONE;
         s_lock.buckets[i].lock_start_ms = 0;
         s_lock.buckets[i].lock_ms = 0;
         s_lock.buckets[i].last_ms = 0;
@@ -157,4 +157,4 @@ void auth_lockout_reset(void)
     }
 }
 
-#endif // DETWS_ENABLE_AUTH_LOCKOUT
+#endif // DWS_ENABLE_AUTH_LOCKOUT

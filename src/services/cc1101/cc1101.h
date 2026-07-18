@@ -3,9 +3,9 @@
 
 /**
  * @file cc1101.h
- * @brief CC1101 sub-GHz radio driver (DETWS_ENABLE_CC1101) - TI 300-928 MHz over SPI.
+ * @brief CC1101 sub-GHz radio driver (DWS_ENABLE_CC1101) - TI 300-928 MHz over SPI.
  *
- * A radio driver plugin for the gateway (DETWS_ENABLE_GATEWAY): generic ISM-band remotes and sensors
+ * A radio driver plugin for the gateway (DWS_ENABLE_GATEWAY): generic ISM-band remotes and sensors
  * (OOK / 2-FSK on 315/433/868/915 MHz) bridged to the web stack. Like the nRF24, the CC1101 speaks an
  * **SPI header protocol** - every transaction begins with a header byte (bit7 = read, bit6 = burst,
  * bits5-0 = address) and returns the **chip status byte** (CHIP_RDYn, the 3-bit state machine value, and
@@ -17,7 +17,7 @@
  * caller supplies it as a register table (a TI SmartRF Studio export); the driver resets the chip, writes
  * that table, sets the channel, and verifies the VERSION status register talks back. Packets use variable
  * length mode (a leading length byte) with appended RSSI/LQI status. Bridge received payloads northbound
- * with det_gateway_uplink. The register/strobe/FIFO protocol is host-testable against a mock; the RF link
+ * with dws_gateway_uplink. The register/strobe/FIFO protocol is host-testable against a mock; the RF link
  * needs the module.
  */
 
@@ -26,7 +26,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_CC1101
+#if DWS_ENABLE_CC1101
 
 #include <stddef.h>
 #include <stdint.h>
@@ -84,6 +84,6 @@ int cc1101_recv(const cc1101_bus *bus, uint8_t *buf, uint8_t cap, int16_t *rssi_
 /** @brief Convert a raw CC1101 RSSI register value to dBm (TI datasheet formula). Pure. */
 int16_t cc1101_rssi_dbm(uint8_t raw);
 
-#endif // DETWS_ENABLE_CC1101
+#endif // DWS_ENABLE_CC1101
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_CC1101_H

@@ -4,25 +4,25 @@
 /**
  * @file 35.Dashboard.ino
  * @brief Real-time SVG dashboard with live telemetry and WebSocket controls
- *        (DETWS_ENABLE_DASHBOARD).
+ *        (DWS_ENABLE_DASHBOARD).
  *
  * Declares a fixed compile-time widget table and serves it at /dashboard. Display
  * widgets (gauge / value / chart) update live over SSE; control widgets (toggle /
  * slider / button) send values back to the device over WebSocket, delivered to a
- * control callback. The sketch feeds readings with detws_dashboard_set(key, value)
- * and pushes a frame with detws_dashboard_publish().
+ * control callback. The sketch feeds readings with dws_dashboard_set(key, value)
+ * and pushes a frame with dws_dashboard_publish().
  *
  * NOTE: enable the dashboard for the whole build (a .ino #define does not reach
  * the separately compiled library). In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_DASHBOARD=1
- * (DETWS_ENABLE_SSE and DETWS_ENABLE_WEBSOCKET are on by default; SSE is required,
+ *     build_flags = -DDWS_ENABLE_DASHBOARD=1
+ * (DWS_ENABLE_SSE and DWS_ENABLE_WEBSOCKET are on by default; SSE is required,
  * WebSocket enables the controls. Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it
  * builds as-is.)
  *
  * Flash, then open http://<ip>/dashboard.
  */
 
-#define DETWS_ENABLE_DASHBOARD 1
+#define DWS_ENABLE_DASHBOARD 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -34,19 +34,19 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static const int LED_PIN = 2; // onboard LED on many ESP32 dev boards
 
 // Compile-time widget table - the dashboard's deterministic source of truth.
 // Display widgets are fed over SSE; control widgets send values back over WS.
 static const DetwsWidget WIDGETS[] = {
-    {DetwsWidgetType::DETWS_WIDGET_GAUGE, "Free heap", "heap", 0, 320000, "B"},
-    {DetwsWidgetType::DETWS_WIDGET_VALUE, "Uptime", "uptime", 0, 0, "s"},
-    {DetwsWidgetType::DETWS_WIDGET_CHART, "WiFi RSSI", "rssi", -100, 0, "dBm"},
-    {DetwsWidgetType::DETWS_WIDGET_TOGGLE, "Onboard LED", "led", 0, 1, ""},
-    {DetwsWidgetType::DETWS_WIDGET_SLIDER, "Brightness", "bright", 0, 255, ""},
-    {DetwsWidgetType::DETWS_WIDGET_BUTTON, "Identify", "ident", 0, 0, ""},
+    {DetwsWidgetType::DWS_WIDGET_GAUGE, "Free heap", "heap", 0, 320000, "B"},
+    {DetwsWidgetType::DWS_WIDGET_VALUE, "Uptime", "uptime", 0, 0, "s"},
+    {DetwsWidgetType::DWS_WIDGET_CHART, "WiFi RSSI", "rssi", -100, 0, "dBm"},
+    {DetwsWidgetType::DWS_WIDGET_TOGGLE, "Onboard LED", "led", 0, 1, ""},
+    {DetwsWidgetType::DWS_WIDGET_SLIDER, "Brightness", "bright", 0, 255, ""},
+    {DetwsWidgetType::DWS_WIDGET_BUTTON, "Identify", "ident", 0, 0, ""},
 };
 
 // Invoked when a control widget sends a value from the browser.
@@ -75,8 +75,8 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    detws_dashboard_on_control(on_control);
-    detws_dashboard_begin(server, "/dashboard", WIDGETS, sizeof(WIDGETS) / sizeof(WIDGETS[0]));
+    dws_dashboard_on_control(on_control);
+    dws_dashboard_begin(server, "/dashboard", WIDGETS, sizeof(WIDGETS) / sizeof(WIDGETS[0]));
     server.begin(80);
 }
 
@@ -90,9 +90,9 @@ void loop()
     if (now - last_ms >= 1000)
     {
         last_ms = now;
-        detws_dashboard_set("heap", (float)ESP.getFreeHeap());
-        detws_dashboard_set("uptime", (float)(now / 1000));
-        detws_dashboard_set("rssi", (float)WiFi.RSSI());
-        detws_dashboard_publish();
+        dws_dashboard_set("heap", (float)ESP.getFreeHeap());
+        dws_dashboard_set("uptime", (float)(now / 1000));
+        dws_dashboard_set("rssi", (float)WiFi.RSSI());
+        dws_dashboard_publish();
     }
 }

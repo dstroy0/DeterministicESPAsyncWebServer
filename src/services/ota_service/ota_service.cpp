@@ -3,13 +3,13 @@
 
 /**
  * @file ota_service.cpp
- * @brief Authenticated streaming OTA firmware update (DETWS_ENABLE_OTA).
+ * @brief Authenticated streaming OTA firmware update (DWS_ENABLE_OTA).
  */
 
 #include "ota_service.h"
 #include "services/clock.h" // dwsdelay
 
-#if DETWS_ENABLE_OTA && defined(ARDUINO)
+#if DWS_ENABLE_OTA && defined(ARDUINO)
 
 #include "dwserver.h"
 #include "network_drivers/presentation/base64/base64.h"
@@ -24,7 +24,7 @@
 // this single-task device). Grouped so it is one named owner, unreachable cross-TU.
 struct OtaCtx
 {
-    DetWebServer *server = nullptr;
+    DWS *server = nullptr;
     const char *path = nullptr;
     char user[MAX_AUTH_LEN] = {0};
     char pass[MAX_AUTH_LEN] = {0};
@@ -95,12 +95,12 @@ static void ota_handle(uint8_t slot_id, HttpReq *req)
 {
     if (!req->body_streaming)
     {
-        s_ota.server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "POST a raw firmware image");
+        s_ota.server->send(slot_id, 400, DWS_MIME_TEXT_PLAIN, "POST a raw firmware image");
         return;
     }
     if (!s_ota.authed)
     {
-        s_ota.server->send(slot_id, 401, DET_MIME_TEXT_PLAIN, "Unauthorized");
+        s_ota.server->send(slot_id, 401, DWS_MIME_TEXT_PLAIN, "Unauthorized");
         return;
     }
     bool ok = s_ota.active && !s_ota.error && Update.end(true);
@@ -108,15 +108,15 @@ static void ota_handle(uint8_t slot_id, HttpReq *req)
     {
         if (s_ota.active)
             Update.abort();
-        s_ota.server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "Update failed");
+        s_ota.server->send(slot_id, 400, DWS_MIME_TEXT_PLAIN, "Update failed");
         return;
     }
-    s_ota.server->send(slot_id, 200, DET_MIME_TEXT_PLAIN, "OK - rebooting");
+    s_ota.server->send(slot_id, 200, DWS_MIME_TEXT_PLAIN, "OK - rebooting");
     dwsdelay(150); // let the response flush before the reboot
     ESP.restart();
 }
 
-void detws_ota_begin(DetWebServer &server, const char *path, const char *user, const char *pass)
+void dws_ota_begin(DWS &server, const char *path, const char *user, const char *pass)
 {
     s_ota.server = &server;
     s_ota.path = path;
@@ -131,7 +131,7 @@ void detws_ota_begin(DetWebServer &server, const char *path, const char *user, c
 
 #else
 
-void detws_ota_begin(DetWebServer &server, const char *path, const char *user, const char *pass)
+void dws_ota_begin(DWS &server, const char *path, const char *user, const char *pass)
 {
     (void)server;
     (void)path;
@@ -139,4 +139,4 @@ void detws_ota_begin(DetWebServer &server, const char *path, const char *user, c
     (void)pass;
 }
 
-#endif // DETWS_ENABLE_OTA && ARDUINO
+#endif // DWS_ENABLE_OTA && ARDUINO

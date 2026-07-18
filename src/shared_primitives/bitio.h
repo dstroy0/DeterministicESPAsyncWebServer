@@ -10,8 +10,8 @@
  * @c uint32_t accumulator, spill whole bytes to the output, and latch @c overflow when the buffer is full. It
  * lives here once.
  *
- * NOTE: distinct from bytes.h's @c det_bw_* helpers, which are a BYTE-oriented (big-endian) codec cursor. This
- * is a BIT writer (@c det_bitw_*), for the DEFLATE bitstream. Header-only, pure (only @c <stdint.h> /
+ * NOTE: distinct from bytes.h's @c dws_bw_* helpers, which are a BYTE-oriented (big-endian) codec cursor. This
+ * is a BIT writer (@c dws_bitw_*), for the DEFLATE bitstream. Header-only, pure (only @c <stdint.h> /
  * @c <stddef.h>), zero link cost when unused.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -25,7 +25,7 @@
 #include <stdint.h>
 
 /** @brief LSB-first bit writer over the caller's output buffer; @c overflow latches once @c cap is exceeded. */
-struct DetBitWriter
+struct DWSBitWriter
 {
     uint8_t *out;
     size_t cap;
@@ -36,7 +36,7 @@ struct DetBitWriter
 };
 
 /** @brief Append the low @p n bits of @p bits, LSB-first, spilling any completed bytes to the output. */
-inline void det_bitw_put(DetBitWriter *w, uint32_t bits, int n)
+inline void dws_bitw_put(DWSBitWriter *w, uint32_t bits, int n)
 {
     w->acc |= bits << w->nbits;
     w->nbits += n;
@@ -54,7 +54,7 @@ inline void det_bitw_put(DetBitWriter *w, uint32_t bits, int n)
 }
 
 /** @brief Flush any partial byte, padding the high bits with zero (byte alignment). */
-inline void det_bitw_align(DetBitWriter *w)
+inline void dws_bitw_align(DWSBitWriter *w)
 {
     if (w->nbits > 0)
     {

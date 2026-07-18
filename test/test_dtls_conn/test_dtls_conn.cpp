@@ -33,7 +33,7 @@ static uint32_t test_clock()
 void setUp()
 {
     g_ms = 0;
-    detws_set_clock(test_clock, 1000); // 1000 ticks/s -> detws_millis() == g_ms
+    dws_set_clock(test_clock, 1000); // 1000 ticks/s -> dws_millis() == g_ms
 }
 void tearDown()
 {
@@ -397,9 +397,9 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
                                          scid_len ? scid : nullptr, scid_len);
 
     uint8_t out2[64];
-    int r2 = det_dtls_conn_process(conn, cfin_rec, cfr, out2, sizeof(out2));
+    int r2 = dws_dtls_conn_process(conn, cfin_rec, cfr, out2, sizeof(out2));
     TEST_ASSERT_TRUE(r2 > 0); // the server acknowledges the client Finished (RFC 9147 §5.8.3)
-    TEST_ASSERT_TRUE(det_dtls_conn_established(conn));
+    TEST_ASSERT_TRUE(dws_dtls_conn_established(conn));
 
     // --- both sides agree on the application-traffic keys ---
     DtlsRecordKeys cli_app_read;  // client reads server app data (from server_ap_traffic)
@@ -414,8 +414,8 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
                                                client_cid, client_cid_len));
     TEST_ASSERT_EQUAL_UINT8(DTLS_CT_ACK, ackinfo.content_type);
 
-    const DtlsRecordKeys *srv_app_write = det_dtls_conn_app_write_keys(conn); // server->client
-    const DtlsRecordKeys *srv_app_read = det_dtls_conn_app_read_keys(conn);   // client->server
+    const DtlsRecordKeys *srv_app_write = dws_dtls_conn_app_write_keys(conn); // server->client
+    const DtlsRecordKeys *srv_app_read = dws_dtls_conn_app_read_keys(conn);   // client->server
     TEST_ASSERT_NOT_NULL(srv_app_write);
     TEST_ASSERT_NOT_NULL(srv_app_read);
     TEST_ASSERT_EQUAL_MEMORY(cli_app_read.key, srv_app_write->key, 16);
@@ -429,9 +429,9 @@ static void complete_handshake_from_flight(DtlsConn *conn, SshSha256Ctx tr, uint
     size_t cfr2 = dtls_ciphertext_protect(&cli_write, 1, DTLS_CT_HANDSHAKE, cfin_frag, cff, cfin_rec2,
                                           sizeof(cfin_rec2), scid_len ? scid : nullptr, scid_len);
     uint8_t out3[64];
-    int r3 = det_dtls_conn_process(conn, cfin_rec2, cfr2, out3, sizeof(out3));
+    int r3 = dws_dtls_conn_process(conn, cfin_rec2, cfr2, out3, sizeof(out3));
     TEST_ASSERT_TRUE(r3 > 0);
-    TEST_ASSERT_TRUE(det_dtls_conn_established(conn));
+    TEST_ASSERT_TRUE(dws_dtls_conn_established(conn));
     uint8_t ack_pt3[64];
     DtlsCiphertext ackinfo3;
     TEST_ASSERT_TRUE(dtls_ciphertext_unprotect(&cli_app_read, 1, out3, (size_t)r3, ack_pt3, sizeof(ack_pt3), &ackinfo3,
@@ -460,7 +460,7 @@ static void test_full_handshake(void)
     DtlsServerConfig cfg;
     server_cfg(&cfg, server_ed_pub);
     DtlsConn conn;
-    det_dtls_conn_init(&conn, &cfg, nullptr, 0); // no HRR expected on the happy path
+    dws_dtls_conn_init(&conn, &cfg, nullptr, 0); // no HRR expected on the happy path
 
     // --- client flight 1: ClientHello (epoch 0) ---
     uint8_t ch[256];
@@ -477,7 +477,7 @@ static void test_full_handshake(void)
     size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
 
     uint8_t flight[2048];
-    int fl = det_dtls_conn_process(&conn, ch_rec, ch_rl, flight, sizeof(flight));
+    int fl = dws_dtls_conn_process(&conn, ch_rec, ch_rl, flight, sizeof(flight));
     TEST_ASSERT_TRUE(fl > 0); // server produced its flight
 
     complete_handshake_from_flight(&conn, tr, /*cfin_msg_seq=*/1, flight, (size_t)fl);
@@ -496,7 +496,7 @@ static void test_cid_handshake(void)
     DtlsServerConfig cfg;
     server_cfg(&cfg, server_ed_pub);
     DtlsConn conn;
-    det_dtls_conn_init(&conn, &cfg, nullptr, 0);
+    dws_dtls_conn_init(&conn, &cfg, nullptr, 0);
 
     // ClientHello offering a 3-byte connection id (the CID the server must place in records it sends us).
     const uint8_t client_cid[3] = {0xC1, 0xC2, 0xC3};
@@ -514,7 +514,7 @@ static void test_cid_handshake(void)
     size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
 
     uint8_t flight[2048];
-    int fl = det_dtls_conn_process(&conn, ch_rec, ch_rl, flight, sizeof(flight));
+    int fl = dws_dtls_conn_process(&conn, ch_rec, ch_rl, flight, sizeof(flight));
     TEST_ASSERT_TRUE(fl > 0);
 
     // The server's first epoch-2 record (after the plaintext ServerHello) must carry the C bit + our CID.
@@ -543,7 +543,7 @@ static void test_hrr_group_renegotiation(void)
     DtlsServerConfig cfg;
     server_cfg(&cfg, server_ed_pub);
     DtlsConn conn;
-    det_dtls_conn_init(&conn, &cfg, TEST_PEER_ADDR, sizeof(TEST_PEER_ADDR));
+    dws_dtls_conn_init(&conn, &cfg, TEST_PEER_ADDR, sizeof(TEST_PEER_ADDR));
 
     // --- client flight 1: ClientHello with NO key_share (message_seq 0) ---
     uint8_t ch1[256];
@@ -555,9 +555,9 @@ static void test_hrr_group_renegotiation(void)
     size_t r1l = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, f1, f1l, r1, sizeof(r1));
 
     uint8_t hrr_flight[512];
-    int hf = det_dtls_conn_process(&conn, r1, r1l, hrr_flight, sizeof(hrr_flight));
+    int hf = dws_dtls_conn_process(&conn, r1, r1l, hrr_flight, sizeof(hrr_flight));
     TEST_ASSERT_TRUE(hf > 0);
-    TEST_ASSERT_FALSE(det_dtls_conn_established(&conn)); // just an HRR so far
+    TEST_ASSERT_FALSE(dws_dtls_conn_established(&conn)); // just an HRR so far
 
     // --- the server flight is a single epoch-0 plaintext HelloRetryRequest ---
     DtlsPlaintext pt;
@@ -600,7 +600,7 @@ static void test_hrr_group_renegotiation(void)
     size_t r2l = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 1, f2, f2l, r2, sizeof(r2));
 
     uint8_t flight[2048];
-    int fl = det_dtls_conn_process(&conn, r2, r2l, flight, sizeof(flight));
+    int fl = dws_dtls_conn_process(&conn, r2, r2l, flight, sizeof(flight));
     TEST_ASSERT_TRUE(fl > 0); // the full server flight
 
     complete_handshake_from_flight(&conn, tr, /*cfin_msg_seq=*/2, flight, (size_t)fl);
@@ -618,7 +618,7 @@ static void test_hrr_retry_without_cookie_rejected(void)
     DtlsServerConfig cfg;
     server_cfg(&cfg, server_ed_pub);
     DtlsConn conn;
-    det_dtls_conn_init(&conn, &cfg, TEST_PEER_ADDR, sizeof(TEST_PEER_ADDR));
+    dws_dtls_conn_init(&conn, &cfg, TEST_PEER_ADDR, sizeof(TEST_PEER_ADDR));
 
     // CH1 without a key_share -> HRR.
     uint8_t ch1[256];
@@ -629,7 +629,7 @@ static void test_hrr_retry_without_cookie_rejected(void)
     uint8_t r1[320];
     size_t r1l = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, f1, f1l, r1, sizeof(r1));
     uint8_t hrr_flight[512];
-    TEST_ASSERT_TRUE(det_dtls_conn_process(&conn, r1, r1l, hrr_flight, sizeof(hrr_flight)) > 0);
+    TEST_ASSERT_TRUE(dws_dtls_conn_process(&conn, r1, r1l, hrr_flight, sizeof(hrr_flight)) > 0);
 
     // CH2 with a key_share but NO cookie (message_seq 1) -> handshake_failure.
     uint8_t ch2[320];
@@ -640,8 +640,8 @@ static void test_hrr_retry_without_cookie_rejected(void)
     uint8_t r2[420];
     size_t r2l = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 1, f2, f2l, r2, sizeof(r2));
     uint8_t out[2048];
-    TEST_ASSERT_EQUAL_INT(-1, det_dtls_conn_process(&conn, r2, r2l, out, sizeof(out)));
-    TEST_ASSERT_EQUAL_UINT8(40, det_dtls_conn_alert(&conn)); // handshake_failure
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&conn, r2, r2l, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(40, dws_dtls_conn_alert(&conn)); // handshake_failure
 }
 
 // A ClientHello that does not offer TLS 1.3 is rejected with a protocol_version alert.
@@ -654,7 +654,7 @@ static void test_reject_no_tls13(void)
     DtlsServerConfig cfg;
     server_cfg(&cfg, server_ed_pub);
     DtlsConn conn;
-    det_dtls_conn_init(&conn, &cfg, nullptr, 0);
+    dws_dtls_conn_init(&conn, &cfg, nullptr, 0);
 
     uint8_t ch[256];
     size_t ch_len = build_client_hello(ch, client_pub);
@@ -669,8 +669,8 @@ static void test_reject_no_tls13(void)
     size_t fl =
         dtls_hs_frag_build(ch[0], 0, (uint32_t)(ch_len - 4), 0, ch + 4, (uint32_t)(ch_len - 4), frag, sizeof(frag));
     size_t rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, frag, fl, rec, sizeof(rec));
-    TEST_ASSERT_EQUAL_INT(-1, det_dtls_conn_process(&conn, rec, rl, out, sizeof(out)));
-    TEST_ASSERT_EQUAL_UINT8(70, det_dtls_conn_alert(&conn)); // protocol_version
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&conn, rec, rl, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT8(70, dws_dtls_conn_alert(&conn)); // protocol_version
 }
 
 // Drive a fresh connection from ClientHello to WAIT_FINISHED; return the server flight and seed the
@@ -680,7 +680,7 @@ static int drive_server_flight(DtlsConn *conn, DtlsServerConfig *cfg, SshSha256C
 {
     uint8_t client_pub[32];
     ssh_x25519_base(client_pub, CLIENT_X25519_PRIV);
-    det_dtls_conn_init(conn, cfg, nullptr, 0);
+    dws_dtls_conn_init(conn, cfg, nullptr, 0);
     uint8_t ch[256];
     size_t ch_len = build_client_hello(ch, client_pub);
     ssh_sha256_init(tr);
@@ -690,7 +690,7 @@ static int drive_server_flight(DtlsConn *conn, DtlsServerConfig *cfg, SshSha256C
                                       sizeof(ch_frag));
     uint8_t ch_rec[320];
     size_t ch_rl = dtls_plaintext_build(DTLS_CT_HANDSHAKE, 0, 0, ch_frag, ch_fl, ch_rec, sizeof(ch_rec));
-    return det_dtls_conn_process(conn, ch_rec, ch_rl, flight, flight_cap);
+    return dws_dtls_conn_process(conn, ch_rec, ch_rl, flight, flight_cap);
 }
 
 // The retransmission timer (RFC 9147 §5.8): after the server flight, the timer is armed at the initial
@@ -708,20 +708,20 @@ static void test_pto_retransmit_and_recovery(void)
     int fl = drive_server_flight(&conn, &cfg, &tr, flight, sizeof(flight));
     TEST_ASSERT_TRUE(fl > 0);
 
-    TEST_ASSERT_EQUAL_INT((int)DTLS_PTO_INITIAL_MS, det_dtls_conn_timeout_ms(&conn)); // armed at the initial PTO
+    TEST_ASSERT_EQUAL_INT((int)DTLS_PTO_INITIAL_MS, dws_dtls_conn_timeout_ms(&conn)); // armed at the initial PTO
 
     uint8_t rflight[2048];
-    TEST_ASSERT_EQUAL_INT(0, det_dtls_conn_on_timeout(&conn, rflight, sizeof(rflight))); // not due yet -> no-op
+    TEST_ASSERT_EQUAL_INT(0, dws_dtls_conn_on_timeout(&conn, rflight, sizeof(rflight))); // not due yet -> no-op
 
     g_ms += DTLS_PTO_INITIAL_MS;
-    int rfl = det_dtls_conn_on_timeout(&conn, rflight, sizeof(rflight));
+    int rfl = dws_dtls_conn_on_timeout(&conn, rflight, sizeof(rflight));
     TEST_ASSERT_TRUE(rfl > 0); // whole flight retransmitted
-    TEST_ASSERT_EQUAL_INT((int)(DTLS_PTO_INITIAL_MS * 2), det_dtls_conn_timeout_ms(&conn)); // backed off to 2x
+    TEST_ASSERT_EQUAL_INT((int)(DTLS_PTO_INITIAL_MS * 2), dws_dtls_conn_timeout_ms(&conn)); // backed off to 2x
 
     // The retransmission is a valid, completable server flight (fresh record seqs); completing it also
     // disarms the timer.
     complete_handshake_from_flight(&conn, tr, 1, rflight, (size_t)rfl);
-    TEST_ASSERT_EQUAL_INT(-1, det_dtls_conn_timeout_ms(&conn));
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_timeout_ms(&conn));
 }
 
 // The timer doubles each retransmission up to the cap, and the handshake is abandoned after the
@@ -738,18 +738,18 @@ static void test_pto_backoff_and_giveup(void)
     TEST_ASSERT_TRUE(drive_server_flight(&conn, &cfg, &tr, flight, sizeof(flight)) > 0);
 
     uint32_t expect = DTLS_PTO_INITIAL_MS;
-    TEST_ASSERT_EQUAL_INT((int)expect, det_dtls_conn_timeout_ms(&conn));
+    TEST_ASSERT_EQUAL_INT((int)expect, dws_dtls_conn_timeout_ms(&conn));
     for (int i = 0; i < DTLS_MAX_RETRANSMITS; i++)
     {
         g_ms += DTLS_PTO_MAX_MS + 1000; // well past any PTO
-        TEST_ASSERT_TRUE(det_dtls_conn_on_timeout(&conn, rflight, sizeof(rflight)) > 0);
+        TEST_ASSERT_TRUE(dws_dtls_conn_on_timeout(&conn, rflight, sizeof(rflight)) > 0);
         expect = expect >= DTLS_PTO_MAX_MS / 2 ? DTLS_PTO_MAX_MS : expect * 2;
-        TEST_ASSERT_EQUAL_INT((int)expect, det_dtls_conn_timeout_ms(&conn)); // doubled, capped at the max
+        TEST_ASSERT_EQUAL_INT((int)expect, dws_dtls_conn_timeout_ms(&conn)); // doubled, capped at the max
     }
     g_ms += DTLS_PTO_MAX_MS + 1000;
-    TEST_ASSERT_EQUAL_INT(-1, det_dtls_conn_on_timeout(&conn, rflight, sizeof(rflight)));          // ceiling: give up
-    TEST_ASSERT_EQUAL_INT(-1, det_dtls_conn_timeout_ms(&conn));                                    // FAILED: no timer
-    TEST_ASSERT_EQUAL_INT(-1, det_dtls_conn_process(&conn, rflight, 1, rflight, sizeof(rflight))); // and rejects input
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_on_timeout(&conn, rflight, sizeof(rflight)));          // ceiling: give up
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_timeout_ms(&conn));                                    // FAILED: no timer
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_process(&conn, rflight, 1, rflight, sizeof(rflight))); // and rejects input
 }
 
 // A client ACK covering the whole server flight stops retransmission (RFC 9147 §5.8.3).
@@ -766,7 +766,7 @@ static void test_pto_ack_cancels_retransmit(void)
     uint8_t flight[2048];
     int fl = drive_server_flight(&conn, &cfg, &tr, flight, sizeof(flight));
     TEST_ASSERT_TRUE(fl > 0);
-    TEST_ASSERT_TRUE(det_dtls_conn_timeout_ms(&conn) >= 0); // armed
+    TEST_ASSERT_TRUE(dws_dtls_conn_timeout_ms(&conn) >= 0); // armed
 
     // Derive the client's epoch-2 write keys from the ServerHello, as a real client would.
     DtlsPlaintext pt;
@@ -802,8 +802,8 @@ static void test_pto_ack_cancels_retransmit(void)
     TEST_ASSERT_TRUE(ar > 0);
 
     uint8_t out[64];
-    det_dtls_conn_process(&conn, ack_rec, ar, out, sizeof(out));
-    TEST_ASSERT_EQUAL_INT(-1, det_dtls_conn_timeout_ms(&conn)); // the ACK stopped the retransmission timer
+    dws_dtls_conn_process(&conn, ack_rec, ar, out, sizeof(out));
+    TEST_ASSERT_EQUAL_INT(-1, dws_dtls_conn_timeout_ms(&conn)); // the ACK stopped the retransmission timer
 }
 
 int main(int, char **)

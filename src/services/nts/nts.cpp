@@ -8,7 +8,7 @@
 
 #include "services/nts/nts.h"
 
-#if DETWS_ENABLE_NTS
+#if DWS_ENABLE_NTS
 
 #include <string.h>
 
@@ -24,7 +24,7 @@ static uint16_t get_u16(const uint8_t *p)
     return (uint16_t)((p[0] << 8) | p[1]);
 }
 
-size_t detws_nts_ke_record(bool critical, uint16_t type, const uint8_t *body, size_t body_len, uint8_t *out, size_t cap)
+size_t dws_nts_ke_record(bool critical, uint16_t type, const uint8_t *body, size_t body_len, uint8_t *out, size_t cap)
 {
     if (!out || (body_len && !body) || body_len > 0xFFFF)
         return 0;
@@ -38,7 +38,7 @@ size_t detws_nts_ke_record(bool critical, uint16_t type, const uint8_t *body, si
     return n;
 }
 
-size_t detws_nts_ke_request(uint8_t *out, size_t cap)
+size_t dws_nts_ke_request(uint8_t *out, size_t cap)
 {
     uint8_t proto[2];
     put_u16(proto, Nts::NTS_NEXT_PROTO_NTPV4);
@@ -47,22 +47,22 @@ size_t detws_nts_ke_request(uint8_t *out, size_t cap)
 
     size_t n = 0;
     size_t r;
-    r = detws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, proto, 2, out + n, cap - n);
+    r = dws_nts_ke_record(true, Nts::NTS_KE_NEXT_PROTOCOL, proto, 2, out + n, cap - n);
     if (!r)
         return 0;
     n += r;
-    r = detws_nts_ke_record(true, Nts::NTS_KE_AEAD_ALGORITHM, aead, 2, out + n, cap - n);
+    r = dws_nts_ke_record(true, Nts::NTS_KE_AEAD_ALGORITHM, aead, 2, out + n, cap - n);
     if (!r)
         return 0;
     n += r;
-    r = detws_nts_ke_record(true, Nts::NTS_KE_END_OF_MESSAGE, nullptr, 0, out + n, cap - n);
+    r = dws_nts_ke_record(true, Nts::NTS_KE_END_OF_MESSAGE, nullptr, 0, out + n, cap - n);
     if (!r)
         return 0;
     n += r;
     return n;
 }
 
-bool detws_nts_ke_parse(const uint8_t *buf, size_t len, DetwsNtsKeCb cb, void *arg)
+bool dws_nts_ke_parse(const uint8_t *buf, size_t len, DetwsNtsKeCb cb, void *arg)
 {
     size_t off = 0;
     bool saw_end = false;
@@ -86,7 +86,7 @@ bool detws_nts_ke_parse(const uint8_t *buf, size_t len, DetwsNtsKeCb cb, void *a
     return saw_end; // a well-formed stream is terminated by an End-of-Message record
 }
 
-size_t detws_nts_ef(uint16_t field_type, const uint8_t *value, size_t value_len, uint8_t *out, size_t cap)
+size_t dws_nts_ef(uint16_t field_type, const uint8_t *value, size_t value_len, uint8_t *out, size_t cap)
 {
     if (!out || (value_len && !value))
         return 0;
@@ -104,14 +104,14 @@ size_t detws_nts_ef(uint16_t field_type, const uint8_t *value, size_t value_len,
     return padded;
 }
 
-size_t detws_nts_ef_unique_id(const uint8_t *nonce, size_t nonce_len, uint8_t *out, size_t cap)
+size_t dws_nts_ef_unique_id(const uint8_t *nonce, size_t nonce_len, uint8_t *out, size_t cap)
 {
-    return detws_nts_ef(NtsEf::NTS_EF_UNIQUE_IDENTIFIER, nonce, nonce_len, out, cap);
+    return dws_nts_ef(NtsEf::NTS_EF_UNIQUE_IDENTIFIER, nonce, nonce_len, out, cap);
 }
 
-size_t detws_nts_ef_cookie(const uint8_t *cookie, size_t cookie_len, uint8_t *out, size_t cap)
+size_t dws_nts_ef_cookie(const uint8_t *cookie, size_t cookie_len, uint8_t *out, size_t cap)
 {
-    return detws_nts_ef(NtsEf::NTS_EF_COOKIE, cookie, cookie_len, out, cap);
+    return dws_nts_ef(NtsEf::NTS_EF_COOKIE, cookie, cookie_len, out, cap);
 }
 
-#endif // DETWS_ENABLE_NTS
+#endif // DWS_ENABLE_NTS

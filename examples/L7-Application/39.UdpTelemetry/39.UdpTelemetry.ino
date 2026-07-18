@@ -3,7 +3,7 @@
 
 /**
  * @file 39.UdpTelemetry.ino
- * @brief Fire-and-forget UDP telemetry cast (DETWS_ENABLE_UDP_TELEMETRY).
+ * @brief Fire-and-forget UDP telemetry cast (DWS_ENABLE_UDP_TELEMETRY).
  *
  * Builds an InfluxDB line-protocol record (`esp32 heap=...i,rssi=...i,temp=...`)
  * and casts it to a collector over UDP once a second - zero-heap, no ACK, no
@@ -12,11 +12,11 @@
  *
  * NOTE: enable it for the whole build (a .ino #define does not reach the
  * separately compiled library). In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_UDP_TELEMETRY=1
+ *     build_flags = -DDWS_ENABLE_UDP_TELEMETRY=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_UDP_TELEMETRY 1
+#define DWS_ENABLE_UDP_TELEMETRY 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -44,7 +44,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    detws_udp_telemetry_begin(COLLECTOR_IP, COLLECTOR_PORT);
+    dws_udp_telemetry_begin(COLLECTOR_IP, COLLECTOR_PORT);
 }
 
 void loop()
@@ -53,13 +53,13 @@ void loop()
     if (millis() - last >= 1000)
     {
         last = millis();
-        char buf[DETWS_UDP_TELEMETRY_BUF];
+        char buf[DWS_UDP_TELEMETRY_BUF];
         DetwsLine line;
-        detws_line_init(&line, buf, sizeof(buf), "esp32");
-        detws_line_add_uint(&line, "heap", ESP.getFreeHeap());
-        detws_line_add_int(&line, "rssi", WiFi.RSSI());
-        detws_line_add_float(&line, "temp", temperatureRead(), 1);
-        if (detws_udp_telemetry_cast(&line))
+        dws_line_init(&line, buf, sizeof(buf), "esp32");
+        dws_line_add_uint(&line, "heap", ESP.getFreeHeap());
+        dws_line_add_int(&line, "rssi", WiFi.RSSI());
+        dws_line_add_float(&line, "temp", temperatureRead(), 1);
+        if (dws_udp_telemetry_cast(&line))
             Serial.printf("cast: %s\n", buf);
     }
 }

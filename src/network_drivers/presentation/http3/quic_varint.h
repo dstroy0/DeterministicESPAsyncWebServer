@@ -21,7 +21,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include <stddef.h>
 #include <stdint.h>
@@ -41,5 +41,5 @@ size_t quic_varint_encode(uint8_t *out, size_t cap, uint64_t value);
  */
 bool quic_varint_decode(const uint8_t *in, size_t len, uint64_t *value, size_t *consumed);
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_VARINT_H

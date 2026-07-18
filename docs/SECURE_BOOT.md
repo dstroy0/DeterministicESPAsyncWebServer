@@ -101,17 +101,17 @@ the SSH host key and `config_store` blobs, enable **NVS encryption**: add an
 3. **Disable debug / recovery surfaces** via eFuse: JTAG (`espefuse.py burn_efuse
 DIS_PAD_JTAG` / soft-disable), and UART download mode or Secure Download Mode
    (`ENABLE_SECURITY_DOWNLOAD`) so the bootloader cannot be used to read memory.
-4. **Build-time:** ship a release build with **`DETWS_ENABLE_DIAG` off** (it
-   exposes the compile-time config), prefer **HTTPS/WSS** (`DETWS_ENABLE_TLS`) and
-   **mTLS** (`DETWS_ENABLE_MTLS`) for control planes, and gate state-changing
-   routes (auth + `DETWS_ENABLE_CSRF`).
+4. **Build-time:** ship a release build with **`DWS_ENABLE_DIAG` off** (it
+   exposes the compile-time config), prefer **HTTPS/WSS** (`DWS_ENABLE_TLS`) and
+   **mTLS** (`DWS_ENABLE_MTLS`) for control planes, and gate state-changing
+   routes (auth + `DWS_ENABLE_CSRF`).
 
 ## Audit log under a physical attacker
 
 The hash chain in [`services/audit_log`](FEATURES.md#audit-log) makes on-device
 tampering detectable, but an attacker who holds the Flash Encryption key could in
 principle recompute the chain. For **true off-device tamper-evidence**, install a
-sink (`detws_audit_set_sink`) that forwards every record - with its chain hash - to
+sink (`dws_audit_set_sink`) that forwards every record - with its chain hash - to
 an append-only remote store (syslog / an HTTP log service / a write-once SD file)
 the device cannot later rewrite. Secure Boot + Flash Encryption raise the bar to
 recover that key; the remote sink is what survives if it is ever breached.

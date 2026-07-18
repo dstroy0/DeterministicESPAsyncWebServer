@@ -8,7 +8,7 @@
 
 #include "services/wal/wal.h"
 
-#if DETWS_ENABLE_WAL
+#if DWS_ENABLE_WAL
 
 #include <string.h>
 
@@ -83,13 +83,13 @@ size_t wal_record_encode(uint8_t *out, size_t cap, uint64_t seq, const uint8_t *
     size_t need = (size_t)WAL_RECORD_HEADER + len;
     if (out == nullptr || need > cap)
         return 0;
-    det_wr32le(out + 0, WAL_MAGIC);
-    det_wr64le(out + 4, seq);
-    det_wr32le(out + 12, len);
+    dws_wr32le(out + 0, WAL_MAGIC);
+    dws_wr64le(out + 4, seq);
+    dws_wr32le(out + 12, len);
     // crc over the 16 header bytes (magic+seq+len) then the payload
     uint32_t crc = crc32_step(0xFFFFFFFFu, out, 16);
     crc = crc32_step(crc, payload, len) ^ 0xFFFFFFFFu;
-    det_wr32le(out + 16, crc);
+    dws_wr32le(out + 16, crc);
     if (len)
         memcpy(out + WAL_RECORD_HEADER, payload, len);
     return need;
@@ -101,11 +101,11 @@ size_t wal_replay(const uint8_t *img, size_t len, WalRecordCb cb, void *ctx)
     while (off + WAL_RECORD_HEADER <= len)
     {
         const uint8_t *r = img + off;
-        if (det_rd32le(r) != WAL_MAGIC)
+        if (dws_rd32le(r) != WAL_MAGIC)
             break; // not a record start (end of log or garbage)
-        uint64_t seq = det_rd64le(r + 4);
-        uint32_t plen = det_rd32le(r + 12);
-        uint32_t crc_stored = det_rd32le(r + 16);
+        uint64_t seq = dws_rd64le(r + 4);
+        uint32_t plen = dws_rd32le(r + 12);
+        uint32_t crc_stored = dws_rd32le(r + 16);
         if (off + (size_t)WAL_RECORD_HEADER + plen > len)
             break; // truncated tail (power loss mid-record)
         uint32_t crc = crc32_step(0xFFFFFFFFu, r, 16);
@@ -119,4 +119,4 @@ size_t wal_replay(const uint8_t *img, size_t len, WalRecordCb cb, void *ctx)
     return off;
 }
 
-#endif // DETWS_ENABLE_WAL
+#endif // DWS_ENABLE_WAL

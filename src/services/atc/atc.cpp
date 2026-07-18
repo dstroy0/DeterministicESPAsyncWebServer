@@ -8,7 +8,7 @@
 
 #include "services/atc/atc.h"
 
-#if DETWS_ENABLE_ATC
+#if DWS_ENABLE_ATC
 
 #include <string.h>
 
@@ -16,15 +16,15 @@
 
 namespace
 {
-void put_json_str(DetSb *b, const char *s)
+void put_json_str(DWSSb *b, const char *s)
 {
-    det_sb_put(b, "\"");
+    dws_sb_put(b, "\"");
     for (const char *p = s ? s : ""; *p; p++)
     {
         if (*p == '"' || *p == '\\')
         {
             char esc[3] = {'\\', *p, '\0'};
-            det_sb_put(b, esc);
+            dws_sb_put(b, esc);
         }
         else
         {
@@ -36,10 +36,10 @@ void put_json_str(DetSb *b, const char *s)
             b->p[b->len++] = *p;
         }
     }
-    det_sb_put(b, "\"");
+    dws_sb_put(b, "\"");
 }
 
-void put_u8(DetSb *b, uint8_t v)
+void put_u8(DWSSb *b, uint8_t v)
 {
     char t[4];
     int n = 0;
@@ -52,48 +52,48 @@ void put_u8(DetSb *b, uint8_t v)
     for (int i = 0; i < n; i++)
         o[i] = t[n - 1 - i];
     o[n] = '\0';
-    det_sb_put(b, o);
+    dws_sb_put(b, o);
 }
 
 // Append the points of one direction (outputs or inputs) as a JSON array.
-void put_array(DetSb *b, const AtcFieldIo *io, bool outputs)
+void put_array(DWSSb *b, const AtcFieldIo *io, bool outputs)
 {
-    det_sb_put(b, "[");
+    dws_sb_put(b, "[");
     bool first = true;
     for (size_t i = 0; i < io->count; i++)
     {
         if (io->points[i].is_output != outputs)
             continue;
         if (!first)
-            det_sb_put(b, ",");
+            dws_sb_put(b, ",");
         first = false;
-        det_sb_put(b, "{\"name\":");
+        dws_sb_put(b, "{\"name\":");
         put_json_str(b, io->points[i].name);
-        det_sb_put(b, ",\"value\":");
+        dws_sb_put(b, ",\"value\":");
         put_u8(b, io->points[i].value);
-        det_sb_put(b, "}");
+        dws_sb_put(b, "}");
     }
-    det_sb_put(b, "]");
+    dws_sb_put(b, "]");
 }
 } // namespace
 
-size_t detws_atc_snapshot_json(const AtcFieldIo *io, char *out, size_t cap)
+size_t dws_atc_snapshot_json(const AtcFieldIo *io, char *out, size_t cap)
 {
     if (!io || !out || (io->count && !io->points))
         return 0;
-    DetSb b = {out, cap, 0, cap > 0};
-    det_sb_put(&b, "{\"inputs\":");
+    DWSSb b = {out, cap, 0, cap > 0};
+    dws_sb_put(&b, "{\"inputs\":");
     put_array(&b, io, false);
-    det_sb_put(&b, ",\"outputs\":");
+    dws_sb_put(&b, ",\"outputs\":");
     put_array(&b, io, true);
-    det_sb_put(&b, "}");
+    dws_sb_put(&b, "}");
     if (!b.ok)
         return 0;
     out[b.len] = '\0';
     return b.len;
 }
 
-bool detws_atc_set_output(AtcFieldIo *io, const char *name, uint8_t value)
+bool dws_atc_set_output(AtcFieldIo *io, const char *name, uint8_t value)
 {
     if (!io || !name || !io->points)
         return false;
@@ -106,7 +106,7 @@ bool detws_atc_set_output(AtcFieldIo *io, const char *name, uint8_t value)
     return false;
 }
 
-uint8_t detws_atc_get(const AtcFieldIo *io, const char *name, bool *found)
+uint8_t dws_atc_get(const AtcFieldIo *io, const char *name, bool *found)
 {
     if (found)
         *found = false;
@@ -122,4 +122,4 @@ uint8_t detws_atc_get(const AtcFieldIo *io, const char *name, bool *found)
     return 0;
 }
 
-#endif // DETWS_ENABLE_ATC
+#endif // DWS_ENABLE_ATC

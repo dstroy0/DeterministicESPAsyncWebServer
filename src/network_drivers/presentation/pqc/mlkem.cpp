@@ -3,7 +3,7 @@
 
 #include "network_drivers/presentation/pqc/mlkem.h"
 
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
 
 #include "network_drivers/presentation/pqc/sha3.h"
 #include <string.h>
@@ -326,4 +326,4 @@ bool mlkem768_encaps(const uint8_t ek[MLKEM768_EK_BYTES], const uint8_t m[MLKEM7
     return true;
 }
 
-#endif // DETWS_ENABLE_PQC_KEX
+#endif // DWS_ENABLE_PQC_KEX

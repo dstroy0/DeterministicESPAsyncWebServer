@@ -8,7 +8,7 @@
 
 #include "services/bacnet/bacnet.h"
 
-#if DETWS_ENABLE_BACNET
+#if DWS_ENABLE_BACNET
 
 #include <string.h>
 
@@ -129,4 +129,4 @@ bool npdu_parse(const uint8_t *buf, size_t len, NpduInfo *out)
     return true;
 }
 
-#endif // DETWS_ENABLE_BACNET
+#endif // DWS_ENABLE_BACNET

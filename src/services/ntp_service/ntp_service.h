@@ -3,11 +3,11 @@
 
 /**
  * @file ntp_service.h
- * @brief Optional SNTP wall-clock time sync (DETWS_ENABLE_NTP).
+ * @brief Optional SNTP wall-clock time sync (DWS_ENABLE_NTP).
  *
  * Thin wrapper over the ESP-IDF SNTP client (`configTzTime`). Gives a
  * clock-less device wall-clock time for log timestamps, the HTTP `Date` header,
- * and future TLS certificate-validity checks. No-op stub when DETWS_ENABLE_NTP
+ * and future TLS certificate-validity checks. No-op stub when DWS_ENABLE_NTP
  * is 0 or on non-Arduino builds.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -26,7 +26,7 @@
  * @brief Start the SNTP client.
  *
  * Returns immediately; the first sync arrives asynchronously (poll
- * detws_ntp_synced()). Call once after the WiFi link is up.
+ * dws_ntp_synced()). Call once after the WiFi link is up.
  *
  * @param tz       POSIX TZ string (e.g. "UTC0", "EST5EDT,M3.2.0,M11.1.0").
  *                 Pass nullptr for UTC.
@@ -34,8 +34,8 @@
  * @param server2  Secondary NTP server (default "time.nist.gov").
  * @return true if the client was started; false if disabled at compile time.
  */
-bool detws_ntp_begin(const char *tz = nullptr, const char *server1 = "pool.ntp.org",
-                     const char *server2 = "time.nist.gov");
+bool dws_ntp_begin(const char *tz = nullptr, const char *server1 = "pool.ntp.org",
+                   const char *server2 = "time.nist.gov");
 
 /**
  * @brief True once a plausible wall-clock time has been obtained from SNTP.
@@ -43,12 +43,12 @@ bool detws_ntp_begin(const char *tz = nullptr, const char *server1 = "pool.ntp.o
  * Checks that the system clock has advanced past 2021-01-01, which only happens
  * after a successful sync (the RTC starts at the epoch on a cold boot).
  */
-bool detws_ntp_synced();
+bool dws_ntp_synced();
 
 /**
  * @brief Current Unix epoch seconds, or 0 if not yet synced (or disabled).
  */
-time_t detws_ntp_epoch();
+time_t dws_ntp_epoch();
 
 /**
  * @brief Format the current time as an RFC 7231 IMF-fixdate (HTTP `Date`).
@@ -60,13 +60,13 @@ time_t detws_ntp_epoch();
  * @return Number of characters written (excluding the null), or 0 if time is
  *         not yet available / disabled.
  */
-size_t detws_ntp_http_date(char *out, size_t out_cap);
+size_t dws_ntp_http_date(char *out, size_t out_cap);
 
 /**
  * @brief NTP as a time source for the multi-source registry (services/time_source).
  *
- * Register with detws_time_source_add("ntp", priority, ntp_time_source) so the aggregated
- * detws_time_now() (and thus the HTTP `Date` header when DETWS_ENABLE_TIME_SOURCE is set) can
+ * Register with dws_time_source_add("ntp", priority, ntp_time_source) so the aggregated
+ * dws_time_now() (and thus the HTTP `Date` header when DWS_ENABLE_TIME_SOURCE is set) can
  * be fed by NTP alongside an RTC / GPS. Returns the current epoch, or 0 when not synced.
  */
 uint32_t ntp_time_source(void);
@@ -76,7 +76,7 @@ uint32_t ntp_time_source(void);
  * @brief Host-only test seam: inject a wall-clock epoch so time-dependent paths
  *        (e.g. the optional HTTP Date header) are exercisable off-device. 0 = none.
  */
-void detws_ntp_set_test_epoch(time_t epoch);
+void dws_ntp_set_test_epoch(time_t epoch);
 #endif
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_NTP_SERVICE_H

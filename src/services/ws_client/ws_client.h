@@ -3,7 +3,7 @@
 
 /**
  * @file ws_client.h
- * @brief Zero-heap outbound WebSocket client, RFC 6455 (DETWS_ENABLE_WS_CLIENT).
+ * @brief Zero-heap outbound WebSocket client, RFC 6455 (DWS_ENABLE_WS_CLIENT).
  *
  * Connects to a remote WebSocket endpoint (ws://, or wss:// over client-side
  * mbedTLS) and exchanges text/binary messages - the device as a WebSocket client
@@ -18,7 +18,7 @@
  *    session). No heap; one connection at a time.
  *
  * Client frames are always masked (RFC 6455 §5.3); server frames are not. Only
- * unfragmented messages that fit DETWS_WS_CLIENT_BUF_SIZE are delivered.
+ * unfragmented messages that fit DWS_WS_CLIENT_BUF_SIZE are delivered.
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WS_CLIENT_H
@@ -28,7 +28,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_WS_CLIENT
+#if DWS_ENABLE_WS_CLIENT
 
 /** @brief WebSocket opcodes (RFC 6455 §5.2). */
 enum class WsClientOpcode : uint8_t
@@ -121,6 +121,6 @@ bool ws_client_connected();
 /** @brief Send a Close frame and drop the connection. */
 void ws_client_close();
 
-#endif // DETWS_ENABLE_WS_CLIENT
+#endif // DWS_ENABLE_WS_CLIENT
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_WS_CLIENT_H

@@ -1,11 +1,11 @@
 # 19.Ethernet - run the server over a wired Ethernet PHY
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_ETHERNET`, `ETH_PHY_*`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_ETHERNET`, `ETH_PHY_*`
 
 ## What this example teaches
 
 Some deployments want a **wired** uplink - PoE cameras, panel-mount controllers, RF-noisy
-factory floors, anything that can't rely on Wi-Fi. With `DETWS_ENABLE_ETHERNET` the physical
+factory floors, anything that can't rely on Wi-Fi. With `DWS_ENABLE_ETHERNET` the physical
 layer gains `init_eth_physical()` alongside `init_wifi_physical()`:
 
 ```cpp
@@ -16,7 +16,7 @@ while (!eth_ready()) delay(250);
 
 It is a thin wrapper over the Arduino **ETH** library for an RMII PHY (LAN8720 / TLK110 /
 RTL8201 / DP83848). Nothing else changes: the egress reporting already classifies a wired
-route as `DETIFACE_ETH`, so `det_net_egress()`, per-route STA/AP/ETH interface filters, and
+route as `DETIFACE_ETH`, so `dws_net_egress()`, per-route STA/AP/ETH interface filters, and
 every protocol work over the wired link the moment it has an IP. Wi-Fi and Ethernet can also
 run together (dual-homed) - the stack picks the default route.
 
@@ -44,6 +44,6 @@ The flags must reach the library build, so pass them as build flags:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_LAN8720 -DETH_PHY_ADDR=1 -DETH_PHY_POWER=-1 -DETH_PHY_MDC=23 -DETH_PHY_MDIO=18 -DETH_CLK_MODE=ETH_CLOCK_GPIO0_IN" \
+  --project-option="build_flags=-DDWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_LAN8720 -DETH_PHY_ADDR=1 -DETH_PHY_POWER=-1 -DETH_PHY_MDC=23 -DETH_PHY_MDIO=18 -DETH_CLK_MODE=ETH_CLOCK_GPIO0_IN" \
   --lib="." examples/Foundation/19.Ethernet/19.Ethernet.ino
 ```

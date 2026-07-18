@@ -114,9 +114,9 @@ struct HttpReq
     HttpVersion version;    ///< Protocol version parsed from the request line.
     uint32_t _version_hash; ///< FNV-1a accumulator for version validation (internal).
 
-    char method[DETWS_METHOD_BUF_SIZE]; ///< HTTP method, null-terminated (OPTIONS, or WebDAV methods when enabled).
-    char path[MAX_PATH_LEN];            ///< URL path, null-terminated; no query string.
-    size_t path_idx;                    ///< Write cursor into path[].
+    char method[DWS_METHOD_BUF_SIZE]; ///< HTTP method, null-terminated (OPTIONS, or WebDAV methods when enabled).
+    char path[MAX_PATH_LEN];          ///< URL path, null-terminated; no query string.
+    size_t path_idx;                  ///< Write cursor into path[].
 
     char query[MAX_QUERY_LEN];                 ///< Raw query string (after `?`).
     size_t query_idx;                          ///< Write cursor into query[].
@@ -126,10 +126,10 @@ struct HttpReq
     QueryParam path_params[MAX_PATH_PARAMS]; ///< `:name` captures from the matched route.
     uint8_t path_param_count;                ///< Valid entries in path_params[].
 
-#if DETWS_CAPTURE_AUTH_HEADER
-    char authorization[DETWS_AUTH_HDR_CAP]; ///< Full Authorization header value (Digest/JWT exceed MAX_VAL_LEN).
-    uint16_t auth_idx;                      ///< Write cursor into authorization[] (parser-internal).
-    bool cur_is_auth;                       ///< True while parsing an Authorization header value (parser-internal).
+#if DWS_CAPTURE_AUTH_HEADER
+    char authorization[DWS_AUTH_HDR_CAP]; ///< Full Authorization header value (Digest/JWT exceed MAX_VAL_LEN).
+    uint16_t auth_idx;                    ///< Write cursor into authorization[] (parser-internal).
+    bool cur_is_auth;                     ///< True while parsing an Authorization header value (parser-internal).
 #endif
 
     Header headers[MAX_HEADERS]; ///< Captured header fields.
@@ -150,7 +150,7 @@ struct HttpReq
     uint8_t body[BODY_BUF_SIZE + 1]; ///< Stored body bytes, always null-terminated.
     size_t body_len;                 ///< Bytes stored in body[] (≤ BODY_BUF_SIZE).
 
-#if DETWS_ENABLE_STREAM_BODY
+#if DWS_ENABLE_STREAM_BODY
     bool body_streaming; ///< True when the body is streamed to a sink, not buffered (OTA / upload).
 #endif
 };
@@ -158,9 +158,9 @@ struct HttpReq
 /** @brief Pool of parser contexts, one per connection-pool slot (incl. reserved dispatch slots). */
 extern HttpReq http_pool[CONN_POOL_SLOTS];
 
-#if DETWS_ENABLE_STREAM_BODY
+#if DWS_ENABLE_STREAM_BODY
 // ---------------------------------------------------------------------------
-// Streaming-body hooks (OTA / file upload) - gated by DETWS_ENABLE_STREAM_BODY.
+// Streaming-body hooks (OTA / file upload) - gated by DWS_ENABLE_STREAM_BODY.
 //
 // When set, the parser consults @ref HttpStreamBeginCb at end-of-headers (the
 // request line + all headers are parsed, so method/path/Authorization are
@@ -184,7 +184,7 @@ typedef void (*HttpStreamAbortCb)(HttpReq *req);
 
 /** @brief Install the streaming-body hooks (pass nullptr to disable; abort optional). */
 void http_parser_set_stream_hooks(HttpStreamBeginCb begin, HttpStreamDataCb data, HttpStreamAbortCb abort = nullptr);
-#endif // DETWS_ENABLE_STREAM_BODY
+#endif // DWS_ENABLE_STREAM_BODY
 
 // ---------------------------------------------------------------------------
 // Parser API
@@ -238,11 +238,11 @@ bool http_get_cookie(const HttpReq *req, const char *name, char *out, size_t out
  *        or de-facto `X-Forwarded-For` / `X-Forwarded-Proto` header.
  *
  * Writes the leftmost (original-client) address into @p ip_out as its RFC 5952
- * canonical text (bounded by @p ip_cap; use ::DET_IP_STR_MAX for the widest IPv6),
+ * canonical text (bounded by @p ip_cap; use ::DWS_IP_STR_MAX for the widest IPv6),
  * and sets @p is_https from `proto=https` / `X-Forwarded-Proto: https`. Both IPv4
  * (with an optional `:port`) and IPv6 (bracketed `for="[2001:db8::1]:port"` or a
  * bare `X-Forwarded-For` literal) are recovered; the candidate is validated with
- * det_ip_parse, so `unknown` / obfuscated `_id` identifiers and malformed tokens
+ * dws_ip_parse, so `unknown` / obfuscated `_id` identifiers and malformed tokens
  * are rejected. The CALLER must only trust this when the TCP peer is a configured
  * trusted upstream - the header is client-spoofable.
  *

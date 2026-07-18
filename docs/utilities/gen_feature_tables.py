@@ -4,7 +4,7 @@
 """Generate the README feature/codec tables from docs/FEATURES.md.
 
 docs/FEATURES.md is the single source of truth: every feature is a `## Name`
-heading, an optional `` `DETWS_ENABLE_*` `` flag line, and a description
+heading, an optional `` `DWS_ENABLE_*` `` flag line, and a description
 paragraph. This script parses those entries, splits them into a FEATURES table
 and a CODECS table, and writes both (as HTML tables with a merged header) into
 the marked region of README.md and docs/README.md. The hover tooltip is the
@@ -27,12 +27,12 @@ FEATURES_MD = os.path.join(ROOT, "docs", "FEATURES.md")
 CONFIG_H = os.path.join(ROOT, "src", "ServerConfig.h")
 
 # Internal derived flags: auto-set from other flags, not user-facing opt-ins, so they
-# get no FEATURES.md entry of their own. Every other DETWS_ENABLE_* must be documented
+# get no FEATURES.md entry of their own. Every other DWS_ENABLE_* must be documented
 # (the coverage guard below fails CI otherwise - this is how the whole industrial-protocol
 # wave once drifted out of the feature grid unnoticed).
 INTERNAL_FLAGS = {
-    "DETWS_ENABLE_STREAM_BODY",  # = OTA || UPLOAD || WEBDAV (shared parser machinery)
-    "DETWS_ENABLE_CLIENT_TLS",  # = HTTP_CLIENT_TLS || MQTT_TLS || WS_CLIENT_TLS || EDGE_ORIGIN_TLS
+    "DWS_ENABLE_STREAM_BODY",  # = OTA || UPLOAD || WEBDAV (shared parser machinery)
+    "DWS_ENABLE_CLIENT_TLS",  # = HTTP_CLIENT_TLS || MQTT_TLS || WS_CLIENT_TLS || EDGE_ORIGIN_TLS
 }
 
 BEGIN = "<!-- BEGIN GENERATED FEATURE TABLES (docs/utilities/gen_feature_tables.py) -->"
@@ -370,7 +370,7 @@ def parse_features(path):
         # Skip blank lines, then an optional `` `FLAG` `` line, then blanks.
         while i < len(lines) and not lines[i].strip():
             i += 1
-        if i < len(lines) and re.match(r"^`DETWS_[A-Z0-9_]+`\s*$", lines[i].strip()):
+        if i < len(lines) and re.match(r"^`DWS_[A-Z0-9_]+`\s*$", lines[i].strip()):
             i += 1
             while i < len(lines) and not lines[i].strip():
                 i += 1
@@ -494,17 +494,17 @@ def apply_to(path, link_prefix, check):
 
 
 def check_flag_coverage():
-    """Fail if a DETWS_ENABLE_* flag in the config header has no FEATURES.md entry
+    """Fail if a DWS_ENABLE_* flag in the config header has no FEATURES.md entry
     (excluding the internal derived flags). Guards against a shipped feature silently
     never reaching the feature grid."""
     cfg = open(CONFIG_H, "r", encoding="utf-8").read()
     feat = open(FEATURES_MD, "r", encoding="utf-8").read()
-    defined = set(re.findall(r"^#define (DETWS_ENABLE_[A-Z0-9_]+) 0", cfg, re.M))
-    documented = set(re.findall(r"^`(DETWS_ENABLE_[A-Z0-9_]+)`", feat, re.M))
+    defined = set(re.findall(r"^#define (DWS_ENABLE_[A-Z0-9_]+) 0", cfg, re.M))
+    documented = set(re.findall(r"^`(DWS_ENABLE_[A-Z0-9_]+)`", feat, re.M))
     missing = sorted(defined - documented - INTERNAL_FLAGS)
     if missing:
         raise SystemExit(
-            "FEATURES.md is missing entries for these DETWS_ENABLE_* flags "
+            "FEATURES.md is missing entries for these DWS_ENABLE_* flags "
             "(add a `## Name` section, or list the flag in INTERNAL_FLAGS if it is "
             f"internal): {missing}"
         )

@@ -14,22 +14,22 @@
  * the dispatcher.
  *
  * (The SSH remote-forward listener, ConnProto::PROTO_SSH_RFWD, is intentionally NOT here: it is a
- * runtime opt-in that self-registers from det_ssh_forward_begin().)
+ * runtime opt-in that self-registers from dws_ssh_forward_begin().)
  */
 
 #include "proto_handler.h"
 
 #include "network_drivers/presentation/presentation.h" // http_proto_handler()
-#if DETWS_ENABLE_TELNET
+#if DWS_ENABLE_TELNET
 #include "network_drivers/presentation/telnet/telnet.h"
 #endif
-#if DETWS_ENABLE_SSH
+#if DWS_ENABLE_SSH
 #include "network_drivers/presentation/ssh/connection/ssh_conn.h"
 #endif
-#if DETWS_ENABLE_MODBUS
+#if DWS_ENABLE_MODBUS
 #include "services/modbus/modbus.h"
 #endif
-#if DETWS_ENABLE_OPCUA
+#if DWS_ENABLE_OPCUA
 #include "services/opcua/opcua.h"
 #endif
 
@@ -44,16 +44,16 @@ static inline void register_if(ConnProto proto, const ProtoHandler *h)
 void proto_register_builtins(void)
 {
     register_if(ConnProto::PROTO_HTTP, http_proto_handler()); // always present (the core request/response protocol)
-#if DETWS_ENABLE_TELNET
+#if DWS_ENABLE_TELNET
     register_if(ConnProto::PROTO_TELNET, telnet_proto_handler());
 #endif
-#if DETWS_ENABLE_SSH
+#if DWS_ENABLE_SSH
     register_if(ConnProto::PROTO_SSH, ssh_proto_handler());
 #endif
-#if DETWS_ENABLE_MODBUS
+#if DWS_ENABLE_MODBUS
     register_if(ConnProto::PROTO_MODBUS, modbus_proto_handler());
 #endif
-#if DETWS_ENABLE_OPCUA
+#if DWS_ENABLE_OPCUA
     register_if(ConnProto::PROTO_OPCUA, opcua_proto_handler());
 #endif
 }

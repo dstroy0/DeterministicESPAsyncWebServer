@@ -42,11 +42,11 @@ static inline void aes256_free_key(SshAesGcmCtx *ctx)
 // mbedtls_aes_crypt_ecb() on a non-const mbedtls_aes_context. (S995 does not apply portably.)
 static inline void aes256_ecb(SshAesGcmCtx *ctx, const uint8_t in[16], uint8_t out[16])
 {
-    det_aes_encrypt_block(ctx->rk, 14, in, out);
+    dws_aes_encrypt_block(ctx->rk, 14, in, out);
 }
 static inline void aes256_load_key(SshAesGcmCtx *ctx, const uint8_t key[32])
 {
-    det_aes_key_expand(key, 8, ctx->rk);
+    dws_aes_key_expand(key, 8, ctx->rk);
 }
 static inline void aes256_free_key(SshAesGcmCtx *)
 {

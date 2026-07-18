@@ -94,7 +94,7 @@ the measured numbers.
 
 ## Build note (PlatformIO)
 
-The example uses only the base server (no `DETWS_ENABLE_*` flag), so a plain compile check needs no build
+The example uses only the base server (no `DWS_ENABLE_*` flag), so a plain compile check needs no build
 flags:
 
 ```sh

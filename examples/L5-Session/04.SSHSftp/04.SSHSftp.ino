@@ -3,14 +3,14 @@
 
 /**
  * @file 04.SSHSftp.ino
- * @brief SFTP (and SCP) file server over SSH (DETWS_ENABLE_SSH_SFTP / _SCP).
+ * @brief SFTP (and SCP) file server over SSH (DWS_ENABLE_SSH_SFTP / _SCP).
  *
  * The board serves files from a LittleFS partition over the one authenticated SSH port: a client's
  * `sftp` (or `scp`) session reads/writes/lists files under a mount root. This is the standards-track
  * southbound path for dropping files (e.g. NC / G-code programs) onto the device securely.
  *
  * It is the SSH server example (01.SSH) plus two lines: mount a filesystem and call
- * det_ssh_sftp_begin(fs, root). The SFTP subsystem + SCP exec attach to the existing SSH channel layer.
+ * dws_ssh_sftp_begin(fs, root). The SFTP subsystem + SCP exec attach to the existing SSH channel layer.
  *
  * Provision an RSA host key in NVS first (see docs/SSH.md "Host key provisioning"), then connect:
  *   sftp -P 22 admin@<ip>            # then: put file / get file / ls / mkdir / rm / rename
@@ -18,14 +18,14 @@
  *   scp -P 22 admin@<ip>:/f out
  *
  * NOTE (PlatformIO): the SFTP server is compiled into the *library*, so the flags must reach the whole
- * build: -DDETWS_ENABLE_SSH=1 -DDETWS_ENABLE_FILE_SERVING=1 -DDETWS_ENABLE_SSH_SFTP=1 (+ _SCP for scp).
+ * build: -DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 (+ _SCP for scp).
  * In the Arduino IDE they are set for you in build_opt.h.
  */
 
-#define DETWS_ENABLE_SSH 1
-#define DETWS_ENABLE_FILE_SERVING 1
-#define DETWS_ENABLE_SSH_SFTP 1
-#define DETWS_ENABLE_SSH_SCP 1
+#define DWS_ENABLE_SSH 1
+#define DWS_ENABLE_FILE_SERVING 1
+#define DWS_ENABLE_SSH_SFTP 1
+#define DWS_ENABLE_SSH_SCP 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -40,7 +40,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static bool ssh_password_auth(const char *user, const char *pass)
 {
@@ -68,12 +68,12 @@ void setup()
         return;
     }
 
-    if (det_ssh_rsa_load_pubkey() != 0)
+    if (dws_ssh_rsa_load_pubkey() != 0)
     {
         Serial.println("No SSH host key in NVS - see docs/SSH.md (Host key provisioning)");
         return;
     }
-    det_ssh_auth_set_password_cb(ssh_password_auth);
+    dws_ssh_auth_set_password_cb(ssh_password_auth);
 
     server.listen(22, ConnProto::PROTO_SSH);
     if (server.begin() < 0)
@@ -81,12 +81,12 @@ void setup()
         Serial.println("begin() failed");
         return;
     }
-    det_ssh_conn_setup();
+    dws_ssh_conn_setup();
 
     // Serve SFTP + SCP from the whole LittleFS volume. A "subsystem sftp" request opens an SFTP session;
     // `scp localfile admin@<ip>:/path` drops a file onto the volume.
-    det_ssh_sftp_begin(LittleFS, "/");
-    det_ssh_scp_begin(LittleFS, "/");
+    dws_ssh_sftp_begin(LittleFS, "/");
+    dws_ssh_scp_begin(LittleFS, "/");
 
     Serial.println("SFTP/SCP server started: sftp -P 22 admin@<ip> ; scp file admin@<ip>:/path");
 }

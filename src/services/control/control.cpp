@@ -8,7 +8,7 @@
 
 #include "services/control/control.h"
 
-#if DETWS_ENABLE_CONTROL
+#if DWS_ENABLE_CONTROL
 
 #include <string.h>
 
@@ -148,4 +148,4 @@ size_t pid_log_record(uint8_t *buf, size_t cap, float setpoint, float measuremen
     return o; // == PID_LOG_RECORD_LEN
 }
 
-#endif // DETWS_ENABLE_CONTROL
+#endif // DWS_ENABLE_CONTROL

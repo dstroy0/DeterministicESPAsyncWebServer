@@ -3,7 +3,7 @@
 
 /**
  * @file 14.MsgPack.ino
- * @brief Encode and decode compact binary MessagePack (DETWS_ENABLE_MSGPACK).
+ * @brief Encode and decode compact binary MessagePack (DWS_ENABLE_MSGPACK).
  *
  * GET /telemetry.msgpack encodes a small {heap, uptime, rssi} map with the
  * zero-heap MessagePack writer into a stack buffer and streams the bytes as
@@ -16,14 +16,14 @@
  *
  * NOTE: enable it for the whole build (a .ino #define does not reach the
  * separately compiled library). In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_MSGPACK=1
+ *     build_flags = -DDWS_ENABLE_MSGPACK=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
  * Try: curl -s http://<ip>/telemetry.msgpack | xxd
  *      printf '\x81\xa3led\x01' | curl -s --data-binary @- http://<ip>/decode
  */
 
-#define DETWS_ENABLE_MSGPACK 1
+#define DWS_ENABLE_MSGPACK 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -33,7 +33,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // One MessagePack map {"heap","uptime","rssi"}, encoded into a ctx buffer and
 // paged out by the chunk source (the same pattern scales to an arbitrarily large

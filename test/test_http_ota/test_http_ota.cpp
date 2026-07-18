@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Tests the parser's streaming-body hook (DETWS_ENABLE_OTA): a body larger than
+// Tests the parser's streaming-body hook (DWS_ENABLE_OTA): a body larger than
 // BODY_BUF_SIZE is streamed to a sink in chunks and reaches ParseState::PARSE_COMPLETE
 // (bypassing the 413 cap), while the default 413 behavior is preserved when no
 // hook matches. Uses a mock sink (no ESP32 Update dependency).

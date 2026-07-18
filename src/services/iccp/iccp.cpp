@@ -8,7 +8,7 @@
 
 #include "services/iccp/iccp.h"
 
-#if DETWS_ENABLE_ICCP
+#if DWS_ENABLE_ICCP
 
 #include <string.h>
 
@@ -47,7 +47,7 @@ size_t int_content(int32_t v, uint8_t *buf)
 }
 } // namespace
 
-size_t detws_iccp_state_q(uint8_t state, uint8_t flags, const uint8_t time[4], uint8_t *out, size_t cap)
+size_t dws_iccp_state_q(uint8_t state, uint8_t flags, const uint8_t time[4], uint8_t *out, size_t cap)
 {
     if (!out)
         return 0;
@@ -70,7 +70,7 @@ size_t detws_iccp_state_q(uint8_t state, uint8_t flags, const uint8_t time[4], u
     return tlv(0xA2, inner, n, out, cap);
 }
 
-size_t detws_iccp_real_q(int32_t milli, uint8_t flags, const uint8_t time[4], uint8_t *out, size_t cap)
+size_t dws_iccp_real_q(int32_t milli, uint8_t flags, const uint8_t time[4], uint8_t *out, size_t cap)
 {
     if (!out)
         return 0;
@@ -98,4 +98,4 @@ size_t detws_iccp_real_q(int32_t milli, uint8_t flags, const uint8_t time[4], ui
     return tlv(0xA3, inner, n, out, cap);
 }
 
-#endif // DETWS_ENABLE_ICCP
+#endif // DWS_ENABLE_ICCP

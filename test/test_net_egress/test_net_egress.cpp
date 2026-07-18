@@ -18,33 +18,33 @@ void tearDown()
 // Egress IP matching the station IP -> WiFi station.
 void test_classify_sta()
 {
-    TEST_ASSERT_EQUAL_INT(DetIface::DETIFACE_STA, det_net_classify_ip(0x0A000005u, 0x0A000005u, 0xC0A80401u));
+    TEST_ASSERT_EQUAL_INT(DWSIface::DETIFACE_STA, dws_net_classify_ip(0x0A000005u, 0x0A000005u, 0xC0A80401u));
 }
 
 // Egress IP matching the softAP IP -> softAP.
 void test_classify_ap()
 {
-    TEST_ASSERT_EQUAL_INT(DetIface::DETIFACE_AP, det_net_classify_ip(0xC0A80401u, 0x0A000005u, 0xC0A80401u));
+    TEST_ASSERT_EQUAL_INT(DWSIface::DETIFACE_AP, dws_net_classify_ip(0xC0A80401u, 0x0A000005u, 0xC0A80401u));
 }
 
 // A live egress IP that is neither WiFi IP -> wired (Ethernet).
 void test_classify_eth()
 {
-    TEST_ASSERT_EQUAL_INT(DetIface::DETIFACE_ETH, det_net_classify_ip(0xC0A80105u, 0x0A000005u, 0));
-    TEST_ASSERT_EQUAL_INT(DetIface::DETIFACE_ETH, det_net_classify_ip(0xC0A80105u, 0, 0)); // ETH only, no WiFi
+    TEST_ASSERT_EQUAL_INT(DWSIface::DETIFACE_ETH, dws_net_classify_ip(0xC0A80105u, 0x0A000005u, 0));
+    TEST_ASSERT_EQUAL_INT(DWSIface::DETIFACE_ETH, dws_net_classify_ip(0xC0A80105u, 0, 0)); // ETH only, no WiFi
 }
 
 // No route -> ANY, regardless of the WiFi IPs.
 void test_classify_none()
 {
-    TEST_ASSERT_EQUAL_INT(DetIface::DETIFACE_ANY, det_net_classify_ip(0, 0x0A000005u, 0xC0A80401u));
+    TEST_ASSERT_EQUAL_INT(DWSIface::DETIFACE_ANY, dws_net_classify_ip(0, 0x0A000005u, 0xC0A80401u));
 }
 
 // On a host build there is no default route, so egress reports ANY / 0.
 void test_egress_host_stub()
 {
-    TEST_ASSERT_EQUAL_INT(DetIface::DETIFACE_ANY, det_net_egress());
-    TEST_ASSERT_EQUAL_UINT32(0, det_net_egress_ip());
+    TEST_ASSERT_EQUAL_INT(DWSIface::DETIFACE_ANY, dws_net_egress());
+    TEST_ASSERT_EQUAL_UINT32(0, dws_net_egress_ip());
 }
 
 // Ethernet bring-up is ESP32-only; on host (and when disabled) it reports not-ready.

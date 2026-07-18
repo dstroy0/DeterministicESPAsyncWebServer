@@ -3,7 +3,7 @@
 
 /**
  * @file sockpool.h
- * @brief Dynamic socket recycling: an LRU connection-slot pool (DETWS_ENABLE_SOCKPOOL).
+ * @brief Dynamic socket recycling: an LRU connection-slot pool (DWS_ENABLE_SOCKPOOL).
  *
  * A device serves a bounded number of concurrent connections. When the pool saturates, the right move is
  * not to drop the new connection but to *recycle* the least-recently-active slot (the one most likely to
@@ -23,7 +23,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SOCKPOOL
+#if DWS_ENABLE_SOCKPOOL
 
 /** @brief One connection slot. */
 struct SockSlot
@@ -40,7 +40,7 @@ struct SockPool
     size_t n;
 };
 
-/** @brief Acquire outcome (the sole return of detws_sockpool_acquire). */
+/** @brief Acquire outcome (the sole return of dws_sockpool_acquire). */
 enum class SockAcq : uint8_t
 {
     SOCK_ACQ_FREE = 0,     ///< a free slot was used.
@@ -49,7 +49,7 @@ enum class SockAcq : uint8_t
 };
 
 /** @brief Initialize a pool over caller storage; all slots start free. */
-void detws_sockpool_init(SockPool *p, SockSlot *slots, size_t n);
+void dws_sockpool_init(SockPool *p, SockSlot *slots, size_t n);
 
 /**
  * @brief Acquire a slot for connection @p id at tick @p now.
@@ -59,19 +59,19 @@ void detws_sockpool_init(SockPool *p, SockSlot *slots, size_t n);
  * @param idx  (may be null) receives the chosen slot index.
  * @return SOCK_ACQ_FREE / SOCK_ACQ_RECYCLED / SOCK_ACQ_FAIL.
  */
-SockAcq detws_sockpool_acquire(SockPool *p, uint32_t id, uint32_t now, size_t *idx, uint32_t *evicted_id);
+SockAcq dws_sockpool_acquire(SockPool *p, uint32_t id, uint32_t now, size_t *idx, uint32_t *evicted_id);
 
 /** @brief Mark slot @p idx active at tick @p now (refreshes its LRU position). */
-void detws_sockpool_touch(SockPool *p, size_t idx, uint32_t now);
+void dws_sockpool_touch(SockPool *p, size_t idx, uint32_t now);
 
 /** @brief Free slot @p idx. @return true if it was a valid, in-use slot. */
-bool detws_sockpool_release(SockPool *p, size_t idx);
+bool dws_sockpool_release(SockPool *p, size_t idx);
 
 /** @brief Find the slot holding connection @p id. @p idx (may be null) gets the index. @return found. */
-bool detws_sockpool_find(const SockPool *p, uint32_t id, size_t *idx);
+bool dws_sockpool_find(const SockPool *p, uint32_t id, size_t *idx);
 
 /** @brief Count of in-use slots. */
-size_t detws_sockpool_in_use(const SockPool *p);
+size_t dws_sockpool_in_use(const SockPool *p);
 
-#endif // DETWS_ENABLE_SOCKPOOL
+#endif // DWS_ENABLE_SOCKPOOL
 #endif // DETERMINISTICESPASYNCWEBSERVER_SOCKPOOL_H

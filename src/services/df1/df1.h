@@ -3,7 +3,7 @@
 
 /**
  * @file df1.h
- * @brief Allen-Bradley DF1 full-duplex frame codec (DETWS_ENABLE_DF1) - zero-heap framing +
+ * @brief Allen-Bradley DF1 full-duplex frame codec (DWS_ENABLE_DF1) - zero-heap framing +
  *        DLE byte-stuffing + BCC/CRC for the Rockwell serial PLC link layer.
  *
  * A DF1 full-duplex message frame (AB pub. 1770-6.5.16):
@@ -29,7 +29,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_DF1
+#if DWS_ENABLE_DF1
 
 #include <stddef.h>
 #include <stdint.h>
@@ -69,6 +69,6 @@ size_t df1_build_frame(uint8_t *buf, size_t cap, const uint8_t *data, size_t dat
  */
 bool df1_parse_frame(const uint8_t *buf, size_t len, Df1Check check, uint8_t *out, size_t out_cap, size_t *out_len);
 
-#endif // DETWS_ENABLE_DF1
+#endif // DWS_ENABLE_DF1
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DF1_H

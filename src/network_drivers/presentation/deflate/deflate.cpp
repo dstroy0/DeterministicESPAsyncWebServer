@@ -19,7 +19,7 @@
 
 #include "deflate.h"
 
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
 
 #include <string.h>
 
@@ -119,28 +119,28 @@ inline int hash3(const uint8_t *p)
 }
 
 // Emit one literal byte via the fixed lit/length code.
-void emit_literal(DetBitWriter *w, const Tables *t, uint8_t b)
+void emit_literal(DWSBitWriter *w, const Tables *t, uint8_t b)
 {
-    det_bitw_put(w, t->ll_code[b], t->ll_len[b]);
+    dws_bitw_put(w, t->ll_code[b], t->ll_len[b]);
 }
 
 // Emit a (length, distance) back-reference via the fixed code tables.
-void emit_match(DetBitWriter *w, const Tables *t, int len, int dist)
+void emit_match(DWSBitWriter *w, const Tables *t, int len, int dist)
 {
     int li = 0;
     while (li < 28 && len >= LEN_BASE[li + 1])
         li++;
     int lsym = 257 + li;
-    det_bitw_put(w, t->ll_code[lsym], t->ll_len[lsym]);
+    dws_bitw_put(w, t->ll_code[lsym], t->ll_len[lsym]);
     if (LEN_EXTRA[li])
-        det_bitw_put(w, (uint32_t)(len - LEN_BASE[li]), LEN_EXTRA[li]);
+        dws_bitw_put(w, (uint32_t)(len - LEN_BASE[li]), LEN_EXTRA[li]);
 
     int di = 0;
     while (di < 29 && dist >= DIST_BASE[di + 1])
         di++;
-    det_bitw_put(w, t->d_code[di], t->d_len[di]);
+    dws_bitw_put(w, t->d_code[di], t->d_len[di]);
     if (DIST_EXTRA[di])
-        det_bitw_put(w, (uint32_t)(dist - DIST_BASE[di]), DIST_EXTRA[di]);
+        dws_bitw_put(w, (uint32_t)(dist - DIST_BASE[di]), DIST_EXTRA[di]);
 }
 } // namespace
 
@@ -155,7 +155,7 @@ DeflateResult deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size
     for (int i = 0; i < HASH_SIZE; i++)
         t->head[i] = NONE;
 
-    DetBitWriter w;
+    DWSBitWriter w;
     w.out = dst;
     w.cap = dst_cap;
     w.cnt = 0;
@@ -165,8 +165,8 @@ DeflateResult deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size
 
     // One fixed-Huffman block, not final (permessage-deflate streams never set
     // BFINAL): BFINAL=0 (1 bit), BTYPE=01 (2 bits, value 1).
-    det_bitw_put(&w, 0, 1);
-    det_bitw_put(&w, 1, 2);
+    dws_bitw_put(&w, 0, 1);
+    dws_bitw_put(&w, 1, 2);
 
     size_t i = 0;
     while (i < src_len)
@@ -235,10 +235,10 @@ DeflateResult deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size
     // End-of-block, then a sync flush: byte-align via an empty stored block and
     // drop its 0x00 0x00 0xff 0xff tail (RFC 7692 sec 7.2.1), leaving a ready
     // permessage-deflate payload.
-    det_bitw_put(&w, t->ll_code[256], t->ll_len[256]); // end-of-block symbol
-    det_bitw_put(&w, 0, 1);                            // BFINAL=0 (empty stored block)
-    det_bitw_put(&w, 0, 2);                            // BTYPE=00 (stored)
-    det_bitw_align(&w);
+    dws_bitw_put(&w, t->ll_code[256], t->ll_len[256]); // end-of-block symbol
+    dws_bitw_put(&w, 0, 1);                            // BFINAL=0 (empty stored block)
+    dws_bitw_put(&w, 0, 2);                            // BTYPE=00 (stored)
+    dws_bitw_align(&w);
     const uint8_t marker[4] = {0x00, 0x00, 0xff, 0xff};
     for (int k = 0; k < 4; k++)
     {
@@ -256,4 +256,4 @@ DeflateResult deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size
     return DeflateResult::DEFLATE_OK;
 }
 
-#endif // DETWS_ENABLE_WS_DEFLATE
+#endif // DWS_ENABLE_WS_DEFLATE

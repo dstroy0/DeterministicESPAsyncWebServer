@@ -3,7 +3,7 @@
 
 /**
  * @file tls_policy.h
- * @brief TLS version negotiation + pinned cipher-suite policy (DETWS_ENABLE_TLS_POLICY).
+ * @brief TLS version negotiation + pinned cipher-suite policy (DWS_ENABLE_TLS_POLICY).
  *
  * The transport TLS layer (`network_drivers/tls`, mbedTLS-backed) already runs the record and handshake
  * and floors the version at TLS 1.2 - so both TLS 1.2 (RFC 5246) and TLS 1.3 (RFC 8446) are negotiated.
@@ -11,10 +11,10 @@
  * [min,max] range and make the chosen version observable, and pin the cipher suites to an audited
  * allowlist selected by server preference (AEAD-only for a hardened profile).
  *
- * This is that pure policy core: `detws_tls_negotiate_version` picks the version the way a server does
- * (the highest it supports not above the client's), `detws_tls_version_name` names it for a status
- * endpoint, `detws_tls_select_cipher` selects a suite by server preference from the offered set, and
- * `detws_tls_is_aead` classifies a suite. Pure, host-testable; the app feeds the results to the mbedTLS
+ * This is that pure policy core: `dws_tls_negotiate_version` picks the version the way a server does
+ * (the highest it supports not above the client's), `dws_tls_version_name` names it for a status
+ * endpoint, `dws_tls_select_cipher` selects a suite by server preference from the offered set, and
+ * `dws_tls_is_aead` classifies a suite. Pure, host-testable; the app feeds the results to the mbedTLS
  * config. No heap, no stdlib.
  */
 
@@ -25,7 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_TLS_POLICY
+#if DWS_ENABLE_TLS_POLICY
 
 /** @brief TLS protocol version wire words. */
 #define TLS_VERSION_1_2 0x0303
@@ -37,21 +37,21 @@
  * @param server_min / @param server_max the server's supported range.
  * @return the chosen version word, or 0 if there is no overlap (client too old).
  */
-uint16_t detws_tls_negotiate_version(uint16_t client_max, uint16_t server_min, uint16_t server_max);
+uint16_t dws_tls_negotiate_version(uint16_t client_max, uint16_t server_min, uint16_t server_max);
 
 /** @brief A human name for a version word: "TLS 1.2", "TLS 1.3", or "unknown". */
-const char *detws_tls_version_name(uint16_t version);
+const char *dws_tls_version_name(uint16_t version);
 
 /**
  * @brief Select a cipher suite by server preference: the first suite in @p server_pinned (ordered by
  *        preference) that also appears in @p client_offered.
  * @return the selected suite id, or 0 if none of the pinned suites was offered.
  */
-uint16_t detws_tls_select_cipher(const uint16_t *client_offered, size_t n_client, const uint16_t *server_pinned,
-                                 size_t n_server);
+uint16_t dws_tls_select_cipher(const uint16_t *client_offered, size_t n_client, const uint16_t *server_pinned,
+                               size_t n_server);
 
 /** @brief True if @p suite is one of the modern AEAD suites (GCM / ChaCha20-Poly1305). */
-bool detws_tls_is_aead(uint16_t suite);
+bool dws_tls_is_aead(uint16_t suite);
 
-#endif // DETWS_ENABLE_TLS_POLICY
+#endif // DWS_ENABLE_TLS_POLICY
 #endif // DETERMINISTICESPASYNCWEBSERVER_TLS_POLICY_H

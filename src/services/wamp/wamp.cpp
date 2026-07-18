@@ -8,7 +8,7 @@
 
 #include "services/wamp/wamp.h"
 
-#if DETWS_ENABLE_WAMP
+#if DWS_ENABLE_WAMP
 
 #include "network_drivers/presentation/json/json.h"
 
@@ -310,4 +310,4 @@ bool wamp_get_uri(const char *msg, size_t index, char *out, size_t out_cap)
     return true;
 }
 
-#endif // DETWS_ENABLE_WAMP
+#endif // DWS_ENABLE_WAMP

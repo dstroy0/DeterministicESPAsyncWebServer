@@ -1,11 +1,11 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// HTTP/3 dispatch-bridge test: proves an HTTP/3 request served by a *real DetWebServer route*. A
+// HTTP/3 dispatch-bridge test: proves an HTTP/3 request served by a *real DWS route*. A
 // QUIC client in the test completes the TLS 1.3 handshake and sends an HTTP/3 GET; quic_server routes
-// it to the reserved dispatch slot; DetWebServer::match_and_execute runs the registered "/hello"
-// handler; and the handler's send() is routed back onto the request stream via det_quic_server_respond.
-// The whole Layer-7 app is built with DETWS_ENABLE_HTTP3=1, so this is the end-to-end wiring: the
+// it to the reserved dispatch slot; DWS::match_and_execute runs the registered "/hello"
+// handler; and the handler's send() is routed back onto the request stream via dws_quic_server_respond.
+// The whole Layer-7 app is built with DWS_ENABLE_HTTP3=1, so this is the end-to-end wiring: the
 // same routes serve HTTP/1.1, HTTP/2, and HTTP/3.
 //
 // The client extracts the server's ephemeral X25519 public key and its chosen connection ID from the
@@ -41,7 +41,7 @@ static const uint8_t CLIENT_SCID[4] = {0xc1, 0xc2, 0xc3, 0xc4};
 
 // The route handler under test: it answers on the reserved HTTP/3 dispatch slot exactly as it would
 // for HTTP/1.1 or HTTP/2 - send() routes the response to the right transport.
-static DetWebServer server;
+static DWS server;
 static bool g_handler_ran = false;
 static void h_hello(uint8_t slot, HttpReq *req)
 {
@@ -298,11 +298,11 @@ void test_h3_request_served_by_route()
 {
     fill();
 
-    // Bring up an HTTP/3-only DetWebServer with one route.
+    // Bring up an HTTP/3-only DWS with one route.
     server.on("/hello", HttpMethod::HTTP_GET, h_hello);
     TEST_ASSERT_TRUE(server.h3_cert(CERT, sizeof(CERT), SERVER_SEED, 443));
-    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, server.begin());
-    det_quic_server_set_out_sink_cb(out_sink, nullptr);
+    TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_OK, server.begin());
+    dws_quic_server_set_out_sink_cb(out_sink, nullptr);
 
     QuicInitialSecrets init;
     quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
@@ -326,8 +326,8 @@ void test_h3_request_served_by_route()
     size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
                            sizeof(CLIENT_SCID), 0, &init.client, frames, fl);
     g_out_n = 0;
-    TEST_ASSERT_TRUE(det_quic_server_ingest(dg, dl, "192.0.2.10", 40000));
-    server.service_once(); // -> det_quic_server_poll(): opens the connection, emits the flight
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(dg, dl, "192.0.2.10", 40000));
+    server.service_once(); // -> dws_quic_server_poll(): opens the connection, emits the flight
     TEST_ASSERT_GREATER_THAN(0, g_out_n);
 
     // Learn the server's chosen SCID (for the 1-RTT short header) from the flight's long header.
@@ -385,7 +385,7 @@ void test_h3_request_served_by_route()
     size_t hdl = build_long(idg + idl, sizeof(idg) - idl, QuicLongPacket::QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID),
                             CLIENT_SCID, sizeof(CLIENT_SCID), 0, &hs_c, hfr, hfl);
     g_out_n = 0;
-    TEST_ASSERT_TRUE(det_quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000));
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000));
     server.service_once();
 
     // Client HTTP/3 GET on request stream 0 (1-RTT); DCID is the server's SCID.
@@ -402,14 +402,14 @@ void test_h3_request_served_by_route()
     size_t s1l = build_short(s1, sizeof(s1), server_scid, server_scid_len, 0, &ap_c, sfr, sfrl);
 
     g_out_n = 0;
-    TEST_ASSERT_TRUE(det_quic_server_ingest(s1, s1l, "192.0.2.10", 40000));
-    server.service_once(); // -> det_quic_server_poll -> dispatch_h3_request -> h_hello -> send -> respond
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(s1, s1l, "192.0.2.10", 40000));
+    server.service_once(); // -> dws_quic_server_poll -> dispatch_h3_request -> h_hello -> send -> respond
 
-    TEST_ASSERT_TRUE(g_handler_ran);                                  // the registered route actually ran
-    TEST_ASSERT_TRUE(response_ok(&ap_s));                             // its 200 + body came back on the request stream
-    TEST_ASSERT_EQUAL_UINT8(0, conn_pool[DETWS_H3_DISPATCH_SLOT].h3); // dispatch slot released
+    TEST_ASSERT_TRUE(g_handler_ran);                                // the registered route actually ran
+    TEST_ASSERT_TRUE(response_ok(&ap_s));                           // its 200 + body came back on the request stream
+    TEST_ASSERT_EQUAL_UINT8(0, conn_pool[DWS_H3_DISPATCH_SLOT].h3); // dispatch slot released
 
-    det_quic_server_stop();
+    dws_quic_server_stop();
 }
 
 int main(int, char **)

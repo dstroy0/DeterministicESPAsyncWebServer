@@ -15,7 +15,7 @@
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_CHANNEL_*
 #include <string.h>
 
-SshChannel ssh_chan[MAX_SSH_CONNS][DETWS_SSH_MAX_CHANNELS];
+SshChannel ssh_chan[MAX_SSH_CONNS][DWS_SSH_MAX_CHANNELS];
 
 // All SSH channel-layer callbacks, owned by one instance (internal linkage): the channel-data
 // sink and the local/remote port-forward hooks. Grouped so it is one named owner, unreachable
@@ -28,70 +28,70 @@ struct SshChannelCtx
     SshRemoteForwardOpenCb rfwd_open_cb = nullptr;
     SshRemoteForwardCancelCb rfwd_cancel_cb = nullptr;
     SshForwardConfirmCb forward_confirm_cb = nullptr;
-#if DETWS_ENABLE_SSH_SFTP
+#if DWS_ENABLE_SSH_SFTP
     SshSftpOpenCb sftp_open_cb = nullptr;
     SshSftpDataCb sftp_data_cb = nullptr;
 #endif
-#if DETWS_ENABLE_SSH_SCP
+#if DWS_ENABLE_SSH_SCP
     SshScpOpenCb scp_open_cb = nullptr;
     SshScpDataCb scp_data_cb = nullptr;
 #endif
 };
 static SshChannelCtx s_chcb;
 
-void det_ssh_channel_set_data_cb(SshChannelDataCb cb)
+void dws_ssh_channel_set_data_cb(SshChannelDataCb cb)
 {
     s_chcb.data_cb = cb;
 }
 
-#if DETWS_ENABLE_SSH_SFTP
-void det_ssh_channel_set_sftp_open_cb(SshSftpOpenCb cb)
+#if DWS_ENABLE_SSH_SFTP
+void dws_ssh_channel_set_sftp_open_cb(SshSftpOpenCb cb)
 {
     s_chcb.sftp_open_cb = cb;
 }
-void det_ssh_channel_set_sftp_data_cb(SshSftpDataCb cb)
+void dws_ssh_channel_set_sftp_data_cb(SshSftpDataCb cb)
 {
     s_chcb.sftp_data_cb = cb;
 }
 #endif
 
-#if DETWS_ENABLE_SSH_SCP
-void det_ssh_channel_set_scp_open_cb(SshScpOpenCb cb)
+#if DWS_ENABLE_SSH_SCP
+void dws_ssh_channel_set_scp_open_cb(SshScpOpenCb cb)
 {
     s_chcb.scp_open_cb = cb;
 }
-void det_ssh_channel_set_scp_data_cb(SshScpDataCb cb)
+void dws_ssh_channel_set_scp_data_cb(SshScpDataCb cb)
 {
     s_chcb.scp_data_cb = cb;
 }
 #endif
 
-void det_ssh_channel_set_forward_open_cb(SshForwardOpenCb cb)
+void dws_ssh_channel_set_forward_open_cb(SshForwardOpenCb cb)
 {
     s_chcb.forward_open_cb = cb;
 }
 
-void det_ssh_channel_set_forward_data_cb(SshForwardDataCb cb)
+void dws_ssh_channel_set_forward_data_cb(SshForwardDataCb cb)
 {
     s_chcb.forward_data_cb = cb;
 }
 
-void det_ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb)
+void dws_ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb)
 {
     s_chcb.rfwd_open_cb = cb;
 }
 
-void det_ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb)
+void dws_ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb)
 {
     s_chcb.rfwd_cancel_cb = cb;
 }
 
-void det_ssh_channel_set_forward_confirm_cb(SshForwardConfirmCb cb)
+void dws_ssh_channel_set_forward_confirm_cb(SshForwardConfirmCb cb)
 {
     s_chcb.forward_confirm_cb = cb;
 }
 
-void det_ssh_channel_init(uint8_t i)
+void dws_ssh_channel_init(uint8_t i)
 {
     if (i >= MAX_SSH_CONNS)
         return;
@@ -137,7 +137,7 @@ static bool rd_string(const uint8_t *p, size_t len, size_t *off, const uint8_t *
 // The open channel @p id on connection @p i, or nullptr. local id == slot index.
 static SshChannel *chan_by_id(uint8_t i, uint32_t id)
 {
-    if (i >= MAX_SSH_CONNS || id >= DETWS_SSH_MAX_CHANNELS || !ssh_chan[i][id].open)
+    if (i >= MAX_SSH_CONNS || id >= DWS_SSH_MAX_CHANNELS || !ssh_chan[i][id].open)
         return nullptr;
     return &ssh_chan[i][id];
 }
@@ -146,7 +146,7 @@ static SshChannel *chan_by_id(uint8_t i, uint32_t id)
 // CONFIRMATION / FAILURE), or nullptr.
 static SshChannel *chan_pending_by_id(uint8_t i, uint32_t id)
 {
-    if (i >= MAX_SSH_CONNS || id >= DETWS_SSH_MAX_CHANNELS || !ssh_chan[i][id].pending)
+    if (i >= MAX_SSH_CONNS || id >= DWS_SSH_MAX_CHANNELS || !ssh_chan[i][id].pending)
         return nullptr;
     return &ssh_chan[i][id];
 }
@@ -155,7 +155,7 @@ static SshChannel *chan_pending_by_id(uint8_t i, uint32_t id)
 // (opened-but-unconfirmed) channel is in use just like an open one.
 static int chan_alloc(uint8_t i)
 {
-    for (int c = 0; c < DETWS_SSH_MAX_CHANNELS; c++)
+    for (int c = 0; c < DWS_SSH_MAX_CHANNELS; c++)
         if (!ssh_chan[i][c].open && !ssh_chan[i][c].pending)
             return c;
     return -1;
@@ -284,7 +284,7 @@ int ssh_global_request_handle(uint8_t i, const uint8_t *payload, size_t len, uin
 // Server-initiated CHANNEL_OPEN (forwarded-tcpip, ssh -R) + its CONFIRM / FAILURE
 // ---------------------------------------------------------------------------
 
-int det_ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
+int dws_ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
                                    uint16_t orig_port, uint8_t *out, size_t *out_len, size_t cap)
 {
     *out_len = 0;
@@ -336,7 +336,7 @@ int det_ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t co
     return slot;
 }
 
-int det_ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_t len)
+int dws_ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_t len)
 {
     // byte || recipient(our local id) || sender(peer id) || window || max packet.
     if (i >= MAX_SSH_CONNS || len < 17 || payload[0] != SSH_MSG_CHANNEL_OPEN_CONFIRM)
@@ -354,7 +354,7 @@ int det_ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_
     return 0;
 }
 
-int det_ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_t len)
+int dws_ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_t len)
 {
     // byte || recipient(our local id) || reason || desc || lang.
     if (i >= MAX_SSH_CONNS || len < 5 || payload[0] != SSH_MSG_CHANNEL_OPEN_FAILURE)
@@ -370,7 +370,7 @@ int det_ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_
     return 0;
 }
 
-int det_ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+int dws_ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
                                 size_t cap)
 {
     if (i >= MAX_SSH_CONNS || len < 1 || payload[0] != SSH_MSG_CHANNEL_OPEN)
@@ -436,7 +436,7 @@ int det_ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, u
 // CHANNEL_REQUEST → SUCCESS / FAILURE
 // ---------------------------------------------------------------------------
 
-int det_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+int dws_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
                                    size_t cap)
 {
     *out_len = 0;
@@ -464,7 +464,7 @@ int det_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len
         (rtype_len == 5 && memcmp(rtype, "shell", 5) == 0) || (rtype_len == 4 && memcmp(rtype, "exec", 4) == 0) ||
         (rtype_len == 7 && memcmp(rtype, "pty-req", 7) == 0) || (rtype_len == 3 && memcmp(rtype, "env", 3) == 0);
 
-#if DETWS_ENABLE_SSH_SFTP
+#if DWS_ENABLE_SSH_SFTP
     // subsystem "sftp": not in the base accept set, so accept it here and tag the channel for the SFTP binding.
     if (rtype_len == 9 && memcmp(rtype, "subsystem", 9) == 0)
     {
@@ -479,7 +479,7 @@ int det_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len
         }
     }
 #endif
-#if DETWS_ENABLE_SSH_SCP
+#if DWS_ENABLE_SSH_SCP
     // exec "scp …": already accepted (exec is in the base set); tag the channel + hand the command to the binding.
     if (rtype_len == 4 && memcmp(rtype, "exec", 4) == 0)
     {
@@ -509,7 +509,7 @@ int det_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len
 // CHANNEL_DATA (inbound) + flow control
 // ---------------------------------------------------------------------------
 
-int det_ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+int dws_ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
                                 size_t cap)
 {
     *out_len = 0;
@@ -542,13 +542,13 @@ int det_ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, u
             if (s_chcb.forward_data_cb)
                 s_chcb.forward_data_cb(i, c->local_id, data, dlen);
             break;
-#if DETWS_ENABLE_SSH_SFTP
+#if DWS_ENABLE_SSH_SFTP
         case SshChanType::SSH_CHAN_SFTP: // SSH_FXP_* bytes -> the SFTP binding
             if (s_chcb.sftp_data_cb)
                 s_chcb.sftp_data_cb(i, c->local_id, data, dlen);
             break;
 #endif
-#if DETWS_ENABLE_SSH_SCP
+#if DWS_ENABLE_SSH_SCP
         case SshChanType::SSH_CHAN_SCP: // RCP protocol bytes -> the SCP binding
             if (s_chcb.scp_data_cb)
                 s_chcb.scp_data_cb(i, c->local_id, data, dlen);
@@ -581,7 +581,7 @@ int det_ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, u
 // CHANNEL_DATA (outbound)
 // ---------------------------------------------------------------------------
 
-int det_ssh_channel_build_data(uint8_t i, uint32_t channel, const uint8_t *data, size_t len, uint8_t *out,
+int dws_ssh_channel_build_data(uint8_t i, uint32_t channel, const uint8_t *data, size_t len, uint8_t *out,
                                size_t *out_len, size_t cap)
 {
     SshChannel *c = (i < MAX_SSH_CONNS) ? chan_by_id(i, channel) : nullptr;
@@ -605,7 +605,7 @@ int det_ssh_channel_build_data(uint8_t i, uint32_t channel, const uint8_t *data,
 // WINDOW_ADJUST (inbound)
 // ---------------------------------------------------------------------------
 
-int det_ssh_channel_handle_window_adjust(uint8_t i, const uint8_t *payload, size_t len)
+int dws_ssh_channel_handle_window_adjust(uint8_t i, const uint8_t *payload, size_t len)
 {
     if (i >= MAX_SSH_CONNS || len < 9 || payload[0] != SSH_MSG_CHANNEL_WINDOW_ADJUST)
         return -1;
@@ -639,14 +639,14 @@ static int build_close_chan(SshChannel *c, uint8_t *out, size_t *out_len, size_t
     return 0;
 }
 
-int det_ssh_channel_build_close(uint8_t i, uint32_t channel, uint8_t *out, size_t *out_len, size_t cap)
+int dws_ssh_channel_build_close(uint8_t i, uint32_t channel, uint8_t *out, size_t *out_len, size_t cap)
 {
     if (i >= MAX_SSH_CONNS)
         return -1;
     return build_close_chan(chan_by_id(i, channel), out, out_len, cap);
 }
 
-int det_ssh_channel_handle_close(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+int dws_ssh_channel_handle_close(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
                                  size_t cap)
 {
     *out_len = 0;

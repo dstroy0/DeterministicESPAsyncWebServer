@@ -19,27 +19,27 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_NUMPARSE_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_NUMPARSE_H
 
-inline bool det_np_ws(char c)
+inline bool dws_np_ws(char c)
 {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v';
 }
-inline bool det_np_digit(char c)
+inline bool dws_np_digit(char c)
 {
     return c >= '0' && c <= '9';
 }
 
 /** @brief Parse a base-10 long; sets @p end past the digits (or to @p s if none). */
-inline long det_strtol(const char *s, const char **end)
+inline long dws_strtol(const char *s, const char **end)
 {
     const char *p = s;
-    while (det_np_ws(*p))
+    while (dws_np_ws(*p))
         p++;
     bool neg = false;
     if (*p == '+' || *p == '-')
         neg = (*p++ == '-');
     const char *ds = p;
     unsigned long v = 0; // accumulate unsigned: signed overflow (a huge digit run) is UB
-    while (det_np_digit(*p))
+    while (dws_np_digit(*p))
         v = v * 10UL + (unsigned long)(*p++ - '0');
     if (end)
         *end = (p == ds) ? s : p;
@@ -47,16 +47,16 @@ inline long det_strtol(const char *s, const char **end)
 }
 
 /** @brief Parse a base-10 unsigned long; sets @p end past the digits (or to @p s). */
-inline unsigned long det_strtoul(const char *s, const char **end)
+inline unsigned long dws_strtoul(const char *s, const char **end)
 {
     const char *p = s;
-    while (det_np_ws(*p))
+    while (dws_np_ws(*p))
         p++;
     if (*p == '+')
         p++;
     const char *ds = p;
     unsigned long v = 0;
-    while (det_np_digit(*p))
+    while (dws_np_digit(*p))
         v = v * 10UL + (unsigned long)(*p++ - '0');
     if (end)
         *end = (p == ds) ? s : p;
@@ -64,11 +64,11 @@ inline unsigned long det_strtoul(const char *s, const char **end)
 }
 
 // Parse the fractional part after a '.', advancing p and accumulating into val.
-inline void det_strtod_frac(const char *&p, double &val, bool &any)
+inline void dws_strtod_frac(const char *&p, double &val, bool &any)
 {
     p++; // consume '.'
     double scale = 1.0;
-    while (det_np_digit(*p))
+    while (dws_np_digit(*p))
     {
         scale *= 10.0;
         val += (double)(*p++ - '0') / scale;
@@ -77,14 +77,14 @@ inline void det_strtod_frac(const char *&p, double &val, bool &any)
 }
 
 // Apply a trailing exponent (e[+/-]NNN) to val, advancing p past it.
-inline void det_strtod_exp(const char *&p, double &val)
+inline void dws_strtod_exp(const char *&p, double &val)
 {
     p++; // consume 'e'/'E'
     bool eneg = false;
     if (*p == '+' || *p == '-')
         eneg = (*p++ == '-');
     int ex = 0;
-    while (det_np_digit(*p))
+    while (dws_np_digit(*p))
     {
         ex = (ex < 400) ? ex * 10 + (*p - '0') : ex; // clamp: 10^400 overflows the double to inf
         p++;
@@ -96,34 +96,34 @@ inline void det_strtod_exp(const char *&p, double &val)
 }
 
 /** @brief Parse a double (integer[.frac][e[+/-]exp]); sets @p end (or to @p s if none). */
-inline double det_strtod(const char *s, const char **end)
+inline double dws_strtod(const char *s, const char **end)
 {
     const char *p = s;
-    while (det_np_ws(*p))
+    while (dws_np_ws(*p))
         p++;
     bool neg = false;
     if (*p == '+' || *p == '-')
         neg = (*p++ == '-');
     bool any = false;
     double val = 0.0;
-    while (det_np_digit(*p))
+    while (dws_np_digit(*p))
     {
         val = val * 10.0 + (*p++ - '0');
         any = true;
     }
     if (*p == '.')
-        det_strtod_frac(p, val, any);
+        dws_strtod_frac(p, val, any);
     if (any && (*p == 'e' || *p == 'E'))
-        det_strtod_exp(p, val);
+        dws_strtod_exp(p, val);
     if (end)
         *end = any ? p : s;
     return neg ? -val : val;
 }
 
 /** @brief Parse a float (integer[.frac][e[+/-]exp]); sets @p end (or to @p s if none). */
-inline float det_strtof(const char *s, const char **end)
+inline float dws_strtof(const char *s, const char **end)
 {
-    return (float)det_strtod(s, end); // GGA lat/lon and other sub-meter values need det_strtod's precision
+    return (float)dws_strtod(s, end); // GGA lat/lon and other sub-meter values need dws_strtod's precision
 }
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DET_NUMPARSE_H

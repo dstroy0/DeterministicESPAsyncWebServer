@@ -5,8 +5,8 @@
 ## What this example teaches
 
 A device with both WiFi and Ethernet has a "default route" the OS picks for
-outbound traffic, and it can flip on a cable pull. `det_net_egress()` reports the
-live egress interface and `det_net_egress_ip()` its IP, queried on demand - no
+outbound traffic, and it can flip on a cable pull. `dws_net_egress()` reports the
+live egress interface and `dws_net_egress_ip()` its IP, queried on demand - no
 manager and no polling loop. The OS (`esp_netif`) does the failover; this just
 reports the current state, useful for logging, telemetry tags, or an "online via
 Ethernet / WiFi" badge in a UI.
@@ -14,8 +14,8 @@ Ethernet / WiFi" badge in a UI.
 **Query on demand:**
 
 ```cpp
-DetIface i = det_net_egress();       // DETIFACE_ETH / DETIFACE_STA / DETIFACE_AP / none
-uint32_t ip = det_net_egress_ip();   // current egress IP (network byte order)
+DWSIface i = dws_net_egress();       // DETIFACE_ETH / DETIFACE_STA / DETIFACE_AP / none
+uint32_t ip = dws_net_egress_ip();   // current egress IP (network byte order)
 ```
 
 The handler maps the enum to a name and formats the IP as JSON. Wire an Ethernet
@@ -48,10 +48,10 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // Map the egress interface enum to a human name.
-static const char *iface_name(DetIface i)
+static const char *iface_name(DWSIface i)
 {
     switch (i)
     {
@@ -80,12 +80,12 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    Serial.printf("egress interface: %s\n", iface_name(det_net_egress()));
+    Serial.printf("egress interface: %s\n", iface_name(dws_net_egress()));
 
     server.on("/net", HTTP_GET, [](uint8_t id, HttpReq *) {
-        uint32_t ip = det_net_egress_ip(); // network byte order
+        uint32_t ip = dws_net_egress_ip(); // network byte order
         char body[96];
-        snprintf(body, sizeof(body), "{\"egress\":\"%s\",\"ip\":\"%u.%u.%u.%u\"}", iface_name(det_net_egress()),
+        snprintf(body, sizeof(body), "{\"egress\":\"%s\",\"ip\":\"%u.%u.%u.%u\"}", iface_name(dws_net_egress()),
                  (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF), (unsigned)((ip >> 16) & 0xFF),
                  (unsigned)((ip >> 24) & 0xFF));
         server.send(id, 200, "application/json", body);

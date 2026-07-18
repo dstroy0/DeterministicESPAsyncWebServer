@@ -13,7 +13,7 @@
 #include <string.h>
 #include <unity.h>
 
-static DetWebServer server;
+static DWS server;
 static fs::FS davfs;
 
 static void push_str(uint8_t slot, const char *s)
@@ -91,7 +91,7 @@ static void populate_src()
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i] = {};
@@ -444,12 +444,12 @@ void test_webdav_deep_tree_rejected()
     TEST_ASSERT_TRUE(resp_status(409)); // dav_copy_recursive refuses past depth 8
 }
 
-// PROPFIND of a directory with more members than the listing cap (DETWS_WEBDAV_MAX_ENTRIES) stops at
+// PROPFIND of a directory with more members than the listing cap (DWS_WEBDAV_MAX_ENTRIES) stops at
 // the limit; PROPPATCH answers 207 for an existing resource and 404 for a missing one.
 void test_webdav_propfind_limit_and_proppatch()
 {
     tree_mkdir("/dav/big");
-    for (int i = 0; i < 40; i++) // more than DETWS_WEBDAV_MAX_ENTRIES (32)
+    for (int i = 0; i < 40; i++) // more than DWS_WEBDAV_MAX_ENTRIES (32)
     {
         char p[64];
         snprintf(p, sizeof p, "/dav/big/f%02d.txt", i);

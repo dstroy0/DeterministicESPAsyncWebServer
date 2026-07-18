@@ -3,20 +3,20 @@
 
 /**
  * @file time_source.h
- * @brief Multi-source time fallback matrix (DETWS_ENABLE_TIME_SOURCE).
+ * @brief Multi-source time fallback matrix (DWS_ENABLE_TIME_SOURCE).
  *
  * A small, zero-heap registry of user-defined time sources (NTP, an RTC, GPS, a
  * manually-set clock, ...). Each source is a callback returning the current Unix
  * epoch seconds, or 0 when that source currently has no valid time. Sources are
- * registered with a priority; detws_time_now() queries them in ascending priority
+ * registered with a priority; dws_time_now() queries them in ascending priority
  * order and returns the first nonzero result, so the device falls back
  * automatically when its preferred clock is unavailable (e.g. GPS loses its fix
  * -> RTC -> NTP). The validity rule lives in each user callback (return 0 when
  * invalid/stale), keeping this layer a pure prioritizer.
  *
- * Everything lives in a fixed BSS table (DETWS_TIME_SOURCE_MAX entries); no heap.
+ * Everything lives in a fixed BSS table (DWS_TIME_SOURCE_MAX entries); no heap.
  * The whole core is host-testable. The API is declared unconditionally and
- * compiles to no-op stubs when DETWS_ENABLE_TIME_SOURCE is 0.
+ * compiles to no-op stubs when DWS_ENABLE_TIME_SOURCE is 0.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -44,7 +44,7 @@ typedef uint32_t (*TimeSourceFn)(void);
  * @param fn        the source callback.
  * @return true if registered; false if @p fn is null or the table is full.
  */
-bool detws_time_source_add(const char *name, uint8_t priority, TimeSourceFn fn);
+bool dws_time_source_add(const char *name, uint8_t priority, TimeSourceFn fn);
 
 /**
  * @brief Current best time.
@@ -52,22 +52,22 @@ bool detws_time_source_add(const char *name, uint8_t priority, TimeSourceFn fn);
  * Queries registered sources in ascending priority and returns the first nonzero
  * epoch (stopping at the first valid source). Returns 0 if none have valid time.
  */
-uint32_t detws_time_now(void);
+uint32_t dws_time_now(void);
 
-/** @brief Name of the source that satisfied the last detws_time_now(), or nullptr. */
-const char *detws_time_source_active(void);
+/** @brief Name of the source that satisfied the last dws_time_now(), or nullptr. */
+const char *dws_time_source_active(void);
 
 /** @brief Clear all registered sources. */
-void detws_time_source_reset(void);
+void dws_time_source_reset(void);
 
 /**
- * @brief The current best time (detws_time_now, any registered NTP / GPS / RTC / ... source)
+ * @brief The current best time (dws_time_now, any registered NTP / GPS / RTC / ... source)
  *        formatted as an RFC 7231 IMF-fixdate into @p out.
  * @return bytes written, or 0 with an empty @p out when no source currently has a valid time.
  *
  * This is what lets the HTTP `Date:` header be fed by whatever time source is enabled, not just
- * NTP: register RTC / GPS / NTP via detws_time_source_add() and the header follows the priority.
+ * NTP: register RTC / GPS / NTP via dws_time_source_add() and the header follows the priority.
  */
-size_t detws_time_http_date(char *out, size_t out_cap);
+size_t dws_time_http_date(char *out, size_t out_cap);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_TIME_SOURCE_H

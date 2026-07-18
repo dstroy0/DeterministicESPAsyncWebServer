@@ -14,7 +14,7 @@
  * The field elements and point arithmetic have two implementations: the portable radix-2^16
  * `ssh_gf` (from ssh_curve25519, the native / non-S3 path), and on the ESP32-S3 a canonical
  * `uint32[8]` layer that does each field multiply as one 256-bit modular multiply on the
- * RSA/MPI accelerator (ssh_fe25519.h, active as DETWS_FE25519_MPI_HW) - the same engine that
+ * RSA/MPI accelerator (ssh_fe25519.h, active as DWS_FE25519_MPI_HW) - the same engine that
  * accelerates the X25519 KEX, here driving the Edwards point arithmetic so the host-key
  * signature runs several times faster. Only the point/field layer differs; the SHA-512 hashing
  * and the scalar arithmetic mod L are shared. Both paths are byte-identical by construction.
@@ -106,7 +106,7 @@ static bool ed_scalar_canonical(const uint8_t s[32])
     return false; // S == L is out of range
 }
 
-#ifdef DETWS_FE25519_MPI_HW
+#ifdef DWS_FE25519_MPI_HW
 // ===================== ESP32-S3 Edwards point arithmetic on the RSA/MPI field ============================
 // The curve constants as canonical uint32[8] (each word = ssh_gf limb 2i | limb 2i+1 << 16 of the radix-2^16
 // constants below; the point arithmetic is byte-identical to the ssh_gf path, verified by the RFC 8032 KAT).
@@ -547,7 +547,7 @@ static bool ed_verify_recompute(uint8_t out[32], const uint8_t S[32], const uint
     ed_pack(out, p);
     return true;
 }
-#endif // DETWS_FE25519_MPI_HW
+#endif // DWS_FE25519_MPI_HW
 
 // --- Public API -------------------------------------------------------------
 

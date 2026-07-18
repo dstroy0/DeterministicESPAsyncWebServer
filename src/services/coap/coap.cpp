@@ -8,12 +8,12 @@
 
 #include "services/coap/coap.h"
 
-#if DETWS_ENABLE_COAP
+#if DWS_ENABLE_COAP
 
 #include "network_drivers/transport/udp.h"
 #include <string.h>
-#if DETWS_ENABLE_COAP_OBSERVE
-#include "services/clock.h" // detws_millis() for Observe notification message IDs / sequencing
+#if DWS_ENABLE_COAP_OBSERVE
+#include "services/clock.h" // dws_millis() for Observe notification message IDs / sequencing
 #endif
 
 // CoAP option numbers we understand (RFC 7252 §5.10, RFC 7959). Others are skipped. Wire values
@@ -42,7 +42,7 @@ struct CoapResource
     CoapHandler handler;
 };
 
-#if DETWS_ENABLE_COAP_OBSERVE
+#if DWS_ENABLE_COAP_OBSERVE
 // An Observe registration (RFC 7641): a client awaiting notifications on a resource.
 struct CoapObserver
 {
@@ -61,27 +61,27 @@ struct CoapObserver
 // `const CoapCtx&` and cannot mutate the table), and nothing here is ambient.
 struct CoapCtx
 {
-    CoapResource res[DETWS_COAP_MAX_RESOURCES]; // resource table: set before begin, read-only during dispatch
+    CoapResource res[DWS_COAP_MAX_RESOURCES]; // resource table: set before begin, read-only during dispatch
     size_t res_count = 0;
 
-    char path[DETWS_COAP_MAX_PATH];      // scratch: reconstructed Uri-Path of the request in flight
-    char query[DETWS_COAP_MAX_QUERY];    // scratch: reconstructed Uri-Query
-    uint8_t pl[DETWS_COAP_MAX_PAYLOAD];  // scratch: handler response body
-    uint8_t tx[DETWS_COAP_MSG_BUF_SIZE]; // scratch: outbound response (request buffer is transport-owned)
+    char path[DWS_COAP_MAX_PATH];      // scratch: reconstructed Uri-Path of the request in flight
+    char query[DWS_COAP_MAX_QUERY];    // scratch: reconstructed Uri-Query
+    uint8_t pl[DWS_COAP_MAX_PAYLOAD];  // scratch: handler response body
+    uint8_t tx[DWS_COAP_MSG_BUF_SIZE]; // scratch: outbound response (request buffer is transport-owned)
 
-#if DETWS_ENABLE_COAP_OBSERVE
-    uint16_t port = DETWS_COAP_OBSERVE_PORT; // UDP port the observe transport notifies from
-    CoapObserver obs[DETWS_COAP_MAX_OBSERVERS];
-    // Last-request fields recorded by det_coap_server_process_ex() for the Observe transport.
+#if DWS_ENABLE_COAP_OBSERVE
+    uint16_t port = DWS_COAP_OBSERVE_PORT; // UDP port the observe transport notifies from
+    CoapObserver obs[DWS_COAP_MAX_OBSERVERS];
+    // Last-request fields recorded by dws_coap_server_process_ex() for the Observe transport.
     int last_observe = -1;
     uint8_t last_method = 0;
     uint8_t last_token[8];
     uint8_t last_tkl = 0;
 #endif
 
-#if DETWS_ENABLE_COAP_BLOCK
+#if DWS_ENABLE_COAP_BLOCK
     // Single in-flight Block1 (request upload) reassembly (RFC 7959); one transfer at a time.
-    uint8_t b1[DETWS_COAP_BLOCK1_MAX];
+    uint8_t b1[DWS_COAP_BLOCK1_MAX];
     size_t b1_len = 0;  // bytes reassembled so far (also the next expected offset)
     uint8_t b1_szx = 0; // negotiated block-size exponent for this transfer
 #endif
@@ -89,19 +89,19 @@ struct CoapCtx
 
 static CoapCtx s_coap;
 
-void det_coap_server_reset()
+void dws_coap_server_reset()
 {
     s_coap.res_count = 0;
     memset(s_coap.res, 0, sizeof(s_coap.res));
-#if DETWS_ENABLE_COAP_BLOCK
+#if DWS_ENABLE_COAP_BLOCK
     s_coap.b1_len = 0;
     s_coap.b1_szx = 0;
 #endif
 }
 
-bool det_coap_server_add_resource(const char *path, uint8_t methods, CoapHandler handler)
+bool dws_coap_server_add_resource(const char *path, uint8_t methods, CoapHandler handler)
 {
-    if (s_coap.res_count >= DETWS_COAP_MAX_RESOURCES || !path || !handler)
+    if (s_coap.res_count >= DWS_COAP_MAX_RESOURCES || !path || !handler)
         return false;
     s_coap.res[s_coap.res_count].path = path;
     s_coap.res[s_coap.res_count].methods = methods;
@@ -220,7 +220,7 @@ static size_t emit_options_payload(uint8_t *resp, size_t cap, size_t n, uint8_t 
         n = append_opt(resp, cap, n, &last_opt, CoapOpt::COAP_OPT_CONTENT_FORMAT, v,
                        enc_uint_minimal((uint16_t)content_format, v));
 
-#if DETWS_ENABLE_COAP_BLOCK
+#if DWS_ENABLE_COAP_BLOCK
     if (block2_val >= 0)
         n = append_opt(resp, cap, n, &last_opt, CoapOpt::COAP_OPT_BLOCK2, v, enc_uint_minimal((uint32_t)block2_val, v));
     if (block1_val >= 0)
@@ -245,7 +245,7 @@ static size_t emit_options_payload(uint8_t *resp, size_t cap, size_t n, uint8_t 
 // Core processing (no sockets, no heap)
 // ---------------------------------------------------------------------------
 
-size_t det_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap,
+size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap,
                                   int32_t observe_seq)
 {
     if (req_len < 4)
@@ -285,7 +285,7 @@ size_t det_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
                    ? emit_header(resp, resp_cap, CoapType::COAP_TYPE_RST, 0, mid, nullptr, 0)
                    : 0;
 
-#if DETWS_ENABLE_COAP_OBSERVE
+#if DWS_ENABLE_COAP_OBSERVE
     s_coap.last_observe = -1;
     s_coap.last_method = code;
     s_coap.last_tkl = tkl;
@@ -304,7 +304,7 @@ size_t det_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
     uint32_t opt_num = 0;
     bool bad = false;
     bool bad_option = false; // unrecognized critical (odd-numbered) option seen (RFC 7252 5.4.1)
-#if DETWS_ENABLE_COAP_BLOCK
+#if DWS_ENABLE_COAP_BLOCK
     int32_t req_block1 = -1; // request Block1 option value (RFC 7959), or -1 if absent
     int32_t req_block2 = -1; // request Block2 option value, or -1 if absent
 #endif
@@ -386,12 +386,12 @@ size_t det_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
         case CoapOpt::COAP_OPT_CONTENT_FORMAT:
             req_cf = (CoapContentFormat)opt_uint(val, olen);
             break;
-#if DETWS_ENABLE_COAP_OBSERVE
+#if DWS_ENABLE_COAP_OBSERVE
         case CoapOpt::COAP_OPT_OBSERVE:
             s_coap.last_observe = (int)opt_uint(val, olen); // 0 = register, 1 = deregister
             break;
 #endif
-#if DETWS_ENABLE_COAP_BLOCK
+#if DWS_ENABLE_COAP_BLOCK
         case CoapOpt::COAP_OPT_BLOCK1: // block-wise request uploads (RFC 7959)
             if (olen > 3)
                 bad = true;
@@ -484,7 +484,7 @@ size_t det_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
         const uint8_t *eff_payload = payload;
         size_t eff_payload_len = payload_len;
 
-#if DETWS_ENABLE_COAP_BLOCK
+#if DWS_ENABLE_COAP_BLOCK
         // --- Block1: reassemble a chunked POST/PUT payload (RFC 7959 §2.5) ---
         if (req_block1 >= 0 && (code == (uint8_t)CoapMethod::COAP_POST || code == (uint8_t)CoapMethod::COAP_PUT))
         {
@@ -553,7 +553,7 @@ size_t det_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
 
     int32_t block2_echo = -1;
 
-#if DETWS_ENABLE_COAP_BLOCK
+#if DWS_ENABLE_COAP_BLOCK
     if (block1_echo >= 0)
         s_coap.b1_len = 0; // the reassembled upload has been handed to the handler; clear it
 
@@ -561,7 +561,7 @@ size_t det_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
     // block at a time (RFC 7959 §2.4). Applies only to a successful body. ---
     if ((cresp.code >> 5) == 2)
     {
-        uint8_t szx = DETWS_COAP_BLOCK_SZX_MAX;
+        uint8_t szx = DWS_COAP_BLOCK_SZX_MAX;
         uint32_t num = 0;
         bool block_wise = false;
         if (req_block2 >= 0)
@@ -572,8 +572,8 @@ size_t det_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
             if (szx == 7)
                 return emit_header(resp, resp_cap, rsp_type, (uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, mid, token,
                                    tkl);
-            if (szx > DETWS_COAP_BLOCK_SZX_MAX)
-                szx = DETWS_COAP_BLOCK_SZX_MAX;
+            if (szx > DWS_COAP_BLOCK_SZX_MAX)
+                szx = DWS_COAP_BLOCK_SZX_MAX;
             block_wise = true; // the client asked for block-wise transfer
         }
         else if (cresp.payload_len > (size_t)(1u << (szx + 4)))
@@ -610,16 +610,16 @@ size_t det_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
                                 block1_echo, cresp.payload, cresp.payload_len);
 }
 
-size_t det_coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap)
+size_t dws_coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap)
 {
-    return det_coap_server_process_ex(req, req_len, resp, resp_cap, -1); // no Observe option
+    return dws_coap_server_process_ex(req, req_len, resp, resp_cap, -1); // no Observe option
 }
 
 // ---------------------------------------------------------------------------
-// UDP transport (det_udp_listen is a host stub on non-Arduino builds)
+// UDP transport (dws_udp_listen is a host stub on non-Arduino builds)
 // ---------------------------------------------------------------------------
 
-#if DETWS_ENABLE_COAP_OBSERVE
+#if DWS_ENABLE_COAP_OBSERVE
 // ---------------------------------------------------------------------------
 // Observe registry + notifications (RFC 7641)
 // ---------------------------------------------------------------------------
@@ -640,11 +640,11 @@ static bool same_token(const CoapObserver *o, const uint8_t *token, uint8_t tkl)
 // Find/refresh an observer; create one on first registration. Returns its slot or -1.
 static int obs_register(const char *ip, uint16_t port, const uint8_t *token, uint8_t tkl, int res_idx)
 {
-    for (int i = 0; i < DETWS_COAP_MAX_OBSERVERS; i++)
+    for (int i = 0; i < DWS_COAP_MAX_OBSERVERS; i++)
         if (s_coap.obs[i].active && s_coap.obs[i].res_idx == res_idx && s_coap.obs[i].port == port &&
             same_token(&s_coap.obs[i], token, tkl) && strcmp(s_coap.obs[i].ip, ip) == 0)
             return i; // already observing
-    for (int i = 0; i < DETWS_COAP_MAX_OBSERVERS; i++)
+    for (int i = 0; i < DWS_COAP_MAX_OBSERVERS; i++)
         if (!s_coap.obs[i].active)
         {
             s_coap.obs[i].active = true;
@@ -665,18 +665,18 @@ static int obs_register(const char *ip, uint16_t port, const uint8_t *token, uin
 // (a Reset). Pass token=nullptr to drop all of @p ip:@p port.
 static void obs_remove(const char *ip, uint16_t port, const uint8_t *token, uint8_t tkl)
 {
-    for (int i = 0; i < DETWS_COAP_MAX_OBSERVERS; i++)
+    for (int i = 0; i < DWS_COAP_MAX_OBSERVERS; i++)
         if (s_coap.obs[i].active && s_coap.obs[i].port == port && strcmp(s_coap.obs[i].ip, ip) == 0 &&
             (token == nullptr || same_token(&s_coap.obs[i], token, tkl)))
             s_coap.obs[i].active = false;
 }
 
-void det_coap_notify(const char *path)
+void dws_coap_notify(const char *path)
 {
     int ridx = find_resource_index(s_coap, path);
     if (ridx < 0)
         return;
-    for (int i = 0; i < DETWS_COAP_MAX_OBSERVERS; i++)
+    for (int i = 0; i < DWS_COAP_MAX_OBSERVERS; i++)
     {
         if (!s_coap.obs[i].active || s_coap.obs[i].res_idx != ridx)
             continue;
@@ -699,24 +699,24 @@ void det_coap_notify(const char *path)
             cresp.payload_len = sizeof(s_coap.pl);
 
         // Build a NON notification: header + token + Observe(seq) + body.
-        uint16_t mid = (uint16_t)detws_millis();
+        uint16_t mid = (uint16_t)dws_millis();
         s_coap.obs[i].seq = (s_coap.obs[i].seq + 1) & 0xFFFFFF;
         size_t n = emit_header(s_coap.tx, sizeof(s_coap.tx), CoapType::COAP_TYPE_NON, cresp.code, mid,
                                s_coap.obs[i].token, s_coap.obs[i].tkl);
         if (n)
             n = emit_options_payload(s_coap.tx, sizeof(s_coap.tx), n, cresp.code, (int32_t)s_coap.obs[i].seq,
                                      cresp.content_format, -1, -1, cresp.payload, cresp.payload_len);
-        if (!n || !det_udp_listener_sendto(s_coap.port, s_coap.obs[i].ip, s_coap.obs[i].port, s_coap.tx, n))
+        if (!n || !dws_udp_listener_sendto(s_coap.port, s_coap.obs[i].ip, s_coap.obs[i].port, s_coap.tx, n))
             s_coap.obs[i].active = false; // unreachable -> drop the observer
     }
 }
 
-static void coap_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer *peer, void *ctx)
+static void coap_udp_handler(const uint8_t *data, size_t len, struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
     char ip[16];
     uint16_t pport = 0;
-    bool have_peer = det_udp_peer_addr(peer, ip, sizeof(ip), &pport);
+    bool have_peer = dws_udp_peer_addr(peer, ip, sizeof(ip), &pport);
 
     // A Reset from a client rejects our notification -> drop its observations.
     if (len >= 1 && ((data[0] >> 4) & 0x03) == (uint8_t)CoapType::COAP_TYPE_RST)
@@ -726,7 +726,7 @@ static void coap_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer 
         return;
     }
 
-    size_t rn = det_coap_server_process_ex(data, len, s_coap.tx, sizeof(s_coap.tx), -1);
+    size_t rn = dws_coap_server_process_ex(data, len, s_coap.tx, sizeof(s_coap.tx), -1);
     if (!rn)
         return;
 
@@ -740,7 +740,7 @@ static void coap_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer 
             {
                 // Re-encode the response carrying the Observe option (registration ack).
                 size_t rn2 =
-                    det_coap_server_process_ex(data, len, s_coap.tx, sizeof(s_coap.tx), (int32_t)s_coap.obs[slot].seq);
+                    dws_coap_server_process_ex(data, len, s_coap.tx, sizeof(s_coap.tx), (int32_t)s_coap.obs[slot].seq);
                 if (rn2)
                     rn = rn2;
             }
@@ -751,32 +751,32 @@ static void coap_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer 
         obs_remove(ip, pport, s_coap.last_token, s_coap.last_tkl);
     }
 
-    det_udp_send(peer, s_coap.tx, rn);
+    dws_udp_send(peer, s_coap.tx, rn);
 }
 
-void det_coap_server_begin(uint16_t port)
+void dws_coap_server_begin(uint16_t port)
 {
     s_coap.port = port;
-    for (int i = 0; i < DETWS_COAP_MAX_OBSERVERS; i++)
+    for (int i = 0; i < DWS_COAP_MAX_OBSERVERS; i++)
         s_coap.obs[i].active = false;
-    det_udp_listen(port, coap_udp_handler, nullptr);
+    dws_udp_listen(port, coap_udp_handler, nullptr);
 }
 
 #else // Observe disabled: the basic request/response handler
 
-static void coap_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer *peer, void *ctx)
+static void coap_udp_handler(const uint8_t *data, size_t len, struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
-    size_t rn = det_coap_server_process(data, len, s_coap.tx, sizeof(s_coap.tx));
+    size_t rn = dws_coap_server_process(data, len, s_coap.tx, sizeof(s_coap.tx));
     if (rn)
-        det_udp_send(peer, s_coap.tx, rn);
+        dws_udp_send(peer, s_coap.tx, rn);
 }
 
-void det_coap_server_begin(uint16_t port)
+void dws_coap_server_begin(uint16_t port)
 {
-    det_udp_listen(port, coap_udp_handler, nullptr);
+    dws_udp_listen(port, coap_udp_handler, nullptr);
 }
 
-#endif // DETWS_ENABLE_COAP_OBSERVE
+#endif // DWS_ENABLE_COAP_OBSERVE
 
-#endif // DETWS_ENABLE_COAP
+#endif // DWS_ENABLE_COAP

@@ -19,58 +19,58 @@ static const DetwsSleepCfg CFG = {1000, 100, 2000, 500};
 void test_awake_when_recent(void)
 {
     // idle 999 < 1000 -> stay awake.
-    TEST_ASSERT_EQUAL_UINT32(0, detws_sleep_next(1999, 1000, &CFG));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sleep_next(1999, 1000, &CFG));
 }
 
 void test_min_window_at_threshold(void)
 {
     // idle exactly 1000: past threshold, 0 doublings -> the floor.
-    TEST_ASSERT_EQUAL_UINT32(100, detws_sleep_next(2000, 1000, &CFG));
+    TEST_ASSERT_EQUAL_UINT32(100, dws_sleep_next(2000, 1000, &CFG));
     // idle 1499: still < one full ramp period past threshold -> still the floor.
-    TEST_ASSERT_EQUAL_UINT32(100, detws_sleep_next(2499, 1000, &CFG));
+    TEST_ASSERT_EQUAL_UINT32(100, dws_sleep_next(2499, 1000, &CFG));
 }
 
 void test_ramp_doubles(void)
 {
     // idle 1500: one ramp period (500) past threshold -> 100<<1 = 200.
-    TEST_ASSERT_EQUAL_UINT32(200, detws_sleep_next(2500, 1000, &CFG));
+    TEST_ASSERT_EQUAL_UINT32(200, dws_sleep_next(2500, 1000, &CFG));
     // idle 2000: two ramp periods -> 400.
-    TEST_ASSERT_EQUAL_UINT32(400, detws_sleep_next(3000, 1000, &CFG));
+    TEST_ASSERT_EQUAL_UINT32(400, dws_sleep_next(3000, 1000, &CFG));
     // idle 3000: four periods -> 100<<4 = 1600.
-    TEST_ASSERT_EQUAL_UINT32(1600, detws_sleep_next(4000, 1000, &CFG));
+    TEST_ASSERT_EQUAL_UINT32(1600, dws_sleep_next(4000, 1000, &CFG));
 }
 
 void test_clamps_to_ceiling(void)
 {
     // idle 10000: many periods, clamped to max_ms = 2000 (not 100<<18).
-    TEST_ASSERT_EQUAL_UINT32(2000, detws_sleep_next(11000, 1000, &CFG));
+    TEST_ASSERT_EQUAL_UINT32(2000, dws_sleep_next(11000, 1000, &CFG));
 }
 
 void test_no_ramp_jumps_to_ceiling(void)
 {
-    DetwsSleepCfg cfg = {1000, 100, 2000, 0};                           // ramp_ms 0
-    TEST_ASSERT_EQUAL_UINT32(0, detws_sleep_next(1500, 1000, &cfg));    // still awake
-    TEST_ASSERT_EQUAL_UINT32(2000, detws_sleep_next(2000, 1000, &cfg)); // straight to max
+    DetwsSleepCfg cfg = {1000, 100, 2000, 0};                         // ramp_ms 0
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sleep_next(1500, 1000, &cfg));    // still awake
+    TEST_ASSERT_EQUAL_UINT32(2000, dws_sleep_next(2000, 1000, &cfg)); // straight to max
 }
 
 void test_degenerate_max_below_min(void)
 {
     DetwsSleepCfg cfg = {1000, 500, 100, 0}; // max < min -> clamp to min
-    TEST_ASSERT_EQUAL_UINT32(500, detws_sleep_next(2000, 1000, &cfg));
+    TEST_ASSERT_EQUAL_UINT32(500, dws_sleep_next(2000, 1000, &cfg));
 }
 
 void test_wrap_safe(void)
 {
     // last_active just before the millis() rollover, now just after: real idle 1284 >= 1000.
-    uint32_t w = detws_sleep_next(0x00000400u, 0xFFFFFF00u, &CFG);
+    uint32_t w = dws_sleep_next(0x00000400u, 0xFFFFFF00u, &CFG);
     TEST_ASSERT_TRUE(w >= 100 && w <= 2000);
     // real idle 306 < 1000 -> awake.
-    TEST_ASSERT_EQUAL_UINT32(0, detws_sleep_next(50, 0xFFFFFF00u, &CFG));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sleep_next(50, 0xFFFFFF00u, &CFG));
 }
 
 void test_null_cfg(void)
 {
-    TEST_ASSERT_EQUAL_UINT32(0, detws_sleep_next(5000, 0, nullptr));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_sleep_next(5000, 0, nullptr));
 }
 
 int main(void)

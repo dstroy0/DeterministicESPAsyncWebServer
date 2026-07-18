@@ -3,12 +3,12 @@
 
 /**
  * @file link_manager.h
- * @brief Multi-interface egress selection + graceful escalation/failover (DETWS_ENABLE_LINK_MANAGER).
+ * @brief Multi-interface egress selection + graceful escalation/failover (DWS_ENABLE_LINK_MANAGER).
  *
  * Once a device has more than one network interface (a wired Ethernet PHY brought up alongside WiFi STA,
  * plus maybe a softAP), something has to decide which one carries traffic and when to switch: escalate to
  * the wired link when it comes up (usually faster / more reliable), and fail over to WiFi when it drops.
- * The stack owns the routes and `det_net_egress()` reports the live one; this is the *policy* that drives
+ * The stack owns the routes and `dws_net_egress()` reports the live one; this is the *policy* that drives
  * it - a small table of interfaces (each a kind + priority + up/down) with a deterministic "best link
  * that is up" selection, plus change detection so the app only reconfigures on an actual transition.
  *
@@ -23,7 +23,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_LINK_MANAGER
+#if DWS_ENABLE_LINK_MANAGER
 
 /** @brief Interface kind (informational; selection is by priority). Stored in a uint8_t field and
  *  compared, so integer constants in a namespacing struct - cast-free. */
@@ -52,13 +52,13 @@ struct LinkManager
 };
 
 /** @brief Initialize over caller storage and compute the initial active egress. */
-void detws_link_init(LinkManager *m, LinkIface *ifaces, size_t n);
+void dws_link_init(LinkManager *m, LinkIface *ifaces, size_t n);
 
 /** @brief Best interface that is up (highest priority, lower index breaks ties). @return index or -1. */
-int detws_link_select(const LinkManager *m);
+int dws_link_select(const LinkManager *m);
 
 /** @brief The current active egress index (-1 if none). */
-int detws_link_active(const LinkManager *m);
+int dws_link_active(const LinkManager *m);
 
 /**
  * @brief Set an interface's up/down state and recompute the active egress.
@@ -66,7 +66,7 @@ int detws_link_active(const LinkManager *m);
  * @param to   (may be null) the new active index.
  * @return true if the active egress changed (escalation or failover happened).
  */
-bool detws_link_set(LinkManager *m, size_t idx, bool up, int *from, int *to);
+bool dws_link_set(LinkManager *m, size_t idx, bool up, int *from, int *to);
 
-#endif // DETWS_ENABLE_LINK_MANAGER
+#endif // DWS_ENABLE_LINK_MANAGER
 #endif // DETERMINISTICESPASYNCWEBSERVER_LINK_MANAGER_H

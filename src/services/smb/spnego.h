@@ -4,7 +4,7 @@
 /**
  * @file spnego.h
  * @brief SPNEGO (RFC 4178) GSS-API wrapping of the NTLMSSP tokens for the SMB2 client
- *        (DETWS_ENABLE_SMB).
+ *        (DWS_ENABLE_SMB).
  *
  * SMB2 SESSION_SETUP carries the NTLM handshake tokens inside a SPNEGO negotiation token. This is
  * the minimal ASN.1 DER layer that a client needs:
@@ -26,7 +26,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_SMB
+#if DWS_ENABLE_SMB
 
 #include <stddef.h>
 #include <stdint.h>
@@ -52,6 +52,6 @@ bool spnego_parse_response(const uint8_t *blob, size_t len, const uint8_t **resp
  */
 size_t spnego_wrap_authenticate(const uint8_t *ntlm, size_t ntlm_len, uint8_t *out, size_t cap);
 
-#endif // DETWS_ENABLE_SMB
+#endif // DWS_ENABLE_SMB
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SPNEGO_H

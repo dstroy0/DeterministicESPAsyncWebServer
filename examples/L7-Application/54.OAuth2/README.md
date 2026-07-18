@@ -1,6 +1,6 @@
 # 54.OAuth2 - authorization-code exchange
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_OAUTH2`, `DETWS_ENABLE_HTTP_CLIENT`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_OAUTH2`, `DWS_ENABLE_HTTP_CLIENT`
 
 ## What this example teaches
 
@@ -15,18 +15,18 @@ _obtains_ the tokens.
 ```cpp
 const char *code = http_get_query(req, "code");
 DetwsOAuth2Tokens t;
-int st = detws_oauth2_exchange_code(TOKEN_URL, code, REDIRECT_URI, CLIENT_ID, CLIENT_SECRET, nullptr, &t);
+int st = dws_oauth2_exchange_code(TOKEN_URL, code, REDIRECT_URI, CLIENT_ID, CLIENT_SECRET, nullptr, &t);
 if (st != 200) { /* 502 */ }
 // t.access_token / t.id_token / t.refresh_token are now populated
 ```
 
-`detws_oauth2_exchange_code()` POSTs the code to the token endpoint through the
+`dws_oauth2_exchange_code()` POSTs the code to the token endpoint through the
 outbound HTTP client ([23.HttpClient](../23.HttpClient)) and fills a tokens struct.
 The `nullptr` argument is the PKCE `code_verifier` - pass it (and `nullptr` for the
 client secret) for a public client using PKCE instead of a client secret.
 
 **Next steps.** Pair this with [50.OidcAuth](../50.OidcAuth) to verify the returned
-`id_token`, and call `detws_oauth2_refresh()` later with the `refresh_token` for
+`id_token`, and call `dws_oauth2_refresh()` later with the `refresh_token` for
 fresh access tokens. In production use `https://` token URLs and set a CA or pin on
 the HTTP client.
 
@@ -34,7 +34,7 @@ the HTTP client.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_OAUTH2=1 -DDETWS_ENABLE_HTTP_CLIENT=1" \
+  --project-option="build_flags=-DDWS_ENABLE_OAUTH2=1 -DDWS_ENABLE_HTTP_CLIENT=1" \
   --lib="." examples/L7-Application/54.OAuth2/54.OAuth2.ino
 ```
 
@@ -52,8 +52,8 @@ explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_OAUTH2 1
-#define DETWS_ENABLE_HTTP_CLIENT 1
+#define DWS_ENABLE_OAUTH2 1
+#define DWS_ENABLE_HTTP_CLIENT 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -69,7 +69,7 @@ static const char *CLIENT_ID = "your-client-id";
 static const char *CLIENT_SECRET = "your-client-secret"; // or nullptr + PKCE code_verifier
 static const char *REDIRECT_URI = "http://device.local/callback";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -89,7 +89,7 @@ void setup()
             return;
         }
         DetwsOAuth2Tokens t;
-        int st = detws_oauth2_exchange_code(TOKEN_URL, code, REDIRECT_URI, CLIENT_ID, CLIENT_SECRET, nullptr, &t);
+        int st = dws_oauth2_exchange_code(TOKEN_URL, code, REDIRECT_URI, CLIENT_ID, CLIENT_SECRET, nullptr, &t);
         if (st != 200)
         {
             char b[48];

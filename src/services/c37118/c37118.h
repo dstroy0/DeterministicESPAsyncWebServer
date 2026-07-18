@@ -3,7 +3,7 @@
 
 /**
  * @file c37118.h
- * @brief IEEE C37.118.2 synchrophasor frame codec (DETWS_ENABLE_C37118) - zero-heap frame
+ * @brief IEEE C37.118.2 synchrophasor frame codec (DWS_ENABLE_C37118) - zero-heap frame
  *        builder + parser for the PMU / PDC wide-area-measurement wire protocol.
  *
  * A C37.118.2 frame (all fields big-endian / network order):
@@ -31,7 +31,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_C37118
+#if DWS_ENABLE_C37118
 
 #include <stddef.h>
 #include <stdint.h>
@@ -100,6 +100,6 @@ bool c37118_parse_frame(const uint8_t *buf, size_t len, C37118Frame *out);
 /** @brief Read the command word from a parsed Command frame. */
 bool c37118_parse_command(const C37118Frame *f, uint16_t *cmd);
 
-#endif // DETWS_ENABLE_C37118
+#endif // DWS_ENABLE_C37118
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_C37118_H

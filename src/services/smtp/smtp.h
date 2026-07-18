@@ -7,9 +7,9 @@
  *
  * A blocking one-shot: connect, greet, optional AUTH LOGIN, then MAIL FROM / RCPT TO /
  * DATA a plain-text message and QUIT. It rides the shared outbound client transport
- * (`det_client`), with implicit TLS (SMTPS, typically port 465) when the config sets
- * `tls` and DETWS_ENABLE_TLS is on. Zero heap; every buffer is a compile-time size
- * (`DETWS_SMTP_*`). Gated by DETWS_ENABLE_SMTP.
+ * (`dws_client`), with implicit TLS (SMTPS, typically port 465) when the config sets
+ * `tls` and DWS_ENABLE_TLS is on. Zero heap; every buffer is a compile-time size
+ * (`DWS_SMTP_*`). Gated by DWS_ENABLE_SMTP.
  *
  * The dialogue itself (smtp_run) is written against a send/recv seam, so the whole
  * protocol exchange - greeting codes, AUTH, dot-stuffing, the terminating `.` - is
@@ -79,7 +79,7 @@ struct SmtpMessage
 SmtpResult smtp_run(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn send, SmtpRecvFn recv, void *ctx);
 
 /**
- * @brief Blocking one-shot send over the real transport (det_client, plus TLS when
+ * @brief Blocking one-shot send over the real transport (dws_client, plus TLS when
  * `cfg->tls`). Opens the connection, runs smtp_run(), and closes.
  * @return SmtpResult::SMTP_OK or an ::SmtpResult error. On non-Arduino (host) builds there is no
  *         lwIP, so this returns SmtpResult::SMTP_ERR_CONNECT; use smtp_run() directly in tests.

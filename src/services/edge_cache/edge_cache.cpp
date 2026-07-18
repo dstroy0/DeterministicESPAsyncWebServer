@@ -8,7 +8,7 @@
 
 #include "services/edge_cache/edge_cache.h"
 
-#if DETWS_ENABLE_EDGE_CACHE
+#if DWS_ENABLE_EDGE_CACHE
 
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <string.h>
@@ -400,7 +400,7 @@ void edge_store_init(EdgeCacheStore *s)
 {
     memset(s, 0, sizeof(*s));
     s->lru_head = s->lru_tail = EDGE_LRU_NONE;
-    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
         s->entries[i].lru_prev = s->entries[i].lru_next = EDGE_LRU_NONE;
 }
 
@@ -410,7 +410,7 @@ EdgeEntry *edge_store_alloc(EdgeCacheStore *s, const char *canon, const char *va
     if (klen >= sizeof(s->entries[0].key))
         return nullptr; // key too long -> non-cacheable
     uint16_t slot = EDGE_LRU_NONE;
-    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
         if (!s->entries[i].used)
         {
             slot = i;
@@ -419,7 +419,7 @@ EdgeEntry *edge_store_alloc(EdgeCacheStore *s, const char *canon, const char *va
     if (slot == EDGE_LRU_NONE)
     {
         if (s->lru_tail == EDGE_LRU_NONE)
-            return nullptr; // DETWS_EDGE_CACHE_SLOTS == 0
+            return nullptr; // DWS_EDGE_CACHE_SLOTS == 0
         slot = s->lru_tail;
         // Offer the still-populated victim to the L2 write-back hook (skip transient passthrough slots).
         if (s->on_evict && s->entries[slot].key[0] != '\0')
@@ -449,7 +449,7 @@ EdgeEntry *edge_store_alloc(EdgeCacheStore *s, const char *canon, const char *va
 EdgeEntry *edge_store_lookup(EdgeCacheStore *s, const char *canon, const char *vary_key, uint32_t now_ms)
 {
     const char *vk = vary_key ? vary_key : "";
-    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
     {
         EdgeEntry *e = &s->entries[i];
         if (e->used && strcmp(e->key, canon) == 0 && strcmp(e->vary_vals, vk) == 0)
@@ -465,12 +465,12 @@ EdgeEntry *edge_store_lookup(EdgeCacheStore *s, const char *canon, const char *v
 
 EdgeEntry *edge_store_find(EdgeCacheStore *s, const char *canon, EdgeHdrLookup lookup, void *ctx, uint32_t now_ms)
 {
-    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
     {
         EdgeEntry *e = &s->entries[i];
         if (!e->used || strcmp(e->key, canon) != 0)
             continue;
-        char cur[DETWS_EDGE_VARY_MAX];
+        char cur[DWS_EDGE_VARY_MAX];
         // re-serialize the current request against this variant's Vary names (empty names -> "")
         if (!edge_vary_serialize(e->vary_names, lookup, ctx, cur, sizeof(cur)))
             continue;
@@ -493,7 +493,7 @@ void edge_entry_set_freshness(EdgeEntry *e, const DetwsCacheControl *cc, bool sh
     if (lifetime < 0)
         lifetime = edge_heuristic_lifetime(date_epoch, last_modified_epoch);
     if (lifetime < 0)
-        lifetime = DETWS_EDGE_DEFAULT_TTL_S;
+        lifetime = DWS_EDGE_DEFAULT_TTL_S;
     e->lifetime_s = lifetime;
     e->initial_age = edge_initial_age(age_hdr, date_epoch, response_time_epoch);
     e->insert_ms = now_ms;
@@ -515,7 +515,7 @@ bool edge_entry_fresh(const EdgeEntry *e, uint32_t now_ms)
 uint32_t edge_store_sweep(EdgeCacheStore *s, uint32_t now_ms)
 {
     uint32_t n = 0;
-    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
     {
         EdgeEntry *e = &s->entries[i];
         if (e->used && !edge_entry_has_validator(e) && !edge_entry_fresh(e, now_ms))
@@ -531,7 +531,7 @@ uint32_t edge_store_sweep(EdgeCacheStore *s, uint32_t now_ms)
 uint32_t edge_store_purge(EdgeCacheStore *s, const char *canon)
 {
     uint32_t n = 0;
-    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
         if (s->entries[i].used && strcmp(s->entries[i].key, canon) == 0)
         {
             store_free(s, i);
@@ -545,7 +545,7 @@ uint32_t edge_store_purge_prefix(EdgeCacheStore *s, const char *prefix)
 {
     size_t plen = strlen(prefix);
     uint32_t n = 0;
-    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
     {
         if (!s->entries[i].used)
             continue;
@@ -562,7 +562,7 @@ uint32_t edge_store_purge_prefix(EdgeCacheStore *s, const char *prefix)
 
 void edge_store_free_entry(EdgeCacheStore *s, EdgeEntry *e)
 {
-    for (uint16_t i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    for (uint16_t i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
         if (&s->entries[i] == e)
         {
             store_free(s, i);
@@ -581,7 +581,7 @@ bool edge_is_storeable(int status, const char *method, const DetwsCacheControl *
         return false;
     if (vary_is_star(vary_header))
         return false;
-    if (body_len > DETWS_EDGE_BODY_MAX)
+    if (body_len > DWS_EDGE_BODY_MAX)
         return false;
     return true;
 }
@@ -657,4 +657,4 @@ void edge_apply_304(EdgeEntry *e, const char *new_hdrs, size_t hdr_len, int64_t 
     edge_entry_set_freshness(e, &cc, true, date, expires, last_mod, age, response_time_epoch, now_ms);
 }
 
-#endif // DETWS_ENABLE_EDGE_CACHE
+#endif // DWS_ENABLE_EDGE_CACHE

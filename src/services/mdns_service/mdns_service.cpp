@@ -3,7 +3,7 @@
 
 /**
  * @file mdns_service.cpp
- * @brief mDNS / DNS-SD advertisement implementation (DETWS_ENABLE_MDNS).
+ * @brief mDNS / DNS-SD advertisement implementation (DWS_ENABLE_MDNS).
  *
  * Uses the ESP-IDF `mdns` component directly (not the Arduino ESPmDNS wrapper)
  * so the only external dependency stays the base SDK + mbedTLS.
@@ -11,11 +11,11 @@
 
 #include "mdns_service.h"
 
-#if DETWS_ENABLE_MDNS && defined(ARDUINO)
+#if DWS_ENABLE_MDNS && defined(ARDUINO)
 
 #include "mdns.h"
 
-bool det_mdns_begin(const char *hostname, uint16_t http_port)
+bool dws_mdns_begin(const char *hostname, uint16_t http_port)
 {
     if (!hostname || hostname[0] == '\0')
         return false;
@@ -28,7 +28,7 @@ bool det_mdns_begin(const char *hostname, uint16_t http_port)
     return true;
 }
 
-bool det_mdns_txt(const char *key, const char *value)
+bool dws_mdns_txt(const char *key, const char *value)
 {
     if (!key || !value)
         return false;
@@ -36,7 +36,7 @@ bool det_mdns_txt(const char *key, const char *value)
     return mdns_service_txt_item_set("_http", "_tcp", key, value) == ESP_OK;
 }
 
-bool det_mdns_add_service(const char *service_type, const char *proto, uint16_t port)
+bool dws_mdns_add_service(const char *service_type, const char *proto, uint16_t port)
 {
     if (!service_type || !proto)
         return false;
@@ -46,11 +46,11 @@ bool det_mdns_add_service(const char *service_type, const char *proto, uint16_t 
 
 #else
 
-bool det_mdns_begin(const char *hostname, uint16_t http_port)
+bool dws_mdns_begin(const char *hostname, uint16_t http_port)
 {
     (void)hostname;
     (void)http_port;
     return false; // mDNS disabled at compile time (or non-Arduino build)
 }
 
-#endif // DETWS_ENABLE_MDNS && ARDUINO
+#endif // DWS_ENABLE_MDNS && ARDUINO

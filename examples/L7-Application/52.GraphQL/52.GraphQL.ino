@@ -3,7 +3,7 @@
 
 /**
  * @file 52.GraphQL.ino
- * @brief GraphQL query endpoint (DETWS_ENABLE_GRAPHQL).
+ * @brief GraphQL query endpoint (DWS_ENABLE_GRAPHQL).
  *
  * POST a GraphQL query to /graphql; the device resolves the selected fields and
  * returns a `{"data":{...}}` response shaped exactly by the query - one endpoint,
@@ -19,11 +19,11 @@
  * are visible to the resolver for that field and its descendants.
  *
  * NOTE: enable it for the whole build. In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_GRAPHQL=1
+ *     build_flags = -DDWS_ENABLE_GRAPHQL=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_GRAPHQL 1
+#define DWS_ENABLE_GRAPHQL 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -33,25 +33,25 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *out)
 {
     if (!strcmp(path, "heap"))
     {
-        out->type = DetwsGqlType::DETWS_GQL_INT;
+        out->type = DetwsGqlType::DWS_GQL_INT;
         out->i = ESP.getFreeHeap();
         return true;
     }
     if (!strcmp(path, "uptime"))
     {
-        out->type = DetwsGqlType::DETWS_GQL_INT;
+        out->type = DetwsGqlType::DWS_GQL_INT;
         out->i = millis() / 1000;
         return true;
     }
     if (!strcmp(path, "net.rssi"))
     {
-        out->type = DetwsGqlType::DETWS_GQL_INT;
+        out->type = DetwsGqlType::DWS_GQL_INT;
         out->i = WiFi.RSSI();
         return true;
     }
@@ -59,17 +59,17 @@ static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *
     {
         static char ip[20];
         WiFi.localIP().toString().toCharArray(ip, sizeof(ip));
-        out->type = DetwsGqlType::DETWS_GQL_STR;
+        out->type = DetwsGqlType::DWS_GQL_STR;
         out->s = ip;
         return true;
     }
     if (!strcmp(path, "greet"))
     {
         const char *who = "?";
-        detws_gql_arg_str(args, "name", &who);
+        dws_gql_arg_str(args, "name", &who);
         static char b[64];
         snprintf(b, sizeof(b), "hi %s", who);
-        out->type = DetwsGqlType::DETWS_GQL_STR;
+        out->type = DetwsGqlType::DWS_GQL_STR;
         out->s = b;
         return true;
     }
@@ -88,10 +88,10 @@ void setup()
 
     server.on("/graphql", HttpMethod::HTTP_POST, [](uint8_t id, HttpReq *req) {
         char body[512];
-        DetwsGqlResult rc = detws_graphql_execute((const char *)req->body, req->body_len, resolver, body, sizeof(body));
+        DetwsGqlResult rc = dws_graphql_execute((const char *)req->body, req->body_len, resolver, body, sizeof(body));
         // The engine writes {"data":...} on success or {"errors":...} on a parse
         // error; 200 with the GraphQL error envelope is the conventional reply.
-        server.send(id, rc == DetwsGqlResult::DETWS_GQL_OK ? 200 : 400, "application/json", body);
+        server.send(id, rc == DetwsGqlResult::DWS_GQL_OK ? 200 : 400, "application/json", body);
     });
 
     server.begin(80);

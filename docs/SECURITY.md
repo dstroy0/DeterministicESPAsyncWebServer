@@ -19,12 +19,12 @@ with caveats, ❌ = a real weakness to be aware of.
 
 | Area                   | Why it's solid                                                                                                                                                                                                                                                 |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Deterministic memory   | Zero heap after [`begin()`](@ref DetWebServer::begin); every buffer is fixed-size and bounds-checked. No use-after-free, no fragmentation, no allocation failure paths.                                                                                        |
+| Deterministic memory   | Zero heap after [`begin()`](@ref DWS::begin); every buffer is fixed-size and bounds-checked. No use-after-free, no fragmentation, no allocation failure paths.                                                                                        |
 | HTTP input validation  | RFC 7230 parser validates every byte; rejects malformed method/path/headers, enforces Host and Content-Length, refuses Transfer-Encoding (no request smuggling surface).                                                                                       |
 | WebSocket framing      | Enforces client masking, reserved-opcode/RSV checks, control-frame size and fragmentation rules.                                                                                                                                                               |
 | SSH crypto correctness | SHA-256/HMAC/AES-CTR/DH validated against NIST/RFC vectors; RSA verification validated against an openssl KAT and native RSA signing against a sign→verify round-trip with a real 2048-bit private exponent. MAC-verify-before-use; constant-time MAC compare. |
 | Secret hygiene         | RSA private key never in static memory (NVS→stack→wipe); session keys, DH secrets, and scratch buffers volatile-wiped after use; key pools are separate linker symbols.                                                                                        |
-| SSH hardening option   | `DETWS_SSH_ALLOW_PASSWORD=0` compiles password auth out entirely for publickey-only deployments.                                                                                                                                                               |
+| SSH hardening option   | `DWS_SSH_ALLOW_PASSWORD=0` compiles password auth out entirely for publickey-only deployments.                                                                                                                                                               |
 
 </details>
 
@@ -35,18 +35,18 @@ with caveats, ❌ = a real weakness to be aware of.
 
 | Area                        | Caveat                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Transport encryption (HTTP) | Opt-in **HTTPS** ([`DETWS_ENABLE_TLS`](@ref DETWS_ENABLE_TLS)) via mbedTLS on a static memory pool - TLS 1.2+/`ECDHE-ECDSA-AES256-GCM-SHA384`, zero-heap (§6). Default off (plain HTTP). Optional **mutual TLS** ([`DETWS_ENABLE_MTLS`](@ref DETWS_ENABLE_MTLS)) adds client-certificate authentication (handshake requires a cert chaining to a configured CA), and `wss://` + TLS-SSE run encrypted over the same TLS record layer. Optional **session resumption** ([`DETWS_ENABLE_TLS_RESUMPTION`](@ref DETWS_ENABLE_TLS_RESUMPTION)) via RFC 5077 tickets gives returning clients an abbreviated handshake. Caveat: one connection at a time (`MAX_TLS_CONNS`=1). On a trusted LAN plain HTTP is fine; the SSH layer is also an encrypted channel. |
+| Transport encryption (HTTP) | Opt-in **HTTPS** ([`DWS_ENABLE_TLS`](@ref DWS_ENABLE_TLS)) via mbedTLS on a static memory pool - TLS 1.2+/`ECDHE-ECDSA-AES256-GCM-SHA384`, zero-heap (§6). Default off (plain HTTP). Optional **mutual TLS** ([`DWS_ENABLE_MTLS`](@ref DWS_ENABLE_MTLS)) adds client-certificate authentication (handshake requires a cert chaining to a configured CA), and `wss://` + TLS-SSE run encrypted over the same TLS record layer. Optional **session resumption** ([`DWS_ENABLE_TLS_RESUMPTION`](@ref DWS_ENABLE_TLS_RESUMPTION)) via RFC 5077 tickets gives returning clients an abbreviated handshake. Caveat: one connection at a time (`MAX_TLS_CONNS`=1). On a trusted LAN plain HTTP is fine; the SSH layer is also an encrypted channel. |
 | SSH timing side-channels    | The native software bignum/AES/RSA paths are **not constant-time**, but they are **compile-excluded from firmware**: the software Montgomery cluster is under `#ifndef ARDUINO` (`ssh_bignum.cpp`) and the software AES / native RSA modexp live in the `#else` of an `#ifdef ARDUINO` (`ssh_aes256ctr.cpp`, `ssh_rsa.cpp`). On ESP32 only the hardware/mbedTLS paths are compiled and run; the software paths exist solely for host testing. |
 | `Date` response header      | Not emitted (the device usually has no wall clock). RFC 7231 §7.1.1.2 permits this for clock-less servers.                                                                                                                                                                                                                                                                                                                                    |
 | Single SSH channel          | One `session` channel per connection; no port-forwarding/X11. Smaller attack surface, but a functional limit.                                                                                                                                                                                                                                                                                                                                 |
-| Diagnostic endpoint         | [`DETWS_ENABLE_DIAG`](@ref DETWS_ENABLE_DIAG) leaks build configuration; default-off and must stay off in production.                                                                                                                                                                                                                                                                                                                         |
-| SNMP agent (v1/v2c)         | Opt-in ([`DETWS_ENABLE_SNMP`](@ref DETWS_ENABLE_SNMP), default off). Community-string access only - the community is sent **in cleartext** and is not real authentication (§10). Read-only by default; `Set` is refused unless a separate read-write community is configured. Run only on a trusted/management network and rename the default `public`/`private` communities. For authenticated + encrypted access, enable **SNMPv3 / USM** ([`DETWS_ENABLE_SNMP_V3`](@ref DETWS_ENABLE_SNMP_V3): HMAC-SHA-256 auth + AES-128 privacy). |
-| JWT bearer auth             | Opt-in ([`DETWS_ENABLE_JWT`](@ref DETWS_ENABLE_JWT), default off). HS256 only - a single shared secret both signs and verifies, so any holder of the secret can mint tokens; keep it server-side. Signature compare is constant-time. The verifier checks the signature and can read integer claims (e.g. `exp`), but does not itself enforce expiry - gate on the claim in your handler. Send tokens only over HTTPS (a bearer token is a password). |
-| Outbound HTTPS client       | Opt-in ([`DETWS_ENABLE_HTTP_CLIENT_TLS`](@ref DETWS_ENABLE_HTTP_CLIENT_TLS), default off). **Encrypt-only by default** (no trust store): resists passive eavesdropping but not an active MITM. Authenticate the peer by installing a CA trust anchor (`http_client_set_ca()`) - verifies the chain + hostname - and/or a SHA-256 certificate pin (`http_client_set_pin()`); a failure aborts the connection. Without one, treat secrets you send as MITM-exposed. |
-| MQTT client                 | Opt-in ([`DETWS_ENABLE_MQTT`](@ref DETWS_ENABLE_MQTT), default off). Plain MQTT sends the broker username/password and all payloads **in cleartext** - use it only on a trusted segment. For an untrusted network use `mqtts://` ([`DETWS_ENABLE_MQTT_TLS`](@ref DETWS_ENABLE_MQTT_TLS)), which shares the client-TLS trust model (encrypt-only by default; install a CA / cert pin via `det_tls_client_set_ca` / `det_tls_client_set_pin` to authenticate the broker). |
-| WebDAV share                | Opt-in ([`DETWS_ENABLE_WEBDAV`](@ref DETWS_ENABLE_WEBDAV), default off). A `dav()` mount exposes a **read/write** view of the filesystem (PUT/DELETE/MKCOL/COPY/MOVE) with **no authentication of its own** - an unprotected mount lets anyone on the network read, overwrite, and delete files. Gate the mount with per-route auth and serve it over HTTPS, and front it with the accept throttles. Locks are **advisory** (a token is issued but not enforced), so they do not prevent concurrent writers. The `..` traversal guard keeps requests inside the mount root. |
-| Modbus TCP slave            | Opt-in ([`DETWS_ENABLE_MODBUS`](@ref DETWS_ENABLE_MODBUS), default off). Modbus has **no authentication or encryption** - any client that reaches port 502 can read and write the entire data model (coils and holding registers). This is inherent to the protocol. Run it only on an isolated/trusted control network (or behind a VPN), front it with the per-IP accept throttle, and keep safety-critical logic from depending solely on client-supplied register values. Reads/writes are bounds-checked against the configured table sizes (out-of-range -> exception 0x02). |
-| OPC UA Binary server        | Opt-in ([`DETWS_ENABLE_OPCUA`](@ref DETWS_ENABLE_OPCUA), default off). Runs **SecurityPolicy None** with an Anonymous user identity - messages on TCP/4840 are neither signed nor encrypted, so any client that reaches the port can read/write/browse whatever the registered resolvers expose (Sign / SignAndEncrypt are not implemented). Run it only on an isolated/trusted control network (or behind a VPN), front it with the per-IP accept throttle, and gate writes in the write resolver (return a Bad StatusCode to refuse). |
+| Diagnostic endpoint         | [`DWS_ENABLE_DIAG`](@ref DWS_ENABLE_DIAG) leaks build configuration; default-off and must stay off in production.                                                                                                                                                                                                                                                                                                                         |
+| SNMP agent (v1/v2c)         | Opt-in ([`DWS_ENABLE_SNMP`](@ref DWS_ENABLE_SNMP), default off). Community-string access only - the community is sent **in cleartext** and is not real authentication (§10). Read-only by default; `Set` is refused unless a separate read-write community is configured. Run only on a trusted/management network and rename the default `public`/`private` communities. For authenticated + encrypted access, enable **SNMPv3 / USM** ([`DWS_ENABLE_SNMP_V3`](@ref DWS_ENABLE_SNMP_V3): HMAC-SHA-256 auth + AES-128 privacy). |
+| JWT bearer auth             | Opt-in ([`DWS_ENABLE_JWT`](@ref DWS_ENABLE_JWT), default off). HS256 only - a single shared secret both signs and verifies, so any holder of the secret can mint tokens; keep it server-side. Signature compare is constant-time. The verifier checks the signature and can read integer claims (e.g. `exp`), but does not itself enforce expiry - gate on the claim in your handler. Send tokens only over HTTPS (a bearer token is a password). |
+| Outbound HTTPS client       | Opt-in ([`DWS_ENABLE_HTTP_CLIENT_TLS`](@ref DWS_ENABLE_HTTP_CLIENT_TLS), default off). **Encrypt-only by default** (no trust store): resists passive eavesdropping but not an active MITM. Authenticate the peer by installing a CA trust anchor (`http_client_set_ca()`) - verifies the chain + hostname - and/or a SHA-256 certificate pin (`http_client_set_pin()`); a failure aborts the connection. Without one, treat secrets you send as MITM-exposed. |
+| MQTT client                 | Opt-in ([`DWS_ENABLE_MQTT`](@ref DWS_ENABLE_MQTT), default off). Plain MQTT sends the broker username/password and all payloads **in cleartext** - use it only on a trusted segment. For an untrusted network use `mqtts://` ([`DWS_ENABLE_MQTT_TLS`](@ref DWS_ENABLE_MQTT_TLS)), which shares the client-TLS trust model (encrypt-only by default; install a CA / cert pin via `dws_tls_client_set_ca` / `dws_tls_client_set_pin` to authenticate the broker). |
+| WebDAV share                | Opt-in ([`DWS_ENABLE_WEBDAV`](@ref DWS_ENABLE_WEBDAV), default off). A `dav()` mount exposes a **read/write** view of the filesystem (PUT/DELETE/MKCOL/COPY/MOVE) with **no authentication of its own** - an unprotected mount lets anyone on the network read, overwrite, and delete files. Gate the mount with per-route auth and serve it over HTTPS, and front it with the accept throttles. Locks are **advisory** (a token is issued but not enforced), so they do not prevent concurrent writers. The `..` traversal guard keeps requests inside the mount root. |
+| Modbus TCP slave            | Opt-in ([`DWS_ENABLE_MODBUS`](@ref DWS_ENABLE_MODBUS), default off). Modbus has **no authentication or encryption** - any client that reaches port 502 can read and write the entire data model (coils and holding registers). This is inherent to the protocol. Run it only on an isolated/trusted control network (or behind a VPN), front it with the per-IP accept throttle, and keep safety-critical logic from depending solely on client-supplied register values. Reads/writes are bounds-checked against the configured table sizes (out-of-range -> exception 0x02). |
+| OPC UA Binary server        | Opt-in ([`DWS_ENABLE_OPCUA`](@ref DWS_ENABLE_OPCUA), default off). Runs **SecurityPolicy None** with an Anonymous user identity - messages on TCP/4840 are neither signed nor encrypted, so any client that reaches the port can read/write/browse whatever the registered resolvers expose (Sign / SignAndEncrypt are not implemented). Run it only on an isolated/trusted control network (or behind a VPN), front it with the per-IP accept throttle, and gate writes in the write resolver (return a Bad StatusCode to refuse). |
 
 </details>
 
@@ -57,7 +57,7 @@ with caveats, ❌ = a real weakness to be aware of.
 
 | Area                          | Status                                                                                                                                                                                                                                                                                                                                                                       |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Connection-rate throttling    | SSH bounds failed auth attempts per connection ([`SSH_MAX_AUTH_ATTEMPTS`](@ref SSH_MAX_AUTH_ATTEMPTS), then [`SSH_MSG_DISCONNECT`](@ref SSH_MSG_DISCONNECT)); HTTP closes the socket on every 401 (one guess per connection). Across connections, two opt-in accept-path throttles bound reconnect/brute-force churn: a global fixed-window limit ([`DETWS_ENABLE_ACCEPT_THROTTLE`](@ref DETWS_ENABLE_ACCEPT_THROTTLE)) and a per-source-IPv4 fixed-window limit ([`DETWS_ENABLE_PER_IP_THROTTLE`](@ref DETWS_ENABLE_PER_IP_THROTTLE), a bounded BSS bucket table - so one noisy client is throttled without affecting others). Both are best-effort and IPv4-keyed; an attacker spreading across many source addresses can still churn the bounded pool, so also filter at the network layer. |
+| Connection-rate throttling    | SSH bounds failed auth attempts per connection ([`SSH_MAX_AUTH_ATTEMPTS`](@ref SSH_MAX_AUTH_ATTEMPTS), then [`SSH_MSG_DISCONNECT`](@ref SSH_MSG_DISCONNECT)); HTTP closes the socket on every 401 (one guess per connection). Across connections, two opt-in accept-path throttles bound reconnect/brute-force churn: a global fixed-window limit ([`DWS_ENABLE_ACCEPT_THROTTLE`](@ref DWS_ENABLE_ACCEPT_THROTTLE)) and a per-source-IPv4 fixed-window limit ([`DWS_ENABLE_PER_IP_THROTTLE`](@ref DWS_ENABLE_PER_IP_THROTTLE), a bounded BSS bucket table - so one noisy client is throttled without affecting others). Both are best-effort and IPv4-keyed; an attacker spreading across many source addresses can still churn the bounded pool, so also filter at the network layer. |
 | Replay/DoS on the accept path | A flood of connections exhausts the fixed pool (by design - no heap), returning 503; the accept-path throttles above reduce churn but there is no allow-list or SYN-cookie equivalent.                                                                                                                                                                                                                                        |
 | Formal audit                  | The crypto and protocol code is vector-tested and reviewed, but has **not** had an independent security audit. Treat accordingly for high-value deployments.                                                                                                                                                                                                                 |
 
@@ -318,7 +318,7 @@ read exploit.
 
 ## 6. TLS / Transport Encryption (HTTPS) {#tls-security}
 
-HTTPS is available as an opt-in layer (`DETWS_ENABLE_TLS`, default off) built on
+HTTPS is available as an opt-in layer (`DWS_ENABLE_TLS`, default off) built on
 mbedTLS, designed so it does **not** break the library's zero-heap / determinism
 guarantee. With it disabled, no TLS code is compiled and the build is unchanged.
 
@@ -326,12 +326,12 @@ guarantee. With it disabled, no TLS code is compiled and the build is unchanged.
 
 mbedTLS normally heap-allocates per connection (TLS context, ~16 KB IN + 16 KB
 OUT record buffers, handshake temporaries). Here every mbedTLS allocation is
-redirected to a **fixed BSS arena** (`DETWS_TLS_ARENA_SIZE`) via a custom
+redirected to a **fixed BSS arena** (`DWS_TLS_ARENA_SIZE`) via a custom
 first-fit allocator installed with `mbedtls_platform_set_calloc_free()` - so the
 system heap is never touched after `begin()`. The arena is sized for the
 worst-case handshake; if it is ever too small the handshake **fails cleanly**
 (allocation returns NULL → connection dropped), never corrupting memory. The
-live high-water mark is queryable via [`det_tls_arena_peak()`](@ref det_tls_arena_peak).
+live high-water mark is queryable via [`dws_tls_arena_peak()`](@ref dws_tls_arena_peak).
 Measured peak for one ECDSA P-256 connection on Arduino-esp32 (16 KB IN/OUT
 records) is ~41.5 KB; the default arena is 48 KB.
 
@@ -361,13 +361,13 @@ records) is ~41.5 KB; the default arena is 48 KB.
   shrinking the IDF record sizes (`CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN`, an
   ESP-IDF-framework build).
 - **Client-certificate auth is optional, off by default** - enable mutual TLS
-  with [`DETWS_ENABLE_MTLS`](@ref DETWS_ENABLE_MTLS) and
-  [`tls_require_client_cert()`](@ref DetWebServer::tls_require_client_cert): the
+  with [`DWS_ENABLE_MTLS`](@ref DWS_ENABLE_MTLS) and
+  [`tls_require_client_cert()`](@ref DWS::tls_require_client_cert): the
   handshake then requires a client cert chaining to the configured CA and exposes
   the verified peer subject DN to handlers. Without it the server does not
   authenticate clients via TLS (use HTTP Basic/Digest/JWT auth for client
   identity instead).
-- **Session resumption is optional** ([`DETWS_ENABLE_TLS_RESUMPTION`](@ref DETWS_ENABLE_TLS_RESUMPTION), default off, TLS 1.2 / RFC 5077 tickets). When on, a returning client resumes with an abbreviated handshake; the session is sealed into the client's ticket (a stateless server), so no per-session cache grows. Security trade-off: the ticket-sealing key (AES-256-GCM, in the static arena) protects every outstanding ticket, so its compromise would expose those resumed sessions - it rotates automatically on the [`DETWS_TLS_TICKET_LIFETIME_S`](@ref DETWS_TLS_TICKET_LIFETIME_S) schedule (default 1 day) to bound that window. Full handshakes still get per-connection ECDHE forward secrecy. Leave it off if ticket-key compromise is in your threat model.
+- **Session resumption is optional** ([`DWS_ENABLE_TLS_RESUMPTION`](@ref DWS_ENABLE_TLS_RESUMPTION), default off, TLS 1.2 / RFC 5077 tickets). When on, a returning client resumes with an abbreviated handshake; the session is sealed into the client's ticket (a stateless server), so no per-session cache grows. Security trade-off: the ticket-sealing key (AES-256-GCM, in the static arena) protects every outstanding ticket, so its compromise would expose those resumed sessions - it rotates automatically on the [`DWS_TLS_TICKET_LIFETIME_S`](@ref DWS_TLS_TICKET_LIFETIME_S) schedule (default 1 day) to bound that window. Full handshakes still get per-connection ECDHE forward secrecy. Leave it off if ticket-key compromise is in your threat model.
 - **`wss://` and TLS Server-Sent Events run over the record layer** when TLS is
   enabled: a WebSocket/SSE upgrade on a TLS connection is encrypted frame-by-frame
   (transparent to handler code), not rejected. Plain `ws://`/SSE on a non-TLS
@@ -868,12 +868,12 @@ environment.
 
 **File:** [dwserver.cpp](@ref dwserver.cpp)
 
-The optional `DETWS_ENABLE_DIAG` build flag enables a JSON endpoint at `/diag`
+The optional `DWS_ENABLE_DIAG` build flag enables a JSON endpoint at `/diag`
 that returns all active feature flags and configuration constants.
 
 **This endpoint exposes build configuration details that could assist an
 attacker in fingerprinting the firmware and calculating buffer sizes.** It is
-disabled by default (`DETWS_ENABLE_DIAG = 0`). Do not enable it in production.
+disabled by default (`DWS_ENABLE_DIAG = 0`). Do not enable it in production.
 
 If enabled during development, protect it with HTTP Basic Auth:
 
@@ -894,23 +894,23 @@ server.on("/diag", HTTP_GET, [](uint8_t slot, HttpReq *req) {
 | HTTP Basic Auth is not constant-time            | Timing oracle risk if measurable from network         | Use TLS or SSH tunnel                                                   |
 | Software AES/SHA paths are not constant-time    | Test-only paths; not relevant in production           | Production uses hardware AES (mbedTLS)                                  |
 | Outbound HTTPS client is encrypt-only by default | Without a CA/pin the client does not authenticate the peer (active MITM exposed) | Install a CA (`http_client_set_ca`) and/or SHA-256 cert pin (`http_client_set_pin`); treat secrets as MITM-exposed otherwise |
-| No HSTS, CSP, or other HTTP security headers    | Application must add headers manually                 | Call [`send()`](@ref DetWebServer::send) with appropriate headers       |
+| No HSTS, CSP, or other HTTP security headers    | Application must add headers manually                 | Call [`send()`](@ref DWS::send) with appropriate headers       |
 | WebSocket Origin not validated                  | Cross-origin WebSocket requests accepted              | Check Origin in ws_connect handler                                      |
 | NVS not encrypted by default                    | RSA private key readable from flash                   | Enable `CONFIG_NVS_ENCRYPTION`                                          |
-| SNMP v1/v2c community is cleartext              | Anyone who can sniff UDP/161 learns the community      | Trusted/management VLAN; rename communities; enable SNMPv3 USM authPriv (`DETWS_ENABLE_SNMP_V3`), or tunnel |
+| SNMP v1/v2c community is cleartext              | Anyone who can sniff UDP/161 learns the community      | Trusted/management VLAN; rename communities; enable SNMPv3 USM authPriv (`DWS_ENABLE_SNMP_V3`), or tunnel |
 
 ---
 
 ## 10. SNMP Agent Security {#snmp-security}
 
-The optional SNMP agent ([`DETWS_ENABLE_SNMP`](@ref DETWS_ENABLE_SNMP), default
+The optional SNMP agent ([`DWS_ENABLE_SNMP`](@ref DWS_ENABLE_SNMP), default
 off) implements **SNMP v1 and v2c**, whose security model is the community
 string - effectively a shared password sent **in the clear** in every datagram.
 It is convenient for monitoring on a trusted network but is **not** an
 authentication or confidentiality mechanism.
 
 For authenticated and encrypted access, enable **SNMPv3 / USM**
-([`DETWS_ENABLE_SNMP_V3`](@ref DETWS_ENABLE_SNMP_V3), default off): a single
+([`DWS_ENABLE_SNMP_V3`](@ref DWS_ENABLE_SNMP_V3), default off): a single
 authPriv user with `usmHMAC192SHA256` authentication (HMAC-SHA-256) and
 `usmAesCfb128` privacy (AES-128-CFB), engine discovery, and the RFC 3414
 timeliness window against replay. The agent rejects unauthenticated non-discovery
@@ -960,7 +960,7 @@ Use this checklist before deploying to a production environment.
 
 ### General {#general-hardening}
 
-- [ ] Disable `DETWS_ENABLE_DIAG` (default is off; confirm `#define DETWS_ENABLE_DIAG 0`)
+- [ ] Disable `DWS_ENABLE_DIAG` (default is off; confirm `#define DWS_ENABLE_DIAG 0`)
 - [ ] Set [`CONN_TIMEOUT_MS`](@ref CONN_TIMEOUT_MS) appropriately (default 5000 ms) to limit slow-loris attacks
 - [ ] Configure [`MAX_CONNS`](@ref MAX_CONNS) no higher than necessary to limit resource exhaustion
 - [ ] Review all route handlers for unchecked user input (query params, body content, header values)
@@ -983,11 +983,11 @@ Use this checklist before deploying to a production environment.
 
 ### SNMP {#snmp-hardening}
 
-- [ ] SNMP is left disabled unless needed ([`DETWS_ENABLE_SNMP`](@ref DETWS_ENABLE_SNMP) default off)
+- [ ] SNMP is left disabled unless needed ([`DWS_ENABLE_SNMP`](@ref DWS_ENABLE_SNMP) default off)
 - [ ] Default communities `public` / `private` are renamed to non-guessable values
 - [ ] No read-write community is configured unless `Set` is actually required (read-only otherwise)
 - [ ] UDP/161 is firewalled to the management host / VLAN (v1/v2c communities are cleartext)
-- [ ] For authenticated/encrypted access use SNMPv3 authPriv ([`DETWS_ENABLE_SNMP_V3`](@ref DETWS_ENABLE_SNMP_V3)); v1/v2c offer no encryption or real authentication
+- [ ] For authenticated/encrypted access use SNMPv3 authPriv ([`DWS_ENABLE_SNMP_V3`](@ref DWS_ENABLE_SNMP_V3)); v1/v2c offer no encryption or real authentication
 - [ ] SNMPv3: each device has a unique engine ID and persists/increments `engineBoots` in NVS; auth/priv passwords are >= 8 chars and not the defaults
 
 ### Build Hardening {#build-hardening}

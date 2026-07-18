@@ -244,7 +244,7 @@ void test_reply_buffer_overflow()
 {
     std::string huge;
     while (huge.size() < 600)
-        huge += "250-continuation\r\n"; // > DETWS_SMTP_REPLY_MAX, no final line
+        huge += "250-continuation\r\n"; // > DWS_SMTP_REPLY_MAX, no final line
     TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_IO, dialogue({huge}, base_cfg(), base_msg()));
 }
 
@@ -274,7 +274,7 @@ void test_body_send_fails()
 void test_auth_secret_too_long()
 {
     SmtpConfig c = base_cfg();
-    std::string longuser(400, 'u'); // base64 grows it past DETWS_SMTP_LINE_MAX
+    std::string longuser(400, 'u'); // base64 grows it past DWS_SMTP_LINE_MAX
     c.user = longuser.c_str();
     c.pass = "pw";
     TEST_ASSERT_EQUAL_INT(SmtpResult::SMTP_ERR_OVERFLOW,
@@ -326,7 +326,7 @@ void test_protocol_error_at_each_step()
 }
 
 // Each outgoing command line that is built with snprintf overflows when its variable
-// field (helo / from / to) is longer than DETWS_SMTP_LINE_MAX.
+// field (helo / from / to) is longer than DWS_SMTP_LINE_MAX.
 void test_command_line_overflows()
 {
     std::string big(300, 'z');

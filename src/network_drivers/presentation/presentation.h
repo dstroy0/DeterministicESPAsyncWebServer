@@ -6,7 +6,7 @@
  * @brief Layer 6 (Presentation) - wires the transport ring buffer to the HTTP parser.
  *
  * This layer owns two responsibilities:
- *   1. Drain bytes via the transport read API (det_conn_available / det_conn_read_byte)
+ *   1. Drain bytes via the transport read API (dws_conn_available / dws_conn_read_byte)
  *      and feed them into the HTTP parser one at a time - the ring is transport's.
  *   2. Expose slot-indexed `http_reset()` and `http_parse()` helpers that the
  *      session layer (server_tick) and application layer (handle) call by slot ID.
@@ -38,7 +38,7 @@
  */
 void http_reset(uint8_t slot_id);
 
-#if DETWS_ENABLE_KEEPALIVE
+#if DWS_ENABLE_KEEPALIVE
 /**
  * @brief Requests served on each connection slot (HTTP keep-alive fairness bound).
  *
@@ -90,14 +90,14 @@ const struct ProtoHandler *http_proto_handler(void);
 /**
  * @brief Install the HTTP per-slot poll pump (the routing core's instance-bound `on_poll`).
  *
- * HTTP is the one protocol whose poll needs the `DetWebServer` instance (routing), so the
+ * HTTP is the one protocol whose poll needs the `DWS` instance (routing), so the
  * application layer installs its pump here at `begin()` - the TX-seam (`resp_sink`) counterpart
  * for the poll direction. With it set, HTTP plugs into the uniform `ProtoHandler::on_poll` seam
  * exactly like every other protocol, so the L5/worker dispatch loop has no HTTP special case.
  */
 void http_proto_set_poll(void (*fn)(uint8_t slot));
 
-#if DETWS_ENABLE_EDGE_CACHE
+#if DWS_ENABLE_EDGE_CACHE
 /**
  * @brief Install the edge-cache per-slot fetch pump (defined in dwserver.cpp, called first in
  *        http_poll_slot).
@@ -105,9 +105,9 @@ void http_proto_set_poll(void (*fn)(uint8_t slot));
  * A cache miss / stale-entry revalidation suspends the client request and drives a non-blocking origin
  * fetch from the slot's poll. @p fn returns true while it is servicing an in-flight fetch for the slot,
  * so the HTTP pipeline is skipped until the fetch completes and starts the cached response. Nullable
- * (unset = no-op). Installed by det_edge_cache_enable(); see services/edge_cache/edge_cache_proxy.
+ * (unset = no-op). Installed by dws_edge_cache_enable(); see services/edge_cache/edge_cache_proxy.
  */
-void detws_http_set_edge_poll(bool (*fn)(uint8_t slot));
+void dws_http_set_edge_poll(bool (*fn)(uint8_t slot));
 #endif
 
 #endif

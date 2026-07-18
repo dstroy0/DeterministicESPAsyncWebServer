@@ -3,23 +3,23 @@
 
 /**
  * @file 44.OtaRollback.ino
- * @brief OTA rollback protection / soft-brick safeguard (DETWS_ENABLE_OTA_ROLLBACK).
+ * @brief OTA rollback protection / soft-brick safeguard (DWS_ENABLE_OTA_ROLLBACK).
  *
  * After an OTA update the new image boots PENDING_VERIFY. Each loop this runs a
  * self-test (here: WiFi up + healthy heap) and ticks the rollback service: a
  * passing self-test commits the image, a failing one (or no confirm within
- * DETWS_OTA_CONFIRM_WINDOW_MS) rolls back to the previous image - so a bad update
+ * DWS_OTA_CONFIRM_WINDOW_MS) rolls back to the previous image - so a bad update
  * self-heals instead of soft-bricking. GET /ota-state shows the current state.
  *
  * Requires the bootloader's app-rollback support
  * (CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE) to actually roll back.
  *
  * NOTE: enable it for the whole build. In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_OTA_ROLLBACK=1
+ *     build_flags = -DDWS_ENABLE_OTA_ROLLBACK=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_OTA_ROLLBACK 1
+#define DWS_ENABLE_OTA_ROLLBACK 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -29,7 +29,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static bool self_test()
 {
@@ -48,7 +48,7 @@ void setup()
 
     server.on("/ota-state", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
         char b[48];
-        snprintf(b, sizeof(b), "{\"img_state\":%u}", detws_ota_img_state());
+        snprintf(b, sizeof(b), "{\"img_state\":%u}", dws_ota_img_state());
         server.send(id, 200, "application/json", b);
     });
     server.begin(80);
@@ -61,8 +61,8 @@ void loop()
     static bool done = false;
     if (!done)
     {
-        DetwsOtaAction a = detws_ota_rollback_tick(self_test());
-        if (a == DetwsOtaAction::DETWS_OTA_COMMIT)
+        DetwsOtaAction a = dws_ota_rollback_tick(self_test());
+        if (a == DetwsOtaAction::DWS_OTA_COMMIT)
         {
             Serial.println("[ota] image committed");
             done = true;

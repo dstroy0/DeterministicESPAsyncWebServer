@@ -147,7 +147,7 @@ struct WsConn
     uint32_t msg_len;         ///< Bytes assembled so far across all fragments.
     uint8_t ctl_buf[125 + 1]; ///< Control-frame payload (ping/pong/close), null-terminated.
 
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
     bool pmd;            ///< permessage-deflate negotiated on this connection (RFC 7692).
     bool msg_compressed; ///< Current data message arrived compressed (RSV1 on its first frame).
 #endif
@@ -163,7 +163,7 @@ extern WsConn ws_pool[MAX_WS_CONNS];
 /**
  * @brief Initialize all WebSocket pool slots to inactive.
  *
- * Called once from DetWebServer::begin().
+ * Called once from DWS::begin().
  */
 void ws_init();
 
@@ -234,8 +234,8 @@ void ws_reset_frame(WsConn *ws);
  * @brief Send a WebSocket frame to the client.
  *
  * Builds the header (no masking -- server-to-client frames are never masked)
- * and hands both to the transport layer (det_conn_send()).  The caller is
- * responsible for flushing afterwards (det_conn_flush()).
+ * and hands both to the transport layer (dws_conn_send()).  The caller is
+ * responsible for flushing afterwards (dws_conn_flush()).
  *
  * @param ws       WebSocket connection.
  * @param opcode   Frame opcode (WsOpcode::WS_OP_TEXT, WsOpcode::WS_OP_BINARY, WsOpcode::WS_OP_PONG, etc.).
@@ -248,8 +248,8 @@ bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t
 /**
  * @brief Set the outbound fragmentation size (RFC 6455 sec 5.4), in payload bytes; 0 = off.
  *
- * A runtime override of DETWS_WS_FRAG_SIZE. When >0, a data message longer than @p bytes is split into
- * that-sized frames by ws_send_frame() (see DETWS_WS_FRAG_SIZE). Applies to all connections.
+ * A runtime override of DWS_WS_FRAG_SIZE. When >0, a data message longer than @p bytes is split into
+ * that-sized frames by ws_send_frame() (see DWS_WS_FRAG_SIZE). Applies to all connections.
  */
 void ws_set_frag_size(uint16_t bytes);
 

@@ -8,7 +8,7 @@
 
 #include "services/ble_gatt/ble_gatt.h"
 
-#if DETWS_ENABLE_BLE_GATT
+#if DWS_ENABLE_BLE_GATT
 
 #include <string.h>
 
@@ -120,13 +120,13 @@ bool att_parse(const uint8_t *pdu, size_t len, AttPdu *out)
 
 namespace
 {
-void put_hex16(DetSb *b, uint16_t v)
+void put_hex16(DWSSb *b, uint16_t v)
 {
     char t[7] = "0x0000";
     static const char *H = "0123456789abcdef";
     for (int i = 0; i < 4; i++)
         t[2 + i] = H[(v >> ((3 - i) * 4)) & 0xF];
-    det_sb_put(b, t);
+    dws_sb_put(b, t);
 }
 } // namespace
 
@@ -134,25 +134,25 @@ size_t gatt_char_json(const GattChar *chars, size_t n, char *out, size_t cap)
 {
     if (!out || cap == 0 || (n && !chars))
         return 0;
-    DetSb b = {out, cap, 0, true};
-    det_sb_put(&b, "[");
+    DWSSb b = {out, cap, 0, true};
+    dws_sb_put(&b, "[");
     for (size_t i = 0; i < n; i++)
     {
         if (i)
-            det_sb_put(&b, ",");
-        det_sb_put(&b, "{\"handle\":");
-        det_sb_u32(&b, chars[i].handle);
-        det_sb_put(&b, ",\"uuid\":\"");
+            dws_sb_put(&b, ",");
+        dws_sb_put(&b, "{\"handle\":");
+        dws_sb_u32(&b, chars[i].handle);
+        dws_sb_put(&b, ",\"uuid\":\"");
         put_hex16(&b, chars[i].uuid);
-        det_sb_put(&b, "\",\"props\":");
-        det_sb_u32(&b, chars[i].props);
-        det_sb_put(&b, "}");
+        dws_sb_put(&b, "\",\"props\":");
+        dws_sb_u32(&b, chars[i].props);
+        dws_sb_put(&b, "}");
     }
-    det_sb_put(&b, "]");
+    dws_sb_put(&b, "]");
     if (!b.ok)
         return 0;
     out[b.len] = '\0';
     return b.len;
 }
 
-#endif // DETWS_ENABLE_BLE_GATT
+#endif // DWS_ENABLE_BLE_GATT

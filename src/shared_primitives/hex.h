@@ -21,14 +21,14 @@
 #include <stdint.h>
 
 /** @brief Nibble 0..15 -> hex char (lowercase, or uppercase when @p upper). */
-inline char det_hex_digit(int nibble, bool upper = false)
+inline char dws_hex_digit(int nibble, bool upper = false)
 {
     const char *H = upper ? "0123456789ABCDEF" : "0123456789abcdef";
     return H[nibble & 0xF];
 }
 
 /** @brief Hex digit -> 0..15, or -1 if @p c is not a hex digit (either case). */
-inline int det_hex_val(char c)
+inline int dws_hex_val(char c)
 {
     if (c >= '0' && c <= '9')
         return c - '0';
@@ -43,7 +43,7 @@ inline int det_hex_val(char c)
  * @brief Encode @p n bytes as 2*n hex chars + NUL into @p out (needs cap >= 2*n+1).
  * @param upper  uppercase A-F when true, else lowercase a-f.
  */
-inline void det_hex_encode(const uint8_t *in, size_t n, char *out, bool upper = false)
+inline void dws_hex_encode(const uint8_t *in, size_t n, char *out, bool upper = false)
 {
     const char *H = upper ? "0123456789ABCDEF" : "0123456789abcdef";
     for (size_t i = 0; i < n; i++)
@@ -58,14 +58,14 @@ inline void det_hex_encode(const uint8_t *in, size_t n, char *out, bool upper = 
  * @brief Decode exactly @p hexlen hex chars into @p out (hexlen/2 bytes).
  * @return byte count, or -1 on odd length / overflow (> @p out_cap) / non-hex input.
  */
-inline int det_hex_decode(const char *in, size_t hexlen, uint8_t *out, size_t out_cap)
+inline int dws_hex_decode(const char *in, size_t hexlen, uint8_t *out, size_t out_cap)
 {
     if ((hexlen % 2) != 0 || (hexlen / 2) > out_cap)
         return -1;
     for (size_t i = 0; i < hexlen; i += 2)
     {
-        int hi = det_hex_val(in[i]);
-        int lo = det_hex_val(in[i + 1]);
+        int hi = dws_hex_val(in[i]);
+        int lo = dws_hex_val(in[i + 1]);
         if (hi < 0 || lo < 0)
             return -1;
         out[i / 2] = (uint8_t)((hi << 4) | lo);

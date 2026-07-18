@@ -8,7 +8,7 @@
 
 #include "services/s7comm/s7comm.h"
 
-#if DETWS_ENABLE_S7COMM
+#if DWS_ENABLE_S7COMM
 
 #include <string.h>
 
@@ -142,4 +142,4 @@ bool s7_read_next_item(const uint8_t *data, size_t data_len, size_t *offset, S7D
     return true;
 }
 
-#endif // DETWS_ENABLE_S7COMM
+#endif // DWS_ENABLE_S7COMM

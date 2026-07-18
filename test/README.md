@@ -75,261 +75,261 @@ The native test matrix has **242 environments**, one per feature, generated from
 
 | Environment | Feature flag(s) | Test suite(s) | Purpose |
 | :--- | :--- | :--- | :--- |
-| `native` | `ETWS_ENFORCE_HOST_HEADER=0` | `test_transport`, `test_presentation`, `test_session`, `test_http_parser`, `test_websocket`, `test_sse` | Layers 4-6: transport + session + presentation + standalone parser (no app layer) These suites predate the RFC 7230 Â§5.4 Host rule and feed bare HTTP/1.1 request lines to exercise parser mechanics; H... |
-| `native_accept_gate` | `ETWS_ENFORCE_HOST_HEADER=0`, `ETWS_ENABLE_ACCEPT_THROTTLE=1`, `ETWS_ENABLE_PER_IP_THROTTLE=1`, `ETWS_ENABLE_IP_ALLOWLIST=1`, `ETWS_ACCEPT_THROTTLE_MAX=3`, `ETWS_ACCEPT_THROTTLE_WINDOW_MS=1000`, `ETWS_PER_IP_THROTTLE_MAX=2`, `ETWS_PER_IP_THROTTLE_WINDOW_MS=1000`, `ETWS_PER_IP_THROTTLE_SLOTS=4`, `ETWS_IP_ALLOWLIST_SLOTS=4` | `test_accept_gate` | Accept-time connection gates with their flags ON (DETWS_ENABLE_ACCEPT_THROTTLE / PER_IP_THROTTLE / IP_ALLOWLIST): the global fixed-window throttle, the per-source-IP bucket table (independent budgets,... |
-| `native_ads` | `ETWS_ENABLE_ADS=1` | `test_ads` | Beckhoff ADS / AMS codec (services/ads): the AMS/TCP + AMS-header request builders (little-endian, target-before-source addressing, cmd id + state flags + cbData + invoke id) for Read/Write/ReadWrite/... |
-| `native_ads1115` | `ETWS_ENABLE_ADS1115=1` | `test_ads1115` | ADS1115 16-bit ADC codec (services/ads1115): building the 16-bit config word for a single-shot single-ended reading (channel MUX, gain, data rate, start/mode/comparator bits, with out-of-range fallbac... |
-| `native_amqp` | `ETWS_ENABLE_AMQP=1` | `test_amqp` | AMQP 0-9-1 frame codec (services/amqp): the protocol header, the frame + method builders, the heartbeat, and the frame/method parsers (type/channel/size/payload/0xCE). |
-| `native_app` | `BODY_BUF_SIZE=512`, `ETWS_ENFORCE_HOST_HEADER=0`, `ETWS_ENABLE_STATS=1`, `ETWS_ENABLE_METRICS=1`, `ETWS_ENABLE_ETAG=1`, `ETWS_ENABLE_WEB_TERMINAL=1`, `ETWS_HTTP_EMIT_DATE=1` | `test_auth`, `test_file_serving`, `test_multipart`, `test_dispatch`, `test_application`, `test_response_headers`, `test_form_params`, `test_path_params`, `test_digest_auth`, `test_digest_vectors`, `test_template`, `test_middleware`, `test_chunked`, `test_json`, `test_iface`, `test_regex`, `test_web_terminal`, `test_defer` | Full stack including Layer 7 application |
-| `native_atc` | `ETWS_ENABLE_ATC=1` | `test_atc` | ATC field-I/O interop snapshot (services/atc): serialize this device's field-I/O map as {"inputs":[...],"outputs":[...]} JSON for an ATC engine over HTTP, plus the output setter and value getter. |
-| `native_audit_log` | `ETWS_ENABLE_AUDIT_LOG=1` | `test_audit_log` | Tamper-evident hash-chained audit log (services/audit_log). |
-| `native_auth_lockout` | `ETWS_ENABLE_AUTH=1`, `ETWS_ENABLE_AUTH_LOCKOUT=1` | `test_auth_lockout` | Per-IP brute-force auth lockout (services/auth_lockout): exponential-backoff lockout state machine. |
-| `native_bacnet` | `ETWS_ENABLE_BACNET=1` | `test_bacnet` | BACnet/IP BVLC + NPDU codec (services/bacnet): the BVLC envelope (type 0x81, function, length) + the NPDU header (version + NPCI control + optional DNET/DADR + hop count) builders and parsers, slicing... |
-| `native_ble_gatt` | `ETWS_ENABLE_BLE_GATT=1` | `test_ble_gatt` | Bluetooth ATT codec + GATT bridge (services/ble_gatt): build/parse the common ATT PDUs (read/write/notify/error, LE handles) and serialize a GATT characteristic table as JSON for the web stack. |
-| `native_bus_capture` | `ETWS_ENABLE_BUS_CAPTURE=1` | `test_bus_capture` | CAN listen-only capture framing (services/bus_capture): can_to_socketcan() building the 16-byte Linux SocketCAN frame (big-endian can_id, EFF/RTR flags, length, data) and the DLT_CAN_SOCKETCAN libpcap... |
-| `native_c37118` | `ETWS_ENABLE_C37118=1` | `test_c37118` | IEEE C37.118.2 synchrophasor frame codec (services/c37118): CRC-CCITT, the frame builder + Command frame, and the CRC-validating parser (type / ids / timestamp / payload). |
-| `native_canopen` | `ETWS_ENABLE_CANOPEN=1` | `test_canopen` | CANopen (CiA 301) message codec (services/canopen): NMT, SYNC, heartbeat, EMCY, PDO, and expedited SDO read/write/abort + the COB-ID classifier, over the shared CAN frame (shared_primitives/can.h). |
-| `native_cbor` | `ETWS_ENABLE_CBOR=1` | `test_cbor` | CBOR (RFC 8949) encoder (network_drivers/presentation/cbor): a pure byte-output codec, host-tested against the RFC 8949 Appendix A vectors. |
-| `native_cc1101` | `ETWS_ENABLE_CC1101=1` | `test_cc1101` | CC1101 sub-GHz radio driver (services/cc1101): the TI SPI header protocol (config registers, command strobes, status registers, TX/RX FIFO) - init/detect, variable-length send, TX-done, set-rx, packet... |
-| `native_cclink` | `ETWS_ENABLE_CCLINK=1` | `test_cclink` | CC-Link cyclic fieldbus frame codec (services/cclink): the frame ([station][command][bit data][word data][sum]) build + parse and the bit/word process-image accessors. |
-| `native_cia402` | `ETWS_ENABLE_CIA402=1`, `ETWS_ENABLE_CANOPEN=1` | `test_cia402` | CiA 402 / IEC 61800-7-201 drive profile (services/cia402): the Statusword power-state decode (mask/value table), the Controlword commands + enable sequence, Statusword flags, the CANopen SDO setters (... |
-| `native_cip` | `ETWS_ENABLE_CIP=1` | `test_cip` | CIP message codec (services/cip): the EPATH logical-segment builder, the request builders (Get_Attribute_Single), and the response parser (service / status / data). |
-| `native_clock` | default | `test_clock` | Pluggable monotonic clock (services/det_clock): default millis(), custom clock divided down to the internal 1000 Hz. |
-| `native_cloudevents` | `ETWS_ENABLE_CLOUDEVENTS=1` | `test_cloudevents` | CloudEvents v1.0 envelope (services/cloudevents): the structured-JSON builder (over the JSON writer) + the binary-mode ce-* header reader. |
-| `native_coap` | `ETWS_ENABLE_COAP=1`, `ETWS_ENABLE_COAP_BLOCK=1`, `ETWS_COAP_BLOCK_SZX_MAX=2`, `ETWS_COAP_BLOCK1_MAX=128` | `test_coap` | CoAP server (RFC 7252) message codec + resource dispatch. |
-| `native_coap_observe` | `ETWS_ENABLE_COAP=1`, `ETWS_ENABLE_COAP_BLOCK=1`, `ETWS_COAP_BLOCK_SZX_MAX=2`, `ETWS_COAP_BLOCK1_MAX=128`, `ETWS_ENABLE_COAP_OBSERVE=1` | `test_coap` | CoAP with resource observation (RFC 7641) enabled. |
-| `native_coaps` | `ETWS_ENABLE_DTLS=1`, `ETWS_ENABLE_COAP=1` | `test_coaps` | CoAP over DTLS (services/coap/coaps, RFC 7252 sec 9): the bridge that drives a DtlsConn handshake and, once established, unwraps each epoch-3 application record, answers it with coap_server_process(),... |
-| `native_coaps_server` | `ETWS_ENABLE_DTLS=1`, `ETWS_ENABLE_COAP=1` | `test_coaps_server` | CoAP-over-DTLS server front-end (services/coap/coaps_server): the per-peer DtlsConn pool + ingest/poll seam on top of det_coaps_process(). |
-| `native_codeql` | `ETWS_ENABLE_CSRF=1`, `ETWS_ENABLE_AUTH_LOCKOUT=1`, `ETWS_ENABLE_IP_ALLOWLIST=1`, `ETWS_ENABLE_WS_DEFLATE=1`, `ETWS_ENABLE_TIME_SOURCE=1`, `ETWS_ENABLE_CONFIG_STORE=1`, `ETWS_ENABLE_DEVICE_ID=1`, `ETWS_ENABLE_TELEMETRY=1`, `ETWS_ENABLE_DASHBOARD=1`, `ETWS_ENABLE_PARTITION_MONITOR=1`, `ETWS_ENABLE_CBOR=1`, `ETWS_ENABLE_MSGPACK=1`, `ETWS_ENABLE_GPIO_MAP=1`, `ETWS_ENABLE_UDP_TELEMETRY=1`, `ETWS_ENABLE_GUARDRAILS=1`, `ETWS_ENABLE_FAILSAFE=1`, `ETWS_ENABLE_SLEEP_SCHED=1`, `ETWS_ENABLE_WEARLEVEL=1`, `ETWS_ENABLE_NETADAPT=1`, `ETWS_ENABLE_DSHOT=1`, `ETWS_ENABLE_HART=1`, `ETWS_ENABLE_NTS=1`, `ETWS_ENABLE_DDS=1`, `ETWS_ENABLE_XMPP=1`, `ETWS_ENABLE_RAWL2=1`, `ETWS_ENABLE_SPA_ROUTER=1`, `ETWS_ENABLE_GOOSE=1`, `ETWS_ENABLE_MTCONNECT=1`, `ETWS_ENABLE_J2735=1`, `ETWS_ENABLE_NEMA_TS2=1`, `ETWS_ENABLE_SNP=1`, `ETWS_ENABLE_DIRECTNET=1`, `ETWS_ENABLE_SEP2=1`, `ETWS_ENABLE_PROFINET=1`, `ETWS_ENABLE_NTCIP=1`, `ETWS_ENABLE_OPENADR=1`, `ETWS_ENABLE_MMS=1`, `ETWS_ENABLE_CCLINK=1`, `ETWS_ENABLE_POWERLINK=1`, `ETWS_ENABLE_SERCOS=1`, `ETWS_ENABLE_PROFIBUS=1`, `ETWS_ENABLE_LONWORKS=1`, `ETWS_ENABLE_MBPLUS=1`, `ETWS_ENABLE_INTERBUS=1`, `ETWS_ENABLE_ICCP=1`, `ETWS_ENABLE_WAVE=1`, `ETWS_ENABLE_UTMC=1`, `ETWS_ENABLE_OCIT=1`, `ETWS_ENABLE_ATC=1`, `ETWS_ENABLE_SOUTHBOUND=1`, `ETWS_ENABLE_EXC_DECODER=1`, `ETWS_ENABLE_HTTP_DELIVERY=1`, `ETWS_ENABLE_HW_HEALTH=1`, `ETWS_ENABLE_MDNS_ADAPTIVE=1`, `ETWS_ENABLE_SOCKPOOL=1`, `ETWS_ENABLE_PSRAM_POOL=1`, `ETWS_ENABLE_HAPPY_EYEBALLS=1`, `ETWS_ENABLE_WIFI_SNIFFER=1`, `ETWS_ENABLE_LINK_MANAGER=1`, `ETWS_ENABLE_CC1101=1`, `ETWS_ENABLE_FDC2214=1`, `ETWS_ENABLE_LDC1614=1`, `ETWS_ENABLE_VL53L0X=1`, `ETWS_ENABLE_RADIO_SNIFF=1`, `ETWS_ENABLE_BLE_GATT=1`, `ETWS_ENABLE_TLS_POLICY=1`, `ETWS_ENABLE_WISUN=1`, `ETWS_ENABLE_LOGBUF=1`, `ETWS_ENABLE_OTA_ROLLBACK=1`, `ETWS_ENABLE_TOTP=1`, `ETWS_ENABLE_WEBHOOK=1`, `ETWS_ENABLE_RADIO_POWER=1`, `ETWS_ENABLE_AUDIT_LOG=1`, `ETWS_ENABLE_OIDC=1`, `ETWS_ENABLE_VFS=1`, `ETWS_ENABLE_GRAPHQL=1`, `ETWS_ENABLE_ESPNOW=1`, `ETWS_ENABLE_OAUTH2=1`, `ETWS_ENABLE_OPCUA=1`, `ETWS_ENABLE_OPCUA_CLIENT=1` | `test_dispatch` | CodeQL coverage env: the full app compiled with every new feature flag ON so CodeQL traces the integration paths (CSRF / lockout / allowlist gates, permessage-deflate) AND the new service modules, whi... |
-| `native_compliance` | default | `test_compliance` | RFC-compliance suite: builds with all enforcement at production defaults (DETWS_ENFORCE_HOST_HEADER=1) and exercises the strict behaviors. |
-| `native_concurrency` | `O1`, `pthread` | `test_concurrency` | Concurrency proof for the cross-thread slot fields (DetAtomic state / rx_head / rx_tail). |
-| `native_config_io` | `ETWS_ENABLE_CONFIG_STORE=1`, `ETWS_ENABLE_CONFIG_IO=1` | `test_config_io` | Schema-driven config export/restore (services/config_io) over the config store; round-trip host-tested against the in-memory backend. |
-| `native_config_store` | `ETWS_ENABLE_CONFIG_STORE=1` | `test_config_store` | Typed NVS config store (services/config_store): string/u32/blob round-trips, defaults, capacity, erase/clear - run against the host in-memory backend (the ESP32 Preferences/NVS backend is compiled in ... |
-| `native_control` | `ETWS_ENABLE_CONTROL=1` | `test_control` | PID control law (services/control): the P/I/D terms, output clamping, anti-windup by conditional integration, derivative-on-measurement (no setpoint kick) + optional low-pass, feed-forward, the batche... |
-| `native_cotp` | `ETWS_ENABLE_COTP=1` | `test_cotp` | TPKT (RFC 1006) + COTP X.224 class-0 frame codec (services/cotp): the TPKT envelope, the COTP Data TPDU + Connection Request builders, and the COTP parser. |
-| `native_crypto_kat` | `ETWS_ENABLE_HTTP3=1` | `test_crypto_kat` | Data-driven external crypto known-answer tests: HMAC-SHA256/512, AEAD_AES_128_GCM, X25519, and Ed25519 verify from Project Wycheproof (including its adversarial edge cases), plus HKDF-SHA256 Extract (... |
-| `native_csrf` | `ETWS_ENABLE_CSRF=1` | `test_csrf` | Stateless HMAC-signed CSRF token (services/csrf): issue/verify with a fixed secret unit-tests on the host (DETWS_ENABLE_CSRF set). |
-| `native_dashboard` | `ETWS_ENABLE_DASHBOARD=1` | `test_dashboard` | Dashboard widget-table JSON serializers (services/dashboard core). |
-| `native_dbm` | `ETWS_ENABLE_WAL=1`, `ETWS_ENABLE_DBM=1` | `test_dbm` | Log-structured hash key-value store on the WAL (services/dbm): put/get/delete with an in-RAM open-addressed index and value data appended to the write-ahead log, plus index rebuild by replaying the lo... |
-| `native_dds` | `ETWS_ENABLE_DDS=1` | `test_dds` | DDS / RTPS framing codec (services/dds): the 20-octet RTPS header (magic/version/vendor/ guidPrefix) and the submessage TLV (id/flags/octetsToNextHeader, endianness flag), build + parse. |
-| `native_deflate` | `ETWS_ENABLE_WS_DEFLATE=1` | `test_deflate` | RFC 1951 DEFLATE core (the WebSocket permessage-deflate compressor). |
-| `native_det_arena` | default | `test_det_arena` | Unified double-ended server arena (network_drivers/session/det_arena): first-fit persistent end (bottom, individual free + coalesce + boundary shrink) + bump scratch end (top, mark/release/reset) shar... |
-| `native_det_ip` | default | `test_det_ip` | IP address core (network_drivers/network/det_ip): RFC 4291 IPv4/IPv6 text parsing, RFC 5952 canonical formatting (:: zero-compression, v4-mapped), and scope classification (loopback / link-local / pri... |
-| `native_det_primitives` | default | `test_det_primitives` | Shared no-stdlib primitives (shared_primitives): the base-10 det_strtol/strtoul/strtof number parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h). |
-| `native_device_id` | `ETWS_ENABLE_DEVICE_ID=1` | `test_device_id` | MAC-derived device UUID (services/device_id): RFC 4122 v5 from a MAC via SHA-1. |
-| `native_devicenet` | `ETWS_ENABLE_DEVICENET=1` | `test_devicenet` | DeviceNet link-adaptation codec (services/devicenet): the 4-group 11-bit CAN id, explicit-message header octet, single-frame explicit messages, and the fragmentation reassembler (CIP over CAN; the CIP... |
-| `native_df1` | `ETWS_ENABLE_DF1=1` | `test_df1` | Allen-Bradley DF1 full-duplex frame codec (services/df1): BCC + CRC-16/ARC, the frame builder with DLE byte-stuffing, and the validating, un-stuffing parser. |
-| `native_diag` | `ETWS_ENABLE_DIAG=1` | `test_diag` | Runtime build-flag reporter (server.diag() / DETWS_ENABLE_DIAG). |
-| `native_directnet` | `ETWS_ENABLE_DIRECTNET=1` | `test_directnet` | AutomationDirect DirectNET serial frame codec (services/directnet): the header (SOH + ASCII-hex slave/type/addr/blocks + ETB + LRC) and data (STX + data + ETX + LRC) frames build/parse. |
-| `native_dma` | `ETWS_ENABLE_DMA=1`, `ETWS_DMA_BUF_SIZE=8`, `ETWS_DMA_CHANNELS=2` | `test_dma` | DMA peripheral ingest / egress simulator (services/dma), v5 hardware ingest: an ingress feed surfaces as RX completion events, a full buffer ping-pongs and re-arms, egress DMA is captured, TX is one-i... |
-| `native_dmx` | `ETWS_ENABLE_DMX=1` | `test_dmx` | DMX512 + RDM lighting codec (services/dmx): the DMX512 slot packet (build/get) and the RDM (ANSI E1.20) packet build/parse with 48-bit UIDs and the 16-bit additive checksum. |
-| `native_dnc` | `ETWS_ENABLE_DNC=1` | `test_dnc`, `test_dnc_stream` | CNC DNC drip-feed (services/dnc): the EIA RS-244 <-> ISO/ASCII tape-code translation (odd-parity EIA table), ISO even parity, G-code block framing with '%' rewind-stop and leader runout, XON/XOFF flow... |
-| `native_dnp3` | `ETWS_ENABLE_DNP3=1` | `test_dnp3` | DNP3 (IEEE 1815) data-link frame codec (services/dnp3): CRC-16/DNP, the frame builder (0x0564 header + CRC'd 16-octet data blocks) and the CRC-validating, de-blocking parser. |
-| `native_dns_resolver` | `ETWS_ENABLE_DNS_RESOLVER=1` | `test_dns_resolver` | DNS resolver answer classifier/verifier (services/dns_resolver): host-tested; the lwIP resolve is ESP32-only. |
-| `native_dns_server` | `ETWS_ENABLE_DNS_SERVER=1` | `test_dns_server` | Authoritative DNS server (services/dns_server): the pure A-record response builder (QNAME parse, compressed A answer, NXDOMAIN, non-A query, header flags, malformed guards) and the built-in name->IP t... |
-| `native_docstore` | `ETWS_ENABLE_WAL=1`, `ETWS_ENABLE_DBM=1`, `ETWS_ENABLE_DOCSTORE=1` | `test_docstore` | Local JSON document store on the WAL (services/docstore): JSON documents addressed by id, stored via dbm on the write-ahead log, plus top-level field queries (find documents whose JSON field equals a ... |
-| `native_dshot` | `ETWS_ENABLE_DSHOT=1` | `test_dshot` | DShot ESC throttle codec (services/dshot): the 16-bit frame (11-bit value + telemetry + 4-bit nibble-xor CRC), the bidirectional inverted-CRC variant, decode/validate, and per-rate bit timing. |
-| `native_dtls` | `ETWS_ENABLE_DTLS=1` | `test_dtls_record` | DTLS 1.3 record layer (network_drivers/presentation/dtls/dtls_record, RFC 9147 sec 4): DTLSPlaintext + DTLSCiphertext protect/unprotect, the unified header, sequence-number encryption (sec 4.2.3) and ... |
-| `native_dtls_conn` | `ETWS_ENABLE_DTLS=1` | `test_dtls_conn` | DTLS 1.3 server handshake state machine (network_drivers/presentation/dtls/dtls_conn, RFC 9147 sec 5-6): the one-round-trip full handshake (TLS_AES_128_GCM_SHA256 / X25519 / Ed25519) over the DTLS rec... |
-| `native_dtls_hs` | `ETWS_ENABLE_DTLS=1` | `test_dtls_handshake` | DTLS 1.3 handshake framing + reliability (network_drivers/presentation/dtls/dtls_handshake, RFC 9147 sec 5 + 7): the 12-byte DTLS handshake header, overlap-tolerant message reassembly, the ACK message... |
-| `native_dtls_tls13` | `ETWS_ENABLE_DTLS=1` | `test_dtls_tls13` | TLS 1.3 messages the DTLS 1.3 handshake adds to tls13_msg (RFC 8446 sec 4.1.4 / 4.4.1), compiled for the DTLS path (DETWS_ENABLE_DTLS, not HTTP/3): the HelloRetryRequest builder, the cookie extension ... |
-| `native_edge_cache` | `ETWS_ENABLE_HTTP_CACHE=1`, `ETWS_ENABLE_HTTP_CLIENT=1`, `ETWS_ENABLE_EDGE_CACHE=1`, `ETWS_ENABLE_RANGE=1` | `test_edge_cache`, `test_edge_fetch` | CDN edge-cache engine (services/edge_cache): the pure freshness/validator core (response header-field access, HTTP-date parsing over IMF-fixdate / RFC 850 / asctime, RFC 9111 lifetime + Expires-Date +... |
-| `native_edge_cache_sd` | `ETWS_ENABLE_WAL=1`, `ETWS_ENABLE_DBM=1`, `ETWS_DBM_VAL_MAX=1024`, `ETWS_ENABLE_HTTP_CACHE=1`, `ETWS_ENABLE_HTTP_CLIENT=1`, `ETWS_ENABLE_EDGE_CACHE=1` | `test_edge_cache_sd` | CDN edge-cache L2 SD-persistence tier (services/edge_cache/edge_cache_sd): the entry <-> dbm-value serialization roundtrip (all response metadata, Vary variants, binary and max-size bodies), the spill... |
-| `native_edge_mesh` | `ETWS_ENABLE_HTTP_CACHE=1`, `ETWS_ENABLE_HTTP_CLIENT=1`, `ETWS_ENABLE_EDGE_CACHE=1`, `ETWS_ENABLE_EDGE_MESH=1` | `test_edge_mesh` | CDN edge-cache mesh sibling-cache codec (services/edge_cache/edge_mesh): the request/response wire frames (build + tri-state accumulating parse over partial reads, magic/version/opcode validation), th... |
-| `native_enip` | `ETWS_ENABLE_ENIP=1` | `test_enip` | EtherNet/IP encapsulation codec (services/enip): the 24-octet header, RegisterSession + SendRRData builders (Common Packet Format), and the SendRRData reply extractor. |
-| `native_enocean` | `ETWS_ENABLE_ENOCEAN=1`, `ETWS_ENOCEAN_MAX_DATA=16` | `test_enocean` | EnOcean ESP3 serial codec (services/enocean), v5 radio plugin: the CRC-8 (poly 0x07) against known answers, a build -> parse round trip, malformed framing (bad sync / header CRC / data CRC), incomplet... |
-| `native_espnow` | `ETWS_ENABLE_ESPNOW=1` | `test_espnow` | ESP-NOW peer messaging (services/espnow) - the envelope codec + peer registry are host-tested here; the esp_now radio binding is ESP32-only. |
-| `native_exc_decoder` | `ETWS_ENABLE_EXC_DECODER=1` | `test_exc_decoder` | ESP32 panic / exception decoder (services/exc_decoder): parse a captured Guru Meditation dump (cause, register PC + EXCVADDR, backtrace PC:SP frames) into a structured ExcInfo and serialize it as JSON... |
-| `native_failsafe` | `ETWS_ENABLE_FAILSAFE=1` | `test_failsafe` | Software watchdog / deadlock detection + safe-state (services/failsafe): the wrap-safe overdue predicate, the lifeline registry, fire-once-per-episode breach callback, and JSON. |
-| `native_fdc2214` | `ETWS_ENABLE_FDC2214=1` | `test_fdc2214` | FDC2114/2214 capacitance-to-digital field sensor (services/fdc2214): the 28-bit data combine + error flags, the frequency scale (data/2^28 * fref), and the single-channel config-sequence builder. |
-| `native_fins` | `ETWS_ENABLE_FINS=1` | `test_fins` | Omron FINS frame codec (services/fins): the command builder + Memory Area Read convenience + the command / response parsers (10-octet header, MRC/SRC, MRES/SRES end code). |
-| `native_flow_export` | `ETWS_ENABLE_FLOW_EXPORT=1` | `test_flow_export` | Flow-record export codec (services/flow_export): NetFlow v5 fixed header/record builders + the NetFlow v9 / IPFIX template-then-data cursor (length/count patching, v9 4-octet padding). |
-| `native_focas` | `ETWS_ENABLE_FOCAS=1` | `test_focas` | FANUC FOCAS Ethernet codec (services/focas): the big-endian frame envelope (magic/version/type/length) + open/close handshake, the generic command request (6-octet function selector + five i32 args), ... |
-| `native_forward` | `ETWS_ENABLE_FORWARD=1`, `ETWS_FWD_MAX_IFACES=4`, `ETWS_FWD_MAX_RULES=4`, `ETWS_FWD_MAX_ACL=4`, `ETWS_FWD_MAX_ROUTES=4`, `ETWS_FWD_INSPECT=1` | `test_forward` | Interface forwarding plane (services/forward), v5 bridge / router: default-deny, an ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the source, the per-rule rate cap (hos... |
-| `native_ftp` | `ETWS_ENABLE_FTP=1` | `test_ftp` | FTP client wire codec (services/ftp, RFC 959 + RFC 2428): the control-command builders (generic verb + PORT + EPRT), the single/multi-line 3-digit reply parser, and the PASV / EPSV data-address decoders. |
-| `native_gateway` | `ETWS_ENABLE_GATEWAY=1`, `ETWS_GW_MAX_PORTS=4` | `test_gateway` | Radio / wireless gateway bridge (services/gateway), v5 southbound-to-northbound: an uplink envelopes a received frame (src address / port / rssi / seq) and publishes it, fail-closed on no sink / unkno... |
-| `native_gnss_survey` | `ETWS_ENABLE_NTRIP_CASTER=1`, `ETWS_ENABLE_NMEA0183=1`, `UNITY_INCLUDE_DOUBLE` | `test_gnss_survey` | GNSS survey-in core (services/gnss/gnss_survey): the exact WGS84 geodetic<->ECEF transform (matched against pyproj EPSG:4979->EPSG:4978), the shifted-origin position averager with a 3-D accuracy estim... |
-| `native_goose` | `ETWS_ENABLE_GOOSE=1` | `test_goose` | IEC 61850 GOOSE publisher codec (services/goose): the BER IECGoosePdu (gocbRef..allData, minimal-length INTEGERs with the positive leading-zero rule) + the GOOSE header + Ethernet frame (ethertype 0x8... |
-| `native_gpio_map` | `ETWS_ENABLE_GPIO_MAP=1` | `test_gpio_map` | GPIO pin-mapper / browser diag core (services/gpio_map): direction names, JSON serializer, control-POST parser, output guard - all pure and host-tested. |
-| `native_graphql` | `ETWS_ENABLE_GRAPHQL=1` | `test_graphql` | GraphQL query subset (services/graphql) - pure parser + executor, host-tested with a demo resolver. |
-| `native_grpcweb` | `ETWS_ENABLE_GRPC_WEB=1` | `test_grpcweb` | gRPC-Web message framing codec (services/grpcweb): the 5-octet length-prefixed message frame builder + the 0x80 trailers frame (grpc-status / grpc-message) + the frame parser. |
-| `native_guardrails` | `ETWS_ENABLE_GUARDRAILS=1` | `test_guardrails` | Heap/stack guardrails (services/guardrails): threshold evaluator + JSON, host-tested. |
-| `native_h2conn` | `ETWS_ENABLE_HTTP2=1` | `test_h2_conn` | HTTP/2 connection engine (network_drivers/presentation/http2/h2_conn, RFC 9113): initial SETTINGS on init, preface + client SETTINGS -> SETTINGS ACK, decoding a real HPACK-encoded request into the hea... |
-| `native_h2frame` | `ETWS_ENABLE_HTTP2=1` | `test_h2_frame` | HTTP/2 binary framing (network_drivers/presentation/http2/h2_frame, RFC 9113): the 9-byte frame header parse/write (24-bit length, reserved-bit masking), SETTINGS build + parse with validation, and th... |
-| `native_h3_conn` | `ETWS_ENABLE_HTTP3=1` | `test_h3_conn` | HTTP/3 application engine (network_drivers/presentation/http3/h3_conn, RFC 9114): drives h3_conn through the quic_conn callback seam - a QPACK-encoded request on a request stream dispatches the right ... |
-| `native_h3_e2e` | `ETWS_ENABLE_HTTP3=1` | `test_h3_e2e` | End-to-end HTTP/3 capstone (network_drivers/presentation/http3): a QUIC client in the test completes the TLS 1.3 handshake against a quic_conn + h3_conn server, sends a real HTTP/3 GET (QPACK HEADERS ... |
-| `native_h3_server` | `ETWS_ENABLE_HTTP3=1` | `test_h3_server` | HTTP/3 dispatch bridge end-to-end through DetWebServer (the full Layer-7 app built with DETWS_ENABLE_HTTP3=1): a QUIC client completes the handshake and sends an HTTP/3 GET, quic_server routes it to t... |
-| `native_h3frame` | `ETWS_ENABLE_HTTP3=1` | `test_h3_frame` | HTTP/3 framing (network_drivers/presentation/http3/h3_frame, RFC 9114 sec 7): the type+length varint header parse/write (incl. |
-| `native_happy_eyeballs` | `ETWS_ENABLE_HAPPY_EYEBALLS=1` | `test_happy_eyeballs` | Dual-stack Happy Eyeballs selection (services/happy_eyeballs): RFC 6724 destination preference scoring, the candidate-list sort + RFC 8305 address-family interleave, and the Connection Attempt Delay g... |
-| `native_hart` | `ETWS_ENABLE_HART=1` | `test_hart` | HART / HART-IP codec (services/hart): the HART command frame (longitudinal XOR checksum, short + long addressing) build/parse and the 8-octet HART-IP message header. |
-| `native_hostlink` | `ETWS_ENABLE_HOSTLINK=1` | `test_hostlink` | Omron Host Link (C-mode) frame codec (services/hostlink): the FCS (XOR), the ASCII command builder (@UU + header + text + FCS + *CR), and the FCS-validating parser + end-code reader. |
-| `native_hpack` | `ETWS_ENABLE_HTTP2=1` | `test_hpack` | HPACK header compression for HTTP/2 (RFC 7541): prefix-integer coding (App C.1), the Huffman string code (App B / C.4.1), the first-request decode with dynamic-table insertion (C.3.1), dynamic-table i... |
-| `native_http_client` | `ETWS_ENABLE_HTTP_CLIENT=1` | `test_http_client` | Outbound HTTP client: URL parser + request builder + response parser. |
-| `native_http_delivery` | `ETWS_ENABLE_HTTP_DELIVERY=1` | `test_http_delivery` | HTTP delivery optimizations (services/http_delivery): RFC 5861 stale-while-revalidate decision + Cache-Control builder, RFC 7233 byte-range delta/offset fetch (X-Y / X- / -N parse + a 206 Content-Rang... |
-| `native_httpcache` | `ETWS_ENABLE_HTTP_CACHE=1` | `test_httpcache` | HTTP Cache-Control helpers (services/httpcache, RFC 9111 + 8246 + 5861): the structured directive builder + first-class origin presets (immutable asset / shared / no-store / revalidatable), the tolera... |
-| `native_hw_health` | `ETWS_ENABLE_HW_HEALTH=1` | `test_hw_health` | Hardware-health diagnostics (services/hw_health): power-rail voltage-drop logger (worst droop + sag/brownout counts), SPI-bus CRC audit with hysteretic clock backoff, GPIO short-circuit test (driven v... |
-| `native_iccp` | `ETWS_ENABLE_ICCP=1` | `test_iccp` | ICCP / TASE.2 (IEC 60870-6) Data_Value codec (services/iccp): the StateQ (state + quality) and RealQ (scaled INTEGER + quality) indication-point BER structures with optional timestamp. |
-| `native_iec60870` | `ETWS_ENABLE_IEC60870=1` | `test_iec60870` | IEC 60870-5-101/-104 codec (services/iec60870): the -104 APCI (I/S/U), the ASDU header + 3-octet IOA, and the -101 FT1.2 fixed/variable link frames (sum checksum). |
-| `native_iface_bridge` | `ETWS_ENABLE_IFACE_BRIDGE=1` | `test_iface_bridge` | Interface bridge pure core (services/iface_bridge): the user-defined address:port -> bus rule table (register / find / dedup / capacity, keyed by port+proto with the full DetIp bind address preserved)... |
-| `native_ina219` | `ETWS_ENABLE_INA219=1` | `test_ina219` | INA219 current/power codec (services/ina219): decoding the bus-voltage register (bits [15:3], LSB 4 mV, status bits ignored) and the shunt-voltage register (signed, LSB 10 uV), computing the calibrati... |
-| `native_inflate` | `ETWS_ENABLE_WS_DEFLATE=1` | `test_inflate` | RFC 1951 INFLATE core (the WebSocket permessage-deflate decompressor). |
-| `native_interbus` | `ETWS_ENABLE_INTERBUS=1` | `test_interbus` | INTERBUS summation-frame codec (services/interbus): the summation frame (loopback + per-device 16-bit slices + CRC-16/CCITT FCS) assemble + disassemble. |
-| `native_iolink` | `ETWS_ENABLE_IOLINK=1` | `test_iolink` | IO-Link (SDCI) data-link message codec (services/iolink): the MC / CKT / CKS control octets and the SDCI checksum (seed 0x52 + the 8->6 compression of IO-Link spec A.1.6), with a hand-computed known-a... |
-| `native_j1939` | `ETWS_ENABLE_J1939=1` | `test_j1939` | SAE J1939 codec (services/j1939): 29-bit id encode/decode (PDU1 + PDU2), single-frame messages, Request PGN, Address Claimed + NAME, and the Transport Protocol (BAM + TP.DT) reassembler, over the shar... |
-| `native_j2735` | `ETWS_ENABLE_J2735=1` | `test_j2735` | SAE J2735 V2X codec (services/j2735): the ASN.1 UPER bit primitive layer (constrained INTEGER / BOOLEAN / bit fields) and the BSMcore block encode/decode. |
-| `native_jwt` | `ETWS_ENABLE_JWT=1` | `test_jwt` | JWT (HS256) bearer-auth verification. |
-| `native_keepalive` | `ETWS_ENFORCE_HOST_HEADER=0`, `ETWS_ENABLE_KEEPALIVE=1`, `ETWS_KEEPALIVE_MAX_REQUESTS=3` | `test_keepalive` | HTTP/1.1 keep-alive (persistent connections): full server built with DETWS_ENABLE_KEEPALIVE=1; a small per-connection request cap makes the fairness-bound test fast. |
-| `native_ld2410` | `ETWS_ENABLE_LD2410=1` | `test_ld2410` | LD2410 mmWave radar codec (services/ld2410): decoding a basic and an engineering-mode report frame, rejecting malformed frames, the byte-by-byte stream reassembler (resync past noise, split feeds, abs... |
-| `native_ldc1614` | `ETWS_ENABLE_LDC1614=1` | `test_ldc1614` | LDC1614 inductance-to-digital field sensor (services/ldc1614): the 28-bit data combine + error flags, the frequency scale (data/2^28 * fref), and the single-channel config-sequence builder. |
-| `native_link_manager` | `ETWS_ENABLE_LINK_MANAGER=1` | `test_link_manager` | Multi-interface egress selection (services/link_manager): a table of interfaces (kind + priority + up/down) with deterministic best-link-up selection, graceful escalation to a higher-priority interfac... |
-| `native_logbuf` | `ETWS_ENABLE_LOGBUF=1` | `test_logbuf` | Rotating log ring + severity trap (services/logbuf): pure, fully host-tested. |
-| `native_lonworks` | `ETWS_ENABLE_LONWORKS=1` | `test_lonworks` | LonWorks / LON-IP network-variable codec (services/lonworks): the LonTalk NV PDU ([msg-code][14-bit selector][value]) build + parse and the SNVT_temp / SNVT_switch scalar encodings. |
-| `native_lora` | `ETWS_ENABLE_LORA=1` | `test_lora` | LoRa codec + SX127x driver (services/lora), v5 radio plugin: the RadioHead 4-byte header parse/build, and the SX127x register protocol (init / send / tx-done / set-rx / recv) exercised against a mock ... |
-| `native_lwm2m_tlv` | `ETWS_ENABLE_LWM2M=1` | `test_lwm2m_tlv` | OMA LwM2M TLV codec (services/lwm2m): the writer (raw + int / bool / string / float value helpers, 8-/16-bit ids, inline / 8-/16-/24-bit lengths) + the cursor reader + integer value decoding. |
-| `native_mbplus` | `ETWS_ENABLE_MBPLUS=1` | `test_mbplus` | Modbus Plus HDLC token-bus codec (services/mbplus): the HDLC frame (7E addr ctrl payload CRC-16/X-25 7E) build + validate and the token-rotation ring helper. |
-| `native_mbus` | `ETWS_ENABLE_MBUS=1` | `test_mbus` | Wired M-Bus codec (services/mbus): the ACK / short / long frame builders + parser (start/stop, doubled length, 8-bit sum checksum) and the EN 13757-3 variable-data record walker (DIF/VIF, DIFE/VIFE ch... |
-| `native_mdns_adaptive` | `ETWS_ENABLE_MDNS_ADAPTIVE=1` | `test_mdns_adaptive` | Adaptive mDNS beacon scheduling (services/mdns_adaptive): RF-contention backoff/recovery of the announce interval, the TTL/2 continuous-refresher cadence, the announce-due check, and the auto-sleep be... |
-| `native_melsec` | `ETWS_ENABLE_MELSEC=1` | `test_melsec` | Mitsubishi MELSEC MC binary 3E codec (services/melsec): the batch-read request builder (little-endian, subheader 0x5000, command 0x0401, device code + 24-bit head device) + the 0xD000 response parser. |
-| `native_mms` | `ETWS_ENABLE_MMS=1` | `test_mms` | IEC 61850 MMS PDU codec (services/mms): the BER confirmed-request/response Read PDUs (invokeID + read service + named ObjectName), build + parse. |
-| `native_modbus` | `ETWS_ENABLE_MODBUS=1`, `ETWS_ENABLE_MODBUS_RTU=1` | `test_modbus` | Modbus TCP slave core + RTU framing (Modbus Application Protocol): the data model + MBAP/PDU codec + the RTU ADU codec (CRC16 + [addr][PDU][CRC]). |
-| `native_modbus_master` | `ETWS_ENABLE_MODBUS=1`, `ETWS_ENABLE_MODBUS_MASTER=1` | `test_modbus_master` | Modbus master codec + scanner (services/modbus/modbus_master): build read requests, parse responses; host-tested as a round-trip against the slave codec. |
-| `native_mpr121` | `ETWS_ENABLE_MPR121=1` | `test_mpr121` | MPR121 capacitive-touch codec (services/mpr121): decoding the touch-status word into an electrode bitmask (masking proximity / over-current), the per-electrode touched test, the proximity / over-curre... |
-| `native_mqtt` | `ETWS_ENABLE_MQTT=1` | `test_mqtt` |  |
-| `native_mqtt_sn` | `ETWS_ENABLE_MQTT_SN=1` | `test_mqtt_sn` | MQTT-SN v1.2 wire codec (services/mqtt/mqtt_sn): the zero-heap message builders (CONNECT/REGISTER/PUBLISH/SUBSCRIBE/PINGREQ/DISCONNECT/SEARCHGW) + the Length+MsgType header parser (1- and 3-octet form... |
-| `native_msgpack` | `ETWS_ENABLE_MSGPACK=1` | `test_msgpack` | MessagePack encoder (network_drivers/presentation/msgpack): a pure byte-output codec, host-tested against the spec encodings. |
-| `native_mtconnect` | `ETWS_ENABLE_MTCONNECT=1` | `test_mtconnect` | MTConnect agent response codec (services/mtconnect, ANSI/MTC1.4): the incremental MTConnectStreams builder (header + Samples/Events/Condition), the MTConnectDevices probe (device model), the MTConnect... |
-| `native_nats` | `ETWS_ENABLE_NATS=1` | `test_nats` | NATS client protocol codec (services/nats): the CONNECT / PUB / SUB / UNSUB / PING / PONG builders + the inbound MSG / INFO / PING / +OK / -ERR parser (subject/sid/reply/payload). |
-| `native_nema_ts2` | `ETWS_ENABLE_NEMA_TS2=1` | `test_nema_ts2` | NEMA TS 2 SDLC frame codec (services/nema_ts2): the traffic-cabinet bus frame ([address][control][frame-type][data][CRC-16/X-25]) build + validate. |
+| `native` | `WS_ENFORCE_HOST_HEADER=0` | `test_transport`, `test_presentation`, `test_session`, `test_http_parser`, `test_websocket`, `test_sse` | Layers 4-6: transport + session + presentation + standalone parser (no app layer) These suites predate the RFC 7230 Â§5.4 Host rule and feed bare HTTP/1.1 request lines to exercise parser mechanics; H... |
+| `native_accept_gate` | `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_ACCEPT_THROTTLE=1`, `WS_ENABLE_PER_IP_THROTTLE=1`, `WS_ENABLE_IP_ALLOWLIST=1`, `WS_ACCEPT_THROTTLE_MAX=3`, `WS_ACCEPT_THROTTLE_WINDOW_MS=1000`, `WS_PER_IP_THROTTLE_MAX=2`, `WS_PER_IP_THROTTLE_WINDOW_MS=1000`, `WS_PER_IP_THROTTLE_SLOTS=4`, `WS_IP_ALLOWLIST_SLOTS=4` | `test_accept_gate` | Accept-time connection gates with their flags ON (DWS_ENABLE_ACCEPT_THROTTLE / PER_IP_THROTTLE / IP_ALLOWLIST): the global fixed-window throttle, the per-source-IP bucket table (independent budgets, w... |
+| `native_ads` | `WS_ENABLE_ADS=1` | `test_ads` | Beckhoff ADS / AMS codec (services/ads): the AMS/TCP + AMS-header request builders (little-endian, target-before-source addressing, cmd id + state flags + cbData + invoke id) for Read/Write/ReadWrite/... |
+| `native_ads1115` | `WS_ENABLE_ADS1115=1` | `test_ads1115` | ADS1115 16-bit ADC codec (services/ads1115): building the 16-bit config word for a single-shot single-ended reading (channel MUX, gain, data rate, start/mode/comparator bits, with out-of-range fallbac... |
+| `native_amqp` | `WS_ENABLE_AMQP=1` | `test_amqp` | AMQP 0-9-1 frame codec (services/amqp): the protocol header, the frame + method builders, the heartbeat, and the frame/method parsers (type/channel/size/payload/0xCE). |
+| `native_app` | `BODY_BUF_SIZE=512`, `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_STATS=1`, `WS_ENABLE_METRICS=1`, `WS_ENABLE_ETAG=1`, `WS_ENABLE_WEB_TERMINAL=1`, `WS_HTTP_EMIT_DATE=1` | `test_auth`, `test_file_serving`, `test_multipart`, `test_dispatch`, `test_application`, `test_response_headers`, `test_form_params`, `test_path_params`, `test_digest_auth`, `test_digest_vectors`, `test_template`, `test_middleware`, `test_chunked`, `test_json`, `test_iface`, `test_regex`, `test_web_terminal`, `test_defer` | Full stack including Layer 7 application |
+| `native_atc` | `WS_ENABLE_ATC=1` | `test_atc` | ATC field-I/O interop snapshot (services/atc): serialize this device's field-I/O map as {"inputs":[...],"outputs":[...]} JSON for an ATC engine over HTTP, plus the output setter and value getter. |
+| `native_audit_log` | `WS_ENABLE_AUDIT_LOG=1` | `test_audit_log` | Tamper-evident hash-chained audit log (services/audit_log). |
+| `native_auth_lockout` | `WS_ENABLE_AUTH=1`, `WS_ENABLE_AUTH_LOCKOUT=1` | `test_auth_lockout` | Per-IP brute-force auth lockout (services/auth_lockout): exponential-backoff lockout state machine. |
+| `native_bacnet` | `WS_ENABLE_BACNET=1` | `test_bacnet` | BACnet/IP BVLC + NPDU codec (services/bacnet): the BVLC envelope (type 0x81, function, length) + the NPDU header (version + NPCI control + optional DNET/DADR + hop count) builders and parsers, slicing... |
+| `native_ble_gatt` | `WS_ENABLE_BLE_GATT=1` | `test_ble_gatt` | Bluetooth ATT codec + GATT bridge (services/ble_gatt): build/parse the common ATT PDUs (read/write/notify/error, LE handles) and serialize a GATT characteristic table as JSON for the web stack. |
+| `native_bus_capture` | `WS_ENABLE_BUS_CAPTURE=1` | `test_bus_capture` | CAN listen-only capture framing (services/bus_capture): can_to_socketcan() building the 16-byte Linux SocketCAN frame (big-endian can_id, EFF/RTR flags, length, data) and the DLT_CAN_SOCKETCAN libpcap... |
+| `native_c37118` | `WS_ENABLE_C37118=1` | `test_c37118` | IEEE C37.118.2 synchrophasor frame codec (services/c37118): CRC-CCITT, the frame builder + Command frame, and the CRC-validating parser (type / ids / timestamp / payload). |
+| `native_canopen` | `WS_ENABLE_CANOPEN=1` | `test_canopen` | CANopen (CiA 301) message codec (services/canopen): NMT, SYNC, heartbeat, EMCY, PDO, and expedited SDO read/write/abort + the COB-ID classifier, over the shared CAN frame (shared_primitives/can.h). |
+| `native_cbor` | `WS_ENABLE_CBOR=1` | `test_cbor` | CBOR (RFC 8949) encoder (network_drivers/presentation/cbor): a pure byte-output codec, host-tested against the RFC 8949 Appendix A vectors. |
+| `native_cc1101` | `WS_ENABLE_CC1101=1` | `test_cc1101` | CC1101 sub-GHz radio driver (services/cc1101): the TI SPI header protocol (config registers, command strobes, status registers, TX/RX FIFO) - init/detect, variable-length send, TX-done, set-rx, packet... |
+| `native_cclink` | `WS_ENABLE_CCLINK=1` | `test_cclink` | CC-Link cyclic fieldbus frame codec (services/cclink): the frame ([station][command][bit data][word data][sum]) build + parse and the bit/word process-image accessors. |
+| `native_cia402` | `WS_ENABLE_CIA402=1`, `WS_ENABLE_CANOPEN=1` | `test_cia402` | CiA 402 / IEC 61800-7-201 drive profile (services/cia402): the Statusword power-state decode (mask/value table), the Controlword commands + enable sequence, Statusword flags, the CANopen SDO setters (... |
+| `native_cip` | `WS_ENABLE_CIP=1` | `test_cip` | CIP message codec (services/cip): the EPATH logical-segment builder, the request builders (Get_Attribute_Single), and the response parser (service / status / data). |
+| `native_clock` | default | `test_clock` | Pluggable monotonic clock (services/dws_clock): default millis(), custom clock divided down to the internal 1000 Hz. |
+| `native_cloudevents` | `WS_ENABLE_CLOUDEVENTS=1` | `test_cloudevents` | CloudEvents v1.0 envelope (services/cloudevents): the structured-JSON builder (over the JSON writer) + the binary-mode ce-* header reader. |
+| `native_coap` | `WS_ENABLE_COAP=1`, `WS_ENABLE_COAP_BLOCK=1`, `WS_COAP_BLOCK_SZX_MAX=2`, `WS_COAP_BLOCK1_MAX=128` | `test_coap` | CoAP server (RFC 7252) message codec + resource dispatch. |
+| `native_coap_observe` | `WS_ENABLE_COAP=1`, `WS_ENABLE_COAP_BLOCK=1`, `WS_COAP_BLOCK_SZX_MAX=2`, `WS_COAP_BLOCK1_MAX=128`, `WS_ENABLE_COAP_OBSERVE=1` | `test_coap` | CoAP with resource observation (RFC 7641) enabled. |
+| `native_coaps` | `WS_ENABLE_DTLS=1`, `WS_ENABLE_COAP=1` | `test_coaps` | CoAP over DTLS (services/coap/coaps, RFC 7252 sec 9): the bridge that drives a DtlsConn handshake and, once established, unwraps each epoch-3 application record, answers it with coap_server_process(),... |
+| `native_coaps_server` | `WS_ENABLE_DTLS=1`, `WS_ENABLE_COAP=1` | `test_coaps_server` | CoAP-over-DTLS server front-end (services/coap/coaps_server): the per-peer DtlsConn pool + ingest/poll seam on top of dws_coaps_process(). |
+| `native_codeql` | `WS_ENABLE_CSRF=1`, `WS_ENABLE_AUTH_LOCKOUT=1`, `WS_ENABLE_IP_ALLOWLIST=1`, `WS_ENABLE_WS_DEFLATE=1`, `WS_ENABLE_TIME_SOURCE=1`, `WS_ENABLE_CONFIG_STORE=1`, `WS_ENABLE_DEVICE_ID=1`, `WS_ENABLE_TELEMETRY=1`, `WS_ENABLE_DASHBOARD=1`, `WS_ENABLE_PARTITION_MONITOR=1`, `WS_ENABLE_CBOR=1`, `WS_ENABLE_MSGPACK=1`, `WS_ENABLE_GPIO_MAP=1`, `WS_ENABLE_UDP_TELEMETRY=1`, `WS_ENABLE_GUARDRAILS=1`, `WS_ENABLE_FAILSAFE=1`, `WS_ENABLE_SLEEP_SCHED=1`, `WS_ENABLE_WEARLEVEL=1`, `WS_ENABLE_NETADAPT=1`, `WS_ENABLE_DSHOT=1`, `WS_ENABLE_HART=1`, `WS_ENABLE_NTS=1`, `WS_ENABLE_DDS=1`, `WS_ENABLE_XMPP=1`, `WS_ENABLE_RAWL2=1`, `WS_ENABLE_SPA_ROUTER=1`, `WS_ENABLE_GOOSE=1`, `WS_ENABLE_MTCONNECT=1`, `WS_ENABLE_J2735=1`, `WS_ENABLE_NEMA_TS2=1`, `WS_ENABLE_SNP=1`, `WS_ENABLE_DIRECTNET=1`, `WS_ENABLE_SEP2=1`, `WS_ENABLE_PROFINET=1`, `WS_ENABLE_NTCIP=1`, `WS_ENABLE_OPENADR=1`, `WS_ENABLE_MMS=1`, `WS_ENABLE_CCLINK=1`, `WS_ENABLE_POWERLINK=1`, `WS_ENABLE_SERCOS=1`, `WS_ENABLE_PROFIBUS=1`, `WS_ENABLE_LONWORKS=1`, `WS_ENABLE_MBPLUS=1`, `WS_ENABLE_INTERBUS=1`, `WS_ENABLE_ICCP=1`, `WS_ENABLE_WAVE=1`, `WS_ENABLE_UTMC=1`, `WS_ENABLE_OCIT=1`, `WS_ENABLE_ATC=1`, `WS_ENABLE_SOUTHBOUND=1`, `WS_ENABLE_EXC_DECODER=1`, `WS_ENABLE_HTTP_DELIVERY=1`, `WS_ENABLE_HW_HEALTH=1`, `WS_ENABLE_MDNS_ADAPTIVE=1`, `WS_ENABLE_SOCKPOOL=1`, `WS_ENABLE_PSRAM_POOL=1`, `WS_ENABLE_HAPPY_EYEBALLS=1`, `WS_ENABLE_WIFI_SNIFFER=1`, `WS_ENABLE_LINK_MANAGER=1`, `WS_ENABLE_CC1101=1`, `WS_ENABLE_FDC2214=1`, `WS_ENABLE_LDC1614=1`, `WS_ENABLE_VL53L0X=1`, `WS_ENABLE_RADIO_SNIFF=1`, `WS_ENABLE_BLE_GATT=1`, `WS_ENABLE_TLS_POLICY=1`, `WS_ENABLE_WISUN=1`, `WS_ENABLE_LOGBUF=1`, `WS_ENABLE_OTA_ROLLBACK=1`, `WS_ENABLE_TOTP=1`, `WS_ENABLE_WEBHOOK=1`, `WS_ENABLE_RADIO_POWER=1`, `WS_ENABLE_AUDIT_LOG=1`, `WS_ENABLE_OIDC=1`, `WS_ENABLE_VFS=1`, `WS_ENABLE_GRAPHQL=1`, `WS_ENABLE_ESPNOW=1`, `WS_ENABLE_OAUTH2=1`, `WS_ENABLE_OPCUA=1`, `WS_ENABLE_OPCUA_CLIENT=1` | `test_dispatch` | CodeQL coverage env: the full app compiled with every new feature flag ON so CodeQL traces the integration paths (CSRF / lockout / allowlist gates, permessage-deflate) AND the new service modules, whi... |
+| `native_compliance` | default | `test_compliance` | RFC-compliance suite: builds with all enforcement at production defaults (DWS_ENFORCE_HOST_HEADER=1) and exercises the strict behaviors. |
+| `native_concurrency` | `O1`, `pthread` | `test_concurrency` | Concurrency proof for the cross-thread slot fields (DWSAtomic state / rx_head / rx_tail). |
+| `native_config_io` | `WS_ENABLE_CONFIG_STORE=1`, `WS_ENABLE_CONFIG_IO=1` | `test_config_io` | Schema-driven config export/restore (services/config_io) over the config store; round-trip host-tested against the in-memory backend. |
+| `native_config_store` | `WS_ENABLE_CONFIG_STORE=1` | `test_config_store` | Typed NVS config store (services/config_store): string/u32/blob round-trips, defaults, capacity, erase/clear - run against the host in-memory backend (the ESP32 Preferences/NVS backend is compiled in ... |
+| `native_control` | `WS_ENABLE_CONTROL=1` | `test_control` | PID control law (services/control): the P/I/D terms, output clamping, anti-windup by conditional integration, derivative-on-measurement (no setpoint kick) + optional low-pass, feed-forward, the batche... |
+| `native_cotp` | `WS_ENABLE_COTP=1` | `test_cotp` | TPKT (RFC 1006) + COTP X.224 class-0 frame codec (services/cotp): the TPKT envelope, the COTP Data TPDU + Connection Request builders, and the COTP parser. |
+| `native_crypto_kat` | `WS_ENABLE_HTTP3=1` | `test_crypto_kat` | Data-driven external crypto known-answer tests: HMAC-SHA256/512, AEAD_AES_128_GCM, X25519, and Ed25519 verify from Project Wycheproof (including its adversarial edge cases), plus HKDF-SHA256 Extract (... |
+| `native_csrf` | `WS_ENABLE_CSRF=1` | `test_csrf` | Stateless HMAC-signed CSRF token (services/csrf): issue/verify with a fixed secret unit-tests on the host (DWS_ENABLE_CSRF set). |
+| `native_dashboard` | `WS_ENABLE_DASHBOARD=1` | `test_dashboard` | Dashboard widget-table JSON serializers (services/dashboard core). |
+| `native_dbm` | `WS_ENABLE_WAL=1`, `WS_ENABLE_DBM=1` | `test_dbm` | Log-structured hash key-value store on the WAL (services/dbm): put/get/delete with an in-RAM open-addressed index and value data appended to the write-ahead log, plus index rebuild by replaying the lo... |
+| `native_dds` | `WS_ENABLE_DDS=1` | `test_dds` | DDS / RTPS framing codec (services/dds): the 20-octet RTPS header (magic/version/vendor/ guidPrefix) and the submessage TLV (id/flags/octetsToNextHeader, endianness flag), build + parse. |
+| `native_deflate` | `WS_ENABLE_WS_DEFLATE=1` | `test_deflate` | RFC 1951 DEFLATE core (the WebSocket permessage-deflate compressor). |
+| `native_det_arena` | default | `test_det_arena` | Unified double-ended server arena (network_drivers/session/dws_arena): first-fit persistent end (bottom, individual free + coalesce + boundary shrink) + bump scratch end (top, mark/release/reset) shar... |
+| `native_det_ip` | default | `test_det_ip` | IP address core (network_drivers/network/dws_ip): RFC 4291 IPv4/IPv6 text parsing, RFC 5952 canonical formatting (:: zero-compression, v4-mapped), and scope classification (loopback / link-local / pri... |
+| `native_det_primitives` | default | `test_det_primitives` | Shared no-stdlib primitives (shared_primitives): the base-10 dws_strtol/strtoul/strtof number parsers (numparse.h) and the strict RFC 3629 UTF-8 validator (utf8.h). |
+| `native_device_id` | `WS_ENABLE_DEVICE_ID=1` | `test_device_id` | MAC-derived device UUID (services/device_id): RFC 4122 v5 from a MAC via SHA-1. |
+| `native_devicenet` | `WS_ENABLE_DEVICENET=1` | `test_devicenet` | DeviceNet link-adaptation codec (services/devicenet): the 4-group 11-bit CAN id, explicit-message header octet, single-frame explicit messages, and the fragmentation reassembler (CIP over CAN; the CIP... |
+| `native_df1` | `WS_ENABLE_DF1=1` | `test_df1` | Allen-Bradley DF1 full-duplex frame codec (services/df1): BCC + CRC-16/ARC, the frame builder with DLE byte-stuffing, and the validating, un-stuffing parser. |
+| `native_diag` | `WS_ENABLE_DIAG=1` | `test_diag` | Runtime build-flag reporter (server.diag() / DWS_ENABLE_DIAG). |
+| `native_directnet` | `WS_ENABLE_DIRECTNET=1` | `test_directnet` | AutomationDirect DirectNET serial frame codec (services/directnet): the header (SOH + ASCII-hex slave/type/addr/blocks + ETB + LRC) and data (STX + data + ETX + LRC) frames build/parse. |
+| `native_dma` | `WS_ENABLE_DMA=1`, `WS_DMA_BUF_SIZE=8`, `WS_DMA_CHANNELS=2` | `test_dma` | DMA peripheral ingest / egress simulator (services/dma), v5 hardware ingest: an ingress feed surfaces as RX completion events, a full buffer ping-pongs and re-arms, egress DMA is captured, TX is one-i... |
+| `native_dmx` | `WS_ENABLE_DMX=1` | `test_dmx` | DMX512 + RDM lighting codec (services/dmx): the DMX512 slot packet (build/get) and the RDM (ANSI E1.20) packet build/parse with 48-bit UIDs and the 16-bit additive checksum. |
+| `native_dnc` | `WS_ENABLE_DNC=1` | `test_dnc`, `test_dnc_stream` | CNC DNC drip-feed (services/dnc): the EIA RS-244 <-> ISO/ASCII tape-code translation (odd-parity EIA table), ISO even parity, G-code block framing with '%' rewind-stop and leader runout, XON/XOFF flow... |
+| `native_dnp3` | `WS_ENABLE_DNP3=1` | `test_dnp3` | DNP3 (IEEE 1815) data-link frame codec (services/dnp3): CRC-16/DNP, the frame builder (0x0564 header + CRC'd 16-octet data blocks) and the CRC-validating, de-blocking parser. |
+| `native_dns_resolver` | `WS_ENABLE_DNS_RESOLVER=1` | `test_dns_resolver` | DNS resolver answer classifier/verifier (services/dns_resolver): host-tested; the lwIP resolve is ESP32-only. |
+| `native_dns_server` | `WS_ENABLE_DNS_SERVER=1` | `test_dns_server` | Authoritative DNS server (services/dns_server): the pure A-record response builder (QNAME parse, compressed A answer, NXDOMAIN, non-A query, header flags, malformed guards) and the built-in name->IP t... |
+| `native_docstore` | `WS_ENABLE_WAL=1`, `WS_ENABLE_DBM=1`, `WS_ENABLE_DOCSTORE=1` | `test_docstore` | Local JSON document store on the WAL (services/docstore): JSON documents addressed by id, stored via dbm on the write-ahead log, plus top-level field queries (find documents whose JSON field equals a ... |
+| `native_dshot` | `WS_ENABLE_DSHOT=1` | `test_dshot` | DShot ESC throttle codec (services/dshot): the 16-bit frame (11-bit value + telemetry + 4-bit nibble-xor CRC), the bidirectional inverted-CRC variant, decode/validate, and per-rate bit timing. |
+| `native_dtls` | `WS_ENABLE_DTLS=1` | `test_dtls_record` | DTLS 1.3 record layer (network_drivers/presentation/dtls/dtls_record, RFC 9147 sec 4): DTLSPlaintext + DTLSCiphertext protect/unprotect, the unified header, sequence-number encryption (sec 4.2.3) and ... |
+| `native_dtls_conn` | `WS_ENABLE_DTLS=1` | `test_dtls_conn` | DTLS 1.3 server handshake state machine (network_drivers/presentation/dtls/dtls_conn, RFC 9147 sec 5-6): the one-round-trip full handshake (TLS_AES_128_GCM_SHA256 / X25519 / Ed25519) over the DTLS rec... |
+| `native_dtls_hs` | `WS_ENABLE_DTLS=1` | `test_dtls_handshake` | DTLS 1.3 handshake framing + reliability (network_drivers/presentation/dtls/dtls_handshake, RFC 9147 sec 5 + 7): the 12-byte DTLS handshake header, overlap-tolerant message reassembly, the ACK message... |
+| `native_dtls_tls13` | `WS_ENABLE_DTLS=1` | `test_dtls_tls13` | TLS 1.3 messages the DTLS 1.3 handshake adds to tls13_msg (RFC 8446 sec 4.1.4 / 4.4.1), compiled for the DTLS path (DWS_ENABLE_DTLS, not HTTP/3): the HelloRetryRequest builder, the cookie extension pa... |
+| `native_edge_cache` | `WS_ENABLE_HTTP_CACHE=1`, `WS_ENABLE_HTTP_CLIENT=1`, `WS_ENABLE_EDGE_CACHE=1`, `WS_ENABLE_RANGE=1` | `test_edge_cache`, `test_edge_fetch` | CDN edge-cache engine (services/edge_cache): the pure freshness/validator core (response header-field access, HTTP-date parsing over IMF-fixdate / RFC 850 / asctime, RFC 9111 lifetime + Expires-Date +... |
+| `native_edge_cache_sd` | `WS_ENABLE_WAL=1`, `WS_ENABLE_DBM=1`, `WS_DBM_VAL_MAX=1024`, `WS_ENABLE_HTTP_CACHE=1`, `WS_ENABLE_HTTP_CLIENT=1`, `WS_ENABLE_EDGE_CACHE=1` | `test_edge_cache_sd` | CDN edge-cache L2 SD-persistence tier (services/edge_cache/edge_cache_sd): the entry <-> dbm-value serialization roundtrip (all response metadata, Vary variants, binary and max-size bodies), the spill... |
+| `native_edge_mesh` | `WS_ENABLE_HTTP_CACHE=1`, `WS_ENABLE_HTTP_CLIENT=1`, `WS_ENABLE_EDGE_CACHE=1`, `WS_ENABLE_EDGE_MESH=1` | `test_edge_mesh` | CDN edge-cache mesh sibling-cache codec (services/edge_cache/edge_mesh): the request/response wire frames (build + tri-state accumulating parse over partial reads, magic/version/opcode validation), th... |
+| `native_enip` | `WS_ENABLE_ENIP=1` | `test_enip` | EtherNet/IP encapsulation codec (services/enip): the 24-octet header, RegisterSession + SendRRData builders (Common Packet Format), and the SendRRData reply extractor. |
+| `native_enocean` | `WS_ENABLE_ENOCEAN=1`, `WS_ENOCEAN_MAX_DATA=16` | `test_enocean` | EnOcean ESP3 serial codec (services/enocean), v5 radio plugin: the CRC-8 (poly 0x07) against known answers, a build -> parse round trip, malformed framing (bad sync / header CRC / data CRC), incomplet... |
+| `native_espnow` | `WS_ENABLE_ESPNOW=1` | `test_espnow` | ESP-NOW peer messaging (services/espnow) - the envelope codec + peer registry are host-tested here; the esp_now radio binding is ESP32-only. |
+| `native_exc_decoder` | `WS_ENABLE_EXC_DECODER=1` | `test_exc_decoder` | ESP32 panic / exception decoder (services/exc_decoder): parse a captured Guru Meditation dump (cause, register PC + EXCVADDR, backtrace PC:SP frames) into a structured ExcInfo and serialize it as JSON... |
+| `native_failsafe` | `WS_ENABLE_FAILSAFE=1` | `test_failsafe` | Software watchdog / deadlock detection + safe-state (services/failsafe): the wrap-safe overdue predicate, the lifeline registry, fire-once-per-episode breach callback, and JSON. |
+| `native_fdc2214` | `WS_ENABLE_FDC2214=1` | `test_fdc2214` | FDC2114/2214 capacitance-to-digital field sensor (services/fdc2214): the 28-bit data combine + error flags, the frequency scale (data/2^28 * fref), and the single-channel config-sequence builder. |
+| `native_fins` | `WS_ENABLE_FINS=1` | `test_fins` | Omron FINS frame codec (services/fins): the command builder + Memory Area Read convenience + the command / response parsers (10-octet header, MRC/SRC, MRES/SRES end code). |
+| `native_flow_export` | `WS_ENABLE_FLOW_EXPORT=1` | `test_flow_export` | Flow-record export codec (services/flow_export): NetFlow v5 fixed header/record builders + the NetFlow v9 / IPFIX template-then-data cursor (length/count patching, v9 4-octet padding). |
+| `native_focas` | `WS_ENABLE_FOCAS=1` | `test_focas` | FANUC FOCAS Ethernet codec (services/focas): the big-endian frame envelope (magic/version/type/length) + open/close handshake, the generic command request (6-octet function selector + five i32 args), ... |
+| `native_forward` | `WS_ENABLE_FORWARD=1`, `WS_FWD_MAX_IFACES=4`, `WS_FWD_MAX_RULES=4`, `WS_FWD_MAX_ACL=4`, `WS_FWD_MAX_ROUTES=4`, `WS_FWD_INSPECT=1` | `test_forward` | Interface forwarding plane (services/forward), v5 bridge / router: default-deny, an ALLOW rule forwards, a DENY wins, multi-destination fan-out, no reflection to the source, the per-rule rate cap (hos... |
+| `native_ftp` | `WS_ENABLE_FTP=1` | `test_ftp` | FTP client wire codec (services/ftp, RFC 959 + RFC 2428): the control-command builders (generic verb + PORT + EPRT), the single/multi-line 3-digit reply parser, and the PASV / EPSV data-address decoders. |
+| `native_gateway` | `WS_ENABLE_GATEWAY=1`, `WS_GW_MAX_PORTS=4` | `test_gateway` | Radio / wireless gateway bridge (services/gateway), v5 southbound-to-northbound: an uplink envelopes a received frame (src address / port / rssi / seq) and publishes it, fail-closed on no sink / unkno... |
+| `native_gnss_survey` | `WS_ENABLE_NTRIP_CASTER=1`, `WS_ENABLE_NMEA0183=1`, `UNITY_INCLUDE_DOUBLE` | `test_gnss_survey` | GNSS survey-in core (services/gnss/gnss_survey): the exact WGS84 geodetic<->ECEF transform (matched against pyproj EPSG:4979->EPSG:4978), the shifted-origin position averager with a 3-D accuracy estim... |
+| `native_goose` | `WS_ENABLE_GOOSE=1` | `test_goose` | IEC 61850 GOOSE publisher codec (services/goose): the BER IECGoosePdu (gocbRef..allData, minimal-length INTEGERs with the positive leading-zero rule) + the GOOSE header + Ethernet frame (ethertype 0x8... |
+| `native_gpio_map` | `WS_ENABLE_GPIO_MAP=1` | `test_gpio_map` | GPIO pin-mapper / browser diag core (services/gpio_map): direction names, JSON serializer, control-POST parser, output guard - all pure and host-tested. |
+| `native_graphql` | `WS_ENABLE_GRAPHQL=1` | `test_graphql` | GraphQL query subset (services/graphql) - pure parser + executor, host-tested with a demo resolver. |
+| `native_grpcweb` | `WS_ENABLE_GRPC_WEB=1` | `test_grpcweb` | gRPC-Web message framing codec (services/grpcweb): the 5-octet length-prefixed message frame builder + the 0x80 trailers frame (grpc-status / grpc-message) + the frame parser. |
+| `native_guardrails` | `WS_ENABLE_GUARDRAILS=1` | `test_guardrails` | Heap/stack guardrails (services/guardrails): threshold evaluator + JSON, host-tested. |
+| `native_h2conn` | `WS_ENABLE_HTTP2=1` | `test_h2_conn` | HTTP/2 connection engine (network_drivers/presentation/http2/h2_conn, RFC 9113): initial SETTINGS on init, preface + client SETTINGS -> SETTINGS ACK, decoding a real HPACK-encoded request into the hea... |
+| `native_h2frame` | `WS_ENABLE_HTTP2=1` | `test_h2_frame` | HTTP/2 binary framing (network_drivers/presentation/http2/h2_frame, RFC 9113): the 9-byte frame header parse/write (24-bit length, reserved-bit masking), SETTINGS build + parse with validation, and th... |
+| `native_h3_conn` | `WS_ENABLE_HTTP3=1` | `test_h3_conn` | HTTP/3 application engine (network_drivers/presentation/http3/h3_conn, RFC 9114): drives h3_conn through the quic_conn callback seam - a QPACK-encoded request on a request stream dispatches the right ... |
+| `native_h3_e2e` | `WS_ENABLE_HTTP3=1` | `test_h3_e2e` | End-to-end HTTP/3 capstone (network_drivers/presentation/http3): a QUIC client in the test completes the TLS 1.3 handshake against a quic_conn + h3_conn server, sends a real HTTP/3 GET (QPACK HEADERS ... |
+| `native_h3_server` | `WS_ENABLE_HTTP3=1` | `test_h3_server` | HTTP/3 dispatch bridge end-to-end through DWS (the full Layer-7 app built with DWS_ENABLE_HTTP3=1): a QUIC client completes the handshake and sends an HTTP/3 GET, quic_server routes it to the reserved... |
+| `native_h3frame` | `WS_ENABLE_HTTP3=1` | `test_h3_frame` | HTTP/3 framing (network_drivers/presentation/http3/h3_frame, RFC 9114 sec 7): the type+length varint header parse/write (incl. |
+| `native_happy_eyeballs` | `WS_ENABLE_HAPPY_EYEBALLS=1` | `test_happy_eyeballs` | Dual-stack Happy Eyeballs selection (services/happy_eyeballs): RFC 6724 destination preference scoring, the candidate-list sort + RFC 8305 address-family interleave, and the Connection Attempt Delay g... |
+| `native_hart` | `WS_ENABLE_HART=1` | `test_hart` | HART / HART-IP codec (services/hart): the HART command frame (longitudinal XOR checksum, short + long addressing) build/parse and the 8-octet HART-IP message header. |
+| `native_hostlink` | `WS_ENABLE_HOSTLINK=1` | `test_hostlink` | Omron Host Link (C-mode) frame codec (services/hostlink): the FCS (XOR), the ASCII command builder (@UU + header + text + FCS + *CR), and the FCS-validating parser + end-code reader. |
+| `native_hpack` | `WS_ENABLE_HTTP2=1` | `test_hpack` | HPACK header compression for HTTP/2 (RFC 7541): prefix-integer coding (App C.1), the Huffman string code (App B / C.4.1), the first-request decode with dynamic-table insertion (C.3.1), dynamic-table i... |
+| `native_http_client` | `WS_ENABLE_HTTP_CLIENT=1` | `test_http_client` | Outbound HTTP client: URL parser + request builder + response parser. |
+| `native_http_delivery` | `WS_ENABLE_HTTP_DELIVERY=1` | `test_http_delivery` | HTTP delivery optimizations (services/http_delivery): RFC 5861 stale-while-revalidate decision + Cache-Control builder, RFC 7233 byte-range delta/offset fetch (X-Y / X- / -N parse + a 206 Content-Rang... |
+| `native_httpcache` | `WS_ENABLE_HTTP_CACHE=1` | `test_httpcache` | HTTP Cache-Control helpers (services/httpcache, RFC 9111 + 8246 + 5861): the structured directive builder + first-class origin presets (immutable asset / shared / no-store / revalidatable), the tolera... |
+| `native_hw_health` | `WS_ENABLE_HW_HEALTH=1` | `test_hw_health` | Hardware-health diagnostics (services/hw_health): power-rail voltage-drop logger (worst droop + sag/brownout counts), SPI-bus CRC audit with hysteretic clock backoff, GPIO short-circuit test (driven v... |
+| `native_iccp` | `WS_ENABLE_ICCP=1` | `test_iccp` | ICCP / TASE.2 (IEC 60870-6) Data_Value codec (services/iccp): the StateQ (state + quality) and RealQ (scaled INTEGER + quality) indication-point BER structures with optional timestamp. |
+| `native_iec60870` | `WS_ENABLE_IEC60870=1` | `test_iec60870` | IEC 60870-5-101/-104 codec (services/iec60870): the -104 APCI (I/S/U), the ASDU header + 3-octet IOA, and the -101 FT1.2 fixed/variable link frames (sum checksum). |
+| `native_iface_bridge` | `WS_ENABLE_IFACE_BRIDGE=1` | `test_iface_bridge` | Interface bridge pure core (services/iface_bridge): the user-defined address:port -> bus rule table (register / find / dedup / capacity, keyed by port+proto with the full DWSIp bind address preserved)... |
+| `native_ina219` | `WS_ENABLE_INA219=1` | `test_ina219` | INA219 current/power codec (services/ina219): decoding the bus-voltage register (bits [15:3], LSB 4 mV, status bits ignored) and the shunt-voltage register (signed, LSB 10 uV), computing the calibrati... |
+| `native_inflate` | `WS_ENABLE_WS_DEFLATE=1` | `test_inflate` | RFC 1951 INFLATE core (the WebSocket permessage-deflate decompressor). |
+| `native_interbus` | `WS_ENABLE_INTERBUS=1` | `test_interbus` | INTERBUS summation-frame codec (services/interbus): the summation frame (loopback + per-device 16-bit slices + CRC-16/CCITT FCS) assemble + disassemble. |
+| `native_iolink` | `WS_ENABLE_IOLINK=1` | `test_iolink` | IO-Link (SDCI) data-link message codec (services/iolink): the MC / CKT / CKS control octets and the SDCI checksum (seed 0x52 + the 8->6 compression of IO-Link spec A.1.6), with a hand-computed known-a... |
+| `native_j1939` | `WS_ENABLE_J1939=1` | `test_j1939` | SAE J1939 codec (services/j1939): 29-bit id encode/decode (PDU1 + PDU2), single-frame messages, Request PGN, Address Claimed + NAME, and the Transport Protocol (BAM + TP.DT) reassembler, over the shar... |
+| `native_j2735` | `WS_ENABLE_J2735=1` | `test_j2735` | SAE J2735 V2X codec (services/j2735): the ASN.1 UPER bit primitive layer (constrained INTEGER / BOOLEAN / bit fields) and the BSMcore block encode/decode. |
+| `native_jwt` | `WS_ENABLE_JWT=1` | `test_jwt` | JWT (HS256) bearer-auth verification. |
+| `native_keepalive` | `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_KEEPALIVE=1`, `WS_KEEPALIVE_MAX_REQUESTS=3` | `test_keepalive` | HTTP/1.1 keep-alive (persistent connections): full server built with DWS_ENABLE_KEEPALIVE=1; a small per-connection request cap makes the fairness-bound test fast. |
+| `native_ld2410` | `WS_ENABLE_LD2410=1` | `test_ld2410` | LD2410 mmWave radar codec (services/ld2410): decoding a basic and an engineering-mode report frame, rejecting malformed frames, the byte-by-byte stream reassembler (resync past noise, split feeds, abs... |
+| `native_ldc1614` | `WS_ENABLE_LDC1614=1` | `test_ldc1614` | LDC1614 inductance-to-digital field sensor (services/ldc1614): the 28-bit data combine + error flags, the frequency scale (data/2^28 * fref), and the single-channel config-sequence builder. |
+| `native_link_manager` | `WS_ENABLE_LINK_MANAGER=1` | `test_link_manager` | Multi-interface egress selection (services/link_manager): a table of interfaces (kind + priority + up/down) with deterministic best-link-up selection, graceful escalation to a higher-priority interfac... |
+| `native_logbuf` | `WS_ENABLE_LOGBUF=1` | `test_logbuf` | Rotating log ring + severity trap (services/logbuf): pure, fully host-tested. |
+| `native_lonworks` | `WS_ENABLE_LONWORKS=1` | `test_lonworks` | LonWorks / LON-IP network-variable codec (services/lonworks): the LonTalk NV PDU ([msg-code][14-bit selector][value]) build + parse and the SNVT_temp / SNVT_switch scalar encodings. |
+| `native_lora` | `WS_ENABLE_LORA=1` | `test_lora` | LoRa codec + SX127x driver (services/lora), v5 radio plugin: the RadioHead 4-byte header parse/build, and the SX127x register protocol (init / send / tx-done / set-rx / recv) exercised against a mock ... |
+| `native_lwm2m_tlv` | `WS_ENABLE_LWM2M=1` | `test_lwm2m_tlv` | OMA LwM2M TLV codec (services/lwm2m): the writer (raw + int / bool / string / float value helpers, 8-/16-bit ids, inline / 8-/16-/24-bit lengths) + the cursor reader + integer value decoding. |
+| `native_mbplus` | `WS_ENABLE_MBPLUS=1` | `test_mbplus` | Modbus Plus HDLC token-bus codec (services/mbplus): the HDLC frame (7E addr ctrl payload CRC-16/X-25 7E) build + validate and the token-rotation ring helper. |
+| `native_mbus` | `WS_ENABLE_MBUS=1` | `test_mbus` | Wired M-Bus codec (services/mbus): the ACK / short / long frame builders + parser (start/stop, doubled length, 8-bit sum checksum) and the EN 13757-3 variable-data record walker (DIF/VIF, DIFE/VIFE ch... |
+| `native_mdns_adaptive` | `WS_ENABLE_MDNS_ADAPTIVE=1` | `test_mdns_adaptive` | Adaptive mDNS beacon scheduling (services/mdns_adaptive): RF-contention backoff/recovery of the announce interval, the TTL/2 continuous-refresher cadence, the announce-due check, and the auto-sleep be... |
+| `native_melsec` | `WS_ENABLE_MELSEC=1` | `test_melsec` | Mitsubishi MELSEC MC binary 3E codec (services/melsec): the batch-read request builder (little-endian, subheader 0x5000, command 0x0401, device code + 24-bit head device) + the 0xD000 response parser. |
+| `native_mms` | `WS_ENABLE_MMS=1` | `test_mms` | IEC 61850 MMS PDU codec (services/mms): the BER confirmed-request/response Read PDUs (invokeID + read service + named ObjectName), build + parse. |
+| `native_modbus` | `WS_ENABLE_MODBUS=1`, `WS_ENABLE_MODBUS_RTU=1` | `test_modbus` | Modbus TCP slave core + RTU framing (Modbus Application Protocol): the data model + MBAP/PDU codec + the RTU ADU codec (CRC16 + [addr][PDU][CRC]). |
+| `native_modbus_master` | `WS_ENABLE_MODBUS=1`, `WS_ENABLE_MODBUS_MASTER=1` | `test_modbus_master` | Modbus master codec + scanner (services/modbus/modbus_master): build read requests, parse responses; host-tested as a round-trip against the slave codec. |
+| `native_mpr121` | `WS_ENABLE_MPR121=1` | `test_mpr121` | MPR121 capacitive-touch codec (services/mpr121): decoding the touch-status word into an electrode bitmask (masking proximity / over-current), the per-electrode touched test, the proximity / over-curre... |
+| `native_mqtt` | `WS_ENABLE_MQTT=1` | `test_mqtt` |  |
+| `native_mqtt_sn` | `WS_ENABLE_MQTT_SN=1` | `test_mqtt_sn` | MQTT-SN v1.2 wire codec (services/mqtt/mqtt_sn): the zero-heap message builders (CONNECT/REGISTER/PUBLISH/SUBSCRIBE/PINGREQ/DISCONNECT/SEARCHGW) + the Length+MsgType header parser (1- and 3-octet form... |
+| `native_msgpack` | `WS_ENABLE_MSGPACK=1` | `test_msgpack` | MessagePack encoder (network_drivers/presentation/msgpack): a pure byte-output codec, host-tested against the spec encodings. |
+| `native_mtconnect` | `WS_ENABLE_MTCONNECT=1` | `test_mtconnect` | MTConnect agent response codec (services/mtconnect, ANSI/MTC1.4): the incremental MTConnectStreams builder (header + Samples/Events/Condition), the MTConnectDevices probe (device model), the MTConnect... |
+| `native_nats` | `WS_ENABLE_NATS=1` | `test_nats` | NATS client protocol codec (services/nats): the CONNECT / PUB / SUB / UNSUB / PING / PONG builders + the inbound MSG / INFO / PING / +OK / -ERR parser (subject/sid/reply/payload). |
+| `native_nema_ts2` | `WS_ENABLE_NEMA_TS2=1` | `test_nema_ts2` | NEMA TS 2 SDLC frame codec (services/nema_ts2): the traffic-cabinet bus frame ([address][control][frame-type][data][CRC-16/X-25]) build + validate. |
 | `native_net_egress` | default | `test_net_egress` | Egress-interface reporting (network_drivers/physical). |
-| `native_netadapt` | `ETWS_ENABLE_NETADAPT=1` | `test_netadapt` | Network adaptation decisions (services/netadapt): TCP receive-window sizing from the free heap (reserve + quarter-of-spare, clamped) and the DHCP->static-IP fallback trigger. |
-| `native_nmea0183` | `ETWS_ENABLE_NMEA0183=1` | `test_nmea0183` | NMEA 0183 sentence codec (services/nmea0183): the XOR checksum, sentence build, parse (field splitting, talker/type, checksum validation) against the canonical GGA vector, and the field-value helpers. |
-| `native_nmea2000` | `ETWS_ENABLE_NMEA2000=1` | `test_nmea2000` | NMEA 2000 codec (services/nmea2000): single-frame messages plus the Fast Packet transport (frame count, build, reassembly), built on the J1939 id codec (implied). |
-| `native_nrf24` | `ETWS_ENABLE_NRF24=1`, `ETWS_NRF24_PAYLOAD=8` | `test_nrf24` | nRF24L01+ driver (services/nrf24), v5 radio plugin: the Nordic SPI command protocol (STATUS shifted out first, W/R_REGISTER, W_TX/R_RX_PAYLOAD, write-1-to-clear) exercised against a mock chip - init /... |
-| `native_ntcip` | `ETWS_ENABLE_NTCIP=1` | `test_ntcip` | NTCIP transportation object OIDs (services/ntcip): the NTCIP 1202 signal-controller + 1203 DMS object roots under 1.3.6.1.4.1.1206.4.2 and the OID builder (root + instance index), for the shipped SNMP... |
-| `native_ntp_server` | `ETWS_ENABLE_NTP_SERVER=1` | `test_ntp_server` | NTP/SNTP server (RFC 5905 server mode) response codec (ntp_server_build_response): version echo, mode/LI/stratum, origin-timestamp copy, reference/receive/transmit stamps, big-endian encoding, and the... |
-| `native_ntrip_caster` | `ETWS_ENABLE_NTRIP_CASTER=1` | `test_ntrip_caster` | NTRIP caster protocol codec (services/gnss/ntrip_caster): rover request parsing (mountpoint, NTRIP 1.0/2.0 version, HTTP Basic auth), the stream-accept / error responses, and the RTCM source table (ST... |
-| `native_nts` | `ETWS_ENABLE_NTS=1` | `test_nts` | Network Time Security codec (services/nts, RFC 8915): the NTS-KE TLV records (build the standard request, parse a response) and the NTS NTP extension-field framing (unique id / cookie, RFC 7822 4-byte... |
-| `native_oauth2` | `ETWS_ENABLE_OAUTH2=1` | `test_oauth2` | OAuth2 token-endpoint client (services/oauth2) - the form-body builder + JSON token-response parser are host-tested (the parser reuses the JSON reader); the HTTP exchange is ESP32-only. |
-| `native_observability` | `ETWS_ENABLE_OBSERVABILITY=1` | `test_observability` | Transport observability (DETWS_ENABLE_OBSERVABILITY): the det_conn_on_event hook, by-reason counters, the live CONN_CLOSING gauge, and that the real lwIP callbacks (recv FIN / error / timeout / local ... |
-| `native_ocit` | `ETWS_ENABLE_OCIT=1` | `test_ocit` | OCIT-Outstations message codec (services/ocit): the object message ([msg-type][object-type][instance][data-type][value]) build + parse and the typed-value accessors. |
-| `native_oidc` | `ETWS_ENABLE_OIDC=1` | `test_oidc` | OIDC RS256 ID-token verifier (services/oidc). |
-| `native_opcua` | `ETWS_ENABLE_OPCUA=1` | `test_opcua` | OPC UA Binary increment 1 (services/opcua) - the type codec, UACP framing, and Hello/Acknowledge handshake are host-tested here; the TCP server (opcua_rx) is ESP32-only. |
-| `native_opcua_client` | `ETWS_ENABLE_OPCUA=1`, `ETWS_ENABLE_OPCUA_CLIENT=1` | `test_opcua_client` |  |
-| `native_openadr` | `ETWS_ENABLE_OPENADR=1` | `test_openadr` | OpenADR 3.0 JSON codec (services/openadr): the event (programID + eventName + interval payloads) and report (VEN reading) JSON documents build, with escaping + a no-stdlib 3-decimal formatter. |
-| `native_ota` | `ETWS_ENFORCE_HOST_HEADER=0`, `ETWS_ENABLE_OTA=1` | `test_http_ota` | Parser streaming-body hook (OTA) - exercises http_parser with DETWS_ENABLE_OTA=1 using a mock sink (no ESP32 Update dependency). |
-| `native_ota_rollback` | `ETWS_ENABLE_OTA_ROLLBACK=1` | `test_ota_rollback` | OTA rollback decision (services/ota_rollback): pure decision matrix host-tested; the esp_ota commit/rollback are ESP32-only. |
-| `native_partition` | `ETWS_ENABLE_PARTITION_MONITOR=1` | `test_partition_monitor` | Flash partition-map monitor (services/partition_monitor core): the kind classifier + JSON serializer host-test here; the esp_partition walk is ESP32-only. |
-| `native_pca9685` | `ETWS_ENABLE_PCA9685=1` | `test_pca9685` | PCA9685 PWM/servo codec (services/pca9685): the PRESCALE computation from a PWM frequency (with clamping), the per-channel register address, the servo pulse-width -> 12-bit count conversion (with clam... |
-| `native_pentest` | `ETWS_ENABLE_MODBUS=1`, `ETWS_ENABLE_MODBUS_MASTER=1`, `ETWS_ENABLE_TOTP=1`, `ETWS_ENABLE_MULTIPART=1`, `ETWS_ENABLE_CBOR=1`, `ETWS_ENABLE_MSGPACK=1`, `ETWS_ENABLE_COAP=1`, `ETWS_ENABLE_COAP_BLOCK=1`, `ETWS_COAP_BLOCK_SZX_MAX=2`, `ETWS_COAP_BLOCK1_MAX=128`, `ETWS_ENABLE_SNMP=1`, `ETWS_ENABLE_SQLITE=1`, `ETWS_ENABLE_REDIS=1`, `ETWS_ENABLE_OPCUA=1`, `ETWS_ENABLE_GRAPHQL=1`, `ETWS_ENABLE_DNS_SERVER=1`, `ETWS_ENABLE_DNP3=1`, `ETWS_ENABLE_STOMP=1`, `ETWS_ENABLE_SMB=1`, `ETWS_ENABLE_DNC=1`, `ETWS_ENABLE_FTP=1`, `ETWS_ENABLE_FINS=1`, `ETWS_ENABLE_MELSEC=1`, `ETWS_ENABLE_CIP=1`, `ETWS_ENABLE_ENIP=1`, `ETWS_ENABLE_DF1=1`, `ETWS_ENABLE_BACNET=1`, `ETWS_ENABLE_COTP=1`, `ETWS_ENABLE_C37118=1`, `ETWS_ENABLE_JWT=1`, `ETWS_ENABLE_DIRECTNET=1`, `ETWS_ENABLE_CCLINK=1`, `ETWS_ENABLE_AMQP=1`, `ETWS_ENABLE_MMS=1`, `ETWS_ENABLE_DDS=1` | `test_pentest` | Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`), NOT part of run_tests.sh. |
-| `native_pn532` | `ETWS_ENABLE_PN532=1`, `ETWS_PN532_MAX_DATA=8` | `test_pn532` | PN532 NFC frame codec (services/pn532), v5 radio plugin: the normal-information-frame build/parse against the documented GetFirmwareVersion command + response frames (LEN/LCS + DCS checksums), a round... |
-| `native_powerlink` | `ETWS_ENABLE_POWERLINK=1` | `test_powerlink` | Ethernet POWERLINK basic frame codec (services/powerlink): the EPL cyclic frames ([messageType][dest][source][payload]) - SoC/PReq/PRes/SoA - build + parse, over raw L2 (0x88AB). |
-| `native_pqc` | `ETWS_ENABLE_PQC_KEX=1` | `test_pqc_sha3`, `test_pqc_mlkem` | Post-quantum hybrid KEX primitives (network_drivers/presentation/pqc): the Keccak/SHA-3/SHAKE sponge (FIPS 202) and ML-KEM-768 Encaps (FIPS 203) - the responder half of the mlkem768x25519-sha256 (SSH)... |
-| `native_preempt_queue` | `ETWS_ENABLE_PREEMPT_QUEUE=1`, `ETWS_PQ_DEPTH=4`, `ETWS_PQ_ITEM_SIZE=4` | `test_preempt_queue` | Preempting work queue (services/preempt_queue), v5 real-time ingest: the host fixed-ring core - FIFO order, urgent-to-front, fail-closed when full, high-water, and drain/handler dispatch. |
-| `native_profibus` | `ETWS_ENABLE_PROFIBUS=1` | `test_profibus` | PROFIBUS-DP FDL telegram codec (services/profibus): the SD1 (no-data) + SD2 (variable data, LE/LEr + arithmetic-sum FCS) telegrams build + validate. |
-| `native_profinet` | `ETWS_ENABLE_PROFINET=1` | `test_profinet` | PROFINET DCP frame codec (services/profinet): the 10-octet DCP header + option/suboption blocks (even-padding) build + parse/walk, for Identify/Set over raw L2 (ethertype 0x8892). |
-| `native_promisc` | `ETWS_ENABLE_PROMISC=1` | `test_promisc` | Wi-Fi promiscuous capture helpers (services/promisc): the pure 802.11 MAC header parser (to/from-DS src/dst/bssid resolution, QoS, WDS 4-address, control frames, malformed rejection) and libpcap (DLT_... |
-| `native_protobuf` | `ETWS_ENABLE_PROTOBUF=1` | `test_protobuf` | Protocol Buffers wire codec (services/protobuf): the zero-heap streaming writer (varint / ZigZag / fixed32 / fixed64 / length-delimited) + the cursor reader, host-tested against the spec vectors. |
+| `native_netadapt` | `WS_ENABLE_NETADAPT=1` | `test_netadapt` | Network adaptation decisions (services/netadapt): TCP receive-window sizing from the free heap (reserve + quarter-of-spare, clamped) and the DHCP->static-IP fallback trigger. |
+| `native_nmea0183` | `WS_ENABLE_NMEA0183=1` | `test_nmea0183` | NMEA 0183 sentence codec (services/nmea0183): the XOR checksum, sentence build, parse (field splitting, talker/type, checksum validation) against the canonical GGA vector, and the field-value helpers. |
+| `native_nmea2000` | `WS_ENABLE_NMEA2000=1` | `test_nmea2000` | NMEA 2000 codec (services/nmea2000): single-frame messages plus the Fast Packet transport (frame count, build, reassembly), built on the J1939 id codec (implied). |
+| `native_nrf24` | `WS_ENABLE_NRF24=1`, `WS_NRF24_PAYLOAD=8` | `test_nrf24` | nRF24L01+ driver (services/nrf24), v5 radio plugin: the Nordic SPI command protocol (STATUS shifted out first, W/R_REGISTER, W_TX/R_RX_PAYLOAD, write-1-to-clear) exercised against a mock chip - init /... |
+| `native_ntcip` | `WS_ENABLE_NTCIP=1` | `test_ntcip` | NTCIP transportation object OIDs (services/ntcip): the NTCIP 1202 signal-controller + 1203 DMS object roots under 1.3.6.1.4.1.1206.4.2 and the OID builder (root + instance index), for the shipped SNMP... |
+| `native_ntp_server` | `WS_ENABLE_NTP_SERVER=1` | `test_ntp_server` | NTP/SNTP server (RFC 5905 server mode) response codec (ntp_server_build_response): version echo, mode/LI/stratum, origin-timestamp copy, reference/receive/transmit stamps, big-endian encoding, and the... |
+| `native_ntrip_caster` | `WS_ENABLE_NTRIP_CASTER=1` | `test_ntrip_caster` | NTRIP caster protocol codec (services/gnss/ntrip_caster): rover request parsing (mountpoint, NTRIP 1.0/2.0 version, HTTP Basic auth), the stream-accept / error responses, and the RTCM source table (ST... |
+| `native_nts` | `WS_ENABLE_NTS=1` | `test_nts` | Network Time Security codec (services/nts, RFC 8915): the NTS-KE TLV records (build the standard request, parse a response) and the NTS NTP extension-field framing (unique id / cookie, RFC 7822 4-byte... |
+| `native_oauth2` | `WS_ENABLE_OAUTH2=1` | `test_oauth2` | OAuth2 token-endpoint client (services/oauth2) - the form-body builder + JSON token-response parser are host-tested (the parser reuses the JSON reader); the HTTP exchange is ESP32-only. |
+| `native_observability` | `WS_ENABLE_OBSERVABILITY=1` | `test_observability` | Transport observability (DWS_ENABLE_OBSERVABILITY): the dws_conn_on_event hook, by-reason counters, the live CONN_CLOSING gauge, and that the real lwIP callbacks (recv FIN / error / timeout / local cl... |
+| `native_ocit` | `WS_ENABLE_OCIT=1` | `test_ocit` | OCIT-Outstations message codec (services/ocit): the object message ([msg-type][object-type][instance][data-type][value]) build + parse and the typed-value accessors. |
+| `native_oidc` | `WS_ENABLE_OIDC=1` | `test_oidc` | OIDC RS256 ID-token verifier (services/oidc). |
+| `native_opcua` | `WS_ENABLE_OPCUA=1` | `test_opcua` | OPC UA Binary increment 1 (services/opcua) - the type codec, UACP framing, and Hello/Acknowledge handshake are host-tested here; the TCP server (opcua_rx) is ESP32-only. |
+| `native_opcua_client` | `WS_ENABLE_OPCUA=1`, `WS_ENABLE_OPCUA_CLIENT=1` | `test_opcua_client` |  |
+| `native_openadr` | `WS_ENABLE_OPENADR=1` | `test_openadr` | OpenADR 3.0 JSON codec (services/openadr): the event (programID + eventName + interval payloads) and report (VEN reading) JSON documents build, with escaping + a no-stdlib 3-decimal formatter. |
+| `native_ota` | `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_OTA=1` | `test_http_ota` | Parser streaming-body hook (OTA) - exercises http_parser with DWS_ENABLE_OTA=1 using a mock sink (no ESP32 Update dependency). |
+| `native_ota_rollback` | `WS_ENABLE_OTA_ROLLBACK=1` | `test_ota_rollback` | OTA rollback decision (services/ota_rollback): pure decision matrix host-tested; the esp_ota commit/rollback are ESP32-only. |
+| `native_partition` | `WS_ENABLE_PARTITION_MONITOR=1` | `test_partition_monitor` | Flash partition-map monitor (services/partition_monitor core): the kind classifier + JSON serializer host-test here; the esp_partition walk is ESP32-only. |
+| `native_pca9685` | `WS_ENABLE_PCA9685=1` | `test_pca9685` | PCA9685 PWM/servo codec (services/pca9685): the PRESCALE computation from a PWM frequency (with clamping), the per-channel register address, the servo pulse-width -> 12-bit count conversion (with clam... |
+| `native_pentest` | `WS_ENABLE_MODBUS=1`, `WS_ENABLE_MODBUS_MASTER=1`, `WS_ENABLE_TOTP=1`, `WS_ENABLE_MULTIPART=1`, `WS_ENABLE_CBOR=1`, `WS_ENABLE_MSGPACK=1`, `WS_ENABLE_COAP=1`, `WS_ENABLE_COAP_BLOCK=1`, `WS_COAP_BLOCK_SZX_MAX=2`, `WS_COAP_BLOCK1_MAX=128`, `WS_ENABLE_SNMP=1`, `WS_ENABLE_SQLITE=1`, `WS_ENABLE_REDIS=1`, `WS_ENABLE_OPCUA=1`, `WS_ENABLE_GRAPHQL=1`, `WS_ENABLE_DNS_SERVER=1`, `WS_ENABLE_DNP3=1`, `WS_ENABLE_STOMP=1`, `WS_ENABLE_SMB=1`, `WS_ENABLE_DNC=1`, `WS_ENABLE_FTP=1`, `WS_ENABLE_FINS=1`, `WS_ENABLE_MELSEC=1`, `WS_ENABLE_CIP=1`, `WS_ENABLE_ENIP=1`, `WS_ENABLE_DF1=1`, `WS_ENABLE_BACNET=1`, `WS_ENABLE_COTP=1`, `WS_ENABLE_C37118=1`, `WS_ENABLE_JWT=1`, `WS_ENABLE_DIRECTNET=1`, `WS_ENABLE_CCLINK=1`, `WS_ENABLE_AMQP=1`, `WS_ENABLE_MMS=1`, `WS_ENABLE_DDS=1` | `test_pentest` | Adversarial / pentest harness - run SEPARATELY (`pio test -e native_pentest`), NOT part of run_tests.sh. |
+| `native_pn532` | `WS_ENABLE_PN532=1`, `WS_PN532_MAX_DATA=8` | `test_pn532` | PN532 NFC frame codec (services/pn532), v5 radio plugin: the normal-information-frame build/parse against the documented GetFirmwareVersion command + response frames (LEN/LCS + DCS checksums), a round... |
+| `native_powerlink` | `WS_ENABLE_POWERLINK=1` | `test_powerlink` | Ethernet POWERLINK basic frame codec (services/powerlink): the EPL cyclic frames ([messageType][dest][source][payload]) - SoC/PReq/PRes/SoA - build + parse, over raw L2 (0x88AB). |
+| `native_pqc` | `WS_ENABLE_PQC_KEX=1` | `test_pqc_sha3`, `test_pqc_mlkem` | Post-quantum hybrid KEX primitives (network_drivers/presentation/pqc): the Keccak/SHA-3/SHAKE sponge (FIPS 202) and ML-KEM-768 Encaps (FIPS 203) - the responder half of the mlkem768x25519-sha256 (SSH)... |
+| `native_preempt_queue` | `WS_ENABLE_PREEMPT_QUEUE=1`, `WS_PQ_DEPTH=4`, `WS_PQ_ITEM_SIZE=4` | `test_preempt_queue` | Preempting work queue (services/preempt_queue), v5 real-time ingest: the host fixed-ring core - FIFO order, urgent-to-front, fail-closed when full, high-water, and drain/handler dispatch. |
+| `native_profibus` | `WS_ENABLE_PROFIBUS=1` | `test_profibus` | PROFIBUS-DP FDL telegram codec (services/profibus): the SD1 (no-data) + SD2 (variable data, LE/LEr + arithmetic-sum FCS) telegrams build + validate. |
+| `native_profinet` | `WS_ENABLE_PROFINET=1` | `test_profinet` | PROFINET DCP frame codec (services/profinet): the 10-octet DCP header + option/suboption blocks (even-padding) build + parse/walk, for Identify/Set over raw L2 (ethertype 0x8892). |
+| `native_promisc` | `WS_ENABLE_PROMISC=1` | `test_promisc` | Wi-Fi promiscuous capture helpers (services/promisc): the pure 802.11 MAC header parser (to/from-DS src/dst/bssid resolution, QoS, WDS 4-address, control frames, malformed rejection) and libpcap (DLT_... |
+| `native_protobuf` | `WS_ENABLE_PROTOBUF=1` | `test_protobuf` | Protocol Buffers wire codec (services/protobuf): the zero-heap streaming writer (varint / ZigZag / fixed32 / fixed64 / length-delimited) + the cursor reader, host-tested against the spec vectors. |
 | `native_prov` | default | `test_provisioning` | Provisioning form-field parser - the only host-testable part of the captive portal (softAP / lwIP UDP / NVS are ESP32-only and compiled out here). |
-| `native_proxy_protocol` | `ETWS_ENABLE_PROXY_PROTOCOL=1` | `test_proxy_protocol` | HAProxy PROXY protocol codec (services/proxy_protocol): the v1 (text) + v2 (binary) TCP/IPv4 header builders and the unified parser (recover the real client IP behind a load balancer). |
-| `native_psram_pool` | `ETWS_ENABLE_PSRAM_POOL=1` | `test_psram_pool` | Buffer placement policy + DMA ping-pong (services/psram_pool): detws_psram_place picks DRAM vs PSRAM by size / DMA requirement / free-heap headroom (large-cold to PSRAM, small-hot + DMA to DRAM, leavi... |
-| `native_qpack` | `ETWS_ENABLE_HTTP3=1` | `test_qpack` | QPACK field-section compression for HTTP/3 (network_drivers/presentation/http3/qpack, RFC 9204): the Appendix B.1 worked example (literal field line with a static name reference), the encoder's exact ... |
-| `native_quic_conn` | `ETWS_ENABLE_HTTP3=1` | `test_quic_conn` | QUIC v1 server connection engine (network_drivers/presentation/http3/quic_conn, RFC 9000 / RFC 9001): the test acts as a QUIC client - builds real Initial / Handshake / 1-RTT packets and drives a serv... |
-| `native_quic_crypto` | `ETWS_ENABLE_HTTP3=1` | `test_quic_crypto` | QUIC Initial packet crypto (network_drivers/presentation/http3/quic_hkdf + quic_aead + quic_crypto, RFC 9001): HKDF-Expand-Label key derivation, AEAD_AES_128_GCM (software AES-128 + GHASH) and header ... |
-| `native_quic_frame` | `ETWS_ENABLE_HTTP3=1` | `test_quic_frame` | QUIC frame codec (network_drivers/presentation/http3/quic_frame, RFC 9000 sec 19): builder/parser round-trips for PADDING/PING/HANDSHAKE_DONE, ACK (single-range + a hand-built multi-range-with-ECN cur... |
-| `native_quic_packet` | `ETWS_ENABLE_HTTP3=1` | `test_quic_packet` | QUIC packet header + packet-number codec (network_drivers/presentation/http3/quic_packet, RFC 9000 sec 17): the long-header build/parse round-trip, a Version Negotiation packet (Version 0 + supported-... |
-| `native_quic_server` | `ETWS_ENABLE_HTTP3=1` | `test_quic_server` | HTTP/3 server glue (network_drivers/presentation/http3/quic_server): the UDP-facing pool that routes datagrams by Destination Connection ID to a pool of QuicConn + H3Conn engines. |
-| `native_quic_tls` | `ETWS_ENABLE_HTTP3=1` | `test_quic_tls` | TLS 1.3 server handshake state machine for QUIC (network_drivers/presentation/http3/ quic_tls, RFC 9001 / RFC 8446): a full interop round-trip - drive the server with a hand-built ClientHello, run the... |
-| `native_quic_tls_pqc` | `ETWS_ENABLE_HTTP3=1`, `ETWS_ENABLE_PQC_KEX=1`, `ETWS_WORKER_TASK_STACK=16384` | `test_quic_tls` | TLS 1.3 QUIC handshake with the X25519MLKEM768 post-quantum hybrid group (IANA 0x11ec, DETWS_ENABLE_PQC_KEX=1): drives the server with a hybrid ClientHello, then verifies it as a conforming client - M... |
-| `native_quic_tp` | `ETWS_ENABLE_HTTP3=1` | `test_quic_tp` | QUIC transport parameters codec (network_drivers/presentation/http3/quic_tp, RFC 9000 sec 18): the sec 18.2 defaults, an encode/parse round-trip over the connection IDs + every varint parameter + the ... |
-| `native_quic_varint` | `ETWS_ENABLE_HTTP3=1` | `test_quic_varint` | QUIC variable-length integer codec (network_drivers/presentation/http3/quic_varint, RFC 9000 sec 16) - the foundational HTTP/3 primitive: the Appendix A.1 worked examples (1/2/4/8 byte encodings), the... |
-| `native_radio_power` | `ETWS_ENABLE_RADIO_POWER=1` | `test_radio_power` | WiFi radio power controls (services/radio_power): modem-sleep mode names host-tested; the apply/readback are ESP32-only (esp_wifi). |
-| `native_radio_sniff` | `ETWS_ENABLE_RADIO_SNIFF=1` | `test_radio_sniff` | Receive-only radio channel sniffer -> pcap (services/radio_sniff): the int->float32 RSSI encode, the pcap global header (DLT 802.15.4 TAP), and the per-frame TAP record (RSSI + channel TLVs + MAC fram... |
-| `native_range` | `ETWS_ENFORCE_HOST_HEADER=0`, `ETWS_ENABLE_RANGE=1` | `test_range` | HTTP Range requests / 206 Partial Content (RFC 7233): full server built with DETWS_ENABLE_RANGE=1, exercising serve_file() against the mock FS (now with seek()) via the tcp_write capture mock. |
-| `native_rawl2` | `ETWS_ENABLE_RAWL2=1` | `test_rawl2` | Raw L2 Ethernet frame codec (services/rawl2): Ethernet II + 802.1Q VLAN build/parse and the 802.3 FCS (CRC-32). |
-| `native_redis` | `ETWS_ENABLE_REDIS=1` | `test_redis_resp` | Redis RESP2/RESP3 codec (services/redis_resp): the zero-heap command encoder + the cursor reply parser (RESP2 simple/error/integer/bulk/array/nil plus RESP3 null/boolean/double/big number/bulk error/v... |
-| `native_relay` | `ETWS_ENABLE_RELAY=1` | `test_relay` | TCP relay / DNAT byte pump (services/relay): the bidirectional relay engine that publishes an internal host:port through the server. |
-| `native_rtc` | `ETWS_ENABLE_RTC=1` | `test_rtc` | DS1307/DS3231 RTC conversions (services/rtc): BCD time registers <-> Unix epoch in 24- and 12-hour encodings, leap years, clock-halt/century bit masks, range validation, and a round-trip over the 2000... |
-| `native_rtcm3` | `ETWS_ENABLE_NTRIP_CASTER=1` | `test_rtcm3` | RTCM 3.x framing + station-reference codec (services/gnss/rtcm3), the pure core of the GNSS RTK base / NTRIP caster: the transport frame (0xD3 preamble, 10-bit length, CRC-24Q), MSB-first bit I/O, and... |
-| `native_s7comm` | `ETWS_ENABLE_S7COMM=1` | `test_s7comm` | Siemens S7comm PDU codec (services/s7comm): the Setup Communication + Read Var request builders, the header parser, and the response data-item reader (length-in-bits + even padding). |
-| `native_scp` | `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_FILE_SERVING=1`, `ETWS_ENABLE_SSH_SCP=1` | `test_scp` | SCP (RCP) protocol wire codec (services/scp): parse an `scp -t/-f <path>` exec command into its sink/source role + target, parse + build the `C<mode> <size> <name>` control line (octal mode, decimal s... |
+| `native_proxy_protocol` | `WS_ENABLE_PROXY_PROTOCOL=1` | `test_proxy_protocol` | HAProxy PROXY protocol codec (services/proxy_protocol): the v1 (text) + v2 (binary) TCP/IPv4 header builders and the unified parser (recover the real client IP behind a load balancer). |
+| `native_psram_pool` | `WS_ENABLE_PSRAM_POOL=1` | `test_psram_pool` | Buffer placement policy + DMA ping-pong (services/psram_pool): dws_psram_place picks DRAM vs PSRAM by size / DMA requirement / free-heap headroom (large-cold to PSRAM, small-hot + DMA to DRAM, leaving... |
+| `native_qpack` | `WS_ENABLE_HTTP3=1` | `test_qpack` | QPACK field-section compression for HTTP/3 (network_drivers/presentation/http3/qpack, RFC 9204): the Appendix B.1 worked example (literal field line with a static name reference), the encoder's exact ... |
+| `native_quic_conn` | `WS_ENABLE_HTTP3=1` | `test_quic_conn` | QUIC v1 server connection engine (network_drivers/presentation/http3/quic_conn, RFC 9000 / RFC 9001): the test acts as a QUIC client - builds real Initial / Handshake / 1-RTT packets and drives a serv... |
+| `native_quic_crypto` | `WS_ENABLE_HTTP3=1` | `test_quic_crypto` | QUIC Initial packet crypto (network_drivers/presentation/http3/quic_hkdf + quic_aead + quic_crypto, RFC 9001): HKDF-Expand-Label key derivation, AEAD_AES_128_GCM (software AES-128 + GHASH) and header ... |
+| `native_quic_frame` | `WS_ENABLE_HTTP3=1` | `test_quic_frame` | QUIC frame codec (network_drivers/presentation/http3/quic_frame, RFC 9000 sec 19): builder/parser round-trips for PADDING/PING/HANDSHAKE_DONE, ACK (single-range + a hand-built multi-range-with-ECN cur... |
+| `native_quic_packet` | `WS_ENABLE_HTTP3=1` | `test_quic_packet` | QUIC packet header + packet-number codec (network_drivers/presentation/http3/quic_packet, RFC 9000 sec 17): the long-header build/parse round-trip, a Version Negotiation packet (Version 0 + supported-... |
+| `native_quic_server` | `WS_ENABLE_HTTP3=1` | `test_quic_server` | HTTP/3 server glue (network_drivers/presentation/http3/quic_server): the UDP-facing pool that routes datagrams by Destination Connection ID to a pool of QuicConn + H3Conn engines. |
+| `native_quic_tls` | `WS_ENABLE_HTTP3=1` | `test_quic_tls` | TLS 1.3 server handshake state machine for QUIC (network_drivers/presentation/http3/ quic_tls, RFC 9001 / RFC 8446): a full interop round-trip - drive the server with a hand-built ClientHello, run the... |
+| `native_quic_tls_pqc` | `WS_ENABLE_HTTP3=1`, `WS_ENABLE_PQC_KEX=1`, `WS_WORKER_TASK_STACK=16384` | `test_quic_tls` | TLS 1.3 QUIC handshake with the X25519MLKEM768 post-quantum hybrid group (IANA 0x11ec, DWS_ENABLE_PQC_KEX=1): drives the server with a hybrid ClientHello, then verifies it as a conforming client - ML-... |
+| `native_quic_tp` | `WS_ENABLE_HTTP3=1` | `test_quic_tp` | QUIC transport parameters codec (network_drivers/presentation/http3/quic_tp, RFC 9000 sec 18): the sec 18.2 defaults, an encode/parse round-trip over the connection IDs + every varint parameter + the ... |
+| `native_quic_varint` | `WS_ENABLE_HTTP3=1` | `test_quic_varint` | QUIC variable-length integer codec (network_drivers/presentation/http3/quic_varint, RFC 9000 sec 16) - the foundational HTTP/3 primitive: the Appendix A.1 worked examples (1/2/4/8 byte encodings), the... |
+| `native_radio_power` | `WS_ENABLE_RADIO_POWER=1` | `test_radio_power` | WiFi radio power controls (services/radio_power): modem-sleep mode names host-tested; the apply/readback are ESP32-only (esp_wifi). |
+| `native_radio_sniff` | `WS_ENABLE_RADIO_SNIFF=1` | `test_radio_sniff` | Receive-only radio channel sniffer -> pcap (services/radio_sniff): the int->float32 RSSI encode, the pcap global header (DLT 802.15.4 TAP), and the per-frame TAP record (RSSI + channel TLVs + MAC fram... |
+| `native_range` | `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_RANGE=1` | `test_range` | HTTP Range requests / 206 Partial Content (RFC 7233): full server built with DWS_ENABLE_RANGE=1, exercising serve_file() against the mock FS (now with seek()) via the tcp_write capture mock. |
+| `native_rawl2` | `WS_ENABLE_RAWL2=1` | `test_rawl2` | Raw L2 Ethernet frame codec (services/rawl2): Ethernet II + 802.1Q VLAN build/parse and the 802.3 FCS (CRC-32). |
+| `native_redis` | `WS_ENABLE_REDIS=1` | `test_redis_resp` | Redis RESP2/RESP3 codec (services/redis_resp): the zero-heap command encoder + the cursor reply parser (RESP2 simple/error/integer/bulk/array/nil plus RESP3 null/boolean/double/big number/bulk error/v... |
+| `native_relay` | `WS_ENABLE_RELAY=1` | `test_relay` | TCP relay / DNAT byte pump (services/relay): the bidirectional relay engine that publishes an internal host:port through the server. |
+| `native_rtc` | `WS_ENABLE_RTC=1` | `test_rtc` | DS1307/DS3231 RTC conversions (services/rtc): BCD time registers <-> Unix epoch in 24- and 12-hour encodings, leap years, clock-halt/century bit masks, range validation, and a round-trip over the 2000... |
+| `native_rtcm3` | `WS_ENABLE_NTRIP_CASTER=1` | `test_rtcm3` | RTCM 3.x framing + station-reference codec (services/gnss/rtcm3), the pure core of the GNSS RTK base / NTRIP caster: the transport frame (0xD3 preamble, 10-bit length, CRC-24Q), MSB-first bit I/O, and... |
+| `native_s7comm` | `WS_ENABLE_S7COMM=1` | `test_s7comm` | Siemens S7comm PDU codec (services/s7comm): the Setup Communication + Read Var request builders, the header parser, and the response data-item reader (length-in-bits + even padding). |
+| `native_scp` | `WS_ENABLE_SSH=1`, `WS_ENABLE_FILE_SERVING=1`, `WS_ENABLE_SSH_SCP=1` | `test_scp` | SCP (RCP) protocol wire codec (services/scp): parse an `scp -t/-f <path>` exec command into its sink/source role + target, parse + build the `C<mode> <size> <name>` control line (octal mode, decimal s... |
 | `native_scratch` | default | `test_scratch` | Shared per-dispatch scratch arena (session/scratch): bump-allocate + reset semantics, alignment, and fail-closed exhaustion. |
-| `native_sdi12` | `ETWS_ENABLE_SDI12=1` | `test_sdi12` | SDI-12 sensor-bus codec (services/sdi12): the command builders, the measurement response parser (atttn), the data-value splitter, and the SDI-12 CRC (compute/encode/verify). |
-| `native_sen0192` | `ETWS_ENABLE_SEN0192=1` | `test_sen0192` | SEN0192 microwave motion sensor presence state machine (services/sen0192): presence asserts on an active sample and holds for the configured window after the last active sample, clears after it, count... |
-| `native_senml` | `ETWS_ENABLE_SENML=1` | `test_senml` | SenML (RFC 8428) pack builder (services/senml): the SenML-JSON encoder (over the JSON writer) + the SenML-CBOR encoder (over the CBOR writer, integer labels), integral numbers emitted as integers. |
-| `native_sep2` | `ETWS_ENABLE_SEP2=1` | `test_sep2` | IEEE 2030.5 (SEP 2.0) resource codec (services/sep2): the DeviceCapability, EndDevice, and DERControl XML documents (urn:ieee:std:2030.5:ns), XML-escaped. |
-| `native_sercos` | `ETWS_ENABLE_SERCOS=1` | `test_sercos` | SERCOS III motion-bus codec (services/sercos): the MDT/AT telegram (type + phase + cycle + data) build + parse and the 16-bit IDN encode/decode (S/P + set + block). |
-| `native_sht3x` | `ETWS_ENABLE_SHT3X=1` | `test_sht3x` | Sensirion SHT3x temperature/humidity codec (services/sht3x): the CRC-8 against the datasheet check value (0xBEEF -> 0x92), the raw-tick -> milli-unit temperature/humidity conversions at the range endp... |
-| `native_sigfox` | `ETWS_ENABLE_SIGFOX=1` | `test_sigfox` | Sigfox modem AT-command codec (services/sigfox), v5 radio plugin: the AT$SF uplink command (uppercase hex encoding of the payload), its bounds (12-byte cap, output cap), and the OK / ERROR / PENDING r... |
-| `native_sleep_sched` | `ETWS_ENABLE_SLEEP_SCHED=1` | `test_sleep_sched` | Dynamic sleep-cycle scheduler (services/sleep_sched): the wrap-safe idle->sleep-window decision core with a doubling ramp clamped to a ceiling. |
-| `native_smb` | `ETWS_ENABLE_SMB=1` | `test_smb2`, `test_smb_crypto`, `test_ntlm`, `test_ntlmssp`, `test_spnego`, `test_smb_client` | SMB2 client (services/smb, MS-SMB2 / MS-NLMP): the SMB2 wire codec (transport frame, sync header, NEGOTIATE, SESSION_SETUP, TREE_CONNECT/CREATE/CLOSE/READ/WRITE); the NTLM digests MD4 (RFC 1320) / MD5... |
-| `native_smtp` | `ETWS_ENABLE_SMTP=1` | `test_smtp` | SMTP client (RFC 5321) dialogue engine (services/smtp/smtp_run): greeting/EHLO/AUTH LOGIN/MAIL/RCPT/DATA over a send/recv seam, with dot-stuffing + multi-line reply parsing. |
-| `native_snmp` | `ETWS_ENABLE_SNMP=1` | `test_snmp_ber`, `test_snmp_agent` | SNMP ASN.1 BER codec (the version-agnostic base for the SNMP agent). |
-| `native_snmp_trap` | `ETWS_ENABLE_SNMP=1`, `ETWS_ENABLE_SNMP_TRAP=1` | `test_snmp_trap` |  |
-| `native_snmp_v3` | `ETWS_ENABLE_SNMP=1`, `ETWS_ENABLE_SNMP_V3=1`, `ETWS_ENABLE_SNMP_TRAP=1` | `test_snmp_v3` | SNMPv3 USM layer: auth (HMAC-SHA-256), privacy (AES-128-CFB), engine discovery, timeliness. |
-| `native_snp` | `ETWS_ENABLE_SNP=1` | `test_snp` | GE Fanuc SNP serial frame codec (services/snp): the Series Ninety Protocol frame ([control][length][data][arithmetic-sum BCC]) build + validate. |
-| `native_sockpool` | `ETWS_ENABLE_SOCKPOOL=1` | `test_sockpool` | Dynamic socket recycling (services/sockpool): a fixed LRU connection-slot pool - acquire (free slot, else recycle the least-recently-used and report the evicted id), touch, release, find, and in-use c... |
-| `native_southbound` | `ETWS_ENABLE_SOUTHBOUND=1` | `test_southbound` | Southbound protocol-driver framework (services/southbound): the bounded driver registry (register / find / clear / count) and the name-dispatched read/write/read_block/write_block facade, including ca... |
-| `native_spa_router` | `ETWS_ENABLE_SPA_ROUTER=1` | `test_spa_router` | Single-page-app micro-routing (services/spa_router): the serve-file / serve-shell / passthrough decision from a request path (extension test + API prefix). |
-| `native_sparkplug` | `ETWS_ENABLE_SPARKPLUG=1` | `test_sparkplug` | Sparkplug B codec (services/sparkplug): the topic builder + the Metric / Payload protobuf serializers (over the protobuf codec). |
-| `native_sqlite` | `ETWS_ENABLE_SQLITE=1` | `test_sqlite` | SQLite3 on-disk file-format reader (services/sqlite): the 100-byte database header, the b-tree page header, the record varint, and record serial types, parsed by hand. |
-| `native_ssh` | `ETWS_SSH_MAX_CHANNELS=3`, `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_FILE_SERVING=1`, `ETWS_ENABLE_SSH_SFTP=1`, `ETWS_ENABLE_SSH_SCP=1` | `test_ssh_crypto`, `test_ssh_transport`, `test_ssh_auth`, `test_ssh_channel`, `test_ssh_server` | SSH crypto layer (native software paths only, no mbedtls dependency); channels multiplexed (DETWS_SSH_MAX_CHANNELS=3) to exercise routing; SFTP/SCP subsystem routing on (FILE_SERVING satisfies the guard) |
+| `native_sdi12` | `WS_ENABLE_SDI12=1` | `test_sdi12` | SDI-12 sensor-bus codec (services/sdi12): the command builders, the measurement response parser (atttn), the data-value splitter, and the SDI-12 CRC (compute/encode/verify). |
+| `native_sen0192` | `WS_ENABLE_SEN0192=1` | `test_sen0192` | SEN0192 microwave motion sensor presence state machine (services/sen0192): presence asserts on an active sample and holds for the configured window after the last active sample, clears after it, count... |
+| `native_senml` | `WS_ENABLE_SENML=1` | `test_senml` | SenML (RFC 8428) pack builder (services/senml): the SenML-JSON encoder (over the JSON writer) + the SenML-CBOR encoder (over the CBOR writer, integer labels), integral numbers emitted as integers. |
+| `native_sep2` | `WS_ENABLE_SEP2=1` | `test_sep2` | IEEE 2030.5 (SEP 2.0) resource codec (services/sep2): the DeviceCapability, EndDevice, and DERControl XML documents (urn:ieee:std:2030.5:ns), XML-escaped. |
+| `native_sercos` | `WS_ENABLE_SERCOS=1` | `test_sercos` | SERCOS III motion-bus codec (services/sercos): the MDT/AT telegram (type + phase + cycle + data) build + parse and the 16-bit IDN encode/decode (S/P + set + block). |
+| `native_sht3x` | `WS_ENABLE_SHT3X=1` | `test_sht3x` | Sensirion SHT3x temperature/humidity codec (services/sht3x): the CRC-8 against the datasheet check value (0xBEEF -> 0x92), the raw-tick -> milli-unit temperature/humidity conversions at the range endp... |
+| `native_sigfox` | `WS_ENABLE_SIGFOX=1` | `test_sigfox` | Sigfox modem AT-command codec (services/sigfox), v5 radio plugin: the AT$SF uplink command (uppercase hex encoding of the payload), its bounds (12-byte cap, output cap), and the OK / ERROR / PENDING r... |
+| `native_sleep_sched` | `WS_ENABLE_SLEEP_SCHED=1` | `test_sleep_sched` | Dynamic sleep-cycle scheduler (services/sleep_sched): the wrap-safe idle->sleep-window decision core with a doubling ramp clamped to a ceiling. |
+| `native_smb` | `WS_ENABLE_SMB=1` | `test_smb2`, `test_smb_crypto`, `test_ntlm`, `test_ntlmssp`, `test_spnego`, `test_smb_client` | SMB2 client (services/smb, MS-SMB2 / MS-NLMP): the SMB2 wire codec (transport frame, sync header, NEGOTIATE, SESSION_SETUP, TREE_CONNECT/CREATE/CLOSE/READ/WRITE); the NTLM digests MD4 (RFC 1320) / MD5... |
+| `native_smtp` | `WS_ENABLE_SMTP=1` | `test_smtp` | SMTP client (RFC 5321) dialogue engine (services/smtp/smtp_run): greeting/EHLO/AUTH LOGIN/MAIL/RCPT/DATA over a send/recv seam, with dot-stuffing + multi-line reply parsing. |
+| `native_snmp` | `WS_ENABLE_SNMP=1` | `test_snmp_ber`, `test_snmp_agent` | SNMP ASN.1 BER codec (the version-agnostic base for the SNMP agent). |
+| `native_snmp_trap` | `WS_ENABLE_SNMP=1`, `WS_ENABLE_SNMP_TRAP=1` | `test_snmp_trap` |  |
+| `native_snmp_v3` | `WS_ENABLE_SNMP=1`, `WS_ENABLE_SNMP_V3=1`, `WS_ENABLE_SNMP_TRAP=1` | `test_snmp_v3` | SNMPv3 USM layer: auth (HMAC-SHA-256), privacy (AES-128-CFB), engine discovery, timeliness. |
+| `native_snp` | `WS_ENABLE_SNP=1` | `test_snp` | GE Fanuc SNP serial frame codec (services/snp): the Series Ninety Protocol frame ([control][length][data][arithmetic-sum BCC]) build + validate. |
+| `native_sockpool` | `WS_ENABLE_SOCKPOOL=1` | `test_sockpool` | Dynamic socket recycling (services/sockpool): a fixed LRU connection-slot pool - acquire (free slot, else recycle the least-recently-used and report the evicted id), touch, release, find, and in-use c... |
+| `native_southbound` | `WS_ENABLE_SOUTHBOUND=1` | `test_southbound` | Southbound protocol-driver framework (services/southbound): the bounded driver registry (register / find / clear / count) and the name-dispatched read/write/read_block/write_block facade, including ca... |
+| `native_spa_router` | `WS_ENABLE_SPA_ROUTER=1` | `test_spa_router` | Single-page-app micro-routing (services/spa_router): the serve-file / serve-shell / passthrough decision from a request path (extension test + API prefix). |
+| `native_sparkplug` | `WS_ENABLE_SPARKPLUG=1` | `test_sparkplug` | Sparkplug B codec (services/sparkplug): the topic builder + the Metric / Payload protobuf serializers (over the protobuf codec). |
+| `native_sqlite` | `WS_ENABLE_SQLITE=1` | `test_sqlite` | SQLite3 on-disk file-format reader (services/sqlite): the 100-byte database header, the b-tree page header, the record varint, and record serial types, parsed by hand. |
+| `native_ssh` | `WS_SSH_MAX_CHANNELS=3`, `WS_ENABLE_SSH=1`, `WS_ENABLE_FILE_SERVING=1`, `WS_ENABLE_SSH_SFTP=1`, `WS_ENABLE_SSH_SCP=1` | `test_ssh_crypto`, `test_ssh_transport`, `test_ssh_auth`, `test_ssh_channel`, `test_ssh_server` | SSH crypto layer (native software paths only, no mbedtls dependency); channels multiplexed (DWS_SSH_MAX_CHANNELS=3) to exercise routing; SFTP/SCP subsystem routing on (FILE_SERVING satisfies the guard) |
 | `native_ssh_aesgcm` | default | `test_ssh_aesgcm` | AES-256-GCM AEAD for aes256-gcm@openssh.com (RFC 5647) host-tested here: seal/open vs the NIST/McGrew AES-256-GCM Test Case 16 vector, tamper rejection, and the invocation-counter advance. |
 | `native_ssh_chachapoly` | default | `test_ssh_chachapoly` | chacha20-poly1305@openssh.com AEAD (network_drivers/presentation/ssh): ChaCha20 vs RFC 8439 sec 2.3.2 block vector, Poly1305 vs RFC 8439 sec 2.5.2, and the OpenSSH construction (length decode, encrypt... |
-| `native_ssh_comp` | `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_SSH_ZLIB=1`, `ETWS_ENABLE_WS_DEFLATE=1` | `test_ssh_comp` | SSH s2c compression WIRING with the full SSH stack built with DETWS_ENABLE_SSH_ZLIB=1: the compression owner (ssh_comp) + its NEWKEYS / USERAUTH_SUCCESS activation + the packet-layer compress path in ... |
-| `native_ssh_conn` | `ETWS_ENABLE_SSH=1` | `test_ssh_conn` | SSH wired through the real transport/session layers (PROTO_SSH byte-pump) |
+| `native_ssh_comp` | `WS_ENABLE_SSH=1`, `WS_ENABLE_SSH_ZLIB=1`, `WS_ENABLE_WS_DEFLATE=1` | `test_ssh_comp` | SSH s2c compression WIRING with the full SSH stack built with DWS_ENABLE_SSH_ZLIB=1: the compression owner (ssh_comp) + its NEWKEYS / USERAUTH_SUCCESS activation + the packet-layer compress path in ss... |
+| `native_ssh_conn` | `WS_ENABLE_SSH=1` | `test_ssh_conn` | SSH wired through the real transport/session layers (PROTO_SSH byte-pump) |
 | `native_ssh_ecdsa` | default | `test_ssh_ecdsa` | ECDSA P-256 for ecdsa-sha2-nistp256 (RFC 5656) host-tested on the software path: pubkey, deterministic sign, and verify pinned byte-exact to the RFC 6979 A.2.5 (P-256/SHA-256) vectors, plus tamper rej... |
 | `native_ssh_ed25519` | default | `test_ssh_ed25519` | Modern SSH crypto KATs (curve25519-sha256 KEX + ssh-ed25519 host key / client auth): SHA-512 (FIPS 180-4), X25519 (RFC 7748), Ed25519 (RFC 8032). |
-| `native_ssh_hardened` | `ETWS_SSH_ALLOW_PASSWORD=0` | `test_ssh_hardening` | SSH built with password auth disabled (publickey-only hardening) |
-| `native_ssh_pqc` | `ETWS_SSH_MAX_CHANNELS=3`, `ETWS_ENABLE_PQC_KEX=1` | `test_ssh_pqc` | mlkem768x25519-sha256 SSH hybrid KEX (draft-ietf-sshm-mlkem-hybrid-kex) end to end: the full SSH transport built with DETWS_ENABLE_PQC_KEX=1 plus the ML-KEM-768 / SHA-3 core. |
-| `native_ssh_sftp` | `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_FILE_SERVING=1`, `ETWS_ENABLE_SSH_SFTP=1` | `test_ssh_sftp` | SFTP protocol v3 wire codec (services/sftp): the SSH_FXP_* request reader + response builders (VERSION / STATUS / HANDLE / DATA / ATTRS / NAME), the ATTRS blob encode/decode round-trip (size / perms /... |
-| `native_ssh_zlib` | `ETWS_ENABLE_SSH=1`, `ETWS_ENABLE_SSH_ZLIB=1`, `ETWS_ENABLE_WS_DEFLATE=1` | `test_ssh_zlib` | SSH server-to-client streaming compressor (zlib@openssh.com / zlib): a context-takeover DEFLATE stream (persistent sliding window across packets, sync-flush per packet, zlib wrapper). |
-| `native_statsd` | `ETWS_ENABLE_STATSD=1` | `test_statsd` | StatsD metrics client (services/statsd): the pure line formatter (name:value\|type, sample rate, DogStatsD tags) plus the count/gauge/timing/set emit helpers, whose sent bytes are captured through the... |
-| `native_stomp` | `ETWS_ENABLE_STOMP=1` | `test_stomp` | STOMP 1.2 frame codec (services/stomp): the zero-heap frame builder (command + escaped headers + NUL body) + the non-mutating parser (command/header slices/body, honoring content-length) + escape/unes... |
-| `native_sunspec` | `ETWS_ENABLE_SUNSPEC=1` | `test_sunspec` | SunSpec Modbus model codec (services/sunspec): the map writer (marker / model headers / points / end model) + the model-chain walker + typed point readers (u16 / i16 / u32 / i32 / string). |
-| `native_syslog` | `ETWS_ENABLE_SYSLOG=1` | `test_syslog` | Syslog client (RFC 5424) line formatter. |
-| `native_telemetry` | `ETWS_ENABLE_TELEMETRY=1` | `test_telemetry` | Telemetry math (services/telemetry): moving-window stats, rate-of-change, and totalizer. |
-| `native_telnet` | `ETWS_ENABLE_TELNET=1` | `test_telnet` | Telnet server (RFC 854 IAC negotiation + line editing) wired through the real transport ring buffer; output checked via the tcp_write capture mock. |
-| `native_thread` | `ETWS_ENABLE_THREAD=1`, `ETWS_THREAD_MAX_DATA=64` | `test_thread` | Thread spinel / HDLC-lite framing codec (services/thread), v5 radio plugin: the FCS (CRC-16/X-25) against its catalog check value (0x906E), an encode -> decode round trip, the byte-stuffing of reserve... |
-| `native_time_source` | `ETWS_ENABLE_TIME_SOURCE=1` | `test_time_source` | Multi-source time fallback matrix (services/time_source): priority-ordered query of user time sources with first-valid-wins fallback. |
-| `native_tls13_kdf` | `ETWS_ENABLE_HTTP3=1` | `test_tls13_kdf` | TLS 1.3 key schedule for the QUIC handshake (network_drivers/presentation/http3/tls13_kdf, RFC 8446 sec 7.1 / 4.4.4): Early/Handshake/Master secret Extract chain, client/server handshake + application... |
-| `native_tls13_msg` | `ETWS_ENABLE_HTTP3=1` | `test_tls13_msg` | TLS 1.3 handshake messages for the QUIC handshake (network_drivers/presentation/http3/ tls13_msg, RFC 8446 sec 4): ClientHello parse (X25519 key_share + capability flags), and the server flight. |
-| `native_tls_policy` | `ETWS_ENABLE_TLS_POLICY=1` | `test_tls_policy` | TLS version negotiation + pinned cipher policy (services/tls_policy): the server-style version pick (highest supported not above the client's), the version name, cipher selection by server preference ... |
-| `native_totp` | `ETWS_ENABLE_TOTP=1` | `test_totp` | TOTP two-factor (services/totp): HMAC-SHA1 HOTP/TOTP + base32, host-tested against the RFC 6238 vectors (builds on the software SHA-1). |
-| `native_tsan` | `g`, `O1`, `fsanitize=thread`, `pthread` | `test_concurrency` | Same harness under ThreadSanitizer: proves ZERO data races on the slot fields (the DetAtomic acquire/release happens-before lets the plain rx_buffer[] writes be read on the other core safely). |
-| `native_udp_telemetry` | `ETWS_ENABLE_UDP_TELEMETRY=1` | `test_udp_telemetry` | UDP telemetry line builder (services/udp_telemetry): InfluxDB line-protocol formatting, host-tested. |
-| `native_umati` | `ETWS_ENABLE_OPCUA=1`, `ETWS_ENABLE_UMATI=1` | `test_umati` | umati / OPC UA for Machine Tools (OPC 40501-1) MachineTool model (services/umati) - the Browse hierarchy + the Read resolver over a bound UmatiMachineTool are host-tested here. |
-| `native_upload` | `ETWS_ENFORCE_HOST_HEADER=0`, `ETWS_ENABLE_UPLOAD=1`, `BODY_BUF_SIZE=64` | `test_upload` | Streaming file upload: POST body -> FS file via the parser streaming hook. |
-| `native_utmc` | `ETWS_ENABLE_UTMC=1` | `test_utmc` | UTMC common-database codec (services/utmc): the UTMCRequest (object id) and UTMCResponse (value + quality + timestamp) HTTP/XML documents build + the request-id parse, escaped. |
-| `native_vfs` | `ETWS_ENABLE_VFS=1` | `test_vfs` | Unified VFS wrapper (services/vfs) - host-tested through its built-in RAM backend (the Arduino FS backend is ESP32-only and HW-verified). |
-| `native_vl53l0x` | `ETWS_ENABLE_VL53L0X=1` | `test_vl53l0x` | VL53L0X time-of-flight ranging codec (services/vl53l0x): the range byte-pair combine to millimeters, the interrupt-status data-ready decode, and the device range-status validity check. |
-| `native_wal` | `ETWS_ENABLE_WAL=1` | `test_wal`, `test_wal_store` | Write-ahead store for atomic buffer-to-flash storage (services/wal): CRC32 record framing + crash-recovery replay (the atomicity core), plus the A/B superblock + checkpoint + mount layer over a block-... |
-| `native_wamp` | `ETWS_ENABLE_WAMP=1` | `test_wamp` | WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO / SUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional array parser (type / ids / URIs... |
-| `native_wave` | `ETWS_ENABLE_WAVE=1` | `test_wave` | IEEE 1609 WAVE codec (services/wave): the 1609.3 WSMP header (version + P-encoded PSID + length) build + parse, the PSID p-encoding, and the 1609.2 secured-message envelope header. |
-| `native_wearlevel` | `ETWS_ENABLE_WEARLEVEL=1` | `test_wearlevel` | Flash wear-leveling slot selector (services/wearlevel): least-worn pick (ties -> lowest index), saturating mark, and the wear-imbalance spread metric. |
-| `native_webdav` | `ETWS_ENABLE_WEBDAV=1` | `test_webdav` | WebDAV server core (RFC 4918): method classification, header parsing, XML escaping, and the 207 Multi-Status builder. |
-| `native_webdav_handler` | `BODY_BUF_SIZE=512`, `ETWS_ENFORCE_HOST_HEADER=0`, `ETWS_ENABLE_WEBDAV=1`, `ETWS_ENABLE_FILE_SERVING=1`, `ETWS_ENABLE_WEB_TERMINAL=1` | `test_webdav_handler` | WebDAV request handler over a directory-capable FS mock (recursive COPY/MOVE/DELETE) |
-| `native_webhook` | `ETWS_ENABLE_WEBHOOK=1` | `test_webhook` | Webhook / IFTTT builders (services/webhook): IFTTT URL + value1/2/3 JSON payload, host-tested. |
-| `native_wifi_sniffer` | `ETWS_ENABLE_WIFI_SNIFFER=1` | `test_wifi_sniffer` | 802.11 sniffer / traffic analyzer (services/wifi_sniffer): decode an 802.11 MAC header (frame-control type/subtype + flags, ToDS/FromDS-dependent addresses), tally frames by type, and the RSSI-hystere... |
-| `native_wisun` | `ETWS_ENABLE_WISUN=1` | `test_wisun` | Wi-SUN FAN border-router connector (services/wisun): the CoAP client request builder (RFC 7252 header + Uri-Path options with extended-length + payload) and the FAN node registry (register / find / jo... |
-| `native_workers` | `ETWS_WORKER_COUNT=2` | `test_workers` | Core-partitioning invariant at N=2 (DETWS_WORKER_COUNT=2): each worker reaps only its owned slots (check_timeouts ownership). |
-| `native_ws_client` | `ETWS_ENABLE_WS_CLIENT=1` | `test_ws_client` |  |
-| `native_ws_deflate` | `ETWS_ENFORCE_HOST_HEADER=0`, `ETWS_ENABLE_WS_DEFLATE=1` | `test_websocket` | WebSocket permessage-deflate (RFC 7692) inbound path wired through the real WS stack: handshake negotiation, the RSV1 frame path, and INFLATE delivery (with the table scratch borrowed from the shared ... |
-| `native_xmpp` | `ETWS_ENABLE_XMPP=1` | `test_xmpp` | XMPP stanza codec (services/xmpp, RFC 6120): XML-escaped stream/message/presence/iq builders and the stanza-name + attribute readers. |
-| `native_zigbee` | `ETWS_ENABLE_ZIGBEE=1`, `ETWS_ZIGBEE_MAX_DATA=32` | `test_zigbee` | Zigbee EZSP / ASH framing codec (services/zigbee), v5 radio plugin: the CRC-16/CCITT and the encoded RST frame against their documented values (C0 38 BC 7E), an encode -> decode round trip, the byte-s... |
-| `native_zwave` | `ETWS_ENABLE_ZWAVE=1`, `ETWS_ZWAVE_MAX_DATA=16` | `test_zwave` | Z-Wave Serial API frame codec (services/zwave), v5 radio plugin: the data-frame build/parse against the documented GetVersion request (01 03 00 15 E9), the XOR checksum, a round trip, malformed framin... |
+| `native_ssh_hardened` | `WS_SSH_ALLOW_PASSWORD=0` | `test_ssh_hardening` | SSH built with password auth disabled (publickey-only hardening) |
+| `native_ssh_pqc` | `WS_SSH_MAX_CHANNELS=3`, `WS_ENABLE_PQC_KEX=1` | `test_ssh_pqc` | mlkem768x25519-sha256 SSH hybrid KEX (draft-ietf-sshm-mlkem-hybrid-kex) end to end: the full SSH transport built with DWS_ENABLE_PQC_KEX=1 plus the ML-KEM-768 / SHA-3 core. |
+| `native_ssh_sftp` | `WS_ENABLE_SSH=1`, `WS_ENABLE_FILE_SERVING=1`, `WS_ENABLE_SSH_SFTP=1` | `test_ssh_sftp` | SFTP protocol v3 wire codec (services/sftp): the SSH_FXP_* request reader + response builders (VERSION / STATUS / HANDLE / DATA / ATTRS / NAME), the ATTRS blob encode/decode round-trip (size / perms /... |
+| `native_ssh_zlib` | `WS_ENABLE_SSH=1`, `WS_ENABLE_SSH_ZLIB=1`, `WS_ENABLE_WS_DEFLATE=1` | `test_ssh_zlib` | SSH server-to-client streaming compressor (zlib@openssh.com / zlib): a context-takeover DEFLATE stream (persistent sliding window across packets, sync-flush per packet, zlib wrapper). |
+| `native_statsd` | `WS_ENABLE_STATSD=1` | `test_statsd` | StatsD metrics client (services/statsd): the pure line formatter (name:value\|type, sample rate, DogStatsD tags) plus the count/gauge/timing/set emit helpers, whose sent bytes are captured through the... |
+| `native_stomp` | `WS_ENABLE_STOMP=1` | `test_stomp` | STOMP 1.2 frame codec (services/stomp): the zero-heap frame builder (command + escaped headers + NUL body) + the non-mutating parser (command/header slices/body, honoring content-length) + escape/unes... |
+| `native_sunspec` | `WS_ENABLE_SUNSPEC=1` | `test_sunspec` | SunSpec Modbus model codec (services/sunspec): the map writer (marker / model headers / points / end model) + the model-chain walker + typed point readers (u16 / i16 / u32 / i32 / string). |
+| `native_syslog` | `WS_ENABLE_SYSLOG=1` | `test_syslog` | Syslog client (RFC 5424) line formatter. |
+| `native_telemetry` | `WS_ENABLE_TELEMETRY=1` | `test_telemetry` | Telemetry math (services/telemetry): moving-window stats, rate-of-change, and totalizer. |
+| `native_telnet` | `WS_ENABLE_TELNET=1` | `test_telnet` | Telnet server (RFC 854 IAC negotiation + line editing) wired through the real transport ring buffer; output checked via the tcp_write capture mock. |
+| `native_thread` | `WS_ENABLE_THREAD=1`, `WS_THREAD_MAX_DATA=64` | `test_thread` | Thread spinel / HDLC-lite framing codec (services/thread), v5 radio plugin: the FCS (CRC-16/X-25) against its catalog check value (0x906E), an encode -> decode round trip, the byte-stuffing of reserve... |
+| `native_time_source` | `WS_ENABLE_TIME_SOURCE=1` | `test_time_source` | Multi-source time fallback matrix (services/time_source): priority-ordered query of user time sources with first-valid-wins fallback. |
+| `native_tls13_kdf` | `WS_ENABLE_HTTP3=1` | `test_tls13_kdf` | TLS 1.3 key schedule for the QUIC handshake (network_drivers/presentation/http3/tls13_kdf, RFC 8446 sec 7.1 / 4.4.4): Early/Handshake/Master secret Extract chain, client/server handshake + application... |
+| `native_tls13_msg` | `WS_ENABLE_HTTP3=1` | `test_tls13_msg` | TLS 1.3 handshake messages for the QUIC handshake (network_drivers/presentation/http3/ tls13_msg, RFC 8446 sec 4): ClientHello parse (X25519 key_share + capability flags), and the server flight. |
+| `native_tls_policy` | `WS_ENABLE_TLS_POLICY=1` | `test_tls_policy` | TLS version negotiation + pinned cipher policy (services/tls_policy): the server-style version pick (highest supported not above the client's), the version name, cipher selection by server preference ... |
+| `native_totp` | `WS_ENABLE_TOTP=1` | `test_totp` | TOTP two-factor (services/totp): HMAC-SHA1 HOTP/TOTP + base32, host-tested against the RFC 6238 vectors (builds on the software SHA-1). |
+| `native_tsan` | `g`, `O1`, `fsanitize=thread`, `pthread` | `test_concurrency` | Same harness under ThreadSanitizer: proves ZERO data races on the slot fields (the DWSAtomic acquire/release happens-before lets the plain rx_buffer[] writes be read on the other core safely). |
+| `native_udp_telemetry` | `WS_ENABLE_UDP_TELEMETRY=1` | `test_udp_telemetry` | UDP telemetry line builder (services/udp_telemetry): InfluxDB line-protocol formatting, host-tested. |
+| `native_umati` | `WS_ENABLE_OPCUA=1`, `WS_ENABLE_UMATI=1` | `test_umati` | umati / OPC UA for Machine Tools (OPC 40501-1) MachineTool model (services/umati) - the Browse hierarchy + the Read resolver over a bound UmatiMachineTool are host-tested here. |
+| `native_upload` | `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_UPLOAD=1`, `BODY_BUF_SIZE=64` | `test_upload` | Streaming file upload: POST body -> FS file via the parser streaming hook. |
+| `native_utmc` | `WS_ENABLE_UTMC=1` | `test_utmc` | UTMC common-database codec (services/utmc): the UTMCRequest (object id) and UTMCResponse (value + quality + timestamp) HTTP/XML documents build + the request-id parse, escaped. |
+| `native_vfs` | `WS_ENABLE_VFS=1` | `test_vfs` | Unified VFS wrapper (services/vfs) - host-tested through its built-in RAM backend (the Arduino FS backend is ESP32-only and HW-verified). |
+| `native_vl53l0x` | `WS_ENABLE_VL53L0X=1` | `test_vl53l0x` | VL53L0X time-of-flight ranging codec (services/vl53l0x): the range byte-pair combine to millimeters, the interrupt-status data-ready decode, and the device range-status validity check. |
+| `native_wal` | `WS_ENABLE_WAL=1` | `test_wal`, `test_wal_store` | Write-ahead store for atomic buffer-to-flash storage (services/wal): CRC32 record framing + crash-recovery replay (the atomicity core), plus the A/B superblock + checkpoint + mount layer over a block-... |
+| `native_wamp` | `WS_ENABLE_WAMP=1` | `test_wamp` | WAMP messaging codec (services/wamp): the JSON-array message builders (HELLO / SUBSCRIBE / PUBLISH / CALL / REGISTER / YIELD / GOODBYE over JsonWriter) + the positional array parser (type / ids / URIs... |
+| `native_wave` | `WS_ENABLE_WAVE=1` | `test_wave` | IEEE 1609 WAVE codec (services/wave): the 1609.3 WSMP header (version + P-encoded PSID + length) build + parse, the PSID p-encoding, and the 1609.2 secured-message envelope header. |
+| `native_wearlevel` | `WS_ENABLE_WEARLEVEL=1` | `test_wearlevel` | Flash wear-leveling slot selector (services/wearlevel): least-worn pick (ties -> lowest index), saturating mark, and the wear-imbalance spread metric. |
+| `native_webdav` | `WS_ENABLE_WEBDAV=1` | `test_webdav` | WebDAV server core (RFC 4918): method classification, header parsing, XML escaping, and the 207 Multi-Status builder. |
+| `native_webdav_handler` | `BODY_BUF_SIZE=512`, `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_WEBDAV=1`, `WS_ENABLE_FILE_SERVING=1`, `WS_ENABLE_WEB_TERMINAL=1` | `test_webdav_handler` | WebDAV request handler over a directory-capable FS mock (recursive COPY/MOVE/DELETE) |
+| `native_webhook` | `WS_ENABLE_WEBHOOK=1` | `test_webhook` | Webhook / IFTTT builders (services/webhook): IFTTT URL + value1/2/3 JSON payload, host-tested. |
+| `native_wifi_sniffer` | `WS_ENABLE_WIFI_SNIFFER=1` | `test_wifi_sniffer` | 802.11 sniffer / traffic analyzer (services/wifi_sniffer): decode an 802.11 MAC header (frame-control type/subtype + flags, ToDS/FromDS-dependent addresses), tally frames by type, and the RSSI-hystere... |
+| `native_wisun` | `WS_ENABLE_WISUN=1` | `test_wisun` | Wi-SUN FAN border-router connector (services/wisun): the CoAP client request builder (RFC 7252 header + Uri-Path options with extended-length + payload) and the FAN node registry (register / find / jo... |
+| `native_workers` | `WS_WORKER_COUNT=2` | `test_workers` | Core-partitioning invariant at N=2 (DWS_WORKER_COUNT=2): each worker reaps only its owned slots (check_timeouts ownership). |
+| `native_ws_client` | `WS_ENABLE_WS_CLIENT=1` | `test_ws_client` |  |
+| `native_ws_deflate` | `WS_ENFORCE_HOST_HEADER=0`, `WS_ENABLE_WS_DEFLATE=1` | `test_websocket` | WebSocket permessage-deflate (RFC 7692) inbound path wired through the real WS stack: handshake negotiation, the RSV1 frame path, and INFLATE delivery (with the table scratch borrowed from the shared ... |
+| `native_xmpp` | `WS_ENABLE_XMPP=1` | `test_xmpp` | XMPP stanza codec (services/xmpp, RFC 6120): XML-escaped stream/message/presence/iq builders and the stanza-name + attribute readers. |
+| `native_zigbee` | `WS_ENABLE_ZIGBEE=1`, `WS_ZIGBEE_MAX_DATA=32` | `test_zigbee` | Zigbee EZSP / ASH framing codec (services/zigbee), v5 radio plugin: the CRC-16/CCITT and the encoded RST frame against their documented values (C0 38 BC 7E), an encode -> decode round trip, the byte-s... |
+| `native_zwave` | `WS_ENABLE_ZWAVE=1`, `WS_ZWAVE_MAX_DATA=16` | `test_zwave` | Z-Wave Serial API frame codec (services/zwave), v5 radio plugin: the data-frame build/parse against the documented GetVersion request (01 03 00 15 E9), the XOR checksum, a round trip, malformed framin... |
 
 <!-- END GENERATED test-environments -->
 
 > [!NOTE]
-> The `native` and `native_app` environments build with `DETWS_ENFORCE_HOST_HEADER=0` because their legacy test suites focus strictly on lower-level parser mechanics. The stricter RFC 7230 §5.4 host header validation is tested independently in `native_compliance`.
+> The `native` and `native_app` environments build with `DWS_ENFORCE_HOST_HEADER=0` because their legacy test suites focus strictly on lower-level parser mechanics. The stricter RFC 7230 §5.4 host header validation is tested independently in `native_compliance`.
 
 > [!IMPORTANT]
 > **Compilation Isolation & Feature Flags**:
 > Under PlatformIO (and standard Arduino/C++ build systems), library source files (in `src/`) are compiled independently of the main application (the sketch's `.ino` file) as separate translation units.
 >
-> Consequently, `#define` macros specified inside `.ino` sketch files (e.g., `#define DETWS_ENABLE_PROVISIONING 1`) **do not propagate** to the library's compiled source code. If you define a configuration macro or feature flag in your sketch rather than in the build configuration, the library's `.cpp` files will compile with their default configuration, resulting in linker errors (e.g., undefined symbols) or severe runtime/memory layout mismatches.
+> Consequently, `#define` macros specified inside `.ino` sketch files (e.g., `#define DWS_ENABLE_PROVISIONING 1`) **do not propagate** to the library's compiled source code. If you define a configuration macro or feature flag in your sketch rather than in the build configuration, the library's `.cpp` files will compile with their default configuration, resulting in linker errors (e.g., undefined symbols) or severe runtime/memory layout mismatches.
 >
-> To configure the library correctly, all override configuration constants and feature flags (such as [`DETWS_ENABLE_PROVISIONING`](@ref DETWS_ENABLE_PROVISIONING), [`DETWS_ENABLE_SSH`](@ref DETWS_ENABLE_SSH), [`MAX_CONNS`](@ref MAX_CONNS), etc.) **must** be set as compiler build flags in your environment (e.g., `build_flags = -DDETWS_ENABLE_PROVISIONING=1` in `platformio.ini`).
+> To configure the library correctly, all override configuration constants and feature flags (such as [`DWS_ENABLE_PROVISIONING`](@ref DWS_ENABLE_PROVISIONING), [`DWS_ENABLE_SSH`](@ref DWS_ENABLE_SSH), [`MAX_CONNS`](@ref MAX_CONNS), etc.) **must** be set as compiler build flags in your environment (e.g., `build_flags = -DDWS_ENABLE_PROVISIONING=1` in `platformio.ini`).
 
 ---
 
@@ -1105,10 +1105,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Before any listener, restart() forwards the no-listeners error (no stop()/begin()).
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_NO_LISTENERS, srv.restart());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_ERR_NO_LISTENERS, srv.restart());</code>
       * <code>TEST_ASSERT_EQUAL_INT32(0, srv.listen((uint16_t)9500));</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.begin());</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.restart());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_OK, srv.begin());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_OK, srv.restart());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1491,16 +1491,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unknown / missing extension and dotfiles fall back.
     * **Assertions**:
-      * <code>Assert equal string ("text/html", DetWebServer::mime_type("/index.html"))</code>
-      * <code>Assert equal string ("text/css", DetWebServer::mime_type("/css/site.css"))</code>
-      * <code>Assert equal string ("application/javascript", DetWebServer::mime_type("/app.JS"))</code>
-      * <code>Assert equal string ("application/json", DetWebServer::mime_type("/api/data.json"))</code>
-      * <code>Assert equal string ("image/svg+xml", DetWebServer::mime_type("logo.svg"))</code>
-      * <code>Assert equal string ("image/png", DetWebServer::mime_type("a.b.c.png"))</code>
-      * <code>Assert equal string ("application/octet-stream", DetWebServer::mime_type("/file.unknownext"))</code>
-      * <code>Assert equal string ("application/octet-stream", DetWebServer::mime_type("/noext"))</code>
-      * <code>Assert equal string ("application/octet-stream", DetWebServer::mime_type("/dir.with.dot/file"))</code>
-      * <code>Assert equal string ("application/octet-stream", DetWebServer::mime_type(nullptr))</code>
+      * <code>Assert equal string ("text/html", DWS::mime_type("/index.html"))</code>
+      * <code>Assert equal string ("text/css", DWS::mime_type("/css/site.css"))</code>
+      * <code>Assert equal string ("application/javascript", DWS::mime_type("/app.JS"))</code>
+      * <code>Assert equal string ("application/json", DWS::mime_type("/api/data.json"))</code>
+      * <code>Assert equal string ("image/svg+xml", DWS::mime_type("logo.svg"))</code>
+      * <code>Assert equal string ("image/png", DWS::mime_type("a.b.c.png"))</code>
+      * <code>Assert equal string ("application/octet-stream", DWS::mime_type("/file.unknownext"))</code>
+      * <code>Assert equal string ("application/octet-stream", DWS::mime_type("/noext"))</code>
+      * <code>Assert equal string ("application/octet-stream", DWS::mime_type("/dir.with.dot/file"))</code>
+      * <code>Assert equal string ("application/octet-stream", DWS::mime_type(nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1707,10 +1707,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: begin() before any listen() -> no-listeners error, no side effects.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_NO_LISTENERS, srv.begin());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_ERR_NO_LISTENERS, srv.begin());</code>
       * <code>TEST_ASSERT_EQUAL_INT32(i, srv.listen((uint16_t)(9100 + i)));</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_LISTENER_FULL, srv.listen(9999));</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.begin());</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_ERR_LISTENER_FULL, srv.listen(9999));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_OK, srv.begin());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1718,8 +1718,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Begin port convenience
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.begin((uint16_t)8080));</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_LISTENER_FULL, full.begin((uint16_t)9999));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_OK, srv.begin((uint16_t)8080));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_ERR_LISTENER_FULL, full.begin((uint16_t)9999));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1766,10 +1766,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Metrics emits prometheus
     * **Assertions**:
       * <code>Assert not null (strstr(out, "text/plain; version=0.0.4"))</code>
-      * <code>Assert not null (strstr(out, "# TYPE detws_http_requests_total counter"))</code>
-      * <code>Assert not null (strstr(out, "detws_http_responses_total{class=\\"2xx\\"}"))</code>
-      * <code>Assert not null (strstr(out, "detws_free_heap_bytes"))</code>
-      * <code>Assert not null (strstr(out, "detws_uptime_seconds"))</code>
+      * <code>Assert not null (strstr(out, "# TYPE dws_http_requests_total counter"))</code>
+      * <code>Assert not null (strstr(out, "dws_http_responses_total{class=\\"2xx\\"}"))</code>
+      * <code>Assert not null (strstr(out, "dws_free_heap_bytes"))</code>
+      * <code>Assert not null (strstr(out, "dws_uptime_seconds"))</code>
   </details>
 
 </details>
@@ -1794,10 +1794,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Set an output.
     * **Assertions**:
-      * <code>Assert true (detws_atc_set_output(&io, "phase.1.green", 1))</code>
+      * <code>Assert true (dws_atc_set_output(&io, "phase.1.green", 1))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, pts[1].value);</code>
-      * <code>Assert false (detws_atc_set_output(&io, "det.1", 1))</code>
-      * <code>Assert false (detws_atc_set_output(&io, "nope", 1))</code>
+      * <code>Assert false (dws_atc_set_output(&io, "det.1", 1))</code>
+      * <code>Assert false (dws_atc_set_output(&io, "nope", 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1805,7 +1805,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Get
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(42, detws_atc_get(&io, "det.1", &found));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(42, dws_atc_get(&io, "det.1", &found));</code>
       * <code>Assert true (found)</code>
       * <code>Assert false (found)</code>
   </details>
@@ -1817,7 +1817,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal string ("{\\"inputs\\":[],\\"outputs\\":[]}", buf)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(strlen("{\\"inputs\\":[],\\"outputs\\":[]}"), n);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_atc_snapshot_json(&io2, small, sizeof(small)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_atc_snapshot_json(&io2, small, sizeof(small)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1827,7 +1827,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert not null (strstr(buf, "\\\\\\""))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_atc_snapshot_json(&io, buf, 8)); // tiny cap fails closed</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_atc_snapshot_json(&io, buf, 8)); // tiny cap fails closed</code>
   </details>
 
 </details>
@@ -1840,13 +1840,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Append assigns monotonic seq
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_audit_append(DetwsAuditCat::DETWS_AUDIT_AUTH, "login alice"));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_audit_append(DetwsAuditCat::DETWS_AUDIT_AUTH_FAIL, "bad password bob"));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(3, detws_audit_append(DetwsAuditCat::DETWS_AUDIT_CONFIG, "set http_port=80"));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(3, detws_audit_count());</code>
-      * <code>Assert equal string ("login alice", detws_audit_at(0)-&gt;msg)</code>
-      * <code>Assert equal string ("set http_port=80", detws_audit_at(2)-&gt;msg)</code>
-      * <code>Assert null (detws_audit_at(3))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH, "login alice"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH_FAIL, "bad password bob"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, dws_audit_append(DetwsAuditCat::DWS_AUDIT_CONFIG, "set http_port=80"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(3, dws_audit_count());</code>
+      * <code>Assert equal string ("login alice", dws_audit_at(0)-&gt;msg)</code>
+      * <code>Assert equal string ("set http_port=80", dws_audit_at(2)-&gt;msg)</code>
+      * <code>Assert null (dws_audit_at(3))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1854,7 +1854,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Chain verifies when untouched
     * **Assertions**:
-      * <code>Assert true (detws_audit_verify(&broken))</code>
+      * <code>Assert true (dws_audit_verify(&broken))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(999, broken); // untouched on success</code>
   </details>
 
@@ -1863,7 +1863,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Corrupt record #4's message in place (hash now mismatches its fields).
     * **Assertions**:
-      * <code>Assert false (detws_audit_verify(&broken))</code>
+      * <code>Assert false (dws_audit_verify(&broken))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(4, broken); // seq of the first failing record</code>
   </details>
 
@@ -1872,7 +1872,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Tampered hash breaks chain
     * **Assertions**:
-      * <code>Assert false (detws_audit_verify(&broken))</code>
+      * <code>Assert false (dws_audit_verify(&broken))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(3, broken);</code>
   </details>
 
@@ -1881,7 +1881,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Tampered category breaks chain
     * **Assertions**:
-      * <code>Assert false (detws_audit_verify(nullptr))</code>
+      * <code>Assert false (dws_audit_verify(nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1889,10 +1889,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ring is capped; oldest seq advanced past the evicted records.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT16(DETWS_AUDIT_LOG_ENTRIES, detws_audit_count());</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)(extra + 1), detws_audit_at(0)-&gt;seq);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)(DETWS_AUDIT_LOG_ENTRIES + extra),</code>
-      * <code>Assert true (detws_audit_verify(nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(DWS_AUDIT_LOG_ENTRIES, dws_audit_count());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)(extra + 1), dws_audit_at(0)-&gt;seq);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)(DWS_AUDIT_LOG_ENTRIES + extra),</code>
+      * <code>Assert true (dws_audit_verify(nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1900,7 +1900,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Tamper after wrap detected at oldest
     * **Assertions**:
-      * <code>Assert false (detws_audit_verify(&broken))</code>
+      * <code>Assert false (dws_audit_verify(&broken))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(oldest-&gt;seq, broken);</code>
   </details>
 
@@ -1909,9 +1909,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Sequence restarts at 1 after reset.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, detws_audit_count());</code>
-      * <code>Assert true (detws_audit_verify(nullptr))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_audit_append(DetwsAuditCat::DETWS_AUDIT_SYSTEM, "fresh"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_audit_count());</code>
+      * <code>Assert true (dws_audit_verify(nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_audit_append(DetwsAuditCat::DWS_AUDIT_SYSTEM, "fresh"));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1944,7 +1944,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dump json reports broken chain
     * **Assertions**:
-      * <code>Assert true (detws_audit_dump_json(doc, sizeof(doc)) &gt; 0)</code>
+      * <code>Assert true (dws_audit_dump_json(doc, sizeof(doc)) &gt; 0)</code>
       * <code>Assert not null (strstr(doc, "\\"intact\\":false"))</code>
       * <code>Assert not null (strstr(doc, "\\"first_broken\\":3"))</code>
   </details>
@@ -1954,7 +1954,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Format fails closed on small buffer
     * **Assertions**:
-      * <code>Assert equal int (0, detws_audit_format(detws_audit_at(0), tiny, sizeof(tiny)))</code>
+      * <code>Assert equal int (0, dws_audit_format(dws_audit_at(0), tiny, sizeof(tiny)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1962,8 +1962,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Null msg and categories
     * **Assertions**:
-      * <code>Assert equal string ("", detws_audit_at(0)-&gt;msg)</code>
-      * <code>Assert true (detws_audit_dump_json(doc, sizeof(doc)) &gt; 0)</code>
+      * <code>Assert equal string ("", dws_audit_at(0)-&gt;msg)</code>
+      * <code>Assert true (dws_audit_dump_json(doc, sizeof(doc)) &gt; 0)</code>
       * <code>Assert not null (strstr(doc, "\\"cat\\":\\"auth_fail\\""))</code>
       * <code>Assert not null (strstr(doc, "\\"cat\\":\\"access\\""))</code>
       * <code>Assert not null (strstr(doc, "\\"cat\\":\\"config\\""))</code>
@@ -1975,7 +1975,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Json escape all chars
     * **Assertions**:
-      * <code>Assert true (detws_audit_format(detws_audit_at(0), buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert true (dws_audit_format(dws_audit_at(0), buf, sizeof(buf)) &gt; 0)</code>
       * <code>Assert not null (strstr(buf, "\\\\\\\\"))</code>
       * <code>Assert not null (strstr(buf, "\\\\t"))</code>
       * <code>Assert not null (strstr(buf, "\\\\r"))</code>
@@ -1988,9 +1988,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Format fails closed all stages
     * **Assertions**:
       * <code>Assert true (flen &gt; 0)</code>
-      * <code>Assert equal int (0, detws_audit_format(e, full, 0))</code>
-      * <code>Assert equal int (0, detws_audit_format(nullptr, full, sizeof(full)))</code>
-      * <code>Assert equal int (0, detws_audit_format(e, small, (size_t)cap))</code>
+      * <code>Assert equal int (0, dws_audit_format(e, full, 0))</code>
+      * <code>Assert equal int (0, dws_audit_format(nullptr, full, sizeof(full)))</code>
+      * <code>Assert equal int (0, dws_audit_format(e, small, (size_t)cap))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -1999,9 +1999,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Dump fails closed all stages
     * **Assertions**:
       * <code>Assert true (flen &gt; 0)</code>
-      * <code>Assert equal int (0, detws_audit_dump_json(full, 0))</code>
-      * <code>Assert equal int (0, detws_audit_dump_json(nullptr, sizeof(full)))</code>
-      * <code>Assert equal int (0, detws_audit_dump_json(small, (size_t)cap))</code>
+      * <code>Assert equal int (0, dws_audit_dump_json(full, 0))</code>
+      * <code>Assert equal int (0, dws_audit_dump_json(nullptr, sizeof(full)))</code>
+      * <code>Assert equal int (0, dws_audit_dump_json(small, (size_t)cap))</code>
   </details>
 
 </details>
@@ -2143,7 +2143,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Locks at threshold
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(DETWS_AUTH_LOCKOUT_BASE_MS, auth_lockout_remaining_ms(&ip, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_AUTH_LOCKOUT_BASE_MS, auth_lockout_remaining_ms(&ip, 0));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -2151,9 +2151,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Exponential backoff
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(DETWS_AUTH_LOCKOUT_BASE_MS, auth_lockout_remaining_ms(&ip, 0));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2u * DETWS_AUTH_LOCKOUT_BASE_MS, auth_lockout_remaining_ms(&ip, 0));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(4u * DETWS_AUTH_LOCKOUT_BASE_MS, auth_lockout_remaining_ms(&ip, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_AUTH_LOCKOUT_BASE_MS, auth_lockout_remaining_ms(&ip, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2u * DWS_AUTH_LOCKOUT_BASE_MS, auth_lockout_remaining_ms(&ip, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4u * DWS_AUTH_LOCKOUT_BASE_MS, auth_lockout_remaining_ms(&ip, 0));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -2161,7 +2161,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Caps at max
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(DETWS_AUTH_LOCKOUT_MAX_MS, auth_lockout_remaining_ms(&ip, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_AUTH_LOCKOUT_MAX_MS, auth_lockout_remaining_ms(&ip, 0));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -2169,9 +2169,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Expires after window
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, auth_lockout_remaining_ms(&ip, DETWS_AUTH_LOCKOUT_BASE_MS - 1));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, auth_lockout_remaining_ms(&ip, DETWS_AUTH_LOCKOUT_BASE_MS));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, auth_lockout_remaining_ms(&ip, DETWS_AUTH_LOCKOUT_BASE_MS + 100));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, auth_lockout_remaining_ms(&ip, DWS_AUTH_LOCKOUT_BASE_MS - 1));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, auth_lockout_remaining_ms(&ip, DWS_AUTH_LOCKOUT_BASE_MS));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, auth_lockout_remaining_ms(&ip, DWS_AUTH_LOCKOUT_BASE_MS + 100));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -2198,8 +2198,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A v4 host that "looks like" the v6 tail must not inherit the lockout.
     * **Assertions**:
-      * <code>Assert true (det_ip_parse("2001:db8::1", &v6a))</code>
-      * <code>Assert true (det_ip_parse("2001:db8::2", &v6b))</code>
+      * <code>Assert true (dws_ip_parse("2001:db8::1", &v6a))</code>
+      * <code>Assert true (dws_ip_parse("2001:db8::2", &v6b))</code>
       * <code>Assert true (auth_lockout_remaining_ms(&v6a, 0) &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, auth_lockout_remaining_ms(&v6b, 0)); // a different v6 peer is not</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, auth_lockout_remaining_ms(&v4, 0));</code>
@@ -2471,7 +2471,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: can_id 0x00000123, big-endian, no flags.
     * **Assertions**:
-      * <code>Assert equal uint (DET_SOCKETCAN_FRAME_LEN, can_to_socketcan(&f, out, sizeof(out)))</code>
+      * <code>Assert equal uint (DWS_SOCKETCAN_FRAME_LEN, can_to_socketcan(&f, out, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x01, out[2]);</code>
@@ -2525,7 +2525,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pcap can linktype
     * **Assertions**:
-      * <code>Assert equal uint (DET_PCAP_GLOBAL_HDR_LEN, det_pcap_global_header(g, sizeof(g), DET_DLT_CAN_SOCKETCAN))</code>
+      * <code>Assert equal uint (DWS_PCAP_GLOBAL_HDR_LEN, dws_pcap_global_header(g, sizeof(g), DWS_DLT_CAN_SOCKETCAN))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(227, g[20]); // DLT_CAN_SOCKETCAN</code>
   </details>
 
@@ -3313,7 +3313,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Sum
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, detws_cclink_sum(b, sizeof(b))); // wraps to 0</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x00, dws_cclink_sum(b, sizeof(b))); // wraps to 0</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3324,13 +3324,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(2 + 2 + 4 + 1, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(5, buf[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(CclinkCmd::CCLINK_CMD_REFRESH, buf[1]);</code>
-      * <code>Assert true (detws_cclink_parse(buf, n, &f))</code>
+      * <code>Assert true (dws_cclink_parse(buf, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(5, f.station);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(CclinkCmd::CCLINK_CMD_REFRESH, f.command);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(6, f.payload_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xA5, f.payload[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0x1234, detws_cclink_get_word(f.payload + 2, 4, 0));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0x5678, detws_cclink_get_word(f.payload + 2, 4, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x1234, dws_cclink_get_word(f.payload + 2, 4, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x5678, dws_cclink_get_word(f.payload + 2, 4, 1));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3338,13 +3338,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Bit accessors
     * **Assertions**:
-      * <code>Assert true (detws_cclink_get_bit(bits, 2, 0))</code>
-      * <code>Assert false (detws_cclink_get_bit(bits, 2, 1))</code>
-      * <code>Assert true (detws_cclink_get_bit(bits, 2, 7))</code>
-      * <code>Assert false (detws_cclink_get_bit(bits, 2, 99))</code>
-      * <code>Assert true (detws_cclink_get_bit(bits, 2, 8))</code>
+      * <code>Assert true (dws_cclink_get_bit(bits, 2, 0))</code>
+      * <code>Assert false (dws_cclink_get_bit(bits, 2, 1))</code>
+      * <code>Assert true (dws_cclink_get_bit(bits, 2, 7))</code>
+      * <code>Assert false (dws_cclink_get_bit(bits, 2, 99))</code>
+      * <code>Assert true (dws_cclink_get_bit(bits, 2, 8))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x01, bits[1]);</code>
-      * <code>Assert false (detws_cclink_get_bit(bits, 2, 0))</code>
+      * <code>Assert false (dws_cclink_get_bit(bits, 2, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3352,8 +3352,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: station > 63 rejected at build.
     * **Assertions**:
-      * <code>Assert false (detws_cclink_parse(buf, n, &f))</code>
-      * <code>Assert false (detws_cclink_parse(buf, 2, &f))</code>
+      * <code>Assert false (dws_cclink_parse(buf, n, &f))</code>
+      * <code>Assert false (dws_cclink_parse(buf, 2, &f))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(</code>
   </details>
 
@@ -3362,9 +3362,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build and accessor guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_cclink_build(1, 0, bits, 16, words, 2, out, 2)); // cap too small</code>
-      * <code>Assert false (detws_cclink_get_bit(bits, 16, 999))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, detws_cclink_get_word(words, 2, 999));                 // out of range -&gt; 0</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_cclink_build(1, 0, bits, 16, words, 2, out, 2)); // cap too small</code>
+      * <code>Assert false (dws_cclink_get_bit(bits, 16, 999))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_cclink_get_word(words, 2, 999));                 // out of range -&gt; 0</code>
   </details>
 
 </details>
@@ -3827,8 +3827,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Default is platform millis
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(5000, detws_millis());</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(12345, detws_millis());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5000, dws_millis());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(12345, dws_millis());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3836,9 +3836,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Custom clock divides to 1000hz
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1000, detws_millis());</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2000, detws_millis());</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1000, detws_millis());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1000, dws_millis());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2000, dws_millis());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1000, dws_millis());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3846,7 +3846,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Sub khz source not divided
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1234, detws_millis());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1234, dws_millis());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3854,8 +3854,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Revert to default
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(42, detws_millis());</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(777, detws_millis());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(42, dws_millis());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(777, dws_millis());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3863,8 +3863,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Micros custom divides to 1mhz
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1000000u, detws_micros());</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2u, detws_micros()); // 160 / 80</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1000000u, dws_micros());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2u, dws_micros()); // 160 / 80</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -3875,7 +3875,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT32(3, s.count);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(10, s.min_us);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(100, s.max_us);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32((10 + 100 + 20) / 3, detws_lat_avg_us(&s));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((10 + 100 + 20) / 3, dws_lat_avg_us(&s));</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, s.over_budget); // only the 100 us sample</code>
   </details>
 
@@ -3998,8 +3998,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Coap udp handler basic
     * **Assertions**:
-      * <code>Assert true (det_udp_captured_len() &gt; 0)</code>
-      * <code>Assert equal uint (0, det_udp_captured_len())</code>
+      * <code>Assert true (dws_udp_captured_len() &gt; 0)</code>
+      * <code>Assert equal uint (0, dws_udp_captured_len())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4007,19 +4007,19 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Register.
     * **Assertions**:
-      * <code>Assert true (det_udp_captured_len() &gt; 0)</code>
-      * <code>Assert true (det_udp_captured_len() &gt; 0)</code>
-      * <code>Assert equal uint (0, det_udp_captured_len())</code>
-      * <code>Assert equal uint (0, det_udp_captured_len())</code>
-      * <code>Assert equal uint (0, det_udp_captured_len())</code>
+      * <code>Assert true (dws_udp_captured_len() &gt; 0)</code>
+      * <code>Assert true (dws_udp_captured_len() &gt; 0)</code>
+      * <code>Assert equal uint (0, dws_udp_captured_len())</code>
+      * <code>Assert equal uint (0, dws_udp_captured_len())</code>
+      * <code>Assert equal uint (0, dws_udp_captured_len())</code>
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_coap_observe_registry_full</b> &mdash; <i>Distinct tokens from one peer fill the DETWS_COAP_MAX_OBSERVERS slots; extras are declined</i></summary>
+    <summary><b>test_coap_observe_registry_full</b> &mdash; <i>Distinct tokens from one peer fill the DWS_COAP_MAX_OBSERVERS slots; extras are declined</i></summary>
 
-    * **Objective**: Distinct tokens from one peer fill the DETWS_COAP_MAX_OBSERVERS slots; extras are declined
+    * **Objective**: Distinct tokens from one peer fill the DWS_COAP_MAX_OBSERVERS slots; extras are declined
     * **Assertions**:
-      * <code>Assert true (det_udp_captured_len() &gt; 0)</code>
+      * <code>Assert true (dws_udp_captured_len() &gt; 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4027,10 +4027,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Add resource limits
     * **Assertions**:
-      * <code>Assert false (det_coap_server_add_resource(nullptr, CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
-      * <code>Assert false (det_coap_server_add_resource("/x", CoapMethodMask::COAP_ALLOW_GET, nullptr))</code>
+      * <code>Assert false (dws_coap_server_add_resource(nullptr, CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
+      * <code>Assert false (dws_coap_server_add_resource("/x", CoapMethodMask::COAP_ALLOW_GET, nullptr))</code>
       * <code>Assert less than (64, added)</code>
-      * <code>Assert false (det_coap_server_add_resource("/nope", CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
+      * <code>Assert false (dws_coap_server_add_resource("/nope", CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4038,7 +4038,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: CON with TKL=3 but no token bytes present (len == 4): RST with an empty token.
     * **Assertions**:
-      * <code>Assert equal uint (0, det_coap_server_process(too_short, 3, resp, sizeof(resp)))</code>
+      * <code>Assert equal uint (0, dws_coap_server_process(too_short, 3, resp, sizeof(resp)))</code>
       * <code>Assert equal uint (4, n)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)CoapType::COAP_TYPE_RST, (resp[0] &gt;&gt; 4) & 0x03);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, resp[1]);</code>
@@ -4069,9 +4069,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Oversized path and query
     * **Assertions**:
-      * <code>Assert true (det_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
+      * <code>Assert true (dws_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1])</code>
-      * <code>Assert true (det_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
+      * <code>Assert true (dws_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1])</code>
   </details>
 
@@ -4080,9 +4080,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Block option too wide
     * **Assertions**:
-      * <code>Assert true (det_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
+      * <code>Assert true (dws_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1])</code>
-      * <code>Assert true (det_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
+      * <code>Assert true (dws_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1])</code>
   </details>
 
@@ -4091,7 +4091,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Block1 reserved szx
     * **Assertions**:
-      * <code>Assert true (det_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
+      * <code>Assert true (dws_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, resp[1])</code>
   </details>
 
@@ -4100,7 +4100,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Block1 continue no space
     * **Assertions**:
-      * <code>Assert equal uint (0, det_coap_server_process(req, e.len, resp, sizeof(resp)))</code>
+      * <code>Assert equal uint (0, dws_coap_server_process(req, e.len, resp, sizeof(resp)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4108,7 +4108,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Response payload clamped
     * **Assertions**:
-      * <code>Assert true (det_coap_server_add_resource("/of", CoapMethodMask::COAP_ALLOW_GET, h_overflow))</code>
+      * <code>Assert true (dws_coap_server_add_resource("/of", CoapMethodMask::COAP_ALLOW_GET, h_overflow))</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1])</code>
   </details>
@@ -4118,7 +4118,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Response buffer too small
     * **Assertions**:
-      * <code>Assert equal uint (0, det_coap_server_process(req, e.len, resp, sizeof(resp)))</code>
+      * <code>Assert equal uint (0, dws_coap_server_process(req, e.len, resp, sizeof(resp)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4126,7 +4126,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Well known core truncates
     * **Assertions**:
-      * <code>Assert true (det_coap_server_add_resource(g_longpaths[i], CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
+      * <code>Assert true (dws_coap_server_add_resource(g_longpaths[i], CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1])</code>
   </details>
@@ -4136,8 +4136,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Observe large seq encoding
     * **Assertions**:
-      * <code>Assert true (det_coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x0102) &gt; 0)</code>
-      * <code>Assert true (det_coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x010203) &gt; 0)</code>
+      * <code>Assert true (dws_coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x0102) &gt; 0)</code>
+      * <code>Assert true (dws_coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x010203) &gt; 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4646,10 +4646,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Round trip
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_config_get_u32("port", 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_config_get_u32("port", 0));</code>
       * <code>Assert equal int (3, c)</code>
       * <code>Assert equal string ("abc", s)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1234, detws_config_get_u32("port", 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1234, dws_config_get_u32("port", 0));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4658,7 +4658,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Import skips unknown keys
     * **Assertions**:
       * <code>Assert equal int (1, c)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(42, detws_config_get_u32("port", 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(42, dws_config_get_u32("port", 0));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4666,7 +4666,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Export overflow fails closed
     * **Assertions**:
-      * <code>Assert equal int (0, detws_config_export("t", SCHEMA, N, buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_config_export("t", SCHEMA, N, buf, sizeof(buf)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4674,10 +4674,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Export import null guards
     * **Assertions**:
-      * <code>Assert equal int (0, detws_config_export("ns", fields, 1, nullptr, sizeof(out)))</code>
-      * <code>Assert equal int (0, detws_config_export("ns", nullptr, 1, out, sizeof(out)))</code>
-      * <code>Assert equal int (0, detws_config_import("ns", nullptr, 1, "text", 4))</code>
-      * <code>Assert equal int (0, detws_config_import("ns", fields, 1, nullptr, 0))</code>
+      * <code>Assert equal int (0, dws_config_export("ns", fields, 1, nullptr, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_config_export("ns", nullptr, 1, out, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_config_import("ns", nullptr, 1, "text", 4))</code>
+      * <code>Assert equal int (0, dws_config_import("ns", fields, 1, nullptr, 0))</code>
   </details>
 
 </details>
@@ -4690,7 +4690,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Str round trip
     * **Assertions**:
-      * <code>Assert true (detws_config_set_str("ssid", "myssid"))</code>
+      * <code>Assert true (dws_config_set_str("ssid", "myssid"))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
       * <code>Assert equal string ("myssid", out)</code>
   </details>
@@ -4726,8 +4726,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: U32 round trip
     * **Assertions**:
-      * <code>Assert true (detws_config_set_u32("ip", 0xC0A80164u))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0xC0A80164u, detws_config_get_u32("ip", 0));</code>
+      * <code>Assert true (dws_config_set_u32("ip", 0xC0A80164u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0xC0A80164u, dws_config_get_u32("ip", 0));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4735,7 +4735,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: U32 default when missing
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(42u, detws_config_get_u32("nope", 42u));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(42u, dws_config_get_u32("nope", 42u));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4743,7 +4743,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Blob round trip
     * **Assertions**:
-      * <code>Assert true (detws_config_set_blob("psk", in, sizeof(in)))</code>
+      * <code>Assert true (dws_config_set_blob("psk", in, sizeof(in)))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(5, n);</code>
       * <code>Assert equal memory (in, out, 5)</code>
   </details>
@@ -4762,7 +4762,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Blob missing returns zero
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_config_get_blob("nope", out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_config_get_blob("nope", out, sizeof(out)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4770,9 +4770,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Erase removes key
     * **Assertions**:
-      * <code>Assert true (detws_config_erase("k"))</code>
+      * <code>Assert true (dws_config_erase("k"))</code>
       * <code>Assert equal string ("gone", out)</code>
-      * <code>Assert false (detws_config_erase("k"))</code>
+      * <code>Assert false (dws_config_erase("k"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4781,7 +4781,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Clear wipes namespace
     * **Assertions**:
       * <code>Assert equal string ("x", out)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(9u, detws_config_get_u32("b", 9u));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(9u, dws_config_get_u32("b", 9u));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4789,8 +4789,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Table full rejects new key
     * **Assertions**:
-      * <code>Assert true (detws_config_set_u32(key, (uint32_t)i))</code>
-      * <code>Assert false (detws_config_set_u32("overflow", 1))</code>
+      * <code>Assert true (dws_config_set_u32(key, (uint32_t)i))</code>
+      * <code>Assert false (dws_config_set_u32("overflow", 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4798,8 +4798,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Existing key overwrites even when full
     * **Assertions**:
-      * <code>Assert true (detws_config_set_u32("k0", 999u))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(999u, detws_config_get_u32("k0", 0));</code>
+      * <code>Assert true (dws_config_set_u32("k0", 999u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(999u, dws_config_get_u32("k0", 0));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4807,7 +4807,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Key too long rejected
     * **Assertions**:
-      * <code>Assert false (detws_config_set_str(longkey, "v"))</code>
+      * <code>Assert false (dws_config_set_str(longkey, "v"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4815,9 +4815,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Setter getter null guards
     * **Assertions**:
-      * <code>Assert false (detws_config_set_str("k", nullptr))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_config_get_str("k", nullptr, 0, "def")); // null out</code>
-      * <code>Assert false (detws_config_set_blob("k", nullptr, 4))</code>
+      * <code>Assert false (dws_config_set_str("k", nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_config_get_str("k", nullptr, 0, "def")); // null out</code>
+      * <code>Assert false (dws_config_set_blob("k", nullptr, 4))</code>
   </details>
 
 </details>
@@ -5221,7 +5221,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Layout bar sparkline types
     * **Assertions**:
-      * <code>Assert true (detws_dashboard_layout_json(buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert true (dws_dashboard_layout_json(buf, sizeof(buf)) &gt; 0)</code>
       * <code>Assert not null (strstr(buf, "\\"type\\":\\"bar\\""))</code>
       * <code>Assert not null (strstr(buf, "\\"type\\":\\"sparkline\\""))</code>
   </details>
@@ -5231,12 +5231,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Null widget table guards
     * **Assertions**:
-      * <code>Assert false (detws_dashboard_set("temp", 1.0f))</code>
-      * <code>Assert false (detws_dashboard_set(nullptr, 1.0f))</code>
-      * <code>Assert equal int (0, detws_dashboard_layout_json(buf, sizeof(buf)))</code>
-      * <code>Assert equal int (0, detws_dashboard_values_json(buf, sizeof(buf)))</code>
-      * <code>Assert equal int (0, detws_dashboard_layout_json(buf, 0))</code>
-      * <code>Assert equal int (0, detws_dashboard_values_json(buf, 0))</code>
+      * <code>Assert false (dws_dashboard_set("temp", 1.0f))</code>
+      * <code>Assert false (dws_dashboard_set(nullptr, 1.0f))</code>
+      * <code>Assert equal int (0, dws_dashboard_layout_json(buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_dashboard_values_json(buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_dashboard_layout_json(buf, 0))</code>
+      * <code>Assert equal int (0, dws_dashboard_values_json(buf, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5244,12 +5244,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Json overflow paths
     * **Assertions**:
-      * <code>Assert equal int (0, detws_dashboard_layout_json(buf, 1))</code>
-      * <code>Assert equal int (0, detws_dashboard_values_json(buf, 1))</code>
-      * <code>Assert equal int (0, detws_dashboard_layout_json(buf, 2))</code>
-      * <code>Assert equal int (0, detws_dashboard_values_json(buf, 2))</code>
-      * <code>Assert equal int (0, detws_dashboard_layout_json(buf, 2))</code>
-      * <code>Assert equal int (0, detws_dashboard_values_json(buf, 2))</code>
+      * <code>Assert equal int (0, dws_dashboard_layout_json(buf, 1))</code>
+      * <code>Assert equal int (0, dws_dashboard_values_json(buf, 1))</code>
+      * <code>Assert equal int (0, dws_dashboard_layout_json(buf, 2))</code>
+      * <code>Assert equal int (0, dws_dashboard_values_json(buf, 2))</code>
+      * <code>Assert equal int (0, dws_dashboard_layout_json(buf, 2))</code>
+      * <code>Assert equal int (0, dws_dashboard_values_json(buf, 2))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5257,16 +5257,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse control edges
     * **Assertions**:
-      * <code>Assert false (detws_dashboard_parse_control(nullptr, key, sizeof(key), &v))</code>
-      * <code>Assert false (detws_dashboard_parse_control("{}", nullptr, sizeof(key), &v))</code>
-      * <code>Assert false (detws_dashboard_parse_control("{}", key, 0, &v))</code>
-      * <code>Assert false (detws_dashboard_parse_control("{}", key, sizeof(key), nullptr))</code>
-      * <code>Assert false (detws_dashboard_parse_control("{\\"k\\" 5}", key, sizeof(key), &v))</code>
-      * <code>Assert true (detws_dashboard_parse_control("{\\"k\\" : \\"temp\\" , \\"v\\" : 3}", key, sizeof(key), &v))</code>
+      * <code>Assert false (dws_dashboard_parse_control(nullptr, key, sizeof(key), &v))</code>
+      * <code>Assert false (dws_dashboard_parse_control("{}", nullptr, sizeof(key), &v))</code>
+      * <code>Assert false (dws_dashboard_parse_control("{}", key, 0, &v))</code>
+      * <code>Assert false (dws_dashboard_parse_control("{}", key, sizeof(key), nullptr))</code>
+      * <code>Assert false (dws_dashboard_parse_control("{\\"k\\" 5}", key, sizeof(key), &v))</code>
+      * <code>Assert true (dws_dashboard_parse_control("{\\"k\\" : \\"temp\\" , \\"v\\" : 3}", key, sizeof(key), &v))</code>
       * <code>Assert equal string ("temp", key)</code>
       * <code>Assert equal float (3.0f, v)</code>
-      * <code>Assert false (detws_dashboard_parse_control("{\\"k\\":\\"unterminated", key, sizeof(key), &v))</code>
-      * <code>Assert false (detws_dashboard_parse_control("{\\"k\\":\\"toolong\\",\\"v\\":1}", small, sizeof(small), &v))</code>
+      * <code>Assert false (dws_dashboard_parse_control("{\\"k\\":\\"unterminated", key, sizeof(key), &v))</code>
+      * <code>Assert false (dws_dashboard_parse_control("{\\"k\\":\\"toolong\\",\\"v\\":1}", small, sizeof(small), &v))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5291,8 +5291,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Set and values
     * **Assertions**:
-      * <code>Assert true (detws_dashboard_set("temp", 23.5f))</code>
-      * <code>Assert true (detws_dashboard_set("count", 7.0f))</code>
+      * <code>Assert true (dws_dashboard_set("temp", 23.5f))</code>
+      * <code>Assert true (dws_dashboard_set("count", 7.0f))</code>
       * <code>Assert equal string ("{\\"temp\\":23.5,\\"count\\":7}", buf)</code>
   </details>
 
@@ -5301,7 +5301,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Set unknown key
     * **Assertions**:
-      * <code>Assert false (detws_dashboard_set("nope", 1.0f))</code>
+      * <code>Assert false (dws_dashboard_set("nope", 1.0f))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5317,7 +5317,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Small buffer fails closed
     * **Assertions**:
-      * <code>Assert equal int (0, detws_dashboard_layout_json(buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_dashboard_layout_json(buf, sizeof(buf)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5325,7 +5325,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse control ok
     * **Assertions**:
-      * <code>Assert true (detws_dashboard_parse_control("{\\"k\\":\\"toggle1\\",\\"v\\":1}", key, sizeof(key), &v))</code>
+      * <code>Assert true (dws_dashboard_parse_control("{\\"k\\":\\"toggle1\\",\\"v\\":1}", key, sizeof(key), &v))</code>
       * <code>Assert equal string ("toggle1", key)</code>
       * <code>Assert equal float (1.0f, v)</code>
   </details>
@@ -5335,7 +5335,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse control float
     * **Assertions**:
-      * <code>Assert true (detws_dashboard_parse_control("{\\"k\\":\\"speed\\",\\"v\\":3.5}", key, sizeof(key), &v))</code>
+      * <code>Assert true (dws_dashboard_parse_control("{\\"k\\":\\"speed\\",\\"v\\":3.5}", key, sizeof(key), &v))</code>
       * <code>Assert equal string ("speed", key)</code>
       * <code>Assert equal float (3.5f, v)</code>
   </details>
@@ -5345,10 +5345,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse control rejects malformed
     * **Assertions**:
-      * <code>Assert false (detws_dashboard_parse_control("{\\"k\\":\\"x\\"}", key, sizeof(key), &v))</code>
-      * <code>Assert false (detws_dashboard_parse_control("{\\"v\\":1}", key, sizeof(key), &v))</code>
-      * <code>Assert false (detws_dashboard_parse_control("not json", key, sizeof(key), &v))</code>
-      * <code>Assert false (detws_dashboard_parse_control("{\\"k\\":\\"x\\",\\"v\\":}", key, sizeof(key), &v))</code>
+      * <code>Assert false (dws_dashboard_parse_control("{\\"k\\":\\"x\\"}", key, sizeof(key), &v))</code>
+      * <code>Assert false (dws_dashboard_parse_control("{\\"v\\":1}", key, sizeof(key), &v))</code>
+      * <code>Assert false (dws_dashboard_parse_control("not json", key, sizeof(key), &v))</code>
+      * <code>Assert false (dws_dashboard_parse_control("{\\"k\\":\\"x\\",\\"v\\":}", key, sizeof(key), &v))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5356,11 +5356,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dispatch control invokes cb
     * **Assertions**:
-      * <code>Assert true (detws_dashboard_dispatch_control("{\\"k\\":\\"led\\",\\"v\\":1}"))</code>
+      * <code>Assert true (dws_dashboard_dispatch_control("{\\"k\\":\\"led\\",\\"v\\":1}"))</code>
       * <code>Assert equal int (1, g_ctrl_calls)</code>
       * <code>Assert equal string ("led", g_ctrl_key)</code>
       * <code>Assert equal float (1.0f, g_ctrl_val)</code>
-      * <code>Assert false (detws_dashboard_dispatch_control("garbage"))</code>
+      * <code>Assert false (dws_dashboard_dispatch_control("garbage"))</code>
       * <code>Assert equal int (1, g_ctrl_calls)</code>
   </details>
 
@@ -5389,11 +5389,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (put_s("beta", "two"))</code>
       * <code>Assert true (get_eq("alpha", "one"))</code>
       * <code>Assert true (get_eq("beta", "two"))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_count(&g_db));</code>
       * <code>Assert true (put_s("alpha", "ONE-UPDATED"))</code>
       * <code>Assert true (get_eq("alpha", "ONE-UPDATED"))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db)); // still 2 live keys</code>
-      * <code>Assert equal int (-1, detws_dbm_get(&g_db, "missing", 7, b, sizeof(b)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_count(&g_db)); // still 2 live keys</code>
+      * <code>Assert equal int (-1, dws_dbm_get(&g_db, "missing", 7, b, sizeof(b)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5401,14 +5401,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A tombstoned key can be re-inserted (resurrect through the tombstone slot).
     * **Assertions**:
-      * <code>Assert true (detws_dbm_contains(&g_db, "k1", 2))</code>
-      * <code>Assert true (detws_dbm_del(&g_db, "k1", 2))</code>
-      * <code>Assert false (detws_dbm_contains(&g_db, "k1", 2))</code>
-      * <code>Assert false (detws_dbm_del(&g_db, "k1", 2))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_dbm_count(&g_db));</code>
+      * <code>Assert true (dws_dbm_contains(&g_db, "k1", 2))</code>
+      * <code>Assert true (dws_dbm_del(&g_db, "k1", 2))</code>
+      * <code>Assert false (dws_dbm_contains(&g_db, "k1", 2))</code>
+      * <code>Assert false (dws_dbm_del(&g_db, "k1", 2))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_dbm_count(&g_db));</code>
       * <code>Assert true (put_s("k1", "again"))</code>
       * <code>Assert true (get_eq("k1", "again"))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_count(&g_db));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5416,11 +5416,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Persist across reboot with checkpoint
     * **Assertions**:
-      * <code>Assert true (detws_dbm_sync(&g_db))</code>
+      * <code>Assert true (dws_dbm_sync(&g_db))</code>
       * <code>Assert true (reboot())</code>
       * <code>Assert true (get_eq("name", "detws2"))</code>
       * <code>Assert true (get_eq("role", "server"))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_count(&g_db));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5432,7 +5432,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (get_eq("a", "1"))</code>
       * <code>Assert true (get_eq("b", "2"))</code>
       * <code>Assert true (get_eq("c", "3"))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(3, detws_dbm_count(&g_db));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, dws_dbm_count(&g_db));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5440,12 +5440,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Delete persists across reboot
     * **Assertions**:
-      * <code>Assert true (detws_dbm_del(&g_db, "drop", 4))</code>
-      * <code>Assert true (detws_dbm_sync(&g_db))</code>
+      * <code>Assert true (dws_dbm_del(&g_db, "drop", 4))</code>
+      * <code>Assert true (dws_dbm_sync(&g_db))</code>
       * <code>Assert true (reboot())</code>
-      * <code>Assert true (detws_dbm_contains(&g_db, "keep", 4))</code>
-      * <code>Assert false (detws_dbm_contains(&g_db, "drop", 4))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_dbm_count(&g_db));</code>
+      * <code>Assert true (dws_dbm_contains(&g_db, "keep", 4))</code>
+      * <code>Assert false (dws_dbm_contains(&g_db, "drop", 4))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_dbm_count(&g_db));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5454,11 +5454,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Many keys and collisions
     * **Assertions**:
       * <code>Assert true (put_s(k, v))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)N, detws_dbm_count(&g_db));</code>
-      * <code>Assert true (detws_dbm_sync(&g_db))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)N, dws_dbm_count(&g_db));</code>
+      * <code>Assert true (dws_dbm_sync(&g_db))</code>
       * <code>Assert true (reboot())</code>
       * <code>Assert true (get_eq(k, v))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)N, detws_dbm_count(&g_db));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)N, dws_dbm_count(&g_db));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5467,7 +5467,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Fill every slot with a distinct live key.
     * **Assertions**:
       * <code>Assert true (put_s(k, "x"))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)DETWS_DBM_SLOTS, detws_dbm_count(&g_db));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)DWS_DBM_SLOTS, dws_dbm_count(&g_db));</code>
       * <code>Assert false (put_s("overflow-key", "x"))</code>
       * <code>Assert true (put_s("s00000", "updated"))</code>
       * <code>Assert true (get_eq("s00000", "updated"))</code>
@@ -5478,11 +5478,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Empty value is valid: get returns 0, key is present.
     * **Assertions**:
-      * <code>Assert false (detws_dbm_put(&g_db, bigk, DETWS_DBM_KEY_MAX + 1, (const uint8_t *)"v", 1))</code>
-      * <code>Assert false (detws_dbm_put(&g_db, "k", 1, bigv, DETWS_DBM_VAL_MAX + 1))</code>
-      * <code>Assert true (detws_dbm_put(&g_db, "empty", 5, nullptr, 0))</code>
-      * <code>Assert equal int (0, detws_dbm_get(&g_db, "empty", 5, b, sizeof(b)))</code>
-      * <code>Assert true (detws_dbm_contains(&g_db, "empty", 5))</code>
+      * <code>Assert false (dws_dbm_put(&g_db, bigk, DWS_DBM_KEY_MAX + 1, (const uint8_t *)"v", 1))</code>
+      * <code>Assert false (dws_dbm_put(&g_db, "k", 1, bigv, DWS_DBM_VAL_MAX + 1))</code>
+      * <code>Assert true (dws_dbm_put(&g_db, "empty", 5, nullptr, 0))</code>
+      * <code>Assert equal int (0, dws_dbm_get(&g_db, "empty", 5, b, sizeof(b)))</code>
+      * <code>Assert true (dws_dbm_contains(&g_db, "empty", 5))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5490,12 +5490,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A too-small buffer fails rather than truncating.
     * **Assertions**:
-      * <code>Assert true (detws_dbm_put(&g_db, "big", 3, val, DETWS_DBM_VAL_MAX))</code>
-      * <code>Assert true (detws_dbm_sync(&g_db))</code>
+      * <code>Assert true (dws_dbm_put(&g_db, "big", 3, val, DWS_DBM_VAL_MAX))</code>
+      * <code>Assert true (dws_dbm_sync(&g_db))</code>
       * <code>Assert true (reboot())</code>
-      * <code>Assert equal int (DETWS_DBM_VAL_MAX, detws_dbm_get(&g_db, "big", 3, out, sizeof(out)))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(val, out, DETWS_DBM_VAL_MAX);</code>
-      * <code>Assert equal int (-1, detws_dbm_get(&g_db, "big", 3, small, sizeof(small)))</code>
+      * <code>Assert equal int (DWS_DBM_VAL_MAX, dws_dbm_get(&g_db, "big", 3, out, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(val, out, DWS_DBM_VAL_MAX);</code>
+      * <code>Assert equal int (-1, dws_dbm_get(&g_db, "big", 3, small, sizeof(small)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5504,15 +5504,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Churn: overwrite k1 many times and delete k3 - all of that becomes dead space in the log.
     * **Assertions**:
       * <code>Assert true (put_s("k1", v))</code>
-      * <code>Assert true (detws_dbm_del(&g_db, "k3", 2))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(3, detws_dbm_count(&g_db)); // k1,k2,k4 live</code>
+      * <code>Assert true (dws_dbm_del(&g_db, "k3", 2))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, dws_dbm_count(&g_db)); // k1,k2,k4 live</code>
       * <code>Assert true (live &lt; used_before)</code>
-      * <code>Assert true (detws_dbm_compact(&g_db, dst))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(3, detws_dbm_count(&g_db));</code>
+      * <code>Assert true (dws_dbm_compact(&g_db, dst))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, dws_dbm_count(&g_db));</code>
       * <code>Assert true (get_eq("k1", "k1-value-revision-29"))</code>
       * <code>Assert true (get_eq("k2", "v2"))</code>
       * <code>Assert true (get_eq("k4", "v4"))</code>
-      * <code>Assert false (detws_dbm_contains(&g_db, "k3", 2))</code>
+      * <code>Assert false (dws_dbm_contains(&g_db, "k3", 2))</code>
       * <code>Assert true (used_after &lt; used_before)</code>
       * <code>Assert true (used_after &gt;= live)</code>
       * <code>Assert true (put_s("k5", "v5"))</code>
@@ -5524,11 +5524,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A 512-byte destination (384 B usable) cannot hold the live set: compact must fail closed.
     * **Assertions**:
-      * <code>Assert true (detws_dbm_put(&g_db, k, (uint16_t)strlen(k), (const uint8_t *)big, sizeof(big)))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(4, detws_dbm_count(&g_db)); // ~800+ B of live values, plus framing</code>
-      * <code>Assert false (detws_dbm_compact(&g_db, dst))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(4, detws_dbm_count(&g_db));</code>
-      * <code>Assert equal int (200, detws_dbm_get(&g_db, "key0", 4, out, sizeof(out)))</code>
+      * <code>Assert true (dws_dbm_put(&g_db, k, (uint16_t)strlen(k), (const uint8_t *)big, sizeof(big)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4, dws_dbm_count(&g_db)); // ~800+ B of live values, plus framing</code>
+      * <code>Assert false (dws_dbm_compact(&g_db, dst))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4, dws_dbm_count(&g_db));</code>
+      * <code>Assert equal int (200, dws_dbm_get(&g_db, "key0", 4, out, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(big, out, 200);</code>
   </details>
 
@@ -5537,8 +5537,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: If reading a value back from the source log fails mid-compaction, compact must fail closed BEFORE
     * **Assertions**:
-      * <code>Assert false (detws_dbm_compact(&g_db, dst))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db));</code>
+      * <code>Assert false (dws_dbm_compact(&g_db, dst))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_count(&g_db));</code>
       * <code>Assert true (get_eq("a", "one-updated"))</code>
       * <code>Assert true (get_eq("b", "two"))</code>
   </details>
@@ -5548,11 +5548,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: If the destination checkpoint (sync) fails after the live keys are copied, compact must fail closed and
     * **Assertions**:
-      * <code>Assert false (detws_dbm_compact(&g_db, dst))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_dbm_count(&g_db));</code>
+      * <code>Assert false (dws_dbm_compact(&g_db, dst))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_dbm_count(&g_db));</code>
       * <code>Assert true (get_eq("x", "10"))</code>
       * <code>Assert true (get_eq("y", "20"))</code>
-      * <code>Assert true (detws_dbm_compact(&g_db, dst2))</code>
+      * <code>Assert true (dws_dbm_compact(&g_db, dst2))</code>
       * <code>Assert true (get_eq("x", "10"))</code>
       * <code>Assert true (get_eq("y", "20"))</code>
   </details>
@@ -5569,7 +5569,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(20, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, 20);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_rtps_header(GUID, VENDOR, out, 10));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rtps_header(GUID, VENDOR, out, 10));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5588,7 +5588,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse message
     * **Assertions**:
-      * <code>Assert true (detws_rtps_parse(msg, n, collect, &s))</code>
+      * <code>Assert true (dws_rtps_parse(msg, n, collect, &s))</code>
       * <code>Assert equal int (2, s.count)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Rtps::RTPS_SM_INFO_TS, s.ids[0]);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(8, s.lens[0]);</code>
@@ -5601,9 +5601,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Bad magic.
     * **Assertions**:
-      * <code>Assert false (detws_rtps_parse(msg, 20, nullptr, nullptr))</code>
-      * <code>Assert false (detws_rtps_parse(msg, 20, nullptr, nullptr))</code>
-      * <code>Assert false (detws_rtps_parse(msg, 10, nullptr, nullptr))</code>
+      * <code>Assert false (dws_rtps_parse(msg, 20, nullptr, nullptr))</code>
+      * <code>Assert false (dws_rtps_parse(msg, 20, nullptr, nullptr))</code>
+      * <code>Assert false (dws_rtps_parse(msg, 10, nullptr, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5611,8 +5611,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Rtps build guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_rtps_header(guid, vendor, out, 4)); // cap too small</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_rtps_submessage(0x15, 0, body, sizeof(body), out, 2)); // cap too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rtps_header(guid, vendor, out, 4)); // cap too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_rtps_submessage(0x15, 0, body, sizeof(body), out, 2)); // cap too small</code>
   </details>
 
 </details>
@@ -5625,7 +5625,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Defer runs inline on host
     * **Assertions**:
-      * <code>Assert true (detws_defer(0, inc, &g_ran))</code>
+      * <code>Assert true (dws_defer(0, inc, &g_ran))</code>
       * <code>Assert equal int (1, g_ran); // executed inline (no worker task on host)</code>
       * <code>Assert equal int (1, g_ran)</code>
   </details>
@@ -5645,7 +5645,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A null callback fails closed on every build (host and target).
     * **Assertions**:
-      * <code>Assert false (detws_defer(0, nullptr, nullptr))</code>
+      * <code>Assert false (dws_defer(0, nullptr, nullptr))</code>
       * <code>Assert equal int (0, g_ran)</code>
   </details>
 
@@ -5773,9 +5773,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Persist free shrinks boundary
     * **Assertions**:
       * <code>Assert not null (p)</code>
-      * <code>Assert true (det_arena_free_bytes(&a) &lt; free0)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(free0, det_arena_free_bytes(&a));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_arena_persist_used(&a));</code>
+      * <code>Assert true (dws_arena_free_bytes(&a) &lt; free0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(free0, dws_arena_free_bytes(&a));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_persist_used(&a));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5783,13 +5783,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Scratch bump and reset
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_arena_scratch_used(&a));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_scratch_used(&a));</code>
       * <code>Assert not null (p)</code>
       * <code>Assert true (aligned8(p))</code>
-      * <code>Assert true (det_arena_scratch_used(&a) &gt;= 100)</code>
+      * <code>Assert true (dws_arena_scratch_used(&a) &gt;= 100)</code>
       * <code>Assert true (p != q)</code>
       * <code>Assert true ((uintptr_t)q &lt; (uintptr_t)p)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_arena_scratch_used(&a));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_scratch_used(&a));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5797,8 +5797,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Scratch mark release
     * **Assertions**:
-      * <code>Assert true (det_arena_scratch_used(&a) &gt; used1)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(used1, det_arena_scratch_used(&a));</code>
+      * <code>Assert true (dws_arena_scratch_used(&a) &gt; used1)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(used1, dws_arena_scratch_used(&a));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5820,8 +5820,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert not null (p)</code>
       * <code>Assert not null (s)</code>
-      * <code>Assert null (det_arena_persist_alloc(&a, 1000))</code>
-      * <code>Assert null (det_arena_scratch_alloc(&a, 1000))</code>
+      * <code>Assert null (dws_arena_persist_alloc(&a, 1000))</code>
+      * <code>Assert null (dws_arena_scratch_alloc(&a, 1000))</code>
       * <code>Assert true ((uint8_t *)p + 1800 &lt;= (uint8_t *)s)</code>
   </details>
 
@@ -5830,8 +5830,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Scratch reset frees middle for persist
     * **Assertions**:
-      * <code>Assert null (det_arena_persist_alloc(&a, 2000))</code>
-      * <code>Assert not null (det_arena_persist_alloc(&a, 2000))</code>
+      * <code>Assert null (dws_arena_persist_alloc(&a, 2000))</code>
+      * <code>Assert not null (dws_arena_persist_alloc(&a, 2000))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5867,10 +5867,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Set add limits
     * **Assertions**:
-      * <code>Assert true (det_arena_set_add(&s, g_r0, sizeof(g_r0)))</code>
-      * <code>Assert true (det_arena_set_add(&s, g_r1, sizeof(g_r1)))</code>
-      * <code>Assert false (det_arena_set_add(&s, extra, sizeof(extra))); // full (max 2)</code>
-      * <code>Assert false (det_arena_set_add(&t, tiny, sizeof(tiny)))</code>
+      * <code>Assert true (dws_arena_set_add(&s, g_r0, sizeof(g_r0)))</code>
+      * <code>Assert true (dws_arena_set_add(&s, g_r1, sizeof(g_r1)))</code>
+      * <code>Assert false (dws_arena_set_add(&s, extra, sizeof(extra))); // full (max 2)</code>
+      * <code>Assert false (dws_arena_set_add(&t, tiny, sizeof(tiny)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5882,7 +5882,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (in_buf(big, g_r1, sizeof(g_r1)))</code>
       * <code>Assert not null (small)</code>
       * <code>Assert true (in_buf(small, g_r0, sizeof(g_r0)))</code>
-      * <code>Assert true (det_arena_set_persist_used(&s) &gt;= 732); // &gt;= requested (alignment rounds up)</code>
+      * <code>Assert true (dws_arena_set_persist_used(&s) &gt;= 732); // &gt;= requested (alignment rounds up)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5891,7 +5891,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Set persist free routes by address
     * **Assertions**:
       * <code>Assert true (in_buf(inR1, g_r1, sizeof(g_r1)))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_arena_set_persist_used(&s));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_set_persist_used(&s));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5901,10 +5901,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (in_buf(a0, g_r0, sizeof(g_r0)))</code>
       * <code>Assert true (in_buf(a1, g_r1, sizeof(g_r1)))</code>
-      * <code>Assert true (det_arena_set_scratch_used(&s) &gt;= 1300)</code>
-      * <code>Assert true (det_arena_set_scratch_used(&s) &gt;= 400)</code>
-      * <code>Assert true (det_arena_set_scratch_used(&s) &lt; 900)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_arena_set_scratch_used(&s));</code>
+      * <code>Assert true (dws_arena_set_scratch_used(&s) &gt;= 1300)</code>
+      * <code>Assert true (dws_arena_set_scratch_used(&s) &gt;= 400)</code>
+      * <code>Assert true (dws_arena_set_scratch_used(&s) &lt; 900)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_arena_set_scratch_used(&s));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5924,11 +5924,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A request larger than any single region fails closed across the whole set.
     * **Assertions**:
-      * <code>Assert null (det_arena_set_persist_alloc(&s, 100000))</code>
-      * <code>Assert null (det_arena_set_scratch_alloc(&s, 100000))</code>
+      * <code>Assert null (dws_arena_set_persist_alloc(&s, 100000))</code>
+      * <code>Assert null (dws_arena_set_scratch_alloc(&s, 100000))</code>
       * <code>Assert true (before &gt; 0)</code>
       * <code>Assert not null (p)</code>
-      * <code>Assert true (det_arena_set_free_bytes(&s) &lt; before)</code>
+      * <code>Assert true (dws_arena_set_free_bytes(&s) &lt; before)</code>
   </details>
 
 </details>
@@ -5943,14 +5943,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_from_v6_bytes</b> &mdash; <i>2001:db8::1 as raw network-order bytes -> DetIp -> canonical text.</i></summary>
+    <summary><b>test_from_v6_bytes</b> &mdash; <i>2001:db8::1 as raw network-order bytes -> DWSIp -> canonical text.</i></summary>
 
-    * **Objective**: 2001:db8::1 as raw network-order bytes -> DetIp -> canonical text.
+    * **Objective**: 2001:db8::1 as raw network-order bytes -> DWSIp -> canonical text.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetIpFamily::DET_IP_V6, ip.family);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWSIpFamily::DWS_IP_V6, ip.family);</code>
       * <code>Assert equal string ("2001:db8::1", s)</code>
-      * <code>Assert true (det_ip_parse("2001:db8::1", &parsed))</code>
-      * <code>Assert true (det_ip_equal(&ip, &parsed))</code>
+      * <code>Assert true (dws_ip_parse("2001:db8::1", &parsed))</code>
+      * <code>Assert true (dws_ip_equal(&ip, &parsed))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5958,14 +5958,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Is unspecified
     * **Assertions**:
-      * <code>Assert true (det_ip_is_unspecified(&none))</code>
-      * <code>Assert true (det_ip_is_unspecified(nullptr))</code>
-      * <code>Assert true (det_ip_parse("0.0.0.0", &z4))</code>
-      * <code>Assert true (det_ip_parse("::", &z6))</code>
-      * <code>Assert true (det_ip_parse("192.168.1.1", &host))</code>
-      * <code>Assert true (det_ip_is_unspecified(&z4))</code>
-      * <code>Assert true (det_ip_is_unspecified(&z6))</code>
-      * <code>Assert false (det_ip_is_unspecified(&host))</code>
+      * <code>Assert true (dws_ip_is_unspecified(&none))</code>
+      * <code>Assert true (dws_ip_is_unspecified(nullptr))</code>
+      * <code>Assert true (dws_ip_parse("0.0.0.0", &z4))</code>
+      * <code>Assert true (dws_ip_parse("::", &z6))</code>
+      * <code>Assert true (dws_ip_parse("192.168.1.1", &host))</code>
+      * <code>Assert true (dws_ip_is_unspecified(&z4))</code>
+      * <code>Assert true (dws_ip_is_unspecified(&z6))</code>
+      * <code>Assert false (dws_ip_is_unspecified(&host))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -5973,29 +5973,29 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: IPv4 CIDR containment (the allowlist primitive - full address, no hashing).
     * **Assertions**:
-      * <code>Assert true (det_ip_parse("192.168.1.0", &net24))</code>
-      * <code>Assert true (det_ip_parse("192.168.1.200", &in24))</code>
-      * <code>Assert true (det_ip_parse("192.168.2.1", &out24))</code>
-      * <code>Assert true (det_ip_prefix_match(&in24, &net24, 24))</code>
-      * <code>Assert false (det_ip_prefix_match(&out24, &net24, 24))</code>
-      * <code>Assert true (det_ip_parse("10.1.2.3", &net8))</code>
-      * <code>Assert true (det_ip_parse("10.255.255.255", &in8))</code>
-      * <code>Assert true (det_ip_parse("11.0.0.1", &out8))</code>
-      * <code>Assert true (det_ip_prefix_match(&in8, &net8, 8))</code>
-      * <code>Assert false (det_ip_prefix_match(&out8, &net8, 8))</code>
-      * <code>Assert true (det_ip_parse("203.0.113.7", &any))</code>
-      * <code>Assert true (det_ip_prefix_match(&any, &any, 32))</code>
-      * <code>Assert false (det_ip_prefix_match(&out24, &any, 32))</code>
-      * <code>Assert true (det_ip_prefix_match(&any, &net8, 0))</code>
-      * <code>Assert true (det_ip_parse("2001:db8::", &v6net))</code>
-      * <code>Assert true (det_ip_parse("2001:db8:0:0:1234::abcd", &v6in))</code>
-      * <code>Assert true (det_ip_parse("2001:db9::1", &v6out))</code>
-      * <code>Assert true (det_ip_prefix_match(&v6in, &v6net, 32))</code>
-      * <code>Assert false (det_ip_prefix_match(&v6out, &v6net, 32))</code>
-      * <code>Assert false (det_ip_prefix_match(&v6in, &net24, 24))</code>
-      * <code>Assert false (det_ip_prefix_match(&in24, &v6net, 24))</code>
-      * <code>Assert false (det_ip_prefix_match(&in24, &net24, 33))</code>
-      * <code>Assert false (det_ip_prefix_match(&v6in, &v6net, 129))</code>
+      * <code>Assert true (dws_ip_parse("192.168.1.0", &net24))</code>
+      * <code>Assert true (dws_ip_parse("192.168.1.200", &in24))</code>
+      * <code>Assert true (dws_ip_parse("192.168.2.1", &out24))</code>
+      * <code>Assert true (dws_ip_prefix_match(&in24, &net24, 24))</code>
+      * <code>Assert false (dws_ip_prefix_match(&out24, &net24, 24))</code>
+      * <code>Assert true (dws_ip_parse("10.1.2.3", &net8))</code>
+      * <code>Assert true (dws_ip_parse("10.255.255.255", &in8))</code>
+      * <code>Assert true (dws_ip_parse("11.0.0.1", &out8))</code>
+      * <code>Assert true (dws_ip_prefix_match(&in8, &net8, 8))</code>
+      * <code>Assert false (dws_ip_prefix_match(&out8, &net8, 8))</code>
+      * <code>Assert true (dws_ip_parse("203.0.113.7", &any))</code>
+      * <code>Assert true (dws_ip_prefix_match(&any, &any, 32))</code>
+      * <code>Assert false (dws_ip_prefix_match(&out24, &any, 32))</code>
+      * <code>Assert true (dws_ip_prefix_match(&any, &net8, 0))</code>
+      * <code>Assert true (dws_ip_parse("2001:db8::", &v6net))</code>
+      * <code>Assert true (dws_ip_parse("2001:db8:0:0:1234::abcd", &v6in))</code>
+      * <code>Assert true (dws_ip_parse("2001:db9::1", &v6out))</code>
+      * <code>Assert true (dws_ip_prefix_match(&v6in, &v6net, 32))</code>
+      * <code>Assert false (dws_ip_prefix_match(&v6out, &v6net, 32))</code>
+      * <code>Assert false (dws_ip_prefix_match(&v6in, &net24, 24))</code>
+      * <code>Assert false (dws_ip_prefix_match(&in24, &v6net, 24))</code>
+      * <code>Assert false (dws_ip_prefix_match(&in24, &net24, 33))</code>
+      * <code>Assert false (dws_ip_prefix_match(&v6in, &v6net, 129))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6009,9 +6009,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: V4 mapped
     * **Assertions**:
-      * <code>Assert true (det_ip_parse("::ffff:10.0.0.1", &ip))</code>
-      * <code>Assert true (det_ip_is_v4_mapped(&ip))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0x0A000001u, det_ip_to_v4_be(&ip));</code>
+      * <code>Assert true (dws_ip_parse("::ffff:10.0.0.1", &ip))</code>
+      * <code>Assert true (dws_ip_is_v4_mapped(&ip))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x0A000001u, dws_ip_to_v4_be(&ip));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6019,15 +6019,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Classify v4
     * **Assertions**:
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_LINK_LOCAL, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_MULTICAST, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LOOPBACK, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LINK_LOCAL, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_MULTICAST, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6035,14 +6035,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: v4-mapped classifies as its v4 scope.
     * **Assertions**:
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_LINK_LOCAL, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_PRIVATE, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_MULTICAST, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_GLOBAL, det_ip_classify(&ip))</code>
-      * <code>Assert equal (DetIpScope::DET_IP_SCOPE_LOOPBACK, det_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LOOPBACK, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LINK_LOCAL, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_PRIVATE, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_MULTICAST, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_GLOBAL, dws_ip_classify(&ip))</code>
+      * <code>Assert equal (DWSIpScope::DWS_IP_SCOPE_LOOPBACK, dws_ip_classify(&ip))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6050,19 +6050,19 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reject malformed
     * **Assertions**:
-      * <code>Assert false (det_ip_parse("", &ip))</code>
-      * <code>Assert false (det_ip_parse("256.0.0.1", &ip))</code>
-      * <code>Assert false (det_ip_parse("1.2.3", &ip))</code>
-      * <code>Assert false (det_ip_parse("1.2.3.4.5", &ip))</code>
-      * <code>Assert false (det_ip_parse("1::2::3", &ip))</code>
-      * <code>Assert false (det_ip_parse("1:2:3:4:5:6:7:8:9", &ip))</code>
-      * <code>Assert false (det_ip_parse("1:2:3:4:5:6:7", &ip))</code>
-      * <code>Assert false (det_ip_parse("12345::1", &ip))</code>
-      * <code>Assert false (det_ip_parse("2001:db8:::1", &ip))</code>
-      * <code>Assert false (det_ip_parse("2001:db8::1:", &ip))</code>
-      * <code>Assert false (det_ip_parse("2001:xyz::1", &ip))</code>
-      * <code>Assert false (det_ip_parse("::ffff:1.2.3.4:5", &ip))</code>
-      * <code>Assert false (det_ip_parse("hello", &ip))</code>
+      * <code>Assert false (dws_ip_parse("", &ip))</code>
+      * <code>Assert false (dws_ip_parse("256.0.0.1", &ip))</code>
+      * <code>Assert false (dws_ip_parse("1.2.3", &ip))</code>
+      * <code>Assert false (dws_ip_parse("1.2.3.4.5", &ip))</code>
+      * <code>Assert false (dws_ip_parse("1::2::3", &ip))</code>
+      * <code>Assert false (dws_ip_parse("1:2:3:4:5:6:7:8:9", &ip))</code>
+      * <code>Assert false (dws_ip_parse("1:2:3:4:5:6:7", &ip))</code>
+      * <code>Assert false (dws_ip_parse("12345::1", &ip))</code>
+      * <code>Assert false (dws_ip_parse("2001:db8:::1", &ip))</code>
+      * <code>Assert false (dws_ip_parse("2001:db8::1:", &ip))</code>
+      * <code>Assert false (dws_ip_parse("2001:xyz::1", &ip))</code>
+      * <code>Assert false (dws_ip_parse("::ffff:1.2.3.4:5", &ip))</code>
+      * <code>Assert false (dws_ip_parse("hello", &ip))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6070,45 +6070,45 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Different families never compare equal.
     * **Assertions**:
-      * <code>Assert true (det_ip_parse("192.168.1.1", &b))</code>
-      * <code>Assert true (det_ip_equal(&a, &b))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A80101u, det_ip_to_v4_be(&a));</code>
-      * <code>Assert true (det_ip_parse("192.168.1.2", &c))</code>
-      * <code>Assert false (det_ip_equal(&a, &c))</code>
-      * <code>Assert true (det_ip_parse("::c0a8:101", &v6))</code>
-      * <code>Assert false (det_ip_equal(&a, &v6))</code>
+      * <code>Assert true (dws_ip_parse("192.168.1.1", &b))</code>
+      * <code>Assert true (dws_ip_equal(&a, &b))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A80101u, dws_ip_to_v4_be(&a));</code>
+      * <code>Assert true (dws_ip_parse("192.168.1.2", &c))</code>
+      * <code>Assert false (dws_ip_equal(&a, &c))</code>
+      * <code>Assert true (dws_ip_parse("::c0a8:101", &v6))</code>
+      * <code>Assert false (dws_ip_equal(&a, &v6))</code>
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_ip_classify_equal_cidr_and_parse_edges</b> &mdash; <i>classify: null and a DetIpFamily::DET_IP_NONE address are UNSPECIFIED.</i></summary>
+    <summary><b>test_ip_classify_equal_cidr_and_parse_edges</b> &mdash; <i>classify: null and a DWSIpFamily::DWS_IP_NONE address are UNSPECIFIED.</i></summary>
 
-    * **Objective**: classify: null and a DetIpFamily::DET_IP_NONE address are UNSPECIFIED.
+    * **Objective**: classify: null and a DWSIpFamily::DWS_IP_NONE address are UNSPECIFIED.
     * **Assertions**:
-      * <code>Assert equal int (DetIpScope::DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(nullptr))</code>
-      * <code>Assert equal int (DetIpScope::DET_IP_SCOPE_UNSPECIFIED, det_ip_classify(&none))</code>
-      * <code>Assert true (det_ip_equal(&none, &none2))</code>
-      * <code>Assert true (det_ip_prefix_match(&in, &net, 20))</code>
-      * <code>Assert false (det_ip_prefix_match(&out, &net, 20))</code>
-      * <code>Assert false (det_ip_parse(":1", &p))</code>
-      * <code>Assert false (det_ip_parse(toolong, &p))</code>
-      * <code>Assert false (det_ip_parse("1.2.3", &p))</code>
-      * <code>Assert false (det_ip_parse("1.2.3.4.5", &p))</code>
-      * <code>Assert false (det_ip_parse("256.0.0.1", &p))</code>
-      * <code>Assert false (det_ip_parse("gg::1", &p))</code>
-      * <code>Assert false (det_ip_parse("1:2:3:4:5:6:7:8:9", &p))</code>
-      * <code>Assert false (det_ip_parse(nullptr, &p))</code>
-      * <code>Assert false (det_ip_parse("1.2.3.4", nullptr))</code>
-      * <code>Assert false (det_ip_parse("1234.5.6.7", &p))</code>
-      * <code>Assert false (det_ip_parse("1.2.3.z", &p))</code>
-      * <code>Assert equal uint (0, det_ip_format(nullptr, buf, sizeof(buf)))</code>
-      * <code>Assert equal uint (0, det_ip_format(&none, buf, sizeof(buf)))</code>
-      * <code>Assert equal uint (0, det_ip_format(&v4, buf, 4))</code>
-      * <code>Assert true (det_ip_parse("2001:db8::1", &v6))</code>
-      * <code>Assert equal uint (0, det_ip_format(&v6, buf, 4))</code>
-      * <code>Assert true (det_ip_parse("::ffff:1.2.3.4", &mapped))</code>
-      * <code>Assert equal uint (0, det_ip_format(&mapped, buf, 5))</code>
-      * <code>Assert equal uint (0, det_ip_to_v4_be(nullptr))</code>
-      * <code>Assert equal uint (0, det_ip_to_v4_be(&v6))</code>
+      * <code>Assert equal int (DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED, dws_ip_classify(nullptr))</code>
+      * <code>Assert equal int (DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED, dws_ip_classify(&none))</code>
+      * <code>Assert true (dws_ip_equal(&none, &none2))</code>
+      * <code>Assert true (dws_ip_prefix_match(&in, &net, 20))</code>
+      * <code>Assert false (dws_ip_prefix_match(&out, &net, 20))</code>
+      * <code>Assert false (dws_ip_parse(":1", &p))</code>
+      * <code>Assert false (dws_ip_parse(toolong, &p))</code>
+      * <code>Assert false (dws_ip_parse("1.2.3", &p))</code>
+      * <code>Assert false (dws_ip_parse("1.2.3.4.5", &p))</code>
+      * <code>Assert false (dws_ip_parse("256.0.0.1", &p))</code>
+      * <code>Assert false (dws_ip_parse("gg::1", &p))</code>
+      * <code>Assert false (dws_ip_parse("1:2:3:4:5:6:7:8:9", &p))</code>
+      * <code>Assert false (dws_ip_parse(nullptr, &p))</code>
+      * <code>Assert false (dws_ip_parse("1.2.3.4", nullptr))</code>
+      * <code>Assert false (dws_ip_parse("1234.5.6.7", &p))</code>
+      * <code>Assert false (dws_ip_parse("1.2.3.z", &p))</code>
+      * <code>Assert equal uint (0, dws_ip_format(nullptr, buf, sizeof(buf)))</code>
+      * <code>Assert equal uint (0, dws_ip_format(&none, buf, sizeof(buf)))</code>
+      * <code>Assert equal uint (0, dws_ip_format(&v4, buf, 4))</code>
+      * <code>Assert true (dws_ip_parse("2001:db8::1", &v6))</code>
+      * <code>Assert equal uint (0, dws_ip_format(&v6, buf, 4))</code>
+      * <code>Assert true (dws_ip_parse("::ffff:1.2.3.4", &mapped))</code>
+      * <code>Assert equal uint (0, dws_ip_format(&mapped, buf, 5))</code>
+      * <code>Assert equal uint (0, dws_ip_to_v4_be(nullptr))</code>
+      * <code>Assert equal uint (0, dws_ip_to_v4_be(&v6))</code>
   </details>
 
 </details>
@@ -6121,10 +6121,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Strtol
     * **Assertions**:
-      * <code>Assert equal int (-42, det_strtol(s, &end))</code>
+      * <code>Assert equal int (-42, dws_strtol(s, &end))</code>
       * <code>Assert equal ptr (s + 5, end)</code>
-      * <code>Assert equal int (7, det_strtol("+7", nullptr))</code>
-      * <code>Assert equal int (0, det_strtol(bad, &e2))</code>
+      * <code>Assert equal int (7, dws_strtol("+7", nullptr))</code>
+      * <code>Assert equal int (0, dws_strtol(bad, &e2))</code>
       * <code>Assert equal ptr (bad, e2)</code>
   </details>
 
@@ -6133,9 +6133,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Strtoul
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(123, det_strtoul(s, &end)); // ws + '+' + digits</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(123, dws_strtoul(s, &end)); // ws + '+' + digits</code>
       * <code>Assert equal ptr (s + 6, end)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, det_strtoul(bad, &e2));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_strtoul(bad, &e2));</code>
       * <code>Assert equal ptr (bad, e2)</code>
   </details>
 
@@ -6144,11 +6144,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Strtof
     * **Assertions**:
-      * <code>Assert float within (0.0001f, 3.14f, det_strtof("  3.14", &end))</code>
-      * <code>Assert float within (0.0001f, -2.5f, det_strtof("-2.5", nullptr))</code>
-      * <code>Assert float within (1.0f, 1500.0f, det_strtof("1.5e3", &end))</code>
-      * <code>Assert float within (0.0001f, 0.0125f, det_strtof("1.25E-2", &end))</code>
-      * <code>Assert float within (0.0001f, 0.0f, det_strtof(bad, &e2))</code>
+      * <code>Assert float within (0.0001f, 3.14f, dws_strtof("  3.14", &end))</code>
+      * <code>Assert float within (0.0001f, -2.5f, dws_strtof("-2.5", nullptr))</code>
+      * <code>Assert float within (1.0f, 1500.0f, dws_strtof("1.5e3", &end))</code>
+      * <code>Assert float within (0.0001f, 0.0125f, dws_strtof("1.25E-2", &end))</code>
+      * <code>Assert float within (0.0001f, 0.0f, dws_strtof(bad, &e2))</code>
       * <code>Assert equal ptr (bad, e2)</code>
   </details>
 
@@ -6157,11 +6157,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Utf8 valid
     * **Assertions**:
-      * <code>Assert true (det_utf8_valid((const uint8_t *)"hello", 5))</code>
-      * <code>Assert true (det_utf8_valid(two, 2))</code>
-      * <code>Assert true (det_utf8_valid(three, 3))</code>
-      * <code>Assert true (det_utf8_valid(four, 4))</code>
-      * <code>Assert true (det_utf8_valid(nullptr, 0))</code>
+      * <code>Assert true (dws_utf8_valid((const uint8_t *)"hello", 5))</code>
+      * <code>Assert true (dws_utf8_valid(two, 2))</code>
+      * <code>Assert true (dws_utf8_valid(three, 3))</code>
+      * <code>Assert true (dws_utf8_valid(four, 4))</code>
+      * <code>Assert true (dws_utf8_valid(nullptr, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6169,13 +6169,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Utf8 invalid
     * **Assertions**:
-      * <code>Assert false (det_utf8_valid(lead_cont, 1))</code>
-      * <code>Assert false (det_utf8_valid(lead_f8, 4))</code>
-      * <code>Assert false (det_utf8_valid(truncated, 2))</code>
-      * <code>Assert false (det_utf8_valid(bad_cont, 2))</code>
-      * <code>Assert false (det_utf8_valid(overlong, 2))</code>
-      * <code>Assert false (det_utf8_valid(surrogate, 3))</code>
-      * <code>Assert false (det_utf8_valid(too_big, 4))</code>
+      * <code>Assert false (dws_utf8_valid(lead_cont, 1))</code>
+      * <code>Assert false (dws_utf8_valid(lead_f8, 4))</code>
+      * <code>Assert false (dws_utf8_valid(truncated, 2))</code>
+      * <code>Assert false (dws_utf8_valid(bad_cont, 2))</code>
+      * <code>Assert false (dws_utf8_valid(overlong, 2))</code>
+      * <code>Assert false (dws_utf8_valid(surrogate, 3))</code>
+      * <code>Assert false (dws_utf8_valid(too_big, 4))</code>
   </details>
 
 </details>
@@ -6669,7 +6669,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Lrc
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x30, detws_dnet_lrc(b, sizeof(b)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x30, dws_dnet_lrc(b, sizeof(b)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6691,7 +6691,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(7, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(DnetByte::DNET_STX, buf[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(DnetByte::DNET_ETX, buf[5]);</code>
-      * <code>Assert true (detws_dnet_data_parse(buf, n, &d, &dl))</code>
+      * <code>Assert true (dws_dnet_data_parse(buf, n, &d, &dl))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(4, dl);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, d, 4);</code>
   </details>
@@ -6701,8 +6701,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Missing STX.
     * **Assertions**:
-      * <code>Assert false (detws_dnet_data_parse(buf, n, &d, &dl))</code>
-      * <code>Assert false (detws_dnet_data_parse(bad, sizeof(bad), &d, &dl))</code>
+      * <code>Assert false (dws_dnet_data_parse(buf, n, &d, &dl))</code>
+      * <code>Assert false (dws_dnet_data_parse(bad, sizeof(bad), &d, &dl))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6710,14 +6710,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_header(1, DnetByte::DNET_READ, 0x40, 2, nullptr, sizeof(out))); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_header(1, DnetByte::DNET_READ, 0x40, 2, out, 5)); // cap too small</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_data(payload, 4, nullptr, sizeof(out)));          // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_data(nullptr, 4, out, sizeof(out)));              // len but null data</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_dnet_data(payload, 4, out, 3));                        // n &gt; cap</code>
-      * <code>Assert false (detws_dnet_data_parse(nullptr, 5, &d, &dl))</code>
-      * <code>Assert false (detws_dnet_data_parse(two, sizeof(two), &d, &dl))</code>
-      * <code>Assert false (detws_dnet_data_parse(no_etx, sizeof(no_etx), &d, &dl))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnet_header(1, DnetByte::DNET_READ, 0x40, 2, nullptr, sizeof(out))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnet_header(1, DnetByte::DNET_READ, 0x40, 2, out, 5)); // cap too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnet_data(payload, 4, nullptr, sizeof(out)));          // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnet_data(nullptr, 4, out, sizeof(out)));              // len but null data</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnet_data(payload, 4, out, 3));                        // n &gt; cap</code>
+      * <code>Assert false (dws_dnet_data_parse(nullptr, 5, &d, &dl))</code>
+      * <code>Assert false (dws_dnet_data_parse(two, sizeof(two), &d, &dl))</code>
+      * <code>Assert false (dws_dnet_data_parse(no_etx, sizeof(no_etx), &d, &dl))</code>
   </details>
 
 </details>
@@ -6836,9 +6836,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Open validates
     * **Assertions**:
-      * <code>Assert false (det_dma_open(nullptr))</code>
-      * <code>Assert false (det_dma_open(&c))</code>
-      * <code>Assert false (det_dma_open(&c))</code>
+      * <code>Assert false (dws_dma_open(nullptr))</code>
+      * <code>Assert false (dws_dma_open(&c))</code>
+      * <code>Assert false (dws_dma_open(&c))</code>
       * <code>Assert true (open_ch(0, false))</code>
       * <code>Assert false (open_ch(0, false))</code>
   </details>
@@ -6849,9 +6849,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Ingress emits rx event
     * **Assertions**:
       * <code>Assert true (open_ch(0, false))</code>
-      * <code>Assert true (det_dma_sim_feed(0, msg, sizeof(msg)))</code>
+      * <code>Assert true (dws_dma_sim_feed(0, msg, sizeof(msg)))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, g_ev.size()); // nothing until we pump the engine</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(det_dma_dir::DET_DMA_RX));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(dws_dma_dir::DWS_DMA_RX));</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(5, g_ev[0].len);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, g_ev[0].channel);</code>
       * <code>Assert equal memory (msg, g_ev[0].data.data(), sizeof(msg))</code>
@@ -6863,9 +6863,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: one full-buffer completion + one partial idle-line flush
     * **Assertions**:
       * <code>Assert true (open_ch(0, false))</code>
-      * <code>Assert true (det_dma_sim_feed(0, msg, sizeof(msg)))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(2, count_dir(det_dma_dir::DET_DMA_RX));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(DETWS_DMA_BUF_SIZE, g_ev[0].len);</code>
+      * <code>Assert true (dws_dma_sim_feed(0, msg, sizeof(msg)))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, count_dir(dws_dma_dir::DWS_DMA_RX));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(DWS_DMA_BUF_SIZE, g_ev[0].len);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(3, g_ev[1].len);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(msg), got.size());</code>
       * <code>Assert equal memory (msg, got.data(), sizeof(msg))</code>
@@ -6877,8 +6877,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: consecutive completions use different buffers (the engine flipped, not reused)
     * **Assertions**:
       * <code>Assert true (open_ch(0, false))</code>
-      * <code>Assert true (det_dma_sim_feed(0, msg, sizeof(msg)))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(2, count_dir(det_dma_dir::DET_DMA_RX));</code>
+      * <code>Assert true (dws_dma_sim_feed(0, msg, sizeof(msg)))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, count_dir(dws_dma_dir::DWS_DMA_RX));</code>
       * <code>Assert not equal (g_ev[0].ptr, g_ev[1].ptr)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, g_ev[0].seq);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(1, g_ev[1].seq); // per-channel sequence increments</code>
@@ -6891,9 +6891,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Egress captures tx
     * **Assertions**:
       * <code>Assert true (open_ch(0, false))</code>
-      * <code>Assert true (det_dma_tx_submit(0, out, sizeof(out)))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(det_dma_dir::DET_DMA_TX));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, count_dir(det_dma_dir::DET_DMA_RX)); // no loopback -&gt; no RX</code>
+      * <code>Assert true (dws_dma_tx_submit(0, out, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(dws_dma_dir::DWS_DMA_TX));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, count_dir(dws_dma_dir::DWS_DMA_RX)); // no loopback -&gt; no RX</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(4, g_ev[0].len);</code>
       * <code>Assert null (g_ev[0].ptr)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(4, n);</code>
@@ -6906,10 +6906,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Tx one in flight fail closed
     * **Assertions**:
       * <code>Assert true (open_ch(0, false))</code>
-      * <code>Assert true (det_dma_tx_submit(0, a, sizeof(a)))</code>
-      * <code>Assert false (det_dma_tx_submit(0, b, sizeof(b)))</code>
-      * <code>Assert true (det_dma_tx_submit(0, b, sizeof(b)))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(2, count_dir(det_dma_dir::DET_DMA_TX));</code>
+      * <code>Assert true (dws_dma_tx_submit(0, a, sizeof(a)))</code>
+      * <code>Assert false (dws_dma_tx_submit(0, b, sizeof(b)))</code>
+      * <code>Assert true (dws_dma_tx_submit(0, b, sizeof(b)))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, count_dir(dws_dma_dir::DWS_DMA_TX));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6918,9 +6918,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Tx rejects bad len
     * **Assertions**:
       * <code>Assert true (open_ch(0, false))</code>
-      * <code>Assert false (det_dma_tx_submit(0, x, 0))</code>
-      * <code>Assert false (det_dma_tx_submit(0, big, DETWS_DMA_BUF_SIZE + 1))</code>
-      * <code>Assert false (det_dma_tx_submit(0, nullptr, 4))</code>
+      * <code>Assert false (dws_dma_tx_submit(0, x, 0))</code>
+      * <code>Assert false (dws_dma_tx_submit(0, big, DWS_DMA_BUF_SIZE + 1))</code>
+      * <code>Assert false (dws_dma_tx_submit(0, nullptr, 4))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6929,9 +6929,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Loopback round trip
     * **Assertions**:
       * <code>Assert true (open_ch(0, true))</code>
-      * <code>Assert true (det_dma_tx_submit(0, ping, sizeof(ping)))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(det_dma_dir::DET_DMA_TX));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(det_dma_dir::DET_DMA_RX));</code>
+      * <code>Assert true (dws_dma_tx_submit(0, ping, sizeof(ping)))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(dws_dma_dir::DWS_DMA_TX));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, count_dir(dws_dma_dir::DWS_DMA_RX));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(ping), got.size());</code>
       * <code>Assert equal memory (ping, got.data(), sizeof(ping))</code>
   </details>
@@ -6942,8 +6942,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Feed fail closed when full
     * **Assertions**:
       * <code>Assert true (open_ch(0, false))</code>
-      * <code>Assert false (det_dma_sim_feed(0, big, sizeof(big)))</code>
-      * <code>Assert true (det_dma_sim_feed(0, ok, sizeof(ok)))</code>
+      * <code>Assert false (dws_dma_sim_feed(0, big, sizeof(big)))</code>
+      * <code>Assert true (dws_dma_sim_feed(0, ok, sizeof(ok)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6951,11 +6951,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Closed channel is inert
     * **Assertions**:
-      * <code>Assert false (det_dma_sim_feed(0, x, sizeof(x)))</code>
-      * <code>Assert false (det_dma_tx_submit(0, x, sizeof(x)))</code>
+      * <code>Assert false (dws_dma_sim_feed(0, x, sizeof(x)))</code>
+      * <code>Assert false (dws_dma_tx_submit(0, x, sizeof(x)))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, g_ev.size());</code>
       * <code>Assert true (open_ch(0, false))</code>
-      * <code>Assert false (det_dma_sim_feed(0, x, sizeof(x)))</code>
+      * <code>Assert false (dws_dma_sim_feed(0, x, sizeof(x)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -6965,8 +6965,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (open_ch(0, false))</code>
       * <code>Assert true (open_ch(1, false))</code>
-      * <code>Assert true (det_dma_sim_feed(0, a, sizeof(a)))</code>
-      * <code>Assert true (det_dma_sim_feed(1, b, sizeof(b)))</code>
+      * <code>Assert true (dws_dma_sim_feed(0, a, sizeof(a)))</code>
+      * <code>Assert true (dws_dma_sim_feed(1, b, sizeof(b)))</code>
       * <code>Assert equal memory (a, g_ev[i].data.data(), sizeof(a))</code>
       * <code>Assert equal memory (b, g_ev[i].data.data(), sizeof(b))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, ch0);</code>
@@ -6978,9 +6978,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Channel guard subconditions
     * **Assertions**:
-      * <code>Assert false (det_dma_sim_feed(0, b, sizeof(b)))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_dma_sim_capture(0, b, 4));   // channel not open</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_dma_sim_capture(255, b, 4)); // bad channel</code>
+      * <code>Assert false (dws_dma_sim_feed(0, b, sizeof(b)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_dma_sim_capture(0, b, 4));   // channel not open</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_dma_sim_capture(255, b, 4)); // bad channel</code>
   </details>
 
 </details>
@@ -7081,7 +7081,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: odd parity across all 8 tracks (EIA characteristic)
     * **Assertions**:
       * <code>Assert true message ((popcount8(e) & 1) == 1, "EIA code must have odd parity")</code>
-      * <code>Assert equal int (c, (int)(unsigned char)det_dnc_eia_to_iso(e))</code>
+      * <code>Assert equal int (c, (int)(unsigned char)dws_dnc_eia_to_iso(e))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_MESSAGE(0, seen[e], "two characters collide on one EIA byte");</code>
       * <code>Assert equal int (43, representable)</code>
   </details>
@@ -7091,23 +7091,23 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: no lowercase / no ':' '(' ')' in EIA -> fail closed
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x20, det_dnc_iso_to_eia('0'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, det_dnc_iso_to_eia('1'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x07, det_dnc_iso_to_eia('7'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x61, det_dnc_iso_to_eia('A'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x73, det_dnc_iso_to_eia('C')); // even hole count -&gt; parity added</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x26, det_dnc_iso_to_eia('W')); // numeral 6 + channel 6 (documented)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x29, det_dnc_iso_to_eia('Z'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x10, det_dnc_iso_to_eia(' '));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x6B, det_dnc_iso_to_eia('.'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x40, det_dnc_iso_to_eia('-'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x31, det_dnc_iso_to_eia('/'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x0B, det_dnc_iso_to_eia('%')); // rewind stop = EIA End-of-Record</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, det_dnc_iso_to_eia('a'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, det_dnc_iso_to_eia('('));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, det_dnc_iso_to_eia(':'));</code>
-      * <code>Assert equal int (0, (int)det_dnc_eia_to_iso(0x00))</code>
-      * <code>Assert equal int (0, (int)det_dnc_eia_to_iso(0x80))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x20, dws_dnc_iso_to_eia('0'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, dws_dnc_iso_to_eia('1'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x07, dws_dnc_iso_to_eia('7'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x61, dws_dnc_iso_to_eia('A'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x73, dws_dnc_iso_to_eia('C')); // even hole count -&gt; parity added</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x26, dws_dnc_iso_to_eia('W')); // numeral 6 + channel 6 (documented)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x29, dws_dnc_iso_to_eia('Z'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x10, dws_dnc_iso_to_eia(' '));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x6B, dws_dnc_iso_to_eia('.'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x40, dws_dnc_iso_to_eia('-'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x31, dws_dnc_iso_to_eia('/'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0B, dws_dnc_iso_to_eia('%')); // rewind stop = EIA End-of-Record</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, dws_dnc_iso_to_eia('a'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, dws_dnc_iso_to_eia('('));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, dws_dnc_iso_to_eia(':'));</code>
+      * <code>Assert equal int (0, (int)dws_dnc_eia_to_iso(0x00))</code>
+      * <code>Assert equal int (0, (int)dws_dnc_eia_to_iso(0x80))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7117,8 +7117,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)c, (uint8_t)(p & 0x7F)); // low 7 bits unchanged</code>
       * <code>Assert true message ((popcount8(p) & 1) == 0, "even parity total")</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x41, det_dnc_iso_add_parity('A')); // 0x41 has 2 bits -&gt; even -&gt; bit7 clear</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0xB1, det_dnc_iso_add_parity('1')); // 0x31 has 3 bits -&gt; odd -&gt; bit7 set</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x41, dws_dnc_iso_add_parity('A')); // 0x41 has 2 bits -&gt; even -&gt; bit7 clear</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xB1, dws_dnc_iso_add_parity('1')); // 0x31 has 3 bits -&gt; odd -&gt; bit7 set</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7149,9 +7149,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Encode block fail closed
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_block(&cfg, "g01", 3, out, sizeof(out)));   // lowercase</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_block(&cfg, "(cmt)", 5, out, sizeof(out))); // '(' not in EIA</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_block(&cfg, "G01", 3, tiny, sizeof(tiny))); // overflow</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnc_encode_block(&cfg, "g01", 3, out, sizeof(out)));   // lowercase</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnc_encode_block(&cfg, "(cmt)", 5, out, sizeof(out))); // '(' not in EIA</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnc_encode_block(&cfg, "G01", 3, tiny, sizeof(tiny))); // overflow</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7173,7 +7173,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(5, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[i]);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_leader(&cfg, tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnc_encode_leader(&cfg, tiny, sizeof(tiny)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7181,13 +7181,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Flow control
     * **Assertions**:
-      * <code>Assert true (det_dnc_flow_can_send(&f))</code>
-      * <code>Assert true (det_dnc_flow_feed(&f, (uint8_t)DncFlowByte::DNC_XOFF))</code>
-      * <code>Assert false (det_dnc_flow_can_send(&f))</code>
-      * <code>Assert false (det_dnc_flow_feed(&f, 'G'))</code>
-      * <code>Assert false (det_dnc_flow_can_send(&f))</code>
-      * <code>Assert true (det_dnc_flow_feed(&f, (uint8_t)DncFlowByte::DNC_XON))</code>
-      * <code>Assert true (det_dnc_flow_can_send(&f))</code>
+      * <code>Assert true (dws_dnc_flow_can_send(&f))</code>
+      * <code>Assert true (dws_dnc_flow_feed(&f, (uint8_t)DncFlowByte::DNC_XOFF))</code>
+      * <code>Assert false (dws_dnc_flow_can_send(&f))</code>
+      * <code>Assert false (dws_dnc_flow_feed(&f, 'G'))</code>
+      * <code>Assert false (dws_dnc_flow_can_send(&f))</code>
+      * <code>Assert true (dws_dnc_flow_feed(&f, (uint8_t)DncFlowByte::DNC_XON))</code>
+      * <code>Assert true (dws_dnc_flow_can_send(&f))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7236,11 +7236,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Encode overflow paths
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_block(&eia, "G01", 3, o, 3)); // chars fill cap, EOB overflows</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_block(&iso, "G", 1, o, 1));   // CR overflows</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_block(&iso, "G", 1, o, 2));   // CR fits, LF overflows</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_marker(&eia, o, 0));          // EIA EOR has no room</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_marker(&iso, o, 0));          // ISO '%' has no room</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnc_encode_block(&eia, "G01", 3, o, 3)); // chars fill cap, EOB overflows</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnc_encode_block(&iso, "G", 1, o, 1));   // CR overflows</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnc_encode_block(&iso, "G", 1, o, 2));   // CR fits, LF overflows</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnc_encode_marker(&eia, o, 0));          // EIA EOR has no room</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_dnc_encode_marker(&iso, o, 0));          // ISO '%' has no room</code>
   </details>
 
 </details>
@@ -7446,16 +7446,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 172.32.x is OUTSIDE the 172.16/12 private block -> public.
     * **Assertions**:
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_UNSPECIFIED, det_dns_resolver_classify(0u))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_BROADCAST, det_dns_resolver_classify(0xFFFFFFFFu))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_LOOPBACK, det_dns_resolver_classify(IPV4(127, 0, 0, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PRIVATE, det_dns_resolver_classify(IPV4(10, 0, 0, 5)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PRIVATE, det_dns_resolver_classify(IPV4(172, 16, 0, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PRIVATE, det_dns_resolver_classify(IPV4(192, 168, 1, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_LINKLOCAL, det_dns_resolver_classify(IPV4(169, 254, 1, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_MULTICAST, det_dns_resolver_classify(IPV4(224, 0, 0, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PUBLIC, det_dns_resolver_classify(IPV4(8, 8, 8, 8)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PUBLIC, det_dns_resolver_classify(IPV4(172, 32, 0, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DWS_IP_UNSPECIFIED, dws_dns_resolver_classify(0u))</code>
+      * <code>Assert equal int (DetwsIpClass::DWS_IP_BROADCAST, dws_dns_resolver_classify(0xFFFFFFFFu))</code>
+      * <code>Assert equal int (DetwsIpClass::DWS_IP_LOOPBACK, dws_dns_resolver_classify(IPV4(127, 0, 0, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(10, 0, 0, 5)))</code>
+      * <code>Assert equal int (DetwsIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(172, 16, 0, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(192, 168, 1, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DWS_IP_LINKLOCAL, dws_dns_resolver_classify(IPV4(169, 254, 1, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DWS_IP_MULTICAST, dws_dns_resolver_classify(IPV4(224, 0, 0, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(8, 8, 8, 8)))</code>
+      * <code>Assert equal int (DetwsIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(172, 32, 0, 1)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7463,10 +7463,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Verify rejects suspicious
     * **Assertions**:
-      * <code>Assert false (det_dns_resolver_verify(IPV4(0, 0, 0, 0)))</code>
-      * <code>Assert false (det_dns_resolver_verify(IPV4(127, 0, 0, 1)))</code>
-      * <code>Assert false (det_dns_resolver_verify(IPV4(255, 255, 255, 255)))</code>
-      * <code>Assert false (det_dns_resolver_verify(IPV4(224, 0, 0, 1)))</code>
+      * <code>Assert false (dws_dns_resolver_verify(IPV4(0, 0, 0, 0)))</code>
+      * <code>Assert false (dws_dns_resolver_verify(IPV4(127, 0, 0, 1)))</code>
+      * <code>Assert false (dws_dns_resolver_verify(IPV4(255, 255, 255, 255)))</code>
+      * <code>Assert false (dws_dns_resolver_verify(IPV4(224, 0, 0, 1)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7474,9 +7474,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Verify accepts plausible
     * **Assertions**:
-      * <code>Assert true (det_dns_resolver_verify(IPV4(8, 8, 8, 8)))</code>
-      * <code>Assert true (det_dns_resolver_verify(IPV4(192, 168, 1, 50))); // private (LAN host)</code>
-      * <code>Assert true (det_dns_resolver_verify(IPV4(169, 254, 0, 2)))</code>
+      * <code>Assert true (dws_dns_resolver_verify(IPV4(8, 8, 8, 8)))</code>
+      * <code>Assert true (dws_dns_resolver_verify(IPV4(192, 168, 1, 50))); // private (LAN host)</code>
+      * <code>Assert true (dws_dns_resolver_verify(IPV4(169, 254, 0, 2)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7484,8 +7484,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Resolve is noop on host
     * **Assertions**:
-      * <code>Assert false (det_dns_resolver_resolve("example.com", &ip))</code>
-      * <code>Assert false (det_dns_resolver_resolve_verified("example.com", &ip))</code>
+      * <code>Assert false (dws_dns_resolver_resolve("example.com", &ip))</code>
+      * <code>Assert false (dws_dns_resolver_resolve_verified("example.com", &ip))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7493,11 +7493,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: resolve fails -> false.
     * **Assertions**:
-      * <code>Assert false (det_dns_resolver_resolve_verified("example.com", &ip))</code>
-      * <code>Assert false (det_dns_resolver_resolve_verified("example.com", &ip))</code>
-      * <code>Assert true (det_dns_resolver_resolve_verified("example.com", &ip))</code>
+      * <code>Assert false (dws_dns_resolver_resolve_verified("example.com", &ip))</code>
+      * <code>Assert false (dws_dns_resolver_resolve_verified("example.com", &ip))</code>
+      * <code>Assert true (dws_dns_resolver_resolve_verified("example.com", &ip))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(IPV4(8, 8, 8, 8), ip);</code>
-      * <code>Assert true (det_dns_resolver_resolve_verified("example.com", nullptr))</code>
+      * <code>Assert true (dws_dns_resolver_resolve_verified("example.com", nullptr))</code>
   </details>
 
 </details>
@@ -7566,11 +7566,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A compression pointer inside the question is illegal.
     * **Assertions**:
-      * <code>Assert equal uint (0, det_dns_server_build_response(q, 11, 60, resolve_foo, out, sizeof(out)))</code>
-      * <code>Assert equal uint (0, det_dns_server_build_response(nullptr, qlen, 60, resolve_foo, out, sizeof(out)))</code>
-      * <code>Assert equal uint (0, det_dns_server_build_response(q, qlen, 60, nullptr, out, sizeof(out)))</code>
-      * <code>Assert equal uint (0, det_dns_server_build_response(bad, sizeof(bad), 60, resolve_foo, out, sizeof(out)))</code>
-      * <code>Assert equal uint (0, det_dns_server_build_response(q, qlen, 60, resolve_foo, out, qlen + 8))</code>
+      * <code>Assert equal uint (0, dws_dns_server_build_response(q, 11, 60, resolve_foo, out, sizeof(out)))</code>
+      * <code>Assert equal uint (0, dws_dns_server_build_response(nullptr, qlen, 60, resolve_foo, out, sizeof(out)))</code>
+      * <code>Assert equal uint (0, dws_dns_server_build_response(q, qlen, 60, nullptr, out, sizeof(out)))</code>
+      * <code>Assert equal uint (0, dws_dns_server_build_response(bad, sizeof(bad), 60, resolve_foo, out, sizeof(out)))</code>
+      * <code>Assert equal uint (0, dws_dns_server_build_response(q, qlen, 60, resolve_foo, out, qlen + 8))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7578,13 +7578,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Table add lookup case insensitive
     * **Assertions**:
-      * <code>Assert true (det_dns_server_add("Printer.LAN", 192, 168, 1, 10))</code>
-      * <code>Assert true (det_dns_server_add("clock.lan", 192, 168, 1, 11))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A8010Au, det_dns_server_lookup("printer.lan")); // case-insensitive hit</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A8010Au, det_dns_server_lookup("PRINTER.LAN"));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A8010Bu, det_dns_server_lookup("clock.lan"));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0u, det_dns_server_lookup("absent.lan"));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0u, det_dns_server_lookup("printer.lan"));</code>
+      * <code>Assert true (dws_dns_server_add("Printer.LAN", 192, 168, 1, 10))</code>
+      * <code>Assert true (dws_dns_server_add("clock.lan", 192, 168, 1, 11))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A8010Au, dws_dns_server_lookup("printer.lan")); // case-insensitive hit</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A8010Au, dws_dns_server_lookup("PRINTER.LAN"));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A8010Bu, dws_dns_server_lookup("clock.lan"));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0u, dws_dns_server_lookup("absent.lan"));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0u, dws_dns_server_lookup("printer.lan"));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7607,7 +7607,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert equal uint (12, n)</code>
       * <code>Assert true (out[2] & 0x80)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x04, out[3] & 0x0F);                                               // NOTIMP</code>
-      * <code>Assert equal uint (0, det_dns_server_build_response(q, qlen, 60, resolve_foo, out, 8))</code>
+      * <code>Assert equal uint (0, dws_dns_server_build_response(q, qlen, 60, resolve_foo, out, 8))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7625,8 +7625,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dns oversized name
     * **Assertions**:
-      * <code>Assert equal uint (0, det_dns_server_build_response(q, qa, 60, resolve_foo, out, sizeof(out)))</code>
-      * <code>Assert equal uint (0, det_dns_server_build_response(q, qb, 60, resolve_foo, out, sizeof(out)))</code>
+      * <code>Assert equal uint (0, dws_dns_server_build_response(q, qa, 60, resolve_foo, out, sizeof(out)))</code>
+      * <code>Assert equal uint (0, dws_dns_server_build_response(q, qb, 60, resolve_foo, out, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7634,7 +7634,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dns question exceeds out cap
     * **Assertions**:
-      * <code>Assert equal uint (0, det_dns_server_build_response(q, qlen, 60, resolve_foo, out, 20))</code>
+      * <code>Assert equal uint (0, dws_dns_server_build_response(q, qlen, 60, resolve_foo, out, 20))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7642,12 +7642,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dns add and lookup guards
     * **Assertions**:
-      * <code>Assert false (det_dns_server_add(nullptr, 1, 2, 3, 4))</code>
-      * <code>Assert false (det_dns_server_add("", 1, 2, 3, 4))</code>
-      * <code>Assert false (det_dns_server_add(toolong, 1, 2, 3, 4))</code>
-      * <code>Assert true (det_dns_server_add(nm, 10, 0, 0, (uint8_t)i))</code>
-      * <code>Assert false (det_dns_server_add("overflow.lan", 10, 0, 0, 99))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0u, det_dns_server_lookup(nullptr));</code>
+      * <code>Assert false (dws_dns_server_add(nullptr, 1, 2, 3, 4))</code>
+      * <code>Assert false (dws_dns_server_add("", 1, 2, 3, 4))</code>
+      * <code>Assert false (dws_dns_server_add(toolong, 1, 2, 3, 4))</code>
+      * <code>Assert true (dws_dns_server_add(nm, 10, 0, 0, (uint8_t)i))</code>
+      * <code>Assert false (dws_dns_server_add("overflow.lan", 10, 0, 0, 99))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0u, dws_dns_server_lookup(nullptr));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7655,7 +7655,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dns begin host stub
     * **Assertions**:
-      * <code>Assert false (det_dns_server_begin())</code>
+      * <code>Assert false (dws_dns_server_begin())</code>
   </details>
 
 </details>
@@ -7671,10 +7671,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (put_doc("u1", "{\\"name\\":\\"alice\\",\\"age\\":30,\\"admin\\":true}"))</code>
       * <code>Assert true (put_doc("u2", "{\\"name\\":\\"bob\\",\\"age\\":25,\\"admin\\":false}"))</code>
       * <code>Assert true (get_eq("u1", "{\\"name\\":\\"alice\\",\\"age\\":30,\\"admin\\":true}"))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_docstore_count(&g_ds));</code>
-      * <code>Assert true (detws_docstore_del(&g_ds, "u2", 2))</code>
-      * <code>Assert false (detws_docstore_contains(&g_ds, "u2", 2))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_count(&g_ds));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_docstore_count(&g_ds));</code>
+      * <code>Assert true (dws_docstore_del(&g_ds, "u2", 2))</code>
+      * <code>Assert false (dws_docstore_contains(&g_ds, "u2", 2))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_docstore_count(&g_ds));</code>
       * <code>Assert true (put_doc("u1", "{\\"name\\":\\"alice2\\",\\"age\\":31}"))</code>
       * <code>Assert true (get_eq("u1", "{\\"name\\":\\"alice2\\",\\"age\\":31}"))</code>
   </details>
@@ -7711,9 +7711,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The field index (JSON scan) works after a remount too.
     * **Assertions**:
-      * <code>Assert true (detws_docstore_sync(&g_ds))</code>
+      * <code>Assert true (dws_docstore_sync(&g_ds))</code>
       * <code>Assert true (reboot())</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(3, detws_docstore_count(&g_ds));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, dws_docstore_count(&g_ds));</code>
       * <code>Assert true (get_eq("u2", "{\\"name\\":\\"bob\\",\\"role\\":\\"user\\"}"))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2, m);</code>
       * <code>Assert true (has_id(&c, "u1"))</code>
@@ -7734,12 +7734,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Find field absent
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_str(&g_ds, "name", "x", collect, &cs)); // "b" has no name</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_docstore_find_str(&g_ds, "name", "x", collect, &cs)); // "b" has no name</code>
       * <code>Assert true (has_id(&cs, "a"))</code>
       * <code>Assert false (has_id(&cs, "b"))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_int(&g_ds, "age", 5, collect, &ci)); // "b" has no age</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_docstore_find_int(&g_ds, "age", 5, collect, &ci)); // "b" has no age</code>
       * <code>Assert true (has_id(&ci, "a"))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_bool(&g_ds, "on", true, collect, &cb)); // "b" has no on</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_docstore_find_bool(&g_ds, "on", true, collect, &cb)); // "b" has no on</code>
       * <code>Assert true (has_id(&cb, "a"))</code>
   </details>
 
@@ -7748,9 +7748,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Find count only null cb
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(2, detws_docstore_find_str(&g_ds, "grp", "x", nullptr, nullptr));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_str(&g_ds, "grp", "y", nullptr, nullptr));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_docstore_find_str(&g_ds, "grp", "z", nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_docstore_find_str(&g_ds, "grp", "x", nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_docstore_find_str(&g_ds, "grp", "y", nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_docstore_find_str(&g_ds, "grp", "z", nullptr, nullptr));</code>
   </details>
 
 </details>
@@ -7763,9 +7763,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: motor stop (value 0) -> all zero.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX16(0x82C6, detws_dshot_encode(1046, false, false));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX16(0x0000, detws_dshot_encode(DshotCmd::DSHOT_CMD_MOTOR_STOP, false, false));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX16(0x0022, detws_dshot_encode(1, false, false));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x82C6, dws_dshot_encode(1046, false, false));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0000, dws_dshot_encode(DshotCmd::DSHOT_CMD_MOTOR_STOP, false, false));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x0022, dws_dshot_encode(1, false, false));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7773,7 +7773,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: value 1046, telemetry set: v12 = 0x82D, nibbles 8^2^D = 7, frame = 0x82D7.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX16(0x82D7, detws_dshot_encode(1046, true, false));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x82D7, dws_dshot_encode(1046, true, false));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7781,7 +7781,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Same value, bidirectional: crc = ~6 & 0xF = 9, frame = 0x82C9.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX16(0x82C9, detws_dshot_encode(1046, false, true));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x82C9, dws_dshot_encode(1046, false, true));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7789,7 +7789,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 0xF000 \| 1046: the high bits are dropped to the 11-bit field -> same as 1046.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX16(0x82C6, detws_dshot_encode((uint16_t)(1046 | 0xF800), false, false));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x82C6, dws_dshot_encode((uint16_t)(1046 | 0xF800), false, false));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7797,15 +7797,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A corrupted CRC nibble fails.
     * **Assertions**:
-      * <code>Assert true (detws_dshot_decode(0x82C6, &val, &tel, false))</code>
+      * <code>Assert true (dws_dshot_decode(0x82C6, &val, &tel, false))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(1046, val);</code>
       * <code>Assert false (tel)</code>
-      * <code>Assert true (detws_dshot_decode(0x82D7, &val, &tel, false))</code>
+      * <code>Assert true (dws_dshot_decode(0x82D7, &val, &tel, false))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(1046, val);</code>
       * <code>Assert true (tel)</code>
-      * <code>Assert false (detws_dshot_decode(0x82C5, nullptr, nullptr, false))</code>
-      * <code>Assert false (detws_dshot_decode(0x82C6, nullptr, nullptr, true))</code>
-      * <code>Assert true (detws_dshot_decode(0x82C9, &val, nullptr, true))</code>
+      * <code>Assert false (dws_dshot_decode(0x82C5, nullptr, nullptr, false))</code>
+      * <code>Assert false (dws_dshot_decode(0x82C6, nullptr, nullptr, true))</code>
+      * <code>Assert true (dws_dshot_decode(0x82C9, &val, nullptr, true))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(1046, val);</code>
   </details>
 
@@ -7814,9 +7814,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 600 kbit: period 1667 ns; "1" ~3/4, "0" ~3/8.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1250, detws_dshot_bit_ns(600, true));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(625, detws_dshot_bit_ns(600, false));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_dshot_bit_ns(999, true)); // unknown rate</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1250, dws_dshot_bit_ns(600, true));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(625, dws_dshot_bit_ns(600, false));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_dshot_bit_ns(999, true)); // unknown rate</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7824,15 +7824,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: OneShot125: 125..250 us.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(125000, detws_esc_pwm_ns(0, DetwsEscPwm::DETWS_ESC_ONESHOT125));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(250000, detws_esc_pwm_ns(1000, DetwsEscPwm::DETWS_ESC_ONESHOT125));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(187500, detws_esc_pwm_ns(500, DetwsEscPwm::DETWS_ESC_ONESHOT125));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(5000, detws_esc_pwm_ns(0, DetwsEscPwm::DETWS_ESC_MULTISHOT));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(25000, detws_esc_pwm_ns(1000, DetwsEscPwm::DETWS_ESC_MULTISHOT));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(15000, detws_esc_pwm_ns(500, DetwsEscPwm::DETWS_ESC_MULTISHOT));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1500000, detws_esc_pwm_ns(500, DetwsEscPwm::DETWS_ESC_PWM));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(84000, detws_esc_pwm_ns(1000, DetwsEscPwm::DETWS_ESC_ONESHOT42));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(250000, detws_esc_pwm_ns(5000, DetwsEscPwm::DETWS_ESC_ONESHOT125));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(125000, dws_esc_pwm_ns(0, DetwsEscPwm::DWS_ESC_ONESHOT125));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(250000, dws_esc_pwm_ns(1000, DetwsEscPwm::DWS_ESC_ONESHOT125));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(187500, dws_esc_pwm_ns(500, DetwsEscPwm::DWS_ESC_ONESHOT125));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5000, dws_esc_pwm_ns(0, DetwsEscPwm::DWS_ESC_MULTISHOT));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(25000, dws_esc_pwm_ns(1000, DetwsEscPwm::DWS_ESC_MULTISHOT));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(15000, dws_esc_pwm_ns(500, DetwsEscPwm::DWS_ESC_MULTISHOT));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1500000, dws_esc_pwm_ns(500, DetwsEscPwm::DWS_ESC_PWM));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(84000, dws_esc_pwm_ns(1000, DetwsEscPwm::DWS_ESC_ONESHOT42));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(250000, dws_esc_pwm_ns(5000, DetwsEscPwm::DWS_ESC_ONESHOT125));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7840,10 +7840,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Each supported line rate maps to a non-zero bit period; an unknown rate is rejected.
     * **Assertions**:
-      * <code>Assert true (detws_dshot_bit_ns(150, true) &gt; 0)</code>
-      * <code>Assert true (detws_dshot_bit_ns(300, false) &gt; 0)</code>
-      * <code>Assert true (detws_dshot_bit_ns(1200, true) &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_dshot_bit_ns(999, true));</code>
+      * <code>Assert true (dws_dshot_bit_ns(150, true) &gt; 0)</code>
+      * <code>Assert true (dws_dshot_bit_ns(300, false) &gt; 0)</code>
+      * <code>Assert true (dws_dshot_bit_ns(1200, true) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_dshot_bit_ns(999, true));</code>
   </details>
 
 </details>
@@ -7940,8 +7940,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert true (edge_sd_deserialize(g_scratch, n, &out))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(DETWS_EDGE_BODY_MAX, out.body_len);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(body, out.body, DETWS_EDGE_BODY_MAX);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(DWS_EDGE_BODY_MAX, out.body_len);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(body, out.body, DWS_EDGE_BODY_MAX);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7987,11 +7987,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_oversize_body_stays_l1_only</b> &mdash; <i>A body whose serialized size exceeds DETWS_DBM_VAL_MAX must not be spilled (stays L1-only).</i></summary>
+    <summary><b>test_oversize_body_stays_l1_only</b> &mdash; <i>A body whose serialized size exceeds DWS_DBM_VAL_MAX must not be spilled (stays L1-only).</i></summary>
 
-    * **Objective**: A body whose serialized size exceeds DETWS_DBM_VAL_MAX must not be spilled (stays L1-only).
+    * **Objective**: A body whose serialized size exceeds DWS_DBM_VAL_MAX must not be spilled (stays L1-only).
     * **Assertions**:
-      * <code>Assert true (serialized &gt; DETWS_DBM_VAL_MAX)</code>
+      * <code>Assert true (serialized &gt; DWS_DBM_VAL_MAX)</code>
       * <code>Assert false (edge_sd_put(&g_db, &in, g_scratch, sizeof(g_scratch)))</code>
   </details>
 
@@ -8023,7 +8023,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Survives reboot
     * **Assertions**:
       * <code>Assert true (edge_sd_put(&g_db, &in, g_scratch, sizeof(g_scratch)))</code>
-      * <code>Assert true (detws_dbm_sync(&g_db))</code>
+      * <code>Assert true (dws_dbm_sync(&g_db))</code>
       * <code>Assert true (reboot())</code>
       * <code>Assert true (edge_sd_get(&g_db, in.digest, &out, g_scratch, sizeof(g_scratch)))</code>
       * <code>Assert equal string (canon, out.key)</code>
@@ -8080,10 +8080,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A foreign (non-edge) value under a 32-byte key: purge_all must skip it (peek_canon guards on version).
     * **Assertions**:
-      * <code>Assert true (detws_dbm_put(&g_db, (const char *)foreign_key, 32, foreign_val, sizeof(foreign_val)))</code>
+      * <code>Assert true (dws_dbm_put(&g_db, (const char *)foreign_key, 32, foreign_val, sizeof(foreign_val)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, edge_sd_purge_all(&g_db)); // only the edge value</code>
       * <code>Assert false (has_path("/cdn/mine"))</code>
-      * <code>Assert equal int (16, detws_dbm_get(&g_db, (const char *)foreign_key, 32, out, sizeof(out)))</code>
+      * <code>Assert equal int (16, dws_dbm_get(&g_db, (const char *)foreign_key, 32, out, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_ARRAY(foreign_val, out, 16); // foreign value intact</code>
   </details>
 
@@ -8250,9 +8250,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_parse_rejects_over_length</b> &mdash; <i>A header claiming data_len 100 (> DETWS_ENOCEAN_MAX_DATA = 16) is rejected early.</i></summary>
+    <summary><b>test_parse_rejects_over_length</b> &mdash; <i>A header claiming data_len 100 (> DWS_ENOCEAN_MAX_DATA = 16) is rejected early.</i></summary>
 
-    * **Objective**: A header claiming data_len 100 (> DETWS_ENOCEAN_MAX_DATA = 16) is rejected early.
+    * **Objective**: A header claiming data_len 100 (> DWS_ENOCEAN_MAX_DATA = 16) is rejected early.
     * **Assertions**:
       * <code>Assert equal int (-1, esp3_parse(buf, sizeof(buf), nullptr))</code>
   </details>
@@ -8295,8 +8295,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Encode decode roundtrip
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(in) + DETWS_ESPNOW_HDR, n);</code>
-      * <code>Assert true (detws_espnow_decode(frame, n, &type, &payload, &plen))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(sizeof(in) + DWS_ESPNOW_HDR, n);</code>
+      * <code>Assert true (dws_espnow_decode(frame, n, &type, &payload, &plen))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(42, type);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(in), plen);</code>
       * <code>Assert equal memory (in, payload, sizeof(in))</code>
@@ -8307,8 +8307,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Encode zero length
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(DETWS_ESPNOW_HDR, n);</code>
-      * <code>Assert true (detws_espnow_decode(frame, n, &type, &p, &plen))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(DWS_ESPNOW_HDR, n);</code>
+      * <code>Assert true (dws_espnow_decode(frame, n, &type, &p, &plen))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(7, type);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, plen);</code>
   </details>
@@ -8318,8 +8318,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: valid payload but buffer too small
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_espnow_encode(1, big, sizeof(big), frame, sizeof(frame)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_espnow_encode(1, ok, sizeof(ok), frame, 5));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_espnow_encode(1, big, sizeof(big), frame, sizeof(frame)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_espnow_encode(1, ok, sizeof(ok), frame, 5));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8327,10 +8327,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: bad magic
     * **Assertions**:
-      * <code>Assert false (detws_espnow_decode(frame, n, &type, &p, &plen))</code>
-      * <code>Assert false (detws_espnow_decode(frame, n, &type, &p, &plen))</code>
-      * <code>Assert false (detws_espnow_decode(frame, 2, &type, &p, &plen))</code>
-      * <code>Assert false (detws_espnow_decode(frame, n + 1, &type, &p, &plen))</code>
+      * <code>Assert false (dws_espnow_decode(frame, n, &type, &p, &plen))</code>
+      * <code>Assert false (dws_espnow_decode(frame, n, &type, &p, &plen))</code>
+      * <code>Assert false (dws_espnow_decode(frame, 2, &type, &p, &plen))</code>
+      * <code>Assert false (dws_espnow_decode(frame, n + 1, &type, &p, &plen))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8338,16 +8338,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Peer registry
     * **Assertions**:
-      * <code>Assert equal int (0, detws_espnow_peer_count())</code>
-      * <code>Assert true (detws_espnow_peer_add(a))</code>
-      * <code>Assert true (detws_espnow_peer_add(b))</code>
-      * <code>Assert true (detws_espnow_peer_add(a))</code>
-      * <code>Assert equal int (2, detws_espnow_peer_count())</code>
-      * <code>Assert true (detws_espnow_peer_has(a))</code>
-      * <code>Assert true (detws_espnow_peer_remove(a))</code>
-      * <code>Assert false (detws_espnow_peer_has(a))</code>
-      * <code>Assert false (detws_espnow_peer_remove(a))</code>
-      * <code>Assert equal int (1, detws_espnow_peer_count())</code>
+      * <code>Assert equal int (0, dws_espnow_peer_count())</code>
+      * <code>Assert true (dws_espnow_peer_add(a))</code>
+      * <code>Assert true (dws_espnow_peer_add(b))</code>
+      * <code>Assert true (dws_espnow_peer_add(a))</code>
+      * <code>Assert equal int (2, dws_espnow_peer_count())</code>
+      * <code>Assert true (dws_espnow_peer_has(a))</code>
+      * <code>Assert true (dws_espnow_peer_remove(a))</code>
+      * <code>Assert false (dws_espnow_peer_has(a))</code>
+      * <code>Assert false (dws_espnow_peer_remove(a))</code>
+      * <code>Assert equal int (1, dws_espnow_peer_count())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8355,9 +8355,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Peer table full fails closed
     * **Assertions**:
-      * <code>Assert true (detws_espnow_peer_add(mac))</code>
-      * <code>Assert false (detws_espnow_peer_add(mac))</code>
-      * <code>Assert equal int (DETWS_ESPNOW_MAX_PEERS, detws_espnow_peer_count())</code>
+      * <code>Assert true (dws_espnow_peer_add(mac))</code>
+      * <code>Assert false (dws_espnow_peer_add(mac))</code>
+      * <code>Assert equal int (DWS_ESPNOW_MAX_PEERS, dws_espnow_peer_count())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8365,7 +8365,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Broadcast address
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(0xFF, DETWS_ESPNOW_BROADCAST[i]);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0xFF, DWS_ESPNOW_BROADCAST[i]);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8373,10 +8373,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Host build: the ESP-NOW bind functions are unavailable.
     * **Assertions**:
-      * <code>Assert false (detws_espnow_peer_add(nullptr))</code>
-      * <code>Assert false (detws_espnow_begin(1, nullptr))</code>
-      * <code>Assert false (detws_espnow_send(mac, 1, payload, sizeof(payload)))</code>
-      * <code>Assert false (detws_espnow_broadcast(1, payload, sizeof(payload)))</code>
+      * <code>Assert false (dws_espnow_peer_add(nullptr))</code>
+      * <code>Assert false (dws_espnow_begin(1, nullptr))</code>
+      * <code>Assert false (dws_espnow_send(mac, 1, payload, sizeof(payload)))</code>
+      * <code>Assert false (dws_espnow_broadcast(1, payload, sizeof(payload)))</code>
   </details>
 
 </details>
@@ -8389,16 +8389,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: "PC" on the very first line (strncmp anchor, not the "\nPC" search).
     * **Assertions**:
-      * <code>Assert false (detws_exc_parse(nullptr, &info))</code>
-      * <code>Assert false (detws_exc_parse("x", nullptr))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(nullptr, buf, sizeof(buf))); // null info</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, nullptr, 128));       // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, buf, 0));             // zero cap</code>
-      * <code>Assert true (detws_exc_parse("PC      : 0x400dfeed  PS : 0x1\\n", &info))</code>
+      * <code>Assert false (dws_exc_parse(nullptr, &info))</code>
+      * <code>Assert false (dws_exc_parse("x", nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_exc_json(nullptr, buf, sizeof(buf))); // null info</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_exc_json(&info, nullptr, 128));       // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_exc_json(&info, buf, 0));             // zero cap</code>
+      * <code>Assert true (dws_exc_parse("PC      : 0x400dfeed  PS : 0x1\\n", &info))</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x400dfeed, info.pc);</code>
-      * <code>Assert true (detws_exc_parse("Core 0 panic'ed (BadSP). Backtrace: 0x400d1000:0xZZ\\n", &info))</code>
+      * <code>Assert true (dws_exc_parse("Core 0 panic'ed (BadSP). Backtrace: 0x400d1000:0xZZ\\n", &info))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, info.frame_count);</code>
-      * <code>Assert true (detws_exc_parse("Guru Meditation Error: Core 0 panic'ed (Weird\\"Cause\\\\x)</code>
+      * <code>Assert true (dws_exc_parse("Guru Meditation Error: Core 0 panic'ed (Weird\\"Cause\\\\x)</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert not null (strstr(buf, "Weird\\\\\\"Cause\\\\\\\\x"))</code>
   </details>
@@ -8408,7 +8408,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse full
     * **Assertions**:
-      * <code>Assert true (detws_exc_parse(PANIC, &info))</code>
+      * <code>Assert true (dws_exc_parse(PANIC, &info))</code>
       * <code>Assert equal int (1, info.core)</code>
       * <code>Assert equal string ("LoadProhibited", info.cause)</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x400d1234, info.pc);</code>
@@ -8439,7 +8439,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No register dump: PC must fall back to the first backtrace frame. Trailing corruption marker.
     * **Assertions**:
-      * <code>Assert true (detws_exc_parse(bt, &info))</code>
+      * <code>Assert true (dws_exc_parse(bt, &info))</code>
       * <code>Assert equal int (-1, info.core)</code>
       * <code>Assert equal string ("", info.cause)</code>
       * <code>Assert false (info.has_excvaddr)</code>
@@ -8452,8 +8452,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Garbage returns false
     * **Assertions**:
-      * <code>Assert false (detws_exc_parse("nothing to see here\\n", &info))</code>
-      * <code>Assert false (detws_exc_parse("", &info))</code>
+      * <code>Assert false (dws_exc_parse("nothing to see here\\n", &info))</code>
+      * <code>Assert false (dws_exc_parse("", &info))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8464,7 +8464,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert null (strstr(buf, "\\"core\\""))</code>
       * <code>Assert null (strstr(buf, "excvaddr"))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_exc_json(&info, tiny, sizeof(tiny)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8472,11 +8472,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Uppercase hex addresses exercise the A-F branch of the nibble parser.
     * **Assertions**:
-      * <code>Assert true (detws_exc_parse(up, &info))</code>
+      * <code>Assert true (dws_exc_parse(up, &info))</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x400D1234, info.frames[0].pc);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x400DABCD, info.frames[1].pc);</code>
-      * <code>Assert true (detws_exc_json(&info, buf, sizeof(buf)) &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, buf, 8)); // tiny cap fails closed</code>
+      * <code>Assert true (dws_exc_json(&info, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_exc_json(&info, buf, 8)); // tiny cap fails closed</code>
   </details>
 
 </details>
@@ -8489,11 +8489,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Across a millis() rollover: last_feed just before wrap, now just after.
     * **Assertions**:
-      * <code>Assert false (detws_lifeline_overdue(1000, 900, 200))</code>
-      * <code>Assert false (detws_lifeline_overdue(1000, 800, 200))</code>
-      * <code>Assert true (detws_lifeline_overdue(1000, 700, 200))</code>
-      * <code>Assert false (detws_lifeline_overdue(50, 0xFFFFFF00u, 1000))</code>
-      * <code>Assert true (detws_lifeline_overdue(0x00000400u, 0xFFFFFF00u, 1000))</code>
+      * <code>Assert false (dws_lifeline_overdue(1000, 900, 200))</code>
+      * <code>Assert false (dws_lifeline_overdue(1000, 800, 200))</code>
+      * <code>Assert true (dws_lifeline_overdue(1000, 700, 200))</code>
+      * <code>Assert false (dws_lifeline_overdue(50, 0xFFFFFF00u, 1000))</code>
+      * <code>Assert true (dws_lifeline_overdue(0x00000400u, 0xFFFFFF00u, 1000))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8502,7 +8502,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Just under the deadline: not overdue, no fire.
     * **Assertions**:
       * <code>Assert equal int (0, id)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_failsafe_check_at(1400));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_failsafe_check_at(1400));</code>
       * <code>Assert equal int (0, s_fire_count)</code>
   </details>
 
@@ -8519,8 +8519,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert equal string ("a", s_fired_name)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1u &lt;&lt; 0, mask);</code>
       * <code>Assert equal int (1, s_fire_count)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_failsafe_check_at(1800));       // fed, healthy</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1u &lt;&lt; 0, detws_failsafe_check_at(2300)); // overdue again</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_failsafe_check_at(1800));       // fed, healthy</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1u &lt;&lt; 0, dws_failsafe_check_at(2300)); // overdue again</code>
       * <code>Assert equal int (2, s_fire_count)</code>
   </details>
 
@@ -8529,8 +8529,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Registry full
     * **Assertions**:
-      * <code>Assert equal int (i, detws_failsafe_register_at("x", 100, 0))</code>
-      * <code>Assert equal int (-1, detws_failsafe_register_at("overflow", 100, 0))</code>
+      * <code>Assert equal int (i, dws_failsafe_register_at("x", 100, 0))</code>
+      * <code>Assert equal int (-1, dws_failsafe_register_at("overflow", 100, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8538,8 +8538,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Feed bad id
     * **Assertions**:
-      * <code>Assert false (detws_failsafe_feed_at(-1, 0))</code>
-      * <code>Assert false (detws_failsafe_feed_at(3, 0))</code>
+      * <code>Assert false (dws_failsafe_feed_at(-1, 0))</code>
+      * <code>Assert false (dws_failsafe_feed_at(3, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -8561,8 +8561,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: A second lifeline drives the JSON comma separator.
     * **Assertions**:
       * <code>Assert true (id &gt;= 0)</code>
-      * <code>Assert true (detws_failsafe_feed(id))</code>
-      * <code>Assert true (detws_failsafe_json_at(0, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert true (dws_failsafe_feed(id))</code>
+      * <code>Assert true (dws_failsafe_json_at(0, buf, sizeof(buf)) &gt; 0)</code>
   </details>
 
 </details>
@@ -9169,7 +9169,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Allow forwards
     * **Assertions**:
-      * <code>Assert true (det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0))</code>
+      * <code>Assert true (dws_forward_add_rule(1, 2, dws_fwd_action::DWS_FWD_ALLOW, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "abc"));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, g_cap[1].frames.size()); // source not touched</code>
@@ -9237,11 +9237,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (add_if(1))</code>
       * <code>Assert false (add_if(1))</code>
-      * <code>Assert false (det_forward_add_if(9, det_if_kind::DET_IF_OTHER, nullptr, nullptr))</code>
+      * <code>Assert false (dws_forward_add_if(9, dws_if_kind::DWS_IF_OTHER, nullptr, nullptr))</code>
       * <code>Assert true (add_if(2))</code>
       * <code>Assert true (add_if(3))</code>
       * <code>Assert true (add_if(4))</code>
-      * <code>Assert false (add_if(5)); // table full (DETWS_FWD_MAX_IFACES = 4)</code>
+      * <code>Assert false (add_if(5)); // table full (DWS_FWD_MAX_IFACES = 4)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9249,8 +9249,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Add rule table full
     * **Assertions**:
-      * <code>Assert true (det_forward_add_rule(1, 2, det_fwd_action::DET_FWD_ALLOW, 0))</code>
-      * <code>Assert false (det_forward_add_rule(1, 3, det_fwd_action::DET_FWD_ALLOW, 0))</code>
+      * <code>Assert true (dws_forward_add_rule(1, 2, dws_fwd_action::DWS_FWD_ALLOW, 0))</code>
+      * <code>Assert false (dws_forward_add_rule(1, 3, dws_fwd_action::DWS_FWD_ALLOW, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9266,7 +9266,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Acl deny by byte pattern
     * **Assertions**:
-      * <code>Assert true (det_forward_acl_add(1, 0, pat, msk, 1, det_fwd_action::DET_FWD_DENY))</code>
+      * <code>Assert true (dws_forward_acl_add(1, 0, pat, msk, 1, dws_fwd_action::DWS_FWD_DENY))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, in1(ok, 3));  // no ACE match -&gt; default allow -&gt; forwarded</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, in1(bad, 3)); // ACE denies at ingress</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());</code>
@@ -9315,7 +9315,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Acl add validation and table full
     * **Assertions**:
       * <code>TEST_ASSERT_FALSE(</code>
-      * <code>Assert true (det_forward_acl_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, det_fwd_action::DET_FWD_ALLOW))</code>
+      * <code>Assert true (dws_forward_acl_add(DWS_FWD_IF_ANY, 0, nullptr, nullptr, 0, dws_fwd_action::DWS_FWD_ALLOW))</code>
       * <code>TEST_ASSERT_FALSE(</code>
   </details>
 
@@ -9324,7 +9324,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Route selects egress and falls through
     * **Assertions**:
-      * <code>Assert true (route_firstbyte(DET_FWD_IF_ANY, 'X', 3, 0))</code>
+      * <code>Assert true (route_firstbyte(DWS_FWD_IF_ANY, 'X', 3, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "Xyz")); // matched -&gt; routed only to if 3</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[3].frames.size());</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, g_cap[2].frames.size()); // the fan-out rule was skipped</code>
@@ -9372,7 +9372,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Route default any content
     * **Assertions**:
-      * <code>Assert true (det_forward_route_add(DET_FWD_IF_ANY, 0, nullptr, nullptr, 0, 2, 0))</code>
+      * <code>Assert true (dws_forward_route_add(DWS_FWD_IF_ANY, 0, nullptr, nullptr, 0, 2, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, ingress(1, "anything"));</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_cap[2].frames.size());</code>
   </details>
@@ -9392,10 +9392,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Route add validation and table full
     * **Assertions**:
-      * <code>Assert false (det_forward_route_add(DET_FWD_IF_ANY, 0, pat, msk, DETWS_FWD_ACL_PATLEN + 1, 2, 0))</code>
-      * <code>Assert false (det_forward_route_add(DET_FWD_IF_ANY, 0, nullptr, msk, 1, 2, 0))</code>
-      * <code>Assert true (route_firstbyte(DET_FWD_IF_ANY, 'A', 2, 0))</code>
-      * <code>Assert false (route_firstbyte(DET_FWD_IF_ANY, 'A', 2, 0))</code>
+      * <code>Assert false (dws_forward_route_add(DWS_FWD_IF_ANY, 0, pat, msk, DWS_FWD_ACL_PATLEN + 1, 2, 0))</code>
+      * <code>Assert false (dws_forward_route_add(DWS_FWD_IF_ANY, 0, nullptr, msk, 1, 2, 0))</code>
+      * <code>Assert true (route_firstbyte(DWS_FWD_IF_ANY, 'A', 2, 0))</code>
+      * <code>Assert false (route_firstbyte(DWS_FWD_IF_ANY, 'A', 2, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9686,12 +9686,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Uplink envelopes and publishes
     * **Assertions**:
-      * <code>Assert true (add_port(0, det_gateway_kind::DET_GW_LORA, 0, false))</code>
-      * <code>Assert true (det_gateway_uplink(0, 0x42, hi, 2, -50))</code>
+      * <code>Assert true (add_port(0, dws_gateway_kind::DWS_GW_LORA, 0, false))</code>
+      * <code>Assert true (dws_gateway_uplink(0, 0x42, hi, 2, -50))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_up.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x42, g_up[0].src_addr);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, g_up[0].port_id);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(det_gateway_kind::DET_GW_LORA, g_up[0].kind);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(dws_gateway_kind::DWS_GW_LORA, g_up[0].kind);</code>
       * <code>TEST_ASSERT_EQUAL_INT16(-50, g_up[0].rssi);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, g_up[0].seq);</code>
       * <code>Assert equal memory (hi, g_up[0].payload.data(), 2)</code>
@@ -9703,7 +9703,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Uplink no sink drops
     * **Assertions**:
-      * <code>Assert false (det_gateway_uplink(0, 1, x, 1, 0))</code>
+      * <code>Assert false (dws_gateway_uplink(0, 1, x, 1, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().up_dropped);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, stats().up_published);</code>
   </details>
@@ -9713,7 +9713,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Uplink unknown port drops
     * **Assertions**:
-      * <code>Assert false (det_gateway_uplink(9, 1, x, 1, 0))</code>
+      * <code>Assert false (dws_gateway_uplink(9, 1, x, 1, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().up_dropped);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, g_up.size());</code>
   </details>
@@ -9723,12 +9723,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Uplink rate cap
     * **Assertions**:
-      * <code>Assert true (det_gateway_uplink(0, 1, x, 1, 0))</code>
-      * <code>Assert true (det_gateway_uplink(0, 1, x, 1, 0))</code>
-      * <code>Assert false (det_gateway_uplink(0, 1, x, 1, 0))</code>
+      * <code>Assert true (dws_gateway_uplink(0, 1, x, 1, 0))</code>
+      * <code>Assert true (dws_gateway_uplink(0, 1, x, 1, 0))</code>
+      * <code>Assert false (dws_gateway_uplink(0, 1, x, 1, 0))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, g_up.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().up_dropped);</code>
-      * <code>Assert true (det_gateway_uplink(0, 1, x, 1, 0))</code>
+      * <code>Assert true (dws_gateway_uplink(0, 1, x, 1, 0))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, g_up.size());</code>
   </details>
 
@@ -9737,7 +9737,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Uplink sink refusal counted
     * **Assertions**:
-      * <code>Assert false (det_gateway_uplink(0, 1, x, 1, 0))</code>
+      * <code>Assert false (dws_gateway_uplink(0, 1, x, 1, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().up_dropped);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, stats().up_published);</code>
   </details>
@@ -9747,7 +9747,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Downlink transmits
     * **Assertions**:
-      * <code>Assert true (det_gateway_downlink(0, 0x10, cmd, 3))</code>
+      * <code>Assert true (dws_gateway_downlink(0, 0x10, cmd, 3))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_down.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, g_down[0].port_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x10, g_down[0].dst);</code>
@@ -9760,8 +9760,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Downlink no tx or unknown port drops
     * **Assertions**:
-      * <code>Assert false (det_gateway_downlink(0, 1, x, 1))</code>
-      * <code>Assert false (det_gateway_downlink(9, 1, x, 1))</code>
+      * <code>Assert false (dws_gateway_downlink(0, 1, x, 1))</code>
+      * <code>Assert false (dws_gateway_downlink(9, 1, x, 1))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2, stats().down_dropped);</code>
   </details>
 
@@ -9770,7 +9770,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Downlink tx refusal counted
     * **Assertions**:
-      * <code>Assert false (det_gateway_downlink(0, 1, x, 1))</code>
+      * <code>Assert false (dws_gateway_downlink(0, 1, x, 1))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, stats().down_dropped);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, stats().down_sent);</code>
   </details>
@@ -9783,7 +9783,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert equal string ("gw/2/66", buf)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(7, n);</code>
       * <code>Assert equal string ("lora/2/66", buf)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gateway_topic(&m, tiny, sizeof(tiny))); // too small -&gt; 0</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_gateway_topic(&m, tiny, sizeof(tiny))); // too small -&gt; 0</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9791,13 +9791,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Add port validation and table full
     * **Assertions**:
-      * <code>Assert false (det_gateway_add_port(nullptr))</code>
-      * <code>Assert true (add_port(0, det_gateway_kind::DET_GW_LORA, 0, false))</code>
-      * <code>Assert false (add_port(0, det_gateway_kind::DET_GW_LORA, 0, false))</code>
-      * <code>Assert true (add_port(1, det_gateway_kind::DET_GW_NRF24, 0, false))</code>
-      * <code>Assert true (add_port(2, det_gateway_kind::DET_GW_ZIGBEE, 0, false))</code>
-      * <code>Assert true (add_port(3, det_gateway_kind::DET_GW_BLE, 0, false))</code>
-      * <code>Assert false (add_port(4, det_gateway_kind::DET_GW_LORA, 0, false)); // table full (DETWS_GW_MAX_PORTS = 4)</code>
+      * <code>Assert false (dws_gateway_add_port(nullptr))</code>
+      * <code>Assert true (add_port(0, dws_gateway_kind::DWS_GW_LORA, 0, false))</code>
+      * <code>Assert false (add_port(0, dws_gateway_kind::DWS_GW_LORA, 0, false))</code>
+      * <code>Assert true (add_port(1, dws_gateway_kind::DWS_GW_NRF24, 0, false))</code>
+      * <code>Assert true (add_port(2, dws_gateway_kind::DWS_GW_ZIGBEE, 0, false))</code>
+      * <code>Assert true (add_port(3, dws_gateway_kind::DWS_GW_BLE, 0, false))</code>
+      * <code>Assert false (add_port(4, dws_gateway_kind::DWS_GW_LORA, 0, false)); // table full (DWS_GW_MAX_PORTS = 4)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -9815,10 +9815,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Topic zero and overflow steps
     * **Assertions**:
-      * <code>Assert true (det_gateway_topic(&m, buf, sizeof(buf)) &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gateway_topic(nullptr, buf, sizeof(buf))); // null msg</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gateway_topic(&m, buf, 0));                // zero buflen</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_gateway_topic(&m, buf, cap));</code>
+      * <code>Assert true (dws_gateway_topic(&m, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_gateway_topic(nullptr, buf, sizeof(buf))); // null msg</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_gateway_topic(&m, buf, 0));                // zero buflen</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_gateway_topic(&m, buf, cap));</code>
   </details>
 
 </details>
@@ -10115,16 +10115,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A >=128-octet allData forces multi-octet BER lengths (len_octets + write_len long-form).
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_goose_pdu(nullptr, out, sizeof(out))); // null g</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_goose_pdu(&g, nullptr, sizeof(out)));  // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_goose_pdu(&g, out, 3));                // cap &lt; reserved header</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_goose_pdu(&g, out, 10)); // fits the header but overflows on a field -&gt; !ok</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_goose_pdu(nullptr, out, sizeof(out))); // null g</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_goose_pdu(&g, nullptr, sizeof(out)));  // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_goose_pdu(&g, out, 3));                // cap &lt; reserved header</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_goose_pdu(&g, out, 10)); // fits the header but overflows on a field -&gt; !ok</code>
       * <code>Assert true (n &gt; 200)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x61, out[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x81, out[1]); // content length &gt;= 128 -&gt; long-form (one following octet)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_goose_frame(nullptr, src, 0x1234, &g2, out, sizeof(out))); // null dst</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_goose_frame(dst, src, 0x1234, &g2, out, 20));              // cap &lt; 22</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_goose_frame(dst, src, 0x1234, &g2, out, 30)); // &gt;=22 but the PDU cannot fit</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(nullptr, src, 0x1234, &g2, out, sizeof(out))); // null dst</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, &g2, out, 20));              // cap &lt; 22</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, &g2, out, 30)); // &gt;=22 but the PDU cannot fit</code>
   </details>
 
 </details>
@@ -10137,11 +10137,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dir name
     * **Assertions**:
-      * <code>Assert equal string ("in", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_IN))</code>
-      * <code>Assert equal string ("in_pullup", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_IN_PULLUP))</code>
-      * <code>Assert equal string ("in_pulldown", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_IN_PULLDOWN))</code>
-      * <code>Assert equal string ("out", detws_gpio_dir_name(DetwsGpioDir::DETWS_GPIO_OUT))</code>
-      * <code>Assert equal string ("in", detws_gpio_dir_name((DetwsGpioDir)99))</code>
+      * <code>Assert equal string ("in", dws_gpio_dir_name(DetwsGpioDir::DWS_GPIO_IN))</code>
+      * <code>Assert equal string ("in_pullup", dws_gpio_dir_name(DetwsGpioDir::DWS_GPIO_IN_PULLUP))</code>
+      * <code>Assert equal string ("in_pulldown", dws_gpio_dir_name(DetwsGpioDir::DWS_GPIO_IN_PULLDOWN))</code>
+      * <code>Assert equal string ("out", dws_gpio_dir_name(DetwsGpioDir::DWS_GPIO_OUT))</code>
+      * <code>Assert equal string ("in", dws_gpio_dir_name((DetwsGpioDir)99))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10166,7 +10166,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Json small buffer fails closed
     * **Assertions**:
-      * <code>Assert equal int (0, detws_gpio_json(pins, 1, buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_gpio_json(pins, 1, buf, sizeof(buf)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10174,13 +10174,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse set
     * **Assertions**:
-      * <code>Assert true (detws_gpio_parse_set(b, strlen(b), &pin, &level))</code>
+      * <code>Assert true (dws_gpio_parse_set(b, strlen(b), &pin, &level))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(2, pin);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, level);</code>
-      * <code>Assert true (detws_gpio_parse_set(b2, strlen(b2), &pin, &level))</code>
+      * <code>Assert true (dws_gpio_parse_set(b2, strlen(b2), &pin, &level))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(13, pin);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, level);</code>
-      * <code>Assert true (detws_gpio_parse_set(b3, strlen(b3), &pin, &level))</code>
+      * <code>Assert true (dws_gpio_parse_set(b3, strlen(b3), &pin, &level))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, level);</code>
   </details>
 
@@ -10189,9 +10189,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse set rejects partial
     * **Assertions**:
-      * <code>Assert false (detws_gpio_parse_set(b, strlen(b), &pin, &level))</code>
-      * <code>Assert false (detws_gpio_parse_set(b2, strlen(b2), &pin, &level))</code>
-      * <code>Assert false (detws_gpio_parse_set(b3, strlen(b3), &pin, &level))</code>
+      * <code>Assert false (dws_gpio_parse_set(b, strlen(b), &pin, &level))</code>
+      * <code>Assert false (dws_gpio_parse_set(b2, strlen(b2), &pin, &level))</code>
+      * <code>Assert false (dws_gpio_parse_set(b3, strlen(b3), &pin, &level))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10199,7 +10199,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: "spin=2" must not satisfy the "pin" field (field-boundary check).
     * **Assertions**:
-      * <code>Assert false (detws_gpio_parse_set(b, strlen(b), &pin, &level))</code>
+      * <code>Assert false (dws_gpio_parse_set(b, strlen(b), &pin, &level))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10207,9 +10207,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Is output
     * **Assertions**:
-      * <code>Assert true (detws_gpio_is_output(pins, 2, 2))</code>
-      * <code>Assert false (detws_gpio_is_output(pins, 2, 0))</code>
-      * <code>Assert false (detws_gpio_is_output(pins, 2, 99))</code>
+      * <code>Assert true (dws_gpio_is_output(pins, 2, 2))</code>
+      * <code>Assert false (dws_gpio_is_output(pins, 2, 0))</code>
+      * <code>Assert false (dws_gpio_is_output(pins, 2, 99))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10228,9 +10228,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Malformed tokens fail
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ 1 }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ 1 }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10238,8 +10238,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Query keyword forms fail
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("query Op"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("query 123"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("query Op"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("query 123"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10247,9 +10247,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: One string argument longer than the decode buffer (256).
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10257,7 +10257,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: String pool exhaustion
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10273,8 +10273,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 31,31,31,31: the 4th separator check trips (plen reaches 95, then '.' -> 96).
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10282,9 +10282,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: id is a string, so arg_int does not match it -> resolver returns -1.
     * **Assertions**:
-      * <code>Assert false (detws_gql_arg_int(nullptr, "x", &i))</code>
-      * <code>Assert false (detws_gql_arg_str(nullptr, "x", &s))</code>
-      * <code>Assert false (detws_gql_arg_bool(nullptr, "x", &b))</code>
+      * <code>Assert false (dws_gql_arg_int(nullptr, "x", &i))</code>
+      * <code>Assert false (dws_gql_arg_str(nullptr, "x", &s))</code>
+      * <code>Assert false (dws_gql_arg_bool(nullptr, "x", &b))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"sensor\\":{\\"value\\":-1}}}", run("{ sensor(id: \\"x\\") { value } }"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"flag\\":false}}", run("{ flag(on: 1) }"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"flag\\":false}}", run("{ flag }"))</code>
@@ -10303,7 +10303,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: \n \t \r \\ \/ and an unknown escape (\z) are all decoded by the arg lexer.
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_OK, run_rc("{ greet(name: \\"a\\\\nb\\\\tc\\\\rd\\\\\\\\e\\\\/f\\\\z\\") }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_OK, run_rc("{ greet(name: \\"a\\\\nb\\\\tc\\\\rd\\\\\\\\e\\\\/f\\\\z\\") }"))</code>
       * <code>Assert not null (strstr(out, "\\"greet\\":\\"hi a"))</code>
   </details>
 
@@ -10312,7 +10312,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: float, exponent, signed-exponent and negative-int argument values all parse
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DWS_GQL_OK,</code>
       * <code>Assert not null (strstr(out, "\\"value\\":70"))</code>
   </details>
 
@@ -10346,7 +10346,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unterminated string arg fails
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"oops) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"oops) }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10354,7 +10354,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Arg missing colon fails
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10362,7 +10362,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Bad arg value fails
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10370,7 +10370,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Trailing junk fails
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ name } junk"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ name } junk"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10378,7 +10378,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Long field name hits limit
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_LIMIT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DWS_GQL_ERR_LIMIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10386,8 +10386,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Null inputs fail closed
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, detws_graphql_execute(0, 0, resolver, out, sizeof(out)))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, detws_graphql_execute("{ name }", 8, resolver, 0, 0))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute(0, 0, resolver, out, sizeof(out)))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{ name }", 8, resolver, 0, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10395,7 +10395,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unknown operation keyword fails
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("subscription { name }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("subscription { name }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10467,42 +10467,42 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: \n \t \r \\ \/ and an unknown escape (\z) are all decoded by the arg lexer.
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, rc)</code>
       * <code>Assert not null (strstr(out, "\\"errors\\""))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, rc)</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, rc)</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, rc)</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_OK, run_rc("{ greet(name: \\"a\\\\nb\\\\tc\\\\rd\\\\\\\\e\\\\/f\\\\z\\") }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_OVERFLOW, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_OK, run_rc("{ greet(name: \\"a\\\\nb\\\\tc\\\\rd\\\\\\\\e\\\\/f\\\\z\\") }"))</code>
       * <code>Assert not null (strstr(out, "\\"greet\\":\\"hi a"))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DWS_GQL_OK,</code>
       * <code>Assert not null (strstr(out, "\\"value\\":70"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"flag\\":true}}", run("{ flag(on: true) }"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"flag\\":false}}", run("{ flag(on: false) }"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"greet\\":\\"hi ?\\"}}", run("{ greet(name: null) }"))</code>
       * <code>Assert not null (strstr(run("{ ctrl }"), "\\\\u0001"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"oops) }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ name } junk"))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DETWS_GQL_ERR_LIMIT,</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, detws_graphql_execute(0, 0, resolver, out, sizeof(out)))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, detws_graphql_execute("{ name }", 8, resolver, 0, 0))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("subscription { name }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("{ 1 }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("query Op"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, run_rc("query 123"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"oops) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ name } junk"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DWS_GQL_ERR_LIMIT,</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute(0, 0, resolver, out, sizeof(out)))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{ name }", 8, resolver, 0, 0))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("subscription { name }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ 1 }"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("query Op"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("query 123"))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"nullval\\":null}}", run("{ nullval }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
-      * <code>Assert false (detws_gql_arg_int(nullptr, "x", &i))</code>
-      * <code>Assert false (detws_gql_arg_str(nullptr, "x", &s))</code>
-      * <code>Assert false (detws_gql_arg_bool(nullptr, "x", &b))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
+      * <code>Assert false (dws_gql_arg_int(nullptr, "x", &i))</code>
+      * <code>Assert false (dws_gql_arg_str(nullptr, "x", &s))</code>
+      * <code>Assert false (dws_gql_arg_bool(nullptr, "x", &b))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"sensor\\":{\\"value\\":-1}}}", run("{ sensor(id: \\"x\\") { value } }"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"flag\\":false}}", run("{ flag(on: 1) }"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"flag\\":false}}", run("{ flag }"))</code>
@@ -10513,7 +10513,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Mutation rejected
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_PARSE, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10521,7 +10521,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Depth limit
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_LIMIT, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10529,7 +10529,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Overflow fails closed
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW, rc)</code>
+      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_OVERFLOW, rc)</code>
   </details>
 
 </details>
@@ -10646,7 +10646,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Eval all clear
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_NONE, detws_guardrail_eval(&h, 8192, 4096, 512));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DWS_BREACH_NONE, dws_guardrail_eval(&h, 8192, 4096, 512));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10654,7 +10654,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Eval heap breach
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_HEAP, detws_guardrail_eval(&h, 8192, 4096, 512));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DWS_BREACH_HEAP, dws_guardrail_eval(&h, 8192, 4096, 512));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10662,7 +10662,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Eval frag and stack
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_FRAG | DetwsBreach::DETWS_BREACH_STACK, b);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DWS_BREACH_FRAG | DetwsBreach::DWS_BREACH_STACK, b);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10670,7 +10670,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Eval all breached
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DWS_BREACH_HEAP | DetwsBreach::DWS_BREACH_FRAG | DetwsBreach::DWS_BREACH_STACK,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10687,7 +10687,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Json small buffer fails closed
     * **Assertions**:
-      * <code>Assert equal int (0, detws_health_json(&h, buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_health_json(&h, buf, sizeof(buf)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10695,7 +10695,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A null health snapshot reports no breach (nothing to evaluate).
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_NONE, detws_guardrail_eval(nullptr, 8192, 4096, 512));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DWS_BREACH_NONE, dws_guardrail_eval(nullptr, 8192, 4096, 512));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10703,9 +10703,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Null out or zero cap -> 0 (nothing written).
     * **Assertions**:
-      * <code>Assert equal int (0, detws_health_json(&h, nullptr, sizeof(buf)))</code>
-      * <code>Assert equal int (0, detws_health_json(&h, buf, 0))</code>
-      * <code>Assert equal int (0, detws_health_json(nullptr, buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_health_json(&h, nullptr, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_health_json(&h, buf, 0))</code>
+      * <code>Assert equal int (0, dws_health_json(nullptr, buf, sizeof(buf)))</code>
       * <code>Assert equal string ("", buf)</code>
   </details>
 
@@ -10716,7 +10716,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(0, h.free_heap);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, h.stack_free);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DETWS_BREACH_NONE, detws_guardrails_check());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DWS_BREACH_NONE, dws_guardrails_check());</code>
   </details>
 
 </details>
@@ -11196,7 +11196,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Overlong field truncated
     * **Assertions**:
       * <code>Assert equal int (1, g_requests)</code>
-      * <code>Assert equal uint (DETWS_H3_METHOD_LEN - 1, strlen(g_method))</code>
+      * <code>Assert equal uint (DWS_H3_METHOD_LEN - 1, strlen(g_method))</code>
   </details>
 
 </details>
@@ -11317,21 +11317,21 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 <summary><b>test_h3_server (1 tests)</b></summary>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_h3_request_served_by_route</b> &mdash; <i>Bring up an HTTP/3-only DetWebServer with one route.</i></summary>
+    <summary><b>test_h3_request_served_by_route</b> &mdash; <i>Bring up an HTTP/3-only DWS with one route.</i></summary>
 
-    * **Objective**: Bring up an HTTP/3-only DetWebServer with one route.
+    * **Objective**: Bring up an HTTP/3-only DWS with one route.
     * **Assertions**:
       * <code>Assert true (server.h3_cert(CERT, sizeof(CERT), SERVER_SEED, 443))</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, server.begin());</code>
-      * <code>Assert true (det_quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_OK, server.begin());</code>
+      * <code>Assert true (dws_quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
       * <code>Assert greater than (0, g_out_n)</code>
       * <code>Assert true (quic_parse_long_header(g_out[0], g_out_len[0], &sh_hdr))</code>
       * <code>Assert true (server_pub_from_sh(sh, shl, server_pub))</code>
-      * <code>Assert true (det_quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000))</code>
-      * <code>Assert true (det_quic_server_ingest(s1, s1l, "192.0.2.10", 40000))</code>
+      * <code>Assert true (dws_quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000))</code>
+      * <code>Assert true (dws_quic_server_ingest(s1, s1l, "192.0.2.10", 40000))</code>
       * <code>Assert true (g_handler_ran)</code>
       * <code>Assert true (response_ok(&ap_s))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, conn_pool[DETWS_H3_DISPATCH_SLOT].h3); // dispatch slot released</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, conn_pool[DWS_H3_DISPATCH_SLOT].h3); // dispatch slot released</code>
   </details>
 
 </details>
@@ -11344,9 +11344,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Global outranks link-local outranks loopback; within global, native v6 outranks v4.
     * **Assertions**:
-      * <code>Assert true (detws_he_pref(&g6) &gt; detws_he_pref(&g4))</code>
-      * <code>Assert true (detws_he_pref(&g4) &gt; detws_he_pref(&ll6))</code>
-      * <code>Assert true (detws_he_pref(&ll6) &gt; detws_he_pref(&lo6))</code>
+      * <code>Assert true (dws_he_pref(&g6) &gt; dws_he_pref(&g4))</code>
+      * <code>Assert true (dws_he_pref(&g4) &gt; dws_he_pref(&ll6))</code>
+      * <code>Assert true (dws_he_pref(&ll6) &gt; dws_he_pref(&lo6))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11354,9 +11354,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Two global v6 + one global v4, given v4-first: sort puts v6 ahead, interleave alternates.
     * **Assertions**:
-      * <code>Assert equal int (DetIpFamily::DET_IP_V6, list[0].family)</code>
-      * <code>Assert equal int (DetIpFamily::DET_IP_V4, list[1].family)</code>
-      * <code>Assert equal int (DetIpFamily::DET_IP_V6, list[2].family)</code>
+      * <code>Assert equal int (DWSIpFamily::DWS_IP_V6, list[0].family)</code>
+      * <code>Assert equal int (DWSIpFamily::DWS_IP_V4, list[1].family)</code>
+      * <code>Assert equal int (DWSIpFamily::DWS_IP_V6, list[2].family)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11373,15 +11373,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Wrap-safe across the uint32 rollover.
     * **Assertions**:
-      * <code>Assert false (detws_he_attempt_due(1000, 1000 + 249, DETWS_HE_ATTEMPT_DELAY_MS))</code>
-      * <code>Assert true (detws_he_attempt_due(1000, 1000 + 250, DETWS_HE_ATTEMPT_DELAY_MS))</code>
-      * <code>Assert true (detws_he_attempt_due(0xFFFFFF00u, 0xFFFFFF00u + 250, DETWS_HE_ATTEMPT_DELAY_MS))</code>
+      * <code>Assert false (dws_he_attempt_due(1000, 1000 + 249, DWS_HE_ATTEMPT_DELAY_MS))</code>
+      * <code>Assert true (dws_he_attempt_due(1000, 1000 + 250, DWS_HE_ATTEMPT_DELAY_MS))</code>
+      * <code>Assert true (dws_he_attempt_due(0xFFFFFF00u, 0xFFFFFF00u + 250, DWS_HE_ATTEMPT_DELAY_MS))</code>
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_pref_scopes_and_order_edges</b> &mdash; <i>Exercise the multicast + unspecified scope arms of detws_he_pref (values are det_ip-classified).</i></summary>
+    <summary><b>test_pref_scopes_and_order_edges</b> &mdash; <i>Exercise the multicast + unspecified scope arms of dws_he_pref (values are dws_ip-classified).</i></summary>
 
-    * **Objective**: Exercise the multicast + unspecified scope arms of detws_he_pref (values are det_ip-classified).
+    * **Objective**: Exercise the multicast + unspecified scope arms of dws_he_pref (values are dws_ip-classified).
   </details>
 
 </details>
@@ -11394,7 +11394,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: XOR longitudinal parity.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x82, detws_hart_checksum(b, sizeof(b)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x82, dws_hart_checksum(b, sizeof(b)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11421,7 +11421,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Build long address
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(1 + 5 + 1 + 1 + 0 + 1, n); // delim+addr+cmd+bc+ck</code>
-      * <code>Assert true (detws_hart_parse(out, n, &f))</code>
+      * <code>Assert true (dws_hart_parse(out, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(5, f.addr_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x03, f.command);</code>
   </details>
@@ -11431,12 +11431,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Corrupt the checksum -> parse fails.
     * **Assertions**:
-      * <code>Assert true (detws_hart_parse(buf, n, &f))</code>
+      * <code>Assert true (dws_hart_parse(buf, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x2A, f.command);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, f.data_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(data, f.data, 3);</code>
-      * <code>Assert false (detws_hart_parse(buf, n, &f))</code>
-      * <code>Assert false (detws_hart_parse(buf, 3, &f))</code>
+      * <code>Assert false (dws_hart_parse(buf, n, &f))</code>
+      * <code>Assert false (dws_hart_parse(buf, 3, &f))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11446,7 +11446,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, 8);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hartip_build_header(0, 0, 0, 0, 0, out, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hartip_build_header(0, 0, 0, 0, 0, out, 4));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11454,11 +11454,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build and parse guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hart_build(0x82, addr, 5, 0, data, sizeof(data), out, 4)); // cap too small</code>
-      * <code>Assert false (detws_hart_parse(nullptr, 10, &hf))</code>
-      * <code>Assert false (detws_hart_parse(tiny, sizeof(tiny), &hf))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hart_build(0x82, addr, 2, 0, data, sizeof(data), out, sizeof(out))); // bad addr_len</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hart_build(0x82, nullptr, 5, 0, data, sizeof(data), out, sizeof(out))); // null addr</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hart_build(0x82, addr, 5, 0, data, sizeof(data), out, 4)); // cap too small</code>
+      * <code>Assert false (dws_hart_parse(nullptr, 10, &hf))</code>
+      * <code>Assert false (dws_hart_parse(tiny, sizeof(tiny), &hf))</code>
   </details>
 
 </details>
@@ -11655,7 +11655,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: hpack_dyn_init clamps a too-large max to the table storage.
     * **Assertions**:
-      * <code>Assert true (t.max_size &lt;= DETWS_HPACK_TABLE_BYTES)</code>
+      * <code>Assert true (t.max_size &lt;= DWS_HPACK_TABLE_BYTES)</code>
       * <code>Assert true (w &gt; 0)</code>
       * <code>Assert equal int (0, (int)hpack_encode_header(out, 4, "x", 1, nul, 1))</code>
       * <code>Assert equal int (0, (int)hpack_encode_header(out, 0, "x-custom", 8, "value", 5))</code>
@@ -11953,15 +11953,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Oversized start (>10 digits) -> read_u32 overflow guard rejects.
     * **Assertions**:
-      * <code>Assert equal int (0, detws_delivery_range("bytes=99999999999-", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, detws_delivery_range("bytes=5", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, detws_delivery_range("bytes=0-99999999999", 1000, &s, &e))</code>
-      * <code>Assert equal int (1, detws_delivery_range("bytes=0-5 ", 1000, &s, &e))</code>
+      * <code>Assert equal int (0, dws_delivery_range("bytes=99999999999-", 1000, &s, &e))</code>
+      * <code>Assert equal int (0, dws_delivery_range("bytes=5", 1000, &s, &e))</code>
+      * <code>Assert equal int (0, dws_delivery_range("bytes=0-99999999999", 1000, &s, &e))</code>
+      * <code>Assert equal int (1, dws_delivery_range("bytes=0-5 ", 1000, &s, &e))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, s);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, e);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_content_range(0, 10, 100, nullptr, sizeof(buf))); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_sw_manifest(paths, 1, "v", nullptr, sizeof(buf))); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_sw_manifest(nullptr, 2, "v", buf, sizeof(buf)));   // n&gt;0, null paths</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_content_range(0, 10, 100, nullptr, sizeof(buf))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(paths, 1, "v", nullptr, sizeof(buf))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(nullptr, 2, "v", buf, sizeof(buf)));   // n&gt;0, null paths</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11969,12 +11969,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: max-age=60, swr=30.
     * **Assertions**:
-      * <code>Assert equal int (DeliveryVerdict::DELIVERY_FRESH, detws_delivery_swr(0, 60, 30))</code>
-      * <code>Assert equal int (DeliveryVerdict::DELIVERY_FRESH, detws_delivery_swr(60, 60, 30))</code>
-      * <code>Assert equal int (DeliveryVerdict::DELIVERY_STALE_REVALIDATE, detws_delivery_swr(61, 60, 30))</code>
+      * <code>Assert equal int (DeliveryVerdict::DELIVERY_FRESH, dws_delivery_swr(0, 60, 30))</code>
+      * <code>Assert equal int (DeliveryVerdict::DELIVERY_FRESH, dws_delivery_swr(60, 60, 30))</code>
+      * <code>Assert equal int (DeliveryVerdict::DELIVERY_STALE_REVALIDATE, dws_delivery_swr(61, 60, 30))</code>
       * <code>TEST_ASSERT_EQUAL_INT(DeliveryVerdict::DELIVERY_STALE_REVALIDATE,</code>
-      * <code>Assert equal int (DeliveryVerdict::DELIVERY_EXPIRED, detws_delivery_swr(91, 60, 30))</code>
-      * <code>Assert equal int (DeliveryVerdict::DELIVERY_EXPIRED, detws_delivery_swr(61, 60, 0))</code>
+      * <code>Assert equal int (DeliveryVerdict::DELIVERY_EXPIRED, dws_delivery_swr(91, 60, 30))</code>
+      * <code>Assert equal int (DeliveryVerdict::DELIVERY_EXPIRED, dws_delivery_swr(61, 60, 0))</code>
       * <code>TEST_ASSERT_EQUAL_INT(DeliveryVerdict::DELIVERY_STALE_REVALIDATE,</code>
   </details>
 
@@ -11986,7 +11986,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_size_t(strlen(buf), n);</code>
       * <code>Assert equal string ("public, max-age=60, stale-while-revalidate=30", buf)</code>
       * <code>Assert equal string ("public, max-age=3600", buf)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_cache_control(3600, 30, tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_cache_control(3600, 30, tiny, sizeof(tiny)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -11994,22 +11994,22 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: X-Y
     * **Assertions**:
-      * <code>Assert equal int (1, detws_delivery_range("bytes=0-499", 1000, &s, &e))</code>
+      * <code>Assert equal int (1, dws_delivery_range("bytes=0-499", 1000, &s, &e))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, s);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(499, e);</code>
-      * <code>Assert equal int (1, detws_delivery_range("bytes=500-", 1000, &s, &e))</code>
+      * <code>Assert equal int (1, dws_delivery_range("bytes=500-", 1000, &s, &e))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(500, s);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(999, e);</code>
-      * <code>Assert equal int (1, detws_delivery_range("bytes=-200", 1000, &s, &e))</code>
+      * <code>Assert equal int (1, dws_delivery_range("bytes=-200", 1000, &s, &e))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(800, s);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(999, e);</code>
-      * <code>Assert equal int (1, detws_delivery_range("bytes=-5000", 1000, &s, &e))</code>
+      * <code>Assert equal int (1, dws_delivery_range("bytes=-5000", 1000, &s, &e))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, s);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(999, e);</code>
-      * <code>Assert equal int (1, detws_delivery_range("bytes=990-99999", 1000, &s, &e))</code>
+      * <code>Assert equal int (1, dws_delivery_range("bytes=990-99999", 1000, &s, &e))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(990, s);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(999, e);</code>
-      * <code>Assert equal int (1, detws_delivery_range("  bytes=0-0", 1000, &s, &e))</code>
+      * <code>Assert equal int (1, dws_delivery_range("  bytes=0-0", 1000, &s, &e))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, s);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, e);</code>
   </details>
@@ -12019,14 +12019,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Range rejects
     * **Assertions**:
-      * <code>Assert equal int (0, detws_delivery_range("bytes=1000-2000", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, detws_delivery_range("bytes=500-100", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, detws_delivery_range("bytes=-0", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, detws_delivery_range("bytes=-", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, detws_delivery_range("bytes=0-100,200-300", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, detws_delivery_range("items=0-100", 1000, &s, &e))</code>
-      * <code>Assert equal int (0, detws_delivery_range("bytes=0-499", 0, &s, &e))</code>
-      * <code>Assert equal int (0, detws_delivery_range("bytes=0-abc", 1000, &s, &e))</code>
+      * <code>Assert equal int (0, dws_delivery_range("bytes=1000-2000", 1000, &s, &e))</code>
+      * <code>Assert equal int (0, dws_delivery_range("bytes=500-100", 1000, &s, &e))</code>
+      * <code>Assert equal int (0, dws_delivery_range("bytes=-0", 1000, &s, &e))</code>
+      * <code>Assert equal int (0, dws_delivery_range("bytes=-", 1000, &s, &e))</code>
+      * <code>Assert equal int (0, dws_delivery_range("bytes=0-100,200-300", 1000, &s, &e))</code>
+      * <code>Assert equal int (0, dws_delivery_range("items=0-100", 1000, &s, &e))</code>
+      * <code>Assert equal int (0, dws_delivery_range("bytes=0-499", 0, &s, &e))</code>
+      * <code>Assert equal int (0, dws_delivery_range("bytes=0-abc", 1000, &s, &e))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -12053,13 +12053,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Delivery guards and escape
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_cache_control(60, 30, nullptr, sizeof(buf))); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_cache_control(60, 30, buf, 0));               // zero cap</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_content_range(0, 10, 100, buf, 2));           // tiny cap</code>
-      * <code>Assert equal int (0, detws_delivery_range("garbage", 100, &start, &end))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_cache_control(60, 30, nullptr, sizeof(buf))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_cache_control(60, 30, buf, 0));               // zero cap</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_content_range(0, 10, 100, buf, 2));           // tiny cap</code>
+      * <code>Assert equal int (0, dws_delivery_range("garbage", 100, &start, &end))</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert not null (strstr(buf, "\\\\\\""))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_delivery_sw_manifest(paths, 1, "1.0", buf, 4)); // tiny cap fails closed</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_delivery_sw_manifest(paths, 1, "1.0", buf, 4)); // tiny cap fails closed</code>
   </details>
 
 </details>
@@ -13158,13 +13158,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: init clamps the start clock into [min_hz, max_hz]; read it back via a non-tripping
     * **Assertions**:
-      * <code>Assert equal int (HwRailVerdict::HW_RAIL_OK, detws_hwhealth_rail_sample(nullptr, 1000))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(nullptr, buf, sizeof(buf))); // null monitor</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(&m, nullptr, sizeof(buf))); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(&m, buf, 0));               // zero cap</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_hwhealth_spi_result(nullptr, true));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1000000, detws_hwhealth_spi_result(&below, false));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(8000000, detws_hwhealth_spi_result(&above, false));</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_OK, dws_hwhealth_rail_sample(nullptr, 1000))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hwhealth_rail_json(nullptr, buf, sizeof(buf))); // null monitor</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hwhealth_rail_json(&m, nullptr, sizeof(buf))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hwhealth_rail_json(&m, buf, 0));               // zero cap</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_hwhealth_spi_result(nullptr, true));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1000000, dws_hwhealth_spi_result(&below, false));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(8000000, dws_hwhealth_spi_result(&above, false));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13172,17 +13172,17 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Overflow path returns 0.
     * **Assertions**:
-      * <code>Assert equal int (HwRailVerdict::HW_RAIL_OK, detws_hwhealth_rail_sample(&m, 3300))</code>
-      * <code>Assert equal int (HwRailVerdict::HW_RAIL_OK, detws_hwhealth_rail_sample(&m, 3100))</code>
-      * <code>Assert equal int (HwRailVerdict::HW_RAIL_SAG, detws_hwhealth_rail_sample(&m, 3050))</code>
-      * <code>Assert equal int (HwRailVerdict::HW_RAIL_SAG, detws_hwhealth_rail_sample(&m, 2900))</code>
-      * <code>Assert equal int (HwRailVerdict::HW_RAIL_BROWNOUT, detws_hwhealth_rail_sample(&m, 2800))</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_OK, dws_hwhealth_rail_sample(&m, 3300))</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_OK, dws_hwhealth_rail_sample(&m, 3100))</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_SAG, dws_hwhealth_rail_sample(&m, 3050))</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_SAG, dws_hwhealth_rail_sample(&m, 2900))</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_BROWNOUT, dws_hwhealth_rail_sample(&m, 2800))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2800, m.min_mv);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2, m.sag_events);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, m.brownout_events);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(strlen(buf), n);</code>
       * <code>Assert equal string ("{\\"nominal_mv\\":3300,\\"min_mv\\":2800,\\"sag\\":2,\\"brownout\\":1}", buf)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_hwhealth_rail_json(&m, tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_hwhealth_rail_json(&m, tiny, sizeof(tiny)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13190,12 +13190,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Two failures: not yet tripped.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(8000000, detws_hwhealth_spi_result(&s, false));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(8000000, detws_hwhealth_spi_result(&s, false));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(4000000, detws_hwhealth_spi_result(&s, false));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(4000000, detws_hwhealth_spi_result(&s, true));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2000000, detws_hwhealth_spi_result(&s, false));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(4000000, detws_hwhealth_spi_result(&s, true));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(8000000, dws_hwhealth_spi_result(&s, false));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(8000000, dws_hwhealth_spi_result(&s, false));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4000000, dws_hwhealth_spi_result(&s, false));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4000000, dws_hwhealth_spi_result(&s, true));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2000000, dws_hwhealth_spi_result(&s, false));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4000000, dws_hwhealth_spi_result(&s, true));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13203,12 +13203,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Fail once (trip=1): halve to 1MHz floor. Fail again: stays at floor.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1000000, detws_hwhealth_spi_result(&s, false));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1000000, detws_hwhealth_spi_result(&s, false));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2000000, detws_hwhealth_spi_result(&s, true));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(4000000, detws_hwhealth_spi_result(&s, true));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(8000000, detws_hwhealth_spi_result(&s, true));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(8000000, detws_hwhealth_spi_result(&s, true));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1000000, dws_hwhealth_spi_result(&s, false));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1000000, dws_hwhealth_spi_result(&s, false));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2000000, dws_hwhealth_spi_result(&s, true));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4000000, dws_hwhealth_spi_result(&s, true));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(8000000, dws_hwhealth_spi_result(&s, true));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(8000000, dws_hwhealth_spi_result(&s, true));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13216,10 +13216,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Gpio short
     * **Assertions**:
-      * <code>Assert equal int (HwGpioVerdict::HW_GPIO_OK, detws_hwhealth_gpio_short(true, true))</code>
-      * <code>Assert equal int (HwGpioVerdict::HW_GPIO_OK, detws_hwhealth_gpio_short(false, false))</code>
-      * <code>Assert equal int (HwGpioVerdict::HW_GPIO_SHORT_GND, detws_hwhealth_gpio_short(true, false))</code>
-      * <code>Assert equal int (HwGpioVerdict::HW_GPIO_SHORT_VCC, detws_hwhealth_gpio_short(false, true))</code>
+      * <code>Assert equal int (HwGpioVerdict::HW_GPIO_OK, dws_hwhealth_gpio_short(true, true))</code>
+      * <code>Assert equal int (HwGpioVerdict::HW_GPIO_OK, dws_hwhealth_gpio_short(false, false))</code>
+      * <code>Assert equal int (HwGpioVerdict::HW_GPIO_SHORT_GND, dws_hwhealth_gpio_short(true, false))</code>
+      * <code>Assert equal int (HwGpioVerdict::HW_GPIO_SHORT_VCC, dws_hwhealth_gpio_short(false, true))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13227,12 +13227,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Expected 100ms decay, 10% tolerance -> [90, 110].
     * **Assertions**:
-      * <code>Assert equal int (HwCapVerdict::HW_CAP_OK, detws_hwhealth_cap_leak(100, 100, 10))</code>
-      * <code>Assert equal int (HwCapVerdict::HW_CAP_OK, detws_hwhealth_cap_leak(90, 100, 10))</code>
-      * <code>Assert equal int (HwCapVerdict::HW_CAP_OK, detws_hwhealth_cap_leak(110, 100, 10))</code>
-      * <code>Assert equal int (HwCapVerdict::HW_CAP_LEAK, detws_hwhealth_cap_leak(80, 100, 10))</code>
-      * <code>Assert equal int (HwCapVerdict::HW_CAP_HIGH_ESR, detws_hwhealth_cap_leak(130, 100, 10))</code>
-      * <code>Assert equal int (HwCapVerdict::HW_CAP_OK, detws_hwhealth_cap_leak(50, 0, 10))</code>
+      * <code>Assert equal int (HwCapVerdict::HW_CAP_OK, dws_hwhealth_cap_leak(100, 100, 10))</code>
+      * <code>Assert equal int (HwCapVerdict::HW_CAP_OK, dws_hwhealth_cap_leak(90, 100, 10))</code>
+      * <code>Assert equal int (HwCapVerdict::HW_CAP_OK, dws_hwhealth_cap_leak(110, 100, 10))</code>
+      * <code>Assert equal int (HwCapVerdict::HW_CAP_LEAK, dws_hwhealth_cap_leak(80, 100, 10))</code>
+      * <code>Assert equal int (HwCapVerdict::HW_CAP_HIGH_ESR, dws_hwhealth_cap_leak(130, 100, 10))</code>
+      * <code>Assert equal int (HwCapVerdict::HW_CAP_OK, dws_hwhealth_cap_leak(50, 0, 10))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13240,7 +13240,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Rail ok spi clamps probes
     * **Assertions**:
-      * <code>Assert equal int (HwRailVerdict::HW_RAIL_OK, detws_hwhealth_rail_sample(&m, 3300))</code>
+      * <code>Assert equal int (HwRailVerdict::HW_RAIL_OK, dws_hwhealth_rail_sample(&m, 3300))</code>
   </details>
 
 </details>
@@ -13291,10 +13291,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: State and real q guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_iccp_state_q(1, 0, t, nullptr, sizeof(out))); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_iccp_state_q(1, 0, t, out, 2));               // overflow</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_iccp_real_q(100, 0, t, out, 2));              // overflow</code>
-      * <code>Assert true (detws_iccp_state_q(1, 0x40, t, out, sizeof(out)) &gt; 0);         // valid (time-field tlv)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iccp_state_q(1, 0, t, nullptr, sizeof(out))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iccp_state_q(1, 0, t, out, 2));               // overflow</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iccp_real_q(100, 0, t, out, 2));              // overflow</code>
+      * <code>Assert true (dws_iccp_state_q(1, 0x40, t, out, sizeof(out)) &gt; 0);         // valid (time-field tlv)</code>
   </details>
 
 </details>
@@ -13545,8 +13545,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Set ap ip updates global
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0x0104A8C0u, detws_ap_ip);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0u, detws_ap_ip);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0x0104A8C0u, dws_ap_ip);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0u, dws_ap_ip);</code>
   </details>
 
 </details>
@@ -13559,16 +13559,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Map and find
     * **Assertions**:
-      * <code>Assert true (det_iface_bridge_map("192.168.1.50", 4001, BridgeProto::tcp, &u))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, det_iface_bridge_count());</code>
+      * <code>Assert true (dws_iface_bridge_map("192.168.1.50", 4001, BridgeProto::tcp, &u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_iface_bridge_count());</code>
       * <code>Assert not null (r)</code>
       * <code>Assert equal (BridgeBus::uart, r-&gt;target.bus)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(4001, r-&gt;listen_port);</code>
-      * <code>Assert equal (DetIpFamily::DET_IP_V4, r-&gt;listen_ip.family)</code>
+      * <code>Assert equal (DWSIpFamily::DWS_IP_V4, r-&gt;listen_ip.family)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(192, r-&gt;listen_ip.bytes[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(50, r-&gt;listen_ip.bytes[3]);</code>
-      * <code>Assert null (det_iface_bridge_find(4001, BridgeProto::udp))</code>
-      * <code>Assert null (det_iface_bridge_find(4002, BridgeProto::tcp))</code>
+      * <code>Assert null (dws_iface_bridge_find(4001, BridgeProto::udp))</code>
+      * <code>Assert null (dws_iface_bridge_find(4002, BridgeProto::tcp))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13576,13 +13576,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Same port+proto is a duplicate -> rejected.
     * **Assertions**:
-      * <code>Assert true (det_iface_bridge_map(nullptr, 5000, BridgeProto::tcp, &i))</code>
+      * <code>Assert true (dws_iface_bridge_map(nullptr, 5000, BridgeProto::tcp, &i))</code>
       * <code>Assert not null (r)</code>
-      * <code>Assert equal (DetIpFamily::DET_IP_NONE, r-&gt;listen_ip.family)</code>
+      * <code>Assert equal (DWSIpFamily::DWS_IP_NONE, r-&gt;listen_ip.family)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x40, r-&gt;target.addr_cs);</code>
-      * <code>Assert false (det_iface_bridge_map("10.0.0.1", 5000, BridgeProto::tcp, &u))</code>
-      * <code>Assert true (det_iface_bridge_map(nullptr, 5000, BridgeProto::udp, &i))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(2, det_iface_bridge_count());</code>
+      * <code>Assert false (dws_iface_bridge_map("10.0.0.1", 5000, BridgeProto::tcp, &u))</code>
+      * <code>Assert true (dws_iface_bridge_map(nullptr, 5000, BridgeProto::udp, &i))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, dws_iface_bridge_count());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13590,8 +13590,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Bad address rejected
     * **Assertions**:
-      * <code>Assert false (det_iface_bridge_map("not.an.ip", 6000, BridgeProto::tcp, &u))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, det_iface_bridge_count());</code>
+      * <code>Assert false (dws_iface_bridge_map("not.an.ip", 6000, BridgeProto::tcp, &u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_iface_bridge_count());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13599,10 +13599,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Table full
     * **Assertions**:
-      * <code>Assert true (det_iface_bridge_map(nullptr, (uint16_t)(7000 + p), BridgeProto::tcp, &u))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_BRIDGE_MAX_RULES, det_iface_bridge_count());</code>
-      * <code>Assert false (det_iface_bridge_map(nullptr, 9999, BridgeProto::tcp, &u))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, det_iface_bridge_count());</code>
+      * <code>Assert true (dws_iface_bridge_map(nullptr, (uint16_t)(7000 + p), BridgeProto::tcp, &u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_BRIDGE_MAX_RULES, dws_iface_bridge_count());</code>
+      * <code>Assert false (dws_iface_bridge_map(nullptr, 9999, BridgeProto::tcp, &u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_iface_bridge_count());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13610,7 +13610,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Txn roundtrip
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(DETWS_BRIDGE_TXN_HDR + 3, n);</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(DWS_BRIDGE_TXN_HDR + 3, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, frame, n);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(n, used);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(3, wl);</code>
@@ -13623,9 +13623,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Partial header (< 4 bytes) -> need more.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_iface_bridge_txn_parse(hdr2, sizeof(hdr2), nullptr, nullptr, nullptr));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_iface_bridge_txn_parse(partial, sizeof(partial), nullptr, nullptr, nullptr));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(DETWS_BRIDGE_TXN_HDR,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iface_bridge_txn_parse(hdr2, sizeof(hdr2), nullptr, nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iface_bridge_txn_parse(partial, sizeof(partial), nullptr, nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(DWS_BRIDGE_TXN_HDR, dws_iface_bridge_txn_parse(readonly, sizeof(readonly), &wl, &rl, &wd));</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, wl);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(8, rl);</code>
   </details>
@@ -13635,8 +13635,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build overflow fails closed
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_iface_bridge_txn_build(small, sizeof(small), wr, 4, 0));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_iface_bridge_txn_parse(nullptr, 10, nullptr, nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iface_bridge_txn_build(small, sizeof(small), wr, 4, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_iface_bridge_txn_parse(nullptr, 10, nullptr, nullptr, nullptr));</code>
   </details>
 
 </details>
@@ -13815,7 +13815,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: CRC-16/CCITT-FALSE check value: CRC of "123456789" = 0x29B1.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX16(0x29B1, detws_interbus_fcs(msg, sizeof(msg)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x29B1, dws_interbus_fcs(msg, sizeof(msg)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13828,7 +13828,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, buf[1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x11, buf[2]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x11, buf[3]);</code>
-      * <code>Assert true (detws_interbus_parse(buf, n, out, 8, &count))</code>
+      * <code>Assert true (dws_interbus_parse(buf, n, out, 8, &count))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, count);</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(0x1111, out[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(0x2222, out[1]);</code>
@@ -13841,7 +13841,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Empty frame
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(4, n); // loopback + FCS</code>
-      * <code>Assert true (detws_interbus_parse(buf, n, out, 2, &count))</code>
+      * <code>Assert true (dws_interbus_parse(buf, n, out, 2, &count))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, count);</code>
   </details>
 
@@ -13850,9 +13850,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Corrupt FCS.
     * **Assertions**:
-      * <code>Assert false (detws_interbus_parse(buf, n, out, 4, &count))</code>
-      * <code>Assert false (detws_interbus_parse(buf, n, out, 4, &count))</code>
-      * <code>Assert false (detws_interbus_parse(buf, n, out, 1, &count))</code>
+      * <code>Assert false (dws_interbus_parse(buf, n, out, 4, &count))</code>
+      * <code>Assert false (dws_interbus_parse(buf, n, out, 4, &count))</code>
+      * <code>Assert false (dws_interbus_parse(buf, n, out, 1, &count))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13860,10 +13860,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build parse guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_interbus_build(nullptr, 2, out, sizeof(out))); // null words</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_interbus_build(words, 2, out, 2));             // cap too small</code>
-      * <code>Assert false (detws_interbus_parse(nullptr, 10, ow, 4, &oc))</code>
-      * <code>Assert false (detws_interbus_parse(tiny, sizeof(tiny), ow, 4, &oc))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_interbus_build(nullptr, 2, out, sizeof(out))); // null words</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_interbus_build(words, 2, out, 2));             // cap too small</code>
+      * <code>Assert false (dws_interbus_parse(nullptr, 10, ow, 4, &oc))</code>
+      * <code>Assert false (dws_interbus_parse(tiny, sizeof(tiny), ow, 4, &oc))</code>
   </details>
 
 </details>
@@ -14140,7 +14140,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Bsm core roundtrip
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
-      * <code>Assert true (detws_j2735_bsm_core_decode(buf, n, &d))</code>
+      * <code>Assert true (dws_j2735_bsm_core_decode(buf, n, &d))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(12, d.msg_count);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0xDEADBEEF, d.id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(34000, d.sec_mark);</code>
@@ -14165,7 +14165,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Spat roundtrip
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
-      * <code>Assert true (detws_j2735_spat_decode(buf, n, out, 8, &count))</code>
+      * <code>Assert true (dws_j2735_spat_decode(buf, n, out, 8, &count))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, count);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, out[0].signal_group);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(J2735PhaseState::J2735_PHASE_PROTECTED_MOVEMENT_ALLOWED, out[0].phase);</code>
@@ -14180,7 +14180,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Only room for 1 but 2 encoded -> false.
     * **Assertions**:
-      * <code>Assert false (detws_j2735_spat_decode(buf, n, out, 1, &count))</code>
+      * <code>Assert false (dws_j2735_spat_decode(buf, n, out, 1, &count))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -14189,7 +14189,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Map roundtrip
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
-      * <code>Assert true (detws_j2735_map_decode(buf, n, &di, out, 8, &count))</code>
+      * <code>Assert true (dws_j2735_map_decode(buf, n, &di, out, 8, &count))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(12345, di.intersection_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(40000, di.ref_lat);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, count);</code>
@@ -14208,7 +14208,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Uper overflow and bsm guard
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, uper_writer_finish(&w));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(&c, buf, 1)); // tiny cap fails closed</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_j2735_bsm_core_encode(&c, buf, 1)); // tiny cap fails closed</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -14220,21 +14220,21 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (uper_get_cint(&r, 5, 5) == 5)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, uper_get_bits(&r, 0));</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, uper_get_bits(&rn, 4));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(nullptr, buf, sizeof(buf)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(&c, nullptr, sizeof(buf)));</code>
-      * <code>Assert false (detws_j2735_bsm_core_decode(nullptr, 16, &c))</code>
-      * <code>Assert false (detws_j2735_bsm_core_decode(buf, 16, nullptr))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_spat_encode(st, 2, nullptr, 16));       // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_spat_encode(st, 32, buf, sizeof(buf))); // count &gt; 31</code>
-      * <code>Assert false (detws_j2735_spat_decode(nullptr, 16, sout, 4, &count))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_map_encode(nullptr, lanes, 2, buf, sizeof(buf))); // null isect</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_j2735_map_encode(&isect, lanes, 32, buf, sizeof(buf))); // count &gt; 31</code>
-      * <code>Assert false (detws_j2735_map_decode(nullptr, 16, &isect, lout, 4, &count))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_j2735_bsm_core_encode(nullptr, buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_j2735_bsm_core_encode(&c, nullptr, sizeof(buf)));</code>
+      * <code>Assert false (dws_j2735_bsm_core_decode(nullptr, 16, &c))</code>
+      * <code>Assert false (dws_j2735_bsm_core_decode(buf, 16, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_j2735_spat_encode(st, 2, nullptr, 16));       // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_j2735_spat_encode(st, 32, buf, sizeof(buf))); // count &gt; 31</code>
+      * <code>Assert false (dws_j2735_spat_decode(nullptr, 16, sout, 4, &count))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_j2735_map_encode(nullptr, lanes, 2, buf, sizeof(buf))); // null isect</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_j2735_map_encode(&isect, lanes, 32, buf, sizeof(buf))); // count &gt; 31</code>
+      * <code>Assert false (dws_j2735_map_decode(nullptr, 16, &isect, lout, 4, &count))</code>
       * <code>Assert true (sn &gt; 1)</code>
-      * <code>Assert false (detws_j2735_spat_decode(buf, 1, sout, 4, &count))</code>
+      * <code>Assert false (dws_j2735_spat_decode(buf, 1, sout, 4, &count))</code>
       * <code>Assert true (mn &gt; 7)</code>
-      * <code>Assert false (detws_j2735_map_decode(buf, mn, &isect, lout, 1, &count))</code>
-      * <code>Assert false (detws_j2735_map_decode(buf, 7, &isect, lout, 4, &count))</code>
+      * <code>Assert false (dws_j2735_map_decode(buf, mn, &isect, lout, 1, &count))</code>
+      * <code>Assert false (dws_j2735_map_decode(buf, 7, &isect, lout, 4, &count))</code>
   </details>
 
 </details>
@@ -14903,9 +14903,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_max_requests_cap_closes</b> &mdash; <i>DETWS_KEEPALIVE_MAX_REQUESTS=3: the 3rd response closes the connection.</i></summary>
+    <summary><b>test_max_requests_cap_closes</b> &mdash; <i>DWS_KEEPALIVE_MAX_REQUESTS=3: the 3rd response closes the connection.</i></summary>
 
-    * **Objective**: DETWS_KEEPALIVE_MAX_REQUESTS=3: the 3rd response closes the connection.
+    * **Objective**: DWS_KEEPALIVE_MAX_REQUESTS=3: the 3rd response closes the connection.
     * **Assertions**:
       * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert equal (ConnState::CONN_ACTIVE, (ConnState)conn_pool[0].state)</code>
@@ -15101,7 +15101,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Init none up
     * **Assertions**:
-      * <code>Assert equal int (-1, detws_link_active(&g_m))</code>
+      * <code>Assert equal int (-1, dws_link_active(&g_m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15109,21 +15109,21 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: WiFi STA comes up first -> it becomes active.
     * **Assertions**:
-      * <code>Assert true (detws_link_set(&g_m, 1, true, &from, &to))</code>
+      * <code>Assert true (dws_link_set(&g_m, 1, true, &from, &to))</code>
       * <code>Assert equal int (-1, from)</code>
       * <code>Assert equal int (1, to)</code>
-      * <code>Assert true (detws_link_set(&g_m, 0, true, &from, &to))</code>
+      * <code>Assert true (dws_link_set(&g_m, 0, true, &from, &to))</code>
       * <code>Assert equal int (1, from)</code>
       * <code>Assert equal int (0, to)</code>
-      * <code>Assert false (detws_link_set(&g_m, 2, true, &from, &to))</code>
-      * <code>Assert equal int (0, detws_link_active(&g_m))</code>
-      * <code>Assert true (detws_link_set(&g_m, 0, false, &from, &to))</code>
+      * <code>Assert false (dws_link_set(&g_m, 2, true, &from, &to))</code>
+      * <code>Assert equal int (0, dws_link_active(&g_m))</code>
+      * <code>Assert true (dws_link_set(&g_m, 0, false, &from, &to))</code>
       * <code>Assert equal int (0, from)</code>
       * <code>Assert equal int (1, to)</code>
-      * <code>Assert true (detws_link_set(&g_m, 1, false, &from, &to))</code>
+      * <code>Assert true (dws_link_set(&g_m, 1, false, &from, &to))</code>
       * <code>Assert equal int (2, to)</code>
-      * <code>Assert true (detws_link_set(&g_m, 2, false, &from, &to))</code>
-      * <code>Assert equal int (-1, detws_link_active(&g_m))</code>
+      * <code>Assert true (dws_link_set(&g_m, 2, false, &from, &to))</code>
+      * <code>Assert equal int (-1, dws_link_active(&g_m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15131,7 +15131,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Two interfaces at equal priority: the lower index wins.
     * **Assertions**:
-      * <code>Assert equal int (0, detws_link_active(&m))</code>
+      * <code>Assert equal int (0, dws_link_active(&m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15139,7 +15139,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Out of range no change
     * **Assertions**:
-      * <code>Assert false (detws_link_set(&g_m, 9, true, &from, &to))</code>
+      * <code>Assert false (dws_link_set(&g_m, 9, true, &from, &to))</code>
       * <code>Assert equal int (1, from)</code>
       * <code>Assert equal int (1, to)</code>
   </details>
@@ -15149,9 +15149,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Select null guards
     * **Assertions**:
-      * <code>Assert equal int (-1, detws_link_select(nullptr))</code>
-      * <code>Assert equal int (-1, detws_link_select(&m))</code>
-      * <code>Assert equal int (-1, detws_link_active(&m))</code>
+      * <code>Assert equal int (-1, dws_link_select(nullptr))</code>
+      * <code>Assert equal int (-1, dws_link_select(&m))</code>
+      * <code>Assert equal int (-1, dws_link_active(&m))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15159,7 +15159,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Init and active null
     * **Assertions**:
-      * <code>Assert equal int (-1, detws_link_active(nullptr))</code>
+      * <code>Assert equal int (-1, dws_link_active(nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15167,13 +15167,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Null manager: reports -1 for both previous and new active, returns false.
     * **Assertions**:
-      * <code>Assert false (detws_link_set(nullptr, 0, true, &from, &to))</code>
+      * <code>Assert false (dws_link_set(nullptr, 0, true, &from, &to))</code>
       * <code>Assert equal int (-1, from)</code>
       * <code>Assert equal int (-1, to)</code>
-      * <code>Assert false (detws_link_set(&m, 0, true, &from, &to))</code>
+      * <code>Assert false (dws_link_set(&m, 0, true, &from, &to))</code>
       * <code>Assert equal int (-1, from)</code>
       * <code>Assert equal int (-1, to)</code>
-      * <code>Assert false (detws_link_set(&g_m, 9, true, nullptr, nullptr))</code>
+      * <code>Assert false (dws_link_set(&g_m, 9, true, nullptr, nullptr))</code>
   </details>
 
 </details>
@@ -15186,10 +15186,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Append and order
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT16(2, detws_log_count());</code>
-      * <code>Assert equal string ("I first", detws_log_at(0))</code>
-      * <code>Assert equal string ("W second", detws_log_at(1))</code>
-      * <code>Assert null (detws_log_at(2))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(2, dws_log_count());</code>
+      * <code>Assert equal string ("I first", dws_log_at(0))</code>
+      * <code>Assert equal string ("W second", dws_log_at(1))</code>
+      * <code>Assert null (dws_log_at(2))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15206,9 +15206,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The 3 oldest (n0,n1,n2) were pruned; oldest now is n3, newest is the last.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT16(DETWS_LOG_LINES, detws_log_count());</code>
-      * <code>Assert equal string ("I n3", detws_log_at(0))</code>
-      * <code>Assert equal string (expect_last, detws_log_at(DETWS_LOG_LINES - 1))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(DWS_LOG_LINES, dws_log_count());</code>
+      * <code>Assert equal string ("I n3", dws_log_at(0))</code>
+      * <code>Assert equal string (expect_last, dws_log_at(DWS_LOG_LINES - 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15218,7 +15218,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (0, g_traps)</code>
       * <code>Assert equal int (2, g_traps)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsLogLevel::DETWS_LOG_ERROR, g_last_level);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsLogLevel::DWS_LOG_ERROR, g_last_level);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15226,9 +15226,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A dump buffer too small for the logged line fails closed.
     * **Assertions**:
-      * <code>Assert equal int (0, detws_log_dump(nullptr, sizeof(out)))</code>
-      * <code>Assert equal int (0, detws_log_dump(out, 0))</code>
-      * <code>Assert equal int (0, detws_log_dump(out, 8))</code>
+      * <code>Assert equal int (0, dws_log_dump(nullptr, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_log_dump(out, 0))</code>
+      * <code>Assert equal int (0, dws_log_dump(out, 8))</code>
   </details>
 
 </details>
@@ -15243,7 +15243,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(5, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, n);</code>
-      * <code>Assert true (detws_lon_parse_nv(out, n, &nv))</code>
+      * <code>Assert true (dws_lon_parse_nv(out, n, &nv))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Lon::LON_MSG_NV_UPDATE, nv.msg_code);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x1234, nv.selector);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, nv.value_len);</code>
@@ -15255,9 +15255,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The top two bits of the selector byte are not part of the 14-bit value.
     * **Assertions**:
-      * <code>Assert true (detws_lon_parse_nv(out, 3, &nv))</code>
+      * <code>Assert true (dws_lon_parse_nv(out, 3, &nv))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x3FFF, nv.selector);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_lon_build_nv(Lon::LON_MSG_NV_UPDATE, 0x4000, nullptr, 0, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lon_build_nv(Lon::LON_MSG_NV_UPDATE, 0x4000, nullptr, 0, out, sizeof(out)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15286,8 +15286,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Snvt clamps and guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_lon_build_nv(0x00, 0, val, sizeof(val), out, 2)); // cap too small</code>
-      * <code>Assert false (detws_lon_parse_nv(tiny, sizeof(tiny), &nv))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_lon_build_nv(0x00, 0, val, sizeof(val), out, 2)); // cap too small</code>
+      * <code>Assert false (dws_lon_parse_nv(tiny, sizeof(tiny), &nv))</code>
   </details>
 
 </details>
@@ -15632,7 +15632,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: CRC-16/X-25 check value: CRC of "123456789" = 0x906E.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX16(0x906E, detws_mbplus_crc(msg, sizeof(msg)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x906E, dws_mbplus_crc(msg, sizeof(msg)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15644,7 +15644,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(Mbplus::MBPLUS_FLAG, buf[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Mbplus::MBPLUS_FLAG, buf[n - 1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(5, buf[1]);</code>
-      * <code>Assert true (detws_mbplus_parse(buf, n, &f))</code>
+      * <code>Assert true (dws_mbplus_parse(buf, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(5, f.address);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Mbplus::MBPLUS_CTRL_DATA, f.control);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, f.payload_len);</code>
@@ -15657,7 +15657,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Token frame no payload
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
-      * <code>Assert true (detws_mbplus_parse(buf, n, &f))</code>
+      * <code>Assert true (dws_mbplus_parse(buf, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Mbplus::MBPLUS_CTRL_TOKEN, f.control);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, f.payload_len);</code>
       * <code>Assert null (f.payload)</code>
@@ -15668,9 +15668,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Next token ring
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(2, detws_mbplus_next_token(1, 8));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, detws_mbplus_next_token(8, 8));  // wrap</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, detws_mbplus_next_token(20, 8)); // beyond max also wraps</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, dws_mbplus_next_token(1, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_mbplus_next_token(8, 8));  // wrap</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_mbplus_next_token(20, 8)); // beyond max also wraps</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15678,10 +15678,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Missing trailing flag.
     * **Assertions**:
-      * <code>Assert false (detws_mbplus_parse(buf, n, &f))</code>
-      * <code>Assert false (detws_mbplus_parse(buf, n, &f))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mbplus_build(0, Mbplus::MBPLUS_CTRL_DATA, nullptr, 0, buf, sizeof(buf)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mbplus_build(65, Mbplus::MBPLUS_CTRL_DATA, nullptr, 0, buf, sizeof(buf)));</code>
+      * <code>Assert false (dws_mbplus_parse(buf, n, &f))</code>
+      * <code>Assert false (dws_mbplus_parse(buf, n, &f))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mbplus_build(0, Mbplus::MBPLUS_CTRL_DATA, nullptr, 0, buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mbplus_build(65, Mbplus::MBPLUS_CTRL_DATA, nullptr, 0, buf, sizeof(buf)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15689,9 +15689,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build parse and token wrap
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mbplus_build(1, 0, payload, sizeof(payload), out, 2)); // cap too small</code>
-      * <code>Assert false (detws_mbplus_parse(tiny, sizeof(tiny), &fr))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, detws_mbplus_next_token(8, 8));      // current == max -&gt; wrap to 1</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mbplus_build(1, 0, payload, sizeof(payload), out, 2)); // cap too small</code>
+      * <code>Assert false (dws_mbplus_parse(tiny, sizeof(tiny), &fr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_mbplus_next_token(8, 8));      // current == max -&gt; wrap to 1</code>
   </details>
 
 </details>
@@ -15884,8 +15884,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Refresh interval
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(60000, det_mdns_refresh_interval(120)); // 120s TTL -&gt; refresh at 60s</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, det_mdns_refresh_interval(0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(60000, dws_mdns_refresh_interval(120)); // 120s TTL -&gt; refresh at 60s</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mdns_refresh_interval(0));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15893,15 +15893,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Crowded: double each window, capped at ceiling.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(120000, det_mdns_beacon_adapt(&b, 8));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(240000, det_mdns_beacon_adapt(&b, 8));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(480000, det_mdns_beacon_adapt(&b, 8));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(480000, det_mdns_beacon_adapt(&b, 8)); // clamped at ceiling</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(480000, det_mdns_beacon_adapt(&b, 3));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(240000, det_mdns_beacon_adapt(&b, 0));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(120000, det_mdns_beacon_adapt(&b, 0));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(60000, det_mdns_beacon_adapt(&b, 0));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(60000, det_mdns_beacon_adapt(&b, 0)); // clamped at base</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(120000, dws_mdns_beacon_adapt(&b, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(240000, dws_mdns_beacon_adapt(&b, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(480000, dws_mdns_beacon_adapt(&b, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(480000, dws_mdns_beacon_adapt(&b, 8)); // clamped at ceiling</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(480000, dws_mdns_beacon_adapt(&b, 3));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(240000, dws_mdns_beacon_adapt(&b, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(120000, dws_mdns_beacon_adapt(&b, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(60000, dws_mdns_beacon_adapt(&b, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(60000, dws_mdns_beacon_adapt(&b, 0)); // clamped at base</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15909,10 +15909,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Wrap-safe: last just below the uint32 rollover, now just after.
     * **Assertions**:
-      * <code>Assert false (det_mdns_beacon_due(&b, 1000, 1000 + 59999))</code>
-      * <code>Assert true (det_mdns_beacon_due(&b, 1000, 1000 + 60000))</code>
-      * <code>Assert true (det_mdns_beacon_due(&b, 1000, 1000 + 120000))</code>
-      * <code>Assert true (det_mdns_beacon_due(&b, 0xFFFFFF00u, 0xFFFFFF00u + 60000))</code>
+      * <code>Assert false (dws_mdns_beacon_due(&b, 1000, 1000 + 59999))</code>
+      * <code>Assert true (dws_mdns_beacon_due(&b, 1000, 1000 + 60000))</code>
+      * <code>Assert true (dws_mdns_beacon_due(&b, 1000, 1000 + 120000))</code>
+      * <code>Assert true (dws_mdns_beacon_due(&b, 0xFFFFFF00u, 0xFFFFFF00u + 60000))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15920,9 +15920,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 10s since last announce; a 40s sleep would leave us at 50s < 60s -> not due yet.
     * **Assertions**:
-      * <code>Assert false (det_mdns_beacon_presleep_due(&b, 0, 10000, 40000))</code>
-      * <code>Assert true (det_mdns_beacon_presleep_due(&b, 0, 10000, 60000))</code>
-      * <code>Assert true (det_mdns_beacon_presleep_due(&b, 0, 0xFFFFFFF0u, 0xFFFFFFF0u))</code>
+      * <code>Assert false (dws_mdns_beacon_presleep_due(&b, 0, 10000, 40000))</code>
+      * <code>Assert true (dws_mdns_beacon_presleep_due(&b, 0, 10000, 60000))</code>
+      * <code>Assert true (dws_mdns_beacon_presleep_due(&b, 0, 0xFFFFFFF0u, 0xFFFFFFF0u))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15930,7 +15930,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Refresh interval and beacon
     * **Assertions**:
-      * <code>Assert false (det_mdns_beacon_due(&b, 1000, 1000))</code>
+      * <code>Assert false (dws_mdns_beacon_due(&b, 1000, 1000))</code>
   </details>
 
 </details>
@@ -16119,7 +16119,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Read request parse
     * **Assertions**:
-      * <code>Assert true (detws_mms_parse(buf, n, &p))</code>
+      * <code>Assert true (dws_mms_parse(buf, n, &p))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_PDU_CONFIRMED_REQUEST, p.pdu_tag);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x1234, p.invoke_id);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_SERVICE_READ, p.service_tag);</code>
@@ -16133,7 +16133,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_PDU_CONFIRMED_RESPONSE, buf[0]); // 0xA1</code>
-      * <code>Assert true (detws_mms_parse(buf, n, &p))</code>
+      * <code>Assert true (dws_mms_parse(buf, n, &p))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(7, p.invoke_id);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_SERVICE_READ, p.service_tag);</code>
       * <code>Assert true (find(p.service_body, p.service_len, data, sizeof(data)) &gt;= 0)</code>
@@ -16144,7 +16144,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse rejects bad tag
     * **Assertions**:
-      * <code>Assert false (detws_mms_parse(bad, sizeof(bad), &p))</code>
+      * <code>Assert false (dws_mms_parse(bad, sizeof(bad), &p))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16153,10 +16153,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: id 0 -> int_content emits {0x00}; round-trips back to 0.
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
-      * <code>Assert true (detws_mms_parse(buf, n, &p))</code>
+      * <code>Assert true (dws_mms_parse(buf, n, &p))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, p.invoke_id);</code>
       * <code>Assert true (n &gt; 0)</code>
-      * <code>Assert true (detws_mms_parse(buf, n, &p))</code>
+      * <code>Assert true (dws_mms_parse(buf, n, &p))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x80, p.invoke_id);</code>
   </details>
 
@@ -16165,10 +16165,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Tiny cap: the final PDU wrap overflows the destination -> 0.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_mms_read_request(1, nullptr, out, sizeof(out))); // null name</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_mms_read_request(1, "x", nullptr, sizeof(out))); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_mms_read_request(1, longname, out, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_mms_read_request(1, "x", out, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_request(1, nullptr, out, sizeof(out))); // null name</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_request(1, "x", nullptr, sizeof(out))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_request(1, longname, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_request(1, "x", out, 4));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16178,7 +16178,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x81, out[1]); // outer length is long-form (one following octet)</code>
-      * <code>Assert true (detws_mms_parse(out, n, &p))</code>
+      * <code>Assert true (dws_mms_parse(out, n, &p))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x1234, p.invoke_id);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Mms::MMS_SERVICE_READ, p.service_tag);</code>
       * <code>Assert not null (p.service_body)</code>
@@ -16190,12 +16190,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: data_len set but data null -> reject.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_mms_read_response(7, nullptr, 5, out, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_mms_read_response(7, data3, sizeof(data3), nullptr, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_mms_read_response(7, data3, sizeof(data3), out, 4));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_mms_read_response(7, big, 254, out, sizeof(out))); // innermost wrap overflows</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_mms_read_response(7, big, 251, out, sizeof(out))); // service wrap overflows</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_mms_read_response(7, big, 250, out, sizeof(out))); // body assembly overflows</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(7, nullptr, 5, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(7, data3, sizeof(data3), nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(7, data3, sizeof(data3), out, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(7, big, 254, out, sizeof(out))); // innermost wrap overflows</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(7, big, 251, out, sizeof(out))); // service wrap overflows</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_mms_read_response(7, big, 250, out, sizeof(out))); // body assembly overflows</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16203,9 +16203,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse null and short
     * **Assertions**:
-      * <code>Assert false (detws_mms_parse(nullptr, 8, &p))</code>
-      * <code>Assert false (detws_mms_parse(one, 1, &p))</code>
-      * <code>Assert false (detws_mms_parse(buf, 5, nullptr))</code>
+      * <code>Assert false (dws_mms_parse(nullptr, 8, &p))</code>
+      * <code>Assert false (dws_mms_parse(one, 1, &p))</code>
+      * <code>Assert false (dws_mms_parse(buf, 5, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16213,12 +16213,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Outer length in long form but the count byte is malformed (nb == 0).
     * **Assertions**:
-      * <code>Assert false (detws_mms_parse(bad_outer_nb, sizeof(bad_outer_nb), &p))</code>
-      * <code>Assert false (detws_mms_parse(over_body, sizeof(over_body), &p))</code>
-      * <code>Assert false (detws_mms_parse(no_invoke, sizeof(no_invoke), &p))</code>
-      * <code>Assert false (detws_mms_parse(big_id, sizeof(big_id), &p))</code>
-      * <code>Assert false (detws_mms_parse(bad_svc_nb, sizeof(bad_svc_nb), &p))</code>
-      * <code>Assert false (detws_mms_parse(over_svc, sizeof(over_svc), &p))</code>
+      * <code>Assert false (dws_mms_parse(bad_outer_nb, sizeof(bad_outer_nb), &p))</code>
+      * <code>Assert false (dws_mms_parse(over_body, sizeof(over_body), &p))</code>
+      * <code>Assert false (dws_mms_parse(no_invoke, sizeof(no_invoke), &p))</code>
+      * <code>Assert false (dws_mms_parse(big_id, sizeof(big_id), &p))</code>
+      * <code>Assert false (dws_mms_parse(bad_svc_nb, sizeof(bad_svc_nb), &p))</code>
+      * <code>Assert false (dws_mms_parse(over_svc, sizeof(over_svc), &p))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16226,7 +16226,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse no service
     * **Assertions**:
-      * <code>Assert true (detws_mms_parse(only_id, sizeof(only_id), &p))</code>
+      * <code>Assert true (dws_mms_parse(only_id, sizeof(only_id), &p))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x2A, p.invoke_id);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0, p.service_tag);</code>
       * <code>Assert null (p.service_body)</code>
@@ -16701,26 +16701,26 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Oversized will payload overflows the body scratch.
     * **Assertions**:
-      * <code>Assert equal uint (0, det_mqtt_build_connect(nullptr, sizeof(out), &o))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_connect(out, sizeof(out), nullptr))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_connect(out, sizeof(out), &no_id))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_connect(out, sizeof(out), &wo))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_connect(out, 2, &o))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_publish(nullptr, sizeof(out), "t", nullptr, 0, 0, 0, false, false))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_publish(out, sizeof(out), "t", nullptr, 0, 3, 0, false, false))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_publish(out, sizeof(out), "t", nullptr, 2000, 0, 0, false, false))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_connect(nullptr, sizeof(out), &o))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_connect(out, sizeof(out), nullptr))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_connect(out, sizeof(out), &no_id))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_connect(out, sizeof(out), &wo))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_connect(out, 2, &o))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_publish(nullptr, sizeof(out), "t", nullptr, 0, 0, 0, false, false))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_publish(out, sizeof(out), "t", nullptr, 0, 3, 0, false, false))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_publish(out, sizeof(out), "t", nullptr, 2000, 0, 0, false, false))</code>
       * <code>TEST_ASSERT_EQUAL_UINT(</code>
-      * <code>Assert equal uint (0, det_mqtt_build_subscribe(nullptr, sizeof(out), 1, "t", 0))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_subscribe(out, sizeof(out), 1, "t", 3))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_subscribe(out, sizeof(out), 1, big_topic, 0))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_unsubscribe(nullptr, sizeof(out), 1, "t"))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_unsubscribe(out, sizeof(out), 1, big_topic))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_ack(nullptr, 4, (MqttType)4, 1))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_ack(out, 3, (MqttType)4, 1))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_pingreq(nullptr, 2))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_pingreq(out, 1))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_disconnect(nullptr, 2))</code>
-      * <code>Assert equal uint (0, det_mqtt_build_disconnect(out, 1))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_subscribe(nullptr, sizeof(out), 1, "t", 0))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_subscribe(out, sizeof(out), 1, "t", 3))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_subscribe(out, sizeof(out), 1, big_topic, 0))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_unsubscribe(nullptr, sizeof(out), 1, "t"))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_unsubscribe(out, sizeof(out), 1, big_topic))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_ack(nullptr, 4, (MqttType)4, 1))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_ack(out, 3, (MqttType)4, 1))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_pingreq(nullptr, 2))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_pingreq(out, 1))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_disconnect(nullptr, 2))</code>
+      * <code>Assert equal uint (0, dws_mqtt_build_disconnect(out, 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16728,13 +16728,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse guards
     * **Assertions**:
-      * <code>Assert false (det_mqtt_parse_fixed_header(one, 1, &type, &flags, &rl, &hl))</code>
-      * <code>Assert false (det_mqtt_parse_fixed_header(bad_rl, 5, &type, &flags, &rl, &hl))</code>
-      * <code>Assert false (det_mqtt_parse_publish(nullptr, 0, 0, topic, sizeof(topic), &tl, &pay, &pl, &pid))</code>
-      * <code>Assert false (det_mqtt_parse_publish(claim, 2, 0, topic, sizeof(topic), &tl, &pay, &pl, &pid))</code>
-      * <code>Assert false (det_mqtt_parse_publish(q1, 4, 0x02, topic, sizeof(topic), &tl, &pay, &pl, &pid))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_mqtt_parse_ack(nullptr, 0));</code>
-      * <code>Assert false (det_mqtt_parse_suback(two, 2, &spid, &rc))</code>
+      * <code>Assert false (dws_mqtt_parse_fixed_header(one, 1, &type, &flags, &rl, &hl))</code>
+      * <code>Assert false (dws_mqtt_parse_fixed_header(bad_rl, 5, &type, &flags, &rl, &hl))</code>
+      * <code>Assert false (dws_mqtt_parse_publish(nullptr, 0, 0, topic, sizeof(topic), &tl, &pay, &pl, &pid))</code>
+      * <code>Assert false (dws_mqtt_parse_publish(claim, 2, 0, topic, sizeof(topic), &tl, &pay, &pl, &pid))</code>
+      * <code>Assert false (dws_mqtt_parse_publish(q1, 4, 0x02, topic, sizeof(topic), &tl, &pay, &pl, &pid))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_mqtt_parse_ack(nullptr, 0));</code>
+      * <code>Assert false (dws_mqtt_parse_suback(two, 2, &spid, &rc))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16742,12 +16742,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Host transport stubs
     * **Assertions**:
-      * <code>Assert false (det_mqtt_connect("h", 1883, false, &o))</code>
-      * <code>Assert false (det_mqtt_publish("t", nullptr, 0, 0, false))</code>
-      * <code>Assert false (det_mqtt_subscribe("t", 0))</code>
-      * <code>Assert false (det_mqtt_unsubscribe("t"))</code>
-      * <code>Assert false (det_mqtt_loop())</code>
-      * <code>Assert false (det_mqtt_connected())</code>
+      * <code>Assert false (dws_mqtt_connect("h", 1883, false, &o))</code>
+      * <code>Assert false (dws_mqtt_publish("t", nullptr, 0, 0, false))</code>
+      * <code>Assert false (dws_mqtt_subscribe("t", 0))</code>
+      * <code>Assert false (dws_mqtt_unsubscribe("t"))</code>
+      * <code>Assert false (dws_mqtt_loop())</code>
+      * <code>Assert false (dws_mqtt_connected())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16761,7 +16761,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Remlen too big
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_mqtt_encode_remlen(b, 268435456u));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mqtt_encode_remlen(b, 268435456u));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16769,7 +16769,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Remlen decode incomplete
     * **Assertions**:
-      * <code>Assert false (det_mqtt_decode_remlen(b, 2, &v, &used))</code>
+      * <code>Assert false (dws_mqtt_decode_remlen(b, 2, &v, &used))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16777,7 +16777,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Remlen decode malformed
     * **Assertions**:
-      * <code>Assert false (det_mqtt_decode_remlen(b, 5, &v, &used))</code>
+      * <code>Assert false (dws_mqtt_decode_remlen(b, 5, &v, &used))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16787,7 +16787,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert greater than (0, len)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x10, buf[0]); // CONNECT, flags 0</code>
-      * <code>Assert true (det_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
+      * <code>Assert true (dws_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
       * <code>Assert equal (MqttType::MQTT_CONNECT, type)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, b[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(4, b[1]);</code>
@@ -16804,7 +16804,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: flags: clean(0x02)\|will(0x04)\|willQoS1(0x08)\|willRetain(0x20)\|user(0x80)\|pass(0x40) = 0xEE
     * **Assertions**:
       * <code>Assert greater than (0, len)</code>
-      * <code>Assert true (det_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
+      * <code>Assert true (dws_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xEE, buf[hl + 7]);</code>
   </details>
 
@@ -16815,9 +16815,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert greater than (0, len)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x30, buf[0]); // PUBLISH, qos0</code>
-      * <code>Assert true (det_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
+      * <code>Assert true (dws_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
       * <code>Assert equal (MqttType::MQTT_PUBLISH, type)</code>
-      * <code>Assert true (det_mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
+      * <code>Assert true (dws_mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
       * <code>Assert equal string ("a/b", topic)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, plen);</code>
       * <code>Assert equal memory ("hi", payload, 2)</code>
@@ -16831,8 +16831,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert greater than (0, len)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x3B, buf[0]);</code>
-      * <code>Assert true (det_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
-      * <code>Assert true (det_mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
+      * <code>Assert true (dws_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
+      * <code>Assert true (dws_mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x1234, pid);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, plen);</code>
   </details>
@@ -16842,7 +16842,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Publish topic overflow rejected
     * **Assertions**:
-      * <code>Assert false (det_mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
+      * <code>Assert false (dws_mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16850,7 +16850,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Publish qos3 rejected
     * **Assertions**:
-      * <code>Assert false (det_mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
+      * <code>Assert false (dws_mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16869,8 +16869,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: topic length 2, bytes {0xC3,0x28} = invalid UTF-8 sequence, qos0 (flags 0).
     * **Assertions**:
       * <code>TEST_ASSERT_FALSE(</code>
-      * <code>Assert false (det_mqtt_parse_publish(embedded_nul, sizeof(embedded_nul), 0, topic, sizeof(topic)</code>
-      * <code>Assert true (det_mqtt_parse_publish(ok, sizeof(ok), 0, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
+      * <code>Assert false (dws_mqtt_parse_publish(embedded_nul, sizeof(embedded_nul), 0, topic, sizeof(topic)</code>
+      * <code>Assert true (dws_mqtt_parse_publish(ok, sizeof(ok), 0, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
       * <code>Assert equal string ("a/b", topic)</code>
   </details>
 
@@ -16881,7 +16881,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert greater than (0, len)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x82, buf[0]); // SUBSCRIBE, required flags 0010</code>
-      * <code>Assert true (det_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
+      * <code>Assert true (dws_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(10, (uint16_t)((b[0] &lt;&lt; 8) | b[1]));</code>
       * <code>TEST_ASSERT_EQUAL_MEMORY("\\x00\\x03"</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, b[7]); // requested QoS</code>
@@ -16901,10 +16901,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ack packets
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(4, det_mqtt_build_ack(buf, sizeof(buf), MqttType::MQTT_PUBACK, 0x2222));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, dws_mqtt_build_ack(buf, sizeof(buf), MqttType::MQTT_PUBACK, 0x2222));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x40, buf[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0x2222, det_mqtt_parse_ack(buf + 2, 2));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(4, det_mqtt_build_ack(buf, sizeof(buf), MqttType::MQTT_PUBREL, 0x3333));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x2222, dws_mqtt_parse_ack(buf + 2, 2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, dws_mqtt_build_ack(buf, sizeof(buf), MqttType::MQTT_PUBREL, 0x3333));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x62, buf[0]); // PUBREL requires flags 0010</code>
   </details>
 
@@ -16913,11 +16913,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Connack
     * **Assertions**:
-      * <code>Assert equal int (0, det_mqtt_parse_connack(ok, 2, &sp))</code>
+      * <code>Assert equal int (0, dws_mqtt_parse_connack(ok, 2, &sp))</code>
       * <code>Assert true (sp)</code>
-      * <code>Assert equal int (5, det_mqtt_parse_connack(bad, 2, &sp))</code>
+      * <code>Assert equal int (5, dws_mqtt_parse_connack(bad, 2, &sp))</code>
       * <code>Assert false (sp)</code>
-      * <code>Assert equal int (-1, det_mqtt_parse_connack(bad, 1, &sp))</code>
+      * <code>Assert equal int (-1, dws_mqtt_parse_connack(bad, 1, &sp))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16925,7 +16925,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Suback
     * **Assertions**:
-      * <code>Assert true (det_mqtt_parse_suback(b, 3, &pid, &rc))</code>
+      * <code>Assert true (dws_mqtt_parse_suback(b, 3, &pid, &rc))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(10, pid);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, rc);</code>
   </details>
@@ -16935,10 +16935,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ping disconnect
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(2, det_mqtt_build_pingreq(buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, dws_mqtt_build_pingreq(buf, sizeof(buf)));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xC0, buf[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[1]);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(2, det_mqtt_build_disconnect(buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, dws_mqtt_build_disconnect(buf, sizeof(buf)));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xE0, buf[0]);</code>
   </details>
 
@@ -16947,7 +16947,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Remaining length 300 -> 2-byte field {0xAC, 0x02}.
     * **Assertions**:
-      * <code>Assert true (det_mqtt_parse_fixed_header(buf, 3, &type, &flags, &rl, &hl))</code>
+      * <code>Assert true (dws_mqtt_parse_fixed_header(buf, 3, &type, &flags, &rl, &hl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(300, rl);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, hl);</code>
   </details>
@@ -17541,7 +17541,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Overflow returns zero
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_streams_end(&s)); // did not fit</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_streams_end(&s)); // did not fit</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17551,8 +17551,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert not null (strstr(buf, "&gt;"))</code>
       * <code>Assert not null (strstr(buf, "&quot;"))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_streams_end(&s2));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_error(1, "X", "y", t2, sizeof(t2)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_streams_end(&s2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_error(1, "X", "y", t2, sizeof(t2)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17576,10 +17576,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A device document that does not fit fails closed.
     * **Assertions**:
-      * <code>Assert true (detws_mtc_devices_end(&s) &gt; 0)</code>
+      * <code>Assert true (dws_mtc_devices_end(&s) &gt; 0)</code>
       * <code>Assert true (contains(buf, "id=\\"d&lt;1\\" name=\\"n&amp;m\\""))</code>
       * <code>Assert true (contains(buf, "id=\\"i&quot;d\\" type=\\"T&gt;y\\""))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_devices_end(&s2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_devices_end(&s2));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17604,10 +17604,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: An asset document that does not fit fails closed.
     * **Assertions**:
-      * <code>Assert true (detws_mtc_assets_end(&s) &gt; 0)</code>
+      * <code>Assert true (dws_mtc_assets_end(&s) &gt; 0)</code>
       * <code>Assert true (contains(buf, "assetId=\\"a&lt;1\\" serialNumber=\\"s&amp;n\\""))</code>
       * <code>Assert true (contains(buf, "&gt;1&gt;2&lt;/ToolLife&gt;"))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_assets_end(&s2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_assets_end(&s2));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -17631,9 +17631,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_sample_buffer_eviction</b> &mdash; <i>Overfill the ring: DETWS_MTC_SAMPLE_BUFFER + 8 observations, so the oldest 8 are evicted.</i></summary>
+    <summary><b>test_sample_buffer_eviction</b> &mdash; <i>Overfill the ring: DWS_MTC_SAMPLE_BUFFER + 8 observations, so the oldest 8 are evicted.</i></summary>
 
-    * **Objective**: Overfill the ring: DETWS_MTC_SAMPLE_BUFFER + 8 observations, so the oldest 8 are evicted.
+    * **Objective**: Overfill the ring: DWS_MTC_SAMPLE_BUFFER + 8 observations, so the oldest 8 are evicted.
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert true (contains(buf, expect))</code>
@@ -17651,7 +17651,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert false (contains(buf, "&lt;Position"))</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert true (contains(buf, "firstSequence=\\"1\\" lastSequence=\\"0\\" nextSequence=\\"1\\""))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_mtc_sample_query(&b, tiny, sizeof(tiny), 1, "device-name", 5, 10));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_mtc_sample_query(&b, tiny, sizeof(tiny), 1, "device-name", 5, 10));</code>
   </details>
 
 </details>
@@ -18096,7 +18096,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: CRC-16/X-25 canonical check value: CRC of "123456789" = 0x906E.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX16(0x906E, detws_nema_ts2_crc(msg, sizeof(msg)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0x906E, dws_nema_ts2_crc(msg, sizeof(msg)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18108,7 +18108,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x05, buf[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x10, buf[1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[2]);</code>
-      * <code>Assert true (detws_nema_ts2_parse(buf, n, &f))</code>
+      * <code>Assert true (dws_nema_ts2_parse(buf, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x05, f.address);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x10, f.control);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(NemaTs2::NEMA_TS2_FT_CMD_LOADSWITCH, f.frame_type);</code>
@@ -18122,7 +18122,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: No data frame
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(5, n);</code>
-      * <code>Assert true (detws_nema_ts2_parse(buf, n, &f))</code>
+      * <code>Assert true (dws_nema_ts2_parse(buf, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, f.data_len);</code>
       * <code>Assert null (f.data)</code>
   </details>
@@ -18132,8 +18132,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse rejects bad crc and short
     * **Assertions**:
-      * <code>Assert false (detws_nema_ts2_parse(buf, n, &f))</code>
-      * <code>Assert false (detws_nema_ts2_parse(buf, 4, &f))</code>
+      * <code>Assert false (dws_nema_ts2_parse(buf, n, &f))</code>
+      * <code>Assert false (dws_nema_ts2_parse(buf, 4, &f))</code>
   </details>
 
 </details>
@@ -18146,7 +18146,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Classify sta
     * **Assertions**:
-      * <code>Assert equal int (DetIface::DETIFACE_STA, det_net_classify_ip(0x0A000005u, 0x0A000005u, 0xC0A80401u))</code>
+      * <code>Assert equal int (DWSIface::DETIFACE_STA, dws_net_classify_ip(0x0A000005u, 0x0A000005u, 0xC0A80401u))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18154,7 +18154,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Classify ap
     * **Assertions**:
-      * <code>Assert equal int (DetIface::DETIFACE_AP, det_net_classify_ip(0xC0A80401u, 0x0A000005u, 0xC0A80401u))</code>
+      * <code>Assert equal int (DWSIface::DETIFACE_AP, dws_net_classify_ip(0xC0A80401u, 0x0A000005u, 0xC0A80401u))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18162,8 +18162,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Classify eth
     * **Assertions**:
-      * <code>Assert equal int (DetIface::DETIFACE_ETH, det_net_classify_ip(0xC0A80105u, 0x0A000005u, 0))</code>
-      * <code>Assert equal int (DetIface::DETIFACE_ETH, det_net_classify_ip(0xC0A80105u, 0, 0))</code>
+      * <code>Assert equal int (DWSIface::DETIFACE_ETH, dws_net_classify_ip(0xC0A80105u, 0x0A000005u, 0))</code>
+      * <code>Assert equal int (DWSIface::DETIFACE_ETH, dws_net_classify_ip(0xC0A80105u, 0, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18171,7 +18171,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Classify none
     * **Assertions**:
-      * <code>Assert equal int (DetIface::DETIFACE_ANY, det_net_classify_ip(0, 0x0A000005u, 0xC0A80401u))</code>
+      * <code>Assert equal int (DWSIface::DETIFACE_ANY, dws_net_classify_ip(0, 0x0A000005u, 0xC0A80401u))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18179,8 +18179,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Egress host stub
     * **Assertions**:
-      * <code>Assert equal int (DetIface::DETIFACE_ANY, det_net_egress())</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, det_net_egress_ip());</code>
+      * <code>Assert equal int (DWSIface::DETIFACE_ANY, dws_net_egress())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_net_egress_ip());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18202,8 +18202,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: heap at or below the reserve -> the floor.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1024, detws_netadapt_window(8000, 8000, 1024, 16384));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1024, detws_netadapt_window(5000, 8000, 1024, 16384));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1024, dws_netadapt_window(8000, 8000, 1024, 16384));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1024, dws_netadapt_window(5000, 8000, 1024, 16384));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18211,8 +18211,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: (free - reserve)/4, clamped. free=40000, reserve=8000 -> 32000/4 = 8000.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(8000, detws_netadapt_window(40000, 8000, 1024, 16384));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1024, detws_netadapt_window(12000, 8000, 1024, 16384));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(8000, dws_netadapt_window(40000, 8000, 1024, 16384));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1024, dws_netadapt_window(12000, 8000, 1024, 16384));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18220,7 +18220,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Huge heap -> clamped to max_win.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(16384, detws_netadapt_window(200000, 8000, 1024, 16384));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(16384, dws_netadapt_window(200000, 8000, 1024, 16384));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18228,7 +18228,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Window degenerate max below min
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(4096, detws_netadapt_window(100000, 8000, 4096, 1024));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(4096, dws_netadapt_window(100000, 8000, 4096, 1024));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18236,8 +18236,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dhcp fallback on timeout
     * **Assertions**:
-      * <code>Assert false (detws_netadapt_dhcp_fallback(9000, 1, 10000, 5))</code>
-      * <code>Assert true (detws_netadapt_dhcp_fallback(10000, 1, 10000, 5))</code>
+      * <code>Assert false (dws_netadapt_dhcp_fallback(9000, 1, 10000, 5))</code>
+      * <code>Assert true (dws_netadapt_dhcp_fallback(10000, 1, 10000, 5))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18245,9 +18245,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: max_attempts 0 disables the attempt trigger.
     * **Assertions**:
-      * <code>Assert true (detws_netadapt_dhcp_fallback(1000, 5, 10000, 5))</code>
-      * <code>Assert false (detws_netadapt_dhcp_fallback(1000, 4, 10000, 5))</code>
-      * <code>Assert false (detws_netadapt_dhcp_fallback(1000, 99, 10000, 0))</code>
+      * <code>Assert true (dws_netadapt_dhcp_fallback(1000, 5, 10000, 5))</code>
+      * <code>Assert false (dws_netadapt_dhcp_fallback(1000, 4, 10000, 5))</code>
+      * <code>Assert false (dws_netadapt_dhcp_fallback(1000, 99, 10000, 0))</code>
   </details>
 
 </details>
@@ -18456,7 +18456,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x0E, g.reg[0x00]);       // CONFIG = EN_CRC|CRCO|PWR_UP (PRX bit clear)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(76, g.reg[0x05]);        // RF_CH</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x03, g.reg[0x03]);       // SETUP_AW = 5-byte</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(8, g.reg[0x11]);         // RX_PW_P0 = DETWS_NRF24_PAYLOAD</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(8, g.reg[0x11]);         // RX_PW_P0 = DWS_NRF24_PAYLOAD</code>
       * <code>Assert equal memory (ADDR, g.rx_addr_p0, 5)</code>
       * <code>Assert equal memory (ADDR, g.tx_addr, 5)</code>
       * <code>Assert false (g.ce)</code>
@@ -18488,7 +18488,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Send rejects oversize
     * **Assertions**:
-      * <code>Assert false (nrf24_send(&g_bus, big, 9)); // &gt; DETWS_NRF24_PAYLOAD (8)</code>
+      * <code>Assert false (nrf24_send(&g_bus, big, 9)); // &gt; DWS_NRF24_PAYLOAD (8)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -18590,7 +18590,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Oid builder overflow
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
   </details>
 
 </details>
@@ -18930,7 +18930,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert not null (strstr(rec, ";GPS;"))</code>
       * <code>Assert not null (strstr(rec, ";1005(1);"))</code>
-      * <code>Assert not null (strstr(rec, ";DetWebServer;"))</code>
+      * <code>Assert not null (strstr(rec, ";DWS;"))</code>
       * <code>Assert not null (strstr(rec, ";0.00;-0.05;"))</code>
   </details>
 
@@ -19018,14 +19018,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No End-of-Message -> not well-formed.
     * **Assertions**:
-      * <code>Assert true (detws_nts_ke_parse(req, n, collect, &c))</code>
+      * <code>Assert true (dws_nts_ke_parse(req, n, collect, &c))</code>
       * <code>Assert equal int (3, c.count)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Nts::NTS_KE_NEXT_PROTOCOL, c.types[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Nts::NTS_KE_AEAD_ALGORITHM, c.types[1]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(Nts::NTS_KE_END_OF_MESSAGE, c.types[2]);</code>
       * <code>Assert true (c.crit[0])</code>
-      * <code>Assert false (detws_nts_ke_parse(bad, sizeof(bad), nullptr, nullptr))</code>
-      * <code>Assert false (detws_nts_ke_parse(trunc, sizeof(trunc), nullptr, nullptr))</code>
+      * <code>Assert false (dws_nts_ke_parse(bad, sizeof(bad), nullptr, nullptr))</code>
+      * <code>Assert false (dws_nts_ke_parse(trunc, sizeof(trunc), nullptr, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19048,10 +19048,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ef wrappers and guards
     * **Assertions**:
-      * <code>Assert true (detws_nts_ef_cookie(data, sizeof(data), out, sizeof(out)) &gt; 0)</code>
-      * <code>Assert true (detws_nts_ef_unique_id(data, sizeof(data), out, sizeof(out)) &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_nts_ef(0x0304, data, sizeof(data), nullptr, sizeof(out))); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_nts_ef(0x0304, data, sizeof(data), out, 2));               // overflow</code>
+      * <code>Assert true (dws_nts_ef_cookie(data, sizeof(data), out, sizeof(out)) &gt; 0)</code>
+      * <code>Assert true (dws_nts_ef_unique_id(data, sizeof(data), out, sizeof(out)) &gt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nts_ef(0x0304, data, sizeof(data), nullptr, sizeof(out))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_nts_ef(0x0304, data, sizeof(data), out, 2));               // overflow</code>
   </details>
 
 </details>
@@ -19100,7 +19100,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build overflows fail closed
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(0,</code>
+      * <code>Assert equal int (0, dws_oauth2_build_code_request("code", "uri", "id", nullptr, nullptr, tiny, sizeof(tiny)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19108,7 +19108,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse token response
     * **Assertions**:
-      * <code>Assert true (detws_oauth2_parse_token_response(json, &t))</code>
+      * <code>Assert true (dws_oauth2_parse_token_response(json, &t))</code>
       * <code>Assert equal string ("AT123", t.access_token)</code>
       * <code>Assert equal string ("Bearer", t.token_type)</code>
       * <code>TEST_ASSERT_EQUAL_INT32(3600, t.expires_in);</code>
@@ -19121,7 +19121,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Only access_token present: still valid; optional fields stay empty/0.
     * **Assertions**:
-      * <code>Assert true (detws_oauth2_parse_token_response("{\\"access_token\\":\\"only\\"}", &t))</code>
+      * <code>Assert true (dws_oauth2_parse_token_response("{\\"access_token\\":\\"only\\"}", &t))</code>
       * <code>Assert equal string ("only", t.access_token)</code>
       * <code>Assert equal string ("", t.refresh_token)</code>
       * <code>TEST_ASSERT_EQUAL_INT32(0, t.expires_in);</code>
@@ -19132,7 +19132,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse error response fails
     * **Assertions**:
-      * <code>Assert false (detws_oauth2_parse_token_response(err, &t))</code>
+      * <code>Assert false (dws_oauth2_parse_token_response(err, &t))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19141,9 +19141,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: A value needing percent-encoding into a tiny buffer overflows (b.ok=false).
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_INT(</code>
-      * <code>TEST_ASSERT_EQUAL_INT(0,</code>
-      * <code>Assert false (detws_oauth2_parse_token_response(nullptr, &tok))</code>
-      * <code>Assert equal int (0, detws_oauth2_build_code_request("a b&c", "uri", "cid", "sec", "ver", out, 8))</code>
+      * <code>Assert equal int (0, dws_oauth2_build_refresh_request(nullptr, "cid", "sec", out, sizeof(out)))</code>
+      * <code>Assert false (dws_oauth2_parse_token_response(nullptr, &tok))</code>
+      * <code>Assert equal int (0, dws_oauth2_build_code_request("a b&c", "uri", "cid", "sec", "ver", out, 8))</code>
   </details>
 
 </details>
@@ -19160,7 +19160,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert equal (2, g_slot)</code>
       * <code>Assert equal (ConnState::CONN_FREE, g_old)</code>
       * <code>Assert equal (ConnState::CONN_ACTIVE, g_new)</code>
-      * <code>Assert equal (DetConnReason::DET_CONN_R_ACCEPT, g_reason)</code>
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_ACCEPT, g_reason)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19183,10 +19183,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: DRAINED is gauge-only: it must not inflate any cumulative close counter.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, det_conn_counters().closing_gauge);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closing_gauge);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2, det_conn_counters().closing_gauge);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, det_conn_counters().closing_gauge);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_conn_counters().closing_gauge);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().closing_gauge);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_conn_counters().closing_gauge);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_conn_counters().closing_gauge);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, c.closes_local);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, c.closes_remote);</code>
   </details>
@@ -19206,7 +19206,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: No hook after unregister
     * **Assertions**:
       * <code>Assert equal (0, g_calls)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().accepts); // counters still move</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().accepts); // counters still move</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19214,8 +19214,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Recv fin counts remote close
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closes_remote);</code>
-      * <code>Assert equal (DetConnReason::DET_CONN_R_CLOSE_REMOTE, g_reason)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().closes_remote);</code>
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_CLOSE_REMOTE, g_reason)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19223,8 +19223,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Err cb counts error close
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closes_error);</code>
-      * <code>Assert equal (DetConnReason::DET_CONN_R_ERROR, g_reason)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().closes_error);</code>
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_ERROR, g_reason)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19233,17 +19233,17 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Timeout sweep counts timeout
     * **Assertions**:
       * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closes_timeout);</code>
-      * <code>Assert equal (DetConnReason::DET_CONN_R_TIMEOUT, g_reason)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().closes_timeout);</code>
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_TIMEOUT, g_reason)</code>
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_local_close_counts_local</b> &mdash; <i>det_conn_close(slot) reads the slot's pcb, frees the slot, and counts a</i></summary>
+    <summary><b>test_local_close_counts_local</b> &mdash; <i>dws_conn_close(slot) reads the slot's pcb, frees the slot, and counts a</i></summary>
 
-    * **Objective**: det_conn_close(slot) reads the slot's pcb, frees the slot, and counts a
+    * **Objective**: dws_conn_close(slot) reads the slot's pcb, frees the slot, and counts a
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closes_local);</code>
-      * <code>Assert equal (DetConnReason::DET_CONN_R_CLOSE_LOCAL, g_reason)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().closes_local);</code>
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_CLOSE_LOCAL, g_reason)</code>
       * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert null (conn_pool[0].pcb)</code>
   </details>
@@ -19253,8 +19253,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Abort slot counts abort and frees
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().closes_abort);</code>
-      * <code>Assert equal (DetConnReason::DET_CONN_R_ABORT, g_reason)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().closes_abort);</code>
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_ABORT, g_reason)</code>
       * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>Assert null (conn_pool[0].pcb)</code>
   </details>
@@ -19264,7 +19264,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Abort slot noop on free slot
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, det_conn_counters().closes_abort);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_conn_counters().closes_abort);</code>
       * <code>Assert equal (0, g_calls)</code>
   </details>
 
@@ -19274,8 +19274,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Backpressure counts when ring full
     * **Assertions**:
       * <code>Assert equal (ERR_MEM, rc)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, det_conn_counters().backpressure);</code>
-      * <code>Assert equal (DetConnReason::DET_CONN_R_BACKPRESSURE, g_reason)</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_conn_counters().backpressure);</code>
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_BACKPRESSURE, g_reason)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19286,10 +19286,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, c.closes_local);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, c.closing_gauge);</code>
-      * <code>Assert equal (DetConnReason::DET_CONN_R_CLOSE_LOCAL, g_reason)</code>
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_CLOSE_LOCAL, g_reason)</code>
       * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, c.closing_gauge);</code>
-      * <code>Assert equal (DetConnReason::DET_CONN_R_DRAINED, g_reason)</code>
+      * <code>Assert equal (DWSConnReason::DWS_CONN_R_DRAINED, g_reason)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19307,8 +19307,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Begin close noop if not active
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, det_conn_counters().closes_local);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, det_conn_counters().closing_gauge);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_conn_counters().closes_local);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_conn_counters().closing_gauge);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19319,7 +19319,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
       * <code>Assert equal (ConnState::CONN_CLOSING, (ConnState)conn_pool[0].state)</code>
       * <code>Assert equal (ConnState::CONN_FREE, (ConnState)conn_pool[0].state)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, det_conn_counters().closing_gauge);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_conn_counters().closing_gauge);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19344,7 +19344,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, n);</code>
-      * <code>Assert true (detws_ocit_parse(out, n, &m))</code>
+      * <code>Assert true (dws_ocit_parse(out, n, &m))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(OcitMsgType::OCIT_MSG_SET, m.msg_type);</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(0x0102, m.object_type);</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(0x0003, m.instance);</code>
@@ -19358,10 +19358,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Set u16 helper
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
-      * <code>Assert true (detws_ocit_parse(out, n, &m))</code>
+      * <code>Assert true (dws_ocit_parse(out, n, &m))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(OcitMsgType::OCIT_MSG_SET, m.msg_type);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(OcitType::OCIT_TYPE_UINT16, m.data_type);</code>
-      * <code>TEST_ASSERT_EQUAL_HEX16(0xBEEF, detws_ocit_value_u16(&m));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0xBEEF, dws_ocit_value_u16(&m));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19370,10 +19370,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: value_u16 on a mismatched value -> 0.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
-      * <code>Assert true (detws_ocit_parse(out, n, &m))</code>
+      * <code>Assert true (dws_ocit_parse(out, n, &m))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, m.value_len);</code>
       * <code>Assert null (m.value)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX16(0, detws_ocit_value_u16(&m));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0, dws_ocit_value_u16(&m));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19381,7 +19381,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse rejects short
     * **Assertions**:
-      * <code>Assert false (detws_ocit_parse(tooshort, 5, &m))</code>
+      * <code>Assert false (dws_ocit_parse(tooshort, 5, &m))</code>
   </details>
 
 </details>
@@ -19394,65 +19394,65 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Crafted headers whose "alg" value trips a find_field edge (before sig verify) -> ERR_ALG:
     * **Assertions**:
-      * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_ALG,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_ALG,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_ALG,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>Assert false (detws_oidc_jwks_find(K_JWKS_BADN, "bad", &bad))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_NOT_YET,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>Assert true (detws_oidc_token_kid(K_TOK_VALID, strlen(K_TOK_VALID), kid, sizeof(kid)))</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_ALG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_ALG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_ALG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert false (dws_oidc_jwks_find(K_JWKS_BADN, "bad", &bad))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_NOT_YET,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert true (dws_oidc_token_kid(K_TOK_VALID, strlen(K_TOK_VALID), kid, sizeof(kid)))</code>
       * <code>Assert equal string ("test-key-1", kid)</code>
-      * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
       * <code>Assert true (key.loaded)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, key.e[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x01, key.e[1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, key.e[2]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x01, key.e[3]);</code>
-      * <code>Assert false (detws_oidc_jwks_find(K_JWKS, "nope", &key))</code>
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_OK, rc)</code>
+      * <code>Assert false (dws_oidc_jwks_find(K_JWKS, "nope", &key))</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_OK, rc)</code>
       * <code>Assert equal string ("user-42", c.sub)</code>
       * <code>Assert equal string ("alice@example.com", c.email)</code>
       * <code>Assert true (c.iat == 1700000000LL)</code>
       * <code>Assert true (c.exp == 4102444800LL)</code>
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_OK, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_EXPIRED, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_ISS, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_AUD, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_ALG, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_SIGNATURE, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_SIGNATURE, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_KEY, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_FORMAT, rc)</code>
-      * <code>Assert false (detws_oidc_token_kid(nullptr, 10, kid, sizeof(kid)))</code>
-      * <code>Assert false (detws_oidc_token_kid("a.b.c", 5, nullptr, sizeof(kid)))</code>
-      * <code>Assert false (detws_oidc_token_kid("a.b.c", 5, kid, 0))</code>
-      * <code>Assert false (detws_oidc_token_kid("A.payload.sig", 13, kid, sizeof(kid)))</code>
-      * <code>Assert false (detws_oidc_jwks_find(nullptr, "k", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[]}", "k", nullptr))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"foo\\":1}", "k", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"x\\"", "x", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "k1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>Assert false (detws_oidc_jwks_find("", "k", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\\\\\\\b\\"}]}", "zzz", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"abc}]}", "abc", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":true}]}", "x", &key))</code>
-      * <code>Assert true (detws_oidc_jwks_find(jwks, nullptr, &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\"}]}", nullptr, &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAAA\\"}]}", nullptr, &key))</code>
-      * <code>Assert true (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAA\\"}]}", nullptr, &key))</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_OK, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_EXPIRED, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_ISS, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_AUD, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_ALG, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_KEY, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_FORMAT, rc)</code>
+      * <code>Assert false (dws_oidc_token_kid(nullptr, 10, kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid("a.b.c", 5, nullptr, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid("a.b.c", 5, kid, 0))</code>
+      * <code>Assert false (dws_oidc_token_kid("A.payload.sig", 13, kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_jwks_find(nullptr, "k", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[]}", "k", nullptr))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"foo\\":1}", "k", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"x\\"", "x", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "k1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert false (dws_oidc_jwks_find("", "k", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\\\\\\\b\\"}]}", "zzz", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"abc}]}", "abc", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":true}]}", "x", &key))</code>
+      * <code>Assert true (dws_oidc_jwks_find(jwks, nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\"}]}", nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAAA\\"}]}", nullptr, &key))</code>
+      * <code>Assert true (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAA\\"}]}", nullptr, &key))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19460,11 +19460,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No `aud` member at all -> aud_contains find_field fails -> ERR_AUD.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_NOT_YET,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_NOT_YET,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19472,14 +19472,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: escaped char inside a string value + a mismatching kid (get_str runs, then rejects).
     * **Assertions**:
-      * <code>Assert false (detws_oidc_jwks_find("", "k", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\\\\\\\b\\"}]}", "zzz", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"abc}]}", "abc", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":true}]}", "x", &key))</code>
-      * <code>Assert true (detws_oidc_jwks_find(jwks, nullptr, &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\"}]}", nullptr, &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAAA\\"}]}", nullptr, &key))</code>
-      * <code>Assert true (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAA\\"}]}", nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("", "k", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\\\\\\\b\\"}]}", "zzz", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"abc}]}", "abc", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":true}]}", "x", &key))</code>
+      * <code>Assert true (dws_oidc_jwks_find(jwks, nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\"}]}", nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAAA\\"}]}", nullptr, &key))</code>
+      * <code>Assert true (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAA\\"}]}", nullptr, &key))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19487,10 +19487,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Token kid guards
     * **Assertions**:
-      * <code>Assert false (detws_oidc_token_kid(nullptr, 10, kid, sizeof(kid)))</code>
-      * <code>Assert false (detws_oidc_token_kid("a.b.c", 5, nullptr, sizeof(kid)))</code>
-      * <code>Assert false (detws_oidc_token_kid("a.b.c", 5, kid, 0))</code>
-      * <code>Assert false (detws_oidc_token_kid("A.payload.sig", 13, kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid(nullptr, 10, kid, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid("a.b.c", 5, nullptr, sizeof(kid)))</code>
+      * <code>Assert false (dws_oidc_token_kid("a.b.c", 5, kid, 0))</code>
+      * <code>Assert false (dws_oidc_token_kid("A.payload.sig", 13, kid, sizeof(kid)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19498,27 +19498,27 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: verify_with_key rejects a null / unloaded key, a zero length, and a header that does
     * **Assertions**:
-      * <code>Assert false (detws_oidc_jwks_find(nullptr, "k", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[]}", "k", nullptr))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"foo\\":1}", "k", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"x\\"", "x", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "k1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>Assert false (detws_oidc_jwks_find("", "k", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\\\\\\\b\\"}]}", "zzz", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"abc}]}", "abc", &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":true}]}", "x", &key))</code>
-      * <code>Assert true (detws_oidc_jwks_find(jwks, nullptr, &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\"}]}", nullptr, &key))</code>
-      * <code>Assert false (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAAA\\"}]}", nullptr, &key))</code>
-      * <code>Assert true (detws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAA\\"}]}", nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find(nullptr, "k", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[]}", "k", nullptr))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"foo\\":1}", "k", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"x\\"", "x", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "k1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert false (dws_oidc_jwks_find("", "k", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\\\\\\\b\\"}]}", "zzz", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"abc}]}", "abc", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":true}]}", "x", &key))</code>
+      * <code>Assert true (dws_oidc_jwks_find(jwks, nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\"}]}", nullptr, &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAAA\\"}]}", nullptr, &key))</code>
+      * <code>Assert true (dws_oidc_jwks_find("{\\"keys\\":[{\\"n\\":\\"AAAA\\",\\"e\\":\\"AAAAAAA\\"}]}", nullptr, &key))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19526,14 +19526,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Wrong segment counts (one '.' / three '.').
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DETWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19541,7 +19541,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Token kid
     * **Assertions**:
-      * <code>Assert true (detws_oidc_token_kid(K_TOK_VALID, strlen(K_TOK_VALID), kid, sizeof(kid)))</code>
+      * <code>Assert true (dws_oidc_token_kid(K_TOK_VALID, strlen(K_TOK_VALID), kid, sizeof(kid)))</code>
       * <code>Assert equal string ("test-key-1", kid)</code>
   </details>
 
@@ -19550,7 +19550,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: e = AQAB = 65537 -> 0x00 0x01 0x00 0x01 right-aligned.
     * **Assertions**:
-      * <code>Assert true (detws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
+      * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
       * <code>Assert true (key.loaded)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, key.e[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x01, key.e[1]);</code>
@@ -19563,7 +19563,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Jwks find missing kid fails
     * **Assertions**:
-      * <code>Assert false (detws_oidc_jwks_find(K_JWKS, "nope", &key))</code>
+      * <code>Assert false (dws_oidc_jwks_find(K_JWKS, "nope", &key))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19571,7 +19571,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Verify valid token and claims
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_OK, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_OK, rc)</code>
       * <code>Assert equal string ("user-42", c.sub)</code>
       * <code>Assert equal string ("alice@example.com", c.email)</code>
       * <code>Assert true (c.iat == 1700000000LL)</code>
@@ -19583,7 +19583,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Verify aud array
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_OK, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_OK, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19591,7 +19591,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reject expired
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_EXPIRED, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_EXPIRED, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19599,7 +19599,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reject wrong issuer
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_ISS, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_ISS, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19607,7 +19607,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reject wrong audience
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_AUD, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_AUD, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19615,7 +19615,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reject non rs256 header
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_ALG, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_ALG, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19623,7 +19623,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reject tampered payload
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_SIGNATURE, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19631,7 +19631,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reject tampered signature
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_SIGNATURE, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19639,7 +19639,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: JWKS whose only key has a different kid than the token's.
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_KEY, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_KEY, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19647,7 +19647,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No kid extractable -> the sole JWKS key is selected, then the token shape
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DETWS_OIDC_ERR_FORMAT, rc)</code>
+      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_FORMAT, rc)</code>
   </details>
 
 </details>
@@ -20453,10 +20453,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (rn &gt; 0)</code>
       * <code>Assert true (opcua_parse_hello(req, rn, &hello))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(DETWS_OPCUA_BUF, hello.recv_buf_size);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BUF, hello.recv_buf_size);</code>
       * <code>Assert true (an &gt; 0)</code>
       * <code>Assert true (opcua_client_on_ack(ack, an, &info))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(DETWS_OPCUA_BUF, info.recv_buf_size);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BUF, info.recv_buf_size);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, info.max_chunk_count);</code>
   </details>
 
@@ -20698,7 +20698,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Overflow
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_openadr_event("p", "e", &iv, 1, buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_openadr_event("p", "e", &iv, 1, buf, sizeof(buf)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20708,10 +20708,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert not null (strstr(out, "\\\\n"))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_openadr_event("p", "e", nullptr, 0, nullptr, sizeof(out)));   // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_openadr_event("p", "eventNameTooLong", nullptr, 0, out, 8));  // overflow</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_openadr_report("p", "e", "r", 1.0, 0, nullptr, sizeof(out))); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_openadr_report("p", "e", "res", 1.0, 0, out, 8));             // overflow</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_openadr_event("p", "e", nullptr, 0, nullptr, sizeof(out)));   // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_openadr_event("p", "eventNameTooLong", nullptr, 0, out, 8));  // overflow</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_openadr_report("p", "e", "r", 1.0, 0, nullptr, sizeof(out))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_openadr_report("p", "e", "res", 1.0, 0, out, 8));             // overflow</code>
   </details>
 
 </details>
@@ -20724,8 +20724,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A normally-booted (valid/undefined) image never rolls back.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_WAIT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_WAIT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_WAIT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_WAIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20733,7 +20733,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pending self test ok commits
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_COMMIT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_COMMIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20741,7 +20741,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pending within window waits
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_WAIT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_WAIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20749,8 +20749,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pending window elapsed rolls back
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_ROLLBACK,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_ROLLBACK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_ROLLBACK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_ROLLBACK,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20758,7 +20758,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A passing self-test commits even past the window.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DETWS_OTA_COMMIT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_COMMIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20766,9 +20766,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: On a host build there are no OTA partitions: img_state reports UNDEFINED and the
     * **Assertions**:
-      * <code>Assert equal int (DetwsOtaImg::DETWS_OTA_IMG_UNDEFINED, detws_ota_img_state())</code>
-      * <code>Assert equal int (DetwsOtaAction::DETWS_OTA_WAIT, detws_ota_rollback_tick(true))</code>
-      * <code>Assert equal int (DetwsOtaAction::DETWS_OTA_WAIT, detws_ota_rollback_tick(false))</code>
+      * <code>Assert equal int (DetwsOtaImg::DWS_OTA_IMG_UNDEFINED, dws_ota_img_state())</code>
+      * <code>Assert equal int (DetwsOtaAction::DWS_OTA_WAIT, dws_ota_rollback_tick(true))</code>
+      * <code>Assert equal int (DetwsOtaAction::DWS_OTA_WAIT, dws_ota_rollback_tick(false))</code>
   </details>
 
 </details>
@@ -20781,11 +20781,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Kind app
     * **Assertions**:
-      * <code>Assert equal string ("factory", detws_partition_kind(0, 0x00))</code>
-      * <code>Assert equal string ("ota", detws_partition_kind(0, 0x10))</code>
-      * <code>Assert equal string ("ota", detws_partition_kind(0, 0x11))</code>
-      * <code>Assert equal string ("test", detws_partition_kind(0, 0x20))</code>
-      * <code>Assert equal string ("app", detws_partition_kind(0, 0x05))</code>
+      * <code>Assert equal string ("factory", dws_partition_kind(0, 0x00))</code>
+      * <code>Assert equal string ("ota", dws_partition_kind(0, 0x10))</code>
+      * <code>Assert equal string ("ota", dws_partition_kind(0, 0x11))</code>
+      * <code>Assert equal string ("test", dws_partition_kind(0, 0x20))</code>
+      * <code>Assert equal string ("app", dws_partition_kind(0, 0x05))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20793,13 +20793,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Kind data
     * **Assertions**:
-      * <code>Assert equal string ("otadata", detws_partition_kind(1, 0x00))</code>
-      * <code>Assert equal string ("phy", detws_partition_kind(1, 0x01))</code>
-      * <code>Assert equal string ("nvs", detws_partition_kind(1, 0x02))</code>
-      * <code>Assert equal string ("coredump", detws_partition_kind(1, 0x03))</code>
-      * <code>Assert equal string ("littlefs", detws_partition_kind(1, 0x83))</code>
-      * <code>Assert equal string ("spiffs", detws_partition_kind(1, 0x82))</code>
-      * <code>Assert equal string ("data", detws_partition_kind(1, 0x77))</code>
+      * <code>Assert equal string ("otadata", dws_partition_kind(1, 0x00))</code>
+      * <code>Assert equal string ("phy", dws_partition_kind(1, 0x01))</code>
+      * <code>Assert equal string ("nvs", dws_partition_kind(1, 0x02))</code>
+      * <code>Assert equal string ("coredump", dws_partition_kind(1, 0x03))</code>
+      * <code>Assert equal string ("littlefs", dws_partition_kind(1, 0x83))</code>
+      * <code>Assert equal string ("spiffs", dws_partition_kind(1, 0x82))</code>
+      * <code>Assert equal string ("data", dws_partition_kind(1, 0x77))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20816,7 +20816,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Json small buffer fails closed
     * **Assertions**:
-      * <code>Assert equal int (0, detws_partition_json(p, 1, buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_partition_json(p, 1, buf, sizeof(buf)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20824,7 +20824,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Collect host stub
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, detws_partition_collect(p, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_partition_collect(p, 4));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20832,8 +20832,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Partition kind data subtypes
     * **Assertions**:
-      * <code>Assert equal string ("nvs_keys", detws_partition_kind(0x01, 0x04))</code>
-      * <code>Assert equal string ("fat", detws_partition_kind(0x01, 0x81))</code>
+      * <code>Assert equal string ("nvs_keys", dws_partition_kind(0x01, 0x04))</code>
+      * <code>Assert equal string ("fat", dws_partition_kind(0x01, 0x81))</code>
   </details>
 
 </details>
@@ -21169,14 +21169,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (consumed &lt;= len)</code>
       * <code>Assert true (consumed &lt;= len)</code>
       * <code>Assert true (c2 &lt;= cut)</code>
-      * <code>Assert true (rd.count &lt;= DETWS_OPCUA_READ_MAX)</code>
-      * <code>Assert true (wq.count &lt;= DETWS_OPCUA_WRITE_MAX)</code>
-      * <code>Assert true (br.count &lt;= DETWS_OPCUA_BROWSE_MAX)</code>
+      * <code>Assert true (rd.count &lt;= DWS_OPCUA_READ_MAX)</code>
+      * <code>Assert true (wq.count &lt;= DWS_OPCUA_WRITE_MAX)</code>
+      * <code>Assert true (br.count &lt;= DWS_OPCUA_BROWSE_MAX)</code>
       * <code>Assert true (end &gt;= vec[k])</code>
       * <code>Assert true (n &lt;= ocap)</code>
       * <code>Assert true (ulen &lt;= sizeof(user))</code>
       * <code>Assert true (consumed &lt;= len)</code>
-      * <code>Assert true (f.header_count &lt;= (size_t)DETWS_STOMP_MAX_HEADERS)</code>
+      * <code>Assert true (f.header_count &lt;= (size_t)DWS_STOMP_MAX_HEADERS)</code>
       * <code>Assert true (slice_in(f.command, f.command_len, buf, len))</code>
       * <code>Assert true (slice_in(f.body, f.body_len, buf, len))</code>
       * <code>Assert true (slice_in(f.headers[h].key, f.headers[h].key_len, buf, len))</code>
@@ -21186,7 +21186,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (slice_in((const char *)rd.data, rd.data_len, (const char *)buf, n))</code>
       * <code>Assert true (slice_in((const char *)tok, tl, (const char *)buf, n))</code>
       * <code>Assert true (slice_in((const char *)ch.target_info, ch.target_info_len, (const char *)buf, n))</code>
-      * <code>Assert true (d.len &lt;= DETWS_DNC_LINE_MAX)</code>
+      * <code>Assert true (d.len &lt;= DWS_DNC_LINE_MAX)</code>
       * <code>Assert true (consumed &lt;= n)</code>
       * <code>Assert true (slice_in((const char *)fr.data, fr.data_len, (const char *)buf, n))</code>
       * <code>Assert true (slice_in((const char *)mr.data, mr.data_len, (const char *)buf, n))</code>
@@ -21353,7 +21353,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dnc decoder fuzz
     * **Assertions**:
-      * <code>Assert true (d.len &lt;= DETWS_DNC_LINE_MAX)</code>
+      * <code>Assert true (d.len &lt;= DWS_DNC_LINE_MAX)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -21493,9 +21493,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_parse_rejects_over_length</b> &mdash; <i>frame_len 20 (> DETWS_PN532_MAX_DATA + 1 = 9) is rejected early.</i></summary>
+    <summary><b>test_parse_rejects_over_length</b> &mdash; <i>frame_len 20 (> DWS_PN532_MAX_DATA + 1 = 9) is rejected early.</i></summary>
 
-    * **Objective**: frame_len 20 (> DETWS_PN532_MAX_DATA + 1 = 9) is rejected early.
+    * **Objective**: frame_len 20 (> DWS_PN532_MAX_DATA + 1 = 9) is rejected early.
     * **Assertions**:
       * <code>Assert equal int (-1, pn532_parse_frame(buf, sizeof(buf), nullptr, nullptr, nullptr))</code>
   </details>
@@ -21551,13 +21551,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: PReq: MN (240) -> CN 5, carrying output PDO.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(7, n);</code>
-      * <code>Assert true (detws_epl_parse(out, n, &f))</code>
+      * <code>Assert true (dws_epl_parse(out, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_MSG_PREQ, f.msg_type);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(5, f.dest);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_NODE_MN, f.source);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(4, f.payload_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(pdo, f.payload, 4);</code>
-      * <code>Assert true (detws_epl_parse(out, n, &f))</code>
+      * <code>Assert true (dws_epl_parse(out, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_MSG_PRES, f.msg_type);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Epl::EPL_NODE_BROADCAST, f.dest);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(5, f.source);</code>
@@ -21568,8 +21568,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unknown message type.
     * **Assertions**:
-      * <code>Assert false (detws_epl_parse(tooshort, 2, &f))</code>
-      * <code>Assert false (detws_epl_parse(bad, 3, &f))</code>
+      * <code>Assert false (dws_epl_parse(tooshort, 2, &f))</code>
+      * <code>Assert false (dws_epl_parse(bad, 3, &f))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -21577,8 +21577,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Epl build guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_epl_build(0x01, 0, 0, nullptr, 4, out, sizeof(out))); // null payload with len</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_epl_build(0x01, 0, 0, pdo, sizeof(pdo), out, 2));     // cap too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_epl_build(0x01, 0, 0, nullptr, 4, out, sizeof(out))); // null payload with len</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_epl_build(0x01, 0, 0, pdo, sizeof(pdo), out, 2));     // cap too small</code>
   </details>
 
 </details>
@@ -21664,11 +21664,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Start validates and runs
     * **Assertions**:
-      * <code>Assert false (detws_pq_start(nullptr))</code>
-      * <code>Assert false (detws_pq_start(&bad))</code>
-      * <code>Assert true (detws_pq_start(&ok))</code>
-      * <code>Assert true (detws_pq_running())</code>
-      * <code>Assert false (detws_pq_start(&ok))</code>
+      * <code>Assert false (dws_pq_start(nullptr))</code>
+      * <code>Assert false (dws_pq_start(&bad))</code>
+      * <code>Assert true (dws_pq_start(&ok))</code>
+      * <code>Assert true (dws_pq_running())</code>
+      * <code>Assert false (dws_pq_start(&ok))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -21690,7 +21690,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Urgent goes to front
     * **Assertions**:
-      * <code>Assert true (detws_pq_post_urgent(&u, 0))</code>
+      * <code>Assert true (dws_pq_post_urgent(&u, 0))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, g_seen.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(99, g_seen[0]); // urgent first</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1, g_seen[1]);</code>
@@ -21698,13 +21698,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_fail_closed_when_full</b> &mdash; <i>The test env sizes DETWS_PQ_DEPTH = 4.</i></summary>
+    <summary><b>test_fail_closed_when_full</b> &mdash; <i>The test env sizes DWS_PQ_DEPTH = 4.</i></summary>
 
-    * **Objective**: The test env sizes DETWS_PQ_DEPTH = 4.
+    * **Objective**: The test env sizes DWS_PQ_DEPTH = 4.
     * **Assertions**:
       * <code>Assert true (post_u32(i))</code>
       * <code>Assert false (post_u32(999))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(DETWS_PQ_DEPTH, g_seen.size());</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(DWS_PQ_DEPTH, g_seen.size());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -21712,8 +21712,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: peak persists after draining
     * **Assertions**:
-      * <code>TEST_ASSERT_GREATER_OR_EQUAL_size_t(3, detws_pq_high_water());</code>
-      * <code>TEST_ASSERT_GREATER_OR_EQUAL_size_t(3, detws_pq_high_water());</code>
+      * <code>TEST_ASSERT_GREATER_OR_EQUAL_size_t(3, dws_pq_high_water());</code>
+      * <code>TEST_ASSERT_GREATER_OR_EQUAL_size_t(3, dws_pq_high_water());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -21721,7 +21721,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: From isr enqueues
     * **Assertions**:
-      * <code>Assert true (detws_pq_post_from_isr(&v))</code>
+      * <code>Assert true (dws_pq_post_from_isr(&v))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_seen.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(7, g_seen[0]);</code>
   </details>
@@ -21733,7 +21733,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(0, g_seen.size());</code>
       * <code>Assert true (post_u32(100 + i))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(DETWS_PQ_DEPTH, g_seen.size());</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(DWS_PQ_DEPTH, g_seen.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(100, g_seen[0]);</code>
   </details>
 
@@ -21742,9 +21742,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: DMA highest, then forward, then device, all above the user lane.
     * **Assertions**:
-      * <code>TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_FORWARD),</code>
-      * <code>TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_DEVICE),</code>
-      * <code>TEST_ASSERT_GREATER_THAN_UINT8(detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_USER),</code>
+      * <code>TEST_ASSERT_GREATER_THAN_UINT8(dws_pq_lane_priority(dws_pq_lane::DWS_PQ_LANE_FORWARD),</code>
+      * <code>TEST_ASSERT_GREATER_THAN_UINT8(dws_pq_lane_priority(dws_pq_lane::DWS_PQ_LANE_DEVICE),</code>
+      * <code>TEST_ASSERT_GREATER_THAN_UINT8(dws_pq_lane_priority(dws_pq_lane::DWS_PQ_LANE_USER),</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -21752,9 +21752,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The USER lane is already started by setUp; start the internal DMA lane too.
     * **Assertions**:
-      * <code>Assert true (detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma))</code>
-      * <code>Assert true (detws_pq_post(&u, 0))</code>
-      * <code>Assert true (detws_pq_post_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &d, 0))</code>
+      * <code>Assert true (dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &dma))</code>
+      * <code>Assert true (dws_pq_post(&u, 0))</code>
+      * <code>Assert true (dws_pq_post_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &d, 0))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, g_seen.size());</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, g_seen_dma.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(22, g_seen_dma[0]);</code>
@@ -21767,13 +21767,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Lane start stop running independent
     * **Assertions**:
-      * <code>Assert true (detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_USER))</code>
-      * <code>Assert false (detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_DMA))</code>
-      * <code>Assert true (detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma))</code>
-      * <code>Assert true (detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_DMA))</code>
-      * <code>Assert false (detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma))</code>
-      * <code>Assert false (detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_DMA))</code>
-      * <code>Assert true (detws_pq_running_lane(detws_pq_lane::DETWS_PQ_LANE_USER))</code>
+      * <code>Assert true (dws_pq_running_lane(dws_pq_lane::DWS_PQ_LANE_USER))</code>
+      * <code>Assert false (dws_pq_running_lane(dws_pq_lane::DWS_PQ_LANE_DMA))</code>
+      * <code>Assert true (dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &dma))</code>
+      * <code>Assert true (dws_pq_running_lane(dws_pq_lane::DWS_PQ_LANE_DMA))</code>
+      * <code>Assert false (dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &dma))</code>
+      * <code>Assert false (dws_pq_running_lane(dws_pq_lane::DWS_PQ_LANE_DMA))</code>
+      * <code>Assert true (dws_pq_running_lane(dws_pq_lane::DWS_PQ_LANE_USER))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -21781,9 +21781,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Lane high water is per lane
     * **Assertions**:
-      * <code>Assert true (detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma))</code>
-      * <code>TEST_ASSERT_GREATER_OR_EQUAL_size_t(2, detws_pq_high_water_lane(detws_pq_lane::DETWS_PQ_LANE_DMA));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pq_high_water_lane(detws_pq_lane::DETWS_PQ_LANE_DEVICE)); // untouched lane</code>
+      * <code>Assert true (dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &dma))</code>
+      * <code>TEST_ASSERT_GREATER_OR_EQUAL_size_t(2, dws_pq_high_water_lane(dws_pq_lane::DWS_PQ_LANE_DMA));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_pq_high_water_lane(dws_pq_lane::DWS_PQ_LANE_DEVICE)); // untouched lane</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -21791,14 +21791,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Guards: urgent-post to a bad lane / with a null item fails closed; drain of a bad lane is a no-op.
     * **Assertions**:
-      * <code>Assert true (detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &cfg))</code>
-      * <code>Assert true (detws_pq_post_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &a, 0))</code>
-      * <code>Assert true (detws_pq_post_lane_urgent(detws_pq_lane::DETWS_PQ_LANE_DMA, &b, 0))</code>
+      * <code>Assert true (dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &cfg))</code>
+      * <code>Assert true (dws_pq_post_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &a, 0))</code>
+      * <code>Assert true (dws_pq_post_lane_urgent(dws_pq_lane::DWS_PQ_LANE_DMA, &b, 0))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2u, (uint32_t)g_seen_dma.size());</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(20u, g_seen_dma[0]); // urgent item first</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(10u, g_seen_dma[1]);</code>
-      * <code>Assert false (detws_pq_post_lane_urgent((detws_pq_lane)detws_pq_lane::DETWS_PQ_LANE_COUNT, &a, 0))</code>
-      * <code>Assert false (detws_pq_post_lane_urgent(detws_pq_lane::DETWS_PQ_LANE_DMA, nullptr, 0))</code>
+      * <code>Assert false (dws_pq_post_lane_urgent((dws_pq_lane)dws_pq_lane::DWS_PQ_LANE_COUNT, &a, 0))</code>
+      * <code>Assert false (dws_pq_post_lane_urgent(dws_pq_lane::DWS_PQ_LANE_DMA, nullptr, 0))</code>
   </details>
 
 </details>
@@ -22407,7 +22407,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Fcs
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x4E, detws_pb_fcs(b, sizeof(b))); // 0x03+0x02+0x49</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x4E, dws_pb_fcs(b, sizeof(b))); // 0x03+0x02+0x49</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -22417,7 +22417,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(6, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, n);</code>
-      * <code>Assert true (detws_pb_parse(out, n, &t))</code>
+      * <code>Assert true (dws_pb_parse(out, n, &t))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Profibus::PB_SD1, t.sd);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x03, t.da);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x02, t.sa);</code>
@@ -22435,7 +22435,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(6, out[1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(6, out[2]); // LEr</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Profibus::PB_SD2, out[3]);</code>
-      * <code>Assert true (detws_pb_parse(out, n, &t))</code>
+      * <code>Assert true (dws_pb_parse(out, n, &t))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Profibus::PB_SD2, t.sd);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x05, t.da);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Profibus::PB_FC_SRD_HIGH, t.fc);</code>
@@ -22448,9 +22448,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Mismatched LE/LEr.
     * **Assertions**:
-      * <code>Assert false (detws_pb_parse(out, n, &t))</code>
-      * <code>Assert false (detws_pb_parse(out, n, &t))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd2(0x05, 0x02, Profibus::PB_FC_SRD_LOW, data, 300, out, sizeof(out)));</code>
+      * <code>Assert false (dws_pb_parse(out, n, &t))</code>
+      * <code>Assert false (dws_pb_parse(out, n, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_pb_build_sd2(0x05, 0x02, Profibus::PB_FC_SRD_LOW, data, 300, out, sizeof(out)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -22458,13 +22458,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build guards: null out and a capacity below the frame size fail closed.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd1(3, 2, 0x6C, nullptr, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd1(3, 2, 0x6C, out, 5));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pb_build_sd2(3, 2, 0x6C, data, sizeof(data), out, 4));</code>
-      * <code>Assert false (detws_pb_parse(nullptr, 6, &tg))</code>
-      * <code>Assert false (detws_pb_parse(out, 6, nullptr))</code>
-      * <code>Assert false (detws_pb_parse(out, 3, &tg))</code>
-      * <code>Assert false (detws_pb_parse(bad_sd2, sizeof(bad_sd2), &tg))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_pb_build_sd1(3, 2, 0x6C, nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_pb_build_sd1(3, 2, 0x6C, out, 5));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_pb_build_sd2(3, 2, 0x6C, data, sizeof(data), out, 4));</code>
+      * <code>Assert false (dws_pb_parse(nullptr, 6, &tg))</code>
+      * <code>Assert false (dws_pb_parse(out, 6, nullptr))</code>
+      * <code>Assert false (dws_pb_parse(out, 3, &tg))</code>
+      * <code>Assert false (dws_pb_parse(bad_sd2, sizeof(bad_sd2), &tg))</code>
   </details>
 
 </details>
@@ -22479,7 +22479,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(10, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, out, 10);</code>
-      * <code>Assert true (detws_pn_dcp_parse_header(out, n, &h))</code>
+      * <code>Assert true (dws_pn_dcp_parse_header(out, n, &h))</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(Pn::PN_FRAMEID_DCP_IDENT_REQ, h.frame_id);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Pn::PN_DCP_SERVICE_IDENTIFY, h.service_id);</code>
       * <code>TEST_ASSERT_EQUAL_HEX32(0x11223344, h.xid);</code>
@@ -22501,7 +22501,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Walk blocks
     * **Assertions**:
-      * <code>Assert true (detws_pn_dcp_walk(buf, n, collect, &s))</code>
+      * <code>Assert true (dws_pn_dcp_walk(buf, n, collect, &s))</code>
       * <code>Assert equal int (2, s.count)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Pn::PN_DCP_OPT_DEVICE, s.opt[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Pn::PN_DCP_SUB_DEV_NAME_OF_STATION, s.sub[0]);</code>
@@ -22515,7 +22515,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: blockLength claims 10 but only 2 value bytes present.
     * **Assertions**:
-      * <code>Assert false (detws_pn_dcp_walk(bad, sizeof(bad), nullptr, nullptr))</code>
+      * <code>Assert false (dws_pn_dcp_walk(bad, sizeof(bad), nullptr, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -22523,13 +22523,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pn guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pn_dcp_header(0, 0, 0, 0, 0, nullptr, sizeof(out))); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pn_dcp_header(0, 0, 0, 0, 0, out, 4));               // cap &lt; header len</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pn_dcp_block(0, 0, (const uint8_t *)"x", 1, nullptr, sizeof(out))); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pn_dcp_block(0, 0, nullptr, 5, out, sizeof(out)));         // len but null value</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_pn_dcp_block(0, 0, (const uint8_t *)"sixval", 6, out, 4)); // block &gt; cap</code>
-      * <code>Assert false (detws_pn_dcp_parse_header(nullptr, 10, &h))</code>
-      * <code>Assert false (detws_pn_dcp_parse_header(shortf, sizeof(shortf), &h))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_pn_dcp_header(0, 0, 0, 0, 0, nullptr, sizeof(out))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_pn_dcp_header(0, 0, 0, 0, 0, out, 4));               // cap &lt; header len</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_pn_dcp_block(0, 0, (const uint8_t *)"x", 1, nullptr, sizeof(out))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_pn_dcp_block(0, 0, nullptr, 5, out, sizeof(out)));         // len but null value</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_pn_dcp_block(0, 0, (const uint8_t *)"sixval", 6, out, 4)); // block &gt; cap</code>
+      * <code>Assert false (dws_pn_dcp_parse_header(nullptr, 10, &h))</code>
+      * <code>Assert false (dws_pn_dcp_parse_header(shortf, sizeof(shortf), &h))</code>
   </details>
 
 </details>
@@ -22632,14 +22632,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Magic 0xa1b2c3d4 little-endian, and link type 105 (DLT_IEEE802_11) at offset 20.
     * **Assertions**:
-      * <code>Assert equal uint (DET_PCAP_GLOBAL_HDR_LEN, det_pcap_global_header(g, sizeof(g), DET_DLT_IEEE802_11))</code>
+      * <code>Assert equal uint (DWS_PCAP_GLOBAL_HDR_LEN, dws_pcap_global_header(g, sizeof(g), DWS_DLT_IEEE802_11))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xd4, g[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xc3, g[1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xb2, g[2]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xa1, g[3]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(105, g[20]);</code>
-      * <code>Assert equal uint (0, det_pcap_global_header(g, 10, DET_DLT_IEEE802_11))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT(DET_PCAP_REC_HDR_LEN,</code>
+      * <code>Assert equal uint (0, dws_pcap_global_header(g, 10, DWS_DLT_IEEE802_11))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(DWS_PCAP_REC_HDR_LEN,</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x44, r[0]); // ts_sec little-endian</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x11, r[3]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(100, r[8]);  // caplen</code>
@@ -22833,9 +22833,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Plain fields
     * **Assertions**:
-      * <code>Assert true (detws_prov_form_field("ssid=MyAP&psk=secret", "ssid", v, sizeof(v)))</code>
+      * <code>Assert true (dws_prov_form_field("ssid=MyAP&psk=secret", "ssid", v, sizeof(v)))</code>
       * <code>Assert equal string ("MyAP", v)</code>
-      * <code>Assert true (detws_prov_form_field("ssid=MyAP&psk=secret", "psk", v, sizeof(v)))</code>
+      * <code>Assert true (dws_prov_form_field("ssid=MyAP&psk=secret", "psk", v, sizeof(v)))</code>
       * <code>Assert equal string ("secret", v)</code>
   </details>
 
@@ -22844,9 +22844,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Url decoding
     * **Assertions**:
-      * <code>Assert true (detws_prov_form_field("ssid=My+AP&psk=p%40ss%21", "ssid", v, sizeof(v)))</code>
+      * <code>Assert true (dws_prov_form_field("ssid=My+AP&psk=p%40ss%21", "ssid", v, sizeof(v)))</code>
       * <code>Assert equal string ("My AP", v)</code>
-      * <code>Assert true (detws_prov_form_field("ssid=My+AP&psk=p%40ss%21", "psk", v, sizeof(v)))</code>
+      * <code>Assert true (dws_prov_form_field("ssid=My+AP&psk=p%40ss%21", "psk", v, sizeof(v)))</code>
       * <code>Assert equal string ("p@ss!", v)</code>
   </details>
 
@@ -22855,7 +22855,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Missing field
     * **Assertions**:
-      * <code>Assert false (detws_prov_form_field("ssid=x", "psk", v, sizeof(v)))</code>
+      * <code>Assert false (dws_prov_form_field("ssid=x", "psk", v, sizeof(v)))</code>
       * <code>Assert equal string ("", v)</code>
   </details>
 
@@ -22864,7 +22864,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No substring match
     * **Assertions**:
-      * <code>Assert true (detws_prov_form_field("myssid=wrong&ssid=right", "ssid", v, sizeof(v)))</code>
+      * <code>Assert true (dws_prov_form_field("myssid=wrong&ssid=right", "ssid", v, sizeof(v)))</code>
       * <code>Assert equal string ("right", v)</code>
   </details>
 
@@ -22873,7 +22873,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Capacity bound
     * **Assertions**:
-      * <code>Assert true (detws_prov_form_field("ssid=abcdef", "ssid", v, sizeof(v)))</code>
+      * <code>Assert true (dws_prov_form_field("ssid=abcdef", "ssid", v, sizeof(v)))</code>
       * <code>Assert equal string ("abc", v)</code>
   </details>
 
@@ -22882,11 +22882,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Any null argument (or zero cap) fails closed and leaves a writable out empty.
     * **Assertions**:
-      * <code>Assert false (detws_prov_form_field(nullptr, "ssid", v, sizeof(v)))</code>
+      * <code>Assert false (dws_prov_form_field(nullptr, "ssid", v, sizeof(v)))</code>
       * <code>Assert equal string ("", v)</code>
-      * <code>Assert false (detws_prov_form_field("ssid=x", nullptr, v, sizeof(v)))</code>
-      * <code>Assert false (detws_prov_form_field("ssid=x", "ssid", nullptr, sizeof(v)))</code>
-      * <code>Assert false (detws_prov_form_field("ssid=x", "ssid", v, 0))</code>
+      * <code>Assert false (dws_prov_form_field("ssid=x", nullptr, v, sizeof(v)))</code>
+      * <code>Assert false (dws_prov_form_field("ssid=x", "ssid", nullptr, sizeof(v)))</code>
+      * <code>Assert false (dws_prov_form_field("ssid=x", "ssid", v, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -22894,7 +22894,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: On host there is no NVS/WiFi: load reports no stored creds and clears the buffers; clear no-ops.
     * **Assertions**:
-      * <code>Assert false (detws_provisioning_load(ssid, sizeof(ssid), psk, sizeof(psk)))</code>
+      * <code>Assert false (dws_provisioning_load(ssid, sizeof(ssid), psk, sizeof(psk)))</code>
       * <code>Assert equal string ("", ssid)</code>
       * <code>Assert equal string ("", psk)</code>
   </details>
@@ -23028,9 +23028,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 64KB asset, threshold 4KB, plenty of both heaps, 32KB DRAM reserve.
     * **Assertions**:
-      * <code>Assert equal int (DetwsPlace::PLACE_PSRAM, detws_psram_place(65536, false, 120000, 2000000, 4096, 32768))</code>
-      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, detws_psram_place(65536, false, 120000, 0, 4096, 32768))</code>
-      * <code>Assert equal int (DetwsPlace::PLACE_FAIL, detws_psram_place(65536, false, 80000, 0, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_PSRAM, dws_psram_place(65536, false, 120000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, dws_psram_place(65536, false, 120000, 0, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_FAIL, dws_psram_place(65536, false, 80000, 0, 4096, 32768))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23038,8 +23038,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 512B hot buffer, threshold 4KB -> DRAM.
     * **Assertions**:
-      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, detws_psram_place(512, false, 120000, 2000000, 4096, 32768))</code>
-      * <code>Assert equal int (DetwsPlace::PLACE_PSRAM, detws_psram_place(512, false, 33000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, dws_psram_place(512, false, 120000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_PSRAM, dws_psram_place(512, false, 33000, 2000000, 4096, 32768))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23047,8 +23047,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: DMA-required buffer must be DRAM even if large.
     * **Assertions**:
-      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, detws_psram_place(8192, true, 120000, 2000000, 4096, 32768))</code>
-      * <code>Assert equal int (DetwsPlace::PLACE_FAIL, detws_psram_place(8192, true, 40000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, dws_psram_place(8192, true, 120000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_FAIL, dws_psram_place(8192, true, 40000, 2000000, 4096, 32768))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23056,9 +23056,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: At exactly the threshold -> treated as large (>=), prefers PSRAM.
     * **Assertions**:
-      * <code>Assert equal int (DetwsPlace::PLACE_FAIL, detws_psram_place(0, false, 120000, 2000000, 4096, 32768))</code>
-      * <code>Assert equal int (DetwsPlace::PLACE_PSRAM, detws_psram_place(4096, false, 120000, 2000000, 4096, 0))</code>
-      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, detws_psram_place(100, false, 1100, 0, 4096, 1000))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_FAIL, dws_psram_place(0, false, 120000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_PSRAM, dws_psram_place(4096, false, 120000, 2000000, 4096, 0))</code>
+      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, dws_psram_place(100, false, 1100, 0, 4096, 1000))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23066,13 +23066,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Swap: roles flip.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, detws_pingpong_fill_index(&pp));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, detws_pingpong_drain_index(&pp));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, detws_pingpong_swap(&pp));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, detws_pingpong_fill_index(&pp));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, detws_pingpong_drain_index(&pp));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, detws_pingpong_swap(&pp));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, detws_pingpong_fill_index(&pp));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_pingpong_fill_index(&pp));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_pingpong_drain_index(&pp));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_pingpong_swap(&pp));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_pingpong_fill_index(&pp));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_pingpong_drain_index(&pp));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_pingpong_swap(&pp));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_pingpong_fill_index(&pp));</code>
   </details>
 
 </details>
@@ -23951,16 +23951,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Start the server: it owns the QuicConn + H3Conn pool and routes by connection ID.
     * **Assertions**:
-      * <code>Assert true (det_quic_server_begin(443, &scfg, app_request, nullptr))</code>
-      * <code>Assert true (det_quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, det_quic_server_active_conns());</code>
+      * <code>Assert true (dws_quic_server_begin(443, &scfg, app_request, nullptr))</code>
+      * <code>Assert true (dws_quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns());</code>
       * <code>Assert greater than (0, g_out_n); // the coalesced Initial(SH) + Handshake(EE..Finished)</code>
-      * <code>Assert true (det_quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000))</code>
-      * <code>Assert true (det_quic_server_ingest(s1, s1l, "192.0.2.10", 40000))</code>
+      * <code>Assert true (dws_quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000))</code>
+      * <code>Assert true (dws_quic_server_ingest(s1, s1l, "192.0.2.10", 40000))</code>
       * <code>Assert equal string ("GET", g_method)</code>
       * <code>Assert equal string ("/hello", g_path)</code>
       * <code>Assert true (response_ok(&ap_s))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, det_quic_server_active_conns());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_quic_server_active_conns());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23968,10 +23968,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Open a connection with a client Initial (the handshake need not complete to hold a slot).
     * **Assertions**:
-      * <code>Assert true (det_quic_server_begin(443, &scfg, app_request, nullptr))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, det_quic_server_active_conns());</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, det_quic_server_active_conns());</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, det_quic_server_active_conns());</code>
+      * <code>Assert true (dws_quic_server_begin(443, &scfg, app_request, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_quic_server_active_conns());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23979,17 +23979,17 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: begin() rejects a null config and a null RNG.
     * **Assertions**:
-      * <code>Assert false (det_quic_server_begin(443, nullptr, app_request, nullptr))</code>
-      * <code>Assert false (det_quic_server_begin(443, &scfg, app_request, nullptr))</code>
-      * <code>Assert true (det_quic_server_begin(443, &scfg, app_request, nullptr))</code>
-      * <code>Assert false (det_quic_server_ingest(one, 0, "192.0.2.1", 1))</code>
-      * <code>Assert false (det_quic_server_ingest(huge, sizeof(huge), "192.0.2.1", 1))</code>
-      * <code>Assert false (det_quic_server_respond(999999, 0, 200, "text/plain", nullptr, 0))</code>
-      * <code>Assert true (det_quic_server_ingest(bad_long, 1, "192.0.2.1", 1))</code>
-      * <code>Assert true (det_quic_server_ingest(short_tiny, 2, "192.0.2.1", 1))</code>
-      * <code>Assert true (det_quic_server_ingest(short_unknown, sizeof(short_unknown), "192.0.2.1", 1))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, det_quic_server_active_conns());</code>
-      * <code>Assert equal int (DETWS_QUIC_INGEST_RING - 1, pushed)</code>
+      * <code>Assert false (dws_quic_server_begin(443, nullptr, app_request, nullptr))</code>
+      * <code>Assert false (dws_quic_server_begin(443, &scfg, app_request, nullptr))</code>
+      * <code>Assert true (dws_quic_server_begin(443, &scfg, app_request, nullptr))</code>
+      * <code>Assert false (dws_quic_server_ingest(one, 0, "192.0.2.1", 1))</code>
+      * <code>Assert false (dws_quic_server_ingest(huge, sizeof(huge), "192.0.2.1", 1))</code>
+      * <code>Assert false (dws_quic_server_respond(999999, 0, 200, "text/plain", nullptr, 0))</code>
+      * <code>Assert true (dws_quic_server_ingest(bad_long, 1, "192.0.2.1", 1))</code>
+      * <code>Assert true (dws_quic_server_ingest(short_tiny, 2, "192.0.2.1", 1))</code>
+      * <code>Assert true (dws_quic_server_ingest(short_unknown, sizeof(short_unknown), "192.0.2.1", 1))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, dws_quic_server_active_conns());</code>
+      * <code>Assert equal int (DWS_QUIC_INGEST_RING - 1, pushed)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23997,9 +23997,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: One more distinct-DCID Initial than the pool holds: the extra alloc_slot()/open_conn() fails.
     * **Assertions**:
-      * <code>Assert true (det_quic_server_begin(443, &scfg, app_request, nullptr))</code>
-      * <code>Assert true (det_quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_QUIC_MAX_CONNS, det_quic_server_active_conns()); // capped at the pool size</code>
+      * <code>Assert true (dws_quic_server_begin(443, &scfg, app_request, nullptr))</code>
+      * <code>Assert true (dws_quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWS_QUIC_MAX_CONNS, dws_quic_server_active_conns()); // capped at the pool size</code>
   </details>
 
 </details>
@@ -24338,10 +24338,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ps names
     * **Assertions**:
-      * <code>Assert equal string ("none", detws_radio_ps_name(DetwsRadioPs::DETWS_PS_NONE))</code>
-      * <code>Assert equal string ("min_modem", detws_radio_ps_name(DetwsRadioPs::DETWS_PS_MIN_MODEM))</code>
-      * <code>Assert equal string ("max_modem", detws_radio_ps_name(DetwsRadioPs::DETWS_PS_MAX_MODEM))</code>
-      * <code>Assert equal string ("none", detws_radio_ps_name(99))</code>
+      * <code>Assert equal string ("none", dws_radio_ps_name(DetwsRadioPs::DWS_PS_NONE))</code>
+      * <code>Assert equal string ("min_modem", dws_radio_ps_name(DetwsRadioPs::DWS_PS_MIN_MODEM))</code>
+      * <code>Assert equal string ("max_modem", dws_radio_ps_name(DetwsRadioPs::DWS_PS_MAX_MODEM))</code>
+      * <code>Assert equal string ("none", dws_radio_ps_name(99))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24349,7 +24349,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Apply is noop on host
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsRadioPs::DETWS_PS_NONE, detws_radio_ps_get());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsRadioPs::DWS_PS_NONE, dws_radio_ps_get());</code>
   </details>
 
 </details>
@@ -24362,11 +24362,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: I2f32
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX32(0x00000000, detws_radiosniff_i2f32(0));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0xC2200000, detws_radiosniff_i2f32(-40));  // -40.0f</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0x42200000, detws_radiosniff_i2f32(40));   // 40.0f</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0xC2FE0000, detws_radiosniff_i2f32(-127)); // -127.0f</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0x3F800000, detws_radiosniff_i2f32(1));    // 1.0f</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x00000000, dws_radiosniff_i2f32(0));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xC2200000, dws_radiosniff_i2f32(-40));  // -40.0f</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x42200000, dws_radiosniff_i2f32(40));   // 40.0f</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xC2FE0000, dws_radiosniff_i2f32(-127)); // -127.0f</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0x3F800000, dws_radiosniff_i2f32(1));    // 1.0f</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24393,7 +24393,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_UINT16(20, rd16le(tap + 2)); // TAP length</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(1, rd16le(tap + 4)); // type = RSS</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(4, rd16le(tap + 6)); // len</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(detws_radiosniff_i2f32(-55), rd32le(tap + 8));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(dws_radiosniff_i2f32(-55), rd32le(tap + 8));</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(3, rd16le(tap + 12));  // type = channel</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(11, rd16le(tap + 16)); // channel number</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x41, buf[36]);</code>
@@ -24405,7 +24405,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Tap record overflow
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_radiosniff_tap_record(small, sizeof(small), frame, 5, -55, 11, 0, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_radiosniff_tap_record(small, sizeof(small), frame, 5, -55, 11, 0, 0));</code>
   </details>
 
 </details>
@@ -24655,18 +24655,18 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: VLAN roundtrip.
     * **Assertions**:
-      * <code>Assert true (detws_eth_parse(buf, n, &f))</code>
+      * <code>Assert true (dws_eth_parse(buf, n, &f))</code>
       * <code>Assert false (f.vlan)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(RawL2::ETHERTYPE_IPV4, f.ethertype);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, f.payload_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(pl, f.payload, 2);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(SRC, f.src, 6);</code>
-      * <code>Assert true (detws_eth_parse(buf, n, &f))</code>
+      * <code>Assert true (dws_eth_parse(buf, n, &f))</code>
       * <code>Assert true (f.vlan)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(5, f.pcp);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(4094, f.vid);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(RawL2::ETHERTYPE_GOOSE, f.ethertype);</code>
-      * <code>Assert false (detws_eth_parse(buf, 10, &f))</code>
+      * <code>Assert false (dws_eth_parse(buf, 10, &f))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24674,7 +24674,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The canonical CRC-32 check value: CRC of "123456789" = 0xCBF43926.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX32(0xCBF43926, detws_eth_fcs(msg, sizeof(msg)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xCBF43926, dws_eth_fcs(msg, sizeof(msg)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24682,11 +24682,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Eth build parse guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_eth_build(nullptr, mac, 0x0800, pay, sizeof(pay), out, sizeof(out))); // null dst</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_eth_build(mac, mac, 0x0800, pay, sizeof(pay), out, 8)); // cap too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_eth_build(nullptr, mac, 0x0800, pay, sizeof(pay), out, sizeof(out))); // null dst</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_eth_build(mac, mac, 0x0800, pay, sizeof(pay), out, 8)); // cap too small</code>
       * <code>TEST_ASSERT_EQUAL_size_t(</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_eth_build_vlan(mac, mac, 0, false, 100, 0x0800, pay, sizeof(pay), out, 8)); // cap</code>
-      * <code>Assert false (detws_eth_parse(vlanish, sizeof(vlanish), &ef))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_eth_build_vlan(mac, mac, 0, false, 100, 0x0800, pay, sizeof(pay), out, 8)); // cap</code>
+      * <code>Assert false (dws_eth_parse(vlanish, sizeof(vlanish), &ef))</code>
   </details>
 
 </details>
@@ -25039,7 +25039,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Bidirectional
     * **Assertions**:
-      * <code>Assert equal int (DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 64))</code>
+      * <code>Assert equal int (DWSRelayStatus::DWS_RELAY_DONE, run_relay(&r, 64))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(17, b.out_len);</code>
       * <code>Assert equal memory ("hello from client", b.out, 17)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(14, a.out_len);</code>
@@ -25053,7 +25053,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Backpressure
     * **Assertions**:
-      * <code>Assert equal int (DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 1000))</code>
+      * <code>Assert equal int (DWSRelayStatus::DWS_RELAY_DONE, run_relay(&r, 1000))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1000, b.out_len);</code>
       * <code>Assert equal memory (data, b.out, 1000)</code>
   </details>
@@ -25066,8 +25066,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (r.b_shut_sent)</code>
       * <code>Assert true (b.shutdown_called)</code>
       * <code>Assert false (r.b2a_done)</code>
-      * <code>Assert equal int (DetRelayStatus::DET_RELAY_RUNNING, st)</code>
-      * <code>Assert equal int (DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 64))</code>
+      * <code>Assert equal int (DWSRelayStatus::DWS_RELAY_RUNNING, st)</code>
+      * <code>Assert equal int (DWSRelayStatus::DWS_RELAY_DONE, run_relay(&r, 64))</code>
       * <code>Assert equal memory ("req", b.out, 3)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(800, a.out_len);</code>
       * <code>Assert equal memory (resp, a.out, 800)</code>
@@ -25079,7 +25079,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Send error
     * **Assertions**:
-      * <code>Assert equal int (DetRelayStatus::DET_RELAY_ERROR, st)</code>
+      * <code>Assert equal int (DWSRelayStatus::DWS_RELAY_ERROR, st)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -25087,7 +25087,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: origin never sends; client sends then closes -> relay completes cleanly
     * **Assertions**:
-      * <code>Assert equal int (DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 32))</code>
+      * <code>Assert equal int (DWSRelayStatus::DWS_RELAY_DONE, run_relay(&r, 32))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(18, b.out_len);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, a.out_len);</code>
   </details>
@@ -25097,10 +25097,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: one step moves the buffered data each way; without an EOF signal the relay keeps running
     * **Assertions**:
-      * <code>Assert equal int (DetRelayStatus::DET_RELAY_RUNNING, det_relay_step(&r))</code>
+      * <code>Assert equal int (DWSRelayStatus::DWS_RELAY_RUNNING, dws_relay_step(&r))</code>
       * <code>Assert equal memory ("hello", b.out, 5)</code>
       * <code>Assert equal memory ("world", a.out, 5)</code>
-      * <code>Assert equal int (DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 8))</code>
+      * <code>Assert equal int (DWSRelayStatus::DWS_RELAY_DONE, run_relay(&r, 8))</code>
       * <code>Assert true (a.shutdown_called)</code>
       * <code>Assert true (b.shutdown_called)</code>
   </details>
@@ -25115,18 +25115,18 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Host build: begin() is a no-op returning false; synced()/epoch() reflect the injected epoch.
     * **Assertions**:
-      * <code>Assert false (detws_ntp_begin("UTC0", "a.pool.ntp.org", "b.pool.ntp.org"))</code>
-      * <code>Assert false (detws_ntp_synced())</code>
-      * <code>Assert equal int (0, (long)detws_ntp_epoch())</code>
+      * <code>Assert false (dws_ntp_begin("UTC0", "a.pool.ntp.org", "b.pool.ntp.org"))</code>
+      * <code>Assert false (dws_ntp_synced())</code>
+      * <code>Assert equal int (0, (long)dws_ntp_epoch())</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, ntp_time_source()); // registry adapter: 0 when unsynced</code>
-      * <code>Assert true (detws_ntp_synced())</code>
-      * <code>Assert equal int (784111777, (long)detws_ntp_epoch())</code>
+      * <code>Assert true (dws_ntp_synced())</code>
+      * <code>Assert equal int (784111777, (long)dws_ntp_epoch())</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(784111777, ntp_time_source()); // registry adapter mirrors the epoch</code>
-      * <code>Assert equal uint (0, detws_ntp_http_date(nullptr, sizeof(buf)))</code>
-      * <code>Assert equal uint (0, detws_ntp_http_date(buf, 0))</code>
-      * <code>Assert true (detws_ntp_http_date(buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert equal uint (0, dws_ntp_http_date(nullptr, sizeof(buf)))</code>
+      * <code>Assert equal uint (0, dws_ntp_http_date(buf, 0))</code>
+      * <code>Assert true (dws_ntp_http_date(buf, sizeof(buf)) &gt; 0)</code>
       * <code>Assert equal string ("Sun, 06 Nov 1994 08:49:37 GMT", buf)</code>
-      * <code>Assert equal uint (0, detws_ntp_http_date(buf, sizeof(buf)))</code>
+      * <code>Assert equal uint (0, dws_ntp_http_date(buf, sizeof(buf)))</code>
       * <code>Assert equal char ('\\0', buf[0])</code>
   </details>
 
@@ -26058,7 +26058,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Overflow
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sep2_device_capability(900, "/edev", "/derp", buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_sep2_device_capability(900, "/edev", "/derp", buf, sizeof(buf)));</code>
   </details>
 
 </details>
@@ -26088,7 +26088,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(8, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect_hdr, out, 4);</code>
-      * <code>Assert true (detws_sercos_parse(out, n, &t))</code>
+      * <code>Assert true (dws_sercos_parse(out, n, &t))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Sercos::SERCOS_TEL_MDT, t.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(4, t.phase);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x1234, t.cycle);</code>
@@ -26102,12 +26102,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Bad type at build; too short + unknown type at parse.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(4, n);</code>
-      * <code>Assert true (detws_sercos_parse(out, n, &t))</code>
+      * <code>Assert true (dws_sercos_parse(out, n, &t))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Sercos::SERCOS_TEL_AT, t.type);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, t.data_len);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sercos_build(0x05, 0, 0, nullptr, 0, out, sizeof(out)));</code>
-      * <code>Assert false (detws_sercos_parse(out, 3, &t))</code>
-      * <code>Assert false (detws_sercos_parse(bad, 4, &t))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_sercos_build(0x05, 0, 0, nullptr, 0, out, sizeof(out)));</code>
+      * <code>Assert false (dws_sercos_parse(out, 3, &t))</code>
+      * <code>Assert false (dws_sercos_parse(bad, 4, &t))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -26115,9 +26115,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Sercos build guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sercos_build(0xEE, 0, 0, data, sizeof(data), out, sizeof(out))); // bad type</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_sercos_build(0xEE, 0, 0, data, sizeof(data), out, sizeof(out))); // bad type</code>
       * <code>TEST_ASSERT_EQUAL_size_t(</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
   </details>
 
 </details>
@@ -26430,7 +26430,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: idle 999 < 1000 -> stay awake.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_sleep_next(1999, 1000, &CFG));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sleep_next(1999, 1000, &CFG));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -26438,8 +26438,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: idle exactly 1000: past threshold, 0 doublings -> the floor.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(100, detws_sleep_next(2000, 1000, &CFG));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(100, detws_sleep_next(2499, 1000, &CFG));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(100, dws_sleep_next(2000, 1000, &CFG));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(100, dws_sleep_next(2499, 1000, &CFG));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -26447,9 +26447,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: idle 1500: one ramp period (500) past threshold -> 100<<1 = 200.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(200, detws_sleep_next(2500, 1000, &CFG));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(400, detws_sleep_next(3000, 1000, &CFG));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1600, detws_sleep_next(4000, 1000, &CFG));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(200, dws_sleep_next(2500, 1000, &CFG));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(400, dws_sleep_next(3000, 1000, &CFG));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1600, dws_sleep_next(4000, 1000, &CFG));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -26457,7 +26457,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: idle 10000: many periods, clamped to max_ms = 2000 (not 100<<18).
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(2000, detws_sleep_next(11000, 1000, &CFG));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2000, dws_sleep_next(11000, 1000, &CFG));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -26465,8 +26465,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No ramp jumps to ceiling
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_sleep_next(1500, 1000, &cfg));    // still awake</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2000, detws_sleep_next(2000, 1000, &cfg)); // straight to max</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sleep_next(1500, 1000, &cfg));    // still awake</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2000, dws_sleep_next(2000, 1000, &cfg)); // straight to max</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -26474,7 +26474,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Degenerate max below min
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(500, detws_sleep_next(2000, 1000, &cfg));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(500, dws_sleep_next(2000, 1000, &cfg));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -26483,7 +26483,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: last_active just before the millis() rollover, now just after: real idle 1284 >= 1000.
     * **Assertions**:
       * <code>Assert true (w &gt;= 100 && w &lt;= 2000)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_sleep_next(50, 0xFFFFFF00u, &CFG));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sleep_next(50, 0xFFFFFF00u, &CFG));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -26491,7 +26491,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Null cfg
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_sleep_next(5000, 0, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_sleep_next(5000, 0, nullptr));</code>
   </details>
 
 </details>
@@ -27815,7 +27815,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The bound handler processed the datagram and sent a reply (captured).
     * **Assertions**:
-      * <code>Assert true (det_udp_captured_len() &gt; 0)</code>
+      * <code>Assert true (dws_udp_captured_len() &gt; 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28273,7 +28273,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0))</code>
       * <code>Assert true (snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0))</code>
-      * <code>Assert true (det_udp_captured_len() &gt; 0)</code>
+      * <code>Assert true (dws_udp_captured_len() &gt; 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28416,8 +28416,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: sum = 0x01+0x03+0x10+0x20+0x30 = 0x64.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x64, detws_snp_bcc(b, sizeof(b)));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, detws_snp_bcc(w, sizeof(w)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x64, dws_snp_bcc(b, sizeof(b)));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, dws_snp_bcc(w, sizeof(w)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28427,7 +28427,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(sizeof(expect), n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(expect, buf, n);</code>
-      * <code>Assert true (detws_snp_parse(buf, n, &f))</code>
+      * <code>Assert true (dws_snp_parse(buf, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(Snp::SNP_SOH, f.control);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, f.data_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(data, f.data, 3);</code>
@@ -28439,7 +28439,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Empty data
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(3, n);</code>
-      * <code>Assert true (detws_snp_parse(buf, n, &f))</code>
+      * <code>Assert true (dws_snp_parse(buf, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, f.data_len);</code>
       * <code>Assert null (f.data)</code>
   </details>
@@ -28449,9 +28449,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Length field says more data than the buffer holds.
     * **Assertions**:
-      * <code>Assert false (detws_snp_parse(buf, n, &f))</code>
-      * <code>Assert false (detws_snp_parse(buf, 2, &f))</code>
-      * <code>Assert false (detws_snp_parse(bad, sizeof(bad), &f))</code>
+      * <code>Assert false (dws_snp_parse(buf, n, &f))</code>
+      * <code>Assert false (dws_snp_parse(buf, 2, &f))</code>
+      * <code>Assert false (dws_snp_parse(bad, sizeof(bad), &f))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28459,9 +28459,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Snp build guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_snp_build(0x10, data, 2, nullptr, sizeof(out))); // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_snp_build(0x10, nullptr, 2, out, sizeof(out)));  // len but null data</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_snp_build(0x10, data, 2, out, 3));               // needs 5, cap 3</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snp_build(0x10, data, 2, nullptr, sizeof(out))); // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snp_build(0x10, nullptr, 2, out, sizeof(out)));  // len but null data</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_snp_build(0x10, data, 2, out, 3));               // needs 5, cap 3</code>
   </details>
 
 </details>
@@ -28474,14 +28474,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Find.
     * **Assertions**:
-      * <code>Assert equal int (SockAcq::SOCK_ACQ_FREE, detws_sockpool_acquire(&g_pool, 100, 10, &idx, nullptr))</code>
+      * <code>Assert equal int (SockAcq::SOCK_ACQ_FREE, dws_sockpool_acquire(&g_pool, 100, 10, &idx, nullptr))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(0, idx);</code>
-      * <code>Assert equal int (SockAcq::SOCK_ACQ_FREE, detws_sockpool_acquire(&g_pool, 101, 11, &idx, nullptr))</code>
+      * <code>Assert equal int (SockAcq::SOCK_ACQ_FREE, dws_sockpool_acquire(&g_pool, 101, 11, &idx, nullptr))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, idx);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(2, detws_sockpool_in_use(&g_pool));</code>
-      * <code>Assert true (detws_sockpool_find(&g_pool, 101, &found))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, dws_sockpool_in_use(&g_pool));</code>
+      * <code>Assert true (dws_sockpool_find(&g_pool, 101, &found))</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, found);</code>
-      * <code>Assert false (detws_sockpool_find(&g_pool, 999, &found))</code>
+      * <code>Assert false (dws_sockpool_find(&g_pool, 999, &found))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28489,13 +28489,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Fill: id 100@t10, 101@t20, 102@t30.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(3, detws_sockpool_in_use(&g_pool));</code>
-      * <code>Assert equal int (SockAcq::SOCK_ACQ_RECYCLED, detws_sockpool_acquire(&g_pool, 103, 40, &idx, &evicted))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, dws_sockpool_in_use(&g_pool));</code>
+      * <code>Assert equal int (SockAcq::SOCK_ACQ_RECYCLED, dws_sockpool_acquire(&g_pool, 103, 40, &idx, &evicted))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(100, evicted);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, idx);                              // slot 0 held id 100</code>
-      * <code>Assert false (detws_sockpool_find(&g_pool, 100, nullptr))</code>
-      * <code>Assert true (detws_sockpool_find(&g_pool, 103, nullptr))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(3, detws_sockpool_in_use(&g_pool));   // still full</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, idx);                            // slot 0 held id 100</code>
+      * <code>Assert false (dws_sockpool_find(&g_pool, 100, nullptr))</code>
+      * <code>Assert true (dws_sockpool_find(&g_pool, 103, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, dws_sockpool_in_use(&g_pool));   // still full</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28503,7 +28503,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Touch id 100 so it is no longer the LRU; now id 101 is oldest.
     * **Assertions**:
-      * <code>Assert equal int (SockAcq::SOCK_ACQ_RECYCLED, detws_sockpool_acquire(&g_pool, 103, 60, nullptr, &evicted))</code>
+      * <code>Assert equal int (SockAcq::SOCK_ACQ_RECYCLED, dws_sockpool_acquire(&g_pool, 103, 60, nullptr, &evicted))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(101, evicted);</code>
   </details>
 
@@ -28512,10 +28512,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Double release is a no-op false.
     * **Assertions**:
-      * <code>Assert true (detws_sockpool_release(&g_pool, idx))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sockpool_in_use(&g_pool));</code>
-      * <code>Assert false (detws_sockpool_release(&g_pool, idx))</code>
-      * <code>Assert equal int (SockAcq::SOCK_ACQ_FREE, detws_sockpool_acquire(&g_pool, 200, 20, nullptr, nullptr))</code>
+      * <code>Assert true (dws_sockpool_release(&g_pool, idx))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_sockpool_in_use(&g_pool));</code>
+      * <code>Assert false (dws_sockpool_release(&g_pool, idx))</code>
+      * <code>Assert equal int (SockAcq::SOCK_ACQ_FREE, dws_sockpool_acquire(&g_pool, 200, 20, nullptr, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28523,7 +28523,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Empty pool fails
     * **Assertions**:
-      * <code>Assert equal int (SockAcq::SOCK_ACQ_FAIL, detws_sockpool_acquire(&empty, 1, 1, nullptr, nullptr))</code>
+      * <code>Assert equal int (SockAcq::SOCK_ACQ_FAIL, dws_sockpool_acquire(&empty, 1, 1, nullptr, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28531,8 +28531,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Null guard subconditions
     * **Assertions**:
-      * <code>Assert false (detws_sockpool_find(nullptr, 1, &idx))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_sockpool_in_use(nullptr)); // null pool -&gt; 0</code>
+      * <code>Assert false (dws_sockpool_find(nullptr, 1, &idx))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_sockpool_in_use(nullptr)); // null pool -&gt; 0</code>
   </details>
 
 </details>
@@ -28545,13 +28545,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Duplicate name rejected.
     * **Assertions**:
-      * <code>Assert equal int (Sb::SB_OK, detws_southbound_register(&g_full))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(1, detws_southbound_count());</code>
-      * <code>Assert equal ptr (&g_full, detws_southbound_find("fake"))</code>
-      * <code>Assert null (detws_southbound_find("nope"))</code>
-      * <code>Assert equal int (Sb::SB_ERR_DUP, detws_southbound_register(&g_full))</code>
-      * <code>Assert equal int (Sb::SB_ERR_ARG, detws_southbound_register(nullptr))</code>
-      * <code>Assert equal int (Sb::SB_ERR_ARG, detws_southbound_register(&noname))</code>
+      * <code>Assert equal int (Sb::SB_OK, dws_southbound_register(&g_full))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, dws_southbound_count());</code>
+      * <code>Assert equal ptr (&g_full, dws_southbound_find("fake"))</code>
+      * <code>Assert null (dws_southbound_find("nope"))</code>
+      * <code>Assert equal int (Sb::SB_ERR_DUP, dws_southbound_register(&g_full))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, dws_southbound_register(nullptr))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, dws_southbound_register(&noname))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28559,15 +28559,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unknown driver.
     * **Assertions**:
-      * <code>Assert equal int (Sb::SB_OK, detws_southbound_read("fake", 3, &v))</code>
+      * <code>Assert equal int (Sb::SB_OK, dws_southbound_read("fake", 3, &v))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(30, v);</code>
-      * <code>Assert equal int (Sb::SB_OK, detws_southbound_write("fake", 3, 999))</code>
-      * <code>Assert equal int (Sb::SB_OK, detws_southbound_read("fake", 3, &v))</code>
+      * <code>Assert equal int (Sb::SB_OK, dws_southbound_write("fake", 3, 999))</code>
+      * <code>Assert equal int (Sb::SB_OK, dws_southbound_read("fake", 3, &v))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(999, v);</code>
-      * <code>Assert equal int (Sb::SB_ERR_NOT_FOUND, detws_southbound_read("x", 0, &v))</code>
-      * <code>Assert equal int (Sb::SB_ERR_NOT_FOUND, detws_southbound_write("x", 0, 0))</code>
-      * <code>Assert equal int (Sb::SB_ERR_ARG, detws_southbound_read("fake", 0, nullptr))</code>
-      * <code>Assert equal int (-42, detws_southbound_read("fake", 0, &v))</code>
+      * <code>Assert equal int (Sb::SB_ERR_NOT_FOUND, dws_southbound_read("x", 0, &v))</code>
+      * <code>Assert equal int (Sb::SB_ERR_NOT_FOUND, dws_southbound_write("x", 0, 0))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, dws_southbound_read("fake", 0, nullptr))</code>
+      * <code>Assert equal int (-42, dws_southbound_read("fake", 0, &v))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28575,13 +28575,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Zero count / null rejected.
     * **Assertions**:
-      * <code>Assert equal int (4, detws_southbound_read_block("fake", 2, out, 4))</code>
+      * <code>Assert equal int (4, dws_southbound_read_block("fake", 2, out, 4))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(20, out[0]);</code>
       * <code>TEST_ASSERT_EQUAL_INT32(50, out[3]);</code>
-      * <code>Assert equal int (3, detws_southbound_write_block("fake", 5, in, 3))</code>
+      * <code>Assert equal int (3, dws_southbound_write_block("fake", 5, in, 3))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(8, v);</code>
-      * <code>Assert equal int (Sb::SB_ERR_ARG, detws_southbound_read_block("fake", 0, out, 0))</code>
-      * <code>Assert equal int (Sb::SB_ERR_ARG, detws_southbound_write_block("fake", 0, nullptr, 3))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, dws_southbound_read_block("fake", 0, out, 0))</code>
+      * <code>Assert equal int (Sb::SB_ERR_ARG, dws_southbound_write_block("fake", 0, nullptr, 3))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28589,10 +28589,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A driver that only implements single-point read.
     * **Assertions**:
-      * <code>Assert equal int (Sb::SB_OK, detws_southbound_read("ro", 0, &v))</code>
-      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, detws_southbound_write("ro", 0, 1))</code>
-      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, detws_southbound_read_block("ro", 0, out, 2))</code>
-      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, detws_southbound_write_block("ro", 0, out, 2))</code>
+      * <code>Assert equal int (Sb::SB_OK, dws_southbound_read("ro", 0, &v))</code>
+      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, dws_southbound_write("ro", 0, 1))</code>
+      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, dws_southbound_read_block("ro", 0, out, 2))</code>
+      * <code>Assert equal int (Sb::SB_ERR_UNSUPPORTED, dws_southbound_write_block("ro", 0, out, 2))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28600,8 +28600,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Fill the registry with distinct-named drivers, then overflow.
     * **Assertions**:
-      * <code>Assert equal int (Sb::SB_ERR_FULL, detws_southbound_register(&drv[i]))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(8, detws_southbound_count());</code>
+      * <code>Assert equal int (Sb::SB_ERR_FULL, dws_southbound_register(&drv[i]))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(8, dws_southbound_count());</code>
       * <code>Assert equal int (8, registered)</code>
   </details>
 
@@ -28610,9 +28610,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dispatch not found guards
     * **Assertions**:
-      * <code>Assert null (detws_southbound_find("nope"))</code>
-      * <code>Assert equal int (Sb::SB_ERR_NOT_FOUND, detws_southbound_read("nope", 0, &v))</code>
-      * <code>Assert equal int (Sb::SB_ERR_NOT_FOUND, detws_southbound_write("nope", 0, 42))</code>
+      * <code>Assert null (dws_southbound_find("nope"))</code>
+      * <code>Assert equal int (Sb::SB_ERR_NOT_FOUND, dws_southbound_read("nope", 0, &v))</code>
+      * <code>Assert equal int (Sb::SB_ERR_NOT_FOUND, dws_southbound_write("nope", 0, 42))</code>
   </details>
 
 </details>
@@ -28625,14 +28625,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A dotfile directory in the path but an extensionless final segment is still a route.
     * **Assertions**:
-      * <code>Assert true (detws_spa_has_extension("/app.js"))</code>
-      * <code>Assert true (detws_spa_has_extension("/assets/style.css"))</code>
-      * <code>Assert true (detws_spa_has_extension("/x/y.min.js"))</code>
-      * <code>Assert false (detws_spa_has_extension("/dashboard"))</code>
-      * <code>Assert false (detws_spa_has_extension("/devices/42"))</code>
-      * <code>Assert false (detws_spa_has_extension("/"))</code>
-      * <code>Assert false (detws_spa_has_extension("/a.b/c"))</code>
-      * <code>Assert false (detws_spa_has_extension("/weird."))</code>
+      * <code>Assert true (dws_spa_has_extension("/app.js"))</code>
+      * <code>Assert true (dws_spa_has_extension("/assets/style.css"))</code>
+      * <code>Assert true (dws_spa_has_extension("/x/y.min.js"))</code>
+      * <code>Assert false (dws_spa_has_extension("/dashboard"))</code>
+      * <code>Assert false (dws_spa_has_extension("/devices/42"))</code>
+      * <code>Assert false (dws_spa_has_extension("/"))</code>
+      * <code>Assert false (dws_spa_has_extension("/a.b/c"))</code>
+      * <code>Assert false (dws_spa_has_extension("/weird."))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -28640,15 +28640,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No API prefix configured: an /api path is just a route.
     * **Assertions**:
-      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("/", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("/dashboard", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("/devices/42", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_FILE, detws_spa_route("/app.js", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_FILE, detws_spa_route("/assets/logo.svg", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_PASSTHROUGH, detws_spa_route("/api/state", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_PASSTHROUGH, detws_spa_route("/api/devices/42", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DETWS_SPA_SERVE_SHELL, detws_spa_route("/api/state", nullptr))</code>
+      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/dashboard", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/devices/42", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_FILE, dws_spa_route("/app.js", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_FILE, dws_spa_route("/assets/logo.svg", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_PASSTHROUGH, dws_spa_route("/api/state", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_PASSTHROUGH, dws_spa_route("/api/devices/42", "/api/"))</code>
+      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/api/state", nullptr))</code>
   </details>
 
 </details>
@@ -29698,10 +29698,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Service request errors
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_auth_handle_service_request(p, 1, out, &olen, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_handle_service_request(p, 0, out, &olen, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_handle_service_request(p, 1, out, &olen, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_handle_service_request(p, n, out, &olen, 3))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_service_request(p, 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_service_request(p, 0, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_service_request(p, 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_service_request(p, n, out, &olen, 3))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29709,9 +29709,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: build_pk_ok via a pubkey probe with a tiny output buffer.
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_auth_build_failure(out, &olen, 2, false))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_build_success(out, &olen, 0))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_handle_request(0, pkt, pn, out, &olen, 4))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_build_failure(out, &olen, 2, false))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_build_success(out, &olen, 0))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_request(0, pkt, pn, out, &olen, 4))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29719,22 +29719,22 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: password: boolean missing, then password string missing.
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, 1, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, 0, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, 1, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, 1, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, 0, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, 1, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, n, &req))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_parse_request(p, n, &req))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29742,7 +29742,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: empty blob: type string cannot be read.
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, pn, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, pn, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
@@ -29756,7 +29756,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pubkey oversized signed prefix
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
   </details>
 
@@ -29765,8 +29765,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Handle request index and parse guards
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_auth_handle_request(MAX_SSH_CONNS, p, 1, out, &olen, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_auth_handle_request(0, p, 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_request(MAX_SSH_CONNS, p, 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_request(0, p, 1, out, &olen, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29774,7 +29774,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Service request accept
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_handle_service_request(pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_service_request(pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_SERVICE_ACCEPT, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(12, sl);</code>
       * <code>Assert equal memory ("ssh-userauth", out + 5, 12)</code>
@@ -29785,7 +29785,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Service request rejects unknown
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_auth_handle_service_request(pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_auth_handle_service_request(pkt, n, out, &olen, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -29793,7 +29793,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse password request
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_parse_request(pkt, n, &req))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_parse_request(pkt, n, &req))</code>
       * <code>Assert true (req.is_password)</code>
       * <code>Assert equal string ("alice", req.user)</code>
       * <code>Assert equal string ("ssh-connection", req.service)</code>
@@ -29806,7 +29806,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse none request
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_parse_request(pkt, n, &req))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_parse_request(pkt, n, &req))</code>
       * <code>Assert false (req.is_password)</code>
       * <code>Assert equal string ("bob", req.user)</code>
   </details>
@@ -29816,7 +29816,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Handle request success
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, ssh_sess[0].phase)</code>
@@ -29827,7 +29827,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Failure advertises the "password" method.
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert false (ssh_sess[0].authed)</code>
       * <code>Assert true (adv)</code>
@@ -29838,7 +29838,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Handle none request fails without auth
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert false (ssh_sess[0].authed)</code>
   </details>
@@ -29848,7 +29848,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No callback installed → all credentials rejected.
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
   </details>
 
@@ -29857,7 +29857,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pubkey probe returns pk ok
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_PK_OK, out[0])</code>
       * <code>Assert false (ssh_sess[0].authed)</code>
   </details>
@@ -29867,7 +29867,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pubkey valid signature succeeds
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, ssh_sess[0].phase)</code>
@@ -29879,7 +29879,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Install the private key into the native RSA sign fixture, e = 65537.
     * **Assertions**:
       * <code>Assert equal int (0, ssh_rsa_sign(sd, sn, SshRsaHash::SHA512, sig))</code>
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
   </details>
@@ -29891,7 +29891,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (ssh_ecdsa_p256_pubkey(q, d))</code>
       * <code>Assert true (ssh_ecdsa_p256_sign(raw, sd, sn, d))</code>
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
   </details>
@@ -29901,10 +29901,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build the signed prefix, prepend string(session_id), sign the whole thing.
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, out[0])</code>
       * <code>Assert true (ssh_sess[0].authed)</code>
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert false (ssh_sess[0].authed)</code>
   </details>
@@ -29914,7 +29914,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pubkey tampered signature fails
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert false (ssh_sess[0].authed)</code>
   </details>
@@ -29924,7 +29924,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pubkey unauthorized key fails
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
   </details>
 
@@ -29994,14 +29994,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Chan slot and msgtype guards
     * **Assertions**:
       * <code>Assert equal int (-1, ssh_global_request_handle(0, z, sizeof(z), out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_open(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_open_confirm(MAX_SSH_CONNS, z, 17))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_open_failure(0, z, 5))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_request(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_data(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_window_adjust(0, z, 9))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_build_close(MAX_SSH_CONNS, 0, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_close(0, z, 5, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open_confirm(MAX_SSH_CONNS, z, 17))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open_failure(0, z, 5))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_request(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_data(MAX_SSH_CONNS, z, 1, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_window_adjust(0, z, 9))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_build_close(MAX_SSH_CONNS, 0, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_close(0, z, 5, out, &ol, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30009,13 +30009,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Chan malformed payloads
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_channel_handle_open(0, over, sizeof(over), out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_open(0, shortpkt, n, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_open(0, dt, n, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_data(0, dp, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open(0, over, sizeof(over), out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open(0, shortpkt, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open(0, dt, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_data(0, dp, n, out, &ol, sizeof(out)))</code>
       * <code>Assert equal int (-1, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)))</code>
       * <code>Assert equal int (-1, ssh_global_request_handle(0, g, n, out, &ol, sizeof(out)))</code>
   </details>
@@ -30026,7 +30026,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Chan open cap guards
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_INT(-1,</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_open(0, ses, n, out, &ol, 10)); // session -&gt; confirm cap&lt;17 (157)</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open(0, ses, n, out, &ol, 10)); // session -&gt; confirm cap&lt;17 (157)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30034,12 +30034,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: While a slot is free: null address (262) and a too-small buffer (273).
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_channel_open_forwarded(0, nullptr, 80, "x", 90, out, &ol, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_open_forwarded(0, "10.0.0.1", 80, "1.2.3.4", 90, out, &ol, 10))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_request(0, rq, n, out, &ol, 3)); // want_reply cap&lt;5 (439)</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_open_forwarded(0, nullptr, 80, "x", 90, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_open_forwarded(0, "10.0.0.1", 80, "1.2.3.4", 90, out, &ol, 10))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_request(0, rq, n, out, &ol, 3)); // want_reply cap&lt;5 (439)</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
-      * <code>Assert equal int (-1, det_ssh_channel_build_close(0, 99, out, &ol, sizeof(out))); // null chan (553)</code>
-      * <code>Assert equal int (-1, det_ssh_channel_open_forwarded(0, "10.0.0.1", 80, "1.2.3.4", 90, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_build_close(0, 99, out, &ol, sizeof(out))); // null chan (553)</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_open_forwarded(0, "10.0.0.1", 80, "1.2.3.4", 90, out, &ol, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30068,7 +30068,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Open unknown type fails
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_FAILURE, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(3u, rd_u32(out + 5)); // unknown channel type</code>
       * <code>Assert false (ssh_chan[0][0].open)</code>
@@ -30079,7 +30079,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Forwarding is opt-in: with no open callback installed it is refused.
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_FAILURE, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(1u, rd_u32(out + 5)); // administratively prohibited</code>
       * <code>Assert false (ssh_chan[0][0].open)</code>
@@ -30090,7 +30090,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Direct tcpip accept confirms
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_CONFIRM, out[0])</code>
       * <code>Assert true (ssh_chan[0][id].open)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(SshChanType::SSH_CHAN_DIRECT_TCPIP, ssh_chan[0][id].type);</code>
@@ -30105,7 +30105,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Direct tcpip refused connect failed
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_FAILURE, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(2u, rd_u32(out + 5)); // connect failed</code>
       * <code>Assert false (ssh_chan[0][0].open)</code>
@@ -30116,7 +30116,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Forward data routes to forward cb
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, dpkt, dn, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, dpkt, dn, out, &olen, sizeof(out)))</code>
       * <code>Assert equal int (1, fwd_data_count)</code>
       * <code>Assert equal int (0, data_cb_count)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(id, fwd_data_channel);</code>
@@ -30128,7 +30128,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Shell request success with reply
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1));</code>
   </details>
@@ -30138,7 +30138,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unknown request failure
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_FAILURE, out[0])</code>
   </details>
 
@@ -30147,7 +30147,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Request no reply produces nothing
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, (uint32_t)olen);</code>
   </details>
 
@@ -30156,7 +30156,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Inbound data invokes callback
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal int (1, data_cb_count)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(id, last_channel);</code>
       * <code>Assert equal int (5, (int)last_data_len)</code>
@@ -30168,7 +30168,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Inbound data window replenish
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_WINDOW_ADJUST, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1)); // peer channel</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(SSH_CHAN_WINDOW, ssh_chan[0][id].local_window);</code>
@@ -30179,7 +30179,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Inbound data exceeding window rejected
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30187,7 +30187,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Outbound data frames and decrements window
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_build_data(0, id, (const uint8_t *)"abc", 3, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_build_data(0, id, (const uint8_t *)"abc", 3, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_DATA, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1)); // peer channel</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(3, rd_u32(out + 5)); // data length</code>
@@ -30200,7 +30200,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Outbound data exceeding peer window rejected
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_channel_build_data(0, id, (const uint8_t *)"abc", 3, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_build_data(0, id, (const uint8_t *)"abc", 3, out, &olen, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30208,7 +30208,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Window adjust grows peer window
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_window_adjust(0, pkt, sizeof(pkt)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_window_adjust(0, pkt, sizeof(pkt)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(600, ssh_chan[0][id].peer_window);</code>
   </details>
 
@@ -30217,7 +30217,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build close emits eof and close
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_build_close(0, id, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_build_close(0, id, out, &olen, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(10, (uint32_t)olen);</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_EOF, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1));</code>
@@ -30231,7 +30231,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Inbound close routes to channel
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_close(0, pkt, 5, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_close(0, pkt, 5, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_EOF, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1));</code>
       * <code>Assert false (ssh_chan[0][id].open)</code>
@@ -30247,18 +30247,18 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert true (ssh_chan[0][b].open)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, ssh_chan[0][a].peer_id);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(7, ssh_chan[0][b].peer_id);</code>
-      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(b, last_channel);</code>
       * <code>Assert equal memory ("to-b", last_data, 4)</code>
-      * <code>Assert equal int (0, det_ssh_channel_build_data(0, a, (const uint8_t *)"x", 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_build_data(0, a, (const uint8_t *)"x", 1, out, &olen, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(5, rd_u32(out + 1));</code>
-      * <code>Assert equal int (0, det_ssh_channel_build_data(0, b, (const uint8_t *)"y", 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_build_data(0, b, (const uint8_t *)"y", 1, out, &olen, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(7, rd_u32(out + 1));</code>
-      * <code>Assert equal int (0, det_ssh_channel_build_close(0, a, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_build_close(0, a, out, &olen, sizeof(out)))</code>
       * <code>Assert false (ssh_chan[0][a].open)</code>
       * <code>Assert true (ssh_chan[0][b].open)</code>
-      * <code>Assert equal int (0, det_ssh_channel_build_data(0, b, (const uint8_t *)"z", 1, out, &olen, sizeof(out)))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_build_data(0, a, (const uint8_t *)"z", 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_build_data(0, b, (const uint8_t *)"z", 1, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_build_data(0, a, (const uint8_t *)"z", 1, out, &olen, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30266,7 +30266,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: One past the pool: CHANNEL_OPEN_FAILURE (resource shortage).
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_open(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_FAILURE, out[0])</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(4u, rd_u32(out + 5)); // reason 4 = resource shortage</code>
   </details>
@@ -30276,7 +30276,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Data to unknown channel rejected
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_data(0, pkt, n, out, &olen, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30375,7 +30375,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Now that it is open, the server can frame outbound data toward the peer window.
     * **Assertions**:
       * <code>Assert true (ch &gt;= 0)</code>
-      * <code>Assert equal int (0, det_ssh_channel_handle_open_confirm(0, pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_open_confirm(0, pkt, n))</code>
       * <code>Assert equal int (1, confirm_count)</code>
       * <code>Assert true (confirm_ok)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)ch, confirm_channel);</code>
@@ -30390,7 +30390,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: The freed slot is reusable: a session open may now claim the same channel id.
     * **Assertions**:
       * <code>Assert true (ch &gt;= 0)</code>
-      * <code>Assert equal int (0, det_ssh_channel_handle_open_failure(0, pkt, 17))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_open_failure(0, pkt, 17))</code>
       * <code>Assert equal int (1, confirm_count)</code>
       * <code>Assert false (confirm_ok)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)ch, sess);</code>
@@ -30401,8 +30401,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Forwarded confirm unknown rejected
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_channel_handle_open_confirm(0, pkt, n))</code>
-      * <code>Assert equal int (-1, det_ssh_channel_handle_open_failure(0, pkt, 17))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open_confirm(0, pkt, n))</code>
+      * <code>Assert equal int (-1, dws_ssh_channel_handle_open_failure(0, pkt, 17))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30411,8 +30411,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Forwarded inbound data routes to forward cb
     * **Assertions**:
       * <code>Assert true (ch &gt;= 0)</code>
-      * <code>Assert equal int (0, det_ssh_channel_handle_open_confirm(0, cpkt, 17))</code>
-      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, pkt, n, dout, &dolen, sizeof(dout)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_open_confirm(0, cpkt, 17))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, pkt, n, dout, &dolen, sizeof(dout)))</code>
       * <code>Assert equal int (1, fwd_data_count)</code>
       * <code>Assert equal int (0, data_cb_count)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32((uint32_t)ch, fwd_data_channel);</code>
@@ -30424,11 +30424,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Sftp subsystem routes
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, out[0])</code>
       * <code>Assert equal int (1, sftp_open_count)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(id, sftp_open_channel);</code>
-      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)))</code>
       * <code>Assert equal int (1, sftp_data_count)</code>
       * <code>Assert equal int (0, data_cb_count)</code>
       * <code>Assert equal memory ("FXP", sftp_data_buf, 3)</code>
@@ -30439,7 +30439,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unknown subsystem refused
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_FAILURE, out[0])</code>
   </details>
 
@@ -30448,11 +30448,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Scp exec routes
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_request(0, rq, n, out, &ol, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, out[0])</code>
       * <code>Assert equal int (1, scp_open_count)</code>
       * <code>Assert equal memory ("scp -t /gcode/part.nc", scp_cmd, scp_cmd_len)</code>
-      * <code>Assert equal int (0, det_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_data(0, dp, dn, out, &ol, sizeof(out)))</code>
       * <code>Assert equal int (1, scp_data_count)</code>
   </details>
 
@@ -30545,9 +30545,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Conn outbound arena exhausted
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_conn_send(j, 0, data, sizeof(data)))</code>
-      * <code>Assert equal int (-1, det_ssh_conn_close_channel(j, 0))</code>
-      * <code>Assert equal int (-1, det_ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_send(j, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_close_channel(j, 0))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30555,8 +30555,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Conn outbound pkt send fails
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_conn_send(j, 0, data, sizeof(data)))</code>
-      * <code>Assert equal int (-1, det_ssh_conn_close_channel(j, 0))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_send(j, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_close_channel(j, 0))</code>
       * <code>TEST_ASSERT_EQUAL_INT(</code>
   </details>
 
@@ -30573,7 +30573,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (tcp_captured_len() &gt;= 8)</code>
       * <code>Assert equal memory ("SSH-2.0-", resp, 8)</code>
-      * <code>Assert not equal (DETWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot)</code>
+      * <code>Assert not equal (DWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30617,12 +30617,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Send entrypoints reject
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_conn_send(250, 0, data, sizeof(data)))</code>
-      * <code>Assert equal int (-1, det_ssh_conn_close_channel(250, 0))</code>
-      * <code>Assert equal int (-1, det_ssh_conn_open_forwarded(250, "h", 22, "o", 1))</code>
-      * <code>Assert equal int (-1, det_ssh_conn_send(j, 0, data, sizeof(data)))</code>
-      * <code>Assert equal int (-1, det_ssh_conn_close_channel(j, 0))</code>
-      * <code>Assert equal int (-1, det_ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_send(250, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_close_channel(250, 0))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_open_forwarded(250, "h", 22, "o", 1))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_send(j, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_close_channel(j, 0))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30638,11 +30638,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The channel slot is free again -> a server-initiated forwarded-tcpip open succeeds.
     * **Assertions**:
-      * <code>Assert equal int (5, det_ssh_conn_send(j, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (5, dws_ssh_conn_send(j, 0, data, sizeof(data)))</code>
       * <code>Assert true (tcp_captured_len() &gt; 0)</code>
-      * <code>Assert equal int (0, det_ssh_conn_close_channel(j, 0))</code>
+      * <code>Assert equal int (0, dws_ssh_conn_close_channel(j, 0))</code>
       * <code>Assert true (tcp_captured_len() &gt; 0)</code>
-      * <code>Assert true (det_ssh_conn_open_forwarded(j, "10.0.0.1", 80, "192.168.0.9", 5000) &gt;= 0)</code>
+      * <code>Assert true (dws_ssh_conn_open_forwarded(j, "10.0.0.1", 80, "192.168.0.9", 5000) &gt;= 0)</code>
       * <code>Assert true (tcp_captured_len() &gt; 0)</code>
   </details>
 
@@ -30651,9 +30651,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The sole channel slot is occupied -> no room for a server-initiated forward.
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_conn_close_channel(j, 0))</code>
-      * <code>Assert equal int (-1, det_ssh_conn_send(j, 0, data, sizeof(data)))</code>
-      * <code>Assert equal int (-1, det_ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_close_channel(j, 0))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_send(j, 0, data, sizeof(data)))</code>
+      * <code>Assert equal int (-1, dws_ssh_conn_open_forwarded(j, "h", 22, "o", 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30661,8 +30661,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Accept no ssh capacity
     * **Assertions**:
-      * <code>Assert not equal (DETWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot)</code>
-      * <code>Assert equal (DETWS_PROTO_SLOT_NONE, conn_pool[1].proto_slot)</code>
+      * <code>Assert not equal (DWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot)</code>
+      * <code>Assert equal (DWS_PROTO_SLOT_NONE, conn_pool[1].proto_slot)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30678,7 +30678,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Rx disconnect tears down
     * **Assertions**:
-      * <code>Assert equal (DETWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot)</code>
+      * <code>Assert equal (DWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30686,7 +30686,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Rx overlong banner closes
     * **Assertions**:
-      * <code>Assert equal (DETWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot)</code>
+      * <code>Assert equal (DWS_PROTO_SLOT_NONE, conn_pool[0].proto_slot)</code>
   </details>
 
 </details>
@@ -30853,7 +30853,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Even a callback that accepts everything must not authenticate, because
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_handle_request(0, pkt, n, out, &olen, sizeof(out)))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, out[0])</code>
       * <code>Assert false (ssh_sess[0].authed)</code>
   </details>
@@ -30863,7 +30863,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: name-list at out[1..]: must contain "publickey" and not "password".
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_auth_build_failure(out, &olen, sizeof(out), false))</code>
+      * <code>Assert equal int (0, dws_ssh_auth_build_failure(out, &olen, sizeof(out), false))</code>
       * <code>Assert true (has_pk)</code>
       * <code>Assert false (has_pw)</code>
   </details>
@@ -30935,7 +30935,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh dispatch bad slot
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_server_dispatch(MAX_SSH_CONNS, p[0], p, 1))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(MAX_SSH_CONNS, p[0], p, 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30943,7 +30943,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh kexinit parse fail
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, p[0], p, sizeof(p)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, p[0], p, sizeof(p)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30951,9 +30951,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh kexdh guards
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
-      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30961,7 +30961,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh service request fail
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30969,8 +30969,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh userauth guards
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, p[0], p, sizeof(p)))</code>
-      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, p[0], p, sizeof(p)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, bad[0], bad, sizeof(bad)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30978,7 +30978,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh postauth authed guard
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, mts[j], p, sizeof(p)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, mts[j], p, sizeof(p)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30986,7 +30986,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh postauth handler fails
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, mts[j], p, sizeof(p)))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, mts[j], p, sizeof(p)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -30994,8 +30994,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh open confirm failure authed
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, c[0], c, sizeof(c)))</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, f[0], f, sizeof(f)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, c[0], c, sizeof(c)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, f[0], f, sizeof(f)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -31003,7 +31003,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh global request reply
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, p[0], p, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, p[0], p, n))</code>
       * <code>Assert equal int (1, emt_n)</code>
   </details>
 
@@ -31012,8 +31012,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ssh window adjust and eof
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, w[0], w, sizeof(w)))</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, e[0], e, sizeof(e)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, w[0], w, sizeof(w)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, e[0], e, sizeof(e)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -31065,35 +31065,35 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Banner exchange already done out-of-band; seed V_C and enter KEXINIT.
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal int (1, emt_n)</code>
       * <code>Assert equal (SSH_MSG_KEXINIT, emt_type[0])</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_DH_INIT, s-&gt;phase)</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal int (2, emt_n)</code>
       * <code>Assert equal (SSH_MSG_KEXDH_REPLY, emt_type[0])</code>
       * <code>Assert equal (SSH_MSG_NEWKEYS, emt_type[1])</code>
       * <code>Assert true (ssh_keys[0].active)</code>
       * <code>Assert true (ssh_pkt[0].enc_out)</code>
       * <code>Assert false (ssh_pkt[0].enc_in)</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, nk, &nk, 1))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, nk, &nk, 1))</code>
       * <code>Assert true (ssh_pkt[0].enc_in && ssh_pkt[0].enc_out)</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_SERVICE, s-&gt;phase)</code>
       * <code>Assert equal int (1, emt_n)</code>
       * <code>Assert equal (SSH_MSG_EXT_INFO, emt_type[0])</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_SERVICE_ACCEPT, emt_type[0])</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_AUTH, s-&gt;phase)</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, emt_type[0])</code>
       * <code>Assert true (s-&gt;authed)</code>
       * <code>Assert equal (SshPhase::SSH_PHASE_OPEN, s-&gt;phase)</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_OPEN_CONFIRM, emt_type[0])</code>
       * <code>Assert true (ssh_chan[0][0].open)</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_SUCCESS, emt_type[0])</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal int (1, chan_data_count)</code>
       * <code>Assert equal int (2, (int)chan_data_len)</code>
       * <code>Assert equal memory ("hi", chan_data, 2)</code>
@@ -31118,9 +31118,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Extinfo not sent without ext info c
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, nk, &nk, 1))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, nk, &nk, 1))</code>
       * <code>Assert false (ssh_sess[0].ext_info_c)</code>
       * <code>Assert equal int (0, emt_n)</code>
   </details>
@@ -31130,7 +31130,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Inbound ext info ignored
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, SSH_MSG_EXT_INFO, pkt, 1))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_EXT_INFO, pkt, 1))</code>
       * <code>Assert equal int (0, emt_n)</code>
   </details>
 
@@ -31149,7 +31149,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Channel open before auth rejected
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -31157,7 +31157,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Service request before newkeys rejected
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert not equal (SshPhase::SSH_PHASE_AUTH, s-&gt;phase)</code>
   </details>
 
@@ -31166,7 +31166,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Disconnect closes
     * **Assertions**:
-      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, pkt[0], pkt, 1))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, pkt[0], pkt, 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -31174,7 +31174,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ignore is noop
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, 1))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, 1))</code>
       * <code>Assert equal int (0, emt_n)</code>
   </details>
 
@@ -31183,11 +31183,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The first SSH_MAX_AUTH_ATTEMPTS-1 failures keep the connection open.
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, emt_type[0])</code>
       * <code>Assert false (s-&gt;authed)</code>
       * <code>Assert equal int (SSH_MAX_AUTH_ATTEMPTS - 1, s-&gt;auth_failures)</code>
-      * <code>Assert equal int (-1, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (-1, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal int (2, emt_n)</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, emt_type[0])</code>
       * <code>Assert equal (SSH_MSG_DISCONNECT, emt_type[1])</code>
@@ -31198,9 +31198,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Auth success after failures
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_FAILURE, emt_type[0])</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, n))</code>
       * <code>Assert equal (SSH_MSG_USERAUTH_SUCCESS, emt_type[0])</code>
       * <code>Assert true (s-&gt;authed)</code>
       * <code>Assert equal int (1, s-&gt;auth_failures)</code>
@@ -31211,7 +31211,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unimplemented reply for unknown message
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, pkt[0], pkt, 1))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, pkt[0], pkt, 1))</code>
       * <code>Assert equal (SSH_MSG_UNIMPLEMENTED, emt_type[0])</code>
       * <code>Assert equal int (5, (int)emt_last_len)</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(6, seq); // rejected packet = seq_no_recv - 1</code>
@@ -31222,8 +31222,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Open a channel so the close path has something to close (peer id 21).
     * **Assertions**:
-      * <code>Assert equal int (0, det_ssh_channel_handle_open(0, op, on, obuf, &ol, sizeof(obuf)))</code>
-      * <code>Assert equal int (0, det_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, pkt, 5))</code>
+      * <code>Assert equal int (0, dws_ssh_channel_handle_open(0, op, on, obuf, &ol, sizeof(obuf)))</code>
+      * <code>Assert equal int (0, dws_ssh_server_dispatch(0, SSH_MSG_CHANNEL_CLOSE, pkt, 5))</code>
       * <code>Assert equal int (2, emt_n)</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_EOF, emt_type[0])</code>
       * <code>Assert equal (SSH_MSG_CHANNEL_CLOSE, emt_type[1])</code>
@@ -31438,7 +31438,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Kexinit parse selects ecdsa
     * **Assertions**:
-      * <code>Assert true (det_ssh_hostkey_ecdsa_available())</code>
+      * <code>Assert true (dws_ssh_hostkey_ecdsa_available())</code>
       * <code>Assert equal int (0, ssh_kexinit_parse(0, buf, n))</code>
       * <code>Assert equal (SshHostkeyAlg::SSH_HOSTKEY_ECDSA_NISTP256, ssh_sess[0].hostkey_alg)</code>
   </details>
@@ -31941,7 +31941,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Emit noop until begin
     * **Assertions**:
-      * <code>Assert equal uint (0, det_udp_captured_len())</code>
+      * <code>Assert equal uint (0, dws_udp_captured_len())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32280,8 +32280,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Init and log captured
     * **Assertions**:
       * <code>Assert true (syslog_log(SyslogSeverity::SYSLOG_INFO, "hello"))</code>
-      * <code>Assert equal uint (strlen(expect), det_udp_captured_len())</code>
-      * <code>Assert equal memory (expect, det_udp_captured(), det_udp_captured_len())</code>
+      * <code>Assert equal uint (strlen(expect), dws_udp_captured_len())</code>
+      * <code>Assert equal memory (expect, dws_udp_captured(), dws_udp_captured_len())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32290,7 +32290,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Log not ready when no server
     * **Assertions**:
       * <code>Assert false (syslog_log(SyslogSeverity::SYSLOG_INFO, "x"))</code>
-      * <code>Assert equal uint (0, det_udp_captured_len())</code>
+      * <code>Assert equal uint (0, dws_udp_captured_len())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32309,7 +32309,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Init truncates long fields
     * **Assertions**:
       * <code>Assert true (syslog_log(SyslogSeverity::SYSLOG_INFO, "m"))</code>
-      * <code>Assert equal uint ((size_t)(DETWS_SYSLOG_FIELD_MAX - 1), hcount)</code>
+      * <code>Assert equal uint ((size_t)(DWS_SYSLOG_FIELD_MAX - 1), hcount)</code>
   </details>
 
 </details>
@@ -32322,12 +32322,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Window classic stats
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT16(8, detws_window_count(&w));</code>
-      * <code>Assert float within (1e-4f, 5.0f, detws_window_mean(&w))</code>
-      * <code>Assert float within (1e-4f, 4.0f, detws_window_variance(&w))</code>
-      * <code>Assert float within (1e-4f, 2.0f, detws_window_stddev(&w))</code>
-      * <code>Assert float within (1e-4f, 2.0f, detws_window_min(&w))</code>
-      * <code>Assert float within (1e-4f, 9.0f, detws_window_max(&w))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(8, dws_window_count(&w));</code>
+      * <code>Assert float within (1e-4f, 5.0f, dws_window_mean(&w))</code>
+      * <code>Assert float within (1e-4f, 4.0f, dws_window_variance(&w))</code>
+      * <code>Assert float within (1e-4f, 2.0f, dws_window_stddev(&w))</code>
+      * <code>Assert float within (1e-4f, 2.0f, dws_window_min(&w))</code>
+      * <code>Assert float within (1e-4f, 9.0f, dws_window_max(&w))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32335,11 +32335,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Window empty
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, detws_window_count(&w));</code>
-      * <code>Assert equal float (0.0f, detws_window_mean(&w))</code>
-      * <code>Assert equal float (0.0f, detws_window_variance(&w))</code>
-      * <code>Assert equal float (0.0f, detws_window_min(&w))</code>
-      * <code>Assert equal float (0.0f, detws_window_max(&w))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_window_count(&w));</code>
+      * <code>Assert equal float (0.0f, dws_window_mean(&w))</code>
+      * <code>Assert equal float (0.0f, dws_window_variance(&w))</code>
+      * <code>Assert equal float (0.0f, dws_window_min(&w))</code>
+      * <code>Assert equal float (0.0f, dws_window_max(&w))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32347,8 +32347,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Window single sample
     * **Assertions**:
-      * <code>Assert float within (1e-4f, 42.0f, detws_window_mean(&w))</code>
-      * <code>Assert float within (1e-4f, 0.0f, detws_window_variance(&w))</code>
+      * <code>Assert float within (1e-4f, 42.0f, dws_window_mean(&w))</code>
+      * <code>Assert float within (1e-4f, 0.0f, dws_window_variance(&w))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32356,11 +32356,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Window eviction
     * **Assertions**:
-      * <code>Assert float within (1e-4f, 2.0f, detws_window_mean(&w))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(3, detws_window_count(&w));</code>
-      * <code>Assert float within (1e-4f, 3.0f, detws_window_mean(&w))</code>
-      * <code>Assert float within (1e-4f, 2.0f, detws_window_min(&w))</code>
-      * <code>Assert float within (1e-4f, 4.0f, detws_window_max(&w))</code>
+      * <code>Assert float within (1e-4f, 2.0f, dws_window_mean(&w))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(3, dws_window_count(&w));</code>
+      * <code>Assert float within (1e-4f, 3.0f, dws_window_mean(&w))</code>
+      * <code>Assert float within (1e-4f, 2.0f, dws_window_min(&w))</code>
+      * <code>Assert float within (1e-4f, 4.0f, dws_window_max(&w))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32368,9 +32368,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Rate basic
     * **Assertions**:
-      * <code>Assert float within (1e-4f, 0.0f, detws_rate_update(&r, 10.0f, 0))</code>
-      * <code>Assert float within (1e-4f, 10.0f, detws_rate_update(&r, 20.0f, 1000))</code>
-      * <code>Assert float within (1e-4f, -5.0f, detws_rate_update(&r, 10.0f, 3000))</code>
+      * <code>Assert float within (1e-4f, 0.0f, dws_rate_update(&r, 10.0f, 0))</code>
+      * <code>Assert float within (1e-4f, 10.0f, dws_rate_update(&r, 20.0f, 1000))</code>
+      * <code>Assert float within (1e-4f, -5.0f, dws_rate_update(&r, 10.0f, 3000))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32378,7 +32378,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Rate zero dt
     * **Assertions**:
-      * <code>Assert float within (1e-4f, 0.0f, detws_rate_update(&r, 9.0f, 100))</code>
+      * <code>Assert float within (1e-4f, 0.0f, dws_rate_update(&r, 9.0f, 100))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32395,7 +32395,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Totalizer trapezoid and reset
     * **Assertions**:
       * <code>Assert float within (1e-4f, 5.0f, (float)total)</code>
-      * <code>Assert float within (1e-6f, 0.0f, (float)detws_totalizer_total(&t))</code>
+      * <code>Assert float within (1e-6f, 0.0f, (float)dws_totalizer_total(&t))</code>
   </details>
 
 </details>
@@ -32790,9 +32790,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Single source
     * **Assertions**:
-      * <code>Assert true (detws_time_source_add("ntp", 1, ntp_fn))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1000, detws_time_now());</code>
-      * <code>Assert equal string ("ntp", detws_time_source_active())</code>
+      * <code>Assert true (dws_time_source_add("ntp", 1, ntp_fn))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1000, dws_time_now());</code>
+      * <code>Assert equal string ("ntp", dws_time_source_active())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32800,8 +32800,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Priority order lowest value wins
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(200, detws_time_now()); // gps (priority 0)</code>
-      * <code>Assert equal string ("gps", detws_time_source_active())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(200, dws_time_now()); // gps (priority 0)</code>
+      * <code>Assert equal string ("gps", dws_time_source_active())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32809,8 +32809,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Falls back when primary unavailable
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(555, detws_time_now());</code>
-      * <code>Assert equal string ("rtc", detws_time_source_active())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(555, dws_time_now());</code>
+      * <code>Assert equal string ("rtc", dws_time_source_active())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32818,8 +32818,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: All unavailable returns zero
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_time_now());</code>
-      * <code>Assert null (detws_time_source_active())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_time_now());</code>
+      * <code>Assert null (dws_time_source_active())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32827,7 +32827,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: First valid short circuits
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(42, detws_time_now());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(42, dws_time_now());</code>
       * <code>Assert equal int (1, g_gps_calls)</code>
       * <code>Assert equal int (0, g_rtc_calls); // rtc never queried (gps already valid)</code>
   </details>
@@ -32837,11 +32837,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Fallback queries in priority order
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(7, detws_time_now());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(7, dws_time_now());</code>
       * <code>Assert equal int (1, g_gps_calls)</code>
       * <code>Assert equal int (1, g_rtc_calls)</code>
       * <code>Assert equal int (0, g_ntp_calls)</code>
-      * <code>Assert equal string ("rtc", detws_time_source_active())</code>
+      * <code>Assert equal string ("rtc", dws_time_source_active())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32849,8 +32849,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Table full rejects
     * **Assertions**:
-      * <code>Assert true (detws_time_source_add("s", (uint8_t)i, rtc_fn))</code>
-      * <code>Assert false (detws_time_source_add("overflow", 9, rtc_fn))</code>
+      * <code>Assert true (dws_time_source_add("s", (uint8_t)i, rtc_fn))</code>
+      * <code>Assert false (dws_time_source_add("overflow", 9, rtc_fn))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32858,7 +32858,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Null fn rejected
     * **Assertions**:
-      * <code>Assert false (detws_time_source_add("bad", 0, nullptr))</code>
+      * <code>Assert false (dws_time_source_add("bad", 0, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32866,9 +32866,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reset clears sources
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(5, detws_time_now());</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_time_now());</code>
-      * <code>Assert null (detws_time_source_active())</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5, dws_time_now());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_time_now());</code>
+      * <code>Assert null (dws_time_source_active())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -32876,11 +32876,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: The HTTP Date header draws from the registry: no valid source -> nothing; a source with a
     * **Assertions**:
-      * <code>Assert equal uint (0, detws_time_http_date(buf, sizeof(buf)))</code>
-      * <code>Assert true (detws_time_http_date(buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert equal uint (0, dws_time_http_date(buf, sizeof(buf)))</code>
+      * <code>Assert true (dws_time_http_date(buf, sizeof(buf)) &gt; 0)</code>
       * <code>Assert equal string ("Sun, 06 Nov 1994 08:49:37 GMT", buf)</code>
-      * <code>Assert equal uint (0, detws_time_http_date(nullptr, sizeof(buf)))</code>
-      * <code>Assert equal uint (0, detws_time_http_date(buf, 0))</code>
+      * <code>Assert equal uint (0, dws_time_http_date(nullptr, sizeof(buf)))</code>
+      * <code>Assert equal uint (0, dws_time_http_date(buf, 0))</code>
   </details>
 
 </details>
@@ -33089,9 +33089,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_HEX16(TLS_VERSION_1_3,</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(TLS_VERSION_1_2,</code>
-      * <code>TEST_ASSERT_EQUAL_HEX16(0, detws_tls_negotiate_version(TLS_VERSION_1_2, TLS_VERSION_1_3, TLS_VERSION_1_3));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0, dws_tls_negotiate_version(TLS_VERSION_1_2, TLS_VERSION_1_3, TLS_VERSION_1_3));</code>
       * <code>TEST_ASSERT_EQUAL_HEX16(TLS_VERSION_1_2,</code>
-      * <code>TEST_ASSERT_EQUAL_HEX16(0, detws_tls_negotiate_version(TLS_VERSION_1_3, TLS_VERSION_1_3, TLS_VERSION_1_2));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0, dws_tls_negotiate_version(TLS_VERSION_1_3, TLS_VERSION_1_3, TLS_VERSION_1_2));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33099,9 +33099,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Version name
     * **Assertions**:
-      * <code>Assert equal string ("TLS 1.2", detws_tls_version_name(TLS_VERSION_1_2))</code>
-      * <code>Assert equal string ("TLS 1.3", detws_tls_version_name(TLS_VERSION_1_3))</code>
-      * <code>Assert equal string ("unknown", detws_tls_version_name(0x0301))</code>
+      * <code>Assert equal string ("TLS 1.2", dws_tls_version_name(TLS_VERSION_1_2))</code>
+      * <code>Assert equal string ("TLS 1.3", dws_tls_version_name(TLS_VERSION_1_3))</code>
+      * <code>Assert equal string ("unknown", dws_tls_version_name(0x0301))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33109,9 +33109,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Server prefers ECDHE_RSA_AES_128_GCM then CHACHA20; client offers CHACHA20 + a legacy suite.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX16(0xCCA8, detws_tls_select_cipher(offered, 2, pinned, 2));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX16(0xC02F, detws_tls_select_cipher(offered2, 2, pinned, 2));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX16(0, detws_tls_select_cipher(offered3, 2, pinned, 2));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0xCCA8, dws_tls_select_cipher(offered, 2, pinned, 2));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0xC02F, dws_tls_select_cipher(offered2, 2, pinned, 2));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX16(0, dws_tls_select_cipher(offered3, 2, pinned, 2));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33119,11 +33119,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Is aead
     * **Assertions**:
-      * <code>Assert true (detws_tls_is_aead(0x1301))</code>
-      * <code>Assert true (detws_tls_is_aead(0xCCA8))</code>
-      * <code>Assert true (detws_tls_is_aead(0xC030))</code>
-      * <code>Assert false (detws_tls_is_aead(0x002F)); // AES_128_CBC_SHA (not AEAD)</code>
-      * <code>Assert false (detws_tls_is_aead(0x0000))</code>
+      * <code>Assert true (dws_tls_is_aead(0x1301))</code>
+      * <code>Assert true (dws_tls_is_aead(0xCCA8))</code>
+      * <code>Assert true (dws_tls_is_aead(0xC030))</code>
+      * <code>Assert false (dws_tls_is_aead(0x002F)); // AES_128_CBC_SHA (not AEAD)</code>
+      * <code>Assert false (dws_tls_is_aead(0x0000))</code>
   </details>
 
 </details>
@@ -33136,11 +33136,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: RFC 6238 Appendix B (SHA-1, T0=0, step=30, digits=8).
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(94287082u, detws_totp(SECRET, SECRET_LEN, 59ull, 30, 8));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(7081804u, detws_totp(SECRET, SECRET_LEN, 1111111109ull, 30, 8));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(14050471u, detws_totp(SECRET, SECRET_LEN, 1111111111ull, 30, 8));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(89005924u, detws_totp(SECRET, SECRET_LEN, 1234567890ull, 30, 8));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(69279037u, detws_totp(SECRET, SECRET_LEN, 2000000000ull, 30, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(94287082u, dws_totp(SECRET, SECRET_LEN, 59ull, 30, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(7081804u, dws_totp(SECRET, SECRET_LEN, 1111111109ull, 30, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(14050471u, dws_totp(SECRET, SECRET_LEN, 1111111111ull, 30, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(89005924u, dws_totp(SECRET, SECRET_LEN, 1234567890ull, 30, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(69279037u, dws_totp(SECRET, SECRET_LEN, 2000000000ull, 30, 8));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33148,10 +33148,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Code from the previous step is accepted within a +/-1 window (clock skew).
     * **Assertions**:
-      * <code>Assert true (detws_totp_verify(SECRET, SECRET_LEN, t, code, 30, 8, 1))</code>
-      * <code>Assert false (detws_totp_verify(SECRET, SECRET_LEN, t, code + 1, 30, 8, 1))</code>
-      * <code>Assert true (detws_totp_verify(SECRET, SECRET_LEN, t, prev, 30, 8, 1))</code>
-      * <code>Assert false (detws_totp_verify(SECRET, SECRET_LEN, t, prev, 30, 8, 0))</code>
+      * <code>Assert true (dws_totp_verify(SECRET, SECRET_LEN, t, code, 30, 8, 1))</code>
+      * <code>Assert false (dws_totp_verify(SECRET, SECRET_LEN, t, code + 1, 30, 8, 1))</code>
+      * <code>Assert true (dws_totp_verify(SECRET, SECRET_LEN, t, prev, 30, 8, 1))</code>
+      * <code>Assert false (dws_totp_verify(SECRET, SECRET_LEN, t, prev, 30, 8, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33170,8 +33170,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Base32 rejects invalid
     * **Assertions**:
-      * <code>Assert equal int (-1, detws_base32_decode("MZXW6!!!", out, sizeof(out)))</code>
-      * <code>Assert equal int (-1, detws_base32_decode("MZXW6MZXW6", out, 1))</code>
+      * <code>Assert equal int (-1, dws_base32_decode("MZXW6!!!", out, sizeof(out)))</code>
+      * <code>Assert equal int (-1, dws_base32_decode("MZXW6MZXW6", out, 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33179,8 +33179,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Long key default period and base32
     * **Assertions**:
-      * <code>Assert true (detws_base32_decode("MFRGG===", out, sizeof(out)) &gt;= 0)</code>
-      * <code>Assert equal int (-1, detws_base32_decode("MFRG!", out, sizeof(out)))</code>
+      * <code>Assert true (dws_base32_decode("MFRGG===", out, sizeof(out)) &gt;= 0)</code>
+      * <code>Assert equal int (-1, dws_base32_decode("MFRG!", out, sizeof(out)))</code>
   </details>
 
 </details>
@@ -33429,7 +33429,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (listener_accept_allowed(10))</code>
       * <code>Assert false (listener_accept_allowed(10))</code>
-      * <code>Assert true (listener_accept_allowed(10 + DETWS_ACCEPT_THROTTLE_WINDOW_MS))</code>
+      * <code>Assert true (listener_accept_allowed(10 + DWS_ACCEPT_THROTTLE_WINDOW_MS))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33438,7 +33438,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Wrap past zero: elapsed = (small - near_max) wraps to a large window jump.
     * **Assertions**:
       * <code>Assert true (listener_accept_allowed(near_max))</code>
-      * <code>Assert true (listener_accept_allowed(near_max + DETWS_ACCEPT_THROTTLE_WINDOW_MS))</code>
+      * <code>Assert true (listener_accept_allowed(near_max + DWS_ACCEPT_THROTTLE_WINDOW_MS))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33467,7 +33467,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (listener_accept_allowed_ip(&ip, 50))</code>
       * <code>Assert false (listener_accept_allowed_ip(&ip, 50))</code>
-      * <code>Assert true (listener_accept_allowed_ip(&ip, 50 + DETWS_PER_IP_THROTTLE_WINDOW_MS))</code>
+      * <code>Assert true (listener_accept_allowed_ip(&ip, 50 + DWS_PER_IP_THROTTLE_WINDOW_MS))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33492,8 +33492,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Per ip throttle v6 distinct
     * **Assertions**:
-      * <code>Assert true (det_ip_parse("2001:db8::1", &a))</code>
-      * <code>Assert true (det_ip_parse("2001:db8::2", &b))</code>
+      * <code>Assert true (dws_ip_parse("2001:db8::1", &a))</code>
+      * <code>Assert true (dws_ip_parse("2001:db8::2", &b))</code>
       * <code>Assert true (listener_accept_allowed_ip(&a, 0))</code>
       * <code>Assert false (listener_accept_allowed_ip(&a, 0))</code>
       * <code>Assert true (listener_accept_allowed_ip(&b, 0))</code>
@@ -33505,7 +33505,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Per ip throttle handles rollover
     * **Assertions**:
       * <code>Assert true (listener_accept_allowed_ip(&ip, near_max))</code>
-      * <code>Assert true (listener_accept_allowed_ip(&ip, near_max + DETWS_PER_IP_THROTTLE_WINDOW_MS))</code>
+      * <code>Assert true (listener_accept_allowed_ip(&ip, near_max + DWS_PER_IP_THROTTLE_WINDOW_MS))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33578,8 +33578,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Ip allowlist v6 cidr
     * **Assertions**:
       * <code>Assert true (listener_ip_allow_add_cidr("2001:db8::/32"))</code>
-      * <code>Assert true (det_ip_parse("2001:db8:0:0:1234::abcd", &in))</code>
-      * <code>Assert true (det_ip_parse("2001:db9::1", &out))</code>
+      * <code>Assert true (dws_ip_parse("2001:db8:0:0:1234::abcd", &in))</code>
+      * <code>Assert true (dws_ip_parse("2001:db9::1", &out))</code>
       * <code>Assert true (listener_ip_allowed(&in))</code>
       * <code>Assert false (listener_ip_allowed(&out))</code>
       * <code>Assert false (listener_ip_allowed(&v4peer))</code>
@@ -33612,9 +33612,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Int and uint fields
     * **Assertions**:
-      * <code>Assert true (detws_line_ok(&l))</code>
+      * <code>Assert true (dws_line_ok(&l))</code>
       * <code>Assert equal string ("env rssi=-42i,uptime=1234u", buf)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(strlen("env rssi=-42i,uptime=1234u"), detws_line_len(&l));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(strlen("env rssi=-42i,uptime=1234u"), dws_line_len(&l));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33622,7 +33622,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Float field
     * **Assertions**:
-      * <code>Assert true (detws_line_ok(&l))</code>
+      * <code>Assert true (dws_line_ok(&l))</code>
       * <code>Assert equal string ("weather temp=21.5,hum=60.25", buf)</code>
   </details>
 
@@ -33631,7 +33631,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No fields not ok
     * **Assertions**:
-      * <code>Assert false (detws_line_ok(&l))</code>
+      * <code>Assert false (dws_line_ok(&l))</code>
       * <code>Assert equal string ("m", buf)</code>
   </details>
 
@@ -33640,7 +33640,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Overflow fails closed
     * **Assertions**:
-      * <code>Assert false (detws_line_ok(&l))</code>
+      * <code>Assert false (dws_line_ok(&l))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33648,7 +33648,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Tags and timestamp
     * **Assertions**:
-      * <code>Assert true (detws_line_ok(&l))</code>
+      * <code>Assert true (dws_line_ok(&l))</code>
       * <code>Assert equal string ("env,host=esp32-1,room=lab rssi=-42i 1465839830100400200", buf)</code>
   </details>
 
@@ -33657,7 +33657,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Tag escaping
     * **Assertions**:
-      * <code>Assert true (detws_line_ok(&l))</code>
+      * <code>Assert true (dws_line_ok(&l))</code>
       * <code>Assert equal string ("m,a\\\\ b=x\\\\,y\\\\=z f=1i", buf)</code>
   </details>
 
@@ -33666,7 +33666,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Tag after field fails closed
     * **Assertions**:
-      * <code>Assert false (detws_line_ok(&l))</code>
+      * <code>Assert false (dws_line_ok(&l))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33689,7 +33689,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal uint (blen, fs::mock_fs_written())</code>
       * <code>Assert equal memory (body, fs::mock_fs_wdata(), blen)</code>
-      * <code>Assert equal uint (blen, detws_upload_last_size())</code>
+      * <code>Assert equal uint (blen, dws_upload_last_size())</code>
       * <code>Assert not null (strstr(out, "200 OK"))</code>
       * <code>Assert not null (strstr(out, expect))</code>
   </details>
@@ -33753,7 +33753,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Write failure replies 500
     * **Assertions**:
-      * <code>Assert equal uint (0, detws_upload_last_size())</code>
+      * <code>Assert equal uint (0, dws_upload_last_size())</code>
       * <code>Assert not null (strstr(out, "500"))</code>
       * <code>Assert not null (strstr(out, "upload failed"))</code>
   </details>
@@ -33769,7 +33769,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Request
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
-      * <code>Assert equal string ("&lt;?xml version=\\"1.0\\"?&gt;&lt;UTMCRequest&gt;&lt;object id=\\"DET_042\\"/&gt;&lt;/UTMCRequest&gt;", buf)</code>
+      * <code>Assert equal string ("&lt;?xml version=\\"1.0\\"?&gt;&lt;UTMCRequest&gt;&lt;object id=\\"DWS_042\\"/&gt;&lt;/UTMCRequest&gt;", buf)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33799,8 +33799,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: No id -> 0.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(7, n);</code>
-      * <code>Assert equal string ("DET_042", id)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(noid, strlen(noid), id, sizeof(id)));</code>
+      * <code>Assert equal string ("DWS_042", id)</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_utmc_parse_request(noid, strlen(noid), id, sizeof(id)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33808,7 +33808,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Overflow
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_utmc_request("a-very-long-object-id-here", buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_utmc_request("a-very-long-object-id-here", buf, sizeof(buf)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33816,9 +33816,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse request guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(nullptr, 10, out, sizeof(out))); // null xml</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(xml, strlen(xml), out, 4)); // id overflows out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(unterm, strlen(unterm), out, sizeof(out))); // unterminated</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_utmc_parse_request(nullptr, 10, out, sizeof(out))); // null xml</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_utmc_parse_request(xml, strlen(xml), out, 4)); // id overflows out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_utmc_parse_request(unterm, strlen(unterm), out, sizeof(out))); // unterminated</code>
   </details>
 
 </details>
@@ -33831,9 +33831,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Write then read file
     * **Assertions**:
-      * <code>Assert true (detws_vfs_write_file("/a.txt", msg, strlen(msg)))</code>
-      * <code>Assert true (detws_vfs_exists("/a.txt"))</code>
-      * <code>TEST_ASSERT_EQUAL_INT32((long)strlen(msg), detws_vfs_size("/a.txt"));</code>
+      * <code>Assert true (dws_vfs_write_file("/a.txt", msg, strlen(msg)))</code>
+      * <code>Assert true (dws_vfs_exists("/a.txt"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32((long)strlen(msg), dws_vfs_size("/a.txt"));</code>
       * <code>TEST_ASSERT_EQUAL_INT32((long)strlen(msg), n);</code>
       * <code>Assert equal string (msg, buf)</code>
   </details>
@@ -33844,14 +33844,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Streamed write and read
     * **Assertions**:
       * <code>Assert true (h &gt;= 0)</code>
-      * <code>Assert equal int (3, detws_vfs_write(h, "abc", 3))</code>
-      * <code>Assert equal int (3, detws_vfs_write(h, "def", 3))</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(6, detws_vfs_size("/s.bin"));</code>
+      * <code>Assert equal int (3, dws_vfs_write(h, "abc", 3))</code>
+      * <code>Assert equal int (3, dws_vfs_write(h, "def", 3))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(6, dws_vfs_size("/s.bin"));</code>
       * <code>Assert true (h &gt;= 0)</code>
-      * <code>Assert equal int (4, detws_vfs_read(h, buf, 4))</code>
+      * <code>Assert equal int (4, dws_vfs_read(h, buf, 4))</code>
       * <code>Assert equal string ("abcd", buf)</code>
-      * <code>Assert equal int (2, detws_vfs_read(h, buf, 4))</code>
-      * <code>Assert equal int (0, detws_vfs_read(h, buf, 4))</code>
+      * <code>Assert equal int (2, dws_vfs_read(h, buf, 4))</code>
+      * <code>Assert equal int (0, dws_vfs_read(h, buf, 4))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33859,7 +33859,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Write mode truncates
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT32(5, detws_vfs_size("/t.txt"));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(5, dws_vfs_size("/t.txt"));</code>
       * <code>Assert equal string ("short", buf)</code>
   </details>
 
@@ -33869,7 +33869,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Append extends
     * **Assertions**:
       * <code>Assert true (h &gt;= 0)</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(12, detws_vfs_size("/log"));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(12, dws_vfs_size("/log"));</code>
       * <code>Assert equal string ("line1\\nline2\\n", buf)</code>
   </details>
 
@@ -33878,13 +33878,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Remove and rename
     * **Assertions**:
-      * <code>Assert true (detws_vfs_rename("/old", "/new"))</code>
-      * <code>Assert false (detws_vfs_exists("/old"))</code>
-      * <code>Assert true (detws_vfs_exists("/new"))</code>
+      * <code>Assert true (dws_vfs_rename("/old", "/new"))</code>
+      * <code>Assert false (dws_vfs_exists("/old"))</code>
+      * <code>Assert true (dws_vfs_exists("/new"))</code>
       * <code>Assert equal string ("data", buf)</code>
-      * <code>Assert true (detws_vfs_remove("/new"))</code>
-      * <code>Assert false (detws_vfs_exists("/new"))</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(-1, detws_vfs_size("/new"));</code>
+      * <code>Assert true (dws_vfs_remove("/new"))</code>
+      * <code>Assert false (dws_vfs_exists("/new"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_vfs_size("/new"));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33892,12 +33892,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Missing file fails closed
     * **Assertions**:
-      * <code>Assert false (detws_vfs_exists("/nope"))</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(-1, detws_vfs_size("/nope"));</code>
-      * <code>Assert true (detws_vfs_open("/nope", DetwsVfsMode::DETWS_VFS_READ) &lt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(-1, detws_vfs_read_file("/nope", buf, sizeof(buf)));</code>
-      * <code>Assert false (detws_vfs_remove("/nope"))</code>
-      * <code>Assert false (detws_vfs_rename("/nope", "/x"))</code>
+      * <code>Assert false (dws_vfs_exists("/nope"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_vfs_size("/nope"));</code>
+      * <code>Assert true (dws_vfs_open("/nope", DetwsVfsMode::DWS_VFS_READ) &lt; 0)</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_vfs_read_file("/nope", buf, sizeof(buf)));</code>
+      * <code>Assert false (dws_vfs_remove("/nope"))</code>
+      * <code>Assert false (dws_vfs_rename("/nope", "/x"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33905,7 +33905,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Read buffer too small fails closed
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT32(-1, detws_vfs_read_file("/big", tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_vfs_read_file("/big", tiny, sizeof(tiny)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33914,8 +33914,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Never exceeds the fixed per-file capacity (fail-closed, no overflow).
     * **Assertions**:
       * <code>Assert true (h &gt;= 0)</code>
-      * <code>TEST_ASSERT_EQUAL_INT32((long)DETWS_VFS_RAM_FILE_SIZE, detws_vfs_size("/full"));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(DETWS_VFS_RAM_FILE_SIZE, (uint32_t)written);</code>
+      * <code>TEST_ASSERT_EQUAL_INT32((long)DWS_VFS_RAM_FILE_SIZE, dws_vfs_size("/full"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(DWS_VFS_RAM_FILE_SIZE, (uint32_t)written);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33923,8 +33923,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: One more distinct file must fail (pool full), not corrupt anything.
     * **Assertions**:
-      * <code>Assert true (detws_vfs_write_file(name, "x", 1))</code>
-      * <code>Assert false (detws_vfs_write_file("/overflow", "x", 1))</code>
+      * <code>Assert true (dws_vfs_write_file(name, "x", 1))</code>
+      * <code>Assert false (dws_vfs_write_file("/overflow", "x", 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33933,8 +33933,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Handle pool exhaustion
     * **Assertions**:
       * <code>Assert true (handles[i] &gt;= 0)</code>
-      * <code>Assert true (detws_vfs_open("/h", DetwsVfsMode::DETWS_VFS_READ) &lt; 0)</code>
-      * <code>Assert true (detws_vfs_open("/h", DetwsVfsMode::DETWS_VFS_READ) &gt;= 0)</code>
+      * <code>Assert true (dws_vfs_open("/h", DetwsVfsMode::DWS_VFS_READ) &lt; 0)</code>
+      * <code>Assert true (dws_vfs_open("/h", DetwsVfsMode::DWS_VFS_READ) &gt;= 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33942,10 +33942,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unmounted fails closed
     * **Assertions**:
-      * <code>Assert true (detws_vfs_open("/a", DetwsVfsMode::DETWS_VFS_READ) &lt; 0)</code>
-      * <code>Assert false (detws_vfs_exists("/a"))</code>
-      * <code>TEST_ASSERT_EQUAL_INT32(-1, detws_vfs_size("/a"));</code>
-      * <code>Assert false (detws_vfs_write_file("/a", "x", 1))</code>
+      * <code>Assert true (dws_vfs_open("/a", DetwsVfsMode::DWS_VFS_READ) &lt; 0)</code>
+      * <code>Assert false (dws_vfs_exists("/a"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_vfs_size("/a"));</code>
+      * <code>Assert false (dws_vfs_write_file("/a", "x", 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33953,11 +33953,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Null path and an over-long name both fail closed on open.
     * **Assertions**:
-      * <code>Assert equal int (-1, detws_vfs_open(nullptr, DetwsVfsMode::DETWS_VFS_WRITE))</code>
-      * <code>Assert equal int (-1, detws_vfs_open(longname, DetwsVfsMode::DETWS_VFS_WRITE))</code>
-      * <code>Assert equal int (-1, detws_vfs_read(999, b, sizeof(b)))</code>
-      * <code>Assert equal int (-1, detws_vfs_write(999, b, sizeof(b)))</code>
-      * <code>Assert true (detws_vfs_read_file("/nope", b, sizeof(b)) &lt; 0)</code>
+      * <code>Assert equal int (-1, dws_vfs_open(nullptr, DetwsVfsMode::DWS_VFS_WRITE))</code>
+      * <code>Assert equal int (-1, dws_vfs_open(longname, DetwsVfsMode::DWS_VFS_WRITE))</code>
+      * <code>Assert equal int (-1, dws_vfs_read(999, b, sizeof(b)))</code>
+      * <code>Assert equal int (-1, dws_vfs_write(999, b, sizeof(b)))</code>
+      * <code>Assert true (dws_vfs_read_file("/nope", b, sizeof(b)) &lt; 0)</code>
   </details>
 
 </details>
@@ -34592,17 +34592,17 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 1-octet: 0x20 -> 20.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(1, detws_wave_encode_psid(0x20, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, dws_wave_encode_psid(0x20, out, sizeof(out)));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x20, out[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(1, detws_wave_decode_psid(out, 1, &psid));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, dws_wave_decode_psid(out, 1, &psid));</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x20, psid);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(3, detws_wave_encode_psid(0x8002, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, dws_wave_encode_psid(0x8002, out, sizeof(out)));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xC0, out[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x80, out[1]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x02, out[2]);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(3, detws_wave_decode_psid(out, 3, &psid));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, dws_wave_decode_psid(out, 3, &psid));</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x8002, psid);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(2, detws_wave_encode_psid(0x0100, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, dws_wave_encode_psid(0x0100, out, sizeof(out)));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x81, out[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[1]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x0100, psid);</code>
@@ -34613,14 +34613,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Psid four octet and caps
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(4, detws_wave_encode_psid(0x00654321, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, dws_wave_encode_psid(0x00654321, out, sizeof(out)));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xE0, out[0] & 0xF0);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(4, detws_wave_decode_psid(out, 4, &psid));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, dws_wave_decode_psid(out, 4, &psid));</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0x00654321, psid);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_encode_psid(0x20, out, 0));       // 1-octet, cap 0</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_encode_psid(0x0100, out, 1));     // 2-octet, cap 1</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_encode_psid(0x8002, out, 2));     // 3-octet, cap 2</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_encode_psid(0x00654321, out, 3)); // 4-octet, cap 3</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_encode_psid(0x20, out, 0));       // 1-octet, cap 0</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_encode_psid(0x0100, out, 1));     // 2-octet, cap 1</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_encode_psid(0x8002, out, 2));     // 3-octet, cap 2</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_encode_psid(0x00654321, out, 3)); // 4-octet, cap 3</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34628,13 +34628,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Psid decode guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(nullptr, 4, &psid));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(&x, 0, &psid));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(&x, 4, nullptr));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(&two, 1, &psid));     // 2-octet, len &lt; 2</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(&three, 1, &psid));   // 3-octet, len &lt; 3</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(&four, 1, &psid));    // 4-octet, len &lt; 4</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_decode_psid(&invalid, 4, &psid)); // no valid length prefix</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_decode_psid(nullptr, 4, &psid));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_decode_psid(&x, 0, &psid));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_decode_psid(&x, 4, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_decode_psid(&two, 1, &psid));     // 2-octet, len &lt; 2</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_decode_psid(&three, 1, &psid));   // 3-octet, len &lt; 3</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_decode_psid(&four, 1, &psid));    // 4-octet, len &lt; 4</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_decode_psid(&invalid, 4, &psid)); // no valid length prefix</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34642,12 +34642,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Wsmp build guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wsmp_build(0x20, pl, 4, nullptr, sizeof(out)));  // null out</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wsmp_build(0x20, nullptr, 4, out, sizeof(out))); // len but null payload</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wsmp_build(0x20, pl, 256, out, sizeof(out)));    // payload &gt; 255</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wsmp_build(0x20, pl, 4, out, 0));                // cap 0</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wsmp_build(0x00654321, pl, 0, out, 2));          // PSID encode doesn't fit</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wsmp_build(0x20, pl, 4, out, 4));                // payload doesn't fit</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wsmp_build(0x20, pl, 4, nullptr, sizeof(out)));  // null out</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wsmp_build(0x20, nullptr, 4, out, sizeof(out))); // len but null payload</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wsmp_build(0x20, pl, 256, out, sizeof(out)));    // payload &gt; 255</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wsmp_build(0x20, pl, 4, out, 0));                // cap 0</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wsmp_build(0x00654321, pl, 0, out, 2));          // PSID encode doesn't fit</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wsmp_build(0x20, pl, 4, out, 4));                // payload doesn't fit</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34655,10 +34655,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Wsmp parse more guards
     * **Assertions**:
-      * <code>Assert false (detws_wsmp_parse(two, 2, &f))</code>
-      * <code>Assert false (detws_wsmp_parse(nullptr, 3, &f))</code>
-      * <code>Assert false (detws_wsmp_parse(bad_psid, 3, &f))</code>
-      * <code>Assert false (detws_wsmp_parse(no_wlen, 3, &f))</code>
+      * <code>Assert false (dws_wsmp_parse(two, 2, &f))</code>
+      * <code>Assert false (dws_wsmp_parse(nullptr, 3, &f))</code>
+      * <code>Assert false (dws_wsmp_parse(bad_psid, 3, &f))</code>
+      * <code>Assert false (dws_wsmp_parse(no_wlen, 3, &f))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34666,9 +34666,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 1609dot2 wrap guards
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, pl, 3, nullptr, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, nullptr, 3, out, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, pl, 3, out, 4)); // needs 5</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, pl, 3, nullptr, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, nullptr, 3, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wave_1609dot2_wrap(Wave::WAVE_16092_SIGNED, pl, 3, out, 4)); // needs 5</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34677,11 +34677,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: A multi-octet PSID (SPaT).
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_HEX8(Wave::WSMP_VERSION, out[0]);</code>
-      * <code>Assert true (detws_wsmp_parse(out, n, &f))</code>
+      * <code>Assert true (dws_wsmp_parse(out, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(Wave::WAVE_PSID_BSM, f.psid);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(4, f.payload_len);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8_ARRAY(payload, f.payload, 4);</code>
-      * <code>Assert true (detws_wsmp_parse(out, n, &f))</code>
+      * <code>Assert true (dws_wsmp_parse(out, n, &f))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(Wave::WAVE_PSID_SPAT, f.psid);</code>
   </details>
 
@@ -34699,8 +34699,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Wsmp parse rejects
     * **Assertions**:
-      * <code>Assert false (detws_wsmp_parse(bad_ver, 3, &f))</code>
-      * <code>Assert false (detws_wsmp_parse(truncated, 4, &f))</code>
+      * <code>Assert false (dws_wsmp_parse(bad_ver, 3, &f))</code>
+      * <code>Assert false (dws_wsmp_parse(truncated, 4, &f))</code>
   </details>
 
 </details>
@@ -34713,8 +34713,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pick least worn ties lowest index
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(1, detws_wearlevel_pick(c, 4)); // 2 at idx1 and idx2 -&gt; lowest index</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wearlevel_pick(all, 3)); // all equal -&gt; idx0</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(1, dws_wearlevel_pick(c, 4)); // 2 at idx1 and idx2 -&gt; lowest index</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wearlevel_pick(all, 3)); // all equal -&gt; idx0</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34722,9 +34722,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pick edge
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wearlevel_pick(nullptr, 4));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wearlevel_pick(c, 0));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_wearlevel_pick(c, 1));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wearlevel_pick(nullptr, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wearlevel_pick(c, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_wearlevel_pick(c, 1));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34733,7 +34733,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Repeated pick+mark must keep every slot within 1 of the others (round-robin wear).
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(1000, c[i]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_wearlevel_spread(c, 4));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_wearlevel_spread(c, 4));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34751,8 +34751,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Spread
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(6, detws_wearlevel_spread(c, 3)); // 10 - 4</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_wearlevel_spread(nullptr, 3));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(6, dws_wearlevel_spread(c, 3)); // 10 - 4</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, dws_wearlevel_spread(nullptr, 3));</code>
   </details>
 
 </details>
@@ -34767,7 +34767,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert not null (strstr(r, "200 OK"))</code>
       * <code>Assert not null (strstr(r, "text/html"))</code>
-      * <code>Assert not null (strstr(r, "DetWS Terminal"))</code>
+      * <code>Assert not null (strstr(r, "DWS Terminal"))</code>
       * <code>Assert not null (strstr(r, "#080c08"))</code>
   </details>
 
@@ -34776,10 +34776,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ws upgrade tracks client
     * **Assertions**:
-      * <code>Assert equal uint (0, detws_web_terminal_client_count())</code>
+      * <code>Assert equal uint (0, dws_web_terminal_client_count())</code>
       * <code>Assert not equal (0xFF, wid)</code>
       * <code>Assert not null (strstr(r, "101 Switching Protocols"))</code>
-      * <code>Assert equal uint (1, detws_web_terminal_client_count())</code>
+      * <code>Assert equal uint (1, dws_web_terminal_client_count())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34830,7 +34830,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No handshake -> no terminal clients -> print writes nothing.
     * **Assertions**:
-      * <code>Assert equal uint (0, detws_web_terminal_client_count())</code>
+      * <code>Assert equal uint (0, dws_web_terminal_client_count())</code>
       * <code>Assert null (strstr(tcp_captured(), "nobody home"))</code>
   </details>
 
@@ -34839,8 +34839,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Close clears client
     * **Assertions**:
-      * <code>Assert equal uint (1, detws_web_terminal_client_count())</code>
-      * <code>Assert equal uint (0, detws_web_terminal_client_count())</code>
+      * <code>Assert equal uint (1, dws_web_terminal_client_count())</code>
+      * <code>Assert equal uint (0, dws_web_terminal_client_count())</code>
   </details>
 
 </details>
@@ -34853,19 +34853,19 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Method classification
     * **Assertions**:
-      * <code>Assert equal int (WebDavMethod::DAV_M_OPTIONS, det_webdav_method("OPTIONS"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_PROPFIND, det_webdav_method("PROPFIND"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_PROPPATCH, det_webdav_method("PROPPATCH"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_MKCOL, det_webdav_method("MKCOL"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_COPY, det_webdav_method("COPY"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_MOVE, det_webdav_method("MOVE"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_LOCK, det_webdav_method("LOCK"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_UNLOCK, det_webdav_method("UNLOCK"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_PUT, det_webdav_method("PUT"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_GET, det_webdav_method("GET"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_DELETE, det_webdav_method("DELETE"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, det_webdav_method("BREW"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, det_webdav_method(nullptr))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_OPTIONS, dws_webdav_method("OPTIONS"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_PROPFIND, dws_webdav_method("PROPFIND"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_PROPPATCH, dws_webdav_method("PROPPATCH"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_MKCOL, dws_webdav_method("MKCOL"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_COPY, dws_webdav_method("COPY"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_MOVE, dws_webdav_method("MOVE"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_LOCK, dws_webdav_method("LOCK"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNLOCK, dws_webdav_method("UNLOCK"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_PUT, dws_webdav_method("PUT"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_GET, dws_webdav_method("GET"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_DELETE, dws_webdav_method("DELETE"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, dws_webdav_method("BREW"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, dws_webdav_method(nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34873,13 +34873,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A plain (unescaped) run that overruns a tiny buffer stops mid-copy, still NUL-terminated.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_webdav_xml_escape(out, 0, "x")); // zero cap</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_webdav_xml_escape(out, 0, "x")); // zero cap</code>
       * <code>Assert true (strlen(tiny) &lt; sizeof(tiny))</code>
-      * <code>Assert false (det_webdav_dest_path(nullptr, out, sizeof(out)))</code>
-      * <code>Assert false (det_webdav_dest_path("/x", nullptr, sizeof(out)))</code>
-      * <code>Assert false (det_webdav_dest_path("/x", out, 0))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(7, det_webdav_ms_entry(buf, sizeof(buf), 7, href, false, 42, nullptr, "text/plain"));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_webdav_proppatch_ms(small, sizeof(small), "/x", "", 0));</code>
+      * <code>Assert false (dws_webdav_dest_path(nullptr, out, sizeof(out)))</code>
+      * <code>Assert false (dws_webdav_dest_path("/x", nullptr, sizeof(out)))</code>
+      * <code>Assert false (dws_webdav_dest_path("/x", out, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7, dws_webdav_ms_entry(buf, sizeof(buf), 7, href, false, 42, nullptr, "text/plain"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_webdav_proppatch_ms(small, sizeof(small), "/x", "", 0));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34887,11 +34887,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Depth parsing
     * **Assertions**:
-      * <code>Assert equal int (0, det_webdav_depth("0", 1))</code>
-      * <code>Assert equal int (1, det_webdav_depth("1", 0))</code>
-      * <code>Assert equal int (DAV_DEPTH_INFINITY, det_webdav_depth("infinity", 0))</code>
-      * <code>Assert equal int (1, det_webdav_depth(nullptr, 1))</code>
-      * <code>Assert equal int (7, det_webdav_depth("bogus", 7))</code>
+      * <code>Assert equal int (0, dws_webdav_depth("0", 1))</code>
+      * <code>Assert equal int (1, dws_webdav_depth("1", 0))</code>
+      * <code>Assert equal int (DAV_DEPTH_INFINITY, dws_webdav_depth("infinity", 0))</code>
+      * <code>Assert equal int (1, dws_webdav_depth(nullptr, 1))</code>
+      * <code>Assert equal int (7, dws_webdav_depth("bogus", 7))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34917,7 +34917,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dest absolute uri
     * **Assertions**:
-      * <code>Assert true (det_webdav_dest_path("http://host:8080/dav/new name.txt", out, sizeof(out)))</code>
+      * <code>Assert true (dws_webdav_dest_path("http://host:8080/dav/new name.txt", out, sizeof(out)))</code>
       * <code>Assert equal string ("/dav/new name.txt", out)</code>
   </details>
 
@@ -34926,7 +34926,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dest percent decoded
     * **Assertions**:
-      * <code>Assert true (det_webdav_dest_path("http://h/dav/a%20b%2Fc.txt", out, sizeof(out)))</code>
+      * <code>Assert true (dws_webdav_dest_path("http://h/dav/a%20b%2Fc.txt", out, sizeof(out)))</code>
       * <code>Assert equal string ("/dav/a b/c.txt", out)</code>
   </details>
 
@@ -34935,7 +34935,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dest abs path
     * **Assertions**:
-      * <code>Assert true (det_webdav_dest_path("/dav/x.txt", out, sizeof(out)))</code>
+      * <code>Assert true (dws_webdav_dest_path("/dav/x.txt", out, sizeof(out)))</code>
       * <code>Assert equal string ("/dav/x.txt", out)</code>
   </details>
 
@@ -34944,9 +34944,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dest rejects malformed
     * **Assertions**:
-      * <code>Assert false (det_webdav_dest_path("dav/x.txt", out, sizeof(out)))</code>
-      * <code>Assert false (det_webdav_dest_path("http://hostonly", out, sizeof(out)))</code>
-      * <code>Assert false (det_webdav_dest_path("/bad%zz", out, sizeof(out)))</code>
+      * <code>Assert false (dws_webdav_dest_path("dav/x.txt", out, sizeof(out)))</code>
+      * <code>Assert false (dws_webdav_dest_path("http://hostonly", out, sizeof(out)))</code>
+      * <code>Assert false (dws_webdav_dest_path("/bad%zz", out, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35060,15 +35060,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Method all including head
     * **Assertions**:
-      * <code>Assert equal int (WebDavMethod::DAV_M_HEAD, det_webdav_method("HEAD"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_OPTIONS, det_webdav_method("OPTIONS"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_MKCOL, det_webdav_method("MKCOL"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_COPY, det_webdav_method("COPY"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_MOVE, det_webdav_method("MOVE"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_LOCK, det_webdav_method("LOCK"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_UNLOCK, det_webdav_method("UNLOCK"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, det_webdav_method("BOGUS"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, det_webdav_method(nullptr))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_HEAD, dws_webdav_method("HEAD"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_OPTIONS, dws_webdav_method("OPTIONS"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_MKCOL, dws_webdav_method("MKCOL"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_COPY, dws_webdav_method("COPY"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_MOVE, dws_webdav_method("MOVE"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_LOCK, dws_webdav_method("LOCK"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNLOCK, dws_webdav_method("UNLOCK"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, dws_webdav_method("BOGUS"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, dws_webdav_method(nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35076,12 +35076,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Malformed %-escape in the destination path fails closed.
     * **Assertions**:
-      * <code>Assert equal int (7, det_webdav_depth(nullptr, 7))</code>
-      * <code>Assert equal int (7, det_webdav_depth("", 7))</code>
-      * <code>Assert equal int (0, det_webdav_depth("0", 7))</code>
-      * <code>Assert equal int (1, det_webdav_depth("1", 7))</code>
-      * <code>Assert false (det_webdav_dest_path("http://host/a%zzb", out, sizeof(out)))</code>
-      * <code>Assert false (det_webdav_dest_path("http://host/aaaaaaaaaaaaaaaaaaaaaaaaaaaa", out, 8))</code>
+      * <code>Assert equal int (7, dws_webdav_depth(nullptr, 7))</code>
+      * <code>Assert equal int (7, dws_webdav_depth("", 7))</code>
+      * <code>Assert equal int (0, dws_webdav_depth("0", 7))</code>
+      * <code>Assert equal int (1, dws_webdav_depth("1", 7))</code>
+      * <code>Assert false (dws_webdav_dest_path("http://host/a%zzb", out, sizeof(out)))</code>
+      * <code>Assert false (dws_webdav_dest_path("http://host/aaaaaaaaaaaaaaaaaaaaaaaaaaaa", out, 8))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35097,8 +35097,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Oversized mtime overflows the element buffer -> len unchanged.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_webdav_ms_entry(buf, sizeof(buf), 0, "/f.txt", false, 100, mtime, "text/plain"));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_webdav_ms_entry(tiny, sizeof(tiny), 0, "/f.txt", false, 100, "", "text/plain"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_webdav_ms_entry(buf, sizeof(buf), 0, "/f.txt", false, 100, mtime, "text/plain"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_webdav_ms_entry(tiny, sizeof(tiny), 0, "/f.txt", false, 100, "", "text/plain"));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35107,7 +35107,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: A self-closed property with trailing whitespace exercises the open-tag trim.
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, det_webdav_proppatch_ms(buf, 20, "/file.txt", body, strlen(body)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_webdav_proppatch_ms(buf, 20, "/file.txt", body, strlen(body)));</code>
   </details>
 
 </details>
@@ -35450,8 +35450,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Overflow fails closed
     * **Assertions**:
-      * <code>Assert equal int (0, detws_ifttt_url("event", "key", buf, sizeof(buf)))</code>
-      * <code>Assert equal int (0, detws_ifttt_payload("aaaa", "bbbb", "cccc", buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_ifttt_url("event", "key", buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_ifttt_payload("aaaa", "bbbb", "cccc", buf, sizeof(buf)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35459,8 +35459,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Host build (no HTTP client): webhook_post is a -1 stub; ifttt_trigger builds url+payload then posts.
     * **Assertions**:
-      * <code>Assert equal int (-1, detws_webhook_post("http://x/y", "{}"))</code>
-      * <code>Assert equal int (-1, detws_ifttt_trigger("evt", "key", "1", "2", "3"))</code>
+      * <code>Assert equal int (-1, dws_webhook_post("http://x/y", "{}"))</code>
+      * <code>Assert equal int (-1, dws_ifttt_trigger("evt", "key", "1", "2", "3"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35468,13 +35468,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Builder arg guards
     * **Assertions**:
-      * <code>Assert equal int (0, detws_ifttt_url(nullptr, "k", buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_ifttt_url(nullptr, "k", buf, sizeof(buf)))</code>
       * <code>Assert equal string ("", buf)</code>
-      * <code>Assert equal int (0, detws_ifttt_url("e", nullptr, buf, sizeof(buf)))</code>
-      * <code>Assert equal int (0, detws_ifttt_url("e", "k", nullptr, 10));                  // null out (no clear)</code>
-      * <code>Assert equal int (0, detws_ifttt_url("e", "k", buf, 0))</code>
-      * <code>Assert equal int (0, detws_ifttt_payload("a", nullptr, nullptr, nullptr, 64))</code>
-      * <code>Assert equal int (0, detws_ifttt_payload("a", nullptr, nullptr, buf, 0))</code>
+      * <code>Assert equal int (0, dws_ifttt_url("e", nullptr, buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_ifttt_url("e", "k", nullptr, 10));                  // null out (no clear)</code>
+      * <code>Assert equal int (0, dws_ifttt_url("e", "k", buf, 0))</code>
+      * <code>Assert equal int (0, dws_ifttt_payload("a", nullptr, nullptr, nullptr, 64))</code>
+      * <code>Assert equal int (0, dws_ifttt_payload("a", nullptr, nullptr, buf, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35482,10 +35482,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: "{\"value1\":\"" is 11 chars; a 10-char plain value overruns mid-escape-loop.
     * **Assertions**:
-      * <code>Assert equal int (0, detws_ifttt_payload("aaaaaaaaaa", nullptr, nullptr, buf, sizeof(buf)))</code>
-      * <code>Assert equal int (0, detws_ifttt_payload("aaa\\"", nullptr, nullptr, buf, sizeof(buf)))</code>
-      * <code>Assert equal int (-1, detws_ifttt_trigger(bigev, "k", "1", nullptr, nullptr))</code>
-      * <code>Assert equal int (-1, detws_ifttt_trigger("e", "k", bigval, nullptr, nullptr))</code>
+      * <code>Assert equal int (0, dws_ifttt_payload("aaaaaaaaaa", nullptr, nullptr, buf, sizeof(buf)))</code>
+      * <code>Assert equal int (0, dws_ifttt_payload("aaa\\"", nullptr, nullptr, buf, sizeof(buf)))</code>
+      * <code>Assert equal int (-1, dws_ifttt_trigger(bigev, "k", "1", nullptr, nullptr))</code>
+      * <code>Assert equal int (-1, dws_ifttt_trigger("e", "k", bigval, nullptr, nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35493,8 +35493,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Trigger build failures
     * **Assertions**:
-      * <code>Assert equal int (-1, detws_ifttt_trigger(bigev, "k", "1", nullptr, nullptr))</code>
-      * <code>Assert equal int (-1, detws_ifttt_trigger("e", "k", bigval, nullptr, nullptr))</code>
+      * <code>Assert equal int (-1, dws_ifttt_trigger(bigev, "k", "1", nullptr, nullptr))</code>
+      * <code>Assert equal int (-1, dws_ifttt_trigger("e", "k", bigval, nullptr, nullptr))</code>
   </details>
 
 </details>
@@ -36215,7 +36215,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse data
     * **Assertions**:
-      * <code>Assert true (detws_wifi_parse(DATA_FROMDS, sizeof(DATA_FROMDS), &f))</code>
+      * <code>Assert true (dws_wifi_parse(DATA_FROMDS, sizeof(DATA_FROMDS), &f))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(WifiType::WIFI_TYPE_DATA, f.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, f.subtype);</code>
       * <code>Assert true (f.from_ds)</code>
@@ -36229,7 +36229,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse beacon
     * **Assertions**:
-      * <code>Assert true (detws_wifi_parse(BEACON, sizeof(BEACON), &f))</code>
+      * <code>Assert true (dws_wifi_parse(BEACON, sizeof(BEACON), &f))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(WifiType::WIFI_TYPE_MGMT, f.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(8, f.subtype); // beacon subtype</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(3, f.naddr);</code>
@@ -36240,12 +36240,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Too short is rejected.
     * **Assertions**:
-      * <code>Assert true (detws_wifi_parse(CTS, sizeof(CTS), &f))</code>
+      * <code>Assert true (dws_wifi_parse(CTS, sizeof(CTS), &f))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(WifiType::WIFI_TYPE_CTRL, f.type);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0x0C, f.subtype); // CTS</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, f.naddr);      // only addr1 fits</code>
-      * <code>Assert false (detws_wifi_parse(CTS, 9, &f))</code>
-      * <code>Assert false (detws_wifi_parse(nullptr, 24, &f))</code>
+      * <code>Assert false (dws_wifi_parse(CTS, 9, &f))</code>
+      * <code>Assert false (dws_wifi_parse(nullptr, 24, &f))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36264,9 +36264,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Current -80 dBm, candidate -70 dBm, 8 dB hysteresis: 10 > 8 -> roam.
     * **Assertions**:
-      * <code>Assert true (detws_wifi_should_roam(-80, -70, 8))</code>
-      * <code>Assert false (detws_wifi_should_roam(-80, -75, 8))</code>
-      * <code>Assert false (detws_wifi_should_roam(-60, -75, 8))</code>
+      * <code>Assert true (dws_wifi_should_roam(-80, -70, 8))</code>
+      * <code>Assert false (dws_wifi_should_roam(-80, -75, 8))</code>
+      * <code>Assert false (dws_wifi_should_roam(-60, -75, 8))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36417,7 +36417,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Worker count is two
     * **Assertions**:
-      * <code>Assert equal int (2, detws_worker_count())</code>
+      * <code>Assert equal int (2, dws_worker_count())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36439,12 +36439,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_worker_self_id_roundtrip</b> &mdash; <i>detws_worker_set_self binds the calling context's worker id; detws_worker_self reads it back.</i></summary>
+    <summary><b>test_worker_self_id_roundtrip</b> &mdash; <i>dws_worker_set_self binds the calling context's worker id; dws_worker_self reads it back.</i></summary>
 
-    * **Objective**: detws_worker_set_self binds the calling context's worker id; detws_worker_self reads it back.
+    * **Objective**: dws_worker_set_self binds the calling context's worker id; dws_worker_self reads it back.
     * **Assertions**:
-      * <code>Assert equal int (1, detws_worker_self())</code>
-      * <code>Assert equal int (0, detws_worker_self())</code>
+      * <code>Assert equal int (1, dws_worker_self())</code>
+      * <code>Assert equal int (0, dws_worker_self())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36452,17 +36452,17 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: On host there is no worker task: start/stop/wake are no-ops and running() stays false.
     * **Assertions**:
-      * <code>Assert false (detws_workers_running())</code>
-      * <code>Assert false (detws_workers_running())</code>
+      * <code>Assert false (dws_workers_running())</code>
+      * <code>Assert false (dws_workers_running())</code>
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_host_defer_runs_inline_and_rejects_null</b> &mdash; <i>On host the caller and pipeline are the same thread, so detws_defer runs the callback inline</i></summary>
+    <summary><b>test_host_defer_runs_inline_and_rejects_null</b> &mdash; <i>On host the caller and pipeline are the same thread, so dws_defer runs the callback inline</i></summary>
 
-    * **Objective**: On host the caller and pipeline are the same thread, so detws_defer runs the callback inline
+    * **Objective**: On host the caller and pipeline are the same thread, so dws_defer runs the callback inline
     * **Assertions**:
-      * <code>Assert false (detws_defer(0, nullptr, nullptr))</code>
-      * <code>Assert true (detws_defer(0, set_flag_to_42, &flag))</code>
+      * <code>Assert false (dws_defer(0, nullptr, nullptr))</code>
+      * <code>Assert true (dws_defer(0, set_flag_to_42, &flag))</code>
       * <code>Assert equal int (42, flag)</code>
   </details>
 
@@ -36671,7 +36671,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal string ("a&lt;b&amp;c&gt;d&apos;e&quot;f", out)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(strlen("a&lt;b&amp;c&gt;d&apos;e&quot;f"), n);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_escape(in, strlen(in), out, 5));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_escape(in, strlen(in), out, 5));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36705,7 +36705,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Stanza name
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(7, detws_xmpp_stanza_name(m, strlen(m), name, sizeof(name)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7, dws_xmpp_stanza_name(m, strlen(m), name, sizeof(name)));</code>
       * <code>Assert equal string ("message", name)</code>
       * <code>Assert equal string ("stream:stream", name)</code>
   </details>
@@ -36715,11 +36715,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Absent attribute -> 0.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(3, detws_xmpp_attr(m, strlen(m), "to", val, sizeof(val)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(3, dws_xmpp_attr(m, strlen(m), "to", val, sizeof(val)));</code>
       * <code>Assert equal string ("a@b", val)</code>
       * <code>Assert equal string ("c@d", val)</code>
       * <code>Assert equal string ("chat", val)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_attr(m, strlen(m), "id", val, sizeof(val)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_attr(m, strlen(m), "id", val, sizeof(val)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36727,12 +36727,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Every escapable character plus a normal one exercises each switch case in put_escaped.
     * **Assertions**:
-      * <code>Assert true (detws_xmpp_escape("a&&lt;&gt;'\\"b", 7, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert true (dws_xmpp_escape("a&&lt;&gt;'\\"b", 7, buf, sizeof(buf)) &gt; 0)</code>
       * <code>Assert equal string ("a&amp;&lt;&gt;&apos;&quot;b", buf)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_escape(nullptr, 3, buf, sizeof(buf)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_escape("x", 1, nullptr, sizeof(buf)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_escape("&", 1, buf, 3));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_escape("abcd", 4, buf, 3));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_escape(nullptr, 3, buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_escape("x", 1, nullptr, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_escape("&", 1, buf, 3));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_escape("abcd", 4, buf, 3));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36740,12 +36740,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Header fits but the body/child does not (the optional-block put fails).
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stream_open("a", "b", tiny, sizeof(tiny)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_message("to", "from", "chat", "hi", tiny, sizeof(tiny)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_presence("available", tiny, sizeof(tiny)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_iq("get", "id1", "&lt;query/&gt;", tiny, sizeof(tiny)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_message("t", nullptr, nullptr, "aBodyThatWillNotFit", mid, sizeof(mid)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_iq("t", nullptr, "&lt;aChildThatWillNotFit/&gt;", mid, sizeof(mid)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_stream_open("a", "b", tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_message("to", "from", "chat", "hi", tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_presence("available", tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_iq("get", "id1", "&lt;query/&gt;", tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_message("t", nullptr, nullptr, "aBodyThatWillNotFit", mid, sizeof(mid)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_iq("t", nullptr, "&lt;aChildThatWillNotFit/&gt;", mid, sizeof(mid)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36753,13 +36753,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: body/child null skip the optional block; null attr values skip put_attr (its `!value` true side).
     * **Assertions**:
-      * <code>Assert true (detws_xmpp_message("to", nullptr, nullptr, nullptr, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert true (dws_xmpp_message("to", nullptr, nullptr, nullptr, buf, sizeof(buf)) &gt; 0)</code>
       * <code>Assert not null (strstr(buf, "&lt;message"))</code>
       * <code>Assert null (strstr(buf, "&lt;body&gt;"))</code>
-      * <code>Assert true (detws_xmpp_iq("set", nullptr, nullptr, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert true (dws_xmpp_iq("set", nullptr, nullptr, buf, sizeof(buf)) &gt; 0)</code>
       * <code>Assert null (strstr(buf, "&lt;child"))</code>
-      * <code>Assert true (detws_xmpp_presence(nullptr, buf, sizeof(buf)) &gt; 0)</code>
-      * <code>Assert true (detws_xmpp_stream_open(nullptr, nullptr, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert true (dws_xmpp_presence(nullptr, buf, sizeof(buf)) &gt; 0)</code>
+      * <code>Assert true (dws_xmpp_stream_open(nullptr, nullptr, buf, sizeof(buf)) &gt; 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36767,18 +36767,18 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Each terminator: '>', '/', space, tab, newline.
     * **Assertions**:
-      * <code>Assert true (detws_xmpp_stanza_name("&lt;iq&gt;", 4, out, sizeof(out)) &gt; 0)</code>
+      * <code>Assert true (dws_xmpp_stanza_name("&lt;iq&gt;", 4, out, sizeof(out)) &gt; 0)</code>
       * <code>Assert equal string ("iq", out)</code>
-      * <code>Assert true (detws_xmpp_stanza_name("&lt;presence/&gt;", 11, out, sizeof(out)) &gt; 0)</code>
+      * <code>Assert true (dws_xmpp_stanza_name("&lt;presence/&gt;", 11, out, sizeof(out)) &gt; 0)</code>
       * <code>Assert equal string ("presence", out)</code>
-      * <code>Assert true (detws_xmpp_stanza_name("&lt;message x&gt;", 11, out, sizeof(out)) &gt; 0)</code>
+      * <code>Assert true (dws_xmpp_stanza_name("&lt;message x&gt;", 11, out, sizeof(out)) &gt; 0)</code>
       * <code>Assert equal string ("message", out)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stanza_name("&lt;?xml?&gt;", 7, out, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stanza_name("&lt;!--c--&gt;", 8, out, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stanza_name("&lt;/close&gt;", 8, out, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stanza_name("no tag", 6, out, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stanza_name(nullptr, 5, out, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_stanza_name("&lt;message&gt;", 9, out, 3)); // cap too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_stanza_name("&lt;?xml?&gt;", 7, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_stanza_name("&lt;!--c--&gt;", 8, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_stanza_name("&lt;/close&gt;", 8, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_stanza_name("no tag", 6, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_stanza_name(nullptr, 5, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_stanza_name("&lt;message&gt;", 9, out, 3)); // cap too small</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -36786,12 +36786,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Single-quoted value + the leading-space substring guard (must not match 'to' inside 'xto').
     * **Assertions**:
-      * <code>Assert true (detws_xmpp_attr("&lt;m xto='no' to='yes'&gt;", 21, "to", out, sizeof(out)) &gt; 0)</code>
+      * <code>Assert true (dws_xmpp_attr("&lt;m xto='no' to='yes'&gt;", 21, "to", out, sizeof(out)) &gt; 0)</code>
       * <code>Assert equal string ("yes", out)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_attr("&lt;m to=x&gt;", 8, "to", out, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_attr(nullptr, 5, "to", out, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_attr("&lt;m to='x'&gt;", 10, nullptr, out, sizeof(out)));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, detws_xmpp_attr("&lt;m to='alice'&gt;", 14, "to", out, 3)); // cap too small</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_attr("&lt;m to=x&gt;", 8, "to", out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_attr(nullptr, 5, "to", out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_attr("&lt;m to='x'&gt;", 10, nullptr, out, sizeof(out)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, dws_xmpp_attr("&lt;m to='alice'&gt;", 14, "to", out, 3)); // cap too small</code>
   </details>
 
 </details>
@@ -36958,9 +36958,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
   </details>
 
   <details style="margin-left: 20px;">
-    <summary><b>test_parse_rejects_over_length</b> &mdash; <i>frame_len 80 (> DETWS_ZWAVE_MAX_DATA + 3 = 19) is rejected early.</i></summary>
+    <summary><b>test_parse_rejects_over_length</b> &mdash; <i>frame_len 80 (> DWS_ZWAVE_MAX_DATA + 3 = 19) is rejected early.</i></summary>
 
-    * **Objective**: frame_len 80 (> DETWS_ZWAVE_MAX_DATA + 3 = 19) is rejected early.
+    * **Objective**: frame_len 80 (> DWS_ZWAVE_MAX_DATA + 3 = 19) is rejected early.
     * **Assertions**:
       * <code>Assert equal int (-1, zwave_parse_frame(frame, sizeof(frame), nullptr, nullptr, nullptr, nullptr))</code>
   </details>

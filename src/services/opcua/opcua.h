@@ -3,7 +3,7 @@
 
 /**
  * @file opcua.h
- * @brief OPC UA Binary server: handshake + SecureChannel + Session + Read/Write + Browse (DETWS_ENABLE_OPCUA).
+ * @brief OPC UA Binary server: handshake + SecureChannel + Session + Read/Write + Browse (DWS_ENABLE_OPCUA).
  *
  * OPC UA (IEC 62541) is large; this is built in increments. **Increment 1** is the
  * foundation every OPC UA server needs:
@@ -55,7 +55,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_OPCUA
+#if DWS_ENABLE_OPCUA
 
 // ---------------------------------------------------------------------------
 // OPC UA Binary built-in type codec (little-endian; OPC UA Part 6 §5.2)
@@ -137,7 +137,7 @@ bool opcua_parse_hello(const uint8_t *msg, size_t len, OpcUaHello *out);
 
 /**
  * @brief Build the `ACK` reply to a parsed Hello, negotiating buffer sizes down
- *        to the server's DETWS_OPCUA_BUF limit.
+ *        to the server's DWS_OPCUA_BUF limit.
  * @return total ACK message bytes written to @p out, or 0 if it does not fit.
  */
 size_t opcua_build_ack(const OpcUaHello *hello, uint8_t *out, size_t cap);
@@ -341,8 +341,8 @@ struct OpcUaReadRequest
 {
     OpcUaMsg msg;   ///< envelope + RequestHeader (type_id = ReadRequest).
     uint32_t total; ///< nodes requested (may exceed the captured count).
-    uint32_t count; ///< nodes captured (clamped to DETWS_OPCUA_READ_MAX).
-    OpcUaReadItem items[DETWS_OPCUA_READ_MAX];
+    uint32_t count; ///< nodes captured (clamped to DWS_OPCUA_READ_MAX).
+    OpcUaReadItem items[DWS_OPCUA_READ_MAX];
 };
 
 /** @brief Parse a `MSG` ReadRequest. @return true if valid. */
@@ -421,7 +421,7 @@ struct OpcUaBrowseRequest
     OpcUaMsg msg;
     uint32_t total;
     uint32_t count;
-    OpcUaBrowseItem items[DETWS_OPCUA_BROWSE_MAX];
+    OpcUaBrowseItem items[DWS_OPCUA_BROWSE_MAX];
 };
 
 /** @brief Parse a `MSG` BrowseRequest. @return true if valid. */
@@ -439,7 +439,7 @@ void opcua_set_browse_handler(OpcUaBrowseHandler fn);
 
 /**
  * @brief Build a `MSG` BrowseResponse: one BrowseResult per browsed node, each with the
- *        references the @p handler returns (up to DETWS_OPCUA_REF_MAX).
+ *        references the @p handler returns (up to DWS_OPCUA_REF_MAX).
  * @return total MSG bytes written, or 0 if it does not fit @p cap.
  */
 size_t opcua_build_browse_response(const OpcUaBrowseRequest *req, OpcUaBrowseHandler handler, uint32_t seq,
@@ -504,7 +504,7 @@ struct OpcUaWriteRequest
     OpcUaMsg msg;
     uint32_t total;
     uint32_t count;
-    OpcUaWriteItem items[DETWS_OPCUA_WRITE_MAX];
+    OpcUaWriteItem items[DWS_OPCUA_WRITE_MAX];
 };
 
 /** @brief Parse a `MSG` WriteRequest. @return true if valid. */
@@ -548,5 +548,5 @@ void opcua_rx(uint8_t slot);
 struct ProtoHandler;
 const struct ProtoHandler *opcua_proto_handler(void);
 
-#endif // DETWS_ENABLE_OPCUA
+#endif // DWS_ENABLE_OPCUA
 #endif // DETERMINISTICESPASYNCWEBSERVER_OPCUA_H

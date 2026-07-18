@@ -8,11 +8,11 @@
 
 #include "services/wifi_sniffer/wifi_sniffer.h"
 
-#if DETWS_ENABLE_WIFI_SNIFFER
+#if DWS_ENABLE_WIFI_SNIFFER
 
 #include <string.h>
 
-bool detws_wifi_parse(const uint8_t *frame, size_t len, WifiFrame *out)
+bool dws_wifi_parse(const uint8_t *frame, size_t len, WifiFrame *out)
 {
     if (!frame || !out || len < 10) // FrameControl(2) + Duration(2) + Address1(6)
         return false;
@@ -45,13 +45,13 @@ bool detws_wifi_parse(const uint8_t *frame, size_t len, WifiFrame *out)
     return true;
 }
 
-void detws_wifi_stats_reset(WifiStats *s)
+void dws_wifi_stats_reset(WifiStats *s)
 {
     if (s)
         memset(s, 0, sizeof(*s));
 }
 
-void detws_wifi_stats_add(WifiStats *s, const WifiFrame *f)
+void dws_wifi_stats_add(WifiStats *s, const WifiFrame *f)
 {
     if (!s || !f)
         return;
@@ -73,7 +73,7 @@ void detws_wifi_stats_add(WifiStats *s, const WifiFrame *f)
     s->total++;
 }
 
-bool detws_wifi_should_roam(int8_t cur_rssi, int8_t cand_rssi, uint8_t hysteresis_db)
+bool dws_wifi_should_roam(int8_t cur_rssi, int8_t cand_rssi, uint8_t hysteresis_db)
 {
     // Both are negative dBm (stronger = closer to 0). Roam only if the candidate clears the current
     // by more than the hysteresis, computed in a wide signed type to avoid int8 overflow.
@@ -81,4 +81,4 @@ bool detws_wifi_should_roam(int8_t cur_rssi, int8_t cand_rssi, uint8_t hysteresi
     return margin > (int32_t)hysteresis_db;
 }
 
-#endif // DETWS_ENABLE_WIFI_SNIFFER
+#endif // DWS_ENABLE_WIFI_SNIFFER

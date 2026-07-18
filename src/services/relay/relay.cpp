@@ -8,16 +8,16 @@
 
 #include "relay.h"
 
-#if DETWS_ENABLE_RELAY
+#if DWS_ENABLE_RELAY
 
 #include <string.h>
 
 // Read one non-blocking chunk from src and forward it to dst. Sets *src_eof on a src seam error;
 // returns -1 on a dst send error, else 0. A zero-length read leaves the buffers untouched.
-static int pump_refill(DetRelayEnd *src, DetRelayEnd *dst, uint8_t *buf, uint16_t *len, uint16_t *off, bool *src_eof,
+static int pump_refill(DWSRelayEnd *src, DWSRelayEnd *dst, uint8_t *buf, uint16_t *len, uint16_t *off, bool *src_eof,
                        uint32_t *counter)
 {
-    int r = src->recv(src->ctx, buf, DETWS_RELAY_BUF);
+    int r = src->recv(src->ctx, buf, DWS_RELAY_BUF);
     if (r < 0)
     {
         *src_eof = true;
@@ -38,7 +38,7 @@ static int pump_refill(DetRelayEnd *src, DetRelayEnd *dst, uint8_t *buf, uint16_
 // Pump one direction (src -> dst) one non-blocking pass: flush pending bytes, then read more.
 // @param dst_shut_sent  the "shutdown already called" flag for @p dst (the peer that stops receiving
 //                       once this direction finishes). Returns -1 on a seam error, else 0.
-static int pump(DetRelayEnd *src, DetRelayEnd *dst, uint8_t *buf, uint16_t *len, uint16_t *off, bool *src_eof,
+static int pump(DWSRelayEnd *src, DWSRelayEnd *dst, uint8_t *buf, uint16_t *len, uint16_t *off, bool *src_eof,
                 bool *dir_done, bool *dst_shut_sent, uint32_t *counter)
 {
     if (*dir_done)
@@ -77,7 +77,7 @@ static int pump(DetRelayEnd *src, DetRelayEnd *dst, uint8_t *buf, uint16_t *len,
     return 0;
 }
 
-void det_relay_init(DetRelay *r, const DetRelayEnd *client, const DetRelayEnd *origin)
+void dws_relay_init(DWSRelay *r, const DWSRelayEnd *client, const DWSRelayEnd *origin)
 {
     if (!r || !client || !origin)
         return;
@@ -86,31 +86,31 @@ void det_relay_init(DetRelay *r, const DetRelayEnd *client, const DetRelayEnd *o
     r->b = *origin;
 }
 
-DetRelayStatus det_relay_step(DetRelay *r)
+DWSRelayStatus dws_relay_step(DWSRelay *r)
 {
     if (!r)
-        return DetRelayStatus::DET_RELAY_ERROR;
+        return DWSRelayStatus::DWS_RELAY_ERROR;
     // a -> b: dst is b, so b's shutdown fires when this direction finishes
     if (pump(&r->a, &r->b, r->buf_a2b, &r->a2b_len, &r->a2b_off, &r->a_eof, &r->a2b_done, &r->b_shut_sent,
              &r->bytes_a2b) < 0)
-        return DetRelayStatus::DET_RELAY_ERROR;
+        return DWSRelayStatus::DWS_RELAY_ERROR;
     // b -> a: dst is a
     if (pump(&r->b, &r->a, r->buf_b2a, &r->b2a_len, &r->b2a_off, &r->b_eof, &r->b2a_done, &r->a_shut_sent,
              &r->bytes_b2a) < 0)
-        return DetRelayStatus::DET_RELAY_ERROR;
+        return DWSRelayStatus::DWS_RELAY_ERROR;
 
-    return (r->a2b_done && r->b2a_done) ? DetRelayStatus::DET_RELAY_DONE : DetRelayStatus::DET_RELAY_RUNNING;
+    return (r->a2b_done && r->b2a_done) ? DWSRelayStatus::DWS_RELAY_DONE : DWSRelayStatus::DWS_RELAY_RUNNING;
 }
 
-void det_relay_note_eof(DetRelay *r, bool origin)
+void dws_relay_note_eof(DWSRelay *r, bool origin)
 {
     if (!r)
         return;
-    // The next det_relay_step drains that source's buffered bytes, then finishes its direction.
+    // The next dws_relay_step drains that source's buffered bytes, then finishes its direction.
     if (origin)
         r->b_eof = true;
     else
         r->a_eof = true;
 }
 
-#endif // DETWS_ENABLE_RELAY
+#endif // DWS_ENABLE_RELAY

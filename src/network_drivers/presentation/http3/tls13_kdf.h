@@ -31,7 +31,7 @@
 
 // Shared by the HTTP/3 (QUIC) handshake and the DTLS 1.3 handshake - both run the same TLS 1.3 key
 // schedule (see tls13_msg.h for the matching guard on the message layer).
-#if (DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS)
+#if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS)
 
 #include <stddef.h>
 #include <stdint.h>
@@ -140,5 +140,5 @@ void tls13_ks_master(Tls13KeySchedule *ks, const uint8_t ch_sfin_hash[TLS13_SECR
 void tls13_finished_mac(const Tls13Kdf *kdf, const uint8_t base_secret[TLS13_SECRET_LEN],
                         const uint8_t transcript_hash[TLS13_SECRET_LEN], uint8_t out[TLS13_SECRET_LEN]);
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_TLS13_KDF_H

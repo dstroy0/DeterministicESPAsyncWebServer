@@ -1,11 +1,11 @@
 # 41.LogBuffer - a fixed-RAM rotating log buffer with severity traps
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_LOGBUF`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_LOGBUF`
 
 ## What this example teaches
 
 When there is no serial cable attached, you still want the last few log lines. This
-keeps the most recent `DETWS_LOG_LINES` lines in a fixed RAM ring (oldest pruned on
+keeps the most recent `DWS_LOG_LINES` lines in a fixed RAM ring (oldest pruned on
 overflow), serves them at `GET /logs`, and fires a trap callback on WARN+ lines -
 here it just prints, but a real app could forward an SNMP trap
 ([26.SnmpTrap](../26.SnmpTrap)) or a webhook ([46.Webhook](../46.Webhook)).
@@ -13,8 +13,8 @@ here it just prints, but a real app could forward an SNMP trap
 **Set a severity trap, then log by level:**
 
 ```cpp
-detws_log_set_trap(DETWS_LOG_WARN, on_trap); // trap on WARN and ERROR
-detws_log(DETWS_LOG_INFO, "boot complete");
+dws_log_set_trap(DWS_LOG_WARN, on_trap); // trap on WARN and ERROR
+dws_log(DWS_LOG_INFO, "boot complete");
 ```
 
 The trap fires only for lines at or above the threshold, so criticals get pushed
@@ -26,12 +26,12 @@ static void on_trap(uint8_t level, const char *line) {
 }
 ```
 
-**Dump the ring on demand.** `detws_log_dump()` writes the whole buffer into a
-caller-owned array sized `DETWS_LOG_LINES * DETWS_LOG_LINE_LEN`:
+**Dump the ring on demand.** `dws_log_dump()` writes the whole buffer into a
+caller-owned array sized `DWS_LOG_LINES * DWS_LOG_LINE_LEN`:
 
 ```cpp
-char buf[DETWS_LOG_LINES * DETWS_LOG_LINE_LEN];
-detws_log_dump(buf, sizeof(buf));
+char buf[DWS_LOG_LINES * DWS_LOG_LINE_LEN];
+dws_log_dump(buf, sizeof(buf));
 server.send(id, 200, "text/plain", buf);
 ```
 
@@ -42,12 +42,12 @@ trips the trap) when heap runs low.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_LOGBUF=1" \
+  --project-option="build_flags=-DDWS_ENABLE_LOGBUF=1" \
   --lib="." examples/L7-Application/41.LogBuffer/41.LogBuffer.ino
 ```
 
 ```sh
-curl http://<ip>/logs   # the last DETWS_LOG_LINES lines, oldest first
+curl http://<ip>/logs   # the last DWS_LOG_LINES lines, oldest first
 ```
 
 ## Annotated source
@@ -59,7 +59,7 @@ with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_LOGBUF 1
+#define DWS_ENABLE_LOGBUF 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -69,7 +69,7 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // Fired for every line at or above the trap threshold.
 static void on_trap(uint8_t level, const char *line)
@@ -88,12 +88,12 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    detws_log_set_trap(DETWS_LOG_WARN, on_trap); // trap on WARN and ERROR
-    detws_log(DETWS_LOG_INFO, "boot complete");
+    dws_log_set_trap(DWS_LOG_WARN, on_trap); // trap on WARN and ERROR
+    dws_log(DWS_LOG_INFO, "boot complete");
 
     server.on("/logs", HTTP_GET, [](uint8_t id, HttpReq *) {
-        char buf[DETWS_LOG_LINES * DETWS_LOG_LINE_LEN];
-        detws_log_dump(buf, sizeof(buf));
+        char buf[DWS_LOG_LINES * DWS_LOG_LINE_LEN];
+        dws_log_dump(buf, sizeof(buf));
         server.send(id, 200, "text/plain", buf);
     });
     server.begin(80);
@@ -108,7 +108,7 @@ void loop()
         char msg[64];
         uint32_t heap = ESP.getFreeHeap();
         snprintf(msg, sizeof(msg), "heap=%u uptime=%lus", (unsigned)heap, millis() / 1000);
-        detws_log(heap < 20000 ? DETWS_LOG_WARN : DETWS_LOG_INFO, msg); // WARN trips the trap
+        dws_log(heap < 20000 ? DWS_LOG_WARN : DWS_LOG_INFO, msg); // WARN trips the trap
     }
     server.handle();
 }

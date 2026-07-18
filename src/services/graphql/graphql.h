@@ -3,7 +3,7 @@
 
 /**
  * @file graphql.h
- * @brief Zero-heap GraphQL query subset - parser + executor (DETWS_ENABLE_GRAPHQL).
+ * @brief Zero-heap GraphQL query subset - parser + executor (DWS_ENABLE_GRAPHQL).
  *
  * A small, deterministic GraphQL *query* engine for a constrained device: it
  * parses a query document into a fixed AST node pool (no heap), then walks the
@@ -24,7 +24,7 @@
  * mutations, subscriptions, fragments, variables, directives, aliases, lists of
  * objects. Malformed input fails closed with `{"errors":[...]}`.
  *
- * Pure and host-tested. Bounds are compile-time (DETWS_GQL_*); parsing and
+ * Pure and host-tested. Bounds are compile-time (DWS_GQL_*); parsing and
  * execution allocate nothing.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -38,16 +38,16 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_GRAPHQL
+#if DWS_ENABLE_GRAPHQL
 
 /** @brief Scalar value kinds a resolver can return. */
 enum class DetwsGqlType : uint8_t
 {
-    DETWS_GQL_NULL = 0,
-    DETWS_GQL_INT,
-    DETWS_GQL_FLOAT,
-    DETWS_GQL_BOOL,
-    DETWS_GQL_STR, ///< s points to a NUL-terminated string stable for the call.
+    DWS_GQL_NULL = 0,
+    DWS_GQL_INT,
+    DWS_GQL_FLOAT,
+    DWS_GQL_BOOL,
+    DWS_GQL_STR, ///< s points to a NUL-terminated string stable for the call.
 };
 
 /** @brief A scalar value (resolver output, or an argument). */
@@ -64,11 +64,11 @@ struct DetwsGqlValue
 struct DetwsGqlArgs;
 
 /** @brief Read an int argument @p name; false if absent / not an int. */
-bool detws_gql_arg_int(const DetwsGqlArgs *args, const char *name, long long *out);
+bool dws_gql_arg_int(const DetwsGqlArgs *args, const char *name, long long *out);
 /** @brief Read a string argument @p name; false if absent / not a string. */
-bool detws_gql_arg_str(const DetwsGqlArgs *args, const char *name, const char **out);
+bool dws_gql_arg_str(const DetwsGqlArgs *args, const char *name, const char **out);
 /** @brief Read a bool argument @p name; false if absent / not a bool. */
-bool detws_gql_arg_bool(const DetwsGqlArgs *args, const char *name, bool *out);
+bool dws_gql_arg_bool(const DetwsGqlArgs *args, const char *name, bool *out);
 
 /**
  * @brief Resolve the scalar leaf at dotted @p path (e.g. "device.uptime").
@@ -76,15 +76,15 @@ bool detws_gql_arg_bool(const DetwsGqlArgs *args, const char *name, bool *out);
  * Fill @p out with the value and return true; return false to emit JSON null.
  * @p args exposes every argument in scope along the path.
  */
-typedef bool (*detws_gql_resolver_fn)(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *out);
+typedef bool (*dws_gql_resolver_fn)(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *out);
 
-/** @brief detws_graphql_execute() result codes. */
+/** @brief dws_graphql_execute() result codes. */
 enum class DetwsGqlResult : int32_t
 {
-    DETWS_GQL_OK = 0,           ///< Executed; @p out holds `{"data":{...}}`.
-    DETWS_GQL_ERR_PARSE = -1,   ///< Malformed query (syntax / unsupported construct).
-    DETWS_GQL_ERR_LIMIT = -2,   ///< Exceeded a DETWS_GQL_* bound (nodes/args/depth/name).
-    DETWS_GQL_ERR_OVERFLOW = -3 ///< Response did not fit @p cap.
+    DWS_GQL_OK = 0,           ///< Executed; @p out holds `{"data":{...}}`.
+    DWS_GQL_ERR_PARSE = -1,   ///< Malformed query (syntax / unsupported construct).
+    DWS_GQL_ERR_LIMIT = -2,   ///< Exceeded a DWS_GQL_* bound (nodes/args/depth/name).
+    DWS_GQL_ERR_OVERFLOW = -3 ///< Response did not fit @p cap.
 };
 
 /**
@@ -97,10 +97,9 @@ enum class DetwsGqlResult : int32_t
  * @param query,len  the query document.
  * @param resolver   leaf resolver (may be nullptr -> every leaf is null).
  * @param out,cap    response buffer and capacity.
- * @return ::DETWS_GQL_OK or a negative ::DetwsGqlResult.
+ * @return ::DWS_GQL_OK or a negative ::DetwsGqlResult.
  */
-DetwsGqlResult detws_graphql_execute(const char *query, size_t len, detws_gql_resolver_fn resolver, char *out,
-                                     size_t cap);
+DetwsGqlResult dws_graphql_execute(const char *query, size_t len, dws_gql_resolver_fn resolver, char *out, size_t cap);
 
-#endif // DETWS_ENABLE_GRAPHQL
+#endif // DWS_ENABLE_GRAPHQL
 #endif // DETERMINISTICESPASYNCWEBSERVER_GRAPHQL_H

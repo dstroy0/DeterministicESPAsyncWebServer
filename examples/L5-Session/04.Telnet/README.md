@@ -1,6 +1,6 @@
 # 04.Telnet - a line-oriented Telnet console
 
-**Layer:** L5 Session · **Build flags:** `DETWS_ENABLE_TELNET`
+**Layer:** L5 Session · **Build flags:** `DWS_ENABLE_TELNET`
 
 ## What this example teaches
 
@@ -36,7 +36,7 @@ void on_command(const char *line, uint8_t conn_id) {
 }
 ```
 
-**Build-flag note.** `DETWS_ENABLE_TELNET` must be set for the whole build; an
+**Build-flag note.** `DWS_ENABLE_TELNET` must be set for the whole build; an
 in-sketch `#define` does not reach the separately compiled library, so pass it as
 a `build_flag` (see the [build_flags gotcha](../../../docs/EXAMPLES.md)).
 
@@ -47,7 +47,7 @@ session.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_TELNET=1" \
+  --project-option="build_flags=-DDWS_ENABLE_TELNET=1" \
   --lib="." examples/L5-Session/04.Telnet/04.Telnet.ino
 ```
 
@@ -66,7 +66,7 @@ added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_TELNET 1
+#define DWS_ENABLE_TELNET 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -76,7 +76,7 @@ added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // Called once per completed line (the library handles echo + line editing).
 void on_command(const char *line, uint8_t conn_id)

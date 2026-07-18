@@ -3,7 +3,7 @@
 
 /**
  * @file wamp.h
- * @brief WAMP (Web Application Messaging Protocol) codec (DETWS_ENABLE_WAMP) - zero-heap
+ * @brief WAMP (Web Application Messaging Protocol) codec (DWS_ENABLE_WAMP) - zero-heap
  *        builders + a positional parser for the unified RPC + PubSub protocol, which rides
  *        the shipped WebSocket layer (subprotocol `wamp.2.json`).
  *
@@ -27,7 +27,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_WAMP
+#if DWS_ENABLE_WAMP
 
 #include <stddef.h>
 #include <stdint.h>
@@ -103,6 +103,6 @@ bool wamp_get_uint(const char *msg, size_t index, uint64_t *out);
  */
 bool wamp_get_uri(const char *msg, size_t index, char *out, size_t out_cap);
 
-#endif // DETWS_ENABLE_WAMP
+#endif // DWS_ENABLE_WAMP
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_WAMP_H

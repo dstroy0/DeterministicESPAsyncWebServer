@@ -3,7 +3,7 @@
 
 /**
  * @file 36.NetEgress.ino
- * @brief Report which interface outbound traffic is using (det_net_egress()).
+ * @brief Report which interface outbound traffic is using (dws_net_egress()).
  *
  * The OS (esp_netif) handles failover between links by reselecting the default
  * route; this sketch just *reports* the live egress interface and its IP, queried
@@ -21,17 +21,17 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
-static const char *iface_name(DetIface i)
+static const char *iface_name(DWSIface i)
 {
     switch (i)
     {
-    case DetIface::DETIFACE_ETH:
+    case DWSIface::DETIFACE_ETH:
         return "ethernet";
-    case DetIface::DETIFACE_AP:
+    case DWSIface::DETIFACE_AP:
         return "softap";
-    case DetIface::DETIFACE_STA:
+    case DWSIface::DETIFACE_STA:
         return "wifi-sta";
     default:
         return "none";
@@ -52,12 +52,12 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    Serial.printf("egress interface: %s\n", iface_name(det_net_egress()));
+    Serial.printf("egress interface: %s\n", iface_name(dws_net_egress()));
 
     server.on("/net", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
-        uint32_t ip = det_net_egress_ip(); // network byte order
+        uint32_t ip = dws_net_egress_ip(); // network byte order
         char body[96];
-        snprintf(body, sizeof(body), "{\"egress\":\"%s\",\"ip\":\"%u.%u.%u.%u\"}", iface_name(det_net_egress()),
+        snprintf(body, sizeof(body), "{\"egress\":\"%s\",\"ip\":\"%u.%u.%u.%u\"}", iface_name(dws_net_egress()),
                  (unsigned)(ip & 0xFF), (unsigned)((ip >> 8) & 0xFF), (unsigned)((ip >> 16) & 0xFF),
                  (unsigned)((ip >> 24) & 0xFF));
         server.send(id, 200, "application/json", body);

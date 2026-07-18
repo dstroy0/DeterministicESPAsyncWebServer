@@ -3,7 +3,7 @@
 
 /**
  * @file 16.OTA.ino
- * @brief Authenticated over-the-air firmware update (DETWS_ENABLE_OTA).
+ * @brief Authenticated over-the-air firmware update (DWS_ENABLE_OTA).
  *
  * Registers a streaming `POST /update` endpoint: a firmware image POSTed with
  * valid HTTP Basic credentials is fed straight into the ESP32 Update API via
@@ -16,7 +16,7 @@
  * (Generate firmware.bin with `pio run` - it is .pio/build/<env>/firmware.bin.)
  */
 
-#define DETWS_ENABLE_OTA 1
+#define DWS_ENABLE_OTA 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -26,7 +26,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void handle_root(uint8_t slot_id, HttpReq *req)
 {
@@ -52,7 +52,7 @@ void setup()
     }
 
     // Authenticated streaming OTA at POST /update.
-    detws_ota_begin(server, "/update", "admin", "s3cret");
+    dws_ota_begin(server, "/update", "admin", "s3cret");
 
     Serial.println("Server up; OTA at POST /update");
 }

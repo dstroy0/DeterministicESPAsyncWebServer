@@ -3,7 +3,7 @@
 //
 // HTTP/3 server-glue test: the same end-to-end flow as test_h3_e2e (a QUIC client completes the
 // TLS 1.3 handshake, sends an HTTP/3 GET, and verifies the 200 + body), but driven THROUGH the
-// quic_server module - det_quic_server_begin / det_quic_server_ingest / det_quic_server_poll / det_quic_server_respond
+// quic_server module - dws_quic_server_begin / dws_quic_server_ingest / dws_quic_server_poll / dws_quic_server_respond
 // with the outbound datagrams captured by the host output sink. It exercises what quic_server adds
 // over the raw engines: opening a connection from a client Initial, routing later datagrams by
 // Destination Connection ID (odcid for the long-header handshake packets, our chosen SCID for the
@@ -49,7 +49,7 @@ static void test_rng(uint8_t *out, size_t len)
     else if (g_rng_call == 1)
         memcpy(out, SERVER_RANDOM, len);
     else
-        memcpy(out, SERVER_SCID, len); // DETWS_QUIC_SCID_LEN == sizeof(SERVER_SCID)
+        memcpy(out, SERVER_SCID, len); // DWS_QUIC_SCID_LEN == sizeof(SERVER_SCID)
     g_rng_call++;
 }
 
@@ -74,7 +74,7 @@ static void app_request(void *, uint32_t conn_id, uint64_t sid, const char *meth
 {
     strncpy(g_method, method, sizeof(g_method) - 1);
     strncpy(g_path, path, sizeof(g_path) - 1);
-    det_quic_server_respond(conn_id, sid, 200, "text/plain", (const uint8_t *)"hello h3", 8);
+    dws_quic_server_respond(conn_id, sid, 200, "text/plain", (const uint8_t *)"hello h3", 8);
 }
 
 static void fill()
@@ -312,8 +312,8 @@ void test_quic_server_http3_get()
     scfg.cert_len = sizeof(CERT);
     memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
     scfg.rng = test_rng;
-    det_quic_server_set_out_sink_cb(out_sink, nullptr);
-    TEST_ASSERT_TRUE(det_quic_server_begin(443, &scfg, app_request, nullptr));
+    dws_quic_server_set_out_sink_cb(out_sink, nullptr);
+    TEST_ASSERT_TRUE(dws_quic_server_begin(443, &scfg, app_request, nullptr));
 
     QuicInitialSecrets init;
     quic_derive_initial_secrets(ODCID, sizeof(ODCID), &init);
@@ -339,9 +339,9 @@ void test_quic_server_http3_get()
 
     // Deliver it: quic_server opens the connection and produces the server flight.
     g_out_n = 0;
-    TEST_ASSERT_TRUE(det_quic_server_ingest(dg, dl, "192.0.2.10", 40000));
-    det_quic_server_poll(0);
-    TEST_ASSERT_EQUAL_UINT8(1, det_quic_server_active_conns());
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(dg, dl, "192.0.2.10", 40000));
+    dws_quic_server_poll(0);
+    TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns());
     TEST_ASSERT_GREATER_THAN(0, g_out_n); // the coalesced Initial(SH) + Handshake(EE..Finished) flight
 
     // Derive the client-side handshake + 1-RTT keys from the captured flight.
@@ -392,8 +392,8 @@ void test_quic_server_http3_get()
     size_t hdl = build_long(idg + idl, sizeof(idg) - idl, QuicLongPacket::QUIC_LP_HANDSHAKE, ODCID, sizeof(ODCID),
                             CLIENT_SCID, sizeof(CLIENT_SCID), 0, &hs_c, hfr, hfl);
     g_out_n = 0;
-    TEST_ASSERT_TRUE(det_quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000));
-    det_quic_server_poll(0); // drains HANDSHAKE_DONE + the server's control/QPACK streams (ignored)
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000));
+    dws_quic_server_poll(0); // drains HANDSHAKE_DONE + the server's control/QPACK streams (ignored)
 
     // Client HTTP/3 GET on request stream 0 (1-RTT). The short-header DCID is the server's SCID.
     uint8_t block[128];
@@ -409,8 +409,8 @@ void test_quic_server_http3_get()
     size_t s1l = build_short(s1, sizeof(s1), SERVER_SCID, sizeof(SERVER_SCID), 0, &ap_c, sfr, sfrl);
 
     g_out_n = 0;
-    TEST_ASSERT_TRUE(det_quic_server_ingest(s1, s1l, "192.0.2.10", 40000));
-    det_quic_server_poll(0); // dispatches the request to app_request, which responds; flushed here
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(s1, s1l, "192.0.2.10", 40000));
+    dws_quic_server_poll(0); // dispatches the request to app_request, which responds; flushed here
 
     // The request reached the application through the server callback...
     TEST_ASSERT_EQUAL_STRING("GET", g_method);
@@ -418,8 +418,8 @@ void test_quic_server_http3_get()
     // ...and the 200 + body came back on the 1-RTT request stream.
     TEST_ASSERT_TRUE(response_ok(&ap_s));
 
-    det_quic_server_stop();
-    TEST_ASSERT_EQUAL_UINT8(0, det_quic_server_active_conns());
+    dws_quic_server_stop();
+    TEST_ASSERT_EQUAL_UINT8(0, dws_quic_server_active_conns());
 }
 
 // A connection with no traffic past the idle timeout is reclaimed (the fixed pool cannot be leaked
@@ -435,8 +435,8 @@ void test_idle_connection_reaped()
     scfg.cert_len = sizeof(CERT);
     memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
     scfg.rng = test_rng;
-    det_quic_server_set_out_sink_cb(out_sink, nullptr);
-    TEST_ASSERT_TRUE(det_quic_server_begin(443, &scfg, app_request, nullptr));
+    dws_quic_server_set_out_sink_cb(out_sink, nullptr);
+    TEST_ASSERT_TRUE(dws_quic_server_begin(443, &scfg, app_request, nullptr));
 
     // Open a connection with a client Initial (the handshake need not complete to hold a slot).
     QuicInitialSecrets init;
@@ -456,19 +456,19 @@ void test_idle_connection_reaped()
     uint8_t dg[1500];
     size_t dl = build_long(dg, sizeof(dg), QuicLongPacket::QUIC_LP_INITIAL, ODCID, sizeof(ODCID), CLIENT_SCID,
                            sizeof(CLIENT_SCID), 0, &init.client, frames, fl);
-    det_quic_server_ingest(dg, dl, "192.0.2.10", 40000);
-    det_quic_server_poll(now);
-    TEST_ASSERT_EQUAL_UINT8(1, det_quic_server_active_conns());
+    dws_quic_server_ingest(dg, dl, "192.0.2.10", 40000);
+    dws_quic_server_poll(now);
+    TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns());
 
     // Just before the timeout it is kept; just after, a poll reclaims it.
-    now += DETWS_QUIC_IDLE_MS - 1;
-    det_quic_server_poll(now);
-    TEST_ASSERT_EQUAL_UINT8(1, det_quic_server_active_conns());
+    now += DWS_QUIC_IDLE_MS - 1;
+    dws_quic_server_poll(now);
+    TEST_ASSERT_EQUAL_UINT8(1, dws_quic_server_active_conns());
     now += 2;
-    det_quic_server_poll(now);
-    TEST_ASSERT_EQUAL_UINT8(0, det_quic_server_active_conns());
+    dws_quic_server_poll(now);
+    TEST_ASSERT_EQUAL_UINT8(0, dws_quic_server_active_conns());
 
-    det_quic_server_stop();
+    dws_quic_server_stop();
 }
 
 // An RNG safe for any length / call count (test_rng only sources one handshake's fixed material).
@@ -494,51 +494,51 @@ void test_quic_server_input_guards()
 {
     fill();
     // begin() rejects a null config and a null RNG.
-    TEST_ASSERT_FALSE(det_quic_server_begin(443, nullptr, app_request, nullptr));
+    TEST_ASSERT_FALSE(dws_quic_server_begin(443, nullptr, app_request, nullptr));
     QuicServerConfig scfg;
     memset(&scfg, 0, sizeof(scfg));
     scfg.cert_der = CERT;
     scfg.cert_len = sizeof(CERT);
     memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
     scfg.rng = nullptr;
-    TEST_ASSERT_FALSE(det_quic_server_begin(443, &scfg, app_request, nullptr));
+    TEST_ASSERT_FALSE(dws_quic_server_begin(443, &scfg, app_request, nullptr));
 
     // poll() before a successful begin is a no-op (running == false).
-    det_quic_server_stop();
-    det_quic_server_poll(0);
+    dws_quic_server_stop();
+    dws_quic_server_poll(0);
 
     scfg.rng = test_rng;
-    det_quic_server_set_out_sink_cb(out_sink, nullptr);
-    TEST_ASSERT_TRUE(det_quic_server_begin(443, &scfg, app_request, nullptr));
+    dws_quic_server_set_out_sink_cb(out_sink, nullptr);
+    TEST_ASSERT_TRUE(dws_quic_server_begin(443, &scfg, app_request, nullptr));
 
     // ingest() rejects an empty or oversized datagram.
     uint8_t one[1] = {0x40};
-    TEST_ASSERT_FALSE(det_quic_server_ingest(one, 0, "192.0.2.1", 1));
-    static uint8_t huge[DETWS_QUIC_MAX_DATAGRAM + 1];
-    TEST_ASSERT_FALSE(det_quic_server_ingest(huge, sizeof(huge), "192.0.2.1", 1));
+    TEST_ASSERT_FALSE(dws_quic_server_ingest(one, 0, "192.0.2.1", 1));
+    static uint8_t huge[DWS_QUIC_MAX_DATAGRAM + 1];
+    TEST_ASSERT_FALSE(dws_quic_server_ingest(huge, sizeof(huge), "192.0.2.1", 1));
 
     // respond() with an unknown connection id fails.
-    TEST_ASSERT_FALSE(det_quic_server_respond(999999, 0, 200, "text/plain", nullptr, 0));
+    TEST_ASSERT_FALSE(dws_quic_server_respond(999999, 0, 200, "text/plain", nullptr, 0));
 
     // Route guards via poll: a malformed long header, a too-short short header, and a short header
     // with an unknown DCID each route to nothing and are dropped.
     uint8_t bad_long[1] = {0xC0}; // long-header bit set but truncated -> parse fails
-    TEST_ASSERT_TRUE(det_quic_server_ingest(bad_long, 1, "192.0.2.1", 1));
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(bad_long, 1, "192.0.2.1", 1));
     uint8_t short_tiny[2] = {0x40, 0x00}; // short header shorter than 1 + SCID_LEN
-    TEST_ASSERT_TRUE(det_quic_server_ingest(short_tiny, 2, "192.0.2.1", 1));
-    uint8_t short_unknown[1 + DETWS_QUIC_SCID_LEN] = {0x40, 9, 9, 9, 9, 9, 9, 9, 9}; // no matching conn
-    TEST_ASSERT_TRUE(det_quic_server_ingest(short_unknown, sizeof(short_unknown), "192.0.2.1", 1));
-    det_quic_server_poll(0);
-    TEST_ASSERT_EQUAL_UINT8(0, det_quic_server_active_conns());
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(short_tiny, 2, "192.0.2.1", 1));
+    uint8_t short_unknown[1 + DWS_QUIC_SCID_LEN] = {0x40, 9, 9, 9, 9, 9, 9, 9, 9}; // no matching conn
+    TEST_ASSERT_TRUE(dws_quic_server_ingest(short_unknown, sizeof(short_unknown), "192.0.2.1", 1));
+    dws_quic_server_poll(0);
+    TEST_ASSERT_EQUAL_UINT8(0, dws_quic_server_active_conns());
 
-    // Ring full: without polling, the ring holds DETWS_QUIC_INGEST_RING-1 entries, then drops.
-    det_quic_server_begin(443, &scfg, app_request, nullptr); // reset the ring cursors
+    // Ring full: without polling, the ring holds DWS_QUIC_INGEST_RING-1 entries, then drops.
+    dws_quic_server_begin(443, &scfg, app_request, nullptr); // reset the ring cursors
     int pushed = 0;
-    for (int i = 0; i < DETWS_QUIC_INGEST_RING + 4; i++)
-        if (det_quic_server_ingest(one, 1, "192.0.2.1", 1))
+    for (int i = 0; i < DWS_QUIC_INGEST_RING + 4; i++)
+        if (dws_quic_server_ingest(one, 1, "192.0.2.1", 1))
             pushed++;
-    TEST_ASSERT_EQUAL_INT(DETWS_QUIC_INGEST_RING - 1, pushed);
-    det_quic_server_stop();
+    TEST_ASSERT_EQUAL_INT(DWS_QUIC_INGEST_RING - 1, pushed);
+    dws_quic_server_stop();
 }
 
 void test_quic_server_pool_full()
@@ -550,20 +550,20 @@ void test_quic_server_pool_full()
     scfg.cert_len = sizeof(CERT);
     memcpy(scfg.ed25519_seed, SERVER_SEED, 32);
     scfg.rng = bulk_rng; // several connections are opened, so the RNG must serve any call count
-    det_quic_server_set_out_sink_cb(out_sink, nullptr);
-    TEST_ASSERT_TRUE(det_quic_server_begin(443, &scfg, app_request, nullptr));
+    dws_quic_server_set_out_sink_cb(out_sink, nullptr);
+    TEST_ASSERT_TRUE(dws_quic_server_begin(443, &scfg, app_request, nullptr));
 
     // One more distinct-DCID Initial than the pool holds: the extra alloc_slot()/open_conn() fails.
-    for (int i = 0; i <= DETWS_QUIC_MAX_CONNS; i++)
+    for (int i = 0; i <= DWS_QUIC_MAX_CONNS; i++)
     {
         uint8_t dcid[8] = {0xA0, (uint8_t)i, 0xB0, 0xB1, 0xB2, 0xB3, 0xB4, 0xB5};
         uint8_t dg[256];
         size_t dl = make_min_initial(dg, sizeof(dg), dcid, sizeof(dcid));
-        TEST_ASSERT_TRUE(det_quic_server_ingest(dg, dl, "192.0.2.10", 40000));
+        TEST_ASSERT_TRUE(dws_quic_server_ingest(dg, dl, "192.0.2.10", 40000));
     }
-    det_quic_server_poll(0);
-    TEST_ASSERT_EQUAL_UINT8(DETWS_QUIC_MAX_CONNS, det_quic_server_active_conns()); // capped at the pool size
-    det_quic_server_stop();
+    dws_quic_server_poll(0);
+    TEST_ASSERT_EQUAL_UINT8(DWS_QUIC_MAX_CONNS, dws_quic_server_active_conns()); // capped at the pool size
+    dws_quic_server_stop();
 }
 
 int main(int, char **)

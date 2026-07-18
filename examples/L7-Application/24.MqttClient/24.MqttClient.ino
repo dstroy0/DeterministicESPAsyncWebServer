@@ -11,16 +11,16 @@
  * own broker for real telemetry / command.
  *
  * Flash, open Serial @ 115200. Full QoS 0/1/2, keep-alive, and DUP retransmit are
- * handled by det_mqtt_loop(); call it every loop().
+ * handled by dws_mqtt_loop(); call it every loop().
  *
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
- *     build_flags = -DDETWS_ENABLE_MQTT=1
- *     ; for mqtts:// add: -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_MQTT_TLS=1
+ *     build_flags = -DDWS_ENABLE_MQTT=1
+ *     ; for mqtts:// add: -DDWS_ENABLE_TLS=1 -DDWS_ENABLE_MQTT_TLS=1
  * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_MQTT 1
+#define DWS_ENABLE_MQTT 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -54,7 +54,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    det_mqtt_set_message_cb(on_message);
+    dws_mqtt_set_message_cb(on_message);
 
     MqttConnectOpts opts;
     memset(&opts, 0, sizeof(opts));
@@ -62,10 +62,10 @@ void setup()
     opts.keepalive_s = 30;
     opts.clean_session = true;
 
-    if (det_mqtt_connect(BROKER, PORT, false, &opts))
+    if (dws_mqtt_connect(BROKER, PORT, false, &opts))
     {
         Serial.println("MQTT connected");
-        det_mqtt_subscribe(TOPIC, 1);
+        dws_mqtt_subscribe(TOPIC, 1);
     }
     else
     {
@@ -75,15 +75,15 @@ void setup()
 
 void loop()
 {
-    det_mqtt_loop();
+    dws_mqtt_loop();
 
     static uint32_t last = 0;
     static uint32_t n = 0;
-    if (det_mqtt_connected() && millis() - last >= 1000)
+    if (dws_mqtt_connected() && millis() - last >= 1000)
     {
         last = millis();
         char msg[48];
         int len = snprintf(msg, sizeof(msg), "hello from esp32 #%lu", (unsigned long)n++);
-        det_mqtt_publish(TOPIC, (const uint8_t *)msg, (size_t)len, 1, false);
+        dws_mqtt_publish(TOPIC, (const uint8_t *)msg, (size_t)len, 1, false);
     }
 }

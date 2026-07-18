@@ -3,7 +3,7 @@
 
 /**
  * @file sep2.h
- * @brief IEEE 2030.5 (Smart Energy Profile 2.0) resource codec (DETWS_ENABLE_SEP2).
+ * @brief IEEE 2030.5 (Smart Energy Profile 2.0) resource codec (DWS_ENABLE_SEP2).
  *
  * IEEE 2030.5 (SEP 2.0) is the RESTful smart-grid protocol: a device is a set of HTTP resources encoded
  * as XML in the `urn:ieee:std:2030.5:ns` namespace. This builds the core resource documents into a
@@ -25,15 +25,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SEP2
+#if DWS_ENABLE_SEP2
 
 /**
  * @brief Build a DeviceCapability document with hrefs to the EndDeviceList and the DER-program list.
  * @param poll_rate the recommended pollRate (seconds).
  * @return length written, or 0 on overflow.
  */
-size_t detws_sep2_device_capability(uint32_t poll_rate, const char *edev_list_href, const char *derp_list_href,
-                                    char *out, size_t cap);
+size_t dws_sep2_device_capability(uint32_t poll_rate, const char *edev_list_href, const char *derp_list_href, char *out,
+                                  size_t cap);
 
 /**
  * @brief Build an EndDevice document.
@@ -42,7 +42,7 @@ size_t detws_sep2_device_capability(uint32_t poll_rate, const char *edev_list_hr
  * @param href  the resource href (borrowed).
  * @return length written, or 0 on overflow.
  */
-size_t detws_sep2_end_device(uint64_t sfdi, const char *lfdi, const char *href, char *out, size_t cap);
+size_t dws_sep2_end_device(uint64_t sfdi, const char *lfdi, const char *href, char *out, size_t cap);
 
 /**
  * @brief Build a DERControl event document.
@@ -52,8 +52,8 @@ size_t detws_sep2_end_device(uint64_t sfdi, const char *lfdi, const char *href, 
  * @param opmod_target_w the real-power setpoint (opModFixedW), in watts (may be negative to absorb).
  * @return length written, or 0 on overflow.
  */
-size_t detws_sep2_der_control(const char *mrid, uint32_t start, uint32_t duration, int32_t opmod_target_w, char *out,
-                              size_t cap);
+size_t dws_sep2_der_control(const char *mrid, uint32_t start, uint32_t duration, int32_t opmod_target_w, char *out,
+                            size_t cap);
 
-#endif // DETWS_ENABLE_SEP2
+#endif // DWS_ENABLE_SEP2
 #endif // DETERMINISTICESPASYNCWEBSERVER_SEP2_H

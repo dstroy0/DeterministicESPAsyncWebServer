@@ -26,7 +26,7 @@
  * Rejects overlong encodings, surrogate code points (U+D800..U+DFFF), values
  * above U+10FFFF, bad continuation bytes, and truncated multi-byte sequences.
  */
-inline bool det_utf8_valid(const uint8_t *s, size_t n)
+inline bool dws_utf8_valid(const uint8_t *s, size_t n)
 {
     size_t i = 0;
     while (i < n)

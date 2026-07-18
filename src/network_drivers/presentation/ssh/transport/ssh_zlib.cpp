@@ -23,7 +23,7 @@
 
 #include "network_drivers/presentation/ssh/transport/ssh_zlib.h"
 
-#if DETWS_ENABLE_SSH_ZLIB
+#if DWS_ENABLE_SSH_ZLIB
 
 #include "shared_primitives/bitio.h"
 
@@ -34,9 +34,9 @@ namespace
 constexpr int MIN_MATCH = 3;   // shortest LZ77 back-reference
 constexpr int MAX_MATCH = 258; // longest (RFC 1951 length code 285)
 constexpr int HASH_MASK = SSH_ZLIB_HASH_SIZE - 1;
-constexpr int WINDOW = DETWS_SSH_ZLIB_WINDOW; // max back-reference distance (power of two)
-constexpr int MAX_CHAIN = 128;                // bounded hash-chain walk per position
-constexpr uint16_t NONE = 0xFFFF;             // empty hash slot / chain terminator
+constexpr int WINDOW = DWS_SSH_ZLIB_WINDOW; // max back-reference distance (power of two)
+constexpr int MAX_CHAIN = 128;              // bounded hash-chain walk per position
+constexpr uint16_t NONE = 0xFFFF;           // empty hash slot / chain terminator
 
 // Length code base values and extra bits (RFC 1951 sec 3.2.5), codes 257..285.
 const short LEN_BASE[29] = {3,  4,  5,  6,  7,  8,  9,  10, 11,  13,  15,  17,  19,  23, 27,
@@ -99,7 +99,7 @@ void build_fixed(SshDeflate *z)
 }
 
 // Emit one raw byte (only valid on a byte boundary: the zlib header and sync marker).
-void put_byte(DetBitWriter *w, uint8_t b)
+void put_byte(DWSBitWriter *w, uint8_t b)
 {
     if (w->cnt >= w->cap)
     {
@@ -115,27 +115,27 @@ inline int hash3(const uint8_t *p)
     return (int)(((uint32_t)p[0] << 10 ^ (uint32_t)p[1] << 5 ^ (uint32_t)p[2]) & HASH_MASK);
 }
 
-void emit_literal(DetBitWriter *w, const SshDeflate *z, uint8_t b)
+void emit_literal(DWSBitWriter *w, const SshDeflate *z, uint8_t b)
 {
-    det_bitw_put(w, z->ll_code[b], z->ll_len[b]);
+    dws_bitw_put(w, z->ll_code[b], z->ll_len[b]);
 }
 
-void emit_match(DetBitWriter *w, const SshDeflate *z, int len, int dist)
+void emit_match(DWSBitWriter *w, const SshDeflate *z, int len, int dist)
 {
     int li = 0;
     while (li < 28 && len >= LEN_BASE[li + 1])
         li++;
     int lsym = 257 + li;
-    det_bitw_put(w, z->ll_code[lsym], z->ll_len[lsym]);
+    dws_bitw_put(w, z->ll_code[lsym], z->ll_len[lsym]);
     if (LEN_EXTRA[li])
-        det_bitw_put(w, (uint32_t)(len - LEN_BASE[li]), LEN_EXTRA[li]);
+        dws_bitw_put(w, (uint32_t)(len - LEN_BASE[li]), LEN_EXTRA[li]);
 
     int di = 0;
     while (di < 29 && dist >= DIST_BASE[di + 1])
         di++;
-    det_bitw_put(w, z->d_code[di], z->d_len[di]);
+    dws_bitw_put(w, z->d_code[di], z->d_len[di]);
     if (DIST_EXTRA[di])
-        det_bitw_put(w, (uint32_t)(dist - DIST_BASE[di]), DIST_EXTRA[di]);
+        dws_bitw_put(w, (uint32_t)(dist - DIST_BASE[di]), DIST_EXTRA[di]);
 }
 
 // Walk the hash chain from cand (newest-first) for the longest match of buf[i..] within WINDOW.
@@ -183,7 +183,7 @@ void ssh_deflate_init(SshDeflate *z, uint8_t *work, uint16_t *head, uint16_t *pr
 
 int ssh_deflate_packet(SshDeflate *z, const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len)
 {
-    if (src_len > (size_t)DETWS_SSH_ZLIB_MAX_IN)
+    if (src_len > (size_t)DWS_SSH_ZLIB_MAX_IN)
         return -1;
 
     // Lay [history || input] out contiguously; matches for the input may reach back into history.
@@ -204,7 +204,7 @@ int ssh_deflate_packet(SshDeflate *z, const uint8_t *src, size_t src_len, uint8_
         z->head[h] = (uint16_t)p;
     }
 
-    DetBitWriter w;
+    DWSBitWriter w;
     w.out = dst;
     w.cap = dst_cap;
     w.cnt = 0;
@@ -222,8 +222,8 @@ int ssh_deflate_packet(SshDeflate *z, const uint8_t *src, size_t src_len, uint8_
     }
 
     // One fixed-Huffman block, not final: BFINAL=0 (1 bit), BTYPE=01 (2 bits, value 1).
-    det_bitw_put(&w, 0, 1);
-    det_bitw_put(&w, 1, 2);
+    dws_bitw_put(&w, 0, 1);
+    dws_bitw_put(&w, 1, 2);
 
     size_t i = hist; // emit tokens only for the new input
     while (i < total)
@@ -270,10 +270,10 @@ int ssh_deflate_packet(SshDeflate *z, const uint8_t *src, size_t src_len, uint8_
 
     // End-of-block, then a Z_SYNC_FLUSH: byte-align via an empty stored block and KEEP its
     // 0x00 0x00 0xff 0xff tail on the wire (SSH sends it; a zlib inflate() flushes at the boundary).
-    det_bitw_put(&w, z->ll_code[256], z->ll_len[256]); // end-of-block symbol
-    det_bitw_put(&w, 0, 1);                            // BFINAL=0 (empty stored block)
-    det_bitw_put(&w, 0, 2);                            // BTYPE=00 (stored)
-    det_bitw_align(&w);
+    dws_bitw_put(&w, z->ll_code[256], z->ll_len[256]); // end-of-block symbol
+    dws_bitw_put(&w, 0, 1);                            // BFINAL=0 (empty stored block)
+    dws_bitw_put(&w, 0, 2);                            // BTYPE=00 (stored)
+    dws_bitw_align(&w);
     put_byte(&w, 0x00);
     put_byte(&w, 0x00);
     put_byte(&w, 0xff);
@@ -294,4 +294,4 @@ int ssh_deflate_packet(SshDeflate *z, const uint8_t *src, size_t src_len, uint8_
     return 0;
 }
 
-#endif // DETWS_ENABLE_SSH_ZLIB
+#endif // DWS_ENABLE_SSH_ZLIB

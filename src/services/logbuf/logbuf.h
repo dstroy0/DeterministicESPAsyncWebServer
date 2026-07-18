@@ -3,9 +3,9 @@
 
 /**
  * @file logbuf.h
- * @brief Fixed-RAM rotating log buffer with severity traps (DETWS_ENABLE_LOGBUF).
+ * @brief Fixed-RAM rotating log buffer with severity traps (DWS_ENABLE_LOGBUF).
  *
- * Keeps the last DETWS_LOG_LINES log lines in a fixed ring (the oldest is pruned
+ * Keeps the last DWS_LOG_LINES log lines in a fixed ring (the oldest is pruned
  * on overflow - no heap, bounded latency), each line stored as `<L> message`
  * where L is the severity letter. Dump the ring oldest-first for a `/logs`
  * endpoint, and register a trap callback that fires when a line is logged at or
@@ -23,41 +23,41 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_LOGBUF
+#if DWS_ENABLE_LOGBUF
 
 /** @brief Severity levels (ordered low -> high). Compared (level >= threshold) and passed through the
  *  uint8_t trap-callback ABI, so integer constants in a namespacing struct - cast-free. */
 struct DetwsLogLevel
 {
-    static constexpr uint8_t DETWS_LOG_DEBUG = 0;
-    static constexpr uint8_t DETWS_LOG_INFO = 1;
-    static constexpr uint8_t DETWS_LOG_WARN = 2;
-    static constexpr uint8_t DETWS_LOG_ERROR = 3;
+    static constexpr uint8_t DWS_LOG_DEBUG = 0;
+    static constexpr uint8_t DWS_LOG_INFO = 1;
+    static constexpr uint8_t DWS_LOG_WARN = 2;
+    static constexpr uint8_t DWS_LOG_ERROR = 3;
 };
 
 /** @brief Trap callback: fired for a line logged at level >= the threshold. */
-typedef void (*detws_log_trap_fn)(uint8_t level, const char *line);
+typedef void (*dws_log_trap_fn)(uint8_t level, const char *line);
 
 /** @brief Empty the ring (and clear the line count). */
-void detws_logbuf_reset(void);
+void dws_logbuf_reset(void);
 
 /** @brief Append @p msg at @p level (stored as `<L> msg`, truncated to fit). */
-void detws_log(uint8_t level, const char *msg);
+void dws_log(uint8_t level, const char *msg);
 
-/** @brief Number of lines currently held (0 .. DETWS_LOG_LINES). */
-uint16_t detws_log_count(void);
+/** @brief Number of lines currently held (0 .. DWS_LOG_LINES). */
+uint16_t dws_log_count(void);
 
 /** @brief Line @p i (0 = oldest .. count-1 = newest), or nullptr if out of range. */
-const char *detws_log_at(uint16_t i);
+const char *dws_log_at(uint16_t i);
 
 /**
  * @brief Dump all held lines, oldest-first, newline-separated, into @p out.
  * @return characters written, or 0 if @p cap is too small (fail-closed).
  */
-int detws_log_dump(char *out, size_t cap);
+int dws_log_dump(char *out, size_t cap);
 
 /** @brief Install a trap callback that fires when a line is logged at level >= @p threshold. */
-void detws_log_set_trap(uint8_t threshold, detws_log_trap_fn cb);
+void dws_log_set_trap(uint8_t threshold, dws_log_trap_fn cb);
 
-#endif // DETWS_ENABLE_LOGBUF
+#endif // DWS_ENABLE_LOGBUF
 #endif // DETERMINISTICESPASYNCWEBSERVER_LOGBUF_H

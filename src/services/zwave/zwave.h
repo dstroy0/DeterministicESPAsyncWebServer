@@ -3,7 +3,7 @@
 
 /**
  * @file zwave.h
- * @brief Z-Wave Serial API frame codec (DETWS_ENABLE_ZWAVE) - Silicon Labs controller.
+ * @brief Z-Wave Serial API frame codec (DWS_ENABLE_ZWAVE) - Silicon Labs controller.
  *
  * The host-side Serial API of a Silicon Labs 500 / 700-series Z-Wave controller reached
  * over UART: a Z-Wave mesh bridged to the web. The host and the controller exchange **data
@@ -31,7 +31,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_ZWAVE
+#if DWS_ENABLE_ZWAVE
 
 #include <stddef.h>
 #include <stdint.h>
@@ -55,7 +55,7 @@ enum class zwave_type : uint8_t
 /**
  * @brief Assemble a data frame carrying @p type + @p cmd + @p data into @p out.
  * @return the total frame length, or 0 if it would not fit @p cap or @p data_len exceeds
- *         DETWS_ZWAVE_MAX_DATA.
+ *         DWS_ZWAVE_MAX_DATA.
  */
 uint16_t zwave_build_frame(zwave_type type, uint8_t cmd, const uint8_t *data, uint8_t data_len, uint8_t *out,
                            uint16_t cap);
@@ -84,6 +84,6 @@ bool zwave_is_can(uint8_t b);
 /** @brief Write the single ACK byte into @p out. @return 1, or 0 if @p cap < 1. */
 uint16_t zwave_build_ack(uint8_t *out, uint16_t cap);
 
-#endif // DETWS_ENABLE_ZWAVE
+#endif // DWS_ENABLE_ZWAVE
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_ZWAVE_H

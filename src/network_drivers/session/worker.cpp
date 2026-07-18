@@ -20,17 +20,17 @@ namespace
 thread_local int t_worker_id = 0;
 } // namespace
 
-int detws_worker_count(void)
+int dws_worker_count(void)
 {
-    return DETWS_WORKER_COUNT;
+    return DWS_WORKER_COUNT;
 }
 
-int detws_worker_self(void)
+int dws_worker_self(void)
 {
     return t_worker_id;
 }
 
-void detws_worker_set_self(int id)
+void dws_worker_set_self(int id)
 {
     t_worker_id = id;
 }
@@ -51,29 +51,29 @@ namespace
 // handles, and the run flag. One named owner, unreachable from any other translation unit.
 struct WorkerCtx
 {
-    detws_worker_pump_fn pump = nullptr;
-    TaskHandle_t tasks[DETWS_WORKER_COUNT] = {nullptr};
+    dws_worker_pump_fn pump = nullptr;
+    TaskHandle_t tasks[DWS_WORKER_COUNT] = {nullptr};
     std::atomic<bool> run{false}; // release on start publishes pump; acquire in the task
 };
 WorkerCtx s_worker;
 
 // Each worker binds its id, then pumps until asked to stop. Between iterations it
 // blocks on its task notification instead of free-running the poll: a producer
-// (listener_enqueue, detws_defer) nudges it the moment work arrives, so events are
+// (listener_enqueue, dws_defer) nudges it the moment work arrives, so events are
 // serviced immediately rather than on the next tick. The block still times out
-// after DETWS_WORKER_POLL_TICKS so the idle timeout sweep (check_timeouts) keeps
+// after DWS_WORKER_POLL_TICKS so the idle timeout sweep (check_timeouts) keeps
 // reaping stale connections with no events in flight; raising that knob now lowers
 // idle wakeups without costing event latency. A nudge that races the pump is
 // latched in the notify count, so ulTaskNotifyTake returns at once - no lost wake.
 void worker_task(void *arg)
 {
     int id = (int)(intptr_t)arg;
-    detws_worker_set_self(id);
+    dws_worker_set_self(id);
     while (s_worker.run.load(std::memory_order_acquire))
     {
         if (s_worker.pump)
             s_worker.pump(id);
-        ulTaskNotifyTake(pdTRUE, DETWS_WORKER_POLL_TICKS); // wake on event, else idle-sweep timeout
+        ulTaskNotifyTake(pdTRUE, DWS_WORKER_POLL_TICKS); // wake on event, else idle-sweep timeout
     }
     s_worker.tasks[id] = nullptr;
     vTaskDelete(nullptr);
@@ -86,72 +86,72 @@ namespace
 {
 struct DeferCmd
 {
-    detws_deferred_fn fn;
+    dws_deferred_fn fn;
     void *arg;
 };
 // The per-worker deferred-callback queue HANDLES, owned by one instance. The hot path
-// (detws_defer / run_deferred / wake) touches only these, so this stays small and live.
+// (dws_defer / run_deferred / wake) touches only these, so this stays small and live.
 struct DeferCtx
 {
-    QueueHandle_t dq[DETWS_WORKER_COUNT] = {nullptr};
+    QueueHandle_t dq[DWS_WORKER_COUNT] = {nullptr};
 };
 DeferCtx s_defer;
 
 // The FreeRTOS static-queue backing store (control blocks + byte storage), in its OWN
-// owned instance. Only detws_workers_start() references it (to create the queues), so a
+// owned instance. Only dws_workers_start() references it (to create the queues), so a
 // firmware that never starts workers (e.g. a pure client sketch) garbage-collects this
 // multi-hundred-byte store instead of anchoring it through the always-live handle path.
 struct DeferStorageCtx
 {
-    StaticQueue_t dq_struct[DETWS_WORKER_COUNT];
-    uint8_t dq_storage[DETWS_WORKER_COUNT][DETWS_DEFER_QUEUE_DEPTH * sizeof(DeferCmd)];
+    StaticQueue_t dq_struct[DWS_WORKER_COUNT];
+    uint8_t dq_storage[DWS_WORKER_COUNT][DWS_DEFER_QUEUE_DEPTH * sizeof(DeferCmd)];
 };
 DeferStorageCtx s_defer_store;
 } // namespace
 
-void detws_workers_start(detws_worker_pump_fn pump)
+void dws_workers_start(dws_worker_pump_fn pump)
 {
     if (s_worker.run.load(std::memory_order_acquire))
         return; // already running
     s_worker.pump = pump;
-    for (int i = 0; i < DETWS_WORKER_COUNT; i++)
+    for (int i = 0; i < DWS_WORKER_COUNT; i++)
         if (!s_defer.dq[i])
-            s_defer.dq[i] = xQueueCreateStatic(DETWS_DEFER_QUEUE_DEPTH, sizeof(DeferCmd), s_defer_store.dq_storage[i],
+            s_defer.dq[i] = xQueueCreateStatic(DWS_DEFER_QUEUE_DEPTH, sizeof(DeferCmd), s_defer_store.dq_storage[i],
                                                &s_defer_store.dq_struct[i]);
     s_worker.run.store(true, std::memory_order_release);
-    for (int i = 0; i < DETWS_WORKER_COUNT; i++)
+    for (int i = 0; i < DWS_WORKER_COUNT; i++)
     {
-        int core = (DETWS_WORKER_CORE + i) % portNUM_PROCESSORS;
-        xTaskCreatePinnedToCore(worker_task, "detws_worker", DETWS_WORKER_TASK_STACK, (void *)(intptr_t)i,
-                                DETWS_WORKER_TASK_PRIORITY, &s_worker.tasks[i], core);
+        int core = (DWS_WORKER_CORE + i) % portNUM_PROCESSORS;
+        xTaskCreatePinnedToCore(worker_task, "dws_worker", DWS_WORKER_TASK_STACK, (void *)(intptr_t)i,
+                                DWS_WORKER_TASK_PRIORITY, &s_worker.tasks[i], core);
     }
 }
 
-bool detws_defer(int worker_id, detws_deferred_fn fn, void *arg)
+bool dws_defer(int worker_id, dws_deferred_fn fn, void *arg)
 {
     if (!fn)
         return false;
-    if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT || !s_defer.dq[worker_id])
+    if (worker_id < 0 || worker_id >= DWS_WORKER_COUNT || !s_defer.dq[worker_id])
         return false;
     DeferCmd cmd = {fn, arg};
     if (xQueueSend(s_defer.dq[worker_id], &cmd, 0) != pdTRUE)
         return false;
-    detws_worker_wake(worker_id); // run the callback now, not on the next idle sweep
+    dws_worker_wake(worker_id); // run the callback now, not on the next idle sweep
     return true;
 }
 
-void detws_worker_wake(int worker_id)
+void dws_worker_wake(int worker_id)
 {
-    if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT)
+    if (worker_id < 0 || worker_id >= DWS_WORKER_COUNT)
         return;
     TaskHandle_t t = s_worker.tasks[worker_id];
     if (t)
         xTaskNotifyGive(t);
 }
 
-void detws_worker_run_deferred(int worker_id)
+void dws_worker_run_deferred(int worker_id)
 {
-    if (worker_id < 0 || worker_id >= DETWS_WORKER_COUNT || !s_defer.dq[worker_id])
+    if (worker_id < 0 || worker_id >= DWS_WORKER_COUNT || !s_defer.dq[worker_id])
         return;
     DeferCmd cmd;
     while (xQueueReceive(s_defer.dq[worker_id], &cmd, 0) == pdTRUE)
@@ -159,7 +159,7 @@ void detws_worker_run_deferred(int worker_id)
             cmd.fn(cmd.arg);
 }
 
-void detws_workers_stop(void)
+void dws_workers_stop(void)
 {
     if (!s_worker.run.load(std::memory_order_acquire))
         return;
@@ -169,37 +169,37 @@ void detws_workers_stop(void)
     vTaskDelay(3);
 }
 
-bool detws_workers_running(void)
+bool dws_workers_running(void)
 {
     return s_worker.run.load(std::memory_order_acquire);
 }
 
 #else // host build - no tasks; handle()/tests drive the pipeline inline
 
-void detws_workers_start(detws_worker_pump_fn)
+void dws_workers_start(dws_worker_pump_fn)
 {
 }
-void detws_workers_stop(void)
+void dws_workers_stop(void)
 {
 }
-bool detws_workers_running(void)
+bool dws_workers_running(void)
 {
     return false;
 }
-void detws_worker_wake(int)
+void dws_worker_wake(int)
 {
 } // no worker task on host - nothing to wake
 
 // No worker task on host: the caller and the pipeline are the same thread, so a
 // deferred callback can run inline immediately (same observable effect, race-free).
-bool detws_defer(int, detws_deferred_fn fn, void *arg)
+bool dws_defer(int, dws_deferred_fn fn, void *arg)
 {
     if (!fn)
         return false;
     fn(arg);
     return true;
 }
-void detws_worker_run_deferred(int)
+void dws_worker_run_deferred(int)
 {
 }
 

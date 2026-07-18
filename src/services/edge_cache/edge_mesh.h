@@ -4,7 +4,7 @@
 /**
  * @file edge_mesh.h
  * @brief CDN edge-cache tier - mesh (sibling-cache) wire codec + async peer-query engine
- *        (DETWS_ENABLE_EDGE_MESH).
+ *        (DWS_ENABLE_EDGE_MESH).
  *
  * Lets a fleet of edge nodes share one warm cache. On a full local miss a node queries its sibling peers
  * (over a plaintext ConnProto::PROTO_MESH TCP link) with a content-addressed request and pulls a fresh copy
@@ -14,7 +14,7 @@
  *
  * This file is the pure, host-testable half: the request/response frame codec, the freshness-carrying entry
  * frame (the shared ::edge_sd_serialize body plus a fixed timing trailer), and the async requester engine
- * over the same EdgeFetchTransport seam the origin fetch uses (det_client on device, a mock in host tests).
+ * over the same EdgeFetchTransport seam the origin fetch uses (dws_client on device, a mock in host tests).
  * The server glue (the peer table, the pre-origin query phase, and the PROTO_MESH serving listener) lives in
  * edge_cache_proxy. Zero heap; fixed buffers.
  *
@@ -33,7 +33,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_EDGE_MESH
+#if DWS_ENABLE_EDGE_MESH
 
 #include "services/edge_cache/edge_cache.h"    // EdgeEntry
 #include "services/edge_cache/edge_cache_sd.h" // EDGE_SD_VALUE_MAX + the shared entry serializer
@@ -51,7 +51,7 @@ constexpr size_t EDGE_MESH_TRAILER = 8 /*date*/ + 8 /*expires*/ + 4 /*lifetime_s
 /** @brief Worst-case entry frame (trailer + a full ::edge_sd_serialize body). */
 constexpr size_t EDGE_MESH_ENTRY_MAX = EDGE_MESH_TRAILER + EDGE_SD_VALUE_MAX;
 /** @brief Worst-case request frame (the third field is a bounded request-header snapshot for Vary matching). */
-constexpr size_t EDGE_MESH_REQ_MAX = 2 + 1 + 1 + 32 + 2 + DETWS_EDGE_KEY_MAX + 2 + DETWS_MESH_HDRS_MAX;
+constexpr size_t EDGE_MESH_REQ_MAX = 2 + 1 + 1 + 32 + 2 + DWS_EDGE_KEY_MAX + 2 + DWS_MESH_HDRS_MAX;
 /** @brief Worst-case response frame (header + entry on a HIT). */
 constexpr size_t EDGE_MESH_RESP_MAX = 2 + 1 + 1 + 2 + EDGE_MESH_ENTRY_MAX;
 
@@ -142,12 +142,12 @@ struct EdgeMeshFetch
 void edge_mesh_fetch_begin(EdgeMeshFetch *m, const EdgeFetchTransport *t, const char *host, uint16_t port,
                            const uint8_t *request, size_t req_len, uint8_t *buf, size_t cap, uint32_t now_ms);
 
-/** @brief Drain available bytes and advance; honors DETWS_MESH_QUERY_MS. @return the current status. */
+/** @brief Drain available bytes and advance; honors DWS_MESH_QUERY_MS. @return the current status. */
 EdgeMeshStatus edge_mesh_fetch_pump(EdgeMeshFetch *m, const EdgeFetchTransport *t, uint32_t now_ms);
 
 /** @brief Release the peer connection (idempotent). */
 void edge_mesh_fetch_end(EdgeMeshFetch *m, const EdgeFetchTransport *t);
 
-#endif // DETWS_ENABLE_EDGE_MESH
+#endif // DWS_ENABLE_EDGE_MESH
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_EDGE_MESH_H

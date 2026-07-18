@@ -8,13 +8,13 @@
 
 #include "services/hw_health/hw_health.h"
 
-#if DETWS_ENABLE_HW_HEALTH
+#if DWS_ENABLE_HW_HEALTH
 
 #include <string.h>
 
 #include "shared_primitives/strbuf.h"
 
-void detws_hwhealth_rail_init(HwRailMonitor *m, uint32_t nominal_mv, uint32_t warn_mv, uint32_t crit_mv)
+void dws_hwhealth_rail_init(HwRailMonitor *m, uint32_t nominal_mv, uint32_t warn_mv, uint32_t crit_mv)
 {
     if (!m)
         return;
@@ -26,7 +26,7 @@ void detws_hwhealth_rail_init(HwRailMonitor *m, uint32_t nominal_mv, uint32_t wa
     m->brownout_events = 0;
 }
 
-HwRailVerdict detws_hwhealth_rail_sample(HwRailMonitor *m, uint32_t mv)
+HwRailVerdict dws_hwhealth_rail_sample(HwRailMonitor *m, uint32_t mv)
 {
     if (!m)
         return HwRailVerdict::HW_RAIL_OK;
@@ -45,28 +45,28 @@ HwRailVerdict detws_hwhealth_rail_sample(HwRailMonitor *m, uint32_t mv)
     return HwRailVerdict::HW_RAIL_OK;
 }
 
-size_t detws_hwhealth_rail_json(const HwRailMonitor *m, char *out, size_t cap)
+size_t dws_hwhealth_rail_json(const HwRailMonitor *m, char *out, size_t cap)
 {
     if (!m || !out || cap == 0)
         return 0;
-    DetSb b = {out, cap, 0, true};
-    det_sb_put(&b, "{\"nominal_mv\":");
-    det_sb_u32(&b, m->nominal_mv);
-    det_sb_put(&b, ",\"min_mv\":");
-    det_sb_u32(&b, m->min_mv);
-    det_sb_put(&b, ",\"sag\":");
-    det_sb_u32(&b, m->sag_events);
-    det_sb_put(&b, ",\"brownout\":");
-    det_sb_u32(&b, m->brownout_events);
-    det_sb_put(&b, "}");
+    DWSSb b = {out, cap, 0, true};
+    dws_sb_put(&b, "{\"nominal_mv\":");
+    dws_sb_u32(&b, m->nominal_mv);
+    dws_sb_put(&b, ",\"min_mv\":");
+    dws_sb_u32(&b, m->min_mv);
+    dws_sb_put(&b, ",\"sag\":");
+    dws_sb_u32(&b, m->sag_events);
+    dws_sb_put(&b, ",\"brownout\":");
+    dws_sb_u32(&b, m->brownout_events);
+    dws_sb_put(&b, "}");
     if (!b.ok)
         return 0;
     out[b.len] = '\0';
     return b.len;
 }
 
-void detws_hwhealth_spi_init(HwSpiBackoff *s, uint32_t start_hz, uint32_t min_hz, uint32_t max_hz, uint16_t fail_trip,
-                             uint16_t ok_trip)
+void dws_hwhealth_spi_init(HwSpiBackoff *s, uint32_t start_hz, uint32_t min_hz, uint32_t max_hz, uint16_t fail_trip,
+                           uint16_t ok_trip)
 {
     if (!s)
         return;
@@ -84,7 +84,7 @@ void detws_hwhealth_spi_init(HwSpiBackoff *s, uint32_t start_hz, uint32_t min_hz
     s->ok_trip = ok_trip ? ok_trip : 1;
 }
 
-uint32_t detws_hwhealth_spi_result(HwSpiBackoff *s, bool crc_ok)
+uint32_t dws_hwhealth_spi_result(HwSpiBackoff *s, bool crc_ok)
 {
     if (!s)
         return 0;
@@ -115,7 +115,7 @@ uint32_t detws_hwhealth_spi_result(HwSpiBackoff *s, bool crc_ok)
     return s->hz;
 }
 
-HwGpioVerdict detws_hwhealth_gpio_short(bool driven_high, bool read_high)
+HwGpioVerdict dws_hwhealth_gpio_short(bool driven_high, bool read_high)
 {
     if (driven_high && !read_high)
         return HwGpioVerdict::HW_GPIO_SHORT_GND;
@@ -124,7 +124,7 @@ HwGpioVerdict detws_hwhealth_gpio_short(bool driven_high, bool read_high)
     return HwGpioVerdict::HW_GPIO_OK;
 }
 
-HwCapVerdict detws_hwhealth_cap_leak(uint32_t measured_ms, uint32_t expected_ms, uint8_t tol_pct)
+HwCapVerdict dws_hwhealth_cap_leak(uint32_t measured_ms, uint32_t expected_ms, uint8_t tol_pct)
 {
     if (expected_ms == 0)
         return HwCapVerdict::HW_CAP_OK;
@@ -139,4 +139,4 @@ HwCapVerdict detws_hwhealth_cap_leak(uint32_t measured_ms, uint32_t expected_ms,
     return HwCapVerdict::HW_CAP_OK;
 }
 
-#endif // DETWS_ENABLE_HW_HEALTH
+#endif // DWS_ENABLE_HW_HEALTH

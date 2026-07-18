@@ -3,7 +3,7 @@
 
 /**
  * @file 72.Umati.ino
- * @brief umati - OPC UA for Machine Tools (OPC 40501-1) MachineTool model (DETWS_ENABLE_UMATI).
+ * @brief umati - OPC UA for Machine Tools (OPC 40501-1) MachineTool model (DWS_ENABLE_UMATI).
  *
  * Turns the board into a umati machine-tool server: it exposes the standard MachineTool information
  * model (Identification, Monitoring - MachineTool / Channel / Spindle / Axis_X..Z, Production,
@@ -18,12 +18,12 @@
  * HTTP server on :80 runs alongside on the same event loop.
  *
  * NOTE: enable it for the whole build. In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_UMATI=1
+ *     build_flags = -DDWS_ENABLE_OPCUA=1 -DDWS_ENABLE_UMATI=1
  * (Arduino IDE: already set for you in the build_opt.h beside this sketch.)
  */
 
-#define DETWS_ENABLE_OPCUA 1
-#define DETWS_ENABLE_UMATI 1
+#define DWS_ENABLE_OPCUA 1
+#define DWS_ENABLE_UMATI 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -34,7 +34,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // The MachineTool the umati server exposes. Own it statically and refresh its live fields each loop
 // from your real machine I/O; the resolvers read straight out of it (no copy).

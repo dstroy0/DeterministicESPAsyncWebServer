@@ -8,10 +8,10 @@
 
 #include "network_drivers/presentation/http3/tls13_msg.h"
 
-#if (DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS)
+#if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS)
 
 #include "network_drivers/presentation/ssh/crypto/ssh_ed25519.h"
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
 #include "network_drivers/presentation/pqc/mlkem.h" // MLKEM768_EK_BYTES (X25519MLKEM768 share sizing)
 #endif
 #include <string.h>
@@ -184,7 +184,7 @@ void parse_key_share(const uint8_t *body, size_t blen, Tls13ClientHello *out)
             memcpy(out->client_x25519, body + i, 32);
             out->has_key_share = true;
         }
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
         else if (group == TLS_GROUP_X25519MLKEM768 && klen == MLKEM768_EK_BYTES + 32)
         {
             out->client_mlkem_ek = body + i;                              // ML-KEM-768 ek (first)
@@ -256,7 +256,7 @@ void parse_extension(uint16_t type, const uint8_t *body, size_t blen, Tls13Clien
             return;
         size_t ll = (body[0] << 8) | body[1];
         out->offers_x25519 = list16_contains(body + 2, blen - 2, ll, TLS_GROUP_X25519);
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
         out->offers_x25519mlkem768 = list16_contains(body + 2, blen - 2, ll, TLS_GROUP_X25519MLKEM768);
 #endif
         break;
@@ -577,4 +577,4 @@ size_t tls13_build_finished(uint8_t *out, size_t cap, const uint8_t verify_data[
     return w.ok ? w.pos : 0;
 }
 
-#endif // DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS
+#endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS

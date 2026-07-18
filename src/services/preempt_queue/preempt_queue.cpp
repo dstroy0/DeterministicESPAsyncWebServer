@@ -5,14 +5,14 @@
  * @file preempt_queue.cpp
  * @brief Preempting work queues + high-priority processing tasks - implementation.
  *
- * One queue + one task per lane (detws_pq_lane::DETWS_PQ_LANE_COUNT lanes). The no-lane detws_pq_* API
+ * One queue + one task per lane (dws_pq_lane::DWS_PQ_LANE_COUNT lanes). The no-lane dws_pq_* API
  * lives in the header and forwards to the USER lane. Internal lanes default to a higher
  * priority than the user lane so internal ingest preempts user work.
  */
 
 #include "services/preempt_queue/preempt_queue.h"
 
-#if DETWS_ENABLE_PREEMPT_QUEUE
+#if DWS_ENABLE_PREEMPT_QUEUE
 
 #include <string.h>
 
@@ -24,49 +24,49 @@ namespace
 // in scope. One named owner, unreachable from any other translation unit.
 struct PqCtx
 {
-    DetwsPqHandler handler[(size_t)detws_pq_lane::DETWS_PQ_LANE_COUNT] = {};
-    void *ctx[(size_t)detws_pq_lane::DETWS_PQ_LANE_COUNT] = {};
-    size_t high_water[(size_t)detws_pq_lane::DETWS_PQ_LANE_COUNT] = {}; // peak items queued at once (sizing aid)
+    DetwsPqHandler handler[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {};
+    void *ctx[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {};
+    size_t high_water[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {}; // peak items queued at once (sizing aid)
 };
 PqCtx s_pq;
 
-// GCOVR_EXCL_START  ESP32-only: only used to name the FreeRTOS task in the ARDUINO detws_pq_start_lane;
+// GCOVR_EXCL_START  ESP32-only: only used to name the FreeRTOS task in the ARDUINO dws_pq_start_lane;
 // the coverage host never starts tasks, and this is internal-linkage (anon namespace) so not callable.
-const char *lane_name(detws_pq_lane lane)
+const char *lane_name(dws_pq_lane lane)
 {
     switch (lane)
     {
-    case detws_pq_lane::DETWS_PQ_LANE_DMA:
-        return "detws_pq_dma";
-    case detws_pq_lane::DETWS_PQ_LANE_FORWARD:
-        return "detws_pq_fwd";
-    case detws_pq_lane::DETWS_PQ_LANE_DEVICE:
-        return "detws_pq_dev";
+    case dws_pq_lane::DWS_PQ_LANE_DMA:
+        return "dws_pq_dma";
+    case dws_pq_lane::DWS_PQ_LANE_FORWARD:
+        return "dws_pq_fwd";
+    case dws_pq_lane::DWS_PQ_LANE_DEVICE:
+        return "dws_pq_dev";
     default:
-        return "detws_pq_user";
+        return "dws_pq_user";
     }
 }
 // GCOVR_EXCL_STOP
 
-bool lane_ok(detws_pq_lane lane)
+bool lane_ok(dws_pq_lane lane)
 {
-    return (unsigned)lane < (unsigned)detws_pq_lane::DETWS_PQ_LANE_COUNT;
+    return (unsigned)lane < (unsigned)dws_pq_lane::DWS_PQ_LANE_COUNT;
 }
 } // namespace
 
 // Default task priority per lane: internal lanes rank above the user lane (DMA highest),
 // staying below the lwIP tcpip (18) / WiFi tasks so networking is never starved.
-uint8_t detws_pq_lane_priority(detws_pq_lane lane)
+uint8_t dws_pq_lane_priority(dws_pq_lane lane)
 {
     switch (lane)
     {
-    case detws_pq_lane::DETWS_PQ_LANE_DMA:
-        return (uint8_t)(DETWS_PQ_INTERNAL_PRIORITY + 2);
-    case detws_pq_lane::DETWS_PQ_LANE_FORWARD:
-        return (uint8_t)(DETWS_PQ_INTERNAL_PRIORITY + 1);
-    case detws_pq_lane::DETWS_PQ_LANE_DEVICE:
-        return (uint8_t)(DETWS_PQ_INTERNAL_PRIORITY);
-    case detws_pq_lane::DETWS_PQ_LANE_USER:
+    case dws_pq_lane::DWS_PQ_LANE_DMA:
+        return (uint8_t)(DWS_PQ_INTERNAL_PRIORITY + 2);
+    case dws_pq_lane::DWS_PQ_LANE_FORWARD:
+        return (uint8_t)(DWS_PQ_INTERNAL_PRIORITY + 1);
+    case dws_pq_lane::DWS_PQ_LANE_DEVICE:
+        return (uint8_t)(DWS_PQ_INTERNAL_PRIORITY);
+    case dws_pq_lane::DWS_PQ_LANE_USER:
     default:
         return 5; // used only when a config passes priority 0; kept below the internal lanes
     }
@@ -85,15 +85,15 @@ namespace
 // owner, unreachable from any other translation unit.
 struct PqQueueCtx
 {
-    StaticQueue_t q_struct[(size_t)detws_pq_lane::DETWS_PQ_LANE_COUNT];
-    uint8_t q_storage[(size_t)detws_pq_lane::DETWS_PQ_LANE_COUNT][DETWS_PQ_DEPTH * DETWS_PQ_ITEM_SIZE];
-    QueueHandle_t q[(size_t)detws_pq_lane::DETWS_PQ_LANE_COUNT] = {};
-    TaskHandle_t task[(size_t)detws_pq_lane::DETWS_PQ_LANE_COUNT] = {};
-    volatile bool run[(size_t)detws_pq_lane::DETWS_PQ_LANE_COUNT] = {};
+    StaticQueue_t q_struct[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT];
+    uint8_t q_storage[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT][DWS_PQ_DEPTH * DWS_PQ_ITEM_SIZE];
+    QueueHandle_t q[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {};
+    TaskHandle_t task[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {};
+    volatile bool run[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {};
 };
 PqQueueCtx s_pqq;
 
-void note_depth(detws_pq_lane lane, UBaseType_t waiting)
+void note_depth(dws_pq_lane lane, UBaseType_t waiting)
 {
     if ((size_t)waiting > s_pq.high_water[(size_t)lane])
         s_pq.high_water[(size_t)lane] = (size_t)waiting;
@@ -104,8 +104,8 @@ void note_depth(detws_pq_lane lane, UBaseType_t waiting)
 // item in order. It blocks forever between items (zero idle wakeups).
 void pq_task(void *arg)
 {
-    detws_pq_lane lane = static_cast<detws_pq_lane>(reinterpret_cast<uintptr_t>(arg));
-    uint8_t item[DETWS_PQ_ITEM_SIZE];
+    dws_pq_lane lane = static_cast<dws_pq_lane>(reinterpret_cast<uintptr_t>(arg));
+    uint8_t item[DWS_PQ_ITEM_SIZE];
     for (;;)
     {
         if (xQueueReceive(s_pqq.q[(size_t)lane], item, portMAX_DELAY) == pdTRUE && s_pq.handler[(size_t)lane])
@@ -114,7 +114,7 @@ void pq_task(void *arg)
 }
 } // namespace
 
-bool detws_pq_start_lane(detws_pq_lane lane, const DetwsPqConfig *cfg)
+bool dws_pq_start_lane(dws_pq_lane lane, const DetwsPqConfig *cfg)
 {
     if (!lane_ok(lane) || s_pqq.run[(size_t)lane] || !cfg || !cfg->handler)
         return false;
@@ -122,15 +122,15 @@ bool detws_pq_start_lane(detws_pq_lane lane, const DetwsPqConfig *cfg)
     s_pq.ctx[(size_t)lane] = cfg->ctx;
     s_pq.high_water[(size_t)lane] = 0;
     if (!s_pqq.q[(size_t)lane])
-        s_pqq.q[(size_t)lane] = xQueueCreateStatic(DETWS_PQ_DEPTH, DETWS_PQ_ITEM_SIZE, s_pqq.q_storage[(size_t)lane],
+        s_pqq.q[(size_t)lane] = xQueueCreateStatic(DWS_PQ_DEPTH, DWS_PQ_ITEM_SIZE, s_pqq.q_storage[(size_t)lane],
                                                    &s_pqq.q_struct[(size_t)lane]);
     if (!s_pqq.q[(size_t)lane])
         return false;
     s_pqq.run[(size_t)lane] = true;
-    uint8_t prio = cfg->priority ? cfg->priority : detws_pq_lane_priority(lane);
+    uint8_t prio = cfg->priority ? cfg->priority : dws_pq_lane_priority(lane);
     int core = cfg->core % portNUM_PROCESSORS;
-    if (xTaskCreatePinnedToCore(pq_task, cfg->name ? cfg->name : lane_name(lane), DETWS_PQ_STACK,
-                                (void *)(uintptr_t)lane, prio, &s_pqq.task[(size_t)lane], core) != pdPASS)
+    if (xTaskCreatePinnedToCore(pq_task, cfg->name ? cfg->name : lane_name(lane), DWS_PQ_STACK, (void *)(uintptr_t)lane,
+                                prio, &s_pqq.task[(size_t)lane], core) != pdPASS)
     {
         s_pqq.run[(size_t)lane] = false;
         return false;
@@ -138,7 +138,7 @@ bool detws_pq_start_lane(detws_pq_lane lane, const DetwsPqConfig *cfg)
     return true;
 }
 
-bool detws_pq_post_lane(detws_pq_lane lane, const void *item, uint32_t timeout_ticks)
+bool dws_pq_post_lane(dws_pq_lane lane, const void *item, uint32_t timeout_ticks)
 {
     if (!lane_ok(lane) || !s_pqq.q[(size_t)lane] || !item)
         return false;
@@ -148,7 +148,7 @@ bool detws_pq_post_lane(detws_pq_lane lane, const void *item, uint32_t timeout_t
     return true;
 }
 
-bool detws_pq_post_lane_urgent(detws_pq_lane lane, const void *item, uint32_t timeout_ticks)
+bool dws_pq_post_lane_urgent(dws_pq_lane lane, const void *item, uint32_t timeout_ticks)
 {
     if (!lane_ok(lane) || !s_pqq.q[(size_t)lane] || !item)
         return false;
@@ -158,7 +158,7 @@ bool detws_pq_post_lane_urgent(detws_pq_lane lane, const void *item, uint32_t ti
     return true;
 }
 
-bool detws_pq_post_lane_from_isr(detws_pq_lane lane, const void *item)
+bool dws_pq_post_lane_from_isr(dws_pq_lane lane, const void *item)
 {
     if (!lane_ok(lane) || !s_pqq.q[(size_t)lane] || !item)
         return false;
@@ -170,12 +170,12 @@ bool detws_pq_post_lane_from_isr(detws_pq_lane lane, const void *item)
     return true;
 }
 
-void detws_pq_drain_lane(detws_pq_lane)
+void dws_pq_drain_lane(dws_pq_lane)
 {
     // The lane's task drains on device; nothing to do here.
 }
 
-void detws_pq_stop_lane(detws_pq_lane lane)
+void dws_pq_stop_lane(dws_pq_lane lane)
 {
     if (!lane_ok(lane))
         return;
@@ -187,17 +187,17 @@ void detws_pq_stop_lane(detws_pq_lane lane)
     }
 }
 
-bool detws_pq_running_lane(detws_pq_lane lane)
+bool dws_pq_running_lane(dws_pq_lane lane)
 {
     return lane_ok(lane) && s_pqq.run[(size_t)lane];
 }
 
-size_t detws_pq_high_water_lane(detws_pq_lane lane)
+size_t dws_pq_high_water_lane(dws_pq_lane lane)
 {
     return lane_ok(lane) ? s_pq.high_water[(size_t)lane] : 0;
 }
 
-#else // host build - fixed per-lane rings, no tasks; detws_pq_drain_lane() runs the handler
+#else // host build - fixed per-lane rings, no tasks; dws_pq_drain_lane() runs the handler
 
 namespace
 {
@@ -205,22 +205,22 @@ namespace
 // its head/tail/count cursors, and the started flag. One named owner, unreachable cross-TU.
 struct PqRingCtx
 {
-    uint8_t buf[(size_t)detws_pq_lane::DETWS_PQ_LANE_COUNT][DETWS_PQ_DEPTH * DETWS_PQ_ITEM_SIZE];
-    size_t head[(size_t)detws_pq_lane::DETWS_PQ_LANE_COUNT] = {}; // next write slot
-    size_t tail[(size_t)detws_pq_lane::DETWS_PQ_LANE_COUNT] = {}; // next read slot
-    size_t count[(size_t)detws_pq_lane::DETWS_PQ_LANE_COUNT] = {};
-    bool started[(size_t)detws_pq_lane::DETWS_PQ_LANE_COUNT] = {};
+    uint8_t buf[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT][DWS_PQ_DEPTH * DWS_PQ_ITEM_SIZE];
+    size_t head[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {}; // next write slot
+    size_t tail[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {}; // next read slot
+    size_t count[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {};
+    bool started[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {};
 };
 PqRingCtx s_pqr;
 
-void note_count(detws_pq_lane lane)
+void note_count(dws_pq_lane lane)
 {
     if (s_pqr.count[(size_t)lane] > s_pq.high_water[(size_t)lane])
         s_pq.high_water[(size_t)lane] = s_pqr.count[(size_t)lane];
 }
 } // namespace
 
-bool detws_pq_start_lane(detws_pq_lane lane, const DetwsPqConfig *cfg)
+bool dws_pq_start_lane(dws_pq_lane lane, const DetwsPqConfig *cfg)
 {
     if (!lane_ok(lane) || s_pqr.started[(size_t)lane] || !cfg || !cfg->handler)
         return false;
@@ -234,64 +234,64 @@ bool detws_pq_start_lane(detws_pq_lane lane, const DetwsPqConfig *cfg)
     return true;
 }
 
-bool detws_pq_post_lane(detws_pq_lane lane, const void *item, uint32_t)
+bool dws_pq_post_lane(dws_pq_lane lane, const void *item, uint32_t)
 {
-    if (!lane_ok(lane) || !item || s_pqr.count[(size_t)lane] >= DETWS_PQ_DEPTH)
+    if (!lane_ok(lane) || !item || s_pqr.count[(size_t)lane] >= DWS_PQ_DEPTH)
         return false; // fail closed when full
-    memcpy(s_pqr.buf[(size_t)lane] + s_pqr.head[(size_t)lane] * DETWS_PQ_ITEM_SIZE, item, DETWS_PQ_ITEM_SIZE);
-    s_pqr.head[(size_t)lane] = (s_pqr.head[(size_t)lane] + 1) % DETWS_PQ_DEPTH;
+    memcpy(s_pqr.buf[(size_t)lane] + s_pqr.head[(size_t)lane] * DWS_PQ_ITEM_SIZE, item, DWS_PQ_ITEM_SIZE);
+    s_pqr.head[(size_t)lane] = (s_pqr.head[(size_t)lane] + 1) % DWS_PQ_DEPTH;
     s_pqr.count[(size_t)lane]++;
     note_count(lane);
     return true;
 }
 
-bool detws_pq_post_lane_urgent(detws_pq_lane lane, const void *item, uint32_t)
+bool dws_pq_post_lane_urgent(dws_pq_lane lane, const void *item, uint32_t)
 {
-    if (!lane_ok(lane) || !item || s_pqr.count[(size_t)lane] >= DETWS_PQ_DEPTH)
+    if (!lane_ok(lane) || !item || s_pqr.count[(size_t)lane] >= DWS_PQ_DEPTH)
         return false;
     s_pqr.tail[(size_t)lane] =
-        (s_pqr.tail[(size_t)lane] + DETWS_PQ_DEPTH - 1) % DETWS_PQ_DEPTH; // step the read cursor back, write there
-    memcpy(s_pqr.buf[(size_t)lane] + s_pqr.tail[(size_t)lane] * DETWS_PQ_ITEM_SIZE, item, DETWS_PQ_ITEM_SIZE);
+        (s_pqr.tail[(size_t)lane] + DWS_PQ_DEPTH - 1) % DWS_PQ_DEPTH; // step the read cursor back, write there
+    memcpy(s_pqr.buf[(size_t)lane] + s_pqr.tail[(size_t)lane] * DWS_PQ_ITEM_SIZE, item, DWS_PQ_ITEM_SIZE);
     s_pqr.count[(size_t)lane]++;
     note_count(lane);
     return true;
 }
 
-bool detws_pq_post_lane_from_isr(detws_pq_lane lane, const void *item)
+bool dws_pq_post_lane_from_isr(dws_pq_lane lane, const void *item)
 {
-    return detws_pq_post_lane(lane, item, 0); // no ISRs on host
+    return dws_pq_post_lane(lane, item, 0); // no ISRs on host
 }
 
-void detws_pq_drain_lane(detws_pq_lane lane)
+void dws_pq_drain_lane(dws_pq_lane lane)
 {
     if (!lane_ok(lane))
         return;
     while (s_pqr.count[(size_t)lane] > 0)
     {
         if (s_pq.handler[(size_t)lane])
-            s_pq.handler[(size_t)lane](s_pqr.buf[(size_t)lane] + s_pqr.tail[(size_t)lane] * DETWS_PQ_ITEM_SIZE,
+            s_pq.handler[(size_t)lane](s_pqr.buf[(size_t)lane] + s_pqr.tail[(size_t)lane] * DWS_PQ_ITEM_SIZE,
                                        s_pq.ctx[(size_t)lane]);
-        s_pqr.tail[(size_t)lane] = (s_pqr.tail[(size_t)lane] + 1) % DETWS_PQ_DEPTH;
+        s_pqr.tail[(size_t)lane] = (s_pqr.tail[(size_t)lane] + 1) % DWS_PQ_DEPTH;
         s_pqr.count[(size_t)lane]--;
     }
 }
 
-void detws_pq_stop_lane(detws_pq_lane lane)
+void dws_pq_stop_lane(dws_pq_lane lane)
 {
     if (lane_ok(lane))
         s_pqr.started[(size_t)lane] = false;
 }
 
-bool detws_pq_running_lane(detws_pq_lane lane)
+bool dws_pq_running_lane(dws_pq_lane lane)
 {
     return lane_ok(lane) && s_pqr.started[(size_t)lane];
 }
 
-size_t detws_pq_high_water_lane(detws_pq_lane lane)
+size_t dws_pq_high_water_lane(dws_pq_lane lane)
 {
     return lane_ok(lane) ? s_pq.high_water[(size_t)lane] : 0;
 }
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_PREEMPT_QUEUE
+#endif // DWS_ENABLE_PREEMPT_QUEUE

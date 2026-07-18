@@ -23,10 +23,10 @@
 
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
-static const char *AP_SSID = "DetWS-Setup";
+static const char *AP_SSID = "DWS-Setup";
 static const char *AP_PASS = "configme123";
 
-DetWebServer server;
+DWS server;
 
 void handle_setup(uint8_t slot_id, HttpReq *req)
 {
@@ -70,8 +70,8 @@ void setup()
     // Required for STA/AP classification (IPAddress converts to uint32_t).
     server.set_ap_ip(WiFi.softAPIP());
 
-    server.on("/setup", HttpMethod::HTTP_GET, handle_setup, DetIface::DETIFACE_AP);   // softAP only
-    server.on("/api/data", HttpMethod::HTTP_GET, handle_api, DetIface::DETIFACE_STA); // station only
+    server.on("/setup", HttpMethod::HTTP_GET, handle_setup, DWSIface::DETIFACE_AP);   // softAP only
+    server.on("/api/data", HttpMethod::HTTP_GET, handle_api, DWSIface::DETIFACE_STA); // station only
     server.on("/", HttpMethod::HTTP_GET, handle_root);                                // any interface
 
     int32_t result = server.begin(80);

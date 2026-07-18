@@ -8,7 +8,7 @@
 
 #include "services/mtconnect/mtconnect.h"
 
-#if DETWS_ENABLE_MTCONNECT
+#if DWS_ENABLE_MTCONNECT
 
 #include <string.h>
 
@@ -85,16 +85,16 @@ void put_u64(DetwsMtcStreams *s, uint64_t v)
 
 const char *mtc_cat_str(DetwsMtcCategory cat)
 {
-    if (cat == DetwsMtcCategory::DETWS_MTC_SAMPLE)
+    if (cat == DetwsMtcCategory::DWS_MTC_SAMPLE)
         return "SAMPLE";
-    if (cat == DetwsMtcCategory::DETWS_MTC_EVENT)
+    if (cat == DetwsMtcCategory::DWS_MTC_EVENT)
         return "EVENT";
     return "CONDITION";
 }
 } // namespace
 
-void detws_mtc_streams_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, uint64_t next_seq,
-                             const char *device_name)
+void dws_mtc_streams_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, uint64_t next_seq,
+                           const char *device_name)
 {
     s->buf = buf;
     s->cap = cap;
@@ -113,8 +113,8 @@ void detws_mtc_streams_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t
     put(s, "\">");
 }
 
-void detws_mtc_streams_add(DetwsMtcStreams *s, DetwsMtcCategory cat, const char *type, const char *data_id,
-                           uint64_t seq, const char *timestamp, const char *value)
+void dws_mtc_streams_add(DetwsMtcStreams *s, DetwsMtcCategory cat, const char *type, const char *data_id, uint64_t seq,
+                         const char *timestamp, const char *value)
 {
     if (!s->ok)
         return;
@@ -124,14 +124,14 @@ void detws_mtc_streams_add(DetwsMtcStreams *s, DetwsMtcCategory cat, const char 
         s->in_comp = true;
     }
     const char *wrap = "Condition";
-    if (cat == DetwsMtcCategory::DETWS_MTC_SAMPLE)
+    if (cat == DetwsMtcCategory::DWS_MTC_SAMPLE)
         wrap = "Samples";
-    else if (cat == DetwsMtcCategory::DETWS_MTC_EVENT)
+    else if (cat == DetwsMtcCategory::DWS_MTC_EVENT)
         wrap = "Events";
     put(s, "<");
     put(s, wrap);
     put(s, ">");
-    if (cat == DetwsMtcCategory::DETWS_MTC_CONDITION)
+    if (cat == DetwsMtcCategory::DWS_MTC_CONDITION)
     {
         // <Condition><Normal type="TYPE" dataItemId="ID" sequence="SEQ" timestamp="TS"/></Condition>
         const char *sub = value ? value : "Normal"; // Normal / Warning / Fault / Unavailable
@@ -169,7 +169,7 @@ void detws_mtc_streams_add(DetwsMtcStreams *s, DetwsMtcCategory cat, const char 
     put(s, ">");
 }
 
-size_t detws_mtc_streams_end(DetwsMtcStreams *s)
+size_t dws_mtc_streams_end(DetwsMtcStreams *s)
 {
     if (s->in_comp)
         put(s, "</ComponentStream>");
@@ -180,7 +180,7 @@ size_t detws_mtc_streams_end(DetwsMtcStreams *s)
     return s->len;
 }
 
-size_t detws_mtc_error(uint64_t instance_id, const char *error_code, const char *message, char *out, size_t cap)
+size_t dws_mtc_error(uint64_t instance_id, const char *error_code, const char *message, char *out, size_t cap)
 {
     DetwsMtcStreams s;
     s.buf = out;
@@ -208,8 +208,8 @@ size_t detws_mtc_error(uint64_t instance_id, const char *error_code, const char 
 
 // --- probe (MTConnectDevices): the device model a client discovers before streaming ---
 
-void detws_mtc_devices_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, const char *device_id,
-                             const char *device_name, const char *uuid)
+void dws_mtc_devices_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, const char *device_id,
+                           const char *device_name, const char *uuid)
 {
     s->buf = buf;
     s->cap = cap;
@@ -230,8 +230,8 @@ void detws_mtc_devices_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t
     put(s, "\"><DataItems>");
 }
 
-void detws_mtc_devices_add_item(DetwsMtcStreams *s, DetwsMtcCategory cat, const char *id, const char *type,
-                                const char *name, const char *units)
+void dws_mtc_devices_add_item(DetwsMtcStreams *s, DetwsMtcCategory cat, const char *id, const char *type,
+                              const char *name, const char *units)
 {
     if (!s->ok)
         return;
@@ -257,7 +257,7 @@ void detws_mtc_devices_add_item(DetwsMtcStreams *s, DetwsMtcCategory cat, const 
     put(s, "/>");
 }
 
-size_t detws_mtc_devices_end(DetwsMtcStreams *s)
+size_t dws_mtc_devices_end(DetwsMtcStreams *s)
 {
     put(s, "</DataItems></Device></Devices></MTConnectDevices>");
     if (!s->ok)
@@ -268,8 +268,8 @@ size_t detws_mtc_devices_end(DetwsMtcStreams *s)
 
 // --- asset (MTConnectAssets): the tool/fixture inventory a client reads by GET /asset ---
 
-void detws_mtc_assets_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, uint32_t asset_count,
-                            uint32_t asset_buffer_size)
+void dws_mtc_assets_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, uint32_t asset_count,
+                          uint32_t asset_buffer_size)
 {
     s->buf = buf;
     s->cap = cap;
@@ -288,8 +288,8 @@ void detws_mtc_assets_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t 
     put(s, "<Assets>");
 }
 
-void detws_mtc_assets_cutting_tool_begin(DetwsMtcStreams *s, const char *asset_id, const char *serial_number,
-                                         const char *tool_id, const char *device_uuid, const char *timestamp)
+void dws_mtc_assets_cutting_tool_begin(DetwsMtcStreams *s, const char *asset_id, const char *serial_number,
+                                       const char *tool_id, const char *device_uuid, const char *timestamp)
 {
     put(s, "<CuttingTool assetId=\"");
     put_escaped(s, asset_id ? asset_id : "");
@@ -321,8 +321,8 @@ void detws_mtc_assets_cutting_tool_begin(DetwsMtcStreams *s, const char *asset_i
     put(s, "><CuttingToolLifeCycle>");
 }
 
-void detws_mtc_assets_tool_life(DetwsMtcStreams *s, const char *type, const char *count_direction, const char *limit,
-                                const char *value)
+void dws_mtc_assets_tool_life(DetwsMtcStreams *s, const char *type, const char *count_direction, const char *limit,
+                              const char *value)
 {
     // <ToolLife type="MINUTES" countDirection="UP" limit="100">42</ToolLife>
     put(s, "<ToolLife type=\"");
@@ -341,12 +341,12 @@ void detws_mtc_assets_tool_life(DetwsMtcStreams *s, const char *type, const char
     put(s, "</ToolLife>");
 }
 
-void detws_mtc_assets_cutting_tool_end(DetwsMtcStreams *s)
+void dws_mtc_assets_cutting_tool_end(DetwsMtcStreams *s)
 {
     put(s, "</CuttingToolLifeCycle></CuttingTool>");
 }
 
-size_t detws_mtc_assets_end(DetwsMtcStreams *s)
+size_t dws_mtc_assets_end(DetwsMtcStreams *s)
 {
     put(s, "</Assets></MTConnectAssets>");
     if (!s->ok)
@@ -399,7 +399,7 @@ void mtc_streams_begin_windowed(DetwsMtcStreams *s, char *buf, size_t cap, uint6
 }
 } // namespace
 
-void detws_mtc_sample_buffer_init(DetwsMtcSampleBuffer *b, uint64_t start_seq)
+void dws_mtc_sample_buffer_init(DetwsMtcSampleBuffer *b, uint64_t start_seq)
 {
     b->count = 0;
     b->head = 0;
@@ -407,8 +407,8 @@ void detws_mtc_sample_buffer_init(DetwsMtcSampleBuffer *b, uint64_t start_seq)
     b->first_seq = b->next_seq; // empty: first == next (lastSequence = next-1 sits just below first)
 }
 
-uint64_t detws_mtc_sample_buffer_add(DetwsMtcSampleBuffer *b, DetwsMtcCategory cat, const char *type,
-                                     const char *data_id, const char *timestamp, const char *value)
+uint64_t dws_mtc_sample_buffer_add(DetwsMtcSampleBuffer *b, DetwsMtcCategory cat, const char *type, const char *data_id,
+                                   const char *timestamp, const char *value)
 {
     DetwsMtcObservation *o = &b->obs[b->head];
     o->cat = cat;
@@ -417,16 +417,16 @@ uint64_t detws_mtc_sample_buffer_add(DetwsMtcSampleBuffer *b, DetwsMtcCategory c
     mtc_copy_str(o->data_id, sizeof(o->data_id), data_id);
     mtc_copy_str(o->timestamp, sizeof(o->timestamp), timestamp);
     mtc_copy_str(o->value, sizeof(o->value), value);
-    b->head = (b->head + 1) % DETWS_MTC_SAMPLE_BUFFER;
-    if (b->count < DETWS_MTC_SAMPLE_BUFFER)
+    b->head = (b->head + 1) % DWS_MTC_SAMPLE_BUFFER;
+    if (b->count < DWS_MTC_SAMPLE_BUFFER)
         b->count++;
     else
         b->first_seq++; // ring full: the oldest was overwritten, so the window slides forward
     return b->next_seq++;
 }
 
-size_t detws_mtc_sample_query(DetwsMtcSampleBuffer *b, char *buf, size_t cap, uint64_t instance_id,
-                              const char *device_name, uint64_t from, uint32_t count)
+size_t dws_mtc_sample_query(DetwsMtcSampleBuffer *b, char *buf, size_t cap, uint64_t instance_id,
+                            const char *device_name, uint64_t from, uint32_t count)
 {
     uint64_t first = b->first_seq;
     uint64_t next = b->next_seq;                  // one past the newest retained observation
@@ -439,19 +439,18 @@ size_t detws_mtc_sample_query(DetwsMtcSampleBuffer *b, char *buf, size_t cap, ui
     uint64_t next_report = (start >= next) ? next : start + to_emit;
 
     DetwsMtcStreams s;
-    mtc_streams_begin_windowed(&s, buf, cap, instance_id, first, last, next_report, DETWS_MTC_SAMPLE_BUFFER,
-                               device_name);
+    mtc_streams_begin_windowed(&s, buf, cap, instance_id, first, last, next_report, DWS_MTC_SAMPLE_BUFFER, device_name);
 
     // The oldest retained observation sits `count` slots behind head; observation `first + k` is at
     // (oldest_idx + k) around the ring.
-    uint32_t oldest_idx = (b->head + DETWS_MTC_SAMPLE_BUFFER - b->count) % DETWS_MTC_SAMPLE_BUFFER;
+    uint32_t oldest_idx = (b->head + DWS_MTC_SAMPLE_BUFFER - b->count) % DWS_MTC_SAMPLE_BUFFER;
     for (uint32_t e = 0; e < to_emit; e++)
     {
         uint32_t k = (uint32_t)((start - first) + e);
-        DetwsMtcObservation *o = &b->obs[(oldest_idx + k) % DETWS_MTC_SAMPLE_BUFFER];
-        detws_mtc_streams_add(&s, o->cat, o->type, o->data_id, o->seq, o->timestamp, o->value);
+        DetwsMtcObservation *o = &b->obs[(oldest_idx + k) % DWS_MTC_SAMPLE_BUFFER];
+        dws_mtc_streams_add(&s, o->cat, o->type, o->data_id, o->seq, o->timestamp, o->value);
     }
-    return detws_mtc_streams_end(&s);
+    return dws_mtc_streams_end(&s);
 }
 
-#endif // DETWS_ENABLE_MTCONNECT
+#endif // DWS_ENABLE_MTCONNECT

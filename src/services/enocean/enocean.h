@@ -3,7 +3,7 @@
 
 /**
  * @file enocean.h
- * @brief EnOcean ESP3 serial codec (DETWS_ENABLE_ENOCEAN) - energy-harvesting 868 MHz.
+ * @brief EnOcean ESP3 serial codec (DWS_ENABLE_ENOCEAN) - energy-harvesting 868 MHz.
  *
  * A UART telegram codec for EnOcean Serial Protocol 3 (ESP3), the framing every USB /
  * serial EnOcean gateway (TCM 310 / USB 300) speaks. A telegram is:
@@ -15,7 +15,7 @@
  * CRC-8, polynomial 0x07, init 0). esp3_parse() frames one telegram out of a byte stream,
  * resynchronising on a bad sync / CRC, and esp3_build() assembles one. This is the radio-
  * plugin codec for the gateway: an inbound RADIO_ERP1 telegram carries a sender id (its
- * source address) and payload; bridge it northbound with det_gateway_uplink(). Pure - you feed
+ * source address) and payload; bridge it northbound with dws_gateway_uplink(). Pure - you feed
  * it the UART bytes - so it is fully host-testable. See example 13.EnOceanGateway.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -27,7 +27,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_ENOCEAN
+#if DWS_ENABLE_ENOCEAN
 
 #include <stddef.h>
 #include <stdint.h>
@@ -73,11 +73,11 @@ int esp3_parse(const uint8_t *raw, uint16_t len, esp3_packet *out);
 /**
  * @brief Assemble an ESP3 telegram into @p out.
  * @return the total telegram length, or 0 if it would not fit @p cap or @p data_len exceeds
- *         DETWS_ENOCEAN_MAX_DATA.
+ *         DWS_ENOCEAN_MAX_DATA.
  */
 uint16_t esp3_build(esp3_type type, const uint8_t *data, uint16_t data_len, const uint8_t *opt, uint8_t opt_len,
                     uint8_t *out, uint16_t cap);
 
-#endif // DETWS_ENABLE_ENOCEAN
+#endif // DWS_ENABLE_ENOCEAN
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_ENOCEAN_H

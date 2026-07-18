@@ -6,21 +6,21 @@
 // (statsd_count/gauge/timing/set), whose formatted-and-sent bytes are captured through the
 // transport UDP service's host capture seam.
 
-#include "network_drivers/transport/udp.h" // det_udp_capture_* (host seam)
+#include "network_drivers/transport/udp.h" // dws_udp_capture_* (host seam)
 #include "services/statsd/statsd.h"
 #include <string>
 #include <unity.h>
 
 static std::string captured()
 {
-    const uint8_t *p = det_udp_captured();
-    return p ? std::string((const char *)p, det_udp_captured_len()) : std::string();
+    const uint8_t *p = dws_udp_captured();
+    return p ? std::string((const char *)p, dws_udp_captured_len()) : std::string();
 }
 
 void setUp()
 {
-    det_udp_capture_enable();
-    det_udp_capture_reset();
+    dws_udp_capture_enable();
+    dws_udp_capture_reset();
 }
 void tearDown()
 {
@@ -81,7 +81,7 @@ void test_emit_counter_and_negative()
     statsd_begin("collector.local", 8125, nullptr);
     statsd_count("api.hits", 3);
     TEST_ASSERT_EQUAL_STRING("api.hits:3|c", captured().c_str());
-    det_udp_capture_reset();
+    dws_udp_capture_reset();
     statsd_count("api.hits", -4); // counters may go negative
     TEST_ASSERT_EQUAL_STRING("api.hits:-4|c", captured().c_str());
 }
@@ -91,10 +91,10 @@ void test_emit_gauge_and_delta()
     statsd_begin("h", 0, nullptr); // 0 -> default port
     statsd_gauge("heap.free", 200000);
     TEST_ASSERT_EQUAL_STRING("heap.free:200000|g", captured().c_str());
-    det_udp_capture_reset();
+    dws_udp_capture_reset();
     statsd_gauge_delta("conns", 5);
     TEST_ASSERT_EQUAL_STRING("conns:+5|g", captured().c_str());
-    det_udp_capture_reset();
+    dws_udp_capture_reset();
     statsd_gauge_delta("conns", -2);
     TEST_ASSERT_EQUAL_STRING("conns:-2|g", captured().c_str());
 }
@@ -104,10 +104,10 @@ void test_emit_timing_set_sampled()
     statsd_begin("h", 8125, nullptr);
     statsd_timing("db.query", 120);
     TEST_ASSERT_EQUAL_STRING("db.query:120|ms", captured().c_str());
-    det_udp_capture_reset();
+    dws_udp_capture_reset();
     statsd_set("uniques", "device-7");
     TEST_ASSERT_EQUAL_STRING("uniques:device-7|s", captured().c_str());
-    det_udp_capture_reset();
+    dws_udp_capture_reset();
     statsd_count_sampled("rare", 1, 0.25f);
     TEST_ASSERT_EQUAL_STRING("rare:1|c|@0.25", captured().c_str());
 }
@@ -122,9 +122,9 @@ void test_emit_global_tags()
 void test_emit_noop_until_begin()
 {
     statsd_begin(nullptr, 0, nullptr); // clears the target
-    det_udp_capture_reset();
+    dws_udp_capture_reset();
     statsd_count("x", 1); // no target -> nothing sent, no crash
-    TEST_ASSERT_EQUAL_UINT(0, det_udp_captured_len());
+    TEST_ASSERT_EQUAL_UINT(0, dws_udp_captured_len());
 }
 
 void test_rate_clamp_and_stage_overflow()

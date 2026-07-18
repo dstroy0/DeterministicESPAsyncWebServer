@@ -94,7 +94,7 @@ The feature lives in the library, so its flag must reach the whole build:
 ```bash
 pio ci examples/L7-Application/62.Ld2410 \
   --board esp32dev --lib "." \
-  --project-option="build_flags=-DDETWS_ENABLE_LD2410=1"
+  --project-option="build_flags=-DDWS_ENABLE_LD2410=1"
 ```
 
 (The Arduino IDE reads the flag from `build_opt.h` beside the sketch automatically.)

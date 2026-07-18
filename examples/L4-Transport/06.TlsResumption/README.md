@@ -1,6 +1,6 @@
 # 06.TlsResumption - cheap repeat handshakes via session tickets
 
-**Layer:** L4 Transport · **Build flags:** `DETWS_ENABLE_TLS`, `DETWS_ENABLE_TLS_RESUMPTION`
+**Layer:** L4 Transport · **Build flags:** `DWS_ENABLE_TLS`, `DWS_ENABLE_TLS_RESUMPTION`
 
 ## What this example teaches
 
@@ -27,7 +27,7 @@ the session; look for `Reused` on the later ones:
 openssl s_client -connect <ip>:443 -tls1_2 -reconnect
 ```
 
-**Build dependency.** `DETWS_ENABLE_TLS_RESUMPTION` requires `DETWS_ENABLE_TLS`
+**Build dependency.** `DWS_ENABLE_TLS_RESUMPTION` requires `DWS_ENABLE_TLS`
 (enforced by a compile-time `#error`), and the platform's mbedTLS build must
 provide the session-ticket support; pass both flags to the library build.
 
@@ -38,7 +38,7 @@ provide the session-ticket support; pass both flags to the library build.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_TLS_RESUMPTION=1 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768" \
+  --project-option="build_flags=-DDWS_ENABLE_TLS=1 -DDWS_ENABLE_TLS_RESUMPTION=1 -DMAX_CONNS=4 -DDWS_TLS_ARENA_SIZE=32768" \
   --lib="." examples/L4-Transport/06.TlsResumption/06.TlsResumption.ino
 ```
 
@@ -51,8 +51,8 @@ cert/key are elided here (see the `.ino`); the C++ is verbatim with comments.
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_TLS 1
-#define DETWS_ENABLE_TLS_RESUMPTION 1
+#define DWS_ENABLE_TLS 1
+#define DWS_ENABLE_TLS_RESUMPTION 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -71,7 +71,7 @@ static const char KEY_PEM[] = R"PEM(-----BEGIN EC PRIVATE KEY-----
 -----END EC PRIVATE KEY-----
 )PEM";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -92,7 +92,7 @@ void setup()
               [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "hello over resumable TLS\n"); });
 
     // Same begin_tls() as plain HTTPS; tickets are issued/accepted automatically
-    // because DETWS_ENABLE_TLS_RESUMPTION is compiled in.
+    // because DWS_ENABLE_TLS_RESUMPTION is compiled in.
     int32_t r =
         server.begin_tls(443, (const uint8_t *)CERT_PEM, sizeof(CERT_PEM), (const uint8_t *)KEY_PEM, sizeof(KEY_PEM));
     if (r < 0)

@@ -5,33 +5,33 @@
  * @file gateway.cpp
  * @brief Radio / wireless gateway bridge - implementation.
  *
- * A static port table; det_gateway_uplink() envelopes a received frame and publishes it through
- * the installed northbound callback (per-port rate-capped, fail-closed), det_gateway_downlink()
- * routes a command to a port's transmit callback, and det_gateway_topic() formats a routing key.
+ * A static port table; dws_gateway_uplink() envelopes a received frame and publishes it through
+ * the installed northbound callback (per-port rate-capped, fail-closed), dws_gateway_downlink()
+ * routes a command to a port's transmit callback, and dws_gateway_topic() formats a routing key.
  * Zero heap.
  */
 
 #include "services/gateway/gateway.h"
 
-#if DETWS_ENABLE_GATEWAY
+#if DWS_ENABLE_GATEWAY
 
 #include <string.h>
 
 #ifdef ARDUINO
-#include "services/clock.h" // detws_millis()
+#include "services/clock.h" // dws_millis()
 #endif
 
 namespace
 {
 struct port
 {
-    det_gateway_tx_fn tx;
+    dws_gateway_tx_fn tx;
     void *ctx;
     uint32_t window_start; // ms of the current uplink rate window
     uint16_t rate_cap;     // uplink frames per second (0 = unlimited)
     uint16_t count;        // uplinks in the current window
     uint8_t id;
-    det_gateway_kind kind;
+    dws_gateway_kind kind;
     bool used;
 };
 
@@ -40,14 +40,14 @@ struct port
 // grouped so it is one named owner, unreachable from any other translation unit.
 struct GatewayCtx
 {
-    port ports[DETWS_GW_MAX_PORTS];
-    det_gateway_uplink_fn uplink = nullptr;
+    port ports[DWS_GW_MAX_PORTS];
+    dws_gateway_uplink_fn uplink = nullptr;
     void *uplink_ctx = nullptr;
-    const char *prefix = DETWS_GW_DEFAULT_PREFIX;
+    const char *prefix = DWS_GW_DEFAULT_PREFIX;
     uint32_t seq = 0;
-    det_gateway_stats stats;
+    dws_gateway_stats stats;
 #ifndef ARDUINO
-    uint32_t now_ms = 0; // host test clock (real builds use detws_millis())
+    uint32_t now_ms = 0; // host test clock (real builds use dws_millis())
 #endif
 };
 GatewayCtx s_gw;
@@ -55,7 +55,7 @@ GatewayCtx s_gw;
 #ifdef ARDUINO
 uint32_t gw_now()
 {
-    return detws_millis();
+    return dws_millis();
 }
 #else
 uint32_t gw_now()
@@ -67,7 +67,7 @@ uint32_t gw_now()
 // Returns a mutable port (callers mutate it), so it takes the owner by non-const reference.
 port *find_port(GatewayCtx &g, uint8_t id)
 {
-    for (uint8_t i = 0; i < DETWS_GW_MAX_PORTS; i++)
+    for (uint8_t i = 0; i < DWS_GW_MAX_PORTS; i++)
         if (g.ports[i].used && g.ports[i].id == id)
             return &g.ports[i];
     return nullptr;
@@ -116,21 +116,21 @@ bool put_u32(char *buf, uint16_t *pos, uint16_t cap, uint32_t v)
 }
 } // namespace
 
-void det_gateway_reset(void)
+void dws_gateway_reset(void)
 {
     memset(s_gw.ports, 0, sizeof(s_gw.ports));
     s_gw.uplink = nullptr;
     s_gw.uplink_ctx = nullptr;
-    s_gw.prefix = DETWS_GW_DEFAULT_PREFIX;
+    s_gw.prefix = DWS_GW_DEFAULT_PREFIX;
     s_gw.seq = 0;
     memset(&s_gw.stats, 0, sizeof(s_gw.stats));
 }
 
-bool det_gateway_add_port(const det_gateway_port_config *cfg)
+bool dws_gateway_add_port(const dws_gateway_port_config *cfg)
 {
     if (!cfg || find_port(s_gw, cfg->port_id))
         return false;
-    for (uint8_t i = 0; i < DETWS_GW_MAX_PORTS; i++)
+    for (uint8_t i = 0; i < DWS_GW_MAX_PORTS; i++)
     {
         if (s_gw.ports[i].used)
             continue;
@@ -147,18 +147,18 @@ bool det_gateway_add_port(const det_gateway_port_config *cfg)
     return false; // table full
 }
 
-void det_gateway_set_uplink_cb(det_gateway_uplink_fn fn, void *ctx)
+void dws_gateway_set_uplink_cb(dws_gateway_uplink_fn fn, void *ctx)
 {
     s_gw.uplink = fn;
     s_gw.uplink_ctx = ctx;
 }
 
-void det_gateway_set_topic_prefix(const char *prefix)
+void dws_gateway_set_topic_prefix(const char *prefix)
 {
-    s_gw.prefix = prefix ? prefix : DETWS_GW_DEFAULT_PREFIX;
+    s_gw.prefix = prefix ? prefix : DWS_GW_DEFAULT_PREFIX;
 }
 
-bool det_gateway_uplink(uint8_t port_id, uint16_t src_addr, const uint8_t *payload, uint16_t len, int16_t rssi)
+bool dws_gateway_uplink(uint8_t port_id, uint16_t src_addr, const uint8_t *payload, uint16_t len, int16_t rssi)
 {
     s_gw.stats.up_in++;
     port *p = find_port(s_gw, port_id);
@@ -167,7 +167,7 @@ bool det_gateway_uplink(uint8_t port_id, uint16_t src_addr, const uint8_t *paylo
         s_gw.stats.up_dropped++;
         return false;
     }
-    det_gateway_msg msg;
+    dws_gateway_msg msg;
     msg.payload = payload;
     msg.seq = s_gw.seq++;
     msg.len = len;
@@ -184,7 +184,7 @@ bool det_gateway_uplink(uint8_t port_id, uint16_t src_addr, const uint8_t *paylo
     return false;
 }
 
-bool det_gateway_downlink(uint8_t port_id, uint16_t dst_addr, const uint8_t *payload, uint16_t len)
+bool dws_gateway_downlink(uint8_t port_id, uint16_t dst_addr, const uint8_t *payload, uint16_t len)
 {
     s_gw.stats.down_in++;
     port *p = find_port(s_gw, port_id);
@@ -197,7 +197,7 @@ bool det_gateway_downlink(uint8_t port_id, uint16_t dst_addr, const uint8_t *pay
     return true;
 }
 
-uint16_t det_gateway_topic(const det_gateway_msg *msg, char *buf, uint16_t buflen)
+uint16_t dws_gateway_topic(const dws_gateway_msg *msg, char *buf, uint16_t buflen)
 {
     if (!msg || !buf || buflen == 0)
         return 0;
@@ -220,17 +220,17 @@ uint16_t det_gateway_topic(const det_gateway_msg *msg, char *buf, uint16_t bufle
     return pos;
 }
 
-void det_gateway_get_stats(det_gateway_stats *out)
+void dws_gateway_get_stats(dws_gateway_stats *out)
 {
     if (out)
         *out = s_gw.stats;
 }
 
 #if !defined(ARDUINO)
-void det_gateway_test_set_now(uint32_t ms)
+void dws_gateway_test_set_now(uint32_t ms)
 {
     s_gw.now_ms = ms;
 }
 #endif
 
-#endif // DETWS_ENABLE_GATEWAY
+#endif // DWS_ENABLE_GATEWAY

@@ -3,7 +3,7 @@
 
 /**
  * @file 33.Csrf.ino
- * @brief CSRF protection for state-changing requests (DETWS_ENABLE_CSRF).
+ * @brief CSRF protection for state-changing requests (DWS_ENABLE_CSRF).
  *
  * When enabled, every POST / PUT / PATCH / DELETE must carry a valid
  * X-CSRF-Token header (a stateless, HMAC-signed token); requests without one get
@@ -13,7 +13,7 @@
  *
  * NOTE: enable it for the whole build (a .ino #define does not reach the
  * separately compiled library). In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_CSRF=1
+ *     build_flags = -DDWS_ENABLE_CSRF=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
  * Try:
@@ -22,7 +22,7 @@
  *   curl -X POST http://<ip>/submit                              -> 403 (missing token)
  */
 
-#define DETWS_ENABLE_CSRF 1
+#define DWS_ENABLE_CSRF 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -31,7 +31,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

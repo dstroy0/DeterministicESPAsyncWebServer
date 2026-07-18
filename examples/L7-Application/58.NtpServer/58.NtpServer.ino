@@ -3,7 +3,7 @@
 
 /**
  * @file 58.NtpServer.ino
- * @brief Turn the ESP32 into a local NTP time server (DETWS_ENABLE_NTP_SERVER).
+ * @brief Turn the ESP32 into a local NTP time server (DWS_ENABLE_NTP_SERVER).
  *
  * The device answers NTP requests on UDP/123 so every gadget on your LAN can sync to it -
  * even with no internet. Its own time comes from a fallback chain (a "time source" list
@@ -19,14 +19,14 @@
  * throughout. Test it from any computer:  `sntp -d <device-ip>`  or  `w32tm /stripchart
  * /computer:<device-ip>`  (Windows)  or  `chronyc -a 'burst 1/1'` against it.
  *
- * Build flags (PlatformIO): `-DDETWS_ENABLE_NTP_SERVER=1 -DDETWS_ENABLE_TIME_SOURCE=1
- *                            -DDETWS_ENABLE_NMEA0183=1 -DDETWS_ENABLE_NTP=1`
+ * Build flags (PlatformIO): `-DDWS_ENABLE_NTP_SERVER=1 -DDWS_ENABLE_TIME_SOURCE=1
+ *                            -DDWS_ENABLE_NMEA0183=1 -DDWS_ENABLE_NTP=1`
  */
 
-#define DETWS_ENABLE_NTP_SERVER 1
-#define DETWS_ENABLE_TIME_SOURCE 1
-#define DETWS_ENABLE_NMEA0183 1
-#define DETWS_ENABLE_NTP 1
+#define DWS_ENABLE_NTP_SERVER 1
+#define DWS_ENABLE_TIME_SOURCE 1
+#define DWS_ENABLE_NMEA0183 1
+#define DWS_ENABLE_NTP 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -105,7 +105,7 @@ static void gps_poll()
     }
 }
 
-// --- Time sources (queried best-first by detws_time_now()) ---
+// --- Time sources (queried best-first by dws_time_now()) ---
 static uint32_t gps_time_source()
 {
     if (g_gps_epoch == 0)
@@ -117,7 +117,7 @@ static uint32_t gps_time_source()
 }
 static uint32_t ntp_upstream_source()
 {
-    return detws_ntp_synced() ? (uint32_t)detws_ntp_epoch() : 0;
+    return dws_ntp_synced() ? (uint32_t)dws_ntp_epoch() : 0;
 }
 
 void setup()
@@ -137,9 +137,9 @@ void setup()
     WiFi.setSleep(false);
 
     // GPS is the primary (stratum 1); the public NTP pool is the fallback.
-    detws_time_source_add("gps", 1, gps_time_source);
-    detws_time_source_add("ntp", 2, ntp_upstream_source);
-    detws_ntp_begin(); // start the upstream SNTP client for the fallback
+    dws_time_source_add("gps", 1, gps_time_source);
+    dws_time_source_add("ntp", 2, ntp_upstream_source);
+    dws_ntp_begin(); // start the upstream SNTP client for the fallback
 
     if (ntp_server_begin(1, NTP_REFID_GPS))
         Serial.println("NTP server listening on UDP/123 (point your devices at this IP)");
@@ -155,8 +155,8 @@ void loop()
     if (millis() - last > 5000)
     {
         last = millis();
-        uint32_t now = detws_time_now();
-        const char *src = detws_time_source_active();
+        uint32_t now = dws_time_now();
+        const char *src = dws_time_source_active();
         Serial.printf("[ntp] epoch=%lu source=%s\n", (unsigned long)now, src ? src : "none-yet");
     }
 }

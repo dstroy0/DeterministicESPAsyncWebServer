@@ -7,7 +7,7 @@ files - e.g. NC / G-code programs - onto the device securely, alongside a shell
 on the same port.
 
 It is the SSH server example ([01.SSH](../01.SSH/)) plus **two calls**: mount a
-filesystem and `det_ssh_sftp_begin(fs, root)` (+ `det_ssh_scp_begin(fs, root)`).
+filesystem and `dws_ssh_sftp_begin(fs, root)` (+ `dws_ssh_scp_begin(fs, root)`).
 The SFTP subsystem and the SCP exec attach to the existing SSH channel layer.
 
 ## What you get
@@ -15,7 +15,7 @@ The SFTP subsystem and the SCP exec attach to the existing SSH channel layer.
 - **SFTP v3** (the OpenSSH `sftp` client's default): `put` / `get` / `ls` /
   `mkdir` / `rmdir` / `rm` / `rename` / `stat` / `realpath`, with streamed
   reads/writes (no heap beyond the fs layer's file handle) and a fixed handle
-  table (`DETWS_SFTP_MAX_HANDLES`). Every path is checked for `..` traversal
+  table (`DWS_SFTP_MAX_HANDLES`). Every path is checked for `..` traversal
   before touching the filesystem.
 - **SCP upload** (`scp localfile admin@<ip>:/path`): the rcp SINK direction, one
   file per transfer. (Download - `scp <ip>:/path localfile` - is a follow-up; use
@@ -27,7 +27,7 @@ The SFTP subsystem and the SCP exec attach to the existing SSH channel layer.
   first boot); an **SD card** works too - open it with `SD.begin(...)` and pass
   `SD` instead of `LittleFS`.
 - An SSH **host key** provisioned in NVS (see `docs/SSH.md`, "Host key
-  provisioning") - the sketch loads it with `det_ssh_rsa_load_pubkey()`.
+  provisioning") - the sketch loads it with `dws_ssh_rsa_load_pubkey()`.
 
 ## Configure + connect
 
@@ -62,10 +62,10 @@ scp -P 22 part.nc admin@<board-ip>:/gcode/part.nc   # upload via scp
 ## Going further
 
 - **Bigger transfers.** SFTP `READ` returns a short `DATA` bounded by one SSH
-  packet (`SSH_PKT_BUF_SIZE`); raise `SSH_PKT_BUF_SIZE` **and** `DETWS_SFTP_MAX_READ`
+  packet (`SSH_PKT_BUF_SIZE`); raise `SSH_PKT_BUF_SIZE` **and** `DWS_SFTP_MAX_READ`
   for higher throughput (`SSH_CHAN_MAX_PACKET` derives from `SSH_PKT_BUF_SIZE`).
 - **Restrict the mount.** Pass a subdirectory as `root` (e.g.
-  `det_ssh_sftp_begin(LittleFS, "/gcode")`) so a client cannot see the whole
+  `dws_ssh_sftp_begin(LittleFS, "/gcode")`) so a client cannot see the whole
   volume; the `..` guard keeps requests inside it.
 - **Machine-tool push.** Combine with `services/dnc` to drip a pushed `.nc`
   program to an attached controller over RS-232 / a socket.
@@ -79,7 +79,7 @@ build:
 pio ci examples/L5-Session/04.SSHSftp \
   --board esp32dev \
   --lib "." \
-  --project-option="build_flags=-DDETWS_ENABLE_SSH=1 -DDETWS_ENABLE_FILE_SERVING=1 -DDETWS_ENABLE_SSH_SFTP=1 -DDETWS_ENABLE_SSH_SCP=1"
+  --project-option="build_flags=-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1"
 ```
 
 (The Arduino IDE reads the flags from `build_opt.h` beside the sketch automatically.)
@@ -93,7 +93,7 @@ recognized in the channel layer, which tags the channel and routes its data to
 the SFTP/SCP binding instead of the shell echo. The binding accumulates the
 channel byte stream into `SSH_FXP_*` (or rcp) records, executes each against the
 `fs::FS` mount - reusing the same file operations WebDAV and the static file
-server use - and frames responses back with `det_ssh_conn_send`. A large SFTP `WRITE`
+server use - and frames responses back with `dws_ssh_conn_send`. A large SFTP `WRITE`
 (or an SCP upload) is streamed straight to the file as the fragments arrive, so a
 transfer is never bounded by a buffer. The wire codecs (`services/sftp`,
 `services/scp`) are pure and host-tested (`native_ssh_sftp`, `native_scp`); this

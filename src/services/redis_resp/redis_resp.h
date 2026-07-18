@@ -3,7 +3,7 @@
 
 /**
  * @file redis_resp.h
- * @brief Redis RESP2/RESP3 wire codec (DETWS_ENABLE_REDIS) - zero-heap command
+ * @brief Redis RESP2/RESP3 wire codec (DWS_ENABLE_REDIS) - zero-heap command
  *        encoder + reply parser, so a device can talk to a Redis server with the
  *        shipped outbound client transport.
  *
@@ -30,7 +30,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_REDIS
+#if DWS_ENABLE_REDIS
 
 #include <stddef.h>
 #include <stdint.h>
@@ -87,6 +87,6 @@ size_t resp_encode_command(char *buf, size_t cap, const char *const *args, const
  */
 bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed);
 
-#endif // DETWS_ENABLE_REDIS
+#endif // DWS_ENABLE_REDIS
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_REDIS_RESP_H

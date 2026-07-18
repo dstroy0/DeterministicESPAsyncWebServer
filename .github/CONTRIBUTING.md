@@ -66,7 +66,7 @@ host machine, separate from the `#ifdef ARDUINO` hardware wrappers.
     ```sh
     pio ci --board=esp32dev \
       --project-option="framework=arduino" \
-      --project-option="build_flags=-DDETWS_ENABLE_WEBSOCKET=1" \
+      --project-option="build_flags=-DDWS_ENABLE_WEBSOCKET=1" \
       --lib="." examples/L6-Presentation/09.WebSocket/09.WebSocket.ino
     ```
 
@@ -101,7 +101,7 @@ the tests to confirm no regression.
 
 ## Build flags
 
-Features are opt-in via `DETWS_ENABLE_*` flags (default off) in
+Features are opt-in via `DWS_ENABLE_*` flags (default off) in
 [src/ServerConfig.h](../src/ServerConfig.h). Some features depend on
 others; illegal combinations fail at compile time with a clear `#error`. If you
 add a feature that builds on another, add the matching dependency guard and

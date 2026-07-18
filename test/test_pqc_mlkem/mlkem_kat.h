@@ -5,8 +5,8 @@
 // Oracle: kyber-py (FIPS 203). Cross-checked: kyber-py round-trip (liboqs skipped: No module named 'oqs'). Do not edit
 // by hand.
 
-#ifndef DETWS_TEST_MLKEM_KAT_H
-#define DETWS_TEST_MLKEM_KAT_H
+#ifndef DWS_TEST_MLKEM_KAT_H
+#define DWS_TEST_MLKEM_KAT_H
 
 #include <stdint.h>
 

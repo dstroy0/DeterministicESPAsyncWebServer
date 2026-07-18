@@ -3,7 +3,7 @@
 
 /**
  * @file openadr.h
- * @brief OpenADR 3.0 (Open Automated Demand Response) JSON codec (DETWS_ENABLE_OPENADR).
+ * @brief OpenADR 3.0 (Open Automated Demand Response) JSON codec (DWS_ENABLE_OPENADR).
  *
  * OpenADR 3.0 is the demand-response protocol as a REST/JSON API (over HTTP + OAuth2, both already
  * shipped): a VTN (server) posts `event` objects to VENs, and VENs post `report` objects back. This
@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_OPENADR
+#if DWS_ENABLE_OPENADR
 
 /** @brief One OpenADR interval payload point (a single value over a time interval). */
 struct OpenAdrInterval
@@ -45,8 +45,8 @@ struct OpenAdrInterval
  * @param count      number of intervals.
  * @return length written (excl NUL), or 0 on overflow.
  */
-size_t detws_openadr_event(const char *program_id, const char *event_name, const OpenAdrInterval *intervals,
-                           size_t count, char *out, size_t cap);
+size_t dws_openadr_event(const char *program_id, const char *event_name, const OpenAdrInterval *intervals, size_t count,
+                         char *out, size_t cap);
 
 /**
  * @brief Build an OpenADR 3.0 report JSON object (one reading for one resource).
@@ -57,8 +57,8 @@ size_t detws_openadr_event(const char *program_id, const char *event_name, const
  * @param timestamp     the reading time (epoch seconds).
  * @return length written (excl NUL), or 0 on overflow.
  */
-size_t detws_openadr_report(const char *program_id, const char *event_id, const char *resource_name, double value,
-                            uint32_t timestamp, char *out, size_t cap);
+size_t dws_openadr_report(const char *program_id, const char *event_id, const char *resource_name, double value,
+                          uint32_t timestamp, char *out, size_t cap);
 
-#endif // DETWS_ENABLE_OPENADR
+#endif // DWS_ENABLE_OPENADR
 #endif // DETERMINISTICESPASYNCWEBSERVER_OPENADR_H

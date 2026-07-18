@@ -12,7 +12,7 @@
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
 #include "../test_pqc_mlkem/mlkem_kat.h"            // kat_ek, kat_dk (a valid ML-KEM key pair)
 #include "../test_ssh_pqc/mlkem_ref.h"              // mlkem768_decaps_ref (the client side)
 #include "network_drivers/presentation/pqc/mlkem.h" // MLKEM768_EK_BYTES / MLKEM768_CT_BYTES
@@ -519,7 +519,7 @@ void test_quic_tls_more_guards()
     // fails the handshake with INTERNAL_ERROR (cert_der/cert_len are caller-supplied and unbounded).
     fill_test_material();
     make_server_config(&cfg);
-    cfg.cert_len = 100000; // far larger than DETWS_H3_CRYPTO_BUF; the Certificate builder returns 0
+    cfg.cert_len = 100000; // far larger than DWS_H3_CRYPTO_BUF; the Certificate builder returns 0
     quic_tls_server_init(&qt, &cfg);
     QuicTransportParams ctp;
     quic_tp_defaults(&ctp);
@@ -534,7 +534,7 @@ void test_quic_tls_more_guards()
     TEST_ASSERT_EQUAL_UINT8(80, qt.alert); // internal_error
 }
 
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
 // Build a ClientHello offering X25519MLKEM768: supported_groups {0x11ec, x25519} and a key_share
 // carrying the client's ML-KEM ek (kat_ek) || X25519 pub (1216 B), plus the other required extensions.
 static size_t build_client_hello_hybrid(uint8_t *out, const uint8_t client_pub[32], const uint8_t *tp, size_t tp_len)
@@ -722,7 +722,7 @@ void test_hybrid_handshake_roundtrip()
     TEST_ASSERT_EQUAL_UINT(sizeof(cfin), used);
     TEST_ASSERT_EQUAL_UINT8(QtlsState::QTLS_DONE, qt.state);
 }
-#endif // DETWS_ENABLE_PQC_KEX
+#endif // DWS_ENABLE_PQC_KEX
 
 int main(int, char **)
 {
@@ -740,7 +740,7 @@ int main(int, char **)
     RUN_TEST(test_reject_malformed_client_hello);
     RUN_TEST(test_quic_tls_more_guards);
     RUN_TEST(test_quic_tls_cert_size_boundary_emit_fails);
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
     RUN_TEST(test_hybrid_handshake_roundtrip);
 #endif
     return UNITY_END();

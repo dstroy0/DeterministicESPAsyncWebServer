@@ -3,7 +3,7 @@
 
 /**
  * @file config_io.h
- * @brief Schema-driven config export / restore (DETWS_ENABLE_CONFIG_IO).
+ * @brief Schema-driven config export / restore (DWS_ENABLE_CONFIG_IO).
  *
  * The app declares a fixed schema - an array of {key, type} fields - and this
  * service serializes their current values from the config store to a portable
@@ -23,13 +23,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_CONFIG_IO
+#if DWS_ENABLE_CONFIG_IO
 
 /** @brief Type of a config field (selects the typed get/set used). */
 enum class DetwsCfgType : uint8_t
 {
-    DETWS_CFG_STR = 0, ///< null-terminated string.
-    DETWS_CFG_U32 = 1, ///< unsigned 32-bit integer (serialized as decimal).
+    DWS_CFG_STR = 0, ///< null-terminated string.
+    DWS_CFG_U32 = 1, ///< unsigned 32-bit integer (serialized as decimal).
 };
 
 /** @brief One field in an export/restore schema. */
@@ -44,7 +44,7 @@ struct DetwsCfgField
  *        lines into @p out.
  * @return characters written, or 0 on a too-small buffer / failure (fail-closed).
  */
-int detws_config_export(const char *ns, const DetwsCfgField *fields, size_t n, char *out, size_t cap);
+int dws_config_export(const char *ns, const DetwsCfgField *fields, size_t n, char *out, size_t cap);
 
 /**
  * @brief Import `key=value` lines from @p text into namespace @p ns, writing each
@@ -52,7 +52,7 @@ int detws_config_export(const char *ns, const DetwsCfgField *fields, size_t n, c
  *        skipped.
  * @return number of fields written.
  */
-int detws_config_import(const char *ns, const DetwsCfgField *fields, size_t n, const char *text, size_t len);
+int dws_config_import(const char *ns, const DetwsCfgField *fields, size_t n, const char *text, size_t len);
 
-#endif // DETWS_ENABLE_CONFIG_IO
+#endif // DWS_ENABLE_CONFIG_IO
 #endif // DETERMINISTICESPASYNCWEBSERVER_CONFIG_IO_H

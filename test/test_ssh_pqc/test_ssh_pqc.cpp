@@ -145,7 +145,7 @@ void test_decaps_ref_matches_kat()
 void test_hybrid_negotiated()
 {
     ssh_transport_init(0);
-    det_ssh_hostkey_ed25519_set(kat_m); // any 32-byte seed; just enables ed25519 host-key negotiation
+    dws_ssh_hostkey_ed25519_set(kat_m); // any 32-byte seed; just enables ed25519 host-key negotiation
     uint8_t buf[512];
     size_t n = build_client_kexinit(buf, "mlkem768x25519-sha256,curve25519-sha256");
     TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
@@ -156,7 +156,7 @@ void test_hybrid_negotiated()
 void test_hybrid_absent_falls_back()
 {
     ssh_transport_init(0);
-    det_ssh_hostkey_ed25519_set(kat_m);
+    dws_ssh_hostkey_ed25519_set(kat_m);
     uint8_t buf[512];
     size_t n = build_client_kexinit(buf, "curve25519-sha256");
     TEST_ASSERT_EQUAL_INT(0, ssh_kexinit_parse(0, buf, n));
@@ -169,7 +169,7 @@ void test_hybrid_kex_end_to_end()
                                      0xb5, 0xc6, 0xd7, 0xe8, 0xf9, 0x0a, 0x1b, 0x2c, 0x3d, 0x4e, 0x5f,
                                      0x60, 0x71, 0x82, 0x93, 0xa4, 0xb5, 0xc6, 0xd7, 0xe8, 0xf9};
     ssh_transport_init(0);
-    det_ssh_hostkey_ed25519_set(seed);
+    dws_ssh_hostkey_ed25519_set(seed);
     SshSession *s = &ssh_sess[0];
     s->kex_alg = SshKexAlg::SSH_KEX_MLKEM768_X25519;
     s->hostkey_alg = SshHostkeyAlg::SSH_HOSTKEY_ED25519;

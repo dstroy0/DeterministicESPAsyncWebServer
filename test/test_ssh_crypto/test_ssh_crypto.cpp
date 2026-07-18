@@ -547,7 +547,7 @@ static void test_rsa_pkcs1_pad_structure(void)
     // With d=1, sign(msg) = m^1 mod n = m (the padded message itself).
     // We can verify the PKCS#1 v1.5 padding structure in the output.
     setup_test_rsa_key();
-    det_ssh_rsa_load_pubkey();
+    dws_ssh_rsa_load_pubkey();
 
     const uint8_t msg[] = "test message for PKCS1 padding check";
     uint8_t sig[256];
@@ -632,7 +632,7 @@ static void test_rsa_sign_verify_roundtrip(void)
 static void test_rsa_encode_pubkey(void)
 {
     setup_test_rsa_key();
-    det_ssh_rsa_load_pubkey();
+    dws_ssh_rsa_load_pubkey();
     TEST_ASSERT_TRUE(ssh_host_pubkey.loaded);
 
     uint8_t blob[SSH_RSA_PUBKEY_BLOB_MAX];
@@ -667,7 +667,7 @@ static void test_rsa_verify_and_encode_guards(void)
         -1, ssh_rsa_verify(n, e, (const uint8_t *)"m", 1, sig, 256, SshRsaHash::SHA256)); // sig not reduced mod n
 
     setup_test_rsa_key();
-    det_ssh_rsa_load_pubkey();
+    dws_ssh_rsa_load_pubkey();
     uint8_t blob[SSH_RSA_PUBKEY_BLOB_MAX];
     size_t blob_len = 0;
     TEST_ASSERT_EQUAL_INT(-1, ssh_rsa_encode_pubkey(blob, &blob_len, SSH_RSA_PUBKEY_BLOB_MAX - 1)); // out_cap too small
@@ -678,7 +678,7 @@ static void test_rsa_verify_and_encode_guards(void)
     // and yields s == 1 (0x00..01). Degenerate, but it exercises the guard.
     setup_test_rsa_key();
     memset(_test_rsa_d, 0, 256);
-    det_ssh_rsa_load_pubkey();
+    dws_ssh_rsa_load_pubkey();
     uint8_t sig0[256];
     TEST_ASSERT_EQUAL_INT(0, ssh_rsa_sign((const uint8_t *)"x", 1, SshRsaHash::SHA256, sig0));
     for (int i = 0; i < 255; i++)
@@ -686,7 +686,7 @@ static void test_rsa_verify_and_encode_guards(void)
     TEST_ASSERT_EQUAL_UINT8(1, sig0[255]);
 
     setup_test_rsa_key(); // restore the fixture for any later test
-    det_ssh_rsa_load_pubkey();
+    dws_ssh_rsa_load_pubkey();
 }
 
 // Real RSA-2048 PKCS#1 v1.5 SHA-256 signature over "hello ssh", produced with
@@ -800,7 +800,7 @@ static void test_rsa_sha512_kat_sign_verify(void)
         -1, ssh_rsa_verify(n, e, (const uint8_t *)"hello rsa-sha2-256", mlen, sig, 256, SshRsaHash::SHA512));
 
     setup_test_rsa_key(); // restore the fixture for any later test
-    det_ssh_rsa_load_pubkey();
+    dws_ssh_rsa_load_pubkey();
 }
 
 // ============================================================================

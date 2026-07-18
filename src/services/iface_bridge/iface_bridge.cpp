@@ -3,7 +3,7 @@
 
 #include "services/iface_bridge/iface_bridge.h"
 
-#if DETWS_ENABLE_IFACE_BRIDGE
+#if DWS_ENABLE_IFACE_BRIDGE
 
 #include <string.h>
 
@@ -12,26 +12,26 @@ namespace
 /// The one owned mutable: the address:port -> bus rule table.
 struct BridgeCtx
 {
-    BridgeRule rules[DETWS_BRIDGE_MAX_RULES];
+    BridgeRule rules[DWS_BRIDGE_MAX_RULES];
     uint8_t count;
 };
 BridgeCtx s_bridge;
 } // namespace
 
-void det_iface_bridge_clear()
+void dws_iface_bridge_clear()
 {
-    for (uint8_t i = 0; i < DETWS_BRIDGE_MAX_RULES; i++)
+    for (uint8_t i = 0; i < DWS_BRIDGE_MAX_RULES; i++)
         s_bridge.rules[i].used = false;
     s_bridge.count = 0;
 }
 
-bool det_iface_bridge_add(const BridgeRule *rule)
+bool dws_iface_bridge_add(const BridgeRule *rule)
 {
     if (!rule)
         return false;
-    if (det_iface_bridge_find(rule->listen_port, rule->proto))
+    if (dws_iface_bridge_find(rule->listen_port, rule->proto))
         return false; // a rule already binds this port+proto
-    for (uint8_t i = 0; i < DETWS_BRIDGE_MAX_RULES; i++)
+    for (uint8_t i = 0; i < DWS_BRIDGE_MAX_RULES; i++)
     {
         if (!s_bridge.rules[i].used)
         {
@@ -44,56 +44,56 @@ bool det_iface_bridge_add(const BridgeRule *rule)
     return false; // table full
 }
 
-bool det_iface_bridge_map(const char *ip, uint16_t port, BridgeProto proto, const BridgeTarget *target)
+bool dws_iface_bridge_map(const char *ip, uint16_t port, BridgeProto proto, const BridgeTarget *target)
 {
     if (!target)
         return false;
     BridgeRule r;
     memset(&r, 0, sizeof(r));
-    r.listen_ip.family = DetIpFamily::DET_IP_NONE; // "any interface" unless a valid address is given
-    if (ip && ip[0] && !det_ip_parse(ip, &r.listen_ip))
+    r.listen_ip.family = DWSIpFamily::DWS_IP_NONE; // "any interface" unless a valid address is given
+    if (ip && ip[0] && !dws_ip_parse(ip, &r.listen_ip))
         return false; // malformed bind address
     r.listen_port = port;
     r.proto = proto;
     r.target = *target;
-    return det_iface_bridge_add(&r);
+    return dws_iface_bridge_add(&r);
 }
 
-const BridgeRule *det_iface_bridge_find(uint16_t port, BridgeProto proto)
+const BridgeRule *dws_iface_bridge_find(uint16_t port, BridgeProto proto)
 {
-    for (uint8_t i = 0; i < DETWS_BRIDGE_MAX_RULES; i++)
+    for (uint8_t i = 0; i < DWS_BRIDGE_MAX_RULES; i++)
         if (s_bridge.rules[i].used && s_bridge.rules[i].listen_port == port && s_bridge.rules[i].proto == proto)
             return &s_bridge.rules[i];
     return nullptr;
 }
 
-uint8_t det_iface_bridge_count()
+uint8_t dws_iface_bridge_count()
 {
     return s_bridge.count;
 }
 
-size_t det_iface_bridge_txn_parse(const uint8_t *buf, size_t len, uint16_t *write_len, uint16_t *read_len,
+size_t dws_iface_bridge_txn_parse(const uint8_t *buf, size_t len, uint16_t *write_len, uint16_t *read_len,
                                   const uint8_t **write_data)
 {
-    if (!buf || len < (size_t)DETWS_BRIDGE_TXN_HDR)
+    if (!buf || len < (size_t)DWS_BRIDGE_TXN_HDR)
         return 0;
     uint16_t wl = (uint16_t)(((uint16_t)buf[0] << 8) | buf[1]);
     uint16_t rl = (uint16_t)(((uint16_t)buf[2] << 8) | buf[3]);
-    if (len < (size_t)DETWS_BRIDGE_TXN_HDR + wl)
+    if (len < (size_t)DWS_BRIDGE_TXN_HDR + wl)
         return 0; // the write payload has not fully arrived yet
     if (write_len)
         *write_len = wl;
     if (read_len)
         *read_len = rl;
     if (write_data)
-        *write_data = buf + DETWS_BRIDGE_TXN_HDR;
-    return (size_t)DETWS_BRIDGE_TXN_HDR + wl;
+        *write_data = buf + DWS_BRIDGE_TXN_HDR;
+    return (size_t)DWS_BRIDGE_TXN_HDR + wl;
 }
 
-size_t det_iface_bridge_txn_build(uint8_t *out, size_t cap, const uint8_t *write_data, uint16_t write_len,
+size_t dws_iface_bridge_txn_build(uint8_t *out, size_t cap, const uint8_t *write_data, uint16_t write_len,
                                   uint16_t read_len)
 {
-    size_t need = (size_t)DETWS_BRIDGE_TXN_HDR + write_len;
+    size_t need = (size_t)DWS_BRIDGE_TXN_HDR + write_len;
     if (!out || cap < need)
         return 0;
     out[0] = (uint8_t)(write_len >> 8);
@@ -101,8 +101,8 @@ size_t det_iface_bridge_txn_build(uint8_t *out, size_t cap, const uint8_t *write
     out[2] = (uint8_t)(read_len >> 8);
     out[3] = (uint8_t)read_len;
     if (write_len && write_data)
-        memcpy(out + DETWS_BRIDGE_TXN_HDR, write_data, write_len);
+        memcpy(out + DWS_BRIDGE_TXN_HDR, write_data, write_len);
     return need;
 }
 
-#endif // DETWS_ENABLE_IFACE_BRIDGE
+#endif // DWS_ENABLE_IFACE_BRIDGE

@@ -22,7 +22,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
 
 #include <stddef.h>
 #include <stdint.h>
@@ -63,6 +63,6 @@ void shake256(uint8_t *out, size_t outlen, const uint8_t *in, size_t inlen);
 /// Begin an incremental SHAKE128 XOF over @p in; pull output with keccak_squeeze(@p c, ...).
 void shake128_absorb(KeccakCtx *c, const uint8_t *in, size_t inlen);
 
-#endif // DETWS_ENABLE_PQC_KEX
+#endif // DWS_ENABLE_PQC_KEX
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_PQC_SHA3_H

@@ -15,7 +15,7 @@
 // the arduino framework's -Os, and ChaCha runs ~2.36x faster at -O2 (measured on-device, CCOUNT). It is
 // constant-time by structure (no secret-dependent branches), so forcing a higher level is side-channel
 // safe - see the caveats in crypto_opt.h. Byte-exact; the SIMD investigation is in docs/FEATURE_PERFORMANCE.md.
-DETWS_CRYPTO_HOT
+DWS_CRYPTO_HOT
 
 namespace
 {

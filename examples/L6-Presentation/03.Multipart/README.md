@@ -53,7 +53,7 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // A tiny multipart test form (name field + file input).
 static const char FORM[] = "<!doctype html><meta charset=utf-8><title>upload</title>"

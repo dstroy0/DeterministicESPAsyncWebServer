@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http3/quic_packet.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include <string.h>
 
@@ -152,4 +152,4 @@ uint64_t quic_pn_decode(uint64_t largest_pn, uint64_t truncated_pn, uint8_t pn_n
     return candidate;
 }
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3

@@ -75,7 +75,7 @@ The feature lives in the library, so its flag must reach the whole build:
 ```bash
 pio ci examples/L7-Application/66.Ads1115 \
   --board esp32dev --lib "." \
-  --project-option="build_flags=-DDETWS_ENABLE_ADS1115=1"
+  --project-option="build_flags=-DDWS_ENABLE_ADS1115=1"
 ```
 
 (The Arduino IDE reads the flag from `build_opt.h` beside the sketch automatically.)

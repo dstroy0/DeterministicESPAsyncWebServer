@@ -5,7 +5,7 @@
  * @file physical.cpp
  * @brief Layer 1 (Physical) - link bring-up and egress reporting.
  *
- * WiFi station bring-up is asynchronous (poll wifi_ready()). det_net_egress()
+ * WiFi station bring-up is asynchronous (poll wifi_ready()). dws_net_egress()
  * reports the live default-route interface (lwIP `netif_default`) and classifies
  * it against the WiFi IPs; the stack owns failover, so there is nothing to poll
  * or track here. The IP classifier is pure and host-tested.
@@ -17,7 +17,7 @@
 #include "lwip/ip_addr.h"
 #include "lwip/netif.h"
 #include <WiFi.h>
-#if DETWS_ENABLE_ETHERNET
+#if DWS_ENABLE_ETHERNET
 #include <ETH.h>
 #endif
 
@@ -32,16 +32,15 @@ bool wifi_ready()
     return WiFi.isConnected();
 }
 
-#if DETWS_ENABLE_ETHERNET
+#if DWS_ENABLE_ETHERNET
 bool init_eth_physical(void)
 {
-#if defined(DETWS_ETH_W5500) && DETWS_ETH_W5500 && ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+#if defined(DWS_ETH_W5500) && DWS_ETH_W5500 && ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
     // W5500 SPI Ethernet (arduino-esp32 3.x ETH SPI API): the HSPI host (SPI3) clocks the W5500 on the
-    // DETWS_ETH_W5500_* pins (CS/INT/RST + SCK/MISO/MOSI). Needs CONFIG_ETH_SPI_ETHERNET_W5500 in the SDK
+    // DWS_ETH_W5500_* pins (CS/INT/RST + SCK/MISO/MOSI). Needs CONFIG_ETH_SPI_ETHERNET_W5500 in the SDK
     // (default on for the S3). W5500 SPI is arduino-esp32 3.x only - the 2.x ETH library has no W5500.
-    return ETH.begin(ETH_PHY_W5500, 1 /*phy addr*/, DETWS_ETH_W5500_CS, DETWS_ETH_W5500_INT, DETWS_ETH_W5500_RST,
-                     SPI3_HOST, DETWS_ETH_W5500_SCK, DETWS_ETH_W5500_MISO, DETWS_ETH_W5500_MOSI,
-                     DETWS_ETH_W5500_SPI_MHZ);
+    return ETH.begin(ETH_PHY_W5500, 1 /*phy addr*/, DWS_ETH_W5500_CS, DWS_ETH_W5500_INT, DWS_ETH_W5500_RST, SPI3_HOST,
+                     DWS_ETH_W5500_SCK, DWS_ETH_W5500_MISO, DWS_ETH_W5500_MOSI, DWS_ETH_W5500_SPI_MHZ);
 #else
     // RMII PHY: pins / type / clock come from the ETH_PHY_* build flags (ETH.begin() defaults).
     return ETH.begin();
@@ -54,7 +53,7 @@ bool eth_ready(void)
 #else
 bool init_eth_physical(void)
 {
-    return false; // Ethernet not enabled (DETWS_ENABLE_ETHERNET)
+    return false; // Ethernet not enabled (DWS_ENABLE_ETHERNET)
 }
 bool eth_ready(void)
 {
@@ -62,7 +61,7 @@ bool eth_ready(void)
 }
 #endif
 
-#if DETWS_ENABLE_IPV6
+#if DWS_ENABLE_IPV6
 #include "lwip/ip6_addr.h"
 #include <string.h>
 
@@ -77,7 +76,7 @@ bool init_ipv6_physical(void)
 #endif
 }
 
-bool net_global_ipv6(DetIp *out)
+bool net_global_ipv6(DWSIp *out)
 {
     if (!out || !netif_default)
         return false;
@@ -88,7 +87,7 @@ bool net_global_ipv6(DetIp *out)
         const ip6_addr_t *a6 = netif_ip6_addr(netif_default, i);
         if (!ip6_addr_isglobal(a6))
             continue;
-        out->family = DetIpFamily::DET_IP_V6;
+        out->family = DWSIpFamily::DWS_IP_V6;
         memcpy(out->bytes, a6->addr, 16); // lwIP holds the 16 bytes in network order
         return true;
     }
@@ -97,15 +96,15 @@ bool net_global_ipv6(DetIp *out)
 
 bool ipv6_ready(void)
 {
-    DetIp tmp;
+    DWSIp tmp;
     return net_global_ipv6(&tmp);
 }
 #else
 bool init_ipv6_physical(void)
 {
-    return false; // IPv6 not enabled (DETWS_ENABLE_IPV6)
+    return false; // IPv6 not enabled (DWS_ENABLE_IPV6)
 }
-bool net_global_ipv6(DetIp *)
+bool net_global_ipv6(DWSIp *)
 {
     return false;
 }
@@ -115,20 +114,20 @@ bool ipv6_ready(void)
 }
 #endif
 
-uint32_t det_net_egress_ip(void)
+uint32_t dws_net_egress_ip(void)
 {
     // netif_default is the current default-route interface (the egress).
     return netif_default ? ip4_addr_get_u32(ip_2_ip4(&netif_default->ip_addr)) : 0;
 }
 
-DetIface det_net_egress(void)
+DWSIface dws_net_egress(void)
 {
-    uint32_t egress = det_net_egress_ip();
+    uint32_t egress = dws_net_egress_ip();
     if (egress == 0)
-        return DetIface::DETIFACE_ANY;
+        return DWSIface::DETIFACE_ANY;
     uint32_t sta = WiFi.isConnected() ? (uint32_t)WiFi.localIP() : 0;
     uint32_t ap = (WiFi.getMode() & WIFI_AP) ? (uint32_t)WiFi.softAPIP() : 0;
-    return det_net_classify_ip(egress, sta, ap);
+    return dws_net_classify_ip(egress, sta, ap);
 }
 
 #else // host build - no radio / stack
@@ -153,7 +152,7 @@ bool init_ipv6_physical(void)
 {
     return false; // no netif on a host build
 }
-bool net_global_ipv6(DetIp *)
+bool net_global_ipv6(DWSIp *)
 {
     return false;
 }
@@ -161,25 +160,25 @@ bool ipv6_ready(void)
 {
     return false;
 }
-uint32_t det_net_egress_ip(void)
+uint32_t dws_net_egress_ip(void)
 {
     return 0;
 }
-DetIface det_net_egress(void)
+DWSIface dws_net_egress(void)
 {
-    return DetIface::DETIFACE_ANY;
+    return DWSIface::DETIFACE_ANY;
 }
 
 #endif // ARDUINO
 
 // Pure classifier (always compiled, host-tested).
-DetIface det_net_classify_ip(uint32_t egress_ip, uint32_t sta_ip, uint32_t ap_ip)
+DWSIface dws_net_classify_ip(uint32_t egress_ip, uint32_t sta_ip, uint32_t ap_ip)
 {
     if (egress_ip == 0)
-        return DetIface::DETIFACE_ANY;
+        return DWSIface::DETIFACE_ANY;
     if (sta_ip != 0 && egress_ip == sta_ip)
-        return DetIface::DETIFACE_STA;
+        return DWSIface::DETIFACE_STA;
     if (ap_ip != 0 && egress_ip == ap_ip)
-        return DetIface::DETIFACE_AP;
-    return DetIface::DETIFACE_ETH; // a live route that is neither WiFi IP -> wired
+        return DWSIface::DETIFACE_AP;
+    return DWSIface::DETIFACE_ETH; // a live route that is neither WiFi IP -> wired
 }

@@ -4,7 +4,7 @@
 /**
  * @file smb_md.h
  * @brief MD4 (RFC 1320), MD5 (RFC 1321), and HMAC-MD5 (RFC 2104) - the legacy digests NTLM
- *        needs, for the SMB2 client (DETWS_ENABLE_SMB). Not used anywhere else in the library.
+ *        needs, for the SMB2 client (DWS_ENABLE_SMB). Not used anywhere else in the library.
  *
  * NTLMv2 (MS-NLMP) builds on these: the NT hash is MD4(UTF-16LE(password)); the NTLMv2 response
  * and the session key are HMAC-MD5 chains. MD4/MD5 are cryptographically broken and are included
@@ -20,7 +20,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_SMB
+#if DWS_ENABLE_SMB
 
 #include <stddef.h>
 #include <stdint.h>
@@ -49,6 +49,6 @@ void md4(const uint8_t *data, size_t len, uint8_t out[16]);
 /** @brief HMAC-MD5 (RFC 2104): the NTLMv2 MAC primitive. */
 void hmac_md5(const uint8_t *key, size_t key_len, const uint8_t *msg, size_t msg_len, uint8_t out[16]);
 
-#endif // DETWS_ENABLE_SMB
+#endif // DWS_ENABLE_SMB
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SMB_MD_H

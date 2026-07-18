@@ -3,30 +3,30 @@
 
 /**
  * @file websocket_sse.cpp
- * @brief WebSocket (RFC 6455) and Server-Sent Events upgrade + public API for DetWebServer.
+ * @brief WebSocket (RFC 6455) and Server-Sent Events upgrade + public API for DWS.
  *
  * Split out of dwserver.cpp (single-purpose server files). The WS handshake (Sec-WebSocket-Accept
  * over SHA-1+base64, optional permessage-deflate), the SSE 200 upgrade, and the send/broadcast
  * public API for both. The frame codecs live in the presentation layer (websocket/, sse/); this
- * is the DetWebServer glue. The upgrade entry points are called by the route dispatcher in
+ * is the DWS glue. The upgrade entry points are called by the route dispatcher in
  * dwserver.cpp (declared in server/dwserver_internal.h). Behaviour is identical to the pre-split code.
  */
 
 #include "dwserver.h"
-#include "network_drivers/transport/tcp.h" // conn_pool, det_conn_*, TcpConn/ConnState
+#include "network_drivers/transport/tcp.h" // conn_pool, dws_conn_*, TcpConn/ConnState
 #include "server/dwserver_internal.h"
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/base64/base64.h"       // base64_decode/encode
 #include "network_drivers/presentation/sha1/sha1.h"           // sha1, SHA1_DIGEST_LEN
 #include "network_drivers/presentation/websocket/websocket.h" // ws_pool, WsConn, ws_alloc/send_frame/close
 #endif
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
 #include "network_drivers/presentation/sse/sse.h" // sse_pool, SseConn, sse_alloc/write
 #endif
 #include <stdio.h>
 #include <string.h>
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
 // Magic GUID concatenated to the client key for the WS accept hash (RFC 6455 4.2.2).
 static const char WS_MAGIC[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 #endif
@@ -35,7 +35,7 @@ static const char WS_MAGIC[] = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 // WebSocket handshake helpers
 // ---------------------------------------------------------------------------
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
 /**
  * @brief Compute the Sec-WebSocket-Accept value for the HTTP 101 response.
  *
@@ -86,7 +86,7 @@ static bool ws_accept_key(const char *client_key, char *out)
  */
 void ws_send_version_required(uint8_t slot_id)
 {
-    if (!det_conn_active(slot_id))
+    if (!dws_conn_active(slot_id))
     {
         http_reset(slot_id);
         return;
@@ -97,9 +97,9 @@ void ws_send_version_required(uint8_t slot_id)
                                "Content-Length: 0\r\n"
                                "Connection: close\r\n\r\n";
 
-    det_conn_send(slot_id, resp, (u16_t)(sizeof(resp) - 1));
-    det_conn_flush(slot_id);
-    det_conn_begin_close(slot_id); // dwell in ConnState::CONN_CLOSING until the response drains
+    dws_conn_send(slot_id, resp, (u16_t)(sizeof(resp) - 1));
+    dws_conn_flush(slot_id);
+    dws_conn_begin_close(slot_id); // dwell in ConnState::CONN_CLOSING until the response drains
 
     http_reset(slot_id);
 }
@@ -114,12 +114,12 @@ bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_connect)
     if (!ws_accept_key(client_key, accept))
         return false;
 
-    if (!det_conn_active(slot_id))
+    if (!dws_conn_active(slot_id))
         return false;
 
     char hdr[WS_HDR_BUF_SIZE];
     int hlen;
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
     // Negotiate permessage-deflate (RFC 7692) if the client offered it. We force
     // no_context_takeover in both directions so each message decompresses
     // independently (the INFLATE window is the message buffer, not a kept window).
@@ -145,8 +145,8 @@ bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_connect)
                     accept);
 #endif
 
-    det_conn_send(slot_id, hdr, (u16_t)hlen);
-    det_conn_flush(slot_id);
+    dws_conn_send(slot_id, hdr, (u16_t)hlen);
+    dws_conn_flush(slot_id);
 
     // Reset HTTP parser but keep the TCP slot -- WS owns it now
     http_reset(slot_id);
@@ -155,11 +155,11 @@ bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_connect)
     if (!ws)
     {
         // No WS slot available -- abort the connection (transport owns the teardown)
-        det_conn_abort_slot(slot_id);
+        dws_conn_abort_slot(slot_id);
         return false;
     }
 
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
     ws->pmd = pmd;
 #endif
     if (on_connect)
@@ -167,19 +167,19 @@ bool ws_do_upgrade(uint8_t slot_id, HttpReq *req, WsConnectHandler on_connect)
 
     return true;
 }
-#endif // DETWS_ENABLE_WEBSOCKET
+#endif // DWS_ENABLE_WEBSOCKET
 
 // ---------------------------------------------------------------------------
 // SSE upgrade helper
 // ---------------------------------------------------------------------------
 
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
 /**
  * @brief Send the HTTP 200 + SSE headers and promote the slot to SSE mode.
  */
 bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect)
 {
-    if (!det_conn_active(slot_id))
+    if (!dws_conn_active(slot_id))
         return false;
 
     static const char SSE_HDR[] = "HTTP/1.1 200 OK\r\n"
@@ -187,8 +187,8 @@ bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect)
                                   "Cache-Control: no-cache\r\n"
                                   "Connection: keep-alive\r\n\r\n";
 
-    det_conn_send(slot_id, SSE_HDR, (u16_t)(sizeof(SSE_HDR) - 1));
-    det_conn_flush(slot_id);
+    dws_conn_send(slot_id, SSE_HDR, (u16_t)(sizeof(SSE_HDR) - 1));
+    dws_conn_flush(slot_id);
 
     // Copy the path BEFORE resetting the parser: http_reset() zeroes the whole
     // HttpReq (including req->path), so a pointer into it would dangle. The saved
@@ -201,7 +201,7 @@ bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect)
     SseConn *sse = sse_alloc(slot_id, path);
     if (!sse)
     {
-        det_conn_abort_slot(slot_id); // transport owns detach + reset + RST
+        dws_conn_abort_slot(slot_id); // transport owns detach + reset + RST
         return false;
     }
 
@@ -210,14 +210,14 @@ bool sse_do_upgrade(uint8_t slot_id, HttpReq *req, SseConnectHandler on_connect)
 
     return true;
 }
-#endif // DETWS_ENABLE_SSE
+#endif // DWS_ENABLE_SSE
 
 // ---------------------------------------------------------------------------
 // WebSocket public API
 // ---------------------------------------------------------------------------
 
-#if DETWS_ENABLE_WEBSOCKET
-void DetWebServer::ws_send_text(uint8_t ws_id, const char *text)
+#if DWS_ENABLE_WEBSOCKET
+void DWS::ws_send_text(uint8_t ws_id, const char *text)
 {
     if (ws_id >= MAX_WS_CONNS || !ws_pool[ws_id].active)
         return;
@@ -227,12 +227,12 @@ void DetWebServer::ws_send_text(uint8_t ws_id, const char *text)
     uint16_t len = (uint16_t)strnlen(text, 0xFFFF);
     if (ws_send_frame(ws, WsOpcode::WS_OP_TEXT, (const uint8_t *)text, len))
     {
-        if (det_conn_active(ws->slot_id))
-            det_conn_flush(ws->slot_id);
+        if (dws_conn_active(ws->slot_id))
+            dws_conn_flush(ws->slot_id);
     }
 }
 
-void DetWebServer::ws_send_binary(uint8_t ws_id, const uint8_t *data, uint16_t len)
+void DWS::ws_send_binary(uint8_t ws_id, const uint8_t *data, uint16_t len)
 {
     if (ws_id >= MAX_WS_CONNS || !ws_pool[ws_id].active)
         return;
@@ -241,41 +241,41 @@ void DetWebServer::ws_send_binary(uint8_t ws_id, const uint8_t *data, uint16_t l
         return;
     if (ws_send_frame(ws, WsOpcode::WS_OP_BINARY, data, len))
     {
-        if (det_conn_active(ws->slot_id))
-            det_conn_flush(ws->slot_id);
+        if (dws_conn_active(ws->slot_id))
+            dws_conn_flush(ws->slot_id);
     }
 }
 
-void DetWebServer::ws_disconnect(uint8_t ws_id)
+void DWS::ws_disconnect(uint8_t ws_id)
 {
     if (ws_id >= MAX_WS_CONNS || !ws_pool[ws_id].active)
         return;
     WsConn *ws = &ws_pool[ws_id];
     ws_close(ws, WsCloseCode::WS_CLOSE_NORMAL);
-    if (det_conn_active(ws->slot_id))
-        det_conn_flush(ws->slot_id);
+    if (dws_conn_active(ws->slot_id))
+        dws_conn_flush(ws->slot_id);
     // handle() detects WsParseState::WS_CLOSED next tick and fires ws_close callback
 }
-#endif // DETWS_ENABLE_WEBSOCKET
+#endif // DWS_ENABLE_WEBSOCKET
 
 // ---------------------------------------------------------------------------
 // Server-Sent Events public API
 // ---------------------------------------------------------------------------
 
-#if DETWS_ENABLE_SSE
-void DetWebServer::sse_send(uint8_t sse_id, const char *data, const char *event, const char *id)
+#if DWS_ENABLE_SSE
+void DWS::sse_send(uint8_t sse_id, const char *data, const char *event, const char *id)
 {
     if (sse_id >= MAX_SSE_CONNS || !sse_pool[sse_id].active)
         return;
     SseConn *sse = &sse_pool[sse_id];
     if (sse_write(sse, data, event, id))
     {
-        if (det_conn_active(sse->slot_id))
-            det_conn_flush(sse->slot_id);
+        if (dws_conn_active(sse->slot_id))
+            dws_conn_flush(sse->slot_id);
     }
 }
 
-void DetWebServer::sse_broadcast(const char *path, const char *data, const char *event, const char *id)
+void DWS::sse_broadcast(const char *path, const char *data, const char *event, const char *id)
 {
     for (int i = 0; i < MAX_SSE_CONNS; i++)
     {
@@ -286,9 +286,9 @@ void DetWebServer::sse_broadcast(const char *path, const char *data, const char 
         SseConn *sse = &sse_pool[i];
         if (sse_write(sse, data, event, id))
         {
-            if (det_conn_active(sse->slot_id))
-                det_conn_flush(sse->slot_id);
+            if (dws_conn_active(sse->slot_id))
+                dws_conn_flush(sse->slot_id);
         }
     }
 }
-#endif // DETWS_ENABLE_SSE
+#endif // DWS_ENABLE_SSE

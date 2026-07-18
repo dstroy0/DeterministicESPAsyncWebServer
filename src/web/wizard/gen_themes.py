@@ -39,7 +39,7 @@ def add(name, category, mode, bg, bg2, card, ink, muted, accent, accent2):
 
 # Themes named after a company / product trademark: kept in the OPEN-SOURCE library (a color palette is
 # not the trademark), but a commercial build should not ship the branded name/association, so the theme
-# blobs (gen_theme_blobs.py) gate these behind DETWS_THEMES_INCLUDE_TRADEMARKED - default 1 (open source),
+# blobs (gen_theme_blobs.py) gate these behind DWS_THEMES_INCLUDE_TRADEMARKED - default 1 (open source),
 # set 0 in a commercial build to drop them. Edit this set freely; it is the single source the packager
 # and the gallery both read. Includes the seven bespoke themes by name where relevant.
 RESTRICTED = frozenset(
@@ -451,7 +451,7 @@ def cmd_gallery():
         "```",
         "",
         "&dagger; = named after a company/product trademark: shipped in the open-source (AGPL) build, but"
-        " dropped from a commercial build (`DETWS_THEMES_INCLUDE_TRADEMARKED=0`). The palette is just colors;"
+        " dropped from a commercial build (`DWS_THEMES_INCLUDE_TRADEMARKED=0`). The palette is just colors;"
         " only the branded name is gated.",
         "",
         "## Bespoke",

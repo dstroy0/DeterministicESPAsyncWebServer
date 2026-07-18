@@ -26,7 +26,7 @@ void tearDown(void)
 void test_parse_full(void)
 {
     ExcInfo info;
-    TEST_ASSERT_TRUE(detws_exc_parse(PANIC, &info));
+    TEST_ASSERT_TRUE(dws_exc_parse(PANIC, &info));
     TEST_ASSERT_EQUAL_INT(1, info.core);
     TEST_ASSERT_EQUAL_STRING("LoadProhibited", info.cause);
     TEST_ASSERT_EQUAL_HEX32(0x400d1234, info.pc);
@@ -41,9 +41,9 @@ void test_parse_full(void)
 void test_json(void)
 {
     ExcInfo info;
-    detws_exc_parse(PANIC, &info);
+    dws_exc_parse(PANIC, &info);
     char buf[512];
-    size_t n = detws_exc_json(&info, buf, sizeof(buf));
+    size_t n = dws_exc_json(&info, buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
     TEST_ASSERT_NOT_NULL(strstr(buf, "\"core\":1"));
@@ -58,7 +58,7 @@ void test_backtrace_only_and_corrupted(void)
     // No register dump: PC must fall back to the first backtrace frame. Trailing corruption marker.
     const char *bt = "Backtrace: 0x400e1111:0x3ffc0000 0x400e2222:0x3ffc0020 |<-CORRUPTED\n";
     ExcInfo info;
-    TEST_ASSERT_TRUE(detws_exc_parse(bt, &info));
+    TEST_ASSERT_TRUE(dws_exc_parse(bt, &info));
     TEST_ASSERT_EQUAL_INT(-1, info.core);
     TEST_ASSERT_EQUAL_STRING("", info.cause);
     TEST_ASSERT_FALSE(info.has_excvaddr);
@@ -69,23 +69,23 @@ void test_backtrace_only_and_corrupted(void)
 void test_garbage_returns_false(void)
 {
     ExcInfo info;
-    TEST_ASSERT_FALSE(detws_exc_parse("nothing to see here\n", &info));
-    TEST_ASSERT_FALSE(detws_exc_parse("", &info));
+    TEST_ASSERT_FALSE(dws_exc_parse("nothing to see here\n", &info));
+    TEST_ASSERT_FALSE(dws_exc_parse("", &info));
 }
 
 void test_json_omits_core_when_absent_and_overflow(void)
 {
     const char *bt = "Backtrace: 0x400e1111:0x3ffc0000\n";
     ExcInfo info;
-    detws_exc_parse(bt, &info);
+    dws_exc_parse(bt, &info);
     char buf[128];
-    size_t n = detws_exc_json(&info, buf, sizeof(buf));
+    size_t n = dws_exc_json(&info, buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_NULL(strstr(buf, "\"core\"")); // omitted when core == -1
     TEST_ASSERT_NULL(strstr(buf, "excvaddr")); // omitted when absent
 
     char tiny[8];
-    TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, tiny, sizeof(tiny)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_exc_json(&info, tiny, sizeof(tiny)));
 }
 
 void test_upper_hex_and_json_overflow()
@@ -94,12 +94,12 @@ void test_upper_hex_and_json_overflow()
     // Uppercase hex addresses exercise the A-F branch of the nibble parser.
     const char *up = "Guru Meditation Error: Core  0 panic'ed (StoreProhibited).\n"
                      "Backtrace: 0x400D1234:0x3FFB2200 0x400DABCD:0x3FFB2220\n";
-    TEST_ASSERT_TRUE(detws_exc_parse(up, &info));
+    TEST_ASSERT_TRUE(dws_exc_parse(up, &info));
     TEST_ASSERT_EQUAL_HEX32(0x400D1234, info.frames[0].pc);
     TEST_ASSERT_EQUAL_HEX32(0x400DABCD, info.frames[1].pc);
     char buf[256];
-    TEST_ASSERT_TRUE(detws_exc_json(&info, buf, sizeof(buf)) > 0);
-    TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, buf, 8)); // tiny cap fails closed
+    TEST_ASSERT_TRUE(dws_exc_json(&info, buf, sizeof(buf)) > 0);
+    TEST_ASSERT_EQUAL_size_t(0, dws_exc_json(&info, buf, 8)); // tiny cap fails closed
 }
 
 // Null-pointer guards on parse + json; a register dump whose "PC" is the very first line
@@ -109,27 +109,27 @@ void test_upper_hex_and_json_overflow()
 void test_exc_edge_guards(void)
 {
     ExcInfo info;
-    TEST_ASSERT_FALSE(detws_exc_parse(nullptr, &info)); // null text
-    TEST_ASSERT_FALSE(detws_exc_parse("x", nullptr));   // null out
+    TEST_ASSERT_FALSE(dws_exc_parse(nullptr, &info)); // null text
+    TEST_ASSERT_FALSE(dws_exc_parse("x", nullptr));   // null out
     char buf[128];
-    TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(nullptr, buf, sizeof(buf))); // null info
-    TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, nullptr, 128));       // null out
-    TEST_ASSERT_EQUAL_size_t(0, detws_exc_json(&info, buf, 0));             // zero cap
+    TEST_ASSERT_EQUAL_size_t(0, dws_exc_json(nullptr, buf, sizeof(buf))); // null info
+    TEST_ASSERT_EQUAL_size_t(0, dws_exc_json(&info, nullptr, 128));       // null out
+    TEST_ASSERT_EQUAL_size_t(0, dws_exc_json(&info, buf, 0));             // zero cap
 
     // "PC" on the very first line (strncmp anchor, not the "\nPC" search).
-    TEST_ASSERT_TRUE(detws_exc_parse("PC      : 0x400dfeed  PS : 0x1\n", &info));
+    TEST_ASSERT_TRUE(dws_exc_parse("PC      : 0x400dfeed  PS : 0x1\n", &info));
     TEST_ASSERT_EQUAL_HEX32(0x400dfeed, info.pc);
 
     // Backtrace with a malformed stack pointer ("0xZZ" has no hex digits): the frame is
     // rejected, parsing stops, and no frames are recorded.
-    TEST_ASSERT_TRUE(detws_exc_parse("Core 0 panic'ed (BadSP). Backtrace: 0x400d1000:0xZZ\n", &info));
+    TEST_ASSERT_TRUE(dws_exc_parse("Core 0 panic'ed (BadSP). Backtrace: 0x400d1000:0xZZ\n", &info));
     TEST_ASSERT_EQUAL_size_t(0, info.frame_count);
 
     // A cause containing a quote and a backslash is JSON-escaped.
-    TEST_ASSERT_TRUE(detws_exc_parse("Guru Meditation Error: Core 0 panic'ed (Weird\"Cause\\x).\n"
-                                     "Backtrace: 0x400d1234:0x3ffb0000\n",
-                                     &info));
-    size_t n = detws_exc_json(&info, buf, sizeof(buf));
+    TEST_ASSERT_TRUE(dws_exc_parse("Guru Meditation Error: Core 0 panic'ed (Weird\"Cause\\x).\n"
+                                   "Backtrace: 0x400d1234:0x3ffb0000\n",
+                                   &info));
+    size_t n = dws_exc_json(&info, buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_NOT_NULL(strstr(buf, "Weird\\\"Cause\\\\x")); // escaped quote + backslash
 }

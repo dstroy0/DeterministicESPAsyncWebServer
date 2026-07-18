@@ -15,12 +15,12 @@
  * ============================================================
  * FEATURE FLAGS  (set to 0 to strip from the build entirely)
  * ============================================================
- *   DETWS_ENABLE_WEBSOCKET    default 1  RFC 6455 framing + SHA-1/base64 handshake
- *   DETWS_ENABLE_SSE          default 1  Server-Sent Events push
- *   DETWS_ENABLE_MULTIPART    default 1  multipart/form-data body parser
- *   DETWS_ENABLE_FILE_SERVING default 1  static files via Arduino FS
- *   DETWS_ENABLE_AUTH         default 1  HTTP Basic Authentication per-route
- *   DETWS_ENABLE_DIAG         default 0  /diag JSON of the compile-time config
+ *   DWS_ENABLE_WEBSOCKET    default 1  RFC 6455 framing + SHA-1/base64 handshake
+ *   DWS_ENABLE_SSE          default 1  Server-Sent Events push
+ *   DWS_ENABLE_MULTIPART    default 1  multipart/form-data body parser
+ *   DWS_ENABLE_FILE_SERVING default 1  static files via Arduino FS
+ *   DWS_ENABLE_AUTH         default 1  HTTP Basic Authentication per-route
+ *   DWS_ENABLE_DIAG         default 0  /diag JSON of the compile-time config
  *
  * ============================================================
  * FEATURE DEPENDENCIES  (a child needs its parent; illegal combos #error)
@@ -83,14 +83,14 @@
 // nodes sharing the heap with other subsystems.
 // -------------------------------------------------------------------
 
-#define DETWS_ENABLE_WEBSOCKET 0
-#define DETWS_ENABLE_SSE 0
-#define DETWS_ENABLE_MULTIPART 0
-#define DETWS_ENABLE_FILE_SERVING 0
-#define DETWS_ENABLE_AUTH 0
+#define DWS_ENABLE_WEBSOCKET 0
+#define DWS_ENABLE_SSE 0
+#define DWS_ENABLE_MULTIPART 0
+#define DWS_ENABLE_FILE_SERVING 0
+#define DWS_ENABLE_AUTH 0
 
 // Diagnostic endpoint: exposes the compile-time config; disable in production.
-#define DETWS_ENABLE_DIAG 1
+#define DWS_ENABLE_DIAG 1
 
 // Tightened capacity to match a small REST API.
 #define MAX_CONNS 2
@@ -115,7 +115,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // GET /config
 // Returns every active sizing constant as JSON so you can verify your build
@@ -177,7 +177,7 @@ void setup()
     Serial.begin(115200);
 
     // Print the active config so you can confirm overrides without curl.
-    Serial.println("\n--- Active DetWebServer config ---");
+    Serial.println("\n--- Active DWS config ---");
     Serial.printf("  MAX_CONNS        = %u\n", (unsigned)MAX_CONNS);
     Serial.printf("  RX_BUF_SIZE      = %u\n", (unsigned)RX_BUF_SIZE);
     Serial.printf("  CONN_TIMEOUT_MS  = %u\n", (unsigned)CONN_TIMEOUT_MS);
@@ -199,7 +199,7 @@ void setup()
     server.on("/echo", HttpMethod::HTTP_POST, handle_echo);
     server.on("/search", HttpMethod::HTTP_GET, handle_search);
 
-    // Diagnostic route (DETWS_ENABLE_DIAG=1): remove or protect in production.
+    // Diagnostic route (DWS_ENABLE_DIAG=1): remove or protect in production.
     server.on("/diag", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.diag(id); });
 
     // Pass a runtime config to override the idle timeout without a rebuild.

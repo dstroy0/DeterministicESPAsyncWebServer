@@ -9,7 +9,7 @@
  * password; the handler runs only after the credentials check passes, otherwise
  * the server answers 401 with a WWW-Authenticate challenge. Pass digest=true for
  * Digest auth instead (see the DigestAuth example). Auth is on by default
- * (DETWS_ENABLE_AUTH).
+ * (DWS_ENABLE_AUTH).
  *
  * NOTE: Basic credentials are base64 (not encryption) - use it over HTTPS or an
  * SSH tunnel on untrusted networks.
@@ -25,7 +25,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

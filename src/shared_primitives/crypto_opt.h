@@ -7,16 +7,16 @@
  *
  * The library ships at the arduino framework's `-Os` (the framework appends it AFTER any PlatformIO env
  * `build_flags`, so a plain `-O2` there is overridden). `-Os` roughly halves the throughput of the software
- * ciphers/MACs. Put @ref DETWS_CRYPTO_HOT at the top of such a `.cpp` (after its includes) to force a higher
+ * ciphers/MACs. Put @ref DWS_CRYPTO_HOT at the top of such a `.cpp` (after its includes) to force a higher
  * level for that one translation unit, regardless of the consumer's size-optimized build:
  *
  * @code
  *   #include "ssh_chacha20.h"
  *   #include "shared_primitives/crypto_opt.h"
- *   DETWS_CRYPTO_HOT   // this TU builds at -O2 (or the configured level)
+ *   DWS_CRYPTO_HOT   // this TU builds at -O2 (or the configured level)
  * @endcode
  *
- * Configure with `DETWS_CRYPTO_OPT_LEVEL` (define in `build_flags` or ServerConfig): `2` (default) or `3`;
+ * Configure with `DWS_CRYPTO_OPT_LEVEL` (define in `build_flags` or ServerConfig): `2` (default) or `3`;
  * define it to `0` to inherit the framework `-Os`. Only GCC honors `#pragma GCC optimize`; clang/other
  * compilers get a no-op and inherit their normal level.
  *
@@ -45,18 +45,18 @@
 #define DETERMINISTICESPASYNCWEBSERVER_CRYPTO_OPT_H
 
 #if defined(__GNUC__) && !defined(__clang__)
-#ifndef DETWS_CRYPTO_OPT_LEVEL
-#define DETWS_CRYPTO_OPT_LEVEL 2 // default: -O2 (the -Os -> -O2 jump is the ~2x win; O2 -> O3 is marginal)
+#ifndef DWS_CRYPTO_OPT_LEVEL
+#define DWS_CRYPTO_OPT_LEVEL 2 // default: -O2 (the -Os -> -O2 jump is the ~2x win; O2 -> O3 is marginal)
 #endif
-#if DETWS_CRYPTO_OPT_LEVEL == 3
-#define DETWS_CRYPTO_HOT _Pragma("GCC optimize(\"O3\")")
-#elif DETWS_CRYPTO_OPT_LEVEL == 2
-#define DETWS_CRYPTO_HOT _Pragma("GCC optimize(\"O2\")")
+#if DWS_CRYPTO_OPT_LEVEL == 3
+#define DWS_CRYPTO_HOT _Pragma("GCC optimize(\"O3\")")
+#elif DWS_CRYPTO_OPT_LEVEL == 2
+#define DWS_CRYPTO_HOT _Pragma("GCC optimize(\"O2\")")
 #else
-#define DETWS_CRYPTO_HOT // 0 / other: inherit the framework -Os
+#define DWS_CRYPTO_HOT // 0 / other: inherit the framework -Os
 #endif
 #else
-#define DETWS_CRYPTO_HOT // non-GCC: no per-TU pragma; inherit the toolchain default
+#define DWS_CRYPTO_HOT // non-GCC: no per-TU pragma; inherit the toolchain default
 #endif
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_CRYPTO_OPT_H

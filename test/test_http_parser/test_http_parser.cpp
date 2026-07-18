@@ -19,7 +19,7 @@
 //   HELPERS    - http_get_header, http_get_query edge cases
 //   STRESS     - large query, many headers, incremental feeds
 
-#include "network_drivers/network/ip.h" // DET_IP_STR_MAX for the recovered-client buffer
+#include "network_drivers/network/ip.h" // DWS_IP_STR_MAX for the recovered-client buffer
 #include "network_drivers/presentation/http_parser/http_parser.h"
 #include <unity.h>
 
@@ -369,7 +369,7 @@ void test_forwarded_strips_quotes_and_port()
 
 void test_forwarded_ipv6_recovered_unknown_rejected()
 {
-    char ip[DET_IP_STR_MAX];
+    char ip[DWS_IP_STR_MAX];
     // RFC 7239 §6: an IPv6 for= value is DQUOTE-wrapped + bracketed, optional :port.
     feed_request(0, "GET / HTTP/1.1\r\nForwarded: for=\"[2001:db8::1]:8080\"\r\n\r\n");
     TEST_ASSERT_TRUE(http_forwarded_client(&http_pool[0], ip, sizeof(ip), nullptr));

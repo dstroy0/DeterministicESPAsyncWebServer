@@ -5,24 +5,24 @@
  * @file coaps_server.h
  * @brief CoAP-over-DTLS server front-end - binds a UDP port to a pool of DtlsConn + the CoAPs bridge.
  *
- * The socket / per-peer glue on top of det_coaps_process(): it owns a fixed pool of @ref DtlsConn
- * handshake engines, binds the CoAPs UDP port (5684, coaps://) through the transport layer (det_udp),
+ * The socket / per-peer glue on top of dws_coaps_process(): it owns a fixed pool of @ref DtlsConn
+ * handshake engines, binds the CoAPs UDP port (5684, coaps://) through the transport layer (dws_udp),
  * routes each inbound datagram to the connection for its peer address (a new peer opens a pool slot),
  * drives the DTLS 1.3 handshake and its retransmission timer, and hands established application records
- * to det_coap_server_process() through det_coaps_process(). CoAP resources are registered with the existing
- * det_coap_server_add_resource() API; this module only carries them over DTLS, so a plaintext CoAP server
- * (det_coap_server_begin on :5683) and this secured one can run side by side over the same resources.
+ * to dws_coap_server_process() through dws_coaps_process(). CoAP resources are registered with the existing
+ * dws_coap_server_add_resource() API; this module only carries them over DTLS, so a plaintext CoAP server
+ * (dws_coap_server_begin on :5683) and this secured one can run side by side over the same resources.
  *
- * Threading (ESP32): det_udp delivers datagrams on the lwIP thread, but the handshake engines must run
+ * Threading (ESP32): dws_udp delivers datagrams on the lwIP thread, but the handshake engines must run
  * on the server loop, so the UDP handler only copies each datagram into a lock-free ingest ring;
- * det_coaps_server_poll() (called from the loop) drains the ring, runs det_coaps_process(), fires the PTO
+ * dws_coaps_server_poll() (called from the loop) drains the ring, runs dws_coaps_process(), fires the PTO
  * retransmission timer, and reaps idle or failed connections. The engines therefore only ever run in
- * one context. On host builds there is no UDP; datagrams are injected with det_coaps_server_ingest() and
+ * one context. On host builds there is no UDP; datagrams are injected with dws_coaps_server_ingest() and
  * replies captured through an output sink, so the whole server is host-testable by shuttling byte
- * buffers to an in-test DTLS client, exactly like dtls_conn and det_coaps_process themselves.
+ * buffers to an in-test DTLS client, exactly like dtls_conn and dws_coaps_process themselves.
  *
  * Constrained-friendly: unlike the HTTP/3 pool this is not PSRAM-gated - a small DtlsConn pool fits
- * internal DRAM, which is the whole point of CoAP. Raise DETWS_COAPS_MAX_CONNS for more simultaneous
+ * internal DRAM, which is the whole point of CoAP. Raise DWS_COAPS_MAX_CONNS for more simultaneous
  * peers (each slot is one DtlsConn handshake engine plus its per-connection key material).
  *
  * @author  Douglas Quigg (dstroy0)
@@ -34,22 +34,22 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_DTLS && DETWS_ENABLE_COAP
+#if DWS_ENABLE_DTLS && DWS_ENABLE_COAP
 
 #include <stddef.h>
 #include <stdint.h>
 
-#ifndef DETWS_COAPS_MAX_CONNS
-#define DETWS_COAPS_MAX_CONNS 2 ///< simultaneous CoAPs (DTLS) connections; each slot is one DtlsConn engine
+#ifndef DWS_COAPS_MAX_CONNS
+#define DWS_COAPS_MAX_CONNS 2 ///< simultaneous CoAPs (DTLS) connections; each slot is one DtlsConn engine
 #endif
-#ifndef DETWS_COAPS_INGEST_RING
-#define DETWS_COAPS_INGEST_RING 6 ///< datagrams buffered from the lwIP thread until det_coaps_server_poll() drains them
+#ifndef DWS_COAPS_INGEST_RING
+#define DWS_COAPS_INGEST_RING 6 ///< datagrams buffered from the lwIP thread until dws_coaps_server_poll() drains them
 #endif
-#ifndef DETWS_COAPS_PORT
-#define DETWS_COAPS_PORT 5684 ///< default UDP port the CoAPs server binds (coaps://, RFC 7252 §12.8)
+#ifndef DWS_COAPS_PORT
+#define DWS_COAPS_PORT 5684 ///< default UDP port the CoAPs server binds (coaps://, RFC 7252 §12.8)
 #endif
-#ifndef DETWS_COAPS_IDLE_MS
-#define DETWS_COAPS_IDLE_MS 60000 ///< reclaim a connection with no inbound datagram for this long (§idle-reaping)
+#ifndef DWS_COAPS_IDLE_MS
+#define DWS_COAPS_IDLE_MS 60000 ///< reclaim a connection with no inbound datagram for this long (§idle-reaping)
 #endif
 
 /**
@@ -72,27 +72,27 @@ struct CoapsServerConfig
 
 /**
  * @brief Start the CoAPs server: install @p cfg, bind @p port over UDP, and route datagrams into the
- * DtlsConn pool. Register CoAP resources first with det_coap_server_add_resource().
+ * DtlsConn pool. Register CoAP resources first with dws_coap_server_add_resource().
  *
- * @param port UDP port to bind, or 0 for @ref DETWS_COAPS_PORT (5684).
+ * @param port UDP port to bind, or 0 for @ref DWS_COAPS_PORT (5684).
  * @return false if @p cfg is invalid, or (Arduino) the UDP bind fails; on host builds it always
- *         returns true and is driven through det_coaps_server_ingest() / the output sink.
+ *         returns true and is driven through dws_coaps_server_ingest() / the output sink.
  */
-bool det_coaps_server_begin(uint16_t port, const CoapsServerConfig *cfg);
+bool dws_coaps_server_begin(uint16_t port, const CoapsServerConfig *cfg);
 
 /**
  * @brief Drive the server once: drain queued datagrams into their connections (running the handshake,
  * or decrypting a CoAP request and answering it), fire the DTLS retransmission timer for any
- * outstanding flight (RFC 9147 §5.8), and reap closed or idle (@ref DETWS_COAPS_IDLE_MS) connections.
- * Call every loop iteration. The monotonic clock is @ref detws_millis (no @c now_ms argument).
+ * outstanding flight (RFC 9147 §5.8), and reap closed or idle (@ref DWS_COAPS_IDLE_MS) connections.
+ * Call every loop iteration. The monotonic clock is @ref dws_millis (no @c now_ms argument).
  */
-void det_coaps_server_poll();
+void dws_coaps_server_poll();
 
 /** @brief Number of pool slots currently in use (open connections). For diagnostics / tests. */
-uint8_t det_coaps_server_active_conns();
+uint8_t dws_coaps_server_active_conns();
 
 /** @brief Stop the server: close the UDP binding and release every pool slot. */
-void det_coaps_server_stop();
+void dws_coaps_server_stop();
 
 // ---------------------------------------------------------------------------
 // Host / test seam (no UDP on host builds)
@@ -102,14 +102,14 @@ void det_coaps_server_stop();
 using CoapsServerOutFn = void (*)(void *ctx, const uint8_t *datagram, size_t len, const char *ip, uint16_t port);
 
 /** @brief Register the outbound-datagram sink used on host builds. */
-void det_coaps_server_set_out_sink_cb(CoapsServerOutFn fn, void *ctx);
+void dws_coaps_server_set_out_sink_cb(CoapsServerOutFn fn, void *ctx);
 
 /**
  * @brief Inject a received datagram from @p ip:@p port (the host-build stand-in for the UDP handler).
- * det_coaps_server_poll() then processes it exactly as a real datagram. @return false if the ring is full.
+ * dws_coaps_server_poll() then processes it exactly as a real datagram. @return false if the ring is full.
  */
-bool det_coaps_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port);
+bool dws_coaps_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port);
 #endif
 
-#endif // DETWS_ENABLE_DTLS && DETWS_ENABLE_COAP
+#endif // DWS_ENABLE_DTLS && DWS_ENABLE_COAP
 #endif // DETERMINISTICESPASYNCWEBSERVER_COAPS_SERVER_H

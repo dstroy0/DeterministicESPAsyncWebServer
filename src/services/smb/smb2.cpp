@@ -8,7 +8,7 @@
 
 #include "smb2.h"
 
-#if DETWS_ENABLE_SMB
+#if DWS_ENABLE_SMB
 
 #include <string.h>
 
@@ -42,15 +42,15 @@ size_t smb2_build_header(uint8_t *buf, size_t cap, Smb2Command command, uint16_t
         return 0;
     memset(buf, 0, SMB2_HEADER_SIZE);
     memcpy(buf + 0, SMB2_PROTOCOL_ID, 4); // ProtocolId
-    det_wr16le(buf + 4, 64);              // StructureSize
+    dws_wr16le(buf + 4, 64);              // StructureSize
     // CreditCharge (6), Status/ChannelSequence (8) left 0
-    det_wr16le(buf + 12, (uint16_t)command); // Command
-    det_wr16le(buf + 14, credit_request);    // CreditRequest
+    dws_wr16le(buf + 12, (uint16_t)command); // Command
+    dws_wr16le(buf + 14, credit_request);    // CreditRequest
     // Flags (16) = 0 (client request), NextCommand (20) = 0
-    det_wr64le(buf + 24, message_id); // MessageId
+    dws_wr64le(buf + 24, message_id); // MessageId
     // Reserved (32) = 0
-    det_wr32le(buf + 36, tree_id);    // TreeId
-    det_wr64le(buf + 40, session_id); // SessionId
+    dws_wr32le(buf + 36, tree_id);    // TreeId
+    dws_wr64le(buf + 40, session_id); // SessionId
     // Signature (48..63) = 0
     return SMB2_HEADER_SIZE;
 }
@@ -59,15 +59,15 @@ bool smb2_parse_header(const uint8_t *buf, size_t len, Smb2Header *out)
 {
     if (!buf || !out || len < SMB2_HEADER_SIZE)
         return false;
-    if (memcmp(buf, SMB2_PROTOCOL_ID, 4) != 0 || det_rd16le(buf + 4) != 64)
+    if (memcmp(buf, SMB2_PROTOCOL_ID, 4) != 0 || dws_rd16le(buf + 4) != 64)
         return false;
-    out->status = det_rd32le(buf + 8);
-    out->command = (Smb2Command)det_rd16le(buf + 12);
-    out->credit_response = det_rd16le(buf + 14);
-    out->flags = det_rd32le(buf + 16);
-    out->message_id = det_rd64le(buf + 24);
-    out->tree_id = det_rd32le(buf + 36);
-    out->session_id = det_rd64le(buf + 40);
+    out->status = dws_rd32le(buf + 8);
+    out->command = (Smb2Command)dws_rd16le(buf + 12);
+    out->credit_response = dws_rd16le(buf + 14);
+    out->flags = dws_rd32le(buf + 16);
+    out->message_id = dws_rd64le(buf + 24);
+    out->tree_id = dws_rd32le(buf + 36);
+    out->session_id = dws_rd64le(buf + 40);
     return true;
 }
 
@@ -85,14 +85,14 @@ size_t smb2_build_negotiate(uint8_t *buf, size_t cap, const uint8_t client_guid[
 
     uint8_t *b = buf + SMB2_HEADER_SIZE; // NEGOTIATE request body
     memset(b, 0, 36);
-    det_wr16le(b + 0, 36);            // StructureSize
-    det_wr16le(b + 2, ndialects);     // DialectCount
-    det_wr16le(b + 4, security_mode); // SecurityMode
+    dws_wr16le(b + 0, 36);            // StructureSize
+    dws_wr16le(b + 2, ndialects);     // DialectCount
+    dws_wr16le(b + 4, security_mode); // SecurityMode
     // Reserved (6) = 0, Capabilities (8) = 0
     memcpy(b + 12, client_guid, 16); // ClientGuid
     // ClientStartTime (28) = 0 (only 3.1.1 reinterprets these 8 bytes as negotiate-context fields)
     for (uint16_t i = 0; i < ndialects; i++)
-        det_wr16le(b + 36 + i * 2, (uint16_t)dialects[i]);
+        dws_wr16le(b + 36 + i * 2, (uint16_t)dialects[i]);
     return total;
 }
 
@@ -107,19 +107,19 @@ bool smb2_parse_negotiate_response(const uint8_t *msg, size_t len, Smb2Negotiate
     if (len < SMB2_HEADER_SIZE + 64)
         return false;
     const uint8_t *b = msg + SMB2_HEADER_SIZE;
-    if (det_rd16le(b + 0) != 65) // StructureSize
+    if (dws_rd16le(b + 0) != 65) // StructureSize
         return false;
 
-    out->security_mode = det_rd16le(b + 2);
-    out->dialect = det_rd16le(b + 4);
+    out->security_mode = dws_rd16le(b + 2);
+    out->dialect = dws_rd16le(b + 4);
     memcpy(out->server_guid, b + 8, 16);
-    out->capabilities = det_rd32le(b + 24);
-    out->max_transact = det_rd32le(b + 28);
-    out->max_read = det_rd32le(b + 32);
-    out->max_write = det_rd32le(b + 36);
+    out->capabilities = dws_rd32le(b + 24);
+    out->max_transact = dws_rd32le(b + 28);
+    out->max_read = dws_rd32le(b + 32);
+    out->max_write = dws_rd32le(b + 36);
 
-    uint16_t sec_off = det_rd16le(b + 56); // SecurityBufferOffset - from the start of the SMB2 header (msg)
-    uint16_t sec_len = det_rd16le(b + 58); // SecurityBufferLength
+    uint16_t sec_off = dws_rd16le(b + 56); // SecurityBufferOffset - from the start of the SMB2 header (msg)
+    uint16_t sec_len = dws_rd16le(b + 58); // SecurityBufferLength
     if (sec_len == 0)
     {
         out->sec_buf = nullptr;
@@ -145,12 +145,12 @@ size_t smb2_build_session_setup(uint8_t *buf, size_t cap, uint64_t message_id, u
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body);
-    det_wr16le(b + 0, 25); // StructureSize (fixed 24 + 1 for the variable buffer)
+    dws_wr16le(b + 0, 25); // StructureSize (fixed 24 + 1 for the variable buffer)
     b[2] = 0;              // Flags (SMB2_SESSION_FLAG_BINDING only for 3.x channel binding)
     b[3] = security_mode;  // SecurityMode (one byte here)
     // Capabilities (4) = 0, Channel (8) = 0
-    det_wr16le(b + 12, (uint16_t)(SMB2_HEADER_SIZE + body)); // SecurityBufferOffset (from the header start)
-    det_wr16le(b + 14, (uint16_t)sec_len);                   // SecurityBufferLength
+    dws_wr16le(b + 12, (uint16_t)(SMB2_HEADER_SIZE + body)); // SecurityBufferOffset (from the header start)
+    dws_wr16le(b + 14, (uint16_t)sec_len);                   // SecurityBufferLength
     // PreviousSessionId (16) = 0 (a fresh session)
     memcpy(b + body, sec_buf, sec_len);
     return total;
@@ -167,12 +167,12 @@ bool smb2_parse_session_setup_response(const uint8_t *msg, size_t len, Smb2Sessi
     if (len < SMB2_HEADER_SIZE + 8)
         return false;
     const uint8_t *b = msg + SMB2_HEADER_SIZE;
-    if (det_rd16le(b + 0) != 9) // StructureSize
+    if (dws_rd16le(b + 0) != 9) // StructureSize
         return false;
 
-    out->session_flags = det_rd16le(b + 2);
-    uint16_t sec_off = det_rd16le(b + 4); // SecurityBufferOffset - from the start of the SMB2 header (msg)
-    uint16_t sec_len = det_rd16le(b + 6); // SecurityBufferLength
+    out->session_flags = dws_rd16le(b + 2);
+    uint16_t sec_off = dws_rd16le(b + 4); // SecurityBufferOffset - from the start of the SMB2 header (msg)
+    uint16_t sec_len = dws_rd16le(b + 6); // SecurityBufferLength
     if (sec_len == 0)
     {
         out->sec_buf = nullptr;
@@ -198,10 +198,10 @@ size_t smb2_build_tree_connect(uint8_t *buf, size_t cap, uint64_t message_id, ui
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body);
-    det_wr16le(b + 0, 9); // StructureSize
+    dws_wr16le(b + 0, 9); // StructureSize
     // Flags/Reserved (2) = 0
-    det_wr16le(b + 4, (uint16_t)(SMB2_HEADER_SIZE + body)); // PathOffset (from the header start) = 72
-    det_wr16le(b + 6, (uint16_t)path_len);                  // PathLength
+    dws_wr16le(b + 4, (uint16_t)(SMB2_HEADER_SIZE + body)); // PathOffset (from the header start) = 72
+    dws_wr16le(b + 6, (uint16_t)path_len);                  // PathLength
     memcpy(b + body, path_utf16, path_len);                 // the \\server\share path (UTF-16LE)
     return total;
 }
@@ -216,12 +216,12 @@ bool smb2_parse_tree_connect_response(const uint8_t *msg, size_t len, Smb2TreeCo
     if (len < SMB2_HEADER_SIZE + 16) // fixed 16-byte body, no variable buffer
         return false;
     const uint8_t *b = msg + SMB2_HEADER_SIZE;
-    if (det_rd16le(b + 0) != 16) // StructureSize
+    if (dws_rd16le(b + 0) != 16) // StructureSize
         return false;
     out->share_type = b[2];
-    out->share_flags = det_rd32le(b + 4);
-    out->capabilities = det_rd32le(b + 8);
-    out->maximal_access = det_rd32le(b + 12);
+    out->share_flags = dws_rd32le(b + 4);
+    out->capabilities = dws_rd32le(b + 8);
+    out->maximal_access = dws_rd32le(b + 12);
     return true;
 }
 
@@ -238,17 +238,17 @@ size_t smb2_build_create(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body);
-    det_wr16le(b + 0, 57); // StructureSize (fixed 56 + 1 for the variable buffer)
+    dws_wr16le(b + 0, 57); // StructureSize (fixed 56 + 1 for the variable buffer)
     // SecurityFlags (2) = 0, RequestedOplockLevel (3) = 0 (SMB2_OPLOCK_LEVEL_NONE)
-    det_wr32le(b + 4, 2); // ImpersonationLevel = Impersonation
+    dws_wr32le(b + 4, 2); // ImpersonationLevel = Impersonation
     // SmbCreateFlags (8) = 0, Reserved (16) = 0
-    det_wr32le(b + 24, desired_access);                      // DesiredAccess
-    det_wr32le(b + 28, 0);                                   // FileAttributes = 0
-    det_wr32le(b + 32, share_access);                        // ShareAccess
-    det_wr32le(b + 36, create_disposition);                  // CreateDisposition
-    det_wr32le(b + 40, create_options);                      // CreateOptions
-    det_wr16le(b + 44, (uint16_t)(SMB2_HEADER_SIZE + body)); // NameOffset (from the header start) = 120
-    det_wr16le(b + 46, (uint16_t)name_len);                  // NameLength
+    dws_wr32le(b + 24, desired_access);                      // DesiredAccess
+    dws_wr32le(b + 28, 0);                                   // FileAttributes = 0
+    dws_wr32le(b + 32, share_access);                        // ShareAccess
+    dws_wr32le(b + 36, create_disposition);                  // CreateDisposition
+    dws_wr32le(b + 40, create_options);                      // CreateOptions
+    dws_wr16le(b + 44, (uint16_t)(SMB2_HEADER_SIZE + body)); // NameOffset (from the header start) = 120
+    dws_wr16le(b + 46, (uint16_t)name_len);                  // NameLength
     // CreateContextsOffset (48) = 0, CreateContextsLength (52) = 0
     memcpy(b + body, name_utf16, name_len);
     return total;
@@ -264,11 +264,11 @@ bool smb2_parse_create_response(const uint8_t *msg, size_t len, Smb2CreateResp *
     if (len < SMB2_HEADER_SIZE + 88) // fixed 88-byte body (StructureSize .. CreateContextsLength)
         return false;
     const uint8_t *b = msg + SMB2_HEADER_SIZE;
-    if (det_rd16le(b + 0) != 89) // StructureSize
+    if (dws_rd16le(b + 0) != 89) // StructureSize
         return false;
-    out->create_action = det_rd32le(b + 4);
-    out->end_of_file = det_rd64le(b + 48);
-    out->file_attributes = det_rd32le(b + 56);
+    out->create_action = dws_rd32le(b + 4);
+    out->end_of_file = dws_rd64le(b + 48);
+    out->file_attributes = dws_rd32le(b + 56);
     memcpy(out->file_id, b + 64, 16); // FileId (persistent 8 + volatile 8)
     return true;
 }
@@ -285,7 +285,7 @@ size_t smb2_build_close(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t 
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body);
-    det_wr16le(b + 0, 24); // StructureSize
+    dws_wr16le(b + 0, 24); // StructureSize
     // Flags (2) = 0 (no POSTQUERY_ATTRIB), Reserved (4) = 0
     memcpy(b + 8, file_id, 16); // FileId
     return total;
@@ -301,10 +301,10 @@ bool smb2_parse_close_response(const uint8_t *msg, size_t len, Smb2CloseResp *ou
     if (len < SMB2_HEADER_SIZE + 60) // fixed 60-byte body
         return false;
     const uint8_t *b = msg + SMB2_HEADER_SIZE;
-    if (det_rd16le(b + 0) != 60) // StructureSize
+    if (dws_rd16le(b + 0) != 60) // StructureSize
         return false;
-    out->end_of_file = det_rd64le(b + 48);
-    out->file_attributes = det_rd32le(b + 56);
+    out->end_of_file = dws_rd64le(b + 48);
+    out->file_attributes = dws_rd32le(b + 56);
     return true;
 }
 
@@ -320,13 +320,13 @@ size_t smb2_build_read(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t s
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body + 1);
-    det_wr16le(b + 0, 49);                   // StructureSize
+    dws_wr16le(b + 0, 49);                   // StructureSize
     b[2] = (uint8_t)(SMB2_HEADER_SIZE + 16); // Padding: requested data offset in the response (header + 16-byte body)
     // Flags (3) = 0
-    det_wr32le(b + 4, length);   // Length
-    det_wr64le(b + 8, offset);   // Offset
+    dws_wr32le(b + 4, length);   // Length
+    dws_wr64le(b + 8, offset);   // Offset
     memcpy(b + 16, file_id, 16); // FileId
-    det_wr32le(b + 32, 1);       // MinimumCount = 1 (fail if the server returns nothing)
+    dws_wr32le(b + 32, 1);       // MinimumCount = 1 (fail if the server returns nothing)
     // Channel (36) = 0, RemainingBytes (40) = 0, ReadChannelInfoOffset/Length (44/46) = 0
     // Buffer (b+48) = one 0 byte (already zeroed)
     return total;
@@ -342,11 +342,11 @@ bool smb2_parse_read_response(const uint8_t *msg, size_t len, Smb2ReadResp *out)
     if (len < SMB2_HEADER_SIZE + 16) // fixed 16-byte body (StructureSize .. Reserved2), Buffer follows
         return false;
     const uint8_t *b = msg + SMB2_HEADER_SIZE;
-    if (det_rd16le(b + 0) != 17) // StructureSize
+    if (dws_rd16le(b + 0) != 17) // StructureSize
         return false;
 
     uint8_t data_off = b[2];               // DataOffset - from the start of the SMB2 header (msg)
-    uint32_t data_len = det_rd32le(b + 4); // DataLength
+    uint32_t data_len = dws_rd32le(b + 4); // DataLength
     if (data_len == 0)
     {
         out->data = nullptr;
@@ -372,10 +372,10 @@ size_t smb2_build_write(uint8_t *buf, size_t cap, uint64_t message_id, uint64_t 
 
     uint8_t *b = buf + SMB2_HEADER_SIZE;
     memset(b, 0, body);
-    det_wr16le(b + 0, 49);                                  // StructureSize
-    det_wr16le(b + 2, (uint16_t)(SMB2_HEADER_SIZE + body)); // DataOffset (from the header start) = 112
-    det_wr32le(b + 4, (uint32_t)data_len);                  // Length
-    det_wr64le(b + 8, offset);                              // Offset
+    dws_wr16le(b + 0, 49);                                  // StructureSize
+    dws_wr16le(b + 2, (uint16_t)(SMB2_HEADER_SIZE + body)); // DataOffset (from the header start) = 112
+    dws_wr32le(b + 4, (uint32_t)data_len);                  // Length
+    dws_wr64le(b + 8, offset);                              // Offset
     memcpy(b + 16, file_id, 16);                            // FileId
     // Channel (32) = 0, RemainingBytes (36) = 0, WriteChannelInfoOffset/Length (40/42) = 0, Flags (44) = 0
     memcpy(b + body, data, data_len); // the data to write
@@ -392,10 +392,10 @@ bool smb2_parse_write_response(const uint8_t *msg, size_t len, Smb2WriteResp *ou
     if (len < SMB2_HEADER_SIZE + 16) // fixed 16-byte body
         return false;
     const uint8_t *b = msg + SMB2_HEADER_SIZE;
-    if (det_rd16le(b + 0) != 17) // StructureSize
+    if (dws_rd16le(b + 0) != 17) // StructureSize
         return false;
-    out->count = det_rd32le(b + 4); // Count (bytes written)
+    out->count = dws_rd32le(b + 4); // Count (bytes written)
     return true;
 }
 
-#endif // DETWS_ENABLE_SMB
+#endif // DWS_ENABLE_SMB

@@ -11,14 +11,14 @@ loopback you can talk to over the network.
 
 ## Build
 
-`DETWS_ENABLE_IFACE_BRIDGE` must be set for the whole build; an in-sketch
+`DWS_ENABLE_IFACE_BRIDGE` must be set for the whole build; an in-sketch
 `#define` does not reach the separately compiled library, so pass it as a
 `build_flag` (see the [build_flags gotcha](../../../docs/EXAMPLES.md)). The
 Arduino IDE reads it from `build_opt.h`; with PlatformIO:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_IFACE_BRIDGE=1" \
+  --project-option="build_flags=-DDWS_ENABLE_IFACE_BRIDGE=1" \
   --lib="." examples/L7-Application/75.InterfaceBridge/75.InterfaceBridge.ino
 ```
 
@@ -45,7 +45,7 @@ per rule:
     stays generic across devices.
 
 Wiring is two calls per endpoint: `server.listen(port, ConnProto::PROTO_BRIDGE)`
-opens the port, and `det_iface_bridge_publish()` binds it to a `BridgeTarget` and
+opens the port, and `dws_iface_bridge_publish()` binds it to a `BridgeTarget` and
 brings the bus up. The server's own poll loop pumps everything.
 
 ```
@@ -117,7 +117,7 @@ write and read), exactly what most I2C sensors expect.
 
 ## Frame limits
 
-`write_len` and `read_len` are each capped at `DETWS_BRIDGE_TXN_MAX` (default
+`write_len` and `read_len` are each capped at `DWS_BRIDGE_TXN_MAX` (default
 256). A frame that exceeds the cap closes the connection - device-server
 transactions are small register accesses, so bump the cap in `ServerConfig.h`
 only if a device genuinely needs larger bursts (keep it under the transport RX
@@ -125,13 +125,13 @@ ring so a whole frame can buffer before it is parsed).
 
 ## Configuration
 
-| Macro                       | Default | Meaning                                          |
-| --------------------------- | ------- | ------------------------------------------------ |
-| `DETWS_ENABLE_IFACE_BRIDGE` | `0`     | compile the bridge in (required)                 |
-| `DETWS_BRIDGE_MAX_RULES`    | `8`     | max concurrent address:port -> bus rules         |
-| `DETWS_BRIDGE_TXN_MAX`      | `256`   | max write / read payload per transaction (bytes) |
-| `DETWS_BRIDGE_STREAM_CHUNK` | `256`   | UART stream pipe chunk (bytes)                   |
-| `DETWS_BRIDGE_UART_TXN_MS`  | `50`    | UART write-then-read reply window (ms)           |
+| Macro                     | Default | Meaning                                          |
+| ------------------------- | ------- | ------------------------------------------------ |
+| `DWS_ENABLE_IFACE_BRIDGE` | `0`     | compile the bridge in (required)                 |
+| `DWS_BRIDGE_MAX_RULES`    | `8`     | max concurrent address:port -> bus rules         |
+| `DWS_BRIDGE_TXN_MAX`      | `256`   | max write / read payload per transaction (bytes) |
+| `DWS_BRIDGE_STREAM_CHUNK` | `256`   | UART stream pipe chunk (bytes)                   |
+| `DWS_BRIDGE_UART_TXN_MS`  | `50`    | UART write-then-read reply window (ms)           |
 
 ## Security
 

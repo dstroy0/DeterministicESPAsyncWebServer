@@ -4,18 +4,18 @@
 /**
  * @file relay_listener.cpp
  * @brief Server-side TCP relay / DNAT listener (see relay_listener.h). Bridges a ConnProto::PROTO_RELAY
- *        connection to an origin det_client connection via the pure relay engine.
+ *        connection to an origin dws_client connection via the pure relay engine.
  */
 
 #include "relay_listener.h"
 
-#if DETWS_ENABLE_RELAY
+#if DWS_ENABLE_RELAY
 
 #include "network_drivers/session/proto_handler.h"
 #include "network_drivers/transport/client.h"
 #include "network_drivers/transport/tcp.h"
 #include "relay.h"
-#if DETWS_ENABLE_RADIO_POWER
+#if DWS_ENABLE_RADIO_POWER
 #include "services/radio_power/radio_power.h" // keep the radio awake during a relayed transfer
 #endif
 #include <string.h>
@@ -28,32 +28,32 @@ struct RelayBind
 {
     bool active;
     uint8_t listener_id;
-    char host[DETWS_RELAY_HOST_MAX];
+    char host[DWS_RELAY_HOST_MAX];
     uint16_t port;
 };
 
-// One live relayed connection: an inbound conn slot bridged to an origin det_client.
+// One live relayed connection: an inbound conn slot bridged to an origin dws_client.
 struct RelayBridge
 {
     bool active;
     uint8_t conn_slot;
     int origin_cid;
-    DetRelay relay;
+    DWSRelay relay;
 };
 
 // All of the listener's mutable state in one owned, feature-gated context (least-privilege; the
 // owner-context guard requires the single file-scope mutable to be a `*Ctx` instance).
 struct RelayListenerCtx
 {
-    RelayBind binds[DETWS_RELAY_MAX_PUBLISH];
-    RelayBridge bridges[DETWS_RELAY_MAX_CONNS];
+    RelayBind binds[DWS_RELAY_MAX_PUBLISH];
+    RelayBridge bridges[DWS_RELAY_MAX_CONNS];
     bool registered;
 };
 RelayListenerCtx s_ctx;
 
 RelayBind *bind_by_listener(uint8_t lid)
 {
-    for (int i = 0; i < DETWS_RELAY_MAX_PUBLISH; i++)
+    for (int i = 0; i < DWS_RELAY_MAX_PUBLISH; i++)
         if (s_ctx.binds[i].active && s_ctx.binds[i].listener_id == lid)
             return &s_ctx.binds[i];
     return nullptr;
@@ -61,7 +61,7 @@ RelayBind *bind_by_listener(uint8_t lid)
 
 RelayBridge *bridge_by_conn(uint8_t slot)
 {
-    for (int i = 0; i < DETWS_RELAY_MAX_CONNS; i++)
+    for (int i = 0; i < DWS_RELAY_MAX_CONNS; i++)
         if (s_ctx.bridges[i].active && s_ctx.bridges[i].conn_slot == slot)
             return &s_ctx.bridges[i];
     return nullptr;
@@ -69,7 +69,7 @@ RelayBridge *bridge_by_conn(uint8_t slot)
 
 int bridge_find_free()
 {
-    for (int i = 0; i < DETWS_RELAY_MAX_CONNS; i++)
+    for (int i = 0; i < DWS_RELAY_MAX_CONNS; i++)
         if (!s_ctx.bridges[i].active)
             return i;
     return -1;
@@ -80,35 +80,35 @@ int bridge_find_free()
 int a_recv(void *c, uint8_t *buf, size_t cap)
 {
     RelayBridge *br = (RelayBridge *)c;
-    if (det_conn_available(br->conn_slot))
-        return (int)det_conn_read(br->conn_slot, buf, cap);
+    if (dws_conn_available(br->conn_slot))
+        return (int)dws_conn_read(br->conn_slot, buf, cap);
     return 0;
 }
 int a_send(void *c, const uint8_t *buf, size_t len)
 {
     RelayBridge *br = (RelayBridge *)c;
     // Send as much as the inbound TCP send window currently allows (partial), not all-or-nothing: a
-    // whole DETWS_RELAY_BUF chunk rarely fits tcp_sndbuf in one shot, and a failed all-or-nothing send
+    // whole DWS_RELAY_BUF chunk rarely fits tcp_sndbuf in one shot, and a failed all-or-nothing send
     // forwards zero bytes and stalls the transfer. room==0 is real backpressure - the pump retries.
-    u16_t room = det_conn_sndbuf(br->conn_slot);
+    u16_t room = dws_conn_sndbuf(br->conn_slot);
     if (room == 0)
         return 0;
     u16_t n = (len < (size_t)room) ? (u16_t)len : room;
-    return det_conn_send(br->conn_slot, buf, n) ? (int)n : 0;
+    return dws_conn_send(br->conn_slot, buf, n) ? (int)n : 0;
 }
-// Origin (b) = the outbound det_client; it reports EOF through the recv seam.
+// Origin (b) = the outbound dws_client; it reports EOF through the recv seam.
 int b_recv(void *c, uint8_t *buf, size_t cap)
 {
     RelayBridge *br = (RelayBridge *)c;
-    size_t n = det_client_read(br->origin_cid, buf, cap);
+    size_t n = dws_client_read(br->origin_cid, buf, cap);
     if (n)
         return (int)n;
-    return det_client_is_closed(br->origin_cid) ? -1 : 0;
+    return dws_client_is_closed(br->origin_cid) ? -1 : 0;
 }
 int b_send(void *c, const uint8_t *buf, size_t len)
 {
     RelayBridge *br = (RelayBridge *)c;
-    return det_client_send(br->origin_cid, buf, len) ? (int)len : 0;
+    return dws_client_send(br->origin_cid, buf, len) ? (int)len : 0;
 }
 
 // Close the origin (and optionally the inbound) and free the bridge. active=false first so a
@@ -116,12 +116,12 @@ int b_send(void *c, const uint8_t *buf, size_t len)
 void teardown(RelayBridge *br, bool close_inbound)
 {
     br->active = false;
-#if DETWS_ENABLE_RADIO_POWER
-    detws_radio_busy_release(); // this bridge is done relaying
+#if DWS_ENABLE_RADIO_POWER
+    dws_radio_busy_release(); // this bridge is done relaying
 #endif
-    det_client_close(br->origin_cid);
+    dws_client_close(br->origin_cid);
     if (close_inbound)
-        det_conn_close(br->conn_slot);
+        dws_conn_close(br->conn_slot);
 }
 
 // Pump the bridge one pass and tear it down if the origin ended or the pump errored.
@@ -131,13 +131,13 @@ void service(uint8_t slot)
     if (!br)
         return;
     // Drain as much as the buffers allow this pass: keep stepping while a step actually moves bytes,
-    // so one poll forwards the whole buffered origin RX ring (DETWS_CLIENT_RX_BUF) instead of a single
-    // DETWS_RELAY_BUF chunk. Bounded by DETWS_RELAY_DRAIN_MAX so one busy bridge cannot starve others.
-    for (int pass = 0; pass < DETWS_RELAY_DRAIN_MAX; pass++)
+    // so one poll forwards the whole buffered origin RX ring (DWS_CLIENT_RX_BUF) instead of a single
+    // DWS_RELAY_BUF chunk. Bounded by DWS_RELAY_DRAIN_MAX so one busy bridge cannot starve others.
+    for (int pass = 0; pass < DWS_RELAY_DRAIN_MAX; pass++)
     {
         uint32_t moved = br->relay.bytes_a2b + br->relay.bytes_b2a;
-        DetRelayStatus st = det_relay_step(&br->relay);
-        if (st == DetRelayStatus::DET_RELAY_ERROR || st == DetRelayStatus::DET_RELAY_DONE)
+        DWSRelayStatus st = dws_relay_step(&br->relay);
+        if (st == DWSRelayStatus::DWS_RELAY_ERROR || st == DWSRelayStatus::DWS_RELAY_DONE)
         {
             teardown(br, true);
             return;
@@ -146,40 +146,40 @@ void service(uint8_t slot)
             break; // no progress this pass; nothing more buffered to move right now
     }
     // origin closed and everything it sent has been forwarded -> nothing more to do
-    if (det_client_is_closed(br->origin_cid) && det_client_available(br->origin_cid) == 0 &&
+    if (dws_client_is_closed(br->origin_cid) && dws_client_available(br->origin_cid) == 0 &&
         br->relay.b2a_off >= br->relay.b2a_len)
         teardown(br, true);
 }
 
 void relay_on_accept(uint8_t slot)
 {
-    RelayBind *bd = bind_by_listener(det_conn_listener_id(slot));
+    RelayBind *bd = bind_by_listener(dws_conn_listener_id(slot));
     if (!bd)
     {
-        det_conn_close(slot); // no origin published for this listener
+        dws_conn_close(slot); // no origin published for this listener
         return;
     }
     int idx = bridge_find_free();
     if (idx < 0)
     {
-        det_conn_close(slot); // bridge table full
+        dws_conn_close(slot); // bridge table full
         return;
     }
-    int cid = det_client_open(bd->host, bd->port, DETWS_RELAY_CONNECT_MS); // blocking connect (LAN origin)
+    int cid = dws_client_open(bd->host, bd->port, DWS_RELAY_CONNECT_MS); // blocking connect (LAN origin)
     if (cid < 0)
     {
-        det_conn_close(slot); // origin unreachable
+        dws_conn_close(slot); // origin unreachable
         return;
     }
     RelayBridge *br = &s_ctx.bridges[idx];
     br->active = true;
     br->conn_slot = slot;
     br->origin_cid = cid;
-    DetRelayEnd a = {a_recv, a_send, nullptr, br};
-    DetRelayEnd b = {b_recv, b_send, nullptr, br};
-    det_relay_init(&br->relay, &a, &b);
-#if DETWS_ENABLE_RADIO_POWER
-    detws_radio_busy_hold(); // hold the radio awake for the life of this bridge
+    DWSRelayEnd a = {a_recv, a_send, nullptr, br};
+    DWSRelayEnd b = {b_recv, b_send, nullptr, br};
+    dws_relay_init(&br->relay, &a, &b);
+#if DWS_ENABLE_RADIO_POWER
+    dws_radio_busy_hold(); // hold the radio awake for the life of this bridge
 #endif
 }
 
@@ -190,7 +190,7 @@ void relay_on_data(uint8_t slot)
 
 void relay_on_poll(uint8_t slot)
 {
-    if (!det_conn_active(slot))
+    if (!dws_conn_active(slot))
         return;
     service(slot);
 }
@@ -206,15 +206,15 @@ const ProtoHandler s_relay_handler = {relay_on_accept, relay_on_data, relay_on_c
 
 } // namespace
 
-bool det_relay_publish(uint8_t listener_id, const char *origin_host, uint16_t origin_port)
+bool dws_relay_publish(uint8_t listener_id, const char *origin_host, uint16_t origin_port)
 {
     if (!origin_host)
         return false;
-    size_t hl = strnlen(origin_host, DETWS_RELAY_HOST_MAX + 1);
-    if (hl == 0 || hl >= DETWS_RELAY_HOST_MAX)
+    size_t hl = strnlen(origin_host, DWS_RELAY_HOST_MAX + 1);
+    if (hl == 0 || hl >= DWS_RELAY_HOST_MAX)
         return false;
     int idx = -1;
-    for (int i = 0; i < DETWS_RELAY_MAX_PUBLISH; i++)
+    for (int i = 0; i < DWS_RELAY_MAX_PUBLISH; i++)
         if (!s_ctx.binds[i].active)
         {
             idx = i;
@@ -234,18 +234,18 @@ bool det_relay_publish(uint8_t listener_id, const char *origin_host, uint16_t or
     return true;
 }
 
-void det_relay_listener_reset(void)
+void dws_relay_listener_reset(void)
 {
-    for (int i = 0; i < DETWS_RELAY_MAX_PUBLISH; i++)
+    for (int i = 0; i < DWS_RELAY_MAX_PUBLISH; i++)
         s_ctx.binds[i].active = false;
-    for (int i = 0; i < DETWS_RELAY_MAX_CONNS; i++)
+    for (int i = 0; i < DWS_RELAY_MAX_CONNS; i++)
         if (s_ctx.bridges[i].active)
         {
             s_ctx.bridges[i].active = false;
-#if DETWS_ENABLE_RADIO_POWER
-            detws_radio_busy_release(); // balance the hold taken when the bridge was opened
+#if DWS_ENABLE_RADIO_POWER
+            dws_radio_busy_release(); // balance the hold taken when the bridge was opened
 #endif
         }
 }
 
-#endif // DETWS_ENABLE_RELAY
+#endif // DWS_ENABLE_RELAY

@@ -32,10 +32,10 @@
 // Gated to Arduino on the S3: the field layer drives the RSA peripheral through mbedTLS's port
 // (esp_mpi_*), which only exists in the on-device toolchain.
 #if defined(ARDUINO) && defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3
-#define DETWS_FE25519_MPI_HW 1
+#define DWS_FE25519_MPI_HW 1
 #endif
 
-#ifdef DETWS_FE25519_MPI_HW
+#ifdef DWS_FE25519_MPI_HW
 
 #include "soc/hwcrypto_reg.h" // RSA/MPI accelerator register map (MODMULT)
 #include "soc/soc.h"          // DR_REG_RSA_BASE
@@ -237,5 +237,5 @@ static inline int fe_neq(const fe a, const fe b)
     return (int)((1 & ((diff - 1) >> 8)) - 1);
 }
 
-#endif // DETWS_FE25519_MPI_HW
+#endif // DWS_FE25519_MPI_HW
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_FE25519_H

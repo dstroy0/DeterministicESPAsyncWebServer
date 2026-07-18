@@ -3,7 +3,7 @@
 
 /**
  * @file dnc.h
- * @brief CNC RS-232 DNC (Distributed Numerical Control) drip-feed codec (DETWS_ENABLE_DNC).
+ * @brief CNC RS-232 DNC (Distributed Numerical Control) drip-feed codec (DWS_ENABLE_DNC).
  *
  * DNC is the classic way a program is streamed to a machine-tool controller: a G-code
  * program (RS-274 / ISO 6983) is punched as blocks (one line each), framed with a
@@ -21,9 +21,9 @@
  *    lowercase letters. The full character table is odd-parity-verified.
  *
  * Three pieces, all pure and zero-heap:
- *  1. character translation (::det_dnc_iso_to_eia / ::det_dnc_eia_to_iso) + ISO even-parity helper;
+ *  1. character translation (::dws_dnc_iso_to_eia / ::dws_dnc_eia_to_iso) + ISO even-parity helper;
  *  2. XON/XOFF flow state (::DncFlow) the send pump consults before each write;
- *  3. a streaming block encoder (::det_dnc_encode_block + the `%`/leader framing) and a
+ *  3. a streaming block encoder (::dws_dnc_encode_block + the `%`/leader framing) and a
  *     byte-at-a-time block decoder (::DncDecoder) that reassembles wire bytes back into
  *     ASCII G-code lines and reports the `%` program start/end.
  *
@@ -36,7 +36,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_DNC
+#if DWS_ENABLE_DNC
 
 #include <stddef.h>
 #include <stdint.h>
@@ -72,23 +72,23 @@ enum class DncEiaCode : uint8_t
  *
  * @return the EIA byte, or 0xFF if @p c has no EIA representation (fail-closed).
  */
-uint8_t det_dnc_iso_to_eia(char c);
+uint8_t dws_dnc_iso_to_eia(char c);
 
 /**
  * @brief Translate one EIA RS-244 byte back to its ISO/ASCII character.
  *
- * The inverse of ::det_dnc_iso_to_eia. EIA End-of-Record (0x0B) maps back to '%'.
+ * The inverse of ::dws_dnc_iso_to_eia. EIA End-of-Record (0x0B) maps back to '%'.
  *
  * @return the ASCII character, or 0 if @p b is not a known EIA code (e.g. blank/runout).
  */
-char det_dnc_eia_to_iso(uint8_t b);
+char dws_dnc_eia_to_iso(uint8_t b);
 
 /**
  * @brief Set even parity in bit 7 of a 7-bit ASCII value (the ISO tape convention).
  * @param ascii7 a value in 0x00-0x7F (bit 7 is ignored on input).
  * @return @p ascii7 with bit 7 set so the byte has an even number of 1 bits.
  */
-uint8_t det_dnc_iso_add_parity(uint8_t ascii7);
+uint8_t dws_dnc_iso_add_parity(uint8_t ascii7);
 
 /** @brief XON/XOFF software flow-control state for the send side. */
 struct DncFlow
@@ -97,17 +97,17 @@ struct DncFlow
 };
 
 /** @brief Reset flow state to "clear to send". */
-void det_dnc_flow_init(DncFlow *f);
+void dws_dnc_flow_init(DncFlow *f);
 
 /**
  * @brief Feed one received byte to the flow-control state machine.
  * @return true if @p rx was a flow-control byte (XON/XOFF) and was consumed; false otherwise
  *         (the byte is ordinary inbound data the caller still owns).
  */
-bool det_dnc_flow_feed(DncFlow *f, uint8_t rx);
+bool dws_dnc_flow_feed(DncFlow *f, uint8_t rx);
 
 /** @brief Whether the send pump may transmit (i.e. not paused by an XOFF). */
-static inline bool det_dnc_flow_can_send(const DncFlow *f)
+static inline bool dws_dnc_flow_can_send(const DncFlow *f)
 {
     return !f->paused;
 }
@@ -118,7 +118,7 @@ struct DncCfg
     DncCode code;        ///< ISO or EIA.
     bool even_parity;    ///< ISO only: emit even parity in bit 7 (ignored for EIA, which is always odd).
     bool crlf;           ///< ISO only: emit CR before the LF End-of-Block (some controllers want CR LF).
-    uint16_t leader_len; ///< leader/trailer runout length in bytes (::det_dnc_encode_leader / _trailer).
+    uint16_t leader_len; ///< leader/trailer runout length in bytes (::dws_dnc_encode_leader / _trailer).
 };
 
 /**
@@ -126,12 +126,12 @@ struct DncCfg
  *
  * The source is plain ASCII with no terminator. Each character is translated to the
  * configured tape code (ISO passes 7-bit through, adding even parity if requested; EIA maps
- * via ::det_dnc_iso_to_eia), then the End-of-Block is appended (ISO: optional CR then LF; EIA: 0x80).
+ * via ::dws_dnc_iso_to_eia), then the End-of-Block is appended (ISO: optional CR then LF; EIA: 0x80).
  *
  * @return bytes written to @p out, or 0 on overflow or a character with no EIA
  *         representation (fail-closed - nothing partial is emitted as a complete block).
  */
-size_t det_dnc_encode_block(const DncCfg *cfg, const char *line, size_t line_len, uint8_t *out, size_t out_cap);
+size_t dws_dnc_encode_block(const DncCfg *cfg, const char *line, size_t line_len, uint8_t *out, size_t out_cap);
 
 /**
  * @brief Emit the `%` program-start (or -end) marker followed by an End-of-Block.
@@ -141,29 +141,29 @@ size_t det_dnc_encode_block(const DncCfg *cfg, const char *line, size_t line_len
  *
  * @return bytes written, or 0 on overflow.
  */
-size_t det_dnc_encode_marker(const DncCfg *cfg, uint8_t *out, size_t out_cap);
+size_t dws_dnc_encode_marker(const DncCfg *cfg, uint8_t *out, size_t out_cap);
 
 /**
  * @brief Emit @ref DncCfg::leader_len runout bytes (NUL - skipped by the reader until `%`).
  * @return bytes written (== leader_len), or 0 if @p out_cap is too small.
  */
-size_t det_dnc_encode_leader(const DncCfg *cfg, uint8_t *out, size_t out_cap);
+size_t dws_dnc_encode_leader(const DncCfg *cfg, uint8_t *out, size_t out_cap);
 
-/** @brief What ::det_dnc_decode_feed produced for the byte just fed. */
+/** @brief What ::dws_dnc_decode_feed produced for the byte just fed. */
 enum class DncEvent : uint8_t
 {
     DNC_EV_NONE = 0,   ///< byte absorbed (mid-block, runout, or flow/ignored); nothing to report.
     DNC_EV_LINE,       ///< a complete non-empty block is ready in DncDecoder::line (NUL-terminated).
     DNC_EV_PROG_START, ///< the first `%` / EOR was seen (program start).
     DNC_EV_PROG_END,   ///< a later `%` / EOR was seen (program end).
-    DNC_EV_OVERFLOW,   ///< the current block exceeded DETWS_DNC_LINE_MAX; it was dropped.
+    DNC_EV_OVERFLOW,   ///< the current block exceeded DWS_DNC_LINE_MAX; it was dropped.
 };
 
 /** @brief Streaming block reassembler: wire bytes in, ASCII G-code lines out. */
 struct DncDecoder
 {
-    DncCode code;                      ///< the tape code being decoded.
-    char line[DETWS_DNC_LINE_MAX + 1]; ///< the current block, NUL-terminated when DncEvent::DNC_EV_LINE fires.
+    DncCode code;                    ///< the tape code being decoded.
+    char line[DWS_DNC_LINE_MAX + 1]; ///< the current block, NUL-terminated when DncEvent::DNC_EV_LINE fires.
     uint16_t len;    ///< bytes accumulated in @ref line so far (the line length on DncEvent::DNC_EV_LINE).
     bool overflow;   ///< the current block overran; drop until the next End-of-Block.
     bool in_program; ///< a program-start `%` has been seen (so the next `%` is the end).
@@ -171,22 +171,22 @@ struct DncDecoder
 };
 
 /** @brief Reset a decoder for a given tape code. */
-void det_dnc_decode_init(DncDecoder *d, DncCode code);
+void dws_dnc_decode_init(DncDecoder *d, DncCode code);
 
 /**
  * @brief Feed one wire byte to the block reassembler.
  *
  * Strips parity (ISO) / translates (EIA), skips runout (NUL / DEL / CR), accumulates a
  * block until its End-of-Block, and reports the `%` program markers. XON/XOFF are not filtered
- * here - flow control rides the reverse channel (see ::det_dnc_flow_feed); in the forward program
+ * here - flow control rides the reverse channel (see ::dws_dnc_flow_feed); in the forward program
  * stream 0x13 is the EIA data character '3', not DC3. On ::DNC_EV_LINE the
  * completed line is in @ref DncDecoder::line (NUL-terminated) and @ref DncDecoder::len is its
  * length; both are reset on the next call.
  *
  * @return the event for this byte (see ::DncEvent).
  */
-DncEvent det_dnc_decode_feed(DncDecoder *d, uint8_t wire);
+DncEvent dws_dnc_decode_feed(DncDecoder *d, uint8_t wire);
 
-#endif // DETWS_ENABLE_DNC
+#endif // DWS_ENABLE_DNC
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DNC_H

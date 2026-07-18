@@ -8,12 +8,12 @@
 
 #include "services/profinet/profinet.h"
 
-#if DETWS_ENABLE_PROFINET
+#if DWS_ENABLE_PROFINET
 
 #include <string.h>
 
-size_t detws_pn_dcp_header(uint16_t frame_id, uint8_t service_id, uint8_t service_type, uint32_t xid,
-                           uint16_t data_length, uint8_t *out, size_t cap)
+size_t dws_pn_dcp_header(uint16_t frame_id, uint8_t service_id, uint8_t service_type, uint32_t xid,
+                         uint16_t data_length, uint8_t *out, size_t cap)
 {
     if (!out || cap < Pn::PN_DCP_HDR_LEN)
         return 0;
@@ -31,8 +31,8 @@ size_t detws_pn_dcp_header(uint16_t frame_id, uint8_t service_id, uint8_t servic
     return Pn::PN_DCP_HDR_LEN;
 }
 
-size_t detws_pn_dcp_block(uint8_t option, uint8_t suboption, const uint8_t *value, size_t value_len, uint8_t *out,
-                          size_t cap)
+size_t dws_pn_dcp_block(uint8_t option, uint8_t suboption, const uint8_t *value, size_t value_len, uint8_t *out,
+                        size_t cap)
 {
     if (!out || (value_len && !value) || value_len > 0xFFFF)
         return 0;
@@ -51,7 +51,7 @@ size_t detws_pn_dcp_block(uint8_t option, uint8_t suboption, const uint8_t *valu
     return n;
 }
 
-bool detws_pn_dcp_parse_header(const uint8_t *frame, size_t len, PnDcpHeader *out)
+bool dws_pn_dcp_parse_header(const uint8_t *frame, size_t len, PnDcpHeader *out)
 {
     if (!frame || !out || len < Pn::PN_DCP_HDR_LEN)
         return false;
@@ -63,7 +63,7 @@ bool detws_pn_dcp_parse_header(const uint8_t *frame, size_t len, PnDcpHeader *ou
     return true;
 }
 
-bool detws_pn_dcp_walk(const uint8_t *blocks, size_t len, DetwsPnDcpBlockCb cb, void *arg)
+bool dws_pn_dcp_walk(const uint8_t *blocks, size_t len, DetwsPnDcpBlockCb cb, void *arg)
 {
     size_t off = 0;
     while (off + 4 <= len)
@@ -81,4 +81,4 @@ bool detws_pn_dcp_walk(const uint8_t *blocks, size_t len, DetwsPnDcpBlockCb cb, 
     return true;
 }
 
-#endif // DETWS_ENABLE_PROFINET
+#endif // DWS_ENABLE_PROFINET

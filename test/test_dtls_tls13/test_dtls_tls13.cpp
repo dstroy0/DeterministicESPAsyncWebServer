@@ -3,7 +3,7 @@
 //
 // TLS 1.3 messages the DTLS 1.3 handshake adds to tls13_msg (RFC 8446 §4.1.4 / §4.4.1): the
 // HelloRetryRequest builder, the cookie extension parse, the empty EncryptedExtensions, and the
-// message_hash transcript wrapper. Compiled with DETWS_ENABLE_DTLS (not HTTP/3) to prove the module
+// message_hash transcript wrapper. Compiled with DWS_ENABLE_DTLS (not HTTP/3) to prove the module
 // builds and works for the DTLS path. The HelloRetryRequest is pinned byte-for-byte, anchored on the
 // RFC 8446 §4.1.3 magic random.
 

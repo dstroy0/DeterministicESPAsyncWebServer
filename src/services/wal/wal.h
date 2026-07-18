@@ -3,7 +3,7 @@
 
 /**
  * @file wal.h
- * @brief Write-ahead journal for atomic buffer-to-flash storage (DETWS_ENABLE_WAL).
+ * @brief Write-ahead journal for atomic buffer-to-flash storage (DWS_ENABLE_WAL).
  *
  * A power-loss-safe write-ahead log, the substrate for on-device data stores (dbm / sqlite / nosql). It
  * is built to the envelope measured on real hardware (docs/FEATURE_PERFORMANCE.md): an SD card over SPI
@@ -34,7 +34,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_WAL
+#if DWS_ENABLE_WAL
 
 /** @brief Bytes of fixed record header before the payload (magic + seq + len + crc). */
 #define WAL_RECORD_HEADER 20
@@ -77,5 +77,5 @@ using WalRecordCb = void (*)(uint64_t seq, const uint8_t *payload, uint32_t len,
  */
 size_t wal_replay(const uint8_t *img, size_t len, WalRecordCb cb, void *ctx);
 
-#endif // DETWS_ENABLE_WAL
+#endif // DWS_ENABLE_WAL
 #endif // DETERMINISTICESPASYNCWEBSERVER_WAL_H

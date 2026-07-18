@@ -3,7 +3,7 @@
 
 /**
  * @file exc_decoder.h
- * @brief ESP32 panic / exception decoder for a live diagnostics panel (DETWS_ENABLE_EXC_DECODER).
+ * @brief ESP32 panic / exception decoder for a live diagnostics panel (DWS_ENABLE_EXC_DECODER).
  *
  * When an ESP32 panics it prints a Guru Meditation dump: a cause ("LoadProhibited"), a per-core register
  * dump (PC, EXCVADDR, ...), and a backtrace of `PC:SP` frame pairs. To resolve those PCs to file:line an
@@ -24,10 +24,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_EXC_DECODER
+#if DWS_ENABLE_EXC_DECODER
 
-#ifndef DETWS_EXC_MAX_FRAMES
-#define DETWS_EXC_MAX_FRAMES 32 ///< backtrace frames retained (Xtensa panics rarely exceed this).
+#ifndef DWS_EXC_MAX_FRAMES
+#define DWS_EXC_MAX_FRAMES 32 ///< backtrace frames retained (Xtensa panics rarely exceed this).
 #endif
 
 /** @brief One backtrace frame: a program counter and its stack pointer. */
@@ -40,12 +40,12 @@ struct ExcFrame
 /** @brief A decoded panic. Fields not found in the input are left at their zeroed / -1 defaults. */
 struct ExcInfo
 {
-    int core;                              ///< panicking core number, or -1 if not present.
-    char cause[32];                        ///< exception cause text (e.g. "LoadProhibited"), "" if absent.
-    uint32_t pc;                           ///< faulting PC (register-dump PC, else first backtrace frame).
-    uint32_t excvaddr;                     ///< faulting data address (EXCVADDR), 0 if absent.
-    bool has_excvaddr;                     ///< true if an EXCVADDR field was present.
-    ExcFrame frames[DETWS_EXC_MAX_FRAMES]; ///< backtrace, outermost-first as printed.
+    int core;                            ///< panicking core number, or -1 if not present.
+    char cause[32];                      ///< exception cause text (e.g. "LoadProhibited"), "" if absent.
+    uint32_t pc;                         ///< faulting PC (register-dump PC, else first backtrace frame).
+    uint32_t excvaddr;                   ///< faulting data address (EXCVADDR), 0 if absent.
+    bool has_excvaddr;                   ///< true if an EXCVADDR field was present.
+    ExcFrame frames[DWS_EXC_MAX_FRAMES]; ///< backtrace, outermost-first as printed.
     size_t frame_count;
 };
 
@@ -56,7 +56,7 @@ struct ExcInfo
  * `Backtrace: pc:sp pc:sp ...` frame list. Tolerant of missing fields and of a trailing "|<-CORRUPTED".
  * @return true if at least one of {cause, pc, a backtrace frame} was found.
  */
-bool detws_exc_parse(const char *text, ExcInfo *out);
+bool dws_exc_parse(const char *text, ExcInfo *out);
 
 /**
  * @brief Serialize a decoded panic as
@@ -64,7 +64,7 @@ bool detws_exc_parse(const char *text, ExcInfo *out);
  * `core` is omitted when -1; `excvaddr` is omitted when absent.
  * @return length written (excl NUL), or 0 on overflow / bad args.
  */
-size_t detws_exc_json(const ExcInfo *info, char *out, size_t cap);
+size_t dws_exc_json(const ExcInfo *info, char *out, size_t cap);
 
-#endif // DETWS_ENABLE_EXC_DECODER
+#endif // DWS_ENABLE_EXC_DECODER
 #endif // DETERMINISTICESPASYNCWEBSERVER_EXC_DECODER_H

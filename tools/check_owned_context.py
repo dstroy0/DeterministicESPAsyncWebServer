@@ -50,7 +50,7 @@ SHARED_SUBSTRATE = {
 }
 
 # A file-scope definition line (column 0). Optional ALL_CAPS attribute macros
-# (EXT_RAM_BSS_ATTR, DETWS_*_ATTR, ...) may bracket `static`.
+# (EXT_RAM_BSS_ATTR, DWS_*_ATTR, ...) may bracket `static`.
 ATTR = r"(?:[A-Z_][A-Z0-9_]*\s+)*"
 DEF_RE = re.compile(
     r"^(?P<pre>" + ATTR + r"static\s+" + ATTR + r"|" + ATTR + r")"

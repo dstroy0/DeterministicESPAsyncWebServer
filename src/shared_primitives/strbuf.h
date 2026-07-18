@@ -25,7 +25,7 @@
 #include <string.h>
 
 /** @brief Bump-append target; @c ok latches false once an append would overflow @c cap. */
-struct DetSb
+struct DWSSb
 {
     char *p;
     size_t cap;
@@ -34,7 +34,7 @@ struct DetSb
 };
 
 /** @brief Append NUL-terminated @p s; leaves the buffer untouched and clears @c ok if it would not fit. */
-inline void det_sb_put(DetSb *b, const char *s)
+inline void dws_sb_put(DWSSb *b, const char *s)
 {
     if (!b->ok)
         return;
@@ -49,7 +49,7 @@ inline void det_sb_put(DetSb *b, const char *s)
 }
 
 /** @brief Append @p s XML-escaped (&amp; &lt; &gt; &quot;); a NULL @p s appends nothing. */
-inline void det_sb_xml(DetSb *b, const char *s)
+inline void dws_sb_xml(DWSSb *b, const char *s)
 {
     if (!b->ok || !s)
         return;
@@ -74,7 +74,7 @@ inline void det_sb_xml(DetSb *b, const char *s)
             break;
         }
         if (rep)
-            det_sb_put(b, rep);
+            dws_sb_put(b, rep);
         else
         {
             if (b->len + 1 >= b->cap)
@@ -88,7 +88,7 @@ inline void det_sb_xml(DetSb *b, const char *s)
 }
 
 /** @brief Append @p v as decimal (no leading zeros; "0" for zero). */
-inline void det_sb_u32(DetSb *b, uint32_t v)
+inline void dws_sb_u32(DWSSb *b, uint32_t v)
 {
     char t[10];
     int n = 0;
@@ -101,31 +101,31 @@ inline void det_sb_u32(DetSb *b, uint32_t v)
     for (int i = 0; i < n; i++)
         o[i] = t[n - 1 - i];
     o[n] = '\0';
-    det_sb_put(b, o);
+    dws_sb_put(b, o);
 }
 
 /** @brief Append @p s as a JSON string literal: double-quoted, with `"` and `\` backslash-escaped. A NULL
  * @p s emits `""`. (Control chars are passed through, matching the emitters this replaced.) */
-inline void det_sb_json(DetSb *b, const char *s)
+inline void dws_sb_json(DWSSb *b, const char *s)
 {
-    det_sb_put(b, "\"");
+    dws_sb_put(b, "\"");
     for (const char *p = s ? s : ""; *p; p++)
     {
         if (*p == '"' || *p == '\\')
         {
             char esc[3] = {'\\', *p, '\0'};
-            det_sb_put(b, esc);
+            dws_sb_put(b, esc);
         }
         else if (b->len + 1 < b->cap)
             b->p[b->len++] = *p;
         else
             b->ok = false;
     }
-    det_sb_put(b, "\"");
+    dws_sb_put(b, "\"");
 }
 
 /** @brief NUL-terminate and return the built length, or 0 if the build overflowed. */
-inline size_t det_sb_finish(DetSb *b)
+inline size_t dws_sb_finish(DWSSb *b)
 {
     if (!b->ok)
         return 0;

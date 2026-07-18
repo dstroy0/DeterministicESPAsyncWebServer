@@ -3,7 +3,7 @@
 
 /**
  * @file rtcm3.h
- * @brief RTCM 3.x framing + station-reference message codec (DETWS_ENABLE_NTRIP_CASTER).
+ * @brief RTCM 3.x framing + station-reference message codec (DWS_ENABLE_NTRIP_CASTER).
  *
  * The pure, zero-heap, host-testable core of the GNSS RTK base / NTRIP caster: the RTCM3 transport frame
  * (0xD3 preamble, 6 reserved + 10-bit length, payload, 24-bit CRC-24Q) and the MSB-first bit I/O every
@@ -29,7 +29,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_NTRIP_CASTER
+#if DWS_ENABLE_NTRIP_CASTER
 
 #include <stddef.h>
 #include <stdint.h>
@@ -132,6 +132,6 @@ size_t rtcm3_build_1006(uint8_t *out, size_t cap, uint16_t station_id, int64_t e
  */
 bool rtcm3_parse_1005(const uint8_t *payload, uint16_t payload_len, Rtcm3StationArp *out);
 
-#endif // DETWS_ENABLE_NTRIP_CASTER
+#endif // DWS_ENABLE_NTRIP_CASTER
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_RTCM3_H

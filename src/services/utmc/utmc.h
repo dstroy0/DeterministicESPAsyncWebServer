@@ -3,7 +3,7 @@
 
 /**
  * @file utmc.h
- * @brief UTMC (Urban Traffic Management and Control) common-database codec (DETWS_ENABLE_UTMC).
+ * @brief UTMC (Urban Traffic Management and Control) common-database codec (DWS_ENABLE_UTMC).
  *
  * UTMC is the UK/EU modular framework for sharing traffic data across heterogeneous municipal systems.
  * Its common-database exchange is an HTTP + XML message set: a client requests the value of an object
@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_UTMC
+#if DWS_ENABLE_UTMC
 
 /** @brief UTMC data-quality flags. */
 // UTMC value-quality codes: wire values compared, so integer constants in a namespacing struct.
@@ -38,7 +38,7 @@ struct Utmc
 /**
  * @brief Build a UTMC request document for one object id. @return length written, or 0 on overflow.
  */
-size_t detws_utmc_request(const char *object_id, char *out, size_t cap);
+size_t dws_utmc_request(const char *object_id, char *out, size_t cap);
 
 /**
  * @brief Build a UTMC response document for one object.
@@ -48,14 +48,14 @@ size_t detws_utmc_request(const char *object_id, char *out, size_t cap);
  * @param timestamp an ISO-8601 timestamp (escaped).
  * @return length written, or 0 on overflow.
  */
-size_t detws_utmc_response(const char *object_id, const char *value, uint8_t quality, const char *timestamp, char *out,
-                           size_t cap);
+size_t dws_utmc_response(const char *object_id, const char *value, uint8_t quality, const char *timestamp, char *out,
+                         size_t cap);
 
 /**
  * @brief Extract the object id from a UTMC request document into @p out.
  * @return the id length, or 0 if no `<object id="..."/>` is found.
  */
-size_t detws_utmc_parse_request(const char *xml, size_t len, char *out, size_t cap);
+size_t dws_utmc_parse_request(const char *xml, size_t len, char *out, size_t cap);
 
-#endif // DETWS_ENABLE_UTMC
+#endif // DWS_ENABLE_UTMC
 #endif // DETERMINISTICESPASYNCWEBSERVER_UTMC_H

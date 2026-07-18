@@ -8,7 +8,7 @@
 
 #include "services/sqlite/sqlite_format.h"
 
-#if DETWS_ENABLE_SQLITE
+#if DWS_ENABLE_SQLITE
 
 #include <string.h>
 
@@ -767,4 +767,4 @@ uint32_t sqlite_build_table_db(uint32_t page_size, const char *table_name, const
     return page_size * 2;
 }
 
-#endif // DETWS_ENABLE_SQLITE
+#endif // DWS_ENABLE_SQLITE

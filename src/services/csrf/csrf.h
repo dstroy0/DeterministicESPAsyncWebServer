@@ -3,7 +3,7 @@
 
 /**
  * @file csrf.h
- * @brief Stateless HMAC-signed CSRF token (DETWS_ENABLE_CSRF).
+ * @brief Stateless HMAC-signed CSRF token (DWS_ENABLE_CSRF).
  *
  * A CSRF token is `<nonce_hex>.<sig_hex>` where sig = the first CSRF_SIG_BYTES of
  * HMAC-SHA256(secret, nonce). The secret is seeded once from the hardware RNG at
@@ -13,7 +13,7 @@
  *
  * The token is sized to fit a single MAX_VAL_LEN header value and a `csrf=`
  * cookie. These functions are pure (no Arduino dependency) so they unit-test on
- * the host (with DETWS_ENABLE_CSRF set) using a fixed secret.
+ * the host (with DWS_ENABLE_CSRF set) using a fixed secret.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -24,7 +24,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_CSRF
+#if DWS_ENABLE_CSRF
 
 #include <stddef.h>
 #include <stdint.h>
@@ -64,6 +64,6 @@ bool csrf_verify(const char *token);
 /** @brief Clear the secret and nonce counter (e.g. between tests). */
 void csrf_reset(void);
 
-#endif // DETWS_ENABLE_CSRF
+#endif // DWS_ENABLE_CSRF
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_CSRF_H

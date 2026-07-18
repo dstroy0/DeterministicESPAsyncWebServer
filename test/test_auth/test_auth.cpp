@@ -19,7 +19,7 @@
 // Helpers
 // ---------------------------------------------------------------------------
 
-static DetWebServer server;
+static DWS server;
 static bool handler_called = false;
 static uint8_t handler_slot = 0xFF;
 
@@ -44,7 +44,7 @@ static void handle_ok(uint8_t slot_id, HttpReq *req)
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     handler_called = false;
     handler_slot = 0xFF;
 

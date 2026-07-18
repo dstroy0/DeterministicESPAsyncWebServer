@@ -9,11 +9,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>
-#if DETWS_ENABLE_CSRF
+#if DWS_ENABLE_CSRF
 #include "services/csrf/csrf.h" // supply a valid token so an unsafe method reaches method dispatch
 #endif
 
-static DetWebServer server;
+static DWS server;
 static bool handler_called = false;
 
 static void push_str(uint8_t slot, const char *s)
@@ -35,7 +35,7 @@ static void handle_ok(uint8_t slot_id, HttpReq *req)
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     handler_called = false;
     for (int i = 0; i < MAX_CONNS; i++)
     {
@@ -49,7 +49,7 @@ void setUp()
     ws_init();
     sse_init();
     tcp_capture_reset();
-#if DETWS_ENABLE_CSRF
+#if DWS_ENABLE_CSRF
     // With CSRF compiled in, state-changing methods are gated before dispatch; set a secret so a valid
     // token can be issued (csrf_issue/verify no-op without one), letting the unsafe-method tests below
     // reach the 405/Allow method dispatch as a legitimate token-bearing client would.
@@ -71,13 +71,13 @@ static void feed_and_handle(uint8_t slot, const char *req_str)
     server.handle();
 }
 
-// Feed an unsafe-method (POST/DELETE/...) request. Under DETWS_ENABLE_CSRF such a method is gated before
+// Feed an unsafe-method (POST/DELETE/...) request. Under DWS_ENABLE_CSRF such a method is gated before
 // dispatch, so attach a valid token to let the request reach the 405/Allow method dispatch (as a real
 // token-bearing client would); with CSRF off the request line is plain.
 static void feed_unsafe(uint8_t slot, const char *method, const char *path)
 {
     char reqbuf[256];
-#if DETWS_ENABLE_CSRF
+#if DWS_ENABLE_CSRF
     char tok[CSRF_TOKEN_BUF];
     csrf_issue(tok, sizeof(tok));
     snprintf(reqbuf, sizeof(reqbuf), "%s %s HTTP/1.1\r\nX-CSRF-Token: %s\r\n\r\n", method, path, tok);
@@ -177,7 +177,7 @@ void test_head_on_post_only_route_405()
 
 // ---- WebSocket handoff (regression) ---------------------------------------
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
 // Once a slot has upgraded to WebSocket, http_parse() must not consume its rx
 // bytes - they are WS frames the frame parser will drain. The event-queue
 // dispatch used to call http_parse() on an upgraded slot and eat the first
@@ -227,7 +227,7 @@ int main()
     RUN_TEST(test_head_runs_get_handler_without_body);
     RUN_TEST(test_get_route_advertises_head_in_allow);
     RUN_TEST(test_head_on_post_only_route_405);
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     RUN_TEST(test_http_parse_skips_ws_upgraded_slot);
 #endif
     RUN_TEST(test_correct_method_still_dispatches);

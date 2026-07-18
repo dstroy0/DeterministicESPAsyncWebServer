@@ -11,7 +11,7 @@
 
 #include "services/partition_monitor/partition_monitor.h"
 
-#if DETWS_ENABLE_PARTITION_MONITOR
+#if DWS_ENABLE_PARTITION_MONITOR
 
 #include "dwserver.h"
 #include "shared_primitives/mime.h"
@@ -20,25 +20,25 @@
 // handle. (The route handler is a fixed-signature callback, so it reaches this owner directly.)
 struct PartitionRoutesCtx
 {
-    DetWebServer *srv = nullptr;
+    DWS *srv = nullptr;
 };
 static PartitionRoutesCtx s_partr;
 
 static void partition_handler(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
-    DetwsPartitionInfo parts[DETWS_PARTITION_MAX];
-    uint8_t n = detws_partition_collect(parts, DETWS_PARTITION_MAX);
-    char buf[DETWS_PARTITION_JSON_BUF];
-    detws_partition_json(parts, n, buf, sizeof(buf));
+    DetwsPartitionInfo parts[DWS_PARTITION_MAX];
+    uint8_t n = dws_partition_collect(parts, DWS_PARTITION_MAX);
+    char buf[DWS_PARTITION_JSON_BUF];
+    dws_partition_json(parts, n, buf, sizeof(buf));
     if (s_partr.srv)
-        s_partr.srv->send(slot_id, 200, DET_MIME_JSON, buf);
+        s_partr.srv->send(slot_id, 200, DWS_MIME_JSON, buf);
 }
 
-void detws_partition_monitor_begin(DetWebServer &server, const char *path)
+void dws_partition_monitor_begin(DWS &server, const char *path)
 {
     s_partr.srv = &server;
     server.on((path && path[0]) ? path : "/partitions", HttpMethod::HTTP_GET, partition_handler);
 }
 
-#endif // DETWS_ENABLE_PARTITION_MONITOR
+#endif // DWS_ENABLE_PARTITION_MONITOR

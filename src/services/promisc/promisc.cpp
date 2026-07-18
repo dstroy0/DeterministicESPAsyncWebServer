@@ -9,7 +9,7 @@
 
 #include "services/promisc/promisc.h"
 
-#if DETWS_ENABLE_PROMISC
+#if DWS_ENABLE_PROMISC
 
 #include <string.h>
 
@@ -83,7 +83,7 @@ bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out)
     return true;
 }
 
-// libpcap framing (det_pcap_global_header / det_pcap_record_header) is in
+// libpcap framing (dws_pcap_global_header / dws_pcap_record_header) is in
 // shared_primitives/pcap.h - shared with the other capture features.
 
 // --- ESP32 radio binding -----------------------------------------------------------------
@@ -152,4 +152,4 @@ void promisc_end(void)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_PROMISC
+#endif // DWS_ENABLE_PROMISC

@@ -8,7 +8,7 @@
 
 #include "services/flow_export/flow_export.h"
 
-#if DETWS_ENABLE_FLOW_EXPORT
+#if DWS_ENABLE_FLOW_EXPORT
 
 #include <string.h>
 
@@ -19,15 +19,15 @@ size_t flow_v5_write_header(uint8_t *buf, size_t cap, const FlowV5Header *h)
     if (!buf || !h || cap < FLOW_V5_HEADER_SIZE)
         return 0;
     size_t p = 0;
-    p += det_wr16be(buf + p, 5); // version
-    p += det_wr16be(buf + p, h->count);
-    p += det_wr32be(buf + p, h->sys_uptime);
-    p += det_wr32be(buf + p, h->unix_secs);
-    p += det_wr32be(buf + p, h->unix_nsecs);
-    p += det_wr32be(buf + p, h->flow_sequence);
+    p += dws_wr16be(buf + p, 5); // version
+    p += dws_wr16be(buf + p, h->count);
+    p += dws_wr32be(buf + p, h->sys_uptime);
+    p += dws_wr32be(buf + p, h->unix_secs);
+    p += dws_wr32be(buf + p, h->unix_nsecs);
+    p += dws_wr32be(buf + p, h->flow_sequence);
     buf[p++] = h->engine_type;
     buf[p++] = h->engine_id;
-    p += det_wr16be(buf + p, h->sampling_interval);
+    p += dws_wr16be(buf + p, h->sampling_interval);
     return p; // 24
 }
 
@@ -36,23 +36,23 @@ size_t flow_v5_write_record(uint8_t *buf, size_t cap, const FlowV5Record *r)
     if (!buf || !r || cap < FLOW_V5_RECORD_SIZE)
         return 0;
     size_t p = 0;
-    p += det_wr32be(buf + p, r->src_addr);
-    p += det_wr32be(buf + p, r->dst_addr);
-    p += det_wr32be(buf + p, r->next_hop);
-    p += det_wr16be(buf + p, r->input);
-    p += det_wr16be(buf + p, r->output);
-    p += det_wr32be(buf + p, r->d_pkts);
-    p += det_wr32be(buf + p, r->d_octets);
-    p += det_wr32be(buf + p, r->first);
-    p += det_wr32be(buf + p, r->last);
-    p += det_wr16be(buf + p, r->src_port);
-    p += det_wr16be(buf + p, r->dst_port);
+    p += dws_wr32be(buf + p, r->src_addr);
+    p += dws_wr32be(buf + p, r->dst_addr);
+    p += dws_wr32be(buf + p, r->next_hop);
+    p += dws_wr16be(buf + p, r->input);
+    p += dws_wr16be(buf + p, r->output);
+    p += dws_wr32be(buf + p, r->d_pkts);
+    p += dws_wr32be(buf + p, r->d_octets);
+    p += dws_wr32be(buf + p, r->first);
+    p += dws_wr32be(buf + p, r->last);
+    p += dws_wr16be(buf + p, r->src_port);
+    p += dws_wr16be(buf + p, r->dst_port);
     buf[p++] = 0; // pad1
     buf[p++] = r->tcp_flags;
     buf[p++] = r->prot;
     buf[p++] = r->tos;
-    p += det_wr16be(buf + p, r->src_as);
-    p += det_wr16be(buf + p, r->dst_as);
+    p += dws_wr16be(buf + p, r->src_as);
+    p += dws_wr16be(buf + p, r->dst_as);
     buf[p++] = r->src_mask;
     buf[p++] = r->dst_mask;
     buf[p++] = 0; // pad2 (2 octets)
@@ -71,7 +71,7 @@ static void w_u16(FlowWriter *w, uint16_t v)
         w->error = true;
         return;
     }
-    w->pos += det_wr16be(w->buf + w->pos, v);
+    w->pos += dws_wr16be(w->buf + w->pos, v);
 }
 
 static void w_u32(FlowWriter *w, uint32_t v)
@@ -83,7 +83,7 @@ static void w_u32(FlowWriter *w, uint32_t v)
         w->error = true;
         return;
     }
-    w->pos += det_wr32be(w->buf + w->pos, v);
+    w->pos += dws_wr32be(w->buf + w->pos, v);
 }
 
 static void w_bytes(FlowWriter *w, const uint8_t *p, size_t n)
@@ -115,7 +115,7 @@ static void w_zero(FlowWriter *w, size_t n)
 
 static void patch16(FlowWriter *w, size_t off, uint16_t v)
 {
-    det_wr16be(w->buf + off, v);
+    dws_wr16be(w->buf + off, v);
 }
 
 bool flow_ipfix_begin(FlowWriter *w, uint8_t *buf, size_t cap, uint32_t export_time, uint32_t seq, uint32_t domain_id)
@@ -236,4 +236,4 @@ size_t flow_export_finish(FlowWriter *w)
     return w->pos;
 }
 
-#endif // DETWS_ENABLE_FLOW_EXPORT
+#endif // DWS_ENABLE_FLOW_EXPORT

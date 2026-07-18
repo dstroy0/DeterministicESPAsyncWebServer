@@ -3,7 +3,7 @@
 
 /**
  * @file provisioning_service.cpp
- * @brief First-boot WiFi provisioning / captive portal (DETWS_ENABLE_PROVISIONING).
+ * @brief First-boot WiFi provisioning / captive portal (DWS_ENABLE_PROVISIONING).
  *
  * The catch-all DNS responder uses the transport-layer UDP service (no add-on library);
  * credentials persist to NVS via Preferences.
@@ -19,7 +19,7 @@
 // Form-field parser (always compiled; the only non-trivial logic, unit-tested).
 // ---------------------------------------------------------------------------
 
-bool detws_prov_form_field(const char *body, const char *key, char *out, size_t cap)
+bool dws_prov_form_field(const char *body, const char *key, char *out, size_t cap)
 {
     if (out && cap)
         out[0] = '\0';
@@ -50,8 +50,8 @@ bool detws_prov_form_field(const char *body, const char *key, char *out, size_t 
         }
         else if (c == '%')
         {
-            int h = det_hex_val(q[1]);
-            int l = (h >= 0) ? det_hex_val(q[2]) : -1;
+            int h = dws_hex_val(q[1]);
+            int l = (h >= 0) ? dws_hex_val(q[2]) : -1;
             if (h >= 0 && l >= 0)
             {
                 c = (char)((h << 4) | l);
@@ -71,7 +71,7 @@ bool detws_prov_form_field(const char *body, const char *key, char *out, size_t 
 // ESP32 captive portal (softAP + lwIP UDP DNS + form/save routes)
 // ---------------------------------------------------------------------------
 
-#if DETWS_ENABLE_PROVISIONING && defined(ARDUINO)
+#if DWS_ENABLE_PROVISIONING && defined(ARDUINO)
 
 #include "dwserver.h"
 #include "network_drivers/application/web_assets.h"
@@ -85,17 +85,17 @@ bool detws_prov_form_field(const char *body, const char *key, char *out, size_t 
 // unreachable cross-TU.
 struct ProvCtx
 {
-    DetWebServer *server = nullptr;
+    DWS *server = nullptr;
     uint8_t ap_ip[4] = {192, 168, 4, 1};
 };
 static ProvCtx s_prov;
 
-// The NVS namespace + credential keys (DETWS_PROV_NVS_NAMESPACE / _KEY_SSID / _KEY_PSK) live in
-// ServerConfig.h under DETWS_ENABLE_PROVISIONING so a deployment can override them; used across
+// The NVS namespace + credential keys (DWS_PROV_NVS_NAMESPACE / _KEY_SSID / _KEY_PSK) live in
+// ServerConfig.h under DWS_ENABLE_PROVISIONING so a deployment can override them; used across
 // the read / clear / save paths (and, for ssid/psk, as the HTML form field names).
 
 // Catch-all DNS: answer every query with our softAP IP (captive-portal hijack).
-static void prov_dns_recv(const uint8_t *req, size_t qlen, struct DetUdpPeer *peer, void *ctx)
+static void prov_dns_recv(const uint8_t *req, size_t qlen, struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
     if (qlen < 12)
@@ -138,20 +138,20 @@ static void prov_dns_recv(const uint8_t *req, size_t qlen, struct DetUdpPeer *pe
     resp[n++] = s_prov.ap_ip[2];
     resp[n++] = s_prov.ap_ip[3];
 
-    det_udp_send(peer, resp, n);
+    dws_udp_send(peer, resp, n);
 }
 
-bool detws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_cap)
+bool dws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_cap)
 {
     if (ssid && ssid_cap)
         ssid[0] = '\0';
     if (psk && psk_cap)
         psk[0] = '\0';
     Preferences prefs;
-    if (!prefs.begin(DETWS_PROV_NVS_NAMESPACE, true))
+    if (!prefs.begin(DWS_PROV_NVS_NAMESPACE, true))
         return false;
-    String s = prefs.getString(DETWS_PROV_KEY_SSID, "");
-    String k = prefs.getString(DETWS_PROV_KEY_PSK, "");
+    String s = prefs.getString(DWS_PROV_KEY_SSID, "");
+    String k = prefs.getString(DWS_PROV_KEY_PSK, "");
     prefs.end();
     if (s.length() == 0)
         return false;
@@ -162,10 +162,10 @@ bool detws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_
     return true;
 }
 
-void detws_provisioning_clear()
+void dws_provisioning_clear()
 {
     Preferences prefs;
-    if (prefs.begin(DETWS_PROV_NVS_NAMESPACE, false))
+    if (prefs.begin(DWS_PROV_NVS_NAMESPACE, false))
     {
         prefs.clear();
         prefs.end();
@@ -175,7 +175,7 @@ void detws_provisioning_clear()
 static void prov_form_handler(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
-    s_prov.server->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_PROV_FORM);
+    s_prov.server->send(slot_id, 200, DWS_MIME_TEXT_HTML, DWS_PROV_FORM);
 }
 
 static void prov_save_handler(uint8_t slot_id, HttpReq *req)
@@ -183,24 +183,24 @@ static void prov_save_handler(uint8_t slot_id, HttpReq *req)
     char ssid[33];
     char psk[64];
     bool have_ssid =
-        detws_prov_form_field((const char *)req->body, DETWS_PROV_KEY_SSID, ssid, sizeof(ssid)) && ssid[0] != '\0';
-    detws_prov_form_field((const char *)req->body, DETWS_PROV_KEY_PSK, psk, sizeof(psk));
+        dws_prov_form_field((const char *)req->body, DWS_PROV_KEY_SSID, ssid, sizeof(ssid)) && ssid[0] != '\0';
+    dws_prov_form_field((const char *)req->body, DWS_PROV_KEY_PSK, psk, sizeof(psk));
     if (!have_ssid)
     {
-        s_prov.server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "SSID required");
+        s_prov.server->send(slot_id, 400, DWS_MIME_TEXT_PLAIN, "SSID required");
         return;
     }
     Preferences prefs;
-    prefs.begin(DETWS_PROV_NVS_NAMESPACE, false);
-    prefs.putString(DETWS_PROV_KEY_SSID, ssid);
-    prefs.putString(DETWS_PROV_KEY_PSK, psk);
+    prefs.begin(DWS_PROV_NVS_NAMESPACE, false);
+    prefs.putString(DWS_PROV_KEY_SSID, ssid);
+    prefs.putString(DWS_PROV_KEY_PSK, psk);
     prefs.end();
-    s_prov.server->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_PROV_SAVED_HTML);
+    s_prov.server->send(slot_id, 200, DWS_MIME_TEXT_HTML, DWS_PROV_SAVED_HTML);
     dwsdelay(500);
     ESP.restart();
 }
 
-void detws_provisioning_begin(DetWebServer &server, const char *ap_ssid)
+void dws_provisioning_begin(DWS &server, const char *ap_ssid)
 {
     s_prov.server = &server;
     WiFi.mode(WIFI_AP);
@@ -212,7 +212,7 @@ void detws_provisioning_begin(DetWebServer &server, const char *ap_ssid)
     s_prov.ap_ip[3] = ip[3];
 
     // Catch-all DNS on UDP/53 via the transport-layer UDP service (callback-driven).
-    det_udp_listen(53, prov_dns_recv, nullptr);
+    dws_udp_listen(53, prov_dns_recv, nullptr);
 
     server.on("/save", HttpMethod::HTTP_POST, prov_save_handler);
     server.on("/*", HttpMethod::HTTP_GET, prov_form_handler); // any other path -> the form
@@ -220,7 +220,7 @@ void detws_provisioning_begin(DetWebServer &server, const char *ap_ssid)
 
 #else // disabled / non-Arduino: stubs (form-field parser above stays available)
 
-bool detws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_cap)
+bool dws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_cap)
 {
     if (ssid && ssid_cap)
         ssid[0] = '\0';
@@ -228,13 +228,13 @@ bool detws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_
         psk[0] = '\0';
     return false;
 }
-void detws_provisioning_begin(DetWebServer &server, const char *ap_ssid)
+void dws_provisioning_begin(DWS &server, const char *ap_ssid)
 {
     (void)server;
     (void)ap_ssid;
 }
-void detws_provisioning_clear()
+void dws_provisioning_clear()
 {
 }
 
-#endif // DETWS_ENABLE_PROVISIONING && ARDUINO
+#endif // DWS_ENABLE_PROVISIONING && ARDUINO

@@ -8,7 +8,7 @@
 
 #include "services/cc1101/cc1101.h"
 
-#if DETWS_ENABLE_CC1101
+#if DWS_ENABLE_CC1101
 
 namespace
 {
@@ -147,4 +147,4 @@ int cc1101_recv(const cc1101_bus *bus, uint8_t *buf, uint8_t cap, int16_t *rssi_
     return out;
 }
 
-#endif // DETWS_ENABLE_CC1101
+#endif // DWS_ENABLE_CC1101

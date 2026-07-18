@@ -69,28 +69,28 @@ static void fresh(void)
     g_d.size = sizeof(g_disk);
     g_dev = dev_over(&g_d);
     TEST_ASSERT_TRUE(wal_store_format(&g_wal, &g_dev));
-    TEST_ASSERT_TRUE(detws_dbm_open(&g_db, &g_wal));
-    detws_docstore_open(&g_ds, &g_db);
+    TEST_ASSERT_TRUE(dws_dbm_open(&g_db, &g_wal));
+    dws_docstore_open(&g_ds, &g_db);
 }
 static bool reboot(void)
 {
     g_dev = dev_over(&g_d);
     if (!wal_store_mount(&g_wal, &g_dev))
         return false;
-    if (!detws_dbm_open(&g_db, &g_wal))
+    if (!dws_dbm_open(&g_db, &g_wal))
         return false;
-    detws_docstore_open(&g_ds, &g_db);
+    dws_docstore_open(&g_ds, &g_db);
     return true;
 }
 
 static bool put_doc(const char *id, const char *json)
 {
-    return detws_docstore_put(&g_ds, id, (uint16_t)strlen(id), (const uint8_t *)json, (uint32_t)strlen(json));
+    return dws_docstore_put(&g_ds, id, (uint16_t)strlen(id), (const uint8_t *)json, (uint32_t)strlen(json));
 }
 static bool get_eq(const char *id, const char *expect)
 {
-    uint8_t buf[DETWS_DBM_VAL_MAX + 1];
-    long n = detws_docstore_get(&g_ds, id, (uint16_t)strlen(id), buf, sizeof(buf));
+    uint8_t buf[DWS_DBM_VAL_MAX + 1];
+    long n = dws_docstore_get(&g_ds, id, (uint16_t)strlen(id), buf, sizeof(buf));
     if (n < 0)
         return false;
     return (size_t)n == strlen(expect) && memcmp(buf, expect, n) == 0;
@@ -129,11 +129,11 @@ void test_put_get_del(void)
     TEST_ASSERT_TRUE(put_doc("u1", "{\"name\":\"alice\",\"age\":30,\"admin\":true}"));
     TEST_ASSERT_TRUE(put_doc("u2", "{\"name\":\"bob\",\"age\":25,\"admin\":false}"));
     TEST_ASSERT_TRUE(get_eq("u1", "{\"name\":\"alice\",\"age\":30,\"admin\":true}"));
-    TEST_ASSERT_EQUAL_UINT32(2, detws_docstore_count(&g_ds));
+    TEST_ASSERT_EQUAL_UINT32(2, dws_docstore_count(&g_ds));
 
-    TEST_ASSERT_TRUE(detws_docstore_del(&g_ds, "u2", 2));
-    TEST_ASSERT_FALSE(detws_docstore_contains(&g_ds, "u2", 2));
-    TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_count(&g_ds));
+    TEST_ASSERT_TRUE(dws_docstore_del(&g_ds, "u2", 2));
+    TEST_ASSERT_FALSE(dws_docstore_contains(&g_ds, "u2", 2));
+    TEST_ASSERT_EQUAL_UINT32(1, dws_docstore_count(&g_ds));
 
     // Replace u1's document.
     TEST_ASSERT_TRUE(put_doc("u1", "{\"name\":\"alice2\",\"age\":31}"));
@@ -149,7 +149,7 @@ void test_find_by_field(void)
 
     // String field.
     Collected c = {};
-    uint32_t m = detws_docstore_find_str(&g_ds, "city", "paris", collect, &c);
+    uint32_t m = dws_docstore_find_str(&g_ds, "city", "paris", collect, &c);
     TEST_ASSERT_EQUAL_UINT32(2, m);
     TEST_ASSERT_EQUAL_INT(2, c.n);
     TEST_ASSERT_TRUE(has_id(&c, "u1"));
@@ -158,14 +158,14 @@ void test_find_by_field(void)
 
     // Integer field.
     Collected c2 = {};
-    m = detws_docstore_find_int(&g_ds, "age", 30, collect, &c2);
+    m = dws_docstore_find_int(&g_ds, "age", 30, collect, &c2);
     TEST_ASSERT_EQUAL_UINT32(2, m);
     TEST_ASSERT_TRUE(has_id(&c2, "u1"));
     TEST_ASSERT_TRUE(has_id(&c2, "u2"));
 
     // No matches.
     Collected c3 = {};
-    m = detws_docstore_find_str(&g_ds, "city", "berlin", collect, &c3);
+    m = dws_docstore_find_str(&g_ds, "city", "berlin", collect, &c3);
     TEST_ASSERT_EQUAL_UINT32(0, m);
     TEST_ASSERT_EQUAL_INT(0, c3.n);
 }
@@ -177,7 +177,7 @@ void test_find_bool(void)
     put_doc("b", "{\"on\":false,\"n\":2}");
     put_doc("c", "{\"on\":true,\"n\":3}");
     Collected c = {};
-    uint32_t m = detws_docstore_find_bool(&g_ds, "on", true, collect, &c);
+    uint32_t m = dws_docstore_find_bool(&g_ds, "on", true, collect, &c);
     TEST_ASSERT_EQUAL_UINT32(2, m);
     TEST_ASSERT_TRUE(has_id(&c, "a"));
     TEST_ASSERT_TRUE(has_id(&c, "c"));
@@ -189,15 +189,15 @@ void test_persist_and_query_across_reboot(void)
     put_doc("u1", "{\"name\":\"alice\",\"role\":\"admin\"}");
     put_doc("u2", "{\"name\":\"bob\",\"role\":\"user\"}");
     put_doc("u3", "{\"name\":\"carol\",\"role\":\"admin\"}");
-    TEST_ASSERT_TRUE(detws_docstore_sync(&g_ds));
+    TEST_ASSERT_TRUE(dws_docstore_sync(&g_ds));
 
     TEST_ASSERT_TRUE(reboot());
-    TEST_ASSERT_EQUAL_UINT32(3, detws_docstore_count(&g_ds));
+    TEST_ASSERT_EQUAL_UINT32(3, dws_docstore_count(&g_ds));
     TEST_ASSERT_TRUE(get_eq("u2", "{\"name\":\"bob\",\"role\":\"user\"}"));
 
     // The field index (JSON scan) works after a remount too.
     Collected c = {};
-    uint32_t m = detws_docstore_find_str(&g_ds, "role", "admin", collect, &c);
+    uint32_t m = dws_docstore_find_str(&g_ds, "role", "admin", collect, &c);
     TEST_ASSERT_EQUAL_UINT32(2, m);
     TEST_ASSERT_TRUE(has_id(&c, "u1"));
     TEST_ASSERT_TRUE(has_id(&c, "u3"));
@@ -227,7 +227,7 @@ void test_find_early_stop(void)
             return false; // stop immediately
         }
     };
-    uint32_t m = detws_docstore_find_str(&g_ds, "grp", "x", L::cb, &once);
+    uint32_t m = dws_docstore_find_str(&g_ds, "grp", "x", L::cb, &once);
     TEST_ASSERT_EQUAL_UINT32(1, m);
     TEST_ASSERT_EQUAL_INT(1, once.seen);
 }
@@ -240,16 +240,16 @@ void test_find_field_absent(void)
     put_doc("b", "{\"other\":\"y\"}"); // lacks name / age / on
 
     Collected cs = {};
-    TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_str(&g_ds, "name", "x", collect, &cs)); // "b" has no name
+    TEST_ASSERT_EQUAL_UINT32(1, dws_docstore_find_str(&g_ds, "name", "x", collect, &cs)); // "b" has no name
     TEST_ASSERT_TRUE(has_id(&cs, "a"));
     TEST_ASSERT_FALSE(has_id(&cs, "b"));
 
     Collected ci = {};
-    TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_int(&g_ds, "age", 5, collect, &ci)); // "b" has no age
+    TEST_ASSERT_EQUAL_UINT32(1, dws_docstore_find_int(&g_ds, "age", 5, collect, &ci)); // "b" has no age
     TEST_ASSERT_TRUE(has_id(&ci, "a"));
 
     Collected cb = {};
-    TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_bool(&g_ds, "on", true, collect, &cb)); // "b" has no on
+    TEST_ASSERT_EQUAL_UINT32(1, dws_docstore_find_bool(&g_ds, "on", true, collect, &cb)); // "b" has no on
     TEST_ASSERT_TRUE(has_id(&cb, "a"));
 }
 
@@ -260,9 +260,9 @@ void test_find_count_only_null_cb(void)
     put_doc("u1", "{\"grp\":\"x\"}");
     put_doc("u2", "{\"grp\":\"x\"}");
     put_doc("u3", "{\"grp\":\"y\"}");
-    TEST_ASSERT_EQUAL_UINT32(2, detws_docstore_find_str(&g_ds, "grp", "x", nullptr, nullptr));
-    TEST_ASSERT_EQUAL_UINT32(1, detws_docstore_find_str(&g_ds, "grp", "y", nullptr, nullptr));
-    TEST_ASSERT_EQUAL_UINT32(0, detws_docstore_find_str(&g_ds, "grp", "z", nullptr, nullptr));
+    TEST_ASSERT_EQUAL_UINT32(2, dws_docstore_find_str(&g_ds, "grp", "x", nullptr, nullptr));
+    TEST_ASSERT_EQUAL_UINT32(1, dws_docstore_find_str(&g_ds, "grp", "y", nullptr, nullptr));
+    TEST_ASSERT_EQUAL_UINT32(0, dws_docstore_find_str(&g_ds, "grp", "z", nullptr, nullptr));
 }
 
 int main(void)

@@ -3,7 +3,7 @@
 
 /**
  * @file 76.NtripCaster.ino
- * @brief GNSS RTK base + NTRIP caster, and a matching rover (DETWS_ENABLE_NTRIP_CASTER).
+ * @brief GNSS RTK base + NTRIP caster, and a matching rover (DWS_ENABLE_NTRIP_CASTER).
  *
  * Two ESP32-S3 boards, each with a GT-U7 GPS on Serial1 (GPS TX -> GPIO18, GPS RX -> GPIO17, PPS -> GPIO4):
  *
@@ -26,10 +26,10 @@
  * base board's IP (printed by the base at boot). Open Serial @ 115200 to watch each side.
  *
  * NOTE (PlatformIO): the caster is compiled into the *library*, so the flag must reach the whole build:
- * `build_flags = -DDETWS_ENABLE_NTRIP_CASTER=1`. In the Arduino IDE it is set in build_opt.h.
+ * `build_flags = -DDWS_ENABLE_NTRIP_CASTER=1`. In the Arduino IDE it is set in build_opt.h.
  */
 
-#define DETWS_ENABLE_NTRIP_CASTER 1
+#define DWS_ENABLE_NTRIP_CASTER 1
 
 // --- CHANGE ME: 1 = base (survey-in + caster), 0 = rover (NTRIP client) ---
 #define NTRIP_ROLE_BASE 1
@@ -93,7 +93,7 @@ static bool read_nmea_line(char *line, size_t cap, size_t *len)
 // ============================ BASE: survey-in + NTRIP caster ============================
 #include "services/gnss/ntrip_caster_listener.h"
 
-DetWebServer server;
+DWS server;
 static GnssSurvey s_survey;
 static bool s_surveyed = false;
 static GnssEcef s_base_ecef;
@@ -120,15 +120,15 @@ void setup()
 
     NtripMount mount = {};
     mount.mountpoint = MOUNTPOINT;
-    mount.identifier = "DetWS GT-U7 base";
+    mount.identifier = "DWS GT-U7 base";
     mount.format_details = "1005(1)"; // station reference once per second
     mount.nav_system = "GPS";
     mount.country = "USA";
-    mount.generator = "DetWebServer";
+    mount.generator = "DWS";
     mount.nmea_required = false;
 
     int32_t li = server.listen(CASTER_PORT, ConnProto::PROTO_NTRIP_CASTER);
-    if (li < 0 || !det_ntrip_caster_add_mount((uint8_t)li, &mount, nullptr /*open access*/))
+    if (li < 0 || !dws_ntrip_caster_add_mount((uint8_t)li, &mount, nullptr /*open access*/))
         Serial.println("caster add_mount failed");
     server.begin();
     Serial.printf("NTRIP caster: %s:%u  mount /%s   (surveying in...)\n", WiFi.localIP().toString().c_str(),
@@ -171,7 +171,7 @@ void loop()
         uint8_t frame[32];
         size_t n = rtcm3_build_1005(frame, sizeof(frame), STATION_ID, gnss_ecef_m_to_01mm(s_base_ecef.x),
                                     gnss_ecef_m_to_01mm(s_base_ecef.y), gnss_ecef_m_to_01mm(s_base_ecef.z));
-        int sent = det_ntrip_caster_broadcast(MOUNTPOINT, frame, n);
+        int sent = dws_ntrip_caster_broadcast(MOUNTPOINT, frame, n);
         if (sent > 0)
             Serial.printf("1005 -> %d rover(s)  [pps=%u]\n", sent, s_pps_count);
     }
@@ -197,7 +197,7 @@ static void connect_ntrip()
         return;
     }
     // NTRIP 1.0 request. (A caster that speaks 2.0 answers HTTP/1.1 200; we accept either.)
-    s_client.printf("GET /%s HTTP/1.0\r\nUser-Agent: NTRIP DetWebServer/1.0\r\nAccept: */*\r\n\r\n", MOUNTPOINT);
+    s_client.printf("GET /%s HTTP/1.0\r\nUser-Agent: NTRIP DWS/1.0\r\nAccept: */*\r\n\r\n", MOUNTPOINT);
     s_streaming = false;
     s_rtcm_len = 0;
 }

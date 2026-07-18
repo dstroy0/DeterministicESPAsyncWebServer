@@ -3,7 +3,7 @@
 
 /**
  * @file canopen.h
- * @brief CANopen (CiA 301) application-layer message codec (DETWS_ENABLE_CANOPEN).
+ * @brief CANopen (CiA 301) application-layer message codec (DWS_ENABLE_CANOPEN).
  *
  * A pure, zero-heap builder + parser for the CANopen messaging set carried over classic
  * CAN frames (see shared_primitives/can.h): NMT node control, SYNC, TIME, the
@@ -27,7 +27,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_CANOPEN
+#if DWS_ENABLE_CANOPEN
 
 #include "shared_primitives/can.h"
 #include <stddef.h>
@@ -162,5 +162,5 @@ bool canopen_parse_heartbeat(const CanFrame *f, uint8_t *node_id, uint8_t *state
 /** @brief Decode an SDO server response (0x580+node): upload data, download ack, or abort. */
 bool canopen_parse_sdo_response(const CanFrame *f, CanopenSdoResponse *out);
 
-#endif // DETWS_ENABLE_CANOPEN
+#endif // DWS_ENABLE_CANOPEN
 #endif // DETERMINISTICESPASYNCWEBSERVER_CANOPEN_H

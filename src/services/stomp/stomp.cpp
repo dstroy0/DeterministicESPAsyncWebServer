@@ -8,7 +8,7 @@
 
 #include "services/stomp/stomp.h"
 
-#if DETWS_ENABLE_STOMP
+#if DWS_ENABLE_STOMP
 
 #include <string.h>
 
@@ -184,7 +184,7 @@ bool stomp_parse_frame(const char *buf, size_t len, StompFrame *out, size_t *con
             colon++;
         if (colon >= line_end)
             return false; // header without a colon
-        if (out->header_count < DETWS_STOMP_MAX_HEADERS)
+        if (out->header_count < DWS_STOMP_MAX_HEADERS)
         {
             StompHeader *h = &out->headers[out->header_count++];
             h->key = buf + cur;
@@ -286,4 +286,4 @@ size_t stomp_unescape(char *dst, size_t cap, const char *src, size_t src_len)
     return pos;
 }
 
-#endif // DETWS_ENABLE_STOMP
+#endif // DWS_ENABLE_STOMP

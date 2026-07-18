@@ -21,7 +21,7 @@
 #include <unity.h>
 
 static const uint32_t OID_SYSDESCR[] = {1, 3, 6, 1, 2, 1, 1, 1, 0};
-static const char *SYSDESCR_VAL = "DetWS v3 agent";
+static const char *SYSDESCR_VAL = "DWS v3 agent";
 
 void setUp()
 {
@@ -501,15 +501,15 @@ static bool find_inform_with_reqid(const uint8_t *d, size_t n, uint32_t reqid)
 void test_inform_v3_builds_informrequest()
 {
     snmp_v3_set_user("myuser", "authpass12", ""); // auth-only -> plaintext scopedPDU
-    det_udp_capture_enable();
-    det_udp_capture_reset();
+    dws_udp_capture_enable();
+    dws_udp_capture_reset();
 
     const uint32_t reqid = 0x4321;
     bool ok = snmp_inform_v3("127.0.0.1", 162, reqid, OID_SYSDESCR, 9, nullptr, 0);
     TEST_ASSERT_TRUE(ok); // built + "sent" through the capturing stub
 
-    const uint8_t *d = det_udp_captured();
-    size_t n = det_udp_captured_len();
+    const uint8_t *d = dws_udp_captured();
+    size_t n = dws_udp_captured_len();
     TEST_ASSERT_NOT_NULL(d);
     TEST_ASSERT_GREATER_THAN(0, (int)n);
     TEST_ASSERT_EQUAL_HEX8(0x30, d[0]); // outer SEQUENCE
@@ -610,9 +610,9 @@ void test_v3_notify_paths()
     TEST_ASSERT_FALSE(snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0));
 
     snmp_v3_set_user("myuser", "authpass12", "privpass12");
-    det_udp_capture_enable();
+    dws_udp_capture_enable();
     TEST_ASSERT_TRUE(snmp_trap_v3("192.168.1.1", 162, trap_oid, 9, nullptr, 0));
-    TEST_ASSERT_TRUE(det_udp_captured_len() > 0);
+    TEST_ASSERT_TRUE(dws_udp_captured_len() > 0);
 }
 
 // Build a v3 message wrapping a caller-supplied (possibly malformed) *plaintext*
@@ -844,7 +844,7 @@ void test_v3_auth_edge_rejections(void)
 void test_v3_notify_overflow_guards()
 {
     snmp_v3_set_user("myuser", "authpass12", "privpass12");
-    det_udp_capture_enable();
+    dws_udp_capture_enable();
     uint32_t trap_oid[] = {1, 3, 6, 1, 4, 1, 49374, 0, 1};
     uint32_t vb_oid[] = {1, 3, 6, 1, 4, 1, 49374, 5, 0};
     static uint8_t big[1600];

@@ -1,6 +1,6 @@
 # 07.SecureWebSocket - wss:// and SSE over TLS
 
-**Layer:** L6 Presentation · **Build flags:** `DETWS_ENABLE_TLS` (WebSocket + SSE on by default)
+**Layer:** L6 Presentation · **Build flags:** `DWS_ENABLE_TLS` (WebSocket + SSE on by default)
 
 ## What this example teaches
 
@@ -33,7 +33,7 @@ normally.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_TLS=1 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768" \
+  --project-option="build_flags=-DDWS_ENABLE_TLS=1 -DMAX_CONNS=4 -DDWS_TLS_ARENA_SIZE=32768" \
   --lib="." examples/L6-Presentation/07.SecureWebSocket/07.SecureWebSocket.ino
 ```
 
@@ -51,7 +51,7 @@ PEM cert/key are elided here (see the `.ino`); the C++ is verbatim with comments
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_TLS 1
+#define DWS_ENABLE_TLS 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -61,7 +61,7 @@ PEM cert/key are elided here (see the `.ino`); the C++ is verbatim with comments
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // Throwaway self-signed-style ECDSA P-256 server cert + key. DEMO ONLY.
 static const char SERVER_CERT_PEM[] = R"PEM(-----BEGIN CERTIFICATE-----

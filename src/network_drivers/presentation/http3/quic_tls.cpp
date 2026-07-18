@@ -8,11 +8,11 @@
 
 #include "network_drivers/presentation/http3/quic_tls.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
 #include "network_drivers/presentation/pqc/mlkem.h" // mlkem768_encaps (X25519MLKEM768 hybrid)
 #endif
 #include <string.h>
@@ -76,7 +76,7 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
         return false;
     }
     bool use_hybrid = false;
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
     // Prefer the PQ/T hybrid whenever the client sent a usable X25519MLKEM768 key_share.
     use_hybrid = ch.has_hybrid_share && ch.offers_x25519mlkem768;
 #endif
@@ -108,7 +108,7 @@ bool process_client_hello(QuicTls *qt, const uint8_t *msg, size_t msg_len)
     size_t ecdhe_len;
     uint16_t group;
     size_t share_len;
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
     uint8_t server_share[MLKEM768_CT_BYTES + 32]; // S_CT2(1088) || Q_S(32) for the hybrid
     if (use_hybrid)
     {
@@ -297,4 +297,4 @@ const QuicTransportParams *quic_tls_peer_params(const QuicTls *qt)
     return qt->have_peer ? &qt->peer : nullptr;
 }
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3

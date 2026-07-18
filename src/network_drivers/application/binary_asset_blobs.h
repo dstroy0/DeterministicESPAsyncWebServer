@@ -6,10 +6,10 @@
 
 /**
  * @file binary_asset_blobs.h
- * @brief Layer 7 - toggleable embedded theme stylesheets (DETWS_ENABLE_THEMES).
+ * @brief Layer 7 - toggleable embedded theme stylesheets (DWS_ENABLE_THEMES).
  *
  * A registry of minified CSS themes in flash (DROM), for serving/switching a theme at runtime.
- * Behind DETWS_ENABLE_THEMES so a build that does not want it links nothing.
+ * Behind DWS_ENABLE_THEMES so a build that does not want it links nothing.
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_BINARY_ASSET_BLOBS_H
@@ -17,26 +17,26 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_THEMES
+#if DWS_ENABLE_THEMES
 
 #include <stddef.h>
 
 /** @brief One embedded theme: its name and its minified CSS (NUL-terminated flash string). */
-struct DetThemeBlob
+struct DWSThemeBlob
 {
     const char *name;
     const char *css;
 };
 
 /** @brief The embedded theme registry (sorted by name) and its count. */
-extern const DetThemeBlob DETWS_THEME_BLOBS[];
-extern const size_t DETWS_THEME_BLOB_COUNT;
+extern const DWSThemeBlob DWS_THEME_BLOBS[];
+extern const size_t DWS_THEME_BLOB_COUNT;
 
 /**
  * @brief Look up a theme's CSS by name (exact match).
  * @return the NUL-terminated minified CSS, or nullptr if no theme by that name is embedded.
  */
-const char *detws_theme_css(const char *name);
+const char *dws_theme_css(const char *name);
 
-#endif // DETWS_ENABLE_THEMES
+#endif // DWS_ENABLE_THEMES
 #endif // DETERMINISTICESPASYNCWEBSERVER_BINARY_ASSET_BLOBS_H

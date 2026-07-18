@@ -22,8 +22,8 @@ void tearDown()
 
 void test_build_code_request_minimal()
 {
-    int n = detws_oauth2_build_code_request("auth-code-123", "https://app.example/cb", "client-42", nullptr, nullptr,
-                                            out, sizeof(out));
+    int n = dws_oauth2_build_code_request("auth-code-123", "https://app.example/cb", "client-42", nullptr, nullptr, out,
+                                          sizeof(out));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_STRING("grant_type=authorization_code&code=auth-code-123"
                              "&redirect_uri=https%3A%2F%2Fapp.example%2Fcb&client_id=client-42",
@@ -32,7 +32,7 @@ void test_build_code_request_minimal()
 
 void test_build_code_request_with_secret_encodes_specials()
 {
-    int n = detws_oauth2_build_code_request("c d", "u", "id", "s3cr!t", nullptr, out, sizeof(out));
+    int n = dws_oauth2_build_code_request("c d", "u", "id", "s3cr!t", nullptr, out, sizeof(out));
     TEST_ASSERT_TRUE(n > 0);
     // space -> %20, '!' -> %21
     TEST_ASSERT_EQUAL_STRING("grant_type=authorization_code&code=c%20d&redirect_uri=u"
@@ -42,14 +42,14 @@ void test_build_code_request_with_secret_encodes_specials()
 
 void test_build_code_request_pkce()
 {
-    detws_oauth2_build_code_request("abc", "u", "id", nullptr, "verifier_xyz-123", out, sizeof(out));
+    dws_oauth2_build_code_request("abc", "u", "id", nullptr, "verifier_xyz-123", out, sizeof(out));
     TEST_ASSERT_NOT_NULL(strstr(out, "&code_verifier=verifier_xyz-123"));
     TEST_ASSERT_NULL(strstr(out, "client_secret")); // PKCE public client: no secret
 }
 
 void test_build_refresh_request()
 {
-    int n = detws_oauth2_build_refresh_request("rt-token", "client-42", "secret", out, sizeof(out));
+    int n = dws_oauth2_build_refresh_request("rt-token", "client-42", "secret", out, sizeof(out));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_STRING("grant_type=refresh_token&refresh_token=rt-token"
                              "&client_id=client-42&client_secret=secret",
@@ -59,8 +59,7 @@ void test_build_refresh_request()
 void test_build_overflows_fail_closed()
 {
     char tiny[10];
-    TEST_ASSERT_EQUAL_INT(0,
-                          detws_oauth2_build_code_request("code", "uri", "id", nullptr, nullptr, tiny, sizeof(tiny)));
+    TEST_ASSERT_EQUAL_INT(0, dws_oauth2_build_code_request("code", "uri", "id", nullptr, nullptr, tiny, sizeof(tiny)));
 }
 
 void test_parse_token_response()
@@ -68,7 +67,7 @@ void test_parse_token_response()
     const char *json = "{\"access_token\":\"AT123\",\"token_type\":\"Bearer\",\"expires_in\":3600,"
                        "\"refresh_token\":\"RT456\",\"id_token\":\"eyJ.x.y\"}";
     DetwsOAuth2Tokens t;
-    TEST_ASSERT_TRUE(detws_oauth2_parse_token_response(json, &t));
+    TEST_ASSERT_TRUE(dws_oauth2_parse_token_response(json, &t));
     TEST_ASSERT_EQUAL_STRING("AT123", t.access_token);
     TEST_ASSERT_EQUAL_STRING("Bearer", t.token_type);
     TEST_ASSERT_EQUAL_INT32(3600, t.expires_in);
@@ -80,7 +79,7 @@ void test_parse_minimal_response()
 {
     // Only access_token present: still valid; optional fields stay empty/0.
     DetwsOAuth2Tokens t;
-    TEST_ASSERT_TRUE(detws_oauth2_parse_token_response("{\"access_token\":\"only\"}", &t));
+    TEST_ASSERT_TRUE(dws_oauth2_parse_token_response("{\"access_token\":\"only\"}", &t));
     TEST_ASSERT_EQUAL_STRING("only", t.access_token);
     TEST_ASSERT_EQUAL_STRING("", t.refresh_token);
     TEST_ASSERT_EQUAL_INT32(0, t.expires_in);
@@ -90,20 +89,19 @@ void test_parse_error_response_fails()
 {
     const char *err = "{\"error\":\"invalid_grant\",\"error_description\":\"bad code\"}";
     DetwsOAuth2Tokens t;
-    TEST_ASSERT_FALSE(detws_oauth2_parse_token_response(err, &t));
+    TEST_ASSERT_FALSE(dws_oauth2_parse_token_response(err, &t));
 }
 
 void test_oauth2_build_parse_guards()
 {
     char out[256];
     TEST_ASSERT_EQUAL_INT(
-        0, detws_oauth2_build_code_request(nullptr, "uri", "cid", "sec", "ver", out, sizeof(out))); // null code
-    TEST_ASSERT_EQUAL_INT(0,
-                          detws_oauth2_build_refresh_request(nullptr, "cid", "sec", out, sizeof(out))); // null refresh
+        0, dws_oauth2_build_code_request(nullptr, "uri", "cid", "sec", "ver", out, sizeof(out)));        // null code
+    TEST_ASSERT_EQUAL_INT(0, dws_oauth2_build_refresh_request(nullptr, "cid", "sec", out, sizeof(out))); // null refresh
     DetwsOAuth2Tokens tok;
-    TEST_ASSERT_FALSE(detws_oauth2_parse_token_response(nullptr, &tok)); // null json
+    TEST_ASSERT_FALSE(dws_oauth2_parse_token_response(nullptr, &tok)); // null json
     // A value needing percent-encoding into a tiny buffer overflows (b.ok=false).
-    TEST_ASSERT_EQUAL_INT(0, detws_oauth2_build_code_request("a b&c", "uri", "cid", "sec", "ver", out, 8));
+    TEST_ASSERT_EQUAL_INT(0, dws_oauth2_build_code_request("a b&c", "uri", "cid", "sec", "ver", out, 8));
 }
 
 int main()

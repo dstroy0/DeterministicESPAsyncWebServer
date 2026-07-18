@@ -9,7 +9,7 @@
 #include "services/fdc2214/fdc2214.h"
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_FDC2214
+#if DWS_ENABLE_FDC2214
 
 uint32_t fdc2214_data(uint16_t msb_reg, uint16_t lsb_reg)
 {
@@ -92,7 +92,7 @@ bool write16(uint8_t reg, uint16_t val)
 
 bool fdc2214_begin(uint8_t addr, uint16_t rcount, uint16_t settlecount)
 {
-    detws_i2c_begin();
+    dws_i2c_begin();
     s_fdc.addr = addr;
     uint16_t id = 0;
     if (!read16(FDC2214_REG_DEVICE_ID, &id))
@@ -121,4 +121,4 @@ bool fdc2214_read_ch0(uint32_t *out)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_FDC2214
+#endif // DWS_ENABLE_FDC2214

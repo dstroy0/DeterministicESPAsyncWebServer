@@ -1,6 +1,6 @@
 # 16.OTA - authenticated over-the-air firmware update
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_OTA`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_OTA`
 
 ## What this example teaches
 
@@ -12,7 +12,7 @@ device reboots into the new firmware.
 **One call wires authenticated streaming OTA:**
 
 ```cpp
-detws_ota_begin(server, "/update", "admin", "s3cret"); // POST body -> Update, then reboot
+dws_ota_begin(server, "/update", "admin", "s3cret"); // POST body -> Update, then reboot
 ```
 
 The body is streamed chunk by chunk into flash as it arrives; only requests with
@@ -25,7 +25,7 @@ streaming-body hook as file upload, **enable OTA or upload, not both** (see
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_OTA=1 -DMAX_CONNS=4" \
+  --project-option="build_flags=-DDWS_ENABLE_OTA=1 -DMAX_CONNS=4" \
   --lib="." examples/L7-Application/16.OTA/16.OTA.ino
 ```
 
@@ -42,7 +42,7 @@ explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_OTA 1
+#define DWS_ENABLE_OTA 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -52,7 +52,7 @@ explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void handle_root(uint8_t slot_id, HttpReq *req)
 {
@@ -78,7 +78,7 @@ void setup()
     }
 
     // Authenticated streaming OTA at POST /update (Basic admin:s3cret).
-    detws_ota_begin(server, "/update", "admin", "s3cret");
+    dws_ota_begin(server, "/update", "admin", "s3cret");
 
     Serial.println("Server up; OTA at POST /update");
 }

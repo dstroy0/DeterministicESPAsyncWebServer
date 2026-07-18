@@ -14,7 +14,7 @@
  * engine has no transport dependency and is host-testable by feeding it a byte stream.
  *
  * Fixed storage, no heap: one frame-reassembly buffer, one header-block buffer, an HPACK decoder
- * table, and a small stream table per connection (sizes from DETWS_H2_*).
+ * table, and a small stream table per connection (sizes from DWS_H2_*).
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -25,7 +25,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP2
+#if DWS_ENABLE_HTTP2
 
 #include "network_drivers/presentation/http2/h2_frame.h"
 #include "network_drivers/presentation/http2/hpack.h"
@@ -71,24 +71,24 @@ struct H2Conn
     H2Callbacks cb;
 
     // Inbound frame reassembly.
-    uint8_t fbuf[H2_FRAME_HEADER_LEN + DETWS_H2_MAX_FRAME];
+    uint8_t fbuf[H2_FRAME_HEADER_LEN + DWS_H2_MAX_FRAME];
     size_t fhave; ///< bytes buffered for the current frame
     size_t pre;   ///< preface bytes matched so far
 
     // Header-block reassembly (HEADERS + CONTINUATION); empty when a frame carries END_HEADERS.
-    uint8_t hblock[DETWS_H2_HDR_BLOCK];
+    uint8_t hblock[DWS_H2_HDR_BLOCK];
     size_t hblock_len;
     uint32_t hblock_stream;
     bool hblock_end_stream;
     bool in_header_block; ///< between a non-END_HEADERS HEADERS and its END_HEADERS CONTINUATION
 
-    HpackDynTable hdec;                ///< HPACK decoder (peer's encoder state)
-    char hscratch[DETWS_H2_HDR_BLOCK]; ///< HPACK per-header emit scratch
+    HpackDynTable hdec;              ///< HPACK decoder (peer's encoder state)
+    char hscratch[DWS_H2_HDR_BLOCK]; ///< HPACK per-header emit scratch
 
     H2Settings peer;          ///< the peer's settings (affect how we send)
     int32_t conn_send_window; ///< our connection-level DATA flow window
 
-    H2Stream streams[DETWS_H2_MAX_STREAMS];
+    H2Stream streams[DWS_H2_MAX_STREAMS];
     uint32_t last_peer_stream; ///< highest client (odd) stream id accepted
 };
 
@@ -112,5 +112,5 @@ bool h2_conn_respond(H2Conn *c, uint32_t stream_id, int status, const char *cont
 /** @brief Send a GOAWAY (last accepted stream, @p error) to begin a graceful shutdown. */
 void h2_conn_goaway(H2Conn *c, uint32_t error);
 
-#endif // DETWS_ENABLE_HTTP2
+#endif // DWS_ENABLE_HTTP2
 #endif // DETERMINISTICESPASYNCWEBSERVER_H2_CONN_H

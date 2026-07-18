@@ -8,9 +8,9 @@
 
 #include "services/failsafe/failsafe.h"
 
-#if DETWS_ENABLE_FAILSAFE
+#if DWS_ENABLE_FAILSAFE
 
-#include "services/clock.h" // detws_millis() - the pluggable monotonic clock
+#include "services/clock.h" // dws_millis() - the pluggable monotonic clock
 
 namespace
 {
@@ -18,7 +18,7 @@ namespace
 // grouped for auditability, unreachable from any other translation unit.
 struct FailsafeCtx
 {
-    DetwsLifeline lines[DETWS_FAILSAFE_MAX_LIFELINES];
+    DetwsLifeline lines[DWS_FAILSAFE_MAX_LIFELINES];
     DetwsFailsafeCb cb = nullptr;
     void *cb_arg = nullptr;
 };
@@ -40,17 +40,17 @@ size_t u32_dec(uint32_t v, char *out)
 }
 } // namespace
 
-void detws_failsafe_reset(void)
+void dws_failsafe_reset(void)
 {
-    for (int i = 0; i < DETWS_FAILSAFE_MAX_LIFELINES; i++)
+    for (int i = 0; i < DWS_FAILSAFE_MAX_LIFELINES; i++)
         s_fs.lines[i] = DetwsLifeline{};
     s_fs.cb = nullptr;
     s_fs.cb_arg = nullptr;
 }
 
-int detws_failsafe_register_at(const char *name, uint32_t deadline_ms, uint32_t now)
+int dws_failsafe_register_at(const char *name, uint32_t deadline_ms, uint32_t now)
 {
-    for (int i = 0; i < DETWS_FAILSAFE_MAX_LIFELINES; i++)
+    for (int i = 0; i < DWS_FAILSAFE_MAX_LIFELINES; i++)
     {
         if (!s_fs.lines[i].armed)
         {
@@ -65,40 +65,40 @@ int detws_failsafe_register_at(const char *name, uint32_t deadline_ms, uint32_t 
     return -1;
 }
 
-int detws_failsafe_register(const char *name, uint32_t deadline_ms)
+int dws_failsafe_register(const char *name, uint32_t deadline_ms)
 {
-    return detws_failsafe_register_at(name, deadline_ms, detws_millis());
+    return dws_failsafe_register_at(name, deadline_ms, dws_millis());
 }
 
-bool detws_failsafe_feed_at(int id, uint32_t now)
+bool dws_failsafe_feed_at(int id, uint32_t now)
 {
-    if (id < 0 || id >= DETWS_FAILSAFE_MAX_LIFELINES || !s_fs.lines[id].armed)
+    if (id < 0 || id >= DWS_FAILSAFE_MAX_LIFELINES || !s_fs.lines[id].armed)
         return false;
     s_fs.lines[id].last_feed_ms = now;
     s_fs.lines[id].breached = false; // a fresh check-in clears the breach so it can fire again next time
     return true;
 }
 
-bool detws_failsafe_feed(int id)
+bool dws_failsafe_feed(int id)
 {
-    return detws_failsafe_feed_at(id, detws_millis());
+    return dws_failsafe_feed_at(id, dws_millis());
 }
 
-void detws_failsafe_on_breach(DetwsFailsafeCb cb, void *arg)
+void dws_failsafe_on_breach(DetwsFailsafeCb cb, void *arg)
 {
     s_fs.cb = cb;
     s_fs.cb_arg = arg;
 }
 
-uint32_t detws_failsafe_check_at(uint32_t now)
+uint32_t dws_failsafe_check_at(uint32_t now)
 {
     uint32_t mask = 0;
-    for (int i = 0; i < DETWS_FAILSAFE_MAX_LIFELINES; i++)
+    for (int i = 0; i < DWS_FAILSAFE_MAX_LIFELINES; i++)
     {
         DetwsLifeline &l = s_fs.lines[i];
         if (!l.armed)
             continue;
-        if (!detws_lifeline_overdue(now, l.last_feed_ms, l.deadline_ms))
+        if (!dws_lifeline_overdue(now, l.last_feed_ms, l.deadline_ms))
             continue;
         mask |= (1u << i);
         if (l.breached) // fire once per stuck episode
@@ -110,9 +110,9 @@ uint32_t detws_failsafe_check_at(uint32_t now)
     return mask;
 }
 
-uint32_t detws_failsafe_check(void)
+uint32_t dws_failsafe_check(void)
 {
-    return detws_failsafe_check_at(detws_millis());
+    return dws_failsafe_check_at(dws_millis());
 }
 
 // append a literal into out[*n], bounded by cap (leaving room for the NUL); truncates safely on overflow.
@@ -130,7 +130,7 @@ static void fs_put_u32(char *out, size_t cap, size_t *n, uint32_t v)
         out[(*n)++] = b[i];
 }
 
-int detws_failsafe_json_at(uint32_t now, char *out, size_t cap)
+int dws_failsafe_json_at(uint32_t now, char *out, size_t cap)
 {
     // {"lifelines":[{"name":"...","overdue":false,"age_ms":N,"deadline_ms":N},...]}
     if (!out || cap == 0)
@@ -138,7 +138,7 @@ int detws_failsafe_json_at(uint32_t now, char *out, size_t cap)
     size_t n = 0;
     fs_put(out, cap, &n, "{\"lifelines\":[");
     bool first = true;
-    for (int i = 0; i < DETWS_FAILSAFE_MAX_LIFELINES; i++)
+    for (int i = 0; i < DWS_FAILSAFE_MAX_LIFELINES; i++)
     {
         DetwsLifeline &l = s_fs.lines[i];
         if (!l.armed)
@@ -149,7 +149,7 @@ int detws_failsafe_json_at(uint32_t now, char *out, size_t cap)
         fs_put(out, cap, &n, "{\"name\":\"");
         fs_put(out, cap, &n, l.name ? l.name : "");
         fs_put(out, cap, &n, "\",\"overdue\":");
-        fs_put(out, cap, &n, detws_lifeline_overdue(now, l.last_feed_ms, l.deadline_ms) ? "true" : "false");
+        fs_put(out, cap, &n, dws_lifeline_overdue(now, l.last_feed_ms, l.deadline_ms) ? "true" : "false");
         fs_put(out, cap, &n, ",\"age_ms\":");
         fs_put_u32(out, cap, &n, now - l.last_feed_ms);
         fs_put(out, cap, &n, ",\"deadline_ms\":");
@@ -161,4 +161,4 @@ int detws_failsafe_json_at(uint32_t now, char *out, size_t cap)
     return (int)n;
 }
 
-#endif // DETWS_ENABLE_FAILSAFE
+#endif // DWS_ENABLE_FAILSAFE

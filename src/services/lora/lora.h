@@ -3,9 +3,9 @@
 
 /**
  * @file lora.h
- * @brief LoRa radio codec + driver (DETWS_ENABLE_LORA) - Semtech SX127x / RFM95-96.
+ * @brief LoRa radio codec + driver (DWS_ENABLE_LORA) - Semtech SX127x / RFM95-96.
  *
- * A per-radio plugin for the gateway (DETWS_ENABLE_GATEWAY): the southbound-radio half of
+ * A per-radio plugin for the gateway (DWS_ENABLE_GATEWAY): the southbound-radio half of
  * a LoRa-to-web bridge. Two layers:
  *
  *   - **Codec** - the RadioHead-compatible 4-byte frame header (`to` / `from` / `id` /
@@ -19,7 +19,7 @@
  *     bus and portable across whatever SPI peripheral you wire the module to.
  *
  * Wiring to the gateway (see example 11.LoRaGateway): poll lora_recv(); on a frame,
- * lora_frame_parse() then det_gateway_uplink(port, header.from, payload, len, rssi). A downlink
+ * lora_frame_parse() then dws_gateway_uplink(port, header.from, payload, len, rssi). A downlink
  * builds a frame with lora_frame_build() and lora_send()s it. The codec + register protocol
  * are verified on the host; the RF link itself needs the module.
  *
@@ -32,7 +32,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_LORA
+#if DWS_ENABLE_LORA
 
 #include <stddef.h>
 #include <stdint.h>
@@ -99,7 +99,7 @@ bool lora_init(const lora_bus *bus, const lora_config *cfg);
 /**
  * @brief Load @p frame into the FIFO and start a transmit (the radio returns to standby on
  *        TxDone). Poll lora_tx_done() for completion.
- * @return true; false if @p len exceeds DETWS_LORA_MAX_PAYLOAD + 4.
+ * @return true; false if @p len exceeds DWS_LORA_MAX_PAYLOAD + 4.
  */
 bool lora_send(const lora_bus *bus, const uint8_t *frame, uint8_t len);
 
@@ -116,6 +116,6 @@ void lora_set_rx(const lora_bus *bus);
  */
 int lora_recv(const lora_bus *bus, uint8_t *buf, uint8_t cap, int16_t *rssi);
 
-#endif // DETWS_ENABLE_LORA
+#endif // DWS_ENABLE_LORA
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_LORA_H

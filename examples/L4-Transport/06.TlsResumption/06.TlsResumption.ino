@@ -3,7 +3,7 @@
 
 /**
  * @file 06.TlsResumption.ino
- * @brief HTTPS with TLS session resumption (RFC 5077 tickets, DETWS_ENABLE_TLS_RESUMPTION).
+ * @brief HTTPS with TLS session resumption (RFC 5077 tickets, DWS_ENABLE_TLS_RESUMPTION).
  *
  * Same HTTPS server as example 22, but with session tickets enabled: a returning
  * client completes an abbreviated handshake (no certificate or full key exchange),
@@ -17,15 +17,15 @@
  *
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
- *     build_flags = -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_TLS_RESUMPTION=1
+ *     build_flags = -DDWS_ENABLE_TLS=1 -DDWS_ENABLE_TLS_RESUMPTION=1
  * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
  * WARNING: the certificate and PRIVATE KEY below are a throwaway self-signed pair
  * committed for the demo - the key is public. NEVER use them in production.
  */
 
-#define DETWS_ENABLE_TLS 1
-#define DETWS_ENABLE_TLS_RESUMPTION 1
+#define DWS_ENABLE_TLS 1
+#define DWS_ENABLE_TLS_RESUMPTION 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -55,7 +55,7 @@ AwEHoUQDQgAEHGSfVhJFHrMMzWyOZu/wrFPpz1RfblpT3pMVSSjJx7boWMWgbZvO
 -----END EC PRIVATE KEY-----
 )PEM";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

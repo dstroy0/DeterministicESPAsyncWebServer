@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http2/h2_server.h"
 
-#if DETWS_ENABLE_HTTP2 && DETWS_ENABLE_TLS
+#if DWS_ENABLE_HTTP2 && DWS_ENABLE_TLS
 
 #include "network_drivers/presentation/http2/h2_conn.h"
 #include "network_drivers/presentation/http_parser/http_parser.h"
@@ -18,24 +18,24 @@
 #include <string.h>
 
 // The per-slot engines are large (~28 KB each), so the pool does not fit internal DRAM alongside
-// TLS - it lives in PSRAM (DETWS_H2_POOL_IN_PSRAM). Same mechanism/caveat as the TLS arena: it
+// TLS - it lives in PSRAM (DWS_H2_POOL_IN_PSRAM). Same mechanism/caveat as the TLS arena: it
 // needs a framework built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y (the stock
 // arduino-esp32 core ships it OFF, so EXT_RAM_BSS_ATTR would no-op); see tools/psram/README.md.
-#if DETWS_H2_POOL_IN_PSRAM && defined(ARDUINO)
+#if DWS_H2_POOL_IN_PSRAM && defined(ARDUINO)
 #include <esp_attr.h> // pulls in sdkconfig.h -> CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY
 #if !defined(CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY)
 #error                                                                                                                 \
-    "DETWS_H2_POOL_IN_PSRAM needs a framework built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y. The stock arduino-esp32 core ships it OFF, so EXT_RAM_BSS_ATTR silently no-ops and the pool would overflow internal DRAM. Rebuild the core (tools/psram/README.md) or unset DETWS_H2_POOL_IN_PSRAM."
+    "DWS_H2_POOL_IN_PSRAM needs a framework built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y. The stock arduino-esp32 core ships it OFF, so EXT_RAM_BSS_ATTR silently no-ops and the pool would overflow internal DRAM. Rebuild the core (tools/psram/README.md) or unset DWS_H2_POOL_IN_PSRAM."
 #endif
 #if defined(EXT_RAM_BSS_ATTR)
-#define DETWS_H2_POOL_ATTR EXT_RAM_BSS_ATTR // IDF v5 / arduino-esp32 3.x
+#define DWS_H2_POOL_ATTR EXT_RAM_BSS_ATTR // IDF v5 / arduino-esp32 3.x
 #elif defined(EXT_RAM_ATTR)
-#define DETWS_H2_POOL_ATTR EXT_RAM_ATTR // IDF v4 / arduino-esp32 2.x
+#define DWS_H2_POOL_ATTR EXT_RAM_ATTR // IDF v4 / arduino-esp32 2.x
 #else
-#define DETWS_H2_POOL_ATTR
+#define DWS_H2_POOL_ATTR
 #endif
 #else
-#define DETWS_H2_POOL_ATTR
+#define DWS_H2_POOL_ATTR
 #endif
 
 // HTTP/2 connection pool, owned by one instance (internal linkage): the per-slot H2 connection
@@ -44,7 +44,7 @@ struct H2ServerCtx
 {
     H2Conn pool[MAX_CONNS];
 };
-static DETWS_H2_POOL_ATTR H2ServerCtx s_h2;
+static DWS_H2_POOL_ATTR H2ServerCtx s_h2;
 
 namespace
 {
@@ -64,7 +64,7 @@ void cb_write(void *io, const uint8_t *data, size_t len)
     size_t off = 0;
     while (off < len)
     {
-        int w = det_tls_write(slot, data + off, len - off);
+        int w = dws_tls_write(slot, data + off, len - off);
         if (w <= 0)
             break; // error / would-block: best-effort for this path
         off += (size_t)w;
@@ -138,7 +138,7 @@ void cb_data(void *app, uint32_t, const uint8_t *data, size_t len, bool)
 }
 } // namespace
 
-void det_h2_server_open(uint8_t slot)
+void dws_h2_server_open(uint8_t slot)
 {
     H2Callbacks cb;
     memset(&cb, 0, sizeof cb);
@@ -152,11 +152,11 @@ void det_h2_server_open(uint8_t slot)
     http_parser_reset(&http_pool[slot]);
 }
 
-void det_h2_server_data(uint8_t slot)
+void dws_h2_server_data(uint8_t slot)
 {
     uint8_t buf[512];
     int n;
-    while ((n = det_tls_read(slot, buf, sizeof buf)) > 0)
+    while ((n = dws_tls_read(slot, buf, sizeof buf)) > 0)
     {
         if (!h2_conn_recv(&s_h2.pool[slot], buf, (size_t)n))
         {
@@ -166,18 +166,18 @@ void det_h2_server_data(uint8_t slot)
     }
 }
 
-bool det_h2_server_respond(uint8_t slot, int code, const char *content_type, const char *body, size_t len)
+bool dws_h2_server_respond(uint8_t slot, int code, const char *content_type, const char *body, size_t len)
 {
     bool ok = h2_conn_respond(&s_h2.pool[slot], conn_pool[slot].h2_stream, code, content_type, body, len);
     http_parser_reset(&http_pool[slot]); // ready for the next stream; keep the connection open
     return ok;
 }
 
-void det_h2_server_close(uint8_t slot)
+void dws_h2_server_close(uint8_t slot)
 {
     conn_pool[slot].h2 = 0;
     conn_pool[slot].h2_checked = 0;
     conn_pool[slot].resp_sink = nullptr;
 }
 
-#endif // DETWS_ENABLE_HTTP2 && DETWS_ENABLE_TLS
+#endif // DWS_ENABLE_HTTP2 && DWS_ENABLE_TLS

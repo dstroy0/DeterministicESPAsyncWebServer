@@ -3,7 +3,7 @@
 
 /**
  * @file ads.h
- * @brief Beckhoff ADS / AMS protocol codec (DETWS_ENABLE_ADS) - zero-heap request builders +
+ * @brief Beckhoff ADS / AMS protocol codec (DWS_ENABLE_ADS) - zero-heap request builders +
  *        response parsers for TwinCAT PLCs over TCP 48898 (the PC-based-control protocol).
  *
  * ADS (Automation Device Specification) rides on AMS (Automation Message Specification). Every
@@ -30,7 +30,7 @@
  * AMS header field order (target-before-source), command ids, and state flags verified against
  * the Beckhoff InfoSys AMS/ADS specification; payload layouts cross-checked with Beckhoff's own
  * open-source ADS library, `pyads`, and Apache PLC4X. Pure codec, host-tested - the caller owns
- * the TCP connection (`det_client_*`) and the AMS route registration on the target router.
+ * the TCP connection (`dws_client_*`) and the AMS route registration on the target router.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -41,7 +41,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_ADS
+#if DWS_ENABLE_ADS
 
 #include <stddef.h>
 #include <stdint.h>
@@ -258,6 +258,6 @@ using AdsNotificationSampleFn = void (*)(uint32_t notification_handle, const uin
 /// buffer is truncated or internally inconsistent.
 bool ads_parse_notification(const uint8_t *data, size_t data_len, AdsNotificationSampleFn on_sample, void *user);
 
-#endif // DETWS_ENABLE_ADS
+#endif // DWS_ENABLE_ADS
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_ADS_H

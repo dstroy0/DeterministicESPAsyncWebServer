@@ -9,7 +9,7 @@
 
 #include "services/snmp/snmp_notify.h"
 
-#if DETWS_ENABLE_SNMP_TRAP
+#if DWS_ENABLE_SNMP_TRAP
 
 #include "services/snmp/snmp_ber.h"
 #include <string.h>
@@ -124,21 +124,21 @@ SnmpNotifyCtx s_notify;
 bool snmp_trap_v2c(const char *dst_ip, uint16_t port, const char *community, const uint32_t *trap_oid,
                    size_t trap_oid_len, const SnmpVarbind *vbs, size_t n)
 {
-    uint8_t buf[DETWS_SNMP_TRAP_BUF_SIZE];
+    uint8_t buf[DWS_SNMP_TRAP_BUF_SIZE];
     uint32_t up = (uint32_t)(millis() / 10); // TimeTicks = hundredths of a second
     size_t len = snmp_notify_build_v2c(buf, sizeof(buf), community, (uint8_t)SnmpTag::SNMP_PDU_TRAPV2,
                                        s_notify.trap_reqid++, trap_oid, trap_oid_len, up, vbs, n);
-    return len && det_udp_sendto(dst_ip, port, buf, len);
+    return len && dws_udp_sendto(dst_ip, port, buf, len);
 }
 
 bool snmp_inform_v2c(const char *dst_ip, uint16_t port, const char *community, uint32_t request_id,
                      const uint32_t *trap_oid, size_t trap_oid_len, const SnmpVarbind *vbs, size_t n)
 {
-    uint8_t buf[DETWS_SNMP_TRAP_BUF_SIZE];
+    uint8_t buf[DWS_SNMP_TRAP_BUF_SIZE];
     uint32_t up = (uint32_t)(millis() / 10);
     size_t len = snmp_notify_build_v2c(buf, sizeof(buf), community, 0xA6 /* InformRequest */, request_id, trap_oid,
                                        trap_oid_len, up, vbs, n);
-    return len && det_udp_sendto(dst_ip, port, buf, len);
+    return len && dws_udp_sendto(dst_ip, port, buf, len);
 }
 
 #else // host build: transport is a stub
@@ -155,4 +155,4 @@ bool snmp_inform_v2c(const char *, uint16_t, const char *, uint32_t, const uint3
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_SNMP_TRAP
+#endif // DWS_ENABLE_SNMP_TRAP

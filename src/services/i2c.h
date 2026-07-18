@@ -6,9 +6,9 @@
  * @brief The one owner of the shared I2C bus bring-up for the peripheral drivers.
  *
  * The sensor / peripheral drivers (RTC, SHT3x, MPR121, ADS1115, INA219, PCA9685) all share a
- * single I2C bus, so they all initialize it through detws_i2c_begin() rather than calling
- * Wire.begin() themselves. That gives one place to choose the pins: DETWS_I2C_SDA_PIN /
- * DETWS_I2C_SCL_PIN (default -1 = the platform default GPIO 21 / 22). Move them off 21/22 when
+ * single I2C bus, so they all initialize it through dws_i2c_begin() rather than calling
+ * Wire.begin() themselves. That gives one place to choose the pins: DWS_I2C_SDA_PIN /
+ * DWS_I2C_SCL_PIN (default -1 = the platform default GPIO 21 / 22). Move them off 21/22 when
  * those pins are needed elsewhere - most importantly a wired-Ethernet PHY: the LAN8720 RMII on
  * the classic ESP32 (WROOM/WROVER) and the ESP32-P4 uses GPIO 21 and 22 (the S3/C3 have no RMII
  * EMAC and use an SPI Ethernet such as the W5500 instead). Re-begin is idempotent, so per-driver
@@ -29,10 +29,10 @@
 
 #include <Wire.h>
 
-/** @brief Bring up the shared I2C bus on DETWS_I2C_SDA_PIN / DETWS_I2C_SCL_PIN (-1 = default). */
-inline void detws_i2c_begin()
+/** @brief Bring up the shared I2C bus on DWS_I2C_SDA_PIN / DWS_I2C_SCL_PIN (-1 = default). */
+inline void dws_i2c_begin()
 {
-    Wire.begin((int)DETWS_I2C_SDA_PIN, (int)DETWS_I2C_SCL_PIN);
+    Wire.begin((int)DWS_I2C_SDA_PIN, (int)DWS_I2C_SCL_PIN);
 }
 
 #endif // ARDUINO

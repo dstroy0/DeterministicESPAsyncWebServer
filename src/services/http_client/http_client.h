@@ -3,7 +3,7 @@
 
 /**
  * @file http_client.h
- * @brief Zero-heap outbound HTTP(S) client over raw lwIP (DETWS_ENABLE_HTTP_CLIENT).
+ * @brief Zero-heap outbound HTTP(S) client over raw lwIP (DWS_ENABLE_HTTP_CLIENT).
  *
  * A blocking client for issuing requests *from* the device: webhooks, telemetry
  * push, REST calls. Split, like the other services, into a pure host-testable
@@ -29,7 +29,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_HTTP_CLIENT
+#if DWS_ENABLE_HTTP_CLIENT
 
 // Transport / result error codes (negative; HTTP status codes are positive).
 enum class HttpClientError : int32_t
@@ -106,7 +106,7 @@ int http_get(const char *url, HttpClientResult *out);
 int http_post(const char *url, const char *content_type, const uint8_t *body, size_t body_len, HttpClientResult *out);
 
 // ---------------------------------------------------------------------------
-// https:// server authentication (optional; needs DETWS_ENABLE_HTTP_CLIENT_TLS)
+// https:// server authentication (optional; needs DWS_ENABLE_HTTP_CLIENT_TLS)
 // ---------------------------------------------------------------------------
 // By default the client encrypts but does NOT authenticate the server (no trust
 // store). Install a CA and/or a certificate pin to authenticate the peer; calls
@@ -121,6 +121,6 @@ void http_client_set_pin(const uint8_t sha256[32]);
 /** @brief Clear any installed CA / pin (back to encrypt-only). */
 void http_client_clear_verify();
 
-#endif // DETWS_ENABLE_HTTP_CLIENT
+#endif // DWS_ENABLE_HTTP_CLIENT
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_HTTP_CLIENT_H

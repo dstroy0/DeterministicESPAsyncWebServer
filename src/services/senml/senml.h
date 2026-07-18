@@ -3,7 +3,7 @@
 
 /**
  * @file senml.h
- * @brief SenML (RFC 8428) sensor-measurement pack builder (DETWS_ENABLE_SENML) - zero-heap
+ * @brief SenML (RFC 8428) sensor-measurement pack builder (DWS_ENABLE_SENML) - zero-heap
  *        SenML-JSON and SenML-CBOR encoders over the shipped JSON / CBOR codecs. SenML is
  *        the standard measurement format for CoAP / LwM2M / HTTP telemetry.
  *
@@ -29,7 +29,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_SENML
+#if DWS_ENABLE_SENML
 
 #include <stddef.h>
 #include <stdint.h>
@@ -65,6 +65,6 @@ size_t senml_json_build(char *buf, size_t cap, const SenmlRecord *records, size_
 /** @brief Build a SenML-CBOR pack (a CBOR array of integer-keyed maps). Returns bytes, or 0. */
 size_t senml_cbor_build(uint8_t *buf, size_t cap, const SenmlRecord *records, size_t count);
 
-#endif // DETWS_ENABLE_SENML
+#endif // DWS_ENABLE_SENML
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SENML_H

@@ -3,7 +3,7 @@
 
 /**
  * @file dnp3.h
- * @brief DNP3 (IEEE 1815) data-link frame codec (DETWS_ENABLE_DNP3) - zero-heap builder +
+ * @brief DNP3 (IEEE 1815) data-link frame codec (DWS_ENABLE_DNP3) - zero-heap builder +
  *        CRC-validating parser for the SCADA / utility outstation link layer.
  *
  * A DNP3 data-link frame:
@@ -30,7 +30,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_DNP3
+#if DWS_ENABLE_DNP3
 
 #include <stddef.h>
 #include <stdint.h>
@@ -80,6 +80,6 @@ struct Dnp3Frame
 bool dnp3_parse_frame(const uint8_t *buf, size_t len, Dnp3Frame *out, uint8_t *out_user, size_t out_cap,
                       size_t *out_user_len);
 
-#endif // DETWS_ENABLE_DNP3
+#endif // DWS_ENABLE_DNP3
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DNP3_H

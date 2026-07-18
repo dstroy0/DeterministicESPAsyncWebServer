@@ -3,7 +3,7 @@
 
 /**
  * @file melsec.h
- * @brief Mitsubishi MELSEC MC protocol (binary 3E frame) codec (DETWS_ENABLE_MELSEC) -
+ * @brief Mitsubishi MELSEC MC protocol (binary 3E frame) codec (DWS_ENABLE_MELSEC) -
  *        zero-heap batch-read request builder + response parser for MELSEC PLCs over TCP/UDP.
  *
  * The QnA-compatible binary 3E request frame (all multi-octet fields LITTLE-endian, unlike
@@ -37,7 +37,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_MELSEC
+#if DWS_ENABLE_MELSEC
 
 #include <stddef.h>
 #include <stdint.h>
@@ -102,6 +102,6 @@ struct MelsecResponse
 /** @brief Parse + validate a binary 3E response (subheader 0xD0 0x00, length, end code, data). */
 bool melsec_parse_response(const uint8_t *buf, size_t len, MelsecResponse *out);
 
-#endif // DETWS_ENABLE_MELSEC
+#endif // DWS_ENABLE_MELSEC
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_MELSEC_H

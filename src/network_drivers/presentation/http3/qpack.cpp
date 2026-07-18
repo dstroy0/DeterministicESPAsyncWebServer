@@ -12,7 +12,7 @@
 
 #include "network_drivers/presentation/http3/qpack.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/hpack_prim/hpack_prim.h" // shared prefix-int + Huffman
 #include <string.h>
@@ -282,4 +282,4 @@ bool qpack_decode(const uint8_t *block, size_t len, char *scratch, size_t scratc
     return true;
 }
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3

@@ -8,7 +8,7 @@
 
 #include "services/gnss/rtcm3.h"
 
-#if DETWS_ENABLE_NTRIP_CASTER
+#if DWS_ENABLE_NTRIP_CASTER
 
 #include <string.h>
 
@@ -229,4 +229,4 @@ bool rtcm3_parse_1005(const uint8_t *payload, uint16_t payload_len, Rtcm3Station
     return true;
 }
 
-#endif // DETWS_ENABLE_NTRIP_CASTER
+#endif // DWS_ENABLE_NTRIP_CASTER

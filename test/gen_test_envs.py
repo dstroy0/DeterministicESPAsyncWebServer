@@ -22,7 +22,7 @@ The table schema (test/test_matrix.json), per env:
     "native_x": {
         "desc":  "free text -> emitted as ; comments above the env",
         "base":  "native_base" (default) | "env:native_app",
-        "flags": ["-DDETWS_ENABLE_X=1", ...],     # extras beyond the base flags
+        "flags": ["-DDWS_ENABLE_X=1", ...],     # extras beyond the base flags
         "src":   ["+<services/x/x.cpp>", "-<*>"], # build_src_filter lines, verbatim
         "tests": ["test_x", ...],                 # test_filter entries
         "test_build_src": "no"                    # optional override

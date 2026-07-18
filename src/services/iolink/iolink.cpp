@@ -8,7 +8,7 @@
 
 #include "services/iolink/iolink.h"
 
-#if DETWS_ENABLE_IOLINK
+#if DWS_ENABLE_IOLINK
 
 uint8_t iol_mc(bool read, uint8_t channel, uint8_t address)
 {
@@ -83,4 +83,4 @@ bool iol_verify(const uint8_t *msg, size_t len, size_t check_idx)
     return compress6(x) == (uint8_t)(msg[check_idx] & IOL_CHECK_SUM_MASK);
 }
 
-#endif // DETWS_ENABLE_IOLINK
+#endif // DWS_ENABLE_IOLINK

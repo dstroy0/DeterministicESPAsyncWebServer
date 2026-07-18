@@ -3,7 +3,7 @@
 
 /**
  * @file 12.AuthLockout.ino
- * @brief Brute-force lockout for HTTP auth (DETWS_ENABLE_AUTH_LOCKOUT).
+ * @brief Brute-force lockout for HTTP auth (DWS_ENABLE_AUTH_LOCKOUT).
  *
  * Adds a per-source-IP guard in front of authenticated routes: after a few wrong
  * passwords from one address, that address is locked out with an exponential
@@ -13,15 +13,15 @@
  *
  * NOTE: enable the lockout for the whole build (a .ino #define does not reach the
  * separately compiled library). In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_AUTH_LOCKOUT=1
- * (DETWS_ENABLE_AUTH is on by default. Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so
+ *     build_flags = -DDWS_ENABLE_AUTH_LOCKOUT=1
+ * (DWS_ENABLE_AUTH is on by default. Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so
  * it builds as-is.)
  *
  * Try: repeat `curl -u admin:wrong http://<ip>/secret` until you get 429, then
  * `curl -u admin:s3cret http://<ip>/secret` once the Retry-After elapses.
  */
 
-#define DETWS_ENABLE_AUTH_LOCKOUT 1
+#define DWS_ENABLE_AUTH_LOCKOUT 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -30,7 +30,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -51,7 +51,7 @@ void setup()
 
     // Protected route. Repeated wrong passwords from one IP trip the lockout
     // (429) with exponential backoff; the tuning lives in ServerConfig.h
-    // (DETWS_AUTH_LOCKOUT_THRESHOLD / _BASE_MS / _MAX_MS).
+    // (DWS_AUTH_LOCKOUT_THRESHOLD / _BASE_MS / _MAX_MS).
     server.on(
         "/secret", HttpMethod::HTTP_GET,
         [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "authenticated!"); }, "Restricted", "admin",

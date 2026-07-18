@@ -14,14 +14,14 @@
 #include <unity.h>
 
 // A test-controllable monotonic clock (ms) so the stale-nonce path can be exercised
-// deterministically: tests advance g_fake_ms and the library reads it via detws_millis().
+// deterministically: tests advance g_fake_ms and the library reads it via dws_millis().
 static uint32_t g_fake_ms = 0;
 static uint32_t fake_clock()
 {
     return g_fake_ms;
 }
 
-static DetWebServer server;
+static DWS server;
 static bool g_called;
 
 static const char *kUser = "admin";
@@ -91,7 +91,7 @@ static void compute_response(const char *user, const char *realm, const char *pa
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     g_called = false;
     for (int i = 0; i < MAX_CONNS; i++)
     {
@@ -110,7 +110,7 @@ void setUp()
 void tearDown()
 {
     tcp_capture_disable();
-    detws_set_clock(nullptr, 0); // revert any injected clock so tests stay independent
+    dws_set_clock(nullptr, 0); // revert any injected clock so tests stay independent
 }
 
 static void rearm_slot(uint8_t slot)
@@ -346,9 +346,9 @@ void test_nonce_is_stateless_timestamped()
 // the fresh nonce from that response authenticates at the same (advanced) time.
 void test_stale_nonce_triggers_transparent_retry()
 {
-    detws_set_clock(fake_clock, 1000); // 1000 ticks/sec -> 1 tick == 1 ms
+    dws_set_clock(fake_clock, 1000); // 1000 ticks/sec -> 1 tick == 1 ms
     g_fake_ms = 0;
-    server = DetWebServer(); // re-seed the keying secret under the injected clock
+    server = DWS(); // re-seed the keying secret under the injected clock
     server.on("/secure", HttpMethod::HTTP_GET, h_secure, kRealm, kUser, kPass, true);
 
     // Mint a nonce at t=0.
@@ -357,7 +357,7 @@ void test_stale_nonce_triggers_transparent_retry()
     TEST_ASSERT_TRUE(extract_nonce(tcp_captured(), nonce, sizeof(nonce)));
 
     // Jump past the nonce lifetime, then present a valid response with the old nonce.
-    g_fake_ms = DETWS_DIGEST_NONCE_LIFETIME_MS + 1;
+    g_fake_ms = DWS_DIGEST_NONCE_LIFETIME_MS + 1;
     char resp[65];
     compute_response(kUser, kRealm, kPass, "GET", "/secure", nonce, "00000001", "abc", resp);
     char authreq[640];

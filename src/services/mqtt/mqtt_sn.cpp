@@ -8,7 +8,7 @@
 
 #include "services/mqtt/mqtt_sn.h"
 
-#if DETWS_ENABLE_MQTT_SN
+#if DWS_ENABLE_MQTT_SN
 
 #include <string.h>
 
@@ -326,4 +326,4 @@ bool mqttsn_parse_register(const uint8_t *payload, size_t len, uint16_t *topic_i
     return true;
 }
 
-#endif // DETWS_ENABLE_MQTT_SN
+#endif // DWS_ENABLE_MQTT_SN

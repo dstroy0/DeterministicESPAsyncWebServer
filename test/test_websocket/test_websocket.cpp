@@ -16,7 +16,7 @@
 #include <string.h>
 #include <unity.h>
 
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
 #include "lwip/tcp.h" // mock write-capture (tcp_capture_reset / tcp_captured)
 #include "network_drivers/presentation/inflate/inflate.h"
 #endif
@@ -910,7 +910,7 @@ void stress_ws_parse_two_consecutive_frames()
     TEST_ASSERT_EQUAL_STRING(t2, (const char *)ws->buf);
 }
 
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
 // permessage-deflate: a compressed (RSV1) frame is decompressed before delivery.
 void test_ws_permessage_deflate_inbound()
 {
@@ -1034,7 +1034,7 @@ void test_ws_deflate_inflate_error_closes()
     TEST_ASSERT_EQUAL(WsParseState::WS_ERROR, ws->parse_state); // inflate error -> closed
 }
 
-#endif // DETWS_ENABLE_WS_DEFLATE
+#endif // DWS_ENABLE_WS_DEFLATE
 
 // Outbound fragmentation (RFC 6455 sec 5.4): a data message longer than the frag size is split into
 // opcode|FIN=0, CONTINUATION|FIN=0..., CONTINUATION|FIN=1 frames; frag=0 restores the single frame.
@@ -1042,7 +1042,7 @@ void test_ws_outbound_fragmentation()
 {
     WsConn *ws = ws_alloc(0);
     TEST_ASSERT_NOT_NULL(ws);
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
     ws->pmd = false; // send the payload verbatim so the split is exactly these bytes
 #endif
     const uint8_t msg[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
@@ -1178,7 +1178,7 @@ int main()
     RUN_TEST(test_ws_text_invalid_utf8_rejected);
     RUN_TEST(test_ws_text_valid_utf8_accepted);
     RUN_TEST(test_ws_binary_arbitrary_bytes_accepted);
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
     RUN_TEST(test_ws_permessage_deflate_inbound);
     RUN_TEST(test_ws_rsv1_without_negotiation_closes);
     RUN_TEST(test_ws_permessage_deflate_outbound);

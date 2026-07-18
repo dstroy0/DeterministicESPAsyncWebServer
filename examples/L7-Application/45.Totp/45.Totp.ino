@@ -3,7 +3,7 @@
 
 /**
  * @file 45.Totp.ino
- * @brief TOTP two-factor auth (RFC 6238) (DETWS_ENABLE_TOTP).
+ * @brief TOTP two-factor auth (RFC 6238) (DWS_ENABLE_TOTP).
  *
  * Decodes a base32 shared secret (the kind Google Authenticator / Authy import),
  * computes the current 6-digit code, and verifies a submitted one within a +/-1
@@ -15,11 +15,11 @@
  * (NTP); this example uses a fixed RTC base so it is self-contained.
  *
  * NOTE: enable it for the whole build. In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_TOTP=1
+ *     build_flags = -DDWS_ENABLE_TOTP=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_TOTP 1
+#define DWS_ENABLE_TOTP 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -34,7 +34,7 @@ static const char *SECRET_B32 = "JBSWY3DPEHPK3PXP";
 static uint8_t g_secret[32];
 static size_t g_secret_len = 0;
 
-DetWebServer server;
+DWS server;
 
 static uint64_t now_unix()
 {
@@ -52,11 +52,11 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    int n = detws_base32_decode(SECRET_B32, g_secret, sizeof(g_secret));
+    int n = dws_base32_decode(SECRET_B32, g_secret, sizeof(g_secret));
     g_secret_len = (n > 0) ? (size_t)n : 0;
 
     server.on("/totp", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
-        uint32_t code = detws_totp(g_secret, g_secret_len, now_unix(), 30, 6);
+        uint32_t code = dws_totp(g_secret, g_secret_len, now_unix(), 30, 6);
         char b[16];
         snprintf(b, sizeof(b), "%06u", code); // zero-pad to 6 digits
         server.send(id, 200, "text/plain", b);
@@ -64,7 +64,7 @@ void setup()
     server.on("/totp/verify", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *req) {
         const char *code_s = http_get_query(req, "code");
         uint32_t code = code_s ? (uint32_t)strtoul(code_s, nullptr, 10) : 0;
-        bool ok = detws_totp_verify(g_secret, g_secret_len, now_unix(), code, 30, 6, 1);
+        bool ok = dws_totp_verify(g_secret, g_secret_len, now_unix(), code, 30, 6, 1);
         server.send(id, 200, "application/json", ok ? "{\"ok\":true}" : "{\"ok\":false}");
     });
     server.begin(80);

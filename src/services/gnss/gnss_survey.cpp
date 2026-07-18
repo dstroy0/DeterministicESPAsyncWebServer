@@ -8,12 +8,12 @@
 
 #include "services/gnss/gnss_survey.h"
 
-#if DETWS_ENABLE_NTRIP_CASTER
+#if DWS_ENABLE_NTRIP_CASTER
 
 #include <math.h>
 #include <string.h>
 
-#if DETWS_ENABLE_NMEA0183
+#if DWS_ENABLE_NMEA0183
 #include "services/nmea0183/nmea0183.h"
 #include "shared_primitives/numparse.h"
 #endif
@@ -154,7 +154,7 @@ bool gnss_survey_complete(const GnssSurvey *s, uint32_t min_obs, double acc_limi
 // GGA -> geodetic (only when the NMEA 0183 codec is available).
 // ---------------------------------------------------------------------------------------------
 
-#if DETWS_ENABLE_NMEA0183
+#if DWS_ENABLE_NMEA0183
 
 namespace
 {
@@ -164,7 +164,7 @@ bool dm_to_deg(const char *field, uint8_t len, double *out)
     if (!field || len == 0)
         return false;
     const char *end = field;
-    double dm = det_strtod(field, &end);
+    double dm = dws_strtod(field, &end);
     if (end == field)
         return false;
     double deg = (double)(long)(dm / 100.0); // whole degrees (field is non-negative; sign is N/S,E/W)
@@ -217,6 +217,6 @@ bool gnss_survey_add_gga(GnssSurvey *s, const Nmea0183 *m)
     return true;
 }
 
-#endif // DETWS_ENABLE_NMEA0183
+#endif // DWS_ENABLE_NMEA0183
 
-#endif // DETWS_ENABLE_NTRIP_CASTER
+#endif // DWS_ENABLE_NTRIP_CASTER

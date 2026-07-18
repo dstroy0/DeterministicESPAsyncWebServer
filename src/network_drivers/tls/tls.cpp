@@ -15,7 +15,7 @@
 #include "network_drivers/tls/tls.h"
 #include "services/clock.h" // dwsdelay
 
-#if DETWS_ENABLE_TLS && defined(ARDUINO)
+#if DWS_ENABLE_TLS && defined(ARDUINO)
 
 #include "lwip/tcp.h"
 #include "network_drivers/transport/tcp.h"
@@ -30,10 +30,10 @@
 #include <mbedtls/ssl.h>
 #include <mbedtls/version.h>
 #include <mbedtls/x509_crt.h>
-#if DETWS_ENABLE_TLS_RESUMPTION
+#if DWS_ENABLE_TLS_RESUMPTION
 #include <mbedtls/ssl_ticket.h> // RFC 5077 session tickets (server-side resumption)
 #if !defined(MBEDTLS_SSL_TICKET_C) || !defined(MBEDTLS_SSL_SESSION_TICKETS)
-#error "DETWS_ENABLE_TLS_RESUMPTION needs an mbedTLS build with MBEDTLS_SSL_TICKET_C + MBEDTLS_SSL_SESSION_TICKETS"
+#error "DWS_ENABLE_TLS_RESUMPTION needs an mbedTLS build with MBEDTLS_SSL_TICKET_C + MBEDTLS_SSL_SESSION_TICKETS"
 #endif
 #endif
 
@@ -48,7 +48,7 @@
 // handshake cleanly (calloc returns NULL) rather than corrupting anything.
 //
 // Placement: by default the arena is internal DRAM (.bss). On a board with PSRAM,
-// set DETWS_TLS_ARENA_IN_PSRAM=1 to move it to external RAM (frees ~DETWS_TLS_ARENA_SIZE
+// set DWS_TLS_ARENA_IN_PSRAM=1 to move it to external RAM (frees ~DWS_TLS_ARENA_SIZE
 // of the ~122 KB internal dram0_0_seg budget, so several concurrent connections fit).
 //
 // This needs a framework built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y, which the
@@ -56,7 +56,7 @@
 // off, EXT_RAM_BSS_ATTR silently expands to nothing and the arena falls back to internal DRAM
 // - i.e. the PSRAM offload silently does not happen. Rather than fail silently we FAIL THE
 // COMPILE and point at the rebuild recipe (tools/psram/README.md). Rebuild the core (pioarduino
-// custom_sdkconfig, or esp32-arduino-lib-builder) or unset DETWS_TLS_ARENA_IN_PSRAM.
+// custom_sdkconfig, or esp32-arduino-lib-builder) or unset DWS_TLS_ARENA_IN_PSRAM.
 //
 // FLASH-CACHE CAVEAT: PSRAM is on the flash cache bus, so while flash is being written (an NVS
 // commit, an OTA) PSRAM is briefly unreadable - TLS code that touches the arena during that
@@ -65,32 +65,32 @@
 // default) if you do OTA / NVS / file-serving concurrently with live TLS. See
 // docs/KNOWN_LIMITATIONS.md (TLS -> "Flash-cache / OTA caveat").
 // ---------------------------------------------------------------------------
-#if DETWS_TLS_ARENA_IN_PSRAM && defined(ARDUINO)
+#if DWS_TLS_ARENA_IN_PSRAM && defined(ARDUINO)
 #include <esp_attr.h> // pulls in sdkconfig.h -> CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY
 #if !defined(CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY)
 #error                                                                                                                 \
-    "DETWS_TLS_ARENA_IN_PSRAM needs a framework built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y. The stock arduino-esp32 core ships it OFF, so EXT_RAM_BSS_ATTR silently no-ops and the arena would stay in internal RAM. Rebuild the core (see tools/psram/README.md) or unset DETWS_TLS_ARENA_IN_PSRAM."
+    "DWS_TLS_ARENA_IN_PSRAM needs a framework built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y. The stock arduino-esp32 core ships it OFF, so EXT_RAM_BSS_ATTR silently no-ops and the arena would stay in internal RAM. Rebuild the core (see tools/psram/README.md) or unset DWS_TLS_ARENA_IN_PSRAM."
 #endif
 #if defined(EXT_RAM_BSS_ATTR)
-#define DETWS_TLS_ARENA_ATTR EXT_RAM_BSS_ATTR // IDF v5 / arduino-esp32 3.x
+#define DWS_TLS_ARENA_ATTR EXT_RAM_BSS_ATTR // IDF v5 / arduino-esp32 3.x
 #elif defined(EXT_RAM_ATTR)
-#define DETWS_TLS_ARENA_ATTR EXT_RAM_ATTR // IDF v4 / arduino-esp32 2.x
+#define DWS_TLS_ARENA_ATTR EXT_RAM_ATTR // IDF v4 / arduino-esp32 2.x
 #else
-#error "DETWS_TLS_ARENA_IN_PSRAM: no EXT_RAM_BSS_ATTR/EXT_RAM_ATTR from the framework (unexpected)."
+#error "DWS_TLS_ARENA_IN_PSRAM: no EXT_RAM_BSS_ATTR/EXT_RAM_ATTR from the framework (unexpected)."
 #endif
 #else
-#define DETWS_TLS_ARENA_ATTR
+#define DWS_TLS_ARENA_ATTR
 #endif
 // Arena allocator state, owned by one instance (internal linkage): the static arena backing
 // every mbedTLS object plus the first-fit pool cursors. One named owner, unreachable cross-TU.
 struct TlsPoolCtx
 {
-    uint8_t arena[DETWS_TLS_ARENA_SIZE];
+    uint8_t arena[DWS_TLS_ARENA_SIZE];
     bool inited = false;
     size_t used = 0;
     size_t peak = 0;
 };
-DETWS_TLS_ARENA_ATTR static TlsPoolCtx s_pool;
+DWS_TLS_ARENA_ATTR static TlsPoolCtx s_pool;
 
 #define TLS_ALIGN 8u
 struct PoolBlk
@@ -185,10 +185,10 @@ static void pool_free(void *ptr)
 }
 
 // The server-config "ready" flag, owned separately from the multi-hundred-byte mbedTLS
-// server state below. det_tls_ready() (and the client-side guards) read this flag every
+// server state below. dws_tls_ready() (and the client-side guards) read this flag every
 // call; grouping it into TlsServerCtx would anchor the whole server config/cert/key/ticket
 // via that always-live reference, keeping ~600 bytes linked even in a client-only firmware
-// that never runs det_tls_configure(). Kept apart, --gc-sections drops s_srv when server
+// that never runs dws_tls_configure(). Kept apart, --gc-sections drops s_srv when server
 // setup is unused.
 struct TlsServerReadyCtx
 {
@@ -204,10 +204,10 @@ struct TlsServerCtx
     mbedtls_ssl_config conf;
     mbedtls_x509_crt cert;
     mbedtls_pk_context key;
-#if DETWS_ENABLE_MTLS
+#if DWS_ENABLE_MTLS
     mbedtls_x509_crt ca; // client-cert trust anchor (mTLS)
 #endif
-#if DETWS_ENABLE_TLS_RESUMPTION
+#if DWS_ENABLE_TLS_RESUMPTION
     mbedtls_ssl_ticket_context ticket_ctx; // server-held key for sealing session tickets
 #endif
 };
@@ -247,20 +247,20 @@ static int tls_rng(void *ctx, unsigned char *out, size_t len)
     return 0;
 }
 
-// Server BIO recv (a det_tls_bio_recv_fn): pull ciphertext from the connection's
+// Server BIO recv (a dws_tls_bio_recv_fn): pull ciphertext from the connection's
 // rx ring (filled by the lwIP recv callback). No bytes -> WANT_READ so mbedTLS
 // yields to the loop. Reads only the ring, so it is safe from either context.
 static int server_bio_recv(void *ctx, unsigned char *buf, size_t len)
 {
     TlsConn *e = (TlsConn *)ctx;
-    size_t n = det_conn_read(e->slot, buf, len); // ciphertext from the rx ring
+    size_t n = dws_conn_read(e->slot, buf, len); // ciphertext from the rx ring
     if (n == 0)
         return MBEDTLS_ERR_SSL_WANT_READ;
     return (int)n;
 }
 
-// Server BIO send (a det_tls_bio_send_fn): emit ciphertext through the transport's
-// context-safe raw write (det_conn_raw_send), so the handshake - pumped from the
+// Server BIO send (a dws_tls_bio_send_fn): emit ciphertext through the transport's
+// context-safe raw write (dws_conn_raw_send), so the handshake - pumped from the
 // main loop - never does an unsynchronized tcp_write racing the lwIP thread, while
 // app-data writes (already in the lwIP thread) still go out directly. Uses the pcb
 // captured at begin() because the response senders null conn->pcb before writing.
@@ -279,24 +279,24 @@ static int server_bio_send(void *ctx, const unsigned char *buf, size_t len)
     if (to > 0xFFFF)
         to = 0xFFFF;
 
-    if (det_conn_raw_send(e->pcb, buf, (u16_t)to))
+    if (dws_conn_raw_send(e->pcb, buf, (u16_t)to))
         return (int)to;
     return MBEDTLS_ERR_SSL_WANT_WRITE; // send buffer full -> mbedTLS retries
 }
 
 // Apply the configured TLS Maximum Fragment Length (RFC 6066) to @p conf: records are
-// capped at DETWS_TLS_MAX_FRAG_LEN. With a variable-buffer-length mbedTLS build this
+// capped at DWS_TLS_MAX_FRAG_LEN. With a variable-buffer-length mbedTLS build this
 // also shrinks per-connection arena use; otherwise it bounds the on-wire record size
 // (bandwidth / latency on a constrained link) and honors a client's MFL request. A
 // no-op when the knob is 0 or the mbedTLS build lacks MBEDTLS_SSL_MAX_FRAGMENT_LENGTH.
 static void tls_apply_max_frag_len(mbedtls_ssl_config *conf)
 {
-#if DETWS_TLS_MAX_FRAG_LEN && defined(MBEDTLS_SSL_MAX_FRAGMENT_LENGTH)
-#if DETWS_TLS_MAX_FRAG_LEN <= 512
+#if DWS_TLS_MAX_FRAG_LEN && defined(MBEDTLS_SSL_MAX_FRAGMENT_LENGTH)
+#if DWS_TLS_MAX_FRAG_LEN <= 512
     mbedtls_ssl_conf_max_frag_len(conf, MBEDTLS_SSL_MAX_FRAG_LEN_512);
-#elif DETWS_TLS_MAX_FRAG_LEN <= 1024
+#elif DWS_TLS_MAX_FRAG_LEN <= 1024
     mbedtls_ssl_conf_max_frag_len(conf, MBEDTLS_SSL_MAX_FRAG_LEN_1024);
-#elif DETWS_TLS_MAX_FRAG_LEN <= 2048
+#elif DWS_TLS_MAX_FRAG_LEN <= 2048
     mbedtls_ssl_conf_max_frag_len(conf, MBEDTLS_SSL_MAX_FRAG_LEN_2048);
 #else
     mbedtls_ssl_conf_max_frag_len(conf, MBEDTLS_SSL_MAX_FRAG_LEN_4096);
@@ -362,7 +362,7 @@ static void tls_apply_curve_pref(mbedtls_ssl_config *conf)
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
-bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len)
+bool dws_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len)
 {
     if (s_srv_ready.ready)
         return true;
@@ -394,7 +394,7 @@ bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *ke
         return false;
 
     mbedtls_ssl_conf_rng(&s_srv.conf, tls_rng, nullptr);
-    tls_apply_max_frag_len(&s_srv.conf); // RFC 6066 record cap (DETWS_TLS_MAX_FRAG_LEN)
+    tls_apply_max_frag_len(&s_srv.conf); // RFC 6066 record cap (DWS_TLS_MAX_FRAG_LEN)
     tls_apply_curve_pref(&s_srv.conf);   // prefer cheap curves (no ECC HW on the S3) - see helper
 #if MBEDTLS_VERSION_MAJOR >= 3
     mbedtls_ssl_conf_min_tls_version(&s_srv.conf, MBEDTLS_SSL_VERSION_TLS1_2);
@@ -405,22 +405,22 @@ bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *ke
     if (mbedtls_ssl_conf_own_cert(&s_srv.conf, &s_srv.cert, &s_srv.key) != 0)
         return false;
 
-#if DETWS_ENABLE_HTTP2
+#if DWS_ENABLE_HTTP2
     // Offer HTTP/2 over TLS via ALPN (RFC 7301), falling back to HTTP/1.1. The list must outlive
-    // the config, so it is static; det_tls_alpn() reports the negotiated choice post-handshake.
+    // the config, so it is static; dws_tls_alpn() reports the negotiated choice post-handshake.
     static const char *s_alpn[] = {"h2", "http/1.1", nullptr}; // mbedTLS keeps this pointer
     if (mbedtls_ssl_conf_alpn_protocols(&s_srv.conf, s_alpn) != 0)
         return false;
 #endif
 
-#if DETWS_ENABLE_TLS_RESUMPTION
+#if DWS_ENABLE_TLS_RESUMPTION
     // RFC 5077 session tickets: a returning client resumes with an abbreviated
     // handshake. Stateless (the session lives in the client's sealed ticket), so
     // no per-session cache grows in the arena. The ticket key rotates on the
     // configured lifetime. mbedtls_ssl_ticket_write/parse are the default codec.
     mbedtls_ssl_ticket_init(&s_srv.ticket_ctx);
     if (mbedtls_ssl_ticket_setup(&s_srv.ticket_ctx, tls_rng, nullptr, MBEDTLS_CIPHER_AES_256_GCM,
-                                 DETWS_TLS_TICKET_LIFETIME_S) != 0)
+                                 DWS_TLS_TICKET_LIFETIME_S) != 0)
         return false;
     mbedtls_ssl_conf_session_tickets_cb(&s_srv.conf, mbedtls_ssl_ticket_write, mbedtls_ssl_ticket_parse,
                                         &s_srv.ticket_ctx);
@@ -433,18 +433,18 @@ bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *ke
     return true;
 }
 
-bool det_tls_ready()
+bool dws_tls_ready()
 {
     return s_srv_ready.ready;
 }
 
-const char *det_tls_alpn(uint8_t slot)
+const char *dws_tls_alpn(uint8_t slot)
 {
     TlsConn *c = find(slot);
     return c ? mbedtls_ssl_get_alpn_protocol(&c->ssl) : nullptr;
 }
 
-bool det_tls_conn_begin(uint8_t slot)
+bool dws_tls_conn_begin(uint8_t slot)
 {
     if (!s_srv_ready.ready)
         return false;
@@ -475,7 +475,7 @@ bool det_tls_conn_begin(uint8_t slot)
     return true;
 }
 
-int det_tls_handshake(uint8_t slot)
+int dws_tls_handshake(uint8_t slot)
 {
     TlsConn *e = find(slot);
     if (!e)
@@ -491,13 +491,13 @@ int det_tls_handshake(uint8_t slot)
     return -1;
 }
 
-bool det_tls_established(uint8_t slot)
+bool dws_tls_established(uint8_t slot)
 {
     TlsConn *e = find(slot);
     return e && e->established;
 }
 
-int det_tls_read(uint8_t slot, uint8_t *buf, size_t len)
+int dws_tls_read(uint8_t slot, uint8_t *buf, size_t len)
 {
     TlsConn *e = find(slot);
     if (!e)
@@ -510,7 +510,7 @@ int det_tls_read(uint8_t slot, uint8_t *buf, size_t len)
     return -1;    // close_notify, peer close, or fatal
 }
 
-int det_tls_write(uint8_t slot, const void *data, size_t len)
+int dws_tls_write(uint8_t slot, const void *data, size_t len)
 {
     TlsConn *e = find(slot);
     if (!e)
@@ -538,7 +538,7 @@ int det_tls_write(uint8_t slot, const void *data, size_t len)
     return (int)sent;
 }
 
-void det_tls_conn_end(uint8_t slot)
+void dws_tls_conn_end(uint8_t slot)
 {
     TlsConn *e = find(slot);
     if (!e)
@@ -550,7 +550,7 @@ void det_tls_conn_end(uint8_t slot)
     e->pcb = nullptr;
 }
 
-void det_tls_conn_free(uint8_t slot)
+void dws_tls_conn_free(uint8_t slot)
 {
     TlsConn *e = find(slot);
     if (!e)
@@ -561,13 +561,13 @@ void det_tls_conn_free(uint8_t slot)
     e->pcb = nullptr;
 }
 
-size_t det_tls_arena_peak()
+size_t dws_tls_arena_peak()
 {
     return s_pool.peak;
 }
 
-#if DETWS_ENABLE_MTLS
-bool det_tls_set_client_ca(const uint8_t *ca, size_t ca_len)
+#if DWS_ENABLE_MTLS
+bool dws_tls_set_client_ca(const uint8_t *ca, size_t ca_len)
 {
     if (!s_srv_ready.ready || !ca)
         return false;
@@ -581,7 +581,7 @@ bool det_tls_set_client_ca(const uint8_t *ca, size_t ca_len)
     return true;
 }
 
-int det_tls_peer_subject(uint8_t slot, char *out, size_t out_len)
+int dws_tls_peer_subject(uint8_t slot, char *out, size_t out_len)
 {
     if (!out || out_len == 0)
         return -1;
@@ -595,15 +595,15 @@ int det_tls_peer_subject(uint8_t slot, char *out, size_t out_len)
     int n = mbedtls_x509_dn_gets(out, out_len, &peer->subject);
     return n; // bytes written (excl. NUL), or <0 on error
 }
-#endif // DETWS_ENABLE_MTLS
+#endif // DWS_ENABLE_MTLS
 
-#if DETWS_ENABLE_CLIENT_TLS
+#if DWS_ENABLE_CLIENT_TLS
 // Optional client-side server authentication (default off = encrypt-only):
 //  - a CA trust anchor -> mbedTLS verifies the chain + hostname during handshake;
 //  - a 32-byte SHA-256 cert pin -> the peer's certificate DER is hashed and
 //    constant-time compared after the handshake.
 // Either, both, or neither may be set; both must pass when both are set. Shared by
-// the one-shot HTTP client (det_tls_client_run) and the persistent session (csess).
+// the one-shot HTTP client (dws_tls_client_run) and the persistent session (csess).
 // Client-side server-authentication config, owned by one instance (internal linkage): the CA
 // trust anchor (+set flag) and the SHA-256 cert pin (+set flag). Shared by the one-shot HTTP
 // client and the persistent session. One named owner, unreachable from any other TU.
@@ -627,7 +627,7 @@ static void client_arena_ensure()
     }
 }
 
-void det_tls_client_set_ca(const uint8_t *ca, size_t ca_len)
+void dws_tls_client_set_ca(const uint8_t *ca, size_t ca_len)
 {
     client_arena_ensure();
     if (s_cli.ca_set)
@@ -641,7 +641,7 @@ void det_tls_client_set_ca(const uint8_t *ca, size_t ca_len)
         mbedtls_x509_crt_free(&s_cli.ca);
 }
 
-void det_tls_client_set_pin(const uint8_t sha256[32])
+void dws_tls_client_set_pin(const uint8_t sha256[32])
 {
     if (!sha256)
     {
@@ -652,7 +652,7 @@ void det_tls_client_set_pin(const uint8_t sha256[32])
     s_cli.pin_set = true;
 }
 
-void det_tls_client_clear_verify()
+void dws_tls_client_clear_verify()
 {
     if (s_cli.ca_set)
         mbedtls_x509_crt_free(&s_cli.ca);
@@ -677,7 +677,7 @@ static int client_conf_apply(mbedtls_ssl_config *conf)
                                     MBEDTLS_SSL_PRESET_DEFAULT) != 0)
         return -1;
     mbedtls_ssl_conf_rng(conf, tls_rng, nullptr);
-    tls_apply_max_frag_len(conf); // RFC 6066 record cap (DETWS_TLS_MAX_FRAG_LEN)
+    tls_apply_max_frag_len(conf); // RFC 6066 record cap (DWS_TLS_MAX_FRAG_LEN)
     tls_apply_curve_pref(conf);   // offer cheap curves first (no ECC HW on the S3) - see helper
     if (s_cli.ca_set)
     {
@@ -691,7 +691,7 @@ static int client_conf_apply(mbedtls_ssl_config *conf)
 #else
     mbedtls_ssl_conf_min_version(conf, MBEDTLS_SSL_MAJOR_VERSION_3, MBEDTLS_SSL_MINOR_VERSION_3);
 #endif
-#if DETWS_ENABLE_TLS_RESUMPTION
+#if DWS_ENABLE_TLS_RESUMPTION
     // Accept a server-issued session ticket (RFC 5077) so the client can resume an
     // abbreviated handshake on reconnect (see the csess save/restore below).
     mbedtls_ssl_conf_session_tickets(conf, MBEDTLS_SSL_SESSION_TICKETS_ENABLED);
@@ -717,7 +717,7 @@ static bool client_pin_ok(mbedtls_ssl_context *ssl)
     return (hret == 0) && ct_eq32(hash, s_cli.pin);
 }
 
-#if DETWS_ENABLE_HTTP_CLIENT_TLS
+#if DWS_ENABLE_HTTP_CLIENT_TLS
 // Blocking client-side TLS exchange over caller-supplied BIO callbacks. Used by
 // the outbound HTTP client for https://. The transport (raw lwIP tcp_write + the
 // receive ring) lives in http_client.cpp; here we own only the mbedTLS client
@@ -725,9 +725,9 @@ static bool client_pin_ok(mbedtls_ssl_context *ssl)
 //
 // Server authentication is OFF by default (the device has no trust store): the
 // transport is encrypted but the peer is unauthenticated unless a CA
-// (det_tls_client_set_ca) and/or a cert pin (det_tls_client_set_pin) is installed.
-int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint8_t *out, size_t out_cap,
-                       size_t *out_len, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn, uint32_t deadline_ms)
+// (dws_tls_client_set_ca) and/or a cert pin (dws_tls_client_set_pin) is installed.
+int dws_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint8_t *out, size_t out_cap,
+                       size_t *out_len, dws_tls_bio_send_fn send_fn, dws_tls_bio_recv_fn recv_fn, uint32_t deadline_ms)
 {
     if (out_len)
         *out_len = 0;
@@ -767,8 +767,8 @@ int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint
         }
         if (ret != 0)
         {
-#ifdef DETWS_HTTP_CLIENT_DEBUG
-            printf("[tls] handshake ret=-0x%04x arena_peak=%u\n", (unsigned)(-ret), (unsigned)det_tls_arena_peak());
+#ifdef DWS_HTTP_CLIENT_DEBUG
+            printf("[tls] handshake ret=-0x%04x arena_peak=%u\n", (unsigned)(-ret), (unsigned)dws_tls_arena_peak());
 #endif
             break;
         }
@@ -776,7 +776,7 @@ int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint
         // Certificate pinning (mismatch or no peer cert aborts).
         if (!client_pin_ok(&ssl))
         {
-#ifdef DETWS_HTTP_CLIENT_DEBUG
+#ifdef DWS_HTTP_CLIENT_DEBUG
             printf("[tls] cert pin mismatch\n");
 #endif
             ret = -1;
@@ -831,11 +831,11 @@ int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint
     mbedtls_ssl_config_free(&conf);
     return rc;
 }
-#endif // DETWS_ENABLE_HTTP_CLIENT_TLS
+#endif // DWS_ENABLE_HTTP_CLIENT_TLS
 
 // --- Persistent client session (csess): one long-lived outbound TLS connection
 // (e.g. MQTTS). Handshake once, then read/write application data over the
-// caller's BIO until det_tls_client_session_end(). Honors the CA/pin trust config above. ---
+// caller's BIO until dws_tls_client_session_end(). Honors the CA/pin trust config above. ---
 // Persistent client session (csess) state, owned by one instance (internal linkage): the
 // long-lived outbound TLS ssl/config + active flag, and (with resumption) the saved session
 // holding the server's ticket. One named owner, unreachable from any other translation unit.
@@ -844,36 +844,36 @@ struct TlsCsessCtx
     mbedtls_ssl_context ssl;
     mbedtls_ssl_config conf;
     bool active = false;
-#if DETWS_ENABLE_TLS_RESUMPTION
+#if DWS_ENABLE_TLS_RESUMPTION
     mbedtls_ssl_session saved;
     bool saved_valid = false;
 #endif
 };
 static TlsCsessCtx s_csess;
 
-#if DETWS_ENABLE_TLS_RESUMPTION
+#if DWS_ENABLE_TLS_RESUMPTION
 // Session saved from the last successful csess handshake (holds the server's
 // ticket). Presented on the next begin() for an abbreviated handshake. Lives in
 // the static arena like every other mbedTLS object - no heap growth.
 
-void det_tls_client_session_forget_session()
+void dws_tls_client_session_forget_session()
 {
     if (s_csess.saved_valid)
         mbedtls_ssl_session_free(&s_csess.saved);
     s_csess.saved_valid = false;
 }
 #else
-void det_tls_client_session_forget_session()
+void dws_tls_client_session_forget_session()
 {
 }
 #endif
 
-bool det_tls_client_session_begin(const char *host, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn)
+bool dws_tls_client_session_begin(const char *host, dws_tls_bio_send_fn send_fn, dws_tls_bio_recv_fn recv_fn)
 {
     if (!send_fn || !recv_fn)
         return false;
     if (s_csess.active)
-        det_tls_client_session_end();
+        dws_tls_client_session_end();
     client_arena_ensure();
     mbedtls_ssl_init(&s_csess.ssl);
     mbedtls_ssl_config_init(&s_csess.conf);
@@ -885,7 +885,7 @@ bool det_tls_client_session_begin(const char *host, det_tls_bio_send_fn send_fn,
     }
     if (host)
         mbedtls_ssl_set_hostname(&s_csess.ssl, host);
-#if DETWS_ENABLE_TLS_RESUMPTION
+#if DWS_ENABLE_TLS_RESUMPTION
     // Present the saved session (server ticket) so this handshake resumes if the
     // server still honors it; a full handshake transparently replaces it below.
     if (s_csess.saved_valid)
@@ -896,12 +896,12 @@ bool det_tls_client_session_begin(const char *host, det_tls_bio_send_fn send_fn,
     return true;
 }
 
-bool det_tls_client_session_active()
+bool dws_tls_client_session_active()
 {
     return s_csess.active;
 }
 
-int det_tls_client_session_handshake()
+int dws_tls_client_session_handshake()
 {
     if (!s_csess.active)
         return -1;
@@ -910,9 +910,9 @@ int det_tls_client_session_handshake()
     {
         if (!client_pin_ok(&s_csess.ssl)) // verify the pin once established
             return -1;
-#if DETWS_ENABLE_TLS_RESUMPTION
+#if DWS_ENABLE_TLS_RESUMPTION
         // Capture the established session (incl. any new ticket) for next time.
-        det_tls_client_session_forget_session();
+        dws_tls_client_session_forget_session();
         mbedtls_ssl_session_init(&s_csess.saved);
         s_csess.saved_valid = (mbedtls_ssl_get_session(&s_csess.ssl, &s_csess.saved) == 0);
 #endif
@@ -923,7 +923,7 @@ int det_tls_client_session_handshake()
     return -1;
 }
 
-int det_tls_client_session_read(uint8_t *buf, size_t len)
+int dws_tls_client_session_read(uint8_t *buf, size_t len)
 {
     if (!s_csess.active)
         return -1;
@@ -935,7 +935,7 @@ int det_tls_client_session_read(uint8_t *buf, size_t len)
     return -1;    // close_notify / peer close / fatal
 }
 
-int det_tls_client_session_write(const uint8_t *data, size_t len)
+int dws_tls_client_session_write(const uint8_t *data, size_t len)
 {
     if (!s_csess.active)
         return -1;
@@ -962,7 +962,7 @@ int det_tls_client_session_write(const uint8_t *data, size_t len)
     return (int)sent;
 }
 
-void det_tls_client_session_end()
+void dws_tls_client_session_end()
 {
     if (!s_csess.active)
         return;
@@ -972,6 +972,6 @@ void det_tls_client_session_end()
     s_csess.active = false;
 }
 
-#endif // DETWS_ENABLE_CLIENT_TLS
+#endif // DWS_ENABLE_CLIENT_TLS
 
-#endif // DETWS_ENABLE_TLS && ARDUINO
+#endif // DWS_ENABLE_TLS && ARDUINO

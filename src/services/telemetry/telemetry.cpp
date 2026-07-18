@@ -3,16 +3,16 @@
 
 /**
  * @file telemetry.cpp
- * @brief Telemetry math helpers implementation (DETWS_ENABLE_TELEMETRY).
+ * @brief Telemetry math helpers implementation (DWS_ENABLE_TELEMETRY).
  */
 
 #include "telemetry.h"
 
-#if DETWS_ENABLE_TELEMETRY
+#if DWS_ENABLE_TELEMETRY
 
 #include <math.h>
 
-void detws_window_init(DetwsWindow *w, float *buf, uint16_t cap)
+void dws_window_init(DetwsWindow *w, float *buf, uint16_t cap)
 {
     w->buf = buf;
     w->cap = cap;
@@ -22,7 +22,7 @@ void detws_window_init(DetwsWindow *w, float *buf, uint16_t cap)
     w->sum_sq = 0.0;
 }
 
-void detws_window_push(DetwsWindow *w, float sample)
+void dws_window_push(DetwsWindow *w, float sample)
 {
     if (!w->buf || w->cap == 0)
         return;
@@ -43,19 +43,19 @@ void detws_window_push(DetwsWindow *w, float sample)
     w->head = (uint16_t)((w->head + 1) % w->cap);
 }
 
-uint16_t detws_window_count(const DetwsWindow *w)
+uint16_t dws_window_count(const DetwsWindow *w)
 {
     return w->count;
 }
 
-float detws_window_mean(const DetwsWindow *w)
+float dws_window_mean(const DetwsWindow *w)
 {
     if (w->count == 0)
         return 0.0f;
     return (float)(w->sum / (double)w->count);
 }
 
-float detws_window_variance(const DetwsWindow *w)
+float dws_window_variance(const DetwsWindow *w)
 {
     if (w->count == 0)
         return 0.0f;
@@ -64,12 +64,12 @@ float detws_window_variance(const DetwsWindow *w)
     return var < 0.0 ? 0.0f : (float)var; // clamp tiny negatives from rounding
 }
 
-float detws_window_stddev(const DetwsWindow *w)
+float dws_window_stddev(const DetwsWindow *w)
 {
-    return sqrtf(detws_window_variance(w));
+    return sqrtf(dws_window_variance(w));
 }
 
-float detws_window_min(const DetwsWindow *w)
+float dws_window_min(const DetwsWindow *w)
 {
     if (w->count == 0)
         return 0.0f;
@@ -80,7 +80,7 @@ float detws_window_min(const DetwsWindow *w)
     return m;
 }
 
-float detws_window_max(const DetwsWindow *w)
+float dws_window_max(const DetwsWindow *w)
 {
     if (w->count == 0)
         return 0.0f;
@@ -91,14 +91,14 @@ float detws_window_max(const DetwsWindow *w)
     return m;
 }
 
-void detws_rate_init(DetwsRate *r)
+void dws_rate_init(DetwsRate *r)
 {
     r->last_value = 0.0f;
     r->last_ms = 0;
     r->primed = false;
 }
 
-float detws_rate_update(DetwsRate *r, float value, uint32_t now_ms)
+float dws_rate_update(DetwsRate *r, float value, uint32_t now_ms)
 {
     if (!r->primed)
     {
@@ -116,7 +116,7 @@ float detws_rate_update(DetwsRate *r, float value, uint32_t now_ms)
     return rate;
 }
 
-void detws_totalizer_init(DetwsTotalizer *t)
+void dws_totalizer_init(DetwsTotalizer *t)
 {
     t->total = 0.0;
     t->last_rate = 0.0f;
@@ -124,7 +124,7 @@ void detws_totalizer_init(DetwsTotalizer *t)
     t->primed = false;
 }
 
-double detws_totalizer_add(DetwsTotalizer *t, float rate, uint32_t now_ms)
+double dws_totalizer_add(DetwsTotalizer *t, float rate, uint32_t now_ms)
 {
     if (!t->primed)
     {
@@ -142,12 +142,12 @@ double detws_totalizer_add(DetwsTotalizer *t, float rate, uint32_t now_ms)
     return t->total;
 }
 
-double detws_totalizer_total(const DetwsTotalizer *t)
+double dws_totalizer_total(const DetwsTotalizer *t)
 {
     return t->total;
 }
 
-void detws_totalizer_reset(DetwsTotalizer *t)
+void dws_totalizer_reset(DetwsTotalizer *t)
 {
     t->total = 0.0;
     t->last_rate = 0.0f;
@@ -155,4 +155,4 @@ void detws_totalizer_reset(DetwsTotalizer *t)
     t->primed = false;
 }
 
-#endif // DETWS_ENABLE_TELEMETRY
+#endif // DWS_ENABLE_TELEMETRY

@@ -88,12 +88,12 @@ void test_node_registry(void)
 {
     WisunNode storage[3];
     WisunFan fan;
-    DetIp br = det_ip_from_v6_bytes((const uint8_t[16]){0xfd, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1});
+    DWSIp br = dws_ip_from_v6_bytes((const uint8_t[16]){0xfd, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1});
     wisun_init(&fan, &br, storage, 3);
 
-    DetIp n1, n2;
-    det_ip_parse("fd00::10", &n1);
-    det_ip_parse("fd00::11", &n2);
+    DWSIp n1, n2;
+    dws_ip_parse("fd00::10", &n1);
+    dws_ip_parse("fd00::11", &n2);
     TEST_ASSERT_EQUAL_INT(0, wisun_node_register(&fan, &n1, 100));
     TEST_ASSERT_EQUAL_INT(1, wisun_node_register(&fan, &n2, 101));
     // Re-register n1 refreshes, does not add.
@@ -116,13 +116,13 @@ void test_registry_full_and_misses(void)
 {
     WisunNode storage[2];
     WisunFan fan;
-    DetIp br;
-    det_ip_parse("fd00::1", &br);
+    DWSIp br;
+    dws_ip_parse("fd00::1", &br);
     wisun_init(&fan, &br, storage, 2);
-    DetIp a, b, c;
-    det_ip_parse("fd00::a", &a);
-    det_ip_parse("fd00::b", &b);
-    det_ip_parse("fd00::c", &c);
+    DWSIp a, b, c;
+    dws_ip_parse("fd00::a", &a);
+    dws_ip_parse("fd00::b", &b);
+    dws_ip_parse("fd00::c", &c);
     TEST_ASSERT_EQUAL_INT(0, wisun_node_register(&fan, &a, 1));
     TEST_ASSERT_EQUAL_INT(1, wisun_node_register(&fan, &b, 2));
     TEST_ASSERT_EQUAL_INT(-1, wisun_node_register(&fan, &c, 3)); // table full

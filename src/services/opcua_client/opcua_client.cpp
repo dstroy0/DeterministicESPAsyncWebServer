@@ -10,7 +10,7 @@
 
 #include "services/opcua_client/opcua_client.h"
 
-#if DETWS_ENABLE_OPCUA_CLIENT
+#if DWS_ENABLE_OPCUA_CLIENT
 
 #include <string.h>
 
@@ -76,12 +76,12 @@ size_t opcua_client_hello(const char *endpoint_url, uint8_t *out, size_t cap)
     ua_w_u8(&w, 'E');
     ua_w_u8(&w, 'L');
     ua_w_u8(&w, 'F');
-    ua_w_u32(&w, 0);               // size placeholder
-    ua_w_u32(&w, 0);               // ProtocolVersion
-    ua_w_u32(&w, DETWS_OPCUA_BUF); // ReceiveBufferSize
-    ua_w_u32(&w, DETWS_OPCUA_BUF); // SendBufferSize
-    ua_w_u32(&w, 0);               // MaxMessageSize (no limit)
-    ua_w_u32(&w, 0);               // MaxChunkCount
+    ua_w_u32(&w, 0);             // size placeholder
+    ua_w_u32(&w, 0);             // ProtocolVersion
+    ua_w_u32(&w, DWS_OPCUA_BUF); // ReceiveBufferSize
+    ua_w_u32(&w, DWS_OPCUA_BUF); // SendBufferSize
+    ua_w_u32(&w, 0);             // MaxMessageSize (no limit)
+    ua_w_u32(&w, 0);             // MaxChunkCount
     ua_w_string(&w, endpoint_url, endpoint_url ? (int32_t)strnlen(endpoint_url, w.cap) : -1);
     return cw_patch(&w);
 }
@@ -130,7 +130,7 @@ size_t opcua_client_create_session(OpcUaClient *c, const char *session_name, con
     // ClientDescription (ApplicationDescription).
     ua_w_string(&w, "urn:det:opcua:client", 20);       // ApplicationUri
     ua_w_string(&w, "urn:det:opcua", 13);              // ProductUri
-    ua_w_localizedtext(&w, nullptr, "DetOpcUaClient"); // ApplicationName
+    ua_w_localizedtext(&w, nullptr, "DWSOpcUaClient"); // ApplicationName
     ua_w_u32(&w, 1);                                   // ApplicationType = Client
     ua_w_string(&w, nullptr, -1);                      // GatewayServerUri
     ua_w_string(&w, nullptr, -1);                      // DiscoveryProfileUri
@@ -519,4 +519,4 @@ int32_t opcua_client_on_browse(const uint8_t *msg, size_t len, OpcUaClientRef *r
     return r.err ? -1 : (int32_t)out_n;
 }
 
-#endif // DETWS_ENABLE_OPCUA_CLIENT
+#endif // DWS_ENABLE_OPCUA_CLIENT

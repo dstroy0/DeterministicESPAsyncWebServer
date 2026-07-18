@@ -3,7 +3,7 @@
 
 /**
  * @file wifi_sniffer.h
- * @brief 802.11 frame decode + traffic tally + RSSI roaming decision (DETWS_ENABLE_WIFI_SNIFFER).
+ * @brief 802.11 frame decode + traffic tally + RSSI roaming decision (DWS_ENABLE_WIFI_SNIFFER).
  *
  * The ESP32 can run its WiFi MAC in promiscuous mode and hand raw 802.11 frames to a callback. Turning
  * those into a useful sniffer / traffic analyzer / RF-diagnostics panel means decoding the 802.11 MAC
@@ -22,7 +22,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_WIFI_SNIFFER
+#if DWS_ENABLE_WIFI_SNIFFER
 
 /** @brief 802.11 frame type (Frame Control bits 2-3). */
 struct WifiType
@@ -56,7 +56,7 @@ struct WifiFrame
  * bytes and Address3 at >= 24 bytes, with @p out->naddr reporting how many were present.
  * @return true if @p len >= 10 and @p frame is non-null; false otherwise.
  */
-bool detws_wifi_parse(const uint8_t *frame, size_t len, WifiFrame *out);
+bool dws_wifi_parse(const uint8_t *frame, size_t len, WifiFrame *out);
 
 /** @brief Running per-type frame tally. */
 struct WifiStats
@@ -69,16 +69,16 @@ struct WifiStats
 };
 
 /** @brief Zero a tally. */
-void detws_wifi_stats_reset(WifiStats *s);
+void dws_wifi_stats_reset(WifiStats *s);
 
 /** @brief Fold one decoded frame into the tally. */
-void detws_wifi_stats_add(WifiStats *s, const WifiFrame *f);
+void dws_wifi_stats_add(WifiStats *s, const WifiFrame *f);
 
 /**
  * @brief Channel-agility roaming decision.
  * @return true if @p cand_rssi exceeds @p cur_rssi by more than @p hysteresis_db (so a switch is worth it).
  */
-bool detws_wifi_should_roam(int8_t cur_rssi, int8_t cand_rssi, uint8_t hysteresis_db);
+bool dws_wifi_should_roam(int8_t cur_rssi, int8_t cand_rssi, uint8_t hysteresis_db);
 
-#endif // DETWS_ENABLE_WIFI_SNIFFER
+#endif // DWS_ENABLE_WIFI_SNIFFER
 #endif // DETERMINISTICESPASYNCWEBSERVER_WIFI_SNIFFER_H

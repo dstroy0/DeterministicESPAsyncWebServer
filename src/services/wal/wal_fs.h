@@ -3,7 +3,7 @@
 
 /**
  * @file wal_fs.h
- * @brief Bind the WAL store's ::WalDev block-device seam to a real fs::FS file (DETWS_ENABLE_WAL, ESP32 only).
+ * @brief Bind the WAL store's ::WalDev block-device seam to a real fs::FS file (DWS_ENABLE_WAL, ESP32 only).
  *
  * The store in wal_store.h does all I/O through three function pointers so its logic stays pure and
  * host-testable; this header is the thin, device-only adapter that points those pointers at a preallocated
@@ -29,13 +29,13 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_WAL && defined(ARDUINO)
+#if DWS_ENABLE_WAL && defined(ARDUINO)
 
 #include "services/wal/wal_store.h"
 #include <FS.h>
 #include <string.h>
 
-namespace detws_wal_fs_detail
+namespace dws_wal_fs_detail
 {
 inline size_t fs_read(void *ctx, uint64_t off, uint8_t *buf, size_t len)
 {
@@ -56,7 +56,7 @@ inline bool fs_sync(void *ctx)
     ((fs::File *)ctx)->flush();
     return true;
 }
-} // namespace detws_wal_fs_detail
+} // namespace dws_wal_fs_detail
 
 /**
  * @brief Ensure @p path on @p fsys exists and is at least @p size bytes (created zero-filled if missing/short).
@@ -102,13 +102,13 @@ inline bool wal_fs_prealloc(fs::FS &fsys, const char *path, uint64_t size)
 inline WalDev wal_fs_dev(fs::File *f, uint64_t size)
 {
     WalDev d;
-    d.read = detws_wal_fs_detail::fs_read;
-    d.write = detws_wal_fs_detail::fs_write;
-    d.sync = detws_wal_fs_detail::fs_sync;
+    d.read = dws_wal_fs_detail::fs_read;
+    d.write = dws_wal_fs_detail::fs_write;
+    d.sync = dws_wal_fs_detail::fs_sync;
     d.ctx = f;
     d.size = size;
     return d;
 }
 
-#endif // DETWS_ENABLE_WAL && ARDUINO
+#endif // DWS_ENABLE_WAL && ARDUINO
 #endif // DETERMINISTICESPASYNCWEBSERVER_WAL_FS_H

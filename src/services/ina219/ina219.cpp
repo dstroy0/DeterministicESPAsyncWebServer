@@ -9,7 +9,7 @@
 #include "services/ina219/ina219.h"
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_INA219
+#if DWS_ENABLE_INA219
 
 int32_t ina219_bus_mv(uint16_t raw)
 {
@@ -57,8 +57,8 @@ namespace
 // and the current LSB, grouped so it is one named owner, unreachable from any other TU.
 struct Ina219Ctx
 {
-    uint8_t addr = DETWS_INA219_I2C_ADDR;
-    uint32_t lsb_ua = DETWS_INA219_CURRENT_LSB_UA;
+    uint8_t addr = DWS_INA219_I2C_ADDR;
+    uint32_t lsb_ua = DWS_INA219_CURRENT_LSB_UA;
 };
 Ina219Ctx s_ina;
 
@@ -88,12 +88,12 @@ bool rd16(uint8_t reg, uint16_t *v)
 
 bool ina219_begin(uint8_t addr, uint32_t current_lsb_ua, uint32_t shunt_mohm)
 {
-    s_ina.addr = addr ? addr : (uint8_t)DETWS_INA219_I2C_ADDR;
-    s_ina.lsb_ua = current_lsb_ua ? current_lsb_ua : (uint32_t)DETWS_INA219_CURRENT_LSB_UA;
-    detws_i2c_begin();
+    s_ina.addr = addr ? addr : (uint8_t)DWS_INA219_I2C_ADDR;
+    s_ina.lsb_ua = current_lsb_ua ? current_lsb_ua : (uint32_t)DWS_INA219_CURRENT_LSB_UA;
+    dws_i2c_begin();
     bool ok = true;
     ok &= wr16(INA219_REG_CALIBRATION,
-               ina219_calibration(s_ina.lsb_ua, shunt_mohm ? shunt_mohm : (uint32_t)DETWS_INA219_SHUNT_MOHM));
+               ina219_calibration(s_ina.lsb_ua, shunt_mohm ? shunt_mohm : (uint32_t)DWS_INA219_SHUNT_MOHM));
     ok &= wr16(INA219_REG_CONFIG, 0x399F); // 32 V range, /8 gain (320 mV), 12-bit, continuous
     return ok;
 }
@@ -163,4 +163,4 @@ bool ina219_read_power_uw(int32_t *)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_INA219
+#endif // DWS_ENABLE_INA219

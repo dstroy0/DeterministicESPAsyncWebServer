@@ -24,7 +24,7 @@ void tearDown()
 struct MockCtrl
 {
     DncDecoder dec;
-    char lines[16][DETWS_DNC_LINE_MAX + 1];
+    char lines[16][DWS_DNC_LINE_MAX + 1];
     int nlines;
     int prog_start, prog_end;
     size_t bytes_sent;
@@ -39,7 +39,7 @@ struct MockCtrl
 static void mock_init(MockCtrl *m, DncCode code)
 {
     memset(m, 0, sizeof(*m));
-    det_dnc_decode_init(&m->dec, code);
+    dws_dnc_decode_init(&m->dec, code);
 }
 
 static int mock_send(void *c, const uint8_t *d, size_t len)
@@ -50,7 +50,7 @@ static int mock_send(void *c, const uint8_t *d, size_t len)
     m->bytes_sent += len;
     for (size_t k = 0; k < len; k++)
     {
-        DncEvent ev = det_dnc_decode_feed(&m->dec, d[k]);
+        DncEvent ev = dws_dnc_decode_feed(&m->dec, d[k]);
         if (ev == DncEvent::DNC_EV_LINE && m->nlines < 16)
         {
             strcpy(m->lines[m->nlines], m->dec.line);

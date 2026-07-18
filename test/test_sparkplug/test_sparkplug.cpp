@@ -184,7 +184,7 @@ void test_spb_error_and_kind_paths()
 
     TEST_ASSERT_EQUAL_UINT(0, spb_build_payload(buf, sizeof(buf), 1, 0, nullptr, 2)); // n>0, null metrics
 
-    static char big[DETWS_SPB_METRIC_MAX + 64];
+    static char big[DWS_SPB_METRIC_MAX + 64];
     memset(big, 'x', sizeof(big) - 1);
     big[sizeof(big) - 1] = '\0';
     SpbMetric ms = {};

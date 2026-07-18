@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http3/quic_tp.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/http3/quic_varint.h"
 #include <string.h>
@@ -219,4 +219,4 @@ bool quic_tp_parse(const uint8_t *buf, size_t len, QuicTransportParams *tp)
     return true;
 }
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3

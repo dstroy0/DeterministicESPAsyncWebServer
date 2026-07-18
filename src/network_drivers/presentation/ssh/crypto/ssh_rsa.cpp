@@ -68,7 +68,7 @@ static int ssh_mbedtls_rng(void *ctx, unsigned char *buf, size_t len)
 // on an ESP32-S3). The private key therefore stays in RAM for the server lifetime (as an SSH host key
 // normally does); the mutex serialises signs because mbedtls mutates the blinding values per operation, so
 // two worker cores must not enter mbedtls_pk_sign on the shared context at once. Loaded once at startup by
-// det_ssh_rsa_load_pubkey() (called from the sketch's setup(), single-threaded).
+// dws_ssh_rsa_load_pubkey() (called from the sketch's setup(), single-threaded).
 struct SshRsaCtx
 {
     mbedtls_pk_context pk;  ///< parsed host key + cached blinding state
@@ -79,7 +79,7 @@ static SshRsaCtx s_rsa;
 
 // Load the NVS DER blob, parse it once into the cached signer context, and extract n and e into
 // ssh_host_pubkey. Idempotent (re-parses / frees any previously loaded key), so calling it again reloads.
-int det_ssh_rsa_load_pubkey(void)
+int dws_ssh_rsa_load_pubkey(void)
 {
     if (!s_rsa.lock)
         s_rsa.lock = xSemaphoreCreateMutex();
@@ -147,8 +147,8 @@ int det_ssh_rsa_load_pubkey(void)
 int ssh_rsa_sign(const uint8_t *msg, size_t msg_len, SshRsaHash hash, uint8_t sig[SSH_RSA_SIG_BYTES])
 {
     // Reuse the key parsed once at startup. Lazy-load as a fallback if the sketch never did (e.g. a sign
-    // before det_ssh_rsa_load_pubkey()); load runs single-threaded at boot so first-use here is the edge case.
-    if (!s_rsa.ready && det_ssh_rsa_load_pubkey() != 0)
+    // before dws_ssh_rsa_load_pubkey()); load runs single-threaded at boot so first-use here is the edge case.
+    if (!s_rsa.ready && dws_ssh_rsa_load_pubkey() != 0)
         return -1;
 
     // Hash the message, then sign the digest. mbedtls_pk_sign() does NOT hash its input - it PKCS#1-pads
@@ -238,7 +238,7 @@ uint8_t _test_rsa_n[SSH_RSA_KEY_BYTES];
 uint8_t _test_rsa_d[SSH_RSA_KEY_BYTES];
 uint8_t _test_rsa_e[4];
 
-int det_ssh_rsa_load_pubkey(void)
+int dws_ssh_rsa_load_pubkey(void)
 {
     memcpy(ssh_host_pubkey.n, _test_rsa_n, SSH_RSA_KEY_BYTES);
     memcpy(ssh_host_pubkey.e_bytes, _test_rsa_e, 4);

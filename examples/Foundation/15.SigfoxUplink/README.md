@@ -1,6 +1,6 @@
 # 15.SigfoxUplink - send a tiny reading over the Sigfox 0G network
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_SIGFOX`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_SIGFOX`
 
 ## What this example teaches
 
@@ -47,6 +47,6 @@ The flag must reach the library build, so pass it as a build flag:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_SIGFOX=1" \
+  --project-option="build_flags=-DDWS_ENABLE_SIGFOX=1" \
   --lib="." examples/Foundation/15.SigfoxUplink/15.SigfoxUplink.ino
 ```

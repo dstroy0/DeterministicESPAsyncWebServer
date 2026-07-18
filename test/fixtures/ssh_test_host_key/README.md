@@ -16,10 +16,10 @@ output - see the [`03.SSHHostKey`](../../../examples/L5-Session/03.SSHHostKey/) 
 
 ## Files
 
-| File                    | What it is                                                                                                                             |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `ssh_test_host_key.h`   | The private key as PKCS#8 DER, as a C byte array (`DETWS_SSH_TEST_HOST_KEY_DER` + `..._LEN`) for the one-time NVS provisioning sketch. |
-| `ssh_test_host_key.pub` | The matching public key, for a client's `known_hosts`.                                                                                 |
+| File                    | What it is                                                                                                                           |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `ssh_test_host_key.h`   | The private key as PKCS#8 DER, as a C byte array (`DWS_SSH_TEST_HOST_KEY_DER` + `..._LEN`) for the one-time NVS provisioning sketch. |
+| `ssh_test_host_key.pub` | The matching public key, for a client's `known_hosts`.                                                                               |
 
 The raw `.pem` / `.der` are intentionally **not** committed (PEM private keys trip
 GitHub push protection); the byte array carries the same key material in C form.
@@ -33,7 +33,7 @@ GitHub push protection); the byte array carries the same key material in C form.
 void setup() {
   Preferences p;
   p.begin("ssh_host_key", false);   // namespace MUST be "ssh_host_key"
-  p.putBytes("priv_der", DETWS_SSH_TEST_HOST_KEY_DER, DETWS_SSH_TEST_HOST_KEY_DER_LEN);
+  p.putBytes("priv_der", DWS_SSH_TEST_HOST_KEY_DER, DWS_SSH_TEST_HOST_KEY_DER_LEN);
   p.end();                          // key name MUST be "priv_der"
 }
 ```

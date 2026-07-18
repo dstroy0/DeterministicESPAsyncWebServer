@@ -12,9 +12,9 @@
 // SNMP face for the NMS, and a small web face for humans. Every buffer is statically sized (no heap),
 // so determinism holds with all three running.
 //
-// Feature flags: DETWS_ENABLE_MODBUS and DETWS_ENABLE_SNMP are turned on for the whole build by the
+// Feature flags: DWS_ENABLE_MODBUS and DWS_ENABLE_SNMP are turned on for the whole build by the
 // project's top-level CMakeLists (add_compile_definitions, before project()) - the ESP-IDF way to set
-// a DETWS_ENABLE_* flag, since the guards live in the separately-compiled library sources. Do NOT
+// a DWS_ENABLE_* flag, since the guards live in the separately-compiled library sources. Do NOT
 // #define them here too; the CMake definition already reaches every translation unit.
 //
 // Arduino autostart is enabled (CONFIG_AUTOSTART_ARDUINO=y in sdkconfig.defaults), so setup() runs once
@@ -32,7 +32,7 @@
 static const char *WIFI_SSID = "YOUR_SSID";
 static const char *WIFI_PASS = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // Modbus data-model addresses (shared with the dashboard + SNMP so the three faces show one state).
 static constexpr uint16_t MB_UPTIME_INPUT_REG = 0;  // application-published: uptime seconds (read-only)
@@ -61,7 +61,7 @@ static void handle_root(uint8_t slot, HttpReq *)
     char body[512];
     int n = snprintf(body, sizeof(body),
                      "<!doctype html><meta name=viewport content='width=device-width,initial-scale=1'>"
-                     "<title>DetWS Industrial Gateway</title>"
+                     "<title>DWS Industrial Gateway</title>"
                      "<h1>Industrial edge gateway</h1><ul>"
                      "<li>uptime: %lu s</li>"
                      "<li>free heap: %u bytes</li>"

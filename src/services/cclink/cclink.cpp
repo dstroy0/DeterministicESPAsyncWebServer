@@ -8,11 +8,11 @@
 
 #include "services/cclink/cclink.h"
 
-#if DETWS_ENABLE_CCLINK
+#if DWS_ENABLE_CCLINK
 
 #include <string.h>
 
-uint8_t detws_cclink_sum(const uint8_t *bytes, size_t len)
+uint8_t dws_cclink_sum(const uint8_t *bytes, size_t len)
 {
     uint8_t sum = 0;
     for (size_t i = 0; i < len; i++)
@@ -20,8 +20,8 @@ uint8_t detws_cclink_sum(const uint8_t *bytes, size_t len)
     return sum;
 }
 
-size_t detws_cclink_build(uint8_t station, uint8_t command, const uint8_t *bits, size_t bit_len, const uint8_t *words,
-                          size_t word_len, uint8_t *out, size_t cap)
+size_t dws_cclink_build(uint8_t station, uint8_t command, const uint8_t *bits, size_t bit_len, const uint8_t *words,
+                        size_t word_len, uint8_t *out, size_t cap)
 {
     if (!out || (bit_len && !bits) || (word_len && !words) || station > 63)
         return 0;
@@ -41,17 +41,17 @@ size_t detws_cclink_build(uint8_t station, uint8_t command, const uint8_t *bits,
         memcpy(out + i, words, word_len);
         i += word_len;
     }
-    out[i] = detws_cclink_sum(out, i); // checksum over station..last data
+    out[i] = dws_cclink_sum(out, i); // checksum over station..last data
     i++;
     return i;
 }
 
-bool detws_cclink_parse(const uint8_t *frame, size_t len, CcLinkFrame *out)
+bool dws_cclink_parse(const uint8_t *frame, size_t len, CcLinkFrame *out)
 {
     if (!frame || !out || len < 3) // station + command + checksum
         return false;
     size_t body = len - 1;
-    if (detws_cclink_sum(frame, body) != frame[body])
+    if (dws_cclink_sum(frame, body) != frame[body])
         return false;
     out->station = frame[0];
     out->command = frame[1];
@@ -60,14 +60,14 @@ bool detws_cclink_parse(const uint8_t *frame, size_t len, CcLinkFrame *out)
     return true;
 }
 
-bool detws_cclink_get_bit(const uint8_t *bits, size_t bit_len, size_t index)
+bool dws_cclink_get_bit(const uint8_t *bits, size_t bit_len, size_t index)
 {
     if (!bits || index / 8 >= bit_len)
         return false;
     return (bits[index / 8] >> (index % 8)) & 1u;
 }
 
-void detws_cclink_set_bit(uint8_t *bits, size_t bit_len, size_t index, bool value)
+void dws_cclink_set_bit(uint8_t *bits, size_t bit_len, size_t index, bool value)
 {
     if (!bits || index / 8 >= bit_len)
         return;
@@ -78,7 +78,7 @@ void detws_cclink_set_bit(uint8_t *bits, size_t bit_len, size_t index, bool valu
         bits[index / 8] &= (uint8_t)~mask;
 }
 
-uint16_t detws_cclink_get_word(const uint8_t *words, size_t word_len, size_t index)
+uint16_t dws_cclink_get_word(const uint8_t *words, size_t word_len, size_t index)
 {
     size_t off = index * 2;
     if (!words || off + 1 >= word_len)
@@ -86,4 +86,4 @@ uint16_t detws_cclink_get_word(const uint8_t *words, size_t word_len, size_t ind
     return (uint16_t)(words[off] | (words[off + 1] << 8)); // little-endian
 }
 
-#endif // DETWS_ENABLE_CCLINK
+#endif // DWS_ENABLE_CCLINK

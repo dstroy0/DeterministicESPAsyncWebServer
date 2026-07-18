@@ -20,7 +20,7 @@
 #include "shared_primitives/utf8.h"
 #include <string.h>
 
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
 #include "network_drivers/presentation/deflate/deflate.h"
 #include "network_drivers/presentation/inflate/inflate.h"
 #include "network_drivers/session/scratch.h"
@@ -122,7 +122,7 @@ void ws_reset_frame(WsConn *ws)
 // One named owner, unreachable cross-TU. (The ws_pool[] table is the shared substrate.)
 struct WsCtx
 {
-    uint16_t frag_size = DETWS_WS_FRAG_SIZE;
+    uint16_t frag_size = DWS_WS_FRAG_SIZE;
 };
 static WsCtx s_ws;
 void ws_set_frag_size(uint16_t bytes)
@@ -149,9 +149,9 @@ static bool ws_emit_one(TcpConn *conn, uint8_t b0, const uint8_t *payload, uint1
         header[3] = (uint8_t)len;
         hlen = 4;
     }
-    if (!det_conn_send(conn->id, header, hlen))
+    if (!dws_conn_send(conn->id, header, hlen))
         return false;
-    if (len > 0 && payload && !det_conn_send(conn->id, payload, len))
+    if (len > 0 && payload && !dws_conn_send(conn->id, payload, len))
         return false;
     return true;
 }
@@ -159,16 +159,16 @@ static bool ws_emit_one(TcpConn *conn, uint8_t b0, const uint8_t *payload, uint1
 bool ws_send_frame(WsConn *ws, WsOpcode opcode, const uint8_t *payload, uint16_t len)
 {
     TcpConn *conn = &conn_pool[ws->slot_id];
-    if (!det_conn_active(ws->slot_id))
+    if (!dws_conn_active(ws->slot_id))
         return false;
 
     uint8_t rsv1 = 0; // permessage-deflate per-message "compressed" flag (RFC 7692)
 
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
     // Compress data frames when permessage-deflate is negotiated. Control frames
     // (close/ping/pong) are never compressed (RFC 7692 sec 5.1). Scratch + output
     // are borrowed from the per-dispatch arena and released when this scope exits;
-    // det_conn_send copies (TCP_WRITE_FLAG_COPY) so the buffer can go immediately.
+    // dws_conn_send copies (TCP_WRITE_FLAG_COPY) so the buffer can go immediately.
     ScratchScope scope;
     if (ws->pmd && len > 0 && (opcode == WsOpcode::WS_OP_TEXT || opcode == WsOpcode::WS_OP_BINARY))
     {
@@ -224,8 +224,8 @@ void ws_close(WsConn *ws, WsCloseCode code)
     uint8_t payload[2] = {(uint8_t)((uint16_t)code >> 8), (uint8_t)code};
     ws_send_frame(ws, WsOpcode::WS_OP_CLOSE, payload, 2);
 
-    if (det_conn_active(ws->slot_id))
-        det_conn_flush(ws->slot_id);
+    if (dws_conn_active(ws->slot_id))
+        dws_conn_flush(ws->slot_id);
 
     ws->parse_state = WsParseState::WS_CLOSED;
 }
@@ -255,8 +255,8 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
         if (ws->opcode == WsOpcode::WS_OP_PING)
         {
             ws_send_frame(ws, WsOpcode::WS_OP_PONG, ws->ctl_buf, (uint16_t)ws->payload_idx);
-            if (det_conn_active(conn->id))
-                det_conn_flush(conn->id);
+            if (dws_conn_active(conn->id))
+                dws_conn_flush(conn->id);
         }
         else if (ws->opcode == WsOpcode::WS_OP_CLOSE)
         {
@@ -275,7 +275,7 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
 
     if (ws->fin)
     {
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
         // permessage-deflate: decompress the reassembled message before delivery.
         // The compressed bytes are in ws->buf; append the RFC 7692 00 00 ff ff
         // marker, INFLATE into an arena buffer, and copy the result back. All
@@ -321,7 +321,7 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
         size_t n = ws->msg_len < WS_FRAME_SIZE ? ws->msg_len : WS_FRAME_SIZE;
         // RFC 6455 8.1: a TEXT message MUST be valid UTF-8 (checked on the fully
         // reassembled + decompressed message); otherwise fail the connection with 1007.
-        if (ws->msg_opcode == WsOpcode::WS_OP_TEXT && !det_utf8_valid(ws->buf, n))
+        if (ws->msg_opcode == WsOpcode::WS_OP_TEXT && !dws_utf8_valid(ws->buf, n))
         {
             ws_close(ws, WsCloseCode::WS_CLOSE_INVALID_PAYLOAD);
             ws->parse_state = WsParseState::WS_ERROR;
@@ -344,10 +344,10 @@ static void ws_finish_frame(WsConn *ws, TcpConn *conn)
 
 void ws_parse(WsConn *ws)
 {
-    if (!det_conn_active(ws->slot_id))
+    if (!dws_conn_active(ws->slot_id))
         return;
 
-    while (det_conn_available(ws->slot_id) > 0)
+    while (dws_conn_available(ws->slot_id) > 0)
     {
         // Stop if we hit a terminal state (leave the rest in the ring)
         if (ws->parse_state == WsParseState::WS_FRAME_READY || ws->parse_state == WsParseState::WS_CLOSED ||
@@ -355,7 +355,7 @@ void ws_parse(WsConn *ws)
             return;
 
         uint8_t byte = 0;
-        if (!det_conn_read_byte(ws->slot_id, &byte)) // ring drained between available() and here
+        if (!dws_conn_read_byte(ws->slot_id, &byte)) // ring drained between available() and here
             break;
         ws_feed_byte(ws, byte);
     }
@@ -422,7 +422,7 @@ void ws_feed_byte(WsConn *ws, uint8_t byte)
                     // Start of a new data message.
                     ws->msg_opcode = ws->opcode;
                     ws->msg_len = 0;
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
                     // RSV1 on the first frame of a data message marks it compressed
                     // (RFC 7692); only honored when permessage-deflate was negotiated.
                     ws->msg_compressed = ws->pmd && (rsv & 0x40);
@@ -431,7 +431,7 @@ void ws_feed_byte(WsConn *ws, uint8_t byte)
             }
             // Validate reserved bits. RSV2/RSV3 are never legal; RSV1 is legal only
             // as the per-message compression flag set above (pmd + new data frame).
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
             {
                 bool new_data = !ws_is_control(ws->opcode) && ws->opcode != WsOpcode::WS_OP_CONTINUATION;
                 if ((rsv & 0x30) || ((rsv & 0x40) && !(ws->pmd && new_data)))

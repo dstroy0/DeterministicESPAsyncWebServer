@@ -5,7 +5,7 @@
 // the ASH frames it sends; a DATA frame carrying an EZSP callback (e.g. an incoming Zigbee
 // message) is bridged northbound.
 //
-//   Zigbee NCP --UART--> ash_frame_decode() --> EZSP payload -> det_gateway_uplink()
+//   Zigbee NCP --UART--> ash_frame_decode() --> EZSP payload -> dws_gateway_uplink()
 //                                                                     |
 //                                              envelope + topic  zigbee/0/<node>
 //                                                                     |
@@ -16,7 +16,7 @@
 // sequence numbers, the incomingMessageHandler fields) is application work; this sketch
 // bridges the raw EZSP payload to show the transport path.
 //
-// Build flags (whole build): DETWS_ENABLE_ZIGBEE=1 DETWS_ENABLE_GATEWAY=1
+// Build flags (whole build): DWS_ENABLE_ZIGBEE=1 DWS_ENABLE_GATEWAY=1
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/gateway/gateway.h"
@@ -29,10 +29,10 @@ static const int PIN_RX = 16, PIN_TX = 17; // UART2 to the Zigbee NCP
 static uint8_t g_buf[512];
 static uint16_t g_len = 0;
 
-static bool northbound_publish(const det_gateway_msg *m, void *)
+static bool northbound_publish(const dws_gateway_msg *m, void *)
 {
     char topic[48];
-    det_gateway_topic(m, topic, sizeof(topic));
+    dws_gateway_topic(m, topic, sizeof(topic));
     Serial.printf("PUBLISH %s  (%u bytes)\n", topic, m->len);
     return true;
 }
@@ -49,13 +49,13 @@ void setup()
     Serial2.begin(115200, SERIAL_8N1, PIN_RX, PIN_TX);
     delay(300);
 
-    det_gateway_reset();
-    det_gateway_port_config p = {};
+    dws_gateway_reset();
+    dws_gateway_port_config p = {};
     p.port_id = RADIO_PORT;
-    p.kind = det_gateway_kind::DET_GW_ZIGBEE;
-    det_gateway_add_port(&p);
-    det_gateway_set_uplink_cb(northbound_publish, nullptr);
-    det_gateway_set_topic_prefix("zigbee");
+    p.kind = dws_gateway_kind::DWS_GW_ZIGBEE;
+    dws_gateway_add_port(&p);
+    dws_gateway_set_uplink_cb(northbound_publish, nullptr);
+    dws_gateway_set_topic_prefix("zigbee");
 
     uint8_t rst[8];
     uint16_t n = ash_frame_encode(Ash::ASH_RST, nullptr, 0, rst, sizeof(rst)); // reset the NCP
@@ -72,7 +72,7 @@ void loop()
     {
         if (g_len == 0)
             break;
-        uint8_t control = 0, payload[DETWS_ZIGBEE_MAX_DATA];
+        uint8_t control = 0, payload[DWS_ZIGBEE_MAX_DATA];
         uint16_t plen = 0;
         int n = ash_frame_decode(g_buf, g_len, &control, payload, sizeof(payload), &plen);
         if (n == 0)
@@ -87,7 +87,7 @@ void loop()
         if ((control & 0x80) == 0 && plen > 0)
         {
             uint16_t node = plen >= 2 ? (uint16_t)((payload[0] << 8) | payload[1]) : payload[0];
-            det_gateway_uplink(RADIO_PORT, node, payload, plen, 0);
+            dws_gateway_uplink(RADIO_PORT, node, payload, plen, 0);
         }
         drop_front((uint16_t)n);
     }

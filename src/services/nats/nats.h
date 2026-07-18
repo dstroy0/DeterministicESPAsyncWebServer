@@ -3,7 +3,7 @@
 
 /**
  * @file nats.h
- * @brief NATS client protocol codec (DETWS_ENABLE_NATS) - zero-heap builder + parser for the
+ * @brief NATS client protocol codec (DWS_ENABLE_NATS) - zero-heap builder + parser for the
  *        text-based NATS pub/sub protocol, so a device can be a NATS client over the shipped
  *        outbound client transport.
  *
@@ -33,7 +33,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_NATS
+#if DWS_ENABLE_NATS
 
 #include <stddef.h>
 #include <stdint.h>
@@ -94,6 +94,6 @@ struct NatsMsg
  */
 bool nats_parse(const char *buf, size_t len, NatsMsg *out, size_t *consumed);
 
-#endif // DETWS_ENABLE_NATS
+#endif // DWS_ENABLE_NATS
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_NATS_H

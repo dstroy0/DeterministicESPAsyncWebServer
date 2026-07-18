@@ -6,16 +6,16 @@
  * @brief SSH direct-tcpip port-forwarding owner (the `ssh -L` target side).
  *
  * The forwarding owner that the channel codec's forward seam
- * (det_ssh_channel_set_forward_open_cb / _data_cb) plugs into. The codec parses a
+ * (dws_ssh_channel_set_forward_open_cb / _data_cb) plugs into. The codec parses a
  * direct-tcpip request and routes channel data; this layer does the actual I/O -
- * it opens the outbound TCP connection through the client transport (det_client)
+ * it opens the outbound TCP connection through the client transport (dws_client)
  * and bridges bytes both ways - so no socket code leaks into the codec. One fixed
  * table maps each forward channel to a client-transport connection; all storage is
- * static (no heap). Compiled only when DETWS_SSH_PORT_FORWARD is set.
+ * static (no heap). Compiled only when DWS_SSH_PORT_FORWARD is set.
  *
  * Security: any authenticated client can ask the server to connect anywhere (an
  * open proxy / SSRF surface), so forwarding is opt-in twice over - compiled out by
- * default, and inert until the application calls det_ssh_forward_begin(). Install a
+ * default, and inert until the application calls dws_ssh_forward_begin(). Install a
  * policy callback to restrict the reachable targets.
  */
 
@@ -26,7 +26,7 @@
 
 #include <stdint.h>
 
-#if DETWS_SSH_PORT_FORWARD
+#if DWS_SSH_PORT_FORWARD
 
 /**
  * @brief Allow/deny policy for a forward target. Return true to permit the connect.
@@ -38,25 +38,25 @@
 typedef bool (*SshForwardPolicyCb)(const char *host, uint16_t port);
 
 /** @brief Install the forward-target policy (optional; default permits all). */
-void det_ssh_forward_set_policy_cb(SshForwardPolicyCb cb);
+void dws_ssh_forward_set_policy_cb(SshForwardPolicyCb cb);
 
 /**
  * @brief Enable direct-tcpip forwarding: install the channel forward callbacks.
  *
- * Call once after det_ssh_conn_setup(). Until then (or if DETWS_SSH_PORT_FORWARD is 0)
+ * Call once after dws_ssh_conn_setup(). Until then (or if DWS_SSH_PORT_FORWARD is 0)
  * the channel codec refuses every direct-tcpip open, so there is no open relay.
  */
-void det_ssh_forward_begin(void);
+void dws_ssh_forward_begin(void);
 
 /**
  * @brief Pump every forward on SSH connection @p ssh_slot: move buffered target
  *        bytes to the client (bounded by the channel's peer window) and propagate
  *        a close from either side. Called from the SSH connection poll each loop.
  */
-void det_ssh_forward_pump(uint8_t ssh_slot);
+void dws_ssh_forward_pump(uint8_t ssh_slot);
 
 /** @brief Tear down all forwards on @p ssh_slot (its SSH connection is closing). */
-void det_ssh_forward_reset(uint8_t ssh_slot);
+void dws_ssh_forward_reset(uint8_t ssh_slot);
 
-#endif // DETWS_SSH_PORT_FORWARD
+#endif // DWS_SSH_PORT_FORWARD
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_FORWARD_H

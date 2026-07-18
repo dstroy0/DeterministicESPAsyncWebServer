@@ -3,7 +3,7 @@
 
 /**
  * @file thread.h
- * @brief Thread spinel / HDLC-lite framing codec (DETWS_ENABLE_THREAD) - OpenThread RCP.
+ * @brief Thread spinel / HDLC-lite framing codec (DWS_ENABLE_THREAD) - OpenThread RCP.
  *
  * The HDLC-lite framing that carries spinel frames to an OpenThread radio co-processor (an
  * nRF52840 / EFR32 RCP) over UART - an 802.15.4 / Thread mesh bridged to IP and the web.
@@ -31,7 +31,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_THREAD
+#if DWS_ENABLE_THREAD
 
 #include <stddef.h>
 #include <stdint.h>
@@ -96,7 +96,7 @@ int spinel_command_parse(const uint8_t *payload, uint16_t len, uint8_t *header, 
 
 /**
  * @brief Encode an HDLC-lite frame: @p payload + FCS, byte-stuffed, flag-terminated.
- * @return the encoded frame length, or 0 if @p len exceeds DETWS_THREAD_MAX_DATA or the
+ * @return the encoded frame length, or 0 if @p len exceeds DWS_THREAD_MAX_DATA or the
  *         stuffed frame would not fit @p cap.
  */
 uint16_t spinel_frame_encode(const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap);
@@ -111,6 +111,6 @@ uint16_t spinel_frame_encode(const uint8_t *payload, uint16_t len, uint8_t *out,
  */
 int spinel_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *payload, uint16_t pay_cap, uint16_t *pay_len);
 
-#endif // DETWS_ENABLE_THREAD
+#endif // DWS_ENABLE_THREAD
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_THREAD_H

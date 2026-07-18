@@ -8,7 +8,7 @@
 
 #include "services/hostlink/hostlink.h"
 
-#if DETWS_ENABLE_HOSTLINK
+#if DWS_ENABLE_HOSTLINK
 
 #include <string.h>
 
@@ -108,4 +108,4 @@ bool hostlink_end_code(const HostlinkFrame *f, uint8_t *code)
     return true;
 }
 
-#endif // DETWS_ENABLE_HOSTLINK
+#endif // DWS_ENABLE_HOSTLINK

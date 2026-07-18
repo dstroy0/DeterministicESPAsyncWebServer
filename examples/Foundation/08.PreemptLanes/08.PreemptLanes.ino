@@ -2,9 +2,9 @@
 //
 // The preempting work queue is not one queue but several named LANES, each with its own
 // task at its own priority:
-//   - detws_pq_lane::DETWS_PQ_LANE_USER    - the one lane exposed to your app (the no-arg detws_pq_*
+//   - dws_pq_lane::DWS_PQ_LANE_USER    - the one lane exposed to your app (the no-arg dws_pq_*
 //                             API drives it). Lowest priority.
-//   - detws_pq_lane::DETWS_PQ_LANE_DMA / _FORWARD / _DEVICE - internal lanes the library uses for its
+//   - dws_pq_lane::DWS_PQ_LANE_DMA / _FORWARD / _DEVICE - internal lanes the library uses for its
 //                             own real-time work; they run ABOVE the user lane (DMA
 //                             highest), so internal ingest always preempts user work.
 //
@@ -12,17 +12,17 @@
 // (proving internal > user), and posts to each. On hardware the higher-priority DMA-lane
 // task is scheduled ahead of the user-lane task whenever both have work.
 //
-// Build flag (whole build): DETWS_ENABLE_PREEMPT_QUEUE=1
+// Build flag (whole build): DWS_ENABLE_PREEMPT_QUEUE=1
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/preempt_queue/preempt_queue.h"
 #include <Arduino.h>
 
-// A queue item padded to the lane item size (the queue copies a fixed DETWS_PQ_ITEM_SIZE
+// A queue item padded to the lane item size (the queue copies a fixed DWS_PQ_ITEM_SIZE
 // bytes, so the posted object must be at least that large).
 union pq_item {
     uint32_t seq;
-    uint8_t raw[DETWS_PQ_ITEM_SIZE];
+    uint8_t raw[DWS_PQ_ITEM_SIZE];
 };
 
 static void on_critical(const void *item, void *)
@@ -43,20 +43,19 @@ void setup()
     DetwsPqConfig dma = {};
     dma.handler = on_critical;
     dma.core = 1;
-    detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &dma);
+    dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &dma);
 
     // User lane via the no-arg API (unchanged from 06.PreemptQueue).
     DetwsPqConfig user = {};
     user.handler = on_background;
     user.priority = 5; // stays below the internal lanes
     user.core = 1;
-    detws_pq_start(&user);
+    dws_pq_start(&user);
 
-    Serial.printf("lane priorities  DMA=%u  FORWARD=%u  DEVICE=%u  USER=%u\n",
-                  detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_DMA),
-                  detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_FORWARD),
-                  detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_DEVICE),
-                  detws_pq_lane_priority(detws_pq_lane::DETWS_PQ_LANE_USER));
+    Serial.printf(
+        "lane priorities  DMA=%u  FORWARD=%u  DEVICE=%u  USER=%u\n", dws_pq_lane_priority(dws_pq_lane::DWS_PQ_LANE_DMA),
+        dws_pq_lane_priority(dws_pq_lane::DWS_PQ_LANE_FORWARD), dws_pq_lane_priority(dws_pq_lane::DWS_PQ_LANE_DEVICE),
+        dws_pq_lane_priority(dws_pq_lane::DWS_PQ_LANE_USER));
     Serial.println("internal lanes outrank the user lane -> internal work preempts user work");
 }
 
@@ -68,7 +67,7 @@ void loop()
     // before the user-lane task whenever both are runnable.
     pq_item it = {};
     it.seq = g_seq++;
-    detws_pq_post_lane(detws_pq_lane::DETWS_PQ_LANE_DMA, &it, 0); // critical -> internal lane
-    detws_pq_post(&it, 0);                                        // background -> user lane
+    dws_pq_post_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &it, 0); // critical -> internal lane
+    dws_pq_post(&it, 0);                                    // background -> user lane
     delay(1000);
 }

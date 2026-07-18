@@ -5,7 +5,7 @@
 // hardware-specific code (a few SPI transfers); everything above - the RadioHead frame
 // codec, the gateway envelope + publish, the downlink - is portable.
 //
-//   RFM95 RX --SPI--> lora_recv() --> lora_frame_parse() --> det_gateway_uplink()
+//   RFM95 RX --SPI--> lora_recv() --> lora_frame_parse() --> dws_gateway_uplink()
 //                                                                 |
 //                                              envelope + topic  lora/0/<from>
 //                                                                 |
@@ -16,7 +16,7 @@
 // RFM95 / SX1276 wired to the pins below to actually receive; the codec + register protocol
 // are host-tested in test/test_lora.
 //
-// Build flags (whole build): DETWS_ENABLE_LORA=1 DETWS_ENABLE_GATEWAY=1
+// Build flags (whole build): DWS_ENABLE_LORA=1 DWS_ENABLE_GATEWAY=1
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/gateway/gateway.h"
@@ -50,11 +50,11 @@ static lora_bus g_bus = {spi_read, spi_write, nullptr};
 
 static uint8_t g_tx_id = 0;
 
-// Northbound publish (the uplink sink): a real build calls mqtt.publish(det_gateway_topic(m), ...).
-static bool northbound_publish(const det_gateway_msg *m, void *)
+// Northbound publish (the uplink sink): a real build calls mqtt.publish(dws_gateway_topic(m), ...).
+static bool northbound_publish(const dws_gateway_msg *m, void *)
 {
     char topic[48];
-    det_gateway_topic(m, topic, sizeof(topic));
+    dws_gateway_topic(m, topic, sizeof(topic));
     Serial.printf("PUBLISH %s  (%u bytes, rssi %d)\n", topic, m->len, m->rssi);
     return true;
 }
@@ -63,7 +63,7 @@ static bool northbound_publish(const det_gateway_msg *m, void *)
 static bool radio_tx(uint8_t, uint16_t dst, const uint8_t *payload, uint16_t len, void *)
 {
     lora_header h = {(uint8_t)dst, NODE_SELF, g_tx_id++, 0x00};
-    uint8_t frame[DETWS_LORA_MAX_PAYLOAD + 4];
+    uint8_t frame[DWS_LORA_MAX_PAYLOAD + 4];
     uint16_t n = lora_frame_build(&h, payload, len, frame, sizeof(frame));
     if (n == 0 || !lora_send(&g_bus, frame, (uint8_t)n))
         return false;
@@ -104,14 +104,14 @@ void setup()
         return;
     }
 
-    det_gateway_reset();
-    det_gateway_port_config p = {};
+    dws_gateway_reset();
+    dws_gateway_port_config p = {};
     p.port_id = RADIO_PORT;
-    p.kind = det_gateway_kind::DET_GW_LORA;
+    p.kind = dws_gateway_kind::DWS_GW_LORA;
     p.tx = radio_tx;
-    det_gateway_add_port(&p);
-    det_gateway_set_uplink_cb(northbound_publish, nullptr);
-    det_gateway_set_topic_prefix("lora");
+    dws_gateway_add_port(&p);
+    dws_gateway_set_uplink_cb(northbound_publish, nullptr);
+    dws_gateway_set_topic_prefix("lora");
 
     lora_set_rx(&g_bus);
     Serial.println("LoRa gateway: SX127x RX -> codec -> publish (lora/0/<from>)");
@@ -120,7 +120,7 @@ void setup()
 void loop()
 {
     // Poll for a received frame; a production build waits on the DIO0 interrupt instead.
-    uint8_t buf[DETWS_LORA_MAX_PAYLOAD + 4];
+    uint8_t buf[DWS_LORA_MAX_PAYLOAD + 4];
     int16_t rssi = 0;
     int n = lora_recv(&g_bus, buf, sizeof(buf), &rssi);
     if (n > 0)
@@ -129,7 +129,7 @@ void loop()
         const uint8_t *payload = nullptr;
         uint16_t plen = 0;
         if (lora_frame_parse(buf, (uint16_t)n, &h, &payload, &plen))
-            det_gateway_uplink(RADIO_PORT, h.from, payload, plen, rssi); // bridge northbound
+            dws_gateway_uplink(RADIO_PORT, h.from, payload, plen, rssi); // bridge northbound
     }
     delay(5);
 }

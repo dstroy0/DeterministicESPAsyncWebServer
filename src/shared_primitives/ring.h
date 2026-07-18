@@ -8,13 +8,13 @@
  * @brief Shared single-producer / single-consumer byte-ring primitive.
  *
  * The one implementation of the receive-ring drain math, used by BOTH transports:
- * the server (det_conn_* in tcp.h, over conn_pool slots) and the outbound
- * client (det_client_* over its pool). Sharing it is deliberate - it keeps the ring
+ * the server (dws_conn_* in tcp.h, over conn_pool slots) and the outbound
+ * client (dws_client_* over its pool). Sharing it is deliberate - it keeps the ring
  * invariants in a single place so a consumer in any layer drains identically and
  * cannot reimplement (and subtly break) the wrap/ordering by hand.
  *
  * Ownership rule: exactly one producer advances `head`, exactly one consumer
- * advances `tail`; indices are DetAtomic so a producer's buffer writes are visible
+ * advances `tail`; indices are DWSAtomic so a producer's buffer writes are visible
  * before the consumer observes the advanced index (acquire/release), correct across
  * the tcpip_thread <-> worker/caller boundary on either core. No locks, no RMW.
  */
@@ -29,7 +29,7 @@
 // ---------------------------------------------------------------------------
 //
 // Fields shared across a producer/consumer thread boundary (ring head/tail, slot
-// state) are wrapped in DetAtomic so the ordering is enforced by construction
+// state) are wrapped in DWSAtomic so the ordering is enforced by construction
 // rather than by convention: every read is an acquire load and every write a
 // release store, so a producer's buffer writes are visible before the consumer
 // observes the advanced index (single-producer / single-consumer, so no
@@ -38,24 +38,24 @@
 // adds no lock and no measurable cost - determinism (bounded latency) is preserved.
 // The conversion operators keep every ==/=/arithmetic call site unchanged; the copy
 // ctor/assignment let a containing aggregate still be value-reset (`x = {}`).
-template <typename T> struct DetAtomic
+template <typename T> struct DWSAtomic
 {
     std::atomic<T> v;
-    DetAtomic() noexcept : v(T())
+    DWSAtomic() noexcept : v(T())
     {
     }
-    DetAtomic(T x) noexcept : v(x)
+    DWSAtomic(T x) noexcept : v(x)
     {
     }
-    DetAtomic(const DetAtomic &o) noexcept : v(o.v.load(std::memory_order_acquire))
+    DWSAtomic(const DWSAtomic &o) noexcept : v(o.v.load(std::memory_order_acquire))
     {
     }
-    DetAtomic &operator=(const DetAtomic &o) noexcept
+    DWSAtomic &operator=(const DWSAtomic &o) noexcept
     {
         v.store(o.v.load(std::memory_order_acquire), std::memory_order_release);
         return *this;
     }
-    DetAtomic &operator=(T x) noexcept
+    DWSAtomic &operator=(T x) noexcept
     {
         v.store(x, std::memory_order_release);
         return *this;
@@ -74,14 +74,14 @@ template <typename T> struct DetAtomic
 // once at the end (one release store), not per byte.
 
 /** @brief Bytes available to read (head - tail, modulo cap). */
-static inline size_t det_ring_available(const DetAtomic<size_t> &head, const DetAtomic<size_t> &tail, size_t cap)
+static inline size_t dws_ring_available(const DWSAtomic<size_t> &head, const DWSAtomic<size_t> &tail, size_t cap)
 {
     return ((size_t)head + cap - (size_t)tail) % cap;
 }
 
 /** @brief Pop one byte into @p out; false if empty. */
-static inline bool det_ring_read_byte(const uint8_t *buf, size_t cap, const DetAtomic<size_t> &head,
-                                      DetAtomic<size_t> &tail, uint8_t *out)
+static inline bool dws_ring_read_byte(const uint8_t *buf, size_t cap, const DWSAtomic<size_t> &head,
+                                      DWSAtomic<size_t> &tail, uint8_t *out)
 {
     size_t t = tail;
     if (t == (size_t)head)
@@ -92,8 +92,8 @@ static inline bool det_ring_read_byte(const uint8_t *buf, size_t cap, const DetA
 }
 
 /** @brief Pop up to @p maxn bytes into @p dst; returns the count read. */
-static inline size_t det_ring_read(const uint8_t *buf, size_t cap, const DetAtomic<size_t> &head,
-                                   DetAtomic<size_t> &tail, uint8_t *dst, size_t maxn)
+static inline size_t dws_ring_read(const uint8_t *buf, size_t cap, const DWSAtomic<size_t> &head,
+                                   DWSAtomic<size_t> &tail, uint8_t *dst, size_t maxn)
 {
     size_t h = head;
     size_t t = tail;
@@ -108,7 +108,7 @@ static inline size_t det_ring_read(const uint8_t *buf, size_t cap, const DetAtom
 }
 
 /** @brief Copy @p n bytes at @p off ahead of the tail into @p dst WITHOUT consuming. */
-static inline void det_ring_peek(const uint8_t *buf, size_t cap, const DetAtomic<size_t> &tail, size_t off,
+static inline void dws_ring_peek(const uint8_t *buf, size_t cap, const DWSAtomic<size_t> &tail, size_t off,
                                  uint8_t *dst, size_t n)
 {
     size_t idx = ((size_t)tail + off) % cap;
@@ -120,7 +120,7 @@ static inline void det_ring_peek(const uint8_t *buf, size_t cap, const DetAtomic
 }
 
 /** @brief Drop @p n bytes from the tail (advance past already-peeked data). */
-static inline void det_ring_consume(DetAtomic<size_t> &tail, size_t cap, size_t n)
+static inline void dws_ring_consume(DWSAtomic<size_t> &tail, size_t cap, size_t n)
 {
     tail = ((size_t)tail + n) % cap;
 }
@@ -128,13 +128,13 @@ static inline void det_ring_consume(DetAtomic<size_t> &tail, size_t cap, size_t 
 // ---------------------------------------------------------------------------
 // SPSC ring fill (producer side)
 // ---------------------------------------------------------------------------
-// The producer owns `head`. The recv callback checks det_ring_free() against the
+// The producer owns `head`. The recv callback checks dws_ring_free() against the
 // whole inbound segment (refuse it for lossless backpressure if it will not fit),
-// then copies each source span with det_ring_write_span() advancing a LOCAL head,
+// then copies each source span with dws_ring_write_span() advancing a LOCAL head,
 // and publishes that head once at the end (one release store, not per byte).
 
 /** @brief Free space to write: (cap-1) - used, one slot reserved to tell full from empty. */
-static inline size_t det_ring_free(const DetAtomic<size_t> &head, const DetAtomic<size_t> &tail, size_t cap)
+static inline size_t dws_ring_free(const DWSAtomic<size_t> &head, const DWSAtomic<size_t> &tail, size_t cap)
 {
     size_t used = ((size_t)head + cap - (size_t)tail) % cap;
     return (cap - 1) - used;
@@ -143,10 +143,10 @@ static inline size_t det_ring_free(const DetAtomic<size_t> &head, const DetAtomi
 /**
  * @brief Copy @p len bytes from @p src into @p buf at local index @p head, wrap-aware
  * (a contiguous memcpy, at most two spans across the wrap), returning the advanced
- * local head. Caller checks det_ring_free() first and publishes the returned head
+ * local head. Caller checks dws_ring_free() first and publishes the returned head
  * once. Bulk memcpy, not a per-byte loop.
  */
-static inline size_t det_ring_write_span(uint8_t *buf, size_t cap, size_t head, const uint8_t *src, size_t len)
+static inline size_t dws_ring_write_span(uint8_t *buf, size_t cap, size_t head, const uint8_t *src, size_t len)
 {
     while (len > 0)
     {

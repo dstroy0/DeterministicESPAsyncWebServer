@@ -5,13 +5,13 @@
  * @file 01.KeepAlive.ino
  * @brief HTTP/1.1 persistent connections (keep-alive).
  *
- * With DETWS_ENABLE_KEEPALIVE the server reuses one TCP connection for many
+ * With DWS_ENABLE_KEEPALIVE the server reuses one TCP connection for many
  * requests instead of closing after each response - the big win when a browser
  * loads a page plus its assets, or a client polls an endpoint. Behavior:
  *   - HTTP/1.1: connection stays open unless the client sends `Connection: close`
  *   - HTTP/1.0: closes unless the client sends `Connection: keep-alive`
  *   - error responses (400/413/414) always close (unknown next-request boundary)
- *   - each connection serves at most DETWS_KEEPALIVE_MAX_REQUESTS, then closes
+ *   - each connection serves at most DWS_KEEPALIVE_MAX_REQUESTS, then closes
  *   - idle connections are still reclaimed by the conn_timeout sweep
  *
  * It is fully transparent to handler code - you write the same routes; the
@@ -25,12 +25,12 @@
  * NOTE: optional features are gated by a compile flag the *library* sources must
  * also see. The `#define` below documents intent, but for PlatformIO enable it
  * for the whole build, e.g. in platformio.ini:
- *     build_flags = -DDETWS_ENABLE_KEEPALIVE=1
+ *     build_flags = -DDWS_ENABLE_KEEPALIVE=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.) A define in the
  * sketch alone does not reach the separately-compiled library .cpp.
  */
 
-#define DETWS_ENABLE_KEEPALIVE 1
+#define DWS_ENABLE_KEEPALIVE 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -39,7 +39,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static const char PAGE[] = "<!doctype html><html><body><h1>Keep-Alive demo</h1>"
                            "<p>This page and its requests are served over one persistent connection.</p>"

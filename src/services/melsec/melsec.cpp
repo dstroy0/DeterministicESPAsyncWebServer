@@ -8,7 +8,7 @@
 
 #include "services/melsec/melsec.h"
 
-#if DETWS_ENABLE_MELSEC
+#if DWS_ENABLE_MELSEC
 
 #include "shared_primitives/endian.h"
 #include <string.h>
@@ -23,19 +23,19 @@ size_t melsec_build_read(uint8_t *buf, size_t cap, uint8_t device_code, uint32_t
     buf[p++] = MELSEC_3E_REQ_SUBHEADER1;
     buf[p++] = MELSEC_NETWORK_DEFAULT;
     buf[p++] = MELSEC_PC_DEFAULT;
-    p += det_wr16le(buf + p, MELSEC_DEST_IO_DEFAULT);
+    p += dws_wr16le(buf + p, MELSEC_DEST_IO_DEFAULT);
     buf[p++] = MELSEC_DEST_MULTIDROP_DEFAULT;
     // request data length = the octets from the monitoring timer onward:
     // timer(2) + command(2) + subcommand(2) + head device(3) + device code(1) + points(2) = 12
-    p += det_wr16le(buf + p, MELSEC_3E_READ_REQ_DATA_LEN);
-    p += det_wr16le(buf + p, monitoring_timer);
-    p += det_wr16le(buf + p, MELSEC_CMD_BATCH_READ);
-    p += det_wr16le(buf + p, MELSEC_SUBCMD_WORD);
+    p += dws_wr16le(buf + p, MELSEC_3E_READ_REQ_DATA_LEN);
+    p += dws_wr16le(buf + p, monitoring_timer);
+    p += dws_wr16le(buf + p, MELSEC_CMD_BATCH_READ);
+    p += dws_wr16le(buf + p, MELSEC_SUBCMD_WORD);
     buf[p++] = (uint8_t)(head_device & 0xFF); // head device number, 3 octets little-endian
     buf[p++] = (uint8_t)((head_device >> 8) & 0xFF);
     buf[p++] = (uint8_t)((head_device >> 16) & 0xFF);
     buf[p++] = device_code;
-    p += det_wr16le(buf + p, points);
+    p += dws_wr16le(buf + p, points);
     return p; // == MELSEC_3E_READ_REQ_LEN
 }
 
@@ -46,15 +46,15 @@ bool melsec_parse_response(const uint8_t *buf, size_t len, MelsecResponse *out)
         return false;
     if (buf[0] != MELSEC_3E_RES_SUBHEADER0 || buf[1] != MELSEC_3E_RES_SUBHEADER1)
         return false;
-    uint16_t data_length = det_rd16le(buf + MELSEC_3E_RES_LEN_OFFSET); // covers the end code + the response data
+    uint16_t data_length = dws_rd16le(buf + MELSEC_3E_RES_LEN_OFFSET); // covers the end code + the response data
     if (data_length < MELSEC_ENDCODE_LEN)
         return false;
     if (MELSEC_3E_RES_DATALEN_BASE + (size_t)data_length > len)
         return false;
-    out->end_code = det_rd16le(buf + MELSEC_3E_RES_DATALEN_BASE);
+    out->end_code = dws_rd16le(buf + MELSEC_3E_RES_DATALEN_BASE);
     out->data = buf + MELSEC_3E_RES_DATA_OFFSET;
     out->data_len = (size_t)data_length - MELSEC_ENDCODE_LEN; // minus the 2-octet end code
     return true;
 }
 
-#endif // DETWS_ENABLE_MELSEC
+#endif // DWS_ENABLE_MELSEC

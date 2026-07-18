@@ -11,7 +11,7 @@
 
 #include "services/zwave/zwave.h"
 
-#if DETWS_ENABLE_ZWAVE
+#if DWS_ENABLE_ZWAVE
 
 namespace
 {
@@ -28,7 +28,7 @@ uint8_t checksum(const uint8_t *from_len, uint16_t n)
 uint16_t zwave_build_frame(zwave_type type, uint8_t cmd, const uint8_t *data, uint8_t data_len, uint8_t *out,
                            uint16_t cap)
 {
-    if (!out || data_len > DETWS_ZWAVE_MAX_DATA || (data == nullptr && data_len > 0))
+    if (!out || data_len > DWS_ZWAVE_MAX_DATA || (data == nullptr && data_len > 0))
         return 0;
     uint8_t frame_len = (uint8_t)(data_len + 3); // Type + Command + Data + Checksum
     uint16_t total = (uint16_t)(2 + frame_len);  // SOF + LEN + frame_len bytes
@@ -55,7 +55,7 @@ int zwave_parse_frame(const uint8_t *raw, uint16_t len, uint8_t *type, uint8_t *
     if (len < 2)
         return 0;
     uint8_t frame_len = raw[1];
-    if (frame_len < 3 || frame_len > DETWS_ZWAVE_MAX_DATA + 3)
+    if (frame_len < 3 || frame_len > DWS_ZWAVE_MAX_DATA + 3)
         return -1; // too short for Type+Cmd+Checksum, or implausibly long
     uint16_t total = (uint16_t)(2 + frame_len);
     if (len < total)
@@ -94,4 +94,4 @@ uint16_t zwave_build_ack(uint8_t *out, uint16_t cap)
     return 1;
 }
 
-#endif // DETWS_ENABLE_ZWAVE
+#endif // DWS_ENABLE_ZWAVE

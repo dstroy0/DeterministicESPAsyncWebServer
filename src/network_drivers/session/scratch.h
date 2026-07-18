@@ -94,7 +94,7 @@ size_t scratch_used(void);
 /** @brief Largest scratch_used() value seen since boot (for sizing the arena). */
 size_t scratch_high_water(void);
 
-/** @brief Total arena capacity in bytes (DETWS_SCRATCH_ARENA_SIZE). */
+/** @brief Total arena capacity in bytes (DWS_SCRATCH_ARENA_SIZE). */
 size_t scratch_capacity(void);
 
 /**

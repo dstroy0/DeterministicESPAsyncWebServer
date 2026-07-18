@@ -4,7 +4,7 @@
 # @brief Deterministic web-asset generator: src/web/input/* -> src/network_drivers/application/<type>.{h,cpp}.
 # @details Each file under src/web/input is an editable source document (HTML, CSS,
 #          JSON, XML, SVG, JS). Its base name is the C identifier it backs (e.g.
-#          DETWS_PROV_FORM.html -> `extern const char DETWS_PROV_FORM[];`) and its
+#          DWS_PROV_FORM.html -> `extern const char DWS_PROV_FORM[];`) and its
 #          extension selects the per-type output header (html.h, css.h, ...). This
 #          script emits the documents as C string literals into the application
 #          layer so the firmware ships them in flash with no filesystem or heap.

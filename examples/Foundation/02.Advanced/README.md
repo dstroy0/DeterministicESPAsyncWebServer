@@ -112,7 +112,7 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // The bearer token required for any write/delete. Compared verbatim below.
 static const char *EXPECTED_TOKEN = "Bearer secret_admin_token";
@@ -366,7 +366,7 @@ void setup()
 {
     Serial.begin(115200);
     delay(1000);
-    Serial.println("\n--- DetWebServer Advanced REST CRUD Example ---");
+    Serial.println("\n--- DWS Advanced REST CRUD Example ---");
 
     init_wifi_physical(SSID, PASSWORD);
     while (!wifi_ready())

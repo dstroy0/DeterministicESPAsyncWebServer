@@ -8,9 +8,9 @@
 
 #include "services/interbus/interbus.h"
 
-#if DETWS_ENABLE_INTERBUS
+#if DWS_ENABLE_INTERBUS
 
-uint16_t detws_interbus_fcs(const uint8_t *bytes, size_t len)
+uint16_t dws_interbus_fcs(const uint8_t *bytes, size_t len)
 {
     // CRC-16/CCITT-FALSE: poly 0x1021, init 0xFFFF, no reflection, xorout 0.
     uint16_t crc = 0xFFFF;
@@ -23,7 +23,7 @@ uint16_t detws_interbus_fcs(const uint8_t *bytes, size_t len)
     return crc;
 }
 
-size_t detws_interbus_build(const uint16_t *words, size_t word_count, uint8_t *out, size_t cap)
+size_t dws_interbus_build(const uint16_t *words, size_t word_count, uint8_t *out, size_t cap)
 {
     if (!out || (word_count && !words))
         return 0;
@@ -38,13 +38,13 @@ size_t detws_interbus_build(const uint16_t *words, size_t word_count, uint8_t *o
         out[i++] = (uint8_t)(words[w] >> 8); // big-endian
         out[i++] = (uint8_t)words[w];
     }
-    uint16_t crc = detws_interbus_fcs(out, i); // FCS over loopback + words
+    uint16_t crc = dws_interbus_fcs(out, i); // FCS over loopback + words
     out[i++] = (uint8_t)(crc >> 8);
     out[i++] = (uint8_t)crc;
     return i;
 }
 
-bool detws_interbus_parse(const uint8_t *frame, size_t len, uint16_t *out_words, size_t max_words, size_t *out_count)
+bool dws_interbus_parse(const uint8_t *frame, size_t len, uint16_t *out_words, size_t max_words, size_t *out_count)
 {
     if (!frame || !out_words || !out_count || len < 4) // loopback + FCS minimum
         return false;
@@ -55,7 +55,7 @@ bool detws_interbus_parse(const uint8_t *frame, size_t len, uint16_t *out_words,
     size_t word_count = (len - 4) / 2;
     if (word_count > max_words)
         return false;
-    uint16_t want = detws_interbus_fcs(frame, len - 2);
+    uint16_t want = dws_interbus_fcs(frame, len - 2);
     uint16_t got = (uint16_t)((frame[len - 2] << 8) | frame[len - 1]);
     if (want != got)
         return false;
@@ -65,4 +65,4 @@ bool detws_interbus_parse(const uint8_t *frame, size_t len, uint16_t *out_words,
     return true;
 }
 
-#endif // DETWS_ENABLE_INTERBUS
+#endif // DWS_ENABLE_INTERBUS

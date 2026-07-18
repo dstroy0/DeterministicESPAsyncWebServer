@@ -93,39 +93,39 @@ the matching header in `src/services/` and its description in
 
 ## Quick-reference table
 
-"Flag" is the `DETWS_ENABLE_*` macro you set to compile the codec in (all default
+"Flag" is the `DWS_ENABLE_*` macro you set to compile the codec in (all default
 **off**). "Talks to" is the machine on the other end.
 
-| Codec         | Flag                         | Transport                  | External hardware               | Typical settings                | Talks to                           |
-| ------------- | ---------------------------- | -------------------------- | ------------------------------- | ------------------------------- | ---------------------------------- |
-| Modbus RTU    | `DETWS_ENABLE_MODBUS_RTU`    | Serial (RS-485/232)        | RS-485 transceiver              | 19200 8E1, unit 1-247           | Modbus sensors, drives, meters     |
-| Modbus TCP    | `DETWS_ENABLE_MODBUS`        | TCP                        | Wi-Fi/Ethernet                  | port 502                        | Modbus PLCs and gateways           |
-| Modbus master | `DETWS_ENABLE_MODBUS_MASTER` | TCP (client)               | Wi-Fi/Ethernet                  | port 502                        | Modbus slave devices               |
-| SunSpec       | `DETWS_ENABLE_SUNSPEC`       | Modbus (RTU or TCP)        | per Modbus row                  | model base reg 40000            | Solar inverters, meters, batteries |
-| DF1           | `DETWS_ENABLE_DF1`           | Serial (RS-232/485)        | RS-232 or RS-485 transceiver    | 19200, full-duplex              | Allen-Bradley (Rockwell) PLCs      |
-| Host Link     | `DETWS_ENABLE_HOSTLINK`      | Serial (RS-232/422/485)    | transceiver                     | 9600 7E2, unit 00-31            | Omron PLCs (C-mode)                |
-| FINS          | `DETWS_ENABLE_FINS`          | UDP                        | Wi-Fi/Ethernet                  | UDP port 9600                   | Omron PLCs (FINS)                  |
-| MELSEC        | `DETWS_ENABLE_MELSEC`        | TCP or UDP                 | Wi-Fi/Ethernet                  | port set on the PLC             | Mitsubishi PLCs (MC 3E)            |
-| S7comm        | `DETWS_ENABLE_S7COMM`        | TCP (ISO-on-TCP)           | Wi-Fi/Ethernet                  | port 102, rack/slot             | Siemens S7-300/400/1200/1500       |
-| BACnet/IP     | `DETWS_ENABLE_BACNET`        | UDP                        | Wi-Fi/Ethernet                  | UDP port 47808                  | Building automation controllers    |
-| EtherNet/IP   | `DETWS_ENABLE_ENIP`          | TCP + UDP                  | Wi-Fi/Ethernet                  | TCP 44818, UDP 2222             | Allen-Bradley / ODVA devices       |
-| CIP           | `DETWS_ENABLE_CIP`           | over EtherNet/IP           | Wi-Fi/Ethernet                  | (rides ENIP)                    | CIP objects on ODVA devices        |
-| DNP3          | `DETWS_ENABLE_DNP3`          | Serial or TCP              | transceiver or Wi-Fi            | TCP 20000, 16-bit addresses     | SCADA / utility outstations        |
-| C37.118       | `DETWS_ENABLE_C37118`        | Serial, TCP or UDP         | transceiver or Wi-Fi            | no fixed port (often 4712/4713) | Power-grid PMUs / PDCs             |
-| M-Bus         | `DETWS_ENABLE_MBUS`          | Serial (M-Bus bus)         | M-Bus level converter (TSS721)  | 2400 8E1, primary addr 1-250    | Water / gas / heat / power meters  |
-| SDI-12        | `DETWS_ENABLE_SDI12`         | Serial (1-wire SDI-12)     | level / direction circuit       | 1200 7E1, sensor addr 0-9/A-Z   | Soil / water / weather sensors     |
-| DMX512 / RDM  | `DETWS_ENABLE_DMX`           | Serial (RS-485)            | RS-485 transceiver (MAX485)     | 250k 8N2, up to 512 channels    | Stage / architectural lighting     |
-| NMEA 0183     | `DETWS_ENABLE_NMEA0183`      | Serial (UART / RS-422)     | none (TTL) or RS-422 receiver   | 4800 or 9600 8N1                | GPS / marine instruments           |
-| IO-Link       | `DETWS_ENABLE_IOLINK`        | Serial (3-wire SDCI)       | IO-Link transceiver (MAX14819)  | 4.8 / 38.4 / 230.4 kbit/s       | Smart sensors / actuators          |
-| IEC 60870     | `DETWS_ENABLE_IEC60870`      | TCP (-104) / serial (-101) | Wi-Fi or RS-232/485 transceiver | TCP 2404; -101 link address     | Utility RTUs / SCADA outstations   |
-| CANopen       | `DETWS_ENABLE_CANOPEN`       | CAN (TWAI or SPI)          | CAN transceiver                 | 125k-1M bit/s, node 1-127       | Motion drives, I/O, CANopen nodes  |
-| J1939         | `DETWS_ENABLE_J1939`         | CAN (TWAI or SPI)          | CAN transceiver                 | 250k bit/s, 29-bit ids          | Trucks, tractors, gensets, marine  |
-| DeviceNet     | `DETWS_ENABLE_DEVICENET`     | CAN (TWAI or SPI)          | CAN transceiver (+ 24 V bus)    | 125/250/500k, MAC 0-63          | DeviceNet I/O, drives (CIP/CAN)    |
-| NMEA 2000     | `DETWS_ENABLE_NMEA2000`      | CAN (TWAI or SPI)          | CAN transceiver (+ N2K tap)     | 250k bit/s, Fast Packet         | Marine GPS / wind / depth / engine |
-| OPC UA        | `DETWS_ENABLE_OPCUA`         | TCP                        | Wi-Fi/Ethernet                  | port 4840, SecurityPolicy None  | OPC UA clients / SCADA             |
-| OPC UA client | `DETWS_ENABLE_OPCUA_CLIENT`  | TCP (client)               | Wi-Fi/Ethernet                  | port 4840                       | OPC UA servers                     |
-| SNMP          | `DETWS_ENABLE_SNMP`          | UDP                        | Wi-Fi/Ethernet                  | UDP 161 (agent), 162 (trap)     | Network monitoring systems         |
-| ESP-NOW       | `DETWS_ENABLE_ESPNOW`        | 2.4 GHz radio              | none (a peer ESP board)         | shared channel, peer MAC        | Other ESP32 / ESP8266 boards       |
+| Codec         | Flag                       | Transport                  | External hardware               | Typical settings                | Talks to                           |
+| ------------- | -------------------------- | -------------------------- | ------------------------------- | ------------------------------- | ---------------------------------- |
+| Modbus RTU    | `DWS_ENABLE_MODBUS_RTU`    | Serial (RS-485/232)        | RS-485 transceiver              | 19200 8E1, unit 1-247           | Modbus sensors, drives, meters     |
+| Modbus TCP    | `DWS_ENABLE_MODBUS`        | TCP                        | Wi-Fi/Ethernet                  | port 502                        | Modbus PLCs and gateways           |
+| Modbus master | `DWS_ENABLE_MODBUS_MASTER` | TCP (client)               | Wi-Fi/Ethernet                  | port 502                        | Modbus slave devices               |
+| SunSpec       | `DWS_ENABLE_SUNSPEC`       | Modbus (RTU or TCP)        | per Modbus row                  | model base reg 40000            | Solar inverters, meters, batteries |
+| DF1           | `DWS_ENABLE_DF1`           | Serial (RS-232/485)        | RS-232 or RS-485 transceiver    | 19200, full-duplex              | Allen-Bradley (Rockwell) PLCs      |
+| Host Link     | `DWS_ENABLE_HOSTLINK`      | Serial (RS-232/422/485)    | transceiver                     | 9600 7E2, unit 00-31            | Omron PLCs (C-mode)                |
+| FINS          | `DWS_ENABLE_FINS`          | UDP                        | Wi-Fi/Ethernet                  | UDP port 9600                   | Omron PLCs (FINS)                  |
+| MELSEC        | `DWS_ENABLE_MELSEC`        | TCP or UDP                 | Wi-Fi/Ethernet                  | port set on the PLC             | Mitsubishi PLCs (MC 3E)            |
+| S7comm        | `DWS_ENABLE_S7COMM`        | TCP (ISO-on-TCP)           | Wi-Fi/Ethernet                  | port 102, rack/slot             | Siemens S7-300/400/1200/1500       |
+| BACnet/IP     | `DWS_ENABLE_BACNET`        | UDP                        | Wi-Fi/Ethernet                  | UDP port 47808                  | Building automation controllers    |
+| EtherNet/IP   | `DWS_ENABLE_ENIP`          | TCP + UDP                  | Wi-Fi/Ethernet                  | TCP 44818, UDP 2222             | Allen-Bradley / ODVA devices       |
+| CIP           | `DWS_ENABLE_CIP`           | over EtherNet/IP           | Wi-Fi/Ethernet                  | (rides ENIP)                    | CIP objects on ODVA devices        |
+| DNP3          | `DWS_ENABLE_DNP3`          | Serial or TCP              | transceiver or Wi-Fi            | TCP 20000, 16-bit addresses     | SCADA / utility outstations        |
+| C37.118       | `DWS_ENABLE_C37118`        | Serial, TCP or UDP         | transceiver or Wi-Fi            | no fixed port (often 4712/4713) | Power-grid PMUs / PDCs             |
+| M-Bus         | `DWS_ENABLE_MBUS`          | Serial (M-Bus bus)         | M-Bus level converter (TSS721)  | 2400 8E1, primary addr 1-250    | Water / gas / heat / power meters  |
+| SDI-12        | `DWS_ENABLE_SDI12`         | Serial (1-wire SDI-12)     | level / direction circuit       | 1200 7E1, sensor addr 0-9/A-Z   | Soil / water / weather sensors     |
+| DMX512 / RDM  | `DWS_ENABLE_DMX`           | Serial (RS-485)            | RS-485 transceiver (MAX485)     | 250k 8N2, up to 512 channels    | Stage / architectural lighting     |
+| NMEA 0183     | `DWS_ENABLE_NMEA0183`      | Serial (UART / RS-422)     | none (TTL) or RS-422 receiver   | 4800 or 9600 8N1                | GPS / marine instruments           |
+| IO-Link       | `DWS_ENABLE_IOLINK`        | Serial (3-wire SDCI)       | IO-Link transceiver (MAX14819)  | 4.8 / 38.4 / 230.4 kbit/s       | Smart sensors / actuators          |
+| IEC 60870     | `DWS_ENABLE_IEC60870`      | TCP (-104) / serial (-101) | Wi-Fi or RS-232/485 transceiver | TCP 2404; -101 link address     | Utility RTUs / SCADA outstations   |
+| CANopen       | `DWS_ENABLE_CANOPEN`       | CAN (TWAI or SPI)          | CAN transceiver                 | 125k-1M bit/s, node 1-127       | Motion drives, I/O, CANopen nodes  |
+| J1939         | `DWS_ENABLE_J1939`         | CAN (TWAI or SPI)          | CAN transceiver                 | 250k bit/s, 29-bit ids          | Trucks, tractors, gensets, marine  |
+| DeviceNet     | `DWS_ENABLE_DEVICENET`     | CAN (TWAI or SPI)          | CAN transceiver (+ 24 V bus)    | 125/250/500k, MAC 0-63          | DeviceNet I/O, drives (CIP/CAN)    |
+| NMEA 2000     | `DWS_ENABLE_NMEA2000`      | CAN (TWAI or SPI)          | CAN transceiver (+ N2K tap)     | 250k bit/s, Fast Packet         | Marine GPS / wind / depth / engine |
+| OPC UA        | `DWS_ENABLE_OPCUA`         | TCP                        | Wi-Fi/Ethernet                  | port 4840, SecurityPolicy None  | OPC UA clients / SCADA             |
+| OPC UA client | `DWS_ENABLE_OPCUA_CLIENT`  | TCP (client)               | Wi-Fi/Ethernet                  | port 4840                       | OPC UA servers                     |
+| SNMP          | `DWS_ENABLE_SNMP`          | UDP                        | Wi-Fi/Ethernet                  | UDP 161 (agent), 162 (trap)     | Network monitoring systems         |
+| ESP-NOW       | `DWS_ENABLE_ESPNOW`        | 2.4 GHz radio              | none (a peer ESP board)         | shared channel, peer MAC        | Other ESP32 / ESP8266 boards       |
 
 ## Serial field-bus codecs (you wire a transceiver)
 
@@ -229,7 +229,7 @@ a frame, then hand it to the codec.
 
 ### Modbus RTU
 
-- **Flag:** `DETWS_ENABLE_MODBUS_RTU` (turns on `DETWS_ENABLE_MODBUS` too).
+- **Flag:** `DWS_ENABLE_MODBUS_RTU` (turns on `DWS_ENABLE_MODBUS` too).
 - **Hardware:** RS-485 transceiver (occasionally RS-232 point-to-point).
 - **Settings:** the Modbus spec default is **19200 baud, 8 data bits, even
   parity, 1 stop bit (8E1)**; **9600 8N1** is also very common. Every device on a
@@ -242,7 +242,7 @@ a frame, then hand it to the codec.
 
 ### DF1 (Allen-Bradley)
 
-- **Flag:** `DETWS_ENABLE_DF1`.
+- **Flag:** `DWS_ENABLE_DF1`.
 - **Hardware:** RS-232 to a PLC serial port (a DB9), or RS-485 for multidrop;
   use the matching transceiver above.
 - **Settings:** commonly **19200** (also 9600/4800), full-duplex DF1. The codec
@@ -254,7 +254,7 @@ ETX` framing and byte-stuffing. See `src/services/df1/df1.h`.
 
 ### Host Link (Omron)
 
-- **Flag:** `DETWS_ENABLE_HOSTLINK`.
+- **Flag:** `DWS_ENABLE_HOSTLINK`.
 - **Hardware:** RS-232, RS-422, or RS-485 to an Omron PLC host-link port.
 - **Settings:** a typical Omron host-link port is **9600 baud, 7 data bits, even
   parity, 2 stop bits (7E2)**; confirm the PLC's setting. Each PLC has a **unit
@@ -272,7 +272,7 @@ the framing is transport-independent.
 
 ### M-Bus (meters)
 
-`DETWS_ENABLE_MBUS`. Wired M-Bus is the European utility-meter bus (water, gas,
+`DWS_ENABLE_MBUS`. Wired M-Bus is the European utility-meter bus (water, gas,
 heat, electricity). Electrically it is **not** RS-485: it is its own powered
 two-wire bus where the master sends by voltage modulation and the meter replies
 by current modulation. So you need an **M-Bus master level converter** (a
@@ -296,7 +296,7 @@ BCD-length LVAR variants are not. See `src/services/mbus/mbus.h`.
 
 ### SDI-12 (environmental sensors)
 
-`DETWS_ENABLE_SDI12`. SDI-12 is the **1200-baud single-wire** bus for soil,
+`DWS_ENABLE_SDI12`. SDI-12 is the **1200-baud single-wire** bus for soil,
 water, and weather sensors. One data line carries both directions (half-duplex,
 **7E1**); the recorder addresses a sensor by one character (0-9, A-Z, a-z). The
 electrical layer is a 5 V line with a marking/break convention, so on a 3.3 V
@@ -318,7 +318,7 @@ Poll a sensor string and publish the readings over Wi-Fi. See
 
 ### DMX512 / RDM (lighting)
 
-`DETWS_ENABLE_DMX`. DMX512 drives stage and architectural lighting over **RS-485**
+`DWS_ENABLE_DMX`. DMX512 drives stage and architectural lighting over **RS-485**
 at **250 kbit/s, 8N2** - so wire the same RS-485 transceiver (a `MAX485` is the
 classic cheap part) as in the RS-485 section above. DMX is one-way and positional:
 each fixture listens on a start address and reads N consecutive channel slots.
@@ -336,7 +336,7 @@ web UI - a tidy **wireless lighting controller**. See `src/services/dmx/dmx.h`.
 
 ### NMEA 0183 (GPS / marine)
 
-`DETWS_ENABLE_NMEA0183`. The classic GPS / marine sentence protocol. A hobby GPS
+`DWS_ENABLE_NMEA0183`. The classic GPS / marine sentence protocol. A hobby GPS
 breakout outputs **3.3 V TTL serial** that wires straight to an ESP32 RX pin (no
 transceiver) - typically **9600 baud, 8N1** (older units 4800). Full-size marine
 instruments use **RS-422**, so for those add an RS-422 receiver. It is mostly
@@ -355,7 +355,7 @@ or an NMEA-0183-to-NMEA-2000 bridge with the codec next door). See
 
 ### IO-Link (smart sensors)
 
-`DETWS_ENABLE_IOLINK`. IO-Link (SDCI) is the point-to-point link to modern smart
+`DWS_ENABLE_IOLINK`. IO-Link (SDCI) is the point-to-point link to modern smart
 sensors and actuators - a single device per port over a 3-wire cable (L+, L-, and
 the C/Q data line). The data line is **not** plain UART levels: it swings to the
 24 V supply, so you need a dedicated **IO-Link master transceiver** (a `MAX14819`
@@ -401,7 +401,7 @@ common). All nodes on a CAN bus must agree on the bit rate.
 
 ### CANopen
 
-`DETWS_ENABLE_CANOPEN`. CANopen (CiA 301) is the dominant higher-layer protocol
+`DWS_ENABLE_CANOPEN`. CANopen (CiA 301) is the dominant higher-layer protocol
 for CAN in factory automation: motion drives, I/O blocks, sensors. Each node has
 an id 1-127. The codec builds and parses the messages; your sketch moves the
 frames with the TWAI driver (or the MCP2515):
@@ -422,7 +422,7 @@ publish their state over MQTT / HTTP / a WebSocket. SDO transfers are expedited
 
 ### J1939
 
-`DETWS_ENABLE_J1939`. The CAN higher-layer protocol for heavy-duty vehicles,
+`DWS_ENABLE_J1939`. The CAN higher-layer protocol for heavy-duty vehicles,
 agriculture, marine, and gensets - same wiring as above (transceiver +
 terminators), but it uses **29-bit extended** ids, almost always at **250
 kbit/s**. The codec packs and unpacks the id (priority / PGN / source /
@@ -445,7 +445,7 @@ the bus and publish them over MQTT or a web dashboard. See
 
 ### DeviceNet
 
-`DETWS_ENABLE_DEVICENET`. DeviceNet is **CIP over CAN** (the same CIP objects as
+`DWS_ENABLE_DEVICENET`. DeviceNet is **CIP over CAN** (the same CIP objects as
 EtherNet/IP, but on a CAN wire). Electrically it is CAN with a twist: a DeviceNet
 cable carries **24 V power** alongside CAN_H / CAN_L, so a real drop also needs
 the power conductors and the standard 5-pin connector - but the signalling is
@@ -453,7 +453,7 @@ ordinary CAN, so the **same transceiver wiring** as above applies (use 125, 250,
 or 500 kbit/s; each node has a MAC id 0-63).
 
 This module supplies the DeviceNet-specific link layer; you build the CIP message
-body with the `cip_*` functions (enable `DETWS_ENABLE_CIP`):
+body with the `cip_*` functions (enable `DWS_ENABLE_CIP`):
 
 - Address a frame: `devicenet_encode_id(&id, DEVICENET_GROUP_2, msg_id, mac)`
   picks the message group + MAC id; `devicenet_decode_id()` reverses it.
@@ -469,7 +469,7 @@ Bridge a DeviceNet segment onto Wi-Fi the same way as the other CAN buses. See
 
 ### NMEA 2000
 
-`DETWS_ENABLE_NMEA2000`. The marine instrumentation backbone (GPS, wind, depth,
+`DWS_ENABLE_NMEA2000`. The marine instrumentation backbone (GPS, wind, depth,
 AIS, engine data) - electrically it is CAN at **250 kbit/s**, and protocol-wise
 it is J1939, so the wiring is the same transceiver setup. A real N2K backbone
 uses a powered trunk with drop "tees"; tap a drop with your transceiver (it only
@@ -512,7 +512,7 @@ the ESP32's built-in Wi-Fi supplies the link.
       ~7.2 Mbit/s at the default 20 MHz SPI clock, ~8.2 Mbit/s at 24 MHz, plateauing
       near the W5500's internal ~8.3 Mbit/s ceiling around 30 MHz. For near-100-Mbit
       speed use an RMII PHY (LAN8720) instead.
-    - **SPI clock and signal integrity.** `DETWS_ETH_W5500_SPI_MHZ` sets the SPI
+    - **SPI clock and signal integrity.** `DWS_ETH_W5500_SPI_MHZ` sets the SPI
       clock (default 20; the W5500 allows up to 33.3 MHz). Higher clocks need clean,
       short wiring: on breadboard jumpers, sustained transfers stay reliable to about
       24 MHz, and above ~33 MHz the SPI reads corrupt (a mis-read chip ID or truncated
@@ -524,9 +524,9 @@ the ESP32's built-in Wi-Fi supplies the link.
 
 ### Modbus TCP and Modbus master
 
-- **Flags:** `DETWS_ENABLE_MODBUS` (the ESP32 is the **slave/server**, using this
+- **Flags:** `DWS_ENABLE_MODBUS` (the ESP32 is the **slave/server**, using this
   library's TCP server with the `PROTO_MODBUS` listener) or
-  `DETWS_ENABLE_MODBUS_MASTER` (the ESP32 is the **master/client**, your sketch
+  `DWS_ENABLE_MODBUS_MASTER` (the ESP32 is the **master/client**, your sketch
   owns the TCP connection).
 - **Settings:** **TCP port 502.** The request carries a **unit identifier**
   (often 1, or 255/0xFF for a native TCP device). No serial parity or baud here;
@@ -536,7 +536,7 @@ the ESP32's built-in Wi-Fi supplies the link.
 
 ### SunSpec
 
-- **Flag:** `DETWS_ENABLE_SUNSPEC`.
+- **Flag:** `DWS_ENABLE_SUNSPEC`.
 - **Hardware:** whatever your Modbus link uses (RS-485 for RTU, Wi-Fi/Ethernet
   for TCP). SunSpec is a **map on top of Modbus holding registers**, not a new
   wire.
@@ -549,7 +549,7 @@ the ESP32's built-in Wi-Fi supplies the link.
 
 ### S7comm (Siemens)
 
-- **Flag:** `DETWS_ENABLE_S7COMM` (needs `DETWS_ENABLE_COTP`).
+- **Flag:** `DWS_ENABLE_S7COMM` (needs `DWS_ENABLE_COTP`).
 - **Hardware:** Wi-Fi/Ethernet to a Siemens S7 PLC.
 - **Settings:** **TCP port 102** (ISO-on-TCP). The connection is addressed by a
   **rack and slot** number that identify the CPU (for example rack 0 / slot 1 or
@@ -561,7 +561,7 @@ the ESP32's built-in Wi-Fi supplies the link.
 
 ### MELSEC (Mitsubishi)
 
-- **Flag:** `DETWS_ENABLE_MELSEC`.
+- **Flag:** `DWS_ENABLE_MELSEC`.
 - **Hardware:** Wi-Fi/Ethernet to a Mitsubishi PLC with an MC-protocol port open.
 - **Settings:** **TCP or UDP**, on the **port you configure on the PLC** (MC
   protocol has no fixed IANA port). This codec speaks the **binary 3E** frame.
@@ -571,7 +571,7 @@ the ESP32's built-in Wi-Fi supplies the link.
 
 ### FINS (Omron)
 
-- **Flag:** `DETWS_ENABLE_FINS`.
+- **Flag:** `DWS_ENABLE_FINS`.
 - **Hardware:** Wi-Fi/Ethernet to an Omron PLC. (FINS also has a serial sibling;
   for serial use [Host Link](#host-link-omron).)
 - **Settings:** **FINS/UDP, port 9600** by default. Addressing is a
@@ -579,11 +579,11 @@ the ESP32's built-in Wi-Fi supplies the link.
   number usually matches the last octet of the PLC's IP by convention.
 - **Codec:** `fins_build_command` / `fins_build_memory_area_read` /
   `fins_parse_response`, carried over this library's UDP transport
-  (`det_udp_sendto`). See `src/services/fins/fins.h`.
+  (`dws_udp_sendto`). See `src/services/fins/fins.h`.
 
 ### BACnet/IP
 
-- **Flag:** `DETWS_ENABLE_BACNET`.
+- **Flag:** `DWS_ENABLE_BACNET`.
 - **Hardware:** Wi-Fi/Ethernet to a building-automation network.
 - **Settings:** **UDP port 47808** (hex 0xBAC0). Devices are identified by a
   **device instance** number; multi-subnet sites use a BBMD/`network number`. The
@@ -593,7 +593,7 @@ the ESP32's built-in Wi-Fi supplies the link.
 
 ### EtherNet/IP and CIP
 
-- **Flags:** `DETWS_ENABLE_ENIP` (the encapsulation) and `DETWS_ENABLE_CIP` (the
+- **Flags:** `DWS_ENABLE_ENIP` (the encapsulation) and `DWS_ENABLE_CIP` (the
   object messages, which turn ENIP on automatically).
 - **Hardware:** Wi-Fi/Ethernet to an ODVA / Allen-Bradley device.
 - **Settings:** **TCP port 44818** for explicit messaging (register a session,
@@ -605,19 +605,19 @@ the ESP32's built-in Wi-Fi supplies the link.
 
 ### DNP3 and C37.118 over IP
 
-- **DNP3** (`DETWS_ENABLE_DNP3`): the IEEE 1815 SCADA outstation link. Over IP it
+- **DNP3** (`DWS_ENABLE_DNP3`): the IEEE 1815 SCADA outstation link. Over IP it
   uses **TCP (or UDP) port 20000**; data-link **source and destination addresses**
   are 16-bit. The codec frames and CRC-checks the `0x0564` data-link layer; the
   transport-function and application (objects/function codes) layer on top. See
   `src/services/dnp3/dnp3.h`.
-- **C37.118** (`DETWS_ENABLE_C37118`): the IEEE C37.118.2 synchrophasor stream
+- **C37.118** (`DWS_ENABLE_C37118`): the IEEE C37.118.2 synchrophasor stream
   from a power-grid PMU/PDC. There is **no IANA-assigned port** (TCP/UDP 4712 and
   4713 are common conventions). Each PMU/PDC is identified by an **IDCODE**; a
   Command frame starts/stops the data stream. See `src/services/c37118/c37118.h`.
 
 ### IEC 60870-5 (-104 and -101)
 
-`DETWS_ENABLE_IEC60870`. The European utility-SCADA protocol. It has two
+`DWS_ENABLE_IEC60870`. The European utility-SCADA protocol. It has two
 transports and this codec does both:
 
 - **-104 over TCP (port 2404)** - no extra hardware beyond Wi-Fi. Open the link
@@ -635,8 +635,8 @@ both share the ASDU layer. See `src/services/iec60870/iec60870.h`.
 
 ### OPC UA (server and client)
 
-- **Flags:** `DETWS_ENABLE_OPCUA` (the ESP32 is the **server**, using this
-  library's TCP listener) and/or `DETWS_ENABLE_OPCUA_CLIENT` (the ESP32 connects
+- **Flags:** `DWS_ENABLE_OPCUA` (the ESP32 is the **server**, using this
+  library's TCP listener) and/or `DWS_ENABLE_OPCUA_CLIENT` (the ESP32 connects
   out to another server; your sketch owns the socket).
 - **Hardware:** Wi-Fi/Ethernet.
 - **Settings:** **TCP port 4840** (the default OPC UA Binary endpoint, URL
@@ -647,8 +647,8 @@ both share the ASDU layer. See `src/services/iec60870/iec60870.h`.
 
 ### SNMP (agent and traps)
 
-- **Flags:** `DETWS_ENABLE_SNMP` (agent), `DETWS_ENABLE_SNMP_V3` (USM
-  authentication/privacy), `DETWS_ENABLE_SNMP_TRAP` (outbound traps/informs).
+- **Flags:** `DWS_ENABLE_SNMP` (agent), `DWS_ENABLE_SNMP_V3` (USM
+  authentication/privacy), `DWS_ENABLE_SNMP_TRAP` (outbound traps/informs).
 - **Hardware:** Wi-Fi/Ethernet to your monitoring system.
 - **Settings:** the agent listens on **UDP port 161**; traps and informs go to
   the manager on **UDP port 162**. v1/v2c use a **community string** (a shared
@@ -658,7 +658,7 @@ both share the ASDU layer. See `src/services/iec60870/iec60870.h`.
 
 ## Radio: ESP-NOW
 
-- **Flag:** `DETWS_ENABLE_ESPNOW`.
+- **Flag:** `DWS_ENABLE_ESPNOW`.
 - **Hardware:** **none beyond a second board.** ESP-NOW uses the ESP32's built-in
   2.4 GHz radio to talk directly to other ESP32/ESP8266 boards with no router or
   access point in between.
@@ -678,19 +678,19 @@ meter. Unlike the field buses above, these run at **3.3 V and wire directly** - 
 transceiver, no level shifter. Most are **I2C** (two shared wires); the LD2410 and a
 GPS are plain **UART**.
 
-Each is a `DETWS_ENABLE_*` flag (default off) with a pure, host-tested codec and a
+Each is a `DWS_ENABLE_*` flag (default off) with a pure, host-tested codec and a
 hand-held beginner example under `examples/L7-Application/`.
 
-| Breakout         | Flag                    | Bus  | Address | Wiring                              | Measures / does                    |
-| ---------------- | ----------------------- | ---- | ------- | ----------------------------------- | ---------------------------------- |
-| DS3231 / DS1307  | `DETWS_ENABLE_RTC`      | I2C  | 0x68    | SDA 21, SCL 22 (+ coin cell)        | Battery-backed wall-clock time     |
-| SHT3x (GY-SHT31) | `DETWS_ENABLE_SHT3X`    | I2C  | 0x44    | SDA 21, SCL 22                      | Temperature + humidity             |
-| MPR121           | `DETWS_ENABLE_MPR121`   | I2C  | 0x5A    | SDA 21, SCL 22, ADDR->GND           | 12 capacitive touch buttons        |
-| ADS1115          | `DETWS_ENABLE_ADS1115`  | I2C  | 0x48    | SDA 21, SCL 22, ADDR->GND           | 16-bit analog voltage (4 channels) |
-| INA219           | `DETWS_ENABLE_INA219`   | I2C  | 0x40    | SDA 21, SCL 22, Vin+/Vin- in series | Current + power of a load          |
-| PCA9685          | `DETWS_ENABLE_PCA9685`  | I2C  | 0x40    | SDA 21, SCL 22, V+ = servo supply   | 16 PWM / servo outputs             |
-| LD2410           | `DETWS_ENABLE_LD2410`   | UART | -       | module TX -> GPIO 16, RX -> GPIO 17 | mmWave human presence / motion     |
-| GT-U7 GPS (NMEA) | `DETWS_ENABLE_NMEA0183` | UART | -       | module TX -> GPIO 16 (9600 baud)    | Position / time (NMEA 0183)        |
+| Breakout         | Flag                  | Bus  | Address | Wiring                              | Measures / does                    |
+| ---------------- | --------------------- | ---- | ------- | ----------------------------------- | ---------------------------------- |
+| DS3231 / DS1307  | `DWS_ENABLE_RTC`      | I2C  | 0x68    | SDA 21, SCL 22 (+ coin cell)        | Battery-backed wall-clock time     |
+| SHT3x (GY-SHT31) | `DWS_ENABLE_SHT3X`    | I2C  | 0x44    | SDA 21, SCL 22                      | Temperature + humidity             |
+| MPR121           | `DWS_ENABLE_MPR121`   | I2C  | 0x5A    | SDA 21, SCL 22, ADDR->GND           | 12 capacitive touch buttons        |
+| ADS1115          | `DWS_ENABLE_ADS1115`  | I2C  | 0x48    | SDA 21, SCL 22, ADDR->GND           | 16-bit analog voltage (4 channels) |
+| INA219           | `DWS_ENABLE_INA219`   | I2C  | 0x40    | SDA 21, SCL 22, Vin+/Vin- in series | Current + power of a load          |
+| PCA9685          | `DWS_ENABLE_PCA9685`  | I2C  | 0x40    | SDA 21, SCL 22, V+ = servo supply   | 16 PWM / servo outputs             |
+| LD2410           | `DWS_ENABLE_LD2410`   | UART | -       | module TX -> GPIO 16, RX -> GPIO 17 | mmWave human presence / motion     |
+| GT-U7 GPS (NMEA) | `DWS_ENABLE_NMEA0183` | UART | -       | module TX -> GPIO 16 (9600 baud)    | Position / time (NMEA 0183)        |
 
 ### The shared I2C bus
 
@@ -701,9 +701,9 @@ I2C breakout's SDA to 21 and SCL to 22 (they all share the pair), give each `3V3
 already include the small pull-up resistors I2C needs. If two boards share an address
 (the PCA9685 and INA219 both default to 0x40), change one with its address solder pads.
 
-All the I2C drivers bring the bus up through one shared helper (`detws_i2c_begin()` in
+All the I2C drivers bring the bus up through one shared helper (`dws_i2c_begin()` in
 `services/i2c.h`), so there is a single place to move the pins:
-**`DETWS_I2C_SDA_PIN` / `DETWS_I2C_SCL_PIN`** (default `-1` = the platform default 21 /
+**`DWS_I2C_SDA_PIN` / `DWS_I2C_SCL_PIN`** (default `-1` = the platform default 21 /
 22). Set both to free GPIOs to relocate the whole bus.
 
 > **Running alongside wired Ethernet.** Only the **classic ESP32 (WROOM/WROVER)** and
@@ -712,8 +712,8 @@ All the I2C drivers bring the bus up through one shared helper (`detws_i2c_begin
 > **W5500** instead. On an RMII board the LAN8720 uses **GPIO 21 (TX_EN)** and
 > **GPIO 22 (TXD1)** - the very pins I2C defaults to - plus, on boards that route the
 > 50 MHz RMII clock there, GPIO 16/17. So with an RMII PHY enabled you **must** move
-> the peripheral buses off those pins: set `-DDETWS_I2C_SDA_PIN=32
--DDETWS_I2C_SCL_PIN=33` (or any free pair) to relocate the I2C sensors, and pass
+> the peripheral buses off those pins: set `-DDWS_I2C_SDA_PIN=32
+-DDWS_I2C_SCL_PIN=33` (or any free pair) to relocate the I2C sensors, and pass
 > **alternate RX/TX** to `ld2410_begin(rx, tx)` / your GPS
 > `Serial.begin(baud, SERIAL_8N1, rx, tx)` (e.g. GPIO 4 / 2). Avoid the other RMII
 > pins (19, 23, 25, 26, 27, 18) and the strapping pins (0, 2, 5, 12, 15). On an S3 with
@@ -722,11 +722,11 @@ All the I2C drivers bring the bus up through one shared helper (`detws_i2c_begin
 
 ### Time: RTC and GPS
 
-- **RTC (DS3231 / DS1307), `DETWS_ENABLE_RTC`** - a battery-backed clock chip at I2C
+- **RTC (DS3231 / DS1307), `DWS_ENABLE_RTC`** - a battery-backed clock chip at I2C
   0x68 so the board knows the time the instant it boots, offline. Wire SDA/SCL, fit its
   coin cell, and register `rtc_time_source` with the time-source chain;
   `rtc_read_epoch()` / `rtc_set_epoch()` read and set it. Example 61.Rtc.
-- **GPS (u-blox GT-U7), `DETWS_ENABLE_NMEA0183`** - the GT-U7 is a u-blox-7 GPS that
+- **GPS (u-blox GT-U7), `DWS_ENABLE_NMEA0183`** - the GT-U7 is a u-blox-7 GPS that
   streams **NMEA 0183** sentences over a plain 3.3 V UART at **9600 baud** (it also has
   a **PPS** pin that pulses once a second for precise timing). Wire its **TX to an
   ESP32 RX** (its RX is optional - only needed to send it config). Accumulate a line
@@ -737,26 +737,26 @@ All the I2C drivers bring the bus up through one shared helper (`detws_i2c_begin
 
 ### Sensing: radar, touch, temperature/humidity, voltage, current
 
-- **LD2410 mmWave radar, `DETWS_ENABLE_LD2410`** - a 24 GHz presence sensor that sees a
+- **LD2410 mmWave radar, `DWS_ENABLE_LD2410`** - a 24 GHz presence sensor that sees a
   still person (breathing), in the dark, through thin walls - over a UART at **256000
   baud**. Cross the data wires (module TX -> ESP32 RX). `ld2410_poll()` decodes each
   frame; `ld2410_present()` / `ld2410_distance_cm()` act on it. Example 62.Ld2410.
-- **MPR121 capacitive touch, `DETWS_ENABLE_MPR121`** - turns 12 wires or pads into
+- **MPR121 capacitive touch, `DWS_ENABLE_MPR121`** - turns 12 wires or pads into
   touch buttons (I2C 0x5A). `mpr121_read_touched()` returns a 12-bit mask. Example
   63.Mpr121.
-- **SHT3x temperature / humidity, `DETWS_ENABLE_SHT3X`** - a CRC-checked Sensirion
+- **SHT3x temperature / humidity, `DWS_ENABLE_SHT3X`** - a CRC-checked Sensirion
   sensor (I2C 0x44). `sht3x_read()` returns temperature and humidity in integer
   milli-units. Example 64.Sht3x.
-- **ADS1115 16-bit ADC, `DETWS_ENABLE_ADS1115`** - four precise analog inputs with a
+- **ADS1115 16-bit ADC, `DWS_ENABLE_ADS1115`** - four precise analog inputs with a
   programmable gain (I2C 0x48). `ads1115_read_uv()` gives a channel's voltage in
   microvolts. Example 66.Ads1115.
-- **INA219 current / power, `DETWS_ENABLE_INA219`** - sits **in series** with a load
+- **INA219 current / power, `DWS_ENABLE_INA219`** - sits **in series** with a load
   (Vin+ -> shunt -> Vin-) and reports voltage, current, and power (I2C 0x40).
   `ina219_read_current_ua()` / `ina219_read_power_uw()`. Example 67.Ina219.
 
 ### Actuation: servos and LEDs
 
-- **PCA9685 16-channel PWM, `DETWS_ENABLE_PCA9685`** - drives up to 16 servos or LEDs
+- **PCA9685 16-channel PWM, `DWS_ENABLE_PCA9685`** - drives up to 16 servos or LEDs
   from the I2C bus (0x40), with its own precise PWM timer. Power the **servos** from the
   board's `V+` screw terminal (a separate 5-6 V supply), never the ESP32.
   `pca9685_set_servo_us()` positions a servo; `pca9685_set_pwm()` dims an LED. Example
@@ -771,13 +771,13 @@ These format data but do **not** add a new physical connection: they ride
 whatever transport already carries the data (MQTT, CoAP, HTTP), so their hardware
 needs are simply that transport's.
 
-- **SenML** (`DETWS_ENABLE_SENML`, implies CBOR): a standard JSON/CBOR shape for
+- **SenML** (`DWS_ENABLE_SENML`, implies CBOR): a standard JSON/CBOR shape for
   sensor measurements. The "hardware" is whatever sensor produces the readings;
   send the encoded payload over MQTT/CoAP/HTTP. See `src/services/senml/`.
-- **Sparkplug B** (`DETWS_ENABLE_SPARKPLUG`, implies Protobuf): an MQTT payload
+- **Sparkplug B** (`DWS_ENABLE_SPARKPLUG`, implies Protobuf): an MQTT payload
   and topic convention for SCADA. Needs an **MQTT broker** and a Sparkplug host
   (see the MQTT client setup); no new wiring. See `src/services/sparkplug/`.
-- **LwM2M TLV** (`DETWS_ENABLE_LWM2M`): the device-management value encoding
+- **LwM2M TLV** (`DWS_ENABLE_LWM2M`): the device-management value encoding
   carried over **CoAP** (this library's CoAP/UDP service); no new wiring. See
   `src/services/lwm2m/`.
 - **Protobuf, CBOR, MessagePack, gRPC-Web, NATS, STOMP, Redis, WAMP, AMQP,

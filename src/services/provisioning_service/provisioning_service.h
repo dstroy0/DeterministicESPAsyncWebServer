@@ -3,7 +3,7 @@
 
 /**
  * @file provisioning_service.h
- * @brief First-boot WiFi provisioning via a captive portal (DETWS_ENABLE_PROVISIONING).
+ * @brief First-boot WiFi provisioning via a captive portal (DWS_ENABLE_PROVISIONING).
  *
  * When no WiFi credentials are stored, the device starts a softAP and a
  * catch-all DNS responder (via the transport-layer UDP service - no add-on library) so any
@@ -12,7 +12,7 @@
  * `WiFi.softAP`, lwIP UDP, and `Preferences`; compiled to stubs when disabled
  * or off-Arduino.
  *
- * The form-field parser (detws_prov_form_field) is always compiled and is the
+ * The form-field parser (dws_prov_form_field) is always compiled and is the
  * only non-trivial logic, so it is unit-tested off-target.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -25,7 +25,7 @@
 #include "ServerConfig.h"
 #include <stddef.h>
 
-class DetWebServer;
+class DWS;
 
 /**
  * @brief Extract and URL-decode a field from an x-www-form-urlencoded body.
@@ -40,7 +40,7 @@ class DetWebServer;
  * @param cap   Capacity of @p out (>= 1).
  * @return true if the field was found, false otherwise (out set to "").
  */
-bool detws_prov_form_field(const char *body, const char *key, char *out, size_t cap);
+bool dws_prov_form_field(const char *body, const char *key, char *out, size_t cap);
 
 /**
  * @brief Load stored WiFi credentials from NVS.
@@ -50,7 +50,7 @@ bool detws_prov_form_field(const char *body, const char *key, char *out, size_t 
  * @param psk_cap   Capacity of @p psk.
  * @return true if a non-empty SSID is stored (the app should connect in STA mode).
  */
-bool detws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_cap);
+bool dws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_cap);
 
 /**
  * @brief Start the captive portal: softAP @p ap_ssid + catch-all DNS + form routes.
@@ -59,9 +59,9 @@ bool detws_provisioning_load(char *ssid, size_t ssid_cap, char *psk, size_t psk_
  * on @p server. The catch-all DNS responder runs from a transport-layer UDP callback,
  * so no per-loop servicing is required. Call after server.begin().
  */
-void detws_provisioning_begin(DetWebServer &server, const char *ap_ssid);
+void dws_provisioning_begin(DWS &server, const char *ap_ssid);
 
 /** @brief Erase stored credentials (forces re-provisioning on next boot). */
-void detws_provisioning_clear();
+void dws_provisioning_clear();
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_PROVISIONING_SERVICE_H

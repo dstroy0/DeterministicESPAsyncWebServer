@@ -33,7 +33,7 @@ HELP = "drive the device as an FTP client against a real pyftpdlib server (devic
 
 # Must match the rig's h_ftp_probe upload (pentesting/rig_firmware/src/main.cpp: FTP_UPLOAD).
 _EXPECT = b"detws-ftp-rig-upload\n"
-_UPLOAD_NAME = "detws_rig.txt"
+_UPLOAD_NAME = "dws_rig.txt"
 
 
 def add_args(p) -> None:

@@ -34,7 +34,7 @@ static const uint8_t CTS[] = {0xc4, 0x00, 0x3a, 0x01, 0x11, 0x22, 0x33, 0x44, 0x
 void test_parse_data(void)
 {
     WifiFrame f;
-    TEST_ASSERT_TRUE(detws_wifi_parse(DATA_FROMDS, sizeof(DATA_FROMDS), &f));
+    TEST_ASSERT_TRUE(dws_wifi_parse(DATA_FROMDS, sizeof(DATA_FROMDS), &f));
     TEST_ASSERT_EQUAL_UINT8(WifiType::WIFI_TYPE_DATA, f.type);
     TEST_ASSERT_EQUAL_UINT8(0, f.subtype);
     TEST_ASSERT_TRUE(f.from_ds);
@@ -47,7 +47,7 @@ void test_parse_data(void)
 void test_parse_beacon(void)
 {
     WifiFrame f;
-    TEST_ASSERT_TRUE(detws_wifi_parse(BEACON, sizeof(BEACON), &f));
+    TEST_ASSERT_TRUE(dws_wifi_parse(BEACON, sizeof(BEACON), &f));
     TEST_ASSERT_EQUAL_UINT8(WifiType::WIFI_TYPE_MGMT, f.type);
     TEST_ASSERT_EQUAL_UINT8(8, f.subtype); // beacon subtype
     TEST_ASSERT_EQUAL_UINT8(3, f.naddr);
@@ -56,26 +56,26 @@ void test_parse_beacon(void)
 void test_parse_ctrl_short(void)
 {
     WifiFrame f;
-    TEST_ASSERT_TRUE(detws_wifi_parse(CTS, sizeof(CTS), &f));
+    TEST_ASSERT_TRUE(dws_wifi_parse(CTS, sizeof(CTS), &f));
     TEST_ASSERT_EQUAL_UINT8(WifiType::WIFI_TYPE_CTRL, f.type);
     TEST_ASSERT_EQUAL_UINT8(0x0C, f.subtype); // CTS
     TEST_ASSERT_EQUAL_UINT8(1, f.naddr);      // only addr1 fits
     // Too short is rejected.
-    TEST_ASSERT_FALSE(detws_wifi_parse(CTS, 9, &f));
-    TEST_ASSERT_FALSE(detws_wifi_parse(nullptr, 24, &f));
+    TEST_ASSERT_FALSE(dws_wifi_parse(CTS, 9, &f));
+    TEST_ASSERT_FALSE(dws_wifi_parse(nullptr, 24, &f));
 }
 
 void test_stats(void)
 {
     WifiStats s;
-    detws_wifi_stats_reset(&s);
+    dws_wifi_stats_reset(&s);
     WifiFrame f;
-    detws_wifi_parse(BEACON, sizeof(BEACON), &f);
-    detws_wifi_stats_add(&s, &f);
-    detws_wifi_parse(DATA_FROMDS, sizeof(DATA_FROMDS), &f);
-    detws_wifi_stats_add(&s, &f);
-    detws_wifi_parse(CTS, sizeof(CTS), &f);
-    detws_wifi_stats_add(&s, &f);
+    dws_wifi_parse(BEACON, sizeof(BEACON), &f);
+    dws_wifi_stats_add(&s, &f);
+    dws_wifi_parse(DATA_FROMDS, sizeof(DATA_FROMDS), &f);
+    dws_wifi_stats_add(&s, &f);
+    dws_wifi_parse(CTS, sizeof(CTS), &f);
+    dws_wifi_stats_add(&s, &f);
     TEST_ASSERT_EQUAL_UINT32(1, s.mgmt);
     TEST_ASSERT_EQUAL_UINT32(1, s.data);
     TEST_ASSERT_EQUAL_UINT32(1, s.ctrl);
@@ -85,20 +85,20 @@ void test_stats(void)
 void test_roam(void)
 {
     // Current -80 dBm, candidate -70 dBm, 8 dB hysteresis: 10 > 8 -> roam.
-    TEST_ASSERT_TRUE(detws_wifi_should_roam(-80, -70, 8));
+    TEST_ASSERT_TRUE(dws_wifi_should_roam(-80, -70, 8));
     // Candidate only 5 dB stronger -> stay.
-    TEST_ASSERT_FALSE(detws_wifi_should_roam(-80, -75, 8));
+    TEST_ASSERT_FALSE(dws_wifi_should_roam(-80, -75, 8));
     // Candidate weaker -> stay.
-    TEST_ASSERT_FALSE(detws_wifi_should_roam(-60, -75, 8));
+    TEST_ASSERT_FALSE(dws_wifi_should_roam(-60, -75, 8));
 }
 
 void test_stats_add_null_and_default_type()
 {
-    detws_wifi_stats_add(nullptr, nullptr); // null guard
+    dws_wifi_stats_add(nullptr, nullptr); // null guard
     WifiStats st = {};
     WifiFrame f = {};
     f.type = 3; // reserved/extension type -> default switch arm (other++)
-    detws_wifi_stats_add(&st, &f);
+    dws_wifi_stats_add(&st, &f);
     TEST_ASSERT_EQUAL_UINT32(1, st.other);
 }
 

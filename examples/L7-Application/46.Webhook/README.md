@@ -1,6 +1,6 @@
 # 46.Webhook - outbound webhooks / IFTTT
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_HTTP_CLIENT`, `DETWS_ENABLE_WEBHOOK`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_HTTP_CLIENT`, `DWS_ENABLE_WEBHOOK`
 
 ## What this example teaches
 
@@ -13,13 +13,13 @@ IFTTT Maker `value1/2/3` shape. It fires once at boot.
 
 ```cpp
 char body[128];
-detws_ifttt_payload("boot", "esp32", nullptr, body, sizeof(body)); // {"value1":...,"value2":...}
-int status = detws_webhook_post(WEBHOOK_URL, body);                // returns the HTTP status
+dws_ifttt_payload("boot", "esp32", nullptr, body, sizeof(body)); // {"value1":...,"value2":...}
+int status = dws_webhook_post(WEBHOOK_URL, body);                // returns the HTTP status
 ```
 
-`detws_ifttt_payload()` formats the three IFTTT values into JSON;
-`detws_webhook_post()` sends it. There is also a one-shot
-`detws_ifttt_trigger(event, key, v1, v2, v3)` that builds the Maker URL for you.
+`dws_ifttt_payload()` formats the three IFTTT values into JSON;
+`dws_webhook_post()` sends it. There is also a one-shot
+`dws_ifttt_trigger(event, key, v1, v2, v3)` that builds the Maker URL for you.
 
 **Where it fires matters.** The POST is blocking, so the example fires it from
 `loop()` (guarded by a `fired` flag), not from a request handler - a blocking
@@ -30,7 +30,7 @@ server.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_HTTP_CLIENT=1 -DDETWS_ENABLE_WEBHOOK=1" \
+  --project-option="build_flags=-DDWS_ENABLE_HTTP_CLIENT=1 -DDWS_ENABLE_WEBHOOK=1" \
   --lib="." examples/L7-Application/46.Webhook/46.Webhook.ino
 ```
 
@@ -48,8 +48,8 @@ added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_HTTP_CLIENT 1
-#define DETWS_ENABLE_WEBHOOK 1
+#define DWS_ENABLE_HTTP_CLIENT 1
+#define DWS_ENABLE_WEBHOOK 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -62,7 +62,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 // A plain webhook endpoint (Slack/Discord/your API). For IFTTT use the helper below.
 static const char *WEBHOOK_URL = "http://192.168.1.10:8080/hook";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -87,12 +87,12 @@ void loop()
     {
         fired = true;
         char body[128];
-        detws_ifttt_payload("boot", "esp32", nullptr, body, sizeof(body));
-        int status = detws_webhook_post(WEBHOOK_URL, body);
+        dws_ifttt_payload("boot", "esp32", nullptr, body, sizeof(body));
+        int status = dws_webhook_post(WEBHOOK_URL, body);
         Serial.printf("[webhook] POST -> status %d\n", status);
 
         // IFTTT Maker form (needs your real key):
-        //   detws_ifttt_trigger("device_boot", "YOUR_IFTTT_KEY", "esp32", nullptr, nullptr);
+        //   dws_ifttt_trigger("device_boot", "YOUR_IFTTT_KEY", "esp32", nullptr, nullptr);
     }
 }
 ```

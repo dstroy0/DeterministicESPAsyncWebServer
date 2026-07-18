@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http2/h2_frame.h"
 
-#if DETWS_ENABLE_HTTP2
+#if DWS_ENABLE_HTTP2
 
 #include <string.h>
 
@@ -187,4 +187,4 @@ size_t h2_build_data(uint8_t *out, size_t cap, uint32_t stream_id, const uint8_t
     return H2_FRAME_HEADER_LEN + data_len;
 }
 
-#endif // DETWS_ENABLE_HTTP2
+#endif // DWS_ENABLE_HTTP2

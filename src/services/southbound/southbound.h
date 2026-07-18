@@ -3,7 +3,7 @@
 
 /**
  * @file southbound.h
- * @brief Southbound protocol-driver framework (DETWS_ENABLE_SOUTHBOUND).
+ * @brief Southbound protocol-driver framework (DWS_ENABLE_SOUTHBOUND).
  *
  * The northbound surface of this library is HTTP/WS/SNMP/etc. to a controller; the *southbound* surface
  * is the field devices it polls and drives (a Modbus slave, a BACnet controller, a raw sensor over
@@ -28,7 +28,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SOUTHBOUND
+#if DWS_ENABLE_SOUTHBOUND
 
 /** @brief Result codes. A driver may also return its own negative transport error, passed through. */
 // Southbound result codes. The API returns int (SB_OK / a count on success, or a negative code), so
@@ -66,28 +66,28 @@ struct SouthboundDriver
  * @brief Register a driver (borrowed; must outlive the registry).
  * @return SB_OK, SB_ERR_ARG (null / no name), SB_ERR_DUP (name taken), or SB_ERR_FULL.
  */
-int detws_southbound_register(const SouthboundDriver *drv);
+int dws_southbound_register(const SouthboundDriver *drv);
 
 /** @brief Drop all registrations (test / re-init helper). */
-void detws_southbound_clear(void);
+void dws_southbound_clear(void);
 
 /** @brief Number of registered drivers. */
-size_t detws_southbound_count(void);
+size_t dws_southbound_count(void);
 
 /** @brief Look up a driver by name, or null. */
-const SouthboundDriver *detws_southbound_find(const char *name);
+const SouthboundDriver *dws_southbound_find(const char *name);
 
 /** @brief Read one point from a named driver. @return SB_OK / negative code. */
-int detws_southbound_read(const char *name, uint32_t point, int32_t *value_out);
+int dws_southbound_read(const char *name, uint32_t point, int32_t *value_out);
 
 /** @brief Write one point to a named driver. @return SB_OK / negative code. */
-int detws_southbound_write(const char *name, uint32_t point, int32_t value);
+int dws_southbound_write(const char *name, uint32_t point, int32_t value);
 
 /** @brief Atomically read @p n points starting at @p first. @return count read (>=0) / negative code. */
-int detws_southbound_read_block(const char *name, uint32_t first, int32_t *out, size_t n);
+int dws_southbound_read_block(const char *name, uint32_t first, int32_t *out, size_t n);
 
 /** @brief Atomically write @p n points starting at @p first. @return count written (>=0) / negative code. */
-int detws_southbound_write_block(const char *name, uint32_t first, const int32_t *in, size_t n);
+int dws_southbound_write_block(const char *name, uint32_t first, const int32_t *in, size_t n);
 
-#endif // DETWS_ENABLE_SOUTHBOUND
+#endif // DWS_ENABLE_SOUTHBOUND
 #endif // DETERMINISTICESPASYNCWEBSERVER_SOUTHBOUND_H

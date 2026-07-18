@@ -11,7 +11,7 @@
 
 #include "services/enocean/enocean.h"
 
-#if DETWS_ENABLE_ENOCEAN
+#if DWS_ENABLE_ENOCEAN
 
 #include <string.h>
 
@@ -38,7 +38,7 @@ int esp3_parse(const uint8_t *raw, uint16_t len, esp3_packet *out)
     uint16_t data_len = (uint16_t)((raw[1] << 8) | raw[2]);
     uint8_t opt_len = raw[3];
     uint8_t type = raw[4];
-    if (data_len > DETWS_ENOCEAN_MAX_DATA)
+    if (data_len > DWS_ENOCEAN_MAX_DATA)
         return -1; // implausible length -> resynchronise
     if (esp3_crc8(&raw[1], 4) != raw[5])
         return -1; // header CRC mismatch
@@ -61,7 +61,7 @@ int esp3_parse(const uint8_t *raw, uint16_t len, esp3_packet *out)
 uint16_t esp3_build(esp3_type type, const uint8_t *data, uint16_t data_len, const uint8_t *opt, uint8_t opt_len,
                     uint8_t *out, uint16_t cap)
 {
-    if (!out || data_len > DETWS_ENOCEAN_MAX_DATA)
+    if (!out || data_len > DWS_ENOCEAN_MAX_DATA)
         return 0;
     uint32_t total = 6u + data_len + opt_len + 1u;
     if (total > cap)
@@ -80,4 +80,4 @@ uint16_t esp3_build(esp3_type type, const uint8_t *data, uint16_t data_len, cons
     return (uint16_t)total;
 }
 
-#endif // DETWS_ENABLE_ENOCEAN
+#endif // DWS_ENABLE_ENOCEAN

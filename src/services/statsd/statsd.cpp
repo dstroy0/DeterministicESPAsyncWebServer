@@ -13,7 +13,7 @@
 #include "services/statsd/statsd.h"
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_STATSD
+#if DWS_ENABLE_STATSD
 
 #include "network_drivers/transport/udp.h"
 #include <string.h>
@@ -129,7 +129,7 @@ size_t statsd_format(char *out, size_t cap, const char *name, const char *value,
 
 // ---------------------------------------------------------------------------
 // Emit helpers: render the value, then send via the transport UDP service. Host builds
-// send through det_udp_sendto's stub + capture seam, so these are host-testable too.
+// send through dws_udp_sendto's stub + capture seam, so these are host-testable too.
 // ---------------------------------------------------------------------------
 
 namespace
@@ -139,7 +139,7 @@ namespace
 struct StatsdCtx
 {
     char host[64] = {};
-    uint16_t port = DETWS_STATSD_PORT;
+    uint16_t port = DWS_STATSD_PORT;
     char tags[96] = {};
     bool ready = false;
 };
@@ -149,10 +149,10 @@ void emit(const StatsdCtx &c, const char *name, const char *value, StatsdType ty
 {
     if (!c.ready)
         return;
-    char line[DETWS_STATSD_LINE_MAX];
+    char line[DWS_STATSD_LINE_MAX];
     size_t n = statsd_format(line, sizeof(line), name, value, type, rate, c.tags[0] ? c.tags : nullptr);
     if (n)
-        det_udp_sendto(c.host, c.port, (const uint8_t *)line, n);
+        dws_udp_sendto(c.host, c.port, (const uint8_t *)line, n);
 }
 } // namespace
 
@@ -165,7 +165,7 @@ void statsd_begin(const char *host, uint16_t port, const char *global_tags)
     }
     strncpy(s_statsd.host, host, sizeof(s_statsd.host) - 1);
     s_statsd.host[sizeof(s_statsd.host) - 1] = '\0';
-    s_statsd.port = port ? port : DETWS_STATSD_PORT;
+    s_statsd.port = port ? port : DWS_STATSD_PORT;
     if (global_tags)
     {
         strncpy(s_statsd.tags, global_tags, sizeof(s_statsd.tags) - 1);
@@ -216,4 +216,4 @@ void statsd_set(const char *name, const char *member)
     emit(s_statsd, name, member ? member : "", StatsdType::STATSD_SET, 1.0f);
 }
 
-#endif // DETWS_ENABLE_STATSD
+#endif // DWS_ENABLE_STATSD

@@ -30,7 +30,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static unsigned long total_routed_requests = 0;
 static unsigned long total_rate_limited = 0;
@@ -199,7 +199,7 @@ void setup()
 {
     Serial.begin(115200);
     delay(1000);
-    Serial.println("\n--- DetWebServer Expert Performance Example ---");
+    Serial.println("\n--- DWS Expert Performance Example ---");
 
     init_wifi_physical(SSID, PASSWORD);
     while (!wifi_ready())

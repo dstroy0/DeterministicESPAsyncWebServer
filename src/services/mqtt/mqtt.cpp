@@ -10,7 +10,7 @@
 #include "services/mqtt/mqtt.h"
 #include "services/clock.h" // dwsdelay
 
-#if DETWS_ENABLE_MQTT
+#if DWS_ENABLE_MQTT
 
 #include "shared_primitives/utf8.h"
 #include <string.h>
@@ -39,10 +39,10 @@ static size_t put_field(uint8_t *p, const uint8_t *data, size_t len)
 }
 static inline size_t put_str(uint8_t *p, const char *s)
 {
-    return put_field(p, (const uint8_t *)s, s ? strnlen(s, DETWS_MQTT_BUF_SIZE) : 0);
+    return put_field(p, (const uint8_t *)s, s ? strnlen(s, DWS_MQTT_BUF_SIZE) : 0);
 }
 
-size_t det_mqtt_encode_remlen(uint8_t *out, uint32_t len)
+size_t dws_mqtt_encode_remlen(uint8_t *out, uint32_t len)
 {
     if (len > 268435455u) // 4 * 7 bits
         return 0;
@@ -58,7 +58,7 @@ size_t det_mqtt_encode_remlen(uint8_t *out, uint32_t len)
     return n;
 }
 
-bool det_mqtt_decode_remlen(const uint8_t *buf, size_t avail, uint32_t *value, size_t *used)
+bool dws_mqtt_decode_remlen(const uint8_t *buf, size_t avail, uint32_t *value, size_t *used)
 {
     uint32_t v = 0;
     uint32_t mult = 1;
@@ -89,12 +89,12 @@ bool det_mqtt_decode_remlen(const uint8_t *buf, size_t avail, uint32_t *value, s
 static size_t compose(uint8_t *out, size_t cap, uint8_t byte0, const uint8_t *body, size_t blen)
 {
     uint8_t rl[4];
-    // Every caller pre-builds body in body[DETWS_MQTT_BUF_SIZE] (1024), so blen is bounded far below
-    // the 2^28 remaining-length limit and det_mqtt_encode_remlen never rejects here; the len > 256MB reject
-    // is covered directly on the public det_mqtt_encode_remlen.
-    size_t rln = det_mqtt_encode_remlen(rl, (uint32_t)blen);
+    // Every caller pre-builds body in body[DWS_MQTT_BUF_SIZE] (1024), so blen is bounded far below
+    // the 2^28 remaining-length limit and dws_mqtt_encode_remlen never rejects here; the len > 256MB reject
+    // is covered directly on the public dws_mqtt_encode_remlen.
+    size_t rln = dws_mqtt_encode_remlen(rl, (uint32_t)blen);
     if (rln == 0)
-        return 0; // GCOVR_EXCL_LINE  unreachable: blen <= DETWS_MQTT_BUF_SIZE << 2^28 via compose's bounded callers
+        return 0; // GCOVR_EXCL_LINE  unreachable: blen <= DWS_MQTT_BUF_SIZE << 2^28 via compose's bounded callers
     size_t total = 1 + rln + blen;
     if (total > cap)
         return 0;
@@ -105,11 +105,11 @@ static size_t compose(uint8_t *out, size_t cap, uint8_t byte0, const uint8_t *bo
     return total;
 }
 
-size_t det_mqtt_build_connect(uint8_t *out, size_t cap, const MqttConnectOpts *opts)
+size_t dws_mqtt_build_connect(uint8_t *out, size_t cap, const MqttConnectOpts *opts)
 {
     if (!out || !opts || !opts->client_id)
         return 0;
-    uint8_t body[DETWS_MQTT_BUF_SIZE];
+    uint8_t body[DWS_MQTT_BUF_SIZE];
     size_t n = 0;
     // Variable header: protocol name + level + flags + keep-alive.
     n += put_str(body + n, "MQTT");
@@ -135,13 +135,13 @@ size_t det_mqtt_build_connect(uint8_t *out, size_t cap, const MqttConnectOpts *o
 
     // Payload: client id, [will topic, will msg], [user], [pass]. Bounds-check
     // each field against the body scratch as we go.
-    size_t need = 2 + strnlen(opts->client_id, DETWS_MQTT_BUF_SIZE);
+    size_t need = 2 + strnlen(opts->client_id, DWS_MQTT_BUF_SIZE);
     if (opts->will_topic)
-        need += 2 + strnlen(opts->will_topic, DETWS_MQTT_BUF_SIZE) + 2 + opts->will_len;
+        need += 2 + strnlen(opts->will_topic, DWS_MQTT_BUF_SIZE) + 2 + opts->will_len;
     if (opts->user)
-        need += 2 + strnlen(opts->user, DETWS_MQTT_BUF_SIZE);
+        need += 2 + strnlen(opts->user, DWS_MQTT_BUF_SIZE);
     if (opts->pass)
-        need += 2 + strnlen(opts->pass, DETWS_MQTT_BUF_SIZE);
+        need += 2 + strnlen(opts->pass, DWS_MQTT_BUF_SIZE);
     if (n + need > sizeof(body))
         return 0;
 
@@ -159,7 +159,7 @@ size_t det_mqtt_build_connect(uint8_t *out, size_t cap, const MqttConnectOpts *o
     return compose(out, cap, (uint8_t)((uint8_t)MqttType::MQTT_CONNECT << 4), body, n);
 }
 
-size_t det_mqtt_build_publish(uint8_t *out, size_t cap, const char *topic, const uint8_t *payload, size_t payload_len,
+size_t dws_mqtt_build_publish(uint8_t *out, size_t cap, const char *topic, const uint8_t *payload, size_t payload_len,
                               uint8_t qos, uint16_t packet_id, bool retain, bool dup)
 {
     if (!out || !topic || qos > 2)
@@ -169,9 +169,9 @@ size_t det_mqtt_build_publish(uint8_t *out, size_t cap, const char *topic, const
     for (const char *t = topic; *t; t++)
         if (*t == '+' || *t == '#')
             return 0;
-    size_t tlen = strnlen(topic, DETWS_MQTT_BUF_SIZE);
+    size_t tlen = strnlen(topic, DWS_MQTT_BUF_SIZE);
     size_t blen = 2 + tlen + (qos > 0 ? 2 : 0) + payload_len;
-    uint8_t body[DETWS_MQTT_BUF_SIZE];
+    uint8_t body[DWS_MQTT_BUF_SIZE];
     if (blen > sizeof(body))
         return 0;
     size_t n = 0;
@@ -193,12 +193,12 @@ size_t det_mqtt_build_publish(uint8_t *out, size_t cap, const char *topic, const
     return compose(out, cap, (uint8_t)(((uint8_t)MqttType::MQTT_PUBLISH << 4) | f), body, n);
 }
 
-size_t det_mqtt_build_subscribe(uint8_t *out, size_t cap, uint16_t packet_id, const char *topic, uint8_t qos)
+size_t dws_mqtt_build_subscribe(uint8_t *out, size_t cap, uint16_t packet_id, const char *topic, uint8_t qos)
 {
     if (!out || !topic || qos > 2)
         return 0;
-    size_t tlen = strnlen(topic, DETWS_MQTT_BUF_SIZE);
-    uint8_t body[DETWS_MQTT_BUF_SIZE];
+    size_t tlen = strnlen(topic, DWS_MQTT_BUF_SIZE);
+    uint8_t body[DWS_MQTT_BUF_SIZE];
     size_t blen = 2 + 2 + tlen + 1;
     if (blen > sizeof(body))
         return 0;
@@ -211,12 +211,12 @@ size_t det_mqtt_build_subscribe(uint8_t *out, size_t cap, uint16_t packet_id, co
                    n); // SUBSCRIBE flags = 0010
 }
 
-size_t det_mqtt_build_unsubscribe(uint8_t *out, size_t cap, uint16_t packet_id, const char *topic)
+size_t dws_mqtt_build_unsubscribe(uint8_t *out, size_t cap, uint16_t packet_id, const char *topic)
 {
     if (!out || !topic)
         return 0;
-    size_t tlen = strnlen(topic, DETWS_MQTT_BUF_SIZE);
-    uint8_t body[DETWS_MQTT_BUF_SIZE];
+    size_t tlen = strnlen(topic, DWS_MQTT_BUF_SIZE);
+    uint8_t body[DWS_MQTT_BUF_SIZE];
     size_t blen = 2 + 2 + tlen;
     if (blen > sizeof(body))
         return 0;
@@ -228,7 +228,7 @@ size_t det_mqtt_build_unsubscribe(uint8_t *out, size_t cap, uint16_t packet_id, 
                    n); // UNSUBSCRIBE flags = 0010
 }
 
-size_t det_mqtt_build_ack(uint8_t *out, size_t cap, MqttType type, uint16_t packet_id)
+size_t dws_mqtt_build_ack(uint8_t *out, size_t cap, MqttType type, uint16_t packet_id)
 {
     if (!out || cap < 4)
         return 0;
@@ -239,7 +239,7 @@ size_t det_mqtt_build_ack(uint8_t *out, size_t cap, MqttType type, uint16_t pack
     return 4;
 }
 
-size_t det_mqtt_build_pingreq(uint8_t *out, size_t cap)
+size_t dws_mqtt_build_pingreq(uint8_t *out, size_t cap)
 {
     if (!out || cap < 2)
         return 0;
@@ -248,7 +248,7 @@ size_t det_mqtt_build_pingreq(uint8_t *out, size_t cap)
     return 2;
 }
 
-size_t det_mqtt_build_disconnect(uint8_t *out, size_t cap)
+size_t dws_mqtt_build_disconnect(uint8_t *out, size_t cap)
 {
     if (!out || cap < 2)
         return 0;
@@ -257,14 +257,14 @@ size_t det_mqtt_build_disconnect(uint8_t *out, size_t cap)
     return 2;
 }
 
-bool det_mqtt_parse_fixed_header(const uint8_t *buf, size_t avail, uint8_t *type, uint8_t *flags,
+bool dws_mqtt_parse_fixed_header(const uint8_t *buf, size_t avail, uint8_t *type, uint8_t *flags,
                                  uint32_t *remaining_len, size_t *header_len)
 {
     if (avail < 2)
         return false;
     uint32_t rl;
     size_t used;
-    if (!det_mqtt_decode_remlen(buf + 1, avail - 1, &rl, &used))
+    if (!dws_mqtt_decode_remlen(buf + 1, avail - 1, &rl, &used))
         return false;
     *type = (uint8_t)(buf[0] >> 4);
     *flags = (uint8_t)(buf[0] & 0x0F);
@@ -273,7 +273,7 @@ bool det_mqtt_parse_fixed_header(const uint8_t *buf, size_t avail, uint8_t *type
     return true;
 }
 
-bool det_mqtt_parse_publish(const uint8_t *buf, uint32_t remaining_len, uint8_t flags, char *topic_out,
+bool dws_mqtt_parse_publish(const uint8_t *buf, uint32_t remaining_len, uint8_t flags, char *topic_out,
                             size_t topic_cap, size_t *topic_len, const uint8_t **payload, size_t *payload_len,
                             uint16_t *packet_id)
 {
@@ -286,7 +286,7 @@ bool det_mqtt_parse_publish(const uint8_t *buf, uint32_t remaining_len, uint8_t 
     if ((size_t)tlen + 1 > topic_cap)
         return false; // topic + NUL must fit
     // MQTT 1.5.3: a UTF-8 string must be well-formed and must not contain U+0000.
-    if (!det_utf8_valid(buf + off, tlen) || memchr(buf + off, 0x00, tlen))
+    if (!dws_utf8_valid(buf + off, tlen) || memchr(buf + off, 0x00, tlen))
         return false;
     memcpy(topic_out, buf + off, tlen);
     topic_out[tlen] = '\0';
@@ -309,14 +309,14 @@ bool det_mqtt_parse_publish(const uint8_t *buf, uint32_t remaining_len, uint8_t 
     return true;
 }
 
-uint16_t det_mqtt_parse_ack(const uint8_t *buf, uint32_t remaining_len)
+uint16_t dws_mqtt_parse_ack(const uint8_t *buf, uint32_t remaining_len)
 {
     if (!buf || remaining_len < 2)
         return 0;
     return get_u16(buf);
 }
 
-int det_mqtt_parse_connack(const uint8_t *buf, uint32_t remaining_len, bool *session_present)
+int dws_mqtt_parse_connack(const uint8_t *buf, uint32_t remaining_len, bool *session_present)
 {
     if (!buf || remaining_len < 2)
         return -1;
@@ -325,7 +325,7 @@ int det_mqtt_parse_connack(const uint8_t *buf, uint32_t remaining_len, bool *ses
     return buf[1];
 }
 
-bool det_mqtt_parse_suback(const uint8_t *buf, uint32_t remaining_len, uint16_t *packet_id, uint8_t *return_code)
+bool dws_mqtt_parse_suback(const uint8_t *buf, uint32_t remaining_len, uint16_t *packet_id, uint8_t *return_code)
 {
     if (!buf || remaining_len < 3)
         return false;
@@ -338,19 +338,19 @@ bool det_mqtt_parse_suback(const uint8_t *buf, uint32_t remaining_len, uint16_t 
 
 // ---------------------------------------------------------------------------
 // Transport (ESP32 only): persistent raw-lwIP TCP client + QoS state machine,
-// with mqtts:// over a persistent client TLS session (det_tls csess).
+// with mqtts:// over a persistent client TLS session (dws_tls csess).
 // ---------------------------------------------------------------------------
 #if defined(ARDUINO)
 
 #include "network_drivers/transport/client.h" // shared outbound TCP client (L4)
 #include <Arduino.h>
 
-#if DETWS_ENABLE_MQTT_TLS
+#if DWS_ENABLE_MQTT_TLS
 #include "network_drivers/tls/tls.h" // persistent client TLS session (csess)
 #include <mbedtls/ssl.h>             // MBEDTLS_ERR_SSL_WANT_* for the BIO callbacks
 #endif
 
-#ifdef DETWS_MQTT_DEBUG
+#ifdef DWS_MQTT_DEBUG
 #define MQ_DBG(...) printf(__VA_ARGS__)
 #else
 #define MQ_DBG(...) ((void)0)
@@ -363,7 +363,7 @@ struct MqttInflight
     uint8_t state; // 0 free, 1 awaiting PUBACK(qos1)/PUBREC(qos2), 2 awaiting PUBCOMP(qos2)
     uint32_t sent_ms;
     uint16_t len;
-    uint8_t pkt[DETWS_MQTT_INFLIGHT_BUF];
+    uint8_t pkt[DWS_MQTT_INFLIGHT_BUF];
 };
 
 // All MQTT connection state, owned by one instance (internal linkage): one broker at a time,
@@ -371,19 +371,19 @@ struct MqttInflight
 struct MqttCtx
 {
     MqttMessageCb cb;
-    int cid = -1;         // outbound connection id (det_client pool)
+    int cid = -1;         // outbound connection id (dws_client pool)
     volatile bool closed; // peer closed / error (set when the pump sees it)
 
     // Inbound plaintext byte ring (consumer = process_rx). It is fed by a pump in
-    // process_rx: for plain TCP from det_client_read, for MQTTS from the TLS session
-    // (det_tls_client_session_read), whose BIO in turn reads ciphertext from det_client.
-    uint8_t rx[DETWS_MQTT_BUF_SIZE];
+    // process_rx: for plain TCP from dws_client_read, for MQTTS from the TLS session
+    // (dws_tls_client_session_read), whose BIO in turn reads ciphertext from dws_client.
+    uint8_t rx[DWS_MQTT_BUF_SIZE];
     volatile size_t rx_head;
     volatile size_t rx_tail;
 
-    uint8_t pkt[DETWS_MQTT_BUF_SIZE]; // contiguous scratch a packet is copied into to parse
-    uint8_t tx[DETWS_MQTT_BUF_SIZE];  // outgoing packet scratch
-    bool use_tls;                     // mqtts:// mode
+    uint8_t pkt[DWS_MQTT_BUF_SIZE]; // contiguous scratch a packet is copied into to parse
+    uint8_t tx[DWS_MQTT_BUF_SIZE];  // outgoing packet scratch
+    bool use_tls;                   // mqtts:// mode
 
     bool mqtt_up;
     uint16_t keepalive_s;
@@ -393,9 +393,9 @@ struct MqttCtx
     uint16_t next_pid = 1;
     int connack_code; // set by process_rx during the connect handshake
 
-    MqttInflight inflight[DETWS_MQTT_MAX_INFLIGHT];
+    MqttInflight inflight[DWS_MQTT_MAX_INFLIGHT];
     // Inbound QoS 2 packet ids that have been PUBREC'd and await PUBREL (0 = empty).
-    uint16_t rx_qos2[DETWS_MQTT_RX_QOS2_SLOTS];
+    uint16_t rx_qos2[DWS_MQTT_RX_QOS2_SLOTS];
 };
 static MqttCtx s_mqtt;
 
@@ -426,16 +426,16 @@ static inline void ring_advance(size_t n)
     s_mqtt.rx_tail = (s_mqtt.rx_tail + n) % sizeof(s_mqtt.rx);
 }
 
-// --- transport over the shared outbound client (det_client) ---
+// --- transport over the shared outbound client (dws_client) ---
 
 // Send raw plaintext bytes to the broker.
 static bool mq_tx_plain(const uint8_t *data, size_t len)
 {
-    return det_client_send(s_mqtt.cid, data, len);
+    return dws_client_send(s_mqtt.cid, data, len);
 }
 
 // Drain plaintext wire bytes from the client into the s_mqtt.rx ring (plain TCP).
-// det_client's own ring applies lossless backpressure to the peer when s_mqtt.rx is
+// dws_client's own ring applies lossless backpressure to the peer when s_mqtt.rx is
 // full and we stop draining.
 static void mq_pump_plain()
 {
@@ -446,10 +446,10 @@ static void mq_pump_plain()
         if (freey == 0)
             break;
         size_t want = freey < sizeof(tmp) ? freey : sizeof(tmp);
-        size_t n = det_client_read(s_mqtt.cid, tmp, want);
+        size_t n = dws_client_read(s_mqtt.cid, tmp, want);
         if (n == 0)
         {
-            if (det_client_is_closed(s_mqtt.cid))
+            if (dws_client_is_closed(s_mqtt.cid))
                 s_mqtt.closed = true;
             break;
         }
@@ -461,21 +461,21 @@ static void mq_pump_plain()
     }
 }
 
-#if DETWS_ENABLE_MQTT_TLS
+#if DWS_ENABLE_MQTT_TLS
 // TLS BIO over the shared client: write ciphertext through the pool, read
 // ciphertext by draining the client's wire ring.
 static int mq_tls_send(void *ctx, const unsigned char *buf, size_t len)
 {
     (void)ctx;
     size_t cap = len > 0xFFFF ? 0xFFFF : len;
-    return det_client_send(s_mqtt.cid, buf, cap) ? (int)cap : MBEDTLS_ERR_SSL_WANT_WRITE;
+    return dws_client_send(s_mqtt.cid, buf, cap) ? (int)cap : MBEDTLS_ERR_SSL_WANT_WRITE;
 }
 static int mq_tls_recv(void *ctx, unsigned char *buf, size_t len)
 {
     (void)ctx;
-    size_t n = det_client_read(s_mqtt.cid, buf, len);
+    size_t n = dws_client_read(s_mqtt.cid, buf, len);
     if (n == 0)
-        return det_client_is_closed(s_mqtt.cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
+        return dws_client_is_closed(s_mqtt.cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
     return (int)n;
 }
 // Drain decrypted plaintext from the TLS session into the s_mqtt.rx ring (main loop).
@@ -488,7 +488,7 @@ static void mq_pump_tls()
         if (freey == 0)
             break;
         size_t want = freey < sizeof(tmp) ? freey : sizeof(tmp);
-        int n = det_tls_client_session_read(tmp, want);
+        int n = dws_tls_client_session_read(tmp, want);
         if (n <= 0)
         {
             if (n < 0)
@@ -502,15 +502,15 @@ static void mq_pump_tls()
         }
     }
 }
-#endif // DETWS_ENABLE_MQTT_TLS
+#endif // DWS_ENABLE_MQTT_TLS
 
 // Send a complete MQTT packet (plaintext or TLS-encrypted per the mode).
 static bool mq_tx(const uint8_t *data, size_t len)
 {
     bool ok;
-#if DETWS_ENABLE_MQTT_TLS
+#if DWS_ENABLE_MQTT_TLS
     if (s_mqtt.use_tls)
-        ok = det_tls_client_session_write(data, len) == (int)len;
+        ok = dws_tls_client_session_write(data, len) == (int)len;
     else
 #endif
         ok = mq_tx_plain(data, len);
@@ -521,19 +521,19 @@ static bool mq_tx(const uint8_t *data, size_t len)
 
 static void mq_close()
 {
-#if DETWS_ENABLE_MQTT_TLS
+#if DWS_ENABLE_MQTT_TLS
     if (s_mqtt.use_tls)
-        det_tls_client_session_end();
+        dws_tls_client_session_end();
 #endif
     if (s_mqtt.cid >= 0)
-        det_client_close(s_mqtt.cid);
+        dws_client_close(s_mqtt.cid);
     s_mqtt.cid = -1;
     s_mqtt.mqtt_up = false;
 }
 
 static int inflight_find(uint16_t pid)
 {
-    for (int i = 0; i < DETWS_MQTT_MAX_INFLIGHT; i++)
+    for (int i = 0; i < DWS_MQTT_MAX_INFLIGHT; i++)
         if (s_mqtt.inflight[i].state != 0 && s_mqtt.inflight[i].pid == pid)
             return i;
     return -1;
@@ -541,7 +541,7 @@ static int inflight_find(uint16_t pid)
 
 static void rxqos2_add(uint16_t pid)
 {
-    for (int i = 0; i < DETWS_MQTT_RX_QOS2_SLOTS; i++)
+    for (int i = 0; i < DWS_MQTT_RX_QOS2_SLOTS; i++)
         if (s_mqtt.rx_qos2[i] == 0)
         {
             s_mqtt.rx_qos2[i] = pid;
@@ -550,14 +550,14 @@ static void rxqos2_add(uint16_t pid)
 }
 static bool rxqos2_has(uint16_t pid)
 {
-    for (int i = 0; i < DETWS_MQTT_RX_QOS2_SLOTS; i++)
+    for (int i = 0; i < DWS_MQTT_RX_QOS2_SLOTS; i++)
         if (s_mqtt.rx_qos2[i] == pid)
             return true;
     return false;
 }
 static void rxqos2_del(uint16_t pid)
 {
-    for (int i = 0; i < DETWS_MQTT_RX_QOS2_SLOTS; i++)
+    for (int i = 0; i < DWS_MQTT_RX_QOS2_SLOTS; i++)
         if (s_mqtt.rx_qos2[i] == pid)
             s_mqtt.rx_qos2[i] = 0;
 }
@@ -568,18 +568,18 @@ static void handle_packet(uint8_t type, uint8_t flags, const uint8_t *body, uint
     switch ((MqttType)type) // wire byte -> typed control-packet dispatch
     {
     case MqttType::MQTT_CONNACK:
-        s_mqtt.connack_code = det_mqtt_parse_connack(body, rl, nullptr);
+        s_mqtt.connack_code = dws_mqtt_parse_connack(body, rl, nullptr);
         if (s_mqtt.connack_code == 0)
             s_mqtt.mqtt_up = true;
         MQ_DBG("[mqtt] CONNACK code=%d\n", s_mqtt.connack_code);
         break;
     case MqttType::MQTT_PUBLISH: {
-        char topic[DETWS_MQTT_MAX_TOPIC];
+        char topic[DWS_MQTT_MAX_TOPIC];
         size_t tlen;
         size_t plen;
         const uint8_t *payload;
         uint16_t pid;
-        if (!det_mqtt_parse_publish(body, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))
+        if (!dws_mqtt_parse_publish(body, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))
         {
             mq_close(); // MQTT-4.8.0-1: a malformed PUBLISH (incl. QoS=3) MUST close the connection
             break;
@@ -591,7 +591,7 @@ static void handle_packet(uint8_t type, uint8_t flags, const uint8_t *body, uint
                 s_mqtt.cb(topic, payload, plen);
             if (qos == 1)
             {
-                size_t n = det_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBACK, pid);
+                size_t n = dws_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBACK, pid);
                 mq_tx(s_mqtt.tx, n);
             }
         }
@@ -603,7 +603,7 @@ static void handle_packet(uint8_t type, uint8_t flags, const uint8_t *body, uint
                     s_mqtt.cb(topic, payload, plen);
                 rxqos2_add(pid);
             }
-            size_t n = det_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBREC, pid);
+            size_t n = dws_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBREC, pid);
             mq_tx(s_mqtt.tx, n);
         }
         break;
@@ -611,29 +611,29 @@ static void handle_packet(uint8_t type, uint8_t flags, const uint8_t *body, uint
     case MqttType::MQTT_PUBACK:  // our QoS 1 publish acknowledged
     case MqttType::MQTT_PUBCOMP: // our QoS 2 publish completed
     {
-        int s = inflight_find(det_mqtt_parse_ack(body, rl));
+        int s = inflight_find(dws_mqtt_parse_ack(body, rl));
         if (s >= 0)
             s_mqtt.inflight[s].state = 0;
         break;
     }
     case MqttType::MQTT_PUBREC: // our QoS 2 publish: reply PUBREL, await PUBCOMP
     {
-        uint16_t pid = det_mqtt_parse_ack(body, rl);
+        uint16_t pid = dws_mqtt_parse_ack(body, rl);
         int s = inflight_find(pid);
         if (s >= 0)
         {
             s_mqtt.inflight[s].state = 2;
             s_mqtt.inflight[s].sent_ms = millis();
         }
-        size_t n = det_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBREL, pid);
+        size_t n = dws_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBREL, pid);
         mq_tx(s_mqtt.tx, n);
         break;
     }
     case MqttType::MQTT_PUBREL: // broker releasing an inbound QoS 2 message: reply PUBCOMP
     {
-        uint16_t pid = det_mqtt_parse_ack(body, rl);
+        uint16_t pid = dws_mqtt_parse_ack(body, rl);
         rxqos2_del(pid);
-        size_t n = det_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBCOMP, pid);
+        size_t n = dws_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBCOMP, pid);
         mq_tx(s_mqtt.tx, n);
         break;
     }
@@ -650,7 +650,7 @@ static void handle_packet(uint8_t type, uint8_t flags, const uint8_t *body, uint
 // Drain complete packets from the rx ring (copies each into s_mqtt.pkt to parse).
 static void process_rx()
 {
-#if DETWS_ENABLE_MQTT_TLS
+#if DWS_ENABLE_MQTT_TLS
     if (s_mqtt.use_tls)
         mq_pump_tls(); // decrypt ciphertext into the plaintext ring first
     else
@@ -670,7 +670,7 @@ static void process_rx()
         uint8_t flags;
         uint32_t rl;
         size_t hl;
-        if (!det_mqtt_parse_fixed_header(hdr, hn, &type, &flags, &rl, &hl))
+        if (!dws_mqtt_parse_fixed_header(hdr, hn, &type, &flags, &rl, &hl))
             return; // incomplete header
         size_t total = hl + rl;
         if (avail < total)
@@ -686,16 +686,16 @@ static void process_rx()
     }
 }
 
-void det_mqtt_set_message_cb(MqttMessageCb cb)
+void dws_mqtt_set_message_cb(MqttMessageCb cb)
 {
     s_mqtt.cb = cb;
 }
 
-bool det_mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttConnectOpts *opts)
+bool dws_mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttConnectOpts *opts)
 {
     if (!host || !opts)
         return false;
-#if !DETWS_ENABLE_MQTT_TLS
+#if !DWS_ENABLE_MQTT_TLS
     if (use_tls)
         return false; // built without MQTTS support
 #endif
@@ -712,20 +712,20 @@ bool det_mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttC
     uint32_t deadline = millis() + 8000;
 
     // Open the TCP connection (DNS + connect) via the shared client transport.
-    s_mqtt.cid = det_client_open(host, port, 8000);
+    s_mqtt.cid = dws_client_open(host, port, 8000);
     if (s_mqtt.cid < 0)
         return false;
 
-#if DETWS_ENABLE_MQTT_TLS
+#if DWS_ENABLE_MQTT_TLS
     if (s_mqtt.use_tls)
     {
-        if (!det_tls_client_session_begin(host, mq_tls_send, mq_tls_recv))
+        if (!dws_tls_client_session_begin(host, mq_tls_send, mq_tls_recv))
         {
             mq_close();
             return false;
         }
         int h;
-        while ((h = det_tls_client_session_handshake()) == 0 && !s_mqtt.closed && (int32_t)(deadline - millis()) > 0)
+        while ((h = dws_tls_client_session_handshake()) == 0 && !s_mqtt.closed && (int32_t)(deadline - millis()) > 0)
             dwsdelay(5);
         if (h != 1)
         {
@@ -736,7 +736,7 @@ bool det_mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttC
     }
 #endif
 
-    size_t n = det_mqtt_build_connect(s_mqtt.tx, sizeof(s_mqtt.tx), opts);
+    size_t n = dws_mqtt_build_connect(s_mqtt.tx, sizeof(s_mqtt.tx), opts);
     if (n == 0 || !mq_tx(s_mqtt.tx, n))
     {
         mq_close();
@@ -758,19 +758,19 @@ bool det_mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttC
     return true;
 }
 
-bool det_mqtt_publish(const char *topic, const uint8_t *payload, size_t len, uint8_t qos, bool retain)
+bool dws_mqtt_publish(const char *topic, const uint8_t *payload, size_t len, uint8_t qos, bool retain)
 {
     if (!s_mqtt.mqtt_up || qos > 2)
         return false;
     if (qos == 0)
     {
-        size_t n = det_mqtt_build_publish(s_mqtt.tx, sizeof(s_mqtt.tx), topic, payload, len, 0, 0, retain, false);
+        size_t n = dws_mqtt_build_publish(s_mqtt.tx, sizeof(s_mqtt.tx), topic, payload, len, 0, 0, retain, false);
         return n && mq_tx(s_mqtt.tx, n);
     }
     // QoS 1/2: take an in-flight slot, store the serialized packet for retransmit.
     int slot = inflight_find(0);
     if (slot < 0)
-        for (int i = 0; i < DETWS_MQTT_MAX_INFLIGHT; i++)
+        for (int i = 0; i < DWS_MQTT_MAX_INFLIGHT; i++)
             if (s_mqtt.inflight[i].state == 0)
             {
                 slot = i;
@@ -779,7 +779,7 @@ bool det_mqtt_publish(const char *topic, const uint8_t *payload, size_t len, uin
     if (slot < 0)
         return false; // in-flight window full
     uint16_t pid = next_pid();
-    size_t n = det_mqtt_build_publish(s_mqtt.inflight[slot].pkt, sizeof(s_mqtt.inflight[slot].pkt), topic, payload, len,
+    size_t n = dws_mqtt_build_publish(s_mqtt.inflight[slot].pkt, sizeof(s_mqtt.inflight[slot].pkt), topic, payload, len,
                                       qos, pid, retain, false);
     if (n == 0)
         return false; // too large for an in-flight slot
@@ -790,23 +790,23 @@ bool det_mqtt_publish(const char *topic, const uint8_t *payload, size_t len, uin
     return mq_tx(s_mqtt.inflight[slot].pkt, n);
 }
 
-bool det_mqtt_subscribe(const char *topic, uint8_t qos)
+bool dws_mqtt_subscribe(const char *topic, uint8_t qos)
 {
     if (!s_mqtt.mqtt_up)
         return false;
-    size_t n = det_mqtt_build_subscribe(s_mqtt.tx, sizeof(s_mqtt.tx), next_pid(), topic, qos);
+    size_t n = dws_mqtt_build_subscribe(s_mqtt.tx, sizeof(s_mqtt.tx), next_pid(), topic, qos);
     return n && mq_tx(s_mqtt.tx, n);
 }
 
-bool det_mqtt_unsubscribe(const char *topic)
+bool dws_mqtt_unsubscribe(const char *topic)
 {
     if (!s_mqtt.mqtt_up)
         return false;
-    size_t n = det_mqtt_build_unsubscribe(s_mqtt.tx, sizeof(s_mqtt.tx), next_pid(), topic);
+    size_t n = dws_mqtt_build_unsubscribe(s_mqtt.tx, sizeof(s_mqtt.tx), next_pid(), topic);
     return n && mq_tx(s_mqtt.tx, n);
 }
 
-bool det_mqtt_loop()
+bool dws_mqtt_loop()
 {
     if (!s_mqtt.mqtt_up)
         return false;
@@ -830,7 +830,7 @@ bool det_mqtt_loop()
         }
         if (!s_mqtt.ping_pending && (now - s_mqtt.last_tx_ms) >= ka)
         {
-            size_t n = det_mqtt_build_pingreq(s_mqtt.tx, sizeof(s_mqtt.tx));
+            size_t n = dws_mqtt_build_pingreq(s_mqtt.tx, sizeof(s_mqtt.tx));
             if (mq_tx(s_mqtt.tx, n))
             {
                 s_mqtt.ping_pending = true;
@@ -840,11 +840,11 @@ bool det_mqtt_loop()
     }
 
     // Retransmit unacked in-flight QoS 1/2 messages.
-    for (int i = 0; i < DETWS_MQTT_MAX_INFLIGHT; i++)
+    for (int i = 0; i < DWS_MQTT_MAX_INFLIGHT; i++)
     {
         if (s_mqtt.inflight[i].state == 0)
             continue;
-        if ((now - s_mqtt.inflight[i].sent_ms) < DETWS_MQTT_RETRANSMIT_MS)
+        if ((now - s_mqtt.inflight[i].sent_ms) < DWS_MQTT_RETRANSMIT_MS)
             continue;
         if (s_mqtt.inflight[i].state == 1)
         {
@@ -853,7 +853,7 @@ bool det_mqtt_loop()
         }
         else // state 2: re-send PUBREL
         {
-            size_t n = det_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBREL, s_mqtt.inflight[i].pid);
+            size_t n = dws_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBREL, s_mqtt.inflight[i].pid);
             mq_tx(s_mqtt.tx, n);
         }
         s_mqtt.inflight[i].sent_ms = now;
@@ -861,16 +861,16 @@ bool det_mqtt_loop()
     return true;
 }
 
-bool det_mqtt_connected()
+bool dws_mqtt_connected()
 {
     return s_mqtt.mqtt_up;
 }
 
-void det_mqtt_disconnect()
+void dws_mqtt_disconnect()
 {
     if (s_mqtt.cid >= 0 && s_mqtt.mqtt_up)
     {
-        size_t n = det_mqtt_build_disconnect(s_mqtt.tx, sizeof(s_mqtt.tx));
+        size_t n = dws_mqtt_build_disconnect(s_mqtt.tx, sizeof(s_mqtt.tx));
         mq_tx(s_mqtt.tx, n);
     }
     mq_close();
@@ -878,37 +878,37 @@ void det_mqtt_disconnect()
 
 #else // host build: transport is a stub
 
-void det_mqtt_set_message_cb(MqttMessageCb)
+void dws_mqtt_set_message_cb(MqttMessageCb)
 {
 }
-bool det_mqtt_connect(const char *, uint16_t, bool, const MqttConnectOpts *)
-{
-    return false;
-}
-bool det_mqtt_publish(const char *, const uint8_t *, size_t, uint8_t, bool)
+bool dws_mqtt_connect(const char *, uint16_t, bool, const MqttConnectOpts *)
 {
     return false;
 }
-bool det_mqtt_subscribe(const char *, uint8_t)
+bool dws_mqtt_publish(const char *, const uint8_t *, size_t, uint8_t, bool)
 {
     return false;
 }
-bool det_mqtt_unsubscribe(const char *)
+bool dws_mqtt_subscribe(const char *, uint8_t)
 {
     return false;
 }
-bool det_mqtt_loop()
+bool dws_mqtt_unsubscribe(const char *)
 {
     return false;
 }
-bool det_mqtt_connected()
+bool dws_mqtt_loop()
 {
     return false;
 }
-void det_mqtt_disconnect()
+bool dws_mqtt_connected()
+{
+    return false;
+}
+void dws_mqtt_disconnect()
 {
 }
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_MQTT
+#endif // DWS_ENABLE_MQTT

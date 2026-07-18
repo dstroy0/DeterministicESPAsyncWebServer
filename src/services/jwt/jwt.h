@@ -30,7 +30,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_JWT
+#if DWS_ENABLE_JWT
 
 /**
  * @brief Verify the HS256 signature of a JWT.
@@ -90,7 +90,7 @@ bool jwt_verify_hs256_at(const char *token, size_t token_len, const uint8_t *sec
  * @brief Validate a Bearer `Authorization` header, enforcing `exp` / `nbf` when clocked.
  *
  * jwt_bearer_valid() plus the RFC 7519 time-claim check. Pass @p now_epoch from your
- * time source (e.g. `(long)detws_time_now()`); 0 skips the time checks.
+ * time source (e.g. `(long)dws_time_now()`); 0 skips the time checks.
  */
 bool jwt_bearer_valid_at(const char *auth_header, const uint8_t *secret, size_t secret_len, long now_epoch,
                          long leeway_s);
@@ -132,6 +132,6 @@ bool jwt_claim_str(const char *token, size_t token_len, const char *name, char *
  */
 bool jwt_scope_allows(const char *scope_claim, const char *required);
 
-#endif // DETWS_ENABLE_JWT
+#endif // DWS_ENABLE_JWT
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_JWT_H

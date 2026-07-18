@@ -21,7 +21,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // GET /users/:id
 void handle_user(uint8_t slot_id, HttpReq *req)

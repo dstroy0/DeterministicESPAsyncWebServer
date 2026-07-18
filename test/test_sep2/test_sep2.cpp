@@ -22,7 +22,7 @@ static bool has(const char *hay, const char *needle)
 void test_device_capability(void)
 {
     char buf[512];
-    size_t n = detws_sep2_device_capability(900, "/edev", "/derp", buf, sizeof(buf));
+    size_t n = dws_sep2_device_capability(900, "/edev", "/derp", buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
     TEST_ASSERT_TRUE(has(buf, "<DeviceCapability xmlns=\"urn:ieee:std:2030.5:ns\" pollRate=\"900\">"));
@@ -34,7 +34,7 @@ void test_device_capability(void)
 void test_end_device(void)
 {
     char buf[512];
-    detws_sep2_end_device(123456789ULL, "3E4F...A1", "/edev/0", buf, sizeof(buf));
+    dws_sep2_end_device(123456789ULL, "3E4F...A1", "/edev/0", buf, sizeof(buf));
     TEST_ASSERT_TRUE(has(buf, "<EndDevice xmlns=\"urn:ieee:std:2030.5:ns\" href=\"/edev/0\">"));
     TEST_ASSERT_TRUE(has(buf, "<sFDI>123456789</sFDI>"));
     TEST_ASSERT_TRUE(has(buf, "<lFDI>3E4F...A1</lFDI>"));
@@ -43,7 +43,7 @@ void test_end_device(void)
 void test_der_control_negative_setpoint(void)
 {
     char buf[512];
-    detws_sep2_der_control("A1B2", 1720000000u, 3600, -1500, buf, sizeof(buf));
+    dws_sep2_der_control("A1B2", 1720000000u, 3600, -1500, buf, sizeof(buf));
     TEST_ASSERT_TRUE(has(buf, "<mRID>A1B2</mRID>"));
     TEST_ASSERT_TRUE(has(buf, "<start>1720000000</start>"));
     TEST_ASSERT_TRUE(has(buf, "<duration>3600</duration>"));
@@ -53,14 +53,14 @@ void test_der_control_negative_setpoint(void)
 void test_xml_escape_in_href(void)
 {
     char buf[512];
-    detws_sep2_device_capability(60, "/e?a=1&b=2", "/d", buf, sizeof(buf));
+    dws_sep2_device_capability(60, "/e?a=1&b=2", "/d", buf, sizeof(buf));
     TEST_ASSERT_TRUE(has(buf, "href=\"/e?a=1&amp;b=2\""));
 }
 
 void test_overflow(void)
 {
     char buf[16];
-    TEST_ASSERT_EQUAL_size_t(0, detws_sep2_device_capability(900, "/edev", "/derp", buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_sep2_device_capability(900, "/edev", "/derp", buf, sizeof(buf)));
 }
 
 int main(void)

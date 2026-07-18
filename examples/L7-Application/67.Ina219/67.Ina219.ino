@@ -3,7 +3,7 @@
 
 /**
  * @file 67.Ina219.ino
- * @brief Measure current and power with an INA219 monitor (DETWS_ENABLE_INA219).
+ * @brief Measure current and power with an INA219 monitor (DWS_ENABLE_INA219).
  *
  * The INA219 sits in series with a load and reports the voltage, the current flowing through it,
  * and the power it uses - so you can answer "how much power does this actually draw?". This
@@ -14,10 +14,10 @@
  * Put the board in the power path: supply (+) -> Vin+, Vin- -> your load (+), load (-) -> GND.
  * The default assumes the common 0.1 ohm shunt on these breakouts.
  *
- * Build flag (PlatformIO): `-DDETWS_ENABLE_INA219=1`
+ * Build flag (PlatformIO): `-DDWS_ENABLE_INA219=1`
  */
 
-#define DETWS_ENABLE_INA219 1
+#define DWS_ENABLE_INA219 1
 
 #include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/ina219/ina219.h"

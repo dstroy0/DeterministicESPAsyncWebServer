@@ -3,7 +3,7 @@
 
 /**
  * @file telemetry.h
- * @brief Zero-heap telemetry math helpers (DETWS_ENABLE_TELEMETRY).
+ * @brief Zero-heap telemetry math helpers (DWS_ENABLE_TELEMETRY).
  *
  * Pure-computation building blocks for turning a stream of sensor samples into
  * dashboard figures, alert triggers, and odometer-style totals - no heap, no
@@ -28,7 +28,7 @@
 #include "ServerConfig.h"
 #include <stdint.h>
 
-#if DETWS_ENABLE_TELEMETRY
+#if DWS_ENABLE_TELEMETRY
 
 // ---------------------------------------------------------------------------
 // Moving-window statistics
@@ -51,28 +51,28 @@ struct DetwsWindow
 };
 
 /** @brief Bind @p w to @p buf (capacity @p cap samples) and reset it to empty. */
-void detws_window_init(DetwsWindow *w, float *buf, uint16_t cap);
+void dws_window_init(DetwsWindow *w, float *buf, uint16_t cap);
 
 /** @brief Add @p sample, evicting the oldest once the window is full. */
-void detws_window_push(DetwsWindow *w, float sample);
+void dws_window_push(DetwsWindow *w, float sample);
 
 /** @brief Number of samples currently in the window. */
-uint16_t detws_window_count(const DetwsWindow *w);
+uint16_t dws_window_count(const DetwsWindow *w);
 
 /** @brief Arithmetic mean of the window (0 when empty). */
-float detws_window_mean(const DetwsWindow *w);
+float dws_window_mean(const DetwsWindow *w);
 
 /** @brief Population variance of the window (0 when empty). */
-float detws_window_variance(const DetwsWindow *w);
+float dws_window_variance(const DetwsWindow *w);
 
 /** @brief Population standard deviation of the window (0 when empty). */
-float detws_window_stddev(const DetwsWindow *w);
+float dws_window_stddev(const DetwsWindow *w);
 
 /** @brief Smallest sample in the window (0 when empty). */
-float detws_window_min(const DetwsWindow *w);
+float dws_window_min(const DetwsWindow *w);
 
 /** @brief Largest sample in the window (0 when empty). */
-float detws_window_max(const DetwsWindow *w);
+float dws_window_max(const DetwsWindow *w);
 
 // ---------------------------------------------------------------------------
 // Rate of change (first derivative)
@@ -87,7 +87,7 @@ struct DetwsRate
 };
 
 /** @brief Reset @p r so the next sample is treated as the first. */
-void detws_rate_init(DetwsRate *r);
+void dws_rate_init(DetwsRate *r);
 
 /**
  * @brief Feed a sample; returns the rate of change in units per second since the
@@ -97,7 +97,7 @@ void detws_rate_init(DetwsRate *r);
  * time is 0. The elapsed-time math is unsigned, so it survives a millis()
  * rollover.
  */
-float detws_rate_update(DetwsRate *r, float value, uint32_t now_ms);
+float dws_rate_update(DetwsRate *r, float value, uint32_t now_ms);
 
 // ---------------------------------------------------------------------------
 // Totalizer (run-time integral / odometer)
@@ -113,7 +113,7 @@ struct DetwsTotalizer
 };
 
 /** @brief Reset @p t to a zero total with no prior sample. */
-void detws_totalizer_init(DetwsTotalizer *t);
+void dws_totalizer_init(DetwsTotalizer *t);
 
 /**
  * @brief Integrate @p rate (units per second) over the time since the last call
@@ -122,13 +122,13 @@ void detws_totalizer_init(DetwsTotalizer *t);
  * The first call only seeds the baseline (total stays 0). Unsigned elapsed-time
  * math survives a millis() rollover.
  */
-double detws_totalizer_add(DetwsTotalizer *t, float rate, uint32_t now_ms);
+double dws_totalizer_add(DetwsTotalizer *t, float rate, uint32_t now_ms);
 
 /** @brief Current running total. */
-double detws_totalizer_total(const DetwsTotalizer *t);
+double dws_totalizer_total(const DetwsTotalizer *t);
 
 /** @brief Reset the running total to 0 and drop the prior sample. */
-void detws_totalizer_reset(DetwsTotalizer *t);
+void dws_totalizer_reset(DetwsTotalizer *t);
 
-#endif // DETWS_ENABLE_TELEMETRY
+#endif // DWS_ENABLE_TELEMETRY
 #endif // DETERMINISTICESPASYNCWEBSERVER_TELEMETRY_H

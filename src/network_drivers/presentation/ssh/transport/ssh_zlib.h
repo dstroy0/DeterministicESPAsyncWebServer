@@ -33,14 +33,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SSH_ZLIB
+#if DWS_ENABLE_SSH_ZLIB
 
 /** @brief Hash-table buckets for the LZ77 3-byte match search (2^bits). */
 #define SSH_ZLIB_HASH_BITS 13
 #define SSH_ZLIB_HASH_SIZE (1 << SSH_ZLIB_HASH_BITS)
 
 /** @brief Work buffer capacity the compressor needs: window history + one input payload. */
-#define SSH_ZLIB_WORK_SIZE ((size_t)DETWS_SSH_ZLIB_WINDOW + (size_t)DETWS_SSH_ZLIB_MAX_IN)
+#define SSH_ZLIB_WORK_SIZE ((size_t)DWS_SSH_ZLIB_WINDOW + (size_t)DWS_SSH_ZLIB_MAX_IN)
 
 /**
  * @brief Streaming server-to-client DEFLATE compressor (one per SSH connection).
@@ -79,11 +79,11 @@ void ssh_deflate_init(SshDeflate *z, uint8_t *work, uint16_t *head, uint16_t *pr
  *
  * Emits the 2-byte zlib header on the first call, then a fixed-Huffman block for @p src followed by a
  * Z_SYNC_FLUSH boundary (`00 00 ff ff`, kept on the wire). Back-references may reach into the
- * persistent window (prior packets), then the window slides to keep the last DETWS_SSH_ZLIB_WINDOW
+ * persistent window (prior packets), then the window slides to keep the last DWS_SSH_ZLIB_WINDOW
  * bytes for the next call.
  *
  * @param z            the compressor.
- * @param src,src_len  uncompressed payload (src_len <= DETWS_SSH_ZLIB_MAX_IN).
+ * @param src,src_len  uncompressed payload (src_len <= DWS_SSH_ZLIB_MAX_IN).
  * @param dst,dst_cap  output buffer for the on-wire compressed payload.
  * @param out_len      set to the compressed length on success.
  * @return 0 on success, -1 on bad input length or output overflow.
@@ -102,5 +102,5 @@ static inline size_t ssh_deflate_bound(size_t src_len)
     return 2 + src_len + (src_len >> 3) + 32;
 }
 
-#endif // DETWS_ENABLE_SSH_ZLIB
+#endif // DWS_ENABLE_SSH_ZLIB
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_ZLIB_H

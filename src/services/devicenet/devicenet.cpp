@@ -8,7 +8,7 @@
 
 #include "services/devicenet/devicenet.h"
 
-#if DETWS_ENABLE_DEVICENET
+#if DWS_ENABLE_DEVICENET
 
 #include <string.h>
 
@@ -47,7 +47,7 @@ bool devicenet_decode_id(uint32_t can_id, DeviceNetId *out)
 {
     if (!out)
         return false;
-    uint32_t id = can_id & DET_CAN_STD_ID_MASK;
+    uint32_t id = can_id & DWS_CAN_STD_ID_MASK;
     if (id < DEVICENET_G2_BASE) // Group 1: 0 MsgID(4) MAC(6)
     {
         out->group = DeviceNetGroup::DEVICENET_GROUP_1;
@@ -117,7 +117,7 @@ void devicenet_frag_reset(DeviceNetFragRx *rx)
 // Append @p n octets to the reassembly buffer; false if it would overflow.
 static bool frag_append(DeviceNetFragRx *rx, const uint8_t *p, uint8_t n)
 {
-    if ((uint32_t)rx->len + n > DETWS_DEVICENET_MSG_MAX)
+    if ((uint32_t)rx->len + n > DWS_DEVICENET_MSG_MAX)
         return false;
     memcpy(rx->buf + rx->len, p, n);
     rx->len = (uint16_t)(rx->len + n);
@@ -186,4 +186,4 @@ DeviceNetFragResult devicenet_frag_feed(DeviceNetFragRx *rx, const uint8_t *body
     }
 }
 
-#endif // DETWS_ENABLE_DEVICENET
+#endif // DWS_ENABLE_DEVICENET

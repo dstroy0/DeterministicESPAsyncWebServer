@@ -8,7 +8,7 @@
 
 #include "services/gnss/ntrip_caster.h"
 
-#if DETWS_ENABLE_NTRIP_CASTER
+#if DWS_ENABLE_NTRIP_CASTER
 
 #include <stdio.h>
 #include <string.h>
@@ -167,7 +167,7 @@ size_t ntrip_build_stream_response(char *out, size_t cap, NtripVersion version)
         n = snprintf(out, cap,
                      "HTTP/1.1 200 OK\r\n"
                      "Ntrip-Version: Ntrip/2.0\r\n"
-                     "Server: DetWebServer\r\n"
+                     "Server: DWS\r\n"
                      "Content-Type: gnss/data\r\n"
                      "Connection: close\r\n\r\n");
     else
@@ -217,7 +217,7 @@ size_t ntrip_build_str_record(char *out, size_t cap, const NtripMount *m)
     const char *fmtd = m->format_details ? m->format_details : "1005(1)";
     const char *nav = m->nav_system ? m->nav_system : "GPS";
     const char *ctry = m->country ? m->country : "";
-    const char *gen = m->generator ? m->generator : "DetWebServer";
+    const char *gen = m->generator ? m->generator : "DWS";
     // STR;mount;identifier;format;format-details;carrier;nav;network;country;lat;lon;nmea;solution;
     //     generator;compr;auth;fee;bitrate;misc   (carrier 0 = station reference only, no observations)
     int n = snprintf(out, cap, "STR;%s;%s;RTCM 3.3;%s;0;%s;none;%s;%s;%s;%d;0;%s;none;N;N;9600;", m->mountpoint, ident,
@@ -250,7 +250,7 @@ size_t ntrip_build_sourcetable(char *out, size_t cap, NtripVersion version, cons
         hn = snprintf(out, cap,
                       "HTTP/1.1 200 OK\r\n"
                       "Ntrip-Version: Ntrip/2.0\r\n"
-                      "Server: DetWebServer\r\n"
+                      "Server: DWS\r\n"
                       "Content-Type: gnss/sourcetable\r\n"
                       "Content-Length: %u\r\n"
                       "Connection: close\r\n\r\n",
@@ -258,7 +258,7 @@ size_t ntrip_build_sourcetable(char *out, size_t cap, NtripVersion version, cons
     else
         hn = snprintf(out, cap,
                       "SOURCETABLE 200 OK\r\n"
-                      "Server: DetWebServer\r\n"
+                      "Server: DWS\r\n"
                       "Content-Type: text/plain\r\n"
                       "Content-Length: %u\r\n\r\n",
                       (unsigned)body_len);
@@ -283,4 +283,4 @@ size_t ntrip_build_sourcetable(char *out, size_t cap, NtripVersion version, cons
     return pos;
 }
 
-#endif // DETWS_ENABLE_NTRIP_CASTER
+#endif // DWS_ENABLE_NTRIP_CASTER

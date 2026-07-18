@@ -8,7 +8,7 @@
 
 #include "services/snmp/snmp_crypto.h"
 
-#if DETWS_ENABLE_SNMP_V3
+#if DWS_ENABLE_SNMP_V3
 
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include <string.h>
@@ -90,10 +90,10 @@ static void aes128_key_schedule(const uint8_t key[16], uint8_t rk[176])
         if (i % 4 == 0)
         {
             uint8_t tmp = t[0]; // RotWord
-            t[0] = DET_AES_SBOX[t[1]];
-            t[1] = DET_AES_SBOX[t[2]];
-            t[2] = DET_AES_SBOX[t[3]];
-            t[3] = DET_AES_SBOX[tmp];
+            t[0] = DWS_AES_SBOX[t[1]];
+            t[1] = DWS_AES_SBOX[t[2]];
+            t[2] = DWS_AES_SBOX[t[3]];
+            t[3] = DWS_AES_SBOX[tmp];
             t[0] ^= kRcon[i / 4 - 1];
         }
         for (int j = 0; j < 4; j++)
@@ -116,7 +116,7 @@ static void aes128_encrypt_block(const uint8_t rk[176], const uint8_t in[16], ui
     {
         // SubBytes
         for (int i = 0; i < 16; i++)
-            s[i] = DET_AES_SBOX[s[i]];
+            s[i] = DWS_AES_SBOX[s[i]];
 
         // ShiftRows (state is column-major: s[r + 4c])
         uint8_t t[16];
@@ -194,4 +194,4 @@ void snmp_aes128_cfb(const uint8_t key[16], const uint8_t iv[16], const uint8_t 
     snmp_wipe(fb, sizeof(fb));
 }
 
-#endif // DETWS_ENABLE_SNMP_V3
+#endif // DWS_ENABLE_SNMP_V3

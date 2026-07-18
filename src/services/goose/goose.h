@@ -3,7 +3,7 @@
 
 /**
  * @file goose.h
- * @brief IEC 61850 GOOSE publisher codec (DETWS_ENABLE_GOOSE).
+ * @brief IEC 61850 GOOSE publisher codec (DWS_ENABLE_GOOSE).
  *
  * GOOSE (Generic Object Oriented Substation Event) is the fast raw-L2 multicast publish IEC 61850 uses
  * for protection trips. A GOOSE frame is an Ethernet frame (ethertype 0x88B8, see services/rawl2) with
@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_GOOSE
+#if DWS_ENABLE_GOOSE
 
 /** @brief The GOOSE control fields (strings are borrowed, not copied). */
 struct DetwsGoose
@@ -47,15 +47,15 @@ struct DetwsGoose
 /**
  * @brief Build the BER IECGoosePdu (the `61 ...` structure) into @p out. @return length, or 0 on overflow.
  */
-size_t detws_goose_pdu(const DetwsGoose *g, uint8_t *out, size_t cap);
+size_t dws_goose_pdu(const DetwsGoose *g, uint8_t *out, size_t cap);
 
 /**
  * @brief Build a full GOOSE Ethernet frame: [dst][src][88B8][APPID len rsvd rsvd][IECGoosePdu].
  * @param appid the GOOSE APPID.
- * @return the frame length, or 0 on overflow. Requires DETWS_ENABLE_RAWL2 for the Ethernet framing.
+ * @return the frame length, or 0 on overflow. Requires DWS_ENABLE_RAWL2 for the Ethernet framing.
  */
-size_t detws_goose_frame(const uint8_t *dst, const uint8_t *src, uint16_t appid, const DetwsGoose *g, uint8_t *out,
-                         size_t cap);
+size_t dws_goose_frame(const uint8_t *dst, const uint8_t *src, uint16_t appid, const DetwsGoose *g, uint8_t *out,
+                       size_t cap);
 
-#endif // DETWS_ENABLE_GOOSE
+#endif // DWS_ENABLE_GOOSE
 #endif // DETERMINISTICESPASYNCWEBSERVER_GOOSE_H

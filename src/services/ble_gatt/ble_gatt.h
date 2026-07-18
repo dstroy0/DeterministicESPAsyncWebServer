@@ -3,7 +3,7 @@
 
 /**
  * @file ble_gatt.h
- * @brief Bluetooth ATT protocol codec + GATT characteristic bridge (DETWS_ENABLE_BLE_GATT).
+ * @brief Bluetooth ATT protocol codec + GATT characteristic bridge (DWS_ENABLE_BLE_GATT).
  *
  * The ESP32's BLE radio is on-chip, but bridging GATT to the web still needs the wire protocol under
  * GATT - the **Attribute Protocol** (ATT, Bluetooth Core Vol 3 Part F): the read / write / notify /
@@ -23,7 +23,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_BLE_GATT
+#if DWS_ENABLE_BLE_GATT
 
 /** @brief ATT opcodes (subset). */
 struct AttOp
@@ -89,5 +89,5 @@ struct GattChar
  */
 size_t gatt_char_json(const GattChar *chars, size_t n, char *out, size_t cap);
 
-#endif // DETWS_ENABLE_BLE_GATT
+#endif // DWS_ENABLE_BLE_GATT
 #endif // DETERMINISTICESPASYNCWEBSERVER_BLE_GATT_H

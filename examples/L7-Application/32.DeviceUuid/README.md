@@ -1,11 +1,11 @@
 # 32.DeviceUuid - a stable MAC-derived device UUID
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_DEVICE_ID`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_DEVICE_ID`
 
 ## What this example teaches
 
 A fleet of identical firmware images needs a stable per-device identity.
-`detws_device_uuid()` derives a deterministic RFC 4122 v5 UUID from the chip's
+`dws_device_uuid()` derives a deterministic RFC 4122 v5 UUID from the chip's
 factory MAC: the same value on every boot, with no storage to wear out or
 provision. Use it for mDNS hostnames, MQTT client IDs, telemetry tags, and the
 like.
@@ -13,11 +13,11 @@ like.
 **Compute once, reuse everywhere:**
 
 ```cpp
-static char g_uuid[DETWS_UUID_STR_LEN];
-detws_device_uuid(g_uuid);          // stable per-chip UUID string
+static char g_uuid[DWS_UUID_STR_LEN];
+dws_device_uuid(g_uuid);          // stable per-chip UUID string
 ```
 
-`DETWS_UUID_STR_LEN` sizes the caller-owned buffer (no heap). Because it is derived
+`DWS_UUID_STR_LEN` sizes the caller-owned buffer (no heap). Because it is derived
 (hashed from the MAC, not random) it is reproducible and needs no NVS. `GET /id`
 returns it as JSON.
 
@@ -25,7 +25,7 @@ returns it as JSON.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_DEVICE_ID=1" \
+  --project-option="build_flags=-DDWS_ENABLE_DEVICE_ID=1" \
   --lib="." examples/L7-Application/32.DeviceUuid/32.DeviceUuid.ino
 ```
 
@@ -42,7 +42,7 @@ with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_DEVICE_ID 1
+#define DWS_ENABLE_DEVICE_ID 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -52,8 +52,8 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
-static char g_uuid[DETWS_UUID_STR_LEN]; // caller-owned (no heap)
+DWS server;
+static char g_uuid[DWS_UUID_STR_LEN]; // caller-owned (no heap)
 
 void setup()
 {
@@ -69,7 +69,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    detws_device_uuid(g_uuid); // stable per-chip UUID (v5, derived from the MAC)
+    dws_device_uuid(g_uuid); // stable per-chip UUID (v5, derived from the MAC)
     Serial.printf("device UUID: %s\n", g_uuid);
 
     server.on("/id", HTTP_GET, [](uint8_t id, HttpReq *) {

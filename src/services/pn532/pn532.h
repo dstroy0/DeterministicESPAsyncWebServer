@@ -3,7 +3,7 @@
 
 /**
  * @file pn532.h
- * @brief PN532 NFC frame codec (DETWS_ENABLE_PN532) - NXP PN532 NFC/RFID controller.
+ * @brief PN532 NFC frame codec (DWS_ENABLE_PN532) - NXP PN532 NFC/RFID controller.
  *
  * The command-frame protocol of the NXP PN532 (the ubiquitous NFC reader on I2C / SPI /
  * HSU breakouts): a tag read/write bridged to an HTTP / MQTT event. The host and the chip
@@ -29,7 +29,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_PN532
+#if DWS_ENABLE_PN532
 
 #include <stddef.h>
 #include <stdint.h>
@@ -42,7 +42,7 @@
 /**
  * @brief Assemble a normal information frame carrying @p tfi + @p data into @p out.
  * @return the total frame length, or 0 if it would not fit @p cap or @p len exceeds
- *         DETWS_PN532_MAX_DATA.
+ *         DWS_PN532_MAX_DATA.
  */
 uint16_t pn532_build_frame(uint8_t tfi, const uint8_t *data, uint8_t len, uint8_t *out, uint16_t cap);
 
@@ -62,6 +62,6 @@ bool pn532_is_ack(const uint8_t *raw, uint16_t len);
 /** @brief Write the 6-byte ACK frame into @p out. @return 6, or 0 if @p cap < 6. */
 uint16_t pn532_build_ack(uint8_t *out, uint16_t cap);
 
-#endif // DETWS_ENABLE_PN532
+#endif // DWS_ENABLE_PN532
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_PN532_H

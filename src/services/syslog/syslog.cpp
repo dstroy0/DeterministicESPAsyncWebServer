@@ -8,7 +8,7 @@
 
 #include "services/syslog/syslog.h"
 
-#if DETWS_ENABLE_SYSLOG
+#if DWS_ENABLE_SYSLOG
 
 #include "network_drivers/transport/udp.h"
 #include <stdio.h>
@@ -20,12 +20,12 @@
 struct SyslogCtx
 {
     char server_ip[16] = {0}; // "255.255.255.255" + NUL
-    uint16_t port = DETWS_SYSLOG_DEFAULT_PORT;
-    char hostname[DETWS_SYSLOG_FIELD_MAX] = {0};
-    char appname[DETWS_SYSLOG_FIELD_MAX] = {0};
+    uint16_t port = DWS_SYSLOG_DEFAULT_PORT;
+    char hostname[DWS_SYSLOG_FIELD_MAX] = {0};
+    char appname[DWS_SYSLOG_FIELD_MAX] = {0};
     SyslogFacility facility = SyslogFacility::SYSLOG_FAC_LOCAL0;
     bool ready = false;
-    char buf[DETWS_SYSLOG_MSG_MAX];
+    char buf[DWS_SYSLOG_MSG_MAX];
 };
 static SyslogCtx s_syslog;
 
@@ -81,7 +81,7 @@ bool syslog_log(SyslogSeverity severity, const char *msg)
                              s_syslog.appname, msg);
     if (n == 0)
         return false;
-    return det_udp_sendto(s_syslog.server_ip, s_syslog.port, (const uint8_t *)s_syslog.buf, n);
+    return dws_udp_sendto(s_syslog.server_ip, s_syslog.port, (const uint8_t *)s_syslog.buf, n);
 }
 
-#endif // DETWS_ENABLE_SYSLOG
+#endif // DWS_ENABLE_SYSLOG

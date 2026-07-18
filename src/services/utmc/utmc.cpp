@@ -8,7 +8,7 @@
 
 #include "services/utmc/utmc.h"
 
-#if DETWS_ENABLE_UTMC
+#if DWS_ENABLE_UTMC
 
 #include <string.h>
 
@@ -16,7 +16,7 @@
 
 namespace
 {
-void put_u(DetSb *b, uint32_t v)
+void put_u(DWSSb *b, uint32_t v)
 {
     char tmp[11];
     int n = 0;
@@ -29,36 +29,36 @@ void put_u(DetSb *b, uint32_t v)
     for (int i = 0; i < n; i++)
         out[i] = tmp[n - 1 - i];
     out[n] = '\0';
-    det_sb_put(b, out);
+    dws_sb_put(b, out);
 }
 } // namespace
 
-size_t detws_utmc_request(const char *object_id, char *out, size_t cap)
+size_t dws_utmc_request(const char *object_id, char *out, size_t cap)
 {
-    DetSb b = {out, cap, 0, out != nullptr && cap > 0};
-    det_sb_put(&b, "<?xml version=\"1.0\"?><UTMCRequest><object id=\"");
-    det_sb_xml(&b, object_id);
-    det_sb_put(&b, "\"/></UTMCRequest>");
-    return det_sb_finish(&b);
+    DWSSb b = {out, cap, 0, out != nullptr && cap > 0};
+    dws_sb_put(&b, "<?xml version=\"1.0\"?><UTMCRequest><object id=\"");
+    dws_sb_xml(&b, object_id);
+    dws_sb_put(&b, "\"/></UTMCRequest>");
+    return dws_sb_finish(&b);
 }
 
-size_t detws_utmc_response(const char *object_id, const char *value, uint8_t quality, const char *timestamp, char *out,
-                           size_t cap)
+size_t dws_utmc_response(const char *object_id, const char *value, uint8_t quality, const char *timestamp, char *out,
+                         size_t cap)
 {
-    DetSb b = {out, cap, 0, out != nullptr && cap > 0};
-    det_sb_put(&b, "<?xml version=\"1.0\"?><UTMCResponse><object id=\"");
-    det_sb_xml(&b, object_id);
-    det_sb_put(&b, "\" value=\"");
-    det_sb_xml(&b, value);
-    det_sb_put(&b, "\" quality=\"");
+    DWSSb b = {out, cap, 0, out != nullptr && cap > 0};
+    dws_sb_put(&b, "<?xml version=\"1.0\"?><UTMCResponse><object id=\"");
+    dws_sb_xml(&b, object_id);
+    dws_sb_put(&b, "\" value=\"");
+    dws_sb_xml(&b, value);
+    dws_sb_put(&b, "\" quality=\"");
     put_u(&b, quality);
-    det_sb_put(&b, "\" timestamp=\"");
-    det_sb_xml(&b, timestamp);
-    det_sb_put(&b, "\"/></UTMCResponse>");
-    return det_sb_finish(&b);
+    dws_sb_put(&b, "\" timestamp=\"");
+    dws_sb_xml(&b, timestamp);
+    dws_sb_put(&b, "\"/></UTMCResponse>");
+    return dws_sb_finish(&b);
 }
 
-size_t detws_utmc_parse_request(const char *xml, size_t len, char *out, size_t cap)
+size_t dws_utmc_parse_request(const char *xml, size_t len, char *out, size_t cap)
 {
     if (!xml || !out || cap == 0)
         return 0;
@@ -85,4 +85,4 @@ size_t detws_utmc_parse_request(const char *xml, size_t len, char *out, size_t c
     return 0;
 }
 
-#endif // DETWS_ENABLE_UTMC
+#endif // DWS_ENABLE_UTMC

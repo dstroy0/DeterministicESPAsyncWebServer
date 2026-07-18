@@ -1,6 +1,6 @@
 # 72.Umati - OPC UA for Machine Tools (umati) MachineTool model
 
-**Layer:** L7-Application · **Flags:** `DETWS_ENABLE_OPCUA` + `DETWS_ENABLE_UMATI`
+**Layer:** L7-Application · **Flags:** `DWS_ENABLE_OPCUA` + `DWS_ENABLE_UMATI`
 
 Turns the board into a **umati** machine-tool server. umati ("universal machine technology interface",
 VDW / OPC Foundation, **OPC 40501-1**) is the OPC UA companion specification for machine tools: it
@@ -42,7 +42,7 @@ example **55.OpcUa**.
 2. Build with both flags set (already in `build_opt.h` for the Arduino IDE):
     ```sh
     pio ci examples/L7-Application/72.Umati --board esp32dev --lib "." \
-      --project-option="build_flags=-DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_UMATI=1"
+      --project-option="build_flags=-DDWS_ENABLE_OPCUA=1 -DDWS_ENABLE_UMATI=1"
     ```
 3. Flash, open Serial @115200, note the IP.
 

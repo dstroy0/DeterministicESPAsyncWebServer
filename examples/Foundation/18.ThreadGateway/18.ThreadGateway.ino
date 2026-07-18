@@ -5,7 +5,7 @@
 // Thread mesh is bridged to IP and the web. This decodes the HDLC-lite frames and bridges
 // the spinel payload of each one northbound.
 //
-//   Thread RCP --UART--> spinel_frame_decode() --> spinel payload -> det_gateway_uplink()
+//   Thread RCP --UART--> spinel_frame_decode() --> spinel payload -> dws_gateway_uplink()
 //                                                                         |
 //                                                  envelope + topic  thread/0/<tid>
 //                                                                         |
@@ -15,7 +15,7 @@
 // test/test_thread. Interpreting the spinel command inside a frame (the property get/set,
 // an inbound IPv6 stream) is application work; this sketch bridges the raw spinel payload.
 //
-// Build flags (whole build): DETWS_ENABLE_THREAD=1 DETWS_ENABLE_GATEWAY=1
+// Build flags (whole build): DWS_ENABLE_THREAD=1 DWS_ENABLE_GATEWAY=1
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/gateway/gateway.h"
@@ -28,10 +28,10 @@ static const int PIN_RX = 16, PIN_TX = 17; // UART2 to the Thread RCP
 static uint8_t g_buf[1024];
 static uint16_t g_len = 0;
 
-static bool northbound_publish(const det_gateway_msg *m, void *)
+static bool northbound_publish(const dws_gateway_msg *m, void *)
 {
     char topic[48];
-    det_gateway_topic(m, topic, sizeof(topic));
+    dws_gateway_topic(m, topic, sizeof(topic));
     Serial.printf("PUBLISH %s  (%u bytes)\n", topic, m->len);
     return true;
 }
@@ -48,13 +48,13 @@ void setup()
     Serial2.begin(115200, SERIAL_8N1, PIN_RX, PIN_TX);
     delay(300);
 
-    det_gateway_reset();
-    det_gateway_port_config p = {};
+    dws_gateway_reset();
+    dws_gateway_port_config p = {};
     p.port_id = RADIO_PORT;
-    p.kind = det_gateway_kind::DET_GW_THREAD;
-    det_gateway_add_port(&p);
-    det_gateway_set_uplink_cb(northbound_publish, nullptr);
-    det_gateway_set_topic_prefix("thread");
+    p.kind = dws_gateway_kind::DWS_GW_THREAD;
+    dws_gateway_add_port(&p);
+    dws_gateway_set_uplink_cb(northbound_publish, nullptr);
+    dws_gateway_set_topic_prefix("thread");
 
     // Reset the NCP: spinel RESET command (header 0x80 | CMD_RESET 0x01).
     const uint8_t reset[2] = {0x80, 0x01};
@@ -73,7 +73,7 @@ void loop()
     {
         if (g_len == 0)
             break;
-        uint8_t payload[DETWS_THREAD_MAX_DATA];
+        uint8_t payload[DWS_THREAD_MAX_DATA];
         uint16_t plen = 0;
         int n = spinel_frame_decode(g_buf, g_len, payload, sizeof(payload), &plen);
         if (n == 0)
@@ -87,7 +87,7 @@ void loop()
         if (plen > 0)
         {
             uint16_t tid = payload[0] & 0x0F;
-            det_gateway_uplink(RADIO_PORT, tid, payload, plen, 0);
+            dws_gateway_uplink(RADIO_PORT, tid, payload, plen, 0);
         }
         drop_front((uint16_t)n);
     }

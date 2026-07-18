@@ -23,7 +23,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include <stddef.h>
 #include <stdint.h>
@@ -148,5 +148,5 @@ size_t quic_build_max_data(uint8_t *out, size_t cap, uint64_t max);
 size_t quic_build_connection_close(uint8_t *out, size_t cap, uint64_t error_code, uint64_t frame_type,
                                    const char *reason, size_t reason_len);
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_FRAME_H

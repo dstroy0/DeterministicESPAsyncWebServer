@@ -171,7 +171,7 @@ extern SshPacketState ssh_pkt[MAX_SSH_CONNS];
 // (ssh_deflate_bound of a full payload) since fixed-Huffman can slightly expand incompressible data.
 // Callers MUST size the wire buffer with this so a compressed packet never overflows and desyncs the
 // stateful cipher / compression stream (a dropped packet mid-stream would corrupt the session).
-#if DETWS_ENABLE_SSH_ZLIB
+#if DWS_ENABLE_SSH_ZLIB
 #define SSH_MAX_EFFECTIVE_PAYLOAD (2 + SSH_PKT_BUF_SIZE + (SSH_PKT_BUF_SIZE >> 3) + 32) // = ssh_deflate_bound()
 #else
 #define SSH_MAX_EFFECTIVE_PAYLOAD (SSH_PKT_BUF_SIZE)

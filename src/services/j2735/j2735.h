@@ -3,7 +3,7 @@
 
 /**
  * @file j2735.h
- * @brief SAE J2735 V2X - ASN.1 UPER primitive codec + Basic Safety Message core (DETWS_ENABLE_J2735).
+ * @brief SAE J2735 V2X - ASN.1 UPER primitive codec + Basic Safety Message core (DWS_ENABLE_J2735).
  *
  * J2735 (the Vehicle-to-Everything message dictionary: BSM, SPaT, MAP) is serialized with ASN.1 **UPER**
  * (Unaligned Packed Encoding Rules). UPER packs fields at the bit level with no padding, so the codec is
@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_J2735
+#if DWS_ENABLE_J2735
 
 /** @brief A UPER bit writer over a caller buffer (MSB-first within each octet). */
 struct UperWriter
@@ -86,10 +86,10 @@ struct J2735BsmCore
  * Encodes, in order: msgCnt [0..127], id (32 bits), secMark [0..65535], lat [-900000000..900000001],
  * long [-1799999999..1800000001], elev [-4096..61439], speed [0..8191], heading [0..28800].
  */
-size_t detws_j2735_bsm_core_encode(const J2735BsmCore *c, uint8_t *out, size_t cap);
+size_t dws_j2735_bsm_core_encode(const J2735BsmCore *c, uint8_t *out, size_t cap);
 
 /** @brief UPER-decode a BSMcore block. @return true on success. */
-bool detws_j2735_bsm_core_decode(const uint8_t *in, size_t len, J2735BsmCore *c);
+bool dws_j2735_bsm_core_decode(const uint8_t *in, size_t len, J2735BsmCore *c);
 
 /** @brief J2735 MovementPhaseState (the signal-group state in a SPaT MovementState). */
 enum class J2735PhaseState : uint8_t
@@ -122,7 +122,7 @@ struct J2735MovementState
  * Encodes count [0..31] then, per state: signalGroup [0..255], eventState [0..9], minEndTime [0..36000],
  * maxEndTime [0..36000] - the timing core a vehicle uses for a countdown.
  */
-size_t detws_j2735_spat_encode(const J2735MovementState *states, size_t count, uint8_t *out, size_t cap);
+size_t dws_j2735_spat_encode(const J2735MovementState *states, size_t count, uint8_t *out, size_t cap);
 
 /**
  * @brief UPER-decode a SPaT MovementState list.
@@ -131,8 +131,8 @@ size_t detws_j2735_spat_encode(const J2735MovementState *states, size_t count, u
  * @param out_count   set to the number decoded.
  * @return true on success (and the encoded count fit in @p max_states).
  */
-bool detws_j2735_spat_decode(const uint8_t *in, size_t len, J2735MovementState *out_states, size_t max_states,
-                             size_t *out_count);
+bool dws_j2735_spat_decode(const uint8_t *in, size_t len, J2735MovementState *out_states, size_t max_states,
+                           size_t *out_count);
 
 /** @brief One MAP lane: an id and an approach/egress flag (the minimal LaneID + directionalUse bit). */
 struct J2735Lane
@@ -157,14 +157,14 @@ struct J2735MapIntersection
  * @param count number of lanes (0..31).
  * @return octets written, or 0 on overflow.
  */
-size_t detws_j2735_map_encode(const J2735MapIntersection *isect, const J2735Lane *lanes, size_t count, uint8_t *out,
-                              size_t cap);
+size_t dws_j2735_map_encode(const J2735MapIntersection *isect, const J2735Lane *lanes, size_t count, uint8_t *out,
+                            size_t cap);
 
 /**
  * @brief UPER-decode a MAP intersection. @return true on success (and the lane count fit @p max_lanes).
  */
-bool detws_j2735_map_decode(const uint8_t *in, size_t len, J2735MapIntersection *isect, J2735Lane *out_lanes,
-                            size_t max_lanes, size_t *out_count);
+bool dws_j2735_map_decode(const uint8_t *in, size_t len, J2735MapIntersection *isect, J2735Lane *out_lanes,
+                          size_t max_lanes, size_t *out_count);
 
-#endif // DETWS_ENABLE_J2735
+#endif // DWS_ENABLE_J2735
 #endif // DETERMINISTICESPASYNCWEBSERVER_J2735_H

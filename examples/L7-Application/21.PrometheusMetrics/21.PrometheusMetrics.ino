@@ -8,7 +8,7 @@
  * Exposes the server's runtime counters as Prometheus metrics so a Prometheus
  * server can scrape the device directly - uptime, total requests, responses by
  * status class, active connections, slot capacity, and free heap. The counters
- * come from the built-in stats subsystem (DETWS_ENABLE_STATS); metrics() just
+ * come from the built-in stats subsystem (DWS_ENABLE_STATS); metrics() just
  * renders them in Prometheus format.
  *
  * Flash, open Serial @ 115200 for the IP, then:
@@ -17,12 +17,12 @@
  *
  * NOTE: optional features are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable them for the whole build, e.g.:
- *     build_flags = -DDETWS_ENABLE_STATS=1 -DDETWS_ENABLE_METRICS=1
+ *     build_flags = -DDWS_ENABLE_STATS=1 -DDWS_ENABLE_METRICS=1
  * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_STATS 1
-#define DETWS_ENABLE_METRICS 1
+#define DWS_ENABLE_STATS 1
+#define DWS_ENABLE_METRICS 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -31,7 +31,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

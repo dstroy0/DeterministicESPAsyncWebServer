@@ -3,7 +3,7 @@
 
 /**
  * @file protobuf.h
- * @brief Protocol Buffers wire codec (DETWS_ENABLE_PROTOBUF) - zero-heap streaming writer
+ * @brief Protocol Buffers wire codec (DWS_ENABLE_PROTOBUF) - zero-heap streaming writer
  *        + cursor reader over caller buffers, the same shape as the shipped CBOR /
  *        MessagePack codecs. This is the standalone Protobuf deliverable; gRPC (framed
  *        Protobuf over HTTP/2) is gated on the HTTP/2 roadmap item.
@@ -29,7 +29,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_PROTOBUF
+#if DWS_ENABLE_PROTOBUF
 
 #include <stddef.h>
 #include <stdint.h>
@@ -100,6 +100,6 @@ int32_t pb_zigzag32(uint32_t v);
 float pb_float_bits(uint32_t bits);
 double pb_double_bits(uint64_t bits);
 
-#endif // DETWS_ENABLE_PROTOBUF
+#endif // DWS_ENABLE_PROTOBUF
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_PROTOBUF_H

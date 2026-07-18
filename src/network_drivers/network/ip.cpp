@@ -3,10 +3,10 @@
 
 /**
  * @file ip.cpp
- * @brief DetIp implementation: RFC 4291 text parsing, RFC 5952 canonical formatting, scope
+ * @brief DWSIp implementation: RFC 4291 text parsing, RFC 5952 canonical formatting, scope
  *        classification. Pure, hand-rolled (no stdlib parsing), host-identical.
  *
- * The public entry points (det_ip_parse / det_ip_format / det_ip_classify) are thin: the work is
+ * The public entry points (dws_ip_parse / dws_ip_format / dws_ip_classify) are thin: the work is
  * split into small single-purpose helpers in the anonymous namespace below - one per concern
  * (parse a hextet, assemble the 16 bytes, find the zero run to compress, classify one family).
  */
@@ -296,23 +296,23 @@ bool is_v4_mapped_bytes(const uint8_t *b)
 }
 
 /** Classify the four v4 bytes at @p b. */
-DetIpScope classify_v4(const uint8_t *b)
+DWSIpScope classify_v4(const uint8_t *b)
 {
     if (b[0] == 0 && b[1] == 0 && b[2] == 0 && b[3] == 0)
-        return DetIpScope::DET_IP_SCOPE_UNSPECIFIED; // 0.0.0.0
+        return DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED; // 0.0.0.0
     if (b[0] == 127)
-        return DetIpScope::DET_IP_SCOPE_LOOPBACK; // 127/8
+        return DWSIpScope::DWS_IP_SCOPE_LOOPBACK; // 127/8
     if (b[0] == 169 && b[1] == 254)
-        return DetIpScope::DET_IP_SCOPE_LINK_LOCAL; // 169.254/16
+        return DWSIpScope::DWS_IP_SCOPE_LINK_LOCAL; // 169.254/16
     if (b[0] == 10 || (b[0] == 172 && b[1] >= 16 && b[1] <= 31) || (b[0] == 192 && b[1] == 168))
-        return DetIpScope::DET_IP_SCOPE_PRIVATE; // RFC 1918
+        return DWSIpScope::DWS_IP_SCOPE_PRIVATE; // RFC 1918
     if (b[0] >= 224 && b[0] <= 239)
-        return DetIpScope::DET_IP_SCOPE_MULTICAST; // 224/4
-    return DetIpScope::DET_IP_SCOPE_GLOBAL;
+        return DWSIpScope::DWS_IP_SCOPE_MULTICAST; // 224/4
+    return DWSIpScope::DWS_IP_SCOPE_GLOBAL;
 }
 
 /** Classify the sixteen v6 bytes at @p b (v4-mapped addresses defer to their embedded v4). */
-DetIpScope classify_v6(const uint8_t *b)
+DWSIpScope classify_v6(const uint8_t *b)
 {
     bool allzero = true;
     for (int k = 0; k < 16; k++)
@@ -322,24 +322,24 @@ DetIpScope classify_v6(const uint8_t *b)
             break;
         }
     if (allzero)
-        return DetIpScope::DET_IP_SCOPE_UNSPECIFIED; // ::
+        return DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED; // ::
 
     bool loopback = (b[15] == 1);
     for (int k = 0; k < 15 && loopback; k++)
         if (b[k])
             loopback = false;
     if (loopback)
-        return DetIpScope::DET_IP_SCOPE_LOOPBACK; // ::1
+        return DWSIpScope::DWS_IP_SCOPE_LOOPBACK; // ::1
 
     if (is_v4_mapped_bytes(b))
         return classify_v4(b + 12); // ::ffff:a.b.c.d takes the v4 scope
     if (b[0] == 0xff)
-        return DetIpScope::DET_IP_SCOPE_MULTICAST; // ff00::/8
+        return DWSIpScope::DWS_IP_SCOPE_MULTICAST; // ff00::/8
     if (b[0] == 0xfe && (b[1] & 0xc0) == 0x80)
-        return DetIpScope::DET_IP_SCOPE_LINK_LOCAL; // fe80::/10
+        return DWSIpScope::DWS_IP_SCOPE_LINK_LOCAL; // fe80::/10
     if ((b[0] & 0xfe) == 0xfc)
-        return DetIpScope::DET_IP_SCOPE_PRIVATE; // fc00::/7 (unique-local)
-    return DetIpScope::DET_IP_SCOPE_GLOBAL;
+        return DWSIpScope::DWS_IP_SCOPE_PRIVATE; // fc00::/7 (unique-local)
+    return DWSIpScope::DWS_IP_SCOPE_GLOBAL;
 }
 } // namespace
 
@@ -347,7 +347,7 @@ DetIpScope classify_v6(const uint8_t *b)
 // Public API
 // -------------------------------------------------------------------------------------------
 
-bool det_ip_parse(const char *s, DetIp *out)
+bool dws_ip_parse(const char *s, DWSIp *out)
 {
     if (!s || !out)
         return false;
@@ -372,30 +372,30 @@ bool det_ip_parse(const char *s, DetIp *out)
     {
         if (!parse_v6(s, len, out->bytes))
             return false;
-        out->family = DetIpFamily::DET_IP_V6;
+        out->family = DWSIpFamily::DWS_IP_V6;
         return true;
     }
     if (dot)
     {
         if (!parse_v4(s, len, out->bytes))
             return false;
-        out->family = DetIpFamily::DET_IP_V4;
+        out->family = DWSIpFamily::DWS_IP_V4;
         return true;
     }
     return false;
 }
 
-size_t det_ip_format(const DetIp *ip, char *out, size_t cap)
+size_t dws_ip_format(const DWSIp *ip, char *out, size_t cap)
 {
     if (!ip || !out || cap == 0)
         return 0;
-    if (ip->family == DetIpFamily::DET_IP_V4)
+    if (ip->family == DWSIpFamily::DWS_IP_V4)
         return format_v4(ip->bytes, out, cap);
-    if (ip->family != DetIpFamily::DET_IP_V6)
+    if (ip->family != DWSIpFamily::DWS_IP_V6)
         return 0;
 
     // IPv4-mapped addresses print with a dotted tail: ::ffff:a.b.c.d (RFC 5952 §5).
-    if (det_ip_is_v4_mapped(ip))
+    if (dws_ip_is_v4_mapped(ip))
     {
         char tail[16];
         size_t tn = format_v4(ip->bytes + 12, tail, sizeof(tail));
@@ -416,7 +416,7 @@ size_t det_ip_format(const DetIp *ip, char *out, size_t cap)
     longest_zero_run(g, &zs, &zl);
 
     // Emit the hextets, replacing the [zs, zs+zl) run with "::" (inet_ntop6-style colon placement).
-    char tmp[DET_IP_STR_MAX];
+    char tmp[DWS_IP_STR_MAX];
     size_t n = 0;
     for (int k = 0; k < 8; k++)
     {
@@ -440,41 +440,41 @@ size_t det_ip_format(const DetIp *ip, char *out, size_t cap)
     return n;
 }
 
-bool det_ip_is_v4_mapped(const DetIp *ip)
+bool dws_ip_is_v4_mapped(const DWSIp *ip)
 {
-    return ip && ip->family == DetIpFamily::DET_IP_V6 && is_v4_mapped_bytes(ip->bytes);
+    return ip && ip->family == DWSIpFamily::DWS_IP_V6 && is_v4_mapped_bytes(ip->bytes);
 }
 
-DetIpScope det_ip_classify(const DetIp *ip)
+DWSIpScope dws_ip_classify(const DWSIp *ip)
 {
     if (!ip)
-        return DetIpScope::DET_IP_SCOPE_UNSPECIFIED;
-    if (ip->family == DetIpFamily::DET_IP_V4)
+        return DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED;
+    if (ip->family == DWSIpFamily::DWS_IP_V4)
         return classify_v4(ip->bytes);
-    if (ip->family == DetIpFamily::DET_IP_V6)
+    if (ip->family == DWSIpFamily::DWS_IP_V6)
         return classify_v6(ip->bytes);
-    return DetIpScope::DET_IP_SCOPE_UNSPECIFIED;
+    return DWSIpScope::DWS_IP_SCOPE_UNSPECIFIED;
 }
 
-bool det_ip_equal(const DetIp *a, const DetIp *b)
+bool dws_ip_equal(const DWSIp *a, const DWSIp *b)
 {
     if (!a || !b || a->family != b->family)
         return false;
     int n = 0;
-    if (a->family == DetIpFamily::DET_IP_V4)
+    if (a->family == DWSIpFamily::DWS_IP_V4)
         n = 4;
-    else if (a->family == DetIpFamily::DET_IP_V6)
+    else if (a->family == DWSIpFamily::DWS_IP_V6)
         n = 16;
     if (n == 0)
-        return true; // both the same non-address family (DetIpFamily::DET_IP_NONE)
+        return true; // both the same non-address family (DWSIpFamily::DWS_IP_NONE)
     return memcmp(a->bytes, b->bytes, (size_t)n) == 0;
 }
 
-DetIp det_ip_from_v4_octets(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
+DWSIp dws_ip_from_v4_octets(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 {
-    DetIp ip;
+    DWSIp ip;
     memset(&ip, 0, sizeof(ip));
-    ip.family = DetIpFamily::DET_IP_V4;
+    ip.family = DWSIpFamily::DWS_IP_V4;
     ip.bytes[0] = a;
     ip.bytes[1] = b;
     ip.bytes[2] = c;
@@ -482,42 +482,42 @@ DetIp det_ip_from_v4_octets(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
     return ip;
 }
 
-DetIp det_ip_from_v6_bytes(const uint8_t bytes[16])
+DWSIp dws_ip_from_v6_bytes(const uint8_t bytes[16])
 {
-    DetIp ip;
-    ip.family = DetIpFamily::DET_IP_V6;
+    DWSIp ip;
+    ip.family = DWSIpFamily::DWS_IP_V6;
     memcpy(ip.bytes, bytes, 16);
     return ip;
 }
 
-uint32_t det_ip_to_v4_be(const DetIp *ip)
+uint32_t dws_ip_to_v4_be(const DWSIp *ip)
 {
     if (!ip)
         return 0;
     const uint8_t *b = ip->bytes;
-    if (ip->family == DetIpFamily::DET_IP_V4)
+    if (ip->family == DWSIpFamily::DWS_IP_V4)
         return ((uint32_t)b[0] << 24) | ((uint32_t)b[1] << 16) | ((uint32_t)b[2] << 8) | b[3];
-    if (det_ip_is_v4_mapped(ip))
+    if (dws_ip_is_v4_mapped(ip))
         return ((uint32_t)b[12] << 24) | ((uint32_t)b[13] << 16) | ((uint32_t)b[14] << 8) | b[15];
     return 0;
 }
 
-bool det_ip_is_unspecified(const DetIp *ip)
+bool dws_ip_is_unspecified(const DWSIp *ip)
 {
-    if (!ip || ip->family == DetIpFamily::DET_IP_NONE)
+    if (!ip || ip->family == DWSIpFamily::DWS_IP_NONE)
         return true;
-    int n = (ip->family == DetIpFamily::DET_IP_V4) ? 4 : 16;
+    int n = (ip->family == DWSIpFamily::DWS_IP_V4) ? 4 : 16;
     for (int i = 0; i < n; i++)
         if (ip->bytes[i])
             return false;
     return true;
 }
 
-bool det_ip_prefix_match(const DetIp *addr, const DetIp *net, uint8_t prefix_len)
+bool dws_ip_prefix_match(const DWSIp *addr, const DWSIp *net, uint8_t prefix_len)
 {
     if (!addr || !net || addr->family != net->family)
         return false;
-    int bits = (addr->family == DetIpFamily::DET_IP_V4) ? 32 : (addr->family == DetIpFamily::DET_IP_V6 ? 128 : 0);
+    int bits = (addr->family == DWSIpFamily::DWS_IP_V4) ? 32 : (addr->family == DWSIpFamily::DWS_IP_V6 ? 128 : 0);
     if (bits == 0 || prefix_len > bits)
         return false;
     int whole = prefix_len / 8; // bytes that must match exactly

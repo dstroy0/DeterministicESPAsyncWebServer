@@ -3,7 +3,7 @@
 
 /**
  * @file 59.StatsdMetrics.ino
- * @brief Push metrics to a StatsD collector (DETWS_ENABLE_STATSD).
+ * @brief Push metrics to a StatsD collector (DWS_ENABLE_STATSD).
  *
  * StatsD is the standard "push" metrics protocol - one UDP line per metric,
  * `name:value|type` - understood by Graphite/StatsD, Telegraf, Datadog, and friends. It is
@@ -16,10 +16,10 @@
  * quickly, run Telegraf with a `[[inputs.statsd]]` section, or the reference StatsD +
  * Graphite, or `nc -u -l 8125` to just watch the raw lines arrive.
  *
- * Build flags (PlatformIO): `-DDETWS_ENABLE_STATSD=1`
+ * Build flags (PlatformIO): `-DDWS_ENABLE_STATSD=1`
  */
 
-#define DETWS_ENABLE_STATSD 1
+#define DWS_ENABLE_STATSD 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"

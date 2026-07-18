@@ -3,7 +3,7 @@
 
 /**
  * @file 74.PidTuning.ino
- * @brief PID control loop + the offline-tuning workflow (DETWS_ENABLE_CONTROL).
+ * @brief PID control loop + the offline-tuning workflow (DWS_ENABLE_CONTROL).
  *
  * Shows the whole services/control tuning loop end to end:
  *   1. run a PID (`pid_update`) at a fixed rate against a plant,
@@ -21,10 +21,10 @@
  *   curl http://<ip>/log.csv > run.csv
  *   python tools/pid_tune.py run.csv --autotune --png tune.png
  *
- * Build flag (platformio.ini):  build_flags = -DDETWS_ENABLE_CONTROL=1
+ * Build flag (platformio.ini):  build_flags = -DDWS_ENABLE_CONTROL=1
  */
 
-#define DETWS_ENABLE_CONTROL 1
+#define DWS_ENABLE_CONTROL 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -42,7 +42,7 @@ static const float OUT_MIN = 0.0f;
 static const float OUT_MAX = 50.0f;
 static const uint32_t PERIOD_MS = 20; // 50 Hz control rate
 
-DetWebServer server;
+DWS server;
 static Pid pid;
 
 // Recorded run (BSS): the first LOG_N control steps after boot / GET /reset.

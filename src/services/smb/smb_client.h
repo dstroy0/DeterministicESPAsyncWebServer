@@ -3,7 +3,7 @@
 
 /**
  * @file smb_client.h
- * @brief SMB2 client dialogue engine (DETWS_ENABLE_SMB) - drives the smb2 / ntlm / spnego wire
+ * @brief SMB2 client dialogue engine (DWS_ENABLE_SMB) - drives the smb2 / ntlm / spnego wire
  *        codecs through a real session to open a file on a Windows share.
  *
  * The wire codecs (smb2.h, ntlm.h, ntlmssp.h, spnego.h) are pure builders/parsers; this ties them
@@ -24,7 +24,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_SMB
+#if DWS_ENABLE_SMB
 
 #include <stddef.h>
 #include <stdint.h>
@@ -37,12 +37,12 @@ enum class SmbResult : int32_t
     SMB_ERR_IO = -2,       ///< a send/recv failed, timed out, or the peer closed mid-message
     SMB_ERR_PROTOCOL = -3, ///< a malformed response, or an unexpected NT status
     SMB_ERR_AUTH = -4,     ///< SESSION_SETUP was rejected (bad user/password/domain)
-    SMB_ERR_OVERFLOW = -5, ///< a message did not fit the work buffer (DETWS_SMB_BUF)
+    SMB_ERR_OVERFLOW = -5, ///< a message did not fit the work buffer (DWS_SMB_BUF)
 };
 
 /**
  * @brief Transport seam: the engine moves raw bytes only through these, so it runs against a real
- *        socket (det_client) or a test mock.
+ *        socket (dws_client) or a test mock.
  * @return send: bytes written (must equal @p len), else < 0. recv: bytes read (> 0), else <= 0 on
  *         close / error / timeout.
  */
@@ -88,7 +88,7 @@ SmbResult smb_close(SmbHandle *h, SmbSendFn send, SmbRecvFn recv, void *ctx);
  * @brief Read up to @p cap bytes from @p offset of the open handle, looping READ requests until the
  *        buffer is full or the server signals end of file.
  * @param out_len receives the number of bytes actually read (may be < @p cap at EOF).
- * @return SmbResult::SMB_OK, or an ::SmbResult error. Reads at most DETWS_SMB_BUF-sized chunks per round trip.
+ * @return SmbResult::SMB_OK, or an ::SmbResult error. Reads at most DWS_SMB_BUF-sized chunks per round trip.
  */
 SmbResult smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size_t *out_len, SmbSendFn send,
                    SmbRecvFn recv, void *ctx);
@@ -102,6 +102,6 @@ SmbResult smb_read(SmbHandle *h, uint64_t offset, uint8_t *out, size_t cap, size
 SmbResult smb_write(SmbHandle *h, uint64_t offset, const uint8_t *data, size_t len, size_t *written, SmbSendFn send,
                     SmbRecvFn recv, void *ctx);
 
-#endif // DETWS_ENABLE_SMB
+#endif // DWS_ENABLE_SMB
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SMB_CLIENT_H

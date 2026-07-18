@@ -3,7 +3,7 @@
 
 /**
  * @file gnss_survey.h
- * @brief GNSS survey-in: WGS84 geodetic <-> ECEF + fixed-position averaging (DETWS_ENABLE_NTRIP_CASTER).
+ * @brief GNSS survey-in: WGS84 geodetic <-> ECEF + fixed-position averaging (DWS_ENABLE_NTRIP_CASTER).
  *
  * An RTK / DGPS base must advertise its own antenna position precisely. A stationary receiver's
  * single-epoch fixes scatter by meters, so the base "surveys in": it averages many fixes into one mean
@@ -16,7 +16,7 @@
  *  - an incremental survey accumulator that keeps a running mean ECEF and a 3-D spread (standard
  *    deviation) using a shifted-origin sum / sum-of-squares, so it is numerically stable at the
  *    ~6.4e6 m magnitude of ECEF coordinates and needs no history buffer;
- *  - a helper to fold a GGA fix straight into the survey (built only when DETWS_ENABLE_NMEA0183 is on).
+ *  - a helper to fold a GGA fix straight into the survey (built only when DWS_ENABLE_NMEA0183 is on).
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -27,7 +27,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_NTRIP_CASTER
+#if DWS_ENABLE_NTRIP_CASTER
 
 #include <stddef.h>
 #include <stdint.h>
@@ -106,7 +106,7 @@ double gnss_survey_accuracy_m(const GnssSurvey *s);
  */
 bool gnss_survey_complete(const GnssSurvey *s, uint32_t min_obs, double acc_limit_m);
 
-#if DETWS_ENABLE_NMEA0183
+#if DWS_ENABLE_NMEA0183
 struct Nmea0183;
 
 /**
@@ -120,6 +120,6 @@ bool gnss_gga_to_geodetic(const Nmea0183 *m, GnssGeodetic *out);
 bool gnss_survey_add_gga(GnssSurvey *s, const Nmea0183 *m);
 #endif
 
-#endif // DETWS_ENABLE_NTRIP_CASTER
+#endif // DWS_ENABLE_NTRIP_CASTER
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_GNSS_SURVEY_H

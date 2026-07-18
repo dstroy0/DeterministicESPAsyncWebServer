@@ -3,7 +3,7 @@
 
 /**
  * @file snmp_ber.h
- * @brief Zero-heap ASN.1 BER encoder/decoder for the SNMP agent (DETWS_ENABLE_SNMP).
+ * @brief Zero-heap ASN.1 BER encoder/decoder for the SNMP agent (DWS_ENABLE_SNMP).
  *
  * A minimal, bounded TLV codec covering exactly the types SNMP uses: INTEGER,
  * OCTET STRING, NULL, OBJECT IDENTIFIER, SEQUENCE, and the SNMP application
@@ -20,7 +20,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SNMP
+#if DWS_ENABLE_SNMP
 
 // ASN.1 / SNMP tags
 enum class SnmpTag : uint8_t
@@ -99,6 +99,6 @@ bool ber_read_oid(BerDec *d, uint32_t *arcs, size_t max, size_t *n);
 /** @brief Advance the cursor past @p length value bytes. */
 bool ber_skip(BerDec *d, size_t length);
 
-#endif // DETWS_ENABLE_SNMP
+#endif // DWS_ENABLE_SNMP
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SNMP_BER_H

@@ -46,13 +46,13 @@ static void minimal_qc(QuicConn *qc)
     memset(qc, 0, sizeof(*qc));
     for (int i = 0; i < 3; i++)
         qc->space[i].largest_acked = -1;
-    for (size_t i = 0; i < DETWS_QUIC_MAX_STREAMS; i++)
+    for (size_t i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
         qc->streams[i].id = UINT64_MAX;
 }
 
 static QuicStream *find_stream(QuicConn *qc, uint64_t id)
 {
-    for (size_t i = 0; i < DETWS_QUIC_MAX_STREAMS; i++)
+    for (size_t i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
         if (qc->streams[i].id == id)
             return &qc->streams[i];
     return nullptr;
@@ -61,7 +61,7 @@ static QuicStream *find_stream(QuicConn *qc, uint64_t id)
 // Find an HTTP/3 stream (with its classified role) by id.
 static H3Stream *find_h3(H3Conn *h3, uint64_t id)
 {
-    for (size_t i = 0; i < DETWS_H3_MAX_STREAMS; i++)
+    for (size_t i = 0; i < DWS_H3_MAX_STREAMS; i++)
         if (h3->streams[i].role != H3StreamRole::H3_ROLE_FREE && h3->streams[i].id == id)
             return &h3->streams[i];
     return nullptr;
@@ -279,7 +279,7 @@ void test_respond_body_too_large()
     minimal_qc(&qc);
     H3Conn h3;
     h3_conn_init(&h3, &qc, on_request, nullptr);
-    static uint8_t big[DETWS_H3_STREAM_BUF + 200];
+    static uint8_t big[DWS_H3_STREAM_BUF + 200];
     memset(big, 'x', sizeof(big));
     TEST_ASSERT_FALSE(h3_conn_respond(&h3, 0, 200, "text/plain", big, sizeof(big)));
 }
@@ -294,7 +294,7 @@ void test_stream_pool_full()
     h3_conn_init(&h3, &qc, on_request, nullptr);
 
     uint8_t b = 0x00;
-    for (uint64_t i = 0; i < DETWS_H3_MAX_STREAMS; i++)
+    for (uint64_t i = 0; i < DWS_H3_MAX_STREAMS; i++)
         qc.cb.on_stream_data(qc.cb.app, &qc, i * 4, &b, 1, false); // partial request streams, no FIN
 
     // One more distinct request stream cannot allocate a slot -> silently ignored.
@@ -304,7 +304,7 @@ void test_stream_pool_full()
     bp += qpack_encode_header(block + bp, sizeof(block) - bp, ":path", 5, "/x", 2);
     uint8_t req[128];
     size_t rp = h3_build_headers(req, sizeof(req), block, bp);
-    qc.cb.on_stream_data(qc.cb.app, &qc, (uint64_t)DETWS_H3_MAX_STREAMS * 4, req, rp, true);
+    qc.cb.on_stream_data(qc.cb.app, &qc, (uint64_t)DWS_H3_MAX_STREAMS * 4, req, rp, true);
     TEST_ASSERT_EQUAL_INT(0, g_requests);
 }
 
@@ -337,7 +337,7 @@ void test_overlong_field_truncated()
 
     uint8_t block[128];
     size_t bp = qpack_encode_prefix(block, sizeof(block));
-    const char *m = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // 26 chars > DETWS_H3_METHOD_LEN (16)
+    const char *m = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // 26 chars > DWS_H3_METHOD_LEN (16)
     bp += qpack_encode_header(block + bp, sizeof(block) - bp, ":method", 7, m, 26);
     bp += qpack_encode_header(block + bp, sizeof(block) - bp, ":path", 5, "/", 1);
     uint8_t req[256];
@@ -345,7 +345,7 @@ void test_overlong_field_truncated()
     qc.cb.on_stream_data(qc.cb.app, &qc, 0, req, rp, true);
 
     TEST_ASSERT_EQUAL_INT(1, g_requests);
-    TEST_ASSERT_EQUAL_UINT(DETWS_H3_METHOD_LEN - 1, strlen(g_method)); // truncated to fit
+    TEST_ASSERT_EQUAL_UINT(DWS_H3_METHOD_LEN - 1, strlen(g_method)); // truncated to fit
 }
 
 int main(int, char **)

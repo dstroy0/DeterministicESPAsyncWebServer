@@ -3,7 +3,7 @@
 
 /**
  * @file 69.EthernetDnc.ino
- * @brief Drip-feed a G-code program to a CNC controller over TCP (DETWS_ENABLE_DNC).
+ * @brief Drip-feed a G-code program to a CNC controller over TCP (DWS_ENABLE_DNC).
  *
  * "DNC" (Distributed Numerical Control) is how a program is streamed to a machine-tool
  * controller a block at a time, with XON/XOFF flow control so the sender pauses when the
@@ -13,16 +13,16 @@
  *
  * At boot the board joins WiFi, connects to the controller's program port, and drip-feeds a
  * short program with `dnc_stream`. The engine is transport-agnostic: this sketch supplies the
- * one piece of glue it needs - `cl_send` / `cl_recv` over `det_client`, the shared outbound TCP
+ * one piece of glue it needs - `cl_send` / `cl_recv` over `dws_client`, the shared outbound TCP
  * transport. `cl_recv` returns any reverse-channel bytes so the engine can honor XOFF/XON.
  *
  * Edit the lines marked "CHANGE ME" below, flash, and open Serial @ 115200.
  *
  * NOTE (PlatformIO): DNC is compiled into the *library*, so the flag must reach the whole build:
- * `build_flags = -DDETWS_ENABLE_DNC=1`. In the Arduino IDE it is set for you in build_opt.h.
+ * `build_flags = -DDWS_ENABLE_DNC=1`. In the Arduino IDE it is set for you in build_opt.h.
  */
 
-#define DETWS_ENABLE_DNC 1
+#define DWS_ENABLE_DNC 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -47,7 +47,7 @@ static const char *PROGRAM = "O0001 (DEMO)\n"
                              "N30 G1 X10 Y5 F100\n"
                              "N40 M30\n";
 
-// dnc_stream's transport seam, bound to det_client.
+// dnc_stream's transport seam, bound to dws_client.
 static int cl_send(void *ctx, const uint8_t *data, size_t len)
 {
     int cid = *(int *)ctx;
@@ -57,7 +57,7 @@ static int cl_send(void *ctx, const uint8_t *data, size_t len)
         size_t chunk = len - sent;
         if (chunk > 0xFFFF)
             chunk = 0xFFFF;
-        if (!det_client_send(cid, data + sent, chunk))
+        if (!dws_client_send(cid, data + sent, chunk))
             return -1;
         sent += chunk;
     }
@@ -69,10 +69,10 @@ static int cl_send(void *ctx, const uint8_t *data, size_t len)
 static int cl_recv(void *ctx, uint8_t *buf, size_t cap)
 {
     int cid = *(int *)ctx;
-    size_t n = det_client_read(cid, buf, cap);
+    size_t n = dws_client_read(cid, buf, cap);
     if (n > 0)
         return (int)n;
-    if (det_client_is_closed(cid))
+    if (dws_client_is_closed(cid))
         return -1;
     delay(1);
     return 0;
@@ -80,7 +80,7 @@ static int cl_recv(void *ctx, uint8_t *buf, size_t cap)
 
 void send_program()
 {
-    int cid = det_client_open(CNC_HOST, CNC_PORT, 8000);
+    int cid = dws_client_open(CNC_HOST, CNC_PORT, 8000);
     if (cid < 0)
     {
         Serial.println("connect failed - is the controller's program port reachable?");
@@ -99,7 +99,7 @@ void send_program()
     else
         Serial.printf("drip-feed failed (DncStreamResult %d) - see the README troubleshooting table\n", (int)rc);
 
-    det_client_close(cid);
+    dws_client_close(cid);
 }
 
 void setup()

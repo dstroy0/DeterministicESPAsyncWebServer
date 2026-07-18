@@ -1,6 +1,6 @@
 # 10.FileServing - serve a static site from LittleFS
 
-**Layer:** L7 Application · **Build flags:** none (`DETWS_ENABLE_FILE_SERVING` is on by default)
+**Layer:** L7 Application · **Build flags:** none (`DWS_ENABLE_FILE_SERVING` is on by default)
 
 ## What this example teaches
 
@@ -52,7 +52,7 @@ verbatim with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

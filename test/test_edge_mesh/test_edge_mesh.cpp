@@ -55,7 +55,7 @@ static void test_request_roundtrip()
     uint8_t digest[32];
     for (int i = 0; i < 32; i++)
         digest[i] = (uint8_t)(i * 7 + 1);
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/app.js?v=2");
     const char *vary = "Accept-Encoding\x1egzip\x1f";
 
@@ -64,8 +64,8 @@ static void test_request_roundtrip()
     TEST_ASSERT_TRUE(n > 0);
 
     uint8_t d2[32];
-    char c2[DETWS_EDGE_KEY_MAX];
-    char v2[DETWS_MESH_HDRS_MAX];
+    char c2[DWS_EDGE_KEY_MAX];
+    char v2[DWS_MESH_HDRS_MAX];
     TEST_ASSERT_EQUAL(EdgeMeshParse::HIT, edge_mesh_parse_request(req, n, d2, c2, sizeof(c2), v2, sizeof(v2)));
     TEST_ASSERT_EQUAL_MEMORY(digest, d2, 32);
     TEST_ASSERT_EQUAL_STRING(canon, c2);
@@ -76,15 +76,15 @@ static void test_request_incomplete_then_complete()
 {
     uint8_t digest[32];
     memset(digest, 0xAB, 32);
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/x");
     uint8_t req[EDGE_MESH_REQ_MAX];
     size_t n = edge_mesh_build_request(digest, canon, "Accept\x1e*\x1f", req, sizeof(req));
     TEST_ASSERT_TRUE(n > 3);
 
     uint8_t d2[32];
-    char c2[DETWS_EDGE_KEY_MAX];
-    char v2[DETWS_MESH_HDRS_MAX];
+    char c2[DWS_EDGE_KEY_MAX];
+    char v2[DWS_MESH_HDRS_MAX];
     // A valid prefix (short of the full frame) accumulates rather than erroring.
     TEST_ASSERT_EQUAL(EdgeMeshParse::INCOMPLETE, edge_mesh_parse_request(req, 2, d2, c2, sizeof(c2), v2, sizeof(v2)));
     TEST_ASSERT_EQUAL(EdgeMeshParse::INCOMPLETE,
@@ -96,14 +96,14 @@ static void test_request_malformed()
 {
     uint8_t digest[32];
     memset(digest, 1, 32);
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/y");
     uint8_t req[EDGE_MESH_REQ_MAX];
     size_t n = edge_mesh_build_request(digest, canon, "", req, sizeof(req));
 
     uint8_t d2[32];
-    char c2[DETWS_EDGE_KEY_MAX];
-    char v2[DETWS_MESH_HDRS_MAX];
+    char c2[DWS_EDGE_KEY_MAX];
+    char v2[DWS_MESH_HDRS_MAX];
     uint8_t bad = req[0];
     req[0] = 'X'; // wrong magic
     TEST_ASSERT_EQUAL(EdgeMeshParse::MALFORMED, edge_mesh_parse_request(req, n, d2, c2, sizeof(c2), v2, sizeof(v2)));
@@ -119,7 +119,7 @@ static void test_request_malformed()
 static void test_entry_frame_roundtrip()
 {
     static const uint8_t body[] = {0x00, 0xFF, 0x10, 'a', 0x00, 'z', 0x7F, 0x80}; // binary-safe
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/img.png");
     EdgeEntry in;
     fill_entry(&in, canon, "\"etag-v1\"", body, sizeof(body));
@@ -165,7 +165,7 @@ static void test_entry_frame_roundtrip()
 static void test_age_propagation()
 {
     static const uint8_t body[] = {'h', 'i'};
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/z");
     EdgeEntry peer;
     fill_entry(&peer, canon, "\"v1\"", body, sizeof(body));
@@ -197,7 +197,7 @@ static void test_age_propagation()
 static void build_hit_frame(uint8_t *frame, size_t cap, size_t *fn_out, long current_age)
 {
     static const uint8_t body[] = {'p', 'a', 'y', 'l', 'o', 'a', 'd'};
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/r");
     EdgeEntry e;
     fill_entry(&e, canon, "\"rv\"", body, sizeof(body));
@@ -370,7 +370,7 @@ static void test_requester_timeout()
     EdgeMeshFetch mf;
     edge_mesh_fetch_begin(&mf, &t, "peer", 7645, (const uint8_t *)"x", 1, g_rbuf, sizeof(g_rbuf), 1000);
     TEST_ASSERT_EQUAL(EdgeMeshStatus::PENDING, edge_mesh_fetch_pump(&mf, &t, 1000));
-    TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, edge_mesh_fetch_pump(&mf, &t, 1000 + DETWS_MESH_QUERY_MS + 1));
+    TEST_ASSERT_EQUAL(EdgeMeshStatus::FAILED, edge_mesh_fetch_pump(&mf, &t, 1000 + DWS_MESH_QUERY_MS + 1));
 }
 
 static void test_requester_peer_closed_early()

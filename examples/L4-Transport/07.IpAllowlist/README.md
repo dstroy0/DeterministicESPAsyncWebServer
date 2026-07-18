@@ -1,6 +1,6 @@
 # 07.IpAllowlist - a source-IP accept-time firewall
 
-**Layer:** L4 Transport · **Build flags:** `DETWS_ENABLE_IP_ALLOWLIST`
+**Layer:** L4 Transport · **Build flags:** `DWS_ENABLE_IP_ALLOWLIST`
 
 ## What this example teaches
 
@@ -39,7 +39,7 @@ The `listener.h` include is what brings in `listener_ip_allow_add_cidr`.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_IP_ALLOWLIST=1" \
+  --project-option="build_flags=-DDWS_ENABLE_IP_ALLOWLIST=1" \
   --lib="." examples/L4-Transport/07.IpAllowlist/07.IpAllowlist.ino
 ```
 
@@ -55,7 +55,7 @@ verbatim with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_IP_ALLOWLIST 1
+#define DWS_ENABLE_IP_ALLOWLIST 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -65,7 +65,7 @@ verbatim with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

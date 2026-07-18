@@ -1,6 +1,6 @@
 # 24.MqttClient - the device publishes/subscribes to an MQTT broker
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_MQTT` (optional `DETWS_ENABLE_TLS` + `DETWS_ENABLE_MQTT_TLS` for `mqtts://`)
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_MQTT` (optional `DWS_ENABLE_TLS` + `DWS_ENABLE_MQTT_TLS` for `mqtts://`)
 
 ## What this example teaches
 
@@ -8,43 +8,43 @@ A full MQTT 3.1.1 client: the device connects to a broker, SUBSCRIBEs to a topic
 and PUBLISHEs to the same topic once a second at QoS 1 - so it receives its own
 messages back through the `on_message` callback, a self-contained round trip you
 can watch on Serial. QoS 0/1/2, keep-alive, and DUP retransmit are handled by
-`det_mqtt_loop()`.
+`dws_mqtt_loop()`.
 
 **Register the receive callback, then connect with options:**
 
 ```cpp
-det_mqtt_set_message_cb(on_message);
+dws_mqtt_set_message_cb(on_message);
 
 MqttConnectOpts opts;
 memset(&opts, 0, sizeof(opts));
 opts.client_id = "detws-esp32-demo";
 opts.keepalive_s = 30;
 opts.clean_session = true;
-if (det_mqtt_connect(BROKER, PORT, false, &opts)) // 3rd arg: use TLS?
-    det_mqtt_subscribe(TOPIC, 1);                  // QoS 1
+if (dws_mqtt_connect(BROKER, PORT, false, &opts)) // 3rd arg: use TLS?
+    dws_mqtt_subscribe(TOPIC, 1);                  // QoS 1
 ```
 
-**Pump the protocol every loop.** `det_mqtt_loop()` drives the state machine
+**Pump the protocol every loop.** `dws_mqtt_loop()` drives the state machine
 (keep-alive PINGs, QoS handshakes, retransmits); skipping it stalls the session:
 
 ```cpp
 void loop() {
-    det_mqtt_loop();
-    if (det_mqtt_connected() && /* once a second */) {
-        det_mqtt_publish(TOPIC, (const uint8_t *)msg, len, 1, false); // QoS 1, not retained
+    dws_mqtt_loop();
+    if (dws_mqtt_connected() && /* once a second */) {
+        dws_mqtt_publish(TOPIC, (const uint8_t *)msg, len, 1, false); // QoS 1, not retained
     }
 }
 ```
 
 `BROKER`/`TOPIC` default to a public test broker; point them at your own broker
 for real telemetry or command. For `mqtts://`, pass `true` as the third argument
-to `det_mqtt_connect()` and build with the TLS flags.
+to `dws_mqtt_connect()` and build with the TLS flags.
 
 ## Build and run
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_MQTT=1" \
+  --project-option="build_flags=-DDWS_ENABLE_MQTT=1" \
   --lib="." examples/L7-Application/24.MqttClient/24.MqttClient.ino
 ```
 
@@ -62,7 +62,7 @@ with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_MQTT 1
+#define DWS_ENABLE_MQTT 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -97,7 +97,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    det_mqtt_set_message_cb(on_message);
+    dws_mqtt_set_message_cb(on_message);
 
     MqttConnectOpts opts;
     memset(&opts, 0, sizeof(opts));
@@ -105,10 +105,10 @@ void setup()
     opts.keepalive_s = 30;
     opts.clean_session = true;
 
-    if (det_mqtt_connect(BROKER, PORT, false, &opts)) // false = plaintext (true for mqtts://)
+    if (dws_mqtt_connect(BROKER, PORT, false, &opts)) // false = plaintext (true for mqtts://)
     {
         Serial.println("MQTT connected");
-        det_mqtt_subscribe(TOPIC, 1); // QoS 1
+        dws_mqtt_subscribe(TOPIC, 1); // QoS 1
     }
     else
     {
@@ -118,16 +118,16 @@ void setup()
 
 void loop()
 {
-    det_mqtt_loop(); // drive keep-alive, QoS handshakes, retransmits
+    dws_mqtt_loop(); // drive keep-alive, QoS handshakes, retransmits
 
     static uint32_t last = 0;
     static uint32_t n = 0;
-    if (det_mqtt_connected() && millis() - last >= 1000)
+    if (dws_mqtt_connected() && millis() - last >= 1000)
     {
         last = millis();
         char msg[48];
         int len = snprintf(msg, sizeof(msg), "hello from esp32 #%lu", (unsigned long)n++);
-        det_mqtt_publish(TOPIC, (const uint8_t *)msg, (size_t)len, 1, false); // QoS 1, not retained
+        dws_mqtt_publish(TOPIC, (const uint8_t *)msg, (size_t)len, 1, false); // QoS 1, not retained
     }
 }
 ```

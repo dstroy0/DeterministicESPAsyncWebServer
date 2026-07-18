@@ -8,12 +8,12 @@
 
 #include "services/rawl2/rawl2.h"
 
-#if DETWS_ENABLE_RAWL2
+#if DWS_ENABLE_RAWL2
 
 #include <string.h>
 
-size_t detws_eth_build(const uint8_t *dst, const uint8_t *src, uint16_t ethertype, const uint8_t *payload,
-                       size_t payload_len, uint8_t *out, size_t cap)
+size_t dws_eth_build(const uint8_t *dst, const uint8_t *src, uint16_t ethertype, const uint8_t *payload,
+                     size_t payload_len, uint8_t *out, size_t cap)
 {
     if (!dst || !src || !out || (payload_len && !payload))
         return 0;
@@ -29,8 +29,8 @@ size_t detws_eth_build(const uint8_t *dst, const uint8_t *src, uint16_t ethertyp
     return n;
 }
 
-size_t detws_eth_build_vlan(const uint8_t *dst, const uint8_t *src, uint8_t pcp, bool dei, uint16_t vid,
-                            uint16_t ethertype, const uint8_t *payload, size_t payload_len, uint8_t *out, size_t cap)
+size_t dws_eth_build_vlan(const uint8_t *dst, const uint8_t *src, uint8_t pcp, bool dei, uint16_t vid,
+                          uint16_t ethertype, const uint8_t *payload, size_t payload_len, uint8_t *out, size_t cap)
 {
     if (!dst || !src || !out || (payload_len && !payload))
         return 0;
@@ -51,7 +51,7 @@ size_t detws_eth_build_vlan(const uint8_t *dst, const uint8_t *src, uint8_t pcp,
     return n;
 }
 
-bool detws_eth_parse(const uint8_t *frame, size_t len, EthFrame *out)
+bool dws_eth_parse(const uint8_t *frame, size_t len, EthFrame *out)
 {
     if (!frame || !out || len < RawL2::ETH_HDR_LEN)
         return false;
@@ -82,7 +82,7 @@ bool detws_eth_parse(const uint8_t *frame, size_t len, EthFrame *out)
     return true;
 }
 
-uint32_t detws_eth_fcs(const uint8_t *bytes, size_t len)
+uint32_t dws_eth_fcs(const uint8_t *bytes, size_t len)
 {
     // CRC-32/ISO-HDLC (the Ethernet FCS): reflected poly 0xEDB88320, init/xorout 0xFFFFFFFF.
     uint32_t crc = 0xFFFFFFFFu;
@@ -95,4 +95,4 @@ uint32_t detws_eth_fcs(const uint8_t *bytes, size_t len)
     return ~crc;
 }
 
-#endif // DETWS_ENABLE_RAWL2
+#endif // DWS_ENABLE_RAWL2

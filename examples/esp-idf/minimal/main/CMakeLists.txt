@@ -4,11 +4,11 @@
 # The library component's name is the repo-root directory name (whatever the repo was checked out
 # as). Derive it the same way the project CMakeLists derived the path, so REQUIRES matches
 # regardless of the checkout folder name/case (main is four levels below the repo root).
-get_filename_component(DETWS_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../../.." ABSOLUTE)
-get_filename_component(DETWS_NAME "${DETWS_ROOT}" NAME)
+get_filename_component(DWS_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../../.." ABSOLUTE)
+get_filename_component(DWS_NAME "${DWS_ROOT}" NAME)
 
 idf_component_register(
     SRCS "main.cpp"
     INCLUDE_DIRS "."
-    REQUIRES arduino-esp32 "${DETWS_NAME}"
+    REQUIRES arduino-esp32 "${DWS_NAME}"
 )

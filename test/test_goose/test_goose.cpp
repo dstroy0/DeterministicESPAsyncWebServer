@@ -48,7 +48,7 @@ void test_pdu_structure(void)
 {
     DetwsGoose g = base();
     uint8_t out[128];
-    size_t n = detws_goose_pdu(&g, out, sizeof(out));
+    size_t n = dws_goose_pdu(&g, out, sizeof(out));
     // Content is 42 octets (see goose.cpp field sizes); PDU = 61 2A <42> = 44.
     TEST_ASSERT_EQUAL_size_t(44, n);
     TEST_ASSERT_EQUAL_HEX8(0x61, out[0]);
@@ -71,12 +71,12 @@ void test_integer_leading_zero(void)
     DetwsGoose g = base();
     g.st_num = 200; // 0xC8, MSB set -> BER positive INTEGER needs a leading 0x00: 85 02 00 C8.
     uint8_t out[128];
-    size_t n = detws_goose_pdu(&g, out, sizeof(out));
+    size_t n = dws_goose_pdu(&g, out, sizeof(out));
     const uint8_t st[] = {0x85, 0x02, 0x00, 0xC8};
     TEST_ASSERT_TRUE(find(out, n, st, 4) >= 0);
     // A value < 0x80 stays one octet.
     g.st_num = 0x7F;
-    n = detws_goose_pdu(&g, out, sizeof(out));
+    n = dws_goose_pdu(&g, out, sizeof(out));
     const uint8_t st2[] = {0x85, 0x01, 0x7F};
     TEST_ASSERT_TRUE(find(out, n, st2, 3) >= 0);
 }
@@ -87,7 +87,7 @@ void test_frame(void)
     uint8_t dst[6] = {0x01, 0x0C, 0xCD, 0x01, 0x00, 0x01};
     uint8_t src[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
     uint8_t out[128];
-    size_t n = detws_goose_frame(dst, src, 0x1234, &g, out, sizeof(out));
+    size_t n = dws_goose_frame(dst, src, 0x1234, &g, out, sizeof(out));
     TEST_ASSERT_TRUE(n > 22);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(dst, out, 6);
     TEST_ASSERT_EQUAL_HEX8_ARRAY(src, out + 6, 6);
@@ -107,17 +107,17 @@ void test_goose_error_and_longform(void)
     DetwsGoose g = base();
     uint8_t out[512];
 
-    TEST_ASSERT_EQUAL_size_t(0, detws_goose_pdu(nullptr, out, sizeof(out))); // null g
-    TEST_ASSERT_EQUAL_size_t(0, detws_goose_pdu(&g, nullptr, sizeof(out)));  // null out
-    TEST_ASSERT_EQUAL_size_t(0, detws_goose_pdu(&g, out, 3));                // cap < reserved header
-    TEST_ASSERT_EQUAL_size_t(0, detws_goose_pdu(&g, out, 10)); // fits the header but overflows on a field -> !ok
+    TEST_ASSERT_EQUAL_size_t(0, dws_goose_pdu(nullptr, out, sizeof(out))); // null g
+    TEST_ASSERT_EQUAL_size_t(0, dws_goose_pdu(&g, nullptr, sizeof(out)));  // null out
+    TEST_ASSERT_EQUAL_size_t(0, dws_goose_pdu(&g, out, 3));                // cap < reserved header
+    TEST_ASSERT_EQUAL_size_t(0, dws_goose_pdu(&g, out, 10)); // fits the header but overflows on a field -> !ok
 
     // A >=128-octet allData forces multi-octet BER lengths (len_octets + write_len long-form).
     static uint8_t big[200];
     memset(big, 0x5A, sizeof(big));
     g.all_data = big;
     g.all_data_len = sizeof(big);
-    size_t n = detws_goose_pdu(&g, out, sizeof(out));
+    size_t n = dws_goose_pdu(&g, out, sizeof(out));
     TEST_ASSERT_TRUE(n > 200);
     TEST_ASSERT_EQUAL_HEX8(0x61, out[0]);
     TEST_ASSERT_EQUAL_HEX8(0x81, out[1]); // content length >= 128 -> long-form (one following octet)
@@ -125,9 +125,9 @@ void test_goose_error_and_longform(void)
     uint8_t dst[6] = {0};
     uint8_t src[6] = {0};
     DetwsGoose g2 = base();
-    TEST_ASSERT_EQUAL_size_t(0, detws_goose_frame(nullptr, src, 0x1234, &g2, out, sizeof(out))); // null dst
-    TEST_ASSERT_EQUAL_size_t(0, detws_goose_frame(dst, src, 0x1234, &g2, out, 20));              // cap < 22
-    TEST_ASSERT_EQUAL_size_t(0, detws_goose_frame(dst, src, 0x1234, &g2, out, 30)); // >=22 but the PDU cannot fit
+    TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(nullptr, src, 0x1234, &g2, out, sizeof(out))); // null dst
+    TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, &g2, out, 20));              // cap < 22
+    TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, &g2, out, 30)); // >=22 but the PDU cannot fit
 }
 
 int main(void)

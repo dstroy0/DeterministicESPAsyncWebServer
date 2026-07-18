@@ -8,7 +8,7 @@
 
 #include "services/modbus/modbus_master.h"
 
-#if DETWS_ENABLE_MODBUS_MASTER
+#if DWS_ENABLE_MODBUS_MASTER
 
 size_t modbus_build_read(uint8_t fc, uint16_t txid, uint8_t unit, uint16_t start, uint16_t count, uint8_t *out,
                          size_t cap)
@@ -71,4 +71,4 @@ int modbus_parse_response(const uint8_t *adu, size_t len, uint16_t *regs_out, si
     return copied;
 }
 
-#endif // DETWS_ENABLE_MODBUS_MASTER
+#endif // DWS_ENABLE_MODBUS_MASTER

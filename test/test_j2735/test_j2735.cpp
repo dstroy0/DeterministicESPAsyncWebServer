@@ -75,12 +75,12 @@ void test_bsm_core_roundtrip(void)
     c.speed = 500;    // 10 m/s
     c.heading = 7200; // 90 deg
     uint8_t buf[64];
-    size_t n = detws_j2735_bsm_core_encode(&c, buf, sizeof(buf));
+    size_t n = dws_j2735_bsm_core_encode(&c, buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
 
     J2735BsmCore d;
     memset(&d, 0, sizeof(d));
-    TEST_ASSERT_TRUE(detws_j2735_bsm_core_decode(buf, n, &d));
+    TEST_ASSERT_TRUE(dws_j2735_bsm_core_decode(buf, n, &d));
     TEST_ASSERT_EQUAL_UINT8(12, d.msg_count);
     TEST_ASSERT_EQUAL_HEX32(0xDEADBEEF, d.id);
     TEST_ASSERT_EQUAL_UINT16(34000, d.sec_mark);
@@ -98,7 +98,7 @@ void test_bsm_core_bit_length(void)
     J2735BsmCore c;
     memset(&c, 0, sizeof(c));
     uint8_t buf[64];
-    size_t n = detws_j2735_bsm_core_encode(&c, buf, sizeof(buf));
+    size_t n = dws_j2735_bsm_core_encode(&c, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_size_t(21, n);
 }
 
@@ -109,12 +109,12 @@ void test_spat_roundtrip(void)
     st[1] = {2, (uint8_t)J2735PhaseState::J2735_PHASE_STOP_AND_REMAIN, 0, 36000};
     st[2] = {17, (uint8_t)J2735PhaseState::J2735_PHASE_PERMISSIVE_CLEARANCE, 300, 320};
     uint8_t buf[64];
-    size_t n = detws_j2735_spat_encode(st, 3, buf, sizeof(buf));
+    size_t n = dws_j2735_spat_encode(st, 3, buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
 
     J2735MovementState out[8];
     size_t count = 0;
-    TEST_ASSERT_TRUE(detws_j2735_spat_decode(buf, n, out, 8, &count));
+    TEST_ASSERT_TRUE(dws_j2735_spat_decode(buf, n, out, 8, &count));
     TEST_ASSERT_EQUAL_size_t(3, count);
     TEST_ASSERT_EQUAL_UINT8(1, out[0].signal_group);
     TEST_ASSERT_EQUAL_UINT8(J2735PhaseState::J2735_PHASE_PROTECTED_MOVEMENT_ALLOWED, out[0].phase);
@@ -128,11 +128,11 @@ void test_spat_decode_too_many(void)
 {
     J2735MovementState st[2] = {{1, 6, 0, 0}, {2, 3, 0, 0}};
     uint8_t buf[32];
-    size_t n = detws_j2735_spat_encode(st, 2, buf, sizeof(buf));
+    size_t n = dws_j2735_spat_encode(st, 2, buf, sizeof(buf));
     J2735MovementState out[1];
     size_t count = 0;
     // Only room for 1 but 2 encoded -> false.
-    TEST_ASSERT_FALSE(detws_j2735_spat_decode(buf, n, out, 1, &count));
+    TEST_ASSERT_FALSE(dws_j2735_spat_decode(buf, n, out, 1, &count));
 }
 
 void test_map_roundtrip(void)
@@ -143,13 +143,13 @@ void test_map_roundtrip(void)
     lanes[1] = {2, false, 2047, -2048};
     lanes[2] = {9, true, 0, 0};
     uint8_t buf[64];
-    size_t n = detws_j2735_map_encode(&isect, lanes, 3, buf, sizeof(buf));
+    size_t n = dws_j2735_map_encode(&isect, lanes, 3, buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
 
     J2735MapIntersection di;
     J2735Lane out[8];
     size_t count = 0;
-    TEST_ASSERT_TRUE(detws_j2735_map_decode(buf, n, &di, out, 8, &count));
+    TEST_ASSERT_TRUE(dws_j2735_map_decode(buf, n, &di, out, 8, &count));
     TEST_ASSERT_EQUAL_UINT16(12345, di.intersection_id);
     TEST_ASSERT_EQUAL_UINT16(40000, di.ref_lat);
     TEST_ASSERT_EQUAL_size_t(3, count);
@@ -171,7 +171,7 @@ void test_uper_overflow_and_bsm_guard()
     uper_put_bits(&w, 0xFFFFFFFFu, 32); // past the 4-byte buffer -> not ok
     TEST_ASSERT_EQUAL_size_t(0, uper_writer_finish(&w));
     J2735BsmCore c = {};
-    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(&c, buf, 1)); // tiny cap fails closed
+    TEST_ASSERT_EQUAL_size_t(0, dws_j2735_bsm_core_encode(&c, buf, 1)); // tiny cap fails closed
 }
 
 void test_j2735_guards_and_truncation()
@@ -194,35 +194,35 @@ void test_j2735_guards_and_truncation()
 
     // encode/decode null-argument guards.
     J2735BsmCore c = {};
-    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(nullptr, buf, sizeof(buf)));
-    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_bsm_core_encode(&c, nullptr, sizeof(buf)));
-    TEST_ASSERT_FALSE(detws_j2735_bsm_core_decode(nullptr, 16, &c));
-    TEST_ASSERT_FALSE(detws_j2735_bsm_core_decode(buf, 16, nullptr));
+    TEST_ASSERT_EQUAL_size_t(0, dws_j2735_bsm_core_encode(nullptr, buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_j2735_bsm_core_encode(&c, nullptr, sizeof(buf)));
+    TEST_ASSERT_FALSE(dws_j2735_bsm_core_decode(nullptr, 16, &c));
+    TEST_ASSERT_FALSE(dws_j2735_bsm_core_decode(buf, 16, nullptr));
 
     J2735MovementState st[2] = {{1, 6, 0, 0}, {2, 3, 0, 0}};
     J2735MovementState sout[4];
     size_t count = 0;
-    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_spat_encode(st, 2, nullptr, 16));       // null out
-    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_spat_encode(st, 32, buf, sizeof(buf))); // count > 31
-    TEST_ASSERT_FALSE(detws_j2735_spat_decode(nullptr, 16, sout, 4, &count));       // null in
+    TEST_ASSERT_EQUAL_size_t(0, dws_j2735_spat_encode(st, 2, nullptr, 16));       // null out
+    TEST_ASSERT_EQUAL_size_t(0, dws_j2735_spat_encode(st, 32, buf, sizeof(buf))); // count > 31
+    TEST_ASSERT_FALSE(dws_j2735_spat_decode(nullptr, 16, sout, 4, &count));       // null in
 
     J2735MapIntersection isect = {1, 2, 3};
     J2735Lane lanes[2] = {{1, true, 0, 0}, {2, false, 0, 0}};
     J2735Lane lout[4];
-    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_map_encode(nullptr, lanes, 2, buf, sizeof(buf))); // null isect
-    TEST_ASSERT_EQUAL_size_t(0, detws_j2735_map_encode(&isect, lanes, 32, buf, sizeof(buf))); // count > 31
-    TEST_ASSERT_FALSE(detws_j2735_map_decode(nullptr, 16, &isect, lout, 4, &count));          // null in
+    TEST_ASSERT_EQUAL_size_t(0, dws_j2735_map_encode(nullptr, lanes, 2, buf, sizeof(buf))); // null isect
+    TEST_ASSERT_EQUAL_size_t(0, dws_j2735_map_encode(&isect, lanes, 32, buf, sizeof(buf))); // count > 31
+    TEST_ASSERT_FALSE(dws_j2735_map_decode(nullptr, 16, &isect, lout, 4, &count));          // null in
 
     // Truncated SPAT: the count reads, but the per-state fields underrun (post-loop r.ok guard).
-    size_t sn = detws_j2735_spat_encode(st, 2, buf, sizeof(buf));
+    size_t sn = dws_j2735_spat_encode(st, 2, buf, sizeof(buf));
     TEST_ASSERT_TRUE(sn > 1);
-    TEST_ASSERT_FALSE(detws_j2735_spat_decode(buf, 1, sout, 4, &count));
+    TEST_ASSERT_FALSE(dws_j2735_spat_decode(buf, 1, sout, 4, &count));
 
     // MAP decode: count exceeds the caller's lane buffer, then a truncated buffer underruns.
-    size_t mn = detws_j2735_map_encode(&isect, lanes, 2, buf, sizeof(buf));
+    size_t mn = dws_j2735_map_encode(&isect, lanes, 2, buf, sizeof(buf));
     TEST_ASSERT_TRUE(mn > 7);
-    TEST_ASSERT_FALSE(detws_j2735_map_decode(buf, mn, &isect, lout, 1, &count)); // count 2 > max 1
-    TEST_ASSERT_FALSE(detws_j2735_map_decode(buf, 7, &isect, lout, 4, &count));  // header ok, lanes underrun
+    TEST_ASSERT_FALSE(dws_j2735_map_decode(buf, mn, &isect, lout, 1, &count)); // count 2 > max 1
+    TEST_ASSERT_FALSE(dws_j2735_map_decode(buf, 7, &isect, lout, 4, &count));  // header ok, lanes underrun
 }
 
 int main(void)

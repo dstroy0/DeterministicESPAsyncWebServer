@@ -3,7 +3,7 @@
 
 /**
  * @file hostlink.h
- * @brief Omron Host Link (C-mode) frame codec (DETWS_ENABLE_HOSTLINK) - zero-heap ASCII
+ * @brief Omron Host Link (C-mode) frame codec (DWS_ENABLE_HOSTLINK) - zero-heap ASCII
  *        command/response framing for the Omron serial host-link protocol, the RS-232/485
  *        sibling of FINS.
  *
@@ -28,7 +28,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HOSTLINK
+#if DWS_ENABLE_HOSTLINK
 
 #include <stddef.h>
 #include <stdint.h>
@@ -65,6 +65,6 @@ bool hostlink_parse(const char *buf, size_t len, HostlinkFrame *out);
 /** @brief Read a response's 2-char end code (the first two text characters) as a byte. */
 bool hostlink_end_code(const HostlinkFrame *f, uint8_t *code);
 
-#endif // DETWS_ENABLE_HOSTLINK
+#endif // DWS_ENABLE_HOSTLINK
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_HOSTLINK_H

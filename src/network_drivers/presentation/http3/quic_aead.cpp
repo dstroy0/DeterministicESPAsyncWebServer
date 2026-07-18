@@ -12,7 +12,7 @@
 
 #include "network_drivers/presentation/http3/quic_aead.h"
 
-#if (DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS)
+#if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS)
 
 #include "shared_primitives/ghash.h"
 #include <string.h>
@@ -45,12 +45,12 @@ void quic_aes128_wipe(QuicAes128 *ctx)
 
 void quic_aes128_init(QuicAes128 *ctx, const uint8_t key[16])
 {
-    det_aes_key_expand(key, 4, ctx->rk);
+    dws_aes_key_expand(key, 4, ctx->rk);
 }
 
 void quic_aes128_encrypt_block(QuicAes128 *ctx, const uint8_t in[16], uint8_t out[16])
 {
-    det_aes_encrypt_block(ctx->rk, 10, in, out);
+    dws_aes_encrypt_block(ctx->rk, 10, in, out);
 }
 
 void quic_aes128_wipe(QuicAes128 *ctx)
@@ -206,4 +206,4 @@ bool quic_aes128_gcm_open(const uint8_t key[16], const uint8_t nonce[12], const 
     return true;
 }
 
-#endif // DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS
+#endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS

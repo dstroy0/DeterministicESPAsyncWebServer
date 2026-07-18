@@ -3,7 +3,7 @@
 
 /**
  * @file dds.h
- * @brief DDS / RTPS wire-protocol codec (DETWS_ENABLE_DDS).
+ * @brief DDS / RTPS wire-protocol codec (DWS_ENABLE_DDS).
  *
  * DDS (OMG Data Distribution Service) publishes on the wire as **RTPS** (DDSI-RTPS, the Real-Time
  * Publish-Subscribe protocol), normally over UDP multicast. An RTPS **message** is a 20-octet header
@@ -12,8 +12,8 @@
  *   Header (20): "RTPS" | protocol version (2) | vendorId (2) | guidPrefix (12)
  *   Submessage:  submessageId (1) | flags (1) | octetsToNextHeader (2, endian per the E flag) | body
  *
- * This is the message + submessage framing codec: `detws_rtps_header` / `detws_rtps_submessage` build
- * them and `detws_rtps_parse` validates the header (magic + version) and walks the submessages,
+ * This is the message + submessage framing codec: `dws_rtps_header` / `dws_rtps_submessage` build
+ * them and `dws_rtps_parse` validates the header (magic + version) and walks the submessages,
  * surfacing each via a callback. The per-submessage bodies (DATA serialized-payload/CDR, HEARTBEAT
  * sequence-number sets, the discovery SPDP/SEDP topics) layer on top of this framing.
  *
@@ -27,7 +27,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_DDS
+#if DWS_ENABLE_DDS
 
 /** @brief RTPS submessage kinds (DDSI-RTPS 8.3.7) + the flag bit for little-endian. */
 // RTPS submessage kinds + the little-endian flag bit + fixed lengths: wire values (the flag is OR'd),
@@ -59,7 +59,7 @@ extern const uint8_t RTPS_VERSION[2]; ///< {2, 4}.
  * @param vendor_id   2-byte vendor id (0x0000 = unknown).
  * @return 20, or 0 if @p cap < 20 or a pointer is null.
  */
-size_t detws_rtps_header(const uint8_t *guid_prefix, const uint8_t *vendor_id, uint8_t *out, size_t cap);
+size_t dws_rtps_header(const uint8_t *guid_prefix, const uint8_t *vendor_id, uint8_t *out, size_t cap);
 
 /**
  * @brief Build one RTPS submessage `[id][flags][octetsToNextHeader][body]`.
@@ -69,10 +69,9 @@ size_t detws_rtps_header(const uint8_t *guid_prefix, const uint8_t *vendor_id, u
  * @param body_len contents length (the octetsToNextHeader value).
  * @return 4 + body_len bytes written, or 0 if it won't fit.
  */
-size_t detws_rtps_submessage(uint8_t id, uint8_t flags, const uint8_t *body, uint16_t body_len, uint8_t *out,
-                             size_t cap);
+size_t dws_rtps_submessage(uint8_t id, uint8_t flags, const uint8_t *body, uint16_t body_len, uint8_t *out, size_t cap);
 
-/** @brief One submessage surfaced by detws_rtps_parse. */
+/** @brief One submessage surfaced by dws_rtps_parse. */
 typedef void (*DetwsRtpsCb)(uint8_t id, uint8_t flags, const uint8_t *body, size_t body_len, void *arg);
 
 /**
@@ -80,7 +79,7 @@ typedef void (*DetwsRtpsCb)(uint8_t id, uint8_t flags, const uint8_t *body, size
  * @return true if the header is a well-formed RTPS message (magic + version <= ours) and every
  *         submessage fits. An octetsToNextHeader of 0 on the last submessage means "to end of message".
  */
-bool detws_rtps_parse(const uint8_t *msg, size_t len, DetwsRtpsCb cb, void *arg);
+bool dws_rtps_parse(const uint8_t *msg, size_t len, DetwsRtpsCb cb, void *arg);
 
-#endif // DETWS_ENABLE_DDS
+#endif // DWS_ENABLE_DDS
 #endif // DETERMINISTICESPASYNCWEBSERVER_DDS_H

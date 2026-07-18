@@ -13,7 +13,7 @@
 
 #include "services/oidc/oidc.h"
 
-#if DETWS_ENABLE_OIDC
+#if DWS_ENABLE_OIDC
 
 #include "network_drivers/presentation/base64/base64.h" // shared base64url_decode
 #include "network_drivers/presentation/ssh/crypto/ssh_rsa.h"
@@ -226,9 +226,9 @@ bool parse_rsa_jwk(const char *s, const char *e, DetwsOidcKey *key)
     char b64[400];
     if (!get_str(s, e, "n", b64, sizeof(b64)))
         return false;
-    uint8_t tmp[DETWS_OIDC_RSA_BYTES + 8];
+    uint8_t tmp[DWS_OIDC_RSA_BYTES + 8];
     size_t nlen = base64url_decode(b64, strnlen(b64, sizeof(b64)), tmp, sizeof(tmp));
-    if (nlen == 0 || !right_align(tmp, nlen, key->n, DETWS_OIDC_RSA_BYTES))
+    if (nlen == 0 || !right_align(tmp, nlen, key->n, DWS_OIDC_RSA_BYTES))
         return false;
 
     if (!get_str(s, e, "e", b64, sizeof(b64)))
@@ -242,7 +242,7 @@ bool parse_rsa_jwk(const char *s, const char *e, DetwsOidcKey *key)
 }
 } // namespace
 
-bool detws_oidc_token_kid(const char *token, size_t token_len, char *kid_out, size_t kid_cap)
+bool dws_oidc_token_kid(const char *token, size_t token_len, char *kid_out, size_t kid_cap)
 {
     if (!token || !kid_out || kid_cap == 0)
         return false;
@@ -258,11 +258,11 @@ bool detws_oidc_token_kid(const char *token, size_t token_len, char *kid_out, si
     return get_str((const char *)hdr, (const char *)hdr + hn, "kid", kid_out, kid_cap);
 }
 
-bool detws_oidc_jwks_find(const char *jwks_json, const char *kid, DetwsOidcKey *key)
+bool dws_oidc_jwks_find(const char *jwks_json, const char *kid, DetwsOidcKey *key)
 {
     if (!jwks_json || !key)
         return false;
-    const char *all_end = jwks_json + strnlen(jwks_json, DETWS_OIDC_JWKS_MAX);
+    const char *all_end = jwks_json + strnlen(jwks_json, DWS_OIDC_JWKS_MAX);
     const char *p = mem_find(jwks_json, all_end, "\"keys\"");
     p = p ? (const char *)memchr(p, '[', (size_t)(all_end - p)) : nullptr;
     if (!p)
@@ -280,7 +280,7 @@ bool detws_oidc_jwks_find(const char *jwks_json, const char *kid, DetwsOidcKey *
         end++; // include '}'
 
         bool want;
-        char this_kid[DETWS_OIDC_KID_LEN];
+        char this_kid[DWS_OIDC_KID_LEN];
         bool has_kid = get_str(obj, end, "kid", this_kid, sizeof(this_kid));
         if (kid && *kid)
             want = has_kid && strcmp(this_kid, kid) == 0;
@@ -296,56 +296,56 @@ bool detws_oidc_jwks_find(const char *jwks_json, const char *kid, DetwsOidcKey *
     return false;
 }
 
-DetwsOidcResult detws_oidc_verify_with_key(const char *token, size_t token_len, const DetwsOidcKey *key,
-                                           const char *expected_iss, const char *expected_aud, uint32_t now_unix,
-                                           DetwsOidcClaims *claims)
+DetwsOidcResult dws_oidc_verify_with_key(const char *token, size_t token_len, const DetwsOidcKey *key,
+                                         const char *expected_iss, const char *expected_aud, uint32_t now_unix,
+                                         DetwsOidcClaims *claims)
 {
-    if (!token || !key || !key->loaded || token_len == 0 || token_len > DETWS_OIDC_MAX_LEN)
-        return DetwsOidcResult::DETWS_OIDC_ERR_FORMAT;
+    if (!token || !key || !key->loaded || token_len == 0 || token_len > DWS_OIDC_MAX_LEN)
+        return DetwsOidcResult::DWS_OIDC_ERR_FORMAT;
 
     const char *seg[3];
     size_t seglen[3];
     if (!split3(token, token_len, seg, seglen))
-        return DetwsOidcResult::DETWS_OIDC_ERR_FORMAT;
+        return DetwsOidcResult::DWS_OIDC_ERR_FORMAT;
 
     // Borrow the large decode buffers from the per-dispatch scratch arena rather
     // than the worker stack (was ~2.6 KB of stack frame: hdr + sig + pl + iss).
     // ScratchScope reclaims them on every return path; fail closed if the arena is
-    // exhausted. Sizes: header 512, signature DETWS_OIDC_RSA_BYTES, payload
-    // DETWS_OIDC_MAX_LEN, issuer 256.
+    // exhausted. Sizes: header 512, signature DWS_OIDC_RSA_BYTES, payload
+    // DWS_OIDC_MAX_LEN, issuer 256.
     const size_t hdr_cap = 512;
     const size_t iss_cap = 256;
     ScratchScope scratch;
     uint8_t *hdr = (uint8_t *)scratch_alloc(hdr_cap, 1);
-    uint8_t *sig = (uint8_t *)scratch_alloc(DETWS_OIDC_RSA_BYTES, 1);
-    uint8_t *pl = (uint8_t *)scratch_alloc(DETWS_OIDC_MAX_LEN, 1);
+    uint8_t *sig = (uint8_t *)scratch_alloc(DWS_OIDC_RSA_BYTES, 1);
+    uint8_t *pl = (uint8_t *)scratch_alloc(DWS_OIDC_MAX_LEN, 1);
     char *iss = (char *)scratch_alloc(iss_cap, 1);
     if (!hdr || !sig || !pl || !iss)
-        return DetwsOidcResult::DETWS_OIDC_ERR_FORMAT; // scratch exhausted: fail closed
+        return DetwsOidcResult::DWS_OIDC_ERR_FORMAT; // scratch exhausted: fail closed
 
     // Header: require alg == RS256 (rejects alg:none / HS256 confusion).
     size_t hn = base64url_decode(seg[0], seglen[0], hdr, hdr_cap - 1);
     if (hn == 0)
-        return DetwsOidcResult::DETWS_OIDC_ERR_FORMAT;
+        return DetwsOidcResult::DWS_OIDC_ERR_FORMAT;
     hdr[hn] = '\0';
     char alg[16];
     if (!get_str((const char *)hdr, (const char *)hdr + hn, "alg", alg, sizeof(alg)) || strcmp(alg, "RS256") != 0)
-        return DetwsOidcResult::DETWS_OIDC_ERR_ALG;
+        return DetwsOidcResult::DWS_OIDC_ERR_ALG;
 
     // Signature: RSA-2048 -> exactly 256 bytes.
-    if (base64url_decode(seg[2], seglen[2], sig, DETWS_OIDC_RSA_BYTES) != DETWS_OIDC_RSA_BYTES)
-        return DetwsOidcResult::DETWS_OIDC_ERR_FORMAT;
+    if (base64url_decode(seg[2], seglen[2], sig, DWS_OIDC_RSA_BYTES) != DWS_OIDC_RSA_BYTES)
+        return DetwsOidcResult::DWS_OIDC_ERR_FORMAT;
 
     // Verify over the signing input "header.payload" (ssh_rsa_verify hashes it). RS256 = SHA-256.
     size_t signing_len = (size_t)(seg[1] + seglen[1] - token);
-    if (ssh_rsa_verify(key->n, key->e, (const uint8_t *)token, signing_len, sig, DETWS_OIDC_RSA_BYTES,
+    if (ssh_rsa_verify(key->n, key->e, (const uint8_t *)token, signing_len, sig, DWS_OIDC_RSA_BYTES,
                        SshRsaHash::SHA256) != 0)
-        return DetwsOidcResult::DETWS_OIDC_ERR_SIGNATURE;
+        return DetwsOidcResult::DWS_OIDC_ERR_SIGNATURE;
 
     // Claims (trusted only now that the signature is valid).
-    size_t pn = base64url_decode(seg[1], seglen[1], pl, DETWS_OIDC_MAX_LEN - 1);
+    size_t pn = base64url_decode(seg[1], seglen[1], pl, DWS_OIDC_MAX_LEN - 1);
     if (pn == 0)
-        return DetwsOidcResult::DETWS_OIDC_ERR_FORMAT;
+        return DetwsOidcResult::DWS_OIDC_ERR_FORMAT;
     pl[pn] = '\0';
     const char *ps = (const char *)pl;
     const char *pe = ps + pn;
@@ -353,20 +353,20 @@ DetwsOidcResult detws_oidc_verify_with_key(const char *token, size_t token_len, 
     if (expected_iss && *expected_iss)
     {
         if (!get_str(ps, pe, "iss", iss, iss_cap) || strcmp(iss, expected_iss) != 0)
-            return DetwsOidcResult::DETWS_OIDC_ERR_ISS;
+            return DetwsOidcResult::DWS_OIDC_ERR_ISS;
     }
     if (expected_aud && *expected_aud)
     {
         if (!aud_contains(ps, pe, expected_aud))
-            return DetwsOidcResult::DETWS_OIDC_ERR_AUD;
+            return DetwsOidcResult::DWS_OIDC_ERR_AUD;
     }
 
     int64_t exp = 0;
     if (!get_int64(ps, pe, "exp", &exp) || (int64_t)now_unix >= exp)
-        return DetwsOidcResult::DETWS_OIDC_ERR_EXPIRED;
+        return DetwsOidcResult::DWS_OIDC_ERR_EXPIRED;
     int64_t nbf = 0;
     if (get_int64(ps, pe, "nbf", &nbf) && (int64_t)now_unix < nbf)
-        return DetwsOidcResult::DETWS_OIDC_ERR_NOT_YET;
+        return DetwsOidcResult::DWS_OIDC_ERR_NOT_YET;
 
     if (claims)
     {
@@ -378,20 +378,20 @@ DetwsOidcResult detws_oidc_verify_with_key(const char *token, size_t token_len, 
         get_str(ps, pe, "email", claims->email, sizeof(claims->email));
         get_int64(ps, pe, "iat", &claims->iat);
     }
-    return DetwsOidcResult::DETWS_OIDC_OK;
+    return DetwsOidcResult::DWS_OIDC_OK;
 }
 
-DetwsOidcResult detws_oidc_verify(const char *token, size_t token_len, const char *jwks_json, const char *expected_iss,
-                                  const char *expected_aud, uint32_t now_unix, DetwsOidcClaims *claims)
+DetwsOidcResult dws_oidc_verify(const char *token, size_t token_len, const char *jwks_json, const char *expected_iss,
+                                const char *expected_aud, uint32_t now_unix, DetwsOidcClaims *claims)
 {
-    char kid[DETWS_OIDC_KID_LEN];
-    if (!detws_oidc_token_kid(token, token_len, kid, sizeof(kid)))
+    char kid[DWS_OIDC_KID_LEN];
+    if (!dws_oidc_token_kid(token, token_len, kid, sizeof(kid)))
         kid[0] = '\0'; // no kid -> let jwks_find pick the sole key
     DetwsOidcKey key;
     key.loaded = false;
-    if (!detws_oidc_jwks_find(jwks_json, kid[0] ? kid : nullptr, &key))
-        return DetwsOidcResult::DETWS_OIDC_ERR_KEY;
-    return detws_oidc_verify_with_key(token, token_len, &key, expected_iss, expected_aud, now_unix, claims);
+    if (!dws_oidc_jwks_find(jwks_json, kid[0] ? kid : nullptr, &key))
+        return DetwsOidcResult::DWS_OIDC_ERR_KEY;
+    return dws_oidc_verify_with_key(token, token_len, &key, expected_iss, expected_aud, now_unix, claims);
 }
 
-#endif // DETWS_ENABLE_OIDC
+#endif // DWS_ENABLE_OIDC

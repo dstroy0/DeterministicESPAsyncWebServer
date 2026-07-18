@@ -28,15 +28,15 @@ void tearDown()
 
 void test_defer_runs_inline_on_host()
 {
-    TEST_ASSERT_TRUE(detws_defer(0, inc, &g_ran));
+    TEST_ASSERT_TRUE(dws_defer(0, inc, &g_ran));
     TEST_ASSERT_EQUAL_INT(1, g_ran); // executed inline (no worker task on host)
-    detws_worker_run_deferred(0);    // no-op on host: must not double-run
+    dws_worker_run_deferred(0);      // no-op on host: must not double-run
     TEST_ASSERT_EQUAL_INT(1, g_ran);
 }
 
 void test_server_defer_routes_by_owner()
 {
-    DetWebServer srv;
+    DWS srv;
     conn_pool[1].owner = 0;
     TEST_ASSERT_TRUE(srv.defer(1, inc, &g_ran));
     TEST_ASSERT_EQUAL_INT(1, g_ran);
@@ -46,7 +46,7 @@ void test_server_defer_routes_by_owner()
 void test_defer_null_fn_fails()
 {
     // A null callback fails closed on every build (host and target).
-    TEST_ASSERT_FALSE(detws_defer(0, nullptr, nullptr));
+    TEST_ASSERT_FALSE(dws_defer(0, nullptr, nullptr));
     TEST_ASSERT_EQUAL_INT(0, g_ran);
 }
 

@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http3/quic_crypto.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/http3/quic_aead.h"
 #include "network_drivers/presentation/http3/quic_hkdf.h"
@@ -147,4 +147,4 @@ void quic_retry_integrity_tag(const uint8_t *odcid, size_t odcid_len, const uint
     quic_aes128_gcm_seal(RETRY_KEY, RETRY_NONCE, aad, p, nullptr, 0, tag);
 }
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3

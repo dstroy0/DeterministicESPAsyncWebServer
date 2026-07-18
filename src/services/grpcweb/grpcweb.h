@@ -3,7 +3,7 @@
 
 /**
  * @file grpcweb.h
- * @brief gRPC-Web message framing (DETWS_ENABLE_GRPC_WEB) - zero-heap length-prefixed frame
+ * @brief gRPC-Web message framing (DWS_ENABLE_GRPC_WEB) - zero-heap length-prefixed frame
  *        builder + parser, the HTTP/1.1-reachable subset of gRPC that wraps the Protobuf
  *        codec (services/protobuf). gRPC proper needs HTTP/2; gRPC-Web rides the shipped
  *        HTTP/1.1 server/client.
@@ -29,7 +29,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_GRPC_WEB
+#if DWS_ENABLE_GRPC_WEB
 
 #include <stddef.h>
 #include <stdint.h>
@@ -71,6 +71,6 @@ bool grpcweb_parse(const uint8_t *buf, size_t len, GrpcWebFrame *out, size_t *co
 /** @brief Extract `grpc-status` (an integer) from a trailers-frame body. */
 bool grpcweb_trailer_status(const uint8_t *body, size_t len, int *status);
 
-#endif // DETWS_ENABLE_GRPC_WEB
+#endif // DWS_ENABLE_GRPC_WEB
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_GRPCWEB_H

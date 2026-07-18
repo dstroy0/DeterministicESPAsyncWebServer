@@ -1,6 +1,6 @@
 # 04.mTLS - mutual TLS (verified client certificates)
 
-**Layer:** L4 Transport · **Build flags:** `DETWS_ENABLE_TLS`, `DETWS_ENABLE_MTLS`
+**Layer:** L4 Transport · **Build flags:** `DWS_ENABLE_TLS`, `DWS_ENABLE_MTLS`
 
 ## What this example teaches
 
@@ -25,7 +25,7 @@ int32_t result = server.begin();                             // activate
 certificate subject is available to handlers:
 
 ```cpp
-char subject[DETWS_MTLS_SUBJECT_MAX];
+char subject[DWS_MTLS_SUBJECT_MAX];
 if (server.tls_client_subject(id, subject, sizeof(subject)) > 0)
     server.send(id, 200, "text/plain", subject);    // e.g. "CN=alice@example.com"
 else
@@ -45,7 +45,7 @@ handshake - so the `/whoami` route is reached only by verified peers.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_MTLS=1 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768" \
+  --project-option="build_flags=-DDWS_ENABLE_TLS=1 -DDWS_ENABLE_MTLS=1 -DMAX_CONNS=4 -DDWS_TLS_ARENA_SIZE=32768" \
   --lib="." examples/L4-Transport/04.mTLS/04.mTLS.ino
 ```
 
@@ -67,8 +67,8 @@ comments.
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_TLS 1
-#define DETWS_ENABLE_MTLS 1
+#define DWS_ENABLE_TLS 1
+#define DWS_ENABLE_MTLS 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -77,7 +77,7 @@ comments.
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // DEMO server identity (ECDSA P-256), presented to the client.
 static const char SERVER_CERT_PEM[] = R"PEM(-----BEGIN CERTIFICATE-----
@@ -115,7 +115,7 @@ void setup()
 
     // Reached only by verified clients; report their certificate subject DN.
     server.on("/whoami", HTTP_GET, [](uint8_t id, HttpReq *) {
-        char subject[DETWS_MTLS_SUBJECT_MAX];
+        char subject[DWS_MTLS_SUBJECT_MAX];
         if (server.tls_client_subject(id, subject, sizeof(subject)) > 0)
             server.send(id, 200, "text/plain", subject);
         else

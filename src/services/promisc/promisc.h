@@ -3,7 +3,7 @@
 
 /**
  * @file promisc.h
- * @brief Wi-Fi promiscuous (monitor) capture (DETWS_ENABLE_PROMISC) - passive 802.11 sniffing.
+ * @brief Wi-Fi promiscuous (monitor) capture (DWS_ENABLE_PROMISC) - passive 802.11 sniffing.
  *
  * A read-only capture path: instead of joining a network and terminating traffic, listen to
  * every 802.11 frame on a channel and hand it to a sink. The canonical wiring feeds the sink
@@ -30,9 +30,9 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_PROMISC
+#if DWS_ENABLE_PROMISC
 
-#include "shared_primitives/pcap.h" // det_pcap_* framing + DET_DLT_IEEE802_11
+#include "shared_primitives/pcap.h" // dws_pcap_* framing + DWS_DLT_IEEE802_11
 #include <stddef.h>
 #include <stdint.h>
 
@@ -67,8 +67,8 @@ struct WifiFrameInfo
  */
 bool wifi_frame_parse(const uint8_t *frame, uint16_t len, WifiFrameInfo *out);
 
-// libpcap framing lives in shared_primitives/pcap.h: det_pcap_global_header() with
-// DET_DLT_IEEE802_11 + det_pcap_record_header() wrap a captured 802.11 frame as a valid PCAP.
+// libpcap framing lives in shared_primitives/pcap.h: dws_pcap_global_header() with
+// DWS_DLT_IEEE802_11 + dws_pcap_record_header() wrap a captured 802.11 frame as a valid PCAP.
 
 /**
  * @brief Sink for one captured frame: the raw 802.11 bytes plus radio metadata.
@@ -93,6 +93,6 @@ void promisc_set_channel(uint8_t channel);
 /** @brief Stop promiscuous capture. */
 void promisc_end(void);
 
-#endif // DETWS_ENABLE_PROMISC
+#endif // DWS_ENABLE_PROMISC
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_PROMISC_H

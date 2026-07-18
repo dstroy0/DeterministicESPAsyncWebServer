@@ -3,7 +3,7 @@
 
 /**
  * @file xmpp.h
- * @brief XMPP (RFC 6120) stanza codec (DETWS_ENABLE_XMPP).
+ * @brief XMPP (RFC 6120) stanza codec (DWS_ENABLE_XMPP).
  *
  * XMPP (Jabber) is an XML streaming protocol: after a `<stream:stream>` open, peers exchange three
  * stanza kinds - `<message>`, `<presence>`, and `<iq>` (info/query). This is the stanza codec: builders
@@ -22,46 +22,46 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_XMPP
+#if DWS_ENABLE_XMPP
 
 /**
  * @brief XML-escape @p in into @p out (& < > ' " -> entities). @return bytes written (excl NUL), or 0 if
  *        it would overflow @p cap (a NUL terminator is written when there is room).
  */
-size_t detws_xmpp_escape(const char *in, size_t in_len, char *out, size_t cap);
+size_t dws_xmpp_escape(const char *in, size_t in_len, char *out, size_t cap);
 
 /**
  * @brief Build the initial `<stream:stream ...>` open tag (jabber:client). @return length, or 0 on overflow.
  */
-size_t detws_xmpp_stream_open(const char *from, const char *to, char *out, size_t cap);
+size_t dws_xmpp_stream_open(const char *from, const char *to, char *out, size_t cap);
 
 /**
  * @brief Build a `<message to=.. from=.. type=..><body>..</body></message>` stanza.
  * @param type e.g. "chat"; null omits the type attribute. from may be null (server stamps it).
  * @return length, or 0 on overflow.
  */
-size_t detws_xmpp_message(const char *to, const char *from, const char *type, const char *body, char *out, size_t cap);
+size_t dws_xmpp_message(const char *to, const char *from, const char *type, const char *body, char *out, size_t cap);
 
 /** @brief Build a `<presence/>` (type null) or `<presence type=".."/>` stanza. @return length, or 0. */
-size_t detws_xmpp_presence(const char *type, char *out, size_t cap);
+size_t dws_xmpp_presence(const char *type, char *out, size_t cap);
 
 /**
  * @brief Build an `<iq type=.. id=..>child</iq>` stanza (child is inserted verbatim; may be null/empty).
  * @return length, or 0 on overflow.
  */
-size_t detws_xmpp_iq(const char *type, const char *id, const char *child_xml, char *out, size_t cap);
+size_t dws_xmpp_iq(const char *type, const char *id, const char *child_xml, char *out, size_t cap);
 
 /**
  * @brief Read the stanza's top-level element name (message / presence / iq / ...) into @p out.
  * @return the name length, or 0 if no start tag is found.
  */
-size_t detws_xmpp_stanza_name(const char *xml, size_t len, char *out, size_t cap);
+size_t dws_xmpp_stanza_name(const char *xml, size_t len, char *out, size_t cap);
 
 /**
  * @brief Extract the value of attribute @p attr from the stanza's start tag into @p out (unescaped copy
  *        is NOT performed - the raw attribute text is returned). @return value length, or 0 if absent.
  */
-size_t detws_xmpp_attr(const char *xml, size_t len, const char *attr, char *out, size_t cap);
+size_t dws_xmpp_attr(const char *xml, size_t len, const char *attr, char *out, size_t cap);
 
-#endif // DETWS_ENABLE_XMPP
+#endif // DWS_ENABLE_XMPP
 #endif // DETERMINISTICESPASYNCWEBSERVER_XMPP_H

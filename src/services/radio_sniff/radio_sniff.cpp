@@ -8,7 +8,7 @@
 
 #include "services/radio_sniff/radio_sniff.h"
 
-#if DETWS_ENABLE_RADIO_SNIFF
+#if DWS_ENABLE_RADIO_SNIFF
 
 namespace
 {
@@ -26,7 +26,7 @@ void wr32le(uint8_t *p, uint32_t v)
 }
 } // namespace
 
-uint32_t detws_radiosniff_i2f32(int32_t dbm)
+uint32_t dws_radiosniff_i2f32(int32_t dbm)
 {
     if (dbm == 0)
         return 0;
@@ -47,24 +47,24 @@ uint32_t detws_radiosniff_i2f32(int32_t dbm)
     return sign | (exp << 23) | mant;
 }
 
-size_t detws_radiosniff_global(uint8_t *out, size_t cap)
+size_t dws_radiosniff_global(uint8_t *out, size_t cap)
 {
-    return det_pcap_global_header(out, cap, DET_DLT_IEEE802_15_4_TAP);
+    return dws_pcap_global_header(out, cap, DWS_DLT_IEEE802_15_4_TAP);
 }
 
-size_t detws_radiosniff_tap_record(uint8_t *out, size_t cap, const uint8_t *frame, size_t flen, int32_t rssi_dbm,
-                                   uint16_t channel, uint32_t ts_sec, uint32_t ts_usec)
+size_t dws_radiosniff_tap_record(uint8_t *out, size_t cap, const uint8_t *frame, size_t flen, int32_t rssi_dbm,
+                                 uint16_t channel, uint32_t ts_sec, uint32_t ts_usec)
 {
     if (!out || !frame || flen == 0)
         return 0;
     size_t caplen = RADIO_SNIFF_TAP_LEN + flen;
-    size_t total = DET_PCAP_REC_HDR_LEN + caplen;
+    size_t total = DWS_PCAP_REC_HDR_LEN + caplen;
     if (cap < total)
         return 0;
 
     // pcap record header.
-    det_pcap_record_header(out, cap, ts_sec, ts_usec, (uint32_t)caplen, (uint32_t)caplen);
-    uint8_t *p = out + DET_PCAP_REC_HDR_LEN;
+    dws_pcap_record_header(out, cap, ts_sec, ts_usec, (uint32_t)caplen, (uint32_t)caplen);
+    uint8_t *p = out + DWS_PCAP_REC_HDR_LEN;
 
     // 802.15.4 TAP header: version(1)=0, reserved(1)=0, length(2 LE) = whole TAP block.
     p[0] = 0;
@@ -73,7 +73,7 @@ size_t detws_radiosniff_tap_record(uint8_t *out, size_t cap, const uint8_t *fram
     // TLV: Received Signal Strength (type 1, len 4), float32 dBm.
     wr16le(p + 4, 1);
     wr16le(p + 6, 4);
-    wr32le(p + 8, detws_radiosniff_i2f32(rssi_dbm));
+    wr32le(p + 8, dws_radiosniff_i2f32(rssi_dbm));
     // TLV: Channel Assignment (type 3, len 3 -> padded to 4): channel number(2 LE) + page(1).
     wr16le(p + 12, 3);
     wr16le(p + 14, 3);
@@ -88,4 +88,4 @@ size_t detws_radiosniff_tap_record(uint8_t *out, size_t cap, const uint8_t *fram
     return total;
 }
 
-#endif // DETWS_ENABLE_RADIO_SNIFF
+#endif // DWS_ENABLE_RADIO_SNIFF

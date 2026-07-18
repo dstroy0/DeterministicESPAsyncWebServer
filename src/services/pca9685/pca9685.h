@@ -3,7 +3,7 @@
 
 /**
  * @file pca9685.h
- * @brief NXP PCA9685 16-channel 12-bit PWM / servo driver codec (DETWS_ENABLE_PCA9685).
+ * @brief NXP PCA9685 16-channel 12-bit PWM / servo driver codec (DWS_ENABLE_PCA9685).
  *
  * The PCA9685 generates sixteen independent 12-bit PWM outputs from a 25 MHz oscillator. The
  * output frequency is set by a PRESCALE register value; each channel is four registers (a 12-bit

@@ -3,7 +3,7 @@
 
 /**
  * @file ld2410.h
- * @brief HLK-LD2410 24 GHz mmWave presence / motion radar codec (DETWS_ENABLE_LD2410).
+ * @brief HLK-LD2410 24 GHz mmWave presence / motion radar codec (DWS_ENABLE_LD2410).
  *
  * The LD2410 streams a framed serial report at 256000 baud: header `F4 F3 F2 F1`, a
  * little-endian intra-frame length, the payload, and footer `F8 F7 F6 F5`. The payload carries
@@ -111,7 +111,7 @@ size_t ld2410_cmd_restart(uint8_t *buf, size_t cap);
 
 // --- ESP32 binding (Serial pump; no-ops on a host build) -------------------------------------
 
-/** @brief Open UART2 at DETWS_LD2410_BAUD on @p rx_pin / @p tx_pin. @return true on ESP32. */
+/** @brief Open UART2 at DWS_LD2410_BAUD on @p rx_pin / @p tx_pin. @return true on ESP32. */
 bool ld2410_begin(int rx_pin, int tx_pin);
 
 /** @brief Pump the UART through the stream. @return true if a fresh report was decoded. */

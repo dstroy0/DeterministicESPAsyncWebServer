@@ -8,32 +8,32 @@
 
 #include "services/bus_capture/bus_capture.h"
 
-#if DETWS_ENABLE_BUS_CAPTURE
+#if DWS_ENABLE_BUS_CAPTURE
 
 size_t can_to_socketcan(const CanFrame *f, uint8_t *out, size_t cap)
 {
-    if (!f || !out || cap < DET_SOCKETCAN_FRAME_LEN)
+    if (!f || !out || cap < DWS_SOCKETCAN_FRAME_LEN)
         return 0;
 
-    uint32_t id = f->id & (f->extended ? DET_CAN_EXT_ID_MASK : DET_CAN_STD_ID_MASK);
+    uint32_t id = f->id & (f->extended ? DWS_CAN_EXT_ID_MASK : DWS_CAN_STD_ID_MASK);
     if (f->extended)
-        id |= DET_CAN_EFF_FLAG;
+        id |= DWS_CAN_EFF_FLAG;
     if (f->rtr)
-        id |= DET_CAN_RTR_FLAG;
+        id |= DWS_CAN_RTR_FLAG;
 
     out[0] = (uint8_t)(id >> 24); // can_id, big-endian
     out[1] = (uint8_t)(id >> 16);
     out[2] = (uint8_t)(id >> 8);
     out[3] = (uint8_t)id;
 
-    uint8_t dlc = f->dlc > DET_CAN_MAX_DLC ? DET_CAN_MAX_DLC : f->dlc;
+    uint8_t dlc = f->dlc > DWS_CAN_MAX_DLC ? DWS_CAN_MAX_DLC : f->dlc;
     out[4] = dlc; // length
     out[5] = 0;   // __pad
     out[6] = 0;   // __res0
     out[7] = 0;   // len8_dlc / __res1
-    for (int i = 0; i < DET_CAN_MAX_DLC; i++)
+    for (int i = 0; i < DWS_CAN_MAX_DLC; i++)
         out[8 + i] = (i < dlc && !f->rtr) ? f->data[i] : 0;
-    return DET_SOCKETCAN_FRAME_LEN;
+    return DWS_SOCKETCAN_FRAME_LEN;
 }
 
 // --- ESP32 TWAI (CAN) binding ------------------------------------------------------------
@@ -115,8 +115,8 @@ void bus_capture_poll(void)
         f.id = m.identifier;
         f.extended = m.extd;
         f.rtr = m.rtr;
-        f.dlc = m.data_length_code > DET_CAN_MAX_DLC ? DET_CAN_MAX_DLC : m.data_length_code;
-        for (int i = 0; i < DET_CAN_MAX_DLC; i++)
+        f.dlc = m.data_length_code > DWS_CAN_MAX_DLC ? DWS_CAN_MAX_DLC : m.data_length_code;
+        for (int i = 0; i < DWS_CAN_MAX_DLC; i++)
             f.data[i] = (i < f.dlc) ? m.data[i] : 0;
         s_bus.sink(&f);
     }
@@ -149,4 +149,4 @@ void bus_capture_end(void)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_BUS_CAPTURE
+#endif // DWS_ENABLE_BUS_CAPTURE

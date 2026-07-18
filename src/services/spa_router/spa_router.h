@@ -3,7 +3,7 @@
 
 /**
  * @file spa_router.h
- * @brief Single-page-app micro-routing decision (DETWS_ENABLE_SPA_ROUTER).
+ * @brief Single-page-app micro-routing decision (DWS_ENABLE_SPA_ROUTER).
  *
  * A single-page web UI does its own client-side routing: the browser navigates to `/dashboard` or
  * `/devices/42`, but there is no such file on the device - the server must return the app shell
@@ -24,18 +24,18 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SPA_ROUTER
+#if DWS_ENABLE_SPA_ROUTER
 
 /** @brief What to do with a request path. */
 enum class DetwsSpaAction : uint8_t
 {
-    DETWS_SPA_SERVE_FILE,  ///< a real asset (has a file extension): serve it statically.
-    DETWS_SPA_SERVE_SHELL, ///< a client route (extensionless): serve the SPA shell (index.html).
-    DETWS_SPA_PASSTHROUGH  ///< under the API prefix: let the app's handlers run.
+    DWS_SPA_SERVE_FILE,  ///< a real asset (has a file extension): serve it statically.
+    DWS_SPA_SERVE_SHELL, ///< a client route (extensionless): serve the SPA shell (index.html).
+    DWS_SPA_PASSTHROUGH  ///< under the API prefix: let the app's handlers run.
 };
 
 /** @brief True if the last path segment has a file extension (a '.' after the last '/'). */
-bool detws_spa_has_extension(const char *path);
+bool dws_spa_has_extension(const char *path);
 
 /**
  * @brief Decide how to route @p path for a single-page app.
@@ -46,7 +46,7 @@ bool detws_spa_has_extension(const char *path);
  * "/" (or empty) serves the shell. A path starting with @p api_prefix passes through. A path whose last
  * segment has an extension serves the file; otherwise the shell.
  */
-DetwsSpaAction detws_spa_route(const char *path, const char *api_prefix);
+DetwsSpaAction dws_spa_route(const char *path, const char *api_prefix);
 
-#endif // DETWS_ENABLE_SPA_ROUTER
+#endif // DWS_ENABLE_SPA_ROUTER
 #endif // DETERMINISTICESPASYNCWEBSERVER_SPA_ROUTER_H

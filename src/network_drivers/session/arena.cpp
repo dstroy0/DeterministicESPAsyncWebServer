@@ -18,23 +18,23 @@ struct ABlk
     size_t used; ///< 0 = free, 1 = in use
 };
 // Header size, rounded up to the arena alignment so payloads stay aligned.
-const size_t AHDR = (sizeof(ABlk) + (DET_ARENA_ALIGN - 1)) & ~(size_t)(DET_ARENA_ALIGN - 1);
+const size_t AHDR = (sizeof(ABlk) + (DWS_ARENA_ALIGN - 1)) & ~(size_t)(DWS_ARENA_ALIGN - 1);
 
 inline size_t align_up(size_t n)
 {
-    return (n + (DET_ARENA_ALIGN - 1)) & ~(size_t)(DET_ARENA_ALIGN - 1);
+    return (n + (DWS_ARENA_ALIGN - 1)) & ~(size_t)(DWS_ARENA_ALIGN - 1);
 }
 } // namespace
 
-void det_arena_init(DetArena *a, void *base, size_t size)
+void dws_arena_init(DWSArena *a, void *base, size_t size)
 {
     // Align the base up to the strongest supported alignment and the size down, so a
-    // scratch borrow up to DET_ARENA_MAX_ALIGN is met by aligning its offset alone.
+    // scratch borrow up to DWS_ARENA_MAX_ALIGN is met by aligning its offset alone.
     uintptr_t b = (uintptr_t)base;
-    uintptr_t ab = (b + (DET_ARENA_MAX_ALIGN - 1)) & ~(uintptr_t)(DET_ARENA_MAX_ALIGN - 1);
+    uintptr_t ab = (b + (DWS_ARENA_MAX_ALIGN - 1)) & ~(uintptr_t)(DWS_ARENA_MAX_ALIGN - 1);
     size_t adj = (size_t)(ab - b);
     a->base = (uint8_t *)ab;
-    a->size = (size > adj) ? ((size - adj) & ~(size_t)(DET_ARENA_ALIGN - 1)) : 0;
+    a->size = (size > adj) ? ((size - adj) & ~(size_t)(DWS_ARENA_ALIGN - 1)) : 0;
     a->persist_end = 0;
     a->scratch_top = a->size;
     a->persist_used = 0;
@@ -46,9 +46,9 @@ void det_arena_init(DetArena *a, void *base, size_t size)
 // Persistent end (first-fit, grows up from the bottom)
 // ---------------------------------------------------------------------------
 
-void *det_arena_persist_alloc(DetArena *a, size_t n)
+void *dws_arena_persist_alloc(DWSArena *a, size_t n)
 {
-    n = align_up(n ? n : DET_ARENA_ALIGN);
+    n = align_up(n ? n : DWS_ARENA_ALIGN);
 
     // First-fit over the existing block chain.
     size_t off = 0;
@@ -58,7 +58,7 @@ void *det_arena_persist_alloc(DetArena *a, size_t n)
         if (!b->used && b->size >= n)
         {
             // Split if the remainder can hold another header + a minimum payload.
-            if (b->size >= n + AHDR + DET_ARENA_ALIGN)
+            if (b->size >= n + AHDR + DWS_ARENA_ALIGN)
             {
                 ABlk *nb = (ABlk *)(a->base + off + AHDR + n);
                 nb->size = b->size - n - AHDR;
@@ -93,7 +93,7 @@ void *det_arena_persist_alloc(DetArena *a, size_t n)
     return nullptr; // fail closed
 }
 
-void det_arena_persist_free(DetArena *a, void *p)
+void dws_arena_persist_free(DWSArena *a, void *p)
 {
     if (!p)
         return;
@@ -140,16 +140,16 @@ void det_arena_persist_free(DetArena *a, void *p)
 // Scratch end (bump, grows down from the top)
 // ---------------------------------------------------------------------------
 
-void *det_arena_scratch_alloc_aligned(DetArena *a, size_t n, size_t align)
+void *dws_arena_scratch_alloc_aligned(DWSArena *a, size_t n, size_t align)
 {
-    if (align < DET_ARENA_ALIGN)
-        align = DET_ARENA_ALIGN;
-    if (align > DET_ARENA_MAX_ALIGN)
-        align = DET_ARENA_MAX_ALIGN; // the base only guarantees this much
-    n = align_up(n ? n : DET_ARENA_ALIGN);
+    if (align < DWS_ARENA_ALIGN)
+        align = DWS_ARENA_ALIGN;
+    if (align > DWS_ARENA_MAX_ALIGN)
+        align = DWS_ARENA_MAX_ALIGN; // the base only guarantees this much
+    n = align_up(n ? n : DWS_ARENA_ALIGN);
     if (a->scratch_top < n)
         return nullptr;
-    // The base is DET_ARENA_MAX_ALIGN-aligned, so aligning the offset down aligns the pointer.
+    // The base is DWS_ARENA_MAX_ALIGN-aligned, so aligning the offset down aligns the pointer.
     size_t nt = (a->scratch_top - n) & ~(size_t)(align - 1);
     if (nt < a->persist_end || nt > a->scratch_top)
         return nullptr; // would cross the persistent end (or underflow)
@@ -160,24 +160,24 @@ void *det_arena_scratch_alloc_aligned(DetArena *a, size_t n, size_t align)
     return a->base + a->scratch_top;
 }
 
-void *det_arena_scratch_alloc(DetArena *a, size_t n)
+void *dws_arena_scratch_alloc(DWSArena *a, size_t n)
 {
-    return det_arena_scratch_alloc_aligned(a, n, DET_ARENA_ALIGN);
+    return dws_arena_scratch_alloc_aligned(a, n, DWS_ARENA_ALIGN);
 }
 
-size_t det_arena_scratch_mark(const DetArena *a)
+size_t dws_arena_scratch_mark(const DWSArena *a)
 {
     return a->scratch_top;
 }
 
-void det_arena_scratch_release(DetArena *a, size_t mark)
+void dws_arena_scratch_release(DWSArena *a, size_t mark)
 {
     // A mark is an earlier (higher) scratch_top; releasing frees everything below it.
     if (mark >= a->scratch_top && mark <= a->size)
         a->scratch_top = mark;
 }
 
-void det_arena_scratch_reset(DetArena *a)
+void dws_arena_scratch_reset(DWSArena *a)
 {
     a->scratch_top = a->size;
 }
@@ -186,18 +186,18 @@ void det_arena_scratch_reset(DetArena *a)
 // Observability
 // ---------------------------------------------------------------------------
 
-size_t det_arena_free_bytes(const DetArena *a)
+size_t dws_arena_free_bytes(const DWSArena *a)
 {
     size_t mid = (a->scratch_top > a->persist_end) ? a->scratch_top - a->persist_end : 0;
     return mid > AHDR ? mid - AHDR : 0; // usable payload of one new persistent block
 }
 
-size_t det_arena_persist_used(const DetArena *a)
+size_t dws_arena_persist_used(const DWSArena *a)
 {
     return a->persist_used;
 }
 
-size_t det_arena_scratch_used(const DetArena *a)
+size_t dws_arena_scratch_used(const DWSArena *a)
 {
     return a->size - a->scratch_top;
 }
@@ -206,108 +206,108 @@ size_t det_arena_scratch_used(const DetArena *a)
 // Multi-region set (DRAM base + PSRAM extension)
 // ===========================================================================
 
-void det_arena_set_init(DetArenaSet *s)
+void dws_arena_set_init(DWSArenaSet *s)
 {
     s->count = 0;
 }
 
-bool det_arena_set_add(DetArenaSet *s, void *base, size_t size)
+bool dws_arena_set_add(DWSArenaSet *s, void *base, size_t size)
 {
-    if (s->count >= DET_ARENA_MAX_REGIONS)
+    if (s->count >= DWS_ARENA_MAX_REGIONS)
         return false;
-    DetArena *r = &s->region[s->count];
-    det_arena_init(r, base, size);
-    if (r->size < AHDR + DET_ARENA_ALIGN)
+    DWSArena *r = &s->region[s->count];
+    dws_arena_init(r, base, size);
+    if (r->size < AHDR + DWS_ARENA_ALIGN)
         return false; // too small to hold even one block
     s->count++;
     return true;
 }
 
-void *det_arena_set_persist_alloc(DetArenaSet *s, size_t n)
+void *dws_arena_set_persist_alloc(DWSArenaSet *s, size_t n)
 {
     for (size_t i = 0; i < s->count; i++)
     {
-        void *p = det_arena_persist_alloc(&s->region[i], n);
+        void *p = dws_arena_persist_alloc(&s->region[i], n);
         if (p)
             return p;
     }
     return nullptr; // fail closed
 }
 
-void det_arena_set_persist_free(DetArenaSet *s, void *p)
+void dws_arena_set_persist_free(DWSArenaSet *s, void *p)
 {
     if (!p)
         return;
     uint8_t *b = (uint8_t *)p;
     for (size_t i = 0; i < s->count; i++)
     {
-        DetArena *r = &s->region[i];
+        DWSArena *r = &s->region[i];
         if (b >= r->base && b < r->base + r->size)
         {
-            det_arena_persist_free(r, p);
+            dws_arena_persist_free(r, p);
             return;
         }
     }
 }
 
-void *det_arena_set_scratch_alloc_aligned(DetArenaSet *s, size_t n, size_t align)
+void *dws_arena_set_scratch_alloc_aligned(DWSArenaSet *s, size_t n, size_t align)
 {
     for (size_t i = 0; i < s->count; i++)
     {
-        void *p = det_arena_scratch_alloc_aligned(&s->region[i], n, align);
+        void *p = dws_arena_scratch_alloc_aligned(&s->region[i], n, align);
         if (p)
             return p;
     }
     return nullptr; // fail closed
 }
 
-void *det_arena_set_scratch_alloc(DetArenaSet *s, size_t n)
+void *dws_arena_set_scratch_alloc(DWSArenaSet *s, size_t n)
 {
-    return det_arena_set_scratch_alloc_aligned(s, n, DET_ARENA_ALIGN);
+    return dws_arena_set_scratch_alloc_aligned(s, n, DWS_ARENA_ALIGN);
 }
 
-DetArenaMark det_arena_set_scratch_mark(const DetArenaSet *s)
+DWSArenaMark dws_arena_set_scratch_mark(const DWSArenaSet *s)
 {
-    DetArenaMark m;
+    DWSArenaMark m;
     m.count = s->count;
     for (size_t i = 0; i < s->count; i++)
         m.top[i] = s->region[i].scratch_top;
     return m;
 }
 
-void det_arena_set_scratch_release(DetArenaSet *s, const DetArenaMark *m)
+void dws_arena_set_scratch_release(DWSArenaSet *s, const DWSArenaMark *m)
 {
     size_t n = m->count < s->count ? m->count : s->count;
     for (size_t i = 0; i < n; i++)
-        det_arena_scratch_release(&s->region[i], m->top[i]);
+        dws_arena_scratch_release(&s->region[i], m->top[i]);
 }
 
-void det_arena_set_scratch_reset(DetArenaSet *s)
+void dws_arena_set_scratch_reset(DWSArenaSet *s)
 {
     for (size_t i = 0; i < s->count; i++)
-        det_arena_scratch_reset(&s->region[i]);
+        dws_arena_scratch_reset(&s->region[i]);
 }
 
-size_t det_arena_set_free_bytes(const DetArenaSet *s)
+size_t dws_arena_set_free_bytes(const DWSArenaSet *s)
 {
     size_t t = 0;
     for (size_t i = 0; i < s->count; i++)
-        t += det_arena_free_bytes(&s->region[i]);
+        t += dws_arena_free_bytes(&s->region[i]);
     return t;
 }
 
-size_t det_arena_set_persist_used(const DetArenaSet *s)
+size_t dws_arena_set_persist_used(const DWSArenaSet *s)
 {
     size_t t = 0;
     for (size_t i = 0; i < s->count; i++)
-        t += det_arena_persist_used(&s->region[i]);
+        t += dws_arena_persist_used(&s->region[i]);
     return t;
 }
 
-size_t det_arena_set_scratch_used(const DetArenaSet *s)
+size_t dws_arena_set_scratch_used(const DWSArenaSet *s)
 {
     size_t t = 0;
     for (size_t i = 0; i < s->count; i++)
-        t += det_arena_scratch_used(&s->region[i]);
+        t += dws_arena_scratch_used(&s->region[i]);
     return t;
 }

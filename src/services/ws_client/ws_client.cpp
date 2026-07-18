@@ -10,7 +10,7 @@
 #include "services/ws_client/ws_client.h"
 #include "services/clock.h" // dwsdelay
 
-#if DETWS_ENABLE_WS_CLIENT
+#if DWS_ENABLE_WS_CLIENT
 
 #include "network_drivers/presentation/base64/base64.h"
 #include "network_drivers/presentation/sha1/sha1.h"
@@ -207,7 +207,7 @@ bool ws_client_parse_frame(const uint8_t *buf, size_t avail, uint8_t *opcode, bo
 
 // ---------------------------------------------------------------------------
 // Transport (ESP32 only): persistent raw-lwIP client + RFC 6455 framing,
-// with wss:// over a persistent client TLS session (det_tls csess).
+// with wss:// over a persistent client TLS session (dws_tls csess).
 // ---------------------------------------------------------------------------
 #if defined(ARDUINO)
 
@@ -215,12 +215,12 @@ bool ws_client_parse_frame(const uint8_t *buf, size_t avail, uint8_t *opcode, bo
 #include <Arduino.h>
 #include <esp_system.h> // esp_fill_random (per-frame masking key)
 
-#if DETWS_ENABLE_WS_CLIENT_TLS
+#if DWS_ENABLE_WS_CLIENT_TLS
 #include "network_drivers/tls/tls.h"
 #include <mbedtls/ssl.h>
 #endif
 
-#ifdef DETWS_WS_CLIENT_DEBUG
+#ifdef DWS_WS_CLIENT_DEBUG
 #define WSC_DBG(...) printf(__VA_ARGS__)
 #else
 #define WSC_DBG(...) ((void)0)
@@ -231,21 +231,21 @@ bool ws_client_parse_frame(const uint8_t *buf, size_t avail, uint8_t *opcode, bo
 struct WsClientCtx
 {
     WsClientMessageCb cb;
-    int cid = -1;         // outbound connection id (det_client pool)
+    int cid = -1;         // outbound connection id (dws_client pool)
     volatile bool closed; // peer closed / error (set when the pump sees it)
     bool ws_up;
     bool use_tls;
 
-    // Inbound plaintext ring, fed by a pump in the loop: from det_client_read for
-    // plain ws, from the TLS session (det_tls_client_session_read) for wss.
-    uint8_t rx[DETWS_WS_CLIENT_BUF_SIZE];
+    // Inbound plaintext ring, fed by a pump in the loop: from dws_client_read for
+    // plain ws, from the TLS session (dws_tls_client_session_read) for wss.
+    uint8_t rx[DWS_WS_CLIENT_BUF_SIZE];
     volatile size_t rx_head;
     volatile size_t rx_tail;
-    uint8_t pkt[DETWS_WS_CLIENT_BUF_SIZE]; // a frame copied out to parse
-    uint8_t tx[DETWS_WS_CLIENT_BUF_SIZE];  // outgoing frame scratch
+    uint8_t pkt[DWS_WS_CLIENT_BUF_SIZE]; // a frame copied out to parse
+    uint8_t tx[DWS_WS_CLIENT_BUF_SIZE];  // outgoing frame scratch
 
     // Fragmented-message reassembly (continuation frames -> one delivered message).
-    uint8_t msg[DETWS_WS_CLIENT_BUF_SIZE];
+    uint8_t msg[DWS_WS_CLIENT_BUF_SIZE];
     size_t msg_len;
     uint8_t msg_op;
 };
@@ -269,11 +269,11 @@ static void ring_copy(uint8_t *dst, size_t n)
         dst[i] = s_wsc.rx[(s_wsc.rx_tail + i) % sizeof(s_wsc.rx)];
 }
 
-// --- transport over the shared outbound client (det_client) ---
+// --- transport over the shared outbound client (dws_client) ---
 
 static bool ws_tx_plain(const uint8_t *data, size_t len)
 {
-    return det_client_send(s_wsc.cid, data, len);
+    return dws_client_send(s_wsc.cid, data, len);
 }
 
 // Drain plaintext wire bytes from the client into the s_wsc.rx ring (plain ws).
@@ -286,10 +286,10 @@ static void ws_pump_plain()
         if (freey == 0)
             break;
         size_t want = freey < sizeof(tmp) ? freey : sizeof(tmp);
-        size_t n = det_client_read(s_wsc.cid, tmp, want);
+        size_t n = dws_client_read(s_wsc.cid, tmp, want);
         if (n == 0)
         {
-            if (det_client_is_closed(s_wsc.cid))
+            if (dws_client_is_closed(s_wsc.cid))
                 s_wsc.closed = true;
             break;
         }
@@ -301,21 +301,21 @@ static void ws_pump_plain()
     }
 }
 
-#if DETWS_ENABLE_WS_CLIENT_TLS
+#if DWS_ENABLE_WS_CLIENT_TLS
 // TLS BIO over the shared client: write ciphertext through the pool, read
 // ciphertext by draining the client's wire ring.
 static int ws_tls_send(void *ctx, const unsigned char *buf, size_t len)
 {
     (void)ctx;
     size_t cap = len > 0xFFFF ? 0xFFFF : len;
-    return det_client_send(s_wsc.cid, buf, cap) ? (int)cap : MBEDTLS_ERR_SSL_WANT_WRITE;
+    return dws_client_send(s_wsc.cid, buf, cap) ? (int)cap : MBEDTLS_ERR_SSL_WANT_WRITE;
 }
 static int ws_tls_recv(void *ctx, unsigned char *buf, size_t len)
 {
     (void)ctx;
-    size_t n = det_client_read(s_wsc.cid, buf, len);
+    size_t n = dws_client_read(s_wsc.cid, buf, len);
     if (n == 0)
-        return det_client_is_closed(s_wsc.cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
+        return dws_client_is_closed(s_wsc.cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
     return (int)n;
 }
 static void ws_pump_tls()
@@ -327,7 +327,7 @@ static void ws_pump_tls()
         if (freey == 0)
             break;
         size_t want = freey < sizeof(tmp) ? freey : sizeof(tmp);
-        int n = det_tls_client_session_read(tmp, want);
+        int n = dws_tls_client_session_read(tmp, want);
         if (n <= 0)
         {
             if (n < 0)
@@ -341,14 +341,14 @@ static void ws_pump_tls()
         }
     }
 }
-#endif // DETWS_ENABLE_WS_CLIENT_TLS
+#endif // DWS_ENABLE_WS_CLIENT_TLS
 
 // Send already-framed bytes (plaintext or TLS-encrypted per the mode).
 static bool ws_tx(const uint8_t *data, size_t len)
 {
-#if DETWS_ENABLE_WS_CLIENT_TLS
+#if DWS_ENABLE_WS_CLIENT_TLS
     if (s_wsc.use_tls)
-        return det_tls_client_session_write(data, len) == (int)len;
+        return dws_tls_client_session_write(data, len) == (int)len;
 #endif
     return ws_tx_plain(data, len);
 }
@@ -366,12 +366,12 @@ static bool ws_send_frame(WsClientOpcode opcode, const uint8_t *payload, size_t 
 
 static void ws_close_tcp()
 {
-#if DETWS_ENABLE_WS_CLIENT_TLS
+#if DWS_ENABLE_WS_CLIENT_TLS
     if (s_wsc.use_tls)
-        det_tls_client_session_end();
+        dws_tls_client_session_end();
 #endif
     if (s_wsc.cid >= 0)
-        det_client_close(s_wsc.cid);
+        dws_client_close(s_wsc.cid);
     s_wsc.cid = -1;
     s_wsc.ws_up = false;
 }
@@ -427,7 +427,7 @@ static void handle_frame(uint8_t op, bool fin, const uint8_t *payload, size_t le
 
 static void process_rx()
 {
-#if DETWS_ENABLE_WS_CLIENT_TLS
+#if DWS_ENABLE_WS_CLIENT_TLS
     if (s_wsc.use_tls)
         ws_pump_tls();
     else
@@ -471,7 +471,7 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
 {
     if (!host || !path)
         return false;
-#if !DETWS_ENABLE_WS_CLIENT_TLS
+#if !DWS_ENABLE_WS_CLIENT_TLS
     if (use_tls)
         return false;
 #endif
@@ -483,24 +483,24 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
     uint32_t deadline = millis() + 8000;
 
     // Open the TCP connection (DNS + connect) via the shared client transport.
-    s_wsc.cid = det_client_open(host, port, 8000);
+    s_wsc.cid = dws_client_open(host, port, 8000);
     if (s_wsc.cid < 0)
     {
-        WSC_DBG("[wsc] det_client_open failed (%d)\n", s_wsc.cid);
+        WSC_DBG("[wsc] dws_client_open failed (%d)\n", s_wsc.cid);
         return false;
     }
 
-#if DETWS_ENABLE_WS_CLIENT_TLS
+#if DWS_ENABLE_WS_CLIENT_TLS
     if (s_wsc.use_tls)
     {
-        if (!det_tls_client_session_begin(host, ws_tls_send, ws_tls_recv))
+        if (!dws_tls_client_session_begin(host, ws_tls_send, ws_tls_recv))
         {
             WSC_DBG("[wsc] csess_begin failed\n");
             ws_close_tcp();
             return false;
         }
         int h;
-        while ((h = det_tls_client_session_handshake()) == 0 && !s_wsc.closed && (int32_t)(deadline - millis()) > 0)
+        while ((h = dws_tls_client_session_handshake()) == 0 && !s_wsc.closed && (int32_t)(deadline - millis()) > 0)
             dwsdelay(5);
         if (h != 1)
         {
@@ -533,7 +533,7 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
     bool done = false;
     while (!done && !s_wsc.closed && (int32_t)(deadline - millis()) > 0)
     {
-#if DETWS_ENABLE_WS_CLIENT_TLS
+#if DWS_ENABLE_WS_CLIENT_TLS
         if (s_wsc.use_tls)
             ws_pump_tls();
         else
@@ -565,7 +565,7 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
 bool ws_client_send_text(const char *text)
 {
     return ws_send_frame(WsClientOpcode::WSC_OP_TEXT, (const uint8_t *)text,
-                         text ? strnlen(text, DETWS_WS_CLIENT_BUF_SIZE) : 0);
+                         text ? strnlen(text, DWS_WS_CLIENT_BUF_SIZE) : 0);
 }
 bool ws_client_send_binary(const uint8_t *data, size_t len)
 {
@@ -628,4 +628,4 @@ void ws_client_close()
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_WS_CLIENT
+#endif // DWS_ENABLE_WS_CLIENT

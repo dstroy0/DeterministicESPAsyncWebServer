@@ -8,13 +8,13 @@
 
 #include "services/dds/dds.h"
 
-#if DETWS_ENABLE_DDS
+#if DWS_ENABLE_DDS
 
 #include <string.h>
 
 const uint8_t RTPS_VERSION[2] = {2, 4};
 
-size_t detws_rtps_header(const uint8_t *guid_prefix, const uint8_t *vendor_id, uint8_t *out, size_t cap)
+size_t dws_rtps_header(const uint8_t *guid_prefix, const uint8_t *vendor_id, uint8_t *out, size_t cap)
 {
     if (!guid_prefix || !vendor_id || !out || cap < Rtps::RTPS_HEADER_LEN)
         return 0;
@@ -30,8 +30,7 @@ size_t detws_rtps_header(const uint8_t *guid_prefix, const uint8_t *vendor_id, u
     return Rtps::RTPS_HEADER_LEN;
 }
 
-size_t detws_rtps_submessage(uint8_t id, uint8_t flags, const uint8_t *body, uint16_t body_len, uint8_t *out,
-                             size_t cap)
+size_t dws_rtps_submessage(uint8_t id, uint8_t flags, const uint8_t *body, uint16_t body_len, uint8_t *out, size_t cap)
 {
     if (!out || (body_len && !body))
         return 0;
@@ -56,7 +55,7 @@ size_t detws_rtps_submessage(uint8_t id, uint8_t flags, const uint8_t *body, uin
     return n;
 }
 
-bool detws_rtps_parse(const uint8_t *msg, size_t len, DetwsRtpsCb cb, void *arg)
+bool dws_rtps_parse(const uint8_t *msg, size_t len, DetwsRtpsCb cb, void *arg)
 {
     if (!msg || len < Rtps::RTPS_HEADER_LEN)
         return false;
@@ -85,4 +84,4 @@ bool detws_rtps_parse(const uint8_t *msg, size_t len, DetwsRtpsCb cb, void *arg)
     return true;
 }
 
-#endif // DETWS_ENABLE_DDS
+#endif // DWS_ENABLE_DDS

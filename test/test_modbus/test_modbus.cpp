@@ -327,7 +327,7 @@ void test_small_response_buffer()
     TEST_ASSERT_EQUAL_size_t(0, run_pdu(wr_regs, 8, small, 8));
 }
 
-#if DETWS_ENABLE_MODBUS_RTU
+#if DWS_ENABLE_MODBUS_RTU
 // Independent CRC16-Modbus (init 0xFFFF, reflected poly 0xA001) for building RTU
 // frames + verifying response CRCs. Anchored to a known vector below.
 static uint16_t t_crc16(const uint8_t *d, size_t n)
@@ -417,7 +417,7 @@ void test_rtu_edge_cases()
     size_t rl = build_rtu(req, 0x11, pdu, sizeof(pdu));
     TEST_ASSERT_EQUAL_size_t(0, modbus_rtu_process_adu(req, rl, resp, 4, 0x11)); // out_cap tiny
 }
-#endif // DETWS_ENABLE_MODBUS_RTU
+#endif // DWS_ENABLE_MODBUS_RTU
 
 void test_server_init_bounds_and_handler()
 {
@@ -447,7 +447,7 @@ int main()
     RUN_TEST(test_discrete_and_input_accessors);
     RUN_TEST(test_exceptions_per_function);
     RUN_TEST(test_small_response_buffer);
-#if DETWS_ENABLE_MODBUS_RTU
+#if DWS_ENABLE_MODBUS_RTU
     RUN_TEST(test_rtu_crc16_known_vector);
     RUN_TEST(test_rtu_read_holding_roundtrip);
     RUN_TEST(test_rtu_bad_crc_dropped);

@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http3/h3_frame.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/http3/quic_varint.h"
 #include <string.h>
@@ -145,4 +145,4 @@ size_t h3_build_goaway(uint8_t *out, size_t cap, uint64_t stream_id)
     return o + a;
 }
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3

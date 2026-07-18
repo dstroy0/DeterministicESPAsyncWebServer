@@ -15,11 +15,11 @@
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "network_drivers/presentation/ssh/transport/ssh_dh.h" // ssh_rng_fill(), ssh_dh[], ssh_dh_generate/derive_keys
 #include "network_drivers/presentation/ssh/transport/ssh_packet.h" // SSH_MSG_KEXINIT, ssh_pkt[]
-#include "services/clock.h"                                        // detws_millis() (re-key timer)
-#if DETWS_ENABLE_PQC_KEX
+#include "services/clock.h"                                        // dws_millis() (re-key timer)
+#if DWS_ENABLE_PQC_KEX
 #include "network_drivers/presentation/pqc/mlkem.h" // mlkem768_encaps (PQ/T hybrid KEX responder)
 #endif
-#if DETWS_ENABLE_SSH_ZLIB
+#if DWS_ENABLE_SSH_ZLIB
 #include "network_drivers/presentation/ssh/transport/ssh_comp.h" // s2c compression negotiation
 #endif
 #include <stdio.h> // snprintf (name-list assembly)
@@ -39,7 +39,7 @@ static const char *const KEX_DH = "diffie-hellman-group14-sha256";
 static const char *const KEX_C25519 = "curve25519-sha256";
 static const char *const KEX_C25519_LIBSSH = "curve25519-sha256@libssh.org"; // identical wire protocol
 static const char *const KEX_ECDH_NISTP256 = "ecdh-sha2-nistp256";           // NIST P-256 ECDH (RFC 5656 §4)
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
 static const char *const KEX_MLKEM768 = "mlkem768x25519-sha256"; // PQ/T hybrid (ML-KEM-768 + X25519)
 #endif
 static const char *const HOSTKEY_RSA_SHA256 = "rsa-sha2-256";
@@ -57,7 +57,7 @@ static const char *const ALG_MAC = "hmac-sha2-256";
 static const char *const ALG_MAC_LIST = "hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,"
                                         "hmac-sha2-256,hmac-sha2-512";
 static const char *const ALG_COMP = "none";
-#if DETWS_ENABLE_SSH_ZLIB
+#if DWS_ENABLE_SSH_ZLIB
 // Server->client compression preference: zlib@openssh.com (delayed, OpenSSH's default) first, then
 // zlib (immediate), then none. Client->server stays "none" (ALG_COMP): see ssh_zlib.h.
 static const char *const ALG_COMP_S2C = "zlib@openssh.com,zlib,none";
@@ -92,17 +92,17 @@ bool ssh_kex_prefer_rsa(void)
     return s_sshtr.prefer_rsa;
 }
 
-void det_ssh_hostkey_ed25519_set(const uint8_t seed[32])
+void dws_ssh_hostkey_ed25519_set(const uint8_t seed[32])
 {
     memcpy(s_sshtr.ed_seed, seed, 32);
     ssh_ed25519_pubkey(s_sshtr.ed_pub, s_sshtr.ed_seed);
     s_sshtr.ed_have = true;
 }
-bool det_ssh_hostkey_ed25519_available(void)
+bool dws_ssh_hostkey_ed25519_available(void)
 {
     return s_sshtr.ed_have;
 }
-void det_ssh_hostkey_ecdsa_set(const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
+void dws_ssh_hostkey_ecdsa_set(const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
 {
     // Derive and cache the public point; reject an invalid scalar (leaves ecdsa_have false).
     if (!ssh_ecdsa_p256_pubkey(s_sshtr.ecdsa_pub, priv))
@@ -110,7 +110,7 @@ void det_ssh_hostkey_ecdsa_set(const uint8_t priv[SSH_ECDSA_P256_PRIV_LEN])
     memcpy(s_sshtr.ecdsa_priv, priv, SSH_ECDSA_P256_PRIV_LEN);
     s_sshtr.ecdsa_have = true;
 }
-bool det_ssh_hostkey_ecdsa_available(void)
+bool dws_ssh_hostkey_ecdsa_available(void)
 {
     return s_sshtr.ecdsa_have;
 }
@@ -128,7 +128,7 @@ static void build_kex_list(char *out, size_t cap)
     const char *c2 = KEX_C25519_LIBSSH;
     const char *dh = KEX_DH;
     const char *ec = KEX_ECDH_NISTP256; // NIST P-256 ECDH (RFC 5656)
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
     // Post-quantum hybrid advertised first: a PQC-capable peer (OpenSSH 9.9+, which also lists it
     // first) negotiates it over classical X25519, closing the harvest-now-decrypt-later gap.
     const char *pq = KEX_MLKEM768;
@@ -148,8 +148,8 @@ static void build_hostkey_list(char *out, size_t cap)
     // Both rsa-sha2-512 and rsa-sha2-256 are backed by the one "ssh-rsa" host key
     // (RFC 8332): advertise 512 before 256 (OpenSSH's order). Filter to keys we hold.
     const bool rsa = hostkey_rsa_available();
-    const bool ed = det_ssh_hostkey_ed25519_available();
-    const bool ec = det_ssh_hostkey_ecdsa_available();
+    const bool ed = dws_ssh_hostkey_ed25519_available();
+    const bool ec = dws_ssh_hostkey_ecdsa_available();
     struct HostkeyCand
     {
         const char *name;
@@ -444,7 +444,7 @@ static bool negotiate_kex(const uint8_t *list, uint32_t nlen, SshKexAlg *out)
 {
     AlgCand<SshKexAlg> kc[5];
     int nk = 0;
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
     kc[nk++] = {KEX_MLKEM768, SshKexAlg::SSH_KEX_MLKEM768_X25519, true}; // hybrid first (PQC-preferred)
 #endif
     if (s_sshtr.prefer_rsa)
@@ -469,8 +469,8 @@ static bool negotiate_kex(const uint8_t *list, uint32_t nlen, SshKexAlg *out)
 static bool negotiate_hostkey(const uint8_t *list, uint32_t nlen, SshHostkeyAlg *out)
 {
     const bool rsa = hostkey_rsa_available();
-    const bool ed = det_ssh_hostkey_ed25519_available();
-    const bool ec = det_ssh_hostkey_ecdsa_available();
+    const bool ed = dws_ssh_hostkey_ed25519_available();
+    const bool ec = dws_ssh_hostkey_ecdsa_available();
     AlgCand<SshHostkeyAlg> hc[4];
     if (s_sshtr.prefer_rsa)
     {
@@ -563,7 +563,7 @@ int ssh_kexinit_parse(uint8_t i, const uint8_t *payload, size_t len)
     // compression s2c: negotiate zlib@openssh.com > zlib > none (server preference).
     if (!read_namelist(payload, len, &off, &list, &nlen))
         return -1;
-#if DETWS_ENABLE_SSH_ZLIB
+#if DWS_ENABLE_SSH_ZLIB
     {
         const AlgCand<SshCompAlg> compc[3] = {{"zlib@openssh.com", SshCompAlg::SSH_COMP_ZLIB_DELAYED, true},
                                               {"zlib", SshCompAlg::SSH_COMP_ZLIB, true},
@@ -868,7 +868,7 @@ int ssh_kex_generate(uint8_t i)
         return -1;
     SshKexAlg a = ssh_sess[i].kex_alg;
     bool curve = (a == SshKexAlg::SSH_KEX_CURVE25519);
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
     curve = curve || (a == SshKexAlg::SSH_KEX_MLKEM768_X25519); // the hybrid's classical half is X25519
 #endif
     if (curve)
@@ -895,7 +895,7 @@ int ssh_kex_generate(uint8_t i)
     return ssh_dh_generate(i);
 }
 
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
 // mlkem768x25519-sha256 (draft-ietf-sshm-mlkem-hybrid-kex): from the client's SSH_MSG_KEX_HYBRID_INIT
 // (byte 30 || string C_INIT, C_INIT = ek(1184) || Q_C(32)), ML-KEM-Encaps to the peer's key and X25519
 // against Q_C, then combine K = SHA256(K_PQ || K_CL). Writes S_REPLY = ciphertext(1088) || Q_S(32) and
@@ -966,7 +966,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
     size_t k_hash_len = 256;
     bool pub_is_string = false;
     bool k_is_string = false;
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
     uint8_t s_reply[MLKEM768_CT_BYTES + 32]; // hybrid S_REPLY = ciphertext(1088) || Q_S(32)
 #endif
 
@@ -994,7 +994,7 @@ int ssh_kexdh_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *rep
         pub_is_string = true;
         ssh_wipe(kk, sizeof(kk));
     }
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
     else if (s->kex_alg == SshKexAlg::SSH_KEX_MLKEM768_X25519)
     {
         // mlkem768x25519-sha256: K = SHA256(K_PQ || K_CL); C_INIT / S_REPLY and K hashed as strings.
@@ -1096,7 +1096,7 @@ void ssh_newkeys_sent(uint8_t i)
         return;
     // We have emitted our SSH_MSG_NEWKEYS: our outbound direction is now encrypted (RFC 4253 sec 7.3).
     ssh_pkt[i].enc_out = true;
-#if DETWS_ENABLE_SSH_ZLIB
+#if DWS_ENABLE_SSH_ZLIB
     // "zlib" (non-delayed) starts its s2c (outbound) stream here; idempotent, so a re-key does not restart it.
     ssh_comp_on_newkeys(i);
 #endif
@@ -1114,7 +1114,7 @@ void ssh_newkeys_complete(uint8_t i)
     // is already authenticated, so resume the open (channel) phase.
     ssh_sess[i].phase = ssh_sess[i].authed ? SshPhase::SSH_PHASE_OPEN : SshPhase::SSH_PHASE_SERVICE;
     // Reset the re-key timer: the volume/time budget is measured from this completed KEX.
-    ssh_sess[i].last_kex_ms = detws_millis();
+    ssh_sess[i].last_kex_ms = dws_millis();
 }
 
 bool ssh_rekey_needed(uint8_t i)

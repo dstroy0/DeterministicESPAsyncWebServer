@@ -3,7 +3,7 @@
 
 /**
  * @file 60.DnsServer.ino
- * @brief Run a tiny DNS server so LAN devices can use names, not IPs (DETWS_ENABLE_DNS_SERVER).
+ * @brief Run a tiny DNS server so LAN devices can use names, not IPs (DWS_ENABLE_DNS_SERVER).
  *
  * On a network with no real DNS (offline, air-gapped, a lab bench), nothing turns
  * "printer.lan" into an address. This makes the ESP32 answer those lookups from a small table
@@ -12,10 +12,10 @@
  *
  * Point another device's DNS at this board's IP, then `nslookup printer.lan <board-ip>`.
  *
- * Build flags (PlatformIO): `-DDETWS_ENABLE_DNS_SERVER=1`
+ * Build flags (PlatformIO): `-DDWS_ENABLE_DNS_SERVER=1`
  */
 
-#define DETWS_ENABLE_DNS_SERVER 1
+#define DWS_ENABLE_DNS_SERVER 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -42,11 +42,11 @@ void setup()
     WiFi.setSleep(false);
 
     // The name -> IPv4 records this server will answer. Edit these for your network.
-    det_dns_server_add("esp32.lan", ip[0], ip[1], ip[2], ip[3]); // this board, by name
-    det_dns_server_add("printer.lan", 192, 168, 1, 50);
-    det_dns_server_add("nas.lan", 192, 168, 1, 60);
+    dws_dns_server_add("esp32.lan", ip[0], ip[1], ip[2], ip[3]); // this board, by name
+    dws_dns_server_add("printer.lan", 192, 168, 1, 50);
+    dws_dns_server_add("nas.lan", 192, 168, 1, 60);
 
-    if (det_dns_server_begin())
+    if (dws_dns_server_begin())
         Serial.println("DNS server on UDP/53 (point a device's DNS here, then: nslookup printer.lan <this-ip>)");
     else
         Serial.println("DNS server failed to bind :53");

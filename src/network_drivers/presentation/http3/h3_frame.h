@@ -19,7 +19,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include <stddef.h>
 #include <stdint.h>
@@ -85,5 +85,5 @@ size_t h3_build_settings(uint8_t *out, size_t cap, const uint64_t *ids, const ui
 /** @brief GOAWAY frame carrying @p stream_id (RFC 9114 sec 7.2.6). */
 size_t h3_build_goaway(uint8_t *out, size_t cap, uint64_t stream_id);
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_H3_FRAME_H

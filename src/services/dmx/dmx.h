@@ -3,7 +3,7 @@
 
 /**
  * @file dmx.h
- * @brief DMX512 framing + RDM (ANSI E1.20) management codec (DETWS_ENABLE_DMX).
+ * @brief DMX512 framing + RDM (ANSI E1.20) management codec (DWS_ENABLE_DMX).
  *
  * DMX512 (lighting / stage control over RS-485) is positional: after a break, a start code
  * octet (0x00 for dimmer data) is followed by up to 512 channel slots, with no checksum or
@@ -25,7 +25,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_DMX
+#if DWS_ENABLE_DMX
 
 #include <stddef.h>
 #include <stdint.h>
@@ -109,5 +109,5 @@ size_t rdm_build(uint8_t *buf, size_t cap, const RdmPacket *p, const uint8_t *pd
  */
 bool rdm_parse(const uint8_t *buf, size_t len, RdmPacket *out, size_t *consumed);
 
-#endif // DETWS_ENABLE_DMX
+#endif // DWS_ENABLE_DMX
 #endif // DETERMINISTICESPASYNCWEBSERVER_DMX_H

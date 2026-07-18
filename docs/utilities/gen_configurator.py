@@ -4,10 +4,10 @@
 """Generate the interactive build configurator (docs/configurator.html).
 
 Single source of truth: src/ServerConfig.h. This parses that header for
-every user-toggleable feature flag (`#ifndef DETWS_ENABLE_X / #define ... 0|1`),
+every user-toggleable feature flag (`#ifndef DWS_ENABLE_X / #define ... 0|1`),
 every override-able tuning knob (`#ifndef KNOB / #define KNOB value`), the section
 titles the file already groups them under, and the hard dependencies encoded as
-`#if DETWS_ENABLE_child && !DETWS_ENABLE_parent` guards. It emits one self-contained
+`#if DWS_ENABLE_child && !DWS_ENABLE_parent` guards. It emits one self-contained
 HTML page (inline CSS/JS, data embedded as JSON) that lets you tick features, tune
 their knobs, and copy out either a platformio.ini `build_flags` block or a set of
 `#define`s - emitting only the values that differ from the library defaults.
@@ -32,11 +32,11 @@ OUT = os.path.join(ROOT, "docs", "configurator.html")
 DASH = re.compile(r"^//\s*-{20,}\s*$")
 IFNDEF = re.compile(r"^#ifndef\s+([A-Za-z_][A-Za-z0-9_]*)\s*$")
 DEFINE = re.compile(r"^#define\s+([A-Za-z_][A-Za-z0-9_]*)\s+(.+?)\s*$")
-IF_GATE = re.compile(r"^#if\s+DETWS_ENABLE_([A-Za-z0-9_]+)\s*$")
+IF_GATE = re.compile(r"^#if\s+DWS_ENABLE_([A-Za-z0-9_]+)\s*$")
 ANY_IF = re.compile(r"^#\s*(if|ifdef|ifndef)\b")
 ENDIF = re.compile(r"^#\s*endif\b")
-DEP = re.compile(r"#if\s+DETWS_ENABLE_([A-Za-z0-9_]+)\s*&&\s*!\s*DETWS_ENABLE_([A-Za-z0-9_]+)")
-REQ = re.compile(r"requires\s+DETWS_ENABLE_([A-Za-z0-9_]+)")
+DEP = re.compile(r"#if\s+DWS_ENABLE_([A-Za-z0-9_]+)\s*&&\s*!\s*DWS_ENABLE_([A-Za-z0-9_]+)")
+REQ = re.compile(r"requires\s+DWS_ENABLE_([A-Za-z0-9_]+)")
 TRAILING = re.compile(r"///<\s*(.*)$")
 
 
@@ -53,7 +53,7 @@ def clean_brief(text):
 
 def title_of(line):
     t = line.lstrip("/").strip()
-    t = re.sub(r"\s*\(DETWS_ENABLE_[^)]*\)", "", t)
+    t = re.sub(r"\s*\(DWS_ENABLE_[^)]*\)", "", t)
     t = t.split(" - ")[0].strip() if " - " in t else t
     return t
 
@@ -68,7 +68,7 @@ def value_kind(raw):
 
 
 def feature_suffix(name):
-    return name[len("DETWS_ENABLE_") :]
+    return name[len("DWS_ENABLE_") :]
 
 
 def parse(path):
@@ -80,7 +80,7 @@ def parse(path):
     order_feat = []
     order_knob = []
     group = "General"
-    gate_stack = []  # feature suffix for each open `#if DETWS_ENABLE_X`, else None
+    gate_stack = []  # feature suffix for each open `#if DWS_ENABLE_X`, else None
     doc = []  # pending block-comment lines
 
     i = 0
@@ -117,7 +117,7 @@ def parse(path):
             i += 1
             continue
 
-        # Conditional nesting: track `#if DETWS_ENABLE_X` gates for knob ownership.
+        # Conditional nesting: track `#if DWS_ENABLE_X` gates for knob ownership.
         mg = IF_GATE.match(stripped)
         if mg:
             gate_stack.append(mg.group(1))
@@ -141,7 +141,7 @@ def parse(path):
                 desc = clean_brief(" ".join(doc)) if doc else trailing
                 if not desc:
                     desc = trailing
-                if name.startswith("DETWS_ENABLE_"):
+                if name.startswith("DWS_ENABLE_"):
                     if name not in features:
                         full = " ".join(doc)
                         me = feature_suffix(name)
@@ -194,9 +194,9 @@ def parse(path):
     # Resolve knob ownership: explicit gate, else longest feature-suffix prefix match.
     suffixes = sorted((f["label"] for f in features.values()), key=len, reverse=True)
     for k in knobs.values():
-        if k["owner"] and ("DETWS_ENABLE_" + k["owner"]) in features:
+        if k["owner"] and ("DWS_ENABLE_" + k["owner"]) in features:
             continue
-        stem = k["name"][len("DETWS_") :] if k["name"].startswith("DETWS_") else k["name"]
+        stem = k["name"][len("DWS_") :] if k["name"].startswith("DWS_") else k["name"]
         owner = None
         for suf in suffixes:
             if stem == suf or stem.startswith(suf + "_"):
@@ -223,7 +223,7 @@ def build_model(parsed):
     for name in parsed["order_knob"]:
         k = knobs[name]
         entry = {"name": name, "default": k["default"], "kind": k["kind"], "desc": k["desc"]}
-        if k["owner"] and ("DETWS_ENABLE_" + k["owner"]) in features:
+        if k["owner"] and ("DWS_ENABLE_" + k["owner"]) in features:
             by_owner.setdefault(k["owner"], []).append(entry)
         else:
             core.append(entry)
@@ -508,7 +508,7 @@ function update() {
     // library sources included (a plain -D in the sketch does not reach them). One flag/line.
     const rows = feats.map(([n, v]) => "-D" + n + "=" + v)
       .concat(kn.map(([n, v]) => "-D" + n + "=" + v));
-    text = rows.length ? rows.join("\n") : "-DDETWS_ENABLE_WEBSOCKET=1  // (example) all defaults - build_opt.h optional";
+    text = rows.length ? rows.join("\n") : "-DDWS_ENABLE_WEBSOCKET=1  // (example) all defaults - build_opt.h optional";
   } else {
     const rows = feats.map(([n, v]) => "#define " + n + " " + v)
       .concat(kn.map(([n, v]) => "#define " + n + " " + v));
@@ -566,7 +566,7 @@ document.getElementById("copy").onclick = async () => {
 };
 document.getElementById("download").onclick = () => {
   // Filename by mode: build_opt.h drops straight next to an Arduino sketch.
-  const names = { buildopt: "build_opt.h", pio: "platformio-build_flags.ini", defines: "DetWebServerOverrides.h" };
+  const names = { buildopt: "build_opt.h", pio: "platformio-build_flags.ini", defines: "DWSWebServerOverrides.h" };
   const blob = new Blob([document.getElementById("output").value + "\n"], { type: "text/plain" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);

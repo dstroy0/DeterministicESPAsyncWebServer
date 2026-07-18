@@ -3,7 +3,7 @@
 
 /**
  * @file ntlm.h
- * @brief NTLMv2 response computation (MS-NLMP §3.3.2) for the SMB2 client (DETWS_ENABLE_SMB).
+ * @brief NTLMv2 response computation (MS-NLMP §3.3.2) for the SMB2 client (DWS_ENABLE_SMB).
  *
  * The auth core: from the user's password and the server's CHALLENGE (the 8-byte server challenge
  * + the target-info AV_PAIR blob), compute the NtChallengeResponse and the session base key that
@@ -27,7 +27,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_SMB
+#if DWS_ENABLE_SMB
 
 #include <stddef.h>
 #include <stdint.h>
@@ -58,6 +58,6 @@ size_t ntlm_v2_response(const uint8_t owf[16], const uint8_t server_challenge[8]
                         const uint8_t timestamp[8], const uint8_t *target_info, size_t ti_len, uint8_t *out,
                         size_t out_cap, uint8_t session_key[16]);
 
-#endif // DETWS_ENABLE_SMB
+#endif // DWS_ENABLE_SMB
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_NTLM_H

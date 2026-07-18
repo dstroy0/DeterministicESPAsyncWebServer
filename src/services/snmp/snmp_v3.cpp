@@ -8,7 +8,7 @@
 
 #include "services/snmp/snmp_v3.h"
 
-#if DETWS_ENABLE_SNMP_V3
+#if DWS_ENABLE_SNMP_V3
 
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "services/snmp/snmp_agent.h"
@@ -494,7 +494,7 @@ size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t
     return build_message(msg_id, true, req_priv, s_v3.v3_c, sc.len, resp, resp_cap);
 }
 
-#if DETWS_ENABLE_SNMP_TRAP
+#if DWS_ENABLE_SNMP_TRAP
 #include "network_drivers/transport/udp.h"
 #include "services/snmp/snmp_notify.h"
 
@@ -529,7 +529,7 @@ static bool send_v3_notify(const char *dst_ip, uint16_t port, uint8_t pdu_tag, u
 
     uint8_t out[SNMP_MSG_BUF_SIZE];
     size_t len = build_message((long)request_id, s_v3.auth_set, s_v3.priv_set, s_v3.v3_c, sc.len, out, sizeof(out));
-    return len && det_udp_sendto(dst_ip, port, out, len);
+    return len && dws_udp_sendto(dst_ip, port, out, len);
 }
 
 bool snmp_trap_v3(const char *dst_ip, uint16_t port, const uint32_t *trap_oid, size_t trap_oid_len,
@@ -549,6 +549,6 @@ bool snmp_inform_v3(const char *dst_ip, uint16_t port, uint32_t request_id, cons
 {
     return send_v3_notify(dst_ip, port, 0xA6 /* InformRequest */, request_id, trap_oid, trap_oid_len, vbs, n);
 }
-#endif // DETWS_ENABLE_SNMP_TRAP
+#endif // DWS_ENABLE_SNMP_TRAP
 
-#endif // DETWS_ENABLE_SNMP_V3
+#endif // DWS_ENABLE_SNMP_V3

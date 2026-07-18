@@ -43,7 +43,7 @@ static void out_sink(void *, const uint8_t *dg, size_t len, const char *ip, uint
 }
 
 // A completed HTTP/3 request: answer 200 (HEAD would need the body suppressed, which the real
-// DetWebServer path does; this bare harness always sends a body).
+// DWS path does; this bare harness always sends a body).
 static void on_request(void *, uint32_t cid, uint64_t sid, const char *method, const char *path, const char *authority,
                        const uint8_t *, size_t body_len)
 {

@@ -3,12 +3,12 @@
 
 /**
  * @file edge_cache.h
- * @brief CDN edge-cache tier - pure engine (DETWS_ENABLE_EDGE_CACHE).
+ * @brief CDN edge-cache tier - pure engine (DWS_ENABLE_EDGE_CACHE).
  *
  * The caching reverse-proxy edge that services/httpcache is the origin-side groundwork for. This
  * header is the pure, host-testable core: the response header-field access and HTTP-date math that
  * httpcache lacks, RFC 9111 freshness (lifetime + age), and the deterministic cache key + SHA-256
- * digest + `Vary` secondary key. No sockets, no DetWebServer, no heap - the socket glue
+ * digest + `Vary` secondary key. No sockets, no DWS, no heap - the socket glue
  * (edge_cache_proxy) and the L2 SD tier (edge_cache_sd) layer on top.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -20,7 +20,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_EDGE_CACHE
+#if DWS_ENABLE_EDGE_CACHE
 
 #include "services/httpcache/httpcache.h" // DetwsCacheControl, cache_freshness_lifetime
 #include <stddef.h>
@@ -107,25 +107,25 @@ bool edge_vary_serialize(const char *vary_header, EdgeHdrLookup lookup, void *ct
 struct EdgeEntry
 {
     bool used;
-    char key[DETWS_EDGE_KEY_MAX];         ///< canonical key (collision-safe exact compare)
-    uint8_t digest[32];                   ///< ssh_sha256(key) - the L2 dbm key
-    char vary_names[DETWS_EDGE_VARY_MAX]; ///< the response Vary header value (field-name list), "" if none
-    char vary_vals[DETWS_EDGE_VARY_MAX];  ///< serialized request Vary values at store time (secondary key)
-    int status;                           ///< stored response status (200)
-    char content_type[64];                ///< Content-Type to replay
-    char etag[64];                        ///< validator (quotes included), "" if none
-    char last_modified[40];               ///< Last-Modified (RFC 1123), "" if none
-    char content_encoding[32];            ///< Content-Encoding to replay (e.g. gzip), "" if none
-    int64_t date_epoch;                   ///< origin Date (-1 absent)
-    int64_t expires_epoch;                ///< origin Expires (-1 absent)
-    int32_t age_hdr;                      ///< origin Age at store (>=0)
-    long lifetime_s;                      ///< resolved freshness lifetime (always >=0)
-    long initial_age;                     ///< corrected initial age at store
-    uint32_t insert_ms;                   ///< monotonic store time (TTL/age base)
-    uint32_t last_used_ms;                ///< recency
-    uint16_t lru_prev, lru_next;          ///< intrusive LRU indices (EDGE_LRU_NONE = end)
+    char key[DWS_EDGE_KEY_MAX];         ///< canonical key (collision-safe exact compare)
+    uint8_t digest[32];                 ///< ssh_sha256(key) - the L2 dbm key
+    char vary_names[DWS_EDGE_VARY_MAX]; ///< the response Vary header value (field-name list), "" if none
+    char vary_vals[DWS_EDGE_VARY_MAX];  ///< serialized request Vary values at store time (secondary key)
+    int status;                         ///< stored response status (200)
+    char content_type[64];              ///< Content-Type to replay
+    char etag[64];                      ///< validator (quotes included), "" if none
+    char last_modified[40];             ///< Last-Modified (RFC 1123), "" if none
+    char content_encoding[32];          ///< Content-Encoding to replay (e.g. gzip), "" if none
+    int64_t date_epoch;                 ///< origin Date (-1 absent)
+    int64_t expires_epoch;              ///< origin Expires (-1 absent)
+    int32_t age_hdr;                    ///< origin Age at store (>=0)
+    long lifetime_s;                    ///< resolved freshness lifetime (always >=0)
+    long initial_age;                   ///< corrected initial age at store
+    uint32_t insert_ms;                 ///< monotonic store time (TTL/age base)
+    uint32_t last_used_ms;              ///< recency
+    uint16_t lru_prev, lru_next;        ///< intrusive LRU indices (EDGE_LRU_NONE = end)
     uint16_t body_len;
-    uint8_t body[DETWS_EDGE_BODY_MAX];
+    uint8_t body[DWS_EDGE_BODY_MAX];
 };
 
 /** @brief Cache observability counters. */
@@ -133,7 +133,7 @@ struct EdgeCacheStats
 {
     uint32_t hits, misses, revalidations_304, replaces_200;
     uint32_t stores, evictions, purges, l2_spills, l2_promotes;
-    uint32_t mesh_hits, mesh_misses; ///< sibling pulls served (DETWS_ENABLE_EDGE_MESH) / peer queries that missed
+    uint32_t mesh_hits, mesh_misses; ///< sibling pulls served (DWS_ENABLE_EDGE_MESH) / peer queries that missed
     uint64_t bytes_stored;
 };
 
@@ -149,7 +149,7 @@ typedef void (*EdgeEvictFn)(void *ctx, const EdgeEntry *victim);
 /** @brief The L1 store: a fixed pool of entries with an intrusive MRU..LRU list. */
 struct EdgeCacheStore
 {
-    EdgeEntry entries[DETWS_EDGE_CACHE_SLOTS];
+    EdgeEntry entries[DWS_EDGE_CACHE_SLOTS];
     uint16_t lru_head, lru_tail; ///< head = MRU, tail = LRU (EDGE_LRU_NONE when empty)
     EdgeCacheStats stats;
     EdgeEvictFn on_evict; ///< nullptr = no L2 write-back; else called with each evicted victim
@@ -164,7 +164,7 @@ void edge_store_init(EdgeCacheStore *s);
  *
  * The returned entry has its key/digest/vary set, is marked used, and is linked at the MRU end; the
  * caller fills status/body/validators/freshness. Returns nullptr only if @p canon would not fit
- * `DETWS_EDGE_KEY_MAX` (non-cacheable). Bumps `stores` (and `evictions` if it displaced an entry).
+ * `DWS_EDGE_KEY_MAX` (non-cacheable). Bumps `stores` (and `evictions` if it displaced an entry).
  */
 EdgeEntry *edge_store_alloc(EdgeCacheStore *s, const char *canon, const char *vary_key);
 
@@ -237,6 +237,6 @@ size_t edge_build_conditional(const EdgeEntry *e, char *out, size_t cap);
  */
 void edge_apply_304(EdgeEntry *e, const char *new_hdrs, size_t hdr_len, int64_t response_time_epoch, uint32_t now_ms);
 
-#endif // DETWS_ENABLE_EDGE_CACHE
+#endif // DWS_ENABLE_EDGE_CACHE
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_EDGE_CACHE_H

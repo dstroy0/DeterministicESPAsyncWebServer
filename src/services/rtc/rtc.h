@@ -7,9 +7,9 @@
  *
  * A DS1307 or DS3231 keeps the wall-clock time running from a coin cell when the ESP32 is off
  * or offline. This reads it (and can set it) over I2C, and plugs into the time-source chain so
- * `detws_time_now()` - and the NTP server - can use it: GPS when locked, the RTC when GPS and
+ * `dws_time_now()` - and the NTP server - can use it: GPS when locked, the RTC when GPS and
  * the internet are gone, upstream NTP otherwise. Both chips expose the same seven BCD time
- * registers at address 0x68, so one driver serves both. Zero heap; gated by DETWS_ENABLE_RTC.
+ * registers at address 0x68, so one driver serves both. Zero heap; gated by DWS_ENABLE_RTC.
  *
  * The BCD <-> Unix-epoch conversion (12/24-hour, leap years, range validation) is pure and
  * host-tested; only the register read/write (Wire) touches hardware.
@@ -57,7 +57,7 @@ bool rtc_set_epoch(uint32_t epoch);
 
 /**
  * @brief A ::TimeSourceFn wrapper (returns rtc_read_epoch()) to register with
- * detws_time_source_add(). @return the RTC time, or 0 when unavailable.
+ * dws_time_source_add(). @return the RTC time, or 0 when unavailable.
  */
 uint32_t rtc_time_source();
 

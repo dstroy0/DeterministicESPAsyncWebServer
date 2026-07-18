@@ -11,39 +11,39 @@
 
 #include "services/dns_resolver/dns_resolver.h"
 
-#if DETWS_ENABLE_DNS_RESOLVER
+#if DWS_ENABLE_DNS_RESOLVER
 
-DetwsIpClass det_dns_resolver_classify(uint32_t ip)
+DetwsIpClass dws_dns_resolver_classify(uint32_t ip)
 {
     if (ip == 0u)
-        return DetwsIpClass::DETWS_IP_UNSPECIFIED;
+        return DetwsIpClass::DWS_IP_UNSPECIFIED;
     if (ip == 0xFFFFFFFFu)
-        return DetwsIpClass::DETWS_IP_BROADCAST;
+        return DetwsIpClass::DWS_IP_BROADCAST;
     uint8_t a = (uint8_t)((ip >> 24) & 0xFF);
     uint8_t b = (uint8_t)((ip >> 16) & 0xFF);
     if (a == 127)
-        return DetwsIpClass::DETWS_IP_LOOPBACK;
+        return DetwsIpClass::DWS_IP_LOOPBACK;
     if (a == 10)
-        return DetwsIpClass::DETWS_IP_PRIVATE;
+        return DetwsIpClass::DWS_IP_PRIVATE;
     if (a == 172 && b >= 16 && b <= 31)
-        return DetwsIpClass::DETWS_IP_PRIVATE;
+        return DetwsIpClass::DWS_IP_PRIVATE;
     if (a == 192 && b == 168)
-        return DetwsIpClass::DETWS_IP_PRIVATE;
+        return DetwsIpClass::DWS_IP_PRIVATE;
     if (a == 169 && b == 254)
-        return DetwsIpClass::DETWS_IP_LINKLOCAL;
+        return DetwsIpClass::DWS_IP_LINKLOCAL;
     if (a >= 224 && a <= 239)
-        return DetwsIpClass::DETWS_IP_MULTICAST;
-    return DetwsIpClass::DETWS_IP_PUBLIC;
+        return DetwsIpClass::DWS_IP_MULTICAST;
+    return DetwsIpClass::DWS_IP_PUBLIC;
 }
 
-bool det_dns_resolver_verify(uint32_t ip)
+bool dws_dns_resolver_verify(uint32_t ip)
 {
-    switch (det_dns_resolver_classify(ip))
+    switch (dws_dns_resolver_classify(ip))
     {
-    case DetwsIpClass::DETWS_IP_UNSPECIFIED: // 0.0.0.0 - blocked / no answer
-    case DetwsIpClass::DETWS_IP_BROADCAST:   // 255.255.255.255 - never a host
-    case DetwsIpClass::DETWS_IP_LOOPBACK:    // 127.x - DNS-rebinding to localhost
-    case DetwsIpClass::DETWS_IP_MULTICAST:   // 224-239 - never an A-record host
+    case DetwsIpClass::DWS_IP_UNSPECIFIED: // 0.0.0.0 - blocked / no answer
+    case DetwsIpClass::DWS_IP_BROADCAST:   // 255.255.255.255 - never a host
+    case DetwsIpClass::DWS_IP_LOOPBACK:    // 127.x - DNS-rebinding to localhost
+    case DetwsIpClass::DWS_IP_MULTICAST:   // 224-239 - never an A-record host
         return false;
     default:
         return true; // private / link-local / public are plausible
@@ -56,7 +56,7 @@ bool det_dns_resolver_verify(uint32_t ip)
 #include "lwip/dns.h"
 #include "lwip/ip_addr.h"
 #include "lwip/priv/tcpip_priv.h"
-#include "services/clock.h" // detws_millis() - the single pluggable monotonic source
+#include "services/clock.h" // dws_millis() - the single pluggable monotonic source
 #include <Arduino.h>
 
 namespace
@@ -111,7 +111,7 @@ uint32_t to_host_order(const ip_addr_t *a)
 }
 } // namespace
 
-bool det_dns_resolver_resolve(const char *host, uint32_t *out_ip)
+bool dws_dns_resolver_resolve(const char *host, uint32_t *out_ip)
 {
     if (!host || !out_ip)
         return false;
@@ -130,8 +130,8 @@ bool det_dns_resolver_resolve(const char *host, uint32_t *out_ip)
     k.host = host;
     tcpip_api_call(do_dns, &k.base); // resolve in the lwIP thread
 
-    uint32_t deadline = detws_millis() + DETWS_DNS_TIMEOUT_MS;
-    while (!s_dr.done && (int32_t)(deadline - detws_millis()) > 0)
+    uint32_t deadline = dws_millis() + DWS_DNS_TIMEOUT_MS;
+    while (!s_dr.done && (int32_t)(deadline - dws_millis()) > 0)
         dwsdelay(5);
 
     if (!s_dr.ok)
@@ -145,7 +145,7 @@ bool det_dns_resolver_resolve(const char *host, uint32_t *out_ip)
 namespace
 {
 // The injected synthetic answer, owned by one instance (internal linkage): a host test sets
-// it via det_dns_resolver_test_set_resolve() and det_dns_resolver_resolve() returns it, grouped so it is one
+// it via dws_dns_resolver_test_set_resolve() and dws_dns_resolver_resolve() returns it, grouped so it is one
 // named owner rather than loose file-scope mutables.
 struct DnsTestCtx
 {
@@ -155,12 +155,12 @@ struct DnsTestCtx
 DnsTestCtx s_dns_test;
 } // namespace
 
-void det_dns_resolver_test_set_resolve(bool ok, uint32_t ip)
+void dws_dns_resolver_test_set_resolve(bool ok, uint32_t ip)
 {
     s_dns_test.ok = ok;
     s_dns_test.ip = ip;
 }
-bool det_dns_resolver_resolve(const char *, uint32_t *out_ip)
+bool dws_dns_resolver_resolve(const char *, uint32_t *out_ip)
 {
     if (!s_dns_test.ok)
         return false;
@@ -171,16 +171,16 @@ bool det_dns_resolver_resolve(const char *, uint32_t *out_ip)
 
 #endif // ARDUINO
 
-bool det_dns_resolver_resolve_verified(const char *host, uint32_t *out_ip)
+bool dws_dns_resolver_resolve_verified(const char *host, uint32_t *out_ip)
 {
     uint32_t ip = 0;
-    if (!det_dns_resolver_resolve(host, &ip))
+    if (!dws_dns_resolver_resolve(host, &ip))
         return false;
-    if (!det_dns_resolver_verify(ip))
+    if (!dws_dns_resolver_verify(ip))
         return false;
     if (out_ip)
         *out_ip = ip;
     return true;
 }
 
-#endif // DETWS_ENABLE_DNS_RESOLVER
+#endif // DWS_ENABLE_DNS_RESOLVER

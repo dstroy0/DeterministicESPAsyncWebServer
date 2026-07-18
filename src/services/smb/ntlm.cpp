@@ -8,7 +8,7 @@
 
 #include "ntlm.h"
 
-#if DETWS_ENABLE_SMB
+#if DWS_ENABLE_SMB
 
 #include "services/smb/smb_md.h"
 #include <string.h>
@@ -111,4 +111,4 @@ size_t ntlm_v2_response(const uint8_t owf[16], const uint8_t server_challenge[8]
     return resp_len;
 }
 
-#endif // DETWS_ENABLE_SMB
+#endif // DWS_ENABLE_SMB

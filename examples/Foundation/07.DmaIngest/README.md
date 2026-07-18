@@ -1,7 +1,7 @@
 # 07.DmaIngest - DMA peripheral ingest with a preempting task queue
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_DMA`,
-`DETWS_ENABLE_PREEMPT_QUEUE`, `DETWS_DMA_SIMULATE`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_DMA`,
+`DWS_ENABLE_PREEMPT_QUEUE`, `DWS_DMA_SIMULATE`
 
 ## What this example teaches
 
@@ -17,7 +17,7 @@ ahead of user work.
 ```
 peripheral --DMA--> ping-pong buffer --complete--> callback (ISR)
                                                        |
-                        detws_pq_post_lane_from_isr(DETWS_PQ_LANE_DMA, &msg)
+                        dws_pq_post_lane_from_isr(DWS_PQ_LANE_DMA, &msg)
                                                        |
                                     DMA-lane task (high prio) -> your handler
 ```
@@ -28,13 +28,13 @@ DMA engine fills the other, so there is a full transfer of headroom to consume i
 ## No loopback wire? Simulate the peripheral
 
 There is usually no physical TX->RX jumper on the bench, so the channel runs the
-built-in **ingress/egress simulator** (`DETWS_DMA_SIMULATE=1`, the default):
+built-in **ingress/egress simulator** (`DWS_DMA_SIMULATE=1`, the default):
 
-- `det_dma_sim_feed()` injects bytes as if they arrived on the RX line,
-- `det_dma_sim_capture()` reads back what egress DMA transmitted,
+- `dws_dma_sim_feed()` injects bytes as if they arrived on the RX line,
+- `dws_dma_sim_capture()` reads back what egress DMA transmitted,
 - a channel opened with `loopback = true` feeds its own egress into its ingress (an
   internal jumper),
-- `det_dma_poll()` advances the engine and fires the completions.
+- `dws_dma_poll()` advances the engine and fires the completions.
 
 This sketch opens a **loopback** channel and, each second, submits a 4-byte frame
 for egress DMA; the jumper feeds it back into RX, the completion posts to the queue,
@@ -53,13 +53,13 @@ TX-complete events on the same channel.)
 
 ## Real silicon
 
-Set `DETWS_DMA_SIMULATE=0` and provide a real driver behind the `det_dma_hw_*`
+Set `DWS_DMA_SIMULATE=0` and provide a real driver behind the `dws_dma_hw_*`
 hooks (a UART UHCI / `spi_master` DMA backend). The sketch above is unchanged - it
-only ever talks to `det_dma_open` / `det_dma_tx_submit` / the completion callback.
+only ever talks to `dws_dma_open` / `dws_dma_tx_submit` / the completion callback.
 
 ## Sizing
 
-`DETWS_DMA_CHANNELS` (channels) and `DETWS_DMA_BUF_SIZE` (bytes per transfer, RX
+`DWS_DMA_CHANNELS` (channels) and `DWS_DMA_BUF_SIZE` (bytes per transfer, RX
 double-buffered at this size) are compile-time because the storage is static.
 
 ## Build-flag note
@@ -69,6 +69,6 @@ separately compiled library), so pass them as build flags:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_DMA=1 -DDETWS_ENABLE_PREEMPT_QUEUE=1 -DDETWS_DMA_SIMULATE=1" \
+  --project-option="build_flags=-DDWS_ENABLE_DMA=1 -DDWS_ENABLE_PREEMPT_QUEUE=1 -DDWS_DMA_SIMULATE=1" \
   --lib="." examples/Foundation/07.DmaIngest/07.DmaIngest.ino
 ```

@@ -14,7 +14,7 @@
 #include "ServerConfig.h"
 #include "services/clock.h" // dwsdelay
 
-#if DETWS_ENABLE_MPR121
+#if DWS_ENABLE_MPR121
 
 #include <string.h>
 
@@ -97,7 +97,7 @@ namespace
 // so it is one named owner, unreachable from any other translation unit.
 struct Mpr121Ctx
 {
-    uint8_t addr = DETWS_MPR121_I2C_ADDR;
+    uint8_t addr = DWS_MPR121_I2C_ADDR;
 };
 Mpr121Ctx s_mpr;
 
@@ -125,11 +125,11 @@ bool rd(uint8_t reg, uint8_t *out, uint8_t n)
 
 bool mpr121_begin(uint8_t addr)
 {
-    s_mpr.addr = addr ? addr : (uint8_t)DETWS_MPR121_I2C_ADDR;
-    detws_i2c_begin();
+    s_mpr.addr = addr ? addr : (uint8_t)DWS_MPR121_I2C_ADDR;
+    dws_i2c_begin();
     uint8_t seq[MPR121_INIT_MAX];
-    size_t n = mpr121_build_init(seq, sizeof(seq), MPR121_ELECTRODES, DETWS_MPR121_TOUCH_THRESHOLD,
-                                 DETWS_MPR121_RELEASE_THRESHOLD);
+    size_t n = mpr121_build_init(seq, sizeof(seq), MPR121_ELECTRODES, DWS_MPR121_TOUCH_THRESHOLD,
+                                 DWS_MPR121_RELEASE_THRESHOLD);
     if (n == 0)
         return false;
     if (!wr(seq[0], seq[1])) // soft reset first; then let the chip settle
@@ -176,4 +176,4 @@ uint16_t mpr121_read_filtered(uint8_t)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_MPR121
+#endif // DWS_ENABLE_MPR121

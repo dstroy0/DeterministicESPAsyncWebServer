@@ -3,7 +3,7 @@
 
 /**
  * @file dshot.h
- * @brief DShot ESC digital throttle protocol codec (DETWS_ENABLE_DSHOT).
+ * @brief DShot ESC digital throttle protocol codec (DWS_ENABLE_DSHOT).
  *
  * DShot is the digital replacement for analog PWM on brushless-motor ESCs (drones, robotics). Each
  * command is a 16-bit frame - 11 bits of value, 1 telemetry-request bit, and a 4-bit CRC:
@@ -13,9 +13,9 @@
  *     bits 3..0   CRC = xor of the three nibbles of (value<<1 | telemetry)
  *
  * For **bidirectional / "extended" DShot** (the ESC sends RPM/telemetry back on the same wire) the CRC
- * is inverted. This is the wire codec: `detws_dshot_encode` builds the 16-bit frame and
- * `detws_dshot_decode` validates the CRC and unpacks it. The physical layer (the bit-timed pulse train
- * at 150/300/600/1200 kbit via the ESP32 RMT peripheral) is the app's transport - `detws_dshot_bit_ns`
+ * is inverted. This is the wire codec: `dws_dshot_encode` builds the 16-bit frame and
+ * `dws_dshot_decode` validates the CRC and unpacks it. The physical layer (the bit-timed pulse train
+ * at 150/300/600/1200 kbit via the ESP32 RMT peripheral) is the app's transport - `dws_dshot_bit_ns`
  * gives the high-time for a 0/1 bit at a given rate so a driver can program the RMT symbols.
  *
  * Pure, zero heap, no stdlib, host-testable.
@@ -28,7 +28,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_DSHOT
+#if DWS_ENABLE_DSHOT
 
 /** @brief The standard DShot special commands (value field 0..47; throttle starts at 48). */
 struct DshotCmd
@@ -58,7 +58,7 @@ struct DshotCmd
  * @return the 16-bit frame `(value<<5) | (telemetry<<4) | crc`, ready to clock out MSB-first. @p value11
  *         above 2047 is masked to 11 bits.
  */
-uint16_t detws_dshot_encode(uint16_t value11, bool telemetry, bool bidirectional);
+uint16_t dws_dshot_encode(uint16_t value11, bool telemetry, bool bidirectional);
 
 /**
  * @brief Validate + unpack a 16-bit DShot frame.
@@ -68,7 +68,7 @@ uint16_t detws_dshot_encode(uint16_t value11, bool telemetry, bool bidirectional
  * @param bidirectional interpret the CRC as the inverted (bidirectional) form.
  * @return true if the CRC is valid.
  */
-bool detws_dshot_decode(uint16_t frame, uint16_t *value11, bool *telemetry, bool bidirectional);
+bool dws_dshot_decode(uint16_t frame, uint16_t *value11, bool *telemetry, bool bidirectional);
 
 /**
  * @brief High-time (ns) of a bit at a DShot rate. A DShot bit is one pulse per bit-period; a "1" is
@@ -77,15 +77,15 @@ bool detws_dshot_decode(uint16_t frame, uint16_t *value11, bool *telemetry, bool
  * @param bit       the bit value (false = 0, true = 1).
  * @return the high time in nanoseconds, or 0 for an unknown rate.
  */
-uint32_t detws_dshot_bit_ns(uint16_t rate_kbit, bool bit);
+uint32_t dws_dshot_bit_ns(uint16_t rate_kbit, bool bit);
 
-/** @brief The legacy analog-PWM ESC protocols (pulse width carries the throttle), for detws_esc_pwm_ns. */
+/** @brief The legacy analog-PWM ESC protocols (pulse width carries the throttle), for dws_esc_pwm_ns. */
 enum class DetwsEscPwm : uint8_t
 {
-    DETWS_ESC_PWM,        ///< standard servo PWM: 1000-2000 us.
-    DETWS_ESC_ONESHOT125, ///< OneShot125: 125-250 us.
-    DETWS_ESC_ONESHOT42,  ///< OneShot42: 42-84 us.
-    DETWS_ESC_MULTISHOT,  ///< Multishot: 5-25 us.
+    DWS_ESC_PWM,        ///< standard servo PWM: 1000-2000 us.
+    DWS_ESC_ONESHOT125, ///< OneShot125: 125-250 us.
+    DWS_ESC_ONESHOT42,  ///< OneShot42: 42-84 us.
+    DWS_ESC_MULTISHOT,  ///< Multishot: 5-25 us.
 };
 
 /**
@@ -95,7 +95,7 @@ enum class DetwsEscPwm : uint8_t
  * @return the pulse high-time in nanoseconds, linearly mapped across the mode's [min, max] range. These
  *         are driven by the MCPWM peripheral; this is the pure throttle->width mapping the driver needs.
  */
-uint32_t detws_esc_pwm_ns(uint16_t throttle_1000, DetwsEscPwm mode);
+uint32_t dws_esc_pwm_ns(uint16_t throttle_1000, DetwsEscPwm mode);
 
-#endif // DETWS_ENABLE_DSHOT
+#endif // DWS_ENABLE_DSHOT
 #endif // DETERMINISTICESPASYNCWEBSERVER_DSHOT_H

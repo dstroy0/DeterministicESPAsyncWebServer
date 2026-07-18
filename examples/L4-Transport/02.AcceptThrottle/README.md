@@ -1,12 +1,12 @@
 # 02.AcceptThrottle - global connection-flood defense
 
-**Layer:** L4 Transport · **Build flags:** `DETWS_ENABLE_ACCEPT_THROTTLE`
+**Layer:** L4 Transport · **Build flags:** `DWS_ENABLE_ACCEPT_THROTTLE`
 
 ## What this example teaches
 
 This is a build-time defense, not an API. When enabled, the accept callback
-rejects new connections once more than `DETWS_ACCEPT_THROTTLE_MAX` have been
-accepted within `DETWS_ACCEPT_THROTTLE_WINDOW_MS` - a global fixed window using
+rejects new connections once more than `DWS_ACCEPT_THROTTLE_MAX` have been
+accepted within `DWS_ACCEPT_THROTTLE_WINDOW_MS` - a global fixed window using
 two counters, no per-IP table. It bounds connection churn (reconnect/brute-force
 floods) on top of the already-bounded connection pool. The sketch's only job is
 to show that enabling the flag is all it takes.
@@ -24,7 +24,7 @@ server.begin(80); // the accept throttle is active automatically when the flag i
 example a window of 1000 ms and a cap of 20 accepts/window:
 
 ```text
-build_flags = -DDETWS_ENABLE_ACCEPT_THROTTLE=1 -DDETWS_ACCEPT_THROTTLE_MAX=20 -DDETWS_ACCEPT_THROTTLE_WINDOW_MS=1000
+build_flags = -DDWS_ENABLE_ACCEPT_THROTTLE=1 -DDWS_ACCEPT_THROTTLE_MAX=20 -DDWS_ACCEPT_THROTTLE_WINDOW_MS=1000
 ```
 
 For a per-source-IP throttle (so one noisy host cannot starve everyone), see
@@ -34,7 +34,7 @@ For a per-source-IP throttle (so one noisy host cannot starve everyone), see
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_ACCEPT_THROTTLE=1" \
+  --project-option="build_flags=-DDWS_ENABLE_ACCEPT_THROTTLE=1" \
   --lib="." examples/L4-Transport/02.AcceptThrottle/02.AcceptThrottle.ino
 ```
 
@@ -50,7 +50,7 @@ verbatim with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_ACCEPT_THROTTLE 1
+#define DWS_ENABLE_ACCEPT_THROTTLE 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -59,7 +59,7 @@ verbatim with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

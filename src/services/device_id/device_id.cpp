@@ -9,7 +9,7 @@
 #include "device_id.h"
 #include "shared_primitives/hex.h"
 
-#if DETWS_ENABLE_DEVICE_ID
+#if DWS_ENABLE_DEVICE_ID
 
 #include "network_drivers/presentation/sha1/sha1.h"
 
@@ -24,7 +24,7 @@ const uint8_t NS_DNS[16] = {0x6b, 0xa7, 0xb8, 0x10, 0x9d, 0xad, 0x11, 0xd1,
                             0x80, 0xb4, 0x00, 0xc0, 0x4f, 0xd4, 0x30, 0xc8};
 } // namespace
 
-void detws_uuid_from_mac(const uint8_t mac[6], char out[DETWS_UUID_STR_LEN])
+void dws_uuid_from_mac(const uint8_t mac[6], char out[DWS_UUID_STR_LEN])
 {
     // UUIDv5 name = lowercase MAC hex (12 chars, no separators).
     uint8_t input[16 + 12];
@@ -32,8 +32,8 @@ void detws_uuid_from_mac(const uint8_t mac[6], char out[DETWS_UUID_STR_LEN])
         input[i] = NS_DNS[i];
     for (int i = 0; i < 6; i++)
     {
-        input[16 + i * 2] = (uint8_t)det_hex_digit((uint8_t)(mac[i] >> 4));
-        input[16 + i * 2 + 1] = (uint8_t)det_hex_digit((uint8_t)(mac[i] & 0x0F));
+        input[16 + i * 2] = (uint8_t)dws_hex_digit((uint8_t)(mac[i] >> 4));
+        input[16 + i * 2 + 1] = (uint8_t)dws_hex_digit((uint8_t)(mac[i] & 0x0F));
     }
 
     uint8_t h[SHA1_DIGEST_LEN];
@@ -51,8 +51,8 @@ void detws_uuid_from_mac(const uint8_t mac[6], char out[DETWS_UUID_STR_LEN])
             out[oi++] = '-';
         for (int b = 0; b < groups[g]; b++)
         {
-            out[oi++] = det_hex_digit((uint8_t)(h[hi] >> 4));
-            out[oi++] = det_hex_digit((uint8_t)(h[hi] & 0x0F));
+            out[oi++] = dws_hex_digit((uint8_t)(h[hi] >> 4));
+            out[oi++] = dws_hex_digit((uint8_t)(h[hi] & 0x0F));
             hi++;
         }
     }
@@ -60,12 +60,12 @@ void detws_uuid_from_mac(const uint8_t mac[6], char out[DETWS_UUID_STR_LEN])
 }
 
 #ifdef ARDUINO
-void detws_device_uuid(char out[DETWS_UUID_STR_LEN])
+void dws_device_uuid(char out[DWS_UUID_STR_LEN])
 {
     uint8_t mac[6] = {0};
     esp_read_mac(mac, ESP_MAC_WIFI_STA); // stable factory MAC
-    detws_uuid_from_mac(mac, out);
+    dws_uuid_from_mac(mac, out);
 }
 #endif
 
-#endif // DETWS_ENABLE_DEVICE_ID
+#endif // DWS_ENABLE_DEVICE_ID

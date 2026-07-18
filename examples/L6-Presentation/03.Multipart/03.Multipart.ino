@@ -20,7 +20,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static const char FORM[] = "<!doctype html><meta charset=utf-8><title>upload</title>"
                            "<form method=POST action=/upload enctype=multipart/form-data>"

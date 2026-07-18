@@ -8,16 +8,16 @@
 
 #include "services/sercos/sercos.h"
 
-#if DETWS_ENABLE_SERCOS
+#if DWS_ENABLE_SERCOS
 
 #include <string.h>
 
-uint16_t detws_sercos_idn(bool is_product, uint8_t param_set, uint16_t data_block)
+uint16_t dws_sercos_idn(bool is_product, uint8_t param_set, uint16_t data_block)
 {
     return (uint16_t)(((is_product ? 1u : 0u) << 15) | ((uint32_t)(param_set & 0x7) << 12) | (data_block & 0x0FFF));
 }
 
-void detws_sercos_idn_parse(uint16_t idn, bool *is_product, uint8_t *param_set, uint16_t *data_block)
+void dws_sercos_idn_parse(uint16_t idn, bool *is_product, uint8_t *param_set, uint16_t *data_block)
 {
     if (is_product)
         *is_product = (idn & 0x8000) != 0;
@@ -27,8 +27,8 @@ void detws_sercos_idn_parse(uint16_t idn, bool *is_product, uint8_t *param_set, 
         *data_block = (uint16_t)(idn & 0x0FFF);
 }
 
-size_t detws_sercos_build(uint8_t type, uint8_t phase, uint16_t cycle, const uint8_t *data, size_t data_len,
-                          uint8_t *out, size_t cap)
+size_t dws_sercos_build(uint8_t type, uint8_t phase, uint16_t cycle, const uint8_t *data, size_t data_len, uint8_t *out,
+                        size_t cap)
 {
     if (!out || (data_len && !data) || (type != Sercos::SERCOS_TEL_MDT && type != Sercos::SERCOS_TEL_AT))
         return 0;
@@ -44,7 +44,7 @@ size_t detws_sercos_build(uint8_t type, uint8_t phase, uint16_t cycle, const uin
     return n;
 }
 
-bool detws_sercos_parse(const uint8_t *frame, size_t len, SercosTelegram *out)
+bool dws_sercos_parse(const uint8_t *frame, size_t len, SercosTelegram *out)
 {
     if (!frame || !out || len < Sercos::SERCOS_HDR_LEN)
         return false;
@@ -58,4 +58,4 @@ bool detws_sercos_parse(const uint8_t *frame, size_t len, SercosTelegram *out)
     return true;
 }
 
-#endif // DETWS_ENABLE_SERCOS
+#endif // DWS_ENABLE_SERCOS

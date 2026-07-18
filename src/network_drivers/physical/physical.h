@@ -10,7 +10,7 @@
  * between interfaces is owned by the stack itself (lwIP/esp_netif reselect the
  * default route when a link drops) - this layer adds no manager and no polling
  * tick; it only *reports* which interface currently carries outbound traffic via
- * det_net_egress(), read on demand from the live default route so the answer is
+ * dws_net_egress(), read on demand from the live default route so the answer is
  * always current.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -20,7 +20,7 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_PHYSICAL_H
 #define DETERMINISTICESPASYNCWEBSERVER_PHYSICAL_H
 
-#include "ServerConfig.h" // DetIface
+#include "ServerConfig.h" // DWSIface
 #include "network_drivers/network/ip.h"
 #include <stdint.h>
 
@@ -40,12 +40,12 @@ bool init_wifi_physical(const char *ssid, const char *password);
 bool wifi_ready();
 
 /**
- * @brief Bring up a wired Ethernet link (DETWS_ENABLE_ETHERNET).
+ * @brief Bring up a wired Ethernet link (DWS_ENABLE_ETHERNET).
  *
  * A thin wrapper over the Arduino ETH library (`ETH.begin()`); the RMII PHY pins / type /
  * clock come from the standard `ETH_PHY_*` build flags for your board. Returns immediately
  * (bring-up is asynchronous); poll eth_ready(). The egress reporting already classifies a
- * wired route as DetIface::DETIFACE_ETH, so the server accepts on the link once it has an IP.
+ * wired route as DWSIface::DETIFACE_ETH, so the server accepts on the link once it has an IP.
  *
  * @return true if ETH.begin() started the driver; false if Ethernet is disabled at build
  *         time or the driver failed to start (and always false on host builds).
@@ -56,7 +56,7 @@ bool init_eth_physical(void);
 bool eth_ready(void);
 
 /**
- * @brief Enable IPv6 (dual-stack) on the Wi-Fi interface (DETWS_ENABLE_IPV6).
+ * @brief Enable IPv6 (dual-stack) on the Wi-Fi interface (DWS_ENABLE_IPV6).
  *
  * Turns on IPv6 for the netif so it acquires a SLAAC link-local address and, if the network
  * advertises a prefix, a global address. Returns immediately (address configuration is
@@ -69,10 +69,10 @@ bool init_ipv6_physical(void);
 
 /**
  * @brief The interface's global (routable) IPv6 address, if it has one.
- * @param[out] out receives the address (family DetIpFamily::DET_IP_V6) when true is returned.
+ * @param[out] out receives the address (family DWSIpFamily::DWS_IP_V6) when true is returned.
  * @return true if a valid global IPv6 address is assigned; false otherwise (incl. host builds).
  */
-bool net_global_ipv6(DetIp *out);
+bool net_global_ipv6(DWSIp *out);
 
 /** @brief True once the interface has a global IPv6 address (see net_global_ipv6()). */
 bool ipv6_ready(void);
@@ -82,13 +82,13 @@ bool ipv6_ready(void);
  *
  * Reads the live lwIP default route, so it reflects the current state after any
  * failover the stack performed - no polling, no cached state. Returns
- * DetIface::DETIFACE_ETH / DetIface::DETIFACE_STA / DetIface::DETIFACE_AP, or DetIface::DETIFACE_ANY when no route is
+ * DWSIface::DETIFACE_ETH / DWSIface::DETIFACE_STA / DWSIface::DETIFACE_AP, or DWSIface::DETIFACE_ANY when no route is
  * up (and on host builds).
  */
-DetIface det_net_egress(void);
+DWSIface dws_net_egress(void);
 
 /** @brief IPv4 (network byte order) of the current egress interface, or 0 if none. */
-uint32_t det_net_egress_ip(void);
+uint32_t dws_net_egress_ip(void);
 
 /**
  * @brief Classify an egress IPv4 against the WiFi station / softAP IPs (pure helper,
@@ -101,6 +101,6 @@ uint32_t det_net_egress_ip(void);
  * @param sta_ip    WiFi station IPv4 (network order), 0 if not connected.
  * @param ap_ip     softAP IPv4 (network order), 0 if the softAP is not up.
  */
-DetIface det_net_classify_ip(uint32_t egress_ip, uint32_t sta_ip, uint32_t ap_ip);
+DWSIface dws_net_classify_ip(uint32_t egress_ip, uint32_t sta_ip, uint32_t ap_ip);
 
 #endif

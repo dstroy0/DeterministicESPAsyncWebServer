@@ -1,6 +1,6 @@
 # 39.UdpTelemetry - fire-and-forget UDP telemetry
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_UDP_TELEMETRY`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_UDP_TELEMETRY`
 
 ## What this example teaches
 
@@ -12,21 +12,21 @@ listener (or just `nc -u -l 8094` to watch the packets).
 **Set the destination once:**
 
 ```cpp
-detws_udp_telemetry_begin(COLLECTOR_IP, COLLECTOR_PORT);
+dws_udp_telemetry_begin(COLLECTOR_IP, COLLECTOR_PORT);
 ```
 
-**Build a line into a caller-owned buffer, then cast it.** `detws_line_*` appends
+**Build a line into a caller-owned buffer, then cast it.** `dws_line_*` appends
 typed fields (the `i` suffix InfluxDB uses for integers comes from the `_int`/`_uint`
-helpers); `detws_udp_telemetry_cast()` sends one datagram:
+helpers); `dws_udp_telemetry_cast()` sends one datagram:
 
 ```cpp
-char buf[DETWS_UDP_TELEMETRY_BUF];
+char buf[DWS_UDP_TELEMETRY_BUF];
 DetwsLine line;
-detws_line_init(&line, buf, sizeof(buf), "esp32");        // measurement name
-detws_line_add_uint(&line, "heap", ESP.getFreeHeap());
-detws_line_add_int(&line, "rssi", WiFi.RSSI());
-detws_line_add_float(&line, "temp", temperatureRead(), 1); // 1 decimal place
-detws_udp_telemetry_cast(&line);                           // -> "esp32 heap=...i,rssi=...i,temp=..."
+dws_line_init(&line, buf, sizeof(buf), "esp32");        // measurement name
+dws_line_add_uint(&line, "heap", ESP.getFreeHeap());
+dws_line_add_int(&line, "rssi", WiFi.RSSI());
+dws_line_add_float(&line, "temp", temperatureRead(), 1); // 1 decimal place
+dws_udp_telemetry_cast(&line);                           // -> "esp32 heap=...i,rssi=...i,temp=..."
 ```
 
 There is no server here - the device is purely a telemetry source - so `loop()`
@@ -36,7 +36,7 @@ just casts on a timer.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_UDP_TELEMETRY=1" \
+  --project-option="build_flags=-DDWS_ENABLE_UDP_TELEMETRY=1" \
   --lib="." examples/L7-Application/39.UdpTelemetry/39.UdpTelemetry.ino
 ```
 
@@ -53,7 +53,7 @@ verbatim with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_UDP_TELEMETRY 1
+#define DWS_ENABLE_UDP_TELEMETRY 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -81,7 +81,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    detws_udp_telemetry_begin(COLLECTOR_IP, COLLECTOR_PORT);
+    dws_udp_telemetry_begin(COLLECTOR_IP, COLLECTOR_PORT);
 }
 
 void loop()
@@ -90,13 +90,13 @@ void loop()
     if (millis() - last >= 1000)
     {
         last = millis();
-        char buf[DETWS_UDP_TELEMETRY_BUF];
+        char buf[DWS_UDP_TELEMETRY_BUF];
         DetwsLine line;
-        detws_line_init(&line, buf, sizeof(buf), "esp32");
-        detws_line_add_uint(&line, "heap", ESP.getFreeHeap());
-        detws_line_add_int(&line, "rssi", WiFi.RSSI());
-        detws_line_add_float(&line, "temp", temperatureRead(), 1);
-        if (detws_udp_telemetry_cast(&line))
+        dws_line_init(&line, buf, sizeof(buf), "esp32");
+        dws_line_add_uint(&line, "heap", ESP.getFreeHeap());
+        dws_line_add_int(&line, "rssi", WiFi.RSSI());
+        dws_line_add_float(&line, "temp", temperatureRead(), 1);
+        if (dws_udp_telemetry_cast(&line))
             Serial.printf("cast: %s\n", buf);
     }
 }

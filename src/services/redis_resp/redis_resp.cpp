@@ -8,7 +8,7 @@
 
 #include "services/redis_resp/redis_resp.h"
 
-#if DETWS_ENABLE_REDIS
+#if DWS_ENABLE_REDIS
 
 #include <string.h>
 
@@ -374,4 +374,4 @@ bool resp_parse(const uint8_t *buf, size_t len, RespReply *out, size_t *consumed
     }
 }
 
-#endif // DETWS_ENABLE_REDIS
+#endif // DWS_ENABLE_REDIS

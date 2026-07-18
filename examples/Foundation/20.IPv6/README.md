@@ -1,6 +1,6 @@
 # 20.IPv6 - serve over IPv6 (dual-stack)
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_IPV6`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_IPV6`
 
 ## What this example teaches
 
@@ -15,19 +15,19 @@ init_ipv6_physical();            // enable IPv6 (SLAAC) on the Wi-Fi netif
 while (!ipv6_ready()) delay(250); // waits for a global (routable) v6 address
 ```
 
-`DETWS_ENABLE_IPV6` gates the bring-up. `init_ipv6_physical()` enables IPv6 on the netif
+`DWS_ENABLE_IPV6` gates the bring-up. `init_ipv6_physical()` enables IPv6 on the netif
 (SLAAC gives a `fe80::` link-local address, plus a global one if a router advertises a prefix).
-`net_global_ipv6()` reads the acquired global address straight from lwIP into a `DetIp`.
+`net_global_ipv6()` reads the acquired global address straight from lwIP into a `DWSIp`.
 
-## The DetIp address core
+## The DWSIp address core
 
 `network_drivers/network/ip.h` is one family-tagged type for both v4 and v6, with:
 
-- **`det_ip_parse()`** - RFC 4291 text (dotted-quad; v6 with `::` zero-compression and the
+- **`dws_ip_parse()`** - RFC 4291 text (dotted-quad; v6 with `::` zero-compression and the
   embedded-v4 `::ffff:a.b.c.d` tail).
-- **`det_ip_format()`** - the RFC 5952 canonical form (lower-case, no leading zeros, longest
+- **`dws_ip_format()`** - the RFC 5952 canonical form (lower-case, no leading zeros, longest
   zero run compressed, v4-mapped shown dotted).
-- **`det_ip_classify()`** - loopback / link-local / private-ULA / multicast / global.
+- **`dws_ip_classify()`** - loopback / link-local / private-ULA / multicast / global.
 
 It is pure and host-tested (`pio test -e native_det_ip`), so the address handling is verified
 off-device; the netif bring-up is ESP32-only.
@@ -46,7 +46,7 @@ The flag must reach the whole library build:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_IPV6=1" \
+  --project-option="build_flags=-DDWS_ENABLE_IPV6=1" \
   --lib="." examples/Foundation/20.IPv6/20.IPv6.ino
 ```
 

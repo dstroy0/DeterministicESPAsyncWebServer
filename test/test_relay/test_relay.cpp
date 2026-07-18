@@ -74,9 +74,9 @@ static void sock_init(MockSock *s, const void *in, size_t in_len, bool eof)
     s->in_eof = eof;
 }
 
-static DetRelayEnd end_of(MockSock *s)
+static DWSRelayEnd end_of(MockSock *s)
 {
-    DetRelayEnd e;
+    DWSRelayEnd e;
     e.recv = msock_recv;
     e.send = msock_send;
     e.shutdown = msock_shutdown;
@@ -84,15 +84,15 @@ static DetRelayEnd end_of(MockSock *s)
     return e;
 }
 
-static DetRelayStatus run_relay(DetRelay *r, int max_steps)
+static DWSRelayStatus run_relay(DWSRelay *r, int max_steps)
 {
     for (int i = 0; i < max_steps; i++)
     {
-        DetRelayStatus st = det_relay_step(r);
-        if (st != DetRelayStatus::DET_RELAY_RUNNING)
+        DWSRelayStatus st = dws_relay_step(r);
+        if (st != DWSRelayStatus::DWS_RELAY_RUNNING)
             return st;
     }
-    return DetRelayStatus::DET_RELAY_RUNNING; // never finished (a bug if it happens)
+    return DWSRelayStatus::DWS_RELAY_RUNNING; // never finished (a bug if it happens)
 }
 
 void test_bidirectional()
@@ -100,11 +100,11 @@ void test_bidirectional()
     MockSock a, b;
     sock_init(&a, "hello from client", 17, true);
     sock_init(&b, "hi from origin", 14, true);
-    DetRelayEnd ea = end_of(&a), eb = end_of(&b);
-    DetRelay r;
-    det_relay_init(&r, &ea, &eb);
+    DWSRelayEnd ea = end_of(&a), eb = end_of(&b);
+    DWSRelay r;
+    dws_relay_init(&r, &ea, &eb);
 
-    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 64));
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_DONE, run_relay(&r, 64));
     TEST_ASSERT_EQUAL_size_t(17, b.out_len);
     TEST_ASSERT_EQUAL_MEMORY("hello from client", b.out, 17);
     TEST_ASSERT_EQUAL_size_t(14, a.out_len);
@@ -122,11 +122,11 @@ void test_backpressure()
     sock_init(&a, data, sizeof(data), true);
     sock_init(&b, nullptr, 0, true);
     b.send_cap = 7; // the origin accepts only 7 bytes per write
-    DetRelayEnd ea = end_of(&a), eb = end_of(&b);
-    DetRelay r;
-    det_relay_init(&r, &ea, &eb);
+    DWSRelayEnd ea = end_of(&a), eb = end_of(&b);
+    DWSRelay r;
+    dws_relay_init(&r, &ea, &eb);
 
-    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 1000));
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_DONE, run_relay(&r, 1000));
     TEST_ASSERT_EQUAL_size_t(1000, b.out_len);
     TEST_ASSERT_EQUAL_MEMORY(data, b.out, 1000); // every byte carried across, in order
 }
@@ -139,22 +139,22 @@ void test_half_close_shutdown()
     MockSock a, b;
     sock_init(&a, "req", 3, true);           // client sends a short request then closes
     sock_init(&b, resp, sizeof(resp), true); // origin streams a long response
-    a.send_cap = 64; // client drains slowly, so b->a stays multi-step regardless of DETWS_RELAY_BUF
-    DetRelayEnd ea = end_of(&a), eb = end_of(&b);
-    DetRelay r;
-    det_relay_init(&r, &ea, &eb);
+    a.send_cap = 64; // client drains slowly, so b->a stays multi-step regardless of DWS_RELAY_BUF
+    DWSRelayEnd ea = end_of(&a), eb = end_of(&b);
+    DWSRelay r;
+    dws_relay_init(&r, &ea, &eb);
 
     // once a->b finishes (client EOF) the origin's half-close must fire, while b->a is still
     // streaming its long response (proving the two directions close independently)
-    DetRelayStatus st = DetRelayStatus::DET_RELAY_RUNNING;
+    DWSRelayStatus st = DWSRelayStatus::DWS_RELAY_RUNNING;
     for (int i = 0; i < 10 && !r.b_shut_sent; i++)
-        st = det_relay_step(&r);
+        st = dws_relay_step(&r);
     TEST_ASSERT_TRUE(r.b_shut_sent); // origin's shutdown fired on the client's FIN
     TEST_ASSERT_TRUE(b.shutdown_called);
     TEST_ASSERT_FALSE(r.b2a_done); // ...while the response direction is still open
-    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_RUNNING, st);
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_RUNNING, st);
 
-    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 64));
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_DONE, run_relay(&r, 64));
     TEST_ASSERT_EQUAL_MEMORY("req", b.out, 3);
     TEST_ASSERT_EQUAL_size_t(800, a.out_len);
     TEST_ASSERT_EQUAL_MEMORY(resp, a.out, 800);
@@ -167,14 +167,14 @@ void test_send_error()
     sock_init(&a, "data", 4, true);
     sock_init(&b, nullptr, 0, true);
     b.fail_send = true; // the origin's send errors
-    DetRelayEnd ea = end_of(&a), eb = end_of(&b);
-    DetRelay r;
-    det_relay_init(&r, &ea, &eb);
+    DWSRelayEnd ea = end_of(&a), eb = end_of(&b);
+    DWSRelay r;
+    dws_relay_init(&r, &ea, &eb);
 
-    DetRelayStatus st = DetRelayStatus::DET_RELAY_RUNNING;
-    for (int i = 0; i < 8 && st == DetRelayStatus::DET_RELAY_RUNNING; i++)
-        st = det_relay_step(&r);
-    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_ERROR, st);
+    DWSRelayStatus st = DWSRelayStatus::DWS_RELAY_RUNNING;
+    for (int i = 0; i < 8 && st == DWSRelayStatus::DWS_RELAY_RUNNING; i++)
+        st = dws_relay_step(&r);
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_ERROR, st);
 }
 
 void test_one_way_idle_then_close()
@@ -183,35 +183,35 @@ void test_one_way_idle_then_close()
     MockSock a, b;
     sock_init(&a, "GET / HTTP/1.0\r\n\r\n", 18, true);
     sock_init(&b, nullptr, 0, true);
-    DetRelayEnd ea = end_of(&a), eb = end_of(&b);
-    DetRelay r;
-    det_relay_init(&r, &ea, &eb);
+    DWSRelayEnd ea = end_of(&a), eb = end_of(&b);
+    DWSRelay r;
+    dws_relay_init(&r, &ea, &eb);
 
-    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 32));
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_DONE, run_relay(&r, 32));
     TEST_ASSERT_EQUAL_size_t(18, b.out_len);
     TEST_ASSERT_EQUAL_size_t(0, a.out_len);
 }
 
-// A transport that signals close out of band (like det_conn's on_close) rather than via recv < 0:
-// the mocks never EOF through recv; det_relay_note_eof() drives the finish.
+// A transport that signals close out of band (like dws_conn's on_close) rather than via recv < 0:
+// the mocks never EOF through recv; dws_relay_note_eof() drives the finish.
 void test_note_eof_out_of_band()
 {
     MockSock a, b;
     sock_init(&a, "hello", 5, false); // in_eof=false: recv returns 0 (not -1) when drained
     sock_init(&b, "world", 5, false);
-    DetRelayEnd ea = end_of(&a), eb = end_of(&b);
-    DetRelay r;
-    det_relay_init(&r, &ea, &eb);
+    DWSRelayEnd ea = end_of(&a), eb = end_of(&b);
+    DWSRelay r;
+    dws_relay_init(&r, &ea, &eb);
 
     // one step moves the buffered data each way; without an EOF signal the relay keeps running
-    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_RUNNING, det_relay_step(&r));
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_RUNNING, dws_relay_step(&r));
     TEST_ASSERT_EQUAL_MEMORY("hello", b.out, 5);
     TEST_ASSERT_EQUAL_MEMORY("world", a.out, 5);
 
     // both peers close out of band -> the relay finishes and both shutdowns fire
-    det_relay_note_eof(&r, false); // inbound closed
-    det_relay_note_eof(&r, true);  // origin closed
-    TEST_ASSERT_EQUAL_INT(DetRelayStatus::DET_RELAY_DONE, run_relay(&r, 8));
+    dws_relay_note_eof(&r, false); // inbound closed
+    dws_relay_note_eof(&r, true);  // origin closed
+    TEST_ASSERT_EQUAL_INT(DWSRelayStatus::DWS_RELAY_DONE, run_relay(&r, 8));
     TEST_ASSERT_TRUE(a.shutdown_called);
     TEST_ASSERT_TRUE(b.shutdown_called);
 }

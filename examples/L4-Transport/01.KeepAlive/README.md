@@ -1,6 +1,6 @@
 # 01.KeepAlive - HTTP/1.1 persistent connections
 
-**Layer:** L4 Transport · **Build flags:** `DETWS_ENABLE_KEEPALIVE`
+**Layer:** L4 Transport · **Build flags:** `DWS_ENABLE_KEEPALIVE`
 
 ## What this example teaches
 
@@ -16,7 +16,7 @@ write the same routes; the server decides keep-alive vs close and emits the righ
 - HTTP/1.1: the connection stays open unless the client sends `Connection: close`.
 - HTTP/1.0: it closes unless the client sends `Connection: keep-alive`.
 - Error responses (400/413/414) always close - the next request boundary is unknown after a parse error.
-- Each connection serves at most `DETWS_KEEPALIVE_MAX_REQUESTS`, then closes.
+- Each connection serves at most `DWS_KEEPALIVE_MAX_REQUESTS`, then closes.
 - Idle connections are still reclaimed by the `conn_timeout` sweep.
 
 **There is no API to learn.** Enabling the flag changes the transport behavior;
@@ -31,15 +31,15 @@ server.on("/time", HTTP_GET, [](uint8_t id, HttpReq *) {
 });
 ```
 
-**Build-flag note.** `DETWS_ENABLE_KEEPALIVE` must reach the library build, so
+**Build-flag note.** `DWS_ENABLE_KEEPALIVE` must reach the library build, so
 pass it as a `build_flag` (an in-sketch `#define` only affects the sketch). You
-can also tune `DETWS_KEEPALIVE_MAX_REQUESTS` the same way.
+can also tune `DWS_KEEPALIVE_MAX_REQUESTS` the same way.
 
 ## Build and run
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_KEEPALIVE=1" \
+  --project-option="build_flags=-DDWS_ENABLE_KEEPALIVE=1" \
   --lib="." examples/L4-Transport/01.KeepAlive/01.KeepAlive.ino
 ```
 
@@ -57,7 +57,7 @@ with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_KEEPALIVE 1
+#define DWS_ENABLE_KEEPALIVE 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -66,7 +66,7 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // A small page that links to /time, so a browser makes several requests that all
 // ride the one persistent connection.

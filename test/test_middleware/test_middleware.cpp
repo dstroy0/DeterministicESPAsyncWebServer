@@ -9,7 +9,7 @@
 #include <string.h>
 #include <unity.h>
 
-static DetWebServer server;
+static DWS server;
 
 // Cross-test observation state (middlewares are plain function pointers, so they
 // communicate through file-static globals + the global server, just like the
@@ -111,7 +111,7 @@ static MwResult mw_order_b(uint8_t slot, HttpReq *req)
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i] = {};

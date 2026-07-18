@@ -3,7 +3,7 @@
 
 /**
  * @file tls.h
- * @brief Deterministic TLS engine: mbedTLS over a static memory pool (DETWS_ENABLE_TLS).
+ * @brief Deterministic TLS engine: mbedTLS over a static memory pool (DWS_ENABLE_TLS).
  *
  * Wraps mbedTLS as a server-side TLS layer that keeps the library's zero-heap
  * guarantee: mbedTLS is pointed at a fixed BSS arena via
@@ -14,18 +14,18 @@
  * single `handle()` loop.
  *
  * ESP32/Arduino only - mbedTLS is not part of the native build. The header
- * compiles everywhere (the functions are no-op stubs unless DETWS_ENABLE_TLS and
+ * compiles everywhere (the functions are no-op stubs unless DWS_ENABLE_TLS and
  * ARDUINO are both set) so call sites need no extra guards.
  *
  * Lifecycle per connection:
  * @code
- *   det_tls_conn_begin(slot);                 // at accept on the TLS port
+ *   dws_tls_conn_begin(slot);                 // at accept on the TLS port
  *   // each EvtType::EVT_DATA, until established:
- *   int h = det_tls_handshake(slot);          // 1 done, 0 pending, <0 fatal
+ *   int h = dws_tls_handshake(slot);          // 1 done, 0 pending, <0 fatal
  *   // once established, app data:
- *   int n = det_tls_read(slot, buf, sizeof buf);   // >0 plaintext, 0 again, <0 closed
- *   det_tls_write(slot, data, len);                // encrypts -> tcp_write
- *   det_tls_conn_end(slot);                    // close_notify + free slot ctx
+ *   int n = dws_tls_read(slot, buf, sizeof buf);   // >0 plaintext, 0 again, <0 closed
+ *   dws_tls_write(slot, data, len);                // encrypts -> tcp_write
+ *   dws_tls_conn_end(slot);                    // close_notify + free slot ctx
  * @endcode
  */
 
@@ -36,7 +36,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_TLS && defined(ARDUINO)
+#if DWS_ENABLE_TLS && defined(ARDUINO)
 
 /**
  * @brief Initialize the global TLS engine: static pool, RNG, server cert/key.
@@ -51,68 +51,68 @@
  * @param key_len   Length incl. the trailing NUL for PEM.
  * @return true on success; false if the pool/cert/key setup failed.
  */
-bool det_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len);
+bool dws_tls_global_init(const uint8_t *cert, size_t cert_len, const uint8_t *key, size_t key_len);
 
-/** @brief True once det_tls_global_init() has succeeded. */
-bool det_tls_ready();
+/** @brief True once dws_tls_global_init() has succeeded. */
+bool dws_tls_ready();
 
 /**
  * @brief The ALPN protocol negotiated for @p slot ("h2" or "http/1.1"), or nullptr if the client
  * offered no ALPN. Valid after the handshake completes. Used to select HTTP/2 vs HTTP/1.1.
  */
-const char *det_tls_alpn(uint8_t slot);
+const char *dws_tls_alpn(uint8_t slot);
 
 /** @brief Begin a TLS session on connection @p slot (sets up ssl_context + BIO). */
-bool det_tls_conn_begin(uint8_t slot);
+bool dws_tls_conn_begin(uint8_t slot);
 
 /**
  * @brief Advance the TLS handshake for @p slot.
  * @return 1 when established, 0 while still in progress (need more data),
  *         negative on a fatal error (caller should drop the connection).
  */
-int det_tls_handshake(uint8_t slot);
+int dws_tls_handshake(uint8_t slot);
 
 /** @brief True once the handshake on @p slot has completed. */
-bool det_tls_established(uint8_t slot);
+bool dws_tls_established(uint8_t slot);
 
 /**
  * @brief Read decrypted application data from @p slot.
  * @return >0 plaintext bytes, 0 if none are available yet, <0 on close/error.
  */
-int det_tls_read(uint8_t slot, uint8_t *buf, size_t len);
+int dws_tls_read(uint8_t slot, uint8_t *buf, size_t len);
 
 /**
  * @brief Encrypt and send @p len bytes on @p slot (loops over partial writes).
  * @return bytes written, or <0 on error.
  */
-int det_tls_write(uint8_t slot, const void *data, size_t len);
+int dws_tls_write(uint8_t slot, const void *data, size_t len);
 
 /** @brief Send close_notify and tear down the per-connection TLS context. */
-void det_tls_conn_end(uint8_t slot);
+void dws_tls_conn_end(uint8_t slot);
 
 /** @brief Tear down the TLS context without close_notify (abrupt disconnect/timeout). */
-void det_tls_conn_free(uint8_t slot);
+void dws_tls_conn_free(uint8_t slot);
 
-/** @brief Peak bytes ever used from the static arena (for sizing DETWS_TLS_ARENA_SIZE). */
-size_t det_tls_arena_peak();
+/** @brief Peak bytes ever used from the static arena (for sizing DWS_TLS_ARENA_SIZE). */
+size_t dws_tls_arena_peak();
 
 /**
  * @brief TLS BIO send/recv callbacks (mbedTLS signatures) - the transport
  *        abstraction the engine reads/writes ciphertext through.
  *
  * Both sides conform to this: the server registers BIO functions that read the
- * connection's rx ring and write via the transport (det_conn_raw_send), and the
- * outbound client passes its own pair to det_tls_client_run(). The engine itself
+ * connection's rx ring and write via the transport (dws_conn_raw_send), and the
+ * outbound client passes its own pair to dws_tls_client_run(). The engine itself
  * never touches lwIP directly.
  */
-typedef int (*det_tls_bio_send_fn)(void *ctx, const unsigned char *buf, size_t len);
-typedef int (*det_tls_bio_recv_fn)(void *ctx, unsigned char *buf, size_t len);
+typedef int (*dws_tls_bio_send_fn)(void *ctx, const unsigned char *buf, size_t len);
+typedef int (*dws_tls_bio_recv_fn)(void *ctx, unsigned char *buf, size_t len);
 
-#if DETWS_ENABLE_MTLS
+#if DWS_ENABLE_MTLS
 /**
  * @brief Require a verified client certificate (mTLS): install the trust-anchor CA.
  *
- * Call after det_tls_global_init(). Parses @p ca (PEM - length incl. the trailing
+ * Call after dws_tls_global_init(). Parses @p ca (PEM - length incl. the trailing
  * NUL - or DER) as the CA chain and switches the server to
  * MBEDTLS_SSL_VERIFY_REQUIRED, so the handshake demands a client certificate that
  * chains to @p ca and aborts the connection otherwise.
@@ -120,7 +120,7 @@ typedef int (*det_tls_bio_recv_fn)(void *ctx, unsigned char *buf, size_t len);
  * @return true on success; false if the engine is not initialized or the CA
  *         failed to parse.
  */
-bool det_tls_set_client_ca(const uint8_t *ca, size_t ca_len);
+bool dws_tls_set_client_ca(const uint8_t *ca, size_t ca_len);
 
 /**
  * @brief Copy the established peer's certificate subject DN into @p out.
@@ -129,10 +129,10 @@ bool det_tls_set_client_ca(const uint8_t *ca, size_t ca_len);
  * @return the subject string length written (excl. NUL), or <0 if there is no
  *         verified peer certificate.
  */
-int det_tls_peer_subject(uint8_t slot, char *out, size_t out_len);
-#endif // DETWS_ENABLE_MTLS
+int dws_tls_peer_subject(uint8_t slot, char *out, size_t out_len);
+#endif // DWS_ENABLE_MTLS
 
-#if DETWS_ENABLE_HTTP_CLIENT_TLS
+#if DWS_ENABLE_HTTP_CLIENT_TLS
 /**
  * @brief Run a blocking client-side TLS exchange over caller-supplied BIO callbacks.
  *
@@ -144,15 +144,15 @@ int det_tls_peer_subject(uint8_t slot, char *out, size_t out_len);
  *
  * NOTE: server authentication is OFF by default (no trust store on the device);
  * the transport is encrypted but unauthenticated unless a CA and/or a cert pin is
- * installed via det_tls_client_set_ca() / det_tls_client_set_pin().
+ * installed via dws_tls_client_set_ca() / dws_tls_client_set_pin().
  *
  * @return 0 on success (@p out_len set), <0 on handshake/verification/IO failure.
  */
-int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint8_t *out, size_t out_cap,
-                       size_t *out_len, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn, uint32_t deadline_ms);
-#endif // DETWS_ENABLE_HTTP_CLIENT_TLS
+int dws_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint8_t *out, size_t out_cap,
+                       size_t *out_len, dws_tls_bio_send_fn send_fn, dws_tls_bio_recv_fn recv_fn, uint32_t deadline_ms);
+#endif // DWS_ENABLE_HTTP_CLIENT_TLS
 
-#if DETWS_ENABLE_CLIENT_TLS
+#if DWS_ENABLE_CLIENT_TLS
 /**
  * @brief Install a CA trust anchor for outbound TLS (HTTPS/MQTTS) verification.
  *
@@ -160,156 +160,156 @@ int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint
  * installed, the client handshake verifies the server's certificate chain and its
  * hostname (SNI) and aborts the connection on failure.
  */
-void det_tls_client_set_ca(const uint8_t *ca, size_t ca_len);
+void dws_tls_client_set_ca(const uint8_t *ca, size_t ca_len);
 
 /**
  * @brief Pin the outbound server's certificate by SHA-256 (32 bytes of the DER).
  *
  * After a successful handshake the peer certificate is hashed and constant-time
  * compared to @p sha256; a mismatch (or no peer cert) fails the connection. Pass
- * nullptr to clear. Can be combined with det_tls_client_set_ca().
+ * nullptr to clear. Can be combined with dws_tls_client_set_ca().
  */
-void det_tls_client_set_pin(const uint8_t sha256[32]);
+void dws_tls_client_set_pin(const uint8_t sha256[32]);
 
 /** @brief Clear any installed client CA and cert pin (back to encrypt-only). */
-void det_tls_client_clear_verify();
+void dws_tls_client_clear_verify();
 
 // --- Persistent client TLS session (one outbound connection at a time) ---
 // For a long-lived encrypted client (MQTTS): handshake once, then read/write
-// application data over the caller's BIO until det_tls_client_session_end(). Honors the
+// application data over the caller's BIO until dws_tls_client_session_end(). Honors the
 // CA/pin installed above. The BIO callbacks read ciphertext from the caller's
 // receive ring and write it to the socket.
 
 /** @brief Begin a client TLS session to @p host over the given BIO. @return false on setup failure. */
-bool det_tls_client_session_begin(const char *host, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn);
+bool dws_tls_client_session_begin(const char *host, dws_tls_bio_send_fn send_fn, dws_tls_bio_recv_fn recv_fn);
 
 /** @brief True while a client TLS session is live (begun, not yet ended). The session is a singleton shared
  * across all client-TLS users, so a would-be caller checks this to avoid tearing down an active session. */
-bool det_tls_client_session_active();
+bool dws_tls_client_session_active();
 
 /** @brief Advance the handshake. @return 1 established (CA/pin checked), 0 pending, <0 fatal. */
-int det_tls_client_session_handshake();
+int dws_tls_client_session_handshake();
 
 /** @brief Read decrypted application data. @return >0 bytes, 0 none yet, <0 closed/error. */
-int det_tls_client_session_read(uint8_t *buf, size_t len);
+int dws_tls_client_session_read(uint8_t *buf, size_t len);
 
 /** @brief Encrypt and send @p len bytes. @return bytes written, or <0 on error. */
-int det_tls_client_session_write(const uint8_t *data, size_t len);
+int dws_tls_client_session_write(const uint8_t *data, size_t len);
 
 /** @brief Send close_notify and tear down the session. */
-void det_tls_client_session_end();
+void dws_tls_client_session_end();
 
 /**
  * @brief Discard the saved TLS session so the next csess handshake is a full one.
  *
- * With DETWS_ENABLE_TLS_RESUMPTION the client keeps the last session's ticket and
- * presents it on the next det_tls_client_session_begin() for an abbreviated handshake. Call
+ * With DWS_ENABLE_TLS_RESUMPTION the client keeps the last session's ticket and
+ * presents it on the next dws_tls_client_session_begin() for an abbreviated handshake. Call
  * this to force a fresh full handshake (e.g. after a credential change). A no-op
  * when resumption is disabled.
  */
-void det_tls_client_session_forget_session();
-#endif // DETWS_ENABLE_CLIENT_TLS
+void dws_tls_client_session_forget_session();
+#endif // DWS_ENABLE_CLIENT_TLS
 
 #else // stubs (TLS disabled or native build)
 
-static inline bool det_tls_global_init(const uint8_t *, size_t, const uint8_t *, size_t)
+static inline bool dws_tls_global_init(const uint8_t *, size_t, const uint8_t *, size_t)
 {
     return false;
 }
-static inline bool det_tls_ready()
+static inline bool dws_tls_ready()
 {
     return false;
 }
-static inline bool det_tls_conn_begin(uint8_t)
+static inline bool dws_tls_conn_begin(uint8_t)
 {
     return false;
 }
-static inline int det_tls_handshake(uint8_t)
+static inline int dws_tls_handshake(uint8_t)
 {
     return -1;
 }
-static inline bool det_tls_established(uint8_t)
+static inline bool dws_tls_established(uint8_t)
 {
     return false;
 }
-static inline int det_tls_read(uint8_t, uint8_t *, size_t)
+static inline int dws_tls_read(uint8_t, uint8_t *, size_t)
 {
     return -1;
 }
-static inline int det_tls_write(uint8_t, const void *, size_t)
+static inline int dws_tls_write(uint8_t, const void *, size_t)
 {
     return -1;
 }
-static inline void det_tls_conn_end(uint8_t)
+static inline void dws_tls_conn_end(uint8_t)
 {
 }
-static inline void det_tls_conn_free(uint8_t)
+static inline void dws_tls_conn_free(uint8_t)
 {
 }
-static inline size_t det_tls_arena_peak()
+static inline size_t dws_tls_arena_peak()
 {
     return 0;
 }
 
-#if DETWS_ENABLE_MTLS
-static inline bool det_tls_set_client_ca(const uint8_t *, size_t)
+#if DWS_ENABLE_MTLS
+static inline bool dws_tls_set_client_ca(const uint8_t *, size_t)
 {
     return false;
 }
-static inline int det_tls_peer_subject(uint8_t, char *, size_t)
+static inline int dws_tls_peer_subject(uint8_t, char *, size_t)
 {
     return -1;
 }
-#endif // DETWS_ENABLE_MTLS
+#endif // DWS_ENABLE_MTLS
 
-#if DETWS_ENABLE_CLIENT_TLS
-typedef int (*det_tls_bio_send_fn)(void *ctx, const unsigned char *buf, size_t len);
-typedef int (*det_tls_bio_recv_fn)(void *ctx, unsigned char *buf, size_t len);
-static inline void det_tls_client_set_ca(const uint8_t *, size_t)
+#if DWS_ENABLE_CLIENT_TLS
+typedef int (*dws_tls_bio_send_fn)(void *ctx, const unsigned char *buf, size_t len);
+typedef int (*dws_tls_bio_recv_fn)(void *ctx, unsigned char *buf, size_t len);
+static inline void dws_tls_client_set_ca(const uint8_t *, size_t)
 {
 }
-static inline void det_tls_client_set_pin(const uint8_t *)
+static inline void dws_tls_client_set_pin(const uint8_t *)
 {
 }
-static inline void det_tls_client_clear_verify()
+static inline void dws_tls_client_clear_verify()
 {
 }
-static inline bool det_tls_client_session_begin(const char *, det_tls_bio_send_fn, det_tls_bio_recv_fn)
+static inline bool dws_tls_client_session_begin(const char *, dws_tls_bio_send_fn, dws_tls_bio_recv_fn)
 {
     return false;
 }
-static inline bool det_tls_client_session_active()
+static inline bool dws_tls_client_session_active()
 {
     return false;
 }
-static inline int det_tls_client_session_handshake()
+static inline int dws_tls_client_session_handshake()
 {
     return -1;
 }
-static inline int det_tls_client_session_read(uint8_t *, size_t)
+static inline int dws_tls_client_session_read(uint8_t *, size_t)
 {
     return -1;
 }
-static inline int det_tls_client_session_write(const uint8_t *, size_t)
+static inline int dws_tls_client_session_write(const uint8_t *, size_t)
 {
     return -1;
 }
-static inline void det_tls_client_session_end()
+static inline void dws_tls_client_session_end()
 {
 }
-static inline void det_tls_client_session_forget_session()
+static inline void dws_tls_client_session_forget_session()
 {
 }
-#endif // DETWS_ENABLE_CLIENT_TLS
+#endif // DWS_ENABLE_CLIENT_TLS
 
-#if DETWS_ENABLE_HTTP_CLIENT_TLS
-static inline int det_tls_client_run(const char *, const uint8_t *, size_t, uint8_t *, size_t, size_t *,
-                                     det_tls_bio_send_fn, det_tls_bio_recv_fn, uint32_t)
+#if DWS_ENABLE_HTTP_CLIENT_TLS
+static inline int dws_tls_client_run(const char *, const uint8_t *, size_t, uint8_t *, size_t, size_t *,
+                                     dws_tls_bio_send_fn, dws_tls_bio_recv_fn, uint32_t)
 {
     return -1;
 }
-#endif // DETWS_ENABLE_HTTP_CLIENT_TLS
+#endif // DWS_ENABLE_HTTP_CLIENT_TLS
 
-#endif // DETWS_ENABLE_TLS && ARDUINO
+#endif // DWS_ENABLE_TLS && ARDUINO
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DET_TLS_H

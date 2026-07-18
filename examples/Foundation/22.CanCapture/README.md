@@ -1,7 +1,7 @@
 # 22.CanCapture - listen-only CAN capture, forwarded to Ethernet
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_BUS_CAPTURE`, `DETWS_ENABLE_FORWARD`,
-`DETWS_ENABLE_ETHERNET`, `ETH_PHY_*`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_BUS_CAPTURE`, `DWS_ENABLE_FORWARD`,
+`DWS_ENABLE_ETHERNET`, `ETH_PHY_*`
 
 ## What this example teaches
 
@@ -11,7 +11,7 @@ or a frame, so it stays completely invisible to the other nodes - and forward ea
 Ethernet to a collector:
 
 ```
-CAN bus ─bus_capture_poll()→ sink ─det_forward_ingress()→ ETH send cb ─UDP→ collector
+CAN bus ─bus_capture_poll()→ sink ─dws_forward_ingress()→ ETH send cb ─UDP→ collector
 ```
 
 - **`services/bus_capture`** installs TWAI in `TWAI_MODE_LISTEN_ONLY` (`bus_capture_begin(tx, rx,
@@ -20,9 +20,9 @@ bitrate, sink)`) and hands each decoded `CanFrame` to your sink; `bus_capture_po
 - **`can_to_socketcan()`** (pure) formats a frame as a 16-byte Linux **SocketCAN** frame -
   big-endian `can_id` with the EFF (extended) / RTR flags, length, and data.
 - **`services/forward`** bridges `CAN → ETH`; the Ethernet egress wraps each SocketCAN frame in a
-  libpcap record (`DET_DLT_CAN_SOCKETCAN`) and `det_udp_sendto()`s it to the collector.
+  libpcap record (`DWS_DLT_CAN_SOCKETCAN`) and `dws_udp_sendto()`s it to the collector.
 
-On the collector, prepend one `det_pcap_global_header(..., DET_DLT_CAN_SOCKETCAN)` and **Wireshark**
+On the collector, prepend one `dws_pcap_global_header(..., DWS_DLT_CAN_SOCKETCAN)` and **Wireshark**
 decodes the stream as CAN.
 
 The framing (`can_to_socketcan`, the PCAP link type) is pure and host-tested
@@ -33,7 +33,7 @@ The framing (`can_to_socketcan`, the PCAP link type) is pure and host-tested
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_BUS_CAPTURE=1 -DDETWS_ENABLE_FORWARD=1 -DDETWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_LAN8720 -DETH_PHY_ADDR=1 -DETH_PHY_POWER=-1 -DETH_PHY_MDC=23 -DETH_PHY_MDIO=18 -DETH_CLK_MODE=ETH_CLOCK_GPIO0_IN" \
+  --project-option="build_flags=-DDWS_ENABLE_BUS_CAPTURE=1 -DDWS_ENABLE_FORWARD=1 -DDWS_ENABLE_ETHERNET=1 -DETH_PHY_TYPE=ETH_PHY_LAN8720 -DETH_PHY_ADDR=1 -DETH_PHY_POWER=-1 -DETH_PHY_MDC=23 -DETH_PHY_MDIO=18 -DETH_CLK_MODE=ETH_CLOCK_GPIO0_IN" \
   --lib="." examples/Foundation/22.CanCapture/22.CanCapture.ino
 ```
 

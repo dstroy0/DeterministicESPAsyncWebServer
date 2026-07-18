@@ -34,7 +34,7 @@ struct GhashKey
     uint32_t M[16][4];
 };
 
-namespace detws_ghash_detail
+namespace dws_ghash_detail
 {
 inline uint32_t be32(const uint8_t *p)
 {
@@ -47,12 +47,12 @@ inline void put_be32(uint8_t *p, uint32_t v)
     p[2] = (uint8_t)(v >> 8);
     p[3] = (uint8_t)v;
 }
-} // namespace detws_ghash_detail
+} // namespace dws_ghash_detail
 
 /** @brief Build the 4-bit multiplication table from the 16-byte subkey @p h. Call once per key. */
 inline void ghash_key_init(GhashKey *t, const uint8_t h[16])
 {
-    using detws_ghash_detail::be32;
+    using dws_ghash_detail::be32;
     // M[8] = H; M[4]=H/x, M[2]=H/x^2, M[1]=H/x^3 (one GF right-shift each, reducing by R=0xe1<<120).
     uint32_t z0 = be32(h), z1 = be32(h + 4), z2 = be32(h + 8), z3 = be32(h + 12);
     t->M[8][0] = z0;
@@ -117,10 +117,10 @@ inline void ghash_mul(const GhashKey *t, uint8_t acc[16])
         z2 ^= t->M[hi][2];
         z3 ^= t->M[hi][3];
     }
-    detws_ghash_detail::put_be32(acc, z0);
-    detws_ghash_detail::put_be32(acc + 4, z1);
-    detws_ghash_detail::put_be32(acc + 8, z2);
-    detws_ghash_detail::put_be32(acc + 12, z3);
+    dws_ghash_detail::put_be32(acc, z0);
+    dws_ghash_detail::put_be32(acc + 4, z1);
+    dws_ghash_detail::put_be32(acc + 8, z2);
+    dws_ghash_detail::put_be32(acc + 12, z3);
 }
 
 /** @brief Fold @p len bytes of @p data into @p acc: acc = (acc XOR block) * H per 16 bytes, a final

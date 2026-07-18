@@ -3,7 +3,7 @@
 
 /**
  * @file ina219.h
- * @brief TI INA219 high-side current / power monitor codec (DETWS_ENABLE_INA219).
+ * @brief TI INA219 high-side current / power monitor codec (DWS_ENABLE_INA219).
  *
  * The INA219 measures the voltage across a shunt resistor (LSB 10 uV) and the bus voltage (LSB
  * 4 mV, in the upper 13 bits of its register), and - once a calibration value derived from the

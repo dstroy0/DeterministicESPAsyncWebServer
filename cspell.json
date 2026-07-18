@@ -1339,7 +1339,8 @@
     "malforming",
     "secsh",
     "bitio",
-    "fmtbuf"
+    "fmtbuf",
+    "DDWS"
   ],
   "ignorePaths": [
     "node_modules/**",

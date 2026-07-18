@@ -4,7 +4,7 @@
 // Unit, stress, and race-condition tests for Layer 7 (Application).
 //
 // Sections:
-//   FUNCTION I/O  - one test per DetWebServer method behavior
+//   FUNCTION I/O  - one test per DWS method behavior
 //   UNIT          - routing, wildcard, not-found, CORS dispatch
 //   STRESS        - route-table full scan, sequential requests, all-slots
 //   RACE SIM      - slot state hazards visible to handle()
@@ -59,7 +59,7 @@ static void push_bytes(uint8_t slot, const char *data)
     }
 }
 
-static DetWebServer *g_server;
+static DWS *g_server;
 
 void setUp()
 {
@@ -75,13 +75,13 @@ void setUp()
     }
     handler_called = false;
     handler_slot = 255;
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     ws_init(); // isolate ws_pool[] between tests (a leftover WS slot makes http_parse skip it)
 #endif
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
     sse_init(); // isolate sse_pool[] between tests
 #endif
-    g_server = new DetWebServer();
+    g_server = new DWS();
 }
 
 void tearDown()
@@ -91,7 +91,7 @@ void tearDown()
 }
 
 // ====================================================================
-// FUNCTION I/O TESTS - DetWebServer::on()
+// FUNCTION I/O TESTS - DWS::on()
 // ====================================================================
 
 void test_fn_on_registers_and_dispatches()
@@ -144,7 +144,7 @@ void test_fn_on_same_path_different_methods_are_distinct()
 }
 
 // ====================================================================
-// FUNCTION I/O TESTS - DetWebServer::on_not_found()
+// FUNCTION I/O TESTS - DWS::on_not_found()
 // ====================================================================
 
 void test_fn_on_not_found_called_when_no_match()
@@ -167,7 +167,7 @@ void test_fn_on_not_found_not_called_when_match_exists()
 }
 
 // ====================================================================
-// FUNCTION I/O TESTS - DetWebServer::set_cors()
+// FUNCTION I/O TESTS - DWS::set_cors()
 // ====================================================================
 
 void test_fn_set_cors_options_preflight_clears_slot()
@@ -621,17 +621,17 @@ void test_redirect_invalid_code_defaults_to_302()
 
 void test_mime_type_detection()
 {
-    TEST_ASSERT_EQUAL_STRING("text/html", DetWebServer::mime_type("/index.html"));
-    TEST_ASSERT_EQUAL_STRING("text/css", DetWebServer::mime_type("/css/site.css"));
-    TEST_ASSERT_EQUAL_STRING("application/javascript", DetWebServer::mime_type("/app.JS")); // case-insensitive
-    TEST_ASSERT_EQUAL_STRING("application/json", DetWebServer::mime_type("/api/data.json"));
-    TEST_ASSERT_EQUAL_STRING("image/svg+xml", DetWebServer::mime_type("logo.svg"));
-    TEST_ASSERT_EQUAL_STRING("image/png", DetWebServer::mime_type("a.b.c.png")); // last extension wins
+    TEST_ASSERT_EQUAL_STRING("text/html", DWS::mime_type("/index.html"));
+    TEST_ASSERT_EQUAL_STRING("text/css", DWS::mime_type("/css/site.css"));
+    TEST_ASSERT_EQUAL_STRING("application/javascript", DWS::mime_type("/app.JS")); // case-insensitive
+    TEST_ASSERT_EQUAL_STRING("application/json", DWS::mime_type("/api/data.json"));
+    TEST_ASSERT_EQUAL_STRING("image/svg+xml", DWS::mime_type("logo.svg"));
+    TEST_ASSERT_EQUAL_STRING("image/png", DWS::mime_type("a.b.c.png")); // last extension wins
     // Unknown / missing extension and dotfiles fall back.
-    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DetWebServer::mime_type("/file.unknownext"));
-    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DetWebServer::mime_type("/noext"));
-    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DetWebServer::mime_type("/dir.with.dot/file"));
-    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DetWebServer::mime_type(nullptr));
+    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DWS::mime_type("/file.unknownext"));
+    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DWS::mime_type("/noext"));
+    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DWS::mime_type("/dir.with.dot/file"));
+    TEST_ASSERT_EQUAL_STRING("application/octet-stream", DWS::mime_type(nullptr));
 }
 
 // ====================================================================
@@ -1146,7 +1146,7 @@ void test_stats_endpoint_emits_json()
     TEST_ASSERT_NOT_NULL(strstr(out, "\"active_conns\""));
 }
 
-#if DETWS_ENABLE_METRICS
+#if DWS_ENABLE_METRICS
 // Prometheus /metrics emits the stats counters in text exposition format.
 void test_metrics_emits_prometheus()
 {
@@ -1160,15 +1160,15 @@ void test_metrics_emits_prometheus()
     g_server->metrics(0);
     const char *out = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(out, "text/plain; version=0.0.4"));
-    TEST_ASSERT_NOT_NULL(strstr(out, "# TYPE detws_http_requests_total counter"));
-    TEST_ASSERT_NOT_NULL(strstr(out, "detws_http_responses_total{class=\"2xx\"}"));
-    TEST_ASSERT_NOT_NULL(strstr(out, "detws_free_heap_bytes"));
-    TEST_ASSERT_NOT_NULL(strstr(out, "detws_uptime_seconds"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "# TYPE dws_http_requests_total counter"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "dws_http_responses_total{class=\"2xx\"}"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "dws_free_heap_bytes"));
+    TEST_ASSERT_NOT_NULL(strstr(out, "dws_uptime_seconds"));
     tcp_capture_disable();
 }
 #endif
 
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
 // Regression: sse_do_upgrade() must store the request path by VALUE before
 // http_reset() zeroes the parser buffer, so a later path-matched sse_broadcast()
 // reaches the client. (A dangling path pointer made broadcasts silently miss.)
@@ -1195,7 +1195,7 @@ void test_sse_broadcast_after_upgrade_matches_path()
 }
 #endif
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
 // The WebSocket send API: bad-id / inactive / terminal-state guards send
 // nothing; a live connection frames text (0x81) and binary (0x82) payloads and
 // flushes, and ws_disconnect queues a Close frame (0x88).
@@ -1248,7 +1248,7 @@ void test_ws_send_api()
 }
 #endif
 
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
 // The SSE send API: sse_send writes an event/id/data block to the bound slot;
 // bad-id / inactive guards send nothing; sse_broadcast skips connections whose
 // stored path does not match.
@@ -1314,7 +1314,7 @@ void test_status_text_reason_phrases()
         {501, "Not Implemented"},
         {503, "Service Unavailable"},
         {999, "Unknown"}, // 999 -> default
-#if DETWS_ENABLE_WEBDAV
+#if DWS_ENABLE_WEBDAV
         {207, "Multi-Status"},
         {412, "Precondition Failed"},
         {423, "Locked"},
@@ -1398,19 +1398,19 @@ void test_allow_header_lists_methods()
 // shared state (released with listener_stop_all()).
 void test_listen_and_begin()
 {
-    DetWebServer srv;
+    DWS srv;
 
     // begin() before any listen() -> no-listeners error, no side effects.
-    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_NO_LISTENERS, srv.begin());
+    TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_ERR_NO_LISTENERS, srv.begin());
 
     // Fill the listener table, then the next listen() is rejected. listen() returns each
     // listener's id (its index), so the i-th call returns i.
     for (int i = 0; i < MAX_LISTENERS; i++)
         TEST_ASSERT_EQUAL_INT32(i, srv.listen((uint16_t)(9100 + i)));
-    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_LISTENER_FULL, srv.listen(9999));
+    TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_ERR_LISTENER_FULL, srv.listen(9999));
 
     // begin() now brings the registered listeners up.
-    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.begin());
+    TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_OK, srv.begin());
     listener_stop_all(); // release the global listener slots for later tests
 }
 
@@ -1419,28 +1419,28 @@ void test_listen_and_begin()
 // error without binding.
 void test_begin_port_convenience()
 {
-    DetWebServer srv;
-    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.begin((uint16_t)8080));
+    DWS srv;
+    TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_OK, srv.begin((uint16_t)8080));
     listener_stop_all();
 
-    DetWebServer full;
+    DWS full;
     for (int i = 0; i < MAX_LISTENERS; i++)
         full.listen((uint16_t)(9300 + i));
-    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_LISTENER_FULL, full.begin((uint16_t)9999));
+    TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_ERR_LISTENER_FULL, full.begin((uint16_t)9999));
 }
 
 // restart() = stop() + begin(): it forwards the no-listeners error before any listen(), and
 // otherwise cycles the listeners back up. stop() must be an idempotent teardown.
 void test_restart_and_stop()
 {
-    DetWebServer srv;
+    DWS srv;
     // Before any listener, restart() forwards the no-listeners error (no stop()/begin()).
-    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_ERR_NO_LISTENERS, srv.restart());
+    TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_ERR_NO_LISTENERS, srv.restart());
 
     // Bring a listener up, then restart() tears down and re-binds it. The first listen() returns id 0.
     TEST_ASSERT_EQUAL_INT32(0, srv.listen((uint16_t)9500));
-    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.begin());
-    TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, srv.restart());
+    TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_OK, srv.begin());
+    TEST_ASSERT_EQUAL_INT32(DWSResult::DWS_OK, srv.restart());
 
     // stop() tears everything down; a second stop() with nothing active is a safe no-op.
     srv.stop();
@@ -1452,19 +1452,19 @@ void test_restart_and_stop()
 // The plain on() path is covered elsewhere; this hits the iface / regex / auth / ws / sse variants.
 void test_route_registration_variants_table_full()
 {
-    DetWebServer srv;
+    DWS srv;
     for (int i = 0; i < MAX_ROUTES; i++)
         srv.on("/x", HttpMethod::HTTP_GET, record_handler);
 
-    srv.on("/i", HttpMethod::HTTP_GET, record_handler, DetIface::DETIFACE_STA); // on(..., iface)
+    srv.on("/i", HttpMethod::HTTP_GET, record_handler, DWSIface::DETIFACE_STA); // on(..., iface)
     srv.on_regex("/re.*", HttpMethod::HTTP_GET, record_handler);
-#if DETWS_ENABLE_AUTH
+#if DWS_ENABLE_AUTH
     srv.on("/a", HttpMethod::HTTP_GET, record_handler, "realm", "u", "p", false);
 #endif
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     srv.on_ws("/ws", nullptr, nullptr, nullptr);
 #endif
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
     srv.on_sse("/sse", nullptr);
 #endif
 
@@ -1517,7 +1517,7 @@ void test_redirect_response_and_code_normalization()
 void test_request_error_paths_te_method_ws()
 {
     g_server->on("/only-get", HttpMethod::HTTP_GET, record_handler);
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     g_server->on_ws("/ws", nullptr, nullptr, nullptr);
 #endif
     // Wrong method to a GET-only route -> 405 with an Allow header.
@@ -1528,7 +1528,7 @@ void test_request_error_paths_te_method_ws()
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "405"));
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Allow:"));
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     // A WS route hit without an upgrade -> 400.
     arm_slot(0, "GET /ws HTTP/1.1\r\nHost: x\r\n\r\n");
     conn_pool[0].pcb = &_mock_pcb;
@@ -1556,7 +1556,7 @@ void test_request_error_paths_te_method_ws()
 // is rejected by the base64 length check instead.
 void test_ws_sse_upgrade_failure_paths()
 {
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     g_server->on_ws("/ws", nullptr, nullptr, nullptr);
 
     // (a) A Sec-WebSocket-Key that does not base64-decode to 16 bytes -> ws_accept_key rejects -> 400.
@@ -1590,7 +1590,7 @@ void test_ws_sse_upgrade_failure_paths()
 #endif
 }
 
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
 // An SSE upgrade with the SSE pool exhausted -> sse_alloc fails, connection aborted after
 // the optimistic 200 event-stream header.
 void test_sse_upgrade_pool_exhausted()
@@ -1654,7 +1654,7 @@ int main()
     RUN_TEST(test_redirect_response_and_code_normalization);
     RUN_TEST(test_request_error_paths_te_method_ws);
     RUN_TEST(test_ws_sse_upgrade_failure_paths);
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
     RUN_TEST(test_sse_upgrade_pool_exhausted);
 #endif
 
@@ -1738,14 +1738,14 @@ int main()
     RUN_TEST(test_listen_and_begin);
     RUN_TEST(test_begin_port_convenience);
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     RUN_TEST(test_ws_send_api);
 #endif
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
     RUN_TEST(test_sse_broadcast_after_upgrade_matches_path);
     RUN_TEST(test_sse_send_api);
 #endif
-#if DETWS_ENABLE_METRICS
+#if DWS_ENABLE_METRICS
     RUN_TEST(test_metrics_emits_prometheus);
 #endif
 

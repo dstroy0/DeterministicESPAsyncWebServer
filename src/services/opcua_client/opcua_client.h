@@ -3,7 +3,7 @@
 
 /**
  * @file opcua_client.h
- * @brief OPC UA Binary client - request builders + response parsers (DETWS_ENABLE_OPCUA_CLIENT).
+ * @brief OPC UA Binary client - request builders + response parsers (DWS_ENABLE_OPCUA_CLIENT).
  *
  * The client side of the OPC UA Binary protocol, the mirror of services/opcua: it
  * builds the request messages a client sends (Hello, OpenSecureChannel,
@@ -34,7 +34,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_OPCUA_CLIENT
+#if DWS_ENABLE_OPCUA_CLIENT
 
 // Dependency (OPCUA_CLIENT requires OPCUA) is enforced centrally in ServerConfig.h.
 
@@ -58,7 +58,7 @@ void opcua_client_init(OpcUaClient *c);
 // Request builders (return bytes written to @p out, or 0 if it does not fit)
 // ---------------------------------------------------------------------------
 
-/** @brief Build a `HEL` Hello, advertising DETWS_OPCUA_BUF buffer sizes. */
+/** @brief Build a `HEL` Hello, advertising DWS_OPCUA_BUF buffer sizes. */
 size_t opcua_client_hello(const char *endpoint_url, uint8_t *out, size_t cap);
 
 /** @brief Build an `OPN` OpenSecureChannelRequest (Issue, SecurityPolicy None). */
@@ -147,5 +147,5 @@ int32_t opcua_client_on_browse(const uint8_t *msg, size_t len, OpcUaClientRef *r
  */
 int32_t opcua_client_on_write(const uint8_t *msg, size_t len, uint32_t *results, uint32_t max);
 
-#endif // DETWS_ENABLE_OPCUA_CLIENT
+#endif // DWS_ENABLE_OPCUA_CLIENT
 #endif // DETERMINISTICESPASYNCWEBSERVER_OPCUA_CLIENT_H

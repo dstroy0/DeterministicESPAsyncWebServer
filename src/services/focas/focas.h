@@ -3,7 +3,7 @@
 
 /**
  * @file focas.h
- * @brief FANUC FOCAS Ethernet protocol codec (DETWS_ENABLE_FOCAS) - zero-heap request builders +
+ * @brief FANUC FOCAS Ethernet protocol codec (DWS_ENABLE_FOCAS) - zero-heap request builders +
  *        response parsers for FANUC CNCs over TCP 8193 (the machine-tool data protocol).
  *
  * FOCAS ("FANUC Open CNC API Specification") is normally a proprietary PC library (fwlib32); this
@@ -34,7 +34,7 @@
  * (`>L`) response layouts, and the 8-octet value encoding (`data / base^exp`) were reverse-
  * engineered by and cross-checked against diohpix/pyfanuc. Function selectors are the verbatim
  * set documented there. Pure codec, host-tested - the caller owns the TCP connection
- * (`det_client_*`) and drives the open -> command -> close sequence.
+ * (`dws_client_*`) and drives the open -> command -> close sequence.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -45,7 +45,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_FOCAS
+#if DWS_ENABLE_FOCAS
 
 #include <stddef.h>
 #include <stdint.h>
@@ -221,6 +221,6 @@ bool focas_decode8(const uint8_t *chunk, size_t len, FocasValue *out);
 /// The scaled value `data / base^exp` as a float (0 for an invalid value).
 float focas_value_f(const FocasValue *v);
 
-#endif // DETWS_ENABLE_FOCAS
+#endif // DWS_ENABLE_FOCAS
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_FOCAS_H

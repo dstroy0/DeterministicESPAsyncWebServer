@@ -8,7 +8,7 @@
 
 #include "services/iec60870/iec60870.h"
 
-#if DETWS_ENABLE_IEC60870
+#if DWS_ENABLE_IEC60870
 
 #include <string.h>
 
@@ -228,4 +228,4 @@ bool iec101_parse(const uint8_t *buf, size_t len, Iec101Frame *out, size_t *cons
     return false;
 }
 
-#endif // DETWS_ENABLE_IEC60870
+#endif // DWS_ENABLE_IEC60870

@@ -6,15 +6,15 @@
  * @brief Layer 5 (Session) - server worker identity.
  *
  * The server pipeline runs in one or more dedicated worker tasks (see
- * DETWS_WORKER_COUNT). Each worker owns a disjoint partition of connection slots
+ * DWS_WORKER_COUNT). Each worker owns a disjoint partition of connection slots
  * (slot i -> worker i % count) and its own scratch arena, so per-worker state
  * (the arena, work buffers) is selected by the caller's worker id. This header is
  * the single source of that id.
  *
  * The id is per-task/per-thread: a worker binds itself once at task entry via
- * detws_worker_set_self(); any context that has not bound an id (the user's
+ * dws_worker_set_self(); any context that has not bound an id (the user's
  * loop(), a unit test, the lwIP thread) reads 0, which is also the only valid id
- * in the default single-worker build, so DETWS_WORKER_COUNT == 1 is byte-for-byte
+ * in the default single-worker build, so DWS_WORKER_COUNT == 1 is byte-for-byte
  * the original single-pipeline behavior.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -26,31 +26,31 @@
 
 #include "ServerConfig.h"
 
-/** @brief Number of server worker tasks (DETWS_WORKER_COUNT). */
-int detws_worker_count(void);
+/** @brief Number of server worker tasks (DWS_WORKER_COUNT). */
+int dws_worker_count(void);
 
 /** @brief Worker id [0, count) of the calling task; 0 by default / single-worker. */
-int detws_worker_self(void);
+int dws_worker_self(void);
 
 /** @brief Bind the calling task/thread to worker id @p id (worker entry / tests). */
-void detws_worker_set_self(int id);
+void dws_worker_set_self(int id);
 
 // ---------------------------------------------------------------------------
 // Worker tasks (ESP32)
 // ---------------------------------------------------------------------------
 //
 // On ESP32 the server runs in dedicated FreeRTOS worker tasks instead of the
-// user's loop(): detws_workers_start() spawns DETWS_WORKER_COUNT tasks, each
+// user's loop(): dws_workers_start() spawns DWS_WORKER_COUNT tasks, each
 // pinned to a core, each binding its worker id and repeatedly invoking the
 // app-supplied pump (so this layer stays free of any app dependency). On host
 // builds there are no tasks - the pipeline is driven inline by handle() / tests -
-// so these are no-ops and detws_workers_running() is false.
+// so these are no-ops and dws_workers_running() is false.
 
 /** @brief Pump callback run by each worker task with its worker id. */
-typedef void (*detws_worker_pump_fn)(int worker_id);
+typedef void (*dws_worker_pump_fn)(int worker_id);
 
 /** @brief Spawn the worker task(s) and start them running @p pump. No-op on host. */
-void detws_workers_start(detws_worker_pump_fn pump);
+void dws_workers_start(dws_worker_pump_fn pump);
 
 /**
  * @brief Wake worker @p worker_id so it services a freshly-queued event now.
@@ -63,13 +63,13 @@ void detws_workers_start(detws_worker_pump_fn pump);
  * No-op on host (no worker task; the pipeline runs inline). Safe to call with an
  * out-of-range id or before the task exists.
  */
-void detws_worker_wake(int worker_id);
+void dws_worker_wake(int worker_id);
 
 /** @brief Signal the worker task(s) to exit and wait briefly for them. No-op on host. */
-void detws_workers_stop(void);
+void dws_workers_stop(void);
 
 /** @brief True while worker task(s) are running (always false on host). */
-bool detws_workers_running(void);
+bool dws_workers_running(void);
 
 // ---------------------------------------------------------------------------
 // Deferred work (thread-safe app -> worker submission)
@@ -81,7 +81,7 @@ bool detws_workers_running(void);
 // instead of calling the send API directly (which would race the worker that owns
 // the slot), wrap it in a small function and hand it to the owning worker. The
 // worker drains and runs deferred callbacks each service iteration.
-// (DetWebServer::defer(slot, fn, arg) is the app-facing wrapper that resolves the
+// (DWS::defer(slot, fn, arg) is the app-facing wrapper that resolves the
 // slot's owner; this layer stays free of the transport/conn_pool dependency.)
 //
 // @p arg must remain valid until the callback runs (point it at static/global
@@ -89,12 +89,12 @@ bool detws_workers_running(void);
 // runs inline immediately, so tests and loop()-driven code behave identically.
 
 /** @brief Deferred callback signature. */
-typedef void (*detws_deferred_fn)(void *arg);
+typedef void (*dws_deferred_fn)(void *arg);
 
 /** @brief Run @p fn(@p arg) on worker @p worker_id. Returns false if the queue is full. */
-bool detws_defer(int worker_id, detws_deferred_fn fn, void *arg);
+bool dws_defer(int worker_id, dws_deferred_fn fn, void *arg);
 
 /** @brief Drain and run worker @p worker_id's deferred callbacks (called by the worker). */
-void detws_worker_run_deferred(int worker_id);
+void dws_worker_run_deferred(int worker_id);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_WORKER_H

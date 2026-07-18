@@ -3,7 +3,7 @@
 
 /**
  * @file bacnet.h
- * @brief BACnet/IP BVLC + NPDU codec (DETWS_ENABLE_BACNET) - zero-heap framing for the
+ * @brief BACnet/IP BVLC + NPDU codec (DWS_ENABLE_BACNET) - zero-heap framing for the
  *        ASHRAE 135 building-automation network layer over UDP (default port 47808).
  *
  * Two stacked layers:
@@ -27,7 +27,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_BACNET
+#if DWS_ENABLE_BACNET
 
 #include <stddef.h>
 #include <stdint.h>
@@ -93,6 +93,6 @@ struct NpduInfo
 /** @brief Parse + validate an NPDU (version, control, optional addressing) and slice the APDU. */
 bool npdu_parse(const uint8_t *buf, size_t len, NpduInfo *out);
 
-#endif // DETWS_ENABLE_BACNET
+#endif // DWS_ENABLE_BACNET
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_BACNET_H

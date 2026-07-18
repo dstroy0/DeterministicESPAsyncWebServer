@@ -8,7 +8,7 @@
 
 #include "services/http_delivery/http_delivery.h"
 
-#if DETWS_ENABLE_HTTP_DELIVERY
+#if DWS_ENABLE_HTTP_DELIVERY
 
 #include <string.h>
 
@@ -79,7 +79,7 @@ bool parse_range_spec(const char *range_header, bool *have_start, bool *have_end
 }
 } // namespace
 
-DeliveryVerdict detws_delivery_swr(uint32_t age_s, uint32_t max_age_s, uint32_t swr_s)
+DeliveryVerdict dws_delivery_swr(uint32_t age_s, uint32_t max_age_s, uint32_t swr_s)
 {
     if (age_s <= max_age_s)
         return DeliveryVerdict::DELIVERY_FRESH;
@@ -89,17 +89,17 @@ DeliveryVerdict detws_delivery_swr(uint32_t age_s, uint32_t max_age_s, uint32_t 
     return DeliveryVerdict::DELIVERY_EXPIRED;
 }
 
-size_t detws_delivery_cache_control(uint32_t max_age_s, uint32_t swr_s, char *out, size_t cap)
+size_t dws_delivery_cache_control(uint32_t max_age_s, uint32_t swr_s, char *out, size_t cap)
 {
     if (!out || cap == 0)
         return 0;
-    DetSb b = {out, cap, 0, true};
-    det_sb_put(&b, "public, max-age=");
-    det_sb_u32(&b, max_age_s);
+    DWSSb b = {out, cap, 0, true};
+    dws_sb_put(&b, "public, max-age=");
+    dws_sb_u32(&b, max_age_s);
     if (swr_s)
     {
-        det_sb_put(&b, ", stale-while-revalidate=");
-        det_sb_u32(&b, swr_s);
+        dws_sb_put(&b, ", stale-while-revalidate=");
+        dws_sb_u32(&b, swr_s);
     }
     if (!b.ok)
         return 0;
@@ -107,7 +107,7 @@ size_t detws_delivery_cache_control(uint32_t max_age_s, uint32_t swr_s, char *ou
     return b.len;
 }
 
-int detws_delivery_range(const char *range_header, uint32_t total, uint32_t *start, uint32_t *end)
+int dws_delivery_range(const char *range_header, uint32_t total, uint32_t *start, uint32_t *end)
 {
     if (!range_header || !start || !end || total == 0)
         return 0;
@@ -144,42 +144,42 @@ int detws_delivery_range(const char *range_header, uint32_t total, uint32_t *sta
     return 1;
 }
 
-size_t detws_delivery_content_range(uint32_t start, uint32_t end, uint32_t total, char *out, size_t cap)
+size_t dws_delivery_content_range(uint32_t start, uint32_t end, uint32_t total, char *out, size_t cap)
 {
     if (!out || cap == 0)
         return 0;
-    DetSb b = {out, cap, 0, true};
-    det_sb_put(&b, "bytes ");
-    det_sb_u32(&b, start);
-    det_sb_put(&b, "-");
-    det_sb_u32(&b, end);
-    det_sb_put(&b, "/");
-    det_sb_u32(&b, total);
+    DWSSb b = {out, cap, 0, true};
+    dws_sb_put(&b, "bytes ");
+    dws_sb_u32(&b, start);
+    dws_sb_put(&b, "-");
+    dws_sb_u32(&b, end);
+    dws_sb_put(&b, "/");
+    dws_sb_u32(&b, total);
     if (!b.ok)
         return 0;
     out[b.len] = '\0';
     return b.len;
 }
 
-size_t detws_delivery_sw_manifest(const char *const *paths, size_t n, const char *version, char *out, size_t cap)
+size_t dws_delivery_sw_manifest(const char *const *paths, size_t n, const char *version, char *out, size_t cap)
 {
     if (!out || cap == 0 || (n && !paths))
         return 0;
-    DetSb b = {out, cap, 0, true};
-    det_sb_put(&b, "{\"version\":");
-    det_sb_json(&b, version ? version : "");
-    det_sb_put(&b, ",\"precache\":[");
+    DWSSb b = {out, cap, 0, true};
+    dws_sb_put(&b, "{\"version\":");
+    dws_sb_json(&b, version ? version : "");
+    dws_sb_put(&b, ",\"precache\":[");
     for (size_t i = 0; i < n; i++)
     {
         if (i)
-            det_sb_put(&b, ",");
-        det_sb_json(&b, paths[i]);
+            dws_sb_put(&b, ",");
+        dws_sb_json(&b, paths[i]);
     }
-    det_sb_put(&b, "]}");
+    dws_sb_put(&b, "]}");
     if (!b.ok)
         return 0;
     out[b.len] = '\0';
     return b.len;
 }
 
-#endif // DETWS_ENABLE_HTTP_DELIVERY
+#endif // DWS_ENABLE_HTTP_DELIVERY

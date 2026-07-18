@@ -6,7 +6,7 @@
 // decode round trip, the byte-stuffing of reserved bytes, and malformed framing (bad CRC,
 // dangling escape, buffer-too-small, no flag yet). Pure host tests.
 //
-// The env sizes DETWS_ZIGBEE_MAX_DATA = 32.
+// The env sizes DWS_ZIGBEE_MAX_DATA = 32.
 
 #include "services/zigbee/zigbee.h"
 #include <unity.h>

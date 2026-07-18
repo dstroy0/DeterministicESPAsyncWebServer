@@ -3,7 +3,7 @@
 
 /**
  * @file modbus_master.h
- * @brief Modbus TCP master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
+ * @brief Modbus TCP master codec + register scanner (DWS_ENABLE_MODBUS_MASTER).
  *
  * The master/client side of Modbus: build a read-request ADU (MBAP header + PDU)
  * and parse the slave's response into register values, so an application can poll
@@ -25,7 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_MODBUS_MASTER
+#if DWS_ENABLE_MODBUS_MASTER
 
 /**
  * @brief Build a read-request ADU (FC 0x03 holding or 0x04 input registers).
@@ -55,5 +55,5 @@ size_t modbus_build_read(uint8_t fc, uint16_t txid, uint8_t unit, uint16_t start
  */
 int modbus_parse_response(const uint8_t *adu, size_t len, uint16_t *regs_out, size_t max_regs, uint8_t *exception_out);
 
-#endif // DETWS_ENABLE_MODBUS_MASTER
+#endif // DWS_ENABLE_MODBUS_MASTER
 #endif // DETERMINISTICESPASYNCWEBSERVER_MODBUS_MASTER_H

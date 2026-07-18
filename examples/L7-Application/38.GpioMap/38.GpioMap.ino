@@ -3,7 +3,7 @@
 
 /**
  * @file 38.GpioMap.ino
- * @brief Browser GPIO pin-mapper / diagnostics panel (DETWS_ENABLE_GPIO_MAP).
+ * @brief Browser GPIO pin-mapper / diagnostics panel (DWS_ENABLE_GPIO_MAP).
  *
  * Declares a compile-time table of GPIO pins (number, label, direction) and serves
  * them at GET /gpio as JSON with live levels; POST /gpio (body `pin=<n>&level=0|1`)
@@ -14,11 +14,11 @@
  *
  * NOTE: enable it for the whole build (a .ino #define does not reach the
  * separately compiled library). In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_GPIO_MAP=1
+ *     build_flags = -DDWS_ENABLE_GPIO_MAP=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_GPIO_MAP 1
+#define DWS_ENABLE_GPIO_MAP 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -28,15 +28,15 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // The pins to expose. Caller-owned and must outlive the server. Mark a pin
-// DetwsGpioDir::DETWS_GPIO_OUT to make it drivable from the panel.
+// DetwsGpioDir::DWS_GPIO_OUT to make it drivable from the panel.
 static DetwsGpioPin gpio_pins[] = {
-    {2, "Onboard LED", DetwsGpioDir::DETWS_GPIO_OUT, 0},
-    {0, "BOOT button", DetwsGpioDir::DETWS_GPIO_IN_PULLUP, 0},
-    {4, "Relay", DetwsGpioDir::DETWS_GPIO_OUT, 0},
-    {34, "ADC sense", DetwsGpioDir::DETWS_GPIO_IN, 0},
+    {2, "Onboard LED", DetwsGpioDir::DWS_GPIO_OUT, 0},
+    {0, "BOOT button", DetwsGpioDir::DWS_GPIO_IN_PULLUP, 0},
+    {4, "Relay", DetwsGpioDir::DWS_GPIO_OUT, 0},
+    {34, "ADC sense", DetwsGpioDir::DWS_GPIO_IN, 0},
 };
 static const uint8_t gpio_count = sizeof(gpio_pins) / sizeof(gpio_pins[0]);
 
@@ -77,7 +77,7 @@ void setup()
     WiFi.setSleep(false);
 
     // GET /gpio (JSON) + POST /gpio (drive an output); pinMode is applied here.
-    detws_gpio_map_begin(server, "/gpio", gpio_pins, gpio_count);
+    dws_gpio_map_begin(server, "/gpio", gpio_pins, gpio_count);
 
     server.on("/", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) { server.send(id, 200, "text/html", DIAG_PAGE); });
     server.begin(80);

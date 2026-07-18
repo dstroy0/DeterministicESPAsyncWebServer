@@ -7,7 +7,7 @@
  *
  * Frame layout (little-endian lengths / distances), per the Hi-Link serial protocol:
  *   report:  F4 F3 F2 F1 | len(2) | type | AA | state | mv_cm(2) mv_e | st_cm(2) st_e |
- *            det_cm(2) | [engineering: maxMvGate maxStGate mvE[9] stE[9] light out] |
+ *            dws_cm(2) | [engineering: maxMvGate maxStGate mvE[9] stE[9] light out] |
  *            55 | check | F8 F7 F6 F5     (len = 0x0D basic, 0x23 engineering)
  *   command: FD FC FB FA | len(2) | word(2) | [value] | 04 03 02 01
  */
@@ -15,7 +15,7 @@
 #include "services/ld2410/ld2410.h"
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_LD2410
+#if DWS_ENABLE_LD2410
 
 #include <string.h>
 
@@ -234,7 +234,7 @@ bool ld2410_begin(int rx_pin, int tx_pin)
 {
     ld2410_stream_reset(&s_ld.stream);
     s_ld.have = false;
-    Serial2.begin(DETWS_LD2410_BAUD, SERIAL_8N1, rx_pin, tx_pin);
+    Serial2.begin(DWS_LD2410_BAUD, SERIAL_8N1, rx_pin, tx_pin);
     return true;
 }
 
@@ -312,4 +312,4 @@ bool ld2410_restart()
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_LD2410
+#endif // DWS_ENABLE_LD2410

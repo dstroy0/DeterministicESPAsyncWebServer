@@ -15,7 +15,7 @@
  *
  * It is transport-free (no lwIP): quic_conn_recv() takes a received datagram and quic_conn_send()
  * pulls the next datagram to transmit, so the engine is host-testable by shuttling byte buffers
- * between a server QuicConn and a client written in the test. quic_server wires it to det_udp.
+ * between a server QuicConn and a client written in the test. quic_server wires it to dws_udp.
  *
  * Scope (a faithful minimal server): QUIC v1 only, no Retry / 0-RTT / key update / connection
  * migration / connection-ID rotation, in-order CRYPTO and stream reassembly, and single-range ACKs.
@@ -34,30 +34,30 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/http3/quic_crypto.h"
 #include "network_drivers/presentation/http3/quic_tls.h"
 #include <stddef.h>
 #include <stdint.h>
 
-#ifndef DETWS_QUIC_MAX_DATAGRAM
-#define DETWS_QUIC_MAX_DATAGRAM 1350 ///< largest UDP payload we send/accept (conservative < 1500 MTU)
+#ifndef DWS_QUIC_MAX_DATAGRAM
+#define DWS_QUIC_MAX_DATAGRAM 1350 ///< largest UDP payload we send/accept (conservative < 1500 MTU)
 #endif
-#ifndef DETWS_QUIC_CRYPTO_RX
-#define DETWS_QUIC_CRYPTO_RX 2048 ///< per-level inbound CRYPTO reassembly window (ClientHello, Finished)
+#ifndef DWS_QUIC_CRYPTO_RX
+#define DWS_QUIC_CRYPTO_RX 2048 ///< per-level inbound CRYPTO reassembly window (ClientHello, Finished)
 #endif
-#ifndef DETWS_QUIC_MAX_STREAMS
-#define DETWS_QUIC_MAX_STREAMS DETWS_H3_MAX_STREAMS ///< tracked streams (request + control/QPACK)
+#ifndef DWS_QUIC_MAX_STREAMS
+#define DWS_QUIC_MAX_STREAMS DWS_H3_MAX_STREAMS ///< tracked streams (request + control/QPACK)
 #endif
-#ifndef DETWS_QUIC_STREAM_RX
-#define DETWS_QUIC_STREAM_RX 2048 ///< per-stream inbound reassembly buffer
+#ifndef DWS_QUIC_STREAM_RX
+#define DWS_QUIC_STREAM_RX 2048 ///< per-stream inbound reassembly buffer
 #endif
-#ifndef DETWS_QUIC_STREAM_TX
-#define DETWS_QUIC_STREAM_TX 2048 ///< per-stream outbound buffer (drained into STREAM frames)
+#ifndef DWS_QUIC_STREAM_TX
+#define DWS_QUIC_STREAM_TX 2048 ///< per-stream outbound buffer (drained into STREAM frames)
 #endif
-#ifndef DETWS_QUIC_PTO_MS
-#define DETWS_QUIC_PTO_MS 1000 ///< base Probe Timeout for retransmitting the handshake flight (RFC 9002)
+#ifndef DWS_QUIC_PTO_MS
+#define DWS_QUIC_PTO_MS 1000 ///< base Probe Timeout for retransmitting the handshake flight (RFC 9002)
 #endif
 
 /** @brief Per-connection stream state (client-initiated + server-initiated). */
@@ -69,9 +69,9 @@ struct QuicStream
     bool rx_fin;      ///< a FIN was received (final size known)
     bool tx_fin;      ///< a FIN should be sent after the buffered tx bytes
     bool tx_fin_sent; ///< the FIN has been sent
-    uint8_t rx[DETWS_QUIC_STREAM_RX];
+    uint8_t rx[DWS_QUIC_STREAM_RX];
     size_t rx_have; ///< contiguous bytes buffered in rx (from offset rx_off - rx_have)
-    uint8_t tx[DETWS_QUIC_STREAM_TX];
+    uint8_t tx[DWS_QUIC_STREAM_TX];
     size_t tx_have; ///< bytes buffered to send
     size_t tx_sent; ///< bytes of tx already put on the wire
 };
@@ -99,7 +99,7 @@ struct QuicPnSpace
     bool ack_eliciting_rx;  ///< an ack-eliciting packet is unacknowledged (we owe an ACK)
     bool discarded;         ///< this space's keys have been dropped (nothing more sent/received)
     uint64_t crypto_rx_off; ///< in-order CRYPTO bytes already delivered to quic_tls
-    uint8_t crypto_rx[DETWS_QUIC_CRYPTO_RX];
+    uint8_t crypto_rx[DWS_QUIC_CRYPTO_RX];
     size_t crypto_rx_have;  ///< contiguous CRYPTO bytes buffered at crypto_rx_off
     uint64_t crypto_tx_off; ///< CRYPTO flight bytes already sent from this level
 };
@@ -119,7 +119,7 @@ struct QuicConn
 
     QuicPnSpace space[3]; ///< indexed by QUIC_ENC_*
 
-    QuicStream streams[DETWS_QUIC_MAX_STREAMS];
+    QuicStream streams[DWS_QUIC_MAX_STREAMS];
 
     QuicConnCallbacks cb;
 
@@ -202,5 +202,5 @@ bool quic_conn_established(const QuicConn *qc);
 /** @brief True if the connection is closed or draining. */
 bool quic_conn_is_closed(const QuicConn *qc);
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_CONN_H

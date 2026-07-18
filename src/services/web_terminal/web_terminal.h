@@ -3,7 +3,7 @@
 
 /**
  * @file web_terminal.h
- * @brief Browser "web serial" terminal over WebSocket (DETWS_ENABLE_WEB_TERMINAL).
+ * @brief Browser "web serial" terminal over WebSocket (DWS_ENABLE_WEB_TERMINAL).
  *
  * A zero-heap equivalent of the WebSerial-style remote serial monitor: it serves
  * a self-contained terminal web page and a WebSocket endpoint on the same path.
@@ -14,21 +14,21 @@
  *
  * @code
  *   void on_cmd(const char *line, uint8_t client) {
- *     detws_web_terminal_printf("you said: %s\n", line);
+ *     dws_web_terminal_printf("you said: %s\n", line);
  *   }
  *   void setup() {
  *     // ... wifi + server.on(...) ...
- *     detws_web_terminal_begin(server, "/terminal");
- *     detws_web_terminal_on_command(on_cmd);
+ *     dws_web_terminal_begin(server, "/terminal");
+ *     dws_web_terminal_on_command(on_cmd);
  *     server.begin(80);
  *   }
  *   void loop() {
  *     server.handle();
- *     detws_web_terminal_printf("uptime %lu\n", millis()); // device -> browsers
+ *     dws_web_terminal_printf("uptime %lu\n", millis()); // device -> browsers
  *   }
  * @endcode
  *
- * No-op stubs when DETWS_ENABLE_WEB_TERMINAL is 0.
+ * No-op stubs when DWS_ENABLE_WEB_TERMINAL is 0.
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_WEB_TERMINAL_H
@@ -36,7 +36,7 @@
 
 #include "dwserver.h"
 
-#if DETWS_ENABLE_WEB_TERMINAL
+#if DWS_ENABLE_WEB_TERMINAL
 
 /**
  * @brief Callback for a line typed in a connected browser terminal.
@@ -54,50 +54,50 @@ typedef void (*TermCommandCb)(const char *line, uint8_t client_id);
  * @param server The web server to attach to (must outlive the terminal).
  * @param path   URL path for the page (default "/terminal").
  */
-void detws_web_terminal_begin(DetWebServer &server, const char *path = "/terminal");
+void dws_web_terminal_begin(DWS &server, const char *path = "/terminal");
 
 /** @brief Install the command callback (browser -> device). Pass nullptr to clear. */
-void detws_web_terminal_on_command(TermCommandCb cb);
+void dws_web_terminal_on_command(TermCommandCb cb);
 
 /** @brief Broadcast text to every connected terminal browser (device -> browsers). */
-void detws_web_terminal_print(const char *s);
+void dws_web_terminal_print(const char *s);
 
 /** @brief Like print() but appends a newline. */
-void detws_web_terminal_println(const char *s);
+void dws_web_terminal_println(const char *s);
 
 /** @brief printf-style broadcast (capped at TERM_TX_BUF_SIZE). */
-void detws_web_terminal_printf(const char *fmt, ...)
+void dws_web_terminal_printf(const char *fmt, ...)
 #if defined(__GNUC__)
     __attribute__((format(printf, 1, 2)))
 #endif
     ;
 
 /** @brief Number of browsers currently connected to the terminal. */
-uint8_t detws_web_terminal_client_count();
+uint8_t dws_web_terminal_client_count();
 
-#else // DETWS_ENABLE_WEB_TERMINAL == 0  -> no-op stubs
+#else // DWS_ENABLE_WEB_TERMINAL == 0  -> no-op stubs
 
 typedef void (*TermCommandCb)(const char *line, uint8_t client_id);
-static inline void detws_web_terminal_begin(DetWebServer &, const char * = "/terminal")
+static inline void dws_web_terminal_begin(DWS &, const char * = "/terminal")
 {
 }
-static inline void detws_web_terminal_on_command(TermCommandCb)
+static inline void dws_web_terminal_on_command(TermCommandCb)
 {
 }
-static inline void detws_web_terminal_print(const char *)
+static inline void dws_web_terminal_print(const char *)
 {
 }
-static inline void detws_web_terminal_println(const char *)
+static inline void dws_web_terminal_println(const char *)
 {
 }
-static inline void detws_web_terminal_printf(const char *, ...)
+static inline void dws_web_terminal_printf(const char *, ...)
 {
 }
-static inline uint8_t detws_web_terminal_client_count()
+static inline uint8_t dws_web_terminal_client_count()
 {
     return 0;
 }
 
-#endif // DETWS_ENABLE_WEB_TERMINAL
+#endif // DWS_ENABLE_WEB_TERMINAL
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_WEB_TERMINAL_H

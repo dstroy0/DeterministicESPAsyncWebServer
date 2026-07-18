@@ -1,6 +1,6 @@
 # 11.FileUpload - stream a POST body straight to a file
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_UPLOAD`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_UPLOAD`
 
 ## What this example teaches
 
@@ -9,11 +9,11 @@ the parser's streaming-body hook - the same mechanism OTA uses - so an upload
 never has to fit in RAM. A GET route serves the stored file back to verify the
 round-trip.
 
-**One call wires the upload sink.** `detws_upload_begin(server, path, fs, dest)`
+**One call wires the upload sink.** `dws_upload_begin(server, path, fs, dest)`
 registers a POST route whose body is streamed to `dest` as it arrives:
 
 ```cpp
-detws_upload_begin(server, "/upload", LittleFS, DEST);     // POST body -> file, chunk by chunk
+dws_upload_begin(server, "/upload", LittleFS, DEST);     // POST body -> file, chunk by chunk
 server.on("/file", HTTP_GET, [](uint8_t id, HttpReq *) {   // read it back
     server.serve_file(id, LittleFS, DEST, "application/octet-stream");
 });
@@ -33,7 +33,7 @@ server.on("/file", HTTP_GET, [](uint8_t id, HttpReq *) {   // read it back
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_UPLOAD=1 -DRX_BUF_SIZE=2048" \
+  --project-option="build_flags=-DDWS_ENABLE_UPLOAD=1 -DRX_BUF_SIZE=2048" \
   --lib="." examples/L7-Application/11.FileUpload/11.FileUpload.ino
 ```
 
@@ -51,7 +51,7 @@ with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_UPLOAD 1
+#define DWS_ENABLE_UPLOAD 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -64,7 +64,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 static const char *DEST = "/uploaded.bin";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -85,7 +85,7 @@ void setup()
     WiFi.setSleep(false);
 
     // POST /upload -> stream the body into DEST on LittleFS (chunked, never in RAM).
-    detws_upload_begin(server, "/upload", LittleFS, DEST);
+    dws_upload_begin(server, "/upload", LittleFS, DEST);
 
     // GET /file -> serve the stored file back.
     server.on("/file", HTTP_GET,

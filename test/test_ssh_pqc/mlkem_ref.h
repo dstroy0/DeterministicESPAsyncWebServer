@@ -10,8 +10,8 @@
 // It deliberately duplicates the NTT/poly machinery rather than reaching into the src static internals
 // so the test is a genuine second implementation.
 
-#ifndef DETWS_TEST_MLKEM_REF_H
-#define DETWS_TEST_MLKEM_REF_H
+#ifndef DWS_TEST_MLKEM_REF_H
+#define DWS_TEST_MLKEM_REF_H
 
 #include "network_drivers/presentation/pqc/sha3.h"
 #include <stdint.h>

@@ -1,6 +1,6 @@
 # 09.ETag - conditional GET for static files
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_ETAG` (with file serving)
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_ETAG` (with file serving)
 
 ## What this example teaches
 
@@ -28,7 +28,7 @@ Put a file at `data/www/index.html` and upload the LittleFS image before running
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_ETAG=1" \
+  --project-option="build_flags=-DDWS_ENABLE_ETAG=1" \
   --lib="." examples/L7-Application/09.ETag/09.ETag.ino
 ```
 
@@ -46,7 +46,7 @@ explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_ETAG 1
+#define DWS_ENABLE_ETAG 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -56,7 +56,7 @@ explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

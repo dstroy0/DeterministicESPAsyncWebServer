@@ -8,7 +8,7 @@
 
 #include "services/jwt/jwt.h"
 
-#if DETWS_ENABLE_JWT
+#if DWS_ENABLE_JWT
 
 #include "network_drivers/presentation/base64/base64.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
@@ -71,7 +71,7 @@ static bool jwt_header_alg_is_hs256(const char *header, size_t hlen)
 
 bool jwt_verify_hs256(const char *token, size_t token_len, const uint8_t *secret, size_t secret_len)
 {
-    if (!token || token_len < 5 || token_len > DETWS_JWT_MAX_LEN)
+    if (!token || token_len < 5 || token_len > DWS_JWT_MAX_LEN)
         return false;
 
     size_t signing_len;
@@ -105,7 +105,7 @@ bool jwt_bearer_valid(const char *auth_header, const uint8_t *secret, size_t sec
     const char *tok = auth_header + 7;
     while (*tok == ' ')
         tok++;
-    return jwt_verify_hs256(tok, strnlen(tok, DETWS_JWT_MAX_LEN + 1), secret, secret_len);
+    return jwt_verify_hs256(tok, strnlen(tok, DWS_JWT_MAX_LEN + 1), secret, secret_len);
 }
 
 bool jwt_time_valid(const char *token, size_t token_len, long now_epoch, long leeway_s)
@@ -140,7 +140,7 @@ bool jwt_bearer_valid_at(const char *auth_header, const uint8_t *secret, size_t 
     const char *tok = auth_header + 7;
     while (*tok == ' ')
         tok++;
-    return jwt_verify_hs256_at(tok, strnlen(tok, DETWS_JWT_MAX_LEN + 1), secret, secret_len, now_epoch, leeway_s);
+    return jwt_verify_hs256_at(tok, strnlen(tok, DWS_JWT_MAX_LEN + 1), secret, secret_len, now_epoch, leeway_s);
 }
 
 bool jwt_claim_int(const char *token, size_t token_len, const char *name, long *out)
@@ -158,7 +158,7 @@ bool jwt_claim_int(const char *token, size_t token_len, const char *name, long *
     const char *payload = d1 + 1;
     size_t payload_len = (size_t)(d2 - payload);
 
-    uint8_t buf[DETWS_JWT_MAX_LEN];
+    uint8_t buf[DWS_JWT_MAX_LEN];
     size_t n = base64url_decode(payload, payload_len, buf, sizeof(buf) - 1);
     if (n == 0)
         return false;
@@ -205,7 +205,7 @@ bool jwt_claim_str(const char *token, size_t token_len, const char *name, char *
     const char *payload = d1 + 1;
     size_t payload_len = (size_t)(d2 - payload);
 
-    uint8_t buf[DETWS_JWT_MAX_LEN];
+    uint8_t buf[DWS_JWT_MAX_LEN];
     size_t n = base64url_decode(payload, payload_len, buf, sizeof(buf) - 1);
     if (n == 0)
         return false;
@@ -244,7 +244,7 @@ bool jwt_scope_allows(const char *scope_claim, const char *required)
 {
     if (!scope_claim || !required || !*required)
         return false;
-    size_t rlen = strnlen(required, DETWS_JWT_MAX_LEN + 1);
+    size_t rlen = strnlen(required, DWS_JWT_MAX_LEN + 1);
     const char *p = scope_claim;
     while (*p)
     {
@@ -259,4 +259,4 @@ bool jwt_scope_allows(const char *scope_claim, const char *required)
     return false;
 }
 
-#endif // DETWS_ENABLE_JWT
+#endif // DWS_ENABLE_JWT

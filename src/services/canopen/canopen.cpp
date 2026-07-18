@@ -8,14 +8,14 @@
 
 #include "services/canopen/canopen.h"
 
-#if DETWS_ENABLE_CANOPEN
+#if DWS_ENABLE_CANOPEN
 
 #include <string.h>
 
 // All CANopen default-profile identifiers are 11-bit standard frames.
 static void std_frame(CanFrame *f, uint32_t id, uint8_t dlc)
 {
-    f->id = id & DET_CAN_STD_ID_MASK;
+    f->id = id & DWS_CAN_STD_ID_MASK;
     f->extended = false;
     f->rtr = false;
     f->dlc = dlc;
@@ -81,7 +81,7 @@ static bool pdo_base(uint8_t pdo_num, bool transmit, uint32_t *base)
 static bool build_pdo(CanFrame *out, uint8_t pdo_num, bool transmit, uint8_t node_id, const uint8_t *data, uint8_t len)
 {
     uint32_t base;
-    if (!out || !valid_node(node_id) || len > DET_CAN_MAX_DLC || (len && !data) || !pdo_base(pdo_num, transmit, &base))
+    if (!out || !valid_node(node_id) || len > DWS_CAN_MAX_DLC || (len && !data) || !pdo_base(pdo_num, transmit, &base))
         return false;
     std_frame(out, base + node_id, len);
     if (len)
@@ -149,7 +149,7 @@ bool canopen_parse(const CanFrame *f, CanopenMsg *out)
 {
     if (!f || !out || f->extended)
         return false; // CANopen default profile is 11-bit standard frames
-    uint32_t id = f->id & DET_CAN_STD_ID_MASK;
+    uint32_t id = f->id & DWS_CAN_STD_ID_MASK;
     uint32_t func = id & CANOPEN_FUNC_MASK;
     uint8_t node = (uint8_t)(id & CANOPEN_NODE_MASK);
     out->type = CanopenType::CANOPEN_T_UNKNOWN;
@@ -232,7 +232,7 @@ bool canopen_parse_emcy(const CanFrame *f, uint8_t *node_id, uint16_t *error_cod
 {
     if (!f || f->extended || f->dlc < 8)
         return false;
-    uint32_t id = f->id & DET_CAN_STD_ID_MASK;
+    uint32_t id = f->id & DWS_CAN_STD_ID_MASK;
     uint8_t node = (uint8_t)(id & CANOPEN_NODE_MASK);
     if ((id & CANOPEN_FUNC_MASK) != CANOPEN_COB_EMCY || node == 0)
         return false; // 0x080 with node 0 is SYNC, not EMCY
@@ -251,7 +251,7 @@ bool canopen_parse_heartbeat(const CanFrame *f, uint8_t *node_id, uint8_t *state
 {
     if (!f || f->extended || f->dlc < 1)
         return false;
-    uint32_t id = f->id & DET_CAN_STD_ID_MASK;
+    uint32_t id = f->id & DWS_CAN_STD_ID_MASK;
     uint8_t node = (uint8_t)(id & CANOPEN_NODE_MASK);
     if ((id & CANOPEN_FUNC_MASK) != CANOPEN_COB_HEARTBEAT || node == 0)
         return false;
@@ -266,7 +266,7 @@ bool canopen_parse_sdo_response(const CanFrame *f, CanopenSdoResponse *out)
 {
     if (!f || !out || f->extended || f->dlc < 8)
         return false;
-    uint32_t id = f->id & DET_CAN_STD_ID_MASK;
+    uint32_t id = f->id & DWS_CAN_STD_ID_MASK;
     if ((id & CANOPEN_FUNC_MASK) != CANOPEN_COB_SDO_TX || (id & CANOPEN_NODE_MASK) == 0)
         return false;
 
@@ -306,4 +306,4 @@ bool canopen_parse_sdo_response(const CanFrame *f, CanopenSdoResponse *out)
     return false; // not a recognised server command specifier
 }
 
-#endif // DETWS_ENABLE_CANOPEN
+#endif // DWS_ENABLE_CANOPEN

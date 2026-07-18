@@ -26,7 +26,7 @@
 #include "ServerConfig.h"
 
 // Shared by the HTTP/3 (QUIC) packet protection and the DTLS 1.3 record layer.
-#if (DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS)
+#if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS)
 
 #include <stddef.h>
 #include <stdint.h>
@@ -93,5 +93,5 @@ void quic_aes128_gcm_seal(const uint8_t key[16], const uint8_t nonce[12], const 
 bool quic_aes128_gcm_open(const uint8_t key[16], const uint8_t nonce[12], const uint8_t *aad, size_t aad_len,
                           const uint8_t *ct, size_t ct_len, uint8_t *out);
 
-#endif // DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS
+#endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_AEAD_H

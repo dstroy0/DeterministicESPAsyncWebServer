@@ -1,6 +1,6 @@
 # 35.Dashboard - a real-time SVG dashboard with live telemetry and controls
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_DASHBOARD` (SSE + WebSocket, both on by default)
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_DASHBOARD` (SSE + WebSocket, both on by default)
 
 ## What this example teaches
 
@@ -15,12 +15,12 @@ entry is type, label, data key, min, max, and unit:
 
 ```cpp
 static const DetwsWidget WIDGETS[] = {
-    {DETWS_WIDGET_GAUGE,  "Free heap",  "heap",   0, 320000, "B"},
-    {DETWS_WIDGET_VALUE,  "Uptime",     "uptime", 0, 0,      "s"},
-    {DETWS_WIDGET_CHART,  "WiFi RSSI",  "rssi",  -100, 0,    "dBm"},
-    {DETWS_WIDGET_TOGGLE, "Onboard LED","led",    0, 1,      ""},
-    {DETWS_WIDGET_SLIDER, "Brightness", "bright", 0, 255,    ""},
-    {DETWS_WIDGET_BUTTON, "Identify",   "ident",  0, 0,      ""},
+    {DWS_WIDGET_GAUGE,  "Free heap",  "heap",   0, 320000, "B"},
+    {DWS_WIDGET_VALUE,  "Uptime",     "uptime", 0, 0,      "s"},
+    {DWS_WIDGET_CHART,  "WiFi RSSI",  "rssi",  -100, 0,    "dBm"},
+    {DWS_WIDGET_TOGGLE, "Onboard LED","led",    0, 1,      ""},
+    {DWS_WIDGET_SLIDER, "Brightness", "bright", 0, 255,    ""},
+    {DWS_WIDGET_BUTTON, "Identify",   "ident",  0, 0,      ""},
 };
 ```
 
@@ -33,25 +33,25 @@ static void on_control(const char *key, float value) {
     else if (strcmp(key, "bright") == 0) analogWrite(LED_PIN, (int)value);
 }
 
-detws_dashboard_on_control(on_control);
-detws_dashboard_begin(server, "/dashboard", WIDGETS, sizeof(WIDGETS) / sizeof(WIDGETS[0]));
+dws_dashboard_on_control(on_control);
+dws_dashboard_begin(server, "/dashboard", WIDGETS, sizeof(WIDGETS) / sizeof(WIDGETS[0]));
 ```
 
 Then push a frame periodically; `set()` stages a value by key, `publish()` flushes
 the frame to every connected browser over SSE:
 
 ```cpp
-detws_dashboard_set("heap", (float)ESP.getFreeHeap());
-detws_dashboard_set("uptime", (float)(now / 1000));
-detws_dashboard_set("rssi", (float)WiFi.RSSI());
-detws_dashboard_publish();
+dws_dashboard_set("heap", (float)ESP.getFreeHeap());
+dws_dashboard_set("uptime", (float)(now / 1000));
+dws_dashboard_set("rssi", (float)WiFi.RSSI());
+dws_dashboard_publish();
 ```
 
 ## Build and run
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_DASHBOARD=1" \
+  --project-option="build_flags=-DDWS_ENABLE_DASHBOARD=1" \
   --lib="." examples/L7-Application/35.Dashboard/35.Dashboard.ino
 ```
 
@@ -67,7 +67,7 @@ with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_DASHBOARD 1
+#define DWS_ENABLE_DASHBOARD 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -79,16 +79,16 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static const int LED_PIN = 2; // onboard LED on many ESP32 dev boards
 
 // Compile-time widget table - the dashboard's deterministic source of truth.
 // Display widgets are fed over SSE; control widgets send values back over WS.
 static const DetwsWidget WIDGETS[] = {
-    {DETWS_WIDGET_GAUGE, "Free heap", "heap", 0, 320000, "B"}, {DETWS_WIDGET_VALUE, "Uptime", "uptime", 0, 0, "s"},
-    {DETWS_WIDGET_CHART, "WiFi RSSI", "rssi", -100, 0, "dBm"}, {DETWS_WIDGET_TOGGLE, "Onboard LED", "led", 0, 1, ""},
-    {DETWS_WIDGET_SLIDER, "Brightness", "bright", 0, 255, ""}, {DETWS_WIDGET_BUTTON, "Identify", "ident", 0, 0, ""},
+    {DWS_WIDGET_GAUGE, "Free heap", "heap", 0, 320000, "B"}, {DWS_WIDGET_VALUE, "Uptime", "uptime", 0, 0, "s"},
+    {DWS_WIDGET_CHART, "WiFi RSSI", "rssi", -100, 0, "dBm"}, {DWS_WIDGET_TOGGLE, "Onboard LED", "led", 0, 1, ""},
+    {DWS_WIDGET_SLIDER, "Brightness", "bright", 0, 255, ""}, {DWS_WIDGET_BUTTON, "Identify", "ident", 0, 0, ""},
 };
 
 // Invoked when a control widget sends a value from the browser.
@@ -117,8 +117,8 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    detws_dashboard_on_control(on_control);
-    detws_dashboard_begin(server, "/dashboard", WIDGETS, sizeof(WIDGETS) / sizeof(WIDGETS[0]));
+    dws_dashboard_on_control(on_control);
+    dws_dashboard_begin(server, "/dashboard", WIDGETS, sizeof(WIDGETS) / sizeof(WIDGETS[0]));
     server.begin(80);
 }
 
@@ -132,10 +132,10 @@ void loop()
     if (now - last_ms >= 1000)
     {
         last_ms = now;
-        detws_dashboard_set("heap", (float)ESP.getFreeHeap());
-        detws_dashboard_set("uptime", (float)(now / 1000));
-        detws_dashboard_set("rssi", (float)WiFi.RSSI());
-        detws_dashboard_publish();
+        dws_dashboard_set("heap", (float)ESP.getFreeHeap());
+        dws_dashboard_set("uptime", (float)(now / 1000));
+        dws_dashboard_set("rssi", (float)WiFi.RSSI());
+        dws_dashboard_publish();
     }
 }
 ```

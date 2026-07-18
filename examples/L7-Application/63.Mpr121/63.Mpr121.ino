@@ -3,7 +3,7 @@
 
 /**
  * @file 63.Mpr121.ino
- * @brief Read touch buttons with an MPR121 capacitive-touch chip (DETWS_ENABLE_MPR121).
+ * @brief Read touch buttons with an MPR121 capacitive-touch chip (DWS_ENABLE_MPR121).
  *
  * The MPR121 turns twelve wires (or copper pads, or pieces of foil / fruit) into touch buttons.
  * This sketch brings it up over I2C and prints which electrode you touch or release, lighting
@@ -14,10 +14,10 @@
  * Wiring (I2C): module SDA -> GPIO 21, SCL -> GPIO 22, VCC -> 3V3, GND -> GND, ADDR -> GND
  * (address 0x5A). Connect a wire from any ELE0..ELE11 pad to something touchable.
  *
- * Build flag (PlatformIO): `-DDETWS_ENABLE_MPR121=1`
+ * Build flag (PlatformIO): `-DDWS_ENABLE_MPR121=1`
  */
 
-#define DETWS_ENABLE_MPR121 1
+#define DWS_ENABLE_MPR121 1
 
 #include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/mpr121/mpr121.h"

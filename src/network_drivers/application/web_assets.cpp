@@ -7,7 +7,7 @@
 #include "network_drivers/application/web_assets.h"
 
 // ---- html ----
-const char DETWS_DASHBOARD_PAGE[] =
+const char DWS_DASHBOARD_PAGE[] =
     "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\" /><meta name=\"viewport\" content=\"width=devic"
     "e-width, initial-scale=1\" /><title>Dashboard</title> <style>*{box-sizing:border-box;}body{margin:0;font-famil"
     "y:system-ui,\"Segoe UI\",Roboto,sans-serif;background:#0e1116;color:#e6edf3;}header{display:flex;align-items:c"
@@ -79,17 +79,17 @@ const char DETWS_DASHBOARD_PAGE[] =
     "};\nes.onmessage = function (ev) {\ntry {\nvar d = JSON.parse(ev.data);\nfor (var k in d)\nif (widgets[k]) wid"
     "gets[k](d[k]);\n} catch (e) {}\n};\n});\n})();</script> </body></html>";
 
-const char DETWS_PROV_FORM[] =
+const char DWS_PROV_FORM[] =
     "<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width\" /><title>WiFi setup</title><"
     "/head><body><h2>WiFi setup</h2><form method=\"POST\" action=\"/save\"> SSID:<br /><input name=\"ssid\" maxleng"
     "th=\"32\" /><br /> Password:<br /><input name=\"psk\" type=\"password\" maxlength=\"63\" /><br /><br /><input "
     "type=\"submit\" value=\"Save\" /></form></body></html>";
 
-const char DETWS_PROV_SAVED_HTML[] = "<html><body> Saved. Rebooting... </body></html>";
+const char DWS_PROV_SAVED_HTML[] = "<html><body> Saved. Rebooting... </body></html>";
 
-const char DETWS_TERMINAL_PAGE[] =
+const char DWS_TERMINAL_PAGE[] =
     "<!doctype html><html><head><meta charset=\"utf-8\" /><meta name=\"viewport\" content=\"width=device-width,init"
-    "ial-scale=1\" /><title>DetWS Terminal</title> <style>:root{--g:#2bb35a;--g2:#00c000;--bg:#080c08;}*{box-sizing"
+    "ial-scale=1\" /><title>DWS Terminal</title> <style>:root{--g:#2bb35a;--g2:#00c000;--bg:#080c08;}*{box-sizing"
     ":border-box;}html,body{margin:0;height:100%;background:var(--bg);color:var(--g);font:14px/1.45 \"Consolas\",\""
     "DejaVu Sans Mono\",monospace;}#wrap{display:flex;flex-direction:column;height:100%;position:relative;}#out{fle"
     "x:1;overflow:auto;padding:10px;white-space:pre-wrap;word-break:break-word;text-shadow:0 0 4px rgba(43,179,90,0"
@@ -115,23 +115,23 @@ const char DETWS_TERMINAL_PAGE[] =
     "\n}\n}\n});\nconn();</script> </body></html>";
 
 // ---- json ----
-const char DETWS_STATS_JSON[] =
+const char DWS_STATS_JSON[] =
     "{\"uptime_ms\":{{uptime_ms}},\"requests\":{{requests}},\"http_2xx\":{{http_2xx}},\"http_4xx\":{{http_4xx}},\"h"
     "ttp_5xx\":{{http_5xx}},\"active_conns\":{{active_conns}},\"free_heap\":{{free_heap}}}";
 
 // ---- text ----
-const char DETWS_METRICS_PROM[] =
-    "# HELP detws_uptime_seconds Device uptime in seconds.\n# TYPE detws_uptime_seconds gauge\ndetws_uptime_seconds"
-    " {{uptime_seconds}}\n# HELP detws_http_requests_total Total HTTP responses sent.\n# TYPE detws_http_requests_t"
-    "otal counter\ndetws_http_requests_total {{requests_total}}\n# HELP detws_http_responses_total HTTP responses b"
-    "y status class.\n# TYPE detws_http_responses_total counter\ndetws_http_responses_total{class=\"2xx\"} {{resp_2"
-    "xx}}\ndetws_http_responses_total{class=\"4xx\"} {{resp_4xx}}\ndetws_http_responses_total{class=\"5xx\"} {{resp"
-    "_5xx}}\n# HELP detws_active_connections Currently active connection slots.\n# TYPE detws_active_connections ga"
-    "uge\ndetws_active_connections {{active_conns}}\n# HELP detws_max_connections Connection slot capacity.\n# TYPE"
-    " detws_max_connections gauge\ndetws_max_connections {{max_conns}}\n# HELP detws_free_heap_bytes Free heap in b"
-    "ytes.\n# TYPE detws_free_heap_bytes gauge\ndetws_free_heap_bytes {{free_heap}}\n# HELP detws_min_free_heap_byt"
-    "es Lowest free heap observed since boot, in bytes.\n# TYPE detws_min_free_heap_bytes gauge\ndetws_min_free_hea"
-    "p_bytes {{min_free_heap}}\n# HELP detws_heap_size_bytes Total heap size, in bytes.\n# TYPE detws_heap_size_byt"
-    "es gauge\ndetws_heap_size_bytes {{heap_size}}\n# HELP detws_max_alloc_heap_bytes Largest contiguous allocatabl"
-    "e heap block, in bytes.\n# TYPE detws_max_alloc_heap_bytes gauge\ndetws_max_alloc_heap_bytes {{max_alloc_heap}"
+const char DWS_METRICS_PROM[] =
+    "# HELP dws_uptime_seconds Device uptime in seconds.\n# TYPE dws_uptime_seconds gauge\ndws_uptime_seconds"
+    " {{uptime_seconds}}\n# HELP dws_http_requests_total Total HTTP responses sent.\n# TYPE dws_http_requests_t"
+    "otal counter\ndws_http_requests_total {{requests_total}}\n# HELP dws_http_responses_total HTTP responses b"
+    "y status class.\n# TYPE dws_http_responses_total counter\ndws_http_responses_total{class=\"2xx\"} {{resp_2"
+    "xx}}\ndws_http_responses_total{class=\"4xx\"} {{resp_4xx}}\ndws_http_responses_total{class=\"5xx\"} {{resp"
+    "_5xx}}\n# HELP dws_active_connections Currently active connection slots.\n# TYPE dws_active_connections ga"
+    "uge\ndws_active_connections {{active_conns}}\n# HELP dws_max_connections Connection slot capacity.\n# TYPE"
+    " dws_max_connections gauge\ndws_max_connections {{max_conns}}\n# HELP dws_free_heap_bytes Free heap in b"
+    "ytes.\n# TYPE dws_free_heap_bytes gauge\ndws_free_heap_bytes {{free_heap}}\n# HELP dws_min_free_heap_byt"
+    "es Lowest free heap observed since boot, in bytes.\n# TYPE dws_min_free_heap_bytes gauge\ndws_min_free_hea"
+    "p_bytes {{min_free_heap}}\n# HELP dws_heap_size_bytes Total heap size, in bytes.\n# TYPE dws_heap_size_byt"
+    "es gauge\ndws_heap_size_bytes {{heap_size}}\n# HELP dws_max_alloc_heap_bytes Largest contiguous allocatabl"
+    "e heap block, in bytes.\n# TYPE dws_max_alloc_heap_bytes gauge\ndws_max_alloc_heap_bytes {{max_alloc_heap}"
     "}\n";

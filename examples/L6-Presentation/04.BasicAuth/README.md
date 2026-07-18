@@ -1,6 +1,6 @@
 # 04.BasicAuth - per-route HTTP Basic authentication
 
-**Layer:** L6 Presentation · **Build flags:** `DETWS_ENABLE_AUTH` (on by default)
+**Layer:** L6 Presentation · **Build flags:** `DWS_ENABLE_AUTH` (on by default)
 
 ## What this example teaches
 
@@ -28,7 +28,7 @@ The handler body is reached only after a valid `Authorization: Basic` header.
 > networks. For a scheme where the password never crosses the wire, pass
 > `digest=true` - see [05.DigestAuth](../05.DigestAuth).
 
-`DETWS_ENABLE_AUTH` is on by default; you only need to set it (to 0) to compile
+`DWS_ENABLE_AUTH` is on by default; you only need to set it (to 0) to compile
 auth out.
 
 ## Build and run
@@ -59,7 +59,7 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

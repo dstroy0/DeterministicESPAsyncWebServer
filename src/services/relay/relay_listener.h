@@ -3,18 +3,18 @@
 
 /**
  * @file relay_listener.h
- * @brief Server-side TCP relay / DNAT listener (DETWS_ENABLE_RELAY) - publish an internal
+ * @brief Server-side TCP relay / DNAT listener (DWS_ENABLE_RELAY) - publish an internal
  *        `host:port` on a server port.
  *
  * Wires the pure relay engine (relay.h) into the server: an inbound connection accepted on a
- * published port is bridged to an origin (an outbound `det_client` connection to the internal
+ * published port is bridged to an origin (an outbound `dws_client` connection to the internal
  * service). A ConnProto::PROTO_RELAY connection handler opens the origin on accept, pumps bytes both ways each
- * poll (via det_relay_step), and tears both down on close - the DNAT return path is automatic.
+ * poll (via dws_relay_step), and tears both down on close - the DNAT return path is automatic.
  *
  * Usage (opt-in twice: compiled out by default, and inert until you publish a port):
  * @code
  *   int32_t li = server.listen(8080, ConnProto::PROTO_RELAY);   // front port 8080
- *   det_relay_publish((uint8_t)li, "192.168.1.60", 80);  // -> internal 192.168.1.60:80
+ *   dws_relay_publish((uint8_t)li, "192.168.1.60", 80);  // -> internal 192.168.1.60:80
  * @endcode
  *
  * Security: this is an open forward to whatever origin you publish - only publish trusted internal
@@ -29,7 +29,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_RELAY
+#if DWS_ENABLE_RELAY
 
 #include <stdint.h>
 
@@ -40,13 +40,13 @@
  * @param origin_host  the internal host to forward to (dotted-quad or a name; copied).
  * @param origin_port  the internal port.
  * @return true; false if the origin host is null/too long or the bind table is full
- *         (DETWS_RELAY_MAX_PUBLISH).
+ *         (DWS_RELAY_MAX_PUBLISH).
  */
-bool det_relay_publish(uint8_t listener_id, const char *origin_host, uint16_t origin_port);
+bool dws_relay_publish(uint8_t listener_id, const char *origin_host, uint16_t origin_port);
 
 /** @brief Clear all published binds and active bridges (start from empty). */
-void det_relay_listener_reset(void);
+void dws_relay_listener_reset(void);
 
-#endif // DETWS_ENABLE_RELAY
+#endif // DWS_ENABLE_RELAY
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_RELAY_LISTENER_H

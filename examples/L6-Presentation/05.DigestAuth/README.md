@@ -1,6 +1,6 @@
 # 05.DigestAuth - HTTP Digest authentication (password never on the wire)
 
-**Layer:** L6 Presentation · **Build flags:** `DETWS_ENABLE_AUTH` (on by default)
+**Layer:** L6 Presentation · **Build flags:** `DWS_ENABLE_AUTH` (on by default)
 
 ## What this example teaches
 
@@ -55,7 +55,7 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // GET /secret - only reached after successful Digest authentication.
 void handle_secret(uint8_t slot_id, HttpReq *req)

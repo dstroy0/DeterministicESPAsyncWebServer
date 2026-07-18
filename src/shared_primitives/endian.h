@@ -29,7 +29,7 @@
 // --- little-endian ------------------------------------------------------------------------------
 
 /** @brief Write @p v little-endian at @p p. @return 2. */
-inline size_t det_wr16le(uint8_t *p, uint16_t v)
+inline size_t dws_wr16le(uint8_t *p, uint16_t v)
 {
     p[0] = (uint8_t)v;
     p[1] = (uint8_t)(v >> 8);
@@ -37,7 +37,7 @@ inline size_t det_wr16le(uint8_t *p, uint16_t v)
 }
 
 /** @brief Write @p v little-endian at @p p. @return 4. */
-inline size_t det_wr32le(uint8_t *p, uint32_t v)
+inline size_t dws_wr32le(uint8_t *p, uint32_t v)
 {
     p[0] = (uint8_t)v;
     p[1] = (uint8_t)(v >> 8);
@@ -47,7 +47,7 @@ inline size_t det_wr32le(uint8_t *p, uint32_t v)
 }
 
 /** @brief Write @p v little-endian at @p p. @return 8. */
-inline size_t det_wr64le(uint8_t *p, uint64_t v)
+inline size_t dws_wr64le(uint8_t *p, uint64_t v)
 {
     for (int i = 0; i < 8; i++)
         p[i] = (uint8_t)(v >> (8 * i));
@@ -55,19 +55,19 @@ inline size_t det_wr64le(uint8_t *p, uint64_t v)
 }
 
 /** @brief Read a little-endian u16 at @p p. */
-inline uint16_t det_rd16le(const uint8_t *p)
+inline uint16_t dws_rd16le(const uint8_t *p)
 {
     return (uint16_t)((uint16_t)p[0] | ((uint16_t)p[1] << 8));
 }
 
 /** @brief Read a little-endian u32 at @p p. */
-inline uint32_t det_rd32le(const uint8_t *p)
+inline uint32_t dws_rd32le(const uint8_t *p)
 {
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
 }
 
 /** @brief Read a little-endian u64 at @p p. */
-inline uint64_t det_rd64le(const uint8_t *p)
+inline uint64_t dws_rd64le(const uint8_t *p)
 {
     uint64_t v = 0;
     for (int i = 0; i < 8; i++)
@@ -78,7 +78,7 @@ inline uint64_t det_rd64le(const uint8_t *p)
 // --- big-endian (network order) -----------------------------------------------------------------
 
 /** @brief Write @p v big-endian at @p p. @return 2. */
-inline size_t det_wr16be(uint8_t *p, uint16_t v)
+inline size_t dws_wr16be(uint8_t *p, uint16_t v)
 {
     p[0] = (uint8_t)(v >> 8);
     p[1] = (uint8_t)v;
@@ -86,7 +86,7 @@ inline size_t det_wr16be(uint8_t *p, uint16_t v)
 }
 
 /** @brief Write @p v big-endian at @p p. @return 4. */
-inline size_t det_wr32be(uint8_t *p, uint32_t v)
+inline size_t dws_wr32be(uint8_t *p, uint32_t v)
 {
     p[0] = (uint8_t)(v >> 24);
     p[1] = (uint8_t)(v >> 16);
@@ -96,7 +96,7 @@ inline size_t det_wr32be(uint8_t *p, uint32_t v)
 }
 
 /** @brief Write @p v big-endian at @p p. @return 8. */
-inline size_t det_wr64be(uint8_t *p, uint64_t v)
+inline size_t dws_wr64be(uint8_t *p, uint64_t v)
 {
     for (int i = 0; i < 8; i++)
         p[i] = (uint8_t)(v >> (8 * (7 - i)));
@@ -104,19 +104,19 @@ inline size_t det_wr64be(uint8_t *p, uint64_t v)
 }
 
 /** @brief Read a big-endian u16 at @p p. */
-inline uint16_t det_rd16be(const uint8_t *p)
+inline uint16_t dws_rd16be(const uint8_t *p)
 {
     return (uint16_t)(((uint16_t)p[0] << 8) | (uint16_t)p[1]);
 }
 
 /** @brief Read a big-endian u32 at @p p. */
-inline uint32_t det_rd32be(const uint8_t *p)
+inline uint32_t dws_rd32be(const uint8_t *p)
 {
     return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
 }
 
 /** @brief Read a big-endian u64 at @p p. */
-inline uint64_t det_rd64be(const uint8_t *p)
+inline uint64_t dws_rd64be(const uint8_t *p)
 {
     uint64_t v = 0;
     for (int i = 0; i < 8; i++)

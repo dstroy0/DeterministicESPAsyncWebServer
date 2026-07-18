@@ -3,7 +3,7 @@
 
 /**
  * @file sunspec.h
- * @brief SunSpec Modbus device-information-model codec (DETWS_ENABLE_SUNSPEC) - zero-heap
+ * @brief SunSpec Modbus device-information-model codec (DWS_ENABLE_SUNSPEC) - zero-heap
  *        model-chain walker + register-point readers and a map builder, layered on the
  *        holding-register model so a solar inverter / meter / battery is interoperable.
  *
@@ -32,7 +32,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_SUNSPEC
+#if DWS_ENABLE_SUNSPEC
 
 #include <stddef.h>
 #include <stdint.h>
@@ -98,6 +98,6 @@ bool sunspec_write_string(SunSpecWriter *w, const char *s, size_t nregs); ///< n
 bool sunspec_write_end_model(SunSpecWriter *w);                           ///< [0xFFFF][0]
 size_t sunspec_writer_finish(SunSpecWriter *w);                           ///< bytes written, or 0 on overflow
 
-#endif // DETWS_ENABLE_SUNSPEC
+#endif // DWS_ENABLE_SUNSPEC
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SUNSPEC_H

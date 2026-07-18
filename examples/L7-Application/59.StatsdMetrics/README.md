@@ -79,7 +79,7 @@ The feature lives in the library, so the flag must reach the whole build:
 ```bash
 pio ci examples/L7-Application/59.StatsdMetrics \
   --board esp32dev --lib "." \
-  --project-option="build_flags=-DDETWS_ENABLE_STATSD=1"
+  --project-option="build_flags=-DDWS_ENABLE_STATSD=1"
 ```
 
 (The Arduino IDE reads the flag from `build_opt.h` beside the sketch automatically.)
@@ -90,5 +90,5 @@ pio ci examples/L7-Application/59.StatsdMetrics \
 Each `statsd_*` call renders the value by hand (no `printf` float/64-bit formatting, which
 needs extra support on some targets), builds the `name:value|type[|@rate][|#tags]` line with
 the pure `statsd_format()` builder, and sends it with the transport UDP service
-(`det_udp_sendto`). Zero heap; the line format is unit-tested on a PC against the StatsD spec
+(`dws_udp_sendto`). Zero heap; the line format is unit-tested on a PC against the StatsD spec
 (see `test/test_statsd`).

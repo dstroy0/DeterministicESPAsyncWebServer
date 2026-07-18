@@ -6,7 +6,7 @@
 // the rules and hands the bytes to interface B's egress. So the device BRIDGES traffic
 // between its interfaces instead of only terminating it.
 //
-//   interface A --DMA RX--> callback --post--> FORWARD lane --> det_forward_ingress()
+//   interface A --DMA RX--> callback --post--> FORWARD lane --> dws_forward_ingress()
 //                                                                     |
 //                                                    (rule A->B allow, rate-capped)
 //                                                                     |
@@ -17,7 +17,7 @@
 // a real build would send B out Wi-Fi / Ethernet / a bus (or another DMA channel).
 //
 // Build flags (whole build):
-//   DETWS_ENABLE_DMA=1 DETWS_ENABLE_PREEMPT_QUEUE=1 DETWS_ENABLE_FORWARD=1 DETWS_DMA_SIMULATE=1
+//   DWS_ENABLE_DMA=1 DWS_ENABLE_PREEMPT_QUEUE=1 DWS_ENABLE_FORWARD=1 DWS_DMA_SIMULATE=1
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/dma/dma.h"
@@ -50,27 +50,27 @@ struct fwd_msg
 };
 union pq_item {
     fwd_msg msg;
-    uint8_t raw[DETWS_PQ_ITEM_SIZE];
+    uint8_t raw[DWS_PQ_ITEM_SIZE];
 };
 
 // Runs on the FORWARD lane (high priority): drive the forwarding plane off the "ISR".
 static void on_forward(const void *item, void *)
 {
     const fwd_msg *m = &((const pq_item *)item)->msg;
-    det_forward_ingress(m->src, m->bytes, m->len);
+    dws_forward_ingress(m->src, m->bytes, m->len);
 }
 
 // DMA-complete on interface A: copy the frame and post it onto the FORWARD lane.
-static void on_dma_complete(const det_dma_event *ev, void *)
+static void on_dma_complete(const dws_dma_event *ev, void *)
 {
-    if (ev->dir != det_dma_dir::DET_DMA_RX)
+    if (ev->dir != dws_dma_dir::DWS_DMA_RX)
         return;
     pq_item it = {};
     it.msg.src = IF_A;
     it.msg.len = ev->len;
     uint16_t n = (ev->len < sizeof(it.msg.bytes)) ? ev->len : sizeof(it.msg.bytes);
     memcpy(it.msg.bytes, ev->data, n);
-    detws_pq_post_lane_from_isr(detws_pq_lane::DETWS_PQ_LANE_FORWARD, &it);
+    dws_pq_post_lane_from_isr(dws_pq_lane::DWS_PQ_LANE_FORWARD, &it);
 }
 
 void setup()
@@ -84,23 +84,23 @@ void setup()
     fwd.priority = 0; // 0 -> the FORWARD lane default (above the user lane)
     fwd.core = 1;
     fwd.name = "forward";
-    detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_FORWARD, &fwd);
+    dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_FORWARD, &fwd);
 
     // Interface A ingress: a DMA channel fed by the simulator.
-    det_dma_config a = {};
+    dws_dma_config a = {};
     a.channel = IF_A;
-    a.periph = det_dma_periph::DET_DMA_UART;
+    a.periph = dws_dma_periph::DWS_DMA_UART;
     a.on_complete = on_dma_complete;
-    det_dma_open(&a);
+    dws_dma_open(&a);
 
     // Forwarding rule: A -> B allowed (default-deny otherwise), no rate cap.
-    det_forward_reset();
-    det_forward_add_if(IF_B, det_if_kind::DET_IF_WIFI_STA, if_b_send, nullptr);
-    det_forward_add_rule(IF_A, IF_B, det_fwd_action::DET_FWD_ALLOW, 0);
+    dws_forward_reset();
+    dws_forward_add_if(IF_B, dws_if_kind::DWS_IF_WIFI_STA, if_b_send, nullptr);
+    dws_forward_add_rule(IF_A, IF_B, dws_fwd_action::DWS_FWD_ALLOW, 0);
 
     // Ingress ACL: drop frames whose first byte is 0xFF (a "bad" marker) before forwarding.
     uint8_t bad_pat[1] = {0xFF}, bad_mask[1] = {0xFF};
-    det_forward_acl_add(IF_A, 0, bad_pat, bad_mask, 1, det_fwd_action::DET_FWD_DENY);
+    dws_forward_acl_add(IF_A, 0, bad_pat, bad_mask, 1, dws_fwd_action::DWS_FWD_DENY);
 
     Serial.println("forwarding: IF_A (DMA) -> FORWARD lane -> ACL + plane -> IF_B egress");
 }
@@ -109,20 +109,20 @@ static uint8_t g_seq = 0;
 
 void loop()
 {
-    // A frame arrives on interface A. det_dma_poll() completes the RX, which fires the
+    // A frame arrives on interface A. dws_dma_poll() completes the RX, which fires the
     // callback -> FORWARD lane -> forwarding plane -> IF_B egress. Every 5th frame is a
     // "bad" one (first byte 0xFF) that the ingress ACL should drop.
     uint8_t frame[8] = {0xBB, g_seq, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66};
     if ((g_seq % 5) == 4)
         frame[0] = 0xFF;
-    det_dma_sim_feed(IF_A, frame, sizeof(frame));
-    det_dma_poll();
+    dws_dma_sim_feed(IF_A, frame, sizeof(frame));
+    dws_dma_poll();
     g_seq++;
 
     if ((g_seq & 0x07) == 0)
     {
-        det_forward_stats st;
-        det_forward_get_stats(&st);
+        dws_forward_stats st;
+        dws_forward_get_stats(&st);
         Serial.printf("stats: in=%lu forwarded=%lu acl_denied=%lu (IF_B frames=%lu)\n", (unsigned long)st.frames_in,
                       (unsigned long)st.forwarded, (unsigned long)st.acl_denied, (unsigned long)g_out_frames);
     }

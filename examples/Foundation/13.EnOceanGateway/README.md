@@ -1,6 +1,6 @@
 # 13.EnOceanGateway - an EnOcean (ESP3) radio bridged to the gateway
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_ENOCEAN`, `DETWS_ENABLE_GATEWAY`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_ENOCEAN`, `DWS_ENABLE_GATEWAY`
 
 ## What this example teaches
 
@@ -12,7 +12,7 @@ chip driver here - the module does the RF, so the "driver" is purely the **ESP3 
 codec**.
 
 ```
-TCM310 --UART--> esp3_parse() --> RADIO_ERP1 sender + payload -> det_gateway_uplink()
+TCM310 --UART--> esp3_parse() --> RADIO_ERP1 sender + payload -> dws_gateway_uplink()
                                                                        |
                                                 envelope + topic  enocean/0/<sender>
                                                                        |
@@ -28,7 +28,7 @@ esp3_packet pkt;
 int n = esp3_parse(buf, len, &pkt);   // >0 = a telegram, 0 = need more, -1 = drop a byte
 if (n > 0 && pkt.type == ESP3_RADIO_ERP1) {
     const uint8_t *sender = pkt.data + pkt.data_len - 5;  // 4-byte id + status
-    det_gateway_uplink(0, (sender[2] << 8) | sender[3], pkt.data, pkt.data_len - 5, 0);
+    dws_gateway_uplink(0, (sender[2] << 8) | sender[3], pkt.data, pkt.data_len - 5, 0);
 }
 ```
 
@@ -53,6 +53,6 @@ The flags must reach the library build, so pass them as build flags:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_ENOCEAN=1 -DDETWS_ENABLE_GATEWAY=1" \
+  --project-option="build_flags=-DDWS_ENABLE_ENOCEAN=1 -DDWS_ENABLE_GATEWAY=1" \
   --lib="." examples/Foundation/13.EnOceanGateway/13.EnOceanGateway.ino
 ```

@@ -19,7 +19,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP2
+#if DWS_ENABLE_HTTP2
 
 #include <stddef.h>
 #include <stdint.h>
@@ -135,5 +135,5 @@ size_t h2_build_headers(uint8_t *out, size_t cap, uint32_t stream_id, const uint
 size_t h2_build_data(uint8_t *out, size_t cap, uint32_t stream_id, const uint8_t *data, size_t data_len,
                      bool end_stream);
 
-#endif // DETWS_ENABLE_HTTP2
+#endif // DWS_ENABLE_HTTP2
 #endif // DETERMINISTICESPASYNCWEBSERVER_H2_FRAME_H

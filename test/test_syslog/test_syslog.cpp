@@ -71,26 +71,26 @@ void test_length_matches_strlen()
     TEST_ASSERT_EQUAL_UINT(strlen(buf), n);
 }
 
-// syslog_init + syslog_log format the record and hand it to det_udp_sendto.
+// syslog_init + syslog_log format the record and hand it to dws_udp_sendto.
 void test_init_and_log_captured()
 {
-    det_udp_capture_enable();
-    det_udp_capture_reset();
+    dws_udp_capture_enable();
+    dws_udp_capture_reset();
     syslog_init("192.168.1.1", 514, "host1", "myapp", SyslogFacility::SYSLOG_FAC_LOCAL0);
     TEST_ASSERT_TRUE(syslog_log(SyslogSeverity::SYSLOG_INFO, "hello"));
     const char *expect = "<134>1 - host1 myapp - - - hello";
-    TEST_ASSERT_EQUAL_UINT(strlen(expect), det_udp_captured_len());
-    TEST_ASSERT_EQUAL_MEMORY(expect, det_udp_captured(), det_udp_captured_len());
+    TEST_ASSERT_EQUAL_UINT(strlen(expect), dws_udp_captured_len());
+    TEST_ASSERT_EQUAL_MEMORY(expect, dws_udp_captured(), dws_udp_captured_len());
 }
 
 // With no server configured the client is not ready and sends nothing.
 void test_log_not_ready_when_no_server()
 {
-    det_udp_capture_enable();
-    det_udp_capture_reset();
+    dws_udp_capture_enable();
+    dws_udp_capture_reset();
     syslog_init(nullptr, 514, "h", "a", SyslogFacility::SYSLOG_FAC_USER); // null server_ip -> copy_field empties it
     TEST_ASSERT_FALSE(syslog_log(SyslogSeverity::SYSLOG_INFO, "x"));
-    TEST_ASSERT_EQUAL_UINT(0, det_udp_captured_len());
+    TEST_ASSERT_EQUAL_UINT(0, dws_udp_captured_len());
 }
 
 // A null output, a zero cap, and out-of-range PRI values are handled defensively.
@@ -106,22 +106,22 @@ void test_format_null_and_pri_clamp()
     TEST_ASSERT_EQUAL_STRING("<191>1 - h a - - - m", buf);
 }
 
-// An over-long hostname is truncated to DETWS_SYSLOG_FIELD_MAX - 1 characters.
+// An over-long hostname is truncated to DWS_SYSLOG_FIELD_MAX - 1 characters.
 void test_init_truncates_long_fields()
 {
-    det_udp_capture_enable();
-    det_udp_capture_reset();
-    char longname[DETWS_SYSLOG_FIELD_MAX + 16];
+    dws_udp_capture_enable();
+    dws_udp_capture_reset();
+    char longname[DWS_SYSLOG_FIELD_MAX + 16];
     memset(longname, 'H', sizeof(longname) - 1);
     longname[sizeof(longname) - 1] = '\0';
     syslog_init("10.0.0.1", 514, longname, "a", SyslogFacility::SYSLOG_FAC_LOCAL0);
     TEST_ASSERT_TRUE(syslog_log(SyslogSeverity::SYSLOG_INFO, "m"));
-    const char *sent = (const char *)det_udp_captured();
+    const char *sent = (const char *)dws_udp_captured();
     const char *host = strstr(sent, "1 - ") + 4; // start of the HOSTNAME field
     size_t hcount = 0;
     while (host[hcount] == 'H')
         hcount++;
-    TEST_ASSERT_EQUAL_UINT((size_t)(DETWS_SYSLOG_FIELD_MAX - 1), hcount);
+    TEST_ASSERT_EQUAL_UINT((size_t)(DWS_SYSLOG_FIELD_MAX - 1), hcount);
 }
 
 int main()

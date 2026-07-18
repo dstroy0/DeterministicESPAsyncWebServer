@@ -27,12 +27,12 @@ struct SshAuthCtx
 };
 static SshAuthCtx s_auth;
 
-void det_ssh_auth_set_password_cb(SshPasswordCb cb)
+void dws_ssh_auth_set_password_cb(SshPasswordCb cb)
 {
     s_auth.pw_cb = cb;
 }
 
-void det_ssh_auth_set_pubkey_cb(SshPubkeyCb cb)
+void dws_ssh_auth_set_pubkey_cb(SshPubkeyCb cb)
 {
     s_auth.pk_cb = cb;
 }
@@ -191,7 +191,7 @@ static bool parse_ecdsa_sig(const uint8_t *sig, uint32_t slen, uint8_t out[SSH_E
 // Service request (RFC 4253 §10)
 // ---------------------------------------------------------------------------
 
-int det_ssh_auth_handle_service_request(const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap)
+int dws_ssh_auth_handle_service_request(const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap)
 {
     if (len < 1 || payload[0] != SSH_MSG_SERVICE_REQUEST)
         return -1;
@@ -219,7 +219,7 @@ int det_ssh_auth_handle_service_request(const uint8_t *payload, size_t len, uint
 // USERAUTH_REQUEST parse (RFC 4252 §5)
 // ---------------------------------------------------------------------------
 
-int det_ssh_auth_parse_request(const uint8_t *payload, size_t len, SshAuthReq *req)
+int dws_ssh_auth_parse_request(const uint8_t *payload, size_t len, SshAuthReq *req)
 {
     memset(req, 0, sizeof(*req));
     if (len < 1 || payload[0] != SSH_MSG_USERAUTH_REQUEST)
@@ -282,10 +282,10 @@ int det_ssh_auth_parse_request(const uint8_t *payload, size_t len, SshAuthReq *r
 // Response builders
 // ---------------------------------------------------------------------------
 
-int det_ssh_auth_build_failure(uint8_t *out, size_t *out_len, size_t cap, bool partial)
+int dws_ssh_auth_build_failure(uint8_t *out, size_t *out_len, size_t cap, bool partial)
 {
     // SSH_MSG_USERAUTH_FAILURE || name-list(authentications) || boolean(partial)
-#if DETWS_SSH_ALLOW_PASSWORD
+#if DWS_SSH_ALLOW_PASSWORD
     static const char methods[] = "publickey,password";
 #else
     static const char methods[] = "publickey"; // password auth disabled for hardening
@@ -301,7 +301,7 @@ int det_ssh_auth_build_failure(uint8_t *out, size_t *out_len, size_t cap, bool p
     return 0;
 }
 
-int det_ssh_auth_build_success(uint8_t *out, size_t *out_len, size_t cap)
+int dws_ssh_auth_build_success(uint8_t *out, size_t *out_len, size_t cap)
 {
     if (cap < 1)
         return -1;
@@ -337,7 +337,7 @@ static int build_pk_ok(const SshAuthReq *req, uint8_t *out, size_t *out_len, siz
 
 // publickey method (RFC 4252 §7): validate the offered key (a signature-less probe -> PK_OK) or verify
 // the signature over string(session_id) || signed_prefix, keying success to connection i.
-static int det_ssh_auth_handle_pubkey(uint8_t i, const SshAuthReq *req, uint8_t *out, size_t *out_len, size_t cap)
+static int dws_ssh_auth_handle_pubkey(uint8_t i, const SshAuthReq *req, uint8_t *out, size_t *out_len, size_t cap)
 {
     // Key type is taken from the blob (the algo name only steers the RSA signature hash).
     bool is_ed = req->pk_blob_len >= 4 + 11 && memcmp(req->pk_blob,
@@ -361,7 +361,7 @@ static int det_ssh_auth_handle_pubkey(uint8_t i, const SshAuthReq *req, uint8_t 
         parsed = parse_ssh_rsa_blob(req->pk_blob, req->pk_blob_len, n_be, e_be);
     bool key_ok = parsed && s_auth.pk_cb && s_auth.pk_cb(req->user, req->pk_blob, req->pk_blob_len);
     if (!key_ok)
-        return det_ssh_auth_build_failure(out, out_len, cap, false);
+        return dws_ssh_auth_build_failure(out, out_len, cap, false);
 
     if (!req->has_signature)
         return build_pk_ok(req, out, out_len, cap); // probe: ask for a signature
@@ -374,7 +374,7 @@ static int det_ssh_auth_handle_pubkey(uint8_t i, const SshAuthReq *req, uint8_t 
     memcpy(signed_data + sd, ssh_sess[i].session_id, SSH_SHA256_DIGEST_LEN);
     sd += SSH_SHA256_DIGEST_LEN;
     if (req->signed_prefix_len > SSH_PKT_BUF_SIZE)
-        return det_ssh_auth_build_failure(out, out_len, cap, false);
+        return dws_ssh_auth_build_failure(out, out_len, cap, false);
     memcpy(signed_data + sd, req->signed_prefix, req->signed_prefix_len);
     sd += req->signed_prefix_len;
 
@@ -400,28 +400,28 @@ static int det_ssh_auth_handle_pubkey(uint8_t i, const SshAuthReq *req, uint8_t 
     {
         ssh_sess[i].authed = true;
         ssh_sess[i].phase = SshPhase::SSH_PHASE_OPEN;
-        return det_ssh_auth_build_success(out, out_len, cap);
+        return dws_ssh_auth_build_success(out, out_len, cap);
     }
-    return det_ssh_auth_build_failure(out, out_len, cap, false);
+    return dws_ssh_auth_build_failure(out, out_len, cap, false);
 }
 
-int det_ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+int dws_ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
                                 size_t cap)
 {
     if (i >= MAX_SSH_CONNS)
         return -1;
 
     SshAuthReq req;
-    if (det_ssh_auth_parse_request(payload, len, &req) != 0)
+    if (dws_ssh_auth_parse_request(payload, len, &req) != 0)
         return -1;
 
     // ---- publickey method (RFC 4252 §7) ----
     if (req.is_pubkey)
-        return det_ssh_auth_handle_pubkey(i, &req, out, out_len, cap);
+        return dws_ssh_auth_handle_pubkey(i, &req, out, out_len, cap);
 
     // ---- password method (RFC 4252 §8) ----
     // Password auth can be compiled out for publickey-only hardening.
-#if DETWS_SSH_ALLOW_PASSWORD
+#if DWS_SSH_ALLOW_PASSWORD
     bool ok = req.is_password && s_auth.pw_cb && s_auth.pw_cb(req.user, req.password);
 #else
     bool ok = false;
@@ -436,7 +436,7 @@ int det_ssh_auth_handle_request(uint8_t i, const uint8_t *payload, size_t len, u
     {
         ssh_sess[i].authed = true;
         ssh_sess[i].phase = SshPhase::SSH_PHASE_OPEN;
-        return det_ssh_auth_build_success(out, out_len, cap);
+        return dws_ssh_auth_build_success(out, out_len, cap);
     }
-    return det_ssh_auth_build_failure(out, out_len, cap, false);
+    return dws_ssh_auth_build_failure(out, out_len, cap, false);
 }

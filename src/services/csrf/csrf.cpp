@@ -3,7 +3,7 @@
 
 /**
  * @file csrf.cpp
- * @brief Stateless HMAC-signed CSRF token implementation (DETWS_ENABLE_CSRF).
+ * @brief Stateless HMAC-signed CSRF token implementation (DWS_ENABLE_CSRF).
  *
  * The token is `<nonce_hex>.<sig_hex>`; the signature is the first CSRF_SIG_BYTES
  * of HMAC-SHA256(secret, nonce). Verification recomputes the HMAC over the
@@ -12,7 +12,7 @@
 
 #include "csrf.h"
 
-#if DETWS_ENABLE_CSRF
+#if DWS_ENABLE_CSRF
 
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include "shared_primitives/hex.h"
@@ -48,7 +48,7 @@ void sign_nonce(const CsrfCtx &c, const uint8_t *nonce, size_t nlen, char *sig_h
 {
     uint8_t mac[SSH_HMAC_SHA256_LEN];
     ssh_hmac_sha256(c.secret, c.secret_len, nonce, nlen, mac);
-    det_hex_encode(mac, CSRF_SIG_BYTES, sig_hex); // truncate the MAC to CSRF_SIG_BYTES
+    dws_hex_encode(mac, CSRF_SIG_BYTES, sig_hex); // truncate the MAC to CSRF_SIG_BYTES
 }
 
 } // namespace
@@ -76,7 +76,7 @@ int csrf_issue(char *out, size_t cap)
 
     char nhex[CSRF_NONCE_BYTES * 2 + 1];
     char shex[CSRF_SIG_BYTES * 2 + 1];
-    det_hex_encode(nonce, CSRF_NONCE_BYTES, nhex);
+    dws_hex_encode(nonce, CSRF_NONCE_BYTES, nhex);
     sign_nonce(s_csrf, nonce, CSRF_NONCE_BYTES, shex);
 
     int n = snprintf(out, cap, "%s.%s", nhex, shex);
@@ -97,7 +97,7 @@ bool csrf_verify(const char *token)
         return false;
 
     uint8_t nonce[CSRF_NONCE_BYTES];
-    if (det_hex_decode(token, nhexlen, nonce, sizeof(nonce)) != CSRF_NONCE_BYTES)
+    if (dws_hex_decode(token, nhexlen, nonce, sizeof(nonce)) != CSRF_NONCE_BYTES)
         return false;
 
     const char *sig = dot + 1;
@@ -116,4 +116,4 @@ void csrf_reset(void)
     s_csrf.counter = 0;
 }
 
-#endif // DETWS_ENABLE_CSRF
+#endif // DWS_ENABLE_CSRF

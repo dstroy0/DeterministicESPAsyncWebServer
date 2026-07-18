@@ -8,12 +8,12 @@
 
 #include "services/powerlink/powerlink.h"
 
-#if DETWS_ENABLE_POWERLINK
+#if DWS_ENABLE_POWERLINK
 
 #include <string.h>
 
-size_t detws_epl_build(uint8_t msg_type, uint8_t dest, uint8_t source, const uint8_t *payload, size_t payload_len,
-                       uint8_t *out, size_t cap)
+size_t dws_epl_build(uint8_t msg_type, uint8_t dest, uint8_t source, const uint8_t *payload, size_t payload_len,
+                     uint8_t *out, size_t cap)
 {
     if (!out || (payload_len && !payload))
         return 0;
@@ -28,22 +28,22 @@ size_t detws_epl_build(uint8_t msg_type, uint8_t dest, uint8_t source, const uin
     return n;
 }
 
-size_t detws_epl_soc(uint8_t source, uint8_t *out, size_t cap)
+size_t dws_epl_soc(uint8_t source, uint8_t *out, size_t cap)
 {
-    return detws_epl_build(Epl::EPL_MSG_SOC, Epl::EPL_NODE_BROADCAST, source, nullptr, 0, out, cap);
+    return dws_epl_build(Epl::EPL_MSG_SOC, Epl::EPL_NODE_BROADCAST, source, nullptr, 0, out, cap);
 }
 
-size_t detws_epl_preq(uint8_t dest_cn, uint8_t source, const uint8_t *pdo, size_t pdo_len, uint8_t *out, size_t cap)
+size_t dws_epl_preq(uint8_t dest_cn, uint8_t source, const uint8_t *pdo, size_t pdo_len, uint8_t *out, size_t cap)
 {
-    return detws_epl_build(Epl::EPL_MSG_PREQ, dest_cn, source, pdo, pdo_len, out, cap);
+    return dws_epl_build(Epl::EPL_MSG_PREQ, dest_cn, source, pdo, pdo_len, out, cap);
 }
 
-size_t detws_epl_pres(uint8_t source_cn, const uint8_t *pdo, size_t pdo_len, uint8_t *out, size_t cap)
+size_t dws_epl_pres(uint8_t source_cn, const uint8_t *pdo, size_t pdo_len, uint8_t *out, size_t cap)
 {
-    return detws_epl_build(Epl::EPL_MSG_PRES, Epl::EPL_NODE_BROADCAST, source_cn, pdo, pdo_len, out, cap);
+    return dws_epl_build(Epl::EPL_MSG_PRES, Epl::EPL_NODE_BROADCAST, source_cn, pdo, pdo_len, out, cap);
 }
 
-bool detws_epl_parse(const uint8_t *frame, size_t len, EplFrame *out)
+bool dws_epl_parse(const uint8_t *frame, size_t len, EplFrame *out)
 {
     if (!frame || !out || len < 3)
         return false;
@@ -59,4 +59,4 @@ bool detws_epl_parse(const uint8_t *frame, size_t len, EplFrame *out)
     return true;
 }
 
-#endif // DETWS_ENABLE_POWERLINK
+#endif // DWS_ENABLE_POWERLINK

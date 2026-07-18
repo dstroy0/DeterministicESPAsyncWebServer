@@ -6,7 +6,7 @@
 // DCS checksums), a round trip, malformed framing (bad preamble / start / LCS / DCS),
 // incomplete frames, over-length rejection, and the ACK frame. Pure host tests.
 //
-// The env sizes DETWS_PN532_MAX_DATA = 8.
+// The env sizes DWS_PN532_MAX_DATA = 8.
 
 #include "services/pn532/pn532.h"
 #include <string.h>
@@ -104,7 +104,7 @@ void test_parse_needs_more_bytes()
 
 void test_parse_rejects_over_length()
 {
-    // frame_len 20 (> DETWS_PN532_MAX_DATA + 1 = 9) is rejected early.
+    // frame_len 20 (> DWS_PN532_MAX_DATA + 1 = 9) is rejected early.
     uint8_t buf[8] = {0x00, 0x00, 0xFF, 0x14, 0xEC, 0xD5, 0x00, 0x00};
     TEST_ASSERT_EQUAL_INT(-1, pn532_parse_frame(buf, sizeof(buf), nullptr, nullptr, nullptr));
 }

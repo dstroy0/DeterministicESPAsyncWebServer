@@ -208,10 +208,10 @@ struct SshRsaPubKey
 {
     uint8_t n[SSH_RSA_KEY_BYTES]; ///< Modulus n (256 bytes, big-endian).
     uint8_t e_bytes[4];           ///< Public exponent e (big-endian uint32).
-    bool loaded;                  ///< True after det_ssh_rsa_load_pubkey() succeeds.
+    bool loaded;                  ///< True after dws_ssh_rsa_load_pubkey() succeeds.
 };
 
-/** @brief Static host public key (BSS). Set by det_ssh_rsa_load_pubkey(). */
+/** @brief Static host public key (BSS). Set by dws_ssh_rsa_load_pubkey(). */
 extern SshRsaPubKey ssh_host_pubkey;
 
 // ---------------------------------------------------------------------------
@@ -231,7 +231,7 @@ extern SshRsaPubKey ssh_host_pubkey;
  *
  * @return 0 on success, -1 if the key is absent or malformed.
  */
-int det_ssh_rsa_load_pubkey(void);
+int dws_ssh_rsa_load_pubkey(void);
 
 /**
  * @brief Sign @p msg using the RSA host key (PKCS#1 v1.5, rsa-sha2-256/512).

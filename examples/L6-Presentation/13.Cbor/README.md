@@ -1,6 +1,6 @@
 # 13.Cbor - compact binary telemetry with CBOR
 
-**Layer:** L6 Presentation · **Build flags:** `DETWS_ENABLE_CBOR`
+**Layer:** L6 Presentation · **Build flags:** `DWS_ENABLE_CBOR`
 
 ## What this example teaches
 
@@ -49,7 +49,7 @@ For a text-based compact binary alternative, see [14.MsgPack](../14.MsgPack).
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_CBOR=1" \
+  --project-option="build_flags=-DDWS_ENABLE_CBOR=1" \
   --lib="." examples/L6-Presentation/13.Cbor/13.Cbor.ino
 ```
 
@@ -66,7 +66,7 @@ explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_CBOR 1
+#define DWS_ENABLE_CBOR 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -76,7 +76,7 @@ explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // One CBOR map {"heap","uptime","rssi"}, encoded into a ctx buffer and paged out
 // by the chunk source (the same pattern scales to an arbitrarily large body).

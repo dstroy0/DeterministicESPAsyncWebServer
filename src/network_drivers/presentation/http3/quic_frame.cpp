@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http3/quic_frame.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/http3/quic_varint.h"
 #include <string.h>
@@ -278,4 +278,4 @@ size_t quic_build_connection_close(uint8_t *out, size_t cap, uint64_t error_code
     return pos + reason_len;
 }
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3

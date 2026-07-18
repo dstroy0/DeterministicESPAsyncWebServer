@@ -25,7 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_CBOR
+#if DWS_ENABLE_CBOR
 
 /** @brief CBOR encoder state over a caller-provided buffer. */
 struct CborWriter
@@ -103,5 +103,5 @@ bool cbor_read_bytes(CborReader *r, const uint8_t **out, size_t *len); ///< byte
 bool cbor_read_array(CborReader *r, size_t *count);                    ///< definite-length array header
 bool cbor_read_map(CborReader *r, size_t *count);                      ///< definite-length map header
 
-#endif // DETWS_ENABLE_CBOR
+#endif // DWS_ENABLE_CBOR
 #endif // DETERMINISTICESPASYNCWEBSERVER_CBOR_H

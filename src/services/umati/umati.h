@@ -3,7 +3,7 @@
 
 /**
  * @file umati.h
- * @brief umati - OPC UA for Machine Tools (OPC 40501-1) information model (DETWS_ENABLE_UMATI).
+ * @brief umati - OPC UA for Machine Tools (OPC 40501-1) information model (DWS_ENABLE_UMATI).
  *
  * umati ("universal machine technology interface") is the OPC UA companion specification for machine
  * tools (VDW / OPC Foundation, OPC 40501-1, namespace `http://opcfoundation.org/UA/MachineTool/`). It
@@ -11,7 +11,7 @@
  * umati dashboard, UaExpert, python `asyncua`, ...) reads the same structure across vendors.
  *
  * This module builds the MachineTool address space on top of the OPC UA Binary server
- * (`services/opcua`, DETWS_ENABLE_OPCUA): it registers a Browse + Read resolver that answers for the
+ * (`services/opcua`, DWS_ENABLE_OPCUA): it registers a Browse + Read resolver that answers for the
  * MachineTool node hierarchy and serves live values out of a caller-owned @ref UmatiMachineTool struct
  * you refresh in your loop. No heap, no stdlib - the model is a fixed node table, the values are
  * pointers/scalars in your struct.
@@ -44,7 +44,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_UMATI
+#if DWS_ENABLE_UMATI
 
 #include "services/opcua/opcua.h" // OpcUaVariant / OpcUaReference / handler typedefs (shares the OPC UA codec)
 #include <stdint.h>
@@ -160,5 +160,5 @@ int32_t umati_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max
  */
 void umati_install(const UmatiMachineTool *mt);
 
-#endif // DETWS_ENABLE_UMATI
+#endif // DWS_ENABLE_UMATI
 #endif // DETERMINISTICESPASYNCWEBSERVER_UMATI_H

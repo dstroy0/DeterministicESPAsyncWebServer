@@ -8,7 +8,7 @@
 
 #include "services/edge_cache/edge_cache_sd.h"
 
-#if DETWS_ENABLE_EDGE_CACHE
+#if DWS_ENABLE_EDGE_CACHE
 
 #include <string.h>
 
@@ -96,7 +96,7 @@ bool edge_sd_deserialize(const uint8_t *buf, size_t len, EdgeEntry *e)
         return false;
     uint16_t bl = get_u16(buf + pos);
     pos += 2;
-    if (bl > DETWS_EDGE_BODY_MAX || pos + bl > len)
+    if (bl > DWS_EDGE_BODY_MAX || pos + bl > len)
         return false;
     memcpy(e->body, buf + pos, bl);
     e->body_len = bl;
@@ -104,10 +104,10 @@ bool edge_sd_deserialize(const uint8_t *buf, size_t len, EdgeEntry *e)
     return true;
 }
 
-#if DETWS_ENABLE_DBM
+#if DWS_ENABLE_DBM
 
 // The L2 key is the entry's SHA-256 digest, which must fit a dbm key exactly.
-static_assert(DETWS_DBM_KEY_MAX >= 32, "edge cache L2 uses a 32-byte SHA-256 digest as the dbm key");
+static_assert(DWS_DBM_KEY_MAX >= 32, "edge cache L2 uses a 32-byte SHA-256 digest as the dbm key");
 
 namespace
 {
@@ -149,10 +149,10 @@ bool collect_cb(const char *key, uint16_t key_len, void *vctx)
     CollectCtx *c = (CollectCtx *)vctx;
     if (key_len != 32)
         return true; // not an edge digest key (shared dbm) - leave it be
-    long n = detws_dbm_get(c->db, key, key_len, c->scratch, c->scratch_cap);
+    long n = dws_dbm_get(c->db, key, key_len, c->scratch, c->scratch_cap);
     if (n <= 0)
         return true;
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     if (!peek_canon(c->scratch, (size_t)n, canon, sizeof(canon)))
         return true; // not an edge value - do not touch it
     if (c->prefix)
@@ -183,9 +183,9 @@ uint32_t purge_matching(DetwsDbm *db, const char *prefix, uint8_t *scratch, size
         c.scratch_cap = scratch_cap;
         c.count = 0;
         c.full = false;
-        detws_dbm_iterate(db, collect_cb, &c);
+        dws_dbm_iterate(db, collect_cb, &c);
         for (int i = 0; i < c.count; i++)
-            if (detws_dbm_del(db, (const char *)c.batch[i], 32))
+            if (dws_dbm_del(db, (const char *)c.batch[i], 32))
                 total++;
         if (!c.full)
             break; // visited everything that matched
@@ -201,16 +201,16 @@ bool edge_sd_put(DetwsDbm *db, const EdgeEntry *e, uint8_t *scratch, size_t scra
     if (!edge_entry_has_validator(e))
         return false; // only spill what a cheap 304 can refresh after a reboot
     size_t n = edge_sd_serialize(e, scratch, scratch_cap);
-    if (n == 0 || n > DETWS_DBM_VAL_MAX)
+    if (n == 0 || n > DWS_DBM_VAL_MAX)
         return false; // too large for the L2 value bound -> stays L1-only
-    return detws_dbm_put(db, (const char *)e->digest, 32, scratch, (uint32_t)n);
+    return dws_dbm_put(db, (const char *)e->digest, 32, scratch, (uint32_t)n);
 }
 
 bool edge_sd_get(DetwsDbm *db, const uint8_t digest[32], EdgeEntry *e, uint8_t *scratch, size_t scratch_cap)
 {
     if (!db || !digest || !e || !scratch)
         return false;
-    long n = detws_dbm_get(db, (const char *)digest, 32, scratch, scratch_cap);
+    long n = dws_dbm_get(db, (const char *)digest, 32, scratch, scratch_cap);
     if (n < 0)
         return false;
     return edge_sd_deserialize(scratch, (size_t)n, e);
@@ -218,7 +218,7 @@ bool edge_sd_get(DetwsDbm *db, const uint8_t digest[32], EdgeEntry *e, uint8_t *
 
 bool edge_sd_del(DetwsDbm *db, const uint8_t digest[32])
 {
-    return db && digest && detws_dbm_del(db, (const char *)digest, 32);
+    return db && digest && dws_dbm_del(db, (const char *)digest, 32);
 }
 
 uint32_t edge_sd_purge_prefix(DetwsDbm *db, const char *path_prefix, uint8_t *scratch, size_t scratch_cap)
@@ -238,6 +238,6 @@ uint32_t edge_sd_purge_all(DetwsDbm *db)
     return purge_matching(db, nullptr, scratch, sizeof(scratch));
 }
 
-#endif // DETWS_ENABLE_DBM
+#endif // DWS_ENABLE_DBM
 
-#endif // DETWS_ENABLE_EDGE_CACHE
+#endif // DWS_ENABLE_EDGE_CACHE

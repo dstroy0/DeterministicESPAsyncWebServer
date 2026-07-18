@@ -26,7 +26,7 @@ static const uint32_t OID_UNKNOWN[] = {1, 3, 6, 1, 2, 1, 99, 0};
 // sysDescr exists as object 1.3.6.1.2.1.1.1 but only instance .0; ask for .5.
 static const uint32_t OID_SYSDESCR_BADINST[] = {1, 3, 6, 1, 2, 1, 1, 1, 5};
 
-static const char *SYSDESCR_VAL = "DetWS test agent";
+static const char *SYSDESCR_VAL = "DWS test agent";
 
 static bool g_set_called = false;
 static long g_set_value = 0;
@@ -696,17 +696,17 @@ void test_dispatch_malformed_pdu()
 
 void test_udp_handler_via_inject()
 {
-    det_udp_reset_listeners();
-    det_udp_capture_enable();
-    det_udp_capture_reset();
+    dws_udp_reset_listeners();
+    dws_udp_capture_enable();
+    dws_udp_capture_reset();
     snmp_agent_begin_udp(161);
     uint8_t req[256];
     size_t rl = build_req(req, sizeof(req), (int)SnmpVersion::SNMP_V2C, "public", (uint8_t)SnmpTag::SNMP_PDU_GET, 50, 0,
                           0, OID_SYSDESCR, 9, nullptr);
-    det_udp_inject(161, "192.0.2.1", 40000, req, rl);
+    dws_udp_inject(161, "192.0.2.1", 40000, req, rl);
     // The bound handler processed the datagram and sent a reply (captured).
-    TEST_ASSERT_TRUE(det_udp_captured_len() > 0);
-    det_udp_reset_listeners();
+    TEST_ASSERT_TRUE(dws_udp_captured_len() > 0);
+    dws_udp_reset_listeners();
 }
 
 void test_malformed_message_guards()

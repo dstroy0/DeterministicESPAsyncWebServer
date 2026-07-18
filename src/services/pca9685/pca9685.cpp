@@ -12,7 +12,7 @@
 #include "services/pca9685/pca9685.h"
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_PCA9685
+#if DWS_ENABLE_PCA9685
 
 namespace
 {
@@ -79,8 +79,8 @@ namespace
 // and the configured PWM frequency, grouped so it is one named owner, unreachable cross-TU.
 struct Pca9685Ctx
 {
-    uint8_t addr = DETWS_PCA9685_I2C_ADDR;
-    uint32_t freq = DETWS_PCA9685_FREQ;
+    uint8_t addr = DWS_PCA9685_I2C_ADDR;
+    uint32_t freq = DWS_PCA9685_FREQ;
 };
 Pca9685Ctx s_pca;
 
@@ -95,9 +95,9 @@ bool wr(uint8_t reg, uint8_t val)
 
 bool pca9685_begin(uint8_t addr, uint32_t freq_hz)
 {
-    s_pca.addr = addr ? addr : (uint8_t)DETWS_PCA9685_I2C_ADDR;
-    s_pca.freq = freq_hz ? freq_hz : (uint32_t)DETWS_PCA9685_FREQ;
-    detws_i2c_begin();
+    s_pca.addr = addr ? addr : (uint8_t)DWS_PCA9685_I2C_ADDR;
+    s_pca.freq = freq_hz ? freq_hz : (uint32_t)DWS_PCA9685_FREQ;
+    dws_i2c_begin();
     bool ok = true;
     ok &= wr(PCA9685_REG_MODE1, 0x10); // SLEEP (required before changing PRESCALE)
     ok &= wr(PCA9685_REG_PRESCALE, pca9685_prescale(s_pca.freq));
@@ -140,4 +140,4 @@ bool pca9685_set_servo_us(uint8_t, uint32_t)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_PCA9685
+#endif // DWS_ENABLE_PCA9685

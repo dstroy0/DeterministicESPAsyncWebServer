@@ -5,10 +5,10 @@
 // the global fixed-window accept throttle, the per-source-IP throttle bucket table
 // (independent budgets, window rollover, the millis() wrap, and bounded eviction), and
 // the CIDR source-IP allowlist. Every address-keyed gate keys on the FULL family-tagged
-// address (DetIp) - never a hash or a uint32 flattening - so IPv4 and IPv6 peers are
+// address (DWSIp) - never a hash or a uint32 flattening - so IPv4 and IPv6 peers are
 // distinct buckets and a v6 peer cannot spray or collide its way past a per-address cap.
 // These functions are always compiled so they can be host-tested; this env also compiles
-// them with DETWS_ENABLE_ACCEPT_THROTTLE / PER_IP_THROTTLE / IP_ALLOWLIST set so the
+// them with DWS_ENABLE_ACCEPT_THROTTLE / PER_IP_THROTTLE / IP_ALLOWLIST set so the
 // flag-guarded accept-callback paths build.
 //
 // The env overrides the budgets to small values so the boundaries are explicit:
@@ -20,15 +20,15 @@
 #include <unity.h>
 
 // Small builders so the tests read in terms of addresses, not byte plumbing.
-static DetIp v4(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
+static DWSIp v4(uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 {
-    return det_ip_from_v4_octets(a, b, c, d);
+    return dws_ip_from_v4_octets(a, b, c, d);
 }
-static DetIp v6(const char *s)
+static DWSIp v6(const char *s)
 {
-    DetIp ip;
-    ip.family = DetIpFamily::DET_IP_NONE;
-    det_ip_parse(s, &ip);
+    DWSIp ip;
+    ip.family = DWSIpFamily::DWS_IP_NONE;
+    dws_ip_parse(s, &ip);
     return ip;
 }
 
@@ -67,8 +67,8 @@ void test_accept_throttle_rollover()
 void test_per_ip_independent_budgets()
 {
     listener_per_ip_throttle_reset();
-    DetIp a = v4(10, 0, 0, 1);
-    DetIp b = v4(10, 0, 0, 2);
+    DWSIp a = v4(10, 0, 0, 1);
+    DWSIp b = v4(10, 0, 0, 2);
     TEST_ASSERT_TRUE(listener_accept_allowed_ip(&a, 0));  // a:1
     TEST_ASSERT_TRUE(listener_accept_allowed_ip(&a, 1));  // a:2 == MAX
     TEST_ASSERT_FALSE(listener_accept_allowed_ip(&a, 2)); // a over budget
@@ -81,8 +81,8 @@ void test_per_ip_independent_budgets()
 void test_per_ip_v6_distinct_buckets()
 {
     listener_per_ip_throttle_reset();
-    DetIp a = v6("2001:db8::1");
-    DetIp b = v6("2001:db8::2");
+    DWSIp a = v6("2001:db8::1");
+    DWSIp b = v6("2001:db8::2");
     TEST_ASSERT_TRUE(listener_accept_allowed_ip(&a, 0));  // a:1
     TEST_ASSERT_TRUE(listener_accept_allowed_ip(&a, 1));  // a:2 == MAX
     TEST_ASSERT_FALSE(listener_accept_allowed_ip(&a, 2)); // a over budget
@@ -95,7 +95,7 @@ void test_per_ip_v6_distinct_buckets()
 void test_per_ip_window_rollover()
 {
     listener_per_ip_throttle_reset();
-    DetIp a = v4(192, 168, 1, 5);
+    DWSIp a = v4(192, 168, 1, 5);
     TEST_ASSERT_TRUE(listener_accept_allowed_ip(&a, 0));
     TEST_ASSERT_TRUE(listener_accept_allowed_ip(&a, 10));
     TEST_ASSERT_FALSE(listener_accept_allowed_ip(&a, 20));  // budget used
@@ -106,8 +106,8 @@ void test_per_ip_window_rollover()
 void test_per_ip_unspecified_defers()
 {
     listener_per_ip_throttle_reset();
-    DetIp none;
-    none.family = DetIpFamily::DET_IP_NONE;
+    DWSIp none;
+    none.family = DWSIpFamily::DWS_IP_NONE;
     for (uint32_t i = 0; i < 10; i++)
         TEST_ASSERT_TRUE(listener_accept_allowed_ip(&none, i));
 }
@@ -120,11 +120,11 @@ void test_per_ip_eviction_bounded()
     // Fill all 4 buckets at staggered start times, none yet expired at now=500.
     for (uint32_t i = 0; i < 4; i++)
     {
-        DetIp ip = v4(10, 0, 0, (uint8_t)(i + 1));
+        DWSIp ip = v4(10, 0, 0, (uint8_t)(i + 1));
         TEST_ASSERT_TRUE(listener_accept_allowed_ip(&ip, i * 100));
     }
     // A 5th distinct address must still be admitted by evicting the least-recently-started.
-    DetIp fresh = v4(10, 0, 0, 99);
+    DWSIp fresh = v4(10, 0, 0, 99);
     TEST_ASSERT_TRUE(listener_accept_allowed_ip(&fresh, 500));
 }
 
@@ -132,7 +132,7 @@ void test_per_ip_eviction_bounded()
 void test_ip_allowlist_empty_allows_all()
 {
     listener_ip_allowlist_reset();
-    DetIp any = v4(8, 8, 8, 8);
+    DWSIp any = v4(8, 8, 8, 8);
     TEST_ASSERT_TRUE(listener_ip_allowed(&any));
 }
 
@@ -140,18 +140,18 @@ void test_ip_allowlist_empty_allows_all()
 void test_ip_allowlist_cidr()
 {
     listener_ip_allowlist_reset();
-    DetIp net = v4(192, 168, 1, 0);
+    DWSIp net = v4(192, 168, 1, 0);
     TEST_ASSERT_TRUE(listener_ip_allow_add(&net, 24));
-    DetIp in = v4(192, 168, 1, 55);
-    DetIp out = v4(192, 168, 2, 55);
+    DWSIp in = v4(192, 168, 1, 55);
+    DWSIp out = v4(192, 168, 2, 55);
     TEST_ASSERT_TRUE(listener_ip_allowed(&in));
     TEST_ASSERT_FALSE(listener_ip_allowed(&out));
 
     listener_ip_allowlist_reset();
-    DetIp net8 = v4(10, 1, 2, 3); // host bits masked -> 10.0.0.0/8
+    DWSIp net8 = v4(10, 1, 2, 3); // host bits masked -> 10.0.0.0/8
     TEST_ASSERT_TRUE(listener_ip_allow_add(&net8, 8));
-    DetIp in8 = v4(10, 255, 255, 255);
-    DetIp out8 = v4(11, 0, 0, 1);
+    DWSIp in8 = v4(10, 255, 255, 255);
+    DWSIp out8 = v4(11, 0, 0, 1);
     TEST_ASSERT_TRUE(listener_ip_allowed(&in8));
     TEST_ASSERT_FALSE(listener_ip_allowed(&out8));
 }
@@ -164,11 +164,11 @@ void test_ip_allowlist_cidr_string()
     TEST_ASSERT_TRUE(listener_ip_allow_add_cidr("2001:db8::/32"));
     TEST_ASSERT_TRUE(listener_ip_allow_add_cidr("10.0.0.5")); // bare host -> /32
 
-    DetIp v4in = v4(192, 168, 1, 200);
-    DetIp v4host = v4(10, 0, 0, 5);
-    DetIp v4no = v4(10, 0, 0, 6);
-    DetIp v6in = v6("2001:db8:0:0:1234::abcd");
-    DetIp v6no = v6("2001:db9::1");
+    DWSIp v4in = v4(192, 168, 1, 200);
+    DWSIp v4host = v4(10, 0, 0, 5);
+    DWSIp v4no = v4(10, 0, 0, 6);
+    DWSIp v6in = v6("2001:db8:0:0:1234::abcd");
+    DWSIp v6no = v6("2001:db9::1");
     TEST_ASSERT_TRUE(listener_ip_allowed(&v4in));
     TEST_ASSERT_TRUE(listener_ip_allowed(&v4host));
     TEST_ASSERT_FALSE(listener_ip_allowed(&v4no));
@@ -186,9 +186,9 @@ void test_ip_allowlist_cidr_string()
 void test_ip_allowlist_family_isolation()
 {
     listener_ip_allowlist_reset();
-    DetIp v4net = v4(192, 168, 1, 0);
+    DWSIp v4net = v4(192, 168, 1, 0);
     TEST_ASSERT_TRUE(listener_ip_allow_add(&v4net, 24));
-    DetIp v6peer = v6("2001:db8::1");
+    DWSIp v6peer = v6("2001:db8::1");
     TEST_ASSERT_FALSE(listener_ip_allowed(&v6peer)); // rules exist but none match this family
 }
 
@@ -196,16 +196,16 @@ void test_ip_allowlist_family_isolation()
 void test_ip_allowlist_host_and_zero_prefix()
 {
     listener_ip_allowlist_reset();
-    DetIp host = v4(203, 0, 113, 7);
+    DWSIp host = v4(203, 0, 113, 7);
     TEST_ASSERT_TRUE(listener_ip_allow_add(&host, 32));
-    DetIp other = v4(203, 0, 113, 8);
+    DWSIp other = v4(203, 0, 113, 8);
     TEST_ASSERT_TRUE(listener_ip_allowed(&host));
     TEST_ASSERT_FALSE(listener_ip_allowed(&other));
 
     listener_ip_allowlist_reset();
-    DetIp z = v4(0, 0, 0, 0);
+    DWSIp z = v4(0, 0, 0, 0);
     TEST_ASSERT_TRUE(listener_ip_allow_add(&z, 0)); // /0 -> matches all v4
-    DetIp anyone = v4(1, 2, 3, 4);
+    DWSIp anyone = v4(1, 2, 3, 4);
     TEST_ASSERT_TRUE(listener_ip_allowed(&anyone));
 }
 
@@ -213,14 +213,14 @@ void test_ip_allowlist_host_and_zero_prefix()
 void test_ip_allowlist_rejects_bad_and_full()
 {
     listener_ip_allowlist_reset();
-    DetIp bad = v4(1, 0, 0, 0);
+    DWSIp bad = v4(1, 0, 0, 0);
     TEST_ASSERT_FALSE(listener_ip_allow_add(&bad, 33)); // prefix > 32
     for (int i = 0; i < 4; i++)                         // SLOTS == 4
     {
-        DetIp r = v4(10, 0, 0, (uint8_t)i);
+        DWSIp r = v4(10, 0, 0, (uint8_t)i);
         TEST_ASSERT_TRUE(listener_ip_allow_add(&r, 32));
     }
-    DetIp overflow = v4(10, 0, 0, 9);
+    DWSIp overflow = v4(10, 0, 0, 9);
     TEST_ASSERT_FALSE(listener_ip_allow_add(&overflow, 32)); // table full
 }
 

@@ -6,7 +6,7 @@
 The themes under src/web/themes/{,generated/} are normally injected into a page at build time. This
 generator instead embeds them - minified - as `const char[]` blobs in a registry so the firmware can
 serve or switch a theme at runtime (e.g. a `/themes/<name>.css` route, or a picker that remembers the
-user's choice). The whole subsystem is behind `DETWS_ENABLE_THEMES`, so a build that does not want
+user's choice). The whole subsystem is behind `DWS_ENABLE_THEMES`, so a build that does not want
 runtime theming links none of it; enabling it embeds the set (each theme is ~1 KB of DROM/flash).
 
 Output: src/network_drivers/application/binary_asset_blobs.{h,cpp} (generated + committed, so the
@@ -74,7 +74,7 @@ def escape_segments(text, width=110):
 
 
 def c_ident(name):
-    return "DETWS_THEME_" + re.sub(r"[^A-Za-z0-9]", "_", name).upper()
+    return "DWS_THEME_" + re.sub(r"[^A-Za-z0-9]", "_", name).upper()
 
 
 def load_themes():
@@ -99,10 +99,10 @@ def render_header(themes):
         "",
         "/**",
         " * @file binary_asset_blobs.h",
-        " * @brief Layer 7 - toggleable embedded theme stylesheets (DETWS_ENABLE_THEMES).",
+        " * @brief Layer 7 - toggleable embedded theme stylesheets (DWS_ENABLE_THEMES).",
         " *",
         " * A registry of minified CSS themes in flash (DROM), for serving/switching a theme at runtime.",
-        " * Behind DETWS_ENABLE_THEMES so a build that does not want it links nothing.",
+        " * Behind DWS_ENABLE_THEMES so a build that does not want it links nothing.",
         " */",
         "",
         "#ifndef " + guard,
@@ -110,28 +110,28 @@ def render_header(themes):
         "",
         '#include "ServerConfig.h"',
         "",
-        "#if DETWS_ENABLE_THEMES",
+        "#if DWS_ENABLE_THEMES",
         "",
         "#include <stddef.h>",
         "",
         "/** @brief One embedded theme: its name and its minified CSS (NUL-terminated flash string). */",
-        "struct DetThemeBlob",
+        "struct DWSThemeBlob",
         "{",
         "    const char *name;",
         "    const char *css;",
         "};",
         "",
         "/** @brief The embedded theme registry (sorted by name) and its count. */",
-        "extern const DetThemeBlob DETWS_THEME_BLOBS[];",
-        "extern const size_t DETWS_THEME_BLOB_COUNT;",
+        "extern const DWSThemeBlob DWS_THEME_BLOBS[];",
+        "extern const size_t DWS_THEME_BLOB_COUNT;",
         "",
         "/**",
         " * @brief Look up a theme's CSS by name (exact match).",
         " * @return the NUL-terminated minified CSS, or nullptr if no theme by that name is embedded.",
         " */",
-        "const char *detws_theme_css(const char *name);",
+        "const char *dws_theme_css(const char *name);",
         "",
-        "#endif // DETWS_ENABLE_THEMES",
+        "#endif // DWS_ENABLE_THEMES",
         "#endif // " + guard,
     ]
     return "\n".join(lines) + "\n"
@@ -143,7 +143,7 @@ def render_source(themes):
         "",
         '#include "network_drivers/application/binary_asset_blobs.h"',
         "",
-        "#if DETWS_ENABLE_THEMES",
+        "#if DWS_ENABLE_THEMES",
         "",
         "#include <string.h>",
         "",
@@ -152,35 +152,35 @@ def render_source(themes):
         segs = escape_segments(css)
         restricted = name in RESTRICTED
         if restricted:  # a trademark-named theme: keep it in OSS, drop it from a commercial build
-            lines.append("#if DETWS_THEMES_INCLUDE_TRADEMARKED")
+            lines.append("#if DWS_THEMES_INCLUDE_TRADEMARKED")
         lines.append("static const char %s[] =" % c_ident(name))
         lines.append('    "' + '"\n    "'.join(segs) + '";')
         if restricted:
             lines.append("#endif")
         lines.append("")
-    lines.append("const DetThemeBlob DETWS_THEME_BLOBS[] = {")
+    lines.append("const DWSThemeBlob DWS_THEME_BLOBS[] = {")
     for name, _ in themes:
         if name in RESTRICTED:
-            lines.append("#if DETWS_THEMES_INCLUDE_TRADEMARKED")
+            lines.append("#if DWS_THEMES_INCLUDE_TRADEMARKED")
             lines.append('    {"%s", %s},' % (name, c_ident(name)))
             lines.append("#endif")
         else:
             lines.append('    {"%s", %s},' % (name, c_ident(name)))
     lines.append("};")
     # sizeof so the count stays correct whether or not the trademark-gated entries are compiled in.
-    lines.append("const size_t DETWS_THEME_BLOB_COUNT = sizeof(DETWS_THEME_BLOBS) / sizeof(DETWS_THEME_BLOBS[0]);")
+    lines.append("const size_t DWS_THEME_BLOB_COUNT = sizeof(DWS_THEME_BLOBS) / sizeof(DWS_THEME_BLOBS[0]);")
     lines.append("")
-    lines.append("const char *detws_theme_css(const char *name)")
+    lines.append("const char *dws_theme_css(const char *name)")
     lines.append("{")
     lines.append("    if (!name)")
     lines.append("        return nullptr;")
-    lines.append("    for (size_t i = 0; i < DETWS_THEME_BLOB_COUNT; i++)")
-    lines.append("        if (strcmp(DETWS_THEME_BLOBS[i].name, name) == 0)")
-    lines.append("            return DETWS_THEME_BLOBS[i].css;")
+    lines.append("    for (size_t i = 0; i < DWS_THEME_BLOB_COUNT; i++)")
+    lines.append("        if (strcmp(DWS_THEME_BLOBS[i].name, name) == 0)")
+    lines.append("            return DWS_THEME_BLOBS[i].css;")
     lines.append("    return nullptr;")
     lines.append("}")
     lines.append("")
-    lines.append("#endif // DETWS_ENABLE_THEMES")
+    lines.append("#endif // DWS_ENABLE_THEMES")
     return "\n".join(lines) + "\n"
 
 

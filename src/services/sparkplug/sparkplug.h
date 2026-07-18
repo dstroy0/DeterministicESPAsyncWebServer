@@ -3,7 +3,7 @@
 
 /**
  * @file sparkplug.h
- * @brief Sparkplug B payload + topic codec (DETWS_ENABLE_SPARKPLUG) - zero-heap builder for
+ * @brief Sparkplug B payload + topic codec (DWS_ENABLE_SPARKPLUG) - zero-heap builder for
  *        the Eclipse Sparkplug B industrial-IoT MQTT payload (a Protobuf message) and its
  *        topic namespace. Builds on the Protobuf codec (services/protobuf) and is published
  *        with the MQTT client.
@@ -26,7 +26,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_SPARKPLUG
+#if DWS_ENABLE_SPARKPLUG
 
 #include <stddef.h>
 #include <stdint.h>
@@ -85,6 +85,6 @@ size_t spb_build_metric(uint8_t *buf, size_t cap, const SpbMetric *m);
 size_t spb_build_payload(uint8_t *buf, size_t cap, uint64_t timestamp, uint64_t seq, const SpbMetric *metrics,
                          size_t n);
 
-#endif // DETWS_ENABLE_SPARKPLUG
+#endif // DWS_ENABLE_SPARKPLUG
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SPARKPLUG_H

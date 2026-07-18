@@ -3,7 +3,7 @@
 
 /**
  * @file ads1115.h
- * @brief TI ADS1115 16-bit ADC codec (DETWS_ENABLE_ADS1115).
+ * @brief TI ADS1115 16-bit ADC codec (DWS_ENABLE_ADS1115).
  *
  * The ADS1115 is a 4-channel 16-bit analog-to-digital converter on the I2C bus with a
  * programmable-gain amplifier - far more resolution and range control than the ESP32's own ADC.

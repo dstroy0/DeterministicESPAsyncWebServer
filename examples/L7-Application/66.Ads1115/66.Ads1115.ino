@@ -3,7 +3,7 @@
 
 /**
  * @file 66.Ads1115.ino
- * @brief Read precise analog voltages with an ADS1115 16-bit ADC (DETWS_ENABLE_ADS1115).
+ * @brief Read precise analog voltages with an ADS1115 16-bit ADC (DWS_ENABLE_ADS1115).
  *
  * The ESP32's built-in ADC is noisy and only ~12-bit. The ADS1115 is a 16-bit analog-to-digital
  * converter on the I2C bus, with a programmable gain so you can zoom in on small signals. This
@@ -14,10 +14,10 @@
  * (address 0x48). Connect what you want to measure between AIN0 and GND (0..4.096 V for the gain
  * used here; never exceed VDD).
  *
- * Build flag (PlatformIO): `-DDETWS_ENABLE_ADS1115=1`
+ * Build flag (PlatformIO): `-DDWS_ENABLE_ADS1115=1`
  */
 
-#define DETWS_ENABLE_ADS1115 1
+#define DWS_ENABLE_ADS1115 1
 
 #include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/ads1115/ads1115.h"

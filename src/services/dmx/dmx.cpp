@@ -8,7 +8,7 @@
 
 #include "services/dmx/dmx.h"
 
-#if DETWS_ENABLE_DMX
+#if DWS_ENABLE_DMX
 
 #include <string.h>
 
@@ -126,4 +126,4 @@ bool rdm_parse(const uint8_t *buf, size_t len, RdmPacket *out, size_t *consumed)
     return true;
 }
 
-#endif // DETWS_ENABLE_DMX
+#endif // DWS_ENABLE_DMX

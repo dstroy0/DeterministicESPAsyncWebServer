@@ -25,12 +25,12 @@
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see. The `#define` below documents intent, but for PlatformIO you must
  * enable it for the whole build, e.g. in platformio.ini:
- *     build_flags = -DDETWS_ENABLE_COAP=1
+ *     build_flags = -DDWS_ENABLE_COAP=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.) A define in the
  * sketch alone does not reach the separately-compiled library .cpp.
  */
 
-#define DETWS_ENABLE_COAP 1
+#define DWS_ENABLE_COAP 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -44,7 +44,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 #define LED_BUILTIN 2
 #endif
 
-DetWebServer server;
+DWS server;
 static int g_led_state = 0;
 
 // GET /info -> a small JSON document with uptime and free heap.
@@ -109,11 +109,11 @@ void setup()
     WiFi.setSleep(false);
 
     // Build the resource table, then bind the server to UDP/5683.
-    det_coap_server_reset();
-    det_coap_server_add_resource("/info", CoapMethodMask::COAP_ALLOW_GET, coap_info);
-    det_coap_server_add_resource("/led", CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_PUT, coap_led);
-    det_coap_server_add_resource("/hello", CoapMethodMask::COAP_ALLOW_GET, coap_hello);
-    det_coap_server_begin(5683);
+    dws_coap_server_reset();
+    dws_coap_server_add_resource("/info", CoapMethodMask::COAP_ALLOW_GET, coap_info);
+    dws_coap_server_add_resource("/led", CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_PUT, coap_led);
+    dws_coap_server_add_resource("/hello", CoapMethodMask::COAP_ALLOW_GET, coap_hello);
+    dws_coap_server_begin(5683);
     Serial.println("CoAP server listening on UDP/5683 (try: coap-client -m get coap://<ip>/info)");
 
     int32_t result = server.begin(80);

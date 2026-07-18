@@ -8,9 +8,9 @@
 
 #include "services/link_manager/link_manager.h"
 
-#if DETWS_ENABLE_LINK_MANAGER
+#if DWS_ENABLE_LINK_MANAGER
 
-int detws_link_select(const LinkManager *m)
+int dws_link_select(const LinkManager *m)
 {
     if (!m || !m->ifaces)
         return -1;
@@ -26,21 +26,21 @@ int detws_link_select(const LinkManager *m)
     return best;
 }
 
-void detws_link_init(LinkManager *m, LinkIface *ifaces, size_t n)
+void dws_link_init(LinkManager *m, LinkIface *ifaces, size_t n)
 {
     if (!m)
         return;
     m->ifaces = ifaces;
     m->n = ifaces ? n : 0;
-    m->active = detws_link_select(m);
+    m->active = dws_link_select(m);
 }
 
-int detws_link_active(const LinkManager *m)
+int dws_link_active(const LinkManager *m)
 {
     return m ? m->active : -1;
 }
 
-bool detws_link_set(LinkManager *m, size_t idx, bool up, int *from, int *to)
+bool dws_link_set(LinkManager *m, size_t idx, bool up, int *from, int *to)
 {
     if (!m || !m->ifaces || idx >= m->n)
     {
@@ -52,7 +52,7 @@ bool detws_link_set(LinkManager *m, size_t idx, bool up, int *from, int *to)
     }
     int prev = m->active;
     m->ifaces[idx].up = up;
-    m->active = detws_link_select(m);
+    m->active = dws_link_select(m);
     if (from)
         *from = prev;
     if (to)
@@ -60,4 +60,4 @@ bool detws_link_set(LinkManager *m, size_t idx, bool up, int *from, int *to)
     return m->active != prev;
 }
 
-#endif // DETWS_ENABLE_LINK_MANAGER
+#endif // DWS_ENABLE_LINK_MANAGER

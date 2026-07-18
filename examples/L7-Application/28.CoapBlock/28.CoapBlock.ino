@@ -19,14 +19,14 @@
  *
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
- *     build_flags = -DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1
- *                   -DDETWS_COAP_MAX_PAYLOAD=1024
+ *     build_flags = -DDWS_ENABLE_COAP=1 -DDWS_ENABLE_COAP_BLOCK=1
+ *                   -DDWS_COAP_MAX_PAYLOAD=1024
  * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_COAP 1
-#define DETWS_ENABLE_COAP_BLOCK 1
-#define DETWS_COAP_MAX_PAYLOAD 1024 // room for a multi-block representation
+#define DWS_ENABLE_COAP 1
+#define DWS_ENABLE_COAP_BLOCK 1
+#define DWS_COAP_MAX_PAYLOAD 1024 // room for a multi-block representation
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -76,10 +76,10 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    det_coap_server_reset();
-    det_coap_server_add_resource("/big", CoapMethodMask::COAP_ALLOW_GET, h_big);
-    det_coap_server_add_resource("/upload", CoapMethodMask::COAP_ALLOW_PUT, h_upload);
-    det_coap_server_begin(5683);
+    dws_coap_server_reset();
+    dws_coap_server_add_resource("/big", CoapMethodMask::COAP_ALLOW_GET, h_big);
+    dws_coap_server_add_resource("/upload", CoapMethodMask::COAP_ALLOW_PUT, h_upload);
+    dws_coap_server_begin(5683);
     Serial.println("CoAP server on :5683");
     Serial.println("  GET coap://<ip>/big      (block-wise responses)");
     Serial.println("  PUT coap://<ip>/upload   (block-wise uploads)");

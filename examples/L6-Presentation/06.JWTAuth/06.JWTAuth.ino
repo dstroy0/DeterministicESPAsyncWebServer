@@ -20,11 +20,11 @@
  *
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
- *     build_flags = -DDETWS_ENABLE_JWT=1
+ *     build_flags = -DDWS_ENABLE_JWT=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_JWT 1
+#define DWS_ENABLE_JWT 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -37,12 +37,12 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 // DEMO shared secret - the issuer signs tokens with this; keep it secret in production.
 static const char *JWT_SECRET = "s3cr3t-key";
 
-DetWebServer server;
+DWS server;
 
 static void protected_handler(uint8_t id, HttpReq *req)
 {
     // req->authorization holds the FULL Authorization header (JWTs exceed
-    // MAX_VAL_LEN; the parser captures it whole when DETWS_ENABLE_JWT is set).
+    // MAX_VAL_LEN; the parser captures it whole when DWS_ENABLE_JWT is set).
     if (!jwt_bearer_valid(req->authorization, (const uint8_t *)JWT_SECRET, strlen(JWT_SECRET)))
     {
         server.add_response_header(id, "WWW-Authenticate", "Bearer");

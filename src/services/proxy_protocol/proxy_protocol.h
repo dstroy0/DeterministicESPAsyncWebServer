@@ -3,7 +3,7 @@
 
 /**
  * @file proxy_protocol.h
- * @brief HAProxy PROXY protocol codec (DETWS_ENABLE_PROXY_PROTOCOL) - zero-heap parser +
+ * @brief HAProxy PROXY protocol codec (DWS_ENABLE_PROXY_PROTOCOL) - zero-heap parser +
  *        builder for the v1 (text) and v2 (binary) headers a load balancer / proxy prepends,
  *        so the server can recover the real client IPv4 when it sits behind one.
  *
@@ -27,7 +27,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_PROXY_PROTOCOL
+#if DWS_ENABLE_PROXY_PROTOCOL
 
 #include <stddef.h>
 #include <stdint.h>
@@ -63,6 +63,6 @@ size_t proxy_v1_build(char *buf, size_t cap, uint32_t src_addr, uint32_t dst_add
 size_t proxy_v2_build(uint8_t *buf, size_t cap, uint32_t src_addr, uint32_t dst_addr, uint16_t src_port,
                       uint16_t dst_port);
 
-#endif // DETWS_ENABLE_PROXY_PROTOCOL
+#endif // DWS_ENABLE_PROXY_PROTOCOL
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_PROXY_PROTOCOL_H

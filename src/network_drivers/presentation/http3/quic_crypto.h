@@ -31,7 +31,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/http3/quic_hkdf.h" // QUIC_HKDF_HASH_LEN
 #include <stddef.h>
@@ -130,5 +130,5 @@ size_t quic_packet_unprotect(uint8_t *pkt, size_t pn_offset, size_t length, uint
 void quic_retry_integrity_tag(const uint8_t *odcid, size_t odcid_len, const uint8_t *retry, size_t retry_len,
                               uint8_t tag[16]);
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_CRYPTO_H

@@ -8,7 +8,7 @@
 
 #include "ftp.h"
 
-#if DETWS_ENABLE_FTP
+#if DWS_ENABLE_FTP
 
 #include <string.h>
 
@@ -247,4 +247,4 @@ bool ftp_parse_epsv(const char *buf, size_t len, uint16_t *port)
     return true;
 }
 
-#endif // DETWS_ENABLE_FTP
+#endif // DWS_ENABLE_FTP

@@ -1,6 +1,6 @@
 # 50.OidcAuth - OpenID Connect ID-token auth (RS256)
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_OIDC`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_OIDC`
 
 ## What this example teaches
 
@@ -15,8 +15,8 @@ valid token, `401` otherwise.
 
 ```cpp
 DetwsOidcClaims claims;
-int rc = detws_oidc_verify(token, strlen(token), JWKS, ISSUER, AUDIENCE, now, &claims);
-if (rc != DETWS_OIDC_OK) { /* 401 */ }
+int rc = dws_oidc_verify(token, strlen(token), JWKS, ISSUER, AUDIENCE, now, &claims);
+if (rc != DWS_OIDC_OK) { /* 401 */ }
 // claims.sub / claims.email are now trusted
 ```
 
@@ -40,7 +40,7 @@ validates.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_OIDC=1" \
+  --project-option="build_flags=-DDWS_ENABLE_OIDC=1" \
   --lib="." examples/L7-Application/50.OidcAuth/50.OidcAuth.ino
 ```
 
@@ -58,7 +58,7 @@ added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_OIDC 1
+#define DWS_ENABLE_OIDC 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -75,7 +75,7 @@ static const char *JWKS = "{\"keys\":[{\"kty\":\"RSA\",\"kid\":\"your-kid\",\"al
 static const char *ISSUER = "https://issuer.example";
 static const char *AUDIENCE = "your-client-id";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -101,8 +101,8 @@ void setup()
         uint32_t now = 1700000100; // production: read from NTP
 
         DetwsOidcClaims claims;
-        int rc = detws_oidc_verify(token, strlen(token), JWKS, ISSUER, AUDIENCE, now, &claims);
-        if (rc != DETWS_OIDC_OK)
+        int rc = dws_oidc_verify(token, strlen(token), JWKS, ISSUER, AUDIENCE, now, &claims);
+        if (rc != DWS_OIDC_OK)
         {
             char b[40];
             snprintf(b, sizeof(b), "{\"error\":%d}", rc);

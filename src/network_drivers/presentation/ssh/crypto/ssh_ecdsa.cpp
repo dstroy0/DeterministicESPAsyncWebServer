@@ -16,7 +16,7 @@
  *   exception-free complete formulas (Renes-Costello-Batina 2016, EFD add/dbl-2015-rcb, a = -3) driven by
  *   a constant-time 4-bit fixed-window scalar multiply (uniform op sequence, full-table masked select, no
  *   input-dependent branches). Signing is RFC 6979 deterministic, so the on-device output is byte-exact to
- *   the published vectors (same KATs as native). This is the production path (DETWS_ECDSA_MPI_HW); sign /
+ *   the published vectors (same KATs as native). This is the production path (DWS_ECDSA_MPI_HW); sign /
  *   verify / ecdh run ~2.7-2.9x faster than the mbedTLS ECP path it replaces on non-S3 targets.
  *
  * Native: the identical complete-formula / RFC 6979 code, but each field multiply is a software
@@ -51,14 +51,14 @@
 // The S3 field/scalar layer drives the RSA peripheral through mbedTLS's port (esp_mpi_*), which only
 // exists in the on-device toolchain and whose MODMULT register map is an S3 specialization.
 #if defined(ARDUINO) && defined(CONFIG_IDF_TARGET_ESP32S3) && CONFIG_IDF_TARGET_ESP32S3
-#define DETWS_ECDSA_MPI_HW 1
+#define DWS_ECDSA_MPI_HW 1
 #endif
 
 // ---------------------------------------------------------------------------
 // Other Arduino (non-S3) - mbedTLS path (portable, hardware-accelerated)
 // ---------------------------------------------------------------------------
 
-#if defined(ARDUINO) && !defined(DETWS_ECDSA_MPI_HW)
+#if defined(ARDUINO) && !defined(DWS_ECDSA_MPI_HW)
 
 #include <esp_random.h> // esp_fill_random() for the ECDSA nonce / blinding RNG
 #include <mbedtls/ecdh.h>
@@ -194,7 +194,7 @@ bool ssh_ecdsa_p256_ecdh(uint8_t shared_x[SSH_ECDSA_P256_COORD_LEN], const uint8
 
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 
-#ifdef DETWS_ECDSA_MPI_HW
+#ifdef DWS_ECDSA_MPI_HW
 #include "soc/hwcrypto_reg.h" // RSA/MPI accelerator register map (MODMULT)
 #include "soc/soc.h"          // DR_REG_RSA_BASE
 extern "C"
@@ -323,7 +323,7 @@ void fp_reduce_once(uint32_t r[8], const uint32_t a[8], const uint32_t m[8])
         r[i] = (a[i] & mask) | (t[i] & ~mask);
 }
 
-#ifdef DETWS_ECDSA_MPI_HW
+#ifdef DWS_ECDSA_MPI_HW
 // z = x*y mod F->m on the S3 RSA accelerator. Requires ecdsa_hw_on() first. Preloading R^2 into the result
 // block makes MODMULT return the plain residue (the esp_mpi_mul_mpi_mod convention). Output canonical (< m).
 void fp_mul(uint32_t z[8], const uint32_t x[8], const uint32_t y[8], const Fp *F) // safe if z aliases x/y

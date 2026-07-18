@@ -8,7 +8,7 @@
 #include <string.h>
 #include <unity.h>
 
-static DetWebServer server;
+static DWS server;
 
 static bool g_called;
 static char g_a[32], g_b[32];
@@ -66,7 +66,7 @@ static void h_exact(uint8_t slot, HttpReq *req)
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     g_called = g_found_a = g_found_b = g_found_missing = false;
     g_a[0] = g_b[0] = '\0';
     for (int i = 0; i < MAX_CONNS; i++)

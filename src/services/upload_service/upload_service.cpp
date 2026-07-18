@@ -3,12 +3,12 @@
 
 /**
  * @file upload_service.cpp
- * @brief Streaming file upload: POST body -> Arduino FS file (DETWS_ENABLE_UPLOAD).
+ * @brief Streaming file upload: POST body -> Arduino FS file (DWS_ENABLE_UPLOAD).
  */
 
 #include "upload_service.h"
 
-#if DETWS_ENABLE_UPLOAD
+#if DWS_ENABLE_UPLOAD
 
 #include "dwserver.h"
 #include "network_drivers/presentation/http_parser/http_parser.h"
@@ -22,7 +22,7 @@
 // unreachable.
 struct UploadCtx
 {
-    DetWebServer *server = nullptr;
+    DWS *server = nullptr;
     const char *path = nullptr;
     fs::FS *fs = nullptr;
     const char *dest = nullptr;
@@ -74,27 +74,27 @@ static void upload_handle(uint8_t slot_id, HttpReq *req)
 {
     if (!req->body_streaming)
     {
-        s_upl.server->send(slot_id, 400, DET_MIME_TEXT_PLAIN, "POST a file body");
+        s_upl.server->send(slot_id, 400, DWS_MIME_TEXT_PLAIN, "POST a file body");
         return;
     }
     if (s_upl.active)
         s_upl.file.close();
     if (!s_upl.active || s_upl.error)
     {
-        s_upl.server->send(slot_id, 500, DET_MIME_TEXT_PLAIN, "upload failed");
+        s_upl.server->send(slot_id, 500, DWS_MIME_TEXT_PLAIN, "upload failed");
         return;
     }
     char msg[48];
     snprintf(msg, sizeof(msg), "OK %u bytes", (unsigned)s_upl.written);
-    s_upl.server->send(slot_id, 200, DET_MIME_TEXT_PLAIN, msg);
+    s_upl.server->send(slot_id, 200, DWS_MIME_TEXT_PLAIN, msg);
 }
 
-size_t detws_upload_last_size()
+size_t dws_upload_last_size()
 {
     return s_upl.written;
 }
 
-void detws_upload_begin(DetWebServer &server, const char *path, fs::FS &fs, const char *dest_path)
+void dws_upload_begin(DWS &server, const char *path, fs::FS &fs, const char *dest_path)
 {
     s_upl.server = &server;
     s_upl.path = path;
@@ -105,4 +105,4 @@ void detws_upload_begin(DetWebServer &server, const char *path, fs::FS &fs, cons
     server.on(path, HttpMethod::HTTP_POST, upload_handle);
 }
 
-#endif // DETWS_ENABLE_UPLOAD
+#endif // DWS_ENABLE_UPLOAD

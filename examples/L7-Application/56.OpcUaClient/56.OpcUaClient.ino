@@ -3,7 +3,7 @@
 
 /**
  * @file 56.OpcUaClient.ino
- * @brief OPC UA Binary client - drive a server over TCP (DETWS_ENABLE_OPCUA_CLIENT).
+ * @brief OPC UA Binary client - drive a server over TCP (DWS_ENABLE_OPCUA_CLIENT).
  *
  * services/opcua_client builds OPC UA requests and parses responses; it is
  * transport-agnostic, so the app owns the socket. This sketch runs the OPC UA
@@ -18,11 +18,11 @@
  * the client on its own; the bundled server just makes the example self-contained.
  *
  * Enable both flags for the build (platformio.ini):
- *     build_flags = -DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_OPCUA_CLIENT=1
+ *     build_flags = -DDWS_ENABLE_OPCUA=1 -DDWS_ENABLE_OPCUA_CLIENT=1
  */
 
-#define DETWS_ENABLE_OPCUA 1
-#define DETWS_ENABLE_OPCUA_CLIENT 1
+#define DWS_ENABLE_OPCUA 1
+#define DWS_ENABLE_OPCUA_CLIENT 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -33,7 +33,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // --- server side: a tiny address space (ns=1;i=1,2 read-only, i=3 writable) ---
 static uint32_t setpoint = 100;

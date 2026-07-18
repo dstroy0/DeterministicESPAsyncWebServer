@@ -11,8 +11,8 @@
 
 void setUp()
 {
-    detws_logbuf_reset();
-    detws_log_set_trap(0xFF, nullptr); // disable trap between tests
+    dws_logbuf_reset();
+    dws_log_set_trap(0xFF, nullptr); // disable trap between tests
 }
 void tearDown()
 {
@@ -20,20 +20,20 @@ void tearDown()
 
 void test_append_and_order()
 {
-    detws_log(DetwsLogLevel::DETWS_LOG_INFO, "first");
-    detws_log(DetwsLogLevel::DETWS_LOG_WARN, "second");
-    TEST_ASSERT_EQUAL_UINT16(2, detws_log_count());
-    TEST_ASSERT_EQUAL_STRING("I first", detws_log_at(0));
-    TEST_ASSERT_EQUAL_STRING("W second", detws_log_at(1));
-    TEST_ASSERT_NULL(detws_log_at(2));
+    dws_log(DetwsLogLevel::DWS_LOG_INFO, "first");
+    dws_log(DetwsLogLevel::DWS_LOG_WARN, "second");
+    TEST_ASSERT_EQUAL_UINT16(2, dws_log_count());
+    TEST_ASSERT_EQUAL_STRING("I first", dws_log_at(0));
+    TEST_ASSERT_EQUAL_STRING("W second", dws_log_at(1));
+    TEST_ASSERT_NULL(dws_log_at(2));
 }
 
 void test_dump()
 {
-    detws_log(DetwsLogLevel::DETWS_LOG_ERROR, "boom");
-    detws_log(DetwsLogLevel::DETWS_LOG_DEBUG, "trace");
+    dws_log(DetwsLogLevel::DWS_LOG_ERROR, "boom");
+    dws_log(DetwsLogLevel::DWS_LOG_DEBUG, "trace");
     char buf[128];
-    int n = detws_log_dump(buf, sizeof(buf));
+    int n = dws_log_dump(buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_STRING("E boom\nD trace", buf);
 }
@@ -41,17 +41,17 @@ void test_dump()
 void test_rotation_drops_oldest()
 {
     char msg[16];
-    for (int i = 0; i < DETWS_LOG_LINES + 3; i++) // overflow by 3
+    for (int i = 0; i < DWS_LOG_LINES + 3; i++) // overflow by 3
     {
         snprintf(msg, sizeof(msg), "n%d", i);
-        detws_log(DetwsLogLevel::DETWS_LOG_INFO, msg);
+        dws_log(DetwsLogLevel::DWS_LOG_INFO, msg);
     }
-    TEST_ASSERT_EQUAL_UINT16(DETWS_LOG_LINES, detws_log_count());
+    TEST_ASSERT_EQUAL_UINT16(DWS_LOG_LINES, dws_log_count());
     // The 3 oldest (n0,n1,n2) were pruned; oldest now is n3, newest is the last.
-    TEST_ASSERT_EQUAL_STRING("I n3", detws_log_at(0));
+    TEST_ASSERT_EQUAL_STRING("I n3", dws_log_at(0));
     char expect_last[16];
-    snprintf(expect_last, sizeof(expect_last), "I n%d", DETWS_LOG_LINES + 2);
-    TEST_ASSERT_EQUAL_STRING(expect_last, detws_log_at(DETWS_LOG_LINES - 1));
+    snprintf(expect_last, sizeof(expect_last), "I n%d", DWS_LOG_LINES + 2);
+    TEST_ASSERT_EQUAL_STRING(expect_last, dws_log_at(DWS_LOG_LINES - 1));
 }
 
 static int g_traps = 0;
@@ -65,25 +65,25 @@ static void trap(uint8_t level, const char *)
 void test_trap_threshold()
 {
     g_traps = 0;
-    detws_log_set_trap(DetwsLogLevel::DETWS_LOG_WARN, trap);
-    detws_log(DetwsLogLevel::DETWS_LOG_INFO, "ignored"); // below threshold
-    detws_log(DetwsLogLevel::DETWS_LOG_DEBUG, "ignored");
+    dws_log_set_trap(DetwsLogLevel::DWS_LOG_WARN, trap);
+    dws_log(DetwsLogLevel::DWS_LOG_INFO, "ignored"); // below threshold
+    dws_log(DetwsLogLevel::DWS_LOG_DEBUG, "ignored");
     TEST_ASSERT_EQUAL_INT(0, g_traps);
-    detws_log(DetwsLogLevel::DETWS_LOG_WARN, "warned"); // at threshold
-    detws_log(DetwsLogLevel::DETWS_LOG_ERROR, "errored");
+    dws_log(DetwsLogLevel::DWS_LOG_WARN, "warned"); // at threshold
+    dws_log(DetwsLogLevel::DWS_LOG_ERROR, "errored");
     TEST_ASSERT_EQUAL_INT(2, g_traps);
-    TEST_ASSERT_EQUAL_UINT8(DetwsLogLevel::DETWS_LOG_ERROR, g_last_level);
+    TEST_ASSERT_EQUAL_UINT8(DetwsLogLevel::DWS_LOG_ERROR, g_last_level);
 }
 
 void test_dump_guards()
 {
     char out[64];
-    TEST_ASSERT_EQUAL_INT(0, detws_log_dump(nullptr, sizeof(out))); // null out
-    TEST_ASSERT_EQUAL_INT(0, detws_log_dump(out, 0));               // zero cap
+    TEST_ASSERT_EQUAL_INT(0, dws_log_dump(nullptr, sizeof(out))); // null out
+    TEST_ASSERT_EQUAL_INT(0, dws_log_dump(out, 0));               // zero cap
     // A dump buffer too small for the logged line fails closed.
-    detws_logbuf_reset();
-    detws_log(0, "a fairly long log line that will not fit a tiny dump buffer");
-    TEST_ASSERT_EQUAL_INT(0, detws_log_dump(out, 8));
+    dws_logbuf_reset();
+    dws_log(0, "a fairly long log line that will not fit a tiny dump buffer");
+    TEST_ASSERT_EQUAL_INT(0, dws_log_dump(out, 8));
 }
 
 int main()

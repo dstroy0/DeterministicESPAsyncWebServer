@@ -24,7 +24,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/http3/quic_packet.h" // QUIC_MAX_CID_LEN
 #include <stddef.h>
@@ -102,5 +102,5 @@ size_t quic_tp_encode(const QuicTransportParams *tp, uint8_t *out, size_t cap);
  */
 bool quic_tp_parse(const uint8_t *buf, size_t len, QuicTransportParams *tp);
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_QUIC_TP_H

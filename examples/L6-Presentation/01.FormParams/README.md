@@ -64,7 +64,7 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // POST /form - echo the urlencoded "name" and "email" fields back as JSON.
 void handle_form(uint8_t slot_id, HttpReq *req)

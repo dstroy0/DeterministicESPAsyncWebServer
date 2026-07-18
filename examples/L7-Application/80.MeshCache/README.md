@@ -32,11 +32,11 @@ looping.
 Wiring is the edge-cache setup plus three calls:
 
 ```cpp
-det_edge_cache_map("/cdn/", "http://192.168.1.60:8000"); // prefix -> origin
-det_edge_cache_enable(server);                            // install the cache
+dws_edge_cache_map("/cdn/", "http://192.168.1.60:8000"); // prefix -> origin
+dws_edge_cache_enable(server);                            // install the cache
 server.listen(MESH_PORT, ConnProto::PROTO_MESH);         // open the sibling port
-det_edge_cache_mesh_serve();                              // answer peers from the local cache
-det_edge_cache_add_peer("192.168.1.51", MESH_PORT);      // a sibling to ask on a miss
+dws_edge_cache_mesh_serve();                              // answer peers from the local cache
+dws_edge_cache_add_peer("192.168.1.51", MESH_PORT);      // a sibling to ask on a miss
 ```
 
 > **Pull only.** Nodes never push objects or invalidations to each other; a node
@@ -106,26 +106,26 @@ sketch to both boards**, giving each the _other_ board's IP as `PEER_IP`:
   cacheable (a `no-store` / `Vary: *` / non-`200` response is never shared).
 - **`mesh_misses` climbs but `mesh_hits` stays 0.** The peer was reachable but did
   not have a fresh matching variant - warm the peer first, or the object may `Vary`
-  on a request header that did not fit the snapshot (`DETWS_MESH_HDRS_MAX`); it falls
+  on a request header that did not fit the snapshot (`DWS_MESH_HDRS_MAX`); it falls
   back to the origin safely.
-- **`det_edge_cache_add_peer` returned false.** The peer table is full
-  (`DETWS_MESH_MAX_PEERS`) or the host string is empty / too long
-  (`DETWS_MESH_HOST_MAX`).
+- **`dws_edge_cache_add_peer` returned false.** The peer table is full
+  (`DWS_MESH_MAX_PEERS`) or the host string is empty / too long
+  (`DWS_MESH_HOST_MAX`).
 - **A cold miss feels slow.** A miss now tries each peer (in series, first hit wins)
-  before the origin, bounded by `DETWS_MESH_QUERY_MS` per peer. Keep the peer list
+  before the origin, bounded by `DWS_MESH_QUERY_MS` per peer. Keep the peer list
   short and the timeout tight on a fast LAN.
 
 ## Going further
 
-- **More than two nodes.** Call `det_edge_cache_add_peer()` once per sibling (up to
-  `DETWS_MESH_MAX_PEERS`); a miss asks them in order, first hit wins. Raise
-  `DETWS_MESH_MAX_CONNS` if a node should answer several peers at once.
+- **More than two nodes.** Call `dws_edge_cache_add_peer()` once per sibling (up to
+  `DWS_MESH_MAX_PEERS`); a miss asks them in order, first hit wins. Raise
+  `DWS_MESH_MAX_CONNS` if a node should answer several peers at once.
 - **`Vary`.** The puller ships a snapshot of its request headers so the peer matches
   the right variant (e.g. `Vary: Accept-Encoding`); a header past
-  `DETWS_MESH_HDRS_MAX` is dropped, degrading to a safe miss, never wrong content.
+  `DWS_MESH_HDRS_MAX` is dropped, degrading to a safe miss, never wrong content.
 - **Bigger caches / S3.** The mesh reuses each fetch slot's origin buffer for the
   peer response (no extra per-slot buffer), but on a classic ESP32 the cache is still
-  tuned conservatively - bump `DETWS_EDGE_CACHE_SLOTS` / `DETWS_EDGE_BODY_MAX` on an
+  tuned conservatively - bump `DWS_EDGE_CACHE_SLOTS` / `DWS_EDGE_BODY_MAX` on an
   S3 / PSRAM board.
 - **Not yet.** A TLS sibling link, UDP-broadcast peer auto-discovery, and push
   replication (with invalidation) are follow-ups; v1 is pull-only over a static,
@@ -139,7 +139,7 @@ The cache + mesh live inside the library, so the flags must reach the whole buil
 pio ci examples/L7-Application/80.MeshCache \
   --board esp32dev \
   --lib "." \
-  --project-option="build_flags=-DDETWS_ENABLE_EDGE_CACHE=1 -DDETWS_ENABLE_HTTP_CACHE=1 -DDETWS_ENABLE_HTTP_CLIENT=1 -DDETWS_ENABLE_EDGE_MESH=1"
+  --project-option="build_flags=-DDWS_ENABLE_EDGE_CACHE=1 -DDWS_ENABLE_HTTP_CACHE=1 -DDWS_ENABLE_HTTP_CLIENT=1 -DDWS_ENABLE_EDGE_MESH=1"
 ```
 
 (The Arduino IDE reads the flags from `build_opt.h` beside the sketch automatically.)
@@ -151,7 +151,7 @@ pio ci examples/L7-Application/80.MeshCache \
 On a full local miss the cache does not go straight to the origin: it builds a
 content-addressed mesh request (the object's SHA-256 key + a snapshot of the request
 headers for `Vary` matching) and, as a **pre-origin phase of the same async fetch
-slot**, queries each peer in turn over a `det_client` connection to its
+slot**, queries each peer in turn over a `dws_client` connection to its
 `ConnProto::PROTO_MESH` port. The peer's handler looks the key up in its **local**
 store only, and if it finds a fresh variant it serializes the entry - the response
 metadata + body (the same codec the SD/L2 tier uses) plus a small trailer carrying
@@ -162,5 +162,5 @@ still fresh, and serves it with `X-Cache: MESH`. A peer `MISS` (or an exhausted 
 list) transitions the same slot to the ordinary origin fetch. The whole thing is
 pumped from `server.handle()`, so a sibling query never stalls the worker. The wire
 codec and the peer-query state machine are a pure engine unit-tested on the host
-(`native_edge_mesh`); this glue binds its seams to the server, `det_client`, and the
+(`native_edge_mesh`); this glue binds its seams to the server, `dws_client`, and the
 cache store.

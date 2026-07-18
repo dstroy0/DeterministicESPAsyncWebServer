@@ -3,7 +3,7 @@
 
 /**
  * @file guardrails.h
- * @brief Runtime heap/stack guardrails (DETWS_ENABLE_GUARDRAILS).
+ * @brief Runtime heap/stack guardrails (DWS_ENABLE_GUARDRAILS).
  *
  * Samples the live health of the device - free heap, the heap low-water mark, the
  * largest free block (a fragmentation signal), and the calling task's remaining
@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_GUARDRAILS
+#if DWS_ENABLE_GUARDRAILS
 
 /** @brief A health snapshot. */
 struct DetwsHealth
@@ -41,43 +41,43 @@ struct DetwsHealth
  *  struct (cast-free at every | / &). */
 struct DetwsBreach
 {
-    static constexpr uint8_t DETWS_BREACH_NONE = 0;
-    static constexpr uint8_t DETWS_BREACH_HEAP = 1;  ///< free heap below DETWS_GUARDRAIL_HEAP_MIN.
-    static constexpr uint8_t DETWS_BREACH_FRAG = 2;  ///< largest block below DETWS_GUARDRAIL_FRAG_MIN_BLOCK.
-    static constexpr uint8_t DETWS_BREACH_STACK = 4; ///< task stack remaining below DETWS_GUARDRAIL_STACK_MIN.
+    static constexpr uint8_t DWS_BREACH_NONE = 0;
+    static constexpr uint8_t DWS_BREACH_HEAP = 1;  ///< free heap below DWS_GUARDRAIL_HEAP_MIN.
+    static constexpr uint8_t DWS_BREACH_FRAG = 2;  ///< largest block below DWS_GUARDRAIL_FRAG_MIN_BLOCK.
+    static constexpr uint8_t DWS_BREACH_STACK = 4; ///< task stack remaining below DWS_GUARDRAIL_STACK_MIN.
 };
 
 // ---------------------------------------------------------------------------
 // Host-testable core
 // ---------------------------------------------------------------------------
 
-/** @brief Evaluate @p h against the floors; returns a DETWS_BREACH_* bitmask. */
-uint8_t detws_guardrail_eval(const DetwsHealth *h, uint32_t heap_min, uint32_t frag_min_block, uint32_t stack_min);
+/** @brief Evaluate @p h against the floors; returns a DWS_BREACH_* bitmask. */
+uint8_t dws_guardrail_eval(const DetwsHealth *h, uint32_t heap_min, uint32_t frag_min_block, uint32_t stack_min);
 
 /**
  * @brief Serialize a health snapshot as JSON into @p out.
  * @return characters written, or 0 if @p cap is too small (fail-closed).
  */
-int detws_health_json(const DetwsHealth *h, char *out, size_t cap);
+int dws_health_json(const DetwsHealth *h, char *out, size_t cap);
 
 // ---------------------------------------------------------------------------
 // Sampling + guardrail check (ESP32; zeros / no-op on host)
 // ---------------------------------------------------------------------------
 
 /** @brief Fill @p h from the live esp_* / FreeRTOS counters (zeros on host). */
-void detws_guardrails_sample(DetwsHealth *h);
+void dws_guardrails_sample(DetwsHealth *h);
 
-/** @brief Breach callback: @p breaches is a DETWS_BREACH_* bitmask, @p h the snapshot. */
-typedef void (*detws_breach_fn)(uint8_t breaches, const DetwsHealth *h);
+/** @brief Breach callback: @p breaches is a DWS_BREACH_* bitmask, @p h the snapshot. */
+typedef void (*dws_breach_fn)(uint8_t breaches, const DetwsHealth *h);
 
-/** @brief Install the breach callback (thresholds come from DETWS_GUARDRAIL_*). */
-void detws_guardrails_begin(detws_breach_fn cb);
+/** @brief Install the breach callback (thresholds come from DWS_GUARDRAIL_*). */
+void dws_guardrails_begin(dws_breach_fn cb);
 
 /**
  * @brief Sample, evaluate, and fire the callback if any guardrail is breached.
- * @return the DETWS_BREACH_* bitmask (0 = all clear).
+ * @return the DWS_BREACH_* bitmask (0 = all clear).
  */
-uint8_t detws_guardrails_check(void);
+uint8_t dws_guardrails_check(void);
 
-#endif // DETWS_ENABLE_GUARDRAILS
+#endif // DWS_ENABLE_GUARDRAILS
 #endif // DETERMINISTICESPASYNCWEBSERVER_GUARDRAILS_H

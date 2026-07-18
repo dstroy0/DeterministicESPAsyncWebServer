@@ -3,7 +3,7 @@
 
 /**
  * @file sht3x.h
- * @brief Sensirion SHT3x temperature / humidity sensor codec (DETWS_ENABLE_SHT3X).
+ * @brief Sensirion SHT3x temperature / humidity sensor codec (DWS_ENABLE_SHT3X).
  *
  * The SHT3x (SHT30 / SHT31 / SHT35) answers a single-shot measurement command with six bytes:
  * a 16-bit temperature word + its CRC-8, then a 16-bit humidity word + its CRC-8. The CRC is

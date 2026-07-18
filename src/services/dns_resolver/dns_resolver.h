@@ -3,7 +3,7 @@
 
 /**
  * @file dns_resolver.h
- * @brief DNS resolver with answer verification (DETWS_ENABLE_DNS_RESOLVER).
+ * @brief DNS resolver with answer verification (DWS_ENABLE_DNS_RESOLVER).
  *
  * Resolves a hostname to an IPv4 address via lwIP (dns_gethostbyname, marshalled
  * to tcpip_thread like the http_client), and classifies / verifies the answer:
@@ -23,18 +23,18 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_DNS_RESOLVER
+#if DWS_ENABLE_DNS_RESOLVER
 
 /** @brief IPv4 address category (RFC special-purpose ranges). */
 enum class DetwsIpClass : uint8_t
 {
-    DETWS_IP_UNSPECIFIED = 0, ///< 0.0.0.0
-    DETWS_IP_LOOPBACK,        ///< 127.0.0.0/8
-    DETWS_IP_PRIVATE,         ///< 10/8, 172.16/12, 192.168/16
-    DETWS_IP_LINKLOCAL,       ///< 169.254.0.0/16
-    DETWS_IP_MULTICAST,       ///< 224.0.0.0/4
-    DETWS_IP_BROADCAST,       ///< 255.255.255.255
-    DETWS_IP_PUBLIC,          ///< globally-routable unicast
+    DWS_IP_UNSPECIFIED = 0, ///< 0.0.0.0
+    DWS_IP_LOOPBACK,        ///< 127.0.0.0/8
+    DWS_IP_PRIVATE,         ///< 10/8, 172.16/12, 192.168/16
+    DWS_IP_LINKLOCAL,       ///< 169.254.0.0/16
+    DWS_IP_MULTICAST,       ///< 224.0.0.0/4
+    DWS_IP_BROADCAST,       ///< 255.255.255.255
+    DWS_IP_PUBLIC,          ///< globally-routable unicast
 };
 
 // ---------------------------------------------------------------------------
@@ -42,7 +42,7 @@ enum class DetwsIpClass : uint8_t
 // ---------------------------------------------------------------------------
 
 /** @brief Classify a host-order IPv4 word (e.g. (10u << 24) | (0u << 16) | (0u << 8) | 1u). */
-DetwsIpClass det_dns_resolver_classify(uint32_t ip);
+DetwsIpClass dws_dns_resolver_classify(uint32_t ip);
 
 /**
  * @brief Is @p ip a plausible A-record answer for a remote host?
@@ -50,7 +50,7 @@ DetwsIpClass det_dns_resolver_classify(uint32_t ip);
  * Rejects unspecified / broadcast / loopback / multicast (spoof / rebinding
  * indicators); accepts private / link-local / public. Host order.
  */
-bool det_dns_resolver_verify(uint32_t ip);
+bool dws_dns_resolver_verify(uint32_t ip);
 
 // ---------------------------------------------------------------------------
 // Resolve (ESP32; returns false on host)
@@ -60,20 +60,20 @@ bool det_dns_resolver_verify(uint32_t ip);
  * @brief Resolve @p host to an IPv4 address (host order) into @p out_ip.
  *
  * Accepts a dotted-quad directly; otherwise queries DNS with a
- * DETWS_DNS_TIMEOUT_MS deadline. Blocking. @return true on success.
+ * DWS_DNS_TIMEOUT_MS deadline. Blocking. @return true on success.
  */
-bool det_dns_resolver_resolve(const char *host, uint32_t *out_ip);
+bool dws_dns_resolver_resolve(const char *host, uint32_t *out_ip);
 
 /**
- * @brief Resolve @p host and require the answer to pass det_dns_resolver_verify().
+ * @brief Resolve @p host and require the answer to pass dws_dns_resolver_verify().
  * @return true only if it resolved AND the address is a plausible answer.
  */
-bool det_dns_resolver_resolve_verified(const char *host, uint32_t *out_ip);
+bool dws_dns_resolver_resolve_verified(const char *host, uint32_t *out_ip);
 
 #if !defined(ARDUINO)
-/** @brief Host test hook: make det_dns_resolver_resolve() return @p ip (host order) when @p ok, else fail. */
-void det_dns_resolver_test_set_resolve(bool ok, uint32_t ip);
+/** @brief Host test hook: make dws_dns_resolver_resolve() return @p ip (host order) when @p ok, else fail. */
+void dws_dns_resolver_test_set_resolve(bool ok, uint32_t ip);
 #endif
 
-#endif // DETWS_ENABLE_DNS_RESOLVER
+#endif // DWS_ENABLE_DNS_RESOLVER
 #endif // DETERMINISTICESPASYNCWEBSERVER_DNS_RESOLVER_H

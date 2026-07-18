@@ -7,13 +7,13 @@
  *
  * The library's internal timing runs at **1000 Hz** - one tick is one millisecond,
  * the cadence the test suite asserts and every timeout / poll is expressed in.
- * `detws_millis()` is that single time source; by default it is the platform
+ * `dws_millis()` is that single time source; by default it is the platform
  * `millis()`.
  *
  * To drive the library from your own clock (a hardware timer, an external RTC, a
  * simulation clock), call:
  *
- *     detws_set_clock(my_clock_fn, my_ticks_per_second);
+ *     dws_set_clock(my_clock_fn, my_ticks_per_second);
  *
  * Your clock reports a free-running tick count at `ticks_per_second`. The library
  * **divides it down to its internal 1000 Hz**, so timeouts and polling keep the
@@ -24,7 +24,7 @@
  * every subsystem follows.
  *
  * The worker poll cadence is fixed at 1000 Hz (the tested default); a build can
- * trade latency for idle power with DETWS_WORKER_POLL_TICKS - see ServerConfig.h.
+ * trade latency for idle power with DWS_WORKER_POLL_TICKS - see ServerConfig.h.
  *
  * Header-only (the override state lives in inline-function-local statics, a single
  * instance across the whole program), so there is nothing extra to compile or link.
@@ -40,17 +40,17 @@
 #include <stdint.h>
 
 /** @brief User clock: returns a free-running monotonic tick count. */
-typedef uint32_t (*detws_clock_fn)(void);
+typedef uint32_t (*dws_clock_fn)(void);
 
 // Override state. Inline functions with local statics resolve to a single shared
 // instance across all translation units (ODR), so a set from anywhere is seen
 // everywhere - no .cpp, no globals to define.
-inline detws_clock_fn &_detws_clock_fn_ref()
+inline dws_clock_fn &_dws_clock_fn_ref()
 {
-    static detws_clock_fn fn = nullptr;
+    static dws_clock_fn fn = nullptr;
     return fn;
 }
-inline uint32_t &_detws_clock_div_ref()
+inline uint32_t &_dws_clock_div_ref()
 {
     static uint32_t div = 1;
     return div;
@@ -61,18 +61,18 @@ inline uint32_t &_detws_clock_div_ref()
  *        it down to its internal 1000 Hz. Pass (nullptr, 0) to revert to the
  *        platform default.
  */
-inline void detws_set_clock(detws_clock_fn fn, uint32_t ticks_per_second)
+inline void dws_set_clock(dws_clock_fn fn, uint32_t ticks_per_second)
 {
-    _detws_clock_fn_ref() = fn;
-    _detws_clock_div_ref() = (ticks_per_second >= 1000) ? (ticks_per_second / 1000) : 1;
+    _dws_clock_fn_ref() = fn;
+    _dws_clock_div_ref() = (ticks_per_second >= 1000) ? (ticks_per_second / 1000) : 1;
 }
 
 /** @brief The library's monotonic time at 1000 Hz (milliseconds). */
-inline uint32_t detws_millis(void)
+inline uint32_t dws_millis(void)
 {
-    detws_clock_fn fn = _detws_clock_fn_ref();
+    dws_clock_fn fn = _dws_clock_fn_ref();
     if (fn)
-        return fn() / _detws_clock_div_ref();
+        return fn() / _dws_clock_div_ref();
     return millis();
 }
 
@@ -82,7 +82,7 @@ inline uint32_t detws_millis(void)
  * `src/` never calls the platform `delay()` directly; every wait goes through this so timing stays
  * centralized and portable. On device it yields to the RTOS one tick at a time until @p ms has elapsed on
  * the monotonic clock (so it sleeps the task and feeds the watchdog, never starving the scheduler); on host
- * it spins on the same clock. Measured against ::detws_millis, so a custom clock governs it too.
+ * it spins on the same clock. Measured against ::dws_millis, so a custom clock governs it too.
  */
 inline void dwsdelay(uint32_t ms)
 {
@@ -92,12 +92,12 @@ inline void dwsdelay(uint32_t ms)
         vTaskDelay(0); // a bare cooperative yield
         return;
     }
-    uint32_t start = detws_millis();
-    while (detws_millis() - start < ms)
+    uint32_t start = dws_millis();
+    while (dws_millis() - start < ms)
         vTaskDelay(1); // one RTOS tick: sleeps the task (the core can idle) and feeds the watchdog
 #else
-    uint32_t start = detws_millis();
-    while (detws_millis() - start < ms)
+    uint32_t start = dws_millis();
+    while (dws_millis() - start < ms)
     {
         // host: spin on the monotonic clock (device-only code paths call this; host tests do not sleep here)
     }
@@ -111,14 +111,14 @@ inline void dwsdelay(uint32_t ms)
 // A second, higher-resolution source for real-time work: timestamping a hardware
 // event in an ISR and budgeting how long a piece of work takes. Pluggable like the
 // millisecond clock; the default is the platform micros() on device, or
-// detws_millis() * 1000 on host (override for sub-ms precision in tests).
+// dws_millis() * 1000 on host (override for sub-ms precision in tests).
 
-inline detws_clock_fn &_detws_micros_fn_ref()
+inline dws_clock_fn &_dws_micros_fn_ref()
 {
-    static detws_clock_fn fn = nullptr;
+    static dws_clock_fn fn = nullptr;
     return fn;
 }
-inline uint32_t &_detws_micros_div_ref()
+inline uint32_t &_dws_micros_div_ref()
 {
     static uint32_t div = 1;
     return div;
@@ -129,10 +129,10 @@ inline uint32_t &_detws_micros_div_ref()
  *        library divides it down to 1 MHz. Pass (nullptr, 0) for the platform
  *        default.
  */
-inline void detws_set_micros_clock(detws_clock_fn fn, uint32_t ticks_per_second)
+inline void dws_set_micros_clock(dws_clock_fn fn, uint32_t ticks_per_second)
 {
-    _detws_micros_fn_ref() = fn;
-    _detws_micros_div_ref() = (ticks_per_second >= 1000000u) ? (ticks_per_second / 1000000u) : 1u;
+    _dws_micros_fn_ref() = fn;
+    _dws_micros_div_ref() = (ticks_per_second >= 1000000u) ? (ticks_per_second / 1000000u) : 1u;
 }
 
 /**
@@ -141,15 +141,15 @@ inline void detws_set_micros_clock(detws_clock_fn fn, uint32_t ticks_per_second)
  *        roughly every 71 minutes, so use it only for short deltas (unsigned
  *        subtraction is wrap-safe).
  */
-inline uint32_t detws_micros(void)
+inline uint32_t dws_micros(void)
 {
-    detws_clock_fn fn = _detws_micros_fn_ref();
+    dws_clock_fn fn = _dws_micros_fn_ref();
     if (fn)
-        return fn() / _detws_micros_div_ref();
+        return fn() / _dws_micros_div_ref();
 #ifdef ARDUINO
     return micros();
 #else
-    return detws_millis() * 1000u; // host fallback (no platform micros); override for precision
+    return dws_millis() * 1000u; // host fallback (no platform micros); override for precision
 #endif
 }
 
@@ -173,7 +173,7 @@ struct DetwsLatencyStat
 };
 
 /** @brief Zero a stat (min seeded high so the first sample sets it). */
-inline void detws_lat_reset(DetwsLatencyStat *s)
+inline void dws_lat_reset(DetwsLatencyStat *s)
 {
     s->count = 0;
     s->over_budget = 0;
@@ -183,18 +183,18 @@ inline void detws_lat_reset(DetwsLatencyStat *s)
 }
 
 /** @brief Start of a measured span: capture the current microsecond time. */
-inline uint32_t detws_lat_begin(void)
+inline uint32_t dws_lat_begin(void)
 {
-    return detws_micros();
+    return dws_micros();
 }
 
 /**
  * @brief End of a span started at @p start_us: record its latency, counting it as
  *        over-budget when @p budget_us is non-zero and exceeded. Wrap-safe.
  */
-inline void detws_lat_end(DetwsLatencyStat *s, uint32_t start_us, uint32_t budget_us)
+inline void dws_lat_end(DetwsLatencyStat *s, uint32_t start_us, uint32_t budget_us)
 {
-    uint32_t lat = detws_micros() - start_us; // wrap-safe unsigned delta
+    uint32_t lat = dws_micros() - start_us; // wrap-safe unsigned delta
     s->count++;
     s->sum_us += lat;
     if (lat < s->min_us)
@@ -206,7 +206,7 @@ inline void detws_lat_end(DetwsLatencyStat *s, uint32_t start_us, uint32_t budge
 }
 
 /** @brief Mean latency (us) over the recorded samples, 0 if none. */
-inline uint32_t detws_lat_avg_us(const DetwsLatencyStat *s)
+inline uint32_t dws_lat_avg_us(const DetwsLatencyStat *s)
 {
     return s->count ? (uint32_t)(s->sum_us / s->count) : 0u;
 }

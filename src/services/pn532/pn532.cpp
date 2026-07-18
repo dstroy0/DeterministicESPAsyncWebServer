@@ -11,7 +11,7 @@
 
 #include "services/pn532/pn532.h"
 
-#if DETWS_ENABLE_PN532
+#if DWS_ENABLE_PN532
 
 namespace
 {
@@ -20,7 +20,7 @@ const uint8_t ACK[6] = {0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00};
 
 uint16_t pn532_build_frame(uint8_t tfi, const uint8_t *data, uint8_t len, uint8_t *out, uint16_t cap)
 {
-    if (!out || len > DETWS_PN532_MAX_DATA || (data == nullptr && len > 0))
+    if (!out || len > DWS_PN532_MAX_DATA || (data == nullptr && len > 0))
         return 0;
     uint16_t total = (uint16_t)(8 + len); // preamble+start(3) + LEN+LCS(2) + TFI + data + DCS + postamble
     if (total > cap)
@@ -56,7 +56,7 @@ int pn532_parse_frame(const uint8_t *raw, uint16_t len, uint8_t *tfi, const uint
     uint8_t frame_len = raw[3];
     if ((uint8_t)(frame_len + raw[4]) != 0)
         return -1; // length checksum
-    if (frame_len == 0 || frame_len > DETWS_PN532_MAX_DATA + 1)
+    if (frame_len == 0 || frame_len > DWS_PN532_MAX_DATA + 1)
         return -1; // no TFI, or implausible length
     uint16_t total = (uint16_t)(7 + frame_len);
     if (len < total)
@@ -94,4 +94,4 @@ uint16_t pn532_build_ack(uint8_t *out, uint16_t cap)
     return 6;
 }
 
-#endif // DETWS_ENABLE_PN532
+#endif // DWS_ENABLE_PN532

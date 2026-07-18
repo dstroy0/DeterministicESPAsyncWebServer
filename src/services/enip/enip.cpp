@@ -8,7 +8,7 @@
 
 #include "services/enip/enip.h"
 
-#if DETWS_ENABLE_ENIP
+#if DWS_ENABLE_ENIP
 
 #include <string.h>
 
@@ -164,4 +164,4 @@ bool eip_parse_send_rr_data(const uint8_t *data, size_t data_len, const uint8_t 
     return false; // no unconnected data item
 }
 
-#endif // DETWS_ENABLE_ENIP
+#endif // DWS_ENABLE_ENIP

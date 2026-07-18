@@ -9,7 +9,7 @@
 #include "services/ldc1614/ldc1614.h"
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_LDC1614
+#if DWS_ENABLE_LDC1614
 
 uint32_t ldc1614_data(uint16_t msb_reg, uint16_t lsb_reg)
 {
@@ -91,7 +91,7 @@ bool write16(uint8_t reg, uint16_t val)
 
 bool ldc1614_begin(uint8_t addr, uint16_t rcount, uint16_t settlecount)
 {
-    detws_i2c_begin();
+    dws_i2c_begin();
     s_ldc.addr = addr;
     uint16_t id = 0;
     if (!read16(LDC1614_REG_DEVICE_ID, &id))
@@ -120,4 +120,4 @@ bool ldc1614_read_ch0(uint32_t *out)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_LDC1614
+#endif // DWS_ENABLE_LDC1614

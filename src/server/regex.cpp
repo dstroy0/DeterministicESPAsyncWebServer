@@ -3,7 +3,7 @@
 
 /**
  * @file regex.cpp
- * @brief Bounded regex route matcher for DetWebServer (used by on_regex() routes).
+ * @brief Bounded regex route matcher for DWS (used by on_regex() routes).
  *
  * Split out of dwserver.cpp (single-purpose server files). A small recursive backtracker over
  * one pattern - literals, '.', quantifiers, character classes, and escapes - with a step budget

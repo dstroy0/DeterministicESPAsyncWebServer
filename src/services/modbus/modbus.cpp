@@ -8,7 +8,7 @@
 
 #include "services/modbus/modbus.h"
 
-#if DETWS_ENABLE_MODBUS
+#if DWS_ENABLE_MODBUS
 
 #include <string.h>
 
@@ -21,10 +21,10 @@
 // named owner, unreachable from any other translation unit.
 struct ModbusCtx
 {
-    uint8_t coils[(DETWS_MODBUS_COILS + 7) / 8];
-    uint8_t discrete[(DETWS_MODBUS_DISCRETE_INPUTS + 7) / 8];
-    uint16_t holding[DETWS_MODBUS_HOLDING_REGS];
-    uint16_t input[DETWS_MODBUS_INPUT_REGS];
+    uint8_t coils[(DWS_MODBUS_COILS + 7) / 8];
+    uint8_t discrete[(DWS_MODBUS_DISCRETE_INPUTS + 7) / 8];
+    uint16_t holding[DWS_MODBUS_HOLDING_REGS];
+    uint16_t input[DWS_MODBUS_INPUT_REGS];
     ModbusWriteCb write_cb = nullptr;
 };
 static ModbusCtx s_modbus;
@@ -57,38 +57,38 @@ void modbus_on_write(ModbusWriteCb cb)
 
 bool modbus_get_coil(uint16_t addr)
 {
-    return (addr < DETWS_MODBUS_COILS) ? bit_get(s_modbus.coils, addr) : false;
+    return (addr < DWS_MODBUS_COILS) ? bit_get(s_modbus.coils, addr) : false;
 }
 void modbus_set_coil(uint16_t addr, bool on)
 {
-    if (addr < DETWS_MODBUS_COILS)
+    if (addr < DWS_MODBUS_COILS)
         bit_set(s_modbus.coils, addr, on);
 }
 bool modbus_get_discrete_input(uint16_t addr)
 {
-    return (addr < DETWS_MODBUS_DISCRETE_INPUTS) ? bit_get(s_modbus.discrete, addr) : false;
+    return (addr < DWS_MODBUS_DISCRETE_INPUTS) ? bit_get(s_modbus.discrete, addr) : false;
 }
 void modbus_set_discrete_input(uint16_t addr, bool on)
 {
-    if (addr < DETWS_MODBUS_DISCRETE_INPUTS)
+    if (addr < DWS_MODBUS_DISCRETE_INPUTS)
         bit_set(s_modbus.discrete, addr, on);
 }
 uint16_t modbus_get_holding_reg(uint16_t addr)
 {
-    return (addr < DETWS_MODBUS_HOLDING_REGS) ? s_modbus.holding[addr] : 0;
+    return (addr < DWS_MODBUS_HOLDING_REGS) ? s_modbus.holding[addr] : 0;
 }
 void modbus_set_holding_reg(uint16_t addr, uint16_t value)
 {
-    if (addr < DETWS_MODBUS_HOLDING_REGS)
+    if (addr < DWS_MODBUS_HOLDING_REGS)
         s_modbus.holding[addr] = value;
 }
 uint16_t modbus_get_input_reg(uint16_t addr)
 {
-    return (addr < DETWS_MODBUS_INPUT_REGS) ? s_modbus.input[addr] : 0;
+    return (addr < DWS_MODBUS_INPUT_REGS) ? s_modbus.input[addr] : 0;
 }
 void modbus_set_input_reg(uint16_t addr, uint16_t value)
 {
-    if (addr < DETWS_MODBUS_INPUT_REGS)
+    if (addr < DWS_MODBUS_INPUT_REGS)
         s_modbus.input[addr] = value;
 }
 
@@ -132,8 +132,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         if (pdu_len < 5)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         uint16_t start = rd16(pdu + 1), qty = rd16(pdu + 3);
-        uint16_t limit =
-            (fc == ModbusFunction::MODBUS_FC_READ_COILS) ? DETWS_MODBUS_COILS : DETWS_MODBUS_DISCRETE_INPUTS;
+        uint16_t limit = (fc == ModbusFunction::MODBUS_FC_READ_COILS) ? DWS_MODBUS_COILS : DWS_MODBUS_DISCRETE_INPUTS;
         const uint8_t *src = (fc == ModbusFunction::MODBUS_FC_READ_COILS) ? s_modbus.coils : s_modbus.discrete;
         if (qty < 1 || qty > 2000)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
@@ -158,7 +157,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         uint16_t start = rd16(pdu + 1), qty = rd16(pdu + 3);
         uint16_t limit =
-            (fc == ModbusFunction::MODBUS_FC_READ_HOLDING_REGS) ? DETWS_MODBUS_HOLDING_REGS : DETWS_MODBUS_INPUT_REGS;
+            (fc == ModbusFunction::MODBUS_FC_READ_HOLDING_REGS) ? DWS_MODBUS_HOLDING_REGS : DWS_MODBUS_INPUT_REGS;
         const uint16_t *src = (fc == ModbusFunction::MODBUS_FC_READ_HOLDING_REGS) ? s_modbus.holding : s_modbus.input;
         if (qty < 1 || qty > 125)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
@@ -181,7 +180,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         uint16_t addr = rd16(pdu + 1), value = rd16(pdu + 3);
         if (value != 0x0000 && value != 0xFF00)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
-        if (addr >= DETWS_MODBUS_COILS)
+        if (addr >= DWS_MODBUS_COILS)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
         bit_set(s_modbus.coils, addr, value == 0xFF00);
         if (s_modbus.write_cb)
@@ -197,7 +196,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         if (pdu_len < 5)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
         uint16_t addr = rd16(pdu + 1), value = rd16(pdu + 3);
-        if (addr >= DETWS_MODBUS_HOLDING_REGS)
+        if (addr >= DWS_MODBUS_HOLDING_REGS)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
         s_modbus.holding[addr] = value;
         if (s_modbus.write_cb)
@@ -216,7 +215,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         uint8_t bc = pdu[5];
         if (qty < 1 || qty > 1968 || bc != (uint8_t)((qty + 7) / 8) || pdu_len < (size_t)6 + bc)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
-        if ((uint32_t)start + qty > DETWS_MODBUS_COILS)
+        if ((uint32_t)start + qty > DWS_MODBUS_COILS)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
         for (uint16_t i = 0; i < qty; i++)
         {
@@ -241,7 +240,7 @@ static size_t modbus_process_pdu(const uint8_t *pdu, size_t pdu_len, uint8_t *ou
         uint8_t bc = pdu[5];
         if (qty < 1 || qty > 123 || bc != (uint8_t)(qty * 2) || pdu_len < (size_t)6 + bc)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_VALUE, out);
-        if ((uint32_t)start + qty > DETWS_MODBUS_HOLDING_REGS)
+        if ((uint32_t)start + qty > DWS_MODBUS_HOLDING_REGS)
             return pdu_exception(fc, ModbusException::MODBUS_EX_ILLEGAL_DATA_ADDRESS, out);
         for (uint16_t i = 0; i < qty; i++)
             s_modbus.holding[start + i] = rd16(pdu + 6 + i * 2);
@@ -290,7 +289,7 @@ size_t modbus_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp, siz
     return 7 + rlen;
 }
 
-#if DETWS_ENABLE_MODBUS_RTU
+#if DWS_ENABLE_MODBUS_RTU
 // CRC16-Modbus (init 0xFFFF, reflected poly 0xA001); transmitted low byte first.
 static uint16_t modbus_crc16(const uint8_t *data, size_t len)
 {
@@ -335,7 +334,7 @@ size_t modbus_rtu_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp,
     resp[2 + rlen] = (uint8_t)(crc >> 8);
     return 1 + rlen + 2;
 }
-#endif // DETWS_ENABLE_MODBUS_RTU
+#endif // DWS_ENABLE_MODBUS_RTU
 
 // ---------------------------------------------------------------------------
 // TCP transport (ESP32-only; the core above is host-tested standalone)
@@ -351,28 +350,28 @@ size_t modbus_rtu_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp,
 // this service never indexes rx_buffer or advances rx_tail itself.
 static size_t ring_avail(const TcpConn *c)
 {
-    return det_conn_available(c->id);
+    return dws_conn_available(c->id);
 }
 static void ring_peek(const TcpConn *c, size_t off, uint8_t *dst, size_t n)
 {
-    det_conn_peek(c->id, off, dst, n);
+    dws_conn_peek(c->id, off, dst, n);
 }
 static void ring_consume(TcpConn *c, size_t n)
 {
-    det_conn_consume(c->id, n);
+    dws_conn_consume(c->id, n);
 }
 
 static void raw_send(uint8_t slot, const void *data, size_t n)
 {
-    if (!det_conn_active(slot) || n == 0)
+    if (!dws_conn_active(slot) || n == 0)
         return;
-    det_conn_send(slot, data, (u16_t)n);
-    det_conn_flush(slot);
+    dws_conn_send(slot, data, (u16_t)n);
+    dws_conn_flush(slot);
 }
 
 static void close_conn(uint8_t slot)
 {
-    det_conn_close(slot); // transport owns detach + slot reset + close
+    dws_conn_close(slot); // transport owns detach + slot reset + close
 }
 
 void modbus_rx(uint8_t slot)
@@ -429,4 +428,4 @@ const ProtoHandler *modbus_proto_handler(void)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_MODBUS
+#endif // DWS_ENABLE_MODBUS

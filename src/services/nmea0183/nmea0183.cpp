@@ -8,7 +8,7 @@
 
 #include "services/nmea0183/nmea0183.h"
 
-#if DETWS_ENABLE_NMEA0183
+#if DWS_ENABLE_NMEA0183
 
 #include "shared_primitives/numparse.h"
 #include <string.h>
@@ -97,7 +97,7 @@ bool nmea0183_parse(const char *s, size_t len, Nmea0183 *out)
     {
         if (i == star || s[i] == ',')
         {
-            if (fc < DETWS_NMEA0183_MAX_FIELDS)
+            if (fc < DWS_NMEA0183_MAX_FIELDS)
             {
                 out->fields[fc] = s + fstart;
                 out->field_len[fc] = (uint8_t)(i - fstart);
@@ -128,8 +128,8 @@ bool nmea0183_field_float(const Nmea0183 *m, uint8_t idx, float *out)
     if (!m || !out || idx >= m->field_count || m->field_len[idx] == 0)
         return false;
     const char *end = m->fields[idx];
-    // The field is delimited by a ',' or '*' in the source, so det_strtof stops at the field end.
-    float v = det_strtof(m->fields[idx], &end);
+    // The field is delimited by a ',' or '*' in the source, so dws_strtof stops at the field end.
+    float v = dws_strtof(m->fields[idx], &end);
     if (end == m->fields[idx])
         return false;
     *out = v;
@@ -141,11 +141,11 @@ bool nmea0183_field_int(const Nmea0183 *m, uint8_t idx, long *out)
     if (!m || !out || idx >= m->field_count || m->field_len[idx] == 0)
         return false;
     const char *end = m->fields[idx];
-    long v = det_strtol(m->fields[idx], &end);
+    long v = dws_strtol(m->fields[idx], &end);
     if (end == m->fields[idx])
         return false;
     *out = v;
     return true;
 }
 
-#endif // DETWS_ENABLE_NMEA0183
+#endif // DWS_ENABLE_NMEA0183

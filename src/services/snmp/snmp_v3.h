@@ -3,7 +3,7 @@
 
 /**
  * @file snmp_v3.h
- * @brief SNMPv3 User-based Security Model (USM) layer (DETWS_ENABLE_SNMP_V3).
+ * @brief SNMPv3 User-based Security Model (USM) layer (DWS_ENABLE_SNMP_V3).
  *
  * Adds authenticated and optionally encrypted SNMPv3 on top of the v1/v2c agent:
  * the v3 message framing (RFC 3412), engine discovery + timeliness (RFC 3414),
@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SNMP_V3
+#if DWS_ENABLE_SNMP_V3
 
 /** @brief usmHMAC192SHA256 authentication-parameter length (192-bit truncation). */
 #define SNMP_V3_AUTH_PARAM_LEN 24
@@ -72,6 +72,6 @@ uint32_t snmp_v3_get_boots();
  */
 size_t snmp_v3_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap);
 
-#endif // DETWS_ENABLE_SNMP_V3
+#endif // DWS_ENABLE_SNMP_V3
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SNMP_V3_H

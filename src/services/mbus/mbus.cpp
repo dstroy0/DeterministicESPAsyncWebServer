@@ -8,7 +8,7 @@
 
 #include "services/mbus/mbus.h"
 
-#if DETWS_ENABLE_MBUS
+#if DWS_ENABLE_MBUS
 
 #include <string.h>
 
@@ -231,4 +231,4 @@ bool mbus_record_next(const uint8_t *body, size_t len, size_t *pos, MbusRecord *
     return true;
 }
 
-#endif // DETWS_ENABLE_MBUS
+#endif // DWS_ENABLE_MBUS

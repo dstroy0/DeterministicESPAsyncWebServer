@@ -3,7 +3,7 @@
 
 /**
  * @file iface_bridge.h
- * @brief User-defined address:port -> hardware-bus translation (DETWS_ENABLE_IFACE_BRIDGE).
+ * @brief User-defined address:port -> hardware-bus translation (DWS_ENABLE_IFACE_BRIDGE).
  *
  * A configurable "device server": the application registers rules mapping a listen address:port (plus
  * TCP/UDP) to a hardware endpoint - a UART, an SPI chip-select, or an I2C address - so a network client
@@ -30,15 +30,15 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_IFACE_BRIDGE
+#if DWS_ENABLE_IFACE_BRIDGE
 
-#include "network_drivers/network/ip.h" // DetIp (carry the full bind address, never a flattened one)
+#include "network_drivers/network/ip.h" // DWSIp (carry the full bind address, never a flattened one)
 #include <stddef.h>
 #include <stdint.h>
 
-// DETWS_BRIDGE_MAX_RULES is defined in ServerConfig.h (the config owner).
+// DWS_BRIDGE_MAX_RULES is defined in ServerConfig.h (the config owner).
 
-#define DETWS_BRIDGE_TXN_HDR 4 ///< transaction frame header: write_len(2) + read_len(2), big-endian
+#define DWS_BRIDGE_TXN_HDR 4 ///< transaction frame header: write_len(2) + read_len(2), big-endian
 
 /// Which hardware bus a rule targets.
 enum class BridgeBus : uint8_t
@@ -78,7 +78,7 @@ struct BridgeTarget
 /// A single address:port -> bus mapping.
 struct BridgeRule
 {
-    DetIp listen_ip;      ///< bind address (x.x.x.x / [v6]); family DET_IP_NONE = any interface
+    DWSIp listen_ip;      ///< bind address (x.x.x.x / [v6]); family DWS_IP_NONE = any interface
     uint16_t listen_port; ///< nnnn
     BridgeProto proto;    ///< TCP or UDP
     BridgeTarget target;
@@ -90,20 +90,20 @@ struct BridgeRule
 // ---------------------------------------------------------------------------------------------
 
 /// Remove all rules.
-void det_iface_bridge_clear();
+void dws_iface_bridge_clear();
 
 /// Register a rule. Returns false if the table is full or a rule already binds the same port+proto.
-bool det_iface_bridge_add(const BridgeRule *rule);
+bool dws_iface_bridge_add(const BridgeRule *rule);
 
 /// Convenience: build + add a rule in one call. @p ip may be NULL for "any interface". Returns false on
 /// a bad address, a full table, or a duplicate port+proto.
-bool det_iface_bridge_map(const char *ip, uint16_t port, BridgeProto proto, const BridgeTarget *target);
+bool dws_iface_bridge_map(const char *ip, uint16_t port, BridgeProto proto, const BridgeTarget *target);
 
 /// Find the rule bound to @p port + @p proto, or NULL. This is the listener-dispatch lookup.
-const BridgeRule *det_iface_bridge_find(uint16_t port, BridgeProto proto);
+const BridgeRule *dws_iface_bridge_find(uint16_t port, BridgeProto proto);
 
 /// Number of registered rules.
-uint8_t det_iface_bridge_count();
+uint8_t dws_iface_bridge_count();
 
 // ---------------------------------------------------------------------------------------------
 // Transaction frame codec (pure). write_len / read_len are big-endian.
@@ -117,16 +117,16 @@ uint8_t det_iface_bridge_count();
  * does not yet hold the whole frame (the caller should read more), so a partial header or a partial write
  * payload both yield 0.
  */
-size_t det_iface_bridge_txn_parse(const uint8_t *buf, size_t len, uint16_t *write_len, uint16_t *read_len,
+size_t dws_iface_bridge_txn_parse(const uint8_t *buf, size_t len, uint16_t *write_len, uint16_t *read_len,
                                   const uint8_t **write_data);
 
 /**
  * @brief Build a transaction request frame (header + write payload) into @p out.
  * @return bytes written, or 0 if @p out is too small.
  */
-size_t det_iface_bridge_txn_build(uint8_t *out, size_t cap, const uint8_t *write_data, uint16_t write_len,
+size_t dws_iface_bridge_txn_build(uint8_t *out, size_t cap, const uint8_t *write_data, uint16_t write_len,
                                   uint16_t read_len);
 
-#endif // DETWS_ENABLE_IFACE_BRIDGE
+#endif // DWS_ENABLE_IFACE_BRIDGE
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_IFACE_BRIDGE_H

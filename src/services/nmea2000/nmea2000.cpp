@@ -8,7 +8,7 @@
 
 #include "services/nmea2000/nmea2000.h"
 
-#if DETWS_ENABLE_NMEA2000
+#if DWS_ENABLE_NMEA2000
 
 #include <string.h>
 
@@ -22,7 +22,7 @@ uint8_t n2k_fastpacket_num_frames(uint16_t total_len)
 bool n2k_fastpacket_build_frame(CanFrame *out, uint8_t seq, uint8_t frame_idx, uint8_t priority, uint32_t pgn,
                                 uint8_t sa, uint8_t da, const uint8_t *data, uint16_t total_len)
 {
-    if (!out || !data || seq > 7 || total_len == 0 || total_len > DETWS_N2K_FP_MAX)
+    if (!out || !data || seq > 7 || total_len == 0 || total_len > DWS_N2K_FP_MAX)
         return false;
     if (frame_idx >= n2k_fastpacket_num_frames(total_len))
         return false;
@@ -32,7 +32,7 @@ bool n2k_fastpacket_build_frame(CanFrame *out, uint8_t seq, uint8_t frame_idx, u
     out->id = id;
     out->extended = true;
     out->rtr = false;
-    out->dlc = DET_CAN_MAX_DLC;                 // Fast Packet frames are full 8-octet frames
+    out->dlc = DWS_CAN_MAX_DLC;                 // Fast Packet frames are full 8-octet frames
     memset(out->data, 0xFF, sizeof(out->data)); // pad unused octets with 0xFF
 
     out->data[0] = (uint8_t)((seq << N2K_FP_SEQ_SHIFT) | (frame_idx & N2K_FP_FRAME_MASK));
@@ -73,7 +73,7 @@ N2kFpResult n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f)
     if (frame_idx == 0) // first frame: total length + first 6 data octets
     {
         uint16_t total = f->data[1];
-        if (total == 0 || total > DETWS_N2K_FP_MAX)
+        if (total == 0 || total > DWS_N2K_FP_MAX)
             return N2kFpResult::N2K_FP_ERR;
         n2k_fastpacket_reset(rx);
         rx->active = true;
@@ -120,4 +120,4 @@ bool n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t sa,
     return j1939_build_message(out, priority, pgn, sa, da, data, len);
 }
 
-#endif // DETWS_ENABLE_NMEA2000
+#endif // DWS_ENABLE_NMEA2000

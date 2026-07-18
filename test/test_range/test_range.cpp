@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// HTTP Range requests / 206 Partial Content (DETWS_ENABLE_RANGE). Each test
+// HTTP Range requests / 206 Partial Content (DWS_ENABLE_RANGE). Each test
 // serves a known 20-byte file via serve_file() with a Range header and checks
 // the status line, Content-Range / Content-Length headers, and the exact bytes
 // returned (via the tcp_write capture mock).
@@ -11,7 +11,7 @@
 #include <string.h>
 #include <unity.h>
 
-static DetWebServer server;
+static DWS server;
 static const char FILE_DATA[] = "0123456789ABCDEFGHIJ"; // 20 bytes
 
 static void push_str(uint8_t slot, const char *s)
@@ -43,7 +43,7 @@ static void serve_data_conn_gone(uint8_t slot_id, HttpReq *req)
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     server.on("/data", HttpMethod::HTTP_GET, serve_data);
     for (int i = 0; i < MAX_CONNS; i++)
     {

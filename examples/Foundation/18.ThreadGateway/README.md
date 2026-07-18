@@ -1,6 +1,6 @@
 # 18.ThreadGateway - an OpenThread RCP bridged to the gateway
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_THREAD`, `DETWS_ENABLE_GATEWAY`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_THREAD`, `DWS_ENABLE_GATEWAY`
 
 ## What this example teaches
 
@@ -10,7 +10,7 @@ OpenThread **radio co-processor** (RCP - an nRF52840 / EFR32), which speaks **sp
 payload northbound - the basis of a Thread / Matter border router.
 
 ```
-Thread RCP --UART--> spinel_frame_decode() --> spinel payload -> det_gateway_uplink()
+Thread RCP --UART--> spinel_frame_decode() --> spinel payload -> dws_gateway_uplink()
                                                                       |
                                                envelope + topic  thread/0/<tid>
                                                                       |
@@ -24,7 +24,7 @@ bytes, and terminates with a Flag `0x7E`. `services/thread` does the framing:
 uint8_t payload[256]; uint16_t plen;
 int n = spinel_frame_decode(buf, len, payload, sizeof(payload), &plen);  // >0 / need-more / -1
 if (n > 0)
-    det_gateway_uplink(0, tid, payload, plen, 0);
+    dws_gateway_uplink(0, tid, payload, plen, 0);
 ```
 
 `spinel_frame_encode()` builds a frame the same way (this sketch sends a spinel RESET at
@@ -53,6 +53,6 @@ The flags must reach the library build, so pass them as build flags:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_THREAD=1 -DDETWS_ENABLE_GATEWAY=1" \
+  --project-option="build_flags=-DDWS_ENABLE_THREAD=1 -DDWS_ENABLE_GATEWAY=1" \
   --lib="." examples/Foundation/18.ThreadGateway/18.ThreadGateway.ino
 ```

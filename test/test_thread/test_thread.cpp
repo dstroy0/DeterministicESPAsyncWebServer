@@ -6,7 +6,7 @@
 // the byte-stuffing of reserved bytes, and malformed framing (bad FCS, dangling escape,
 // buffer-too-small, no flag). Pure host tests.
 //
-// The env sizes DETWS_THREAD_MAX_DATA = 64.
+// The env sizes DWS_THREAD_MAX_DATA = 64.
 
 #include "services/thread/thread.h"
 #include <unity.h>

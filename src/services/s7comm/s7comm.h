@@ -3,7 +3,7 @@
 
 /**
  * @file s7comm.h
- * @brief Siemens S7comm PDU codec (DETWS_ENABLE_S7COMM) - zero-heap builder + parser for the
+ * @brief Siemens S7comm PDU codec (DWS_ENABLE_S7COMM) - zero-heap builder + parser for the
  *        S7-300/400 communication PDUs, carried inside a COTP Data TPDU (services/cotp) over
  *        ISO-on-TCP (port 102).
  *
@@ -31,7 +31,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_S7COMM
+#if DWS_ENABLE_S7COMM
 
 #include <stddef.h>
 #include <stdint.h>
@@ -130,6 +130,6 @@ struct S7DataItem
  */
 bool s7_read_next_item(const uint8_t *data, size_t data_len, size_t *offset, S7DataItem *out);
 
-#endif // DETWS_ENABLE_S7COMM
+#endif // DWS_ENABLE_S7COMM
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_S7COMM_H

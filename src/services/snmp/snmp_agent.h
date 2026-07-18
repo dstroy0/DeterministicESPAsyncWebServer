@@ -12,7 +12,7 @@
  *  - snmp_agent_process() takes a complete request datagram and produces a
  *    complete response datagram in a caller buffer - no sockets, no heap. It is
  *    unit-tested on the host (env:native_snmp).
- *  - snmp_agent_begin_udp() binds the agent on :161 via the det_udp_* transport
+ *  - snmp_agent_begin_udp() binds the agent on :161 via the dws_udp_* transport
  *    API (Arduino only) and feeds received datagrams through snmp_agent_process().
  *
  * The MIB is a fixed BSS table of SNMP_MAX_MIB_ENTRIES objects. Register objects
@@ -35,7 +35,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SNMP
+#if DWS_ENABLE_SNMP
 
 // SNMP message versions (the on-wire INTEGER value).
 enum class SnmpVersion : uint8_t
@@ -165,6 +165,6 @@ size_t snmp_dispatch_pdu(const uint8_t *pdu, size_t pdu_len, bool allow_write, b
  */
 void snmp_agent_begin_udp(uint16_t port = 161);
 
-#endif // DETWS_ENABLE_SNMP
+#endif // DWS_ENABLE_SNMP
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SNMP_AGENT_H

@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/dtls/dtls_handshake.h"
 
-#if DETWS_ENABLE_DTLS
+#if DWS_ENABLE_DTLS
 
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include <string.h>
@@ -286,4 +286,4 @@ bool dtls_cookie_verify(const uint8_t hmac_key[32], uint64_t now, uint64_t max_a
     return true;
 }
 
-#endif // DETWS_ENABLE_DTLS
+#endif // DWS_ENABLE_DTLS

@@ -130,7 +130,7 @@ static void test_fetch_close_delimited()
 
 static void test_fetch_oversize()
 {
-    static uint8_t big[DETWS_EDGE_FETCH_BUF + 1024];
+    static uint8_t big[DWS_EDGE_FETCH_BUF + 1024];
     const char *head = "HTTP/1.1 200 OK\r\nContent-Length: 6000\r\n\r\n";
     size_t hl = strlen(head);
     memcpy(big, head, hl);
@@ -150,7 +150,7 @@ static void test_fetch_timeout()
     EdgeFetch f;
     edge_fetch_begin(&f, &t, "h", 80, "GET / HTTP/1.1\r\n\r\n", 18, 1000);
     TEST_ASSERT_EQUAL(EdgeFetchStatus::PENDING, edge_fetch_pump(&f, &t, 1000)); // drained, still waiting
-    TEST_ASSERT_EQUAL(EdgeFetchStatus::FAILED, edge_fetch_pump(&f, &t, 1000 + DETWS_EDGE_FETCH_TIMEOUT_MS));
+    TEST_ASSERT_EQUAL(EdgeFetchStatus::FAILED, edge_fetch_pump(&f, &t, 1000 + DWS_EDGE_FETCH_TIMEOUT_MS));
 }
 
 static void test_fetch_open_fail()

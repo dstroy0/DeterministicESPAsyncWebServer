@@ -3,7 +3,7 @@
 
 #include "network_drivers/presentation/pqc/sha3.h"
 
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
 
 // Keccak-f[1600] permutation constants (FIPS 202): iota round constants, rho rotation offsets, and
 // the rho/pi lane-permutation order.
@@ -148,4 +148,4 @@ void shake128_absorb(KeccakCtx *c, const uint8_t *in, size_t inlen)
     keccak_absorb(c, KECCAK_RATE_SHAKE128, in, inlen, 0x1F);
 }
 
-#endif // DETWS_ENABLE_PQC_KEX
+#endif // DWS_ENABLE_PQC_KEX

@@ -3,7 +3,7 @@
 
 /**
  * @file ntlmssp.h
- * @brief NTLMSSP message codec (MS-NLMP §2.2.1) for the SMB2 client (DETWS_ENABLE_SMB).
+ * @brief NTLMSSP message codec (MS-NLMP §2.2.1) for the SMB2 client (DWS_ENABLE_SMB).
  *
  * The three-message NTLM handshake tokens that carry the NTLMv2 response (ntlm.h) inside SMB2
  * SESSION_SETUP: the client sends a NEGOTIATE (type 1), the server replies with a CHALLENGE
@@ -21,7 +21,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_SMB
+#if DWS_ENABLE_SMB
 
 #include <stddef.h>
 #include <stdint.h>
@@ -83,6 +83,6 @@ size_t ntlmssp_build_authenticate(uint8_t *buf, size_t cap, const uint8_t *lm_re
                                   const uint8_t *nt_resp, size_t nt_len, const char *domain, const char *user,
                                   const char *workstation, uint32_t flags);
 
-#endif // DETWS_ENABLE_SMB
+#endif // DWS_ENABLE_SMB
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_NTLMSSP_H

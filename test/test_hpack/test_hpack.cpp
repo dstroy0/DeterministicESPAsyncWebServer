@@ -291,7 +291,7 @@ void test_hpack_encode_paths()
     // hpack_dyn_init clamps a too-large max to the table storage.
     HpackDynTable t;
     hpack_dyn_init(&t, 0xffffffffu);
-    TEST_ASSERT_TRUE(t.max_size <= DETWS_HPACK_TABLE_BYTES);
+    TEST_ASSERT_TRUE(t.max_size <= DWS_HPACK_TABLE_BYTES);
 
     // A value whose Huffman form is not shorter takes the literal (non-Huffman) string path.
     uint8_t out[64];

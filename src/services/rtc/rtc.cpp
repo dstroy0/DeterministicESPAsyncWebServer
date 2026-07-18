@@ -12,7 +12,7 @@
 #include "services/rtc/rtc.h"
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_RTC
+#if DWS_ENABLE_RTC
 
 namespace
 {
@@ -110,17 +110,17 @@ void rtc_epoch_to_regs(uint32_t epoch, uint8_t r[RTC_REG_COUNT])
 
 bool rtc_begin()
 {
-    detws_i2c_begin();
+    dws_i2c_begin();
     return true;
 }
 
 uint32_t rtc_read_epoch()
 {
-    Wire.beginTransmission(DETWS_RTC_I2C_ADDR);
+    Wire.beginTransmission(DWS_RTC_I2C_ADDR);
     Wire.write((uint8_t)0x00); // point at register 0 (seconds)
     if (Wire.endTransmission() != 0)
         return 0; // no RTC on the bus
-    if (Wire.requestFrom((int)DETWS_RTC_I2C_ADDR, (int)RTC_REG_COUNT) != RTC_REG_COUNT)
+    if (Wire.requestFrom((int)DWS_RTC_I2C_ADDR, (int)RTC_REG_COUNT) != RTC_REG_COUNT)
         return 0;
     uint8_t r[RTC_REG_COUNT];
     for (int i = 0; i < RTC_REG_COUNT; i++)
@@ -133,7 +133,7 @@ bool rtc_set_epoch(uint32_t epoch)
 {
     uint8_t r[RTC_REG_COUNT];
     rtc_epoch_to_regs(epoch, r);
-    Wire.beginTransmission(DETWS_RTC_I2C_ADDR);
+    Wire.beginTransmission(DWS_RTC_I2C_ADDR);
     Wire.write((uint8_t)0x00);
     for (int i = 0; i < RTC_REG_COUNT; i++)
         Wire.write(r[i]);
@@ -166,4 +166,4 @@ uint32_t rtc_time_source()
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_RTC
+#endif // DWS_ENABLE_RTC

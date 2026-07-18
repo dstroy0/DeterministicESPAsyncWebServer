@@ -18,7 +18,7 @@
 // path on the S3 and runs materially faster than the framework -Os; it is constant-time by structure
 // (the final reduction is branchless), so a higher level for this TU is side-channel safe. Byte-exact.
 // See the caveats in crypto_opt.h and the ChaCha note in ssh_chacha20.cpp.
-DETWS_CRYPTO_HOT
+DWS_CRYPTO_HOT
 
 namespace
 {

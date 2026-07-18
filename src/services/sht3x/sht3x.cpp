@@ -10,7 +10,7 @@
 #include "ServerConfig.h"
 #include "services/clock.h" // dwsdelay
 
-#if DETWS_ENABLE_SHT3X
+#if DWS_ENABLE_SHT3X
 
 uint8_t sht3x_crc8(const uint8_t *data, size_t len)
 {
@@ -65,7 +65,7 @@ namespace
 // so it is one named owner, unreachable from any other translation unit.
 struct Sht3xCtx
 {
-    uint8_t addr = DETWS_SHT3X_I2C_ADDR;
+    uint8_t addr = DWS_SHT3X_I2C_ADDR;
 };
 Sht3xCtx s_sht;
 
@@ -80,8 +80,8 @@ bool send_cmd(uint16_t cmd)
 
 bool sht3x_begin(uint8_t addr)
 {
-    s_sht.addr = addr ? addr : (uint8_t)DETWS_SHT3X_I2C_ADDR;
-    detws_i2c_begin();
+    s_sht.addr = addr ? addr : (uint8_t)DWS_SHT3X_I2C_ADDR;
+    dws_i2c_begin();
     bool ok = send_cmd(SHT3X_CMD_SOFT_RESET);
     dwsdelay(2); // soft reset completes in < 1.5 ms
     return ok;
@@ -113,4 +113,4 @@ bool sht3x_read(int32_t *, int32_t *)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_SHT3X
+#endif // DWS_ENABLE_SHT3X

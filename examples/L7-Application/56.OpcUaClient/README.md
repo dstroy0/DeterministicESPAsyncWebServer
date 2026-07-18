@@ -1,6 +1,6 @@
 # 56.OpcUaClient - an OPC UA Binary client
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_OPCUA`, `DETWS_ENABLE_OPCUA_CLIENT`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_OPCUA`, `DWS_ENABLE_OPCUA_CLIENT`
 
 ## What this example teaches
 
@@ -54,7 +54,7 @@ server just makes the example self-contained. Read and write items are small str
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_OPCUA=1 -DDETWS_ENABLE_OPCUA_CLIENT=1" \
+  --project-option="build_flags=-DDWS_ENABLE_OPCUA=1 -DDWS_ENABLE_OPCUA_CLIENT=1" \
   --lib="." examples/L7-Application/56.OpcUaClient/56.OpcUaClient.ino
 ```
 
@@ -71,8 +71,8 @@ with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_OPCUA 1
-#define DETWS_ENABLE_OPCUA_CLIENT 1
+#define DWS_ENABLE_OPCUA 1
+#define DWS_ENABLE_OPCUA_CLIENT 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -83,7 +83,7 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // --- server side: a tiny address space (ns=1;i=1,2 read-only, i=3 writable) ---
 static uint32_t setpoint = 100;

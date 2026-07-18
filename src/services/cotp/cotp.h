@@ -3,7 +3,7 @@
 
 /**
  * @file cotp.h
- * @brief TPKT (RFC 1006) + COTP / ISO 8073 X.224 class-0 frame codec (DETWS_ENABLE_COTP) -
+ * @brief TPKT (RFC 1006) + COTP / ISO 8073 X.224 class-0 frame codec (DWS_ENABLE_COTP) -
  *        zero-heap "ISO transport on TCP" framing, the reusable foundation under S7comm and
  *        IEC 61850 MMS.
  *
@@ -27,7 +27,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_COTP
+#if DWS_ENABLE_COTP
 
 #include <stddef.h>
 #include <stdint.h>
@@ -86,6 +86,6 @@ struct CotpHeader
 /** @brief Parse a COTP TPDU (typically the TPKT payload). */
 bool cotp_parse(const uint8_t *buf, size_t len, CotpHeader *out);
 
-#endif // DETWS_ENABLE_COTP
+#endif // DWS_ENABLE_COTP
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_COTP_H

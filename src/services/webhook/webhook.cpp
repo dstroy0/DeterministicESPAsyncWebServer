@@ -8,7 +8,7 @@
 
 #include "services/webhook/webhook.h"
 
-#if DETWS_ENABLE_WEBHOOK
+#if DWS_ENABLE_WEBHOOK
 
 #include "shared_primitives/mime.h"
 
@@ -53,7 +53,7 @@ bool put_escaped(char *out, size_t cap, size_t *pos, const char *s)
 }
 } // namespace
 
-int detws_ifttt_url(const char *event, const char *key, char *out, size_t cap)
+int dws_ifttt_url(const char *event, const char *key, char *out, size_t cap)
 {
     if (!out || cap == 0 || !event || !key)
     {
@@ -70,7 +70,7 @@ int detws_ifttt_url(const char *event, const char *key, char *out, size_t cap)
     return w;
 }
 
-int detws_ifttt_payload(const char *v1, const char *v2, const char *v3, char *out, size_t cap)
+int dws_ifttt_payload(const char *v1, const char *v2, const char *v3, char *out, size_t cap)
 {
     if (!out || cap == 0)
         return 0;
@@ -102,36 +102,36 @@ int detws_ifttt_payload(const char *v1, const char *v2, const char *v3, char *ou
     return (int)pos;
 }
 
-#if DETWS_ENABLE_HTTP_CLIENT
+#if DWS_ENABLE_HTTP_CLIENT
 
 #include "services/http_client/http_client.h"
 
-int detws_webhook_post(const char *url, const char *json)
+int dws_webhook_post(const char *url, const char *json)
 {
     if (!url || !json)
         return (int)HttpClientError::HTTP_CLIENT_ERR_URL;
     HttpClientResult r;
-    return http_post(url, DET_MIME_JSON, (const uint8_t *)json, strnlen(json, DETWS_HTTP_CLIENT_BUF_SIZE), &r);
+    return http_post(url, DWS_MIME_JSON, (const uint8_t *)json, strnlen(json, DWS_HTTP_CLIENT_BUF_SIZE), &r);
 }
 
 #else // http_client not enabled in this build
 
-int detws_webhook_post(const char *, const char *)
+int dws_webhook_post(const char *, const char *)
 {
     return -1;
 }
 
-#endif // DETWS_ENABLE_HTTP_CLIENT
+#endif // DWS_ENABLE_HTTP_CLIENT
 
-int detws_ifttt_trigger(const char *event, const char *key, const char *v1, const char *v2, const char *v3)
+int dws_ifttt_trigger(const char *event, const char *key, const char *v1, const char *v2, const char *v3)
 {
     char url[160];
     char body[256];
-    if (detws_ifttt_url(event, key, url, sizeof(url)) == 0)
+    if (dws_ifttt_url(event, key, url, sizeof(url)) == 0)
         return -1;
-    if (detws_ifttt_payload(v1, v2, v3, body, sizeof(body)) == 0)
+    if (dws_ifttt_payload(v1, v2, v3, body, sizeof(body)) == 0)
         return -1;
-    return detws_webhook_post(url, body);
+    return dws_webhook_post(url, body);
 }
 
-#endif // DETWS_ENABLE_WEBHOOK
+#endif // DWS_ENABLE_WEBHOOK

@@ -3,7 +3,7 @@
 
 /**
  * @file partition_monitor.h
- * @brief Flash partition-map monitor (DETWS_ENABLE_PARTITION_MONITOR).
+ * @brief Flash partition-map monitor (DWS_ENABLE_PARTITION_MONITOR).
  *
  * Reports the device's flash partition table as JSON for diagnostics / OTA
  * dashboards: each entry's label, a human "kind" (factory / ota / nvs / spiffs /
@@ -23,9 +23,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_PARTITION_MONITOR
+#if DWS_ENABLE_PARTITION_MONITOR
 
-class DetWebServer;
+class DWS;
 
 /** @brief One flash partition entry. */
 struct DetwsPartitionInfo
@@ -43,26 +43,26 @@ struct DetwsPartitionInfo
 // ---------------------------------------------------------------------------
 
 /** @brief Human name for a partition type/subtype (e.g. "factory", "ota", "nvs", "littlefs"). */
-const char *detws_partition_kind(uint8_t type, uint8_t subtype);
+const char *dws_partition_kind(uint8_t type, uint8_t subtype);
 
 /**
  * @brief Serialize a partition array as JSON `{"partitions":[...]}` into @p out.
  * @return characters written, or 0 if @p cap is too small.
  */
-int detws_partition_json(const DetwsPartitionInfo *parts, uint8_t count, char *out, size_t cap);
+int dws_partition_json(const DetwsPartitionInfo *parts, uint8_t count, char *out, size_t cap);
 
 /**
  * @brief Walk the flash partition table into @p out (ESP32; 0 on host builds).
  * @return number of partitions written (<= @p max).
  */
-uint8_t detws_partition_collect(DetwsPartitionInfo *out, uint8_t max);
+uint8_t dws_partition_collect(DetwsPartitionInfo *out, uint8_t max);
 
 // ---------------------------------------------------------------------------
 // Server integration
 // ---------------------------------------------------------------------------
 
 /** @brief Serve the partition map as JSON at @p path (GET). Default "/partitions". */
-void detws_partition_monitor_begin(DetWebServer &server, const char *path);
+void dws_partition_monitor_begin(DWS &server, const char *path);
 
-#endif // DETWS_ENABLE_PARTITION_MONITOR
+#endif // DWS_ENABLE_PARTITION_MONITOR
 #endif // DETERMINISTICESPASYNCWEBSERVER_PARTITION_MONITOR_H

@@ -8,7 +8,7 @@
 
 #include "services/snmp/snmp_ber.h"
 
-#if DETWS_ENABLE_SNMP
+#if DWS_ENABLE_SNMP
 
 #include <string.h>
 
@@ -328,4 +328,4 @@ bool ber_skip(BerDec *d, size_t length)
     return true;
 }
 
-#endif // DETWS_ENABLE_SNMP
+#endif // DWS_ENABLE_SNMP

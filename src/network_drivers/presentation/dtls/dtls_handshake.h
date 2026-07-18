@@ -32,7 +32,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_DTLS
+#if DWS_ENABLE_DTLS
 
 #include <stddef.h>
 #include <stdint.h>
@@ -205,5 +205,5 @@ bool dtls_cookie_verify(const uint8_t hmac_key[32], uint64_t now, uint64_t max_a
                         size_t addr_len, const uint8_t *cookie, size_t cookie_len, uint8_t *payload_out,
                         size_t payload_cap, size_t *payload_len_out);
 
-#endif // DETWS_ENABLE_DTLS
+#endif // DWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_DTLS_HANDSHAKE_H

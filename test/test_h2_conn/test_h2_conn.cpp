@@ -356,7 +356,7 @@ void test_h2_stream_table_full_rst()
     establish(c, cap);
     uint8_t block[128];
     size_t blen = build_request(block, sizeof block);
-    for (int i = 0; i < DETWS_H2_MAX_STREAMS; i++)
+    for (int i = 0; i < DWS_H2_MAX_STREAMS; i++)
     {
         uint8_t hf[160];
         size_t hn = h2_build_headers(hf, sizeof hf, (uint32_t)(1 + 2 * i), block, blen, false);
@@ -364,7 +364,7 @@ void test_h2_stream_table_full_rst()
     }
     cap.out.clear();
     uint8_t hf[160];
-    size_t hn = h2_build_headers(hf, sizeof hf, (uint32_t)(1 + 2 * DETWS_H2_MAX_STREAMS), block, blen, false);
+    size_t hn = h2_build_headers(hf, sizeof hf, (uint32_t)(1 + 2 * DWS_H2_MAX_STREAMS), block, blen, false);
     TEST_ASSERT_TRUE(h2_conn_recv(&c, hf, hn)); // kept alive
     TEST_ASSERT_TRUE(count_frames(cap.out, H2FrameType::H2_RST_STREAM) >= 1);
 }
@@ -525,7 +525,7 @@ void test_h2_frame_too_big()
     H2Conn c;
     establish(c, cap);
     uint8_t hh[9];
-    h2_write_header(hh, sizeof hh, DETWS_H2_MAX_FRAME + 1, H2FrameType::H2_DATA, 0, 1);
+    h2_write_header(hh, sizeof hh, DWS_H2_MAX_FRAME + 1, H2FrameType::H2_DATA, 0, 1);
     TEST_ASSERT_FALSE(h2_conn_recv(&c, hh, 9));
 }
 
@@ -572,7 +572,7 @@ void test_h2_more_guards()
         fresh_feed(H2FrameType::H2_HEADERS, H2_FLAG_PRIORITY | H2_FLAG_END_HEADERS, 1, p3, 3)); // priority < 5
     uint8_t bad_hpack[4] = {0xFF, 0xFF, 0xFF, 0xFF};
     TEST_ASSERT_FALSE(fresh_feed(H2FrameType::H2_HEADERS, H2_FLAG_END_HEADERS, 1, bad_hpack, 4)); // COMPRESSION_ERROR
-    std::vector<uint8_t> huge(DETWS_H2_HDR_BLOCK + 16, 0);
+    std::vector<uint8_t> huge(DWS_H2_HDR_BLOCK + 16, 0);
     TEST_ASSERT_FALSE(fresh_feed(H2FrameType::H2_HEADERS, 0, 1, huge.data(), huge.size())); // fragment > hblock
     TEST_ASSERT_FALSE(fresh_feed(H2FrameType::H2_DATA, H2_FLAG_PADDED, 1, nullptr, 0));     // no pad byte
     uint8_t dpad[2] = {5, 1};
@@ -602,7 +602,7 @@ void test_h2_continuation_more()
         Cap cap;
         H2Conn c;
         establish(c, cap);
-        std::vector<uint8_t> frag(DETWS_H2_HDR_BLOCK - 8, 0);
+        std::vector<uint8_t> frag(DWS_H2_HDR_BLOCK - 8, 0);
         TEST_ASSERT_TRUE(feed_frame(c, H2FrameType::H2_HEADERS, 0, 1, frag.data(), frag.size())); // buffered (< hblock)
         std::vector<uint8_t> more(64, 0);
         TEST_ASSERT_FALSE(feed_frame(c, H2FrameType::H2_CONTINUATION, 0, 1, more.data(), more.size())); // overflow

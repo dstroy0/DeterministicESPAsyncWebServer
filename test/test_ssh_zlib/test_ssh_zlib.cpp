@@ -137,7 +137,7 @@ void test_window_slide_long_session()
 // A max-size payload (the input-length boundary) must be accepted and round-trip.
 void test_max_input_payload()
 {
-    static uint8_t buf[DETWS_SSH_ZLIB_MAX_IN];
+    static uint8_t buf[DWS_SSH_ZLIB_MAX_IN];
     for (size_t i = 0; i < sizeof(buf); i++)
         buf[i] = (uint8_t)(i * 31 + 7);
     feed(buf, sizeof(buf));
@@ -182,10 +182,10 @@ void test_fuzz_low_entropy_stream()
     verify_stream();
 }
 
-// Input longer than DETWS_SSH_ZLIB_MAX_IN must be rejected (the caller chunks to packet size).
+// Input longer than DWS_SSH_ZLIB_MAX_IN must be rejected (the caller chunks to packet size).
 void test_oversize_input_rejected()
 {
-    static uint8_t buf[DETWS_SSH_ZLIB_MAX_IN + 1];
+    static uint8_t buf[DWS_SSH_ZLIB_MAX_IN + 1];
     memset(buf, 'x', sizeof(buf));
     size_t olen = 0;
     int rc = ssh_deflate_packet(&g_z, buf, sizeof(buf), g_out, sizeof(g_out), &olen);

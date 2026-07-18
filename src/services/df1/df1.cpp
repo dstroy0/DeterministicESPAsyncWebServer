@@ -8,7 +8,7 @@
 
 #include "services/df1/df1.h"
 
-#if DETWS_ENABLE_DF1
+#if DWS_ENABLE_DF1
 
 uint8_t df1_bcc(const uint8_t *data, size_t len)
 {
@@ -142,4 +142,4 @@ bool df1_parse_frame(const uint8_t *buf, size_t len, Df1Check check, uint8_t *ou
     return true;
 }
 
-#endif // DETWS_ENABLE_DF1
+#endif // DWS_ENABLE_DF1

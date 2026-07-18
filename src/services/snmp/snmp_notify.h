@@ -3,10 +3,10 @@
 
 /**
  * @file snmp_notify.h
- * @brief Outbound SNMP notifications - Trap and InformRequest (DETWS_ENABLE_SNMP_TRAP).
+ * @brief Outbound SNMP notifications - Trap and InformRequest (DWS_ENABLE_SNMP_TRAP).
  *
  * Lets the agent push events to a manager instead of only answering polls:
- * SNMPv2c (RFC 3416) and, when DETWS_ENABLE_SNMP_V3 is set, SNMPv3 USM (authPriv)
+ * SNMPv2c (RFC 3416) and, when DWS_ENABLE_SNMP_V3 is set, SNMPv3 USM (authPriv)
  * notifications. Every notification carries the mandatory `sysUpTime.0` and
  * `snmpTrapOID.0` bindings plus any caller varbinds. Split, like the other
  * services, into a host-testable PDU builder and an ESP32 UDP send:
@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SNMP_TRAP
+#if DWS_ENABLE_SNMP_TRAP
 
 /** @brief Variable-binding value types accepted in a notification. */
 enum class SnmpVbType : uint8_t
@@ -102,7 +102,7 @@ bool snmp_trap_v2c(const char *dst_ip, uint16_t port, const char *community, con
 bool snmp_inform_v2c(const char *dst_ip, uint16_t port, const char *community, uint32_t request_id,
                      const uint32_t *trap_oid, size_t trap_oid_len, const SnmpVarbind *vbs, size_t n);
 
-#if DETWS_ENABLE_SNMP_V3
+#if DWS_ENABLE_SNMP_V3
 /**
  * @brief Send an SNMPv3 USM Trap (authPriv) using the configured engine + user.
  *
@@ -126,6 +126,6 @@ bool snmp_inform_v3(const char *dst_ip, uint16_t port, uint32_t request_id, cons
                     size_t trap_oid_len, const SnmpVarbind *vbs, size_t n);
 #endif
 
-#endif // DETWS_ENABLE_SNMP_TRAP
+#endif // DWS_ENABLE_SNMP_TRAP
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SNMP_NOTIFY_H

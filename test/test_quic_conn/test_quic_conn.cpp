@@ -436,8 +436,8 @@ void test_full_handshake_and_stream()
     TEST_ASSERT_TRUE(got_resp);
 
     // --- Loss recovery: the client never ACKed the 1-RTT response, so a PTO retransmits it ---
-    quic_conn_on_timeout(&qc, 5000);                         // arm (APP space has unacknowledged stream data)
-    quic_conn_on_timeout(&qc, 5000 + DETWS_QUIC_PTO_MS + 1); // fire -> rewind the response stream
+    quic_conn_on_timeout(&qc, 5000);                       // arm (APP space has unacknowledged stream data)
+    quic_conn_on_timeout(&qc, 5000 + DWS_QUIC_PTO_MS + 1); // fire -> rewind the response stream
     sl = quic_conn_send(&qc, sdg, sizeof(sdg));
     TEST_ASSERT_TRUE(sl > 0);
     bool resent = false;
@@ -518,7 +518,7 @@ void test_pto_retransmits_flight()
     TEST_ASSERT_EQUAL_UINT(0, quic_conn_send(&qc, sdg, sizeof(sdg))); // still nothing (not fired)
 
     // Advance past the PTO: the flight is marked for retransmission and re-sent.
-    quic_conn_on_timeout(&qc, 1000 + DETWS_QUIC_PTO_MS + 1);
+    quic_conn_on_timeout(&qc, 1000 + DWS_QUIC_PTO_MS + 1);
     uint8_t sdg2[1500];
     size_t sl2 = quic_conn_send(&qc, sdg2, sizeof(sdg2));
     TEST_ASSERT_TRUE(sl2 > 0);
@@ -535,7 +535,7 @@ void test_pto_retransmits_flight()
     // to the last packet we sent), the PTO disarms and does not retransmit again.
     qc.space[QuicEnc::QUIC_ENC_INITIAL].discarded = true;
     qc.space[QuicEnc::QUIC_ENC_HANDSHAKE].largest_acked = qc.space[QuicEnc::QUIC_ENC_HANDSHAKE].last_ae_pn;
-    quic_conn_on_timeout(&qc, 1000 + 10 * DETWS_QUIC_PTO_MS);
+    quic_conn_on_timeout(&qc, 1000 + 10 * DWS_QUIC_PTO_MS);
     TEST_ASSERT_FALSE(qc.pto_armed);
     TEST_ASSERT_EQUAL_UINT(0, quic_conn_send(&qc, sdg2, sizeof(sdg2)));
 }
@@ -874,7 +874,7 @@ void test_quic_stream_send_table_full()
     QuicConn qc;
     QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
     init_conn(&qc, &cb);
-    for (int i = 0; i < DETWS_QUIC_MAX_STREAMS; i++)
+    for (int i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
         TEST_ASSERT_EQUAL_UINT(2, quic_conn_stream_send(&qc, (uint64_t)(i * 4), (const uint8_t *)"hi", 2, false));
     TEST_ASSERT_EQUAL_UINT(0, quic_conn_stream_send(&qc, 999, (const uint8_t *)"x", 1, false)); // table full
 }
@@ -910,7 +910,7 @@ void test_quic_recv_malformed_initial_headers()
     dg[hn + 2] = 0x00; // payload length 0x400 = 1024
     TEST_ASSERT_FALSE(quic_conn_recv(&qc, dg, hn + 8));
 
-    // 303: a packet larger than the decrypt work buffer (pkt_len > DETWS_QUIC_MAX_DATAGRAM), yet <= len.
+    // 303: a packet larger than the decrypt work buffer (pkt_len > DWS_QUIC_MAX_DATAGRAM), yet <= len.
     dg[hn] = 0x00;
     size_t c = quic_varint_encode(dg + hn + 1, sizeof(dg) - hn - 1, 1400);
     memset(dg + hn + 1 + c, 0, 1450 - (hn + 1 + c));
@@ -973,7 +973,7 @@ void test_quic_conn_stream_frames()
         quic_conn_recv(&qc, dg, dl);
         TEST_ASSERT_TRUE(g_stream_fin);
     }
-    // (c) The inbound stream table fills at DETWS_QUIC_MAX_STREAMS distinct ids; the extra is dropped.
+    // (c) The inbound stream table fills at DWS_QUIC_MAX_STREAMS distinct ids; the extra is dropped.
     {
         QuicConn qc;
         QuicConnCallbacks cb = {on_stream_data, on_hs_done, nullptr};
@@ -981,7 +981,7 @@ void test_quic_conn_stream_frames()
         uint8_t d1 = 0x55;
         uint8_t fr[512];
         size_t fl = 0;
-        for (int i = 0; i <= DETWS_QUIC_MAX_STREAMS; i++)
+        for (int i = 0; i <= DWS_QUIC_MAX_STREAMS; i++)
             fl += quic_build_stream(fr + fl, sizeof(fr) - fl, (uint64_t)(i * 4), 0, &d1, 1, false);
         size_t dl = build_long(dg, sizeof dg, QuicLongPacket::QUIC_LP_INITIAL, ODCID, 8, CLIENT_SCID, 4, 0,
                                &init.client, fr, fl);
@@ -989,7 +989,7 @@ void test_quic_conn_stream_frames()
     }
 }
 
-// A CRYPTO reassembly window overflow is clamped (two datagrams push past DETWS_QUIC_CRYPTO_RX).
+// A CRYPTO reassembly window overflow is clamped (two datagrams push past DWS_QUIC_CRYPTO_RX).
 void test_quic_conn_crypto_window_clamp()
 {
     fill();

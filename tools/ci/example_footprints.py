@@ -7,7 +7,7 @@ Three subcommands, used by .github/workflows/esp32-build.yml:
       Print a one-line JSON array of {name, ino, flags, feature} for every
       example .ino, to drive the build matrix. `flags` is the first
       `build_flags=...` documented in the example's README (empty if none);
-      `feature` is the example's DETWS_ENABLE_* signature (e.g. "TLS+MTLS"), or
+      `feature` is the example's DWS_ENABLE_* signature (e.g. "TLS+MTLS"), or
       "core/<name>" when it enables nothing.
 
       With a newline-separated list of changed paths on stdin, prints only the
@@ -54,10 +54,10 @@ def find_flags(readme):
 
 
 def feature_key(flags, name):
-    enables = re.findall(r"-D(DETWS_[A-Z0-9_]+)=", flags)
+    enables = re.findall(r"-D(DWS_[A-Z0-9_]+)=", flags)
     short = []
     for e in enables:
-        s = e.replace("DETWS_ENABLE_", "").replace("DETWS_", "")
+        s = e.replace("DWS_ENABLE_", "").replace("DWS_", "")
         if s and s not in short:
             short.append(s)
     return "+".join(short) if short else f"core/{name}"

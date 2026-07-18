@@ -3,7 +3,7 @@
 
 /**
  * @file mms.h
- * @brief IEC 61850 MMS (Manufacturing Message Specification) PDU codec (DETWS_ENABLE_MMS).
+ * @brief IEC 61850 MMS (Manufacturing Message Specification) PDU codec (DWS_ENABLE_MMS).
  *
  * MMS (ISO 9506) is the client/server core of IEC 61850: an ACSI object model (logical devices/nodes,
  * data objects, datasets) carried as BER-encoded MMS PDUs over ISO-on-TCP (TPKT + COTP, already shipped
@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_MMS
+#if DWS_ENABLE_MMS
 
 /** @brief MMS PDU tags (context-specific) + the service tags used here. */
 // MMS PDU / service / BER tags: wire bytes, so integer constants in a namespacing struct.
@@ -46,7 +46,7 @@ struct Mms
  * @param item_name the MMS ObjectName (e.g. "LD0/GGIO1$ST$Ind1$stVal"), a VisibleString.
  * @return the PDU length written, or 0 on overflow / bad args.
  */
-size_t detws_mms_read_request(uint32_t invoke_id, const char *item_name, uint8_t *out, size_t cap);
+size_t dws_mms_read_request(uint32_t invoke_id, const char *item_name, uint8_t *out, size_t cap);
 
 /**
  * @brief Build an MMS confirmed-response Read PDU carrying one pre-encoded AccessResult data value.
@@ -56,7 +56,7 @@ size_t detws_mms_read_request(uint32_t invoke_id, const char *item_name, uint8_t
  * @param data_len  its length.
  * @return the PDU length written, or 0 on overflow.
  */
-size_t detws_mms_read_response(uint32_t invoke_id, const uint8_t *data, size_t data_len, uint8_t *out, size_t cap);
+size_t dws_mms_read_response(uint32_t invoke_id, const uint8_t *data, size_t data_len, uint8_t *out, size_t cap);
 
 /** @brief A parsed MMS confirmed PDU (top-level). */
 struct MmsPdu
@@ -69,7 +69,7 @@ struct MmsPdu
 };
 
 /** @brief Parse an MMS confirmed PDU header (pdu tag + invokeID + service tag). @return true if well-formed. */
-bool detws_mms_parse(const uint8_t *pdu, size_t len, MmsPdu *out);
+bool dws_mms_parse(const uint8_t *pdu, size_t len, MmsPdu *out);
 
-#endif // DETWS_ENABLE_MMS
+#endif // DWS_ENABLE_MMS
 #endif // DETERMINISTICESPASYNCWEBSERVER_MMS_H

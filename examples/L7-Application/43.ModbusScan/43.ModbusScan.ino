@@ -3,7 +3,7 @@
 
 /**
  * @file 43.ModbusScan.ino
- * @brief Modbus master codec + register scanner (DETWS_ENABLE_MODBUS_MASTER).
+ * @brief Modbus master codec + register scanner (DWS_ENABLE_MODBUS_MASTER).
  *
  * The master/client side of Modbus: build read-request ADUs and parse the
  * responses into register values. This example self-scans - it runs the requests
@@ -13,12 +13,12 @@
  * holding registers as JSON.
  *
  * NOTE: enable both flags for the whole build. In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_MODBUS=1 -DDETWS_ENABLE_MODBUS_MASTER=1
+ *     build_flags = -DDWS_ENABLE_MODBUS=1 -DDWS_ENABLE_MODBUS_MASTER=1
  * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_MODBUS 1
-#define DETWS_ENABLE_MODBUS_MASTER 1
+#define DWS_ENABLE_MODBUS 1
+#define DWS_ENABLE_MODBUS_MASTER 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -29,7 +29,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

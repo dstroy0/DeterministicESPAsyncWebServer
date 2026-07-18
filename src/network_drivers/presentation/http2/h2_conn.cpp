@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http2/h2_conn.h"
 
-#if DETWS_ENABLE_HTTP2
+#if DWS_ENABLE_HTTP2
 
 #include <stdio.h>
 #include <string.h>
@@ -28,7 +28,7 @@ void wr(H2Conn *c, const uint8_t *data, size_t len)
 
 H2Stream *find_stream(H2Conn *c, uint32_t id)
 {
-    for (int i = 0; i < DETWS_H2_MAX_STREAMS; i++)
+    for (int i = 0; i < DWS_H2_MAX_STREAMS; i++)
         if (c->streams[i].id == id && id != 0)
             return &c->streams[i];
     return nullptr;
@@ -36,7 +36,7 @@ H2Stream *find_stream(H2Conn *c, uint32_t id)
 
 H2Stream *alloc_stream(H2Conn *c, uint32_t id)
 {
-    for (int i = 0; i < DETWS_H2_MAX_STREAMS; i++)
+    for (int i = 0; i < DWS_H2_MAX_STREAMS; i++)
         if (c->streams[i].id == 0)
         {
             c->streams[i].id = id;
@@ -51,7 +51,7 @@ void send_our_settings(H2Conn *c)
 {
     const uint16_t ids[4] = {H2Setting::H2_SETTINGS_ENABLE_PUSH, H2Setting::H2_SETTINGS_MAX_CONCURRENT_STREAMS,
                              H2Setting::H2_SETTINGS_INITIAL_WINDOW_SIZE, H2Setting::H2_SETTINGS_MAX_FRAME_SIZE};
-    const uint32_t vals[4] = {0, DETWS_H2_MAX_STREAMS, 65535, DETWS_H2_MAX_FRAME};
+    const uint32_t vals[4] = {0, DWS_H2_MAX_STREAMS, 65535, DWS_H2_MAX_FRAME};
     uint8_t buf[H2_FRAME_HEADER_LEN + 4 * 6];
     size_t n = h2_build_settings(buf, sizeof buf, ids, vals, 4);
     wr(c, buf, n);
@@ -271,7 +271,7 @@ void h2_conn_init(H2Conn *c, const H2Callbacks *cb)
     c->phase = 0;
     h2_settings_defaults(&c->peer);
     c->conn_send_window = 65535;
-    hpack_dyn_init(&c->hdec, DETWS_HPACK_TABLE_BYTES);
+    hpack_dyn_init(&c->hdec, DWS_HPACK_TABLE_BYTES);
     send_our_settings(c);
 }
 
@@ -308,7 +308,7 @@ bool h2_conn_recv(H2Conn *c, const uint8_t *data, size_t len)
                 return true;
         }
         uint32_t plen = ((uint32_t)c->fbuf[0] << 16) | ((uint32_t)c->fbuf[1] << 8) | c->fbuf[2];
-        if (plen > DETWS_H2_MAX_FRAME)
+        if (plen > DWS_H2_MAX_FRAME)
             return false; // FRAME_SIZE_ERROR
         size_t total = H2_FRAME_HEADER_LEN + plen;
         size_t take = total - c->fhave;
@@ -405,4 +405,4 @@ void h2_conn_goaway(H2Conn *c, uint32_t error)
     c->phase = 2;
 }
 
-#endif // DETWS_ENABLE_HTTP2
+#endif // DWS_ENABLE_HTTP2

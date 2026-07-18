@@ -75,14 +75,14 @@ static void fresh(void)
     g_d.size = sizeof(g_disk);
     g_dev = dev_over(&g_d);
     TEST_ASSERT_TRUE(wal_store_format(&g_wal, &g_dev));
-    TEST_ASSERT_TRUE(detws_dbm_open(&g_db, &g_wal));
+    TEST_ASSERT_TRUE(dws_dbm_open(&g_db, &g_wal));
 }
 static bool reboot(void)
 {
     g_dev = dev_over(&g_d);
     if (!wal_store_mount(&g_wal, &g_dev))
         return false;
-    return detws_dbm_open(&g_db, &g_wal);
+    return dws_dbm_open(&g_db, &g_wal);
 }
 
 // --- entry construction helpers ------------------------------------------------------------------
@@ -115,7 +115,7 @@ void test_serialize_roundtrip_all_fields(void)
 {
     EdgeEntry in;
     memset(&in, 0, sizeof(in));
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/img.png?w=64");
     strncpy(in.key, canon, sizeof(in.key) - 1);
     edge_key_digest(in.key, strlen(in.key), in.digest);
@@ -155,19 +155,19 @@ void test_serialize_roundtrip_all_fields(void)
 void test_serialize_max_body(void)
 {
     EdgeEntry in;
-    uint8_t body[DETWS_EDGE_BODY_MAX];
-    for (int i = 0; i < DETWS_EDGE_BODY_MAX; i++)
+    uint8_t body[DWS_EDGE_BODY_MAX];
+    for (int i = 0; i < DWS_EDGE_BODY_MAX; i++)
         body[i] = (uint8_t)(i * 131 + 17);
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/big.bin");
-    fill_entry(&in, canon, "\"big\"", body, DETWS_EDGE_BODY_MAX);
+    fill_entry(&in, canon, "\"big\"", body, DWS_EDGE_BODY_MAX);
 
     size_t n = edge_sd_serialize(&in, g_scratch, sizeof(g_scratch));
     TEST_ASSERT_TRUE(n > 0);
     EdgeEntry out;
     TEST_ASSERT_TRUE(edge_sd_deserialize(g_scratch, n, &out));
-    TEST_ASSERT_EQUAL_UINT16(DETWS_EDGE_BODY_MAX, out.body_len);
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(body, out.body, DETWS_EDGE_BODY_MAX);
+    TEST_ASSERT_EQUAL_UINT16(DWS_EDGE_BODY_MAX, out.body_len);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(body, out.body, DWS_EDGE_BODY_MAX);
 }
 
 void test_serialize_too_small_scratch_fails(void)
@@ -175,7 +175,7 @@ void test_serialize_too_small_scratch_fails(void)
     EdgeEntry in;
     uint8_t body[300];
     memset(body, 'x', sizeof(body));
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/x");
     fill_entry(&in, canon, "\"e\"", body, sizeof(body));
     uint8_t tiny[16];
@@ -185,7 +185,7 @@ void test_serialize_too_small_scratch_fails(void)
 void test_deserialize_corrupt_fails_closed(void)
 {
     EdgeEntry in;
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/y");
     fill_entry(&in, canon, "\"e\"", (const uint8_t *)"hello", 5);
     size_t n = edge_sd_serialize(&in, g_scratch, sizeof(g_scratch));
@@ -205,7 +205,7 @@ void test_put_get_roundtrip(void)
 {
     fresh();
     EdgeEntry in;
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/a.txt");
     fill_entry(&in, canon, "\"a1\"", (const uint8_t *)"payload-A", 9);
     TEST_ASSERT_TRUE(edge_sd_put(&g_db, &in, g_scratch, sizeof(g_scratch)));
@@ -220,7 +220,7 @@ void test_put_get_roundtrip(void)
 
     // A digest that was never stored misses.
     EdgeEntry in2;
-    char c2[DETWS_EDGE_KEY_MAX];
+    char c2[DWS_EDGE_KEY_MAX];
     mkcanon(c2, sizeof(c2), "/cdn/never");
     fill_entry(&in2, c2, "\"n\"", (const uint8_t *)"x", 1);
     TEST_ASSERT_FALSE(edge_sd_get(&g_db, in2.digest, &out, g_scratch, sizeof(g_scratch)));
@@ -230,7 +230,7 @@ void test_no_validator_not_spilled(void)
 {
     fresh();
     EdgeEntry in;
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/novalidator");
     fill_entry(&in, canon, "", (const uint8_t *)"body", 4); // no etag / last-modified
     in.last_modified[0] = '\0';
@@ -243,15 +243,15 @@ void test_no_validator_not_spilled(void)
 void test_oversize_body_stays_l1_only(void)
 {
     fresh();
-    // A body whose serialized size exceeds DETWS_DBM_VAL_MAX must not be spilled (stays L1-only).
+    // A body whose serialized size exceeds DWS_DBM_VAL_MAX must not be spilled (stays L1-only).
     EdgeEntry in;
-    uint8_t body[DETWS_EDGE_BODY_MAX];
+    uint8_t body[DWS_EDGE_BODY_MAX];
     memset(body, 'Z', sizeof(body));
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/toobig");
-    fill_entry(&in, canon, "\"big\"", body, DETWS_EDGE_BODY_MAX);
+    fill_entry(&in, canon, "\"big\"", body, DWS_EDGE_BODY_MAX);
     size_t serialized = edge_sd_serialize(&in, g_scratch, sizeof(g_scratch));
-    TEST_ASSERT_TRUE(serialized > DETWS_DBM_VAL_MAX); // the env sizes DBM_VAL_MAX below a full entry
+    TEST_ASSERT_TRUE(serialized > DWS_DBM_VAL_MAX); // the env sizes DBM_VAL_MAX below a full entry
     TEST_ASSERT_FALSE(edge_sd_put(&g_db, &in, g_scratch, sizeof(g_scratch)));
 }
 
@@ -266,7 +266,7 @@ static void spill_cb(void *ctx, const EdgeEntry *v)
 
 static EdgeEntry *store_mk(EdgeCacheStore *s, const char *path, const char *etag, const char *body)
 {
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), path);
     EdgeEntry *e = edge_store_alloc(s, canon, "");
     TEST_ASSERT_NOT_NULL(e);
@@ -289,12 +289,12 @@ void test_spill_on_evict_and_promote(void)
     store.evict_ctx = &g_db;
 
     // Fill every L1 slot, then one more: the LRU victim (the first inserted) is evicted -> spilled to L2.
-    char first_canon[DETWS_EDGE_KEY_MAX];
+    char first_canon[DWS_EDGE_KEY_MAX];
     mkcanon(first_canon, sizeof(first_canon), "/cdn/e0");
     uint8_t first_digest[32];
     edge_key_digest(first_canon, strlen(first_canon), first_digest);
 
-    for (int i = 0; i < DETWS_EDGE_CACHE_SLOTS; i++)
+    for (int i = 0; i < DWS_EDGE_CACHE_SLOTS; i++)
     {
         char path[24];
         snprintf(path, sizeof(path), "/cdn/e%d", i);
@@ -312,7 +312,7 @@ void test_spill_on_evict_and_promote(void)
     TEST_ASSERT_EQUAL_STRING(first_canon, out.key);
     TEST_ASSERT_EQUAL_STRING("\"e0\"", out.etag);
 
-    char last_canon[DETWS_EDGE_KEY_MAX];
+    char last_canon[DWS_EDGE_KEY_MAX];
     mkcanon(last_canon, sizeof(last_canon), "/cdn/eN");
     uint8_t last_digest[32];
     edge_key_digest(last_canon, strlen(last_canon), last_digest);
@@ -329,7 +329,7 @@ void test_transient_entry_not_spilled(void)
     store.evict_ctx = &g_db;
 
     // Fill the store with transient (empty-key) entries; evicting one must NOT fire the write-back hook.
-    for (int i = 0; i <= DETWS_EDGE_CACHE_SLOTS; i++)
+    for (int i = 0; i <= DWS_EDGE_CACHE_SLOTS; i++)
     {
         EdgeEntry *e = edge_store_alloc(&store, "", "");
         TEST_ASSERT_NOT_NULL(e);
@@ -344,12 +344,12 @@ void test_survives_reboot(void)
 {
     fresh();
     EdgeEntry in;
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/persist");
     fill_entry(&in, canon, "\"p9\"", (const uint8_t *)"survive-me", 10);
     strncpy(in.last_modified, "Wed, 01 Jan 2025 00:00:00 GMT", sizeof(in.last_modified) - 1);
     TEST_ASSERT_TRUE(edge_sd_put(&g_db, &in, g_scratch, sizeof(g_scratch)));
-    TEST_ASSERT_TRUE(detws_dbm_sync(&g_db));
+    TEST_ASSERT_TRUE(dws_dbm_sync(&g_db));
 
     TEST_ASSERT_TRUE(reboot());
     EdgeEntry out;
@@ -366,7 +366,7 @@ void test_del(void)
 {
     fresh();
     EdgeEntry in;
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), "/cdn/del");
     fill_entry(&in, canon, "\"d\"", (const uint8_t *)"gone", 4);
     TEST_ASSERT_TRUE(edge_sd_put(&g_db, &in, g_scratch, sizeof(g_scratch)));
@@ -379,7 +379,7 @@ void test_del(void)
 static void put_path(const char *path)
 {
     EdgeEntry in;
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), path);
     fill_entry(&in, canon, "\"v\"", (const uint8_t *)"x", 1);
     TEST_ASSERT_TRUE(edge_sd_put(&g_db, &in, g_scratch, sizeof(g_scratch)));
@@ -387,7 +387,7 @@ static void put_path(const char *path)
 static bool has_path(const char *path)
 {
     EdgeEntry in, out;
-    char canon[DETWS_EDGE_KEY_MAX];
+    char canon[DWS_EDGE_KEY_MAX];
     mkcanon(canon, sizeof(canon), path);
     fill_entry(&in, canon, "\"v\"", (const uint8_t *)"x", 1);
     return edge_sd_get(&g_db, in.digest, &out, g_scratch, sizeof(g_scratch));
@@ -445,13 +445,13 @@ void test_shared_dbm_foreign_value_untouched(void)
     memset(foreign_key, 0xA5, sizeof(foreign_key));
     uint8_t foreign_val[16];
     memset(foreign_val, 0xFF, sizeof(foreign_val)); // first byte 0xFF != edge version 1
-    TEST_ASSERT_TRUE(detws_dbm_put(&g_db, (const char *)foreign_key, 32, foreign_val, sizeof(foreign_val)));
+    TEST_ASSERT_TRUE(dws_dbm_put(&g_db, (const char *)foreign_key, 32, foreign_val, sizeof(foreign_val)));
     put_path("/cdn/mine");
 
     TEST_ASSERT_EQUAL_UINT32(1, edge_sd_purge_all(&g_db)); // only the edge value
     TEST_ASSERT_FALSE(has_path("/cdn/mine"));
     uint8_t out[16];
-    TEST_ASSERT_EQUAL_INT(16, detws_dbm_get(&g_db, (const char *)foreign_key, 32, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_INT(16, dws_dbm_get(&g_db, (const char *)foreign_key, 32, out, sizeof(out)));
     TEST_ASSERT_EQUAL_UINT8_ARRAY(foreign_val, out, 16); // foreign value intact
 }
 

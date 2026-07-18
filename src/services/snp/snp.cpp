@@ -8,11 +8,11 @@
 
 #include "services/snp/snp.h"
 
-#if DETWS_ENABLE_SNP
+#if DWS_ENABLE_SNP
 
 #include <string.h>
 
-uint8_t detws_snp_bcc(const uint8_t *bytes, size_t len)
+uint8_t dws_snp_bcc(const uint8_t *bytes, size_t len)
 {
     uint8_t sum = 0;
     for (size_t i = 0; i < len; i++)
@@ -20,7 +20,7 @@ uint8_t detws_snp_bcc(const uint8_t *bytes, size_t len)
     return sum;
 }
 
-size_t detws_snp_build(uint8_t control, const uint8_t *data, size_t data_len, uint8_t *out, size_t cap)
+size_t dws_snp_build(uint8_t control, const uint8_t *data, size_t data_len, uint8_t *out, size_t cap)
 {
     if (!out || (data_len && !data) || data_len > 255)
         return 0;
@@ -31,11 +31,11 @@ size_t detws_snp_build(uint8_t control, const uint8_t *data, size_t data_len, ui
     out[1] = (uint8_t)data_len;
     if (data_len)
         memcpy(out + 2, data, data_len);
-    out[2 + data_len] = detws_snp_bcc(out, 2 + data_len); // BCC over control..last data
+    out[2 + data_len] = dws_snp_bcc(out, 2 + data_len); // BCC over control..last data
     return n;
 }
 
-bool detws_snp_parse(const uint8_t *frame, size_t len, SnpFrame *out)
+bool dws_snp_parse(const uint8_t *frame, size_t len, SnpFrame *out)
 {
     if (!frame || !out || len < 3) // control + length + BCC
         return false;
@@ -43,7 +43,7 @@ bool detws_snp_parse(const uint8_t *frame, size_t len, SnpFrame *out)
     size_t expect = 2 + (size_t)data_len + 1;
     if (len < expect)
         return false;
-    if (detws_snp_bcc(frame, 2 + data_len) != frame[2 + data_len])
+    if (dws_snp_bcc(frame, 2 + data_len) != frame[2 + data_len])
         return false;
     out->control = frame[0];
     out->data = data_len ? (frame + 2) : nullptr;
@@ -51,4 +51,4 @@ bool detws_snp_parse(const uint8_t *frame, size_t len, SnpFrame *out)
     return true;
 }
 
-#endif // DETWS_ENABLE_SNP
+#endif // DWS_ENABLE_SNP

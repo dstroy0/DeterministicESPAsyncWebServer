@@ -4,7 +4,7 @@
 /**
  * @file sftp.h
  * @brief SFTP protocol v3 wire codec (SSH_FXP_*, draft-ietf-secsh-filexfer-02) - the pure, host-testable
- *        half of the SSH SFTP subsystem (DETWS_ENABLE_SSH_SFTP).
+ *        half of the SSH SFTP subsystem (DWS_ENABLE_SSH_SFTP).
  *
  * SFTP runs as an SSH "subsystem" over a session channel: length-prefixed packets, each `uint32 length ||
  * byte type || …`. This file parses request packets and builds response packets into caller buffers - no
@@ -22,7 +22,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_SSH_SFTP
+#if DWS_ENABLE_SSH_SFTP
 
 #include <stddef.h>
 #include <stdint.h>
@@ -160,6 +160,6 @@ size_t sftp_build_name1(uint32_t id, const char *name, const char *longname, con
 size_t sftp_format_longname(bool is_dir, uint32_t perms, uint64_t size, uint32_t mtime, const char *name, char *out,
                             size_t cap);
 
-#endif // DETWS_ENABLE_SSH_SFTP
+#endif // DWS_ENABLE_SSH_SFTP
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SFTP_H

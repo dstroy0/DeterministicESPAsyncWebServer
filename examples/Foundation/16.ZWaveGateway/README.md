@@ -1,6 +1,6 @@
 # 16.ZWaveGateway - a Z-Wave mesh bridged to the gateway
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_ZWAVE`, `DETWS_ENABLE_GATEWAY`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_ZWAVE`, `DWS_ENABLE_GATEWAY`
 
 ## What this example teaches
 
@@ -9,7 +9,7 @@ Silicon Labs 500 / 700-series controller speaking its **Serial API** over UART. 
 reports, we pull the source node id + payload and publish it northbound.
 
 ```
-Z-Wave mesh --UART--> zwave_parse_frame() --> node + payload -> det_gateway_uplink()
+Z-Wave mesh --UART--> zwave_parse_frame() --> node + payload -> dws_gateway_uplink()
                                                                      |
                                               envelope + topic  zwave/0/<node>
                                                                      |
@@ -26,7 +26,7 @@ int n = zwave_parse_frame(buf, len, &type, &cmd, &pd, &pdlen);  // >0 / need-mor
 if (n > 0) {
     Serial2.write((uint8_t)ZWAVE_ACK);              // acknowledge the frame
     if (cmd == 0x04 /* ApplicationCommandHandler */)
-        det_gateway_uplink(0, pd[1] /* node */, &pd[3], pdlen - 3, 0);
+        dws_gateway_uplink(0, pd[1] /* node */, &pd[3], pdlen - 3, 0);
 }
 ```
 
@@ -51,6 +51,6 @@ The flags must reach the library build, so pass them as build flags:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_ZWAVE=1 -DDETWS_ENABLE_GATEWAY=1" \
+  --project-option="build_flags=-DDWS_ENABLE_ZWAVE=1 -DDWS_ENABLE_GATEWAY=1" \
   --lib="." examples/Foundation/16.ZWaveGateway/16.ZWaveGateway.ino
 ```

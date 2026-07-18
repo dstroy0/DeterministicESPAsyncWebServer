@@ -5,7 +5,7 @@
  * @file 04.mTLS.ino
  * @brief Mutual TLS - require and verify a client certificate (mTLS).
  *
- * With DETWS_ENABLE_MTLS the HTTPS server demands a client certificate during the
+ * With DWS_ENABLE_MTLS the HTTPS server demands a client certificate during the
  * TLS handshake and verifies it against a configured trust-anchor CA. A client
  * that presents no certificate, or one not signed by the CA, is rejected before
  * any HTTP is exchanged - strong transport-level client authentication with no
@@ -24,12 +24,12 @@
  * NOTE: optional features are gated by a compile flag the *library* sources must
  * also see. The defines below document intent, but for PlatformIO enable them
  * for the whole build, e.g. in platformio.ini:
- *     build_flags = -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_MTLS=1
+ *     build_flags = -DDWS_ENABLE_TLS=1 -DDWS_ENABLE_MTLS=1
  * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_TLS 1
-#define DETWS_ENABLE_MTLS 1
+#define DWS_ENABLE_TLS 1
+#define DWS_ENABLE_MTLS 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -38,7 +38,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // --- DEMO server identity (ECDSA P-256), presented to the client. ----------
 static const char SERVER_CERT_PEM[] = R"PEM(-----BEGIN CERTIFICATE-----
@@ -113,7 +113,7 @@ void setup()
 
     // Identify the verified client to the handler.
     server.on("/whoami", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
-        char subject[DETWS_MTLS_SUBJECT_MAX];
+        char subject[DWS_MTLS_SUBJECT_MAX];
         if (server.tls_client_subject(id, subject, sizeof(subject)) > 0)
             server.send(id, 200, "text/plain", subject);
         else

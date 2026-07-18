@@ -13,7 +13,7 @@
 
 #include "services/graphql/graphql.h"
 
-#if DETWS_ENABLE_GRAPHQL
+#if DWS_ENABLE_GRAPHQL
 
 #include <stdio.h>
 #include <string.h>
@@ -28,7 +28,7 @@ namespace
 {
 struct Node
 {
-    char name[DETWS_GQL_NAME_MAX];
+    char name[DWS_GQL_NAME_MAX];
     int first_arg;
     int n_args;
     int first_child; // -1 if leaf
@@ -36,7 +36,7 @@ struct Node
 };
 struct Arg
 {
-    char name[DETWS_GQL_NAME_MAX];
+    char name[DWS_GQL_NAME_MAX];
     DetwsGqlValue val;
 };
 
@@ -47,27 +47,27 @@ struct Arg
 // machine, so its helpers reach this owner directly.
 struct GqlCtx
 {
-    Node nodes[DETWS_GQL_MAX_NODES];
-    Arg args[DETWS_GQL_MAX_ARGS];
-    char strbuf[DETWS_GQL_STRBUF];
+    Node nodes[DWS_GQL_MAX_NODES];
+    Arg args[DWS_GQL_MAX_ARGS];
+    char strbuf[DWS_GQL_STRBUF];
     int nnodes;
     int nargs;
     int str_len;
     int root;
     DetwsGqlResult err;
     // executor: scope stack of in-scope arg indices, resolver, and dotted path
-    int scope[DETWS_GQL_MAX_ARGS];
+    int scope[DWS_GQL_MAX_ARGS];
     int scope_n;
-    detws_gql_resolver_fn resolver;
-    char path[DETWS_GQL_PATH_MAX];
+    dws_gql_resolver_fn resolver;
+    char path[DWS_GQL_PATH_MAX];
 };
 GqlCtx s_gql;
 
 int new_node()
 {
-    if (s_gql.nnodes >= DETWS_GQL_MAX_NODES)
+    if (s_gql.nnodes >= DWS_GQL_MAX_NODES)
     {
-        s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_LIMIT;
+        s_gql.err = DetwsGqlResult::DWS_GQL_ERR_LIMIT;
         return -1;
     }
     Node *n = &s_gql.nodes[s_gql.nnodes];
@@ -112,8 +112,8 @@ char peek(Lex &L)
 // Record a generic parse error, preserving any more specific error already set.
 void gql_flag_parse_err()
 {
-    if (s_gql.err == DetwsGqlResult::DETWS_GQL_OK)
-        s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+    if (s_gql.err == DetwsGqlResult::DWS_GQL_OK)
+        s_gql.err = DetwsGqlResult::DWS_GQL_ERR_PARSE;
 }
 
 bool is_name_start(char c)
@@ -133,9 +133,9 @@ bool parse_name(Lex &L, char *out)
     int i = 0;
     while (L.p < L.e && is_name(*L.p))
     {
-        if (i >= DETWS_GQL_NAME_MAX - 1)
+        if (i >= DWS_GQL_NAME_MAX - 1)
         {
-            s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_LIMIT;
+            s_gql.err = DetwsGqlResult::DWS_GQL_ERR_LIMIT;
             return false;
         }
         out[i++] = *L.p++;
@@ -147,9 +147,9 @@ bool parse_name(Lex &L, char *out)
 // Copy a decoded string into the strbuf pool; returns pointer or nullptr.
 const char *intern(const char *s, int len)
 {
-    if (s_gql.str_len + len + 1 > DETWS_GQL_STRBUF)
+    if (s_gql.str_len + len + 1 > DWS_GQL_STRBUF)
     {
-        s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_LIMIT;
+        s_gql.err = DetwsGqlResult::DWS_GQL_ERR_LIMIT;
         return nullptr;
     }
     char *dst = s_gql.strbuf + s_gql.str_len;
@@ -165,7 +165,7 @@ bool parse_value(Lex &L, DetwsGqlValue *v)
     if (c == '"')
     {
         L.p++; // opening quote
-        char tmp[DETWS_GQL_STRBUF];
+        char tmp[DWS_GQL_STRBUF];
         int n = 0;
         while (L.p < L.e && *L.p != '"')
         {
@@ -200,21 +200,21 @@ bool parse_value(Lex &L, DetwsGqlValue *v)
             }
             if (n >= (int)sizeof(tmp) - 1)
             {
-                s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_LIMIT;
+                s_gql.err = DetwsGqlResult::DWS_GQL_ERR_LIMIT;
                 return false;
             }
             tmp[n++] = ch;
         }
         if (L.p >= L.e)
         {
-            s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+            s_gql.err = DetwsGqlResult::DWS_GQL_ERR_PARSE;
             return false;
         }
         L.p++; // closing quote
         const char *s = intern(tmp, n);
         if (!s)
             return false;
-        v->type = DetwsGqlType::DETWS_GQL_STR;
+        v->type = DetwsGqlType::DWS_GQL_STR;
         v->s = s;
         return true;
     }
@@ -273,17 +273,17 @@ bool parse_value(Lex &L, DetwsGqlValue *v)
         }
         if (!any)
         {
-            s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+            s_gql.err = DetwsGqlResult::DWS_GQL_ERR_PARSE;
             return false;
         }
         if (is_float)
         {
-            v->type = DetwsGqlType::DETWS_GQL_FLOAT;
+            v->type = DetwsGqlType::DWS_GQL_FLOAT;
             v->f = neg ? -fval : fval;
         }
         else
         {
-            v->type = DetwsGqlType::DETWS_GQL_INT;
+            v->type = DetwsGqlType::DWS_GQL_INT;
             // Negate in signed space: ipart is unsigned (to dodge signed-overflow UB while
             // accumulating), so -ipart would be a modular unsigned negation, not arithmetic negation.
             v->i = neg ? -(long long)ipart : (long long)ipart;
@@ -296,23 +296,23 @@ bool parse_value(Lex &L, DetwsGqlValue *v)
     {
         if (strcmp(kw, "true") == 0)
         {
-            v->type = DetwsGqlType::DETWS_GQL_BOOL;
+            v->type = DetwsGqlType::DWS_GQL_BOOL;
             v->b = true;
             return true;
         }
         if (strcmp(kw, "false") == 0)
         {
-            v->type = DetwsGqlType::DETWS_GQL_BOOL;
+            v->type = DetwsGqlType::DWS_GQL_BOOL;
             v->b = false;
             return true;
         }
         if (strcmp(kw, "null") == 0)
         {
-            v->type = DetwsGqlType::DETWS_GQL_NULL;
+            v->type = DetwsGqlType::DWS_GQL_NULL;
             return true;
         }
     }
-    s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+    s_gql.err = DetwsGqlResult::DWS_GQL_ERR_PARSE;
     return false;
 }
 
@@ -336,9 +336,9 @@ int parse_field(Lex &L, int depth)
         int count = 0;
         while (peek(L) != ')')
         {
-            if (s_gql.nargs >= DETWS_GQL_MAX_ARGS)
+            if (s_gql.nargs >= DWS_GQL_MAX_ARGS)
             {
-                s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_LIMIT;
+                s_gql.err = DetwsGqlResult::DWS_GQL_ERR_LIMIT;
                 return -1;
             }
             Arg *a = &s_gql.args[s_gql.nargs];
@@ -349,7 +349,7 @@ int parse_field(Lex &L, int depth)
             }
             if (peek(L) != ':')
             {
-                s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+                s_gql.err = DetwsGqlResult::DWS_GQL_ERR_PARSE;
                 return -1;
             }
             L.p++; // ':'
@@ -367,19 +367,19 @@ int parse_field(Lex &L, int depth)
     // sub-selection
     if (peek(L) == '{')
         s_gql.nodes[idx].first_child = parse_selection(L, depth + 1);
-    return s_gql.err != DetwsGqlResult::DETWS_GQL_OK ? -1 : idx;
+    return s_gql.err != DetwsGqlResult::DWS_GQL_OK ? -1 : idx;
 }
 
 int parse_selection(Lex &L, int depth)
 {
-    if (depth > DETWS_GQL_MAX_DEPTH)
+    if (depth > DWS_GQL_MAX_DEPTH)
     {
-        s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_LIMIT;
+        s_gql.err = DetwsGqlResult::DWS_GQL_ERR_LIMIT;
         return -1;
     }
     if (peek(L) != '{')
     {
-        s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+        s_gql.err = DetwsGqlResult::DWS_GQL_ERR_PARSE;
         return -1;
     }
     L.p++; // '{'
@@ -389,7 +389,7 @@ int parse_selection(Lex &L, int depth)
     {
         if (L.p >= L.e)
         {
-            s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+            s_gql.err = DetwsGqlResult::DWS_GQL_ERR_PARSE;
             return -1;
         }
         int f = parse_field(L, depth);
@@ -410,15 +410,15 @@ bool parse_document(Lex &L)
     char c = peek(L);
     if (c != '{')
     {
-        char kw[DETWS_GQL_NAME_MAX];
+        char kw[DWS_GQL_NAME_MAX];
         if (!parse_name(L, kw) || strcmp(kw, "query") != 0)
         {
-            s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_PARSE; // only anonymous or `query` operations
+            s_gql.err = DetwsGqlResult::DWS_GQL_ERR_PARSE; // only anonymous or `query` operations
             return false;
         }
         if (peek(L) != '{') // optional operation name
         {
-            char opname[DETWS_GQL_NAME_MAX];
+            char opname[DWS_GQL_NAME_MAX];
             if (!parse_name(L, opname))
             {
                 gql_flag_parse_err();
@@ -427,11 +427,11 @@ bool parse_document(Lex &L)
         }
     }
     s_gql.root = parse_selection(L, 1);
-    if (s_gql.err != DetwsGqlResult::DETWS_GQL_OK)
+    if (s_gql.err != DetwsGqlResult::DWS_GQL_OK)
         return false;
     if (peek(L) != '\0') // trailing junk after the operation
     {
-        s_gql.err = DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+        s_gql.err = DetwsGqlResult::DWS_GQL_ERR_PARSE;
         return false;
     }
     return true;
@@ -493,18 +493,18 @@ void w_scalar(Writer &w, const DetwsGqlValue *v)
     char b[40];
     switch (v->type)
     {
-    case DetwsGqlType::DETWS_GQL_INT:
+    case DetwsGqlType::DWS_GQL_INT:
         snprintf(b, sizeof(b), "%lld", v->i);
         w_str(w, b);
         break;
-    case DetwsGqlType::DETWS_GQL_FLOAT:
+    case DetwsGqlType::DWS_GQL_FLOAT:
         snprintf(b, sizeof(b), "%g", v->f);
         w_str(w, b);
         break;
-    case DetwsGqlType::DETWS_GQL_BOOL:
+    case DetwsGqlType::DWS_GQL_BOOL:
         w_str(w, v->b ? "true" : "false");
         break;
-    case DetwsGqlType::DETWS_GQL_STR:
+    case DetwsGqlType::DWS_GQL_STR:
         w_json_str(w, v->s ? v->s : "");
         break;
     default:
@@ -521,15 +521,15 @@ void emit_field(Writer &w, int idx, int path_len)
     int plen = path_len;
     if (plen > 0)
     {
-        if (plen + 1 >= DETWS_GQL_PATH_MAX)
+        if (plen + 1 >= DWS_GQL_PATH_MAX)
         {
             w.ovf = true;
             return;
         }
         s_gql.path[plen++] = '.';
     }
-    int nl = (int)strnlen(node->name, DETWS_GQL_PATH_MAX);
-    if (plen + nl >= DETWS_GQL_PATH_MAX)
+    int nl = (int)strnlen(node->name, DWS_GQL_PATH_MAX);
+    if (plen + nl >= DWS_GQL_PATH_MAX)
     {
         w.ovf = true;
         return;
@@ -541,7 +541,7 @@ void emit_field(Writer &w, int idx, int path_len)
     // push this field's args into scope
     int pushed = 0;
     for (int a = 0; a < node->n_args; a++)
-        if (s_gql.scope_n < DETWS_GQL_MAX_ARGS)
+        if (s_gql.scope_n < DWS_GQL_MAX_ARGS)
         {
             s_gql.scope[s_gql.scope_n++] = node->first_arg + a;
             pushed++;
@@ -566,7 +566,7 @@ void emit_field(Writer &w, int idx, int path_len)
     else
     {
         DetwsGqlValue v;
-        v.type = DetwsGqlType::DETWS_GQL_NULL;
+        v.type = DetwsGqlType::DWS_GQL_NULL;
         DetwsGqlArgs view = {s_gql.scope, s_gql.scope_n};
         if (s_gql.resolver && s_gql.resolver(s_gql.path, &view, &v))
             w_scalar(w, &v);
@@ -579,14 +579,14 @@ void emit_field(Writer &w, int idx, int path_len)
 }
 } // namespace
 
-bool detws_gql_arg_int(const DetwsGqlArgs *args, const char *name, long long *out)
+bool dws_gql_arg_int(const DetwsGqlArgs *args, const char *name, long long *out)
 {
     if (!args)
         return false;
     for (int k = 0; k < args->count; k++)
     {
         Arg *a = &s_gql.args[args->idx[k]];
-        if (strcmp(a->name, name) == 0 && a->val.type == DetwsGqlType::DETWS_GQL_INT)
+        if (strcmp(a->name, name) == 0 && a->val.type == DetwsGqlType::DWS_GQL_INT)
         {
             *out = a->val.i;
             return true;
@@ -594,14 +594,14 @@ bool detws_gql_arg_int(const DetwsGqlArgs *args, const char *name, long long *ou
     }
     return false;
 }
-bool detws_gql_arg_str(const DetwsGqlArgs *args, const char *name, const char **out)
+bool dws_gql_arg_str(const DetwsGqlArgs *args, const char *name, const char **out)
 {
     if (!args)
         return false;
     for (int k = 0; k < args->count; k++)
     {
         Arg *a = &s_gql.args[args->idx[k]];
-        if (strcmp(a->name, name) == 0 && a->val.type == DetwsGqlType::DETWS_GQL_STR)
+        if (strcmp(a->name, name) == 0 && a->val.type == DetwsGqlType::DWS_GQL_STR)
         {
             *out = a->val.s;
             return true;
@@ -609,14 +609,14 @@ bool detws_gql_arg_str(const DetwsGqlArgs *args, const char *name, const char **
     }
     return false;
 }
-bool detws_gql_arg_bool(const DetwsGqlArgs *args, const char *name, bool *out)
+bool dws_gql_arg_bool(const DetwsGqlArgs *args, const char *name, bool *out)
 {
     if (!args)
         return false;
     for (int k = 0; k < args->count; k++)
     {
         Arg *a = &s_gql.args[args->idx[k]];
-        if (strcmp(a->name, name) == 0 && a->val.type == DetwsGqlType::DETWS_GQL_BOOL)
+        if (strcmp(a->name, name) == 0 && a->val.type == DetwsGqlType::DWS_GQL_BOOL)
         {
             *out = a->val.b;
             return true;
@@ -625,33 +625,32 @@ bool detws_gql_arg_bool(const DetwsGqlArgs *args, const char *name, bool *out)
     return false;
 }
 
-DetwsGqlResult detws_graphql_execute(const char *query, size_t len, detws_gql_resolver_fn resolver, char *out,
-                                     size_t cap)
+DetwsGqlResult dws_graphql_execute(const char *query, size_t len, dws_gql_resolver_fn resolver, char *out, size_t cap)
 {
     s_gql.nnodes = 0;
     s_gql.nargs = 0;
     s_gql.str_len = 0;
     s_gql.scope_n = 0;
     s_gql.root = -1;
-    s_gql.err = DetwsGqlResult::DETWS_GQL_OK;
+    s_gql.err = DetwsGqlResult::DWS_GQL_OK;
     s_gql.resolver = resolver;
     s_gql.path[0] = '\0';
 
     Lex L = {query, query + (query ? len : 0)};
     if (!query || !out || cap == 0)
-        return DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+        return DetwsGqlResult::DWS_GQL_ERR_PARSE;
 
     if (!parse_document(L))
     {
         const char *msg =
-            (s_gql.err == DetwsGqlResult::DETWS_GQL_ERR_LIMIT) ? "query exceeds a configured limit" : "syntax error";
+            (s_gql.err == DetwsGqlResult::DWS_GQL_ERR_LIMIT) ? "query exceeds a configured limit" : "syntax error";
         Writer w = {out, cap, 0, false};
         w_str(w, "{\"errors\":[{\"message\":");
         w_json_str(w, msg);
         w_str(w, "}]}");
         if (!w.ovf && w.n < cap)
             out[w.n] = '\0';
-        return s_gql.err != DetwsGqlResult::DETWS_GQL_OK ? s_gql.err : DetwsGqlResult::DETWS_GQL_ERR_PARSE;
+        return s_gql.err != DetwsGqlResult::DWS_GQL_OK ? s_gql.err : DetwsGqlResult::DWS_GQL_ERR_PARSE;
     }
 
     Writer w = {out, cap, 0, false};
@@ -666,9 +665,9 @@ DetwsGqlResult detws_graphql_execute(const char *query, size_t len, detws_gql_re
     }
     w_str(w, "}}");
     if (w.ovf || w.n >= cap)
-        return DetwsGqlResult::DETWS_GQL_ERR_OVERFLOW;
+        return DetwsGqlResult::DWS_GQL_ERR_OVERFLOW;
     out[w.n] = '\0';
-    return DetwsGqlResult::DETWS_GQL_OK;
+    return DetwsGqlResult::DWS_GQL_OK;
 }
 
-#endif // DETWS_ENABLE_GRAPHQL
+#endif // DWS_ENABLE_GRAPHQL

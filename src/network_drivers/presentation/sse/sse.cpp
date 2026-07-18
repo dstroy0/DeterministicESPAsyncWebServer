@@ -87,7 +87,7 @@ int sse_format(char *buf, size_t n, const char *data, const char *event, const c
 
 bool sse_write(SseConn *sse, const char *data, const char *event, const char *id)
 {
-    if (!det_conn_active(sse->slot_id))
+    if (!dws_conn_active(sse->slot_id))
         return false;
 
     char buf[SSE_BUF_SIZE];
@@ -95,6 +95,6 @@ bool sse_write(SseConn *sse, const char *data, const char *event, const char *id
     if (pos <= 0)
         return false;
 
-    det_conn_send(sse->slot_id, buf, (u16_t)pos);
+    dws_conn_send(sse->slot_id, buf, (u16_t)pos);
     return true;
 }

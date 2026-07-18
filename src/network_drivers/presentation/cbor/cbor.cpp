@@ -8,29 +8,29 @@
 
 #include "cbor.h"
 
-#if DETWS_ENABLE_CBOR
+#if DWS_ENABLE_CBOR
 
 #include "shared_primitives/bytes.h"
 #include <string.h>
 
 void cbor_init(CborWriter *w, uint8_t *buf, size_t cap)
 {
-    det_bw_init(w, buf, cap);
+    dws_bw_init(w, buf, cap);
 }
 
 size_t cbor_len(const CborWriter *w)
 {
-    return det_bw_len(w);
+    return dws_bw_len(w);
 }
 
 bool cbor_ok(const CborWriter *w)
 {
-    return det_bw_ok(w);
+    return dws_bw_ok(w);
 }
 
 static void put(CborWriter *w, uint8_t b)
 {
-    det_bw_put(w, b);
+    dws_bw_put(w, b);
 }
 
 // Write a CBOR head: the major type (top 3 bits) plus the argument, choosing the
@@ -46,22 +46,22 @@ static void head(CborWriter *w, uint8_t major, uint64_t val)
     else if (val < 0x100ULL)
     {
         put(w, (uint8_t)(m | 24));
-        det_bw_put_be(w, val, 1);
+        dws_bw_put_be(w, val, 1);
     }
     else if (val < 0x10000ULL)
     {
         put(w, (uint8_t)(m | 25));
-        det_bw_put_be(w, val, 2);
+        dws_bw_put_be(w, val, 2);
     }
     else if (val < 0x100000000ULL)
     {
         put(w, (uint8_t)(m | 26));
-        det_bw_put_be(w, val, 4);
+        dws_bw_put_be(w, val, 4);
     }
     else
     {
         put(w, (uint8_t)(m | 27));
-        det_bw_put_be(w, val, 8);
+        dws_bw_put_be(w, val, 8);
     }
 }
 
@@ -112,7 +112,7 @@ void cbor_float(CborWriter *w, float f)
     uint32_t bits;
     memcpy(&bits, &f, sizeof(bits));
     put(w, 0xfa); // major 7, single-precision
-    det_bw_put_be(w, bits, 4);
+    dws_bw_put_be(w, bits, 4);
 }
 
 void cbor_array(CborWriter *w, size_t count)
@@ -131,12 +131,12 @@ void cbor_map(CborWriter *w, size_t count)
 
 void cbor_reader_init(CborReader *r, const uint8_t *buf, size_t len)
 {
-    det_br_init(r, buf, len);
+    dws_br_init(r, buf, len);
 }
 
 bool cbor_reader_ok(const CborReader *r)
 {
-    return det_br_ok(r);
+    return dws_br_ok(r);
 }
 
 // Read a CBOR head at r->pos: major type + argument, advancing pos. Sets err and
@@ -177,7 +177,7 @@ static bool read_head(CborReader *r, uint8_t *major, uint64_t *val)
         return false;
     }
     // The argument is the `need` big-endian bytes after this head byte.
-    return det_br_take_be(r, need, val);
+    return dws_br_take_be(r, need, val);
 }
 
 CborType cbor_peek(CborReader *r)
@@ -290,7 +290,7 @@ bool cbor_read_float(CborReader *r, float *out)
     if (b == 0xfa) // single
     {
         uint64_t v;
-        if (!det_br_take_be(r, 4, &v))
+        if (!dws_br_take_be(r, 4, &v))
             return false;
         uint32_t bits = (uint32_t)v;
         memcpy(out, &bits, sizeof(*out));
@@ -299,7 +299,7 @@ bool cbor_read_float(CborReader *r, float *out)
     if (b == 0xfb) // double -> narrow to float
     {
         uint64_t bits;
-        if (!det_br_take_be(r, 8, &bits))
+        if (!dws_br_take_be(r, 8, &bits))
             return false;
         double d;
         memcpy(&d, &bits, sizeof(d));
@@ -368,4 +368,4 @@ bool cbor_read_map(CborReader *r, size_t *count)
     return true;
 }
 
-#endif // DETWS_ENABLE_CBOR
+#endif // DWS_ENABLE_CBOR

@@ -9,7 +9,7 @@
 #include "services/ntp_server/ntp_server.h"
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_NTP_SERVER
+#if DWS_ENABLE_NTP_SERVER
 
 #include <string.h> // memset, memcpy
 
@@ -62,27 +62,27 @@ namespace
 // stratum and reference id, grouped so it is one named owner, unreachable cross-TU.
 struct NtpServerCtx
 {
-    uint8_t stratum = DETWS_NTP_SERVER_STRATUM;
+    uint8_t stratum = DWS_NTP_SERVER_STRATUM;
     uint32_t refid = NTP_REFID_LOCL;
 };
 NtpServerCtx s_ntp;
 
 // UDP handler: answer each request from the current time (silent if we have none).
-void ntp_server_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer *peer, void *ctx)
+void ntp_server_udp_handler(const uint8_t *data, size_t len, struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
-    uint32_t unix_secs = detws_time_now();
+    uint32_t unix_secs = dws_time_now();
     if (unix_secs == 0) // no valid time - do not serve a wrong clock
         return;
     // Sub-second fraction from the monotonic ms clock (best-effort; not phase-locked to the
     // 1 Hz second boundary, so the sub-second component is approximate on this class of clock).
-    uint32_t frac = (uint32_t)(((uint64_t)(detws_millis() % 1000u) << 32) / 1000u);
+    uint32_t frac = (uint32_t)(((uint64_t)(dws_millis() % 1000u) << 32) / 1000u);
 
     uint8_t resp[NTP_PACKET_LEN];
     size_t n = ntp_server_build_response(data, len, s_ntp.stratum, s_ntp.refid, unix_secs + NTP_UNIX_OFFSET, frac, resp,
                                          sizeof(resp));
     if (n)
-        det_udp_send(peer, resp, n);
+        dws_udp_send(peer, resp, n);
 }
 } // namespace
 
@@ -90,7 +90,7 @@ bool ntp_server_begin(uint8_t stratum, uint32_t refid)
 {
     s_ntp.stratum = stratum;
     s_ntp.refid = refid;
-    return det_udp_listen(123, ntp_server_udp_handler, nullptr);
+    return dws_udp_listen(123, ntp_server_udp_handler, nullptr);
 }
 
 #else // host build: no lwIP. The codec above is host-tested; the binding is a stub.
@@ -102,4 +102,4 @@ bool ntp_server_begin(uint8_t, uint32_t)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_NTP_SERVER
+#endif // DWS_ENABLE_NTP_SERVER

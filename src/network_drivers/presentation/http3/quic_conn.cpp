@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http3/quic_conn.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/http3/quic_aead.h" // QUIC_AEAD_TAG_LEN
 #include "network_drivers/presentation/http3/quic_frame.h"
@@ -37,7 +37,7 @@ const QuicPacketKeys *seal_keys(QuicConn *qc, int level)
 QuicStream *stream_get(QuicConn *qc, uint64_t id, bool create)
 {
     QuicStream *free_slot = nullptr;
-    for (size_t i = 0; i < DETWS_QUIC_MAX_STREAMS; i++)
+    for (size_t i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
     {
         if (qc->streams[i].id == id && qc->streams[i].id != UINT64_MAX)
             return &qc->streams[i];
@@ -73,7 +73,7 @@ void quic_conn_init(QuicConn *qc, const QuicTlsConfig *cfg, const uint8_t *odcid
         qc->space[i].largest_acked = -1;
         qc->space[i].last_ae_pn = -1;
     }
-    for (size_t i = 0; i < DETWS_QUIC_MAX_STREAMS; i++)
+    for (size_t i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
         qc->streams[i].id = UINT64_MAX;
 
     // The server's transport parameters carry the connection IDs the handshake must echo.
@@ -306,8 +306,8 @@ size_t recv_packet(QuicConn *qc, const uint8_t *dg, size_t len)
 
     // Unprotect on a copy so a failed decrypt does not corrupt following coalesced packets. The
     // engine runs sequentially on one task, so the scratch is a shared static (not reentrant).
-    static uint8_t work[DETWS_QUIC_MAX_DATAGRAM];
-    static uint8_t plain[DETWS_QUIC_MAX_DATAGRAM];
+    static uint8_t work[DWS_QUIC_MAX_DATAGRAM];
+    static uint8_t plain[DWS_QUIC_MAX_DATAGRAM];
     if (pkt_len > sizeof(work))
         return 0;
     memcpy(work, dg, pkt_len);
@@ -411,7 +411,7 @@ size_t build_app_frames(QuicConn *qc, int level, uint8_t *buf, size_t cap, bool 
             *ae = true;
         }
     }
-    for (size_t i = 0; i < DETWS_QUIC_MAX_STREAMS; i++)
+    for (size_t i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
     {
         QuicStream *st = &qc->streams[i];
         if (st->id == UINT64_MAX)
@@ -474,7 +474,7 @@ size_t build_packet(QuicConn *qc, int level, uint8_t *out, size_t cap)
     if (!keys)
         return 0;
 
-    uint8_t frames[DETWS_QUIC_MAX_DATAGRAM];
+    uint8_t frames[DWS_QUIC_MAX_DATAGRAM];
     bool ae = false;
     size_t frame_len = build_frames(qc, level, frames, sizeof(frames), &ae);
     if (frame_len == 0)
@@ -569,8 +569,8 @@ size_t quic_conn_send(QuicConn *qc, uint8_t *out, size_t cap)
     // flight); a build then discard was the bug. Being at-most one datagram approximate here is fine.
     if (!qc->address_validated && qc->sent_bytes >= 3 * qc->recv_bytes)
         return 0;
-    if (cap > DETWS_QUIC_MAX_DATAGRAM)
-        cap = DETWS_QUIC_MAX_DATAGRAM;
+    if (cap > DWS_QUIC_MAX_DATAGRAM)
+        cap = DWS_QUIC_MAX_DATAGRAM;
 
     // A queued transport CONNECTION_CLOSE is sent once - at the highest encryption level we still hold
     // keys for (so the peer can decrypt it) - and then the connection is closed. It replaces the normal
@@ -611,7 +611,7 @@ namespace
 // PTO period with exponential backoff, capped so the shift cannot overflow (RFC 9002 sec 6.2.1).
 uint32_t pto_period(uint8_t count)
 {
-    uint32_t p = DETWS_QUIC_PTO_MS;
+    uint32_t p = DWS_QUIC_PTO_MS;
     for (uint8_t i = 0; i < count && p < (1u << 30); i++)
         p <<= 1;
     return p;
@@ -664,7 +664,7 @@ void quic_conn_on_timeout(QuicConn *qc, uint32_t now_ms)
             qc->handshake_done_queued = true;
             qc->handshake_done_sent = false;
         }
-        for (size_t i = 0; i < DETWS_QUIC_MAX_STREAMS; i++)
+        for (size_t i = 0; i < DWS_QUIC_MAX_STREAMS; i++)
         {
             QuicStream *st = &qc->streams[i];
             if (st->id == UINT64_MAX)
@@ -710,4 +710,4 @@ bool quic_conn_is_closed(const QuicConn *qc)
     return qc->closed || qc->draining;
 }
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3

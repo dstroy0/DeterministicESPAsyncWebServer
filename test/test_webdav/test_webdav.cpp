@@ -26,19 +26,19 @@ static bool contains(const char *hay, const char *needle)
 
 void test_method_classification()
 {
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_OPTIONS, det_webdav_method("OPTIONS"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_PROPFIND, det_webdav_method("PROPFIND"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_PROPPATCH, det_webdav_method("PROPPATCH"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_MKCOL, det_webdav_method("MKCOL"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_COPY, det_webdav_method("COPY"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_MOVE, det_webdav_method("MOVE"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_LOCK, det_webdav_method("LOCK"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNLOCK, det_webdav_method("UNLOCK"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_PUT, det_webdav_method("PUT"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_GET, det_webdav_method("GET"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_DELETE, det_webdav_method("DELETE"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNSUPPORTED, det_webdav_method("BREW"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNSUPPORTED, det_webdav_method(nullptr));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_OPTIONS, dws_webdav_method("OPTIONS"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_PROPFIND, dws_webdav_method("PROPFIND"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_PROPPATCH, dws_webdav_method("PROPPATCH"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_MKCOL, dws_webdav_method("MKCOL"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_COPY, dws_webdav_method("COPY"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_MOVE, dws_webdav_method("MOVE"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_LOCK, dws_webdav_method("LOCK"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNLOCK, dws_webdav_method("UNLOCK"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_PUT, dws_webdav_method("PUT"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_GET, dws_webdav_method("GET"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_DELETE, dws_webdav_method("DELETE"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNSUPPORTED, dws_webdav_method("BREW"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNSUPPORTED, dws_webdav_method(nullptr));
 }
 
 // Fail-closed guards on the pure builders: xml_escape zero-cap + plain-char truncation,
@@ -47,15 +47,15 @@ void test_method_classification()
 void test_webdav_builder_guards()
 {
     char out[256];
-    TEST_ASSERT_EQUAL_size_t(0, det_webdav_xml_escape(out, 0, "x")); // zero cap
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_xml_escape(out, 0, "x")); // zero cap
     // A plain (unescaped) run that overruns a tiny buffer stops mid-copy, still NUL-terminated.
     char tiny[4];
-    det_webdav_xml_escape(tiny, sizeof(tiny), "abcdefgh");
+    dws_webdav_xml_escape(tiny, sizeof(tiny), "abcdefgh");
     TEST_ASSERT_TRUE(strlen(tiny) < sizeof(tiny));
 
-    TEST_ASSERT_FALSE(det_webdav_dest_path(nullptr, out, sizeof(out)));  // null destination
-    TEST_ASSERT_FALSE(det_webdav_dest_path("/x", nullptr, sizeof(out))); // null out
-    TEST_ASSERT_FALSE(det_webdav_dest_path("/x", out, 0));               // zero cap
+    TEST_ASSERT_FALSE(dws_webdav_dest_path(nullptr, out, sizeof(out)));  // null destination
+    TEST_ASSERT_FALSE(dws_webdav_dest_path("/x", nullptr, sizeof(out))); // null out
+    TEST_ASSERT_FALSE(dws_webdav_dest_path("/x", out, 0));               // zero cap
 
     // ms_entry: an href whose escaped form + fixed markup overruns the internal 512-byte
     // element scratch returns the input length unchanged (atomic: nothing committed).
@@ -63,11 +63,11 @@ void test_webdav_builder_guards()
     memset(href, 'a', 255);
     href[255] = '\0';
     char buf[4096];
-    TEST_ASSERT_EQUAL_size_t(7, det_webdav_ms_entry(buf, sizeof(buf), 7, href, false, 42, nullptr, "text/plain"));
+    TEST_ASSERT_EQUAL_size_t(7, dws_webdav_ms_entry(buf, sizeof(buf), 7, href, false, 42, nullptr, "text/plain"));
 
     // proppatch: a cap that holds the preamble but not the closing envelope -> 0.
     char small[200];
-    TEST_ASSERT_EQUAL_size_t(0, det_webdav_proppatch_ms(small, sizeof(small), "/x", "", 0));
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_proppatch_ms(small, sizeof(small), "/x", "", 0));
 }
 
 // ---------------------------------------------------------------------------
@@ -76,11 +76,11 @@ void test_webdav_builder_guards()
 
 void test_depth_parsing()
 {
-    TEST_ASSERT_EQUAL_INT(0, det_webdav_depth("0", 1));
-    TEST_ASSERT_EQUAL_INT(1, det_webdav_depth("1", 0));
-    TEST_ASSERT_EQUAL_INT(DAV_DEPTH_INFINITY, det_webdav_depth("infinity", 0));
-    TEST_ASSERT_EQUAL_INT(1, det_webdav_depth(nullptr, 1)); // absent -> default
-    TEST_ASSERT_EQUAL_INT(7, det_webdav_depth("bogus", 7)); // unrecognized -> default
+    TEST_ASSERT_EQUAL_INT(0, dws_webdav_depth("0", 1));
+    TEST_ASSERT_EQUAL_INT(1, dws_webdav_depth("1", 0));
+    TEST_ASSERT_EQUAL_INT(DAV_DEPTH_INFINITY, dws_webdav_depth("infinity", 0));
+    TEST_ASSERT_EQUAL_INT(1, dws_webdav_depth(nullptr, 1)); // absent -> default
+    TEST_ASSERT_EQUAL_INT(7, dws_webdav_depth("bogus", 7)); // unrecognized -> default
 }
 
 // ---------------------------------------------------------------------------
@@ -90,7 +90,7 @@ void test_depth_parsing()
 void test_xml_escape()
 {
     char out[128];
-    size_t n = det_webdav_xml_escape(out, sizeof(out), "a&b<c>d\"e'f");
+    size_t n = dws_webdav_xml_escape(out, sizeof(out), "a&b<c>d\"e'f");
     TEST_ASSERT_EQUAL_STRING("a&amp;b&lt;c&gt;d&quot;e&apos;f", out);
     TEST_ASSERT_EQUAL_size_t(strlen(out), n);
 }
@@ -98,7 +98,7 @@ void test_xml_escape()
 void test_xml_escape_truncates_safely()
 {
     char out[8];
-    det_webdav_xml_escape(out, sizeof(out), "<<<<<<<<"); // each '<' is 4 chars escaped
+    dws_webdav_xml_escape(out, sizeof(out), "<<<<<<<<"); // each '<' is 4 chars escaped
     TEST_ASSERT_TRUE(strlen(out) < sizeof(out));         // never overruns
     TEST_ASSERT_EQUAL_STRING("&lt;", out);               // one full entity fits
 }
@@ -110,30 +110,30 @@ void test_xml_escape_truncates_safely()
 void test_dest_absolute_uri()
 {
     char out[128];
-    TEST_ASSERT_TRUE(det_webdav_dest_path("http://host:8080/dav/new name.txt", out, sizeof(out)));
+    TEST_ASSERT_TRUE(dws_webdav_dest_path("http://host:8080/dav/new name.txt", out, sizeof(out)));
     TEST_ASSERT_EQUAL_STRING("/dav/new name.txt", out); // %20 not present here
 }
 
 void test_dest_percent_decoded()
 {
     char out[128];
-    TEST_ASSERT_TRUE(det_webdav_dest_path("http://h/dav/a%20b%2Fc.txt", out, sizeof(out)));
+    TEST_ASSERT_TRUE(dws_webdav_dest_path("http://h/dav/a%20b%2Fc.txt", out, sizeof(out)));
     TEST_ASSERT_EQUAL_STRING("/dav/a b/c.txt", out);
 }
 
 void test_dest_abs_path()
 {
     char out[128];
-    TEST_ASSERT_TRUE(det_webdav_dest_path("/dav/x.txt", out, sizeof(out)));
+    TEST_ASSERT_TRUE(dws_webdav_dest_path("/dav/x.txt", out, sizeof(out)));
     TEST_ASSERT_EQUAL_STRING("/dav/x.txt", out);
 }
 
 void test_dest_rejects_malformed()
 {
     char out[128];
-    TEST_ASSERT_FALSE(det_webdav_dest_path("dav/x.txt", out, sizeof(out)));       // not absolute
-    TEST_ASSERT_FALSE(det_webdav_dest_path("http://hostonly", out, sizeof(out))); // no path
-    TEST_ASSERT_FALSE(det_webdav_dest_path("/bad%zz", out, sizeof(out)));         // bad escape
+    TEST_ASSERT_FALSE(dws_webdav_dest_path("dav/x.txt", out, sizeof(out)));       // not absolute
+    TEST_ASSERT_FALSE(dws_webdav_dest_path("http://hostonly", out, sizeof(out))); // no path
+    TEST_ASSERT_FALSE(dws_webdav_dest_path("/bad%zz", out, sizeof(out)));         // bad escape
 }
 
 // ---------------------------------------------------------------------------
@@ -144,11 +144,11 @@ void test_multistatus_file_and_collection()
 {
     char buf[1024];
     size_t len = 0;
-    len = det_webdav_ms_begin(buf, sizeof(buf), len);
-    len = det_webdav_ms_entry(buf, sizeof(buf), len, "/dav/", true, 0, "Mon, 01 Jan 2026 00:00:00 GMT", "");
-    len = det_webdav_ms_entry(buf, sizeof(buf), len, "/dav/readme.txt", false, 42, "Mon, 01 Jan 2026 00:00:00 GMT",
+    len = dws_webdav_ms_begin(buf, sizeof(buf), len);
+    len = dws_webdav_ms_entry(buf, sizeof(buf), len, "/dav/", true, 0, "Mon, 01 Jan 2026 00:00:00 GMT", "");
+    len = dws_webdav_ms_entry(buf, sizeof(buf), len, "/dav/readme.txt", false, 42, "Mon, 01 Jan 2026 00:00:00 GMT",
                               "text/plain");
-    len = det_webdav_ms_end(buf, sizeof(buf), len);
+    len = dws_webdav_ms_end(buf, sizeof(buf), len);
     TEST_ASSERT_EQUAL_size_t(strlen(buf), len);
 
     TEST_ASSERT_TRUE(contains(buf, "<D:multistatus xmlns:D=\"DAV:\">"));
@@ -168,9 +168,9 @@ void test_multistatus_escapes_href()
 {
     char buf[512];
     size_t len = 0;
-    len = det_webdav_ms_begin(buf, sizeof(buf), len);
-    len = det_webdav_ms_entry(buf, sizeof(buf), len, "/dav/a&b.txt", false, 1, "", "text/plain");
-    len = det_webdav_ms_end(buf, sizeof(buf), len);
+    len = dws_webdav_ms_begin(buf, sizeof(buf), len);
+    len = dws_webdav_ms_entry(buf, sizeof(buf), len, "/dav/a&b.txt", false, 1, "", "text/plain");
+    len = dws_webdav_ms_end(buf, sizeof(buf), len);
     TEST_ASSERT_TRUE(contains(buf, "<D:href>/dav/a&amp;b.txt</D:href>"));
 }
 
@@ -178,9 +178,9 @@ void test_multistatus_entry_stops_when_full()
 {
     char buf[80]; // only room for the prolog + open tag, not a whole <response>
     size_t len = 0;
-    len = det_webdav_ms_begin(buf, sizeof(buf), len);
+    len = dws_webdav_ms_begin(buf, sizeof(buf), len);
     size_t before = len;
-    size_t after = det_webdav_ms_entry(buf, sizeof(buf), before, "/dav/x.txt", false, 1, "", "text/plain");
+    size_t after = dws_webdav_ms_entry(buf, sizeof(buf), before, "/dav/x.txt", false, 1, "", "text/plain");
     TEST_ASSERT_EQUAL_size_t(before, after); // did not fit -> unchanged, no partial element
     TEST_ASSERT_TRUE(strlen(buf) <= sizeof(buf));
 }
@@ -208,7 +208,7 @@ void test_proppatch_windows_timestamp()
                        "<Z:Win32LastModifiedTime>Tue, 06 Jan 2026 00:00:00 GMT</Z:Win32LastModifiedTime>"
                        "</D:prop></D:set></D:propertyupdate>";
     char buf[1024];
-    size_t len = det_webdav_proppatch_ms(buf, sizeof(buf), "/dav/file.txt", body, strlen(body));
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/file.txt", body, strlen(body));
     assert_proppatch_envelope(buf, len);
     TEST_ASSERT_TRUE(contains(buf, "<D:href>/dav/file.txt</D:href>"));
     // property echoed self-closed with its prefix + xmlns intact
@@ -226,7 +226,7 @@ void test_proppatch_multiple_and_self_closed()
                        "<author xmlns=\"http://ns.example/\">x</author>"
                        "</D:prop></D:set></D:propertyupdate>";
     char buf[1024];
-    size_t len = det_webdav_proppatch_ms(buf, sizeof(buf), "/dav/d/", body, strlen(body));
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/d/", body, strlen(body));
     assert_proppatch_envelope(buf, len);
     TEST_ASSERT_TRUE(contains(buf, "<D:getlastmodified/>"));
     TEST_ASSERT_TRUE(contains(buf, "<author xmlns=\"http://ns.example/\"/>")); // default-ns prop, value dropped
@@ -237,7 +237,7 @@ void test_proppatch_remove_block()
     const char *body = "<D:propertyupdate xmlns:D=\"DAV:\" xmlns:Z=\"urn:x\">"
                        "<D:remove><D:prop><Z:custom/></D:prop></D:remove></D:propertyupdate>";
     char buf[512];
-    size_t len = det_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
     assert_proppatch_envelope(buf, len);
     TEST_ASSERT_TRUE(contains(buf, "<Z:custom/>")); // properties in <remove> are refused too
 }
@@ -247,7 +247,7 @@ void test_proppatch_escapes_href()
     const char *body = "<D:propertyupdate xmlns:D=\"DAV:\"><D:set><D:prop><D:displayname/></D:prop></D:set>"
                        "</D:propertyupdate>";
     char buf[512];
-    size_t len = det_webdav_proppatch_ms(buf, sizeof(buf), "/dav/a&b", body, strlen(body));
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/a&b", body, strlen(body));
     assert_proppatch_envelope(buf, len);
     TEST_ASSERT_TRUE(contains(buf, "<D:href>/dav/a&amp;b</D:href>"));
 }
@@ -255,7 +255,7 @@ void test_proppatch_escapes_href()
 void test_proppatch_empty_body_is_valid()
 {
     char buf[512];
-    size_t len = det_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", "", 0);
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", "", 0);
     assert_proppatch_envelope(buf, len); // still a well-formed 207 with an empty prop
     TEST_ASSERT_TRUE(contains(buf, "<D:prop>"));
 }
@@ -267,7 +267,7 @@ void test_proppatch_rejects_injection()
                        "<evil attr=\"<broken\"/>"
                        "</D:prop></D:set></D:propertyupdate>";
     char buf[512];
-    size_t len = det_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/f", body, strlen(body));
     assert_proppatch_envelope(buf, len);
     TEST_ASSERT_FALSE(contains(buf, "<broken")); // the malformed tag was skipped
 }
@@ -294,7 +294,7 @@ void test_proppatch_fuzz_bounded()
             const char *alpha = "<>/:= \"abcZD?!prop";
             body[i] = (rng & 3) ? alpha[(rng >> 2) % 18] : (char)(rng & 0xFF);
         }
-        size_t len = det_webdav_proppatch_ms(buf, sizeof(buf), "/x", body, n);
+        size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/x", body, n);
         TEST_ASSERT_TRUE(len <= sizeof(buf));
         if (len)
         {
@@ -311,35 +311,35 @@ void test_proppatch_stops_when_full()
     const char *body = "<D:propertyupdate xmlns:D=\"DAV:\"><D:set><D:prop><D:displayname/></D:prop></D:set>"
                        "</D:propertyupdate>";
     char buf[40]; // too small for the whole document
-    size_t len = det_webdav_proppatch_ms(buf, sizeof(buf), "/dav/file.txt", body, strlen(body));
+    size_t len = dws_webdav_proppatch_ms(buf, sizeof(buf), "/dav/file.txt", body, strlen(body));
     TEST_ASSERT_EQUAL_size_t(0, len);            // signals "did not fit"
     TEST_ASSERT_TRUE(strlen(buf) < sizeof(buf)); // no overrun
 }
 
 void test_method_all_including_head()
 {
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_HEAD, det_webdav_method("HEAD"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_OPTIONS, det_webdav_method("OPTIONS"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_MKCOL, det_webdav_method("MKCOL"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_COPY, det_webdav_method("COPY"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_MOVE, det_webdav_method("MOVE"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_LOCK, det_webdav_method("LOCK"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNLOCK, det_webdav_method("UNLOCK"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNSUPPORTED, det_webdav_method("BOGUS"));
-    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNSUPPORTED, det_webdav_method(nullptr));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_HEAD, dws_webdav_method("HEAD"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_OPTIONS, dws_webdav_method("OPTIONS"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_MKCOL, dws_webdav_method("MKCOL"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_COPY, dws_webdav_method("COPY"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_MOVE, dws_webdav_method("MOVE"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_LOCK, dws_webdav_method("LOCK"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNLOCK, dws_webdav_method("UNLOCK"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNSUPPORTED, dws_webdav_method("BOGUS"));
+    TEST_ASSERT_EQUAL_INT(WebDavMethod::DAV_M_UNSUPPORTED, dws_webdav_method(nullptr));
 }
 
 void test_depth_and_dest_path_guards()
 {
-    TEST_ASSERT_EQUAL_INT(7, det_webdav_depth(nullptr, 7)); // null -> default
-    TEST_ASSERT_EQUAL_INT(7, det_webdav_depth("", 7));      // empty -> default
-    TEST_ASSERT_EQUAL_INT(0, det_webdav_depth("0", 7));
-    TEST_ASSERT_EQUAL_INT(1, det_webdav_depth("1", 7));
+    TEST_ASSERT_EQUAL_INT(7, dws_webdav_depth(nullptr, 7)); // null -> default
+    TEST_ASSERT_EQUAL_INT(7, dws_webdav_depth("", 7));      // empty -> default
+    TEST_ASSERT_EQUAL_INT(0, dws_webdav_depth("0", 7));
+    TEST_ASSERT_EQUAL_INT(1, dws_webdav_depth("1", 7));
     char out[64];
     // Malformed %-escape in the destination path fails closed.
-    TEST_ASSERT_FALSE(det_webdav_dest_path("http://host/a%zzb", out, sizeof(out)));
+    TEST_ASSERT_FALSE(dws_webdav_dest_path("http://host/a%zzb", out, sizeof(out)));
     // A path that overflows the output buffer fails closed.
-    TEST_ASSERT_FALSE(det_webdav_dest_path("http://host/aaaaaaaaaaaaaaaaaaaaaaaaaaaa", out, 8));
+    TEST_ASSERT_FALSE(dws_webdav_dest_path("http://host/aaaaaaaaaaaaaaaaaaaaaaaaaaaa", out, 8));
 }
 
 void test_ms_entry_content_type_overflow()
@@ -351,7 +351,7 @@ void test_ms_entry_content_type_overflow()
         ct[i] = 'x';
     ct[419] = '\0';
     // An oversized content-type overflows the internal element buffer -> len unchanged (atomic no-op).
-    size_t r = det_webdav_ms_entry(buf, sizeof(buf), len, "/f.txt", false, 100, "Mon, 01 Jan 2026 00:00:00 GMT", ct);
+    size_t r = dws_webdav_ms_entry(buf, sizeof(buf), len, "/f.txt", false, 100, "Mon, 01 Jan 2026 00:00:00 GMT", ct);
     TEST_ASSERT_EQUAL_size_t(len, r);
 }
 
@@ -363,10 +363,10 @@ void test_ms_entry_mtime_and_tiny_buf()
         mtime[i] = 'm';
     mtime[459] = '\0';
     // Oversized mtime overflows the element buffer -> len unchanged.
-    TEST_ASSERT_EQUAL_size_t(0, det_webdav_ms_entry(buf, sizeof(buf), 0, "/f.txt", false, 100, mtime, "text/plain"));
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_ms_entry(buf, sizeof(buf), 0, "/f.txt", false, 100, mtime, "text/plain"));
     // A well-formed entry that does not fit the OUTPUT buffer leaves len unchanged (atomic commit fails).
     char tiny[40];
-    TEST_ASSERT_EQUAL_size_t(0, det_webdav_ms_entry(tiny, sizeof(tiny), 0, "/f.txt", false, 100, "", "text/plain"));
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_ms_entry(tiny, sizeof(tiny), 0, "/f.txt", false, 100, "", "text/plain"));
 }
 
 void test_proppatch_ms_echo()
@@ -374,10 +374,10 @@ void test_proppatch_ms_echo()
     char buf[512];
     // A self-closed property with trailing whitespace exercises the open-tag trim.
     const char *body = "<D:propertyupdate><D:set><D:prop><D:author  /></D:prop></D:set></D:propertyupdate>";
-    size_t n = det_webdav_proppatch_ms(buf, sizeof(buf), "/file.txt", body, strlen(body));
+    size_t n = dws_webdav_proppatch_ms(buf, sizeof(buf), "/file.txt", body, strlen(body));
     TEST_ASSERT_TRUE(n > 0);
     // A tiny buffer makes the leading append fail -> 0.
-    TEST_ASSERT_EQUAL_size_t(0, det_webdav_proppatch_ms(buf, 20, "/file.txt", body, strlen(body)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_webdav_proppatch_ms(buf, 20, "/file.txt", body, strlen(body)));
 }
 
 int main()

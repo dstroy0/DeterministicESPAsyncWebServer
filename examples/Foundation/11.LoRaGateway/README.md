@@ -1,6 +1,6 @@
 # 11.LoRaGateway - a real LoRa radio bridged to the gateway
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_LORA`, `DETWS_ENABLE_GATEWAY`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_LORA`, `DWS_ENABLE_GATEWAY`
 
 ## What this example teaches
 
@@ -9,7 +9,7 @@ simulated feed, this drives an actual **Semtech SX127x / RFM95-96** over SPI and
 its frames to the [gateway](../10.RadioGateway/README.md).
 
 ```
-RFM95 RX --SPI--> lora_recv() --> lora_frame_parse() --> det_gateway_uplink()
+RFM95 RX --SPI--> lora_recv() --> lora_frame_parse() --> dws_gateway_uplink()
                                                               |
                                            envelope + topic  lora/0/<from>
                                                               |
@@ -33,7 +33,7 @@ lora_set_rx(&bus);               // listen
 int n = lora_recv(&bus, buf, sizeof(buf), &rssi);   // -> a frame, or -1
 lora_header h; const uint8_t *payload; uint16_t plen;
 lora_frame_parse(buf, n, &h, &payload, &plen);
-det_gateway_uplink(0, h.from, payload, plen, rssi);      // bridge northbound
+dws_gateway_uplink(0, h.from, payload, plen, rssi);      // bridge northbound
 ```
 
 A **downlink** (a northbound command) is the mirror: `lora_frame_build()` then
@@ -63,6 +63,6 @@ The flags must reach the library build, so pass them as build flags:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_LORA=1 -DDETWS_ENABLE_GATEWAY=1" \
+  --project-option="build_flags=-DDWS_ENABLE_LORA=1 -DDWS_ENABLE_GATEWAY=1" \
   --lib="." examples/Foundation/11.LoRaGateway/11.LoRaGateway.ino
 ```

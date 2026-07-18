@@ -17,22 +17,22 @@ void tearDown()
 
 void test_kind_app()
 {
-    TEST_ASSERT_EQUAL_STRING("factory", detws_partition_kind(0, 0x00));
-    TEST_ASSERT_EQUAL_STRING("ota", detws_partition_kind(0, 0x10));
-    TEST_ASSERT_EQUAL_STRING("ota", detws_partition_kind(0, 0x11));
-    TEST_ASSERT_EQUAL_STRING("test", detws_partition_kind(0, 0x20));
-    TEST_ASSERT_EQUAL_STRING("app", detws_partition_kind(0, 0x05)); // app, not a known subtype
+    TEST_ASSERT_EQUAL_STRING("factory", dws_partition_kind(0, 0x00));
+    TEST_ASSERT_EQUAL_STRING("ota", dws_partition_kind(0, 0x10));
+    TEST_ASSERT_EQUAL_STRING("ota", dws_partition_kind(0, 0x11));
+    TEST_ASSERT_EQUAL_STRING("test", dws_partition_kind(0, 0x20));
+    TEST_ASSERT_EQUAL_STRING("app", dws_partition_kind(0, 0x05)); // app, not a known subtype
 }
 
 void test_kind_data()
 {
-    TEST_ASSERT_EQUAL_STRING("otadata", detws_partition_kind(1, 0x00));
-    TEST_ASSERT_EQUAL_STRING("phy", detws_partition_kind(1, 0x01));
-    TEST_ASSERT_EQUAL_STRING("nvs", detws_partition_kind(1, 0x02));
-    TEST_ASSERT_EQUAL_STRING("coredump", detws_partition_kind(1, 0x03));
-    TEST_ASSERT_EQUAL_STRING("littlefs", detws_partition_kind(1, 0x83));
-    TEST_ASSERT_EQUAL_STRING("spiffs", detws_partition_kind(1, 0x82));
-    TEST_ASSERT_EQUAL_STRING("data", detws_partition_kind(1, 0x77)); // unknown data subtype
+    TEST_ASSERT_EQUAL_STRING("otadata", dws_partition_kind(1, 0x00));
+    TEST_ASSERT_EQUAL_STRING("phy", dws_partition_kind(1, 0x01));
+    TEST_ASSERT_EQUAL_STRING("nvs", dws_partition_kind(1, 0x02));
+    TEST_ASSERT_EQUAL_STRING("coredump", dws_partition_kind(1, 0x03));
+    TEST_ASSERT_EQUAL_STRING("littlefs", dws_partition_kind(1, 0x83));
+    TEST_ASSERT_EQUAL_STRING("spiffs", dws_partition_kind(1, 0x82));
+    TEST_ASSERT_EQUAL_STRING("data", dws_partition_kind(1, 0x77)); // unknown data subtype
 }
 
 void test_json()
@@ -42,7 +42,7 @@ void test_json()
         {"app0", 0, 0x10, 0x10000, 0x140000, true},
     };
     char buf[512];
-    int n = detws_partition_json(p, 2, buf, sizeof(buf));
+    int n = dws_partition_json(p, 2, buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_STRING(
         "{\"partitions\":[{\"label\":\"nvs\",\"kind\":\"nvs\",\"type\":1,\"subtype\":2,\"addr\":36864,\"size\":24576,"
@@ -56,19 +56,19 @@ void test_json_small_buffer_fails_closed()
 {
     DetwsPartitionInfo p[1] = {{"nvs", 1, 0x02, 0x9000, 0x6000, false}};
     char buf[8];
-    TEST_ASSERT_EQUAL_INT(0, detws_partition_json(p, 1, buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_INT(0, dws_partition_json(p, 1, buf, sizeof(buf)));
 }
 
 void test_collect_host_stub()
 {
     DetwsPartitionInfo p[4];
-    TEST_ASSERT_EQUAL_UINT8(0, detws_partition_collect(p, 4));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_partition_collect(p, 4));
 }
 
 void test_partition_kind_data_subtypes()
 {
-    TEST_ASSERT_EQUAL_STRING("nvs_keys", detws_partition_kind(0x01, 0x04));
-    TEST_ASSERT_EQUAL_STRING("fat", detws_partition_kind(0x01, 0x81));
+    TEST_ASSERT_EQUAL_STRING("nvs_keys", dws_partition_kind(0x01, 0x04));
+    TEST_ASSERT_EQUAL_STRING("fat", dws_partition_kind(0x01, 0x81));
 }
 
 int main()

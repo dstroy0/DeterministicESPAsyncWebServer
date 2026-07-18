@@ -1,6 +1,6 @@
 # 17.ZigbeeGateway - a Zigbee (EZSP/ASH) NCP bridged to the gateway
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_ZIGBEE`, `DETWS_ENABLE_GATEWAY`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_ZIGBEE`, `DWS_ENABLE_GATEWAY`
 
 ## What this example teaches
 
@@ -10,7 +10,7 @@ Silicon Labs **EmberZNet** network co-processor (NCP), which speaks **EZSP** ove
 DATA frame carrying an EZSP callback (an incoming Zigbee message) is bridged northbound.
 
 ```
-Zigbee NCP --UART--> ash_frame_decode() --> EZSP payload -> det_gateway_uplink()
+Zigbee NCP --UART--> ash_frame_decode() --> EZSP payload -> dws_gateway_uplink()
                                                                  |
                                           envelope + topic  zigbee/0/<node>
                                                                  |
@@ -24,7 +24,7 @@ bytes, and terminates with a Flag `0x7E`. `services/zigbee` does the framing:
 uint8_t control, payload[128]; uint16_t plen;
 int n = ash_frame_decode(buf, len, &control, payload, sizeof(payload), &plen);
 if (n > 0 && (control & 0x80) == 0 /* DATA frame */)
-    det_gateway_uplink(0, node, payload, plen, 0);
+    dws_gateway_uplink(0, node, payload, plen, 0);
 ```
 
 `ash_frame_encode()` builds a frame the same way (this sketch sends an ASH `RST` at boot).
@@ -52,6 +52,6 @@ The flags must reach the library build, so pass them as build flags:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_ZIGBEE=1 -DDETWS_ENABLE_GATEWAY=1" \
+  --project-option="build_flags=-DDWS_ENABLE_ZIGBEE=1 -DDWS_ENABLE_GATEWAY=1" \
   --lib="." examples/Foundation/17.ZigbeeGateway/17.ZigbeeGateway.ino
 ```

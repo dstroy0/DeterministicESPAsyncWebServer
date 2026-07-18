@@ -3,7 +3,7 @@
 
 /**
  * @file cip.h
- * @brief CIP (Common Industrial Protocol) message codec (DETWS_ENABLE_CIP) - zero-heap
+ * @brief CIP (Common Industrial Protocol) message codec (DWS_ENABLE_CIP) - zero-heap
  *        request builder + response parser for the message that rides inside an EtherNet/IP
  *        Unconnected Data item (services/enip). Together they form a working CIP read path.
  *
@@ -29,7 +29,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_CIP
+#if DWS_ENABLE_CIP
 
 #include <stddef.h>
 #include <stdint.h>
@@ -80,6 +80,6 @@ struct CipResponse
 /** @brief Parse a CIP response (service + status + additional status + data). */
 bool cip_parse_response(const uint8_t *buf, size_t len, CipResponse *out);
 
-#endif // DETWS_ENABLE_CIP
+#endif // DWS_ENABLE_CIP
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_CIP_H

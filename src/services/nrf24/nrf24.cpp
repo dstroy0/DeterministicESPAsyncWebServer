@@ -13,7 +13,7 @@
 
 #include "services/nrf24/nrf24.h"
 
-#if DETWS_ENABLE_NRF24
+#if DWS_ENABLE_NRF24
 
 namespace
 {
@@ -124,7 +124,7 @@ bool nrf24_init(const nrf_bus *bus, const nrf_config *cfg)
     else if (cfg->data_rate == 2)
         dr = 0x20; // 250 kbps
     reg_write(bus, Nrf24Reg::REG_RF_SETUP, (uint8_t)(dr | ((cfg->tx_power & 0x03) << 1)));
-    reg_write(bus, Nrf24Reg::REG_RX_PW_P0, DETWS_NRF24_PAYLOAD);
+    reg_write(bus, Nrf24Reg::REG_RX_PW_P0, DWS_NRF24_PAYLOAD);
     reg_write_buf(bus, Nrf24Reg::REG_RX_ADDR_P0, cfg->address, 5);
     reg_write_buf(bus, Nrf24Reg::REG_TX_ADDR, cfg->address, 5);
 
@@ -139,18 +139,18 @@ bool nrf24_init(const nrf_bus *bus, const nrf_config *cfg)
 
 bool nrf24_send(const nrf_bus *bus, const uint8_t *data, uint8_t len)
 {
-    if (!bus || !data || len == 0 || len > DETWS_NRF24_PAYLOAD)
+    if (!bus || !data || len == 0 || len > DWS_NRF24_PAYLOAD)
         return false;
     bus->ce(false, bus->ctx);
     reg_write(bus, Nrf24Reg::REG_CONFIG,
               Nrf24Cfg::CFG_EN_CRC | Nrf24Cfg::CFG_CRCO | Nrf24Cfg::CFG_PWR_UP); // PRIM_RX = 0 -> PTX
 
-    uint8_t tx[1 + DETWS_NRF24_PAYLOAD];
-    uint8_t rx[1 + DETWS_NRF24_PAYLOAD];
+    uint8_t tx[1 + DWS_NRF24_PAYLOAD];
+    uint8_t rx[1 + DWS_NRF24_PAYLOAD];
     tx[0] = Nrf24Cmd::CMD_W_TX_PAYLOAD;
-    for (uint8_t i = 0; i < DETWS_NRF24_PAYLOAD; i++)
+    for (uint8_t i = 0; i < DWS_NRF24_PAYLOAD; i++)
         tx[1 + i] = (i < len) ? data[i] : 0x00; // zero-pad to the static width
-    bus->spi(tx, rx, (uint8_t)(DETWS_NRF24_PAYLOAD + 1), bus->ctx);
+    bus->spi(tx, rx, (uint8_t)(DWS_NRF24_PAYLOAD + 1), bus->ctx);
 
     bus->ce(true, bus->ctx); // key the transmit
     return true;
@@ -190,14 +190,14 @@ int nrf24_recv(const nrf_bus *bus, uint8_t *buf, uint8_t cap, uint8_t *pipe)
         reg_write(bus, Nrf24Reg::REG_STATUS, Nrf24Status::ST_RX_DR);
         return -1;
     }
-    uint8_t tx[1 + DETWS_NRF24_PAYLOAD];
-    uint8_t rx[1 + DETWS_NRF24_PAYLOAD];
+    uint8_t tx[1 + DWS_NRF24_PAYLOAD];
+    uint8_t rx[1 + DWS_NRF24_PAYLOAD];
     tx[0] = Nrf24Cmd::CMD_R_RX_PAYLOAD;
-    for (uint8_t i = 0; i < DETWS_NRF24_PAYLOAD; i++)
+    for (uint8_t i = 0; i < DWS_NRF24_PAYLOAD; i++)
         tx[1 + i] = 0xFF;
-    bus->spi(tx, rx, (uint8_t)(DETWS_NRF24_PAYLOAD + 1), bus->ctx);
+    bus->spi(tx, rx, (uint8_t)(DWS_NRF24_PAYLOAD + 1), bus->ctx);
 
-    uint8_t n = (DETWS_NRF24_PAYLOAD < cap) ? DETWS_NRF24_PAYLOAD : cap;
+    uint8_t n = (DWS_NRF24_PAYLOAD < cap) ? DWS_NRF24_PAYLOAD : cap;
     for (uint8_t i = 0; i < n; i++)
         buf[i] = rx[1 + i];
     if (pipe)
@@ -206,4 +206,4 @@ int nrf24_recv(const nrf_bus *bus, uint8_t *buf, uint8_t cap, uint8_t *pipe)
     return (int)n;
 }
 
-#endif // DETWS_ENABLE_NRF24
+#endif // DWS_ENABLE_NRF24

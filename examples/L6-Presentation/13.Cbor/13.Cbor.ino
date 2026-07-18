@@ -3,7 +3,7 @@
 
 /**
  * @file 13.Cbor.ino
- * @brief Serve telemetry as compact binary CBOR (DETWS_ENABLE_CBOR).
+ * @brief Serve telemetry as compact binary CBOR (DWS_ENABLE_CBOR).
  *
  * Encodes a small {heap, uptime, rssi} map with the zero-heap CBOR writer into a
  * stack buffer and streams the bytes as application/cbor (via the chunked writer,
@@ -12,13 +12,13 @@
  *
  * NOTE: enable it for the whole build (a .ino #define does not reach the
  * separately compiled library). In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_CBOR=1
+ *     build_flags = -DDWS_ENABLE_CBOR=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
  * Try: curl -s http://<ip>/telemetry.cbor | xxd
  */
 
-#define DETWS_ENABLE_CBOR 1
+#define DWS_ENABLE_CBOR 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -28,7 +28,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // One CBOR map {"heap","uptime","rssi"}, encoded once into a ctx buffer and then
 // paged out by the chunk source. (The body is tiny, but the same pattern serves an

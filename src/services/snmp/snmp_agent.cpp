@@ -8,11 +8,11 @@
 
 #include "services/snmp/snmp_agent.h"
 
-#if DETWS_ENABLE_SNMP
+#if DWS_ENABLE_SNMP
 
 #include <string.h>
 
-#if DETWS_ENABLE_SNMP_V3
+#if DWS_ENABLE_SNMP_V3
 #include "services/snmp/snmp_v3.h"
 #endif
 
@@ -50,7 +50,7 @@ struct SnmpAgentCtx
 {
     SnmpMibEntry mib[SNMP_MAX_MIB_ENTRIES];
     size_t mib_count = 0;
-    char ro[SNMP_COMMUNITY_MAX] = DETWS_SNMP_DEFAULT_RO_COMMUNITY;
+    char ro[SNMP_COMMUNITY_MAX] = DWS_SNMP_DEFAULT_RO_COMMUNITY;
     char rw[SNMP_COMMUNITY_MAX] = "";
     bool rw_set = false;
 };
@@ -149,7 +149,7 @@ void snmp_agent_init(const char *ro_community)
     s_agent.mib_count = 0;
     s_agent.rw_set = false;
     s_agent.rw[0] = '\0';
-    const char *ro = (ro_community && ro_community[0]) ? ro_community : DETWS_SNMP_DEFAULT_RO_COMMUNITY;
+    const char *ro = (ro_community && ro_community[0]) ? ro_community : DWS_SNMP_DEFAULT_RO_COMMUNITY;
     strncpy(s_agent.ro, ro, sizeof(s_agent.ro) - 1);
     s_agent.ro[sizeof(s_agent.ro) - 1] = '\0';
 }
@@ -623,10 +623,10 @@ size_t snmp_agent_process(const uint8_t *req, size_t req_len, uint8_t *resp, siz
 
     if (version == (int)SnmpVersion::SNMP_V3)
     {
-#if DETWS_ENABLE_SNMP_V3
+#if DWS_ENABLE_SNMP_V3
         return snmp_v3_process(req, req_len, resp, resp_cap);
 #else
-        return 0; // v3 needs the gated USM layer (DETWS_ENABLE_SNMP_V3)
+        return 0; // v3 needs the gated USM layer (DWS_ENABLE_SNMP_V3)
 #endif
     }
     if (version != (int)SnmpVersion::SNMP_V1 && version != (int)SnmpVersion::SNMP_V2C)
@@ -679,17 +679,17 @@ struct SnmpUdpCtx
 SnmpUdpCtx s_snmp_udp;
 } // namespace
 
-static void snmp_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer *peer, void *ctx)
+static void snmp_udp_handler(const uint8_t *data, size_t len, struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
     size_t rn = snmp_agent_process(data, len, s_snmp_udp.tx, sizeof(s_snmp_udp.tx));
     if (rn)
-        det_udp_send(peer, s_snmp_udp.tx, rn);
+        dws_udp_send(peer, s_snmp_udp.tx, rn);
 }
 
 void snmp_agent_begin_udp(uint16_t port)
 {
-    det_udp_listen(port, snmp_udp_handler, nullptr);
+    dws_udp_listen(port, snmp_udp_handler, nullptr);
 }
 
-#endif // DETWS_ENABLE_SNMP
+#endif // DWS_ENABLE_SNMP

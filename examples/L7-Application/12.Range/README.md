@@ -1,6 +1,6 @@
 # 12.Range - HTTP Range / 206 Partial Content
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_RANGE` (with file serving)
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_RANGE` (with file serving)
 
 ## What this example teaches
 
@@ -28,7 +28,7 @@ range math is easy to verify with `curl -r`. Both `bytes=0-9` (first ten) and
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_RANGE=1" \
+  --project-option="build_flags=-DDWS_ENABLE_RANGE=1" \
   --lib="." examples/L7-Application/12.Range/12.Range.ino
 ```
 
@@ -48,7 +48,7 @@ explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_RANGE 1
+#define DWS_ENABLE_RANGE 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -58,7 +58,7 @@ explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // Create a known 1 KiB file (repeating 0..255 pattern) so range math is easy to verify.
 static void make_demo_file()
@@ -95,7 +95,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    // serve_file() honors Range automatically when DETWS_ENABLE_RANGE is set.
+    // serve_file() honors Range automatically when DWS_ENABLE_RANGE is set.
     server.on("/data.bin", HTTP_GET,
               [](uint8_t id, HttpReq *) { server.serve_file(id, LittleFS, "/data.bin", "application/octet-stream"); });
 

@@ -3,12 +3,12 @@
 
 /**
  * @file nmea2000.h
- * @brief NMEA 2000 codec (DETWS_ENABLE_NMEA2000) - the marine instrumentation network, built on
+ * @brief NMEA 2000 codec (DWS_ENABLE_NMEA2000) - the marine instrumentation network, built on
  *        J1939 over CAN.
  *
  * NMEA 2000 is J1939 at the transport layer (the same 29-bit priority / PGN / source /
  * destination identifier), so this codec reuses the J1939 id encode / decode
- * (`DETWS_ENABLE_NMEA2000` force-enables `DETWS_ENABLE_J1939`). What it adds is the
+ * (`DWS_ENABLE_NMEA2000` force-enables `DWS_ENABLE_J1939`). What it adds is the
  * NMEA-specific **Fast Packet** transport: messages of 9..223 octets are split across CAN
  * frames using a per-frame control octet (sequence counter + frame counter) instead of the
  * J1939 BAM/CMDT protocol. The first frame carries the total length; continuations carry 7
@@ -26,7 +26,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_NMEA2000
+#if DWS_ENABLE_NMEA2000
 
 #include "services/j1939/j1939.h" // reuses the J1939 29-bit identifier codec
 #include "shared_primitives/can.h"
@@ -58,7 +58,7 @@ struct N2kFastPacketRx
     uint16_t total_len; ///< announced total length
     uint16_t received;  ///< octets stored so far
     uint8_t next_frame; ///< next expected frame counter
-    uint8_t buf[DETWS_N2K_FP_MAX];
+    uint8_t buf[DWS_N2K_FP_MAX];
 };
 
 /** @brief Number of Fast Packet frames needed for @p total_len octets. */
@@ -81,5 +81,5 @@ N2kFpResult n2k_fastpacket_feed(N2kFastPacketRx *rx, const CanFrame *f);
 bool n2k_build_single(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da, const uint8_t *data,
                       uint8_t len);
 
-#endif // DETWS_ENABLE_NMEA2000
+#endif // DWS_ENABLE_NMEA2000
 #endif // DETERMINISTICESPASYNCWEBSERVER_NMEA2000_H

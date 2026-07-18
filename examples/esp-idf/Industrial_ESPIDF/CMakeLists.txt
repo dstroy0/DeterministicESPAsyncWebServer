@@ -14,18 +14,18 @@ cmake_minimum_required(VERSION 3.16)
 # Point IDF at the repo root (three levels up: Industrial_ESPIDF -> esp-idf -> examples -> repo root),
 # which is itself a component (has the repo-root CMakeLists.txt). Derive the path so the example is
 # independent of where the repo is checked out.
-get_filename_component(DETWS_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
-set(EXTRA_COMPONENT_DIRS "${DETWS_ROOT}")
+get_filename_component(DWS_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../.." ABSOLUTE)
+set(EXTRA_COMPONENT_DIRS "${DWS_ROOT}")
 
-# Turn the industrial feature set on for the WHOLE build. Every DETWS_ENABLE_* guard lives inside the
+# Turn the industrial feature set on for the WHOLE build. Every DWS_ENABLE_* guard lives inside the
 # library's own .cpp sources (compiled by the repo-root component), so the flags must be global
 # compile definitions set here, before project() - the ESP-IDF equivalent of Arduino's build_opt.h or
 # PlatformIO's build_flags. A #define in main.cpp alone would not reach the separately-compiled
 # library, and modbus_server_init() / snmp_agent_init() would then fail to link.
 add_compile_definitions(
-    DETWS_ENABLE_MODBUS=1
-    DETWS_ENABLE_SNMP=1
+    DWS_ENABLE_MODBUS=1
+    DWS_ENABLE_SNMP=1
 )
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(detws_industrial)
+project(dws_industrial)

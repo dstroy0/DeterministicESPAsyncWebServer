@@ -3,12 +3,12 @@
 
 /**
  * @file devicenet.h
- * @brief DeviceNet link-adaptation codec (DETWS_ENABLE_DEVICENET) - the CAN-specific layer of
+ * @brief DeviceNet link-adaptation codec (DWS_ENABLE_DEVICENET) - the CAN-specific layer of
  *        "CIP over CAN".
  *
  * DeviceNet (ODVA) carries CIP over classic CAN. The CIP application layer (services, EPATH,
  * data) is the same one the EtherNet/IP codec uses, so build the message body with the
- * existing `cip_*` functions (`DETWS_ENABLE_CIP`); this module supplies the DeviceNet-specific
+ * existing `cip_*` functions (`DWS_ENABLE_CIP`); this module supplies the DeviceNet-specific
  * link adaptation that is NOT part of CIP:
  *
  *  - The 11-bit CAN **identifier** as a Message Group (1..4) + Message ID + MAC ID, per the
@@ -35,7 +35,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_DEVICENET
+#if DWS_ENABLE_DEVICENET
 
 #include "shared_primitives/can.h"
 #include <stddef.h>
@@ -97,9 +97,9 @@ enum class DeviceNetFragResult : uint8_t
 struct DeviceNetFragRx
 {
     bool active;
-    uint8_t next_count;                   ///< next expected modulo-64 fragment count
-    uint16_t len;                         ///< octets stored so far
-    uint8_t buf[DETWS_DEVICENET_MSG_MAX]; ///< reassembled body (excludes the fragmentation octets)
+    uint8_t next_count;                 ///< next expected modulo-64 fragment count
+    uint16_t len;                       ///< octets stored so far
+    uint8_t buf[DWS_DEVICENET_MSG_MAX]; ///< reassembled body (excludes the fragmentation octets)
 };
 
 // --- identifier ---
@@ -139,5 +139,5 @@ void devicenet_frag_reset(DeviceNetFragRx *rx);
  */
 DeviceNetFragResult devicenet_frag_feed(DeviceNetFragRx *rx, const uint8_t *body, uint8_t body_len);
 
-#endif // DETWS_ENABLE_DEVICENET
+#endif // DWS_ENABLE_DEVICENET
 #endif // DETERMINISTICESPASYNCWEBSERVER_DEVICENET_H

@@ -3,7 +3,7 @@
 
 /**
  * @file enip.h
- * @brief EtherNet/IP encapsulation codec (DETWS_ENABLE_ENIP) - zero-heap builder + parser
+ * @brief EtherNet/IP encapsulation codec (DWS_ENABLE_ENIP) - zero-heap builder + parser
  *        for the ODVA EtherNet/IP encapsulation layer (TCP/UDP 44818), the transport that
  *        carries CIP. The reusable base for CIP / EtherNet/IP explicit messaging.
  *
@@ -31,7 +31,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_ENIP
+#if DWS_ENABLE_ENIP
 
 #include <stddef.h>
 #include <stdint.h>
@@ -85,6 +85,6 @@ size_t eip_build_send_rr_data(uint8_t *buf, size_t cap, uint32_t session_handle,
 /** @brief From a SendRRData command-data block, extract the Unconnected Data item (the CIP reply). */
 bool eip_parse_send_rr_data(const uint8_t *data, size_t data_len, const uint8_t **cip, size_t *cip_len);
 
-#endif // DETWS_ENABLE_ENIP
+#endif // DWS_ENABLE_ENIP
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_ENIP_H

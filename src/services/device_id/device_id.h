@@ -3,13 +3,13 @@
 
 /**
  * @file device_id.h
- * @brief Stable device UUID derived from the chip MAC (DETWS_ENABLE_DEVICE_ID).
+ * @brief Stable device UUID derived from the chip MAC (DWS_ENABLE_DEVICE_ID).
  *
- * detws_uuid_from_mac() computes a deterministic RFC 4122 version-5 UUID from a
+ * dws_uuid_from_mac() computes a deterministic RFC 4122 version-5 UUID from a
  * 6-byte MAC: namespace = the RFC 4122 DNS namespace, name = the lowercase MAC
  * hex, hashed with the library's SHA-1. The same MAC always yields the same
  * UUID, so it is a stable device identity (mDNS hostname, MQTT client ID, ...)
- * that needs no storage. detws_device_uuid() reads the ESP32 factory MAC and
+ * that needs no storage. dws_device_uuid() reads the ESP32 factory MAC and
  * formats it (ESP32 only). Pure, host-testable core; no heap.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -22,27 +22,27 @@
 #include "ServerConfig.h"
 #include <stdint.h>
 
-#if DETWS_ENABLE_DEVICE_ID
+#if DWS_ENABLE_DEVICE_ID
 
 /** @brief Length of a formatted UUID string including the null terminator. */
-#define DETWS_UUID_STR_LEN 37
+#define DWS_UUID_STR_LEN 37
 
 /**
  * @brief Format a deterministic RFC 4122 v5 UUID from a 6-byte MAC.
  *
  * @param mac  six MAC bytes.
- * @param out  buffer of at least DETWS_UUID_STR_LEN bytes; receives
+ * @param out  buffer of at least DWS_UUID_STR_LEN bytes; receives
  *             "xxxxxxxx-xxxx-5xxx-yxxx-xxxxxxxxxxxx" (lowercase, null-terminated).
  */
-void detws_uuid_from_mac(const uint8_t mac[6], char out[DETWS_UUID_STR_LEN]);
+void dws_uuid_from_mac(const uint8_t mac[6], char out[DWS_UUID_STR_LEN]);
 
 #ifdef ARDUINO
 /**
  * @brief Format this device's UUID from its ESP32 factory (WiFi STA) MAC.
- * @param out  buffer of at least DETWS_UUID_STR_LEN bytes.
+ * @param out  buffer of at least DWS_UUID_STR_LEN bytes.
  */
-void detws_device_uuid(char out[DETWS_UUID_STR_LEN]);
+void dws_device_uuid(char out[DWS_UUID_STR_LEN]);
 #endif
 
-#endif // DETWS_ENABLE_DEVICE_ID
+#endif // DWS_ENABLE_DEVICE_ID
 #endif // DETERMINISTICESPASYNCWEBSERVER_DEVICE_ID_H

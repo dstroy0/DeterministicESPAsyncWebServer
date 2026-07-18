@@ -3,19 +3,19 @@
 
 /**
  * @file 46.Webhook.ino
- * @brief Outbound webhooks / IFTTT (DETWS_ENABLE_WEBHOOK).
+ * @brief Outbound webhooks / IFTTT (DWS_ENABLE_WEBHOOK).
  *
  * Pushes an event FROM the device: builds an IFTTT Maker URL + value1/2/3 JSON
  * and POSTs it through the outbound http_client. GET /fire triggers it on demand;
  * point WEBHOOK_URL at IFTTT, a Slack/Discord incoming webhook, or your own API.
  *
  * NOTE: enable both flags for the whole build. In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_HTTP_CLIENT=1 -DDETWS_ENABLE_WEBHOOK=1
+ *     build_flags = -DDWS_ENABLE_HTTP_CLIENT=1 -DDWS_ENABLE_WEBHOOK=1
  * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_HTTP_CLIENT 1
-#define DETWS_ENABLE_WEBHOOK 1
+#define DWS_ENABLE_HTTP_CLIENT 1
+#define DWS_ENABLE_WEBHOOK 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -28,7 +28,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 // A plain webhook endpoint (Slack/Discord/your API). For IFTTT use the helper below.
 static const char *WEBHOOK_URL = "http://192.168.1.10:8080/hook";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -53,11 +53,11 @@ void loop()
     {
         fired = true;
         char body[128];
-        detws_ifttt_payload("boot", "esp32", nullptr, body, sizeof(body));
-        int status = detws_webhook_post(WEBHOOK_URL, body);
+        dws_ifttt_payload("boot", "esp32", nullptr, body, sizeof(body));
+        int status = dws_webhook_post(WEBHOOK_URL, body);
         Serial.printf("[webhook] POST -> status %d\n", status);
 
         // IFTTT Maker form (needs your real key):
-        //   detws_ifttt_trigger("device_boot", "YOUR_IFTTT_KEY", "esp32", nullptr, nullptr);
+        //   dws_ifttt_trigger("device_boot", "YOUR_IFTTT_KEY", "esp32", nullptr, nullptr);
     }
 }

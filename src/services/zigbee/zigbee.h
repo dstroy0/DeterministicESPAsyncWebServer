@@ -3,7 +3,7 @@
 
 /**
  * @file zigbee.h
- * @brief Zigbee EZSP / ASH framing codec (DETWS_ENABLE_ZIGBEE) - Silicon Labs NCP.
+ * @brief Zigbee EZSP / ASH framing codec (DWS_ENABLE_ZIGBEE) - Silicon Labs NCP.
  *
  * The ASH (Asynchronous Serial Host, UG101) data-link layer that carries EZSP frames to a
  * Silicon Labs EmberZNet network co-processor over UART - a Zigbee network bridged to the
@@ -30,7 +30,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_ZIGBEE
+#if DWS_ENABLE_ZIGBEE
 
 #include <stddef.h>
 #include <stdint.h>
@@ -50,7 +50,7 @@ uint16_t ash_crc16(const uint8_t *buf, uint16_t len);
 
 /**
  * @brief Encode an ASH frame: [control | payload] + CRC-16, byte-stuffed, flag-terminated.
- * @return the encoded frame length, or 0 if @p len exceeds DETWS_ZIGBEE_MAX_DATA or the
+ * @return the encoded frame length, or 0 if @p len exceeds DWS_ZIGBEE_MAX_DATA or the
  *         stuffed frame would not fit @p cap.
  */
 uint16_t ash_frame_encode(uint8_t control, const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap);
@@ -67,6 +67,6 @@ uint16_t ash_frame_encode(uint8_t control, const uint8_t *payload, uint16_t len,
 int ash_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *control, uint8_t *payload, uint16_t pay_cap,
                      uint16_t *pay_len);
 
-#endif // DETWS_ENABLE_ZIGBEE
+#endif // DWS_ENABLE_ZIGBEE
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_ZIGBEE_H

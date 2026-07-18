@@ -8,11 +8,11 @@
 
 #include "network_drivers/presentation/dtls/dtls_conn.h"
 
-#if DETWS_ENABLE_DTLS
+#if DWS_ENABLE_DTLS
 
 #include "network_drivers/presentation/http3/tls13_msg.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
-#include "services/clock.h" // detws_millis() stamps / checks the HelloRetryRequest cookie freshness
+#include "services/clock.h" // dws_millis() stamps / checks the HelloRetryRequest cookie freshness
 #include <string.h>
 
 namespace
@@ -26,7 +26,7 @@ const uint8_t ALERT_PROTOCOL_VERSION = 70;
 const uint8_t ALERT_INTERNAL_ERROR = 80;
 
 // HelloRetryRequest cookie freshness window: the client must echo the cookie within this many
-// milliseconds of it being minted (RFC 9147 §5.1). detws_millis() supplies both timestamps.
+// milliseconds of it being minted (RFC 9147 §5.1). dws_millis() supplies both timestamps.
 const uint64_t DTLS_HRR_COOKIE_MAX_AGE_MS = 60000;
 
 // The record-layer demux (RFC 9147 §4): a first byte 0b001xxxxx is a DTLSCiphertext unified header.
@@ -145,7 +145,7 @@ void flight_arm(DtlsConn *c)
     c->awaiting_reply = true;
     c->retransmits = 0;
     c->pto_ms = DTLS_PTO_INITIAL_MS;
-    c->flight_sent_ms = detws_millis();
+    c->flight_sent_ms = dws_millis();
 }
 
 // Stop the retransmission timer: the expected reply arrived, or the flight was acknowledged.
@@ -176,8 +176,8 @@ int send_hello_retry(DtlsConn *c, const Tls13ClientHello *ch, const uint8_t *ch1
     // Stateless cookie with an empty payload: this connection keeps its own transcript across the
     // retry, so the cookie only has to prove return-routability and bind the client address.
     uint8_t cookie[DTLS_COOKIE_MAX];
-    size_t clen = dtls_cookie_make(c->cfg.cookie_key, detws_millis(), nullptr, 0, c->peer_addr, c->peer_addr_len,
-                                   cookie, sizeof(cookie));
+    size_t clen = dtls_cookie_make(c->cfg.cookie_key, dws_millis(), nullptr, 0, c->peer_addr, c->peer_addr_len, cookie,
+                                   sizeof(cookie));
     if (!clen)
         return fail(c, ALERT_INTERNAL_ERROR);
 
@@ -203,7 +203,7 @@ bool dtls_hrr_cookie_ok(const DtlsConn *c, const Tls13ClientHello *ch)
     uint8_t payload[1];
     size_t plen = 0;
     return ch->cookie &&
-           dtls_cookie_verify(c->cfg.cookie_key, detws_millis(), DTLS_HRR_COOKIE_MAX_AGE_MS, c->peer_addr,
+           dtls_cookie_verify(c->cfg.cookie_key, dws_millis(), DTLS_HRR_COOKIE_MAX_AGE_MS, c->peer_addr,
                               c->peer_addr_len, ch->cookie, ch->cookie_len, payload, sizeof(payload), &plen);
 }
 
@@ -430,7 +430,7 @@ void process_ack(DtlsConn *c, const uint8_t *body, size_t len)
     flight_disarm(c);
 }
 
-// One-record outcome for the det_dtls_conn_process datagram walk.
+// One-record outcome for the dws_dtls_conn_process datagram walk.
 enum class DtlsRecStep
 {
     NEXT,  // record consumed; keep walking the datagram
@@ -493,7 +493,7 @@ DtlsRecStep process_plaintext_record(DtlsConn *c, const uint8_t *dgram, size_t l
 // (3, application), covering the epoch-2 Finished record (§7). Sent at most once.
 void maybe_send_completion_ack(DtlsConn *c, uint8_t *out, size_t out_cap, size_t *out_len)
 {
-    if (!det_dtls_conn_established(c) || c->hs_ack_sent)
+    if (!dws_dtls_conn_established(c) || c->hs_ack_sent)
         return;
     DtlsRecordNumber rn = {2, c->rx_ep2_seq};
     uint8_t ack_body[2 + 16];
@@ -509,7 +509,7 @@ void maybe_send_completion_ack(DtlsConn *c, uint8_t *out, size_t out_cap, size_t
 }
 } // namespace
 
-void det_dtls_conn_init(DtlsConn *c, const DtlsServerConfig *cfg, const uint8_t *peer_addr, size_t peer_addr_len)
+void dws_dtls_conn_init(DtlsConn *c, const DtlsServerConfig *cfg, const uint8_t *peer_addr, size_t peer_addr_len)
 {
     memset(c, 0, sizeof(*c));
     c->cfg = *cfg;
@@ -528,7 +528,7 @@ void det_dtls_conn_init(DtlsConn *c, const DtlsServerConfig *cfg, const uint8_t 
     dtls_hs_reasm_init(&c->reasm, 0, c->reasm_buf + 4, DTLS_CONN_REASM_CAP);
 }
 
-int det_dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *out, size_t out_cap)
+int dws_dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *out, size_t out_cap)
 {
     if (c->state == DtlsConnState::FAILED)
         return -1;
@@ -549,20 +549,20 @@ int det_dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t
     return (int)out_len;
 }
 
-int det_dtls_conn_timeout_ms(const DtlsConn *c)
+int dws_dtls_conn_timeout_ms(const DtlsConn *c)
 {
     if (!c->awaiting_reply || c->state == DtlsConnState::FAILED || c->state == DtlsConnState::DONE)
         return -1;
     // Wrap-safe remaining time: (deadline - now) as a signed delta, clamped at 0 (already due).
-    int32_t remaining = (int32_t)(c->flight_sent_ms + c->pto_ms - detws_millis());
+    int32_t remaining = (int32_t)(c->flight_sent_ms + c->pto_ms - dws_millis());
     return remaining > 0 ? remaining : 0;
 }
 
-int det_dtls_conn_on_timeout(DtlsConn *c, uint8_t *out, size_t out_cap)
+int dws_dtls_conn_on_timeout(DtlsConn *c, uint8_t *out, size_t out_cap)
 {
     if (!c->awaiting_reply || c->state == DtlsConnState::FAILED || c->state == DtlsConnState::DONE)
         return 0;
-    if ((int32_t)(detws_millis() - (c->flight_sent_ms + c->pto_ms)) < 0)
+    if ((int32_t)(dws_millis() - (c->flight_sent_ms + c->pto_ms)) < 0)
         return 0; // not yet due (spurious / early wake-up)
     if (c->retransmits >= DTLS_MAX_RETRANSMITS)
     {
@@ -576,31 +576,31 @@ int det_dtls_conn_on_timeout(DtlsConn *c, uint8_t *out, size_t out_cap)
         return -1;
     c->retransmits++;
     c->pto_ms = c->pto_ms >= DTLS_PTO_MAX_MS / 2 ? DTLS_PTO_MAX_MS : c->pto_ms * 2; // §5.8.1 backoff, capped
-    c->flight_sent_ms = detws_millis();
+    c->flight_sent_ms = dws_millis();
     return (int)out_len;
 }
 
-bool det_dtls_conn_established(const DtlsConn *c)
+bool dws_dtls_conn_established(const DtlsConn *c)
 {
     return c->state == DtlsConnState::DONE && c->ep3_ready;
 }
 
-uint8_t det_dtls_conn_alert(const DtlsConn *c)
+uint8_t dws_dtls_conn_alert(const DtlsConn *c)
 {
     return c->alert;
 }
 
-const DtlsRecordKeys *det_dtls_conn_app_write_keys(const DtlsConn *c)
+const DtlsRecordKeys *dws_dtls_conn_app_write_keys(const DtlsConn *c)
 {
     return c->ep3_ready ? &c->ep3_srv : nullptr;
 }
 
-const DtlsRecordKeys *det_dtls_conn_app_read_keys(const DtlsConn *c)
+const DtlsRecordKeys *dws_dtls_conn_app_read_keys(const DtlsConn *c)
 {
     return c->ep3_ready ? &c->ep3_cli : nullptr;
 }
 
-size_t det_dtls_conn_local_cid(const DtlsConn *c, uint8_t *out)
+size_t dws_dtls_conn_local_cid(const DtlsConn *c, uint8_t *out)
 {
     if (!c->cid_negotiated || c->local_cid_len == 0)
         return 0;
@@ -608,10 +608,10 @@ size_t det_dtls_conn_local_cid(const DtlsConn *c, uint8_t *out)
     return c->local_cid_len;
 }
 
-bool det_dtls_conn_open_app(DtlsConn *c, const uint8_t *rec, size_t rec_len, uint8_t *out, size_t out_cap,
+bool dws_dtls_conn_open_app(DtlsConn *c, const uint8_t *rec, size_t rec_len, uint8_t *out, size_t out_cap,
                             size_t *out_len)
 {
-    if (!det_dtls_conn_established(c))
+    if (!dws_dtls_conn_established(c))
         return false;
     DtlsCiphertext info;
     uint64_t next = c->replay_ep3.seeded ? c->replay_ep3.highest + 1 : 0;
@@ -628,13 +628,13 @@ bool det_dtls_conn_open_app(DtlsConn *c, const uint8_t *rec, size_t rec_len, uin
     return true;
 }
 
-size_t det_dtls_conn_seal_app(DtlsConn *c, const uint8_t *data, size_t len, uint8_t *out, size_t out_cap)
+size_t dws_dtls_conn_seal_app(DtlsConn *c, const uint8_t *data, size_t len, uint8_t *out, size_t out_cap)
 {
-    if (!det_dtls_conn_established(c))
+    if (!dws_dtls_conn_established(c))
         return 0;
     // tx_seq_ep3 is shared with the completion ACK, so app records never reuse its sequence number.
     return dtls_ciphertext_protect(&c->ep3_srv, c->tx_seq_ep3++, DTLS_CT_APPLICATION_DATA, data, len, out, out_cap,
                                    c->cid_negotiated ? c->peer_cid : nullptr, c->cid_negotiated ? c->peer_cid_len : 0);
 }
 
-#endif // DETWS_ENABLE_DTLS
+#endif // DWS_ENABLE_DTLS

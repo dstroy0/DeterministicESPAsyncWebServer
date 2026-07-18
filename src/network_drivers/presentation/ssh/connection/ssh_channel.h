@@ -12,7 +12,7 @@
  * client on a given channel. Flow control follows RFC 4254 §5.2 (per-channel
  * window tracking + WINDOW_ADJUST).
  *
- * Up to DETWS_SSH_MAX_CHANNELS channels per connection are multiplexed, each with
+ * Up to DWS_SSH_MAX_CHANNELS channels per connection are multiplexed, each with
  * its own id, peer id, and windows. The default (1) is the original single-channel
  * control/console link. Every inbound message is routed to its channel by the
  * recipient channel id it carries.
@@ -34,8 +34,8 @@ enum class SshChanType : uint8_t
     SSH_CHAN_SESSION = 0,         ///< "session" - shell / exec / data
     SSH_CHAN_DIRECT_TCPIP = 1,    ///< "direct-tcpip" - client-initiated TCP forward (ssh -L)
     SSH_CHAN_FORWARDED_TCPIP = 2, ///< "forwarded-tcpip" - server-initiated TCP forward (ssh -R)
-    SSH_CHAN_SFTP = 3,            ///< a "session" running the "sftp" subsystem (DETWS_ENABLE_SSH_SFTP)
-    SSH_CHAN_SCP = 4              ///< a "session" running an `exec "scp …"` (DETWS_ENABLE_SSH_SCP)
+    SSH_CHAN_SFTP = 3,            ///< a "session" running the "sftp" subsystem (DWS_ENABLE_SSH_SFTP)
+    SSH_CHAN_SCP = 4              ///< a "session" running an `exec "scp …"` (DWS_ENABLE_SSH_SCP)
 };
 
 /** @brief Per-connection channel state. */
@@ -51,17 +51,17 @@ struct SshChannel
     uint32_t peer_max_pkt; ///< Client's maximum packet size.
 };
 
-/** @brief Channel pool: DETWS_SSH_MAX_CHANNELS channels per SSH connection (BSS).
+/** @brief Channel pool: DWS_SSH_MAX_CHANNELS channels per SSH connection (BSS).
  *  Owned by this layer; src/ code routes through the functions below, never the
  *  array (tests inspect it white-box). Index: [connection slot][channel slot]. */
-extern SshChannel ssh_chan[MAX_SSH_CONNS][DETWS_SSH_MAX_CHANNELS];
+extern SshChannel ssh_chan[MAX_SSH_CONNS][DWS_SSH_MAX_CHANNELS];
 
 /** @brief Application callback for inbound channel data (raw bytes), tagged with
  *  the channel id it arrived on. */
 typedef void (*SshChannelDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
 
 /** @brief Install the inbound-data callback (session channels). */
-void det_ssh_channel_set_data_cb(SshChannelDataCb cb);
+void dws_ssh_channel_set_data_cb(SshChannelDataCb cb);
 
 /**
  * @brief "direct-tcpip" forward request: a client asked the server to open a TCP
@@ -81,10 +81,10 @@ typedef int (*SshForwardOpenCb)(uint8_t slot, uint32_t channel, const char *host
 typedef void (*SshForwardDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
 
 /** @brief Install the direct-tcpip forward open-policy callback (opt-in). */
-void det_ssh_channel_set_forward_open_cb(SshForwardOpenCb cb);
+void dws_ssh_channel_set_forward_open_cb(SshForwardOpenCb cb);
 
 /** @brief Install the direct-tcpip forward inbound-data callback. */
-void det_ssh_channel_set_forward_data_cb(SshForwardDataCb cb);
+void dws_ssh_channel_set_forward_data_cb(SshForwardDataCb cb);
 
 /**
  * @brief "tcpip-forward" remote-forward request (ssh -R): the client asks the server
@@ -103,38 +103,38 @@ typedef int (*SshRemoteForwardOpenCb)(uint8_t slot, const char *bind_addr, size_
 typedef int (*SshRemoteForwardCancelCb)(uint8_t slot, const char *bind_addr, size_t addr_len, uint16_t bind_port);
 
 /** @brief Install the remote-forward (ssh -R) open-policy callback (opt-in). */
-void det_ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb);
+void dws_ssh_channel_set_rforward_open_cb(SshRemoteForwardOpenCb cb);
 
 /** @brief Install the remote-forward (ssh -R) cancel callback (opt-in). */
-void det_ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb);
+void dws_ssh_channel_set_rforward_cancel_cb(SshRemoteForwardCancelCb cb);
 
 /**
  * @brief Result of the client's reply to a server-initiated forwarded-tcpip channel:
  *        @p ok = true on CHANNEL_OPEN_CONFIRMATION (the bridge may start), false on
  *        CHANNEL_OPEN_FAILURE (the owner tears the bridge down). @p channel is the
- *        local id returned by det_ssh_channel_open_forwarded().
+ *        local id returned by dws_ssh_channel_open_forwarded().
  */
 typedef void (*SshForwardConfirmCb)(uint8_t slot, uint32_t channel, bool ok);
 
 /** @brief Install the forwarded-tcpip open-confirmation callback (opt-in, ssh -R). */
-void det_ssh_channel_set_forward_confirm_cb(SshForwardConfirmCb cb);
+void dws_ssh_channel_set_forward_confirm_cb(SshForwardConfirmCb cb);
 
-#if DETWS_ENABLE_SSH_SFTP
+#if DWS_ENABLE_SSH_SFTP
 /** @brief A `subsystem "sftp"` request was accepted on @p channel; the binding starts an SFTP session. */
 typedef void (*SshSftpOpenCb)(uint8_t slot, uint32_t channel);
 /** @brief Inbound bytes on an SFTP channel (the raw SSH_FXP_* stream) - kept out of the session data cb. */
 typedef void (*SshSftpDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
-void det_ssh_channel_set_sftp_open_cb(SshSftpOpenCb cb);
-void det_ssh_channel_set_sftp_data_cb(SshSftpDataCb cb);
+void dws_ssh_channel_set_sftp_open_cb(SshSftpOpenCb cb);
+void dws_ssh_channel_set_sftp_data_cb(SshSftpDataCb cb);
 #endif
 
-#if DETWS_ENABLE_SSH_SCP
+#if DWS_ENABLE_SSH_SCP
 /** @brief An `exec "scp …"` request was accepted on @p channel (@p cmd is @p cmd_len bytes, not NUL-terminated). */
 typedef void (*SshScpOpenCb)(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd_len);
 /** @brief Inbound bytes on an SCP channel (the RCP protocol stream). */
 typedef void (*SshScpDataCb)(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len);
-void det_ssh_channel_set_scp_open_cb(SshScpOpenCb cb);
-void det_ssh_channel_set_scp_data_cb(SshScpDataCb cb);
+void dws_ssh_channel_set_scp_open_cb(SshScpOpenCb cb);
+void dws_ssh_channel_set_scp_data_cb(SshScpDataCb cb);
 #endif
 
 /**
@@ -149,7 +149,7 @@ void det_ssh_channel_set_scp_data_cb(SshScpDataCb cb);
  *         small). On success the caller emits @p out and, on the eventual confirm,
  *         bridges bytes on the returned channel.
  */
-int det_ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
+int dws_ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t conn_port, const char *orig_addr,
                                    uint16_t orig_port, uint8_t *out, size_t *out_len, size_t cap);
 
 /**
@@ -159,7 +159,7 @@ int det_ssh_channel_open_forwarded(uint8_t i, const char *conn_addr, uint16_t co
  * window / max-packet, and marks it open. Fires the confirm callback (@p ok = true).
  * @return 0 on success, -1 if malformed or no matching pending channel.
  */
-int det_ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_t len);
+int dws_ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_t len);
 
 /**
  * @brief Handle SSH_MSG_CHANNEL_OPEN_FAILURE for a channel we opened (ssh -R).
@@ -167,7 +167,7 @@ int det_ssh_channel_handle_open_confirm(uint8_t i, const uint8_t *payload, size_
  * Frees the pending channel and fires the confirm callback (@p ok = false).
  * @return 0 on success, -1 if malformed or no matching pending channel.
  */
-int det_ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_t len);
+int dws_ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_t len);
 
 /**
  * @brief Handle SSH_MSG_GLOBAL_REQUEST (RFC 4254 §4).
@@ -186,7 +186,7 @@ int det_ssh_channel_handle_open_failure(uint8_t i, const uint8_t *payload, size_
 int ssh_global_request_handle(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len, size_t cap);
 
 /** @brief Reset channel state for slot @p i. */
-void det_ssh_channel_init(uint8_t i);
+void dws_ssh_channel_init(uint8_t i);
 
 /**
  * @brief Handle SSH_MSG_CHANNEL_OPEN and emit CHANNEL_OPEN_CONFIRMATION.
@@ -194,20 +194,20 @@ void det_ssh_channel_init(uint8_t i);
  * Accepts a "session" channel; any other type yields CHANNEL_OPEN_FAILURE.
  * @return 0 if a response was produced, -1 if malformed.
  */
-int det_ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+int dws_ssh_channel_handle_open(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
                                 size_t cap);
 
 /**
  * @brief Handle SSH_MSG_CHANNEL_REQUEST.
  *
  * "shell", "exec", "pty-req", and "env" are accepted; anything else is refused - except that when
- * DETWS_ENABLE_SSH_SFTP is set a `subsystem "sftp"` is accepted (the channel is tagged SSH_CHAN_SFTP and the
- * sftp-open callback fires), and when DETWS_ENABLE_SSH_SCP is set an `exec "scp …"` is additionally tagged
+ * DWS_ENABLE_SSH_SFTP is set a `subsystem "sftp"` is accepted (the channel is tagged SSH_CHAN_SFTP and the
+ * sftp-open callback fires), and when DWS_ENABLE_SSH_SCP is set an `exec "scp …"` is additionally tagged
  * SSH_CHAN_SCP (the scp-open callback fires with the command). When want_reply is set, CHANNEL_SUCCESS /
  * CHANNEL_FAILURE is written to @p out and *@p out_len > 0; otherwise *@p out_len is 0.
  * @return 0 on success, -1 if malformed.
  */
-int det_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+int dws_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
                                    size_t cap);
 
 /**
@@ -216,7 +216,7 @@ int det_ssh_channel_handle_request(uint8_t i, const uint8_t *payload, size_t len
  *        CHANNEL_WINDOW_ADJUST is written to @p out (*@p out_len > 0).
  * @return 0 on success, -1 if malformed or channel not open.
  */
-int det_ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+int dws_ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
                                 size_t cap);
 
 /**
@@ -225,28 +225,28 @@ int det_ssh_channel_handle_data(uint8_t i, const uint8_t *payload, size_t len, u
  * @return 0 on success, -1 if the channel is closed/unknown, the peer window is
  *         too small, or @p out is too small.
  */
-int det_ssh_channel_build_data(uint8_t i, uint32_t channel, const uint8_t *data, size_t len, uint8_t *out,
+int dws_ssh_channel_build_data(uint8_t i, uint32_t channel, const uint8_t *data, size_t len, uint8_t *out,
                                size_t *out_len, size_t cap);
 
 /**
  * @brief Handle SSH_MSG_CHANNEL_WINDOW_ADJUST (grows the peer window).
  * @return 0 on success, -1 if malformed.
  */
-int det_ssh_channel_handle_window_adjust(uint8_t i, const uint8_t *payload, size_t len);
+int dws_ssh_channel_handle_window_adjust(uint8_t i, const uint8_t *payload, size_t len);
 
 /**
  * @brief Build SSH_MSG_CHANNEL_EOF + SSH_MSG_CHANNEL_CLOSE for channel @p channel
  *        and mark it closed.
  * @return 0 on success, -1 if the channel is closed/unknown or @p out is too small.
  */
-int det_ssh_channel_build_close(uint8_t i, uint32_t channel, uint8_t *out, size_t *out_len, size_t cap);
+int dws_ssh_channel_build_close(uint8_t i, uint32_t channel, uint8_t *out, size_t *out_len, size_t cap);
 
 /**
  * @brief Handle an inbound SSH_MSG_CHANNEL_CLOSE: route to the recipient channel,
  *        reply with EOF + CLOSE, and mark it closed.
  * @return 0 if a response was produced, -1 if malformed or the channel is unknown.
  */
-int det_ssh_channel_handle_close(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
+int dws_ssh_channel_handle_close(uint8_t i, const uint8_t *payload, size_t len, uint8_t *out, size_t *out_len,
                                  size_t cap);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SSH_CHANNEL_H

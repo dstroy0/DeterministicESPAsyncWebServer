@@ -3,7 +3,7 @@
 
 /**
  * @file fdc2214.h
- * @brief TI FDC2114/2214 capacitance-to-digital field-sensing codec (DETWS_ENABLE_FDC2214).
+ * @brief TI FDC2114/2214 capacitance-to-digital field-sensing codec (DWS_ENABLE_FDC2214).
  *
  * The FDC2x14 measures the resonant frequency of an external LC tank; a capacitance shift (a finger
  * near the electrode, a liquid rising past it, a material change) moves that frequency, so watching the

@@ -3,7 +3,7 @@
 
 /**
  * @file smb2.h
- * @brief SMB2 client wire codec (MS-SMB2), DETWS_ENABLE_SMB - increment 1: the transport
+ * @brief SMB2 client wire codec (MS-SMB2), DWS_ENABLE_SMB - increment 1: the transport
  *        frame, the 64-byte sync packet header, and the NEGOTIATE exchange.
  *
  * Windows-share program storage is a common CNC file path (Fanuc / Haas / Mazak / Heidenhain
@@ -31,7 +31,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_SMB
+#if DWS_ENABLE_SMB
 
 #include <stddef.h>
 #include <stdint.h>
@@ -361,6 +361,6 @@ struct Smb2WriteResp
  */
 bool smb2_parse_write_response(const uint8_t *msg, size_t len, Smb2WriteResp *out);
 
-#endif // DETWS_ENABLE_SMB
+#endif // DWS_ENABLE_SMB
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SMB2_H

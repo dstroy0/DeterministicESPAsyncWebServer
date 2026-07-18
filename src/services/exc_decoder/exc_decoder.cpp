@@ -8,7 +8,7 @@
 
 #include "services/exc_decoder/exc_decoder.h"
 
-#if DETWS_ENABLE_EXC_DECODER
+#if DWS_ENABLE_EXC_DECODER
 
 #include <string.h>
 
@@ -57,35 +57,35 @@ const char *parse_hex(const char *p, uint32_t *out)
     return p;
 }
 
-void put_json_str(DetSb *b, const char *s)
+void put_json_str(DWSSb *b, const char *s)
 {
-    det_sb_put(b, "\"");
+    dws_sb_put(b, "\"");
     for (const char *p = s ? s : ""; *p; p++)
     {
         if (*p == '"' || *p == '\\')
         {
             char esc[3] = {'\\', *p, '\0'};
-            det_sb_put(b, esc);
+            dws_sb_put(b, esc);
         }
         else if (b->len + 1 < b->cap)
             b->p[b->len++] = *p;
         else
             b->ok = false;
     }
-    det_sb_put(b, "\"");
+    dws_sb_put(b, "\"");
 }
 
 // Emit a 32-bit value as a JSON string literal "0x........".
-void put_hex32(DetSb *b, uint32_t v)
+void put_hex32(DWSSb *b, uint32_t v)
 {
     char t[13] = "\"0x00000000\"";
     static const char *H = "0123456789abcdef";
     for (int i = 0; i < 8; i++)
         t[3 + i] = H[(v >> ((7 - i) * 4)) & 0xF];
-    det_sb_put(b, t);
+    dws_sb_put(b, t);
 }
 
-void put_int(DetSb *b, int v)
+void put_int(DWSSb *b, int v)
 {
     char t[12];
     int n = 0;
@@ -100,11 +100,11 @@ void put_int(DetSb *b, int v)
     int k = 0;
     if (neg)
         o[k++] =
-            '-'; // GCOVR_EXCL_LINE detws_exc_json's only put_int call is guarded by core >= 0, so v is never negative
+            '-'; // GCOVR_EXCL_LINE dws_exc_json's only put_int call is guarded by core >= 0, so v is never negative
     for (int i = 0; i < n; i++)
         o[k++] = t[n - 1 - i];
     o[k] = '\0';
-    det_sb_put(b, o);
+    dws_sb_put(b, o);
 }
 
 // Parse a run of decimal digits at @p p into a small non-negative int, clamped to avoid signed-overflow
@@ -186,7 +186,7 @@ void parse_backtrace(const char *text, ExcInfo *out)
     if (!bt)
         return;
     const char *p = bt + 10;
-    while (out->frame_count < DETWS_EXC_MAX_FRAMES)
+    while (out->frame_count < DWS_EXC_MAX_FRAMES)
     {
         p = skip_ws(p);
         uint32_t pc = 0;
@@ -205,7 +205,7 @@ void parse_backtrace(const char *text, ExcInfo *out)
 }
 } // namespace
 
-bool detws_exc_parse(const char *text, ExcInfo *out)
+bool dws_exc_parse(const char *text, ExcInfo *out)
 {
     if (!text || !out)
         return false;
@@ -228,42 +228,42 @@ bool detws_exc_parse(const char *text, ExcInfo *out)
     return out->cause[0] != '\0' || out->pc != 0 || out->frame_count > 0;
 }
 
-size_t detws_exc_json(const ExcInfo *info, char *out, size_t cap)
+size_t dws_exc_json(const ExcInfo *info, char *out, size_t cap)
 {
     if (!info || !out || cap == 0)
         return 0;
-    DetSb b = {out, cap, 0, true};
-    det_sb_put(&b, "{");
+    DWSSb b = {out, cap, 0, true};
+    dws_sb_put(&b, "{");
     bool first = true;
     if (info->core >= 0)
     {
-        det_sb_put(&b, "\"core\":");
+        dws_sb_put(&b, "\"core\":");
         put_int(&b, info->core);
         first = false;
     }
     if (!first)
-        det_sb_put(&b, ",");
-    det_sb_put(&b, "\"cause\":");
+        dws_sb_put(&b, ",");
+    dws_sb_put(&b, "\"cause\":");
     put_json_str(&b, info->cause);
-    det_sb_put(&b, ",\"pc\":");
+    dws_sb_put(&b, ",\"pc\":");
     put_hex32(&b, info->pc);
     if (info->has_excvaddr)
     {
-        det_sb_put(&b, ",\"excvaddr\":");
+        dws_sb_put(&b, ",\"excvaddr\":");
         put_hex32(&b, info->excvaddr);
     }
-    det_sb_put(&b, ",\"backtrace\":[");
+    dws_sb_put(&b, ",\"backtrace\":[");
     for (size_t i = 0; i < info->frame_count; i++)
     {
         if (i)
-            det_sb_put(&b, ",");
+            dws_sb_put(&b, ",");
         put_hex32(&b, info->frames[i].pc);
     }
-    det_sb_put(&b, "]}");
+    dws_sb_put(&b, "]}");
     if (!b.ok)
         return 0;
     out[b.len] = '\0';
     return b.len;
 }
 
-#endif // DETWS_ENABLE_EXC_DECODER
+#endif // DWS_ENABLE_EXC_DECODER

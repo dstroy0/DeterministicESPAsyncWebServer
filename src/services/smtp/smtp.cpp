@@ -6,14 +6,14 @@
  * @brief Outbound SMTP client (RFC 5321) - implementation. See smtp.h for the model.
  *
  * smtp_run() is the pure dialogue engine (host-testable via the send/recv seam);
- * smtp_send() binds it to the real transport on Arduino (det_client, +det_tls csess).
+ * smtp_send() binds it to the real transport on Arduino (dws_client, +dws_tls csess).
  */
 
 #include "services/smtp/smtp.h"
 #include "ServerConfig.h"
 #include "services/clock.h" // dwsdelay
 
-#if DETWS_ENABLE_SMTP
+#if DWS_ENABLE_SMTP
 
 #include "network_drivers/presentation/base64/base64.h"
 #include <stdio.h>  // snprintf
@@ -24,7 +24,7 @@ namespace
 // Send an entire C string; returns true only if every byte went out.
 bool send_str(SmtpSendFn send, void *ctx, const char *s)
 {
-    size_t n = strnlen(s, DETWS_SMTP_LINE_MAX + 1);
+    size_t n = strnlen(s, DWS_SMTP_LINE_MAX + 1);
     return n == 0 || send(ctx, (const uint8_t *)s, n) == (int)n;
 }
 
@@ -57,7 +57,7 @@ bool reply_complete(const char *buf, size_t len, int *code)
 // Read one (possibly multi-line) reply into a stack buffer and return its code.
 SmtpResult read_reply(SmtpRecvFn recv, void *ctx, int *code)
 {
-    char buf[DETWS_SMTP_REPLY_MAX];
+    char buf[DWS_SMTP_REPLY_MAX];
     size_t len = 0;
     for (;;)
     {
@@ -86,8 +86,8 @@ int command(SmtpSendFn send, SmtpRecvFn recv, void *ctx, const char *line)
 // AUTH LOGIN leg: send @p secret base64-encoded + CRLF, return the reply code.
 int auth_send_b64(SmtpSendFn send, SmtpRecvFn recv, void *ctx, const char *secret)
 {
-    char line[DETWS_SMTP_LINE_MAX];
-    char b64[DETWS_SMTP_LINE_MAX];
+    char line[DWS_SMTP_LINE_MAX];
+    char b64[DWS_SMTP_LINE_MAX];
     size_t slen = strnlen(secret, sizeof(b64));
     if (((slen + 2) / 3) * 4 + 3 >= sizeof(b64)) // b64 + CRLF must fit
         return (int)SmtpResult::SMTP_ERR_OVERFLOW;
@@ -164,7 +164,7 @@ SmtpResult smtp_run(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn se
     if (!cfg || !msg || !send || !recv || !cfg->host || !cfg->from || !cfg->from[0] || !msg->to || !msg->to[0])
         return SmtpResult::SMTP_ERR_ARG;
 
-    char line[DETWS_SMTP_LINE_MAX];
+    char line[DWS_SMTP_LINE_MAX];
     int code;
 
     // Greeting.
@@ -231,7 +231,7 @@ SmtpResult smtp_run(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn se
         return SmtpResult::SMTP_ERR_PROTOCOL;
 
     // The message itself, then wait for acceptance.
-    char body[DETWS_SMTP_MSG_MAX];
+    char body[DWS_SMTP_MSG_MAX];
     int mlen = build_message(body, sizeof(body), cfg, msg);
     if (mlen < 0)
         return (SmtpResult)mlen;
@@ -248,14 +248,14 @@ SmtpResult smtp_run(const SmtpConfig *cfg, const SmtpMessage *msg, SmtpSendFn se
 }
 
 // ---------------------------------------------------------------------------
-// Real-transport binding (Arduino): det_client, plus a det_tls csess for SMTPS.
+// Real-transport binding (Arduino): dws_client, plus a dws_tls csess for SMTPS.
 // ---------------------------------------------------------------------------
 
 #if defined(ARDUINO)
 
 #include "network_drivers/transport/client.h"
 #include <Arduino.h> // millis, delay
-#if DETWS_ENABLE_TLS
+#if DWS_ENABLE_TLS
 #include "network_drivers/tls/tls.h"
 #endif
 
@@ -267,7 +267,7 @@ struct SmtpXport
     uint32_t deadline;
 };
 
-// Plaintext seam over det_client.
+// Plaintext seam over dws_client.
 int cl_send(void *ctx, const uint8_t *data, size_t len)
 {
     SmtpXport *x = (SmtpXport *)ctx;
@@ -277,7 +277,7 @@ int cl_send(void *ctx, const uint8_t *data, size_t len)
         size_t chunk = len - sent;
         if (chunk > 0xFFFF)
             chunk = 0xFFFF;
-        if (!det_client_send(x->cid, data + sent, chunk))
+        if (!dws_client_send(x->cid, data + sent, chunk))
             return -1;
         sent += chunk;
     }
@@ -288,43 +288,43 @@ int cl_recv(void *ctx, uint8_t *buf, size_t cap)
     SmtpXport *x = (SmtpXport *)ctx;
     while ((int32_t)(x->deadline - millis()) > 0)
     {
-        size_t n = det_client_read(x->cid, buf, cap);
+        size_t n = dws_client_read(x->cid, buf, cap);
         if (n > 0)
             return (int)n;
-        if (det_client_is_closed(x->cid) && det_client_available(x->cid) == 0)
+        if (dws_client_is_closed(x->cid) && dws_client_available(x->cid) == 0)
             return -1;
         dwsdelay(5);
     }
     return -1; // timeout
 }
 
-#if DETWS_ENABLE_TLS
-// TLS ciphertext BIO: the csess handshake/records read/write the wire via det_client.
+#if DWS_ENABLE_TLS
+// TLS ciphertext BIO: the csess handshake/records read/write the wire via dws_client.
 int tls_bio_send(void *ctx, const unsigned char *buf, size_t len)
 {
     SmtpXport *x = (SmtpXport *)ctx;
-    return det_client_send(x->cid, buf, len) ? (int)len : MBEDTLS_ERR_SSL_WANT_WRITE;
+    return dws_client_send(x->cid, buf, len) ? (int)len : MBEDTLS_ERR_SSL_WANT_WRITE;
 }
 int tls_bio_recv(void *ctx, unsigned char *buf, size_t len)
 {
     SmtpXport *x = (SmtpXport *)ctx;
-    size_t n = det_client_read(x->cid, buf, len);
+    size_t n = dws_client_read(x->cid, buf, len);
     if (n == 0)
-        return det_client_is_closed(x->cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
+        return dws_client_is_closed(x->cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
     return (int)n;
 }
 // Application seam over the established TLS session.
 int tls_send(void *ctx, const uint8_t *data, size_t len)
 {
     (void)ctx;
-    return det_tls_client_session_write(data, len) == (int)len ? (int)len : -1;
+    return dws_tls_client_session_write(data, len) == (int)len ? (int)len : -1;
 }
 int tls_recv(void *ctx, uint8_t *buf, size_t cap)
 {
     SmtpXport *x = (SmtpXport *)ctx;
     while ((int32_t)(x->deadline - millis()) > 0)
     {
-        int n = det_tls_client_session_read(buf, cap);
+        int n = dws_tls_client_session_read(buf, cap);
         if (n > 0)
             return n;
         if (n < 0 && n != MBEDTLS_ERR_SSL_WANT_READ && n != MBEDTLS_ERR_SSL_WANT_WRITE)
@@ -333,7 +333,7 @@ int tls_recv(void *ctx, uint8_t *buf, size_t cap)
     }
     return -1; // timeout
 }
-#endif // DETWS_ENABLE_TLS
+#endif // DWS_ENABLE_TLS
 } // namespace
 
 SmtpResult smtp_send(const SmtpConfig *cfg, const SmtpMessage *msg)
@@ -342,33 +342,33 @@ SmtpResult smtp_send(const SmtpConfig *cfg, const SmtpMessage *msg)
         return SmtpResult::SMTP_ERR_ARG;
 
     SmtpXport x;
-    x.cid = det_client_open(cfg->host, cfg->port, DETWS_SMTP_TIMEOUT_MS);
+    x.cid = dws_client_open(cfg->host, cfg->port, DWS_SMTP_TIMEOUT_MS);
     if (x.cid < 0)
         return SmtpResult::SMTP_ERR_CONNECT;
-    x.deadline = millis() + DETWS_SMTP_TIMEOUT_MS;
+    x.deadline = millis() + DWS_SMTP_TIMEOUT_MS;
 
     SmtpResult rc;
     if (cfg->tls)
     {
-#if DETWS_ENABLE_TLS
-        if (!det_tls_client_session_begin(cfg->host, tls_bio_send, tls_bio_recv))
+#if DWS_ENABLE_TLS
+        if (!dws_tls_client_session_begin(cfg->host, tls_bio_send, tls_bio_recv))
         {
-            det_client_close(x.cid);
+            dws_client_close(x.cid);
             return SmtpResult::SMTP_ERR_TLS;
         }
         int h;
-        while ((h = det_tls_client_session_handshake()) == 0 && (int32_t)(x.deadline - millis()) > 0)
+        while ((h = dws_tls_client_session_handshake()) == 0 && (int32_t)(x.deadline - millis()) > 0)
             dwsdelay(5);
         if (h != 1) // 1 = established; 0 = still pending at timeout; <0 = fatal
         {
-            det_tls_client_session_end();
-            det_client_close(x.cid);
+            dws_tls_client_session_end();
+            dws_client_close(x.cid);
             return SmtpResult::SMTP_ERR_TLS;
         }
         rc = smtp_run(cfg, msg, tls_send, tls_recv, &x);
-        det_tls_client_session_end();
+        dws_tls_client_session_end();
 #else
-        det_client_close(x.cid);
+        dws_client_close(x.cid);
         return SmtpResult::SMTP_ERR_TLS; // SMTPS requested but TLS not built in
 #endif
     }
@@ -377,7 +377,7 @@ SmtpResult smtp_send(const SmtpConfig *cfg, const SmtpMessage *msg)
         rc = smtp_run(cfg, msg, cl_send, cl_recv, &x);
     }
 
-    det_client_close(x.cid);
+    dws_client_close(x.cid);
     return rc;
 }
 
@@ -390,4 +390,4 @@ SmtpResult smtp_send(const SmtpConfig *, const SmtpMessage *)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_SMTP
+#endif // DWS_ENABLE_SMTP

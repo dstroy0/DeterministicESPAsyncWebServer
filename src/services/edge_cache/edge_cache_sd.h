@@ -3,7 +3,7 @@
 
 /**
  * @file edge_cache_sd.h
- * @brief CDN edge-cache tier - L2 SD persistence (DETWS_ENABLE_EDGE_CACHE && DETWS_ENABLE_DBM).
+ * @brief CDN edge-cache tier - L2 SD persistence (DWS_ENABLE_EDGE_CACHE && DWS_ENABLE_DBM).
  *
  * The persistent second tier behind the bounded L1 RAM store (edge_cache): an evicted L1 entry is
  * written back to a dbm key-value store on the WAL (services/dbm, SD-card backed on device, a RAM WalDev
@@ -11,7 +11,7 @@
  * log-structured on the WAL, the cached set survives a reboot (dbm rebuilds its index by replaying the
  * log on open).
  *
- * The L2 key is the entry's 32-byte SHA-256 digest (== DETWS_DBM_KEY_MAX), so no key is re-derived. The
+ * The L2 key is the entry's 32-byte SHA-256 digest (== DWS_DBM_KEY_MAX), so no key is re-derived. The
  * value is a compact, versioned, little-endian serialization of the entry's response metadata + body.
  *
  * These are pure functions over a caller-owned dbm handle and a caller-owned scratch buffer (no
@@ -33,8 +33,8 @@
 
 // The entry serialize/deserialize below is the shared byte codec for an EdgeEntry (used by both the L2 SD
 // tier and the mesh sibling link), so it compiles whenever the edge cache is on; the dbm-backed put/get/purge
-// helpers further down need the persistence tier and stay gated on DETWS_ENABLE_DBM.
-#if DETWS_ENABLE_EDGE_CACHE
+// helpers further down need the persistence tier and stay gated on DWS_ENABLE_DBM.
+#if DWS_ENABLE_EDGE_CACHE
 
 #include "services/edge_cache/edge_cache.h"
 #include <stddef.h>
@@ -44,13 +44,13 @@
  * @brief Worst-case serialized value size of one entry (every metadata string full + a max-size body).
  *
  * Size the scratch buffer with this. A serialized entry only fits in dbm when this (or the actual, often
- * smaller, size) is <= DETWS_DBM_VAL_MAX - otherwise the entry stays L1-only (::edge_sd_put returns false).
+ * smaller, size) is <= DWS_DBM_VAL_MAX - otherwise the entry stays L1-only (::edge_sd_put returns false).
  */
 static constexpr size_t EDGE_SD_VALUE_MAX = 1 /*version*/ + 2 /*status*/ + 2 /*body_len*/ + 7u * 2u /*str lengths*/
                                             + sizeof(EdgeEntry::key) + sizeof(EdgeEntry::content_type) +
                                             sizeof(EdgeEntry::etag) + sizeof(EdgeEntry::last_modified) +
                                             sizeof(EdgeEntry::content_encoding) + sizeof(EdgeEntry::vary_names) +
-                                            sizeof(EdgeEntry::vary_vals) + DETWS_EDGE_BODY_MAX;
+                                            sizeof(EdgeEntry::vary_vals) + DWS_EDGE_BODY_MAX;
 
 /**
  * @brief Serialize @p e's response metadata + body into @p out (little-endian, versioned).
@@ -69,14 +69,14 @@ size_t edge_sd_serialize(const EdgeEntry *e, uint8_t *out, size_t cap);
  */
 bool edge_sd_deserialize(const uint8_t *buf, size_t len, EdgeEntry *e);
 
-#if DETWS_ENABLE_DBM
+#if DWS_ENABLE_DBM
 
 #include "services/dbm/dbm.h"
 
 /**
  * @brief Write @p e back to the L2 store (keyed by its digest), using @p scratch to serialize.
  * @return true if it was spilled; false if @p e carries no validator, or its serialization does not fit
- *         @p scratch / DETWS_DBM_VAL_MAX, or the dbm write fails (the entry simply stays L1-only).
+ *         @p scratch / DWS_DBM_VAL_MAX, or the dbm write fails (the entry simply stays L1-only).
  */
 bool edge_sd_put(DetwsDbm *db, const EdgeEntry *e, uint8_t *scratch, size_t scratch_cap);
 
@@ -98,8 +98,8 @@ uint32_t edge_sd_purge_prefix(DetwsDbm *db, const char *path_prefix, uint8_t *sc
 /** @brief Drop every L2 entry. @return the number purged. */
 uint32_t edge_sd_purge_all(DetwsDbm *db);
 
-#endif // DETWS_ENABLE_DBM
+#endif // DWS_ENABLE_DBM
 
-#endif // DETWS_ENABLE_EDGE_CACHE
+#endif // DWS_ENABLE_EDGE_CACHE
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_EDGE_CACHE_SD_H

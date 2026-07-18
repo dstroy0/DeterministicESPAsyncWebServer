@@ -13,22 +13,22 @@
 
 #include "services/forward/forward.h"
 
-#if DETWS_ENABLE_FORWARD
+#if DWS_ENABLE_FORWARD
 
 #include <string.h>
 
 #ifdef ARDUINO
-#include "services/clock.h" // detws_millis()
+#include "services/clock.h" // dws_millis()
 #endif
 
 namespace
 {
 struct iface
 {
-    det_if_send_fn send;
+    dws_if_send_fn send;
     void *ctx;
     uint8_t id;
-    det_if_kind kind;
+    dws_if_kind kind;
     bool used;
 };
 
@@ -39,18 +39,18 @@ struct rule
     uint16_t count;        // frames forwarded in the current window
     uint8_t src;
     uint8_t dst;
-    det_fwd_action action;
+    dws_fwd_action action;
     bool used;
 };
 
 struct acl_entry
 {
-    uint8_t pattern[DETWS_FWD_ACL_PATLEN];
-    uint8_t mask[DETWS_FWD_ACL_PATLEN];
+    uint8_t pattern[DWS_FWD_ACL_PATLEN];
+    uint8_t mask[DWS_FWD_ACL_PATLEN];
     uint16_t offset;
-    uint8_t src;    // source interface, or DET_FWD_IF_ANY
+    uint8_t src;    // source interface, or DWS_FWD_IF_ANY
     uint8_t patlen; // 0 = match any content
-    det_fwd_action action;
+    dws_fwd_action action;
     bool used;
 };
 
@@ -58,12 +58,12 @@ struct acl_entry
 struct route
 {
     uint32_t window_start; // ms of the current rate window
-    uint8_t pattern[DETWS_FWD_ACL_PATLEN];
-    uint8_t mask[DETWS_FWD_ACL_PATLEN];
+    uint8_t pattern[DWS_FWD_ACL_PATLEN];
+    uint8_t mask[DWS_FWD_ACL_PATLEN];
     uint16_t offset;
     uint16_t rate_cap; // frames per second to the egress (0 = unlimited)
     uint16_t count;    // frames routed in the current window
-    uint8_t src;       // source interface, or DET_FWD_IF_ANY
+    uint8_t src;       // source interface, or DWS_FWD_IF_ANY
     uint8_t patlen;    // 0 = match any content
     uint8_t egress;    // egress interface id
     bool used;
@@ -73,18 +73,18 @@ struct route
 // rules, ACL, and stats grouped so it is one named owner, unreachable cross-TU.
 struct ForwardCtx
 {
-    iface if_[DETWS_FWD_MAX_IFACES];
-    rule rules[DETWS_FWD_MAX_RULES];
-    acl_entry acl[DETWS_FWD_MAX_ACL];
-    route routes[DETWS_FWD_MAX_ROUTES];
-    det_fwd_action acl_default = det_fwd_action::DET_FWD_ALLOW; // frames matching no ACL entry (opt-in ACL)
-#if DETWS_FWD_INSPECT
-    det_fwd_inspect_fn inspector = nullptr; // opt-in ingress inspection hook
+    iface if_[DWS_FWD_MAX_IFACES];
+    rule rules[DWS_FWD_MAX_RULES];
+    acl_entry acl[DWS_FWD_MAX_ACL];
+    route routes[DWS_FWD_MAX_ROUTES];
+    dws_fwd_action acl_default = dws_fwd_action::DWS_FWD_ALLOW; // frames matching no ACL entry (opt-in ACL)
+#if DWS_FWD_INSPECT
+    dws_fwd_inspect_fn inspector = nullptr; // opt-in ingress inspection hook
     void *inspect_ctx = nullptr;
 #endif
-    det_forward_stats stats;
+    dws_forward_stats stats;
 #ifndef ARDUINO
-    uint32_t now_ms = 0; // host test clock (real builds use detws_millis())
+    uint32_t now_ms = 0; // host test clock (real builds use dws_millis())
 #endif
 };
 ForwardCtx s_fwd;
@@ -92,7 +92,7 @@ ForwardCtx s_fwd;
 #ifdef ARDUINO
 uint32_t fwd_now()
 {
-    return detws_millis();
+    return dws_millis();
 }
 #else
 uint32_t fwd_now()
@@ -103,7 +103,7 @@ uint32_t fwd_now()
 
 const iface *find_if(const ForwardCtx &f, uint8_t id)
 {
-    for (uint8_t i = 0; i < DETWS_FWD_MAX_IFACES; i++)
+    for (uint8_t i = 0; i < DWS_FWD_MAX_IFACES; i++)
         if (f.if_[i].used && f.if_[i].id == id)
             return &f.if_[i];
     return nullptr;
@@ -121,11 +121,11 @@ resolve_result resolve(const ForwardCtx &f, uint8_t src, uint8_t dst, int *allow
 {
     int allow = -1;
     bool deny = false;
-    for (uint8_t i = 0; i < DETWS_FWD_MAX_RULES; i++)
+    for (uint8_t i = 0; i < DWS_FWD_MAX_RULES; i++)
     {
         if (!f.rules[i].used || f.rules[i].src != src || f.rules[i].dst != dst)
             continue;
-        if (f.rules[i].action == det_fwd_action::DET_FWD_DENY)
+        if (f.rules[i].action == dws_fwd_action::DWS_FWD_DENY)
             deny = true;
         else if (allow < 0)
             allow = (int)i;
@@ -181,7 +181,7 @@ bool pat_match(uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uin
 // Does an ACL entry match this frame? (interface + byte pattern under mask).
 bool acl_match(const acl_entry *a, uint8_t src, const uint8_t *data, uint16_t len)
 {
-    if (a->src != DET_FWD_IF_ANY && a->src != src)
+    if (a->src != DWS_FWD_IF_ANY && a->src != src)
         return false;
     return pat_match(a->offset, a->pattern, a->mask, a->patlen, data, len);
 }
@@ -189,38 +189,38 @@ bool acl_match(const acl_entry *a, uint8_t src, const uint8_t *data, uint16_t le
 // Ingress ACL: the first matching entry's action decides; otherwise the default.
 bool acl_permits(const ForwardCtx &f, uint8_t src, const uint8_t *data, uint16_t len)
 {
-    for (uint8_t i = 0; i < DETWS_FWD_MAX_ACL; i++)
+    for (uint8_t i = 0; i < DWS_FWD_MAX_ACL; i++)
         if (f.acl[i].used && acl_match(&f.acl[i], src, data, len))
-            return f.acl[i].action == det_fwd_action::DET_FWD_ALLOW;
-    return f.acl_default == det_fwd_action::DET_FWD_ALLOW;
+            return f.acl[i].action == dws_fwd_action::DWS_FWD_ALLOW;
+    return f.acl_default == dws_fwd_action::DWS_FWD_ALLOW;
 }
 } // namespace
 
-void det_forward_reset(void)
+void dws_forward_reset(void)
 {
     memset(s_fwd.if_, 0, sizeof(s_fwd.if_));
     memset(s_fwd.rules, 0, sizeof(s_fwd.rules));
     memset(s_fwd.acl, 0, sizeof(s_fwd.acl));
     memset(s_fwd.routes, 0, sizeof(s_fwd.routes));
-    s_fwd.acl_default = det_fwd_action::DET_FWD_ALLOW;
-#if DETWS_FWD_INSPECT
+    s_fwd.acl_default = dws_fwd_action::DWS_FWD_ALLOW;
+#if DWS_FWD_INSPECT
     s_fwd.inspector = nullptr;
     s_fwd.inspect_ctx = nullptr;
 #endif
     memset(&s_fwd.stats, 0, sizeof(s_fwd.stats));
 }
 
-void det_forward_acl_set_default(det_fwd_action action)
+void dws_forward_acl_set_default(dws_fwd_action action)
 {
     s_fwd.acl_default = action;
 }
 
-bool det_forward_acl_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
-                         det_fwd_action action)
+bool dws_forward_acl_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
+                         dws_fwd_action action)
 {
-    if (patlen > DETWS_FWD_ACL_PATLEN || (patlen > 0 && (!pattern || !mask)))
+    if (patlen > DWS_FWD_ACL_PATLEN || (patlen > 0 && (!pattern || !mask)))
         return false;
-    for (uint8_t i = 0; i < DETWS_FWD_MAX_ACL; i++)
+    for (uint8_t i = 0; i < DWS_FWD_MAX_ACL; i++)
     {
         if (s_fwd.acl[i].used)
             continue;
@@ -241,12 +241,12 @@ bool det_forward_acl_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern
     return false; // table full
 }
 
-bool det_forward_route_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
+bool dws_forward_route_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
                            uint8_t egress_if, uint16_t rate_cap_per_sec)
 {
-    if (patlen > DETWS_FWD_ACL_PATLEN || (patlen > 0 && (!pattern || !mask)))
+    if (patlen > DWS_FWD_ACL_PATLEN || (patlen > 0 && (!pattern || !mask)))
         return false;
-    for (uint8_t i = 0; i < DETWS_FWD_MAX_ROUTES; i++)
+    for (uint8_t i = 0; i < DWS_FWD_MAX_ROUTES; i++)
     {
         if (s_fwd.routes[i].used)
             continue;
@@ -270,11 +270,11 @@ bool det_forward_route_add(uint8_t src_if, uint16_t offset, const uint8_t *patte
     return false; // table full
 }
 
-bool det_forward_add_if(uint8_t if_id, det_if_kind kind, det_if_send_fn send, void *ctx)
+bool dws_forward_add_if(uint8_t if_id, dws_if_kind kind, dws_if_send_fn send, void *ctx)
 {
     if (!send || find_if(s_fwd, if_id))
         return false;
-    for (uint8_t i = 0; i < DETWS_FWD_MAX_IFACES; i++)
+    for (uint8_t i = 0; i < DWS_FWD_MAX_IFACES; i++)
     {
         if (s_fwd.if_[i].used)
             continue;
@@ -288,9 +288,9 @@ bool det_forward_add_if(uint8_t if_id, det_if_kind kind, det_if_send_fn send, vo
     return false; // table full
 }
 
-bool det_forward_add_rule(uint8_t src_if, uint8_t dst_if, det_fwd_action action, uint16_t rate_cap_per_sec)
+bool dws_forward_add_rule(uint8_t src_if, uint8_t dst_if, dws_fwd_action action, uint16_t rate_cap_per_sec)
 {
-    for (uint8_t i = 0; i < DETWS_FWD_MAX_RULES; i++)
+    for (uint8_t i = 0; i < DWS_FWD_MAX_RULES; i++)
     {
         if (s_fwd.rules[i].used)
             continue;
@@ -311,10 +311,10 @@ bool det_forward_add_rule(uint8_t src_if, uint8_t dst_if, det_fwd_action action,
 static uint8_t forward_policy_route(uint8_t src_if, const uint8_t *data, uint16_t len, bool *handled)
 {
     *handled = true;
-    for (uint8_t i = 0; i < DETWS_FWD_MAX_ROUTES; i++)
+    for (uint8_t i = 0; i < DWS_FWD_MAX_ROUTES; i++)
     {
         route &rt = s_fwd.routes[i];
-        if (!rt.used || (rt.src != DET_FWD_IF_ANY && rt.src != src_if))
+        if (!rt.used || (rt.src != DWS_FWD_IF_ANY && rt.src != src_if))
             continue;
         if (!pat_match(rt.offset, rt.pattern, rt.mask, rt.patlen, data, len))
             continue;
@@ -344,7 +344,7 @@ static uint8_t forward_policy_route(uint8_t src_if, const uint8_t *data, uint16_
     return 0;
 }
 
-uint8_t det_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len)
+uint8_t dws_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len)
 {
     s_fwd.stats.frames_in++;
     if (!acl_permits(s_fwd, src_if, data, len)) // ingress ACL runs before any forwarding rule
@@ -352,10 +352,10 @@ uint8_t det_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len)
         s_fwd.stats.acl_denied++;
         return 0;
     }
-#if DETWS_FWD_INSPECT
+#if DWS_FWD_INSPECT
     // Opt-in inspection hook: an app callback observes/filters the frame before routing.
     if (s_fwd.inspector &&
-        s_fwd.inspector(src_if, data, len, s_fwd.inspect_ctx) == det_fwd_verdict::DET_FWD_INSPECT_DROP)
+        s_fwd.inspector(src_if, data, len, s_fwd.inspect_ctx) == dws_fwd_verdict::DWS_FWD_INSPECT_DROP)
     {
         s_fwd.stats.inspect_dropped++;
         return 0;
@@ -368,7 +368,7 @@ uint8_t det_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len)
     if (routed)
         return verdict;
     uint8_t n = 0;
-    for (uint8_t i = 0; i < DETWS_FWD_MAX_IFACES; i++)
+    for (uint8_t i = 0; i < DWS_FWD_MAX_IFACES; i++)
     {
         if (!s_fwd.if_[i].used || s_fwd.if_[i].id == src_if) // never reflect to the source interface
             continue;
@@ -399,14 +399,14 @@ uint8_t det_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len)
     return n;
 }
 
-void det_forward_get_stats(det_forward_stats *out)
+void dws_forward_get_stats(dws_forward_stats *out)
 {
     if (out)
         *out = s_fwd.stats;
 }
 
-#if DETWS_FWD_INSPECT
-void det_forward_set_inspector(det_fwd_inspect_fn fn, void *ctx)
+#if DWS_FWD_INSPECT
+void dws_forward_set_inspector(dws_fwd_inspect_fn fn, void *ctx)
 {
     s_fwd.inspector = fn;
     s_fwd.inspect_ctx = ctx;
@@ -414,10 +414,10 @@ void det_forward_set_inspector(det_fwd_inspect_fn fn, void *ctx)
 #endif
 
 #if !defined(ARDUINO)
-void det_forward_test_set_now(uint32_t ms)
+void dws_forward_test_set_now(uint32_t ms)
 {
     s_fwd.now_ms = ms;
 }
 #endif
 
-#endif // DETWS_ENABLE_FORWARD
+#endif // DWS_ENABLE_FORWARD

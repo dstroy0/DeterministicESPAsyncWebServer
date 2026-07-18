@@ -10,7 +10,7 @@
  * ONLY in the key size: parameterize on @c nk (key words: 4 for AES-128, 8 for AES-256) and @c nr (rounds: 10
  * or 14) and one implementation serves all three.
  *
- * Only the S-box (@c DET_AES_SBOX from aes_sbox.h) and the GF(2^8) @c xtime are used - no large T-tables - so
+ * Only the S-box (@c DWS_AES_SBOX from aes_sbox.h) and the GF(2^8) @c xtime are used - no large T-tables - so
  * this is the same "constant-time by structure" shape the copies had (a table-indexed S-box; no secret-
  * dependent branching introduced here). Header-only and pure (S-box + @c <string.h>), so it is compiled into
  * only the NATIVE software path of each module; the @c \#ifdef ARDUINO mbedTLS/HW branches are untouched.
@@ -22,25 +22,25 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_AES_BLOCK_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_AES_BLOCK_H
 
-#include "shared_primitives/aes_sbox.h" // DET_AES_SBOX
+#include "shared_primitives/aes_sbox.h" // DWS_AES_SBOX
 #include <stdint.h>
 #include <string.h>
 
 /** @brief GF(2^8) multiply-by-2 (xtime) for the AES MixColumns step. */
-inline uint8_t det_aes_xtime(uint8_t a)
+inline uint8_t dws_aes_xtime(uint8_t a)
 {
     return (uint8_t)((a << 1) ^ ((a >> 7) ? 0x1bu : 0x00u));
 }
 
 /** @brief AES SubWord (FIPS 197 sec 5.2): apply the S-box to each of the four bytes of a 32-bit word. */
-inline uint32_t det_aes_sub_word(uint32_t w)
+inline uint32_t dws_aes_sub_word(uint32_t w)
 {
-    return ((uint32_t)DET_AES_SBOX[w >> 24] << 24) | ((uint32_t)DET_AES_SBOX[(w >> 16) & 0xff] << 16) |
-           ((uint32_t)DET_AES_SBOX[(w >> 8) & 0xff] << 8) | (uint32_t)DET_AES_SBOX[w & 0xff];
+    return ((uint32_t)DWS_AES_SBOX[w >> 24] << 24) | ((uint32_t)DWS_AES_SBOX[(w >> 16) & 0xff] << 16) |
+           ((uint32_t)DWS_AES_SBOX[(w >> 8) & 0xff] << 8) | (uint32_t)DWS_AES_SBOX[w & 0xff];
 }
 
 /** @brief AES RotWord (FIPS 197 sec 5.2): cyclically rotate a 32-bit word one byte left. */
-inline uint32_t det_aes_rot_word(uint32_t w)
+inline uint32_t dws_aes_rot_word(uint32_t w)
 {
     return (w << 8) | (w >> 24);
 }
@@ -49,7 +49,7 @@ inline uint32_t det_aes_rot_word(uint32_t w)
  * @brief AES key expansion (FIPS 197 sec 5.2). @p nk key words (4=AES-128, 8=AES-256); @p rk receives
  *        4*(@p nk + 7) round-key words (44 for AES-128, 60 for AES-256).
  */
-inline void det_aes_key_expand(const uint8_t *key, int nk, uint32_t *rk)
+inline void dws_aes_key_expand(const uint8_t *key, int nk, uint32_t *rk)
 {
     // Rcon[1..10] (index 0 unused); AES-128 uses up to [10], AES-256 up to [7].
     static const uint8_t RCON[11] = {0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
@@ -62,18 +62,18 @@ inline void det_aes_key_expand(const uint8_t *key, int nk, uint32_t *rk)
     {
         uint32_t t = rk[i - 1];
         if (i % nk == 0)
-            t = det_aes_sub_word(det_aes_rot_word(t)) ^ ((uint32_t)RCON[i / nk] << 24);
+            t = dws_aes_sub_word(dws_aes_rot_word(t)) ^ ((uint32_t)RCON[i / nk] << 24);
         else if (nk > 6 && i % nk == 4) // AES-256 applies an extra SubWord at the mid-point of each 8-word run.
-            t = det_aes_sub_word(t);
+            t = dws_aes_sub_word(t);
         rk[i] = rk[i - nk] ^ t;
     }
 }
 
 /**
  * @brief AES single-block encrypt (FIPS 197 sec 5.1), @p nr rounds (10=AES-128, 14=AES-256). State is
- *        column-major: s[col*4 + row]. @p rk is the schedule from det_aes_key_expand.
+ *        column-major: s[col*4 + row]. @p rk is the schedule from dws_aes_key_expand.
  */
-inline void det_aes_encrypt_block(const uint32_t *rk, int nr, const uint8_t in[16], uint8_t out[16])
+inline void dws_aes_encrypt_block(const uint32_t *rk, int nr, const uint8_t in[16], uint8_t out[16])
 {
     uint8_t s[16];
     for (int i = 0; i < 16; i++)
@@ -82,7 +82,7 @@ inline void det_aes_encrypt_block(const uint32_t *rk, int nr, const uint8_t in[1
     for (int r = 1; r < nr; r++)
     {
         for (int i = 0; i < 16; i++)
-            s[i] = DET_AES_SBOX[s[i]];
+            s[i] = DWS_AES_SBOX[s[i]];
 
         uint8_t t;
         t = s[1]; // row 1 <<< 1
@@ -109,10 +109,10 @@ inline void det_aes_encrypt_block(const uint32_t *rk, int nr, const uint8_t in[1
             uint8_t cc = s[c * 4 + 2];
             uint8_t d = s[c * 4 + 3];
             uint8_t e = a ^ b ^ cc ^ d;
-            s[c * 4] = a ^ e ^ det_aes_xtime(a ^ b);
-            s[c * 4 + 1] = b ^ e ^ det_aes_xtime(b ^ cc);
-            s[c * 4 + 2] = cc ^ e ^ det_aes_xtime(cc ^ d);
-            s[c * 4 + 3] = d ^ e ^ det_aes_xtime(d ^ a);
+            s[c * 4] = a ^ e ^ dws_aes_xtime(a ^ b);
+            s[c * 4 + 1] = b ^ e ^ dws_aes_xtime(b ^ cc);
+            s[c * 4 + 2] = cc ^ e ^ dws_aes_xtime(cc ^ d);
+            s[c * 4 + 3] = d ^ e ^ dws_aes_xtime(d ^ a);
         }
 
         for (int i = 0; i < 16; i++)
@@ -120,7 +120,7 @@ inline void det_aes_encrypt_block(const uint32_t *rk, int nr, const uint8_t in[1
     }
 
     for (int i = 0; i < 16; i++)
-        s[i] = DET_AES_SBOX[s[i]];
+        s[i] = DWS_AES_SBOX[s[i]];
 
     uint8_t t;
     t = s[1];

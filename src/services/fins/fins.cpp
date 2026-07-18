@@ -8,7 +8,7 @@
 
 #include "services/fins/fins.h"
 
-#if DETWS_ENABLE_FINS
+#if DWS_ENABLE_FINS
 
 #include <string.h>
 
@@ -99,4 +99,4 @@ bool fins_parse_response(const uint8_t *buf, size_t len, FinsResponse *out)
     return true;
 }
 
-#endif // DETWS_ENABLE_FINS
+#endif // DWS_ENABLE_FINS

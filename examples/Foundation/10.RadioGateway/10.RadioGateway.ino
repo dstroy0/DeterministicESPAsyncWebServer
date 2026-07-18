@@ -5,9 +5,9 @@
 // the lane's task runs a tiny per-radio codec (first two bytes are the source node address,
 // the rest is the payload) and hands it to the gateway, which envelopes it (address / port /
 // RSSI / seq) and PUBLISHES it northbound - wire that to MQTT / HTTP / WebSocket. A command
-// runs the other way: det_gateway_downlink() transmits on the radio.
+// runs the other way: dws_gateway_downlink() transmits on the radio.
 //
-//   radio RX --DMA--> callback --post--> FORWARD lane --> codec --> det_gateway_uplink()
+//   radio RX --DMA--> callback --post--> FORWARD lane --> codec --> dws_gateway_uplink()
 //                                                                        |
 //                                                     envelope + topic <prefix>/<port>/<addr>
 //                                                                        |
@@ -17,7 +17,7 @@
 // build swaps the simulator feed for the module's SPI RX and the publish for an MQTT client.
 //
 // Build flags (whole build):
-//   DETWS_ENABLE_DMA=1 DETWS_ENABLE_PREEMPT_QUEUE=1 DETWS_ENABLE_GATEWAY=1 DETWS_DMA_SIMULATE=1
+//   DWS_ENABLE_DMA=1 DWS_ENABLE_PREEMPT_QUEUE=1 DWS_ENABLE_GATEWAY=1 DWS_DMA_SIMULATE=1
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/dma/dma.h"
@@ -30,10 +30,10 @@ static const uint8_t RADIO_PORT = 0; // DMA channel 0 == the LoRa module
 
 // Northbound publish: a real build calls mqtt.publish(topic, payload, len). We format the
 // routing key and print it.
-static bool northbound_publish(const det_gateway_msg *m, void *)
+static bool northbound_publish(const dws_gateway_msg *m, void *)
 {
     char topic[48];
-    det_gateway_topic(m, topic, sizeof(topic));
+    dws_gateway_topic(m, topic, sizeof(topic));
     Serial.printf("  PUBLISH %s  (%u bytes, rssi %d, seq %u)\n", topic, m->len, m->rssi, (unsigned)m->seq);
     return true;
 }
@@ -54,7 +54,7 @@ struct radio_frame
 };
 union pq_item {
     radio_frame f;
-    uint8_t raw[DETWS_PQ_ITEM_SIZE];
+    uint8_t raw[DWS_PQ_ITEM_SIZE];
 };
 
 // FORWARD lane task (high priority): the per-radio codec + the northbound bridge, off the
@@ -65,20 +65,20 @@ static void on_forward(const void *item, void *)
     if (f->len < 2)
         return; // need the 2-byte node address header
     uint16_t addr = ((uint16_t)f->bytes[0] << 8) | f->bytes[1];
-    det_gateway_uplink(f->port, addr, f->bytes + 2, (uint16_t)(f->len - 2), /*rssi*/ -60);
+    dws_gateway_uplink(f->port, addr, f->bytes + 2, (uint16_t)(f->len - 2), /*rssi*/ -60);
 }
 
 // DMA-complete on the radio port: copy the frame and post it onto the FORWARD lane.
-static void on_dma_complete(const det_dma_event *ev, void *)
+static void on_dma_complete(const dws_dma_event *ev, void *)
 {
-    if (ev->dir != det_dma_dir::DET_DMA_RX)
+    if (ev->dir != dws_dma_dir::DWS_DMA_RX)
         return;
     pq_item it = {};
     it.f.port = RADIO_PORT;
     it.f.len = ev->len;
     uint16_t n = (ev->len < sizeof(it.f.bytes)) ? ev->len : sizeof(it.f.bytes);
     memcpy(it.f.bytes, ev->data, n);
-    detws_pq_post_lane_from_isr(detws_pq_lane::DETWS_PQ_LANE_FORWARD, &it);
+    dws_pq_post_lane_from_isr(dws_pq_lane::DWS_PQ_LANE_FORWARD, &it);
 }
 
 void setup()
@@ -91,23 +91,23 @@ void setup()
     fwd.priority = 0; // FORWARD lane default (above the user lane)
     fwd.core = 1;
     fwd.name = "gw_rx";
-    detws_pq_start_lane(detws_pq_lane::DETWS_PQ_LANE_FORWARD, &fwd);
+    dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_FORWARD, &fwd);
 
-    det_dma_config a = {};
+    dws_dma_config a = {};
     a.channel = RADIO_PORT;
-    a.periph = det_dma_periph::DET_DMA_SPI; // LoRa modules are SPI
+    a.periph = dws_dma_periph::DWS_DMA_SPI; // LoRa modules are SPI
     a.on_complete = on_dma_complete;
-    det_dma_open(&a);
+    dws_dma_open(&a);
 
     // The gateway: one LoRa port, publishing under "lora/<port>/<addr>".
-    det_gateway_reset();
-    det_gateway_port_config p = {};
+    dws_gateway_reset();
+    dws_gateway_port_config p = {};
     p.port_id = RADIO_PORT;
-    p.kind = det_gateway_kind::DET_GW_LORA;
+    p.kind = dws_gateway_kind::DWS_GW_LORA;
     p.tx = radio_tx;
-    det_gateway_add_port(&p);
-    det_gateway_set_uplink_cb(northbound_publish, nullptr);
-    det_gateway_set_topic_prefix("lora");
+    dws_gateway_add_port(&p);
+    dws_gateway_set_uplink_cb(northbound_publish, nullptr);
+    dws_gateway_set_topic_prefix("lora");
 
     Serial.println("gateway: LoRa RX -> DMA -> FORWARD lane -> codec -> publish (lora/port/addr)");
 }
@@ -119,16 +119,16 @@ void loop()
     // A radio frame arrives from one of four nodes (0x40..0x43): [addr_hi][addr_lo][0xAB][seq].
     uint16_t addr = 0x0040 + (g_seq & 0x03);
     uint8_t frame[4] = {(uint8_t)(addr >> 8), (uint8_t)(addr & 0xFF), 0xAB, g_seq};
-    det_dma_sim_feed(RADIO_PORT, frame, sizeof(frame));
-    det_dma_poll(); // completes RX -> FORWARD lane -> codec -> uplink publish
+    dws_dma_sim_feed(RADIO_PORT, frame, sizeof(frame));
+    dws_dma_poll(); // completes RX -> FORWARD lane -> codec -> uplink publish
     g_seq++;
 
     if ((g_seq & 0x07) == 0)
     {
         uint8_t cmd[2] = {0x01, g_seq};
-        det_gateway_downlink(RADIO_PORT, 0x0040, cmd, sizeof(cmd)); // command node 0x40
-        det_gateway_stats st;
-        det_gateway_get_stats(&st);
+        dws_gateway_downlink(RADIO_PORT, 0x0040, cmd, sizeof(cmd)); // command node 0x40
+        dws_gateway_stats st;
+        dws_gateway_get_stats(&st);
         Serial.printf("stats: up_in=%lu published=%lu down_sent=%lu\n", (unsigned long)st.up_in,
                       (unsigned long)st.up_published, (unsigned long)st.down_sent);
     }

@@ -3,7 +3,7 @@
 
 /**
  * @file mqtt_sn.h
- * @brief MQTT-SN v1.2 wire codec (DETWS_ENABLE_MQTT_SN) - zero-heap message builder +
+ * @brief MQTT-SN v1.2 wire codec (DWS_ENABLE_MQTT_SN) - zero-heap message builder +
  *        parser for MQTT for Sensor Networks, the UDP / non-TCP MQTT variant for
  *        constrained, lossy links (topic IDs instead of strings, gateway discovery,
  *        sleeping-client keep-alive).
@@ -31,7 +31,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_MQTT_SN
+#if DWS_ENABLE_MQTT_SN
 
 #include <stddef.h>
 #include <stdint.h>
@@ -149,6 +149,6 @@ bool mqttsn_parse_publish(const uint8_t *payload, size_t len, uint8_t *flags, ui
 bool mqttsn_parse_register(const uint8_t *payload, size_t len, uint16_t *topic_id, uint16_t *msg_id,
                            const char **topic_name, size_t *topic_name_len);
 
-#endif // DETWS_ENABLE_MQTT_SN
+#endif // DWS_ENABLE_MQTT_SN
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_MQTT_SN_H

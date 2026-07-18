@@ -95,7 +95,7 @@ static void sha256_block(uint32_t h[8], const uint8_t blk[64])
     // big-endian; the rest are extended with the sigma-0/sigma-1 recurrence.
     uint32_t W[64];
     for (int i = 0; i < 16; i++)
-        W[i] = det_rd32be(blk + i * 4);
+        W[i] = dws_rd32be(blk + i * 4);
     for (int i = 16; i < 64; i++)
     {
         uint32_t s0 = rotr32(W[i - 15], 7U) ^ rotr32(W[i - 15], 18U) ^ (W[i - 15] >> 3U); // σ0
@@ -195,11 +195,11 @@ void ssh_sha256_final(SshSha256Ctx *ctx, uint8_t digest[SSH_SHA256_DIGEST_LEN])
     while (ctx->buflen < 56)
         ctx->buf[ctx->buflen++] = 0x00;
 
-    det_wr64be(ctx->buf + 56, bitlen);
+    dws_wr64be(ctx->buf + 56, bitlen);
     sha256_block(ctx->s, ctx->buf);
 
     for (int i = 0; i < 8; i++)
-        det_wr32be(digest + i * 4, ctx->s[i]);
+        dws_wr32be(digest + i * 4, ctx->s[i]);
 }
 
 // ---------------------------------------------------------------------------

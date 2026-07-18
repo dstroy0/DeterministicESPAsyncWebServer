@@ -9,7 +9,7 @@
 #include "services/dns_server/dns_server.h"
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_DNS_SERVER
+#if DWS_ENABLE_DNS_SERVER
 
 #include <string.h> // memcpy, strlen
 
@@ -38,7 +38,7 @@ bool ci_eq(const char *a, const char *b)
 // byte just past QTYPE/QCLASS). Returns false on a malformed or over-long question.
 bool parse_question(const uint8_t *q, size_t qlen, char *name, size_t name_cap, uint16_t *qtype, size_t *qend)
 {
-    // GCOVR_EXCL_START  the sole caller (det_dns_server_build_response) already rejects qlen < 12
+    // GCOVR_EXCL_START  the sole caller (dws_dns_server_build_response) already rejects qlen < 12
     if (qlen < 12)
         return false;
     // GCOVR_EXCL_STOP
@@ -77,7 +77,7 @@ bool parse_question(const uint8_t *q, size_t qlen, char *name, size_t name_cap, 
 }
 } // namespace
 
-size_t det_dns_server_build_response(const uint8_t *query, size_t qlen, uint32_t ttl, DnsResolveFn resolve,
+size_t dws_dns_server_build_response(const uint8_t *query, size_t qlen, uint32_t ttl, DnsResolveFn resolve,
                                      uint8_t *out, size_t out_cap)
 {
     if (!query || !out || !resolve || qlen < 12)
@@ -97,7 +97,7 @@ size_t det_dns_server_build_response(const uint8_t *query, size_t qlen, uint32_t
         return 12;
     }
 
-    char name[DETWS_DNS_NAME_MAX];
+    char name[DWS_DNS_NAME_MAX];
     uint16_t qtype = 0;
     size_t qend = 0;
     if (!parse_question(query, qlen, name, sizeof(name), &qtype, &qend))
@@ -146,7 +146,7 @@ size_t det_dns_server_build_response(const uint8_t *query, size_t qlen, uint32_t
 }
 
 // ---------------------------------------------------------------------------
-// Built-in A-record table (host-testable; used by det_dns_server_begin()).
+// Built-in A-record table (host-testable; used by dws_dns_server_begin()).
 // ---------------------------------------------------------------------------
 
 namespace
@@ -155,21 +155,21 @@ namespace
 // grouped so it is one named owner, unreachable from other translation units.
 struct DnsSrvCtx
 {
-    char names[DETWS_DNS_SERVER_MAX_RECORDS][DETWS_DNS_NAME_MAX];
-    uint32_t ips[DETWS_DNS_SERVER_MAX_RECORDS];
+    char names[DWS_DNS_SERVER_MAX_RECORDS][DWS_DNS_NAME_MAX];
+    uint32_t ips[DWS_DNS_SERVER_MAX_RECORDS];
     size_t count = 0;
 };
 DnsSrvCtx s_dns;
 } // namespace
 
-bool det_dns_server_add(const char *name, uint8_t a, uint8_t b, uint8_t c, uint8_t d)
+bool dws_dns_server_add(const char *name, uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 {
     if (!name || !name[0])
         return false;
-    size_t nlen = strnlen(name, DETWS_DNS_NAME_MAX);
-    if (nlen >= DETWS_DNS_NAME_MAX)
+    size_t nlen = strnlen(name, DWS_DNS_NAME_MAX);
+    if (nlen >= DWS_DNS_NAME_MAX)
         return false;
-    if (s_dns.count >= DETWS_DNS_SERVER_MAX_RECORDS)
+    if (s_dns.count >= DWS_DNS_SERVER_MAX_RECORDS)
         return false;
     memcpy(s_dns.names[s_dns.count], name, nlen + 1);
     s_dns.ips[s_dns.count] = ((uint32_t)a << 24) | ((uint32_t)b << 16) | ((uint32_t)c << 8) | (uint32_t)d;
@@ -177,7 +177,7 @@ bool det_dns_server_add(const char *name, uint8_t a, uint8_t b, uint8_t c, uint8
     return true;
 }
 
-uint32_t det_dns_server_lookup(const char *name)
+uint32_t dws_dns_server_lookup(const char *name)
 {
     if (!name)
         return 0;
@@ -187,7 +187,7 @@ uint32_t det_dns_server_lookup(const char *name)
     return 0;
 }
 
-void det_dns_server_clear()
+void dws_dns_server_clear()
 {
     s_dns.count = 0;
 }
@@ -198,29 +198,28 @@ void det_dns_server_clear()
 
 namespace
 {
-void det_dns_server_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer *peer, void *ctx)
+void dws_dns_server_udp_handler(const uint8_t *data, size_t len, struct DWSUdpPeer *peer, void *ctx)
 {
     (void)ctx;
-    uint8_t resp[DETWS_DNS_NAME_MAX + 32]; // header + question + one A answer
-    size_t n =
-        det_dns_server_build_response(data, len, DETWS_DNS_SERVER_TTL, det_dns_server_lookup, resp, sizeof(resp));
+    uint8_t resp[DWS_DNS_NAME_MAX + 32]; // header + question + one A answer
+    size_t n = dws_dns_server_build_response(data, len, DWS_DNS_SERVER_TTL, dws_dns_server_lookup, resp, sizeof(resp));
     if (n)
-        det_udp_send(peer, resp, n);
+        dws_udp_send(peer, resp, n);
 }
 } // namespace
 
-bool det_dns_server_begin()
+bool dws_dns_server_begin()
 {
-    return det_udp_listen(53, det_dns_server_udp_handler, nullptr);
+    return dws_udp_listen(53, dws_dns_server_udp_handler, nullptr);
 }
 
 #else // host build: no lwIP. The codec + table above are host-tested; begin is a stub.
 
-bool det_dns_server_begin()
+bool dws_dns_server_begin()
 {
     return false;
 }
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_DNS_SERVER
+#endif // DWS_ENABLE_DNS_SERVER

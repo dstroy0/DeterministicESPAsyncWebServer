@@ -14,14 +14,14 @@
  * On the ESP32-S3 (Arduino) X25519 has a second, byte-identical implementation that runs the
  * ladder in canonical uint32[8] and does each field multiply as one 256-bit modular multiply on
  * the RSA/MPI accelerator (~4.3x the software/PIE ladder); the field layer is in ssh_fe25519.h (shared with
- * Ed25519, active as DETWS_FE25519_MPI_HW). It shares the accelerator lock with mbedtls, so a scalar-mult is
+ * Ed25519, active as DWS_FE25519_MPI_HW). It shares the accelerator lock with mbedtls, so a scalar-mult is
  * bracketed by ssh_fe_hw_enable()/ssh_fe_hw_disable() (esp_mpi_{enable,disable}_hardware_hw_op()).
  */
 
 #include "network_drivers/presentation/ssh/crypto/ssh_curve25519.h"
 // On the S3, X25519 runs its whole Montgomery ladder in canonical uint32[8] and does each field multiply as
 // one 256-bit modular multiply on the RSA/MPI accelerator (~4.3x the software/PIE ladder). That field layer is
-// shared with Ed25519 (ssh_ed25519.cpp) and defines DETWS_FE25519_MPI_HW when active (Arduino + S3).
+// shared with Ed25519 (ssh_ed25519.cpp) and defines DWS_FE25519_MPI_HW when active (Arduino + S3).
 #include "network_drivers/presentation/ssh/crypto/ssh_fe25519.h"
 #ifdef ARDUINO
 #include "sdkconfig.h"      // CONFIG_IDF_TARGET_ESP32S3 - selects the vector (PIE) field multiply
@@ -30,7 +30,7 @@
 
 // Small field constant (radix-2^16). Used only by the software X25519 ladder (the S3 MODMULT path carries its
 // own canonical a24), so it would be unused there.
-#ifndef DETWS_FE25519_MPI_HW
+#ifndef DWS_FE25519_MPI_HW
 static const ssh_gf GF_121665 = {0xDB41, 1}; // 121665 = 0x1DB41 (Montgomery a24)
 #endif
 
@@ -314,7 +314,7 @@ void ssh_gf_unpack(ssh_gf out, const uint8_t in[32])
     out[15] &= 0x7fff;
 }
 
-#ifdef DETWS_FE25519_MPI_HW
+#ifdef DWS_FE25519_MPI_HW
 // ============================= ESP32-S3 X25519 on the RSA/MPI accelerator =================================
 // The canonical uint32[8] field layer (fe, fe_add/sub/mul/sq/..., the MODMULT, and the lock+power bring-up)
 // lives in ssh_fe25519.h - shared with Ed25519. Here is only the X25519-specific a24 and the RFC 7748 ladder.
@@ -447,7 +447,7 @@ void ssh_x25519(uint8_t out[32], const uint8_t scalar[32], const uint8_t point[3
     ssh_gf_mul(a, a, c);
     ssh_gf_pack(out, a);
 }
-#endif // DETWS_FE25519_MPI_HW
+#endif // DWS_FE25519_MPI_HW
 
 void ssh_x25519_base(uint8_t out[32], const uint8_t scalar[32])
 {

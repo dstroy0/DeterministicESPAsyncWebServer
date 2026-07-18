@@ -48,7 +48,7 @@ snmpget  -v2c -c public <ip> 1.3.6.1.4.1.49374.10.0   # free heap (Gauge32)
 
 ## How the feature flags are set
 
-Every subsystem is behind a `DETWS_ENABLE_*` flag that defaults **off**; only the core HTTP server is
+Every subsystem is behind a `DWS_ENABLE_*` flag that defaults **off**; only the core HTTP server is
 on. The flags are checked inside the library's own `.cpp` sources (compiled by the repo-root
 component), so a `#define` in `main.cpp` alone would **not** reach them - `modbus_server_init()` /
 `snmp_agent_init()` would fail to link. The ESP-IDF way (the equivalent of Arduino's `build_opt.h` or
@@ -57,8 +57,8 @@ before `project()`:
 
 ```cmake
 add_compile_definitions(
-    DETWS_ENABLE_MODBUS=1
-    DETWS_ENABLE_SNMP=1
+    DWS_ENABLE_MODBUS=1
+    DWS_ENABLE_SNMP=1
 )
 ```
 

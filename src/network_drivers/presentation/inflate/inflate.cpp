@@ -14,7 +14,7 @@
 
 #include "inflate.h"
 
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
 
 #include <string.h>
 
@@ -360,4 +360,4 @@ InflateResult inflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size
     return InflateResult::INFLATE_OK;
 }
 
-#endif // DETWS_ENABLE_WS_DEFLATE
+#endif // DWS_ENABLE_WS_DEFLATE

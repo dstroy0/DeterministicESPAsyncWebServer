@@ -59,8 +59,8 @@ No network needed. That is what an RTC buys you.
 
 ## Where this fits
 
-`detws_time_now()` asks your registered time sources best-first. Here the RTC is source #1, so
-your whole app just calls `detws_time_now()` and gets good time offline. Chain it with GPS
+`dws_time_now()` asks your registered time sources best-first. Here the RTC is source #1, so
+your whole app just calls `dws_time_now()` and gets good time offline. Chain it with GPS
 (example 58) and upstream NTP for the full picture - **GPS (best) -> RTC (offline) -> NTP** -
 and feed it to the NTP server (example 58) to serve time to your entire LAN.
 
@@ -82,7 +82,7 @@ The feature lives in the library, so its flags must reach the whole build:
 ```bash
 pio ci examples/L7-Application/61.Rtc \
   --board esp32dev --lib "." \
-  --project-option="build_flags=-DDETWS_ENABLE_RTC=1 -DDETWS_ENABLE_TIME_SOURCE=1 -DDETWS_ENABLE_NTP=1"
+  --project-option="build_flags=-DDWS_ENABLE_RTC=1 -DDWS_ENABLE_TIME_SOURCE=1 -DDWS_ENABLE_NTP=1"
 ```
 
 (The Arduino IDE reads the flags from `build_opt.h` beside the sketch automatically.)

@@ -3,7 +3,7 @@
 
 /**
  * @file mpr121.h
- * @brief NXP MPR121 12-channel capacitive-touch controller codec (DETWS_ENABLE_MPR121).
+ * @brief NXP MPR121 12-channel capacitive-touch controller codec (DWS_ENABLE_MPR121).
  *
  * The MPR121 reports a 16-bit touch-status word (registers 0x00/0x01): bits 0-11 are the twelve
  * electrodes, bit 12 is the proximity electrode, and bit 15 is the over-current flag. It also

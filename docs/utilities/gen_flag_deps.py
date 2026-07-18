@@ -6,23 +6,23 @@
 The single source of truth is src/ServerConfig.h. A child feature that cannot compile
 without a parent is enforced there by a preprocessor guard whose #error says "... requires ...":
 
-    #if DETWS_ENABLE_CHILD && !DETWS_ENABLE_PARENT
-    #error "... DETWS_ENABLE_CHILD requires DETWS_ENABLE_PARENT"
+    #if DWS_ENABLE_CHILD && !DWS_ENABLE_PARENT
+    #error "... DWS_ENABLE_CHILD requires DWS_ENABLE_PARENT"
     #endif
 
 and a PSRAM-class feature by a guard whose #error mentions PSRAM:
 
-    #if DETWS_ENABLE_HTTP2 && defined(ARDUINO) && !DETWS_H2_POOL_IN_PSRAM
-    #error "... DETWS_ENABLE_HTTP2 needs PSRAM ..."
+    #if DWS_ENABLE_HTTP2 && defined(ARDUINO) && !DWS_H2_POOL_IN_PSRAM
+    #error "... DWS_ENABLE_HTTP2 needs PSRAM ..."
     #endif
 
 This script walks the header with a preprocessor-condition stack. For each #error it reads the
-active conditions - the positive DETWS_ENABLE_* term is the feature being built (the child), each
-negated DETWS_* term a prerequisite - AND the error message: a "requires" message yields a hard
+active conditions - the positive DWS_ENABLE_* term is the feature being built (the child), each
+negated DWS_* term a prerequisite - AND the error message: a "requires" message yields a hard
 feature edge, a "PSRAM" message a resource gate, anything else (a worker-stack floor, a size range)
-is ignored. Gating on the message is what keeps a scoping clause like `!DETWS_ENABLE_SSH` in a
+is ignored. Gating on the message is what keeps a scoping clause like `!DWS_ENABLE_SSH` in a
 stack-size guard from being mistaken for "OIDC requires SSH". Auto-derived flags (a `#define
-DETWS_ENABLE_X 1` guarded by an OR of other ENABLE flags) are read too. The graph is injected into
+DWS_ENABLE_X 1` guarded by an OR of other ENABLE flags) are read too. The graph is injected into
 the "Build-flag dependencies" section of README.md between generated markers, so it can never drift
 from the guards the compiler actually enforces.
 
@@ -43,8 +43,8 @@ DIAGRAMS = os.path.join(ROOT, "docs", "diagrams")
 BEGIN = "<!-- BEGIN GENERATED FLAG DEPS (docs/utilities/gen_flag_deps.py) -->"
 END = "<!-- END GENERATED FLAG DEPS -->"
 
-ENABLE = re.compile(r"(!?)\s*DETWS_ENABLE_(\w+)")  # positive (child) / negated (parent) enable flags
-NEG = re.compile(r"!\s*(DETWS_\w+)")  # any negated DETWS_* prerequisite (enable flag or resource knob)
+ENABLE = re.compile(r"(!?)\s*DWS_ENABLE_(\w+)")  # positive (child) / negated (parent) enable flags
+NEG = re.compile(r"!\s*(DWS_\w+)")  # any negated DWS_* prerequisite (enable flag or resource knob)
 NUM = re.compile(r"([A-Z_][A-Z0-9_]*\s*[<>]=?\s*\d+)")  # a numeric side-condition, used as an edge label
 
 
@@ -90,8 +90,8 @@ def parse_guards(text):
             prereqs = NEG.findall(active)
             if "requires" in msg:
                 for prereq in prereqs:
-                    if prereq.startswith("DETWS_ENABLE_"):
-                        parent = prereq[len("DETWS_ENABLE_") :]
+                    if prereq.startswith("DWS_ENABLE_"):
+                        parent = prereq[len("DWS_ENABLE_") :]
                         for child in children:
                             if parent != child:
                                 hard.add((parent, child))
@@ -103,14 +103,14 @@ def parse_guards(text):
                     if "PSRAM" in prereq and "ACK" not in prereq:
                         for child in children:
                             resource.add((child, label))
-        elif s.startswith("#define DETWS_ENABLE_"):
-            # Auto-derived flag: `#define DETWS_ENABLE_X 1` guarded by an OR of other ENABLE flags.
+        elif s.startswith("#define DWS_ENABLE_"):
+            # Auto-derived flag: `#define DWS_ENABLE_X 1` guarded by an OR of other ENABLE flags.
             active = " || ".join(c for c in stack if c)
-            m = re.match(r"#define\s+DETWS_ENABLE_(\w+)\s+1\b", s)
-            if not m or "DETWS_ENABLE_" not in active:
+            m = re.match(r"#define\s+DWS_ENABLE_(\w+)\s+1\b", s)
+            if not m or "DWS_ENABLE_" not in active:
                 continue
             dflag = m.group(1)
-            for src in {e for e in re.findall(r"DETWS_ENABLE_(\w+)", active) if e != dflag}:
+            for src in {e for e in re.findall(r"DWS_ENABLE_(\w+)", active) if e != dflag}:
                 derived.add((src, dflag))
     return hard, resource, derived
 
@@ -241,7 +241,7 @@ def build_block():
         # A few children require two parents; only the primary edge is drawn (to keep the tree
         # uncrossed), so the second requirement is stated here.
         notes = "; ".join(
-            f"**{', '.join('`DETWS_ENABLE_' + c + '`' for c in cs)}** also need `DETWS_ENABLE_{p}`"
+            f"**{', '.join('`DWS_ENABLE_' + c + '`' for c in cs)}** also need `DWS_ENABLE_{p}`"
             for p, cs in extra.items()
         )
         lines += [f"> Not drawn (so the tree stays uncrossed): {notes}.", ""]
@@ -252,7 +252,7 @@ def build_block():
             "",
             "| Enabling this... | ...auto-enables |",
             "| --- | --- |",
-            *[f"| `DETWS_ENABLE_{s}` | `DETWS_ENABLE_{d}` |" for s, d in sorted(derived)],
+            *[f"| `DWS_ENABLE_{s}` | `DWS_ENABLE_{d}` |" for s, d in sorted(derived)],
             "</details>",
             "",
         ]
@@ -263,7 +263,7 @@ def build_block():
             "",
             "| Feature | Gate |",
             "| --- | --- |",
-            *[f"| `DETWS_ENABLE_{c}` | {lbl if lbl else 'PSRAM pool'} |" for c, lbl in sorted(resource)],
+            *[f"| `DWS_ENABLE_{c}` | {lbl if lbl else 'PSRAM pool'} |" for c, lbl in sorted(resource)],
             "</details>",
             "",
         ]

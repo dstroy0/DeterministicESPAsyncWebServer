@@ -1,6 +1,6 @@
 # 14.NfcGateway - a PN532 NFC reader bridged to the gateway
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_PN532`, `DETWS_ENABLE_GATEWAY`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_PN532`, `DWS_ENABLE_GATEWAY`
 
 ## What this example teaches
 
@@ -9,7 +9,7 @@ ubiquitous NXP **PN532** over I2C. Scanning a tag becomes a northbound event: th
 is enveloped and published.
 
 ```
-tag scan --PN532/I2C--> pn532_parse_frame() -> UID -> det_gateway_uplink()
+tag scan --PN532/I2C--> pn532_parse_frame() -> UID -> dws_gateway_uplink()
                                                        |
                                     envelope + topic  nfc/0/<target>
                                                        |
@@ -50,6 +50,6 @@ The flags must reach the library build, so pass them as build flags:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_PN532=1 -DDETWS_ENABLE_GATEWAY=1" \
+  --project-option="build_flags=-DDWS_ENABLE_PN532=1 -DDWS_ENABLE_GATEWAY=1" \
   --lib="." examples/Foundation/14.NfcGateway/14.NfcGateway.ino
 ```

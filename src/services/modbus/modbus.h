@@ -36,7 +36,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_MODBUS
+#if DWS_ENABLE_MODBUS
 
 /** @brief Modbus function codes (Modbus Application Protocol §6). */
 enum class ModbusFunction : uint8_t
@@ -108,7 +108,7 @@ void modbus_set_input_reg(uint16_t addr, uint16_t value);   ///< Set an input re
  */
 size_t modbus_process_adu(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap);
 
-#if DETWS_ENABLE_MODBUS_RTU
+#if DWS_ENABLE_MODBUS_RTU
 /**
  * @brief Process one complete Modbus RTU ADU (`[addr][PDU][CRC16]`) for slave
  *        @p my_addr against the data model, writing the RTU response ADU.
@@ -134,6 +134,6 @@ void modbus_rx(uint8_t slot);
 struct ProtoHandler;
 const struct ProtoHandler *modbus_proto_handler(void);
 
-#endif // DETWS_ENABLE_MODBUS
+#endif // DWS_ENABLE_MODBUS
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_MODBUS_H

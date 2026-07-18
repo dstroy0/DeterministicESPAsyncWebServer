@@ -13,7 +13,7 @@
 
 #include "server/ssh_scp.h"
 
-#if DETWS_ENABLE_SSH_SCP
+#if DWS_ENABLE_SSH_SCP
 
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h"
 #include "network_drivers/presentation/ssh/connection/ssh_conn.h"
@@ -37,13 +37,13 @@ struct ScpConn
     uint8_t slot;
     uint32_t channel;
     ScpSt st;
-    char dest[DETWS_SFTP_PATH_MAX]; ///< the -t target (a file, or a dir if it ends with '/')
+    char dest[DWS_SFTP_PATH_MAX]; ///< the -t target (a file, or a dir if it ends with '/')
     bool dest_is_dir;
     fs::File file;
     uint64_t remaining; ///< data bytes still to receive
     bool err;
     uint16_t cl_len; ///< control-line accumulator length
-    char cl[DETWS_SFTP_PATH_MAX + 64];
+    char cl[DWS_SFTP_PATH_MAX + 64];
 };
 
 struct SshScpCtx
@@ -57,7 +57,7 @@ SshScpCtx s_scp;
 
 void ack(ScpConn *c, uint8_t byte)
 {
-    det_ssh_conn_send(c->slot, c->channel, &byte, 1);
+    dws_ssh_conn_send(c->slot, c->channel, &byte, 1);
 }
 void err_ack(ScpConn *c, const char *msg)
 {
@@ -68,7 +68,7 @@ void err_ack(ScpConn *c, const char *msg)
         ml = sizeof(buf) - 3;
     memcpy(buf + 1, msg, ml);
     buf[1 + ml] = '\n';
-    det_ssh_conn_send(c->slot, c->channel, buf, 2 + ml);
+    dws_ssh_conn_send(c->slot, c->channel, buf, 2 + ml);
 }
 void scp_end(ScpConn *c)
 {
@@ -76,7 +76,7 @@ void scp_end(ScpConn *c)
         c->file.close();
     c->file = fs::File();
     c->active = false;
-    det_ssh_conn_close_channel(c->slot, c->channel);
+    dws_ssh_conn_close_channel(c->slot, c->channel);
 }
 
 void scp_on_open(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd_len)
@@ -93,7 +93,7 @@ void scp_on_open(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd_len
     c->err = false;
     c->cl_len = 0;
 
-    char path[DETWS_SFTP_PATH_MAX];
+    char path[DWS_SFTP_PATH_MAX];
     ScpMode mode = scp_parse_cmd(cmd, cmd_len, path, sizeof(path));
     if (mode == ScpMode::SINK)
     {
@@ -119,7 +119,7 @@ void scp_on_open(uint8_t slot, uint32_t channel, const char *cmd, size_t cmd_len
 // Resolve the on-disk destination for a received file named @p name.
 bool scp_resolve_dest(ScpConn *c, const char *name, char *out, size_t cap)
 {
-    char sub[DETWS_SFTP_PATH_MAX + 96];
+    char sub[DWS_SFTP_PATH_MAX + 96];
     if (c->dest_is_dir)
         snprintf(sub, sizeof(sub), "%s%s", c->dest, name); // c->dest ends with '/'
     else
@@ -159,14 +159,14 @@ void scp_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len
 
             uint32_t mode = 0;
             uint64_t size = 0;
-            char name[DETWS_SFTP_PATH_MAX];
+            char name[DWS_SFTP_PATH_MAX];
             if (!scp_parse_cline(c->cl, c->cl_len, &mode, &size, name, sizeof(name)))
             {
                 err_ack(c, "unsupported scp record"); // e.g. a D/E directory record (no -r support)
                 scp_end(c);
                 return;
             }
-            char disk[DETWS_SFTP_PATH_MAX];
+            char disk[DWS_SFTP_PATH_MAX];
             if (!scp_resolve_dest(c, name, disk, sizeof(disk)))
             {
                 err_ack(c, "bad path");
@@ -217,7 +217,7 @@ void scp_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len
 }
 } // namespace
 
-void det_ssh_scp_begin(fs::FS &fs, const char *root)
+void dws_ssh_scp_begin(fs::FS &fs, const char *root)
 {
     s_scp.fs = &fs;
     s_scp.root = (root && root[0]) ? root : "/";
@@ -230,10 +230,10 @@ void det_ssh_scp_begin(fs::FS &fs, const char *root)
     }
     if (!s_scp.registered)
     {
-        det_ssh_channel_set_scp_open_cb(scp_on_open);
-        det_ssh_channel_set_scp_data_cb(scp_on_data);
+        dws_ssh_channel_set_scp_open_cb(scp_on_open);
+        dws_ssh_channel_set_scp_data_cb(scp_on_data);
         s_scp.registered = true;
     }
 }
 
-#endif // DETWS_ENABLE_SSH_SCP
+#endif // DWS_ENABLE_SSH_SCP

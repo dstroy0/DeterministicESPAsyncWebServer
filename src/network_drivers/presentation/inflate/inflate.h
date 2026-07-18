@@ -32,7 +32,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
 
 /**
  * @brief Working-memory bytes inflate_raw() needs for its Huffman tables.
@@ -63,5 +63,5 @@ enum class InflateResult : int32_t
 InflateResult inflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len,
                           void *scratch, size_t scratch_len);
 
-#endif // DETWS_ENABLE_WS_DEFLATE
+#endif // DWS_ENABLE_WS_DEFLATE
 #endif // DETERMINISTICESPASYNCWEBSERVER_INFLATE_H

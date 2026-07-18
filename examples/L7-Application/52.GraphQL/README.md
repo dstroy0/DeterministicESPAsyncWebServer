@@ -1,6 +1,6 @@
 # 52.GraphQL - a GraphQL query endpoint
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_GRAPHQL`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_GRAPHQL`
 
 ## What this example teaches
 
@@ -14,13 +14,13 @@ paths (`net.rssi`); arguments are visible to the resolver for that field:
 
 ```cpp
 static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *out) {
-    if (!strcmp(path, "heap"))     { out->type = DETWS_GQL_INT; out->i = ESP.getFreeHeap(); return true; }
-    if (!strcmp(path, "net.rssi")) { out->type = DETWS_GQL_INT; out->i = WiFi.RSSI();       return true; }
+    if (!strcmp(path, "heap"))     { out->type = DWS_GQL_INT; out->i = ESP.getFreeHeap(); return true; }
+    if (!strcmp(path, "net.rssi")) { out->type = DWS_GQL_INT; out->i = WiFi.RSSI();       return true; }
     if (!strcmp(path, "greet")) {
         const char *who = "?";
-        detws_gql_arg_str(args, "name", &who);   // read the field's argument
+        dws_gql_arg_str(args, "name", &who);   // read the field's argument
         static char b[64]; snprintf(b, sizeof(b), "hi %s", who);
-        out->type = DETWS_GQL_STR; out->s = b; return true;
+        out->type = DWS_GQL_STR; out->s = b; return true;
     }
     return false; // -> null
 }
@@ -33,8 +33,8 @@ recursing into the resolver for each child; returning false yields `null`.
 and writes the response envelope:
 
 ```cpp
-DetwsGqlResult rc = detws_graphql_execute(req->body, req->body_len, resolver, body, sizeof(body));
-server.send(id, rc == DETWS_GQL_OK ? 200 : 400, "application/json", body);
+DetwsGqlResult rc = dws_graphql_execute(req->body, req->body_len, resolver, body, sizeof(body));
+server.send(id, rc == DWS_GQL_OK ? 200 : 400, "application/json", body);
 ```
 
 It writes `{"data":...}` on success or `{"errors":...}` on a parse error;
@@ -44,7 +44,7 @@ answering `200` with the GraphQL error envelope is the conventional reply.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_GRAPHQL=1" \
+  --project-option="build_flags=-DDWS_ENABLE_GRAPHQL=1" \
   --lib="." examples/L7-Application/52.GraphQL/52.GraphQL.ino
 ```
 
@@ -64,7 +64,7 @@ added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_GRAPHQL 1
+#define DWS_ENABLE_GRAPHQL 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -74,26 +74,26 @@ added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // One scalar per dotted path; nested objects recurse, arguments are per-field.
 static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *out)
 {
     if (!strcmp(path, "heap"))
     {
-        out->type = DETWS_GQL_INT;
+        out->type = DWS_GQL_INT;
         out->i = ESP.getFreeHeap();
         return true;
     }
     if (!strcmp(path, "uptime"))
     {
-        out->type = DETWS_GQL_INT;
+        out->type = DWS_GQL_INT;
         out->i = millis() / 1000;
         return true;
     }
     if (!strcmp(path, "net.rssi"))
     {
-        out->type = DETWS_GQL_INT;
+        out->type = DWS_GQL_INT;
         out->i = WiFi.RSSI();
         return true;
     }
@@ -101,17 +101,17 @@ static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *
     {
         static char ip[20];
         WiFi.localIP().toString().toCharArray(ip, sizeof(ip));
-        out->type = DETWS_GQL_STR;
+        out->type = DWS_GQL_STR;
         out->s = ip;
         return true;
     }
     if (!strcmp(path, "greet"))
     {
         const char *who = "?";
-        detws_gql_arg_str(args, "name", &who);
+        dws_gql_arg_str(args, "name", &who);
         static char b[64];
         snprintf(b, sizeof(b), "hi %s", who);
-        out->type = DETWS_GQL_STR;
+        out->type = DWS_GQL_STR;
         out->s = b;
         return true;
     }
@@ -130,10 +130,10 @@ void setup()
 
     server.on("/graphql", HTTP_POST, [](uint8_t id, HttpReq *req) {
         char body[512];
-        DetwsGqlResult rc = detws_graphql_execute((const char *)req->body, req->body_len, resolver, body, sizeof(body));
+        DetwsGqlResult rc = dws_graphql_execute((const char *)req->body, req->body_len, resolver, body, sizeof(body));
         // The engine writes {"data":...} on success or {"errors":...} on a parse
         // error; 200 with the GraphQL error envelope is the conventional reply.
-        server.send(id, rc == DETWS_GQL_OK ? 200 : 400, "application/json", body);
+        server.send(id, rc == DWS_GQL_OK ? 200 : 400, "application/json", body);
     });
 
     server.begin(80);

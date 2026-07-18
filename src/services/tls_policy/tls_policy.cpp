@@ -8,9 +8,9 @@
 
 #include "services/tls_policy/tls_policy.h"
 
-#if DETWS_ENABLE_TLS_POLICY
+#if DWS_ENABLE_TLS_POLICY
 
-uint16_t detws_tls_negotiate_version(uint16_t client_max, uint16_t server_min, uint16_t server_max)
+uint16_t dws_tls_negotiate_version(uint16_t client_max, uint16_t server_min, uint16_t server_max)
 {
     if (server_min > server_max)
         return 0;
@@ -20,7 +20,7 @@ uint16_t detws_tls_negotiate_version(uint16_t client_max, uint16_t server_min, u
     return chosen;
 }
 
-const char *detws_tls_version_name(uint16_t version)
+const char *dws_tls_version_name(uint16_t version)
 {
     switch (version)
     {
@@ -33,8 +33,8 @@ const char *detws_tls_version_name(uint16_t version)
     }
 }
 
-uint16_t detws_tls_select_cipher(const uint16_t *client_offered, size_t n_client, const uint16_t *server_pinned,
-                                 size_t n_server)
+uint16_t dws_tls_select_cipher(const uint16_t *client_offered, size_t n_client, const uint16_t *server_pinned,
+                               size_t n_server)
 {
     if (!client_offered || !server_pinned)
         return 0;
@@ -46,7 +46,7 @@ uint16_t detws_tls_select_cipher(const uint16_t *client_offered, size_t n_client
     return 0;
 }
 
-bool detws_tls_is_aead(uint16_t suite)
+bool dws_tls_is_aead(uint16_t suite)
 {
     switch (suite)
     {
@@ -67,4 +67,4 @@ bool detws_tls_is_aead(uint16_t suite)
     }
 }
 
-#endif // DETWS_ENABLE_TLS_POLICY
+#endif // DWS_ENABLE_TLS_POLICY

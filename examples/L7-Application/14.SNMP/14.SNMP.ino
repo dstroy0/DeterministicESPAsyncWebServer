@@ -22,12 +22,12 @@
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see. The `#define` below documents intent, but for PlatformIO you must
  * enable it for the whole build, e.g. in platformio.ini:
- *     build_flags = -DDETWS_ENABLE_SNMP=1
+ *     build_flags = -DDWS_ENABLE_SNMP=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.) A define in the
  * sketch alone does not reach the separately-compiled library .cpp.
  */
 
-#define DETWS_ENABLE_SNMP 1
+#define DWS_ENABLE_SNMP 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -35,10 +35,10 @@
 #include <WiFi.h>
 
 // SNMPv3 (USM) is an additional gated layer. Enable it for the whole build with
-//     build_flags = -DDETWS_ENABLE_SNMP=1 -DDETWS_ENABLE_SNMP_V3=1
+//     build_flags = -DDWS_ENABLE_SNMP=1 -DDWS_ENABLE_SNMP_V3=1
 // then query with authPriv (HMAC-SHA-256 auth + AES-128 privacy), e.g.:
 //   snmpget -v3 -u detws -l authPriv -a SHA-256 -A authpass12 -x AES -X privpass12 <ip> sysDescr.0
-#if DETWS_ENABLE_SNMP_V3
+#if DWS_ENABLE_SNMP_V3
 #include "services/snmp/snmp_v3.h"
 #endif
 
@@ -49,7 +49,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 #define LED_BUILTIN 2
 #endif
 
-DetWebServer server;
+DWS server;
 
 // Private enterprise subtree: 1.3.6.1.4.1.49374
 static const uint32_t OID_FREE_HEAP[] = {1, 3, 6, 1, 4, 1, 49374, 10, 0}; // Gauge32, read-only
@@ -95,7 +95,7 @@ void setup()
     snmp_agent_add_dynamic(OID_FREE_HEAP, 9, (uint8_t)SnmpTag::SNMP_GAUGE32, get_free_heap);
     snmp_agent_add_integer(OID_LED, 9, 0, set_led); // writable
 
-#if DETWS_ENABLE_SNMP_V3
+#if DWS_ENABLE_SNMP_V3
     // SNMPv3 USM: a single authPriv user (HMAC-SHA-256 + AES-128). For a unique
     // engine ID, derive it from the chip MAC; persist/increment engineBoots in NVS.
     snmp_v3_init(nullptr, 0);

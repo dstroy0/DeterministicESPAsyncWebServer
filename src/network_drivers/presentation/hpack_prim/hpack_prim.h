@@ -21,7 +21,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP2 || DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP2 || DWS_ENABLE_HTTP3
 
 #include <stddef.h>
 #include <stdint.h>
@@ -47,5 +47,5 @@ bool hpack_decode_str(const uint8_t *block, size_t len, size_t *pos, char *out, 
  * @return bytes written, or 0 on overflow. */
 size_t hpack_encode_str(uint8_t *out, size_t cap, const char *s, size_t n);
 
-#endif // DETWS_ENABLE_HTTP2 || DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP2 || DWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_HPACK_PRIM_H

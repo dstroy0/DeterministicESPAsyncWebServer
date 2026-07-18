@@ -557,7 +557,7 @@ bool json_get_int(const char *json, const char *key, long *out)
     if (!v || *v == '"') // must be a bare number, not a string
         return false;
     const char *end = nullptr;
-    long val = det_strtol(v, &end);
+    long val = dws_strtol(v, &end);
     if (end == v)
         return false; // no digits parsed
     *out = val;

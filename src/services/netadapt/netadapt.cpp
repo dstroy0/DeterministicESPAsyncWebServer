@@ -8,9 +8,9 @@
 
 #include "services/netadapt/netadapt.h"
 
-#if DETWS_ENABLE_NETADAPT
+#if DWS_ENABLE_NETADAPT
 
-uint32_t detws_netadapt_window(uint32_t free_heap, uint32_t reserve, uint32_t min_win, uint32_t max_win)
+uint32_t dws_netadapt_window(uint32_t free_heap, uint32_t reserve, uint32_t min_win, uint32_t max_win)
 {
     uint32_t ceil_win = max_win < min_win ? min_win : max_win;
     if (free_heap <= reserve)
@@ -25,7 +25,7 @@ uint32_t detws_netadapt_window(uint32_t free_heap, uint32_t reserve, uint32_t mi
     return win;
 }
 
-bool detws_netadapt_dhcp_fallback(uint32_t elapsed_ms, uint32_t attempts, uint32_t timeout_ms, uint32_t max_attempts)
+bool dws_netadapt_dhcp_fallback(uint32_t elapsed_ms, uint32_t attempts, uint32_t timeout_ms, uint32_t max_attempts)
 {
     if (elapsed_ms >= timeout_ms)
         return true;
@@ -34,4 +34,4 @@ bool detws_netadapt_dhcp_fallback(uint32_t elapsed_ms, uint32_t attempts, uint32
     return false;
 }
 
-#endif // DETWS_ENABLE_NETADAPT
+#endif // DWS_ENABLE_NETADAPT

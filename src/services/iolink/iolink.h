@@ -3,7 +3,7 @@
 
 /**
  * @file iolink.h
- * @brief IO-Link (SDCI, IEC 61131-9) data-link message codec (DETWS_ENABLE_IOLINK).
+ * @brief IO-Link (SDCI, IEC 61131-9) data-link message codec (DWS_ENABLE_IOLINK).
  *
  * IO-Link is the point-to-point 3-wire serial link to smart sensors / actuators. This codec
  * implements the data-link **message layer**: the M-sequence Control octet (MC), the
@@ -31,7 +31,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_IOLINK
+#if DWS_ENABLE_IOLINK
 
 #include <stddef.h>
 #include <stdint.h>
@@ -99,5 +99,5 @@ uint8_t iol_finalize(uint8_t *msg, size_t len, size_t check_idx);
  */
 bool iol_verify(const uint8_t *msg, size_t len, size_t check_idx);
 
-#endif // DETWS_ENABLE_IOLINK
+#endif // DWS_ENABLE_IOLINK
 #endif // DETERMINISTICESPASYNCWEBSERVER_IOLINK_H

@@ -3,9 +3,9 @@
 
 /**
  * @file nrf24.h
- * @brief nRF24L01+ radio driver (DETWS_ENABLE_NRF24) - Nordic 2.4 GHz over SPI.
+ * @brief nRF24L01+ radio driver (DWS_ENABLE_NRF24) - Nordic 2.4 GHz over SPI.
  *
- * A radio driver plugin for the gateway (DETWS_ENABLE_GATEWAY): cheap point-to-multipoint
+ * A radio driver plugin for the gateway (DWS_ENABLE_GATEWAY): cheap point-to-multipoint
  * 2.4 GHz sensor links bridged to the web stack. Unlike the SX127x (plain register
  * read/write), the nRF24L01+ speaks an **SPI command protocol** (each transaction is a
  * command byte + data, and every command returns the STATUS register) and needs a separate
@@ -14,9 +14,9 @@
  *
  * The nRF24 does its own **hardware addressing** (5-byte pipe addresses), so a received
  * frame's "source" is the pipe number it arrived on - there is no in-payload header and
- * therefore no separate codec. It uses a **static payload width** (DETWS_NRF24_PAYLOAD):
+ * therefore no separate codec. It uses a **static payload width** (DWS_NRF24_PAYLOAD):
  * every frame is that many bytes (a short send is zero-padded). Bridge received payloads
- * northbound with det_gateway_uplink(port, pipe, payload, width, 0). The register/command
+ * northbound with dws_gateway_uplink(port, pipe, payload, width, 0). The register/command
  * protocol is host-testable against a mock; the RF link needs the module.
  *
  * @author  Douglas Quigg (dstroy0)
@@ -28,7 +28,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_NRF24
+#if DWS_ENABLE_NRF24
 
 #include <stddef.h>
 #include <stdint.h>
@@ -63,8 +63,8 @@ struct nrf_config
 bool nrf24_init(const nrf_bus *bus, const nrf_config *cfg);
 
 /**
- * @brief Transmit @p len bytes (zero-padded to DETWS_NRF24_PAYLOAD). Poll nrf24_tx_done().
- * @return true; false if @p len exceeds DETWS_NRF24_PAYLOAD.
+ * @brief Transmit @p len bytes (zero-padded to DWS_NRF24_PAYLOAD). Poll nrf24_tx_done().
+ * @return true; false if @p len exceeds DWS_NRF24_PAYLOAD.
  */
 bool nrf24_send(const nrf_bus *bus, const uint8_t *data, uint8_t len);
 
@@ -77,10 +77,10 @@ void nrf24_set_rx(const nrf_bus *bus);
 /**
  * @brief If a frame is waiting, copy it into @p buf and report the pipe it arrived on.
  * @param[out] pipe set to the receiving pipe number 0..5 (may be null).
- * @return the payload width (DETWS_NRF24_PAYLOAD, capped at @p cap), or -1 if none.
+ * @return the payload width (DWS_NRF24_PAYLOAD, capped at @p cap), or -1 if none.
  */
 int nrf24_recv(const nrf_bus *bus, uint8_t *buf, uint8_t cap, uint8_t *pipe);
 
-#endif // DETWS_ENABLE_NRF24
+#endif // DWS_ENABLE_NRF24
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_NRF24_H

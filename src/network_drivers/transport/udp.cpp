@@ -21,7 +21,7 @@
 struct UdpListener
 {
     struct udp_pcb *pcb;
-    DetUdpHandler handler;
+    DWSUdpHandler handler;
     void *ctx;
     bool used;
 };
@@ -36,15 +36,15 @@ struct UdpListener
 // tcp.cpp's TransportCtx::in_tcpip_thread.
 struct UdpCtx
 {
-    UdpListener listeners[DETWS_MAX_UDP_LISTENERS];
-    uint8_t rx[DETWS_UDP_RX_BUF_SIZE]; // shared: lwIP delivers one datagram at a time
-    struct udp_pcb *out = nullptr;     // one shared outbound PCB for det_udp_sendto()
+    UdpListener listeners[DWS_MAX_UDP_LISTENERS];
+    uint8_t rx[DWS_UDP_RX_BUF_SIZE]; // shared: lwIP delivers one datagram at a time
+    struct udp_pcb *out = nullptr;   // one shared outbound PCB for dws_udp_sendto()
     volatile bool in_tcpip_thread = false;
 };
 static UdpCtx s_udp;
 
 // Concrete peer: lwIP source address/port plus the receiving PCB to reply on.
-struct DetUdpPeer
+struct DWSUdpPeer
 {
     const ip_addr_t *addr;
     u16_t port;
@@ -76,7 +76,7 @@ static void udp_trampoline(void *arg, struct udp_pcb *pcb, struct pbuf *p, const
     pbuf_free(p);
     if (l && l->handler)
     {
-        DetUdpPeer peer = {addr, port, pcb};
+        DWSUdpPeer peer = {addr, port, pcb};
         bool prev = s_udp.in_tcpip_thread;
         s_udp.in_tcpip_thread = true;
         l->handler(s_udp.rx, n, &peer, l->ctx);
@@ -86,19 +86,19 @@ static void udp_trampoline(void *arg, struct udp_pcb *pcb, struct pbuf *p, const
 
 // Raw lwIP UDP must run in tcpip_thread: with lwIP core-locking (arduino-esp32 3.x /
 // IDF 5.x) a udp_new/bind/recv/sendto from any other task asserts ("Required to lock
-// TCPIP core functionality"), and without it, it races the stack. det_udp_* therefore
+// TCPIP core functionality"), and without it, it races the stack. dws_udp_* therefore
 // marshal these ops via tcpip_api_call(), the same as the TCP transport.
-enum class DetUdpOp : uint8_t
+enum class DWSUdpOp : uint8_t
 {
     UDP_OP_LISTEN,  // udp_new + bind + arm recv on s_udp.listeners[slot]
     UDP_OP_SEND,    // send to addr:port on an existing pcb
     UDP_OP_SEND_OUT // send to addr:port on the shared lazy outbound pcb
 };
 
-struct DetUdpCall
+struct DWSUdpCall
 {
     struct tcpip_api_call_data base;
-    DetUdpOp op;
+    DWSUdpOp op;
     int slot;            // LISTEN: index into s_udp.listeners
     struct udp_pcb *pcb; // SEND: target pcb
     ip_addr_t addr;      // SEND / SEND_OUT: destination (by value - caller's may be transient)
@@ -111,13 +111,13 @@ struct DetUdpCall
 // Runs in tcpip_thread via tcpip_api_call.
 static err_t udp_do(struct tcpip_api_call_data *c)
 {
-    DetUdpCall *k = (DetUdpCall *)c;
+    DWSUdpCall *k = (DWSUdpCall *)c;
     bool prev = s_udp.in_tcpip_thread;
     s_udp.in_tcpip_thread = true;
     k->result = false;
     switch (k->op)
     {
-    case DetUdpOp::UDP_OP_LISTEN: {
+    case DWSUdpOp::UDP_OP_LISTEN: {
         struct udp_pcb *pcb = udp_new();
         if (pcb)
         {
@@ -134,10 +134,10 @@ static err_t udp_do(struct tcpip_api_call_data *c)
         }
         break;
     }
-    case DetUdpOp::UDP_OP_SEND:
+    case DWSUdpOp::UDP_OP_SEND:
         k->result = udp_pbuf_send(k->pcb, &k->addr, k->port, k->data, k->len);
         break;
-    case DetUdpOp::UDP_OP_SEND_OUT:
+    case DWSUdpOp::UDP_OP_SEND_OUT:
         if (!s_udp.out)
             s_udp.out = udp_new();
         if (s_udp.out)
@@ -148,9 +148,9 @@ static err_t udp_do(struct tcpip_api_call_data *c)
     return ERR_OK;
 }
 
-bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx)
+bool dws_udp_listen(uint16_t port, DWSUdpHandler handler, void *ctx)
 {
-    for (int i = 0; i < DETWS_MAX_UDP_LISTENERS; i++)
+    for (int i = 0; i < DWS_MAX_UDP_LISTENERS; i++)
     {
         if (s_udp.listeners[i].used)
             continue;
@@ -158,9 +158,9 @@ bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx)
         s_udp.listeners[i].handler = handler;
         s_udp.listeners[i].ctx = ctx;
         s_udp.listeners[i].pcb = nullptr;
-        DetUdpCall k;
+        DWSUdpCall k;
         memset(&k, 0, sizeof(k));
-        k.op = DetUdpOp::UDP_OP_LISTEN;
+        k.op = DWSUdpOp::UDP_OP_LISTEN;
         k.slot = i;
         k.port = port;
         tcpip_api_call(udp_do, &k.base); // always called off tcpip_thread (service begin())
@@ -175,15 +175,15 @@ bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx)
     return false; // pool exhausted
 }
 
-bool det_udp_send(struct DetUdpPeer *peer, const uint8_t *data, size_t len)
+bool dws_udp_send(struct DWSUdpPeer *peer, const uint8_t *data, size_t len)
 {
     if (!peer || !peer->pcb || !peer->addr || !data || len == 0)
         return false;
     if (s_udp.in_tcpip_thread) // replying from a handler (already in tcpip_thread)
         return udp_pbuf_send(peer->pcb, peer->addr, peer->port, data, len);
-    DetUdpCall k;
+    DWSUdpCall k;
     memset(&k, 0, sizeof(k));
-    k.op = DetUdpOp::UDP_OP_SEND;
+    k.op = DWSUdpOp::UDP_OP_SEND;
     k.pcb = peer->pcb;
     k.addr = *peer->addr;
     k.port = peer->port;
@@ -193,7 +193,7 @@ bool det_udp_send(struct DetUdpPeer *peer, const uint8_t *data, size_t len)
     return k.result;
 }
 
-bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, size_t len)
+bool dws_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, size_t len)
 {
     if (!dst_ip || !data || len == 0)
         return false;
@@ -210,9 +210,9 @@ bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, 
         }
         return udp_pbuf_send(s_udp.out, &dst, dst_port, data, len);
     }
-    DetUdpCall k;
+    DWSUdpCall k;
     memset(&k, 0, sizeof(k));
-    k.op = DetUdpOp::UDP_OP_SEND_OUT;
+    k.op = DWSUdpOp::UDP_OP_SEND_OUT;
     k.addr = dst;
     k.port = dst_port;
     k.data = data;
@@ -221,7 +221,7 @@ bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, 
     return k.result;
 }
 
-bool det_udp_peer_addr(const struct DetUdpPeer *peer, char *ip_out, size_t ip_cap, uint16_t *port_out)
+bool dws_udp_peer_addr(const struct DWSUdpPeer *peer, char *ip_out, size_t ip_cap, uint16_t *port_out)
 {
     if (!peer || !peer->addr || !ip_out || ip_cap < 8)
         return false;
@@ -231,7 +231,7 @@ bool det_udp_peer_addr(const struct DetUdpPeer *peer, char *ip_out, size_t ip_ca
     return true;
 }
 
-bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t dst_port, const uint8_t *data,
+bool dws_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t dst_port, const uint8_t *data,
                              size_t len)
 {
     if (!dst_ip || !data || len == 0)
@@ -240,7 +240,7 @@ bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t 
     if (!ipaddr_aton(dst_ip, &dst))
         return false;
     struct udp_pcb *pcb = nullptr;
-    for (int i = 0; i < DETWS_MAX_UDP_LISTENERS; i++)
+    for (int i = 0; i < DWS_MAX_UDP_LISTENERS; i++)
     {
         if (s_udp.listeners[i].used && s_udp.listeners[i].pcb && s_udp.listeners[i].pcb->local_port == listen_port)
         {
@@ -252,9 +252,9 @@ bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t 
         return false;
     if (s_udp.in_tcpip_thread)
         return udp_pbuf_send(pcb, &dst, dst_port, data, len);
-    DetUdpCall k;
+    DWSUdpCall k;
     memset(&k, 0, sizeof(k));
-    k.op = DetUdpOp::UDP_OP_SEND;
+    k.op = DWSUdpOp::UDP_OP_SEND;
     k.pcb = pcb;
     k.addr = dst;
     k.port = dst_port;
@@ -267,29 +267,29 @@ bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t 
 #else // host build: no lwIP. A test-injectable UDP mock keeps UDP-using services host-testable.
 
 // Concrete host peer: the source address/port of an injected datagram, which a service's handler
-// reads back via det_udp_peer_addr() to reply (or, for CoAP Observe, to key a registration).
-struct DetUdpPeer
+// reads back via dws_udp_peer_addr() to reply (or, for CoAP Observe, to key a registration).
+struct DWSUdpPeer
 {
     char ip[16];
     uint16_t port;
 };
 
 // Host UDP mock state, owned by one instance (internal linkage): the bound listeners, a capture of
-// the last datagram sent (shared by det_udp_send/sendto/listener_sendto), and the listener_sendto
-// result knob. A test drives the receive path with det_udp_inject() and reads replies via
-// det_udp_captured(). One named owner, unreachable from any other translation unit.
+// the last datagram sent (shared by dws_udp_send/sendto/listener_sendto), and the listener_sendto
+// result knob. A test drives the receive path with dws_udp_inject() and reads replies via
+// dws_udp_captured(). One named owner, unreachable from any other translation unit.
 namespace
 {
 struct HostUdpListener
 {
     uint16_t port;
-    DetUdpHandler handler;
+    DWSUdpHandler handler;
     void *ctx;
     bool used;
 };
 struct HostUdpCtx
 {
-    HostUdpListener lst[DETWS_MAX_UDP_LISTENERS];
+    HostUdpListener lst[DWS_MAX_UDP_LISTENERS];
     bool cap_on;
     uint8_t cap_buf[2048];
     size_t cap_len;
@@ -310,14 +310,14 @@ bool host_capture(const uint8_t *data, size_t len)
 }
 } // namespace
 
-bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx)
+bool dws_udp_listen(uint16_t port, DWSUdpHandler handler, void *ctx)
 {
     // Rebind an existing port, else take a free slot, else evict slot 0 (host tests only).
     HostUdpListener *slot = nullptr;
-    for (int i = 0; i < DETWS_MAX_UDP_LISTENERS; i++)
+    for (int i = 0; i < DWS_MAX_UDP_LISTENERS; i++)
         if (s_udp.lst[i].used && s_udp.lst[i].port == port)
             slot = &s_udp.lst[i];
-    for (int i = 0; i < DETWS_MAX_UDP_LISTENERS && !slot; i++)
+    for (int i = 0; i < DWS_MAX_UDP_LISTENERS && !slot; i++)
         if (!s_udp.lst[i].used)
             slot = &s_udp.lst[i];
     if (!slot)
@@ -329,12 +329,12 @@ bool det_udp_listen(uint16_t port, DetUdpHandler handler, void *ctx)
     return true;
 }
 
-void det_udp_inject(uint16_t listen_port, const char *src_ip, uint16_t src_port, const uint8_t *data, size_t len)
+void dws_udp_inject(uint16_t listen_port, const char *src_ip, uint16_t src_port, const uint8_t *data, size_t len)
 {
-    for (int i = 0; i < DETWS_MAX_UDP_LISTENERS; i++)
+    for (int i = 0; i < DWS_MAX_UDP_LISTENERS; i++)
         if (s_udp.lst[i].used && s_udp.lst[i].port == listen_port && s_udp.lst[i].handler)
         {
-            DetUdpPeer peer;
+            DWSUdpPeer peer;
             strncpy(peer.ip, src_ip ? src_ip : "", sizeof(peer.ip) - 1);
             peer.ip[sizeof(peer.ip) - 1] = '\0';
             peer.port = src_port;
@@ -343,50 +343,50 @@ void det_udp_inject(uint16_t listen_port, const char *src_ip, uint16_t src_port,
         }
 }
 
-void det_udp_set_listener_sendto_result(bool ok)
+void dws_udp_set_listener_sendto_result(bool ok)
 {
     s_udp.listener_sendto_ok = ok;
 }
 
-void det_udp_reset_listeners()
+void dws_udp_reset_listeners()
 {
-    for (int i = 0; i < DETWS_MAX_UDP_LISTENERS; i++)
+    for (int i = 0; i < DWS_MAX_UDP_LISTENERS; i++)
         s_udp.lst[i] = {};
     s_udp.listener_sendto_ok = true;
 }
 
-bool det_udp_send(struct DetUdpPeer *peer, const uint8_t *data, size_t len)
+bool dws_udp_send(struct DWSUdpPeer *peer, const uint8_t *data, size_t len)
 {
     (void)peer;
     return host_capture(data, len);
 }
 
-void det_udp_capture_enable()
+void dws_udp_capture_enable()
 {
     s_udp.cap_on = true;
     s_udp.cap_len = 0;
 }
-void det_udp_capture_reset()
+void dws_udp_capture_reset()
 {
     s_udp.cap_len = 0;
 }
-const uint8_t *det_udp_captured()
+const uint8_t *dws_udp_captured()
 {
     return s_udp.cap_len ? s_udp.cap_buf : nullptr;
 }
-size_t det_udp_captured_len()
+size_t dws_udp_captured_len()
 {
     return s_udp.cap_len;
 }
 
-bool det_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, size_t len)
+bool dws_udp_sendto(const char *dst_ip, uint16_t dst_port, const uint8_t *data, size_t len)
 {
     (void)dst_ip;
     (void)dst_port;
     return host_capture(data, len); // captured "send" succeeds so the caller's success path runs
 }
 
-bool det_udp_peer_addr(const struct DetUdpPeer *peer, char *ip_out, size_t ip_cap, uint16_t *port_out)
+bool dws_udp_peer_addr(const struct DWSUdpPeer *peer, char *ip_out, size_t ip_cap, uint16_t *port_out)
 {
     if (!peer)
         return false;
@@ -400,7 +400,7 @@ bool det_udp_peer_addr(const struct DetUdpPeer *peer, char *ip_out, size_t ip_ca
     return true;
 }
 
-bool det_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t dst_port, const uint8_t *data,
+bool dws_udp_listener_sendto(uint16_t listen_port, const char *dst_ip, uint16_t dst_port, const uint8_t *data,
                              size_t len)
 {
     (void)listen_port;

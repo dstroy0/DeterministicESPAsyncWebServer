@@ -8,7 +8,7 @@
 
 #include "services/j1939/j1939.h"
 
-#if DETWS_ENABLE_J1939
+#if DWS_ENABLE_J1939
 
 #include <string.h>
 
@@ -31,7 +31,7 @@ bool j1939_decode_id(uint32_t id, J1939Id *out)
 {
     if (!out)
         return false;
-    id &= DET_CAN_EXT_ID_MASK;
+    id &= DWS_CAN_EXT_ID_MASK;
     out->priority = (uint8_t)((id >> 26) & 7u);
     uint8_t edp = (uint8_t)((id >> 25) & 1u);
     uint8_t dp = (uint8_t)((id >> 24) & 1u);
@@ -69,7 +69,7 @@ static bool ext_frame(CanFrame *f, uint8_t priority, uint32_t pgn, uint8_t sa, u
 bool j1939_build_message(CanFrame *out, uint8_t priority, uint32_t pgn, uint8_t sa, uint8_t da, const uint8_t *data,
                          uint8_t len)
 {
-    if (!out || len > DET_CAN_MAX_DLC || (len && !data))
+    if (!out || len > DWS_CAN_MAX_DLC || (len && !data))
         return false;
     if (!ext_frame(out, priority, pgn, sa, da, len))
         return false;
@@ -131,7 +131,7 @@ uint8_t j1939_tp_num_packets(uint16_t total_size)
 
 bool j1939_build_bam_cm(CanFrame *out, uint8_t sa, uint32_t pgn, uint16_t total_size)
 {
-    if (!out || total_size < 9 || total_size > DETWS_J1939_TP_MAX || pgn > 0x3FFFFu)
+    if (!out || total_size < 9 || total_size > DWS_J1939_TP_MAX || pgn > 0x3FFFFu)
         return false; // BAM is for 9..1785 octet messages
     if (!ext_frame(out, 7, J1939_PGN_TP_CM, sa, J1939_ADDR_GLOBAL, 8))
         return false; // GCOVR_EXCL_LINE  unreachable: fixed priority 7 + J1939_PGN_TP_CM (<=0x3FFFF), encode can't fail
@@ -180,7 +180,7 @@ J1939TpResult j1939_tp_feed(J1939TpRx *rx, const CanFrame *f)
         uint16_t total = (uint16_t)(f->data[1] | (f->data[2] << 8));
         uint8_t packets = f->data[3];
         uint32_t pgn = (uint32_t)f->data[5] | ((uint32_t)f->data[6] << 8) | ((uint32_t)f->data[7] << 16);
-        if (total < 9 || total > DETWS_J1939_TP_MAX || packets != j1939_tp_num_packets(total))
+        if (total < 9 || total > DWS_J1939_TP_MAX || packets != j1939_tp_num_packets(total))
             return J1939TpResult::J1939_TP_ERROR;
         rx->active = true;
         rx->sa = id.sa;
@@ -218,4 +218,4 @@ J1939TpResult j1939_tp_feed(J1939TpRx *rx, const CanFrame *f)
     return J1939TpResult::J1939_TP_IGNORED;
 }
 
-#endif // DETWS_ENABLE_J1939
+#endif // DWS_ENABLE_J1939

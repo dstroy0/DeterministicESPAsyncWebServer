@@ -22,15 +22,15 @@ static bool has(const char *hay, const char *needle)
 void test_request(void)
 {
     char buf[128];
-    size_t n = detws_utmc_request("DET_042", buf, sizeof(buf));
+    size_t n = dws_utmc_request("DWS_042", buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
-    TEST_ASSERT_EQUAL_STRING("<?xml version=\"1.0\"?><UTMCRequest><object id=\"DET_042\"/></UTMCRequest>", buf);
+    TEST_ASSERT_EQUAL_STRING("<?xml version=\"1.0\"?><UTMCRequest><object id=\"DWS_042\"/></UTMCRequest>", buf);
 }
 
 void test_response(void)
 {
     char buf[256];
-    detws_utmc_response("SIGN_7", "SLOW", Utmc::UTMC_QUALITY_GOOD, "2026-07-06T12:00:00Z", buf, sizeof(buf));
+    dws_utmc_response("SIGN_7", "SLOW", Utmc::UTMC_QUALITY_GOOD, "2026-07-06T12:00:00Z", buf, sizeof(buf));
     TEST_ASSERT_TRUE(has(buf, "<UTMCResponse><object id=\"SIGN_7\""));
     TEST_ASSERT_TRUE(has(buf, "value=\"SLOW\""));
     TEST_ASSERT_TRUE(has(buf, "quality=\"0\""));
@@ -40,7 +40,7 @@ void test_response(void)
 void test_response_escapes(void)
 {
     char buf[256];
-    detws_utmc_response("A&B", "x<y", Utmc::UTMC_QUALITY_SUSPECT, "t", buf, sizeof(buf));
+    dws_utmc_response("A&B", "x<y", Utmc::UTMC_QUALITY_SUSPECT, "t", buf, sizeof(buf));
     TEST_ASSERT_TRUE(has(buf, "id=\"A&amp;B\""));
     TEST_ASSERT_TRUE(has(buf, "value=\"x&lt;y\""));
     TEST_ASSERT_TRUE(has(buf, "quality=\"1\""));
@@ -48,30 +48,30 @@ void test_response_escapes(void)
 
 void test_parse_request(void)
 {
-    const char *req = "<?xml version=\"1.0\"?><UTMCRequest><object id=\"DET_042\"/></UTMCRequest>";
+    const char *req = "<?xml version=\"1.0\"?><UTMCRequest><object id=\"DWS_042\"/></UTMCRequest>";
     char id[32];
-    size_t n = detws_utmc_parse_request(req, strlen(req), id, sizeof(id));
+    size_t n = dws_utmc_parse_request(req, strlen(req), id, sizeof(id));
     TEST_ASSERT_EQUAL_size_t(7, n);
-    TEST_ASSERT_EQUAL_STRING("DET_042", id);
+    TEST_ASSERT_EQUAL_STRING("DWS_042", id);
     // No id -> 0.
     const char *noid = "<UTMCRequest><object/></UTMCRequest>";
-    TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(noid, strlen(noid), id, sizeof(id)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_utmc_parse_request(noid, strlen(noid), id, sizeof(id)));
 }
 
 void test_overflow(void)
 {
     char buf[16];
-    TEST_ASSERT_EQUAL_size_t(0, detws_utmc_request("a-very-long-object-id-here", buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_utmc_request("a-very-long-object-id-here", buf, sizeof(buf)));
 }
 
 void test_parse_request_guards()
 {
     char out[64];
-    TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(nullptr, 10, out, sizeof(out))); // null xml
+    TEST_ASSERT_EQUAL_size_t(0, dws_utmc_parse_request(nullptr, 10, out, sizeof(out))); // null xml
     const char *xml = "<x id=\"ABCDEFGHIJ\"/>";
-    TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(xml, strlen(xml), out, 4)); // id overflows out
+    TEST_ASSERT_EQUAL_size_t(0, dws_utmc_parse_request(xml, strlen(xml), out, 4)); // id overflows out
     const char *unterm = "<x id=\"ABC";
-    TEST_ASSERT_EQUAL_size_t(0, detws_utmc_parse_request(unterm, strlen(unterm), out, sizeof(out))); // unterminated
+    TEST_ASSERT_EQUAL_size_t(0, dws_utmc_parse_request(unterm, strlen(unterm), out, sizeof(out))); // unterminated
 }
 
 int main(void)

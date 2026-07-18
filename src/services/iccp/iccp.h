@@ -3,7 +3,7 @@
 
 /**
  * @file iccp.h
- * @brief ICCP / TASE.2 (IEC 60870-6) inter-control-center telemetry codec (DETWS_ENABLE_ICCP).
+ * @brief ICCP / TASE.2 (IEC 60870-6) inter-control-center telemetry codec (DWS_ENABLE_ICCP).
  *
  * ICCP (TASE.2, IEC 60870-6) exchanges real-time power-grid telemetry between control centers. It is an
  * application profile *on top of MMS* (the shipped services/mms): a TASE.2 "indication point" (a data
@@ -14,7 +14,7 @@
  *
  * simplified here to the common **StateQ** (a discrete state 0..3 + a quality-flags byte) and **RealQ**
  * (an IEEE-754-ish scaled real + quality) indication points that most bilateral tables use. The result
- * is a BER blob the caller wraps in an MMS Read response (`detws_mms_read_response`). Pure, zero heap,
+ * is a BER blob the caller wraps in an MMS Read response (`dws_mms_read_response`). Pure, zero heap,
  * no stdlib, host-testable; the TASE.2 bilateral-table + MMS transport are the shipped services.
  */
 
@@ -25,7 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_ICCP
+#if DWS_ENABLE_ICCP
 
 /** @brief TASE.2 quality flags (DataFlags, the common bits). */
 // TASE.2 quality/state wire values + the 2-bit quality mask, so integer constants in a struct.
@@ -51,7 +51,7 @@ struct Iccp
  *
  * Encodes `[A2 { 85 <stateAndQuality byte> [17 <4-octet time>] }]` (context-tagged StateQ structure).
  */
-size_t detws_iccp_state_q(uint8_t state, uint8_t flags, const uint8_t time[4], uint8_t *out, size_t cap);
+size_t dws_iccp_state_q(uint8_t state, uint8_t flags, const uint8_t time[4], uint8_t *out, size_t cap);
 
 /**
  * @brief Build a TASE.2 RealQ Data_Value: a scaled real value (milli-units) + quality flags.
@@ -62,7 +62,7 @@ size_t detws_iccp_state_q(uint8_t state, uint8_t flags, const uint8_t time[4], u
  *
  * Encodes `[A3 { 02 <INTEGER milli> 85 <quality byte> [17 <time>] }]`.
  */
-size_t detws_iccp_real_q(int32_t milli, uint8_t flags, const uint8_t time[4], uint8_t *out, size_t cap);
+size_t dws_iccp_real_q(int32_t milli, uint8_t flags, const uint8_t time[4], uint8_t *out, size_t cap);
 
-#endif // DETWS_ENABLE_ICCP
+#endif // DWS_ENABLE_ICCP
 #endif // DETERMINISTICESPASYNCWEBSERVER_ICCP_H

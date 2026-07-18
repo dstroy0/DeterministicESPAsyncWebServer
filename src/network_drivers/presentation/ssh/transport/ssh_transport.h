@@ -54,7 +54,7 @@
 static constexpr size_t SSH_KEXINIT_S_MAX = 704;
 
 /** @brief Server identification string (no CR LF; appended on the wire). */
-#define SSH_SERVER_VERSION "SSH-2.0-DetWS_1.0"
+#define SSH_SERVER_VERSION "SSH-2.0-DWS_1.0"
 
 // ---------------------------------------------------------------------------
 // Handshake phase
@@ -131,7 +131,7 @@ struct SshSession
     bool ext_info_c;       ///< Client advertised ext-info-c (RFC 8308): send EXT_INFO.
     bool authed;           ///< True after successful user authentication.
     uint8_t auth_failures; ///< Failed USERAUTH_REQUESTs (brute-force limit, RFC 4252 §4).
-    uint32_t last_kex_ms;  ///< detws_millis() when the last KEX completed (server-initiated re-key timer).
+    uint32_t last_kex_ms;  ///< dws_millis() when the last KEX completed (server-initiated re-key timer).
 };
 
 /** @brief Static pool of SSH session state (BSS), one per SSH slot. */
@@ -216,10 +216,10 @@ bool ssh_kex_prefer_rsa(void);
  * The RSA host key (loaded via ssh_rsa) and this may both be present; negotiation picks
  * one per ssh_kex_set_prefer_rsa(). If neither is installed the handshake cannot complete.
  */
-void det_ssh_hostkey_ed25519_set(const uint8_t seed[32]);
+void dws_ssh_hostkey_ed25519_set(const uint8_t seed[32]);
 
 /** @brief True if an ssh-ed25519 host key has been installed. */
-bool det_ssh_hostkey_ed25519_available(void);
+bool dws_ssh_hostkey_ed25519_available(void);
 
 /**
  * @brief Install an ecdsa-sha2-nistp256 host key from its 32-byte P-256 private scalar.
@@ -228,10 +228,10 @@ bool det_ssh_hostkey_ed25519_available(void);
  * the public point. May coexist with the RSA and ssh-ed25519 host keys; negotiation picks one
  * per ssh_kex_set_prefer_rsa(). An invalid scalar (0 or >= the group order) is ignored.
  */
-void det_ssh_hostkey_ecdsa_set(const uint8_t priv[32]);
+void dws_ssh_hostkey_ecdsa_set(const uint8_t priv[32]);
 
 /** @brief True if an ecdsa-sha2-nistp256 host key has been installed. */
-bool det_ssh_hostkey_ecdsa_available(void);
+bool dws_ssh_hostkey_ecdsa_available(void);
 
 /**
  * @brief Generate the server ephemeral for the negotiated KEX method (call after parse).
@@ -323,8 +323,8 @@ int ssh_kexdh_build_reply(const uint8_t *ks, size_t ks_len, const uint8_t *f_be,
  * KEX the exchange hash is saved as the session id. K is wiped from the stack before
  * returning.
  *
- * Requires ssh_kex_generate(i) and a host key (det_ssh_rsa_load_pubkey() and/or
- * det_ssh_hostkey_ed25519_set()) to have been called.
+ * Requires ssh_kex_generate(i) and a host key (dws_ssh_rsa_load_pubkey() and/or
+ * dws_ssh_hostkey_ed25519_set()) to have been called.
  *
  * @param[in]  i          SSH slot.
  * @param[in]  payload    KEXDH_INIT payload.

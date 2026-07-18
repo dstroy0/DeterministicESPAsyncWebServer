@@ -1,6 +1,6 @@
 # 55.OpcUa - an OPC UA Binary server
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_OPCUA`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_OPCUA`
 
 ## What this example teaches
 
@@ -57,7 +57,7 @@ server.begin(80);
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_OPCUA=1" \
+  --project-option="build_flags=-DDWS_ENABLE_OPCUA=1" \
   --lib="." examples/L7-Application/55.OpcUa/55.OpcUa.ino
 ```
 
@@ -74,7 +74,7 @@ explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_OPCUA 1
+#define DWS_ENABLE_OPCUA 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -84,7 +84,7 @@ explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static uint32_t setpoint = 100; // a writable variable, exposed at ns=1;i=10
 

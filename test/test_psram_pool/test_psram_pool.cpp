@@ -16,51 +16,51 @@ void tearDown(void)
 void test_place_large_prefers_psram(void)
 {
     // 64KB asset, threshold 4KB, plenty of both heaps, 32KB DRAM reserve.
-    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_PSRAM, detws_psram_place(65536, false, 120000, 2000000, 4096, 32768));
+    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_PSRAM, dws_psram_place(65536, false, 120000, 2000000, 4096, 32768));
     // No PSRAM available -> falls back to DRAM (fits with reserve).
-    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_DRAM, detws_psram_place(65536, false, 120000, 0, 4096, 32768));
+    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_DRAM, dws_psram_place(65536, false, 120000, 0, 4096, 32768));
     // No PSRAM and DRAM can't hold it while keeping the reserve -> FAIL.
-    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_FAIL, detws_psram_place(65536, false, 80000, 0, 4096, 32768));
+    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_FAIL, dws_psram_place(65536, false, 80000, 0, 4096, 32768));
 }
 
 void test_place_small_prefers_dram(void)
 {
     // 512B hot buffer, threshold 4KB -> DRAM.
-    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_DRAM, detws_psram_place(512, false, 120000, 2000000, 4096, 32768));
+    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_DRAM, dws_psram_place(512, false, 120000, 2000000, 4096, 32768));
     // DRAM too tight (reserve dominates) -> PSRAM fallback.
-    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_PSRAM, detws_psram_place(512, false, 33000, 2000000, 4096, 32768));
+    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_PSRAM, dws_psram_place(512, false, 33000, 2000000, 4096, 32768));
 }
 
 void test_place_dma_forces_dram(void)
 {
     // DMA-required buffer must be DRAM even if large.
-    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_DRAM, detws_psram_place(8192, true, 120000, 2000000, 4096, 32768));
+    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_DRAM, dws_psram_place(8192, true, 120000, 2000000, 4096, 32768));
     // DMA required but DRAM can't fit with reserve -> FAIL (PSRAM is not DMA-capable).
-    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_FAIL, detws_psram_place(8192, true, 40000, 2000000, 4096, 32768));
+    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_FAIL, dws_psram_place(8192, true, 40000, 2000000, 4096, 32768));
 }
 
 void test_place_edges(void)
 {
-    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_FAIL, detws_psram_place(0, false, 120000, 2000000, 4096, 32768));
+    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_FAIL, dws_psram_place(0, false, 120000, 2000000, 4096, 32768));
     // At exactly the threshold -> treated as large (>=), prefers PSRAM.
-    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_PSRAM, detws_psram_place(4096, false, 120000, 2000000, 4096, 0));
+    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_PSRAM, dws_psram_place(4096, false, 120000, 2000000, 4096, 0));
     // Exact DRAM fit: size + reserve == free_dram is allowed.
-    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_DRAM, detws_psram_place(100, false, 1100, 0, 4096, 1000));
+    TEST_ASSERT_EQUAL_INT(DetwsPlace::PLACE_DRAM, dws_psram_place(100, false, 1100, 0, 4096, 1000));
 }
 
 void test_pingpong(void)
 {
     PingPong pp;
-    detws_pingpong_init(&pp);
-    TEST_ASSERT_EQUAL_UINT8(0, detws_pingpong_fill_index(&pp));
-    TEST_ASSERT_EQUAL_UINT8(1, detws_pingpong_drain_index(&pp));
+    dws_pingpong_init(&pp);
+    TEST_ASSERT_EQUAL_UINT8(0, dws_pingpong_fill_index(&pp));
+    TEST_ASSERT_EQUAL_UINT8(1, dws_pingpong_drain_index(&pp));
     // Swap: roles flip.
-    TEST_ASSERT_EQUAL_UINT8(1, detws_pingpong_swap(&pp));
-    TEST_ASSERT_EQUAL_UINT8(1, detws_pingpong_fill_index(&pp));
-    TEST_ASSERT_EQUAL_UINT8(0, detws_pingpong_drain_index(&pp));
+    TEST_ASSERT_EQUAL_UINT8(1, dws_pingpong_swap(&pp));
+    TEST_ASSERT_EQUAL_UINT8(1, dws_pingpong_fill_index(&pp));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_pingpong_drain_index(&pp));
     // Swap back.
-    TEST_ASSERT_EQUAL_UINT8(0, detws_pingpong_swap(&pp));
-    TEST_ASSERT_EQUAL_UINT8(0, detws_pingpong_fill_index(&pp));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_pingpong_swap(&pp));
+    TEST_ASSERT_EQUAL_UINT8(0, dws_pingpong_fill_index(&pp));
 }
 
 int main(void)

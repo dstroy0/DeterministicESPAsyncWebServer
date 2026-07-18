@@ -14,12 +14,12 @@
 //   - An oversized header is dropped whole (no malformed half-line)
 
 #include "dwserver.h"
-#include "services/ntp_service/ntp_service.h" // detws_ntp_set_test_epoch() for the Date-header tests
+#include "services/ntp_service/ntp_service.h" // dws_ntp_set_test_epoch() for the Date-header tests
 #include <stdio.h>
 #include <string.h>
 #include <unity.h>
 
-static DetWebServer server;
+static DWS server;
 
 static void push_str(uint8_t slot, const char *s)
 {
@@ -104,7 +104,7 @@ static void h_oversized(uint8_t slot, HttpReq *req)
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i] = {};
@@ -117,13 +117,13 @@ void setUp()
     ws_init();
     sse_init();
     tcp_capture_reset();
-    detws_ntp_set_test_epoch(0); // clockless by default; Date tests opt in
+    dws_ntp_set_test_epoch(0); // clockless by default; Date tests opt in
 }
 
 void tearDown()
 {
     tcp_capture_disable();
-    detws_ntp_set_test_epoch(0);
+    dws_ntp_set_test_epoch(0);
 }
 
 static void feed_and_handle(uint8_t slot, const char *req_str)
@@ -224,11 +224,11 @@ void test_oversized_header_dropped_whole()
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "X-Small: ok\r\n"));
 }
 
-// DETWS_HTTP_EMIT_DATE: with a valid wall-clock time, every response carries the
+// DWS_HTTP_EMIT_DATE: with a valid wall-clock time, every response carries the
 // RFC 7231 IMF-fixdate Date header (epoch 784111777 = the RFC's example date).
 void test_date_header_emitted_when_time_set()
 {
-    detws_ntp_set_test_epoch(784111777); // Sun, 06 Nov 1994 08:49:37 GMT
+    dws_ntp_set_test_epoch(784111777); // Sun, 06 Nov 1994 08:49:37 GMT
     server.on("/h", HttpMethod::HTTP_GET, h_plain);
     feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "Date: Sun, 06 Nov 1994 08:49:37 GMT\r\n"));
@@ -238,7 +238,7 @@ void test_date_header_emitted_when_time_set()
 // than emitting a wrong date (RFC 7231 7.1.1.2).
 void test_date_header_omitted_when_clockless()
 {
-    detws_ntp_set_test_epoch(0);
+    dws_ntp_set_test_epoch(0);
     server.on("/h", HttpMethod::HTTP_GET, h_plain);
     feed_and_handle(0, "GET /h HTTP/1.1\r\n\r\n");
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "200 OK"));
@@ -248,29 +248,29 @@ void test_date_header_omitted_when_clockless()
 void test_ntp_host_seam_accessors()
 {
     // Host build: begin() is a no-op returning false; synced()/epoch() reflect the injected epoch.
-    TEST_ASSERT_FALSE(detws_ntp_begin("UTC0", "a.pool.ntp.org", "b.pool.ntp.org"));
-    detws_ntp_set_test_epoch(0);
-    TEST_ASSERT_FALSE(detws_ntp_synced());
-    TEST_ASSERT_EQUAL_INT(0, (long)detws_ntp_epoch());
+    TEST_ASSERT_FALSE(dws_ntp_begin("UTC0", "a.pool.ntp.org", "b.pool.ntp.org"));
+    dws_ntp_set_test_epoch(0);
+    TEST_ASSERT_FALSE(dws_ntp_synced());
+    TEST_ASSERT_EQUAL_INT(0, (long)dws_ntp_epoch());
     TEST_ASSERT_EQUAL_UINT32(0, ntp_time_source()); // registry adapter: 0 when unsynced
-    detws_ntp_set_test_epoch(784111777);
-    TEST_ASSERT_TRUE(detws_ntp_synced());
-    TEST_ASSERT_EQUAL_INT(784111777, (long)detws_ntp_epoch());
+    dws_ntp_set_test_epoch(784111777);
+    TEST_ASSERT_TRUE(dws_ntp_synced());
+    TEST_ASSERT_EQUAL_INT(784111777, (long)dws_ntp_epoch());
     TEST_ASSERT_EQUAL_UINT32(784111777, ntp_time_source()); // registry adapter mirrors the epoch
     // http_date guards: null out / zero cap both return 0 without writing.
     char buf[40];
-    TEST_ASSERT_EQUAL_UINT(0, detws_ntp_http_date(nullptr, sizeof(buf)));
-    TEST_ASSERT_EQUAL_UINT(0, detws_ntp_http_date(buf, 0));
+    TEST_ASSERT_EQUAL_UINT(0, dws_ntp_http_date(nullptr, sizeof(buf)));
+    TEST_ASSERT_EQUAL_UINT(0, dws_ntp_http_date(buf, 0));
     // Valid IMF-fixdate for the injected epoch.
-    TEST_ASSERT_TRUE(detws_ntp_http_date(buf, sizeof(buf)) > 0);
+    TEST_ASSERT_TRUE(dws_ntp_http_date(buf, sizeof(buf)) > 0);
     TEST_ASSERT_EQUAL_STRING("Sun, 06 Nov 1994 08:49:37 GMT", buf);
     // A pathologically large epoch overflows the broken-down year, so gmtime_r fails and http_date
     // fails closed (empty string, length 0). glibc returns EOVERFLOW here; the host test runs on glibc.
-    detws_ntp_set_test_epoch((time_t)100000000000000000LL);
+    dws_ntp_set_test_epoch((time_t)100000000000000000LL);
     buf[0] = 'x';
-    TEST_ASSERT_EQUAL_UINT(0, detws_ntp_http_date(buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_UINT(0, dws_ntp_http_date(buf, sizeof(buf)));
     TEST_ASSERT_EQUAL_CHAR('\0', buf[0]);
-    detws_ntp_set_test_epoch(0); // restore the clockless default for the other tests
+    dws_ntp_set_test_epoch(0); // restore the clockless default for the other tests
 }
 
 int main()

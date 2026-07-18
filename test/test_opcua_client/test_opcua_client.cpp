@@ -52,7 +52,7 @@ void test_hello_ack_roundtrip()
 
     OpcUaHello hello;
     TEST_ASSERT_TRUE(opcua_parse_hello(req, rn, &hello));
-    TEST_ASSERT_EQUAL_UINT32(DETWS_OPCUA_BUF, hello.recv_buf_size);
+    TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BUF, hello.recv_buf_size);
 
     uint8_t ack[64];
     size_t an = opcua_build_ack(&hello, ack, sizeof(ack));
@@ -60,7 +60,7 @@ void test_hello_ack_roundtrip()
 
     OpcUaAckInfo info;
     TEST_ASSERT_TRUE(opcua_client_on_ack(ack, an, &info));
-    TEST_ASSERT_EQUAL_UINT32(DETWS_OPCUA_BUF, info.recv_buf_size);
+    TEST_ASSERT_EQUAL_UINT32(DWS_OPCUA_BUF, info.recv_buf_size);
     TEST_ASSERT_EQUAL_UINT32(1, info.max_chunk_count);
 }
 

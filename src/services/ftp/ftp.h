@@ -3,7 +3,7 @@
 
 /**
  * @file ftp.h
- * @brief FTP client wire codec (RFC 959 + RFC 2428 + RFC 3659), DETWS_ENABLE_FTP.
+ * @brief FTP client wire codec (RFC 959 + RFC 2428 + RFC 3659), DWS_ENABLE_FTP.
  *
  * The pure protocol layer of an FTP client: build control-channel commands, parse the
  * (possibly multiline) 3-digit reply, and decode the PASV / EPSV data-channel address the
@@ -27,7 +27,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_FTP
+#if DWS_ENABLE_FTP
 
 #include <stddef.h>
 #include <stdint.h>
@@ -101,6 +101,6 @@ static inline bool ftp_reply_ok(int code)
     return ftp_reply_class(code) == 2;
 }
 
-#endif // DETWS_ENABLE_FTP
+#endif // DWS_ENABLE_FTP
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_FTP_H

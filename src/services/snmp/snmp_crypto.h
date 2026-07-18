@@ -3,7 +3,7 @@
 
 /**
  * @file snmp_crypto.h
- * @brief USM cryptographic primitives for SNMPv3 (DETWS_ENABLE_SNMP_V3).
+ * @brief USM cryptographic primitives for SNMPv3 (DWS_ENABLE_SNMP_V3).
  *
  * Provides exactly what the User-based Security Model needs and nothing more:
  *
@@ -25,7 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SNMP_V3
+#if DWS_ENABLE_SNMP_V3
 
 /** @brief Localized-key length (SHA-256 digest size). */
 #define SNMP_USM_KEY_LEN 32
@@ -64,6 +64,6 @@ void snmp_usm_localize_key(const char *password, const uint8_t *engine_id, size_
 void snmp_aes128_cfb(const uint8_t key[16], const uint8_t iv[16], const uint8_t *in, uint8_t *out, size_t len,
                      bool encrypt);
 
-#endif // DETWS_ENABLE_SNMP_V3
+#endif // DWS_ENABLE_SNMP_V3
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SNMP_CRYPTO_H

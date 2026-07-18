@@ -2,21 +2,21 @@
 //
 // The RMII path (example 19.Ethernet) needs an ESP32 with an on-chip Ethernet MAC. The S3 has
 // no RMII MAC, so a wired link there uses an SPI Ethernet controller - the WIZnet W5500 - over
-// the HSPI bus. With DETWS_ETH_W5500=1, init_eth_physical() calls the arduino-esp32 3.x ETH SPI
+// the HSPI bus. With DWS_ETH_W5500=1, init_eth_physical() calls the arduino-esp32 3.x ETH SPI
 // API (ETH.begin(ETH_PHY_W5500, ...)); once the link has a DHCP IP the server accepts on it with
-// no other change (the egress reporting classifies the wired route as DetIface::DETIFACE_ETH).
+// no other change (the egress reporting classifies the wired route as DWSIface::DETIFACE_ETH).
 //
 // W5500 SPI Ethernet is arduino-esp32 3.x only (the 2.x ETH library has no W5500). Build this
 // with the arduino-cli / IDF-5.x core.
 //
-// Wiring (ESP32-S3-DevKitC, HSPI) - the DETWS_ETH_W5500_* build flags in build_opt.h:
+// Wiring (ESP32-S3-DevKitC, HSPI) - the DWS_ETH_W5500_* build flags in build_opt.h:
 //   CS = GPIO7  RST = GPIO6  INT = GPIO5  SCLK = GPIO12  MOSI = GPIO11  MISO = GPIO13  (VCC 3V3, GND)
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include <ETH.h>
 
-DetWebServer server;
+DWS server;
 
 static unsigned long request_count = 0;
 
@@ -39,7 +39,7 @@ void setup()
 {
     Serial.begin(115200);
 
-    // init_eth_physical() installs the W5500 driver (ETH.begin with the DETWS_ETH_W5500_* pins). It
+    // init_eth_physical() installs the W5500 driver (ETH.begin with the DWS_ETH_W5500_* pins). It
     // returns false if the MAC never answered on SPI - check the return before polling for a link, or a
     // never-installed driver reboot-loops the poll below.
     if (!init_eth_physical())

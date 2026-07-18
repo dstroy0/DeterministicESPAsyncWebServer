@@ -16,7 +16,7 @@
  * That keeps these codecs pure and host-testable, exactly like the serial / TCP codecs.
  *
  * Header-only, not feature-gated: each CAN codec includes it behind its own
- * `DETWS_ENABLE_*` guard.
+ * `DWS_ENABLE_*` guard.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -27,9 +27,9 @@
 
 #include <stdint.h>
 
-#define DET_CAN_MAX_DLC 8               ///< classic CAN carries at most 8 data octets.
-#define DET_CAN_STD_ID_MASK 0x7FFu      ///< 11-bit standard identifier.
-#define DET_CAN_EXT_ID_MASK 0x1FFFFFFFu ///< 29-bit extended identifier.
+#define DWS_CAN_MAX_DLC 8               ///< classic CAN carries at most 8 data octets.
+#define DWS_CAN_STD_ID_MASK 0x7FFu      ///< 11-bit standard identifier.
+#define DWS_CAN_EXT_ID_MASK 0x1FFFFFFFu ///< 29-bit extended identifier.
 
 /**
  * @brief One classic CAN 2.0 frame.
@@ -46,7 +46,7 @@ struct CanFrame
     bool extended;
     bool rtr;
     uint8_t dlc;
-    uint8_t data[DET_CAN_MAX_DLC];
+    uint8_t data[DWS_CAN_MAX_DLC];
 };
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DET_CAN_H

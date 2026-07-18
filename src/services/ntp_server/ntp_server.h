@@ -10,12 +10,12 @@
  * devices in sync against this one. It is a stateless request/response: a client sends a
  * 48-octet packet, the server fills in the reference/receive/transmit timestamps (echoing
  * the client's transmit stamp as the origin so the client can compute round-trip delay)
- * and sends it back. Zero heap; gated by DETWS_ENABLE_NTP_SERVER (default off).
+ * and sends it back. Zero heap; gated by DWS_ENABLE_NTP_SERVER (default off).
  *
  * The response builder (ntp_server_build_response) is pure - it takes the request bytes and
  * the current NTP-epoch time and writes the reply - so it is fully host-tested with no lwIP.
  * ntp_server_begin() binds UDP/123 via the transport UDP service and drives it from
- * `detws_time_now()` (seconds) plus a `detws_millis()`-derived sub-second fraction.
+ * `dws_time_now()` (seconds) plus a `dws_millis()`-derived sub-second fraction.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -62,8 +62,8 @@ size_t ntp_server_build_response(const uint8_t *req, size_t req_len, uint8_t str
 /**
  * @brief Start answering NTP requests on UDP/123 from the device's own clock.
  *
- * Uses `detws_time_now()` for the seconds and `detws_millis()` for the sub-second fraction.
- * While the device has no time (`detws_time_now()` returns 0) the server does not reply, so
+ * Uses `dws_time_now()` for the seconds and `dws_millis()` for the sub-second fraction.
+ * While the device has no time (`dws_time_now()` returns 0) the server does not reply, so
  * a client falls through to its next configured source rather than trusting an unset clock.
  *
  * @param stratum the stratum to advertise (1 for a GPS/reference clock, 2-15 for a relay).

@@ -3,7 +3,7 @@
 
 /**
  * @file 64.Sht3x.ino
- * @brief Measure temperature and humidity with a Sensirion SHT3x (DETWS_ENABLE_SHT3X).
+ * @brief Measure temperature and humidity with a Sensirion SHT3x (DWS_ENABLE_SHT3X).
  *
  * The SHT3x (SHT30/31/35) is a small, accurate temperature + humidity sensor on the I2C bus.
  * This reads it once a second and prints the values. Every reading is protected by a CRC-8 the
@@ -14,10 +14,10 @@
  * Wiring (I2C): module SDA -> GPIO 21, SCL -> GPIO 22, VCC -> 3V3, GND -> GND, ADDR -> GND
  * (address 0x44).
  *
- * Build flag (PlatformIO): `-DDETWS_ENABLE_SHT3X=1`
+ * Build flag (PlatformIO): `-DDWS_ENABLE_SHT3X=1`
  */
 
-#define DETWS_ENABLE_SHT3X 1
+#define DWS_ENABLE_SHT3X 1
 
 #include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/sht3x/sht3x.h"

@@ -8,29 +8,29 @@
 
 #include "services/happy_eyeballs/happy_eyeballs.h"
 
-#if DETWS_ENABLE_HAPPY_EYEBALLS
+#if DWS_ENABLE_HAPPY_EYEBALLS
 
 namespace
 {
 // Effective family for interleave: an IPv4-mapped IPv6 address is treated as IPv4.
-bool eff_is_v6(const DetIp *ip)
+bool eff_is_v6(const DWSIp *ip)
 {
-    return ip->family == DetIpFamily::DET_IP_V6 && !det_ip_is_v4_mapped(ip);
+    return ip->family == DWSIpFamily::DWS_IP_V6 && !dws_ip_is_v4_mapped(ip);
 }
 
-int scope_rank(const DetIp *ip)
+int scope_rank(const DWSIp *ip)
 {
-    switch (det_ip_classify(ip))
+    switch (dws_ip_classify(ip))
     {
-    case DetIpScope::DET_IP_SCOPE_GLOBAL:
+    case DWSIpScope::DWS_IP_SCOPE_GLOBAL:
         return 5;
-    case DetIpScope::DET_IP_SCOPE_PRIVATE:
+    case DWSIpScope::DWS_IP_SCOPE_PRIVATE:
         return 4;
-    case DetIpScope::DET_IP_SCOPE_LINK_LOCAL:
+    case DWSIpScope::DWS_IP_SCOPE_LINK_LOCAL:
         return 3;
-    case DetIpScope::DET_IP_SCOPE_LOOPBACK:
+    case DWSIpScope::DWS_IP_SCOPE_LOOPBACK:
         return 2;
-    case DetIpScope::DET_IP_SCOPE_MULTICAST:
+    case DWSIpScope::DWS_IP_SCOPE_MULTICAST:
         return 1;
     default:
         return 0; // unspecified
@@ -38,15 +38,15 @@ int scope_rank(const DetIp *ip)
 }
 } // namespace
 
-int detws_he_pref(const DetIp *ip)
+int dws_he_pref(const DWSIp *ip)
 {
-    if (!ip || ip->family == DetIpFamily::DET_IP_NONE)
+    if (!ip || ip->family == DWSIpFamily::DWS_IP_NONE)
         return -1;
     // Scope dominates; within a scope a native IPv6 outranks IPv4 (RFC 6724 default policy).
     return scope_rank(ip) * 2 + (eff_is_v6(ip) ? 1 : 0);
 }
 
-void detws_he_order(DetIp *list, size_t n)
+void dws_he_order(DWSIp *list, size_t n)
 {
     if (!list || n < 2)
         return;
@@ -54,10 +54,10 @@ void detws_he_order(DetIp *list, size_t n)
     // Stable insertion sort by preference (descending).
     for (size_t i = 1; i < n; i++)
     {
-        DetIp key = list[i];
-        int kp = detws_he_pref(&key);
+        DWSIp key = list[i];
+        int kp = dws_he_pref(&key);
         size_t j = i;
-        while (j > 0 && detws_he_pref(&list[j - 1]) < kp)
+        while (j > 0 && dws_he_pref(&list[j - 1]) < kp)
         {
             list[j] = list[j - 1];
             j--;
@@ -65,18 +65,18 @@ void detws_he_order(DetIp *list, size_t n)
         list[j] = key;
     }
 
-    if (n > DETWS_HE_MAX)
+    if (n > DWS_HE_MAX)
         return; // too large to interleave in the fixed scratch; sorted order stands.
 
     // RFC 8305 sec 4: interleave families so successive attempts alternate v6/v4. Preserve the
     // preference order within each family; start with the family of the top-preference address.
-    DetIp out[DETWS_HE_MAX];
+    DWSIp out[DWS_HE_MAX];
     size_t o = 0;
     size_t iv6 = 0;
     size_t iv4 = 0;
     // Collect indices per family in preference order.
-    size_t v6[DETWS_HE_MAX];
-    size_t v4[DETWS_HE_MAX];
+    size_t v6[DWS_HE_MAX];
+    size_t v4[DWS_HE_MAX];
     size_t nv6 = 0;
     size_t nv4 = 0;
     for (size_t i = 0; i < n; i++)
@@ -103,10 +103,10 @@ void detws_he_order(DetIp *list, size_t n)
         list[i] = out[i];
 }
 
-bool detws_he_attempt_due(uint32_t last_start_ms, uint32_t now_ms, uint32_t attempt_delay_ms)
+bool dws_he_attempt_due(uint32_t last_start_ms, uint32_t now_ms, uint32_t attempt_delay_ms)
 {
     uint32_t elapsed = now_ms - last_start_ms; // wrap-safe modular subtraction
     return elapsed >= attempt_delay_ms;
 }
 
-#endif // DETWS_ENABLE_HAPPY_EYEBALLS
+#endif // DWS_ENABLE_HAPPY_EYEBALLS

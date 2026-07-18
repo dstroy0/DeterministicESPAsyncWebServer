@@ -6,20 +6,20 @@
  * @brief SSH server example: host key from NVS, auth callbacks, channel echo.
  *
  * Demonstrates the SSH server stack (RFC 4253/4252/4254):
- *   - Enabling SSH (DETWS_ENABLE_SSH) and listening on ConnProto::PROTO_SSH
+ *   - Enabling SSH (DWS_ENABLE_SSH) and listening on ConnProto::PROTO_SSH
  *   - Loading the RSA-2048 host key from NVS (see docs/SSH.md "Host key
  *     provisioning" - you must store a DER key under namespace "ssh_host_key",
  *     key "priv_der" once per device before this runs)
- *   - Password auth (det_ssh_auth_set_password_cb) and publickey auth
- *     (det_ssh_auth_set_pubkey_cb)
+ *   - Password auth (dws_ssh_auth_set_password_cb) and publickey auth
+ *     (dws_ssh_auth_set_pubkey_cb)
  *   - A channel data callback that echoes received bytes back to the client
- *     with det_ssh_conn_send()
+ *     with dws_ssh_conn_send()
  *   - Optional TCP port forwarding via the ssh_forward owner, gated by
- *     DETWS_SSH_PORT_FORWARD (off here; see the block below to enable it):
+ *     DWS_SSH_PORT_FORWARD (off here; see the block below to enable it):
  *     local (ssh -L, outbound) AND remote (ssh -R, a listener on the device that
- *     tunnels back to the client) - det_ssh_forward_begin() enables both.
+ *     tunnels back to the client) - dws_ssh_forward_begin() enables both.
  *
- * Hardening: define DETWS_SSH_ALLOW_PASSWORD 0 to compile password auth out and
+ * Hardening: define DWS_SSH_ALLOW_PASSWORD 0 to compile password auth out and
  * accept publickey only. Failed attempts are bounded by SSH_MAX_AUTH_ATTEMPTS.
  *
  * Connect with:  ssh -p 22 admin@<ip>      (password below)
@@ -30,15 +30,15 @@
  */
 
 // Enable the SSH stack for this sketch (overrides the default-off config).
-#define DETWS_ENABLE_SSH 1
+#define DWS_ENABLE_SSH 1
 
 // To demonstrate TCP port forwarding (ssh -L), uncomment these: the channel pool
 // must hold the shell + the tunnel(s), and the outbound client pool must cover the
-// concurrent forwards (DETWS_CLIENT_CONNS >= DETWS_SSH_FWD_MAX).
-// #define DETWS_SSH_MAX_CHANNELS 4
-// #define DETWS_SSH_PORT_FORWARD 1
-// #define DETWS_CLIENT_CONNS 3
-// #define DETWS_SSH_FWD_MAX 3
+// concurrent forwards (DWS_CLIENT_CONNS >= DWS_SSH_FWD_MAX).
+// #define DWS_SSH_MAX_CHANNELS 4
+// #define DWS_SSH_PORT_FORWARD 1
+// #define DWS_CLIENT_CONNS 3
+// #define DWS_SSH_FWD_MAX 3
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -52,7 +52,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // --- Authentication callbacks ----------------------------------------------
 
@@ -78,14 +78,14 @@ static bool ssh_pubkey_auth(const char *user, const uint8_t *blob, size_t blob_l
 
 static void ssh_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t len)
 {
-    det_ssh_conn_send(slot, channel, data, len); // echo back on the same channel
+    dws_ssh_conn_send(slot, channel, data, len); // echo back on the same channel
 }
 
-#if DETWS_SSH_PORT_FORWARD
+#if DWS_SSH_PORT_FORWARD
 // --- Forward policy: which ssh -L targets are allowed --------------------------
 // Any authenticated client can otherwise ask the board to connect anywhere (an
 // open proxy). Return true to permit a target; restrict it to what you intend.
-static bool det_ssh_forward_policy(const char *host, uint16_t port)
+static bool dws_ssh_forward_policy(const char *host, uint16_t port)
 {
     return port == 80 || port == 443; // demo: allow only outbound web
 }
@@ -107,16 +107,16 @@ void setup()
 
     // Load the RSA host key's public half from NVS (the private key is read
     // per-signature into a stack buffer and wiped; never held in static RAM).
-    if (det_ssh_rsa_load_pubkey() != 0)
+    if (dws_ssh_rsa_load_pubkey() != 0)
     {
         Serial.println("No SSH host key in NVS - see docs/SSH.md (Host key provisioning)");
         return;
     }
 
     // Install SSH callbacks before begin().
-    det_ssh_auth_set_password_cb(ssh_password_auth);
-    det_ssh_auth_set_pubkey_cb(ssh_pubkey_auth);
-    det_ssh_channel_set_data_cb(ssh_on_data);
+    dws_ssh_auth_set_password_cb(ssh_password_auth);
+    dws_ssh_auth_set_pubkey_cb(ssh_pubkey_auth);
+    dws_ssh_channel_set_data_cb(ssh_on_data);
 
     // Listen for SSH on port 22 (and, optionally, HTTP on 80 alongside it).
     server.listen(22, ConnProto::PROTO_SSH);
@@ -128,15 +128,15 @@ void setup()
     }
 
     // One-time wiring of the SSH dispatcher's outbound path. Call after begin().
-    det_ssh_conn_setup();
+    dws_ssh_conn_setup();
 
-#if DETWS_SSH_PORT_FORWARD
+#if DWS_SSH_PORT_FORWARD
     // Enable forwarding (opt-in; nothing is forwarded until this runs). This turns on
     // BOTH local (ssh -L, gated by the policy below) and remote (ssh -R, a listener the
-    // client asks the device to open). For ssh -R also raise DETWS_SSH_MAX_CHANNELS and,
-    // if you expect concurrent tunnels, DETWS_SSH_RFWD_MAX / DETWS_SSH_RFWD_BRIDGE_MAX.
-    det_ssh_forward_set_policy_cb(det_ssh_forward_policy);
-    det_ssh_forward_begin();
+    // client asks the device to open). For ssh -R also raise DWS_SSH_MAX_CHANNELS and,
+    // if you expect concurrent tunnels, DWS_SSH_RFWD_MAX / DWS_SSH_RFWD_BRIDGE_MAX.
+    dws_ssh_forward_set_policy_cb(dws_ssh_forward_policy);
+    dws_ssh_forward_begin();
     Serial.println("SSH port forwarding enabled (ssh -L to 80/443; ssh -R listeners)");
 #endif
 

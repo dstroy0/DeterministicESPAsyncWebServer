@@ -3,7 +3,7 @@
 
 /**
  * @file telnet.h
- * @brief Layer 6/7 - minimal RFC 854 Telnet server (DETWS_ENABLE_TELNET).
+ * @brief Layer 6/7 - minimal RFC 854 Telnet server (DWS_ENABLE_TELNET).
  *
  * A zero-heap line-oriented Telnet console dispatched from the session layer's
  * ConnProto::PROTO_TELNET arms (the same way SSH is dispatched to ssh_conn). On connect it
@@ -29,7 +29,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_TELNET
+#if DWS_ENABLE_TELNET
 
 /** @brief Called with each completed input line (NUL-terminated, no CR/LF) and its client id. */
 typedef void (*TelnetCommandCb)(const char *line, uint8_t conn_id);
@@ -66,6 +66,6 @@ void telnet_close(uint8_t slot);
 struct ProtoHandler;
 const struct ProtoHandler *telnet_proto_handler(void);
 
-#endif // DETWS_ENABLE_TELNET
+#endif // DWS_ENABLE_TELNET
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_TELNET_H

@@ -8,7 +8,7 @@
 #include <string.h>
 #include <unity.h>
 
-static DetWebServer server;
+static DWS server;
 
 static void push_str(uint8_t slot, const char *s)
 {
@@ -60,7 +60,7 @@ static void h_null(uint8_t slot, HttpReq *req)
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i] = {};

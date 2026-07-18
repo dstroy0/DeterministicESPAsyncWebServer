@@ -28,8 +28,8 @@ The board maps a **prefix** (say `/cdn/`) to an **origin** (say a web server on
 Wiring is two calls:
 
 ```cpp
-det_edge_cache_map("/cdn/", "http://192.168.1.60:8000"); // prefix -> origin
-det_edge_cache_enable(server);                            // install the cache
+dws_edge_cache_map("/cdn/", "http://192.168.1.60:8000"); // prefix -> origin
+dws_edge_cache_enable(server);                            // install the cache
 ```
 
 The server's normal `handle()` loop drives the async origin fetch and the cached
@@ -90,32 +90,32 @@ GET /cache/stats for counters; POST /cache/purge to invalidate /cdn/
 
 - **Every request is a MISS.** The response is not cacheable - the origin sent
   `Cache-Control: no-store`/`private`, `Vary: *`, a non-`200` status, or a body
-  larger than `DETWS_EDGE_BODY_MAX`. Non-cacheable responses are proxied through
+  larger than `DWS_EDGE_BODY_MAX`. Non-cacheable responses are proxied through
   uncached.
 - **`502 Bad Gateway`.** The origin was unreachable or timed out
-  (`DETWS_EDGE_FETCH_TIMEOUT_MS`), or the response exceeded the fetch buffer
-  (`DETWS_EDGE_FETCH_BUF`). Check `ORIGIN` and that the origin is up.
-- **`det_edge_cache_map` returned false.** The map table is full
-  (`DETWS_EDGE_MAP_MAX`), or you passed an `https://` origin (v1 is plaintext
+  (`DWS_EDGE_FETCH_TIMEOUT_MS`), or the response exceeded the fetch buffer
+  (`DWS_EDGE_FETCH_BUF`). Check `ORIGIN` and that the origin is up.
+- **`dws_edge_cache_map` returned false.** The map table is full
+  (`DWS_EDGE_MAP_MAX`), or you passed an `https://` origin (v1 is plaintext
   only - TLS origins are a follow-up).
 
 ## Going further
 
 - **Size the cache.** Defaults are conservative to fit a classic ESP32:
-  `DETWS_EDGE_CACHE_SLOTS` entries of up to `DETWS_EDGE_BODY_MAX` bytes each. On an
+  `DWS_EDGE_CACHE_SLOTS` entries of up to `DWS_EDGE_BODY_MAX` bytes each. On an
   S3 / PSRAM board, bump both up for a bigger, more useful cache.
 - **`Vary`.** Responses that `Vary` on request headers (e.g. `Accept-Encoding`)
   are cached as separate variants and matched per request; `Vary: *` is uncached.
-- **HTTPS origins.** Build with `-DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_EDGE_ORIGIN_TLS=1`
+- **HTTPS origins.** Build with `-DDWS_ENABLE_TLS=1 -DDWS_ENABLE_EDGE_ORIGIN_TLS=1`
   and map an `https://` origin - it is fetched over TLS (S3 / PSRAM recommended: the
   TLS engine adds a ~48 KB arena). Verification is **off by default** (encrypt-only,
-  no authentication); call `det_edge_cache_set_origin_ca(pem, len)` to verify the
-  origin's chain + hostname, or `det_edge_cache_set_origin_pin(sha256)` to pin it.
+  no authentication); call `dws_edge_cache_set_origin_ca(pem, len)` to verify the
+  origin's chain + hostname, or `dws_edge_cache_set_origin_pin(sha256)` to pin it.
   One TLS origin fetch runs at a time (the client-TLS session is shared with
   MQTTS / wss). Note: the trust store is shared across all client-TLS users, and on
   the espressif32-default mbedtls v2 an **IP-address** origin must use a CN-matching
   cert (IP-address SANs are not matched; DNS-named origins work normally).
-- **Range / `206`.** Build with `-DDETWS_ENABLE_RANGE=1` and a cached object serves
+- **Range / `206`.** Build with `-DDWS_ENABLE_RANGE=1` and a cached object serves
   a `Range: bytes=...` request as `206 Partial Content` with a `Content-Range`
   header, streaming just the requested window; every full hit then advertises
   `Accept-Ranges: bytes`, and an unsatisfiable range answers `416`. Single-range
@@ -126,18 +126,18 @@ GET /cache/stats for counters; POST /cache/purge to invalidate /cdn/
     curl -r 999999- http://<board>/cdn/test.txt  # -> 416 Range Not Satisfiable
     ```
 
-- **Persistence (SD).** Build with `-DDETWS_ENABLE_DBM=1 -DDETWS_ENABLE_WAL=1` and
+- **Persistence (SD).** Build with `-DDWS_ENABLE_DBM=1 -DDWS_ENABLE_WAL=1` and
   the sketch mounts a WAL-backed dbm store on an SD card and binds it as an **L2
   tier**: an entry evicted from the RAM (L1) tier spills to SD, and after a reboot
   the log is replayed so the cached set survives. A persisted entry is served by
   revalidating it once (a cheap conditional GET → `304`) rather than re-downloading,
   because its freshness can't be trusted across a reboot. Only entries carrying a
   validator (`ETag` / `Last-Modified`) are spilled - those are exactly the ones a
-  `304` can refresh. Raise `DETWS_DBM_VAL_MAX` toward `DETWS_EDGE_BODY_MAX + ~470`
+  `304` can refresh. Raise `DWS_DBM_VAL_MAX` toward `DWS_EDGE_BODY_MAX + ~470`
   so full-size bodies fit one SD record; larger entries just stay L1-only. Watch
   `l2_spills` / `l2_promotes` in `GET /cache/stats`. The dbm index is fixed RAM
-  (`DETWS_DBM_SLOTS` keys); on a classic ESP32 the default 256 will not fit
-  alongside the cache + SD driver, so lower it (e.g. `-DDETWS_DBM_SLOTS=32`) or use
+  (`DWS_DBM_SLOTS` keys); on a classic ESP32 the default 256 will not fit
+  alongside the cache + SD driver, so lower it (e.g. `-DDWS_DBM_SLOTS=32`) or use
   an S3 / PSRAM board.
 
 ## Build and run (PlatformIO)
@@ -148,7 +148,7 @@ The cache lives inside the library, so the flags must reach the whole build:
 pio ci examples/L7-Application/79.EdgeCache \
   --board esp32dev \
   --lib "." \
-  --project-option="build_flags=-DDETWS_ENABLE_EDGE_CACHE=1 -DDETWS_ENABLE_HTTP_CACHE=1 -DDETWS_ENABLE_HTTP_CLIENT=1"
+  --project-option="build_flags=-DDWS_ENABLE_EDGE_CACHE=1 -DDWS_ENABLE_HTTP_CACHE=1 -DDWS_ENABLE_HTTP_CLIENT=1"
 ```
 
 (The Arduino IDE reads the flags from `build_opt.h` beside the sketch automatically.)
@@ -157,15 +157,15 @@ pio ci examples/L7-Application/79.EdgeCache \
 
 ## How it works under the hood (for the curious)
 
-`det_edge_cache_enable()` registers a **middleware** that runs before route
+`dws_edge_cache_enable()` registers a **middleware** that runs before route
 matching and installs an async-fetch **poll hook** in the HTTP slot pump. On a
 request under a mapped prefix the middleware computes a canonical cache key
 (method + host + path, SHA-256 digested) and looks it up. A fresh hit is served
 immediately with the constant-memory chunked send-pump. A miss or a stale entry
-opens a `det_client` connection to the origin, sends the (conditional) request,
+opens a `dws_client` connection to the origin, sends the (conditional) request,
 and **suspends** the client request - returning without a response. Each
 `server.handle()` tick the poll hook drains the origin response into a bounded
 buffer; when it is complete the entry is stored (or the 304 refreshes the stale
 copy) and the cached body is streamed to the waiting client. The freshness /
 validator / key / store logic is a pure engine unit-tested on the host
-(`native_edge_cache`); this glue binds its seams to the server and `det_client`.
+(`native_edge_cache`); this glue binds its seams to the server and `dws_client`.

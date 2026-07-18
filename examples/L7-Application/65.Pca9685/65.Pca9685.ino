@@ -3,7 +3,7 @@
 
 /**
  * @file 65.Pca9685.ino
- * @brief Drive servos / LEDs with a PCA9685 16-channel PWM board (DETWS_ENABLE_PCA9685).
+ * @brief Drive servos / LEDs with a PCA9685 16-channel PWM board (DWS_ENABLE_PCA9685).
  *
  * The PCA9685 gives the ESP32 sixteen hardware PWM channels over just two I2C wires - enough for
  * a walking robot, a set of dimmable LEDs, or one very smooth servo. This sketch sets the PWM
@@ -15,10 +15,10 @@
  * board's V+ screw terminal with a separate 5-6 V supply (a servo can draw far more than the
  * ESP32's 3V3 pin can give) and share GND.
  *
- * Build flag (PlatformIO): `-DDETWS_ENABLE_PCA9685=1`
+ * Build flag (PlatformIO): `-DDWS_ENABLE_PCA9685=1`
  */
 
-#define DETWS_ENABLE_PCA9685 1
+#define DWS_ENABLE_PCA9685 1
 
 #include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/pca9685/pca9685.h"

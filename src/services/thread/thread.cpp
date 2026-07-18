@@ -12,7 +12,7 @@
 
 #include "services/thread/thread.h"
 
-#if DETWS_ENABLE_THREAD
+#if DWS_ENABLE_THREAD
 
 namespace
 {
@@ -148,7 +148,7 @@ uint16_t spinel_fcs(const uint8_t *buf, uint16_t len)
 
 uint16_t spinel_frame_encode(const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap)
 {
-    if (!out || len > DETWS_THREAD_MAX_DATA || (payload == nullptr && len > 0))
+    if (!out || len > DWS_THREAD_MAX_DATA || (payload == nullptr && len > 0))
         return 0;
     uint16_t fcs = spinel_fcs(payload, len);
     uint16_t p = 0;
@@ -175,7 +175,7 @@ int spinel_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *payload, uint
         return 0; // no complete frame yet
 
     // Remove the byte-stuffing from raw[0, flag) into a scratch: payload + FCS(2).
-    uint8_t un[DETWS_THREAD_MAX_DATA + 2];
+    uint8_t un[DWS_THREAD_MAX_DATA + 2];
     uint16_t n = 0;
     for (uint16_t i = 0; i < flag; i++)
     {
@@ -205,4 +205,4 @@ int spinel_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *payload, uint
     return (int)(flag + 1);
 }
 
-#endif // DETWS_ENABLE_THREAD
+#endif // DWS_ENABLE_THREAD

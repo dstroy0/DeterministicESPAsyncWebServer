@@ -8,7 +8,7 @@
 
 #include "services/cloudevents/cloudevents.h"
 
-#if DETWS_ENABLE_CLOUDEVENTS
+#if DWS_ENABLE_CLOUDEVENTS
 
 #include "network_drivers/presentation/json/json.h"
 #include <string.h>
@@ -75,4 +75,4 @@ bool cloudevents_from_headers(const HttpReq *req, CloudEvent *out)
     return ce_present(out->id) && ce_present(out->source) && ce_present(out->type);
 }
 
-#endif // DETWS_ENABLE_CLOUDEVENTS
+#endif // DWS_ENABLE_CLOUDEVENTS

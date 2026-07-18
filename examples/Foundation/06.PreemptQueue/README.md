@@ -1,6 +1,6 @@
 # 06.PreemptQueue - real-time ingest with a preempting task queue
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_PREEMPT_QUEUE`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_PREEMPT_QUEUE`
 
 ## What this example teaches
 
@@ -18,7 +18,7 @@ DetwsPqConfig cfg = {};
 cfg.handler  = on_reading; // runs in the high-priority task, once per item
 cfg.priority = 6;          // above loop(): a post preempts into the handler
 cfg.core     = 1;          // pin the task
-detws_pq_start(&cfg);
+dws_pq_start(&cfg);
 ```
 
 **Post from an ISR** - interrupt-safe, asks for an immediate context switch:
@@ -26,7 +26,7 @@ detws_pq_start(&cfg);
 ```cpp
 void IRAM_ATTR sample_isr() {
     Reading r{ esp_timer_get_time(), g_seq++ };
-    detws_pq_post_from_isr(&r);   // xQueueSendFromISR + portYIELD_FROM_ISR
+    dws_pq_post_from_isr(&r);   // xQueueSendFromISR + portYIELD_FROM_ISR
 }
 ```
 
@@ -35,24 +35,24 @@ fail-closed (they return `false` and drop rather than block forever) when the
 queue is full:
 
 ```cpp
-detws_pq_post(&item, 0);          // to the back
-detws_pq_post_urgent(&item, 0);   // jump the queue
+dws_pq_post(&item, 0);          // to the back
+dws_pq_post_urgent(&item, 0);   // jump the queue
 ```
 
 On hardware the high-priority task drains the queue automatically. Measured on a
 DevKitV1: an ISR post reaches the handler in ~12 us, and the queue never backs up
 past one item (each post is processed before the next arrives).
 
-**Sizing.** `DETWS_PQ_DEPTH` (items), `DETWS_PQ_ITEM_SIZE` (bytes per item), and
-`DETWS_PQ_STACK` (task stack) are compile-time because the storage is static;
-`detws_pq_high_water()` reports the peak depth so you can size `DETWS_PQ_DEPTH`.
+**Sizing.** `DWS_PQ_DEPTH` (items), `DWS_PQ_ITEM_SIZE` (bytes per item), and
+`DWS_PQ_STACK` (task stack) are compile-time because the storage is static;
+`dws_pq_high_water()` reports the peak depth so you can size `DWS_PQ_DEPTH`.
 
-**Build-flag note.** `DETWS_ENABLE_PREEMPT_QUEUE` must reach the library build (an
+**Build-flag note.** `DWS_ENABLE_PREEMPT_QUEUE` must reach the library build (an
 in-sketch `#define` does not reach the separately compiled library), so pass it as
 a build flag:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_PREEMPT_QUEUE=1" \
+  --project-option="build_flags=-DDWS_ENABLE_PREEMPT_QUEUE=1" \
   --lib="." examples/Foundation/06.PreemptQueue/06.PreemptQueue.ino
 ```

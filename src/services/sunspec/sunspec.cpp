@@ -8,7 +8,7 @@
 
 #include "services/sunspec/sunspec.h"
 
-#if DETWS_ENABLE_SUNSPEC
+#if DWS_ENABLE_SUNSPEC
 
 #include <string.h>
 
@@ -179,4 +179,4 @@ size_t sunspec_writer_finish(SunSpecWriter *w)
     return w->error ? 0 : w->pos;
 }
 
-#endif // DETWS_ENABLE_SUNSPEC
+#endif // DWS_ENABLE_SUNSPEC

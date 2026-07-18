@@ -3,7 +3,7 @@
 
 /**
  * @file 50.OidcAuth.ino
- * @brief OpenID Connect ID-token auth, RS256 (DETWS_ENABLE_OIDC).
+ * @brief OpenID Connect ID-token auth, RS256 (DWS_ENABLE_OIDC).
  *
  * A client presents `Authorization: Bearer <id_token>`; the device verifies the
  * RS256 signature against the issuer's JWKS public key and checks iss / aud / exp,
@@ -22,11 +22,11 @@
  *    bundled test token validates.
  *
  * NOTE: enable it for the whole build. In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_OIDC=1
+ *     build_flags = -DDWS_ENABLE_OIDC=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_OIDC 1
+#define DWS_ENABLE_OIDC 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -43,7 +43,7 @@ static const char *JWKS = "{\"keys\":[{\"kty\":\"RSA\",\"kid\":\"your-kid\",\"al
 static const char *ISSUER = "https://issuer.example";
 static const char *AUDIENCE = "your-client-id";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -69,8 +69,8 @@ void setup()
         uint32_t now = 1700000100; // production: read from NTP
 
         DetwsOidcClaims claims;
-        DetwsOidcResult rc = detws_oidc_verify(token, strlen(token), JWKS, ISSUER, AUDIENCE, now, &claims);
-        if (rc != DetwsOidcResult::DETWS_OIDC_OK)
+        DetwsOidcResult rc = dws_oidc_verify(token, strlen(token), JWKS, ISSUER, AUDIENCE, now, &claims);
+        if (rc != DetwsOidcResult::DWS_OIDC_OK)
         {
             char b[40];
             snprintf(b, sizeof(b), "{\"error\":%d}", (int)rc);

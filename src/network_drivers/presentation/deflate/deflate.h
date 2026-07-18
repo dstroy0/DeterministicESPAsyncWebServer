@@ -37,7 +37,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_WS_DEFLATE
+#if DWS_ENABLE_WS_DEFLATE
 
 /**
  * @brief Working-memory bytes deflate_raw() needs (hash chains + code tables).
@@ -72,5 +72,5 @@ enum class DeflateResult : int32_t
 DeflateResult deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_cap, size_t *out_len,
                           void *scratch, size_t scratch_len);
 
-#endif // DETWS_ENABLE_WS_DEFLATE
+#endif // DWS_ENABLE_WS_DEFLATE
 #endif // DETERMINISTICESPASYNCWEBSERVER_DEFLATE_H

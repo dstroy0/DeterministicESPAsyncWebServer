@@ -8,7 +8,7 @@
 //
 // This borrows the discipline from fuzzing rather than fixed-fixture unit tests:
 // the seed is fresh-random per run BUT is logged and can be pinned via the
-// DETWS_TEST_KEY_SEED environment variable (64 hex chars), so any failure
+// DWS_TEST_KEY_SEED environment variable (64 hex chars), so any failure
 // reproduces exactly - which keeps a randomized input honest in a suite that is
 // otherwise deterministic. Known-answer vectors (test_crypto_kat, RFC vectors)
 // stay fixed and must never use this.
@@ -22,7 +22,7 @@
 #include <cstring>
 #include <random>
 
-// Fill out[32] with a throwaway Ed25519 seed. If DETWS_TEST_KEY_SEED holds 64 hex
+// Fill out[32] with a throwaway Ed25519 seed. If DWS_TEST_KEY_SEED holds 64 hex
 // chars it is used verbatim (reproduce a run); otherwise a fresh random seed is
 // drawn. Either way the seed is logged with the exact re-pin command.
 static inline void throwaway_ed25519_seed(uint8_t out[32])
@@ -37,7 +37,7 @@ static inline void throwaway_ed25519_seed(uint8_t out[32])
         return -1;
     };
 
-    const char *pin = getenv("DETWS_TEST_KEY_SEED");
+    const char *pin = getenv("DWS_TEST_KEY_SEED");
     bool pinned = false;
     if (pin && strlen(pin) >= 64)
     {
@@ -66,7 +66,7 @@ static inline void throwaway_ed25519_seed(uint8_t out[32])
         hex[2 * i + 1] = H[out[i] & 0x0f];
     }
     hex[64] = '\0';
-    printf("[throwaway-key] ed25519 seed=%s%s (re-pin: DETWS_TEST_KEY_SEED=%s)\n", hex, pinned ? " (pinned)" : "", hex);
+    printf("[throwaway-key] ed25519 seed=%s%s (re-pin: DWS_TEST_KEY_SEED=%s)\n", hex, pinned ? " (pinned)" : "", hex);
 }
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_TEST_THROWAWAY_KEY_H

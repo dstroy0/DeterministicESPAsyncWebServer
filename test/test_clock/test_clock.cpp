@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Unit tests for the pluggable monotonic clock (services/det_clock): the platform
+// Unit tests for the pluggable monotonic clock (services/dws_clock): the platform
 // default, a custom clock divided down to the internal 1000 Hz, and revert.
 
 #include "services/clock.h"
@@ -21,101 +21,101 @@ static uint32_t fake_us()
 
 void setUp()
 {
-    detws_set_clock(nullptr, 0); // start each test on the platform default
-    detws_set_micros_clock(nullptr, 0);
+    dws_set_clock(nullptr, 0); // start each test on the platform default
+    dws_set_micros_clock(nullptr, 0);
 }
 void tearDown()
 {
-    detws_set_clock(nullptr, 0);
-    detws_set_micros_clock(nullptr, 0);
+    dws_set_clock(nullptr, 0);
+    dws_set_micros_clock(nullptr, 0);
 }
 
 void test_default_is_platform_millis()
 {
     set_millis(5000);
-    TEST_ASSERT_EQUAL_UINT32(5000, detws_millis());
+    TEST_ASSERT_EQUAL_UINT32(5000, dws_millis());
     set_millis(12345);
-    TEST_ASSERT_EQUAL_UINT32(12345, detws_millis());
+    TEST_ASSERT_EQUAL_UINT32(12345, dws_millis());
 }
 
 void test_custom_clock_divides_to_1000hz()
 {
-    detws_set_clock(fake_clock, 8000); // 8 kHz source -> divide by 8
+    dws_set_clock(fake_clock, 8000); // 8 kHz source -> divide by 8
     g_fake = 8000;
-    TEST_ASSERT_EQUAL_UINT32(1000, detws_millis());
+    TEST_ASSERT_EQUAL_UINT32(1000, dws_millis());
     g_fake = 16000;
-    TEST_ASSERT_EQUAL_UINT32(2000, detws_millis());
+    TEST_ASSERT_EQUAL_UINT32(2000, dws_millis());
 
     g_fake = 1000000;
-    detws_set_clock(fake_clock, 1000000); // 1 MHz source -> divide by 1000
-    TEST_ASSERT_EQUAL_UINT32(1000, detws_millis());
+    dws_set_clock(fake_clock, 1000000); // 1 MHz source -> divide by 1000
+    TEST_ASSERT_EQUAL_UINT32(1000, dws_millis());
 }
 
 void test_sub_khz_source_not_divided()
 {
-    detws_set_clock(fake_clock, 500); // < 1000: cannot divide up, used as-is
+    dws_set_clock(fake_clock, 500); // < 1000: cannot divide up, used as-is
     g_fake = 1234;
-    TEST_ASSERT_EQUAL_UINT32(1234, detws_millis());
+    TEST_ASSERT_EQUAL_UINT32(1234, dws_millis());
 }
 
 void test_revert_to_default()
 {
-    detws_set_clock(fake_clock, 1000);
+    dws_set_clock(fake_clock, 1000);
     g_fake = 42;
-    TEST_ASSERT_EQUAL_UINT32(42, detws_millis());
-    detws_set_clock(nullptr, 0);
+    TEST_ASSERT_EQUAL_UINT32(42, dws_millis());
+    dws_set_clock(nullptr, 0);
     set_millis(777);
-    TEST_ASSERT_EQUAL_UINT32(777, detws_millis());
+    TEST_ASSERT_EQUAL_UINT32(777, dws_millis());
 }
 
 // --- v5 clock-awareness: microsecond base + latency budgeting -----------------
 
 void test_micros_custom_divides_to_1mhz()
 {
-    detws_set_micros_clock(fake_us, 80000000u); // 80 MHz source -> divide by 80
+    dws_set_micros_clock(fake_us, 80000000u); // 80 MHz source -> divide by 80
     g_fake_us = 80000000u;
-    TEST_ASSERT_EQUAL_UINT32(1000000u, detws_micros());
+    TEST_ASSERT_EQUAL_UINT32(1000000u, dws_micros());
     g_fake_us = 160u;
-    TEST_ASSERT_EQUAL_UINT32(2u, detws_micros()); // 160 / 80
+    TEST_ASSERT_EQUAL_UINT32(2u, dws_micros()); // 160 / 80
 }
 
 void test_latency_stat_records_and_budgets()
 {
-    detws_set_micros_clock(fake_us, 1000000u); // 1 MHz -> microseconds == counter
+    dws_set_micros_clock(fake_us, 1000000u); // 1 MHz -> microseconds == counter
     DetwsLatencyStat s;
-    detws_lat_reset(&s);
+    dws_lat_reset(&s);
 
     g_fake_us = 1000;
-    uint32_t t = detws_lat_begin();
+    uint32_t t = dws_lat_begin();
     g_fake_us = 1010; // 10 us span (budget 50: ok)
-    detws_lat_end(&s, t, 50);
+    dws_lat_end(&s, t, 50);
 
     g_fake_us = 2000;
-    t = detws_lat_begin();
+    t = dws_lat_begin();
     g_fake_us = 2100; // 100 us span (budget 50: OVER)
-    detws_lat_end(&s, t, 50);
+    dws_lat_end(&s, t, 50);
 
     g_fake_us = 3000;
-    t = detws_lat_begin();
+    t = dws_lat_begin();
     g_fake_us = 3020; // 20 us span
-    detws_lat_end(&s, t, 50);
+    dws_lat_end(&s, t, 50);
 
     TEST_ASSERT_EQUAL_UINT32(3, s.count);
     TEST_ASSERT_EQUAL_UINT32(10, s.min_us);
     TEST_ASSERT_EQUAL_UINT32(100, s.max_us);
-    TEST_ASSERT_EQUAL_UINT32((10 + 100 + 20) / 3, detws_lat_avg_us(&s));
+    TEST_ASSERT_EQUAL_UINT32((10 + 100 + 20) / 3, dws_lat_avg_us(&s));
     TEST_ASSERT_EQUAL_UINT32(1, s.over_budget); // only the 100 us sample
 }
 
 void test_latency_budget_zero_disables()
 {
-    detws_set_micros_clock(fake_us, 1000000u);
+    dws_set_micros_clock(fake_us, 1000000u);
     DetwsLatencyStat s;
-    detws_lat_reset(&s);
+    dws_lat_reset(&s);
     g_fake_us = 0;
-    uint32_t t = detws_lat_begin();
+    uint32_t t = dws_lat_begin();
     g_fake_us = 99999; // huge span, but budget 0 = disabled
-    detws_lat_end(&s, t, 0);
+    dws_lat_end(&s, t, 0);
     TEST_ASSERT_EQUAL_UINT32(1, s.count);
     TEST_ASSERT_EQUAL_UINT32(0, s.over_budget);
 }

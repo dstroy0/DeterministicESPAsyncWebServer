@@ -53,7 +53,7 @@ verbatim with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void handle_sensor(uint8_t slot_id, HttpReq *req)
 {

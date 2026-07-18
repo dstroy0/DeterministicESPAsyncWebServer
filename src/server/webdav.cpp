@@ -3,11 +3,11 @@
 
 /**
  * @file webdav.cpp
- * @brief WebDAV (RFC 4918) filesystem-backed request handler for DetWebServer.
+ * @brief WebDAV (RFC 4918) filesystem-backed request handler for DWS.
  *
  * Split out of dwserver.cpp (single-purpose server files). The pure WebDAV core - method
  * classification, the 207 Multi-Status XML builder, header parsing - lives in
- * services/webdav/webdav.{h,cpp} and is host-tested; this file is the DetWebServer glue that
+ * services/webdav/webdav.{h,cpp} and is host-tested; this file is the DWS glue that
  * needs a real filesystem (PROPFIND/PUT/COPY/MOVE/... over an fs::FS subtree). WEBDAV requires
  * FILE_SERVING (enforced in ServerConfig.h), so the file-serving helpers it borrows are always
  * present. Behaviour is identical to the pre-split code - a pure move.
@@ -20,7 +20,7 @@
 #include "shared_primitives/mime.h"
 #include <string.h>
 
-#if DETWS_ENABLE_WEBDAV
+#if DWS_ENABLE_WEBDAV
 // ---------------------------------------------------------------------------
 // WebDAV (RFC 4918) - filesystem-backed request handling. The pure core
 // (method classification + 207 XML builder + header parsing) lives in
@@ -31,7 +31,7 @@
 // buffer (BSS). One named owner, unreachable from any other translation unit.
 struct DavBufCtx
 {
-    char buf[DETWS_WEBDAV_BUF_SIZE];
+    char buf[DWS_WEBDAV_BUF_SIZE];
 };
 static DavBufCtx s_dav;
 
@@ -191,7 +191,7 @@ static int dav_resolve_path(const Route *r, const char *reqpath, char *out, size
     return 0;
 }
 
-#if DETWS_ENABLE_STREAM_BODY
+#if DWS_ENABLE_STREAM_BODY
 // Per-connection streaming-PUT state for WebDAV: each slot streams its body to its
 // own file, so concurrent PUTs never clobber one another, and a transfer is never
 // bounded by BODY_BUF_SIZE. Indexed by the request's slot (req - http_pool).
@@ -209,21 +209,21 @@ struct DavPut
 // PUTs never clobber one another). One named owner, unreachable from any other TU.
 struct DavPutCtx
 {
-    DetWebServer *stream_srv = nullptr;
+    DWS *stream_srv = nullptr;
     DavPut put[MAX_CONNS];
 };
 static DavPutCtx s_davput;
 
-bool DetWebServer::dav_put_begin_tramp(HttpReq *req)
+bool DWS::dav_put_begin_tramp(HttpReq *req)
 {
     return s_davput.stream_srv && s_davput.stream_srv->dav_stream_put_begin(req);
 }
-void DetWebServer::dav_put_data_tramp(HttpReq *req, const uint8_t *data, size_t len)
+void DWS::dav_put_data_tramp(HttpReq *req, const uint8_t *data, size_t len)
 {
     if (s_davput.stream_srv)
         s_davput.stream_srv->dav_stream_put_data(req, data, len);
 }
-void DetWebServer::dav_put_abort_tramp(HttpReq *req)
+void DWS::dav_put_abort_tramp(HttpReq *req)
 {
     // The PUT was torn down before the handler ran: close the half-written file so
     // the handle is not leaked (a leak eventually exhausts LittleFS's open slots).
@@ -235,7 +235,7 @@ void DetWebServer::dav_put_abort_tramp(HttpReq *req)
     }
 }
 
-bool DetWebServer::dav_stream_put_begin(HttpReq *req)
+bool DWS::dav_stream_put_begin(HttpReq *req)
 {
     if (strcmp(req->method, "PUT") != 0)
         return false;
@@ -247,7 +247,7 @@ bool DetWebServer::dav_stream_put_begin(HttpReq *req)
             continue;
         if (!path_matches(r->path, r->is_wildcard, req->path))
             continue;
-        if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != det_conn_iface(slot))
+        if (r->iface_filter != DWSIface::DETIFACE_ANY && r->iface_filter != dws_conn_iface(slot))
             continue;
         // GCOVR_EXCL_START  a RouteType::ROUTE_DAV route always carries static_fs (set in dav()); this null-guard
         // cannot fire
@@ -272,7 +272,7 @@ bool DetWebServer::dav_stream_put_begin(HttpReq *req)
     return false;
 }
 
-void DetWebServer::dav_stream_put_data(HttpReq *req, const uint8_t *data, size_t len)
+void DWS::dav_stream_put_data(HttpReq *req, const uint8_t *data, size_t len)
 {
     uint8_t slot = (uint8_t)(req - http_pool);
     // GCOVR_EXCL_START  req is always one of the http_pool slots, so slot < MAX_CONNS; the bound cannot fire
@@ -288,9 +288,9 @@ void DetWebServer::dav_stream_put_data(HttpReq *req, const uint8_t *data, size_t
             d->written += len;
     }
 }
-#endif // DETWS_ENABLE_STREAM_BODY
+#endif // DWS_ENABLE_STREAM_BODY
 
-void DetWebServer::dav(const char *url_prefix, fs::FS &file_sys, const char *fs_root)
+void DWS::dav(const char *url_prefix, fs::FS &file_sys, const char *fs_root)
 {
     if (_route_count >= MAX_ROUTES)
         return;
@@ -308,16 +308,16 @@ void DetWebServer::dav(const char *url_prefix, fs::FS &file_sys, const char *fs_
     r->static_fs = &file_sys;
     r->static_root = fs_root;
 
-#if DETWS_ENABLE_STREAM_BODY
-    // Stream PUT bodies straight to the file (one global sink; see DETWS_ENABLE_STREAM_BODY).
+#if DWS_ENABLE_STREAM_BODY
+    // Stream PUT bodies straight to the file (one global sink; see DWS_ENABLE_STREAM_BODY).
     s_davput.stream_srv = this;
     http_parser_set_stream_hooks(dav_put_begin_tramp, dav_put_data_tramp, dav_put_abort_tramp);
 #endif
 }
 
-void DetWebServer::dav_send_status(uint8_t slot_id, int code, const char *extra_headers)
+void DWS::dav_send_status(uint8_t slot_id, int code, const char *extra_headers)
 {
-    if (!det_conn_active(slot_id))
+    if (!dws_conn_active(slot_id))
     {
         http_reset(slot_id);
         return;
@@ -327,11 +327,11 @@ void DetWebServer::dav_send_status(uint8_t slot_id, int code, const char *extra_
     char header[RESP_HDR_BUF_SIZE];
     int hlen = snprintf(header, sizeof(header), "HTTP/1.1 %d %s\r\n%sContent-Length: 0\r\n%s\r\n", code,
                         status_text(code), extra_headers ? extra_headers : "", cl);
-    det_conn_send(slot_id, header, (u16_t)hlen);
+    dws_conn_send(slot_id, header, (u16_t)hlen);
     resp_end(slot_id, code, 0, keep);
 }
 
-bool DetWebServer::try_serve_dav(uint8_t slot_id, HttpReq *req)
+bool DWS::try_serve_dav(uint8_t slot_id, HttpReq *req)
 {
     for (uint8_t i = 0; i < _route_count; i++)
     {
@@ -340,7 +340,7 @@ bool DetWebServer::try_serve_dav(uint8_t slot_id, HttpReq *req)
             continue;
         if (!path_matches(r->path, r->is_wildcard, req->path))
             continue;
-        if (r->iface_filter != DetIface::DETIFACE_ANY && r->iface_filter != det_conn_iface(slot_id))
+        if (r->iface_filter != DWSIface::DETIFACE_ANY && r->iface_filter != dws_conn_iface(slot_id))
             continue;
         serve_dav_request(slot_id, req, r);
         return true;
@@ -348,7 +348,7 @@ bool DetWebServer::try_serve_dav(uint8_t slot_id, HttpReq *req)
     return false;
 }
 
-void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
+void DWS::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route *r)
 {
     // GCOVR_EXCL_START  a RouteType::ROUTE_DAV route always carries static_fs (set in dav()); this null-guard cannot
     // fire
@@ -374,7 +374,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         plen--;
     const char *root = r->static_root ? r->static_root : "";
 
-    switch (det_webdav_method(req->method))
+    switch (dws_webdav_method(req->method))
     {
     case WebDavMethod::DAV_M_OPTIONS:
         add_response_header(slot_id, "DAV", "1, 2");
@@ -399,13 +399,13 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
             dav_send_status(slot_id, 405, ""); // GET on a collection is not a download
             return;
         }
-        serve_file_internal(slot_id, det_webdav_method(req->method) == WebDavMethod::DAV_M_HEAD, fsys, fs_path,
+        serve_file_internal(slot_id, dws_webdav_method(req->method) == WebDavMethod::DAV_M_HEAD, fsys, fs_path,
                             mime_type(fs_path), nullptr);
         return;
     }
 
     case WebDavMethod::DAV_M_PUT: {
-#if DETWS_ENABLE_STREAM_BODY
+#if DWS_ENABLE_STREAM_BODY
         if (req->body_streaming)
         {
             // The body was written to this slot's file as it arrived (dav_stream_put_*).
@@ -470,7 +470,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
     case WebDavMethod::DAV_M_MOVE: {
         const char *dest_hdr = http_get_header(req, "Destination");
         char dest_url[256];
-        if (!dest_hdr || !det_webdav_dest_path(dest_hdr, dest_url, sizeof(dest_url)))
+        if (!dest_hdr || !dws_webdav_dest_path(dest_hdr, dest_url, sizeof(dest_url)))
         {
             dav_send_status(slot_id, 400, "");
             return;
@@ -506,7 +506,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
             return;
         }
 
-        if (det_webdav_method(req->method) == WebDavMethod::DAV_M_MOVE)
+        if (dws_webdav_method(req->method) == WebDavMethod::DAV_M_MOVE)
         {
             if (dest_exists)
                 dav_rm_recursive(fsys, dest_fs, 0); // replace
@@ -582,7 +582,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         uint32_t fsize = (uint32_t)f.size();
         time_t mtime = f.getLastWrite();
 
-        int depth = det_webdav_depth(http_get_header(req, "Depth"), 1);
+        int depth = dws_webdav_depth(http_get_header(req, "Depth"), 1);
 
         // RFC 4918 9.1.1: this server lists at most one level, so a Depth: infinity
         // PROPFIND is rejected with 403 + the propfind-finite-depth precondition rather
@@ -611,10 +611,10 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         }
 
         size_t cap = sizeof(s_dav.buf), len = 0;
-        len = det_webdav_ms_begin(s_dav.buf, cap, len);
+        len = dws_webdav_ms_begin(s_dav.buf, cap, len);
         char mt[40];
         http_rfc1123(mtime, mt, sizeof(mt));
-        len = det_webdav_ms_entry(s_dav.buf, cap, len, self_href, isdir, fsize, mt, isdir ? "" : mime_type(fs_path));
+        len = dws_webdav_ms_entry(s_dav.buf, cap, len, self_href, isdir, fsize, mt, isdir ? "" : mime_type(fs_path));
 
         if (isdir && depth >= 1)
         {
@@ -624,9 +624,9 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
                 fs::File c = f.openNextFile();
                 if (!c)
                     break;
-                if (count >= DETWS_WEBDAV_MAX_ENTRIES)
+                if (count >= DWS_WEBDAV_MAX_ENTRIES)
                 {
-                    c.close(); // GCOVR_EXCL_LINE  a 2048B DETWS_WEBDAV_BUF_SIZE fills at ~8 entries, well before
+                    c.close(); // GCOVR_EXCL_LINE  a 2048B DWS_WEBDAV_BUF_SIZE fills at ~8 entries, well before
                     break;     // GCOVR_EXCL_LINE  MAX_ENTRIES(32), so the buffer-full break preempts this cap
                 }
                 const char *base = dav_basename(c.name());
@@ -639,14 +639,14 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
                 http_rfc1123(cmt, cmtbuf, sizeof(cmtbuf));
                 c.close();
                 size_t before = len;
-                len = det_webdav_ms_entry(s_dav.buf, cap, len, chref, cdir, csize, cmtbuf, cdir ? "" : mime_type(base));
+                len = dws_webdav_ms_entry(s_dav.buf, cap, len, chref, cdir, csize, cmtbuf, cdir ? "" : mime_type(base));
                 if (len == before)
                     break; // buffer full - stop listing
                 count++;
             }
         }
         f.close();
-        len = det_webdav_ms_end(s_dav.buf, cap, len);
+        len = dws_webdav_ms_end(s_dav.buf, cap, len);
         send(slot_id, 207, "application/xml; charset=utf-8", s_dav.buf);
         return;
     }
@@ -661,7 +661,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
             return;
         }
         size_t n =
-            det_webdav_proppatch_ms(s_dav.buf, sizeof(s_dav.buf), req->path, (const char *)req->body, req->body_len);
+            dws_webdav_proppatch_ms(s_dav.buf, sizeof(s_dav.buf), req->path, (const char *)req->body, req->body_len);
         if (!n)
         {
             dav_send_status(slot_id, 507, ""); // Insufficient Storage: response did not fit the buffer
@@ -679,4 +679,4 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         return;
     }
 }
-#endif // DETWS_ENABLE_WEBDAV
+#endif // DWS_ENABLE_WEBDAV

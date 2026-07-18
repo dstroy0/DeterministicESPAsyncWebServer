@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Unit tests for the WebSocket web-serial terminal (DETWS_ENABLE_WEB_TERMINAL):
+// Unit tests for the WebSocket web-serial terminal (DWS_ENABLE_WEB_TERMINAL):
 // page serving, the WS upgrade + connect tracking, browser->device commands, and
 // device->browser broadcast.
 
@@ -10,7 +10,7 @@
 #include <string.h>
 #include <unity.h>
 
-static DetWebServer server;
+static DWS server;
 static char g_cmd[64];
 static uint8_t g_cmd_client;
 
@@ -62,7 +62,7 @@ static size_t build_frame(uint8_t *dst, WsOpcode opcode, const uint8_t *payload,
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i] = {};
@@ -77,8 +77,8 @@ void setUp()
     tcp_capture_reset();
     g_cmd[0] = '\0';
     g_cmd_client = 0xFF;
-    detws_web_terminal_begin(server, "/terminal");
-    detws_web_terminal_on_command(on_cmd);
+    dws_web_terminal_begin(server, "/terminal");
+    dws_web_terminal_on_command(on_cmd);
 }
 
 void tearDown()
@@ -111,18 +111,18 @@ void test_serves_terminal_page()
     const char *r = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(r, "200 OK"));
     TEST_ASSERT_NOT_NULL(strstr(r, "text/html"));
-    TEST_ASSERT_NOT_NULL(strstr(r, "DetWS Terminal")); // page title
-    TEST_ASSERT_NOT_NULL(strstr(r, "#080c08"));        // docs CRT theme bg
+    TEST_ASSERT_NOT_NULL(strstr(r, "DWS Terminal")); // page title
+    TEST_ASSERT_NOT_NULL(strstr(r, "#080c08"));      // docs CRT theme bg
 }
 
 void test_ws_upgrade_tracks_client()
 {
-    TEST_ASSERT_EQUAL_UINT(0, detws_web_terminal_client_count());
+    TEST_ASSERT_EQUAL_UINT(0, dws_web_terminal_client_count());
     uint8_t wid = do_handshake(0);
     TEST_ASSERT_NOT_EQUAL(0xFF, wid);
     const char *r = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(r, "101 Switching Protocols"));
-    TEST_ASSERT_EQUAL_UINT(1, detws_web_terminal_client_count());
+    TEST_ASSERT_EQUAL_UINT(1, dws_web_terminal_client_count());
 }
 
 // RFC 6455 4.2.1: a GET with Upgrade: websocket but no "Upgrade" token in the
@@ -166,7 +166,7 @@ void test_broadcast_reaches_client()
 {
     do_handshake(0);
     tcp_capture_reset(); // isolate the broadcast from the handshake bytes
-    detws_web_terminal_print("hello browser");
+    dws_web_terminal_print("hello browser");
     const char *r = tcp_captured();
     TEST_ASSERT_NOT_NULL(strstr(r, "hello browser"));
 }
@@ -175,7 +175,7 @@ void test_printf_broadcast()
 {
     do_handshake(0);
     tcp_capture_reset();
-    detws_web_terminal_printf("count=%d", 7);
+    dws_web_terminal_printf("count=%d", 7);
     TEST_ASSERT_NOT_NULL(strstr(tcp_captured(), "count=7"));
 }
 
@@ -183,19 +183,19 @@ void test_no_broadcast_without_clients()
 {
     // No handshake -> no terminal clients -> print writes nothing.
     tcp_capture_reset();
-    detws_web_terminal_print("nobody home");
-    TEST_ASSERT_EQUAL_UINT(0, detws_web_terminal_client_count());
+    dws_web_terminal_print("nobody home");
+    TEST_ASSERT_EQUAL_UINT(0, dws_web_terminal_client_count());
     TEST_ASSERT_NULL(strstr(tcp_captured(), "nobody home"));
 }
 
 void test_close_clears_client()
 {
     do_handshake(0);
-    TEST_ASSERT_EQUAL_UINT(1, detws_web_terminal_client_count());
+    TEST_ASSERT_EQUAL_UINT(1, dws_web_terminal_client_count());
     WsConn *ws = ws_find(0);
     ws->parse_state = WsParseState::WS_CLOSED; // simulate client close
     server.handle();                           // handle() fires the ws_close route callback
-    TEST_ASSERT_EQUAL_UINT(0, detws_web_terminal_client_count());
+    TEST_ASSERT_EQUAL_UINT(0, dws_web_terminal_client_count());
 }
 
 int main()

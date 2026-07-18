@@ -6,7 +6,7 @@
  * @brief WebSocket permessage-deflate (RFC 7692): transparent two-way compression.
  *
  * Identical to 26.WebSocket (a /ws echo endpoint) except it enables
- * DETWS_ENABLE_WS_DEFLATE. With the extension compiled in, the server advertises
+ * DWS_ENABLE_WS_DEFLATE. With the extension compiled in, the server advertises
  * `permessage-deflate; client_no_context_takeover; server_no_context_takeover`
  * during the handshake; any browser that offered the extension (Chrome, Firefox,
  * Safari all do by default) then sends its frames DEFLATE-compressed with the
@@ -27,7 +27,7 @@
  */
 
 // Enable WebSocket permessage-deflate for this sketch (overrides default-off).
-#define DETWS_ENABLE_WS_DEFLATE 1
+#define DWS_ENABLE_WS_DEFLATE 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -36,7 +36,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static const char PAGE[] = "<!doctype html><meta charset=utf-8><title>WS deflate echo</title>"
                            "<input id=i autofocus><pre id=o></pre><script>"

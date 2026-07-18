@@ -8,7 +8,7 @@
 
 #include "services/sen0192/sen0192.h"
 
-#if DETWS_ENABLE_SEN0192
+#if DWS_ENABLE_SEN0192
 
 // ---------------------------------------------------------------------------
 // Pure presence state machine (host-tested).
@@ -71,7 +71,7 @@ uint32_t sen0192_motion_active_age_ms(const Sen0192Motion *m, uint32_t now_ms)
 
 #if defined(ARDUINO)
 
-#include "services/clock.h" // detws_millis()
+#include "services/clock.h" // dws_millis()
 #include <Arduino.h>
 
 namespace
@@ -87,9 +87,9 @@ Sen0192Ctx s_sen;
 
 bool sen0192_begin(void)
 {
-    s_sen.pin = DETWS_SEN0192_PIN;
+    s_sen.pin = DWS_SEN0192_PIN;
     pinMode(s_sen.pin, INPUT);
-    sen0192_motion_init(&s_sen.motion, DETWS_SEN0192_HOLD_MS, DETWS_SEN0192_ACTIVE_HIGH != 0);
+    sen0192_motion_init(&s_sen.motion, DWS_SEN0192_HOLD_MS, DWS_SEN0192_ACTIVE_HIGH != 0);
     return true;
 }
 
@@ -98,12 +98,12 @@ bool sen0192_poll(void)
     if (s_sen.pin < 0)
         return false;
     bool level = digitalRead(s_sen.pin) != 0;
-    return sen0192_motion_update(&s_sen.motion, level, detws_millis());
+    return sen0192_motion_update(&s_sen.motion, level, dws_millis());
 }
 
 bool sen0192_present(void)
 {
-    sen0192_motion_tick(&s_sen.motion, detws_millis()); // age presence out even between poll()s
+    sen0192_motion_tick(&s_sen.motion, dws_millis()); // age presence out even between poll()s
     return sen0192_motion_present(&s_sen.motion);
 }
 
@@ -133,4 +133,4 @@ uint32_t sen0192_motion_count(void)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_SEN0192
+#endif // DWS_ENABLE_SEN0192

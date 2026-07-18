@@ -3,18 +3,18 @@
 
 /**
  * @file auth_lockout.h
- * @brief Per-peer brute-force lockout for HTTP auth (DETWS_ENABLE_AUTH_LOCKOUT).
+ * @brief Per-peer brute-force lockout for HTTP auth (DWS_ENABLE_AUTH_LOCKOUT).
  *
  * Tracks consecutive failed authentications per source address in a fixed BSS
- * table (no heap). The key is the full family-tagged address (DetIp), so an IPv4
+ * table (no heap). The key is the full family-tagged address (DWSIp), so an IPv4
  * and an IPv6 peer are always distinct buckets and no attacker can share or poison
  * another address's state through a lossy hash collision. After
- * DETWS_AUTH_LOCKOUT_THRESHOLD consecutive failures an address is locked out for
- * DETWS_AUTH_LOCKOUT_BASE_MS, doubling on each further failure up to
- * DETWS_AUTH_LOCKOUT_MAX_MS; a successful auth clears the address. Compiled only
- * when DETWS_ENABLE_AUTH_LOCKOUT is set (the host unit tests enable it and drive
+ * DWS_AUTH_LOCKOUT_THRESHOLD consecutive failures an address is locked out for
+ * DWS_AUTH_LOCKOUT_BASE_MS, doubling on each further failure up to
+ * DWS_AUTH_LOCKOUT_MAX_MS; a successful auth clears the address. Compiled only
+ * when DWS_ENABLE_AUTH_LOCKOUT is set (the host unit tests enable it and drive
  * it with a synthetic millisecond clock). An unspecified address (family
- * DetIpFamily::DET_IP_NONE or all-zero) is untrackable and is never locked.
+ * DWSIpFamily::DWS_IP_NONE or all-zero) is untrackable and is never locked.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -25,7 +25,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_AUTH_LOCKOUT
+#if DWS_ENABLE_AUTH_LOCKOUT
 
 #include <stdint.h>
 
@@ -38,17 +38,17 @@
  *         untrackable); otherwise the milliseconds until the lockout expires. The
  *         window math is unsigned so it survives a millis() rollover.
  */
-uint32_t auth_lockout_remaining_ms(const DetIp *ip, uint32_t now_ms);
+uint32_t auth_lockout_remaining_ms(const DWSIp *ip, uint32_t now_ms);
 
 /** @brief Record a failed authentication from @p ip at @p now_ms (may start or escalate a lockout). */
-void auth_lockout_fail(const DetIp *ip, uint32_t now_ms);
+void auth_lockout_fail(const DWSIp *ip, uint32_t now_ms);
 
 /** @brief Clear @p ip's failure / lockout state after a successful authentication. */
-void auth_lockout_succeed(const DetIp *ip);
+void auth_lockout_succeed(const DWSIp *ip);
 
 /** @brief Reset the whole lockout table (e.g. between tests). */
 void auth_lockout_reset(void);
 
-#endif // DETWS_ENABLE_AUTH_LOCKOUT
+#endif // DWS_ENABLE_AUTH_LOCKOUT
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_AUTH_LOCKOUT_H

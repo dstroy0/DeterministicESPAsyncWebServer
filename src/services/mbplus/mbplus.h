@@ -3,7 +3,7 @@
 
 /**
  * @file mbplus.h
- * @brief Modbus Plus HDLC token-bus frame codec (DETWS_ENABLE_MBPLUS).
+ * @brief Modbus Plus HDLC token-bus frame codec (DWS_ENABLE_MBPLUS).
  *
  * Modbus Plus is Schneider's 1 Mbit/s token-passing peer bus. Its data link is HDLC-framed: a frame is
  * delimited by the HDLC flag 0x7E, carries an address / control / the LLC+Modbus routing path + data,
@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_MBPLUS
+#if DWS_ENABLE_MBPLUS
 
 // Modbus Plus HDLC wire constants: integer values compared/emitted, in a namespacing struct.
 struct Mbplus
@@ -36,7 +36,7 @@ struct Mbplus
 };
 
 /** @brief CRC-16/X-25 (the Modbus Plus HDLC FCS) over @p len bytes. */
-uint16_t detws_mbplus_crc(const uint8_t *bytes, size_t len);
+uint16_t dws_mbplus_crc(const uint8_t *bytes, size_t len);
 
 /**
  * @brief Build a Modbus Plus HDLC frame: 7E addr ctrl [payload] CRClo CRChi 7E.
@@ -48,8 +48,8 @@ uint16_t detws_mbplus_crc(const uint8_t *bytes, size_t len);
  *
  * The CRC covers address + control + payload (not the flags).
  */
-size_t detws_mbplus_build(uint8_t address, uint8_t control, const uint8_t *payload, size_t payload_len, uint8_t *out,
-                          size_t cap);
+size_t dws_mbplus_build(uint8_t address, uint8_t control, const uint8_t *payload, size_t payload_len, uint8_t *out,
+                        size_t cap);
 
 /** @brief A parsed Modbus Plus frame (payload points into the input). */
 struct MbPlusFrame
@@ -61,7 +61,7 @@ struct MbPlusFrame
 };
 
 /** @brief Validate the flags + CRC and parse a Modbus Plus frame. @return true if well-formed. */
-bool detws_mbplus_parse(const uint8_t *frame, size_t len, MbPlusFrame *out);
+bool dws_mbplus_parse(const uint8_t *frame, size_t len, MbPlusFrame *out);
 
 /**
  * @brief Compute the next token holder in the logical ring.
@@ -69,7 +69,7 @@ bool detws_mbplus_parse(const uint8_t *frame, size_t len, MbPlusFrame *out);
  * @param max_station  the highest active station on the segment.
  * @return the next station address, wrapping from max_station back to 1.
  */
-uint8_t detws_mbplus_next_token(uint8_t current, uint8_t max_station);
+uint8_t dws_mbplus_next_token(uint8_t current, uint8_t max_station);
 
-#endif // DETWS_ENABLE_MBPLUS
+#endif // DWS_ENABLE_MBPLUS
 #endif // DETERMINISTICESPASYNCWEBSERVER_MBPLUS_H

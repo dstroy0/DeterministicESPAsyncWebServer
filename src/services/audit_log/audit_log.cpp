@@ -9,13 +9,13 @@
  * hash; the oldest retained record chains a moving "anchor" (the hash of the
  * last evicted record, genesis-zero before any eviction), so the retained window
  * verifies as a complete chain. SHA-256 comes from ssh_sha256 (HW-accelerated on
- * ESP32); the timestamp comes from the pluggable det_clock.
+ * ESP32); the timestamp comes from the pluggable dws_clock.
  */
 
 #include "services/audit_log/audit_log.h"
 #include "shared_primitives/hex.h"
 
-#if DETWS_ENABLE_AUDIT_LOG
+#if DWS_ENABLE_AUDIT_LOG
 
 #include "network_drivers/presentation/ssh/crypto/ssh_sha256.h"
 #include "services/clock.h"
@@ -28,18 +28,18 @@ namespace
 // named owner, unreachable from any other translation unit.
 struct AuditCtx
 {
-    DetwsAuditEntry ring[DETWS_AUDIT_LOG_ENTRIES];
-    uint16_t head = 0;                         // index of the oldest retained record
-    uint16_t count = 0;                        // records currently retained
-    uint32_t seq = 0;                          // last assigned sequence number (monotonic)
-    uint8_t anchor[DETWS_AUDIT_HASH_LEN] = {}; // prev-hash for the oldest retained record
-    detws_audit_sink_fn sink = nullptr;
+    DetwsAuditEntry ring[DWS_AUDIT_LOG_ENTRIES];
+    uint16_t head = 0;                       // index of the oldest retained record
+    uint16_t count = 0;                      // records currently retained
+    uint32_t seq = 0;                        // last assigned sequence number (monotonic)
+    uint8_t anchor[DWS_AUDIT_HASH_LEN] = {}; // prev-hash for the oldest retained record
+    dws_audit_sink_fn sink = nullptr;
 };
 AuditCtx s_audit;
 
 inline uint16_t idx(const AuditCtx &c, uint16_t i)
 {
-    return (uint16_t)((c.head + i) % DETWS_AUDIT_LOG_ENTRIES);
+    return (uint16_t)((c.head + i) % DWS_AUDIT_LOG_ENTRIES);
 }
 
 void put_le32(uint8_t out[4], uint32_t v)
@@ -52,18 +52,18 @@ void put_le32(uint8_t out[4], uint32_t v)
 
 // hash = SHA-256(prev_hash || seq_le || ts_le || category || msg_len || msg).
 // msg_len is length-prefixed so two records can never serialize ambiguously.
-void chain_hash(const uint8_t prev[DETWS_AUDIT_HASH_LEN], const DetwsAuditEntry *e, uint8_t out[DETWS_AUDIT_HASH_LEN])
+void chain_hash(const uint8_t prev[DWS_AUDIT_HASH_LEN], const DetwsAuditEntry *e, uint8_t out[DWS_AUDIT_HASH_LEN])
 {
     SshSha256Ctx c;
     ssh_sha256_init(&c);
-    ssh_sha256_update(&c, prev, DETWS_AUDIT_HASH_LEN);
+    ssh_sha256_update(&c, prev, DWS_AUDIT_HASH_LEN);
     uint8_t le[4];
     put_le32(le, e->seq);
     ssh_sha256_update(&c, le, 4);
     put_le32(le, e->ts);
     ssh_sha256_update(&c, le, 4);
     ssh_sha256_update(&c, (const uint8_t *)&e->category, 1); // hash the raw category byte
-    uint8_t mlen = (uint8_t)strnlen(e->msg, DETWS_AUDIT_MSG_LEN - 1);
+    uint8_t mlen = (uint8_t)strnlen(e->msg, DWS_AUDIT_MSG_LEN - 1);
     ssh_sha256_update(&c, &mlen, 1);
     ssh_sha256_update(&c, (const uint8_t *)e->msg, mlen);
     ssh_sha256_final(&c, out);
@@ -92,8 +92,8 @@ size_t json_escape(char *out, size_t pos, size_t cap, const char *s)
         else if (ch < 0x20)
         {
             ub[0] = '\\', ub[1] = 'u', ub[2] = '0', ub[3] = '0';
-            ub[4] = det_hex_digit((ch >> 4) & 0xF);
-            ub[5] = det_hex_digit(ch & 0xF);
+            ub[4] = dws_hex_digit((ch >> 4) & 0xF);
+            ub[5] = dws_hex_digit(ch & 0xF);
             ub[6] = '\0';
             esc = ub, n = 6;
         }
@@ -114,18 +114,18 @@ size_t json_escape(char *out, size_t pos, size_t cap, const char *s)
 
 size_t hex_hash(char *out, size_t pos, size_t cap, const uint8_t *h)
 {
-    if (pos + DETWS_AUDIT_HASH_LEN * 2 > cap)
+    if (pos + DWS_AUDIT_HASH_LEN * 2 > cap)
         return cap + 1;
-    for (size_t i = 0; i < DETWS_AUDIT_HASH_LEN; i++)
+    for (size_t i = 0; i < DWS_AUDIT_HASH_LEN; i++)
     {
-        out[pos++] = det_hex_digit((h[i] >> 4) & 0xF);
-        out[pos++] = det_hex_digit(h[i] & 0xF);
+        out[pos++] = dws_hex_digit((h[i] >> 4) & 0xF);
+        out[pos++] = dws_hex_digit(h[i] & 0xF);
     }
     return pos;
 }
 } // namespace
 
-void detws_audit_reset(void)
+void dws_audit_reset(void)
 {
     s_audit.head = 0;
     s_audit.count = 0;
@@ -133,37 +133,37 @@ void detws_audit_reset(void)
     memset(s_audit.anchor, 0, sizeof(s_audit.anchor)); // genesis
 }
 
-void detws_audit_set_sink(detws_audit_sink_fn sink)
+void dws_audit_set_sink(dws_audit_sink_fn sink)
 {
     s_audit.sink = sink;
 }
 
-uint32_t detws_audit_append(DetwsAuditCat category, const char *msg)
+uint32_t dws_audit_append(DetwsAuditCat category, const char *msg)
 {
     // prev = hash of the current newest record (anchor if the ring is empty).
-    uint8_t prev[DETWS_AUDIT_HASH_LEN];
+    uint8_t prev[DWS_AUDIT_HASH_LEN];
     if (s_audit.count == 0)
-        memcpy(prev, s_audit.anchor, DETWS_AUDIT_HASH_LEN);
+        memcpy(prev, s_audit.anchor, DWS_AUDIT_HASH_LEN);
     else
-        memcpy(prev, s_audit.ring[idx(s_audit, (uint16_t)(s_audit.count - 1))].hash, DETWS_AUDIT_HASH_LEN);
+        memcpy(prev, s_audit.ring[idx(s_audit, (uint16_t)(s_audit.count - 1))].hash, DWS_AUDIT_HASH_LEN);
 
     // Full ring: evict the oldest; its hash advances the chain anchor so the
     // retained window still verifies. (Eviction touches only the oldest, never
     // the newest we just read as prev.)
-    if (s_audit.count == DETWS_AUDIT_LOG_ENTRIES)
+    if (s_audit.count == DWS_AUDIT_LOG_ENTRIES)
     {
-        memcpy(s_audit.anchor, s_audit.ring[s_audit.head].hash, DETWS_AUDIT_HASH_LEN);
-        s_audit.head = (uint16_t)((s_audit.head + 1) % DETWS_AUDIT_LOG_ENTRIES);
+        memcpy(s_audit.anchor, s_audit.ring[s_audit.head].hash, DWS_AUDIT_HASH_LEN);
+        s_audit.head = (uint16_t)((s_audit.head + 1) % DWS_AUDIT_LOG_ENTRIES);
         s_audit.count--;
     }
 
     DetwsAuditEntry *e = &s_audit.ring[idx(s_audit, s_audit.count)];
     e->seq = ++s_audit.seq;
-    e->ts = detws_millis();
+    e->ts = dws_millis();
     e->category = category;
     if (msg)
     {
-        size_t n = strnlen(msg, DETWS_AUDIT_MSG_LEN - 1);
+        size_t n = strnlen(msg, DWS_AUDIT_MSG_LEN - 1);
         memcpy(e->msg, msg, n);
         e->msg[n] = '\0';
     }
@@ -177,63 +177,63 @@ uint32_t detws_audit_append(DetwsAuditCat category, const char *msg)
     return e->seq;
 }
 
-uint16_t detws_audit_count(void)
+uint16_t dws_audit_count(void)
 {
     return s_audit.count;
 }
 
-const DetwsAuditEntry *detws_audit_at(uint16_t i)
+const DetwsAuditEntry *dws_audit_at(uint16_t i)
 {
     if (i >= s_audit.count)
         return nullptr;
     return &s_audit.ring[idx(s_audit, i)];
 }
 
-bool detws_audit_verify(uint32_t *first_broken_seq)
+bool dws_audit_verify(uint32_t *first_broken_seq)
 {
-    uint8_t expected[DETWS_AUDIT_HASH_LEN];
-    memcpy(expected, s_audit.anchor, DETWS_AUDIT_HASH_LEN);
+    uint8_t expected[DWS_AUDIT_HASH_LEN];
+    memcpy(expected, s_audit.anchor, DWS_AUDIT_HASH_LEN);
     for (uint16_t i = 0; i < s_audit.count; i++)
     {
         const DetwsAuditEntry *e = &s_audit.ring[idx(s_audit, i)];
-        uint8_t h[DETWS_AUDIT_HASH_LEN];
+        uint8_t h[DWS_AUDIT_HASH_LEN];
         chain_hash(expected, e, h);
-        if (memcmp(h, e->hash, DETWS_AUDIT_HASH_LEN) != 0)
+        if (memcmp(h, e->hash, DWS_AUDIT_HASH_LEN) != 0)
         {
             if (first_broken_seq)
                 *first_broken_seq = e->seq;
             return false;
         }
-        memcpy(expected, e->hash, DETWS_AUDIT_HASH_LEN);
+        memcpy(expected, e->hash, DWS_AUDIT_HASH_LEN);
     }
     return true;
 }
 
-const char *detws_audit_cat_name(DetwsAuditCat category)
+const char *dws_audit_cat_name(DetwsAuditCat category)
 {
     switch (category)
     {
-    case DetwsAuditCat::DETWS_AUDIT_AUTH:
+    case DetwsAuditCat::DWS_AUDIT_AUTH:
         return "auth";
-    case DetwsAuditCat::DETWS_AUDIT_AUTH_FAIL:
+    case DetwsAuditCat::DWS_AUDIT_AUTH_FAIL:
         return "auth_fail";
-    case DetwsAuditCat::DETWS_AUDIT_ACCESS:
+    case DetwsAuditCat::DWS_AUDIT_ACCESS:
         return "access";
-    case DetwsAuditCat::DETWS_AUDIT_CONFIG:
+    case DetwsAuditCat::DWS_AUDIT_CONFIG:
         return "config";
-    case DetwsAuditCat::DETWS_AUDIT_ADMIN:
+    case DetwsAuditCat::DWS_AUDIT_ADMIN:
         return "admin";
     default:
         return "system";
     }
 }
 
-int detws_audit_format(const DetwsAuditEntry *e, char *out, size_t cap)
+int dws_audit_format(const DetwsAuditEntry *e, char *out, size_t cap)
 {
     if (!e || !out || cap == 0)
         return 0;
     int head = snprintf(out, cap, "{\"seq\":%lu,\"ts\":%lu,\"cat\":\"%s\",\"msg\":\"", (unsigned long)e->seq,
-                        (unsigned long)e->ts, detws_audit_cat_name(e->category));
+                        (unsigned long)e->ts, dws_audit_cat_name(e->category));
     if (head < 0 || (size_t)head >= cap)
         return 0;
     size_t pos = (size_t)head;
@@ -259,12 +259,12 @@ int detws_audit_format(const DetwsAuditEntry *e, char *out, size_t cap)
     return (int)pos;
 }
 
-int detws_audit_dump_json(char *out, size_t cap)
+int dws_audit_dump_json(char *out, size_t cap)
 {
     if (!out || cap == 0)
         return 0;
     uint32_t broken = 0;
-    bool intact = detws_audit_verify(&broken);
+    bool intact = dws_audit_verify(&broken);
 
     int head;
     if (intact)
@@ -284,7 +284,7 @@ int detws_audit_dump_json(char *out, size_t cap)
                 return 0;
             out[pos++] = ',';
         }
-        int n = detws_audit_format(&s_audit.ring[idx(s_audit, i)], out + pos, cap - pos);
+        int n = dws_audit_format(&s_audit.ring[idx(s_audit, i)], out + pos, cap - pos);
         if (n <= 0)
             return 0;
         pos += (size_t)n;
@@ -299,4 +299,4 @@ int detws_audit_dump_json(char *out, size_t cap)
     return (int)pos;
 }
 
-#endif // DETWS_ENABLE_AUDIT_LOG
+#endif // DWS_ENABLE_AUDIT_LOG

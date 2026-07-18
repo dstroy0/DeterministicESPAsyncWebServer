@@ -8,9 +8,9 @@
 
 #include "services/sockpool/sockpool.h"
 
-#if DETWS_ENABLE_SOCKPOOL
+#if DWS_ENABLE_SOCKPOOL
 
-void detws_sockpool_init(SockPool *p, SockSlot *slots, size_t n)
+void dws_sockpool_init(SockPool *p, SockSlot *slots, size_t n)
 {
     if (!p)
         return;
@@ -24,7 +24,7 @@ void detws_sockpool_init(SockPool *p, SockSlot *slots, size_t n)
     }
 }
 
-SockAcq detws_sockpool_acquire(SockPool *p, uint32_t id, uint32_t now, size_t *idx, uint32_t *evicted_id)
+SockAcq dws_sockpool_acquire(SockPool *p, uint32_t id, uint32_t now, size_t *idx, uint32_t *evicted_id)
 {
     if (!p || !p->slots || p->n == 0)
         return SockAcq::SOCK_ACQ_FAIL;
@@ -57,7 +57,7 @@ SockAcq detws_sockpool_acquire(SockPool *p, uint32_t id, uint32_t now, size_t *i
     return SockAcq::SOCK_ACQ_RECYCLED;
 }
 
-void detws_sockpool_touch(SockPool *p, size_t idx, uint32_t now)
+void dws_sockpool_touch(SockPool *p, size_t idx, uint32_t now)
 {
     if (!p || !p->slots || idx >= p->n)
         return;
@@ -65,7 +65,7 @@ void detws_sockpool_touch(SockPool *p, size_t idx, uint32_t now)
         p->slots[idx].last_used = now;
 }
 
-bool detws_sockpool_release(SockPool *p, size_t idx)
+bool dws_sockpool_release(SockPool *p, size_t idx)
 {
     if (!p || !p->slots || idx >= p->n || !p->slots[idx].in_use)
         return false;
@@ -73,7 +73,7 @@ bool detws_sockpool_release(SockPool *p, size_t idx)
     return true;
 }
 
-bool detws_sockpool_find(const SockPool *p, uint32_t id, size_t *idx)
+bool dws_sockpool_find(const SockPool *p, uint32_t id, size_t *idx)
 {
     if (!p || !p->slots)
         return false;
@@ -87,7 +87,7 @@ bool detws_sockpool_find(const SockPool *p, uint32_t id, size_t *idx)
     return false;
 }
 
-size_t detws_sockpool_in_use(const SockPool *p)
+size_t dws_sockpool_in_use(const SockPool *p)
 {
     if (!p || !p->slots)
         return 0;
@@ -98,4 +98,4 @@ size_t detws_sockpool_in_use(const SockPool *p)
     return c;
 }
 
-#endif // DETWS_ENABLE_SOCKPOOL
+#endif // DWS_ENABLE_SOCKPOOL

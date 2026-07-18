@@ -1,6 +1,6 @@
 # 19.Syslog - remote logging to a syslog server (RFC 5424)
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_SYSLOG`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_SYSLOG`
 
 ## What this example teaches
 
@@ -41,7 +41,7 @@ unprivileged port like 5140 with an ad-hoc UDP listener for testing.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_SYSLOG=1" \
+  --project-option="build_flags=-DDWS_ENABLE_SYSLOG=1" \
   --lib="." examples/L7-Application/19.Syslog/19.Syslog.ino
 ```
 
@@ -60,7 +60,7 @@ added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_SYSLOG 1
+#define DWS_ENABLE_SYSLOG 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -73,7 +73,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 static const char *SYSLOG_SERVER = "192.168.1.10"; // your syslog collector
 static const uint16_t SYSLOG_PORT = 514;           // 514 = IANA syslog; use 5140 for an unprivileged listener
 
-DetWebServer server;
+DWS server;
 
 // Per-request access log -> syslog (status maps to severity).
 static void access_log(const char *method, const char *path, int status, int len)

@@ -3,7 +3,7 @@
 
 /**
  * @file mbus.h
- * @brief Wired M-Bus (Meter-Bus, EN 13757-2/-3) frame codec (DETWS_ENABLE_MBUS).
+ * @brief Wired M-Bus (Meter-Bus, EN 13757-2/-3) frame codec (DWS_ENABLE_MBUS).
  *
  * A pure, zero-heap builder + parser for the M-Bus link-layer frames used by utility meters
  * (water / gas / heat / electricity), plus a walker for the EN 13757-3 variable-data records
@@ -30,7 +30,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_MBUS
+#if DWS_ENABLE_MBUS
 
 #include <stddef.h>
 #include <stdint.h>
@@ -144,5 +144,5 @@ uint8_t mbus_dif_data_len(uint8_t coding);
  */
 bool mbus_record_next(const uint8_t *body, size_t len, size_t *pos, MbusRecord *out);
 
-#endif // DETWS_ENABLE_MBUS
+#endif // DWS_ENABLE_MBUS
 #endif // DETERMINISTICESPASYNCWEBSERVER_MBUS_H

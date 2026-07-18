@@ -12,7 +12,7 @@
 static const char *WIFI_SSID = "YOUR_SSID";
 static const char *WIFI_PASS = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static void handle_root(uint8_t slot, HttpReq *)
 {

@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http3/tls13_kdf.h"
 
-#if (DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS)
+#if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS)
 
 #include "network_drivers/presentation/http3/quic_hkdf.h"
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
@@ -90,4 +90,4 @@ void tls13_finished_mac(const Tls13Kdf *kdf, const uint8_t base_secret[TLS13_SEC
     ssh_hmac_sha256(finished_key, sizeof(finished_key), transcript_hash, TLS13_SECRET_LEN, out);
 }
 
-#endif // DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS
+#endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS

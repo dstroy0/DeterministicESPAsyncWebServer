@@ -3,7 +3,7 @@
 
 /**
  * @file stomp.h
- * @brief STOMP 1.2 frame codec (DETWS_ENABLE_STOMP) - zero-heap frame builder + parser,
+ * @brief STOMP 1.2 frame codec (DWS_ENABLE_STOMP) - zero-heap frame builder + parser,
  *        so a device can talk to a STOMP broker (ActiveMQ / RabbitMQ / Artemis) over the
  *        shipped outbound client transport (TCP, or STOMP-over-WebSocket via the WS client).
  *
@@ -34,7 +34,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_STOMP
+#if DWS_ENABLE_STOMP
 
 #include <stddef.h>
 #include <stdint.h>
@@ -53,8 +53,8 @@ struct StompFrame
 {
     const char *command; ///< command verb (e.g. "MESSAGE"); not NUL-terminated
     size_t command_len;
-    StompHeader headers[DETWS_STOMP_MAX_HEADERS];
-    size_t header_count; ///< number of parsed headers (capped at DETWS_STOMP_MAX_HEADERS)
+    StompHeader headers[DWS_STOMP_MAX_HEADERS];
+    size_t header_count; ///< number of parsed headers (capped at DWS_STOMP_MAX_HEADERS)
     const char *body;    ///< frame body (may contain NULs when content-length is given)
     size_t body_len;
 };
@@ -96,6 +96,6 @@ bool stomp_header(const StompFrame *f, const char *name, const char **val, size_
  */
 size_t stomp_unescape(char *dst, size_t cap, const char *src, size_t src_len);
 
-#endif // DETWS_ENABLE_STOMP
+#endif // DWS_ENABLE_STOMP
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_STOMP_H

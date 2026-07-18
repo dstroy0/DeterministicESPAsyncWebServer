@@ -3,7 +3,7 @@
 
 /**
  * @file cclink.h
- * @brief CC-Link (CLPA) cyclic fieldbus frame codec (DETWS_ENABLE_CCLINK).
+ * @brief CC-Link (CLPA) cyclic fieldbus frame codec (DWS_ENABLE_CCLINK).
  *
  * CC-Link is Mitsubishi's (CLPA) factory fieldbus. The classic CC-Link master polls remote stations
  * over RS-485 exchanging a cyclic process image split into bit devices (RX/RY - remote input/output
@@ -24,7 +24,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_CCLINK
+#if DWS_ENABLE_CCLINK
 
 // CC-Link command bytes: wire values compared/emitted, so integer constants in a namespacing struct.
 struct CclinkCmd
@@ -35,7 +35,7 @@ struct CclinkCmd
 };
 
 /** @brief Arithmetic-sum checksum: low byte of the sum of @p len bytes. */
-uint8_t detws_cclink_sum(const uint8_t *bytes, size_t len);
+uint8_t dws_cclink_sum(const uint8_t *bytes, size_t len);
 
 /**
  * @brief Build a CC-Link cyclic frame: [station][command][bit_data...][word_data...][checksum].
@@ -47,8 +47,8 @@ uint8_t detws_cclink_sum(const uint8_t *bytes, size_t len);
  * @param word_len   number of word-device bytes.
  * @return the frame length (2 + bit_len + word_len + 1), or 0 on overflow / bad args.
  */
-size_t detws_cclink_build(uint8_t station, uint8_t command, const uint8_t *bits, size_t bit_len, const uint8_t *words,
-                          size_t word_len, uint8_t *out, size_t cap);
+size_t dws_cclink_build(uint8_t station, uint8_t command, const uint8_t *bits, size_t bit_len, const uint8_t *words,
+                        size_t word_len, uint8_t *out, size_t cap);
 
 /** @brief A parsed CC-Link frame (payload points into the input; caller knows the bit/word split). */
 struct CcLinkFrame
@@ -60,16 +60,16 @@ struct CcLinkFrame
 };
 
 /** @brief Validate the checksum and parse a CC-Link frame. @return true if the checksum matches. */
-bool detws_cclink_parse(const uint8_t *frame, size_t len, CcLinkFrame *out);
+bool dws_cclink_parse(const uint8_t *frame, size_t len, CcLinkFrame *out);
 
 /** @brief Read bit @p index (0-based) from a bit-device byte array. */
-bool detws_cclink_get_bit(const uint8_t *bits, size_t bit_len, size_t index);
+bool dws_cclink_get_bit(const uint8_t *bits, size_t bit_len, size_t index);
 
 /** @brief Set/clear bit @p index in a bit-device byte array (no-op if out of range). */
-void detws_cclink_set_bit(uint8_t *bits, size_t bit_len, size_t index, bool value);
+void dws_cclink_set_bit(uint8_t *bits, size_t bit_len, size_t index, bool value);
 
 /** @brief Read word @p index (0-based, little-endian) from a word-device byte array. */
-uint16_t detws_cclink_get_word(const uint8_t *words, size_t word_len, size_t index);
+uint16_t dws_cclink_get_word(const uint8_t *words, size_t word_len, size_t index);
 
-#endif // DETWS_ENABLE_CCLINK
+#endif // DWS_ENABLE_CCLINK
 #endif // DETERMINISTICESPASYNCWEBSERVER_CCLINK_H

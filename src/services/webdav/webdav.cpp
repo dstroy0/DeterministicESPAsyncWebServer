@@ -10,11 +10,11 @@
 #include "services/webdav/webdav.h"
 #include "shared_primitives/hex.h"
 
-#if DETWS_ENABLE_WEBDAV
+#if DWS_ENABLE_WEBDAV
 
 #include <string.h>
 
-WebDavMethod det_webdav_method(const char *m)
+WebDavMethod dws_webdav_method(const char *m)
 {
     if (!m)
         return WebDavMethod::DAV_M_UNSUPPORTED;
@@ -45,7 +45,7 @@ WebDavMethod det_webdav_method(const char *m)
     return WebDavMethod::DAV_M_UNSUPPORTED;
 }
 
-int det_webdav_depth(const char *depth_hdr, int dflt)
+int dws_webdav_depth(const char *depth_hdr, int dflt)
 {
     if (!depth_hdr || !depth_hdr[0])
         return dflt;
@@ -71,7 +71,7 @@ static bool app(char *buf, size_t cap, size_t *len, const char *s)
     return true;
 }
 
-size_t det_webdav_xml_escape(char *dst, size_t cap, const char *src)
+size_t dws_webdav_xml_escape(char *dst, size_t cap, const char *src)
 {
     size_t o = 0;
     if (cap == 0)
@@ -118,7 +118,7 @@ size_t det_webdav_xml_escape(char *dst, size_t cap, const char *src)
     return o;
 }
 
-bool det_webdav_dest_path(const char *destination, char *out, size_t cap)
+bool dws_webdav_dest_path(const char *destination, char *out, size_t cap)
 {
     if (!destination || !out || cap == 0)
         return false;
@@ -148,8 +148,8 @@ bool det_webdav_dest_path(const char *destination, char *out, size_t cap)
         char c = *p;
         if (c == '%')
         {
-            int hi = det_hex_val(p[1]);
-            int lo = (hi >= 0) ? det_hex_val(p[2]) : -1;
+            int hi = dws_hex_val(p[1]);
+            int lo = (hi >= 0) ? dws_hex_val(p[2]) : -1;
             if (hi < 0 || lo < 0)
                 return false; // malformed escape
             c = (char)((hi << 4) | lo);
@@ -164,13 +164,13 @@ bool det_webdav_dest_path(const char *destination, char *out, size_t cap)
     return true;
 }
 
-size_t det_webdav_ms_begin(char *buf, size_t cap, size_t len)
+size_t dws_webdav_ms_begin(char *buf, size_t cap, size_t len)
 {
     app(buf, cap, &len, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<D:multistatus xmlns:D=\"DAV:\">\n");
     return len;
 }
 
-size_t det_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, bool is_collection, uint32_t size,
+size_t dws_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, bool is_collection, uint32_t size,
                            const char *rfc1123_mtime, const char *content_type)
 {
     // Build the whole <response> in a temp first so the append is atomic: a
@@ -179,7 +179,7 @@ size_t det_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, 
     size_t t = 0;
     char esc[256];
 
-    det_webdav_xml_escape(esc, sizeof(esc), href);
+    dws_webdav_xml_escape(esc, sizeof(esc), href);
     // The href block is at most 26 + esc(<=255) + 62 == 343 bytes, and adding the collection
     // marker + resourcetype close reaches <=376 - all well within tmp[512], so these three
     // atomic-append guards cannot fire (esc is capped by its own 256-byte buffer above).
@@ -240,7 +240,7 @@ size_t det_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, 
     return len;
 }
 
-size_t det_webdav_ms_end(char *buf, size_t cap, size_t len)
+size_t dws_webdav_ms_end(char *buf, size_t cap, size_t len)
 {
     app(buf, cap, &len, "</D:multistatus>\n");
     return len;
@@ -252,13 +252,13 @@ static bool name_end_char(char c)
     return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '/' || c == '>';
 }
 
-size_t det_webdav_proppatch_ms(char *buf, size_t cap, const char *href, const char *body, size_t body_len)
+size_t dws_webdav_proppatch_ms(char *buf, size_t cap, const char *href, const char *body, size_t body_len)
 {
     size_t len = 0;
     if (cap)
         buf[0] = '\0'; // always a valid C-string, even if nothing below fits
     char esc[256];
-    det_webdav_xml_escape(esc, sizeof(esc), href);
+    dws_webdav_xml_escape(esc, sizeof(esc), href);
     if (!app(buf, cap, &len,
              "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<D:multistatus xmlns:D=\"DAV:\">\n"
              "  <D:response>\n    <D:href>") ||
@@ -272,7 +272,7 @@ size_t det_webdav_proppatch_ms(char *buf, size_t cap, const char *href, const ch
     int emitted = 0;
     bool in_prop = false;
     size_t i = 0;
-    while (i < body_len && emitted < DETWS_WEBDAV_MAX_PROPS)
+    while (i < body_len && emitted < DWS_WEBDAV_MAX_PROPS)
     {
         if (body[i] != '<')
         {
@@ -365,4 +365,4 @@ size_t det_webdav_proppatch_ms(char *buf, size_t cap, const char *href, const ch
     return len;
 }
 
-#endif // DETWS_ENABLE_WEBDAV
+#endif // DWS_ENABLE_WEBDAV

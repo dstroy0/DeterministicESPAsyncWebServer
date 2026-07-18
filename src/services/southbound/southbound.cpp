@@ -8,12 +8,12 @@
 
 #include "services/southbound/southbound.h"
 
-#if DETWS_ENABLE_SOUTHBOUND
+#if DWS_ENABLE_SOUTHBOUND
 
 #include <string.h>
 
-#ifndef DETWS_SOUTHBOUND_MAX_DRIVERS
-#define DETWS_SOUTHBOUND_MAX_DRIVERS 8 ///< bounded registry; no heap.
+#ifndef DWS_SOUTHBOUND_MAX_DRIVERS
+#define DWS_SOUTHBOUND_MAX_DRIVERS 8 ///< bounded registry; no heap.
 #endif
 
 namespace
@@ -22,37 +22,37 @@ namespace
 // driver table and its count, grouped so it is one named owner, unreachable cross-TU.
 struct SouthboundCtx
 {
-    const SouthboundDriver *drivers[DETWS_SOUTHBOUND_MAX_DRIVERS] = {};
+    const SouthboundDriver *drivers[DWS_SOUTHBOUND_MAX_DRIVERS] = {};
     size_t count = 0;
 };
 SouthboundCtx s_sb;
 } // namespace
 
-int detws_southbound_register(const SouthboundDriver *drv)
+int dws_southbound_register(const SouthboundDriver *drv)
 {
     if (!drv || !drv->name)
         return Sb::SB_ERR_ARG;
-    if (detws_southbound_find(drv->name))
+    if (dws_southbound_find(drv->name))
         return Sb::SB_ERR_DUP;
-    if (s_sb.count >= DETWS_SOUTHBOUND_MAX_DRIVERS)
+    if (s_sb.count >= DWS_SOUTHBOUND_MAX_DRIVERS)
         return Sb::SB_ERR_FULL;
     s_sb.drivers[s_sb.count++] = drv;
     return Sb::SB_OK;
 }
 
-void detws_southbound_clear(void)
+void dws_southbound_clear(void)
 {
-    for (size_t i = 0; i < DETWS_SOUTHBOUND_MAX_DRIVERS; i++)
+    for (size_t i = 0; i < DWS_SOUTHBOUND_MAX_DRIVERS; i++)
         s_sb.drivers[i] = nullptr;
     s_sb.count = 0;
 }
 
-size_t detws_southbound_count(void)
+size_t dws_southbound_count(void)
 {
     return s_sb.count;
 }
 
-const SouthboundDriver *detws_southbound_find(const char *name)
+const SouthboundDriver *dws_southbound_find(const char *name)
 {
     if (!name)
         return nullptr;
@@ -62,11 +62,11 @@ const SouthboundDriver *detws_southbound_find(const char *name)
     return nullptr;
 }
 
-int detws_southbound_read(const char *name, uint32_t point, int32_t *value_out)
+int dws_southbound_read(const char *name, uint32_t point, int32_t *value_out)
 {
     if (!value_out)
         return Sb::SB_ERR_ARG;
-    const SouthboundDriver *d = detws_southbound_find(name);
+    const SouthboundDriver *d = dws_southbound_find(name);
     if (!d)
         return Sb::SB_ERR_NOT_FOUND;
     if (!d->read)
@@ -74,9 +74,9 @@ int detws_southbound_read(const char *name, uint32_t point, int32_t *value_out)
     return d->read(d->ctx, point, value_out);
 }
 
-int detws_southbound_write(const char *name, uint32_t point, int32_t value)
+int dws_southbound_write(const char *name, uint32_t point, int32_t value)
 {
-    const SouthboundDriver *d = detws_southbound_find(name);
+    const SouthboundDriver *d = dws_southbound_find(name);
     if (!d)
         return Sb::SB_ERR_NOT_FOUND;
     if (!d->write)
@@ -84,11 +84,11 @@ int detws_southbound_write(const char *name, uint32_t point, int32_t value)
     return d->write(d->ctx, point, value);
 }
 
-int detws_southbound_read_block(const char *name, uint32_t first, int32_t *out, size_t n)
+int dws_southbound_read_block(const char *name, uint32_t first, int32_t *out, size_t n)
 {
     if (!out || n == 0)
         return Sb::SB_ERR_ARG;
-    const SouthboundDriver *d = detws_southbound_find(name);
+    const SouthboundDriver *d = dws_southbound_find(name);
     if (!d)
         return Sb::SB_ERR_NOT_FOUND;
     if (!d->read_block)
@@ -96,11 +96,11 @@ int detws_southbound_read_block(const char *name, uint32_t first, int32_t *out, 
     return d->read_block(d->ctx, first, out, n);
 }
 
-int detws_southbound_write_block(const char *name, uint32_t first, const int32_t *in, size_t n)
+int dws_southbound_write_block(const char *name, uint32_t first, const int32_t *in, size_t n)
 {
     if (!in || n == 0)
         return Sb::SB_ERR_ARG;
-    const SouthboundDriver *d = detws_southbound_find(name);
+    const SouthboundDriver *d = dws_southbound_find(name);
     if (!d)
         return Sb::SB_ERR_NOT_FOUND;
     if (!d->write_block)
@@ -108,4 +108,4 @@ int detws_southbound_write_block(const char *name, uint32_t first, const int32_t
     return d->write_block(d->ctx, first, in, n);
 }
 
-#endif // DETWS_ENABLE_SOUTHBOUND
+#endif // DWS_ENABLE_SOUTHBOUND

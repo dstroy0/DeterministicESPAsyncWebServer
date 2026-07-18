@@ -3,7 +3,7 @@
 
 /**
  * @file sdi12.h
- * @brief SDI-12 sensor-bus command / response codec (DETWS_ENABLE_SDI12).
+ * @brief SDI-12 sensor-bus command / response codec (DWS_ENABLE_SDI12).
  *
  * SDI-12 is the 1200-baud single-wire ASCII bus used by environmental / agricultural sensors
  * (soil moisture, water level, weather). A recorder addresses a sensor by a single character
@@ -26,7 +26,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_SDI12
+#if DWS_ENABLE_SDI12
 
 #include <stddef.h>
 #include <stdint.h>
@@ -91,5 +91,5 @@ void sdi12_crc_encode(uint16_t crc, char out[SDI12_CRC_CHARS]);
  */
 bool sdi12_check_crc(const char *resp, size_t len);
 
-#endif // DETWS_ENABLE_SDI12
+#endif // DWS_ENABLE_SDI12
 #endif // DETERMINISTICESPASYNCWEBSERVER_SDI12_H

@@ -15,7 +15,7 @@
 
 HttpReq http_pool[CONN_POOL_SLOTS];
 
-#if DETWS_ENABLE_STREAM_BODY
+#if DWS_ENABLE_STREAM_BODY
 // Streaming-body hooks (OTA / file upload), owned by one instance (internal linkage): null
 // unless the application installs them. One named owner, unreachable cross-TU. (The http_pool[]
 // request table is the shared cross-TU substrate.)
@@ -33,7 +33,7 @@ void http_parser_set_stream_hooks(HttpStreamBeginCb begin, HttpStreamDataCb data
     s_hp.stream_data = data;
     s_hp.stream_abort = abort;
 }
-#endif // DETWS_ENABLE_STREAM_BODY
+#endif // DWS_ENABLE_STREAM_BODY
 
 // ---------------------------------------------------------------------------
 // FNV-1a hash constants for HTTP version validation
@@ -148,7 +148,7 @@ static void parse_query_params(HttpReq *req)
 void http_parser_reset(HttpReq *req)
 {
     uint8_t id = req->slot_id;
-#if DETWS_ENABLE_STREAM_BODY
+#if DWS_ENABLE_STREAM_BODY
     // A streamed body that never reached ParseState::PARSE_COMPLETE is being torn down (peer
     // reset / timeout / error): let the sink release its resource before we wipe
     // the state. The normal-completion reset runs while parse_state==ParseState::PARSE_COMPLETE
@@ -285,7 +285,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             p->cur_key[k] = '\0';
             p->parse_state = ParseState::PARSE_HEADER_VAL;
             p->current_token_idx = 0;
-#if DETWS_CAPTURE_AUTH_HEADER
+#if DWS_CAPTURE_AUTH_HEADER
             // The Authorization value (Digest / JWT bearer) exceeds MAX_VAL_LEN,
             // so capture it whole into a dedicated buffer independent of scratch.
             p->cur_is_auth = (strcasecmp(p->cur_key, "Authorization") == 0);
@@ -329,7 +329,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
             // Terminate the scratch value so detection sees a clean C string.
             size_t vlen = p->current_token_idx < MAX_VAL_LEN ? p->current_token_idx : MAX_VAL_LEN - 1;
             p->cur_val[vlen] = '\0';
-#if DETWS_CAPTURE_AUTH_HEADER
+#if DWS_CAPTURE_AUTH_HEADER
             if (p->cur_is_auth)
             {
                 p->authorization[p->auth_idx] = '\0';
@@ -393,9 +393,9 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         }
         else
         {
-#if DETWS_CAPTURE_AUTH_HEADER
+#if DWS_CAPTURE_AUTH_HEADER
             // Capture the full Authorization value (Digest / JWT) past MAX_VAL_LEN.
-            if (p->cur_is_auth && p->auth_idx < DETWS_AUTH_HDR_CAP - 1)
+            if (p->cur_is_auth && p->auth_idx < DWS_AUTH_HDR_CAP - 1)
                 p->authorization[p->auth_idx++] = c;
 #endif
             if (p->current_token_idx < MAX_VAL_LEN - 1)
@@ -424,15 +424,15 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
         {
             // RFC 7230 §5.4: a request MUST NOT carry more than one Host header
             // (always enforced); an HTTP/1.1 request MUST carry exactly one Host
-            // header (enforced only when DETWS_ENFORCE_HOST_HEADER is set).
+            // header (enforced only when DWS_ENFORCE_HOST_HEADER is set).
             bool host_violation = (p->host_count > 1);
-#if DETWS_ENFORCE_HOST_HEADER
+#if DWS_ENFORCE_HOST_HEADER
             if (p->version == HttpVersion::HTTP_11 && p->host_count == 0)
                 host_violation = true;
 #endif
             if (host_violation)
                 p->parse_state = ParseState::PARSE_ERROR;
-#if DETWS_ENABLE_STREAM_BODY
+#if DWS_ENABLE_STREAM_BODY
             // Streaming sink (OTA / upload): all headers are parsed here, so the
             // hook can match method/path/Authorization and begin a sink (Update
             // or a file). If it accepts, the body streams in chunks and the size
@@ -463,7 +463,7 @@ void http_parser_feed(HttpReq *p, uint8_t byte)
 
     case ParseState::PARSE_BODY:
         // Body is opaque data - no character validation.
-#if DETWS_ENABLE_STREAM_BODY
+#if DWS_ENABLE_STREAM_BODY
         if (p->body_streaming)
         {
             // Reuse body[] as a flush buffer: fill it, then hand whole chunks to
@@ -568,7 +568,7 @@ bool http_get_cookie(const HttpReq *req, const char *name, char *out, size_t out
 // Extract and validate a Forwarded / X-Forwarded-For client-address token from
 // [s, s+n) into out (canonical text). Accepts IPv4 with an optional ":port", a
 // bracketed IPv6 "[2001:db8::1]:port" (RFC 7239 §6), and a bare IPv6 (the de-facto
-// X-Forwarded-For form). The candidate is confirmed with det_ip_parse, so "unknown",
+// X-Forwarded-For form). The candidate is confirmed with dws_ip_parse, so "unknown",
 // an obfuscated "_id" identifier (RFC 7239 §6.3), or any malformed token returns
 // false. Returns true and writes the RFC 5952 canonical address on success.
 static bool fwd_extract_client(const char *s, size_t n, char *out, size_t cap)
@@ -589,7 +589,7 @@ static bool fwd_extract_client(const char *s, size_t n, char *out, size_t cap)
     if (n == 0)
         return false;
 
-    char tok[DET_IP_STR_MAX];
+    char tok[DWS_IP_STR_MAX];
     size_t tlen = 0;
     if (s[0] == '[')
     {
@@ -627,10 +627,10 @@ static bool fwd_extract_client(const char *s, size_t n, char *out, size_t cap)
     }
     tok[tlen] = '\0';
 
-    DetIp ip;
-    if (!det_ip_parse(tok, &ip)) // rejects "unknown" / "_obf" / malformed
+    DWSIp ip;
+    if (!dws_ip_parse(tok, &ip)) // rejects "unknown" / "_obf" / malformed
         return false;
-    return det_ip_format(&ip, out, cap) > 0; // false if out is too small for the canonical text
+    return dws_ip_format(&ip, out, cap) > 0; // false if out is too small for the canonical text
 }
 
 bool http_forwarded_client(const HttpReq *req, char *ip_out, size_t ip_cap, bool *is_https)

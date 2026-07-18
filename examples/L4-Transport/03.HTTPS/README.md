@@ -1,11 +1,11 @@
 # 03.HTTPS - deterministic TLS with a static memory pool
 
-**Layer:** L4 Transport · **Build flags:** `DETWS_ENABLE_TLS`
+**Layer:** L4 Transport · **Build flags:** `DWS_ENABLE_TLS`
 
 ## What this example teaches
 
 This serves the same routes over HTTPS on port 443. The notable part is _how_:
-mbedTLS is pointed at a fixed BSS arena (`DETWS_TLS_ARENA_SIZE`) through a custom
+mbedTLS is pointed at a fixed BSS arena (`DWS_TLS_ARENA_SIZE`) through a custom
 allocator, so the TLS handshake and session use **no heap** and the determinism
 guarantee holds. The RNG is the ESP32 hardware CSPRNG.
 
@@ -24,7 +24,7 @@ The handlers are ordinary - TLS is a transport concern, so the same
 `server.send()` works; a `/status` route just reports `tls:true` and free heap so
 you can confirm nothing leaked to the heap during the handshake.
 
-**Arena sizing.** If `begin_tls()` fails, the usual cause is a `DETWS_TLS_ARENA_SIZE`
+**Arena sizing.** If `begin_tls()` fails, the usual cause is a `DWS_TLS_ARENA_SIZE`
 too small for the handshake (a compile-time check rejects absurdly small values).
 The arena is the only memory TLS uses; size it for your cert chain and cipher.
 
@@ -37,7 +37,7 @@ The arena is the only memory TLS uses; size it for your cert chain and cipher.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_TLS=1 -DMAX_CONNS=4 -DDETWS_TLS_ARENA_SIZE=32768" \
+  --project-option="build_flags=-DDWS_ENABLE_TLS=1 -DMAX_CONNS=4 -DDWS_TLS_ARENA_SIZE=32768" \
   --lib="." examples/L4-Transport/03.HTTPS/03.HTTPS.ino
 ```
 
@@ -57,7 +57,7 @@ are elided here for brevity (see the `.ino`); the C++ is verbatim with comments.
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_TLS 1
+#define DWS_ENABLE_TLS 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -77,7 +77,7 @@ static const char KEY_PEM[] = R"PEM(-----BEGIN EC PRIVATE KEY-----
 -----END EC PRIVATE KEY-----
 )PEM";
 
-DetWebServer server;
+DWS server;
 
 void handle_root(uint8_t slot_id, HttpReq *req)
 {

@@ -27,7 +27,7 @@
  * @return bytes written (excluding the NUL), or 0 with an empty @p out when @p epoch is 0,
  *         @p out is null / @p out_cap is 0, or the time cannot be broken down.
  */
-inline size_t detws_http_date(time_t epoch, char *out, size_t out_cap)
+inline size_t dws_http_date(time_t epoch, char *out, size_t out_cap)
 {
     if (!out || out_cap == 0)
         return 0;

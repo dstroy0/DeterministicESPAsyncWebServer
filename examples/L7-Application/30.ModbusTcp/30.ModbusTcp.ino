@@ -19,11 +19,11 @@
  *
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
- *     build_flags = -DDETWS_ENABLE_MODBUS=1
+ *     build_flags = -DDWS_ENABLE_MODBUS=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_MODBUS 1
+#define DWS_ENABLE_MODBUS 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -33,7 +33,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // Notified whenever a client writes a coil or holding register.
 static void on_write(uint8_t fc, uint16_t start, uint16_t count)

@@ -13,12 +13,12 @@
 
 #include "services/umati/umati.h"
 
-#if DETWS_ENABLE_UMATI
+#if DWS_ENABLE_UMATI
 
 #include <string.h> // strnlen (string.h is allowed; the no-stdlib rule is about stdlib.h/malloc)
 
 // ---------------------------------------------------------------------------
-// Node identifiers (namespace DETWS_UMATI_NS). Objects end in 0; their variables count up from it.
+// Node identifiers (namespace DWS_UMATI_NS). Objects end in 0; their variables count up from it.
 // ---------------------------------------------------------------------------
 namespace
 {
@@ -111,9 +111,9 @@ int32_t add_ref(OpcUaReference *out, int32_t n, uint32_t max, uint32_t target_id
     OpcUaReference *r = &out[n];
     r->ref_type_id = organizes ? OPCUA_REFTYPE_ORGANIZES : OPCUA_REFTYPE_HAS_COMPONENT;
     r->is_forward = true;
-    r->target_ns = DETWS_UMATI_NS;
+    r->target_ns = DWS_UMATI_NS;
     r->target_id = target_id;
-    r->browse_name_ns = DETWS_UMATI_NS;
+    r->browse_name_ns = DWS_UMATI_NS;
     r->browse_name = name;
     r->display_name = name;
     r->node_class = node_class;
@@ -142,7 +142,7 @@ void umati_bind(const UmatiMachineTool *mt)
 bool umati_read(uint16_t ns, uint32_t id, uint32_t attribute, OpcUaVariant *out)
 {
     const UmatiMachineTool *mt = s_umati.mt;
-    if (!mt || ns != DETWS_UMATI_NS || attribute != OPCUA_ATTR_VALUE)
+    if (!mt || ns != DWS_UMATI_NS || attribute != OPCUA_ATTR_VALUE)
         return false;
     switch (id)
     {
@@ -235,7 +235,7 @@ int32_t umati_browse(uint16_t ns, uint32_t id, OpcUaReference *out, uint32_t max
         return add_ref(out, 0, max, MACHINETOOL, mt->name ? mt->name : "MachineTool", OPCUA_NODECLASS_OBJECT,
                        /*organizes=*/true);
 
-    if (ns != DETWS_UMATI_NS)
+    if (ns != DWS_UMATI_NS)
         return -1;
 
     int32_t n = 0;
@@ -304,4 +304,4 @@ void umati_install(const UmatiMachineTool *mt)
     opcua_set_browse_handler(umati_browse);
 }
 
-#endif // DETWS_ENABLE_UMATI
+#endif // DWS_ENABLE_UMATI

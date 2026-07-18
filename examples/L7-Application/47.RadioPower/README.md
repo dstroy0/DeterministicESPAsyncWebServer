@@ -1,6 +1,6 @@
 # 47.RadioPower - WiFi radio power controls
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_RADIO_POWER` (+ `DETWS_RADIO_WIFI_PS`, optional `DETWS_RADIO_MAX_TX_DBM`)
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_RADIO_POWER` (+ `DWS_RADIO_WIFI_PS`, optional `DWS_RADIO_MAX_TX_DBM`)
 
 ## What this example teaches
 
@@ -13,21 +13,21 @@ from the radio.
 so the settings are applied once association completes:
 
 ```cpp
-detws_radio_power_apply();   // applies the build-flag-configured modem-sleep / TX cap
-Serial.printf("radio modem-sleep: %s\n", detws_radio_ps_name(detws_radio_ps_get()));
+dws_radio_power_apply();   // applies the build-flag-configured modem-sleep / TX cap
+Serial.printf("radio modem-sleep: %s\n", dws_radio_ps_name(dws_radio_ps_get()));
 ```
 
 **The mode is a build flag, not a runtime call**, so it reaches the
-separately-compiled library: `DETWS_RADIO_WIFI_PS` is `0` (none), `1` (min modem
-sleep), or `2` (max modem sleep), with an optional `DETWS_RADIO_MAX_TX_DBM` cap.
-`detws_radio_ps_get()` reads the live mode back and `detws_radio_ps_name()` turns
+separately-compiled library: `DWS_RADIO_WIFI_PS` is `0` (none), `1` (min modem
+sleep), or `2` (max modem sleep), with an optional `DWS_RADIO_MAX_TX_DBM` cap.
+`dws_radio_ps_get()` reads the live mode back and `dws_radio_ps_name()` turns
 it into a string for the endpoint.
 
 ## Build and run
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_RADIO_POWER=1 -DDETWS_RADIO_WIFI_PS=1" \
+  --project-option="build_flags=-DDWS_ENABLE_RADIO_POWER=1 -DDWS_RADIO_WIFI_PS=1" \
   --lib="." examples/L7-Application/47.RadioPower/47.RadioPower.ino
 ```
 
@@ -44,7 +44,7 @@ with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_RADIO_POWER 1
+#define DWS_ENABLE_RADIO_POWER 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -54,7 +54,7 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -67,12 +67,12 @@ void setup()
 
     // Apply the configured modem-sleep / TX settings AFTER the link is up (the
     // WiFi connect path may set its own default first).
-    detws_radio_power_apply();
-    Serial.printf("radio modem-sleep: %s\n", detws_radio_ps_name(detws_radio_ps_get()));
+    dws_radio_power_apply();
+    Serial.printf("radio modem-sleep: %s\n", dws_radio_ps_name(dws_radio_ps_get()));
 
     server.on("/radio", HTTP_GET, [](uint8_t id, HttpReq *) {
         char b[48];
-        snprintf(b, sizeof(b), "{\"modem_sleep\":\"%s\"}", detws_radio_ps_name(detws_radio_ps_get()));
+        snprintf(b, sizeof(b), "{\"modem_sleep\":\"%s\"}", dws_radio_ps_name(dws_radio_ps_get()));
         server.send(id, 200, "application/json", b);
     });
     server.begin(80);

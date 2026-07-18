@@ -3,13 +3,13 @@
 
 /**
  * @file ota_service.h
- * @brief Optional authenticated OTA firmware update (DETWS_ENABLE_OTA).
+ * @brief Optional authenticated OTA firmware update (DWS_ENABLE_OTA).
  *
  * Registers a POST endpoint that streams a firmware image straight into the
  * ESP32 `Update` API via the parser's streaming-body hook
  * (http_parser_set_stream_hooks), so the image never has to fit in RAM. On a
  * successful flash the device responds and reboots into the new firmware.
- * Compiled to a no-op stub when DETWS_ENABLE_OTA is 0 or off-Arduino.
+ * Compiled to a no-op stub when DWS_ENABLE_OTA is 0 or off-Arduino.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -20,7 +20,7 @@
 
 #include "ServerConfig.h"
 
-class DetWebServer;
+class DWS;
 
 /**
  * @brief Register an authenticated streaming OTA endpoint.
@@ -38,6 +38,6 @@ class DetWebServer;
  * curl -u admin:s3cret --data-binary @firmware.bin http://<ip>/update
  * @endcode
  */
-void detws_ota_begin(DetWebServer &server, const char *path, const char *user, const char *pass);
+void dws_ota_begin(DWS &server, const char *path, const char *user, const char *pass);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_OTA_SERVICE_H

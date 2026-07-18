@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Phase 2 core-partitioning invariant (built with DETWS_WORKER_COUNT=2): a worker
+// Phase 2 core-partitioning invariant (built with DWS_WORKER_COUNT=2): a worker
 // only ever touches the connection slots it owns. The idle-timeout sweep is the
 // one place a worker writes slot state from its own task, so it must reap ONLY its
 // owned slots - otherwise two workers could write the same slot. The per-worker
@@ -23,7 +23,7 @@ void tearDown()
 
 void test_worker_count_is_two()
 {
-    TEST_ASSERT_EQUAL_INT(2, detws_worker_count());
+    TEST_ASSERT_EQUAL_INT(2, dws_worker_count());
 }
 
 void test_check_timeouts_reaps_only_owned_slots()
@@ -58,21 +58,21 @@ void test_pool_init_defaults_owner_zero()
 
 void test_worker_self_id_roundtrip()
 {
-    // detws_worker_set_self binds the calling context's worker id; detws_worker_self reads it back.
-    detws_worker_set_self(1);
-    TEST_ASSERT_EQUAL_INT(1, detws_worker_self());
-    detws_worker_set_self(0);
-    TEST_ASSERT_EQUAL_INT(0, detws_worker_self());
+    // dws_worker_set_self binds the calling context's worker id; dws_worker_self reads it back.
+    dws_worker_set_self(1);
+    TEST_ASSERT_EQUAL_INT(1, dws_worker_self());
+    dws_worker_set_self(0);
+    TEST_ASSERT_EQUAL_INT(0, dws_worker_self());
 }
 
 void test_host_worker_lifecycle_is_noops()
 {
     // On host there is no worker task: start/stop/wake are no-ops and running() stays false.
-    detws_workers_start(nullptr);
-    TEST_ASSERT_FALSE(detws_workers_running());
-    detws_worker_wake(0);
-    detws_workers_stop();
-    TEST_ASSERT_FALSE(detws_workers_running());
+    dws_workers_start(nullptr);
+    TEST_ASSERT_FALSE(dws_workers_running());
+    dws_worker_wake(0);
+    dws_workers_stop();
+    TEST_ASSERT_FALSE(dws_workers_running());
 }
 
 static void set_flag_to_42(void *arg)
@@ -81,11 +81,11 @@ static void set_flag_to_42(void *arg)
 }
 void test_host_defer_runs_inline_and_rejects_null()
 {
-    // On host the caller and pipeline are the same thread, so detws_defer runs the callback inline
+    // On host the caller and pipeline are the same thread, so dws_defer runs the callback inline
     // immediately; a null callback is rejected.
-    TEST_ASSERT_FALSE(detws_defer(0, nullptr, nullptr));
+    TEST_ASSERT_FALSE(dws_defer(0, nullptr, nullptr));
     int flag = 0;
-    TEST_ASSERT_TRUE(detws_defer(0, set_flag_to_42, &flag));
+    TEST_ASSERT_TRUE(dws_defer(0, set_flag_to_42, &flag));
     TEST_ASSERT_EQUAL_INT(42, flag);
 }
 

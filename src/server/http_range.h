@@ -4,10 +4,10 @@
 /**
  * @file http_range.h
  * @brief Shared single-range `Range: bytes=...` parser (RFC 7233), used by static file serving and the
- *        edge cache (DETWS_ENABLE_RANGE).
+ *        edge cache (DWS_ENABLE_RANGE).
  *
  * Promoted out of file_serving.cpp so both the filesystem file server and the CDN edge cache share one
- * owner for the range math. Pure and size/string-driven - no DetWebServer or fs:: dependency.
+ * owner for the range math. Pure and size/string-driven - no DWS or fs:: dependency.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -18,7 +18,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_RANGE
+#if DWS_ENABLE_RANGE
 
 #include <stddef.h>
 
@@ -34,6 +34,6 @@
  */
 int http_parse_byte_range(const char *hdr, size_t size, size_t *out_start, size_t *out_end);
 
-#endif // DETWS_ENABLE_RANGE
+#endif // DWS_ENABLE_RANGE
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_HTTP_RANGE_H

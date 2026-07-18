@@ -3,25 +3,25 @@
 
 /**
  * @file 17.Provisioning.ino
- * @brief First-boot WiFi provisioning via a captive portal (DETWS_ENABLE_PROVISIONING).
+ * @brief First-boot WiFi provisioning via a captive portal (DWS_ENABLE_PROVISIONING).
  *
  * On first boot (no stored credentials) the device starts a softAP
- * "DetWS-Setup" and a catch-all DNS responder (raw lwIP UDP - no add-on
+ * "DWS-Setup" and a catch-all DNS responder (raw lwIP UDP - no add-on
  * library), so connecting a phone pops the credentials form. Submitted SSID/PSK
  * persist to NVS and the device reboots into station mode and serves normally.
  *
  * No external libraries: only WiFi (softAP), lwIP UDP, and Preferences (NVS).
- * To re-provision, call detws_provisioning_clear() (e.g. from a button handler).
+ * To re-provision, call dws_provisioning_clear() (e.g. from a button handler).
  */
 
-#define DETWS_ENABLE_PROVISIONING 1
+#define DWS_ENABLE_PROVISIONING 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
 #include "services/provisioning_service/provisioning_service.h"
 #include <WiFi.h>
 
-DetWebServer server;
+DWS server;
 
 void handle_root(uint8_t slot_id, HttpReq *req)
 {
@@ -35,7 +35,7 @@ void setup()
 
     char ssid[33];
     char psk[64];
-    if (detws_provisioning_load(ssid, sizeof(ssid), psk, sizeof(psk)))
+    if (dws_provisioning_load(ssid, sizeof(ssid), psk, sizeof(psk)))
     {
         // Credentials present: connect as a normal station.
         init_wifi_physical(ssid, psk);
@@ -54,8 +54,8 @@ void setup()
     {
         // No credentials: bring up the captive portal.
         server.begin(80);
-        detws_provisioning_begin(server, "DetWS-Setup");
-        Serial.println("Provisioning: join WiFi 'DetWS-Setup' and open any page");
+        dws_provisioning_begin(server, "DWS-Setup");
+        Serial.println("Provisioning: join WiFi 'DWS-Setup' and open any page");
     }
 }
 

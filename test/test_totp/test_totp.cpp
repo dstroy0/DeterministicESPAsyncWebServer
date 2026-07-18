@@ -23,34 +23,34 @@ void tearDown()
 void test_rfc6238_vectors()
 {
     // RFC 6238 Appendix B (SHA-1, T0=0, step=30, digits=8).
-    TEST_ASSERT_EQUAL_UINT32(94287082u, detws_totp(SECRET, SECRET_LEN, 59ull, 30, 8));
-    TEST_ASSERT_EQUAL_UINT32(7081804u, detws_totp(SECRET, SECRET_LEN, 1111111109ull, 30, 8));
-    TEST_ASSERT_EQUAL_UINT32(14050471u, detws_totp(SECRET, SECRET_LEN, 1111111111ull, 30, 8));
-    TEST_ASSERT_EQUAL_UINT32(89005924u, detws_totp(SECRET, SECRET_LEN, 1234567890ull, 30, 8));
-    TEST_ASSERT_EQUAL_UINT32(69279037u, detws_totp(SECRET, SECRET_LEN, 2000000000ull, 30, 8));
+    TEST_ASSERT_EQUAL_UINT32(94287082u, dws_totp(SECRET, SECRET_LEN, 59ull, 30, 8));
+    TEST_ASSERT_EQUAL_UINT32(7081804u, dws_totp(SECRET, SECRET_LEN, 1111111109ull, 30, 8));
+    TEST_ASSERT_EQUAL_UINT32(14050471u, dws_totp(SECRET, SECRET_LEN, 1111111111ull, 30, 8));
+    TEST_ASSERT_EQUAL_UINT32(89005924u, dws_totp(SECRET, SECRET_LEN, 1234567890ull, 30, 8));
+    TEST_ASSERT_EQUAL_UINT32(69279037u, dws_totp(SECRET, SECRET_LEN, 2000000000ull, 30, 8));
 }
 
 void test_verify_window()
 {
     uint64_t t = 1111111111ull;
-    uint32_t code = detws_totp(SECRET, SECRET_LEN, t, 30, 8); // 14050471
-    TEST_ASSERT_TRUE(detws_totp_verify(SECRET, SECRET_LEN, t, code, 30, 8, 1));
-    TEST_ASSERT_FALSE(detws_totp_verify(SECRET, SECRET_LEN, t, code + 1, 30, 8, 1));
+    uint32_t code = dws_totp(SECRET, SECRET_LEN, t, 30, 8); // 14050471
+    TEST_ASSERT_TRUE(dws_totp_verify(SECRET, SECRET_LEN, t, code, 30, 8, 1));
+    TEST_ASSERT_FALSE(dws_totp_verify(SECRET, SECRET_LEN, t, code + 1, 30, 8, 1));
     // Code from the previous step is accepted within a +/-1 window (clock skew).
-    uint32_t prev = detws_totp(SECRET, SECRET_LEN, t - 30, 30, 8);
-    TEST_ASSERT_TRUE(detws_totp_verify(SECRET, SECRET_LEN, t, prev, 30, 8, 1));
-    TEST_ASSERT_FALSE(detws_totp_verify(SECRET, SECRET_LEN, t, prev, 30, 8, 0)); // no window -> rejected
+    uint32_t prev = dws_totp(SECRET, SECRET_LEN, t - 30, 30, 8);
+    TEST_ASSERT_TRUE(dws_totp_verify(SECRET, SECRET_LEN, t, prev, 30, 8, 1));
+    TEST_ASSERT_FALSE(dws_totp_verify(SECRET, SECRET_LEN, t, prev, 30, 8, 0)); // no window -> rejected
 }
 
 void test_base32_decode()
 {
     uint8_t out[16];
-    int n = detws_base32_decode("MZXW6===", out, sizeof(out)); // -> "foo"
+    int n = dws_base32_decode("MZXW6===", out, sizeof(out)); // -> "foo"
     TEST_ASSERT_EQUAL_INT(3, n);
     TEST_ASSERT_EQUAL_UINT8_ARRAY((const uint8_t *)"foo", out, 3);
 
     // Case-insensitive, spaces/dashes ignored (how apps display a secret).
-    int n2 = detws_base32_decode("mz xw-6", out, sizeof(out));
+    int n2 = dws_base32_decode("mz xw-6", out, sizeof(out));
     TEST_ASSERT_EQUAL_INT(3, n2);
     TEST_ASSERT_EQUAL_UINT8_ARRAY((const uint8_t *)"foo", out, 3);
 }
@@ -58,8 +58,8 @@ void test_base32_decode()
 void test_base32_rejects_invalid()
 {
     uint8_t out[16];
-    TEST_ASSERT_EQUAL_INT(-1, detws_base32_decode("MZXW6!!!", out, sizeof(out))); // '!' invalid
-    TEST_ASSERT_EQUAL_INT(-1, detws_base32_decode("MZXW6MZXW6", out, 1));         // overflow
+    TEST_ASSERT_EQUAL_INT(-1, dws_base32_decode("MZXW6!!!", out, sizeof(out))); // '!' invalid
+    TEST_ASSERT_EQUAL_INT(-1, dws_base32_decode("MZXW6MZXW6", out, 1));         // overflow
 }
 
 void test_long_key_default_period_and_base32()
@@ -67,11 +67,11 @@ void test_long_key_default_period_and_base32()
     uint8_t longkey[80];
     for (int i = 0; i < 80; i++)
         longkey[i] = (uint8_t)i;
-    (void)detws_totp(longkey, sizeof(longkey), 59, 0, 6); // period 0 -> defaults to 30; long key pre-hashed
-    (void)detws_hotp(longkey, sizeof(longkey), 1, 6);
+    (void)dws_totp(longkey, sizeof(longkey), 59, 0, 6); // period 0 -> defaults to 30; long key pre-hashed
+    (void)dws_hotp(longkey, sizeof(longkey), 1, 6);
     uint8_t out[16];
-    TEST_ASSERT_TRUE(detws_base32_decode("MFRGG===", out, sizeof(out)) >= 0);  // '=' padding skipped
-    TEST_ASSERT_EQUAL_INT(-1, detws_base32_decode("MFRG!", out, sizeof(out))); // invalid char
+    TEST_ASSERT_TRUE(dws_base32_decode("MFRGG===", out, sizeof(out)) >= 0);  // '=' padding skipped
+    TEST_ASSERT_EQUAL_INT(-1, dws_base32_decode("MFRG!", out, sizeof(out))); // invalid char
 }
 
 int main()

@@ -3,11 +3,11 @@
 
 /**
  * @file sleep_sched.h
- * @brief Dynamic sleep-cycle scheduler (DETWS_ENABLE_SLEEP_SCHED).
+ * @brief Dynamic sleep-cycle scheduler (DWS_ENABLE_SLEEP_SCHED).
  *
  * Decides, from the time since the last activity, whether a low-power device should sleep between
  * requests and for how long - so a battery / solar node idles most of the time yet still serves. It is
- * a pure decision core (`detws_sleep_next`): given `now`, the last-activity timestamp, and a config, it
+ * a pure decision core (`dws_sleep_next`): given `now`, the last-activity timestamp, and a config, it
  * returns the number of milliseconds to sleep (0 = stay awake). The device stays awake until it has
  * been idle for `idle_ms`, then sleeps in windows that ramp from `min_ms` up to `max_ms` the longer the
  * idle streak runs (so a briefly-idle device wakes often and responsively, a long-idle one sleeps deep).
@@ -25,7 +25,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SLEEP_SCHED
+#if DWS_ENABLE_SLEEP_SCHED
 
 /** @brief Scheduler configuration (all times in ms). */
 struct DetwsSleepCfg
@@ -39,7 +39,7 @@ struct DetwsSleepCfg
 /**
  * @brief Milliseconds to sleep given the idle duration, or 0 to stay awake.
  *
- * @param now             current time (detws_millis units).
+ * @param now             current time (dws_millis units).
  * @param last_active_ms  timestamp of the last activity (a request, a send, app work).
  * @param cfg             thresholds.
  *
@@ -48,7 +48,7 @@ struct DetwsSleepCfg
  * streak (doubling every `cfg.ramp_ms`, or straight to `max_ms` when `ramp_ms` is 0). If `max_ms` <
  * `min_ms` the result is clamped to `min_ms`.
  */
-uint32_t detws_sleep_next(uint32_t now, uint32_t last_active_ms, const DetwsSleepCfg *cfg);
+uint32_t dws_sleep_next(uint32_t now, uint32_t last_active_ms, const DetwsSleepCfg *cfg);
 
-#endif // DETWS_ENABLE_SLEEP_SCHED
+#endif // DWS_ENABLE_SLEEP_SCHED
 #endif // DETERMINISTICESPASYNCWEBSERVER_SLEEP_SCHED_H

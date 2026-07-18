@@ -29,7 +29,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // GET /headers - attach a custom header and a cookie, then respond.
 void handle_headers(uint8_t slot_id, HttpReq *req)

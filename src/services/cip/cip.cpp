@@ -8,7 +8,7 @@
 
 #include "services/cip/cip.h"
 
-#if DETWS_ENABLE_CIP
+#if DWS_ENABLE_CIP
 
 #include <string.h>
 
@@ -106,4 +106,4 @@ bool cip_parse_response(const uint8_t *buf, size_t len, CipResponse *out)
     return true;
 }
 
-#endif // DETWS_ENABLE_CIP
+#endif // DWS_ENABLE_CIP

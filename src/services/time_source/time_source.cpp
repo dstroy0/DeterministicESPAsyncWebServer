@@ -9,9 +9,9 @@
  */
 
 #include "time_source.h"
-#include "shared_primitives/http_date.h" // detws_http_date() - the shared IMF-fixdate formatter
+#include "shared_primitives/http_date.h" // dws_http_date() - the shared IMF-fixdate formatter
 
-#if DETWS_ENABLE_TIME_SOURCE
+#if DWS_ENABLE_TIME_SOURCE
 
 namespace
 {
@@ -27,17 +27,17 @@ struct Src
 // source table and the last-selected source name, grouped so it is one named owner.
 struct TimeSourceCtx
 {
-    Src sources[DETWS_TIME_SOURCE_MAX];
+    Src sources[DWS_TIME_SOURCE_MAX];
     const char *active = nullptr;
 };
 TimeSourceCtx s_ts;
 } // namespace
 
-bool detws_time_source_add(const char *name, uint8_t priority, TimeSourceFn fn)
+bool dws_time_source_add(const char *name, uint8_t priority, TimeSourceFn fn)
 {
     if (!fn)
         return false;
-    for (int i = 0; i < DETWS_TIME_SOURCE_MAX; i++)
+    for (int i = 0; i < DWS_TIME_SOURCE_MAX; i++)
     {
         if (!s_ts.sources[i].used)
         {
@@ -51,7 +51,7 @@ bool detws_time_source_add(const char *name, uint8_t priority, TimeSourceFn fn)
     return false; // table full
 }
 
-uint32_t detws_time_now(void)
+uint32_t dws_time_now(void)
 {
     s_ts.active = nullptr;
 
@@ -60,10 +60,10 @@ uint32_t detws_time_now(void)
     // importantly, does not invoke lower-priority callbacks once a higher-priority
     // source has answered (reading an RTC / GPS can be costly).
     uint32_t queried = 0; // bitmask of sources already tried
-    for (int pass = 0; pass < DETWS_TIME_SOURCE_MAX; pass++)
+    for (int pass = 0; pass < DWS_TIME_SOURCE_MAX; pass++)
     {
         int sel = -1;
-        for (int i = 0; i < DETWS_TIME_SOURCE_MAX; i++)
+        for (int i = 0; i < DWS_TIME_SOURCE_MAX; i++)
         {
             if (!s_ts.sources[i].used || (queried & (1u << i)))
                 continue;
@@ -84,42 +84,42 @@ uint32_t detws_time_now(void)
     return 0;
 }
 
-const char *detws_time_source_active(void)
+const char *dws_time_source_active(void)
 {
     return s_ts.active;
 }
 
-void detws_time_source_reset(void)
+void dws_time_source_reset(void)
 {
-    for (int i = 0; i < DETWS_TIME_SOURCE_MAX; i++)
+    for (int i = 0; i < DWS_TIME_SOURCE_MAX; i++)
         s_ts.sources[i] = Src{};
     s_ts.active = nullptr;
 }
 
-#else // DETWS_ENABLE_TIME_SOURCE == 0 -> no-op stubs
+#else // DWS_ENABLE_TIME_SOURCE == 0 -> no-op stubs
 
-bool detws_time_source_add(const char *, uint8_t, TimeSourceFn)
+bool dws_time_source_add(const char *, uint8_t, TimeSourceFn)
 {
     return false;
 }
-uint32_t detws_time_now(void)
+uint32_t dws_time_now(void)
 {
     return 0;
 }
-const char *detws_time_source_active(void)
+const char *dws_time_source_active(void)
 {
     return nullptr;
 }
-void detws_time_source_reset(void)
+void dws_time_source_reset(void)
 {
 }
 
-#endif // DETWS_ENABLE_TIME_SOURCE
+#endif // DWS_ENABLE_TIME_SOURCE
 
-// The current best time (detws_time_now, any registered NTP / GPS / RTC / ... source) as an RFC 7231
-// IMF-fixdate. Defined unconditionally: with the registry disabled detws_time_now() is 0, so this
+// The current best time (dws_time_now, any registered NTP / GPS / RTC / ... source) as an RFC 7231
+// IMF-fixdate. Defined unconditionally: with the registry disabled dws_time_now() is 0, so this
 // returns 0 (no Date). Lets the HTTP Date header draw from whatever time source is enabled.
-size_t detws_time_http_date(char *out, size_t out_cap)
+size_t dws_time_http_date(char *out, size_t out_cap)
 {
-    return detws_http_date((time_t)detws_time_now(), out, out_cap);
+    return dws_http_date((time_t)dws_time_now(), out, out_cap);
 }

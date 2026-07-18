@@ -29,7 +29,7 @@
  * @return 0 on success, or -1 if the buffer is already full or the fragment would not fit (the buffer is
  *         left truncated, so the caller fails closed rather than overflowing).
  */
-inline int det_fmt_append(char *out, size_t cap, size_t *pos, const char *fmt, ...)
+inline int dws_fmt_append(char *out, size_t cap, size_t *pos, const char *fmt, ...)
 {
     if (*pos >= cap)
         return -1;

@@ -96,7 +96,7 @@ static void sha512_block(uint64_t h[8], const uint8_t blk[128])
 {
     uint64_t W[80];
     for (int i = 0; i < 16; i++)
-        W[i] = det_rd64be(blk + i * 8);
+        W[i] = dws_rd64be(blk + i * 8);
     for (int i = 16; i < 80; i++)
     {
         uint64_t s0 = rotr64(W[i - 15], 1) ^ rotr64(W[i - 15], 8) ^ (W[i - 15] >> 7); // σ0
@@ -188,12 +188,12 @@ void ssh_sha512_final(SshSha512Ctx *ctx, uint8_t digest[SSH_SHA512_DIGEST_LEN])
     while (ctx->buflen < 112)
         ctx->buf[ctx->buflen++] = 0x00;
 
-    det_wr64be(ctx->buf + 112, len_hi);
-    det_wr64be(ctx->buf + 120, len_lo);
+    dws_wr64be(ctx->buf + 112, len_hi);
+    dws_wr64be(ctx->buf + 120, len_lo);
     sha512_block(ctx->s, ctx->buf);
 
     for (int i = 0; i < 8; i++)
-        det_wr64be(digest + i * 8, ctx->s[i]);
+        dws_wr64be(digest + i * 8, ctx->s[i]);
 }
 
 void ssh_sha512(const uint8_t *data, size_t len, uint8_t digest[SSH_SHA512_DIGEST_LEN])

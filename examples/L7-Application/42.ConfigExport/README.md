@@ -1,6 +1,6 @@
 # 42.ConfigExport - schema-driven config export / restore
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_CONFIG_STORE`, `DETWS_ENABLE_CONFIG_IO`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_CONFIG_STORE`, `DWS_ENABLE_CONFIG_IO`
 
 ## What this example teaches
 
@@ -14,9 +14,9 @@ typed NVS config store - deterministic and zero-heap.
 
 ```cpp
 static const DetwsCfgField SCHEMA[] = {
-    {"hostname",  DETWS_CFG_STR},
-    {"http_port", DETWS_CFG_U32},
-    {"location",  DETWS_CFG_STR},
+    {"hostname",  DWS_CFG_STR},
+    {"http_port", DWS_CFG_U32},
+    {"location",  DWS_CFG_STR},
 };
 ```
 
@@ -25,8 +25,8 @@ namespace ("app") and seeded; export serializes exactly the schema fields, impor
 parses them back:
 
 ```cpp
-detws_config_export("app", SCHEMA, SCHEMA_N, buf, sizeof(buf));            // GET -> key=value lines
-int n = detws_config_import("app", SCHEMA, SCHEMA_N, req->body, req->body_len); // POST -> n fields restored
+dws_config_export("app", SCHEMA, SCHEMA_N, buf, sizeof(buf));            // GET -> key=value lines
+int n = dws_config_import("app", SCHEMA, SCHEMA_N, req->body, req->body_len); // POST -> n fields restored
 ```
 
 Because both sides share the schema, an unknown or mistyped key in the import body
@@ -36,7 +36,7 @@ is rejected rather than silently written.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_CONFIG_STORE=1 -DDETWS_ENABLE_CONFIG_IO=1" \
+  --project-option="build_flags=-DDWS_ENABLE_CONFIG_STORE=1 -DDWS_ENABLE_CONFIG_IO=1" \
   --lib="." examples/L7-Application/42.ConfigExport/42.ConfigExport.ino
 ```
 
@@ -54,8 +54,8 @@ verbatim with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_CONFIG_STORE 1
-#define DETWS_ENABLE_CONFIG_IO 1
+#define DWS_ENABLE_CONFIG_STORE 1
+#define DWS_ENABLE_CONFIG_IO 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -66,13 +66,13 @@ verbatim with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // The persisted fields to back up / restore (shared by export and import).
 static const DetwsCfgField SCHEMA[] = {
-    {"hostname", DETWS_CFG_STR},
-    {"http_port", DETWS_CFG_U32},
-    {"location", DETWS_CFG_STR},
+    {"hostname", DWS_CFG_STR},
+    {"http_port", DWS_CFG_U32},
+    {"location", DWS_CFG_STR},
 };
 static const size_t SCHEMA_N = sizeof(SCHEMA) / sizeof(SCHEMA[0]);
 
@@ -87,18 +87,18 @@ void setup()
     WiFi.setSleep(false);
 
     // Seed a couple of values (normally set at provisioning).
-    detws_config_begin("app");
-    detws_config_set_str("hostname", "sensor-01");
-    detws_config_set_u32("http_port", 80);
-    detws_config_set_str("location", "lab");
+    dws_config_begin("app");
+    dws_config_set_str("hostname", "sensor-01");
+    dws_config_set_u32("http_port", 80);
+    dws_config_set_str("location", "lab");
 
     server.on("/config", HTTP_GET, [](uint8_t id, HttpReq *) {
         char buf[512];
-        detws_config_export("app", SCHEMA, SCHEMA_N, buf, sizeof(buf));
+        dws_config_export("app", SCHEMA, SCHEMA_N, buf, sizeof(buf));
         server.send(id, 200, "text/plain", buf);
     });
     server.on("/config", HTTP_POST, [](uint8_t id, HttpReq *req) {
-        int n = detws_config_import("app", SCHEMA, SCHEMA_N, (const char *)req->body, req->body_len);
+        int n = dws_config_import("app", SCHEMA, SCHEMA_N, (const char *)req->body, req->body_len);
         char msg[48];
         snprintf(msg, sizeof(msg), "imported %d field(s)\n", n);
         server.send(id, 200, "text/plain", msg);

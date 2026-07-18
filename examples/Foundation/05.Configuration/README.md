@@ -17,11 +17,11 @@ value instead of the default. Here the optional subsystems are stripped and the
 buffers are shrunk for a small sensor node:
 
 ```cpp
-#define DETWS_ENABLE_WEBSOCKET 0   // strip features entirely: no code, no RAM, no flash
-#define DETWS_ENABLE_SSE 0
-#define DETWS_ENABLE_MULTIPART 0
-#define DETWS_ENABLE_FILE_SERVING 0
-#define DETWS_ENABLE_AUTH 0
+#define DWS_ENABLE_WEBSOCKET 0   // strip features entirely: no code, no RAM, no flash
+#define DWS_ENABLE_SSE 0
+#define DWS_ENABLE_MULTIPART 0
+#define DWS_ENABLE_FILE_SERVING 0
+#define DWS_ENABLE_AUTH 0
 #define MAX_CONNS 2                 // tighten capacity to roughly halve RAM
 #define RX_BUF_SIZE 512
 #define BODY_BUF_SIZE 128
@@ -63,7 +63,7 @@ needs its parent; illegal combinations fail with a compile-time `#error`).
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_DIAG=1" \
+  --project-option="build_flags=-DDWS_ENABLE_DIAG=1" \
   --lib="." examples/Foundation/05.Configuration/05.Configuration.ino
 ```
 
@@ -104,14 +104,14 @@ annotated.
 // nodes sharing the heap with other subsystems. Each #define MUST precede the
 // library include to take effect.
 // -------------------------------------------------------------------
-#define DETWS_ENABLE_WEBSOCKET 0
-#define DETWS_ENABLE_SSE 0
-#define DETWS_ENABLE_MULTIPART 0
-#define DETWS_ENABLE_FILE_SERVING 0
-#define DETWS_ENABLE_AUTH 0
+#define DWS_ENABLE_WEBSOCKET 0
+#define DWS_ENABLE_SSE 0
+#define DWS_ENABLE_MULTIPART 0
+#define DWS_ENABLE_FILE_SERVING 0
+#define DWS_ENABLE_AUTH 0
 
 // Diagnostic endpoint: exposes the compile-time config; disable in production.
-#define DETWS_ENABLE_DIAG 1
+#define DWS_ENABLE_DIAG 1
 
 // Tightened capacity to match a small REST API (every value sizes a BSS array).
 #define MAX_CONNS 2
@@ -136,7 +136,7 @@ annotated.
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // GET /config - return every active sizing constant as JSON so you can verify
 // your build flags / #defines took effect without a debugger.
@@ -195,7 +195,7 @@ void setup()
     Serial.begin(115200);
 
     // Print the active config so you can confirm overrides without curl.
-    Serial.println("\n--- Active DetWebServer config ---");
+    Serial.println("\n--- Active DWS config ---");
     Serial.printf("  MAX_CONNS        = %u\n", (unsigned)MAX_CONNS);
     Serial.printf("  RX_BUF_SIZE      = %u\n", (unsigned)RX_BUF_SIZE);
     Serial.printf("  CONN_TIMEOUT_MS  = %u\n", (unsigned)CONN_TIMEOUT_MS);
@@ -217,7 +217,7 @@ void setup()
     server.on("/echo", HTTP_POST, handle_echo);
     server.on("/search", HTTP_GET, handle_search);
 
-    // Diagnostic route (DETWS_ENABLE_DIAG=1): remove or protect in production.
+    // Diagnostic route (DWS_ENABLE_DIAG=1): remove or protect in production.
     server.on("/diag", HTTP_GET, [](uint8_t id, HttpReq *) { server.diag(id); });
 
     // Pass a runtime config to override the idle timeout without a rebuild.

@@ -23,7 +23,7 @@ void test_snapshot_json(void)
     };
     AtcFieldIo io = {pts, 3};
     char buf[256];
-    size_t n = detws_atc_snapshot_json(&io, buf, sizeof(buf));
+    size_t n = dws_atc_snapshot_json(&io, buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
     TEST_ASSERT_NOT_NULL(strstr(buf, "\"inputs\":[{\"name\":\"det.1\",\"value\":1}"));
@@ -36,12 +36,12 @@ void test_set_output(void)
     AtcPoint pts[2] = {{"det.1", false, 0}, {"phase.1.green", true, 0}};
     AtcFieldIo io = {pts, 2};
     // Set an output.
-    TEST_ASSERT_TRUE(detws_atc_set_output(&io, "phase.1.green", 1));
+    TEST_ASSERT_TRUE(dws_atc_set_output(&io, "phase.1.green", 1));
     TEST_ASSERT_EQUAL_UINT8(1, pts[1].value);
     // Cannot set an input.
-    TEST_ASSERT_FALSE(detws_atc_set_output(&io, "det.1", 1));
+    TEST_ASSERT_FALSE(dws_atc_set_output(&io, "det.1", 1));
     // Unknown name.
-    TEST_ASSERT_FALSE(detws_atc_set_output(&io, "nope", 1));
+    TEST_ASSERT_FALSE(dws_atc_set_output(&io, "nope", 1));
 }
 
 void test_get(void)
@@ -49,9 +49,9 @@ void test_get(void)
     AtcPoint pts[2] = {{"det.1", false, 42}, {"out.1", true, 7}};
     AtcFieldIo io = {pts, 2};
     bool found = false;
-    TEST_ASSERT_EQUAL_UINT8(42, detws_atc_get(&io, "det.1", &found));
+    TEST_ASSERT_EQUAL_UINT8(42, dws_atc_get(&io, "det.1", &found));
     TEST_ASSERT_TRUE(found);
-    detws_atc_get(&io, "missing", &found);
+    dws_atc_get(&io, "missing", &found);
     TEST_ASSERT_FALSE(found);
 }
 
@@ -59,14 +59,14 @@ void test_empty_and_overflow(void)
 {
     AtcFieldIo io = {nullptr, 0};
     char buf[64];
-    size_t n = detws_atc_snapshot_json(&io, buf, sizeof(buf));
+    size_t n = dws_atc_snapshot_json(&io, buf, sizeof(buf));
     TEST_ASSERT_EQUAL_STRING("{\"inputs\":[],\"outputs\":[]}", buf);
     TEST_ASSERT_EQUAL_size_t(strlen("{\"inputs\":[],\"outputs\":[]}"), n);
 
     AtcPoint pts[1] = {{"a-long-input-name", false, 1}};
     AtcFieldIo io2 = {pts, 1};
     char small[16];
-    TEST_ASSERT_EQUAL_size_t(0, detws_atc_snapshot_json(&io2, small, sizeof(small)));
+    TEST_ASSERT_EQUAL_size_t(0, dws_atc_snapshot_json(&io2, small, sizeof(small)));
 }
 
 void test_json_escapes_and_overflow()
@@ -74,10 +74,10 @@ void test_json_escapes_and_overflow()
     AtcPoint pts[1] = {{"a\"b\\c", false, 1}}; // name with a quote + backslash gets escaped
     AtcFieldIo io = {pts, 1};
     char buf[128];
-    size_t n = detws_atc_snapshot_json(&io, buf, sizeof(buf));
+    size_t n = dws_atc_snapshot_json(&io, buf, sizeof(buf));
     TEST_ASSERT_TRUE(n > 0);
-    TEST_ASSERT_NOT_NULL(strstr(buf, "\\\""));                         // escaped quote present
-    TEST_ASSERT_EQUAL_size_t(0, detws_atc_snapshot_json(&io, buf, 8)); // tiny cap fails closed
+    TEST_ASSERT_NOT_NULL(strstr(buf, "\\\""));                       // escaped quote present
+    TEST_ASSERT_EQUAL_size_t(0, dws_atc_snapshot_json(&io, buf, 8)); // tiny cap fails closed
 }
 
 int main(void)

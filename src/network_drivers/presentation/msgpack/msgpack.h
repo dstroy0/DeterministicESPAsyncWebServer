@@ -32,7 +32,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_MSGPACK
+#if DWS_ENABLE_MSGPACK
 
 /** @brief MessagePack encoder state over a caller-provided buffer. */
 struct MsgpackWriter
@@ -110,5 +110,5 @@ bool msgpack_read_bytes(MsgpackReader *r, const uint8_t **out, size_t *len); ///
 bool msgpack_read_array(MsgpackReader *r, size_t *count);                    ///< array header (object count)
 bool msgpack_read_map(MsgpackReader *r, size_t *count);                      ///< map header (key/value pair count)
 
-#endif // DETWS_ENABLE_MSGPACK
+#endif // DWS_ENABLE_MSGPACK
 #endif // DETERMINISTICESPASYNCWEBSERVER_MSGPACK_H

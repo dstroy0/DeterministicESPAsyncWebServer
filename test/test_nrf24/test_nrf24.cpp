@@ -6,7 +6,7 @@
 // W_TX_PAYLOAD / R_RX_PAYLOAD, and STATUS write-1-to-clear. init / send / tx-done / set-rx
 // / recv are verified without a radio (the RF link needs the module).
 //
-// The env sizes DETWS_NRF24_PAYLOAD = 8.
+// The env sizes DWS_NRF24_PAYLOAD = 8.
 
 #include "services/nrf24/nrf24.h"
 #include <string.h>
@@ -96,7 +96,7 @@ void test_init_configures_and_powers_up()
     TEST_ASSERT_EQUAL_HEX8(0x0E, g.reg[0x00]);       // CONFIG = EN_CRC|CRCO|PWR_UP (PRX bit clear)
     TEST_ASSERT_EQUAL_UINT8(76, g.reg[0x05]);        // RF_CH
     TEST_ASSERT_EQUAL_HEX8(0x03, g.reg[0x03]);       // SETUP_AW = 5-byte
-    TEST_ASSERT_EQUAL_UINT8(8, g.reg[0x11]);         // RX_PW_P0 = DETWS_NRF24_PAYLOAD
+    TEST_ASSERT_EQUAL_UINT8(8, g.reg[0x11]);         // RX_PW_P0 = DWS_NRF24_PAYLOAD
     TEST_ASSERT_EQUAL_MEMORY(ADDR, g.rx_addr_p0, 5); // RX_ADDR_P0
     TEST_ASSERT_EQUAL_MEMORY(ADDR, g.tx_addr, 5);    // TX_ADDR
     TEST_ASSERT_FALSE(g.ce);                         // CE stays low until set_rx / send
@@ -125,7 +125,7 @@ void test_send_pads_to_width_and_keys_tx()
 void test_send_rejects_oversize()
 {
     const uint8_t big[9] = {0};
-    TEST_ASSERT_FALSE(nrf24_send(&g_bus, big, 9)); // > DETWS_NRF24_PAYLOAD (8)
+    TEST_ASSERT_FALSE(nrf24_send(&g_bus, big, 9)); // > DWS_NRF24_PAYLOAD (8)
 }
 
 void test_tx_done_flag()

@@ -3,7 +3,7 @@
 
 /**
  * @file 01.Basic.ino
- * @brief Entry-level example demonstrating the core DetWebServer features.
+ * @brief Entry-level example demonstrating the core DWS features.
  *
  * Demonstrates:
  *   - WiFi connection via init_wifi_physical() + wifi_ready() polling
@@ -41,7 +41,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static unsigned long request_count = 0;
 

@@ -6,7 +6,7 @@
 // a round trip, malformed framing (bad SOF / checksum / length), incomplete frames, and the
 // ACK / NAK / CAN control bytes. Pure host tests.
 //
-// The env sizes DETWS_ZWAVE_MAX_DATA = 16.
+// The env sizes DWS_ZWAVE_MAX_DATA = 16.
 
 #include "services/zwave/zwave.h"
 #include <unity.h>
@@ -77,7 +77,7 @@ void test_parse_needs_more_bytes()
 
 void test_parse_rejects_over_length()
 {
-    // frame_len 80 (> DETWS_ZWAVE_MAX_DATA + 3 = 19) is rejected early.
+    // frame_len 80 (> DWS_ZWAVE_MAX_DATA + 3 = 19) is rejected early.
     const uint8_t frame[4] = {0x01, 0x50, 0x00, 0x00};
     TEST_ASSERT_EQUAL_INT(-1, zwave_parse_frame(frame, sizeof(frame), nullptr, nullptr, nullptr, nullptr));
 }

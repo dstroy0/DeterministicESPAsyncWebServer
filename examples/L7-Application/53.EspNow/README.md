@@ -1,6 +1,6 @@
 # 53.EspNow - ESP-NOW peer messaging
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_ESPNOW`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_ESPNOW`
 
 ## What this example teaches
 
@@ -15,7 +15,7 @@ see each other over Serial. Messages carry a 1-byte type so a receiver can demux
 WiFi.mode(WIFI_STA);
 WiFi.disconnect();
 esp_wifi_set_channel(CHANNEL, WIFI_SECOND_CHAN_NONE); // both peers must share a channel
-detws_espnow_begin(CHANNEL, on_espnow);
+dws_espnow_begin(CHANNEL, on_espnow);
 ```
 
 **Receive callback gets the sender MAC, a type byte, and the payload:**
@@ -30,7 +30,7 @@ static void on_espnow(const uint8_t mac[6], uint8_t type, const uint8_t *payload
 **Broadcast with a type tag:**
 
 ```cpp
-detws_espnow_broadcast(MSG_COUNTER, (const uint8_t *)msg, len);
+dws_espnow_broadcast(MSG_COUNTER, (const uint8_t *)msg, len);
 ```
 
 This sketch has no web server - it is pure radio - but to bridge ESP-NOW into the
@@ -41,7 +41,7 @@ traffic out to browser WebSocket clients.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_ESPNOW=1" \
+  --project-option="build_flags=-DDWS_ENABLE_ESPNOW=1" \
   --lib="." examples/L7-Application/53.EspNow/53.EspNow.ino
 ```
 
@@ -57,7 +57,7 @@ explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_ESPNOW 1
+#define DWS_ENABLE_ESPNOW 1
 
 #include "services/espnow/espnow.h"
 #include <WiFi.h>
@@ -83,7 +83,7 @@ void setup()
     WiFi.disconnect();
     esp_wifi_set_channel(CHANNEL, WIFI_SECOND_CHAN_NONE);
 
-    if (!detws_espnow_begin(CHANNEL, on_espnow))
+    if (!dws_espnow_begin(CHANNEL, on_espnow))
     {
         Serial.println("ESP-NOW init failed");
         return;
@@ -103,7 +103,7 @@ void loop()
         last = millis();
         char msg[24];
         int len = snprintf(msg, sizeof(msg), "count=%lu", (unsigned long)n++);
-        bool ok = detws_espnow_broadcast(MSG_COUNTER, (const uint8_t *)msg, (size_t)len);
+        bool ok = dws_espnow_broadcast(MSG_COUNTER, (const uint8_t *)msg, (size_t)len);
         Serial.printf("broadcast %s -> %s\n", msg, ok ? "ok" : "FAIL");
     }
 }

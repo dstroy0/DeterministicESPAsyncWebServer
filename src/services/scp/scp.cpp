@@ -8,7 +8,7 @@
 
 #include "services/scp/scp.h"
 
-#if DETWS_ENABLE_SSH_SCP
+#if DWS_ENABLE_SSH_SCP
 
 #include <stdio.h>
 #include <string.h>
@@ -108,4 +108,4 @@ size_t scp_build_cline(uint32_t mode, uint64_t size, const char *name, char *out
     return (size_t)n;
 }
 
-#endif // DETWS_ENABLE_SSH_SCP
+#endif // DWS_ENABLE_SSH_SCP

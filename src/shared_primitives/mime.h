@@ -22,10 +22,10 @@
 #ifndef DETERMINISTICESPASYNCWEBSERVER_DET_MIME_H
 #define DETERMINISTICESPASYNCWEBSERVER_DET_MIME_H
 
-static const char *const DET_MIME_JSON = "application/json";
-static const char *const DET_MIME_TEXT_PLAIN = "text/plain";
-static const char *const DET_MIME_TEXT_HTML = "text/html";
-static const char *const DET_MIME_OCTET_STREAM = "application/octet-stream";
-static const char *const DET_MIME_JAVASCRIPT = "application/javascript";
+static const char *const DWS_MIME_JSON = "application/json";
+static const char *const DWS_MIME_TEXT_PLAIN = "text/plain";
+static const char *const DWS_MIME_TEXT_HTML = "text/html";
+static const char *const DWS_MIME_OCTET_STREAM = "application/octet-stream";
+static const char *const DWS_MIME_JAVASCRIPT = "application/javascript";
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DET_MIME_H

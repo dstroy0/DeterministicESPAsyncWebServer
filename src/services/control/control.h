@@ -3,7 +3,7 @@
 
 /**
  * @file control.h
- * @brief Closed-loop control law (DETWS_ENABLE_CONTROL) - a zero-heap PID controller plus a
+ * @brief Closed-loop control law (DWS_ENABLE_CONTROL) - a zero-heap PID controller plus a
  *        handful of inline control-law primitives, for driving an actuator toward a setpoint.
  *
  * The PID is the textbook parallel form with the corrections that matter on real hardware:
@@ -34,7 +34,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_CONTROL
+#if DWS_ENABLE_CONTROL
 
 #include <stddef.h>
 #include <stdint.h>
@@ -219,6 +219,6 @@ size_t pid_log_header(uint8_t *buf, size_t cap, const Pid *p, float dt);
 /// Write one 16-octet dense-binary log record. Returns PID_LOG_RECORD_LEN, or 0 if cap too small.
 size_t pid_log_record(uint8_t *buf, size_t cap, float setpoint, float measurement, float output, bool saturated);
 
-#endif // DETWS_ENABLE_CONTROL
+#endif // DWS_ENABLE_CONTROL
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_CONTROL_H

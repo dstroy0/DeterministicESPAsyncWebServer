@@ -11,7 +11,7 @@
 
 #include "services/totp/totp.h"
 
-#if DETWS_ENABLE_TOTP
+#if DWS_ENABLE_TOTP
 
 #include "network_drivers/presentation/sha1/sha1.h"
 #include <string.h>
@@ -58,7 +58,7 @@ uint32_t pow10u(uint8_t n)
 }
 } // namespace
 
-uint32_t detws_hotp(const uint8_t *key, size_t keylen, uint64_t counter, uint8_t digits)
+uint32_t dws_hotp(const uint8_t *key, size_t keylen, uint64_t counter, uint8_t digits)
 {
     uint8_t msg[8];
     for (int i = 7; i >= 0; i--)
@@ -75,15 +75,15 @@ uint32_t detws_hotp(const uint8_t *key, size_t keylen, uint64_t counter, uint8_t
     return bin % pow10u(digits);
 }
 
-uint32_t detws_totp(const uint8_t *key, size_t keylen, uint64_t unix_time, uint32_t period, uint8_t digits)
+uint32_t dws_totp(const uint8_t *key, size_t keylen, uint64_t unix_time, uint32_t period, uint8_t digits)
 {
     if (period == 0)
         period = 30;
-    return detws_hotp(key, keylen, unix_time / period, digits);
+    return dws_hotp(key, keylen, unix_time / period, digits);
 }
 
-bool detws_totp_verify(const uint8_t *key, size_t keylen, uint64_t unix_time, uint32_t code, uint32_t period,
-                       uint8_t digits, int window)
+bool dws_totp_verify(const uint8_t *key, size_t keylen, uint64_t unix_time, uint32_t code, uint32_t period,
+                     uint8_t digits, int window)
 {
     if (period == 0)
         period = 30;
@@ -93,13 +93,13 @@ bool detws_totp_verify(const uint8_t *key, size_t keylen, uint64_t unix_time, ui
         int64_t c = step + w;
         if (c < 0)
             continue;
-        if (detws_hotp(key, keylen, (uint64_t)c, digits) == code)
+        if (dws_hotp(key, keylen, (uint64_t)c, digits) == code)
             return true;
     }
     return false;
 }
 
-int detws_base32_decode(const char *b32, uint8_t *out, size_t cap)
+int dws_base32_decode(const char *b32, uint8_t *out, size_t cap)
 {
     if (!b32 || !out)
         return -1;
@@ -133,4 +133,4 @@ int detws_base32_decode(const char *b32, uint8_t *out, size_t cap)
     return (int)n;
 }
 
-#endif // DETWS_ENABLE_TOTP
+#endif // DWS_ENABLE_TOTP

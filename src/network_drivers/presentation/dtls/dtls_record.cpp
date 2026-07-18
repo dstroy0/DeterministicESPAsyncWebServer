@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/dtls/dtls_record.h"
 
-#if DETWS_ENABLE_DTLS
+#if DWS_ENABLE_DTLS
 
 #include "network_drivers/presentation/http3/quic_aead.h"
 #include "network_drivers/presentation/http3/tls13_kdf.h"
@@ -297,4 +297,4 @@ void dtls_replay_mark(DtlsReplayWindow *w, uint64_t seq)
         w->bitmap |= ((uint64_t)1 << diff);
 }
 
-#endif // DETWS_ENABLE_DTLS
+#endif // DWS_ENABLE_DTLS

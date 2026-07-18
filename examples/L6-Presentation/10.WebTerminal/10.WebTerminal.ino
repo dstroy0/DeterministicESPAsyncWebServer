@@ -18,12 +18,12 @@
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see. The `#define` below documents intent, but for PlatformIO you must
  * enable it for the whole build, e.g. in platformio.ini:
- *     build_flags = -DDETWS_ENABLE_WEB_TERMINAL=1
+ *     build_flags = -DDWS_ENABLE_WEB_TERMINAL=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.) A define in the
  * sketch alone does not reach the separately-compiled library .cpp.
  */
 
-#define DETWS_ENABLE_WEB_TERMINAL 1
+#define DWS_ENABLE_WEB_TERMINAL 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -33,20 +33,20 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // Browser -> device: handle a typed command line.
 void on_command(const char *line, uint8_t client_id)
 {
     (void)client_id;
     if (strcmp(line, "help") == 0)
-        detws_web_terminal_println("commands: help, heap, uptime, <echo>");
+        dws_web_terminal_println("commands: help, heap, uptime, <echo>");
     else if (strcmp(line, "heap") == 0)
-        detws_web_terminal_printf("free heap: %u bytes\n", ESP.getFreeHeap());
+        dws_web_terminal_printf("free heap: %u bytes\n", ESP.getFreeHeap());
     else if (strcmp(line, "uptime") == 0)
-        detws_web_terminal_printf("uptime: %lu ms\n", millis());
+        dws_web_terminal_printf("uptime: %lu ms\n", millis());
     else
-        detws_web_terminal_printf("echo: %s\n", line);
+        dws_web_terminal_printf("echo: %s\n", line);
 }
 
 void setup()
@@ -66,8 +66,8 @@ void setup()
 
     WiFi.setSleep(false);
 
-    detws_web_terminal_begin(server, "/terminal");
-    detws_web_terminal_on_command(on_command);
+    dws_web_terminal_begin(server, "/terminal");
+    dws_web_terminal_on_command(on_command);
 
     int32_t result = server.begin(80);
     if (result < 0)
@@ -87,7 +87,7 @@ void loop()
     if (millis() - last >= 3000)
     {
         last = millis();
-        if (detws_web_terminal_client_count() > 0)
-            detws_web_terminal_printf("uptime %lu ms, heap %u\n", millis(), ESP.getFreeHeap());
+        if (dws_web_terminal_client_count() > 0)
+            dws_web_terminal_printf("uptime %lu ms, heap %u\n", millis(), ESP.getFreeHeap());
     }
 }

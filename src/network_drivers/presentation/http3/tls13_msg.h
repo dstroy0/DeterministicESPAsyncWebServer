@@ -32,7 +32,7 @@
 // Shared by the HTTP/3 (QUIC) handshake and the DTLS 1.3 handshake: both carry the same TLS 1.3
 // messages, so this module compiles for either. The DTLS-specific additions (HelloRetryRequest, the
 // cookie extension, the sec 4.4.1 message_hash) are used by the DTLS handshake but are valid TLS 1.3.
-#if (DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS)
+#if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS)
 
 #include <stddef.h>
 #include <stdint.h>
@@ -50,7 +50,7 @@ struct TlsHs
 
 #define TLS_CIPHER_AES_128_GCM_SHA256 0x1301 ///< the one cipher suite we support
 #define TLS_GROUP_X25519 0x001d              ///< the classical key-exchange group we support
-#define TLS_GROUP_X25519MLKEM768 0x11ec      ///< PQ/T hybrid group (ML-KEM-768 + X25519), when DETWS_ENABLE_PQC_KEX
+#define TLS_GROUP_X25519MLKEM768 0x11ec      ///< PQ/T hybrid group (ML-KEM-768 + X25519), when DWS_ENABLE_PQC_KEX
 #define TLS_SIG_ED25519 0x0807               ///< the one signature scheme we produce
 #define TLS_VERSION_1_3 0x0304               ///< supported_versions selected value (TLS 1.3)
 static constexpr uint16_t TLS_VERSION_DTLS_1_3 = 0xFEFC;    ///< supported_versions selected value (DTLS 1.3, RFC 9147)
@@ -64,7 +64,7 @@ struct Tls13ClientHello
     uint8_t session_id_len;
     uint8_t client_x25519[32]; ///< the client's X25519 key_share (valid iff has_key_share or has_hybrid_share)
     bool has_key_share;
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
     bool offers_x25519mlkem768;     ///< supported_groups contains X25519MLKEM768
     bool has_hybrid_share;          ///< key_share carried an X25519MLKEM768 entry
     const uint8_t *client_mlkem_ek; ///< the client's ML-KEM-768 encapsulation key (1184 B, aliases input)
@@ -192,5 +192,5 @@ size_t tls13_build_encrypted_extensions_empty(uint8_t *out, size_t cap);
  */
 size_t tls13_build_message_hash(uint8_t *out, size_t cap, const uint8_t ch1_hash[32]);
 
-#endif // DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS
+#endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_TLS13_MSG_H

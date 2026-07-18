@@ -1,6 +1,6 @@
 # 06.JWTAuth - stateless bearer-token auth (JWT HS256)
 
-**Layer:** L6 Presentation · **Build flags:** `DETWS_ENABLE_JWT`
+**Layer:** L6 Presentation · **Build flags:** `DWS_ENABLE_JWT`
 
 ## What this example teaches
 
@@ -13,7 +13,7 @@ constrained device).
 **Verify the signature.** `jwt_bearer_valid()` checks the whole
 `Authorization` header against the secret. The full header is in
 `req->authorization` - JWTs exceed `MAX_VAL_LEN`, so the parser captures the
-authorization header whole when `DETWS_ENABLE_JWT` is set:
+authorization header whole when `DWS_ENABLE_JWT` is set:
 
 ```cpp
 if (!jwt_bearer_valid(req->authorization, (const uint8_t *)JWT_SECRET, strlen(JWT_SECRET))) {
@@ -48,7 +48,7 @@ includes a ready-made token to try.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_JWT=1" \
+  --project-option="build_flags=-DDWS_ENABLE_JWT=1" \
   --lib="." examples/L6-Presentation/06.JWTAuth/06.JWTAuth.ino
 ```
 
@@ -66,7 +66,7 @@ added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_JWT 1
+#define DWS_ENABLE_JWT 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -79,12 +79,12 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 // DEMO shared secret - the issuer signs tokens with this; keep it secret in production.
 static const char *JWT_SECRET = "s3cr3t-key";
 
-DetWebServer server;
+DWS server;
 
 static void protected_handler(uint8_t id, HttpReq *req)
 {
     // req->authorization holds the FULL Authorization header (JWTs exceed
-    // MAX_VAL_LEN; the parser captures it whole when DETWS_ENABLE_JWT is set).
+    // MAX_VAL_LEN; the parser captures it whole when DWS_ENABLE_JWT is set).
     if (!jwt_bearer_valid(req->authorization, (const uint8_t *)JWT_SECRET, strlen(JWT_SECRET)))
     {
         server.add_response_header(id, "WWW-Authenticate", "Bearer");

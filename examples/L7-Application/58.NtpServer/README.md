@@ -22,7 +22,7 @@ sources, best first, and serves whichever is available:
 2. **The internet NTP pool (fallback).** If there is no GPS fix yet but the device _does_
    have internet, it falls back to `pool.ntp.org`.
 
-`detws_time_now()` asks the sources in priority order and returns the first good answer, so
+`dws_time_now()` asks the sources in priority order and returns the first good answer, so
 you get GPS when it is locked and the internet pool otherwise, seamlessly.
 
 ```
@@ -109,7 +109,7 @@ The feature lives in the library, so its flags must reach the whole build:
 ```bash
 pio ci examples/L7-Application/58.NtpServer \
   --board esp32dev --lib "." \
-  --project-option="build_flags=-DDETWS_ENABLE_NTP_SERVER=1 -DDETWS_ENABLE_TIME_SOURCE=1 -DDETWS_ENABLE_NMEA0183=1 -DDETWS_ENABLE_NTP=1"
+  --project-option="build_flags=-DDWS_ENABLE_NTP_SERVER=1 -DDWS_ENABLE_TIME_SOURCE=1 -DDWS_ENABLE_NMEA0183=1 -DDWS_ENABLE_NTP=1"
 ```
 
 (The Arduino IDE reads the flags from `build_opt.h` beside the sketch automatically.)
@@ -119,9 +119,9 @@ pio ci examples/L7-Application/58.NtpServer \
 ## How it works (for the curious)
 
 `ntp_server_begin(stratum, refid)` binds UDP/123 through the library's transport UDP service
-and answers each 48-byte NTP request from `detws_time_now()`, echoing the client's transmit
+and answers each 48-byte NTP request from `dws_time_now()`, echoing the client's transmit
 timestamp so it can measure the round-trip delay. The time comes from **time sources** you
-register with `detws_time_source_add(name, priority, fn)` - here a GPS parser (priority 1)
+register with `dws_time_source_add(name, priority, fn)` - here a GPS parser (priority 1)
 and the SNTP client (priority 2). The GPS parser reads standard `$GPRMC` sentences with the
 zero-heap `nmea0183` codec, pulls out the UTC time and date, and converts them to a Unix
 timestamp. Everything is fixed-buffer and heap-free, and the response builder is unit-tested

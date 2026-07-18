@@ -9,7 +9,7 @@
 
 #include "spnego.h"
 
-#if DETWS_ENABLE_SMB
+#if DWS_ENABLE_SMB
 
 #include <string.h>
 
@@ -170,4 +170,4 @@ bool spnego_parse_response(const uint8_t *blob, size_t len, const uint8_t **resp
     return false;
 }
 
-#endif // DETWS_ENABLE_SMB
+#endif // DWS_ENABLE_SMB

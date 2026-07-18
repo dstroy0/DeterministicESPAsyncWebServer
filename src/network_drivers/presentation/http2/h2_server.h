@@ -9,7 +9,7 @@
  * this module instead of the HTTP/1.1 parser. It runs one h2_conn per connection slot, maps each
  * decoded request's pseudo-headers (:method / :path / :authority) and headers into the slot's
  * HttpReq, and marks it ParseState::PARSE_COMPLETE so the existing route dispatcher serves it. Responses from
- * the handlers route back here (DetWebServer::send branches on the slot's h2 flag) and are
+ * the handlers route back here (DWS::send branches on the slot's h2 flag) and are
  * serialized as HEADERS + DATA frames, leaving the connection open for the next stream.
  *
  * The per-slot engines are large (a whole frame is buffered), so their pool lives in PSRAM where
@@ -24,25 +24,25 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_HTTP2 && DETWS_ENABLE_TLS
+#if DWS_ENABLE_HTTP2 && DWS_ENABLE_TLS
 
 #include <stddef.h>
 #include <stdint.h>
 
 /** @brief Start the HTTP/2 engine for @p slot after ALPN "h2" (sends our initial SETTINGS). */
-void det_h2_server_open(uint8_t slot);
+void dws_h2_server_open(uint8_t slot);
 
 /** @brief Feed the slot's decrypted inbound bytes into the engine; drives requests via HttpReq. */
-void det_h2_server_data(uint8_t slot);
+void dws_h2_server_data(uint8_t slot);
 
 /**
  * @brief Serialize a handler's response for the slot's current stream (HEADERS + DATA), then ready
  * the slot's HttpReq for the next stream (the connection stays open). @return false on error.
  */
-bool det_h2_server_respond(uint8_t slot, int code, const char *content_type, const char *body, size_t len);
+bool dws_h2_server_respond(uint8_t slot, int code, const char *content_type, const char *body, size_t len);
 
 /** @brief Release per-slot HTTP/2 state on connection close. */
-void det_h2_server_close(uint8_t slot);
+void dws_h2_server_close(uint8_t slot);
 
-#endif // DETWS_ENABLE_HTTP2 && DETWS_ENABLE_TLS
+#endif // DWS_ENABLE_HTTP2 && DWS_ENABLE_TLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_H2_SERVER_H

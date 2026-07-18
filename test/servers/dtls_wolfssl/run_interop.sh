@@ -39,12 +39,12 @@ if [[ ! -f "$WORK/cert.der" ]]; then
   openssl x509 -in "$WORK/cert.pem" -outform DER -out "$WORK/cert.der" 2>/dev/null
 fi
 
-# --- 3. compile the harness against the library sources (DETWS_ENABLE_DTLS) ---
+# --- 3. compile the harness against the library sources (DWS_ENABLE_DTLS) ---
 echo ">> compiling harness"
 D="$ROOT/src/network_drivers/presentation"
 # -I test/mocks supplies the host Arduino.h shim (millis()) that services/clock.h pulls in - the same
 # shim the pio host tests use; the harness is likewise a host build.
-g++ -O2 -std=gnu++17 -DDETWS_ENABLE_DTLS=1 -I"$ROOT/src" -I"$ROOT/test/mocks" "$HERE/dtls_interop_server.cpp" \
+g++ -O2 -std=gnu++17 -DDWS_ENABLE_DTLS=1 -I"$ROOT/src" -I"$ROOT/test/mocks" "$HERE/dtls_interop_server.cpp" \
   "$D/dtls/dtls_conn.cpp" "$D/dtls/dtls_record.cpp" "$D/dtls/dtls_handshake.cpp" \
   "$D/http3/tls13_msg.cpp" "$D/http3/tls13_kdf.cpp" "$D/http3/quic_hkdf.cpp" "$D/http3/quic_aead.cpp" \
   "$D/ssh/crypto/ssh_sha256.cpp" "$D/ssh/crypto/ssh_hmac_sha256.cpp" "$D/ssh/crypto/ssh_sha512.cpp" \

@@ -8,7 +8,7 @@
 
 #include "services/cotp/cotp.h"
 
-#if DETWS_ENABLE_COTP
+#if DWS_ENABLE_COTP
 
 #include <string.h>
 
@@ -127,4 +127,4 @@ bool cotp_parse(const uint8_t *buf, size_t len, CotpHeader *out)
     return true;
 }
 
-#endif // DETWS_ENABLE_COTP
+#endif // DWS_ENABLE_COTP

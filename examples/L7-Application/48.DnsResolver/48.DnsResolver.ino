@@ -3,7 +3,7 @@
 
 /**
  * @file 48.DnsResolver.ino
- * @brief DNS resolver with answer verification (DETWS_ENABLE_DNS_RESOLVER).
+ * @brief DNS resolver with answer verification (DWS_ENABLE_DNS_RESOLVER).
  *
  * Resolves a hostname to an IPv4 address and rejects suspicious answers (0.0.0.0,
  * loopback, broadcast, multicast - DNS-rebinding / spoof indicators).
@@ -13,11 +13,11 @@
  * app, resolve off the request hot path (e.g. from loop() / a setup step) and cache.
  *
  * NOTE: enable it for the whole build. In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_DNS_RESOLVER=1
+ *     build_flags = -DDWS_ENABLE_DNS_RESOLVER=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_DNS_RESOLVER 1
+#define DWS_ENABLE_DNS_RESOLVER 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -27,7 +27,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -47,7 +47,7 @@ void setup()
             return;
         }
         uint32_t ip = 0;
-        bool ok = det_dns_resolver_resolve(host, &ip);
+        bool ok = dws_dns_resolver_resolve(host, &ip);
         if (!ok)
         {
             server.send(id, 502, "application/json", "{\"error\":\"resolve failed\"}");
@@ -55,7 +55,7 @@ void setup()
         }
         char b[80];
         snprintf(b, sizeof(b), "{\"ip\":\"%u.%u.%u.%u\",\"verified\":%s}", (ip >> 24) & 0xFF, (ip >> 16) & 0xFF,
-                 (ip >> 8) & 0xFF, ip & 0xFF, det_dns_resolver_verify(ip) ? "true" : "false");
+                 (ip >> 8) & 0xFF, ip & 0xFF, dws_dns_resolver_verify(ip) ? "true" : "false");
         server.send(id, 200, "application/json", b);
     });
     server.begin(80);

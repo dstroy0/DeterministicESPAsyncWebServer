@@ -3,7 +3,7 @@
 
 /**
  * @file sen0192.h
- * @brief DFRobot SEN0192 10.525 GHz microwave Doppler motion sensor (DETWS_ENABLE_SEN0192).
+ * @brief DFRobot SEN0192 10.525 GHz microwave Doppler motion sensor (DWS_ENABLE_SEN0192).
  *
  * The SEN0192 is a 3-pin part (V / G / digital OUT) whose OUT line asserts while it senses motion
  * (Doppler shift) within its adjustable range. Unlike the framed serial of an LD2410, it carries no
@@ -12,9 +12,9 @@
  * sample, so brief gaps between Doppler returns don't make presence flap.
  *
  * The presence state machine (::Sen0192Motion) is pure and host-tested - it takes a sampled line level
- * and a timestamp and needs no clock or GPIO. The ESP32 binding reads DETWS_SEN0192_PIN each poll (via
- * detws_millis()) and feeds it in; only that read touches hardware. The OUT polarity and hold window come
- * from ServerConfig (DETWS_SEN0192_ACTIVE_HIGH / DETWS_SEN0192_HOLD_MS / DETWS_SEN0192_PIN).
+ * and a timestamp and needs no clock or GPIO. The ESP32 binding reads DWS_SEN0192_PIN each poll (via
+ * dws_millis()) and feeds it in; only that read touches hardware. The OUT polarity and hold window come
+ * from ServerConfig (DWS_SEN0192_ACTIVE_HIGH / DWS_SEN0192_HOLD_MS / DWS_SEN0192_PIN).
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -25,7 +25,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_SEN0192
+#if DWS_ENABLE_SEN0192
 
 #include <stdint.h>
 
@@ -72,12 +72,12 @@ uint32_t sen0192_motion_active_age_ms(const Sen0192Motion *m, uint32_t now_ms);
 // --- ESP32 binding (GPIO poll; no-ops on a host build) ---------------------------------------
 
 /**
- * @brief Configure DETWS_SEN0192_PIN as an input and start tracking (polarity / hold from ServerConfig).
+ * @brief Configure DWS_SEN0192_PIN as an input and start tracking (polarity / hold from ServerConfig).
  * @return true on ESP32, false on a host build.
  */
 bool sen0192_begin(void);
 
-/** @brief Sample the pin now (via detws_millis()). @return true iff a new presence just started. */
+/** @brief Sample the pin now (via dws_millis()). @return true iff a new presence just started. */
 bool sen0192_poll(void);
 
 /** @brief Current presence. */
@@ -86,6 +86,6 @@ bool sen0192_present(void);
 /** @brief Count of motion events (clear -> present transitions) since sen0192_begin(). */
 uint32_t sen0192_motion_count(void);
 
-#endif // DETWS_ENABLE_SEN0192
+#endif // DWS_ENABLE_SEN0192
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SEN0192_H

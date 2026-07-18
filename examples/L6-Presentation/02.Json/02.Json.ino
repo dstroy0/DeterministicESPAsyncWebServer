@@ -21,7 +21,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // GET /api/info - build a JSON object with JsonWriter (no heap).
 void handle_info(uint8_t slot_id, HttpReq *req)

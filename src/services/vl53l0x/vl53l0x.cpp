@@ -9,7 +9,7 @@
 #include "services/vl53l0x/vl53l0x.h"
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_VL53L0X
+#if DWS_ENABLE_VL53L0X
 
 uint16_t vl53l0x_range_mm(uint8_t hi, uint8_t lo)
 {
@@ -83,7 +83,7 @@ bool rn(uint8_t reg, uint8_t *buf, uint8_t n)
 
 bool vl53l0x_begin(uint8_t addr)
 {
-    detws_i2c_begin();
+    dws_i2c_begin();
     s_vl.addr = addr;
     uint8_t id = 0;
     if (!r8(VL53L0X_REG_IDENTIFICATION_MODEL_ID, &id) || id != VL53L0X_MODEL_ID)
@@ -109,4 +109,4 @@ bool vl53l0x_read_mm(uint16_t *mm)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_VL53L0X
+#endif // DWS_ENABLE_VL53L0X

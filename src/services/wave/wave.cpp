@@ -8,11 +8,11 @@
 
 #include "services/wave/wave.h"
 
-#if DETWS_ENABLE_WAVE
+#if DWS_ENABLE_WAVE
 
 #include <string.h>
 
-size_t detws_wave_encode_psid(uint32_t psid, uint8_t *out, size_t cap)
+size_t dws_wave_encode_psid(uint32_t psid, uint8_t *out, size_t cap)
 {
     // P-encoding: the number of leading 1 bits in the first octet gives the length.
     if (psid < 0x80)
@@ -48,7 +48,7 @@ size_t detws_wave_encode_psid(uint32_t psid, uint8_t *out, size_t cap)
     return 4;
 }
 
-size_t detws_wave_decode_psid(const uint8_t *in, size_t len, uint32_t *psid)
+size_t dws_wave_decode_psid(const uint8_t *in, size_t len, uint32_t *psid)
 {
     if (!in || len < 1 || !psid)
         return 0;
@@ -82,7 +82,7 @@ size_t detws_wave_decode_psid(const uint8_t *in, size_t len, uint32_t *psid)
     return 0;
 }
 
-size_t detws_wsmp_build(uint32_t psid, const uint8_t *payload, size_t payload_len, uint8_t *out, size_t cap)
+size_t dws_wsmp_build(uint32_t psid, const uint8_t *payload, size_t payload_len, uint8_t *out, size_t cap)
 {
     if (!out || (payload_len && !payload) || payload_len > 255)
         return 0;
@@ -90,7 +90,7 @@ size_t detws_wsmp_build(uint32_t psid, const uint8_t *payload, size_t payload_le
         return 0;
     size_t i = 0;
     out[i++] = Wave::WSMP_VERSION; // version/subtype (low nibble = version)
-    size_t p = detws_wave_encode_psid(psid, out + i, cap - i);
+    size_t p = dws_wave_encode_psid(psid, out + i, cap - i);
     if (!p)
         return 0;
     i += p;
@@ -105,14 +105,14 @@ size_t detws_wsmp_build(uint32_t psid, const uint8_t *payload, size_t payload_le
     return i;
 }
 
-bool detws_wsmp_parse(const uint8_t *frame, size_t len, WsmpFrame *out)
+bool dws_wsmp_parse(const uint8_t *frame, size_t len, WsmpFrame *out)
 {
     if (!frame || !out || len < 3)
         return false;
     if ((frame[0] & 0x0F) != Wave::WSMP_VERSION)
         return false;
     uint32_t psid = 0;
-    size_t p = detws_wave_decode_psid(frame + 1, len - 1, &psid);
+    size_t p = dws_wave_decode_psid(frame + 1, len - 1, &psid);
     if (!p)
         return false;
     size_t off = 1 + p;
@@ -127,8 +127,8 @@ bool detws_wsmp_parse(const uint8_t *frame, size_t len, WsmpFrame *out)
     return true;
 }
 
-size_t detws_wave_1609dot2_wrap(uint8_t content_type, const uint8_t *payload, size_t payload_len, uint8_t *out,
-                                size_t cap)
+size_t dws_wave_1609dot2_wrap(uint8_t content_type, const uint8_t *payload, size_t payload_len, uint8_t *out,
+                              size_t cap)
 {
     if (!out || (payload_len && !payload))
         return 0;
@@ -142,4 +142,4 @@ size_t detws_wave_1609dot2_wrap(uint8_t content_type, const uint8_t *payload, si
     return n;
 }
 
-#endif // DETWS_ENABLE_WAVE
+#endif // DWS_ENABLE_WAVE

@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/telnet/telnet.h"
 
-#if DETWS_ENABLE_TELNET
+#if DWS_ENABLE_TELNET
 
 #include "network_drivers/session/proto_handler.h"
 #include "network_drivers/transport/tcp.h"
@@ -69,10 +69,10 @@ static TelnetConn *find_conn(uint8_t slot)
 
 static void raw_send(uint8_t slot, const void *data, size_t n)
 {
-    if (!det_conn_active(slot) || n == 0)
+    if (!dws_conn_active(slot) || n == 0)
         return;
-    det_conn_send(slot, data, (u16_t)n);
-    det_conn_flush(slot);
+    dws_conn_send(slot, data, (u16_t)n);
+    dws_conn_flush(slot);
 }
 
 // Send Telnet *data* (echo + application output): a literal IAC byte (0xFF) MUST be
@@ -81,7 +81,7 @@ static void raw_send(uint8_t slot, const void *data, size_t n)
 // (IAC WILL/DO/...) use raw_send directly - they send IAC intentionally.
 static void send_escaped(uint8_t slot, const void *data, size_t n)
 {
-    if (!det_conn_active(slot) || n == 0)
+    if (!dws_conn_active(slot) || n == 0)
         return;
     const uint8_t *b = (const uint8_t *)data;
     size_t start = 0;
@@ -90,14 +90,14 @@ static void send_escaped(uint8_t slot, const void *data, size_t n)
         if (b[i] == 0xFF)
         {
             if (i > start)
-                det_conn_send(slot, b + start, (u16_t)(i - start));
-            det_conn_send(slot, "\xff\xff", 2); // doubled IAC
+                dws_conn_send(slot, b + start, (u16_t)(i - start));
+            dws_conn_send(slot, "\xff\xff", 2); // doubled IAC
             start = i + 1;
         }
     }
     if (n > start)
-        det_conn_send(slot, b + start, (u16_t)(n - start));
-    det_conn_flush(slot);
+        dws_conn_send(slot, b + start, (u16_t)(n - start));
+    dws_conn_flush(slot);
 }
 
 // ---------------------------------------------------------------------------
@@ -116,7 +116,7 @@ void telnet_accept(uint8_t slot)
     if (!t)
     {
         // No Telnet capacity: drop the connection (transport owns the teardown).
-        det_conn_close(slot);
+        dws_conn_close(slot);
         return;
     }
     memset(t, 0, sizeof(*t));
@@ -128,7 +128,7 @@ void telnet_accept(uint8_t slot)
     static const uint8_t neg[] = {TelnetByte::T_IAC, TelnetByte::T_WILL, TelnetByte::OPT_ECHO,
                                   TelnetByte::T_IAC, TelnetByte::T_WILL, TelnetByte::OPT_SGA};
     raw_send(slot, neg, sizeof(neg));
-    raw_send(slot, "DetWS Telnet ready\r\n> ", 22);
+    raw_send(slot, "DWS Telnet ready\r\n> ", 22);
 }
 
 void telnet_close(uint8_t slot)
@@ -178,7 +178,7 @@ void telnet_rx(uint8_t slot)
         return;
 
     uint8_t b;
-    while (det_conn_read_byte(slot, &b))
+    while (dws_conn_read_byte(slot, &b))
     {
         switch (t->st)
         {
@@ -286,4 +286,4 @@ const ProtoHandler *telnet_proto_handler(void)
     return &s_telnet_handler;
 }
 
-#endif // DETWS_ENABLE_TELNET
+#endif // DWS_ENABLE_TELNET

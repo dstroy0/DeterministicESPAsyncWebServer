@@ -15,7 +15,7 @@
 
 #include "services/opcua/opcua.h"
 
-#if DETWS_ENABLE_OPCUA
+#if DWS_ENABLE_OPCUA
 
 #include <string.h>
 
@@ -365,11 +365,11 @@ size_t opcua_build_ack(const OpcUaHello *hello, uint8_t *out, size_t cap)
     ua_w_u8(&w, 'K');
     ua_w_u8(&w, 'F');
     ua_w_u32(&w, total);
-    ua_w_u32(&w, 0);                                          // ProtocolVersion
-    ua_w_u32(&w, neg(hello->send_buf_size, DETWS_OPCUA_BUF)); // our ReceiveBufferSize
-    ua_w_u32(&w, neg(hello->recv_buf_size, DETWS_OPCUA_BUF)); // our SendBufferSize
-    ua_w_u32(&w, neg(hello->max_msg_size, DETWS_OPCUA_BUF));  // MaxMessageSize
-    ua_w_u32(&w, 1);                                          // MaxChunkCount (single-chunk)
+    ua_w_u32(&w, 0);                                        // ProtocolVersion
+    ua_w_u32(&w, neg(hello->send_buf_size, DWS_OPCUA_BUF)); // our ReceiveBufferSize
+    ua_w_u32(&w, neg(hello->recv_buf_size, DWS_OPCUA_BUF)); // our SendBufferSize
+    ua_w_u32(&w, neg(hello->max_msg_size, DWS_OPCUA_BUF));  // MaxMessageSize
+    ua_w_u32(&w, 1);                                        // MaxChunkCount (single-chunk)
     return w.ok ? w.n : 0;
 }
 
@@ -547,8 +547,8 @@ bool opcua_parse_msg(const uint8_t *msg, size_t len, OpcUaMsg *out)
 static const char OPCUA_TRANSPORT_URI[] =
     "http://opcfoundation.org/UA-Profile/Transport/uatcp-uasc-uabinary"; // NOSONAR
 
-// The server-identity defaults (DETWS_DETWS_OPCUA_DEFAULT_ENDPOINT / _APP_URI / _APP_NAME) live in
-// ServerConfig.h under DETWS_ENABLE_OPCUA so a deployment can override them; used here for both
+// The server-identity defaults (DWS_DWS_OPCUA_DEFAULT_ENDPOINT / _APP_URI / _APP_NAME) live in
+// ServerConfig.h under DWS_ENABLE_OPCUA so a deployment can override them; used here for both
 // the struct default and the builder fallback so the two cannot drift apart.
 
 // All OPC UA agent state, owned by one instance (internal linkage): the advertised server
@@ -557,14 +557,13 @@ static const char OPCUA_TRANSPORT_URI[] =
 // time). Grouped so it is one named owner, unreachable from any other translation unit.
 struct OpcuaCtx
 {
-    OpcUaServerInfo server_info = {DETWS_OPCUA_DEFAULT_ENDPOINT, DETWS_OPCUA_DEFAULT_APP_URI,
-                                   DETWS_OPCUA_DEFAULT_APP_NAME};
+    OpcUaServerInfo server_info = {DWS_OPCUA_DEFAULT_ENDPOINT, DWS_OPCUA_DEFAULT_APP_URI, DWS_OPCUA_DEFAULT_APP_NAME};
     OpcUaReadHandler read_handler = nullptr;
     OpcUaWriteHandler write_handler = nullptr;
     OpcUaBrowseHandler browse_handler = nullptr;
 #ifdef ARDUINO
-    uint8_t msg[DETWS_OPCUA_BUF]; // single-accessor reassembly buffer
-    uint8_t resp[2048];           // single-accessor response buffer (ACK / OPN / MSG response)
+    uint8_t msg[DWS_OPCUA_BUF]; // single-accessor reassembly buffer
+    uint8_t resp[2048];         // single-accessor response buffer (ACK / OPN / MSG response)
     uint32_t channel_id = 0;
     uint32_t token_id = 0;
     uint32_t seq = 0;
@@ -581,9 +580,9 @@ void opcua_set_endpoint_url(const char *url)
 
 void ua_w_endpoint_description(UaWriter *w, const OpcUaServerInfo *info)
 {
-    const char *url = (info && info->endpoint_url) ? info->endpoint_url : DETWS_OPCUA_DEFAULT_ENDPOINT;
-    const char *auri = (info && info->application_uri) ? info->application_uri : DETWS_OPCUA_DEFAULT_APP_URI;
-    const char *aname = (info && info->application_name) ? info->application_name : DETWS_OPCUA_DEFAULT_APP_NAME;
+    const char *url = (info && info->endpoint_url) ? info->endpoint_url : DWS_OPCUA_DEFAULT_ENDPOINT;
+    const char *auri = (info && info->application_uri) ? info->application_uri : DWS_OPCUA_DEFAULT_APP_URI;
+    const char *aname = (info && info->application_name) ? info->application_name : DWS_OPCUA_DEFAULT_APP_NAME;
 
     ua_w_string(w, url, (int32_t)strnlen(url, w->cap)); // EndpointUrl
     // Server (ApplicationDescription).
@@ -831,7 +830,7 @@ bool opcua_parse_read(const uint8_t *msg, size_t len, OpcUaReadRequest *out)
         int32_t qn = ua_r_i32(&r); // QualifiedName.Name (String)
         if (qn > 0)
             r_skip(&r, (size_t)qn);
-        if (out->count < DETWS_OPCUA_READ_MAX)
+        if (out->count < DWS_OPCUA_READ_MAX)
         {
             OpcUaReadItem *it = &out->items[out->count++];
             it->ns = nid.ns;
@@ -890,7 +889,7 @@ bool opcua_parse_write(const uint8_t *msg, size_t len, OpcUaWriteRequest *out)
         OpcUaVariant val;
         if (!ua_r_datavalue(&r, &val, nullptr)) // Value (DataValue)
             return false;
-        if (out->count < DETWS_OPCUA_WRITE_MAX)
+        if (out->count < DWS_OPCUA_WRITE_MAX)
         {
             OpcUaWriteItem *it = &out->items[out->count++];
             it->ns = nid.ns;
@@ -992,7 +991,7 @@ bool opcua_parse_browse(const uint8_t *msg, size_t len, OpcUaBrowseRequest *out)
         (void)ua_r_bool(&r);  // IncludeSubtypes
         (void)ua_r_u32(&r);   // NodeClassMask
         (void)ua_r_u32(&r);   // ResultMask
-        if (out->count < DETWS_OPCUA_BROWSE_MAX)
+        if (out->count < DWS_OPCUA_BROWSE_MAX)
         {
             OpcUaBrowseItem *it = &out->items[out->count++];
             it->ns = nid.ns;
@@ -1016,8 +1015,8 @@ size_t opcua_build_browse_response(const OpcUaBrowseRequest *req, OpcUaBrowseHan
     ua_w_i32(&w, (int32_t)req->count); // Results[] (one BrowseResult per browsed node)
     for (uint32_t i = 0; i < req->count; i++)
     {
-        OpcUaReference refs[DETWS_OPCUA_REF_MAX];
-        int32_t n = handler ? handler(req->items[i].ns, req->items[i].id, refs, DETWS_OPCUA_REF_MAX) : -1;
+        OpcUaReference refs[DWS_OPCUA_REF_MAX];
+        int32_t n = handler ? handler(req->items[i].ns, req->items[i].id, refs, DWS_OPCUA_REF_MAX) : -1;
         uint32_t status = (n < 0) ? OPCUA_STATUS_BAD_NODE_ID_UNKNOWN : OPCUA_STATUS_GOOD;
         uint32_t nrefs = (n < 0) ? 0 : (uint32_t)n;
 
@@ -1064,33 +1063,33 @@ namespace
 // this service never indexes rx_buffer or advances rx_tail itself.
 size_t ring_avail(const TcpConn *c)
 {
-    return det_conn_available(c->id);
+    return dws_conn_available(c->id);
 }
 void ring_peek(const TcpConn *c, size_t off, uint8_t *dst, size_t n)
 {
-    det_conn_peek(c->id, off, dst, n);
+    dws_conn_peek(c->id, off, dst, n);
 }
 void ring_consume(TcpConn *c, size_t n)
 {
-    det_conn_consume(c->id, n);
+    dws_conn_consume(c->id, n);
 }
 void raw_send(uint8_t slot, const void *data, size_t n)
 {
-    if (!det_conn_active(slot) || n == 0)
+    if (!dws_conn_active(slot) || n == 0)
         return;
-    det_conn_send(slot, data, (u16_t)n);
-    det_conn_flush(slot);
+    dws_conn_send(slot, data, (u16_t)n);
+    dws_conn_flush(slot);
 }
 void close_conn(uint8_t slot)
 {
-    det_conn_close(slot); // transport owns detach + slot reset + close
+    dws_conn_close(slot); // transport owns detach + slot reset + close
 }
 
 } // namespace
 
 void opcua_rx(uint8_t slot)
 {
-    if (!det_conn_active(slot))
+    if (!dws_conn_active(slot))
         return;
     TcpConn *c = &conn_pool[slot];
 
@@ -1180,8 +1179,8 @@ void opcua_rx(uint8_t slot)
                     close_conn(slot);
                     return;
                 }
-                OpcUaVariant vals[DETWS_OPCUA_READ_MAX];
-                uint32_t sts[DETWS_OPCUA_READ_MAX];
+                OpcUaVariant vals[DWS_OPCUA_READ_MAX];
+                uint32_t sts[DWS_OPCUA_READ_MAX];
                 for (uint32_t i = 0; i < rr.count; i++)
                 {
                     memset(&vals[i], 0, sizeof(vals[i]));
@@ -1210,7 +1209,7 @@ void opcua_rx(uint8_t slot)
                     close_conn(slot);
                     return;
                 }
-                uint32_t res[DETWS_OPCUA_WRITE_MAX];
+                uint32_t res[DWS_OPCUA_WRITE_MAX];
                 for (uint32_t i = 0; i < wr.count; i++)
                     res[i] = s_opcua.write_handler ? s_opcua.write_handler(wr.items[i].ns, wr.items[i].id,
                                                                            wr.items[i].attribute, &wr.items[i].value)
@@ -1255,4 +1254,4 @@ const ProtoHandler *opcua_proto_handler(void)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_OPCUA
+#endif // DWS_ENABLE_OPCUA

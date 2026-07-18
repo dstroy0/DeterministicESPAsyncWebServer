@@ -88,7 +88,7 @@ static void test_browse_objects_folder_has_machinetool(void)
     int32_t n = browse(0, 85, refs, 8); // Objects folder
     TEST_ASSERT_EQUAL_INT32(1, n);
     TEST_ASSERT_EQUAL_UINT32(N_MACHINETOOL, refs[0].target_id);
-    TEST_ASSERT_EQUAL_UINT32(DETWS_UMATI_NS, refs[0].target_ns);
+    TEST_ASSERT_EQUAL_UINT32(DWS_UMATI_NS, refs[0].target_ns);
     TEST_ASSERT_EQUAL_UINT32(OPCUA_NODECLASS_OBJECT, refs[0].node_class);
     TEST_ASSERT_EQUAL_UINT32(OPCUA_REFTYPE_ORGANIZES, refs[0].ref_type_id); // Organizes, not HasComponent
     TEST_ASSERT_EQUAL_STRING("CNC-1", refs[0].browse_name);                 // uses mt->name
@@ -97,7 +97,7 @@ static void test_browse_objects_folder_has_machinetool(void)
 static void test_browse_machinetool_components(void)
 {
     OpcUaReference refs[8];
-    int32_t n = browse(DETWS_UMATI_NS, N_MACHINETOOL, refs, 8);
+    int32_t n = browse(DWS_UMATI_NS, N_MACHINETOOL, refs, 8);
     TEST_ASSERT_EQUAL_INT32(4, n); // Identification, Monitoring, Production, Notification
     TEST_ASSERT_NOT_NULL(find_ref(refs, n, "Identification"));
     TEST_ASSERT_NOT_NULL(find_ref(refs, n, "Monitoring"));
@@ -111,7 +111,7 @@ static void test_browse_machinetool_components(void)
 static void test_browse_identification_variables(void)
 {
     OpcUaReference refs[8];
-    int32_t n = browse(DETWS_UMATI_NS, N_IDENTIFICATION, refs, 8);
+    int32_t n = browse(DWS_UMATI_NS, N_IDENTIFICATION, refs, 8);
     TEST_ASSERT_EQUAL_INT32(6, n);
     const OpcUaReference *man = find_ref(refs, n, "Manufacturer");
     TEST_ASSERT_NOT_NULL(man);
@@ -126,22 +126,22 @@ static void test_browse_identification_variables(void)
 static void test_browse_monitoring_and_children(void)
 {
     OpcUaReference refs[8];
-    int32_t n = browse(DETWS_UMATI_NS, N_MONITORING, refs, 8);
+    int32_t n = browse(DWS_UMATI_NS, N_MONITORING, refs, 8);
     TEST_ASSERT_EQUAL_INT32(6, n); // MachineTool, Channel, Spindle, Axis_X/Y/Z
     TEST_ASSERT_NOT_NULL(find_ref(refs, n, "Channel"));
     TEST_ASSERT_NOT_NULL(find_ref(refs, n, "Spindle"));
     TEST_ASSERT_NOT_NULL(find_ref(refs, n, "Axis_X"));
     TEST_ASSERT_NOT_NULL(find_ref(refs, n, "Axis_Z"));
 
-    n = browse(DETWS_UMATI_NS, N_MON_CHANNEL, refs, 8);
+    n = browse(DWS_UMATI_NS, N_MON_CHANNEL, refs, 8);
     TEST_ASSERT_EQUAL_INT32(4, n); // ChannelState, FeedOverride, RapidOverride, ActiveProgram
     TEST_ASSERT_NOT_NULL(find_ref(refs, n, "ChannelState"));
     TEST_ASSERT_NOT_NULL(find_ref(refs, n, "FeedOverride"));
 
-    n = browse(DETWS_UMATI_NS, N_MON_SPINDLE, refs, 8);
+    n = browse(DWS_UMATI_NS, N_MON_SPINDLE, refs, 8);
     TEST_ASSERT_EQUAL_INT32(3, n); // RotationSpeed, OverrideValue, IsRotating
 
-    n = browse(DETWS_UMATI_NS, N_MON_AXIS_X, refs, 8);
+    n = browse(DWS_UMATI_NS, N_MON_AXIS_X, refs, 8);
     TEST_ASSERT_EQUAL_INT32(1, n); // ActualPosition
     TEST_ASSERT_EQUAL_STRING("ActualPosition", refs[0].browse_name);
     TEST_ASSERT_EQUAL_UINT32(N_AX_X_POS, refs[0].target_id);
@@ -150,20 +150,20 @@ static void test_browse_monitoring_and_children(void)
 static void test_browse_leaf_and_unknown_return_negative(void)
 {
     OpcUaReference refs[4];
-    TEST_ASSERT_EQUAL_INT32(-1, browse(DETWS_UMATI_NS, N_SP_SPEED, refs, 4)); // a leaf Variable has no children
-    TEST_ASSERT_EQUAL_INT32(-1, browse(DETWS_UMATI_NS, 999999, refs, 4));     // unknown node
-    TEST_ASSERT_EQUAL_INT32(-1, browse(7, N_MACHINETOOL, refs, 4));           // wrong namespace
+    TEST_ASSERT_EQUAL_INT32(-1, browse(DWS_UMATI_NS, N_SP_SPEED, refs, 4)); // a leaf Variable has no children
+    TEST_ASSERT_EQUAL_INT32(-1, browse(DWS_UMATI_NS, 999999, refs, 4));     // unknown node
+    TEST_ASSERT_EQUAL_INT32(-1, browse(7, N_MACHINETOOL, refs, 4));         // wrong namespace
 }
 
 // --- Read resolver ----------------------------------------------------------
 static void test_read_identification(void)
 {
     OpcUaVariant v;
-    TEST_ASSERT_TRUE(umati_read(DETWS_UMATI_NS, N_ID_MANUFACTURER, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_ID_MANUFACTURER, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_STRING, v.type);
     TEST_ASSERT_EQUAL_STRING("Acme Machines", v.str);
 
-    TEST_ASSERT_TRUE(umati_read(DETWS_UMATI_NS, N_ID_YEAR, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_ID_YEAR, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_UINT32, v.type);
     TEST_ASSERT_EQUAL_UINT32(2026, v.u32);
 }
@@ -171,39 +171,39 @@ static void test_read_identification(void)
 static void test_read_monitoring_values(void)
 {
     OpcUaVariant v;
-    TEST_ASSERT_TRUE(umati_read(DETWS_UMATI_NS, N_MON_OPMODE, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_MON_OPMODE, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_INT32, v.type);
     TEST_ASSERT_EQUAL_INT32((int32_t)UmatiOperationMode::UMATI_OP_AUTOMATIC, v.i32);
 
-    TEST_ASSERT_TRUE(umati_read(DETWS_UMATI_NS, N_CH_STATE, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_CH_STATE, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL_INT32((int32_t)UmatiChannelState::UMATI_CH_RUNNING, v.i32);
 
-    TEST_ASSERT_TRUE(umati_read(DETWS_UMATI_NS, N_CH_FEEDOVR, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_CH_FEEDOVR, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_DOUBLE, v.type);
     TEST_ASSERT_TRUE(v.f64 == 85.0); // exact value; the suite compares doubles with == (Unity double asserts off)
 
-    TEST_ASSERT_TRUE(umati_read(DETWS_UMATI_NS, N_SP_SPEED, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_SP_SPEED, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_TRUE(v.f64 == 1200.0);
 
-    TEST_ASSERT_TRUE(umati_read(DETWS_UMATI_NS, N_SP_ROTATING, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_SP_ROTATING, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_BOOL, v.type);
     TEST_ASSERT_TRUE(v.b);
 
-    TEST_ASSERT_TRUE(umati_read(DETWS_UMATI_NS, N_AX_X_POS, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_AX_X_POS, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_TRUE(v.f64 == 10.5);
 
-    TEST_ASSERT_TRUE(umati_read(DETWS_UMATI_NS, N_CH_ACTIVEPROG, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_CH_ACTIVEPROG, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL_STRING("PART_A.NC", v.str);
 }
 
 static void test_read_production_and_notification(void)
 {
     OpcUaVariant v;
-    TEST_ASSERT_TRUE(umati_read(DETWS_UMATI_NS, N_PROD_PARTCOUNT, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_PROD_PARTCOUNT, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL_UINT32(7, v.u32);
-    TEST_ASSERT_TRUE(umati_read(DETWS_UMATI_NS, N_NOTIF_MESSAGE, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_NOTIF_MESSAGE, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL_STRING("Door open", v.str);
-    TEST_ASSERT_TRUE(umati_read(DETWS_UMATI_NS, N_NOTIF_SEVERITY, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, N_NOTIF_SEVERITY, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL_UINT32(500, v.u32);
 }
 
@@ -211,7 +211,7 @@ static void test_read_null_string_served_as_empty(void)
 {
     g_mt.ident.model = nullptr; // a null field must not crash - served as ""
     OpcUaVariant v;
-    TEST_ASSERT_TRUE(umati_read(DETWS_UMATI_NS, 5102 /*Model*/, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_TRUE(umati_read(DWS_UMATI_NS, 5102 /*Model*/, OPCUA_ATTR_VALUE, &v));
     TEST_ASSERT_EQUAL(OpcUaVariantType::OPCUA_VAR_STRING, v.type);
     TEST_ASSERT_EQUAL_STRING("", v.str);
     TEST_ASSERT_EQUAL_INT32(0, v.str_len);
@@ -220,16 +220,16 @@ static void test_read_null_string_served_as_empty(void)
 static void test_read_rejects_unknown_ns_attr_and_node(void)
 {
     OpcUaVariant v;
-    TEST_ASSERT_FALSE(umati_read(DETWS_UMATI_NS, 999999, OPCUA_ATTR_VALUE, &v));         // unknown node
-    TEST_ASSERT_FALSE(umati_read(7, N_ID_MANUFACTURER, OPCUA_ATTR_VALUE, &v));           // wrong namespace
-    TEST_ASSERT_FALSE(umati_read(DETWS_UMATI_NS, N_ID_MANUFACTURER, 12 /*!Value*/, &v)); // not the Value attribute
+    TEST_ASSERT_FALSE(umati_read(DWS_UMATI_NS, 999999, OPCUA_ATTR_VALUE, &v));         // unknown node
+    TEST_ASSERT_FALSE(umati_read(7, N_ID_MANUFACTURER, OPCUA_ATTR_VALUE, &v));         // wrong namespace
+    TEST_ASSERT_FALSE(umati_read(DWS_UMATI_NS, N_ID_MANUFACTURER, 12 /*!Value*/, &v)); // not the Value attribute
 }
 
 static void test_read_before_bind_is_a_clean_miss(void)
 {
     umati_bind(nullptr); // no model bound
     OpcUaVariant v;
-    TEST_ASSERT_FALSE(umati_read(DETWS_UMATI_NS, N_ID_MANUFACTURER, OPCUA_ATTR_VALUE, &v));
+    TEST_ASSERT_FALSE(umati_read(DWS_UMATI_NS, N_ID_MANUFACTURER, OPCUA_ATTR_VALUE, &v));
     OpcUaReference refs[4];
     TEST_ASSERT_EQUAL_INT32(-1, umati_browse(0, 85, refs, 4));
 }

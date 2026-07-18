@@ -9,14 +9,14 @@
  * Mirrors the CoAP/SNMP split: this header declares the pure, host-testable core
  * (no sockets, no filesystem - unit-tested in env:native_webdav). The
  * filesystem-backed request handling (PROPFIND directory walk, PUT/MKCOL/DELETE/
- * COPY/MOVE, GET via the file-serving path) lives in DetWebServer::serve_dav_*
+ * COPY/MOVE, GET via the file-serving path) lives in DWS::serve_dav_*
  * and runs only on a build with a real Arduino FS.
  *
  * Scope: class 1 (PROPFIND Depth 0/1, PROPPATCH, PUT, DELETE, MKCOL, COPY, MOVE)
  * plus OPTIONS and advisory LOCK/UNLOCK (a synthetic token is issued but not
  * enforced). PROPPATCH is answered 207 with every requested property refused 403
  * (read-only live properties, no dead-property store). The filesystem-backed
- * handler streams a PUT body straight to the file (DetWebServer's stream-body
+ * handler streams a PUT body straight to the file (DWS's stream-body
  * hook), so uploads are not bounded by BODY_BUF_SIZE.
  */
 
@@ -27,7 +27,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_WEBDAV
+#if DWS_ENABLE_WEBDAV
 
 /** @brief WebDAV request methods recognized by the server. */
 enum class WebDavMethod : uint8_t
@@ -52,19 +52,19 @@ enum class WebDavMethod : uint8_t
 static constexpr int32_t DAV_DEPTH_INFINITY = 0x7fffffff;
 
 /** @brief Classify an HTTP method token (e.g. "PROPFIND") into a WebDavMethod. */
-WebDavMethod det_webdav_method(const char *m);
+WebDavMethod dws_webdav_method(const char *m);
 
 /**
  * @brief Parse a Depth header value ("0", "1", or "infinity").
  * @return 0, 1, or DAV_DEPTH_INFINITY; @p dflt when @p depth_hdr is null/empty.
  */
-int det_webdav_depth(const char *depth_hdr, int dflt);
+int dws_webdav_depth(const char *depth_hdr, int dflt);
 
 /**
  * @brief XML-escape @p src into @p dst (`&`, `<`, `>`, `"`, `'`).
  * @return length written (NUL-terminated; truncated to fit @p cap).
  */
-size_t det_webdav_xml_escape(char *dst, size_t cap, const char *src);
+size_t dws_webdav_xml_escape(char *dst, size_t cap, const char *src);
 
 /**
  * @brief Extract and percent-decode the path of a Destination header.
@@ -73,7 +73,7 @@ size_t det_webdav_xml_escape(char *dst, size_t cap, const char *src);
  * scheme + authority are skipped and `%xx` escapes are decoded into @p out.
  * @return false on overflow or a malformed value.
  */
-bool det_webdav_dest_path(const char *destination, char *out, size_t cap);
+bool dws_webdav_dest_path(const char *destination, char *out, size_t cap);
 
 // 207 Multi-Status incremental builder. Each call appends to a buffer already
 // holding @p len bytes and returns the new length, never exceeding @p cap. A
@@ -81,7 +81,7 @@ bool det_webdav_dest_path(const char *destination, char *out, size_t cap);
 // stop adding entries and close the document).
 
 /** @brief Write the XML prolog and the open <multistatus> element. */
-size_t det_webdav_ms_begin(char *buf, size_t cap, size_t len);
+size_t dws_webdav_ms_begin(char *buf, size_t cap, size_t len);
 
 /**
  * @brief Append one <response> describing a resource.
@@ -92,11 +92,11 @@ size_t det_webdav_ms_begin(char *buf, size_t cap, size_t len);
  * @param rfc1123_mtime  Last-Modified string, or "" to omit.
  * @param content_type   MIME type (files only), or "" to omit.
  */
-size_t det_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, bool is_collection, uint32_t size,
+size_t dws_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, bool is_collection, uint32_t size,
                            const char *rfc1123_mtime, const char *content_type);
 
 /** @brief Close the <multistatus> element. */
-size_t det_webdav_ms_end(char *buf, size_t cap, size_t len);
+size_t dws_webdav_ms_end(char *buf, size_t cap, size_t len);
 
 /**
  * @brief Build a complete 207 Multi-Status body answering a PROPPATCH.
@@ -106,7 +106,7 @@ size_t det_webdav_ms_end(char *buf, size_t cap, size_t len);
  * are echoed verbatim (self-closed) from the request @p body so the client sees
  * exactly which properties it asked for, namespace declarations intact; a property
  * whose tag would contain a stray '<' is skipped (no XML injection). Up to
- * DETWS_WEBDAV_MAX_PROPS properties are echoed.
+ * DWS_WEBDAV_MAX_PROPS properties are echoed.
  *
  * @param buf       destination buffer (whole document, NUL-terminated).
  * @param cap       buffer capacity.
@@ -115,8 +115,8 @@ size_t det_webdav_ms_end(char *buf, size_t cap, size_t len);
  * @param body_len  length of @p body.
  * @return bytes written, or 0 if the document did not fit @p cap.
  */
-size_t det_webdav_proppatch_ms(char *buf, size_t cap, const char *href, const char *body, size_t body_len);
+size_t dws_webdav_proppatch_ms(char *buf, size_t cap, const char *href, const char *body, size_t body_len);
 
-#endif // DETWS_ENABLE_WEBDAV
+#endif // DWS_ENABLE_WEBDAV
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_WEBDAV_H

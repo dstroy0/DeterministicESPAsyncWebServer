@@ -8,12 +8,12 @@
 
 #include "services/ocit/ocit.h"
 
-#if DETWS_ENABLE_OCIT
+#if DWS_ENABLE_OCIT
 
 #include <string.h>
 
-size_t detws_ocit_build(uint8_t msg_type, uint16_t object_type, uint16_t instance, uint8_t data_type,
-                        const uint8_t *value, size_t value_len, uint8_t *out, size_t cap)
+size_t dws_ocit_build(uint8_t msg_type, uint16_t object_type, uint16_t instance, uint8_t data_type,
+                      const uint8_t *value, size_t value_len, uint8_t *out, size_t cap)
 {
     if (!out || (value_len && !value))
         return 0;
@@ -31,14 +31,13 @@ size_t detws_ocit_build(uint8_t msg_type, uint16_t object_type, uint16_t instanc
     return n;
 }
 
-size_t detws_ocit_set_u16(uint16_t object_type, uint16_t instance, uint16_t value, uint8_t *out, size_t cap)
+size_t dws_ocit_set_u16(uint16_t object_type, uint16_t instance, uint16_t value, uint8_t *out, size_t cap)
 {
     uint8_t v[2] = {(uint8_t)(value >> 8), (uint8_t)value};
-    return detws_ocit_build(OcitMsgType::OCIT_MSG_SET, object_type, instance, OcitType::OCIT_TYPE_UINT16, v, 2, out,
-                            cap);
+    return dws_ocit_build(OcitMsgType::OCIT_MSG_SET, object_type, instance, OcitType::OCIT_TYPE_UINT16, v, 2, out, cap);
 }
 
-bool detws_ocit_parse(const uint8_t *msg, size_t len, OcitMsg *out)
+bool dws_ocit_parse(const uint8_t *msg, size_t len, OcitMsg *out)
 {
     if (!msg || !out || len < 6)
         return false;
@@ -51,11 +50,11 @@ bool detws_ocit_parse(const uint8_t *msg, size_t len, OcitMsg *out)
     return true;
 }
 
-uint16_t detws_ocit_value_u16(const OcitMsg *m)
+uint16_t dws_ocit_value_u16(const OcitMsg *m)
 {
     if (!m || m->data_type != OcitType::OCIT_TYPE_UINT16 || m->value_len < 2 || !m->value)
         return 0;
     return (uint16_t)((m->value[0] << 8) | m->value[1]);
 }
 
-#endif // DETWS_ENABLE_OCIT
+#endif // DWS_ENABLE_OCIT

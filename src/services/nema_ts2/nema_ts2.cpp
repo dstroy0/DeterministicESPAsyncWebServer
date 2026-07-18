@@ -8,11 +8,11 @@
 
 #include "services/nema_ts2/nema_ts2.h"
 
-#if DETWS_ENABLE_NEMA_TS2
+#if DWS_ENABLE_NEMA_TS2
 
 #include <string.h>
 
-uint16_t detws_nema_ts2_crc(const uint8_t *bytes, size_t len)
+uint16_t dws_nema_ts2_crc(const uint8_t *bytes, size_t len)
 {
     // CRC-16/X-25: reflected poly 0x8408 (reverse of 0x1021), init 0xFFFF, xorout 0xFFFF.
     uint16_t crc = 0xFFFF;
@@ -25,8 +25,8 @@ uint16_t detws_nema_ts2_crc(const uint8_t *bytes, size_t len)
     return (uint16_t)~crc;
 }
 
-size_t detws_nema_ts2_build(uint8_t address, uint8_t control, uint8_t frame_type, const uint8_t *data, size_t data_len,
-                            uint8_t *out, size_t cap)
+size_t dws_nema_ts2_build(uint8_t address, uint8_t control, uint8_t frame_type, const uint8_t *data, size_t data_len,
+                          uint8_t *out, size_t cap)
 {
     if (!out || (data_len && !data))
         return 0;
@@ -38,18 +38,18 @@ size_t detws_nema_ts2_build(uint8_t address, uint8_t control, uint8_t frame_type
     out[2] = frame_type;
     if (data_len)
         memcpy(out + 3, data, data_len);
-    uint16_t crc = detws_nema_ts2_crc(out, 3 + data_len);
+    uint16_t crc = dws_nema_ts2_crc(out, 3 + data_len);
     out[3 + data_len] = (uint8_t)crc; // FCS low byte first
     out[3 + data_len + 1] = (uint8_t)(crc >> 8);
     return n;
 }
 
-bool detws_nema_ts2_parse(const uint8_t *frame, size_t len, NemaTs2Frame *out)
+bool dws_nema_ts2_parse(const uint8_t *frame, size_t len, NemaTs2Frame *out)
 {
     if (!frame || !out || len < 5) // address + control + frame_type + 2-byte FCS
         return false;
     size_t body = len - 2;
-    uint16_t want = detws_nema_ts2_crc(frame, body);
+    uint16_t want = dws_nema_ts2_crc(frame, body);
     uint16_t got = (uint16_t)(frame[body] | (frame[body + 1] << 8));
     if (want != got)
         return false;
@@ -61,4 +61,4 @@ bool detws_nema_ts2_parse(const uint8_t *frame, size_t len, NemaTs2Frame *out)
     return true;
 }
 
-#endif // DETWS_ENABLE_NEMA_TS2
+#endif // DWS_ENABLE_NEMA_TS2

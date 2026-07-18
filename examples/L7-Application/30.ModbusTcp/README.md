@@ -1,6 +1,6 @@
 # 30.ModbusTcp - a Modbus TCP slave/server
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_MODBUS`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_MODBUS`
 
 ## What this example teaches
 
@@ -36,7 +36,7 @@ trusted control network, fronted by the per-IP accept throttle
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_MODBUS=1" \
+  --project-option="build_flags=-DDWS_ENABLE_MODBUS=1" \
   --lib="." examples/L7-Application/30.ModbusTcp/30.ModbusTcp.ino
 ```
 
@@ -54,7 +54,7 @@ with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_MODBUS 1
+#define DWS_ENABLE_MODBUS 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -64,7 +64,7 @@ with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // Notified whenever a client writes a coil or holding register.
 static void on_write(uint8_t fc, uint16_t start, uint16_t count)

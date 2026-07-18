@@ -27,7 +27,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_CLOUDEVENTS
+#if DWS_ENABLE_CLOUDEVENTS
 
 #include "network_drivers/presentation/http_parser/http_parser.h"
 #include <stddef.h>
@@ -73,6 +73,6 @@ size_t cloudevents_build_json(char *buf, size_t cap, const CloudEvent *ce);
  */
 bool cloudevents_from_headers(const HttpReq *req, CloudEvent *out);
 
-#endif // DETWS_ENABLE_CLOUDEVENTS
+#endif // DWS_ENABLE_CLOUDEVENTS
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_CLOUDEVENTS_H

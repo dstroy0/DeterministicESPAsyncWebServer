@@ -36,13 +36,12 @@ void test_oid_builder_scalar_and_index(void)
 {
     uint32_t out[24];
     // A scalar takes .0.
-    size_t n = detws_ntcip_oid(NTCIP_1202_MAX_PHASES, NTCIP_1202_MAX_PHASES_LEN, 0, out, sizeof(out) / sizeof(out[0]));
+    size_t n = dws_ntcip_oid(NTCIP_1202_MAX_PHASES, NTCIP_1202_MAX_PHASES_LEN, 0, out, sizeof(out) / sizeof(out[0]));
     TEST_ASSERT_EQUAL_size_t(NTCIP_1202_MAX_PHASES_LEN + 1, n);
     TEST_ASSERT_EQUAL_UINT32(0, out[n - 1]);
 
     // A table column takes the row index.
-    n = detws_ntcip_oid(NTCIP_1202_PHASE_MIN_GREEN, NTCIP_1202_PHASE_MIN_GREEN_LEN, 4, out,
-                        sizeof(out) / sizeof(out[0]));
+    n = dws_ntcip_oid(NTCIP_1202_PHASE_MIN_GREEN, NTCIP_1202_PHASE_MIN_GREEN_LEN, 4, out, sizeof(out) / sizeof(out[0]));
     TEST_ASSERT_EQUAL_size_t(NTCIP_1202_PHASE_MIN_GREEN_LEN + 1, n);
     TEST_ASSERT_EQUAL_UINT32(4, out[n - 1]);
     // The root is copied verbatim before the index.
@@ -53,8 +52,8 @@ void test_oid_builder_scalar_and_index(void)
 void test_oid_builder_overflow(void)
 {
     uint32_t out[4]; // too small
-    TEST_ASSERT_EQUAL_size_t(
-        0, detws_ntcip_oid(NTCIP_1203_DMS_MESSAGE_MULTI, NTCIP_1203_DMS_MESSAGE_MULTI_LEN, 1, out, 4));
+    TEST_ASSERT_EQUAL_size_t(0,
+                             dws_ntcip_oid(NTCIP_1203_DMS_MESSAGE_MULTI, NTCIP_1203_DMS_MESSAGE_MULTI_LEN, 1, out, 4));
 }
 
 int main(void)

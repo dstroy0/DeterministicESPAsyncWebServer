@@ -8,16 +8,16 @@
 
 #include "services/mdns_adaptive/mdns_adaptive.h"
 
-#if DETWS_ENABLE_MDNS_ADAPTIVE
+#if DWS_ENABLE_MDNS_ADAPTIVE
 
-uint32_t det_mdns_refresh_interval(uint32_t ttl_s)
+uint32_t dws_mdns_refresh_interval(uint32_t ttl_s)
 {
     // Half the TTL, in ms; guard the *1000 against overflow.
     uint64_t half_ms = (uint64_t)ttl_s * 1000 / 2;
     return half_ms > 0xFFFFFFFFu ? 0xFFFFFFFFu : (uint32_t)half_ms;
 }
 
-void det_mdns_beacon_init(MdnsBeacon *b, uint32_t base_ms, uint32_t max_ms, uint16_t hi_thresh)
+void dws_mdns_beacon_init(MdnsBeacon *b, uint32_t base_ms, uint32_t max_ms, uint16_t hi_thresh)
 {
     if (!b)
         return;
@@ -27,7 +27,7 @@ void det_mdns_beacon_init(MdnsBeacon *b, uint32_t base_ms, uint32_t max_ms, uint
     b->hi_thresh = hi_thresh ? hi_thresh : 1;
 }
 
-uint32_t det_mdns_beacon_adapt(MdnsBeacon *b, uint16_t contention)
+uint32_t dws_mdns_beacon_adapt(MdnsBeacon *b, uint16_t contention)
 {
     if (!b)
         return 0;
@@ -48,7 +48,7 @@ uint32_t det_mdns_beacon_adapt(MdnsBeacon *b, uint16_t contention)
     return b->cur_ms;
 }
 
-bool det_mdns_beacon_due(const MdnsBeacon *b, uint32_t last_ms, uint32_t now_ms)
+bool dws_mdns_beacon_due(const MdnsBeacon *b, uint32_t last_ms, uint32_t now_ms)
 {
     if (!b)
         return false;
@@ -56,7 +56,7 @@ bool det_mdns_beacon_due(const MdnsBeacon *b, uint32_t last_ms, uint32_t now_ms)
     return elapsed >= b->cur_ms;
 }
 
-bool det_mdns_beacon_presleep_due(const MdnsBeacon *b, uint32_t last_ms, uint32_t now_ms, uint32_t sleep_ms)
+bool dws_mdns_beacon_presleep_due(const MdnsBeacon *b, uint32_t last_ms, uint32_t now_ms, uint32_t sleep_ms)
 {
     if (!b)
         return false;
@@ -66,4 +66,4 @@ bool det_mdns_beacon_presleep_due(const MdnsBeacon *b, uint32_t last_ms, uint32_
     return after >= b->cur_ms;
 }
 
-#endif // DETWS_ENABLE_MDNS_ADAPTIVE
+#endif // DWS_ENABLE_MDNS_ADAPTIVE

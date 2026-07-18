@@ -3,22 +3,22 @@
 
 /**
  * @file 15.mDNS.ino
- * @brief Advertise the device over mDNS / DNS-SD (DETWS_ENABLE_MDNS).
+ * @brief Advertise the device over mDNS / DNS-SD (DWS_ENABLE_MDNS).
  *
- * det_mdns_begin(hostname, port) makes the device reachable at
+ * dws_mdns_begin(hostname, port) makes the device reachable at
  * `<hostname>.local` and advertises an `_http._tcp` service, so clients on the
  * LAN can find it without knowing its IP.
  *
- * NOTE: this service is compiled into the library only when DETWS_ENABLE_MDNS
+ * NOTE: this service is compiled into the library only when DWS_ENABLE_MDNS
  * is set for the whole build (a .ino #define does not reach the separately
  * compiled library). In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_MDNS=1
+ *     build_flags = -DDWS_ENABLE_MDNS=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
  * Flash, then browse to http://detws-demo.local/.
  */
 
-#define DETWS_ENABLE_MDNS 1
+#define DWS_ENABLE_MDNS 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -29,7 +29,7 @@ static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 static const char *HOSTNAME = "detws-demo";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -49,12 +49,12 @@ void setup()
               [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "hello via mDNS"); });
     server.begin(80);
 
-    if (det_mdns_begin(HOSTNAME, 80))
+    if (dws_mdns_begin(HOSTNAME, 80))
     {
         // Bonjour TXT records (shown by DNS-SD browsers) + advertise HTTPS too.
-        det_mdns_txt("path", "/");
-        det_mdns_txt("fw", "1.0");
-        det_mdns_add_service("_https", "_tcp", 443);
+        dws_mdns_txt("path", "/");
+        dws_mdns_txt("fw", "1.0");
+        dws_mdns_add_service("_https", "_tcp", 443);
         Serial.printf("mDNS: http://%s.local/\n", HOSTNAME);
     }
 }

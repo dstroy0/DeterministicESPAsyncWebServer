@@ -61,7 +61,7 @@ reproduced verbatim with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // Test page: open an EventSource and append every "tick" event's data.
 static const char PAGE[] = "<!doctype html><meta charset=utf-8><title>SSE</title><pre id=o></pre><script>"

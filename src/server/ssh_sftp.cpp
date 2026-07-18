@@ -7,36 +7,36 @@
  *
  * Binds the pure SFTP v3 codec (services/sftp) to an SSH session channel: accumulates SSH_FXP_* request
  * packets from the channel byte stream, executes them against an fs::FS mount, and frames responses back with
- * det_ssh_conn_send. A large WRITE is streamed straight to the file (never buffered whole); a READ returns a short
+ * dws_ssh_conn_send. A large WRITE is streamed straight to the file (never buffered whole); a READ returns a short
  * DATA (the client re-requests). A fixed handle table holds open files/dirs. Every path is checked for `..`
  * traversal (server/fs_path.h) before touching the filesystem.
  */
 
 #include "server/ssh_sftp.h"
 
-#if DETWS_ENABLE_SSH_SFTP
+#if DWS_ENABLE_SSH_SFTP
 
 #include "network_drivers/presentation/ssh/connection/ssh_channel.h" // callbacks + setters
-#include "network_drivers/presentation/ssh/connection/ssh_conn.h"    // det_ssh_conn_send / det_ssh_conn_close_channel
+#include "network_drivers/presentation/ssh/connection/ssh_conn.h"    // dws_ssh_conn_send / dws_ssh_conn_close_channel
 #include "server/fs_path.h"
 #include "services/sftp/sftp.h"
 #include <string.h>
 
 namespace
 {
-// Leave headroom below one SSH packet for the CHANNEL_DATA framing, so det_ssh_conn_send never rejects a response.
+// Leave headroom below one SSH packet for the CHANNEL_DATA framing, so dws_ssh_conn_send never rejects a response.
 constexpr size_t SFTP_RESP_CAP = SSH_PKT_BUF_SIZE - 16;
 // Worst-case one READDIR NAME entry (filename + longname + attrs), used to stash an entry that did not fit.
-constexpr size_t SFTP_ENTRY_MAX = DETWS_SFTP_PATH_MAX + 320;
+constexpr size_t SFTP_ENTRY_MAX = DWS_SFTP_PATH_MAX + 320;
 
 struct SftpHandle
 {
     bool used;
     bool is_dir;
-    fs::File file;                  ///< the open fs handle (a dir cursor for READDIR)
-    char path[DETWS_SFTP_PATH_MAX]; ///< resolved on-disk path
-    bool readdir_done;              ///< the directory has been fully listed
-    bool has_pending;               ///< a READDIR entry that did not fit last time, emitted first next time
+    fs::File file;                ///< the open fs handle (a dir cursor for READDIR)
+    char path[DWS_SFTP_PATH_MAX]; ///< resolved on-disk path
+    bool readdir_done;            ///< the directory has been fully listed
+    bool has_pending;             ///< a READDIR entry that did not fit last time, emitted first next time
     uint16_t pend_len;
     uint8_t pend[SFTP_ENTRY_MAX];
 };
@@ -47,7 +47,7 @@ struct SftpSession
     uint8_t slot;
     uint32_t channel;
     uint16_t acc_len; ///< bytes accumulated toward the next request packet
-    uint8_t acc[DETWS_SFTP_PKT_BUF];
+    uint8_t acc[DWS_SFTP_PKT_BUF];
     // streaming write: a WRITE whose data payload arrives across CHANNEL_DATA calls
     bool writing;
     int wr_handle;
@@ -55,7 +55,7 @@ struct SftpSession
     uint32_t wr_remaining;
     uint32_t wr_id;
     bool wr_err;
-    SftpHandle handles[DETWS_SFTP_MAX_HANDLES];
+    SftpHandle handles[DWS_SFTP_MAX_HANDLES];
 };
 
 struct SshSftpCtx
@@ -64,15 +64,15 @@ struct SshSftpCtx
     const char *root = "/";
     bool registered = false;
     SftpSession sess[MAX_SSH_CONNS];
-    uint8_t out[SSH_PKT_BUF_SIZE];     ///< response-build scratch (sends are synchronous, one at a time)
-    uint8_t rbuf[DETWS_SFTP_MAX_READ]; ///< READ scratch
+    uint8_t out[SSH_PKT_BUF_SIZE];   ///< response-build scratch (sends are synchronous, one at a time)
+    uint8_t rbuf[DWS_SFTP_MAX_READ]; ///< READ scratch
 };
 SshSftpCtx s_sftp;
 
 // --- handle table ---------------------------------------------------------------------------------
 void free_handle(SftpSession *s, int h)
 {
-    if (h < 0 || h >= DETWS_SFTP_MAX_HANDLES || !s->handles[h].used)
+    if (h < 0 || h >= DWS_SFTP_MAX_HANDLES || !s->handles[h].used)
         return;
     if (s->handles[h].file)
         s->handles[h].file.close();
@@ -82,12 +82,12 @@ void free_handle(SftpSession *s, int h)
 }
 void free_all_handles(SftpSession *s)
 {
-    for (int i = 0; i < DETWS_SFTP_MAX_HANDLES; i++)
+    for (int i = 0; i < DWS_SFTP_MAX_HANDLES; i++)
         free_handle(s, i);
 }
 int alloc_handle(SftpSession *s)
 {
-    for (int i = 0; i < DETWS_SFTP_MAX_HANDLES; i++)
+    for (int i = 0; i < DWS_SFTP_MAX_HANDLES; i++)
         if (!s->handles[i].used)
             return i;
     return -1;
@@ -98,7 +98,7 @@ int handle_index(SftpSession *s, const uint8_t *h, uint32_t hl)
     if (hl != 4)
         return -1;
     uint32_t idx = ((uint32_t)h[0] << 24) | ((uint32_t)h[1] << 16) | ((uint32_t)h[2] << 8) | (uint32_t)h[3];
-    if (idx >= DETWS_SFTP_MAX_HANDLES || !s->handles[idx].used)
+    if (idx >= DWS_SFTP_MAX_HANDLES || !s->handles[idx].used)
         return -1;
     return (int)idx;
 }
@@ -124,7 +124,7 @@ void attrs_from_file(fs::File &f, SftpAttrs *a)
 // Resolve a client request path to an on-disk path under the mount root. "" and "." mean the root.
 int resolve(const uint8_t *path, uint32_t plen, char *out, size_t cap)
 {
-    char req[DETWS_SFTP_PATH_MAX];
+    char req[DWS_SFTP_PATH_MAX];
     if (plen >= sizeof(req))
         return -2;
     memcpy(req, path, plen);
@@ -136,7 +136,7 @@ int resolve(const uint8_t *path, uint32_t plen, char *out, size_t cap)
 void send_resp(SftpSession *s, size_t n)
 {
     if (n > 0)
-        det_ssh_conn_send(s->slot, s->channel, s_sftp.out, n);
+        dws_ssh_conn_send(s->slot, s->channel, s_sftp.out, n);
 }
 void send_status(SftpSession *s, uint32_t id, uint32_t code, const char *msg)
 {
@@ -289,7 +289,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
         uint32_t pflags = sftp_rd_u32(&r);
         SftpAttrs a;
         sftp_rd_attrs(&r, &a);
-        char disk[DETWS_SFTP_PATH_MAX];
+        char disk[DWS_SFTP_PATH_MAX];
         if (resolve(p, pl, disk, sizeof(disk)) != 0)
         {
             send_status(s, id, SSH_FX_PERMISSION_DENIED, "bad path");
@@ -354,7 +354,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
         }
         fs::File &f = s->handles[hi].file;
         f.seek((uint32_t)off);
-        uint32_t want = rlen < DETWS_SFTP_MAX_READ ? rlen : DETWS_SFTP_MAX_READ;
+        uint32_t want = rlen < DWS_SFTP_MAX_READ ? rlen : DWS_SFTP_MAX_READ;
         size_t got = f.read(s_sftp.rbuf, want);
         if (got == 0)
         {
@@ -368,7 +368,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
         const uint8_t *p = nullptr;
         uint32_t pl = 0;
         sftp_rd_string(&r, &p, &pl);
-        char disk[DETWS_SFTP_PATH_MAX];
+        char disk[DWS_SFTP_PATH_MAX];
         if (!r.ok || resolve(p, pl, disk, sizeof(disk)) != 0)
         {
             send_status(s, id, SSH_FX_PERMISSION_DENIED, "bad path");
@@ -417,7 +417,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
         const uint8_t *p = nullptr;
         uint32_t pl = 0;
         sftp_rd_string(&r, &p, &pl);
-        char disk[DETWS_SFTP_PATH_MAX];
+        char disk[DWS_SFTP_PATH_MAX];
         if (!r.ok || resolve(p, pl, disk, sizeof(disk)) != 0)
         {
             send_status(s, id, SSH_FX_PERMISSION_DENIED, "bad path");
@@ -454,7 +454,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
         const uint8_t *p = nullptr;
         uint32_t pl = 0;
         sftp_rd_string(&r, &p, &pl);
-        char disk[DETWS_SFTP_PATH_MAX];
+        char disk[DWS_SFTP_PATH_MAX];
         if (!r.ok || resolve(p, pl, disk, sizeof(disk)) != 0)
         {
             send_status(s, id, SSH_FX_PERMISSION_DENIED, "bad path");
@@ -467,7 +467,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
         const uint8_t *p = nullptr;
         uint32_t pl = 0;
         sftp_rd_string(&r, &p, &pl);
-        char disk[DETWS_SFTP_PATH_MAX];
+        char disk[DWS_SFTP_PATH_MAX];
         if (!r.ok || resolve(p, pl, disk, sizeof(disk)) != 0)
         {
             send_status(s, id, SSH_FX_PERMISSION_DENIED, "bad path");
@@ -480,7 +480,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
         const uint8_t *p = nullptr;
         uint32_t pl = 0;
         sftp_rd_string(&r, &p, &pl);
-        char disk[DETWS_SFTP_PATH_MAX];
+        char disk[DWS_SFTP_PATH_MAX];
         if (!r.ok || resolve(p, pl, disk, sizeof(disk)) != 0)
         {
             send_status(s, id, SSH_FX_PERMISSION_DENIED, "bad path");
@@ -496,8 +496,8 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
         uint32_t nl = 0;
         sftp_rd_string(&r, &op, &ol);
         sftp_rd_string(&r, &np, &nl);
-        char od[DETWS_SFTP_PATH_MAX];
-        char nd[DETWS_SFTP_PATH_MAX];
+        char od[DWS_SFTP_PATH_MAX];
+        char nd[DWS_SFTP_PATH_MAX];
         if (!r.ok || resolve(op, ol, od, sizeof(od)) != 0 || resolve(np, nl, nd, sizeof(nd)) != 0)
         {
             send_status(s, id, SSH_FX_PERMISSION_DENIED, "bad path");
@@ -515,7 +515,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
             send_status(s, id, SSH_FX_BAD_MESSAGE, "");
             return;
         }
-        char req[DETWS_SFTP_PATH_MAX];
+        char req[DWS_SFTP_PATH_MAX];
         if (pl >= sizeof(req))
         {
             send_status(s, id, SSH_FX_FAILURE, "path too long");
@@ -528,7 +528,7 @@ void handle_packet(SftpSession *s, const uint8_t *buf, size_t total)
             send_status(s, id, SSH_FX_PERMISSION_DENIED, "traversal");
             return;
         }
-        char cpath[DETWS_SFTP_PATH_MAX + 1];
+        char cpath[DWS_SFTP_PATH_MAX + 1];
         if (pl == 0 || (pl == 1 && req[0] == '.'))
             snprintf(cpath, sizeof(cpath), "/");
         else if (req[0] == '/')
@@ -663,7 +663,7 @@ void sftp_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t le
         size_t space = sizeof(s->acc) - s->acc_len;
         if (space == 0)
         {
-            det_ssh_conn_close_channel(slot, s->channel); // a non-WRITE packet too big to buffer
+            dws_ssh_conn_close_channel(slot, s->channel); // a non-WRITE packet too big to buffer
             s->active = false;
             return;
         }
@@ -674,7 +674,7 @@ void sftp_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t le
         len -= take;
         if (!process_acc(s))
         {
-            det_ssh_conn_close_channel(slot, s->channel);
+            dws_ssh_conn_close_channel(slot, s->channel);
             s->active = false;
             return;
         }
@@ -683,7 +683,7 @@ void sftp_on_data(uint8_t slot, uint32_t channel, const uint8_t *data, size_t le
 } // namespace
 
 // --- public API -----------------------------------------------------------------------------------
-void det_ssh_sftp_begin(fs::FS &fs, const char *root)
+void dws_ssh_sftp_begin(fs::FS &fs, const char *root)
 {
     s_sftp.fs = &fs;
     s_sftp.root = (root && root[0]) ? root : "/";
@@ -694,10 +694,10 @@ void det_ssh_sftp_begin(fs::FS &fs, const char *root)
     }
     if (!s_sftp.registered)
     {
-        det_ssh_channel_set_sftp_open_cb(sftp_on_open);
-        det_ssh_channel_set_sftp_data_cb(sftp_on_data);
+        dws_ssh_channel_set_sftp_open_cb(sftp_on_open);
+        dws_ssh_channel_set_sftp_data_cb(sftp_on_data);
         s_sftp.registered = true;
     }
 }
 
-#endif // DETWS_ENABLE_SSH_SFTP
+#endif // DWS_ENABLE_SSH_SFTP

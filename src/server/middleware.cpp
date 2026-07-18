@@ -3,23 +3,23 @@
 
 /**
  * @file middleware.cpp
- * @brief Middleware chain + built-in fixed-window rate limiter for DetWebServer.
+ * @brief Middleware chain + built-in fixed-window rate limiter for DWS.
  *
  * Split out of dwserver.cpp (single-purpose server files). use() registers a middleware;
  * run_middleware() runs the chain in order (first MW_HALT stops dispatch); enable_rate_limit()
  * / rate_limit_check() implement a rollover-safe fixed-window counter that answers 429 +
- * Retry-After past the budget. All four are DetWebServer methods over member state - a pure move.
+ * Retry-After past the budget. All four are DWS methods over member state - a pure move.
  */
 
 #include "dwserver.h"
-#include "shared_primitives/mime.h" // DET_MIME_TEXT_PLAIN
+#include "shared_primitives/mime.h" // DWS_MIME_TEXT_PLAIN
 #include <stdio.h>
 
 // ---------------------------------------------------------------------------
 // Middleware chain + built-in rate limiter
 // ---------------------------------------------------------------------------
 
-void DetWebServer::use(Middleware mw)
+void DWS::use(Middleware mw)
 {
     if (mw == nullptr || _middleware_count >= MAX_MIDDLEWARE)
         return;
@@ -28,7 +28,7 @@ void DetWebServer::use(Middleware mw)
 
 // Run the chain in registration order. The first middleware to return MwResult::MW_HALT
 // stops dispatch; it is responsible for having sent a response.
-bool DetWebServer::run_middleware(uint8_t slot_id, HttpReq *req)
+bool DWS::run_middleware(uint8_t slot_id, HttpReq *req)
 {
     for (uint8_t i = 0; i < _middleware_count; i++)
     {
@@ -38,7 +38,7 @@ bool DetWebServer::run_middleware(uint8_t slot_id, HttpReq *req)
     return false;
 }
 
-void DetWebServer::enable_rate_limit(uint16_t max_requests, uint32_t window_ms)
+void DWS::enable_rate_limit(uint16_t max_requests, uint32_t window_ms)
 {
     _rl_max = max_requests;
     _rl_window_ms = window_ms;
@@ -48,7 +48,7 @@ void DetWebServer::enable_rate_limit(uint16_t max_requests, uint32_t window_ms)
 
 // Fixed-window counter. Unsigned subtraction is rollover-safe across the millis()
 // wrap. On the request that tips past _rl_max, reply 429 + Retry-After and stop.
-bool DetWebServer::rate_limit_check(uint8_t slot_id)
+bool DWS::rate_limit_check(uint8_t slot_id)
 {
     if (_rl_max == 0 || _rl_window_ms == 0)
         return false; // disabled
@@ -70,6 +70,6 @@ bool DetWebServer::rate_limit_check(uint8_t slot_id)
     char secs[12];
     snprintf(secs, sizeof(secs), "%lu", (unsigned long)((remain_ms + 999) / 1000));
     add_response_header(slot_id, "Retry-After", secs);
-    send(slot_id, 429, DET_MIME_TEXT_PLAIN, "Too Many Requests");
+    send(slot_id, 429, DWS_MIME_TEXT_PLAIN, "Too Many Requests");
     return true;
 }

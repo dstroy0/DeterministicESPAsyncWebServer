@@ -1,10 +1,10 @@
 # 20.Diagnostics - a compile-time configuration endpoint
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_DIAG`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_DIAG`
 
 ## What this example teaches
 
-`server.diag(slot_id)` serves `DETWS_DIAG_JSON`, a compile-time snapshot of which
+`server.diag(slot_id)` serves `DWS_DIAG_JSON`, a compile-time snapshot of which
 features are enabled and how the buffers are sized. It is handy while developing -
 one route tells you exactly what the firmware was built with - but because it
 exposes the build configuration, keep it **off (or behind auth) in production**.
@@ -15,7 +15,7 @@ exposes the build configuration, keep it **off (or behind auth) in production**.
 server.on("/diag", HTTP_GET, [](uint8_t id, HttpReq *) { server.diag(id); });
 ```
 
-The JSON is assembled at compile time from the active `DETWS_*` macros, so the
+The JSON is assembled at compile time from the active `DWS_*` macros, so the
 endpoint adds essentially nothing at runtime and cannot drift from the real
 configuration.
 
@@ -23,7 +23,7 @@ configuration.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_DIAG=1" \
+  --project-option="build_flags=-DDWS_ENABLE_DIAG=1" \
   --lib="." examples/L7-Application/20.Diagnostics/20.Diagnostics.ino
 ```
 
@@ -40,7 +40,7 @@ verbatim with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_DIAG 1
+#define DWS_ENABLE_DIAG 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -49,7 +49,7 @@ verbatim with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

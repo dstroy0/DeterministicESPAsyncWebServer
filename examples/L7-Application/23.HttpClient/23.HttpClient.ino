@@ -15,9 +15,9 @@
  *
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
- *     build_flags = -DDETWS_ENABLE_HTTP_CLIENT=1
- *     ; for https:// add: -DDETWS_ENABLE_TLS=1 -DDETWS_ENABLE_HTTP_CLIENT_TLS=1
- *     ; to trace where a request stalls, add: -DDETWS_HTTP_CLIENT_DEBUG
+ *     build_flags = -DDWS_ENABLE_HTTP_CLIENT=1
+ *     ; for https:// add: -DDWS_ENABLE_TLS=1 -DDWS_ENABLE_HTTP_CLIENT_TLS=1
+ *     ; to trace where a request stalls, add: -DDWS_HTTP_CLIENT_DEBUG
  * (Arduino IDE: they are already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
  * https:// note: encrypt-only by default (the device has no trust store), so the
@@ -27,7 +27,7 @@
  * request. Call once before issuing requests.
  */
 
-#define DETWS_ENABLE_HTTP_CLIENT 1
+#define DWS_ENABLE_HTTP_CLIENT 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"

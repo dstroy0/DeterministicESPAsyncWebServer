@@ -17,24 +17,24 @@
 #define DETERMINISTICESPASYNCWEBSERVER_WEB_ASSETS_H
 
 // ---- html ----
-/** @brief Real-time SVG telemetry dashboard page (DETWS_ENABLE_DASHBOARD). */
-extern const char DETWS_DASHBOARD_PAGE[];
+/** @brief Real-time SVG telemetry dashboard page (DWS_ENABLE_DASHBOARD). */
+extern const char DWS_DASHBOARD_PAGE[];
 
 /** @brief Captive-portal form for WiFi credential entry (provisioning service). */
-extern const char DETWS_PROV_FORM[];
+extern const char DWS_PROV_FORM[];
 
 /** @brief Success page shown after credentials are saved and the device reboots. */
-extern const char DETWS_PROV_SAVED_HTML[];
+extern const char DWS_PROV_SAVED_HTML[];
 
 /** @brief Self-contained WebSocket terminal page (green-phosphor CRT theme; auto ws/wss). */
-extern const char DETWS_TERMINAL_PAGE[];
+extern const char DWS_TERMINAL_PAGE[];
 
 // ---- json ----
 /** @brief Runtime stats JSON (rendered via send_template); add/rename fields to taste. */
-extern const char DETWS_STATS_JSON[];
+extern const char DWS_STATS_JSON[];
 
 // ---- text ----
 /** @brief All available Prometheus metrics; comment a value line out with a leading # to drop it. */
-extern const char DETWS_METRICS_PROM[];
+extern const char DWS_METRICS_PROM[];
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_WEB_ASSETS_H

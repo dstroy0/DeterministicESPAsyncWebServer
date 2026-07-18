@@ -3,18 +3,18 @@
 
 /**
  * @file failsafe.h
- * @brief Software watchdog: deadlock detection + fail-safe safe-state (DETWS_ENABLE_FAILSAFE).
+ * @brief Software watchdog: deadlock detection + fail-safe safe-state (DWS_ENABLE_FAILSAFE).
  *
  * A fixed registry of "lifelines" - a task, worker, or control loop that must check in
- * (`detws_failsafe_feed`) at least every `deadline_ms`. If one stops checking in (a hang, a
- * deadlock, a wedged loop), `detws_failsafe_check()` detects it and fires a breach callback exactly
+ * (`dws_failsafe_feed`) at least every `deadline_ms`. If one stops checking in (a hang, a
+ * deadlock, a wedged loop), `dws_failsafe_check()` detects it and fires a breach callback exactly
  * once per stuck episode, so the app can drive its outputs to a known-safe state (motors off, valves
  * closed), log, and optionally reset. It complements the hardware task watchdog: this one is
  * app-defined, per-lifeline, and knows *which* subsystem wedged.
  *
  * Zero heap (a static registry), no stdlib. The overdue test is a wrap-safe unsigned time delta, so it
  * is correct across a `millis()` rollover. The evaluation core takes an explicit `now`, so it is fully
- * host-testable with a synthetic clock; the no-`now` wrappers read the pluggable `detws_millis()`.
+ * host-testable with a synthetic clock; the no-`now` wrappers read the pluggable `dws_millis()`.
  */
 
 #ifndef DETERMINISTICESPASYNCWEBSERVER_FAILSAFE_H
@@ -24,14 +24,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_FAILSAFE
+#if DWS_ENABLE_FAILSAFE
 
 /** @brief One monitored lifeline. */
 struct DetwsLifeline
 {
     const char *name;      ///< label (for the breach callback + JSON); not copied.
     uint32_t deadline_ms;  ///< max interval between feeds before it is considered stuck.
-    uint32_t last_feed_ms; ///< time of the last check-in (detws_millis units).
+    uint32_t last_feed_ms; ///< time of the last check-in (dws_millis units).
     bool armed;            ///< slot in use.
     bool breached;         ///< currently in breach (so the callback fires once per episode).
 };
@@ -49,7 +49,7 @@ typedef void (*DetwsFailsafeCb)(int id, const char *name, void *arg);
  * Wrap-safe: the unsigned delta `now - last_feed` is correct across a millis() rollover as long as the
  * true gap is under 2^32 ms (~49 days), which any real deadline is.
  */
-static inline bool detws_lifeline_overdue(uint32_t now, uint32_t last_feed_ms, uint32_t deadline_ms)
+static inline bool dws_lifeline_overdue(uint32_t now, uint32_t last_feed_ms, uint32_t deadline_ms)
 {
     return (uint32_t)(now - last_feed_ms) > deadline_ms;
 }
@@ -59,25 +59,25 @@ static inline bool detws_lifeline_overdue(uint32_t now, uint32_t last_feed_ms, u
 // ---------------------------------------------------------------------------
 
 /** @brief Clear the whole registry and the breach callback (mainly for tests / re-init). */
-void detws_failsafe_reset(void);
+void dws_failsafe_reset(void);
 
 /**
  * @brief Register a lifeline that must check in at least every @p deadline_ms.
  * @param name        label used in the breach callback + JSON (borrowed, not copied).
  * @param deadline_ms max allowed interval between feeds.
- * @return the lifeline id (>= 0), or -1 if the registry (DETWS_FAILSAFE_MAX_LIFELINES) is full.
+ * @return the lifeline id (>= 0), or -1 if the registry (DWS_FAILSAFE_MAX_LIFELINES) is full.
  *
  * The lifeline starts fed at the registration time, so it is not instantly overdue.
  */
-int detws_failsafe_register(const char *name, uint32_t deadline_ms);
-int detws_failsafe_register_at(const char *name, uint32_t deadline_ms, uint32_t now);
+int dws_failsafe_register(const char *name, uint32_t deadline_ms);
+int dws_failsafe_register_at(const char *name, uint32_t deadline_ms, uint32_t now);
 
-/** @brief Check in lifeline @p id (clears any breach). Reads detws_millis(). */
-bool detws_failsafe_feed(int id);
-bool detws_failsafe_feed_at(int id, uint32_t now);
+/** @brief Check in lifeline @p id (clears any breach). Reads dws_millis(). */
+bool dws_failsafe_feed(int id);
+bool dws_failsafe_feed_at(int id, uint32_t now);
 
 /** @brief Install the breach callback (fired once per stuck episode). */
-void detws_failsafe_on_breach(DetwsFailsafeCb cb, void *arg);
+void dws_failsafe_on_breach(DetwsFailsafeCb cb, void *arg);
 
 /**
  * @brief Evaluate every armed lifeline; fire the callback for each newly-overdue one.
@@ -86,11 +86,11 @@ void detws_failsafe_on_breach(DetwsFailsafeCb cb, void *arg);
  * A lifeline that is overdue and not already flagged fires the callback once and is marked breached
  * until it is fed again; already-breached lifelines stay in the returned mask but do not re-fire.
  */
-uint32_t detws_failsafe_check_at(uint32_t now);
-uint32_t detws_failsafe_check(void);
+uint32_t dws_failsafe_check_at(uint32_t now);
+uint32_t dws_failsafe_check(void);
 
 /** @brief Serialize the registry as JSON for a /health-style endpoint. @return bytes written (excl NUL). */
-int detws_failsafe_json_at(uint32_t now, char *out, size_t cap);
+int dws_failsafe_json_at(uint32_t now, char *out, size_t cap);
 
-#endif // DETWS_ENABLE_FAILSAFE
+#endif // DWS_ENABLE_FAILSAFE
 #endif // DETERMINISTICESPASYNCWEBSERVER_FAILSAFE_H

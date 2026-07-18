@@ -36,7 +36,7 @@ EXT_RAM_BSS_ATTR static uint8_t arena[48000];   // "put this in PSRAM, please"
 
 and, _if the framework was built to allow it_, the linker puts `arena` in a special section
 `.ext_ram.bss` that lives in PSRAM. Zero heap. The library already does exactly this when you
-set `-DDETWS_TLS_ARENA_IN_PSRAM=1`.
+set `-DDWS_TLS_ARENA_IN_PSRAM=1`.
 
 **The catch (this is the whole reason this guide exists).** `EXT_RAM_BSS_ATTR` only works if
 the framework was compiled with one setting turned on:
@@ -116,8 +116,8 @@ custom_sdkconfig =
     CONFIG_SPIRAM_SPEED_80M=y
 build_flags =
     -DBOARD_HAS_PSRAM
-    -DDETWS_ENABLE_TLS=1
-    -DDETWS_TLS_ARENA_IN_PSRAM=1
+    -DDWS_ENABLE_TLS=1
+    -DDWS_TLS_ARENA_IN_PSRAM=1
     -DMAX_TLS_CONNS=3
 lib_deps = <your path or registry name for DeterministicESPAsyncWebServer>
 ```

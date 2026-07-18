@@ -8,7 +8,7 @@
 
 #include "services/nats/nats.h"
 
-#if DETWS_ENABLE_NATS
+#if DWS_ENABLE_NATS
 
 #include <string.h>
 
@@ -305,4 +305,4 @@ bool nats_parse(const char *buf, size_t len, NatsMsg *out, size_t *consumed)
     return true;
 }
 
-#endif // DETWS_ENABLE_NATS
+#endif // DWS_ENABLE_NATS

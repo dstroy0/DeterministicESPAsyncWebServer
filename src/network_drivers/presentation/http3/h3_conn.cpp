@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http3/h3_conn.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/http3/qpack.h"
 #include "network_drivers/presentation/http3/quic_varint.h"
@@ -19,7 +19,7 @@ namespace
 H3Stream *h3_stream_get(H3Conn *h3, uint64_t id, bool create)
 {
     H3Stream *free_slot = nullptr;
-    for (size_t i = 0; i < DETWS_H3_MAX_STREAMS; i++)
+    for (size_t i = 0; i < DWS_H3_MAX_STREAMS; i++)
     {
         if (h3->streams[i].role != H3StreamRole::H3_ROLE_FREE && h3->streams[i].id == id)
             return &h3->streams[i];
@@ -62,8 +62,8 @@ bool req_emit(void *ctx, const char *name, size_t nlen, const char *value, size_
 // Parse the accumulated request stream: decode HEADERS, coalesce DATA into a body, and dispatch.
 void dispatch_request(H3Conn *h3, H3Stream *st)
 {
-    static uint8_t body[DETWS_H3_STREAM_BUF];
-    static char scratch[DETWS_H3_PATH_LEN + DETWS_H3_AUTHORITY_LEN + 64];
+    static uint8_t body[DWS_H3_STREAM_BUF];
+    static char scratch[DWS_H3_PATH_LEN + DWS_H3_AUTHORITY_LEN + 64];
     size_t body_len = 0;
 
     size_t off = 0;
@@ -217,7 +217,7 @@ void h3_conn_init(H3Conn *h3, QuicConn *qc, H3RequestFn on_request, void *app)
     h3->on_request = on_request;
     h3->app = app;
     h3->next_uni_id = 3;
-    for (size_t i = 0; i < DETWS_H3_MAX_STREAMS; i++)
+    for (size_t i = 0; i < DWS_H3_MAX_STREAMS; i++)
         h3->streams[i].id = UINT64_MAX;
     h3_settings_defaults(&h3->peer_settings);
 
@@ -265,7 +265,7 @@ bool h3_conn_respond(H3Conn *h3, uint64_t stream_id, int status, const char *con
     bp += qpack_encode_header(block + bp, sizeof(block) - bp, "content-length", 14, clen, cl);
 
     // HEADERS frame + DATA frame, sent on the request stream with FIN.
-    uint8_t out[DETWS_H3_STREAM_BUF];
+    uint8_t out[DWS_H3_STREAM_BUF];
     size_t op = h3_build_headers(out, sizeof(out), block, bp);
     if (!op)
         return false;
@@ -279,4 +279,4 @@ bool h3_conn_respond(H3Conn *h3, uint64_t stream_id, int status, const char *con
     return quic_conn_stream_send(h3->qc, stream_id, out, op, true) == op;
 }
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3

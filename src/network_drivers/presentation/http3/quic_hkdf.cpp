@@ -8,7 +8,7 @@
 
 #include "network_drivers/presentation/http3/quic_hkdf.h"
 
-#if (DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS)
+#if (DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS)
 
 #include "network_drivers/presentation/ssh/crypto/ssh_hmac_sha256.h"
 #include <string.h>
@@ -92,4 +92,4 @@ void quic_hkdf_expand_label(const uint8_t secret[QUIC_HKDF_HASH_LEN], const char
     quic_hkdf_expand_label_ctx(secret, label, nullptr, 0, out, out_len, label_prefix);
 }
 
-#endif // DETWS_ENABLE_HTTP3 || DETWS_ENABLE_DTLS
+#endif // DWS_ENABLE_HTTP3 || DWS_ENABLE_DTLS

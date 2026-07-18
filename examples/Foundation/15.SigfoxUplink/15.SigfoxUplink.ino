@@ -12,7 +12,7 @@
 // Needs a Sigfox modem + subscription to actually transmit; the AT-command codec is host-
 // tested in test/test_sigfox.
 //
-// Build flag (whole build): DETWS_ENABLE_SIGFOX=1
+// Build flag (whole build): DWS_ENABLE_SIGFOX=1
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/sigfox/sigfox.h"

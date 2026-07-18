@@ -3,22 +3,22 @@
 
 /**
  * @file 20.Diagnostics.ino
- * @brief Compile-time configuration endpoint (DETWS_ENABLE_DIAG).
+ * @brief Compile-time configuration endpoint (DWS_ENABLE_DIAG).
  *
- * server.diag(slot_id) serves DETWS_DIAG_JSON - a compile-time snapshot of the
+ * server.diag(slot_id) serves DWS_DIAG_JSON - a compile-time snapshot of the
  * enabled features and buffer sizes. Handy while developing; it exposes the
  * build configuration, so keep it OFF (or behind auth) in production.
  *
- * NOTE: this feature is compiled into the library only when DETWS_ENABLE_DIAG
+ * NOTE: this feature is compiled into the library only when DWS_ENABLE_DIAG
  * is set for the whole build (a .ino #define does not reach the separately
  * compiled library). In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_DIAG=1
+ *     build_flags = -DDWS_ENABLE_DIAG=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
  * Flash, open Serial @ 115200 for the IP, then GET http://<ip>/diag.
  */
 
-#define DETWS_ENABLE_DIAG 1
+#define DWS_ENABLE_DIAG 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -27,7 +27,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

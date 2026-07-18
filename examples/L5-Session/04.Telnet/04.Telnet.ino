@@ -3,7 +3,7 @@
 
 /**
  * @file 04.Telnet.ino
- * @brief Line-oriented Telnet console (RFC 854) on port 23 (DETWS_ENABLE_TELNET).
+ * @brief Line-oriented Telnet console (RFC 854) on port 23 (DWS_ENABLE_TELNET).
  *
  * Opens a Telnet listener via server.listen(23, ConnProto::PROTO_TELNET). The server
  * negotiates echo + character mode, edits the line for you (backspace works),
@@ -13,16 +13,16 @@
  * Telnet is PLAINTEXT - no auth, no encryption. Use only on a trusted LAN;
  * prefer SSH (29.SSH) or the WebSocket terminal (35.WebTerminal) otherwise.
  *
- * NOTE: this feature is compiled into the library only when DETWS_ENABLE_TELNET
+ * NOTE: this feature is compiled into the library only when DWS_ENABLE_TELNET
  * is set for the whole build (a .ino #define does not reach the separately
  * compiled library). In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_TELNET=1
+ *     build_flags = -DDWS_ENABLE_TELNET=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  *
  * Flash, open Serial @ 115200 for the IP, then: telnet <ip> 23  (type "help").
  */
 
-#define DETWS_ENABLE_TELNET 1
+#define DWS_ENABLE_TELNET 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -32,7 +32,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void on_command(const char *line, uint8_t conn_id)
 {

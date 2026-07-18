@@ -4,7 +4,7 @@
 /**
  * @file scp.h
  * @brief SCP (RCP) protocol wire codec - the pure, host-testable half of the SCP-over-SSH server
- *        (DETWS_ENABLE_SSH_SCP).
+ *        (DWS_ENABLE_SSH_SCP).
  *
  * SCP transfers a file over an SSH `exec "scp …"` channel using the old rcp line protocol: the source side
  * sends a control line `C<mode> <size> <name>\n`, the peer acks with a 0 byte, then the file bytes flow,
@@ -21,7 +21,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_SSH_SCP
+#if DWS_ENABLE_SSH_SCP
 
 #include <stddef.h>
 #include <stdint.h>
@@ -60,6 +60,6 @@ bool scp_parse_cline(const char *line, size_t len, uint32_t *mode_out, uint64_t 
  */
 size_t scp_build_cline(uint32_t mode, uint64_t size, const char *name, char *out, size_t cap);
 
-#endif // DETWS_ENABLE_SSH_SCP
+#endif // DWS_ENABLE_SSH_SCP
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_SCP_H

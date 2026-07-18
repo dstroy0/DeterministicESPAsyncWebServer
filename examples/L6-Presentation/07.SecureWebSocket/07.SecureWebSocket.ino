@@ -8,7 +8,7 @@
  * WebSocket and SSE both run over the deterministic TLS engine: the wss://
  * handshake and every frame are encrypted, and SSE events are pushed over the
  * same TLS record layer. It is transparent to handler code - you register the
- * same on_ws() / on_sse() routes; enabling DETWS_ENABLE_TLS and serving on a TLS
+ * same on_ws() / on_sse() routes; enabling DWS_ENABLE_TLS and serving on a TLS
  * listener is all it takes. (wss receive decrypts records straight into the
  * frame parser; SSE is send-only.)
  *
@@ -21,11 +21,11 @@
  *
  * NOTE: optional features are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable them for the whole build, e.g.:
- *     build_flags = -DDETWS_ENABLE_TLS=1
+ *     build_flags = -DDWS_ENABLE_TLS=1
  * (WebSocket and SSE are on by default.)
  */
 
-#define DETWS_ENABLE_TLS 1
+#define DWS_ENABLE_TLS 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -35,7 +35,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 // Throwaway self-signed-style ECDSA P-256 server cert + key. DEMO ONLY.
 static const char SERVER_CERT_PEM[] = R"PEM(-----BEGIN CERTIFICATE-----

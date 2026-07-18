@@ -8,7 +8,7 @@
  * serve_static(url_prefix, fs, fs_root) mounts a filesystem subtree at a URL
  * prefix: a request for "/" maps to "/www/index.html", "/app.js" to
  * "/www/app.js", and so on (content types inferred from the extension). File
- * serving is on by default (DETWS_ENABLE_FILE_SERVING).
+ * serving is on by default (DWS_ENABLE_FILE_SERVING).
  *
  * Put your assets under a `data/www/` folder and upload the LittleFS image
  * ("Upload Filesystem Image" in PlatformIO / Arduino) before running.
@@ -24,7 +24,7 @@
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {

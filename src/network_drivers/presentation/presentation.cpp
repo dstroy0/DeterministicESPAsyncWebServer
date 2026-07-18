@@ -7,7 +7,7 @@
  *
  * This file is now a thin adapter.  The HTTP parsing logic lives in
  * http_parser.cpp.  This layer only knows about:
- *   - The transport RX read API (det_conn_available / det_conn_read_byte) - it
+ *   - The transport RX read API (dws_conn_available / dws_conn_read_byte) - it
  *     never indexes the ring itself; transport owns rx_buffer / rx_head / rx_tail
  *   - Slot-indexed helpers that the session and application layers expect
  *
@@ -19,21 +19,21 @@
 
 #include "presentation.h"
 #include "network_drivers/session/proto_handler.h" // ProtoHandler (the L5 dispatch seam this registers into)
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
 #include "network_drivers/presentation/websocket/websocket.h" // ws_find()/ws_free(): a WS-upgraded slot must never be HTTP-parsed
 #endif
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
 #include "network_drivers/presentation/sse/sse.h" // sse_free(): release an SSE binding when its HTTP slot closes/reuses
 #endif
-#if DETWS_ENABLE_TLS
+#if DWS_ENABLE_TLS
 #include "network_drivers/tls/tls.h"
-#if DETWS_ENABLE_HTTP2
+#if DWS_ENABLE_HTTP2
 #include "network_drivers/presentation/http2/h2_server.h"
 #endif
 #include <string.h> // strcmp (ALPN check)
 #endif
 
-#if DETWS_ENABLE_KEEPALIVE
+#if DWS_ENABLE_KEEPALIVE
 uint16_t http_req_count[MAX_CONNS];
 #endif
 
@@ -54,10 +54,10 @@ void http_reset(uint8_t slot_id)
 // dispatch, wedging every later connection that reuses the slot.
 static inline void http_release_upgrade_bindings(uint8_t slot_id)
 {
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     ws_free(slot_id);
 #endif
-#if DETWS_ENABLE_SSE
+#if DWS_ENABLE_SSE
     sse_free(slot_id);
 #endif
 }
@@ -67,7 +67,7 @@ void http_conn_open(uint8_t slot_id)
     if (slot_id >= MAX_CONNS)
         return;
     http_release_upgrade_bindings(slot_id); // a reused slot must not inherit a prior WS/SSE binding
-#if DETWS_ENABLE_KEEPALIVE
+#if DWS_ENABLE_KEEPALIVE
     http_req_count[slot_id] = 0; // fresh connection: clear the keep-alive request tally
 #endif
     http_reset(slot_id);
@@ -78,7 +78,7 @@ void http_parse(uint8_t slot_id)
     if (slot_id >= MAX_CONNS)
         return;
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     // Once a slot upgrades to WebSocket its rx ring carries WS frames, not HTTP.
     // The WS frame parser is pumped separately (handle()/the worker loop); feeding
     // those bytes to the HTTP parser here would consume - and corrupt - the first
@@ -93,8 +93,8 @@ void http_parse(uint8_t slot_id)
 
     // Drain via the transport read API - the parser never touches the ring itself.
     // Check the terminal state BEFORE consuming so a pipelined next request is left
-    // in the ring; the window is reopened by the worker's det_conn_ack_consumed().
-    while (det_conn_available(slot_id) > 0)
+    // in the ring; the window is reopened by the worker's dws_conn_ack_consumed().
+    while (dws_conn_available(slot_id) > 0)
     {
         switch (req->parse_state)
         {
@@ -108,7 +108,7 @@ void http_parse(uint8_t slot_id)
         }
 
         uint8_t byte = 0;
-        if (!det_conn_read_byte(slot_id, &byte)) // ring drained between available() and here
+        if (!dws_conn_read_byte(slot_id, &byte)) // ring drained between available() and here
             break;
         http_parser_feed(req, byte);
     }
@@ -125,13 +125,13 @@ void http_parse(uint8_t slot_id)
 // HTTP / TLS / h2 / ws specifics - it only routes events to registered handlers.
 // ---------------------------------------------------------------------------
 
-#if DETWS_ENABLE_TLS
-// Abort a TLS connection (fatal handshake/read error). det_conn_abort_slot owns
+#if DWS_ENABLE_TLS
+// Abort a TLS connection (fatal handshake/read error). dws_conn_abort_slot owns
 // the whole teardown: free the TLS context (abrupt), detach the pcb, reset the
 // slot, then RST - so this never reaches into the raw tcp_pcb.
 static void tls_abort(uint8_t slot)
 {
-    det_conn_abort_slot(slot);
+    dws_conn_abort_slot(slot);
     http_reset(slot);
 }
 
@@ -140,9 +140,9 @@ static void tls_abort(uint8_t slot)
 // plaintext path uses; the rx ring now holds ciphertext, consumed by the BIO).
 static void tls_data(uint8_t slot)
 {
-    if (!det_tls_established(slot))
+    if (!dws_tls_established(slot))
     {
-        int h = det_tls_handshake(slot);
+        int h = dws_tls_handshake(slot);
         if (h < 0)
         {
             tls_abort(slot);
@@ -152,28 +152,28 @@ static void tls_data(uint8_t slot)
             return; // still handshaking; wait for more ciphertext
     }
 
-#if DETWS_ENABLE_HTTP2
+#if DWS_ENABLE_HTTP2
     // Just past the handshake: if the client negotiated ALPN "h2", this connection speaks HTTP/2
     // for its lifetime - hand its decrypted bytes to the h2 engine, not the HTTP/1.1 parser.
     if (!conn_pool[slot].h2_checked)
     {
         conn_pool[slot].h2_checked = 1;
-        const char *alpn = det_tls_alpn(slot);
+        const char *alpn = dws_tls_alpn(slot);
         if (alpn && strcmp(alpn, "h2") == 0)
         {
             conn_pool[slot].h2 = 1;
-            conn_pool[slot].resp_sink = det_h2_server_respond; // route responses through the h2 framer
-            det_h2_server_open(slot);
+            conn_pool[slot].resp_sink = dws_h2_server_respond; // route responses through the h2 framer
+            dws_h2_server_open(slot);
         }
     }
     if (conn_pool[slot].h2)
     {
-        det_h2_server_data(slot);
+        dws_h2_server_data(slot);
         return;
     }
 #endif
 
-#if DETWS_ENABLE_WEBSOCKET
+#if DWS_ENABLE_WEBSOCKET
     // A TLS slot upgraded to WebSocket is pumped from handle() (it decrypts
     // records and feeds the WS frame parser, dispatching each frame); leave the
     // ciphertext in the rx ring for it rather than feeding the HTTP parser here.
@@ -183,7 +183,7 @@ static void tls_data(uint8_t slot)
 
     uint8_t buf[256];
     int n;
-    while ((n = det_tls_read(slot, buf, sizeof(buf))) > 0)
+    while ((n = dws_tls_read(slot, buf, sizeof(buf))) > 0)
     {
         HttpReq *req = &http_pool[slot];
         for (int i = 0; i < n; i++)
@@ -198,14 +198,14 @@ static void tls_data(uint8_t slot)
     if (n < 0)
         tls_abort(slot);
 }
-#endif // DETWS_ENABLE_TLS
+#endif // DWS_ENABLE_TLS
 
 // The data/close paths branch on TLS (a TLS slot's rx ring holds ciphertext,
 // decrypted into the parser); accept maps directly.
 static void http_evt_accept(uint8_t slot)
 {
     http_conn_open(slot); // resets the parser + (keep-alive) the per-conn request tally
-#if DETWS_ENABLE_HTTP2
+#if DWS_ENABLE_HTTP2
     conn_pool[slot].h2 = 0; // a reused slot must re-run the post-handshake ALPN check
     conn_pool[slot].h2_checked = 0;
     conn_pool[slot].resp_sink = nullptr; // back to the HTTP/1.1 builder until ALPN says otherwise
@@ -213,7 +213,7 @@ static void http_evt_accept(uint8_t slot)
 }
 static void http_evt_data(uint8_t slot)
 {
-#if DETWS_ENABLE_TLS
+#if DWS_ENABLE_TLS
     if (conn_pool[slot].tls)
     {
         tls_data(slot);
@@ -224,14 +224,14 @@ static void http_evt_data(uint8_t slot)
 }
 static void http_evt_close(uint8_t slot)
 {
-#if DETWS_ENABLE_TLS
+#if DWS_ENABLE_TLS
     if (conn_pool[slot].tls)
-        det_tls_conn_free(slot); // also covers timeouts (EvtType::EVT_ERROR)
+        dws_tls_conn_free(slot); // also covers timeouts (EvtType::EVT_ERROR)
 #endif
     http_release_upgrade_bindings(slot); // FIN/RST/error on an SSE or WS slot must free its binding
     http_reset(slot);
 }
-// HTTP's poll pump is instance-bound (it dispatches into a DetWebServer's routes), so the routing
+// HTTP's poll pump is instance-bound (it dispatches into a DWS's routes), so the routing
 // core installs it here at begin() via http_proto_set_poll(). The trampoline lets the ProtoHandler
 // stay a plain static const while the actual pump lives in the application TU - the on_poll analogue
 // of the resp_sink TX seam. Until installed (e.g. the native harness before begin()) it is a no-op.

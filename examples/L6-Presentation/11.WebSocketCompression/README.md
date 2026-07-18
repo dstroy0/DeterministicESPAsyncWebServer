@@ -1,11 +1,11 @@
 # 11.WebSocketCompression - permessage-deflate
 
-**Layer:** L6 Presentation · **Build flags:** `DETWS_ENABLE_WS_DEFLATE` (requires `DETWS_ENABLE_WEBSOCKET`)
+**Layer:** L6 Presentation · **Build flags:** `DWS_ENABLE_WS_DEFLATE` (requires `DWS_ENABLE_WEBSOCKET`)
 
 ## What this example teaches
 
 This is the [WebSocket echo](../09.WebSocket) with one flag added:
-`DETWS_ENABLE_WS_DEFLATE` turns on permessage-deflate (RFC 7692), transparent
+`DWS_ENABLE_WS_DEFLATE` turns on permessage-deflate (RFC 7692), transparent
 two-way compression. The handler code is unchanged - it still reads plaintext -
 but frames travel compressed on the wire.
 
@@ -42,7 +42,7 @@ compressed length.
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_WS_DEFLATE=1" \
+  --project-option="build_flags=-DDWS_ENABLE_WS_DEFLATE=1" \
   --lib="." examples/L6-Presentation/11.WebSocketCompression/11.WebSocketCompression.ino
 ```
 
@@ -58,7 +58,7 @@ reproduced verbatim with added explanatory comments:
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 // Enable WebSocket permessage-deflate for this sketch (overrides default-off).
-#define DETWS_ENABLE_WS_DEFLATE 1
+#define DWS_ENABLE_WS_DEFLATE 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -67,7 +67,7 @@ reproduced verbatim with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 static const char PAGE[] = "<!doctype html><meta charset=utf-8><title>WS deflate echo</title>"
                            "<input id=i autofocus><pre id=o></pre><script>"

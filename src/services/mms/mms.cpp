@@ -8,7 +8,7 @@
 
 #include "services/mms/mms.h"
 
-#if DETWS_ENABLE_MMS
+#if DWS_ENABLE_MMS
 
 #include <string.h>
 
@@ -111,7 +111,7 @@ bool ber_len(const uint8_t *pdu, size_t len, size_t at, size_t *value, size_t *h
 }
 } // namespace
 
-size_t detws_mms_read_request(uint32_t invoke_id, const char *item_name, uint8_t *out, size_t cap)
+size_t dws_mms_read_request(uint32_t invoke_id, const char *item_name, uint8_t *out, size_t cap)
 {
     if (!out || !item_name)
         return 0;
@@ -161,7 +161,7 @@ size_t detws_mms_read_request(uint32_t invoke_id, const char *item_name, uint8_t
     return tlv(Mms::MMS_PDU_CONFIRMED_REQUEST, body, bn, out, cap);
 }
 
-size_t detws_mms_read_response(uint32_t invoke_id, const uint8_t *data, size_t data_len, uint8_t *out, size_t cap)
+size_t dws_mms_read_response(uint32_t invoke_id, const uint8_t *data, size_t data_len, uint8_t *out, size_t cap)
 {
     if (!out || (data_len && !data))
         return 0;
@@ -187,7 +187,7 @@ size_t detws_mms_read_response(uint32_t invoke_id, const uint8_t *data, size_t d
     return tlv(Mms::MMS_PDU_CONFIRMED_RESPONSE, body, bn, out, cap);
 }
 
-bool detws_mms_parse(const uint8_t *pdu, size_t len, MmsPdu *out)
+bool dws_mms_parse(const uint8_t *pdu, size_t len, MmsPdu *out)
 {
     if (!pdu || !out || len < 2)
         return false;
@@ -240,4 +240,4 @@ bool detws_mms_parse(const uint8_t *pdu, size_t len, MmsPdu *out)
     return true;
 }
 
-#endif // DETWS_ENABLE_MMS
+#endif // DWS_ENABLE_MMS

@@ -34,7 +34,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_DTLS
+#if DWS_ENABLE_DTLS
 
 #include <stddef.h>
 #include <stdint.h>
@@ -197,5 +197,5 @@ bool dtls_replay_check(const DtlsReplayWindow *w, uint64_t seq);
 /** @brief Record @p seq as accepted, advancing the window. Call only after a successful deprotect. */
 void dtls_replay_mark(DtlsReplayWindow *w, uint64_t seq);
 
-#endif // DETWS_ENABLE_DTLS
+#endif // DWS_ENABLE_DTLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_DTLS_RECORD_H

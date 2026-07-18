@@ -8,7 +8,7 @@
 
 #include "services/focas/focas.h"
 
-#if DETWS_ENABLE_FOCAS
+#if DWS_ENABLE_FOCAS
 
 #include <string.h>
 
@@ -221,4 +221,4 @@ float focas_value_f(const FocasValue *v)
     return (float)v->data / div;
 }
 
-#endif // DETWS_ENABLE_FOCAS
+#endif // DWS_ENABLE_FOCAS

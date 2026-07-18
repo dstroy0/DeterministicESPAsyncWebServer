@@ -4,7 +4,7 @@
 /**
  * @file hw_health.h
  * @brief Hardware-health diagnostics: rail droop, SPI CRC backoff, GPIO short, cap leakage
- *        (DETWS_ENABLE_HW_HEALTH).
+ *        (DWS_ENABLE_HW_HEALTH).
  *
  * Four pure decision cores an app feeds with samples it reads from the hardware (ADC millivolts, a SPI
  * CRC pass/fail, a driven-vs-readback GPIO level, a capacitor decay time). Each turns raw measurements
@@ -28,9 +28,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_HW_HEALTH
+#if DWS_ENABLE_HW_HEALTH
 
-/** @brief Rail sample verdict (the sole return of detws_hwhealth_rail_sample). */
+/** @brief Rail sample verdict (the sole return of dws_hwhealth_rail_sample). */
 enum class HwRailVerdict : uint8_t
 {
     HW_RAIL_OK = 0,      ///< at or above the warn threshold.
@@ -38,7 +38,7 @@ enum class HwRailVerdict : uint8_t
     HW_RAIL_BROWNOUT = 2 ///< below the crit threshold.
 };
 
-/** @brief GPIO short-circuit verdict (the sole return of detws_hwhealth_gpio_short). */
+/** @brief GPIO short-circuit verdict (the sole return of dws_hwhealth_gpio_short). */
 enum class HwGpioVerdict : uint8_t
 {
     HW_GPIO_OK = 0,        ///< readback matches the driven level.
@@ -46,7 +46,7 @@ enum class HwGpioVerdict : uint8_t
     HW_GPIO_SHORT_VCC = 2  ///< drove low, read high: shorted to Vcc.
 };
 
-/** @brief Capacitor-leakage verdict (the sole return of detws_hwhealth_cap_leak). */
+/** @brief Capacitor-leakage verdict (the sole return of dws_hwhealth_cap_leak). */
 enum class HwCapVerdict : uint8_t
 {
     HW_CAP_OK = 0,      ///< decay time within tolerance of expected.
@@ -78,23 +78,23 @@ struct HwSpiBackoff
 };
 
 /** @brief Initialize a rail monitor. @p min_mv starts at @p nominal_mv. */
-void detws_hwhealth_rail_init(HwRailMonitor *m, uint32_t nominal_mv, uint32_t warn_mv, uint32_t crit_mv);
+void dws_hwhealth_rail_init(HwRailMonitor *m, uint32_t nominal_mv, uint32_t warn_mv, uint32_t crit_mv);
 
 /** @brief Record one rail sample; updates the worst-droop min + counters. @return HW_RAIL_*. */
-HwRailVerdict detws_hwhealth_rail_sample(HwRailMonitor *m, uint32_t mv);
+HwRailVerdict dws_hwhealth_rail_sample(HwRailMonitor *m, uint32_t mv);
 
 /** @brief Serialize a rail monitor: `{"nominal_mv":..,"min_mv":..,"sag":..,"brownout":..}`. */
-size_t detws_hwhealth_rail_json(const HwRailMonitor *m, char *out, size_t cap);
+size_t dws_hwhealth_rail_json(const HwRailMonitor *m, char *out, size_t cap);
 
 /** @brief Initialize a SPI backoff state machine. */
-void detws_hwhealth_spi_init(HwSpiBackoff *s, uint32_t start_hz, uint32_t min_hz, uint32_t max_hz, uint16_t fail_trip,
-                             uint16_t ok_trip);
+void dws_hwhealth_spi_init(HwSpiBackoff *s, uint32_t start_hz, uint32_t min_hz, uint32_t max_hz, uint16_t fail_trip,
+                           uint16_t ok_trip);
 
 /** @brief Feed one transfer's CRC result; adjusts the clock with hysteresis. @return the new clock (hz). */
-uint32_t detws_hwhealth_spi_result(HwSpiBackoff *s, bool crc_ok);
+uint32_t dws_hwhealth_spi_result(HwSpiBackoff *s, bool crc_ok);
 
 /** @brief Short-circuit test from a driven level and its readback. @return HW_GPIO_*. */
-HwGpioVerdict detws_hwhealth_gpio_short(bool driven_high, bool read_high);
+HwGpioVerdict dws_hwhealth_gpio_short(bool driven_high, bool read_high);
 
 /**
  * @brief Leakage test comparing a measured RC decay time to the expected one.
@@ -103,7 +103,7 @@ HwGpioVerdict detws_hwhealth_gpio_short(bool driven_high, bool read_high);
  * @param tol_pct     tolerance band (percent) around expected.
  * @return HW_CAP_OK / HW_CAP_LEAK (too fast) / HW_CAP_HIGH_ESR (too slow).
  */
-HwCapVerdict detws_hwhealth_cap_leak(uint32_t measured_ms, uint32_t expected_ms, uint8_t tol_pct);
+HwCapVerdict dws_hwhealth_cap_leak(uint32_t measured_ms, uint32_t expected_ms, uint8_t tol_pct);
 
-#endif // DETWS_ENABLE_HW_HEALTH
+#endif // DWS_ENABLE_HW_HEALTH
 #endif // DETERMINISTICESPASYNCWEBSERVER_HW_HEALTH_H

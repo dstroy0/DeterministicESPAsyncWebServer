@@ -1,11 +1,11 @@
 # 37.PartitionMonitor - a flash partition-map endpoint
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_PARTITION_MONITOR`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_PARTITION_MONITOR`
 
 ## What this example teaches
 
 The ESP32's flash is carved into partitions (factory app, OTA slots, NVS,
-LittleFS, ...). `detws_partition_monitor_begin()` serves that table as JSON at
+LittleFS, ...). `dws_partition_monitor_begin()` serves that table as JSON at
 `/partitions`: each entry's label, kind, type/subtype, flash offset, and size, plus
 which app slot is currently running. It is a one-call diagnostics endpoint that
 pairs well with OTA dashboards, and it needs no special hardware.
@@ -13,7 +13,7 @@ pairs well with OTA dashboards, and it needs no special hardware.
 **One call mounts the endpoint:**
 
 ```cpp
-detws_partition_monitor_begin(server, "/partitions");
+dws_partition_monitor_begin(server, "/partitions");
 ```
 
 The handler reads the partition table from the ESP-IDF API and serializes it
@@ -23,7 +23,7 @@ directly into the response (no heap).
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_PARTITION_MONITOR=1" \
+  --project-option="build_flags=-DDWS_ENABLE_PARTITION_MONITOR=1" \
   --lib="." examples/L7-Application/37.PartitionMonitor/37.PartitionMonitor.ino
 ```
 
@@ -40,7 +40,7 @@ reproduced verbatim with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_PARTITION_MONITOR 1
+#define DWS_ENABLE_PARTITION_MONITOR 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -50,7 +50,7 @@ reproduced verbatim with added explanatory comments:
 static const char *SSID = "YOUR_SSID";
 static const char *PASSWORD = "YOUR_PASSWORD";
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -67,7 +67,7 @@ void setup()
     WiFi.setSleep(false);
 
     // Serve the flash partition table as JSON at /partitions.
-    detws_partition_monitor_begin(server, "/partitions");
+    dws_partition_monitor_begin(server, "/partitions");
     server.begin(80);
 }
 

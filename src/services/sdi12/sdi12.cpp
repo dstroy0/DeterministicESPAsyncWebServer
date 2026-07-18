@@ -8,7 +8,7 @@
 
 #include "services/sdi12/sdi12.h"
 
-#if DETWS_ENABLE_SDI12
+#if DWS_ENABLE_SDI12
 
 #include "shared_primitives/numparse.h"
 #include <string.h>
@@ -72,9 +72,9 @@ bool sdi12_parse_measure(const char *resp, size_t len, char *addr, uint16_t *rea
     if (!resp || len < 5) // a<ttt><n> is at least 5 octets
         return false;
     for (int i = 1; i <= 3; i++)
-        if (!det_np_digit(resp[i]))
+        if (!dws_np_digit(resp[i]))
             return false;
-    if (!det_np_digit(resp[4]))
+    if (!dws_np_digit(resp[4]))
         return false;
     if (addr)
         *addr = resp[0];
@@ -82,7 +82,7 @@ bool sdi12_parse_measure(const char *resp, size_t len, char *addr, uint16_t *rea
         *ready_sec = (uint16_t)((resp[1] - '0') * 100 + (resp[2] - '0') * 10 + (resp[3] - '0'));
     // The value count is the remaining digits (1 digit for aM!, 2 for aC!).
     uint16_t count = 0;
-    for (size_t i = 4; i < len && det_np_digit(resp[i]); i++)
+    for (size_t i = 4; i < len && dws_np_digit(resp[i]); i++)
         count = (uint16_t)(count * 10 + (resp[i] - '0'));
     if (num_values)
         *num_values = (uint8_t)count;
@@ -104,8 +104,8 @@ bool sdi12_parse_values(const char *resp, size_t len, float *out, size_t max, si
         {
             const char *start = resp + i;
             const char *end = start;
-            // det_strtof handles a leading '-'; for '+' parse the magnitude after the sign.
-            float v = (c == '+') ? det_strtof(start + 1, &end) : det_strtof(start, &end);
+            // dws_strtof handles a leading '-'; for '+' parse the magnitude after the sign.
+            float v = (c == '+') ? dws_strtof(start + 1, &end) : dws_strtof(start, &end);
             if (end == start || (c == '+' && end == start + 1)) // no digits consumed
             {
                 i++;
@@ -157,4 +157,4 @@ bool sdi12_check_crc(const char *resp, size_t len)
     return memcmp(enc, resp + data_len, SDI12_CRC_CHARS) == 0;
 }
 
-#endif // DETWS_ENABLE_SDI12
+#endif // DWS_ENABLE_SDI12

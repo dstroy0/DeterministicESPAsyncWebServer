@@ -8,7 +8,7 @@
 
 #include "smb_md.h"
 
-#if DETWS_ENABLE_SMB
+#if DWS_ENABLE_SMB
 
 #include "shared_primitives/endian.h"
 #include <string.h>
@@ -39,7 +39,7 @@ static void md5_compress(uint32_t s[4], const uint8_t block[64])
 {
     uint32_t m[16];
     for (int i = 0; i < 16; i++)
-        m[i] = det_rd32le(block + i * 4);
+        m[i] = dws_rd32le(block + i * 4);
     uint32_t a = s[0];
     uint32_t b = s[1];
     uint32_t c = s[2];
@@ -96,7 +96,7 @@ static void md4_compress(uint32_t s[4], const uint8_t block[64])
 {
     uint32_t x[16];
     for (int i = 0; i < 16; i++)
-        x[i] = det_rd32le(block + i * 4);
+        x[i] = dws_rd32le(block + i * 4);
     uint32_t a = s[0];
     uint32_t b = s[1];
     uint32_t c = s[2];
@@ -214,7 +214,7 @@ static void md_finish(MdCtx *c, uint8_t out[16], md_compress_fn compress)
         lenbuf[i] = (uint8_t)(bits >> (8 * i)); // little-endian bit length
     md_absorb(c, lenbuf, 8, compress);          // triggers the final compress
     for (int i = 0; i < 4; i++)
-        det_wr32le(out + i * 4, c->state[i]);
+        dws_wr32le(out + i * 4, c->state[i]);
 }
 
 void md5_update(MdCtx *c, const uint8_t *data, size_t len)
@@ -281,4 +281,4 @@ void hmac_md5(const uint8_t *key, size_t key_len, const uint8_t *msg, size_t msg
     md5_final(&c, out);
 }
 
-#endif // DETWS_ENABLE_SMB
+#endif // DWS_ENABLE_SMB

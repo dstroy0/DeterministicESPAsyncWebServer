@@ -3,7 +3,7 @@
 
 /**
  * @file sercos.h
- * @brief SERCOS III motion-bus telegram + IDN codec (DETWS_ENABLE_SERCOS).
+ * @brief SERCOS III motion-bus telegram + IDN codec (DWS_ENABLE_SERCOS).
  *
  * SERCOS III is the real-time drive/motion bus over Ethernet (raw L2, ethertype 0x88CD, on the shipped
  * services/rawl2). The master cyclically sends **MDT** (Master Data Telegrams) carrying setpoints to the
@@ -26,7 +26,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_SERCOS
+#if DWS_ENABLE_SERCOS
 
 // SERCOS telegram types + header length: wire values, so integer constants in a struct.
 struct Sercos
@@ -43,10 +43,10 @@ struct Sercos
  * @param data_block the data block number 0..4095.
  * @return the 16-bit IDN: bit15 = S/P, bits14..12 = set, bits11..0 = block.
  */
-uint16_t detws_sercos_idn(bool is_product, uint8_t param_set, uint16_t data_block);
+uint16_t dws_sercos_idn(bool is_product, uint8_t param_set, uint16_t data_block);
 
 /** @brief Decode a SERCOS IDN into its parts (any out-pointer may be null). */
-void detws_sercos_idn_parse(uint16_t idn, bool *is_product, uint8_t *param_set, uint16_t *data_block);
+void dws_sercos_idn_parse(uint16_t idn, bool *is_product, uint8_t *param_set, uint16_t *data_block);
 
 /**
  * @brief Build a SERCOS telegram: [type][phase][cycle:2 LE][data...].
@@ -56,8 +56,8 @@ void detws_sercos_idn_parse(uint16_t idn, bool *is_product, uint8_t *param_set, 
  * @param data  the cyclic device data (may be null if data_len == 0).
  * @return the telegram length (4 + data_len), or 0 on overflow.
  */
-size_t detws_sercos_build(uint8_t type, uint8_t phase, uint16_t cycle, const uint8_t *data, size_t data_len,
-                          uint8_t *out, size_t cap);
+size_t dws_sercos_build(uint8_t type, uint8_t phase, uint16_t cycle, const uint8_t *data, size_t data_len, uint8_t *out,
+                        size_t cap);
 
 /** @brief A parsed SERCOS telegram (data points into the input). */
 struct SercosTelegram
@@ -70,7 +70,7 @@ struct SercosTelegram
 };
 
 /** @brief Parse a SERCOS telegram. @return true if @p len >= 4 and the type is MDT/AT. */
-bool detws_sercos_parse(const uint8_t *frame, size_t len, SercosTelegram *out);
+bool dws_sercos_parse(const uint8_t *frame, size_t len, SercosTelegram *out);
 
-#endif // DETWS_ENABLE_SERCOS
+#endif // DWS_ENABLE_SERCOS
 #endif // DETERMINISTICESPASYNCWEBSERVER_SERCOS_H

@@ -10,7 +10,7 @@
 #include "ServerConfig.h"
 #include "services/clock.h" // dwsdelay
 
-#if DETWS_ENABLE_ADS1115
+#if DWS_ENABLE_ADS1115
 
 namespace
 {
@@ -30,11 +30,11 @@ uint16_t ads1115_config_single(uint8_t channel, uint8_t gain, uint8_t dr)
     if (channel > 3)
         channel = 0;
     if (gain > Ads1115Gain::ADS1115_GAIN_16)
-        gain = (uint8_t)DETWS_ADS1115_GAIN;
+        gain = (uint8_t)DWS_ADS1115_GAIN;
     if (dr > Ads1115DataRate::ADS1115_DR_860)
-        dr = (uint8_t)DETWS_ADS1115_DR;
+        dr = (uint8_t)DWS_ADS1115_DR;
     uint16_t cfg = OS_SINGLE;
-#if DETWS_ADS1115_DIFFERENTIAL
+#if DWS_ADS1115_DIFFERENTIAL
     cfg |= (uint16_t)((uint16_t)channel << 12); // differential pair: MUX 0=AIN0-1, 1=AIN0-3, 2=AIN1-3, 3=AIN2-3
 #else
     cfg |= (uint16_t)(MUX_SINGLE0 | ((uint16_t)channel << 12)); // single-ended AINx
@@ -49,7 +49,7 @@ uint16_t ads1115_config_single(uint8_t channel, uint8_t gain, uint8_t dr)
 int32_t ads1115_raw_to_uv(int16_t raw, uint8_t gain)
 {
     if (gain > Ads1115Gain::ADS1115_GAIN_16)
-        gain = (uint8_t)DETWS_ADS1115_GAIN;
+        gain = (uint8_t)DWS_ADS1115_GAIN;
     return (int32_t)((int64_t)raw * FSR_UV[gain] / 32768);
 }
 
@@ -69,7 +69,7 @@ namespace
 // address, so it is one named owner, unreachable from any other translation unit.
 struct Ads1115Ctx
 {
-    uint8_t addr = DETWS_ADS1115_I2C_ADDR;
+    uint8_t addr = DWS_ADS1115_I2C_ADDR;
 };
 Ads1115Ctx s_ads;
 
@@ -99,8 +99,8 @@ bool rd16(uint8_t reg, uint16_t *v)
 
 bool ads1115_begin(uint8_t addr)
 {
-    s_ads.addr = addr ? addr : (uint8_t)DETWS_ADS1115_I2C_ADDR;
-    detws_i2c_begin();
+    s_ads.addr = addr ? addr : (uint8_t)DWS_ADS1115_I2C_ADDR;
+    dws_i2c_begin();
     return true;
 }
 
@@ -108,7 +108,7 @@ bool ads1115_read_raw(uint8_t channel, uint8_t gain, int16_t *raw)
 {
     if (!raw)
         return false;
-    uint8_t dr = (uint8_t)DETWS_ADS1115_DR;
+    uint8_t dr = (uint8_t)DWS_ADS1115_DR;
     if (dr > Ads1115DataRate::ADS1115_DR_860)
         dr = Ads1115DataRate::ADS1115_DR_128;
     if (!wr16(ADS1115_REG_CONFIG, ads1115_config_single(channel, gain, dr)))
@@ -150,4 +150,4 @@ bool ads1115_read_uv(uint8_t, uint8_t, int32_t *)
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_ADS1115
+#endif // DWS_ENABLE_ADS1115

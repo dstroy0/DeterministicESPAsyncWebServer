@@ -8,11 +8,11 @@
  * The server is split into a pure, host-testable core and an ESP32-only UDP
  * transport (mirroring the SNMP agent's split):
  *
- *  - det_coap_server_process() takes a complete request datagram and produces a
+ *  - dws_coap_server_process() takes a complete request datagram and produces a
  *    complete response datagram in a caller buffer - no sockets, no heap. It is
  *    unit-tested on the host (env:native_coap).
- *  - det_coap_server_begin() binds the transport-layer UDP service on :5683
- *    (Arduino only) and feeds received datagrams through det_coap_server_process().
+ *  - dws_coap_server_begin() binds the transport-layer UDP service on :5683
+ *    (Arduino only) and feeds received datagrams through dws_coap_server_process().
  *
  * Only the message layer's piggybacked-response model is implemented: a CON
  * request is answered with a piggybacked ACK, a NON request with a NON response.
@@ -21,11 +21,11 @@
  * /.well-known/core resource-discovery listing (RFC 6690) is served. The codec
  * understands the Uri-Path, Uri-Query and
  * Content-Format options; other options are skipped. Block-wise transfer
- * (RFC 7959, the Block1/Block2 options) is available under DETWS_ENABLE_COAP_BLOCK;
- * resource observation (RFC 7641) under DETWS_ENABLE_COAP_OBSERVE.
+ * (RFC 7959, the Block1/Block2 options) is available under DWS_ENABLE_COAP_BLOCK;
+ * resource observation (RFC 7641) under DWS_ENABLE_COAP_OBSERVE.
  *
- * The resource table is a fixed BSS array of DETWS_COAP_MAX_RESOURCES entries.
- * Register handlers with det_coap_server_add_resource(); the path string is
+ * The resource table is a fixed BSS array of DWS_COAP_MAX_RESOURCES entries.
+ * Register handlers with dws_coap_server_add_resource(); the path string is
  * referenced by pointer and must outlive the server (point it at flash/static
  * data, like the rest of the library's strings).
  */
@@ -37,7 +37,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#if DETWS_ENABLE_COAP
+#if DWS_ENABLE_COAP
 
 // CoAP message types (RFC 7252 §3, the 2-bit T field).
 enum class CoapType : uint8_t
@@ -57,7 +57,7 @@ enum class CoapMethod : uint8_t
     COAP_DELETE = 4,
 };
 
-// Allowed-methods bitmask for det_coap_server_add_resource() (bit per method). A mask is OR'd together,
+// Allowed-methods bitmask for dws_coap_server_add_resource() (bit per method). A mask is OR'd together,
 // so these are integer constants in a namespacing struct, not an enum class (which would force a cast
 // at every |). The bit position is the CoapMethod ordinal.
 struct CoapMethodMask
@@ -144,7 +144,7 @@ typedef void (*CoapHandler)(const CoapRequest *req, CoapResponse *resp);
 // ---------------------------------------------------------------------------
 
 /** @brief Reset the server and clear the resource table. Call before registering resources. */
-void det_coap_server_reset();
+void dws_coap_server_reset();
 
 /**
  * @brief Register a resource at @p path served by @p handler.
@@ -155,7 +155,7 @@ void det_coap_server_reset();
  * @param handler  invoked for an allowed method on a matching path.
  * @return false if the table is full.
  */
-bool det_coap_server_add_resource(const char *path, uint8_t methods, CoapHandler handler);
+bool dws_coap_server_add_resource(const char *path, uint8_t methods, CoapHandler handler);
 
 // ---------------------------------------------------------------------------
 // Core processing (host-testable; no sockets, no heap)
@@ -175,14 +175,14 @@ bool det_coap_server_add_resource(const char *path, uint8_t methods, CoapHandler
  * @param resp_cap capacity of @p resp.
  * @return number of response bytes written, or 0 to send nothing.
  */
-size_t det_coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap);
+size_t dws_coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap);
 
 /**
- * @brief Like det_coap_server_process(), but include an Observe option (RFC 7641) in
+ * @brief Like dws_coap_server_process(), but include an Observe option (RFC 7641) in
  *        a successful (2.xx) response carrying the notification sequence
  *        @p observe_seq (a value < 0 omits it). Used by the Observe transport.
  */
-size_t det_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap,
+size_t dws_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap,
                                   int32_t observe_seq);
 
 // ---------------------------------------------------------------------------
@@ -193,11 +193,11 @@ size_t det_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *r
  * @brief Bind the server to UDP @p port (default 5683) via the transport-layer UDP service.
  *
  * Callback-driven (no per-loop servicing). Call after WiFi is up. On non-Arduino
- * builds det_udp_listen() is a stub, so the core remains host-testable.
+ * builds dws_udp_listen() is a stub, so the core remains host-testable.
  */
-void det_coap_server_begin(uint16_t port = 5683);
+void dws_coap_server_begin(uint16_t port = 5683);
 
-#if DETWS_ENABLE_COAP_OBSERVE
+#if DWS_ENABLE_COAP_OBSERVE
 /**
  * @brief Push a notification to every observer of @p path (RFC 7641).
  *
@@ -208,9 +208,9 @@ void det_coap_server_begin(uint16_t port = 5683);
  * build. A client registers by sending a GET with the Observe option (0); it
  * deregisters with Observe (1), a Reset, or by going away.
  */
-void det_coap_notify(const char *path);
+void dws_coap_notify(const char *path);
 #endif
 
-#endif // DETWS_ENABLE_COAP
+#endif // DWS_ENABLE_COAP
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_COAP_H

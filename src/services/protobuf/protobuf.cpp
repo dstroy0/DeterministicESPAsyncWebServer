@@ -8,7 +8,7 @@
 
 #include "services/protobuf/protobuf.h"
 
-#if DETWS_ENABLE_PROTOBUF
+#if DWS_ENABLE_PROTOBUF
 
 #include <string.h>
 
@@ -243,4 +243,4 @@ double pb_double_bits(uint64_t bits)
     return d;
 }
 
-#endif // DETWS_ENABLE_PROTOBUF
+#endif // DWS_ENABLE_PROTOBUF

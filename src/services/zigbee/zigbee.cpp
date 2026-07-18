@@ -12,7 +12,7 @@
 
 #include "services/zigbee/zigbee.h"
 
-#if DETWS_ENABLE_ZIGBEE
+#if DWS_ENABLE_ZIGBEE
 
 namespace
 {
@@ -59,7 +59,7 @@ uint16_t ash_crc16(const uint8_t *buf, uint16_t len)
 
 uint16_t ash_frame_encode(uint8_t control, const uint8_t *payload, uint16_t len, uint8_t *out, uint16_t cap)
 {
-    if (!out || len > DETWS_ZIGBEE_MAX_DATA || (payload == nullptr && len > 0))
+    if (!out || len > DWS_ZIGBEE_MAX_DATA || (payload == nullptr && len > 0))
         return 0;
     // CRC over control + payload.
     uint16_t crc = crc16_byte(0xFFFF, control);
@@ -93,7 +93,7 @@ int ash_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *control, uint8_t
         return 0; // no complete frame yet
 
     // Remove the byte-stuffing from raw[0, flag) into a fixed scratch: control + payload + CRC(2).
-    uint8_t un[DETWS_ZIGBEE_MAX_DATA + 3];
+    uint8_t un[DWS_ZIGBEE_MAX_DATA + 3];
     uint16_t n = 0;
     for (uint16_t i = 0; i < flag; i++)
     {
@@ -127,4 +127,4 @@ int ash_frame_decode(const uint8_t *raw, uint16_t len, uint8_t *control, uint8_t
     return (int)(flag + 1); // consume up to and including the flag
 }
 
-#endif // DETWS_ENABLE_ZIGBEE
+#endif // DWS_ENABLE_ZIGBEE

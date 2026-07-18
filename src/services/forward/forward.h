@@ -3,19 +3,19 @@
 
 /**
  * @file forward.h
- * @brief Interface forwarding plane (DETWS_ENABLE_FORWARD) - the v5 bridge / router.
+ * @brief Interface forwarding plane (DWS_ENABLE_FORWARD) - the v5 bridge / router.
  *
  * A forwarding plane over the ingest pipeline. You register **interfaces** (Wi-Fi STA /
  * AP, Ethernet, a peripheral bus, a radio), each with an egress **send callback**, then
  * add per-pair **rules** (`src -> dst`, allow or deny, with an optional rate cap). When a
- * frame arrives on an interface you call det_forward_ingress(); the plane evaluates the
+ * frame arrives on an interface you call dws_forward_ingress(); the plane evaluates the
  * rules and forwards the bytes to **every allowed destination** by calling that
  * destination's send callback - so the device bridges / routes between its interfaces
  * instead of only terminating traffic.
  *
  * The canonical wiring is DMA-driven: an inbound DMA-complete event (services/dma) is
  * posted onto the FORWARD lane (services/preempt_queue), whose task calls
- * det_forward_ingress(), and each destination's send callback hands the bytes to that
+ * dws_forward_ingress(), and each destination's send callback hands the bytes to that
  * interface's egress DMA. The plane itself is decoupled from both - it only knows
  * interfaces, rules, and the send callbacks - so it is pure and host-testable.
  *
@@ -23,9 +23,9 @@
  * no DENY rule does (a DENY always wins). A frame is never reflected to its source
  * interface. **Fail-closed**: an exceeded rate cap or a send callback returning false
  * drops the frame for that destination and is counted - it never blocks. Storage is
- * static (zero heap): DETWS_FWD_MAX_IFACES interfaces, DETWS_FWD_MAX_RULES rules.
+ * static (zero heap): DWS_FWD_MAX_IFACES interfaces, DWS_FWD_MAX_RULES rules.
  *
- * **Policy routing** (route-by-tag): a policy route (det_forward_route_add) matches a frame by
+ * **Policy routing** (route-by-tag): a policy route (dws_forward_route_add) matches a frame by
  * the same byte-pattern primitive as the ACL - so it keys on any field at a known offset
  * (EtherType, IP protocol, a port, an address prefix) - and binds the match to a single
  * **egress interface**. A matched frame is forwarded only to that interface, taking precedence
@@ -34,8 +34,8 @@
  * NIC / radio. The ingress ACL still runs first, and the same rate-cap / never-reflect /
  * fail-closed guarantees apply to the chosen egress.
  *
- * **Inspection hook** (DETWS_FWD_INSPECT, off by default for cost + privacy): when built in, an
- * app can register an inspector (det_forward_set_inspector) that runs on every ingress frame
+ * **Inspection hook** (DWS_FWD_INSPECT, off by default for cost + privacy): when built in, an
+ * app can register an inspector (dws_forward_set_inspector) that runs on every ingress frame
  * after the ACL and before routing - to observe / parse / meter, and optionally drop it. It is a
  * flexible app callback (arbitrary logic), complementing the fast fixed-offset ACL.
  *
@@ -48,40 +48,40 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_FORWARD
+#if DWS_ENABLE_FORWARD
 
 #include <stddef.h>
 #include <stdint.h>
 
 /** @brief Interface kind (informational; the plane treats all interfaces the same). */
-enum class det_if_kind : uint8_t
+enum class dws_if_kind : uint8_t
 {
-    DET_IF_OTHER = 0,
-    DET_IF_WIFI_STA,
-    DET_IF_WIFI_AP,
-    DET_IF_ETH,
-    DET_IF_BUS,
-    DET_IF_RADIO,
+    DWS_IF_OTHER = 0,
+    DWS_IF_WIFI_STA,
+    DWS_IF_WIFI_AP,
+    DWS_IF_ETH,
+    DWS_IF_BUS,
+    DWS_IF_RADIO,
 };
 
 /** @brief Rule action for a `(src, dst)` interface pair or an ACL entry. */
-enum class det_fwd_action : uint8_t
+enum class dws_fwd_action : uint8_t
 {
-    DET_FWD_DENY = 0,
-    DET_FWD_ALLOW = 1,
+    DWS_FWD_DENY = 0,
+    DWS_FWD_ALLOW = 1,
 };
 
 /** @brief Wildcard source interface for an ACL entry (matches a frame from any source). */
-#define DET_FWD_IF_ANY 0xFF
+#define DWS_FWD_IF_ANY 0xFF
 
 /**
  * @brief Egress: emit @p len bytes on interface @p if_id.
  * @return true if the interface accepted the bytes; false drops (counted as a send fail).
  */
-using det_if_send_fn = bool (*)(uint8_t if_id, const uint8_t *data, uint16_t len, void *ctx);
+using dws_if_send_fn = bool (*)(uint8_t if_id, const uint8_t *data, uint16_t len, void *ctx);
 
-/** @brief Forwarding counters (monotonic since the last det_forward_reset()). */
-struct det_forward_stats
+/** @brief Forwarding counters (monotonic since the last dws_forward_reset()). */
+struct dws_forward_stats
 {
     uint32_t frames_in;       ///< ingress calls
     uint32_t forwarded;       ///< destination sends that succeeded
@@ -90,86 +90,86 @@ struct det_forward_stats
     uint32_t send_fail;       ///< destination send callbacks that returned false
     uint32_t acl_denied;      ///< frames dropped at ingress by the access-control list
     uint32_t policy_routed;   ///< frames that matched a policy route (routed to its chosen egress)
-    uint32_t inspect_dropped; ///< frames dropped by the inspection hook (DETWS_FWD_INSPECT)
+    uint32_t inspect_dropped; ///< frames dropped by the inspection hook (DWS_FWD_INSPECT)
 };
 
 /** @brief Clear all interfaces, rules, and stats (start from empty). */
-void det_forward_reset(void);
+void dws_forward_reset(void);
 
 /**
  * @brief Register an interface and its egress send callback.
  * @return true; false if @p if_id is already registered, @p send is null, or the table
- *         is full (DETWS_FWD_MAX_IFACES).
+ *         is full (DWS_FWD_MAX_IFACES).
  */
-bool det_forward_add_if(uint8_t if_id, det_if_kind kind, det_if_send_fn send, void *ctx);
+bool dws_forward_add_if(uint8_t if_id, dws_if_kind kind, dws_if_send_fn send, void *ctx);
 
 /**
  * @brief Add a forwarding rule. @p rate_cap_per_sec caps ALLOW rules (0 = unlimited); it
  *        is ignored for DENY rules.
- * @return true; false if the table is full (DETWS_FWD_MAX_RULES).
+ * @return true; false if the table is full (DWS_FWD_MAX_RULES).
  */
-bool det_forward_add_rule(uint8_t src_if, uint8_t dst_if, det_fwd_action action, uint16_t rate_cap_per_sec);
+bool dws_forward_add_rule(uint8_t src_if, uint8_t dst_if, dws_fwd_action action, uint16_t rate_cap_per_sec);
 
 /**
  * @brief Set the ACL default action - what happens to a frame that matches no ACL entry.
- *        Default det_fwd_action::DET_FWD_ALLOW (an empty ACL passes everything, so the ACL is opt-in);
- *        set det_fwd_action::DET_FWD_DENY for allowlist semantics (only explicitly permitted frames pass).
+ *        Default dws_fwd_action::DWS_FWD_ALLOW (an empty ACL passes everything, so the ACL is opt-in);
+ *        set dws_fwd_action::DWS_FWD_DENY for allowlist semantics (only explicitly permitted frames pass).
  */
-void det_forward_acl_set_default(det_fwd_action action);
+void dws_forward_acl_set_default(dws_fwd_action action);
 
 /**
  * @brief Add an ingress access-control entry (evaluated in add order, first match wins).
  *
- * A frame is matched when it arrived on @p src_if (or DET_FWD_IF_ANY) and its bytes at
+ * A frame is matched when it arrived on @p src_if (or DWS_FWD_IF_ANY) and its bytes at
  * `[offset, offset + patlen)` equal @p pattern under @p mask (each `byte & mask == pattern`).
  * @p patlen 0 matches any content (interface-only entry); a frame shorter than
  * `offset + patlen` does not match the entry (evaluation continues). The first matching
  * entry's @p action (permit/deny) decides; if none match, the ACL default applies.
  * Denied frames are dropped at ingress before any forwarding rule runs.
- * @return false if the ACL table is full or @p patlen exceeds DETWS_FWD_ACL_PATLEN.
+ * @return false if the ACL table is full or @p patlen exceeds DWS_FWD_ACL_PATLEN.
  */
-bool det_forward_acl_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
-                         det_fwd_action action);
+bool dws_forward_acl_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
+                         dws_fwd_action action);
 
 /**
  * @brief Add a policy route: a frame matching this byte pattern is forwarded only to
  *        @p egress_if, taking precedence over the src->dst rules (first matching route wins).
  *
  * The match is the same offset/pattern/mask primitive as the ACL (each `byte & mask == pattern`
- * at `[offset, offset + patlen)`), keyed on frames from @p src_if or DET_FWD_IF_ANY; @p patlen 0
+ * at `[offset, offset + patlen)`), keyed on frames from @p src_if or DWS_FWD_IF_ANY; @p patlen 0
  * matches any content (a default route). On a match the frame goes only to @p egress_if -
  * subject to the same guarantees as a rule: never reflected to the source, dropped (counted) if
  * @p egress_if is not registered, if @p rate_cap_per_sec (0 = unlimited) is exceeded, or if the
  * egress send fails. A matched route ends the decision (the normal fan-out is skipped).
  *
- * @return true; false if @p patlen exceeds DETWS_FWD_ACL_PATLEN, a non-zero @p patlen has a null
- *         pattern/mask, or the table is full (DETWS_FWD_MAX_ROUTES).
+ * @return true; false if @p patlen exceeds DWS_FWD_ACL_PATLEN, a non-zero @p patlen has a null
+ *         pattern/mask, or the table is full (DWS_FWD_MAX_ROUTES).
  */
-bool det_forward_route_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
+bool dws_forward_route_add(uint8_t src_if, uint16_t offset, const uint8_t *pattern, const uint8_t *mask, uint8_t patlen,
                            uint8_t egress_if, uint16_t rate_cap_per_sec);
 
-#if DETWS_FWD_INSPECT
+#if DWS_FWD_INSPECT
 /** @brief The verdict an inspection hook returns for a frame. */
-enum class det_fwd_verdict : uint8_t
+enum class dws_fwd_verdict : uint8_t
 {
-    DET_FWD_INSPECT_PASS = 0, ///< let the frame continue to routing / forwarding
-    DET_FWD_INSPECT_DROP = 1, ///< drop the frame (counted as inspect_dropped)
+    DWS_FWD_INSPECT_PASS = 0, ///< let the frame continue to routing / forwarding
+    DWS_FWD_INSPECT_DROP = 1, ///< drop the frame (counted as inspect_dropped)
 };
 
 /**
  * @brief Ingress inspection hook: observe / parse @p data (from @p src_if, @p len bytes) and
- *        return a ::det_fwd_verdict. Runs after the ACL and before policy routes / the fan-out.
+ *        return a ::dws_fwd_verdict. Runs after the ACL and before policy routes / the fan-out.
  *        The callback must not block; it may record metrics, log, or decide to drop.
  */
-using det_fwd_inspect_fn = det_fwd_verdict (*)(uint8_t src_if, const uint8_t *data, uint16_t len, void *ctx);
+using dws_fwd_inspect_fn = dws_fwd_verdict (*)(uint8_t src_if, const uint8_t *data, uint16_t len, void *ctx);
 
 /**
  * @brief Install (or clear, with @p fn null) the ingress inspection hook.
  *
- * Opt-in twice over: compiled in only when DETWS_FWD_INSPECT is set (cost + privacy), and inert
+ * Opt-in twice over: compiled in only when DWS_FWD_INSPECT is set (cost + privacy), and inert
  * until an inspector is registered. A DROP verdict discards the frame before any forwarding.
  */
-void det_forward_set_inspector(det_fwd_inspect_fn fn, void *ctx);
+void dws_forward_set_inspector(dws_fwd_inspect_fn fn, void *ctx);
 #endif
 
 /**
@@ -179,17 +179,17 @@ void det_forward_set_inspector(det_fwd_inspect_fn fn, void *ctx);
  * per-rule rate cap, and calls the destination's send callback. Fail-closed.
  * @return the number of destinations the frame was successfully forwarded to.
  */
-uint8_t det_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len);
+uint8_t dws_forward_ingress(uint8_t src_if, const uint8_t *data, uint16_t len);
 
 /** @brief Copy the current forwarding counters into @p out. */
-void det_forward_get_stats(det_forward_stats *out);
+void dws_forward_get_stats(dws_forward_stats *out);
 
 #if !defined(ARDUINO)
 /** @brief Host only: set the millisecond clock the rate cap uses (tests drive the window).
- *         On device the plane reads detws_millis(). */
-void det_forward_test_set_now(uint32_t ms);
+ *         On device the plane reads dws_millis(). */
+void dws_forward_test_set_now(uint32_t ms);
 #endif
 
-#endif // DETWS_ENABLE_FORWARD
+#endif // DWS_ENABLE_FORWARD
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DET_FORWARD_H

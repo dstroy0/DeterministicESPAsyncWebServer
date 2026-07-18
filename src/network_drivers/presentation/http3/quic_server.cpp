@@ -8,11 +8,11 @@
 
 #include "network_drivers/presentation/http3/quic_server.h"
 
-#if DETWS_ENABLE_HTTP3
+#if DWS_ENABLE_HTTP3
 
 #include "network_drivers/presentation/http3/quic_packet.h"
 #include "network_drivers/presentation/http3/quic_tp.h"
-#include "shared_primitives/ring.h" // DetAtomic
+#include "shared_primitives/ring.h" // DWSAtomic
 #include <string.h>
 
 #if defined(ARDUINO)
@@ -21,31 +21,31 @@
 
 // The pool (QuicConn + H3Conn per slot) and the ingest ring are large, so on a PSRAM board they can
 // be moved to external RAM (like the HTTP/2 pool). Default is internal DRAM; a build that overflows
-// sets DETWS_QUIC_SERVER_IN_PSRAM=1 on a core built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY.
-#ifndef DETWS_QUIC_SERVER_IN_PSRAM
-#define DETWS_QUIC_SERVER_IN_PSRAM 0
+// sets DWS_QUIC_SERVER_IN_PSRAM=1 on a core built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY.
+#ifndef DWS_QUIC_SERVER_IN_PSRAM
+#define DWS_QUIC_SERVER_IN_PSRAM 0
 #endif
-#ifndef DETWS_QUIC_SERVER_ACK_DRAM
-#define DETWS_QUIC_SERVER_ACK_DRAM 0 ///< consciously accept the pool in internal DRAM (roomy S3 / P4)
+#ifndef DWS_QUIC_SERVER_ACK_DRAM
+#define DWS_QUIC_SERVER_ACK_DRAM 0 ///< consciously accept the pool in internal DRAM (roomy S3 / P4)
 #endif
 // The QuicConn + H3Conn pool plus the ingest ring are tens of KB; on a device that is a deliberate
-// footprint choice. Fail fast (like DETWS_ENABLE_SSH_ZLIB / DETWS_ENABLE_HTTP2) so it is not an
+// footprint choice. Fail fast (like DWS_ENABLE_SSH_ZLIB / DWS_ENABLE_HTTP2) so it is not an
 // accidental DRAM overflow: move the pool to PSRAM, or acknowledge the internal-DRAM cost.
-#if defined(ARDUINO) && !DETWS_QUIC_SERVER_IN_PSRAM && !DETWS_QUIC_SERVER_ACK_DRAM
+#if defined(ARDUINO) && !DWS_QUIC_SERVER_IN_PSRAM && !DWS_QUIC_SERVER_ACK_DRAM
 #error                                                                                                                 \
-    "DeterministicESPAsyncWebServer: DETWS_ENABLE_HTTP3 - the quic_server QuicConn+H3Conn pool + ingest ring are tens of KB. Set DETWS_QUIC_SERVER_IN_PSRAM=1 on a PSRAM board (S3 / P4 / WROVER built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y, tools/psram/README.md), OR set DETWS_QUIC_SERVER_ACK_DRAM=1 to accept the internal-DRAM cost (fits a small pool on a roomy chip)."
+    "DeterministicESPAsyncWebServer: DWS_ENABLE_HTTP3 - the quic_server QuicConn+H3Conn pool + ingest ring are tens of KB. Set DWS_QUIC_SERVER_IN_PSRAM=1 on a PSRAM board (S3 / P4 / WROVER built with CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY=y, tools/psram/README.md), OR set DWS_QUIC_SERVER_ACK_DRAM=1 to accept the internal-DRAM cost (fits a small pool on a roomy chip)."
 #endif
-#if DETWS_QUIC_SERVER_IN_PSRAM && defined(ARDUINO)
+#if DWS_QUIC_SERVER_IN_PSRAM && defined(ARDUINO)
 #include <esp_attr.h>
 #if defined(EXT_RAM_BSS_ATTR)
-#define DETWS_QUIC_POOL_ATTR EXT_RAM_BSS_ATTR
+#define DWS_QUIC_POOL_ATTR EXT_RAM_BSS_ATTR
 #elif defined(EXT_RAM_ATTR)
-#define DETWS_QUIC_POOL_ATTR EXT_RAM_ATTR
+#define DWS_QUIC_POOL_ATTR EXT_RAM_ATTR
 #else
-#define DETWS_QUIC_POOL_ATTR
+#define DWS_QUIC_POOL_ATTR
 #endif
 #else
-#define DETWS_QUIC_POOL_ATTR
+#define DWS_QUIC_POOL_ATTR
 #endif
 
 namespace
@@ -53,7 +53,7 @@ namespace
 // One buffered inbound datagram (payload + the peer it arrived from).
 struct QuicIngest
 {
-    uint8_t data[DETWS_QUIC_MAX_DATAGRAM];
+    uint8_t data[DWS_QUIC_MAX_DATAGRAM];
     uint16_t len;
     char ip[16];
     uint16_t port;
@@ -63,31 +63,31 @@ struct QuicIngest
 struct QuicSlot
 {
     bool used;
-    uint32_t id; ///< stable handle for det_quic_server_respond()
+    uint32_t id; ///< stable handle for dws_quic_server_respond()
     QuicConn qc;
     H3Conn h3;
     char peer_ip[16];
     uint16_t peer_port;
-    uint32_t last_ms; ///< detws_millis() of the last datagram received (idle-reaping clock)
+    uint32_t last_ms; ///< dws_millis() of the last datagram received (idle-reaping clock)
 };
 
 // HTTP/3 QUIC connection + ingest buffers, owned by one instance (internal linkage). Placed in
-// PSRAM (DETWS_QUIC_POOL_ATTR) when configured; kept separate from the DRAM control state below
+// PSRAM (DWS_QUIC_POOL_ATTR) when configured; kept separate from the DRAM control state below
 // so only the large buffers move off internal RAM. One named owner, unreachable cross-TU.
 struct QuicServerPoolCtx
 {
-    QuicSlot pool[DETWS_QUIC_MAX_CONNS];
-    QuicIngest ring[DETWS_QUIC_INGEST_RING];
+    QuicSlot pool[DWS_QUIC_MAX_CONNS];
+    QuicIngest ring[DWS_QUIC_INGEST_RING];
 };
-DETWS_QUIC_POOL_ATTR QuicServerPoolCtx s_qpool;
+DWS_QUIC_POOL_ATTR QuicServerPoolCtx s_qpool;
 
 // All HTTP/3 QUIC server control state, owned by one instance (internal linkage): the ingest
 // ring cursors, the server config + request callback + app pointer, the bound port / running
 // flag / next connection id, and (host) the outbound sink. One named owner, unreachable cross-TU.
 struct QuicServerCtx
 {
-    DetAtomic<size_t> ring_head; ///< producer (udp / ingest) advances
-    DetAtomic<size_t> ring_tail; ///< consumer (poll) advances
+    DWSAtomic<size_t> ring_head; ///< producer (udp / ingest) advances
+    DWSAtomic<size_t> ring_tail; ///< consumer (poll) advances
     QuicServerConfig cfg;
     QuicServerRequestFn on_request = nullptr;
     void *app = nullptr;
@@ -121,20 +121,20 @@ bool cid_eq(const uint8_t *a, uint8_t alen, const uint8_t *b, uint8_t blen)
 void server_send(const char *ip, uint16_t port, const uint8_t *data, size_t len)
 {
 #if defined(ARDUINO)
-    det_udp_listener_sendto(s_quic.port, ip, port, data, len);
+    dws_udp_listener_sendto(s_quic.port, ip, port, data, len);
 #else
     if (s_quic.out_sink)
         s_quic.out_sink(s_quic.out_ctx, data, len, ip, port);
 #endif
 }
 
-// --- ingest ring (SPSC: one producer fills, det_quic_server_poll consumes) ------------------------
+// --- ingest ring (SPSC: one producer fills, dws_quic_server_poll consumes) ------------------------
 bool ring_push(const uint8_t *dg, size_t len, const char *ip, uint16_t port)
 {
-    if (len == 0 || len > DETWS_QUIC_MAX_DATAGRAM)
+    if (len == 0 || len > DWS_QUIC_MAX_DATAGRAM)
         return false;
     size_t head = s_quic.ring_head;
-    size_t next = (head + 1) % DETWS_QUIC_INGEST_RING;
+    size_t next = (head + 1) % DWS_QUIC_INGEST_RING;
     if (next == (size_t)s_quic.ring_tail)
         return false; // ring full: drop (QUIC recovers via retransmission)
     QuicIngest *e = &s_qpool.ring[head];
@@ -152,14 +152,14 @@ bool ring_pop(QuicIngest *out)
     if (tail == (size_t)s_quic.ring_head)
         return false;
     *out = s_qpool.ring[tail];
-    s_quic.ring_tail = (tail + 1) % DETWS_QUIC_INGEST_RING;
+    s_quic.ring_tail = (tail + 1) % DWS_QUIC_INGEST_RING;
     return true;
 }
 
 // --- slot pool --------------------------------------------------------------------------------
 QuicSlot *slot_by_id(uint32_t id)
 {
-    for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
+    for (uint8_t i = 0; i < DWS_QUIC_MAX_CONNS; i++)
         if (s_qpool.pool[i].used && s_qpool.pool[i].id == id)
             return &s_qpool.pool[i];
     return nullptr;
@@ -167,7 +167,7 @@ QuicSlot *slot_by_id(uint32_t id)
 
 QuicSlot *alloc_slot()
 {
-    for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
+    for (uint8_t i = 0; i < DWS_QUIC_MAX_CONNS; i++)
         if (!s_qpool.pool[i].used)
         {
             QuicSlot *s = &s_qpool.pool[i];
@@ -208,21 +208,21 @@ QuicSlot *open_conn(const QuicLongHeader *lh, const char *ip, uint16_t port)
     tc.params.initial_max_data = 1048576;
     tc.params.initial_max_sd_bidi_remote = 262144; // client-initiated request streams
     tc.params.initial_max_sd_uni = 262144;         // client control / QPACK encoder+decoder streams
-    tc.params.initial_max_streams_bidi = DETWS_H3_MAX_STREAMS;
-    tc.params.initial_max_streams_uni = DETWS_H3_MAX_STREAMS;
-    tc.params.max_idle_timeout = DETWS_QUIC_IDLE_MS; // both ends reclaim the connection after this idle
+    tc.params.initial_max_streams_bidi = DWS_H3_MAX_STREAMS;
+    tc.params.initial_max_streams_uni = DWS_H3_MAX_STREAMS;
+    tc.params.max_idle_timeout = DWS_QUIC_IDLE_MS; // both ends reclaim the connection after this idle
     s_quic.cfg.rng(tc.ephemeral_priv, sizeof tc.ephemeral_priv);
     s_quic.cfg.rng(tc.random, sizeof tc.random);
-#if DETWS_ENABLE_PQC_KEX
+#if DWS_ENABLE_PQC_KEX
     s_quic.cfg.rng(tc.mlkem_m, sizeof tc.mlkem_m); // fresh ML-KEM Encaps randomness per handshake
 #endif
 
-    uint8_t our_scid[DETWS_QUIC_SCID_LEN];
+    uint8_t our_scid[DWS_QUIC_SCID_LEN];
     s_quic.cfg.rng(our_scid, sizeof our_scid);
 
     QuicConnCallbacks cb;
     memset(&cb, 0, sizeof cb); // h3_conn_init installs the real callbacks
-    quic_conn_init(&s->qc, &tc, lh->dcid, lh->dcid_len, lh->scid, lh->scid_len, our_scid, DETWS_QUIC_SCID_LEN, &cb);
+    quic_conn_init(&s->qc, &tc, lh->dcid, lh->dcid_len, lh->scid, lh->scid_len, our_scid, DWS_QUIC_SCID_LEN, &cb);
     h3_conn_init(&s->h3, &s->qc, h3_on_request, s);
 
     copy_str(s->peer_ip, sizeof s->peer_ip, ip);
@@ -241,7 +241,7 @@ QuicSlot *route(const uint8_t *dg, size_t len, bool *is_initial, QuicLongHeader 
     {
         if (!quic_parse_long_header(dg, len, lh_out))
             return nullptr;
-        for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
+        for (uint8_t i = 0; i < DWS_QUIC_MAX_CONNS; i++)
         {
             QuicSlot *s = &s_qpool.pool[i];
             if (!s->used)
@@ -255,12 +255,12 @@ QuicSlot *route(const uint8_t *dg, size_t len, bool *is_initial, QuicLongHeader 
         return nullptr;
     }
     // Short header (1-RTT): the DCID is our chosen SCID, whose length only we know.
-    if (len < (size_t)1 + DETWS_QUIC_SCID_LEN)
+    if (len < (size_t)1 + DWS_QUIC_SCID_LEN)
         return nullptr;
-    for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
+    for (uint8_t i = 0; i < DWS_QUIC_MAX_CONNS; i++)
     {
         QuicSlot *s = &s_qpool.pool[i];
-        if (s->used && s->qc.scid_len == DETWS_QUIC_SCID_LEN && memcmp(dg + 1, s->qc.scid, DETWS_QUIC_SCID_LEN) == 0)
+        if (s->used && s->qc.scid_len == DWS_QUIC_SCID_LEN && memcmp(dg + 1, s->qc.scid, DWS_QUIC_SCID_LEN) == 0)
             return s;
     }
     return nullptr;
@@ -268,8 +268,8 @@ QuicSlot *route(const uint8_t *dg, size_t len, bool *is_initial, QuicLongHeader 
 
 void flush_and_reap(uint32_t now_ms)
 {
-    uint8_t out[DETWS_QUIC_MAX_DATAGRAM];
-    for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
+    uint8_t out[DWS_QUIC_MAX_DATAGRAM];
+    for (uint8_t i = 0; i < DWS_QUIC_MAX_CONNS; i++)
     {
         QuicSlot *s = &s_qpool.pool[i];
         if (!s->used)
@@ -280,45 +280,45 @@ void flush_and_reap(uint32_t now_ms)
             server_send(s->peer_ip, s->peer_port, out, n);
         // Reap a closed connection, or one idle past the timeout (wrap-safe delta) so a client that
         // never closes cannot leak the fixed pool.
-        if (quic_conn_is_closed(&s->qc) || (uint32_t)(now_ms - s->last_ms) >= DETWS_QUIC_IDLE_MS)
+        if (quic_conn_is_closed(&s->qc) || (uint32_t)(now_ms - s->last_ms) >= DWS_QUIC_IDLE_MS)
             s->used = false;
     }
 }
 
 #if defined(ARDUINO)
-void udp_ingest_cb(const uint8_t *data, size_t len, DetUdpPeer *peer, void * /*ctx*/)
+void udp_ingest_cb(const uint8_t *data, size_t len, DWSUdpPeer *peer, void * /*ctx*/)
 {
     char ip[16];
     uint16_t port = 0;
-    if (!det_udp_peer_addr(peer, ip, sizeof ip, &port))
+    if (!dws_udp_peer_addr(peer, ip, sizeof ip, &port))
         return;
     ring_push(data, len, ip, port);
 }
 #endif
 } // namespace
 
-bool det_quic_server_begin(uint16_t port, const QuicServerConfig *cfg, QuicServerRequestFn on_request, void *app)
+bool dws_quic_server_begin(uint16_t port, const QuicServerConfig *cfg, QuicServerRequestFn on_request, void *app)
 {
     if (!cfg || !cfg->rng)
         return false;
     s_quic.cfg = *cfg;
     s_quic.on_request = on_request;
     s_quic.app = app;
-    s_quic.port = port ? port : DETWS_HTTP3_PORT;
-    for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
+    s_quic.port = port ? port : DWS_HTTP3_PORT;
+    for (uint8_t i = 0; i < DWS_QUIC_MAX_CONNS; i++)
         s_qpool.pool[i].used = false;
     s_quic.ring_head = 0;
     s_quic.ring_tail = 0;
     s_quic.next_id = 1;
     s_quic.running = true;
 #if defined(ARDUINO)
-    return det_udp_listen(s_quic.port, udp_ingest_cb, nullptr);
+    return dws_udp_listen(s_quic.port, udp_ingest_cb, nullptr);
 #else
-    return true; // host: fed through det_quic_server_ingest()
+    return true; // host: fed through dws_quic_server_ingest()
 #endif
 }
 
-void det_quic_server_poll(uint32_t now_ms)
+void dws_quic_server_poll(uint32_t now_ms)
 {
     if (!s_quic.running)
         return;
@@ -338,7 +338,7 @@ void det_quic_server_poll(uint32_t now_ms)
     flush_and_reap(now_ms);
 }
 
-bool det_quic_server_respond(uint32_t conn_id, uint64_t stream_id, int status, const char *content_type,
+bool dws_quic_server_respond(uint32_t conn_id, uint64_t stream_id, int status, const char *content_type,
                              const uint8_t *body, size_t body_len)
 {
     QuicSlot *s = slot_by_id(conn_id);
@@ -347,35 +347,35 @@ bool det_quic_server_respond(uint32_t conn_id, uint64_t stream_id, int status, c
     return h3_conn_respond(&s->h3, stream_id, status, content_type, body, body_len);
 }
 
-uint8_t det_quic_server_active_conns(void)
+uint8_t dws_quic_server_active_conns(void)
 {
     uint8_t n = 0;
-    for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
+    for (uint8_t i = 0; i < DWS_QUIC_MAX_CONNS; i++)
         if (s_qpool.pool[i].used)
             n++;
     return n;
 }
 
-void det_quic_server_stop(void)
+void dws_quic_server_stop(void)
 {
     s_quic.running = false;
-    for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
+    for (uint8_t i = 0; i < DWS_QUIC_MAX_CONNS; i++)
         s_qpool.pool[i].used = false;
     s_quic.ring_head = 0;
     s_quic.ring_tail = 0;
 }
 
 #if !defined(ARDUINO)
-void det_quic_server_set_out_sink_cb(QuicServerOutFn fn, void *ctx)
+void dws_quic_server_set_out_sink_cb(QuicServerOutFn fn, void *ctx)
 {
     s_quic.out_sink = fn;
     s_quic.out_ctx = ctx;
 }
 
-bool det_quic_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port)
+bool dws_quic_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port)
 {
     return ring_push(datagram, len, ip, port);
 }
 #endif
 
-#endif // DETWS_ENABLE_HTTP3
+#endif // DWS_ENABLE_HTTP3

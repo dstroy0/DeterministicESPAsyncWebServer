@@ -11,7 +11,7 @@
 
 #include "config_store.h"
 
-#if DETWS_ENABLE_CONFIG_STORE
+#if DWS_ENABLE_CONFIG_STORE
 
 #include <string.h>
 
@@ -31,7 +31,7 @@ struct ConfigStoreCtx
 ConfigStoreCtx s_cfg;
 } // namespace
 
-bool detws_config_begin(const char *ns)
+bool dws_config_begin(const char *ns)
 {
     if (s_cfg.open)
         s_cfg.prefs.end();
@@ -39,14 +39,14 @@ bool detws_config_begin(const char *ns)
     return s_cfg.open;
 }
 
-bool detws_config_set_str(const char *key, const char *val)
+bool dws_config_set_str(const char *key, const char *val)
 {
     if (!val)
         return false;
-    return s_cfg.prefs.putString(key, val) == strnlen(val, DETWS_CONFIG_VAL_MAX + 1);
+    return s_cfg.prefs.putString(key, val) == strnlen(val, DWS_CONFIG_VAL_MAX + 1);
 }
 
-size_t detws_config_get_str(const char *key, char *out, size_t out_cap, const char *def)
+size_t dws_config_get_str(const char *key, char *out, size_t out_cap, const char *def)
 {
     if (!out || out_cap == 0)
         return 0;
@@ -63,36 +63,36 @@ size_t detws_config_get_str(const char *key, char *out, size_t out_cap, const ch
     return s_cfg.prefs.getString(key, out, out_cap);
 }
 
-bool detws_config_set_u32(const char *key, uint32_t val)
+bool dws_config_set_u32(const char *key, uint32_t val)
 {
     return s_cfg.prefs.putUInt(key, val) == sizeof(uint32_t);
 }
 
-uint32_t detws_config_get_u32(const char *key, uint32_t def)
+uint32_t dws_config_get_u32(const char *key, uint32_t def)
 {
     return s_cfg.prefs.getUInt(key, def);
 }
 
-bool detws_config_set_blob(const char *key, const void *data, size_t len)
+bool dws_config_set_blob(const char *key, const void *data, size_t len)
 {
     if (!data)
         return false;
     return s_cfg.prefs.putBytes(key, data, len) == len;
 }
 
-size_t detws_config_get_blob(const char *key, void *out, size_t out_cap)
+size_t dws_config_get_blob(const char *key, void *out, size_t out_cap)
 {
     if (!out || !s_cfg.prefs.isKey(key))
         return 0;
     return s_cfg.prefs.getBytes(key, out, out_cap);
 }
 
-bool detws_config_erase(const char *key)
+bool dws_config_erase(const char *key)
 {
     return s_cfg.prefs.remove(key);
 }
 
-bool detws_config_clear(void)
+bool dws_config_clear(void)
 {
     return s_cfg.prefs.clear();
 }
@@ -103,8 +103,8 @@ namespace
 {
 struct Entry
 {
-    char key[DETWS_CONFIG_KEY_MAX];
-    uint8_t val[DETWS_CONFIG_VAL_MAX];
+    char key[DWS_CONFIG_KEY_MAX];
+    uint8_t val[DWS_CONFIG_VAL_MAX];
     size_t len;
     bool used;
 };
@@ -112,19 +112,19 @@ struct Entry
 // entry table (the NVS test double), so it is one named owner, unreachable cross-TU.
 struct ConfigStoreCtx
 {
-    Entry tbl[DETWS_CONFIG_MAX_ENTRIES];
+    Entry tbl[DWS_CONFIG_MAX_ENTRIES];
 };
 ConfigStoreCtx s_cfg;
 
 bool key_ok(const char *key)
 {
-    return key && key[0] && strnlen(key, DETWS_CONFIG_KEY_MAX + 1) < DETWS_CONFIG_KEY_MAX;
+    return key && key[0] && strnlen(key, DWS_CONFIG_KEY_MAX + 1) < DWS_CONFIG_KEY_MAX;
 }
 
 // Returns a mutable entry (callers mutate it), so it takes the owner by non-const reference.
 Entry *find(ConfigStoreCtx &c, const char *key)
 {
-    for (int i = 0; i < DETWS_CONFIG_MAX_ENTRIES; i++)
+    for (int i = 0; i < DWS_CONFIG_MAX_ENTRIES; i++)
         if (c.tbl[i].used && strcmp(c.tbl[i].key, key) == 0)
             return &c.tbl[i];
     return nullptr;
@@ -135,12 +135,12 @@ Entry *find_or_alloc(ConfigStoreCtx &c, const char *key)
     Entry *e = find(c, key);
     if (e)
         return e;
-    for (int i = 0; i < DETWS_CONFIG_MAX_ENTRIES; i++)
+    for (int i = 0; i < DWS_CONFIG_MAX_ENTRIES; i++)
         if (!c.tbl[i].used)
         {
             c.tbl[i].used = true;
-            strncpy(c.tbl[i].key, key, DETWS_CONFIG_KEY_MAX - 1);
-            c.tbl[i].key[DETWS_CONFIG_KEY_MAX - 1] = '\0';
+            strncpy(c.tbl[i].key, key, DWS_CONFIG_KEY_MAX - 1);
+            c.tbl[i].key[DWS_CONFIG_KEY_MAX - 1] = '\0';
             c.tbl[i].len = 0;
             return &c.tbl[i];
         }
@@ -149,7 +149,7 @@ Entry *find_or_alloc(ConfigStoreCtx &c, const char *key)
 
 bool store(ConfigStoreCtx &c, const char *key, const void *data, size_t len)
 {
-    if (!key_ok(key) || len > DETWS_CONFIG_VAL_MAX)
+    if (!key_ok(key) || len > DWS_CONFIG_VAL_MAX)
         return false;
     Entry *e = find_or_alloc(c, key);
     if (!e)
@@ -160,20 +160,20 @@ bool store(ConfigStoreCtx &c, const char *key, const void *data, size_t len)
 }
 } // namespace
 
-bool detws_config_begin(const char *ns)
+bool dws_config_begin(const char *ns)
 {
     (void)ns; // single in-memory namespace on host
     return true;
 }
 
-bool detws_config_set_str(const char *key, const char *val)
+bool dws_config_set_str(const char *key, const char *val)
 {
     if (!val)
         return false;
-    return store(s_cfg, key, val, strnlen(val, DETWS_CONFIG_VAL_MAX) + 1); // include the null terminator
+    return store(s_cfg, key, val, strnlen(val, DWS_CONFIG_VAL_MAX) + 1); // include the null terminator
 }
 
-size_t detws_config_get_str(const char *key, char *out, size_t out_cap, const char *def)
+size_t dws_config_get_str(const char *key, char *out, size_t out_cap, const char *def)
 {
     if (!out || out_cap == 0)
         return 0;
@@ -187,13 +187,13 @@ size_t detws_config_get_str(const char *key, char *out, size_t out_cap, const ch
     return n;
 }
 
-bool detws_config_set_u32(const char *key, uint32_t val)
+bool dws_config_set_u32(const char *key, uint32_t val)
 {
     uint8_t b[4] = {(uint8_t)val, (uint8_t)(val >> 8), (uint8_t)(val >> 16), (uint8_t)(val >> 24)};
     return store(s_cfg, key, b, sizeof(b));
 }
 
-uint32_t detws_config_get_u32(const char *key, uint32_t def)
+uint32_t dws_config_get_u32(const char *key, uint32_t def)
 {
     Entry *e = key_ok(key) ? find(s_cfg, key) : nullptr;
     if (!e || e->len < 4)
@@ -201,14 +201,14 @@ uint32_t detws_config_get_u32(const char *key, uint32_t def)
     return (uint32_t)e->val[0] | ((uint32_t)e->val[1] << 8) | ((uint32_t)e->val[2] << 16) | ((uint32_t)e->val[3] << 24);
 }
 
-bool detws_config_set_blob(const char *key, const void *data, size_t len)
+bool dws_config_set_blob(const char *key, const void *data, size_t len)
 {
     if (!data)
         return false;
     return store(s_cfg, key, data, len);
 }
 
-size_t detws_config_get_blob(const char *key, void *out, size_t out_cap)
+size_t dws_config_get_blob(const char *key, void *out, size_t out_cap)
 {
     Entry *e = key_ok(key) ? find(s_cfg, key) : nullptr;
     if (!e || !out)
@@ -218,7 +218,7 @@ size_t detws_config_get_blob(const char *key, void *out, size_t out_cap)
     return n;
 }
 
-bool detws_config_erase(const char *key)
+bool dws_config_erase(const char *key)
 {
     Entry *e = key_ok(key) ? find(s_cfg, key) : nullptr;
     if (!e)
@@ -228,12 +228,12 @@ bool detws_config_erase(const char *key)
     return true;
 }
 
-bool detws_config_clear(void)
+bool dws_config_clear(void)
 {
-    for (int i = 0; i < DETWS_CONFIG_MAX_ENTRIES; i++)
+    for (int i = 0; i < DWS_CONFIG_MAX_ENTRIES; i++)
         s_cfg.tbl[i] = Entry{};
     return true;
 }
 
 #endif // ARDUINO
-#endif // DETWS_ENABLE_CONFIG_STORE
+#endif // DWS_ENABLE_CONFIG_STORE

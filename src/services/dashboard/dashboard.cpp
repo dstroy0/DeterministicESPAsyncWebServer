@@ -3,7 +3,7 @@
 
 /**
  * @file dashboard.cpp
- * @brief Dashboard widget table + JSON serializers (DETWS_ENABLE_DASHBOARD).
+ * @brief Dashboard widget table + JSON serializers (DWS_ENABLE_DASHBOARD).
  *
  * The host-testable core: it owns the widget table and value array and turns them
  * into the layout / values JSON the page consumes. No server or web_assets
@@ -13,7 +13,7 @@
 
 #include "services/dashboard/dashboard.h"
 
-#if DETWS_ENABLE_DASHBOARD
+#if DWS_ENABLE_DASHBOARD
 
 #include "shared_primitives/fmtbuf.h"
 #include "shared_primitives/numparse.h"
@@ -27,7 +27,7 @@ struct DashboardCtx
 {
     const DetwsWidget *widgets = nullptr;
     uint8_t count = 0;
-    float values[DETWS_DASHBOARD_MAX_WIDGETS] = {};
+    float values[DWS_DASHBOARD_MAX_WIDGETS] = {};
     DetwsControlCb control_cb = nullptr;
 };
 static DashboardCtx s_dash;
@@ -36,34 +36,34 @@ static const char *widget_type_name(DetwsWidgetType t)
 {
     switch (t)
     {
-    case DetwsWidgetType::DETWS_WIDGET_GAUGE:
+    case DetwsWidgetType::DWS_WIDGET_GAUGE:
         return "gauge";
-    case DetwsWidgetType::DETWS_WIDGET_BAR:
+    case DetwsWidgetType::DWS_WIDGET_BAR:
         return "bar";
-    case DetwsWidgetType::DETWS_WIDGET_SPARKLINE:
+    case DetwsWidgetType::DWS_WIDGET_SPARKLINE:
         return "sparkline";
-    case DetwsWidgetType::DETWS_WIDGET_CHART:
+    case DetwsWidgetType::DWS_WIDGET_CHART:
         return "chart";
-    case DetwsWidgetType::DETWS_WIDGET_BUTTON:
+    case DetwsWidgetType::DWS_WIDGET_BUTTON:
         return "button";
-    case DetwsWidgetType::DETWS_WIDGET_TOGGLE:
+    case DetwsWidgetType::DWS_WIDGET_TOGGLE:
         return "toggle";
-    case DetwsWidgetType::DETWS_WIDGET_SLIDER:
+    case DetwsWidgetType::DWS_WIDGET_SLIDER:
         return "slider";
     default:
         return "value";
     }
 }
 
-void detws_dashboard_configure(const DetwsWidget *widgets, uint8_t count)
+void dws_dashboard_configure(const DetwsWidget *widgets, uint8_t count)
 {
     s_dash.widgets = widgets;
-    s_dash.count = count > DETWS_DASHBOARD_MAX_WIDGETS ? DETWS_DASHBOARD_MAX_WIDGETS : count;
-    for (uint8_t i = 0; i < DETWS_DASHBOARD_MAX_WIDGETS; i++)
+    s_dash.count = count > DWS_DASHBOARD_MAX_WIDGETS ? DWS_DASHBOARD_MAX_WIDGETS : count;
+    for (uint8_t i = 0; i < DWS_DASHBOARD_MAX_WIDGETS; i++)
         s_dash.values[i] = 0.0f;
 }
 
-bool detws_dashboard_set(const char *key, float value)
+bool dws_dashboard_set(const char *key, float value)
 {
     if (!key || !s_dash.widgets)
         return false;
@@ -78,7 +78,7 @@ bool detws_dashboard_set(const char *key, float value)
     return false;
 }
 
-int detws_dashboard_layout_json(char *out, size_t cap)
+int dws_dashboard_layout_json(char *out, size_t cap)
 {
     if (!out || cap == 0)
         return 0;
@@ -86,23 +86,23 @@ int detws_dashboard_layout_json(char *out, size_t cap)
     if (!s_dash.widgets)
         return 0;
     size_t pos = 0;
-    if (det_fmt_append(out, cap, &pos, "[") != 0)
+    if (dws_fmt_append(out, cap, &pos, "[") != 0)
         return 0;
     for (uint8_t i = 0; i < s_dash.count; i++)
     {
         const DetwsWidget *w = &s_dash.widgets[i];
-        if (det_fmt_append(out, cap, &pos,
+        if (dws_fmt_append(out, cap, &pos,
                            "%s{\"type\":\"%s\",\"label\":\"%s\",\"key\":\"%s\",\"min\":%g,\"max\":%g,\"unit\":\"%s\"}",
                            i ? "," : "", widget_type_name(w->type), w->label ? w->label : "", w->key ? w->key : "",
                            (double)w->min, (double)w->max, w->unit ? w->unit : "") != 0)
             return 0;
     }
-    if (det_fmt_append(out, cap, &pos, "]") != 0)
+    if (dws_fmt_append(out, cap, &pos, "]") != 0)
         return 0;
     return (int)pos;
 }
 
-int detws_dashboard_values_json(char *out, size_t cap)
+int dws_dashboard_values_json(char *out, size_t cap)
 {
     if (!out || cap == 0)
         return 0;
@@ -110,15 +110,15 @@ int detws_dashboard_values_json(char *out, size_t cap)
     if (!s_dash.widgets)
         return 0;
     size_t pos = 0;
-    if (det_fmt_append(out, cap, &pos, "{") != 0)
+    if (dws_fmt_append(out, cap, &pos, "{") != 0)
         return 0;
     for (uint8_t i = 0; i < s_dash.count; i++)
     {
-        if (det_fmt_append(out, cap, &pos, "%s\"%s\":%g", i ? "," : "",
+        if (dws_fmt_append(out, cap, &pos, "%s\"%s\":%g", i ? "," : "",
                            s_dash.widgets[i].key ? s_dash.widgets[i].key : "", (double)s_dash.values[i]) != 0)
             return 0;
     }
-    if (det_fmt_append(out, cap, &pos, "}") != 0)
+    if (dws_fmt_append(out, cap, &pos, "}") != 0)
         return 0;
     return (int)pos;
 }
@@ -127,7 +127,7 @@ int detws_dashboard_values_json(char *out, size_t cap)
 // Controls (inbound WebSocket messages)
 // ---------------------------------------------------------------------------
 
-void detws_dashboard_on_control(DetwsControlCb cb)
+void dws_dashboard_on_control(DetwsControlCb cb)
 {
     s_dash.control_cb = cb;
 }
@@ -153,7 +153,7 @@ static const char *control_value_ptr(const char *s, const char *key)
     return p;
 }
 
-bool detws_dashboard_parse_control(const char *msg, char *key_out, size_t key_cap, float *value_out)
+bool dws_dashboard_parse_control(const char *msg, char *key_out, size_t key_cap, float *value_out)
 {
     if (!msg || !key_out || key_cap == 0 || !value_out)
         return false;
@@ -173,22 +173,22 @@ bool detws_dashboard_parse_control(const char *msg, char *key_out, size_t key_ca
     }
     key_out[i] = '\0';
     const char *end = nullptr;
-    float v = det_strtof(vp, &end);
+    float v = dws_strtof(vp, &end);
     if (end == vp)
         return false; // no numeric value
     *value_out = v;
     return true;
 }
 
-bool detws_dashboard_dispatch_control(const char *msg)
+bool dws_dashboard_dispatch_control(const char *msg)
 {
     char key[32];
     float value;
-    if (!detws_dashboard_parse_control(msg, key, sizeof(key), &value))
+    if (!dws_dashboard_parse_control(msg, key, sizeof(key), &value))
         return false;
     if (s_dash.control_cb)
         s_dash.control_cb(key, value);
     return s_dash.control_cb != nullptr;
 }
 
-#endif // DETWS_ENABLE_DASHBOARD
+#endif // DWS_ENABLE_DASHBOARD

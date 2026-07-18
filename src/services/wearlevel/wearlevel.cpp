@@ -8,9 +8,9 @@
 
 #include "services/wearlevel/wearlevel.h"
 
-#if DETWS_ENABLE_WEARLEVEL
+#if DWS_ENABLE_WEARLEVEL
 
-size_t detws_wearlevel_pick(const uint32_t *counts, size_t n)
+size_t dws_wearlevel_pick(const uint32_t *counts, size_t n)
 {
     if (!counts || n == 0)
         return 0;
@@ -27,7 +27,7 @@ size_t detws_wearlevel_pick(const uint32_t *counts, size_t n)
     return best;
 }
 
-void detws_wearlevel_mark(uint32_t *counts, size_t n, size_t idx)
+void dws_wearlevel_mark(uint32_t *counts, size_t n, size_t idx)
 {
     if (!counts || idx >= n)
         return;
@@ -35,7 +35,7 @@ void detws_wearlevel_mark(uint32_t *counts, size_t n, size_t idx)
         counts[idx]++;
 }
 
-uint32_t detws_wearlevel_spread(const uint32_t *counts, size_t n)
+uint32_t dws_wearlevel_spread(const uint32_t *counts, size_t n)
 {
     if (!counts || n == 0)
         return 0;
@@ -51,4 +51,4 @@ uint32_t detws_wearlevel_spread(const uint32_t *counts, size_t n)
     return hi - lo;
 }
 
-#endif // DETWS_ENABLE_WEARLEVEL
+#endif // DWS_ENABLE_WEARLEVEL

@@ -3,7 +3,7 @@
 
 /**
  * @file fins.h
- * @brief Omron FINS frame codec (DETWS_ENABLE_FINS) - zero-heap command/response builder +
+ * @brief Omron FINS frame codec (DWS_ENABLE_FINS) - zero-heap command/response builder +
  *        parser for the Factory Interface Network Service (FINS/UDP), so a device can talk
  *        to an Omron PLC over the shipped UDP transport.
  *
@@ -30,7 +30,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_FINS
+#if DWS_ENABLE_FINS
 
 #include <stddef.h>
 #include <stdint.h>
@@ -100,6 +100,6 @@ struct FinsResponse
 /** @brief Parse a response frame (header + MRC + SRC + MRES + SRES + data). */
 bool fins_parse_response(const uint8_t *buf, size_t len, FinsResponse *out);
 
-#endif // DETWS_ENABLE_FINS
+#endif // DWS_ENABLE_FINS
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_FINS_H

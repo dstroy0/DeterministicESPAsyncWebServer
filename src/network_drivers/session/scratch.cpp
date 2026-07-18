@@ -5,10 +5,10 @@
  * @file scratch.cpp
  * @brief Per-worker per-dispatch scratch arenas - implementation.
  *
- * One bump allocator per worker (DETWS_WORKER_COUNT arenas in BSS), selected by
+ * One bump allocator per worker (DWS_WORKER_COUNT arenas in BSS), selected by
  * the caller's worker id. Each arena has exactly one accessor (its worker), so
  * the lock-free / fixed-size guarantees in scratch.h hold per worker. With
- * DETWS_WORKER_COUNT == 1 this is byte-for-byte the original single arena.
+ * DWS_WORKER_COUNT == 1 this is byte-for-byte the original single arena.
  */
 
 #include "scratch.h"
@@ -28,16 +28,16 @@ namespace
 // only this, so this symbol is always live.
 struct ScratchCtx
 {
-    size_t off[DETWS_WORKER_COUNT];        // bump offset per worker
-    size_t high_water[DETWS_WORKER_COUNT]; // peak off per worker
+    size_t off[DWS_WORKER_COUNT];        // bump offset per worker
+    size_t high_water[DWS_WORKER_COUNT]; // peak off per worker
 };
 ScratchCtx s_scratch;
 
 // The bump arenas, in their OWN owned instance so they are a distinct linker symbol.
 // Only scratch_alloc() references them, so a firmware that never allocates scratch
 // (e.g. a plain TLS/HTTP server - no SSH / WebSocket / OIDC) has scratch_alloc()
-// garbage-collected and, with it, these arenas - reclaiming DETWS_WORKER_COUNT *
-// DETWS_SCRATCH_ARENA_SIZE bytes of DRAM. They must NOT be merged into ScratchCtx:
+// garbage-collected and, with it, these arenas - reclaiming DWS_WORKER_COUNT *
+// DWS_SCRATCH_ARENA_SIZE bytes of DRAM. They must NOT be merged into ScratchCtx:
 // scratch_reset()'s always-live reference to off[] would then anchor the whole
 // section (--gc-sections is per-symbol), keeping the multi-KB arenas linked in
 // builds that never touch them.
@@ -46,7 +46,7 @@ struct ScratchArenaCtx
     // scratch_alloc aligns the bump OFFSET, so the arena base must itself be aligned to
     // the strictest alignment a caller can request. As a struct member it would only
     // inherit 8-byte alignment; force 32 (a standalone array got this from the linker).
-    alignas(32) uint8_t arena[DETWS_WORKER_COUNT][DETWS_SCRATCH_ARENA_SIZE]; // the arenas (BSS)
+    alignas(32) uint8_t arena[DWS_WORKER_COUNT][DWS_SCRATCH_ARENA_SIZE]; // the arenas (BSS)
 };
 ScratchArenaCtx s_scratch_arena;
 
@@ -57,8 +57,8 @@ constexpr size_t SCRATCH_DEFAULT_ALIGN = sizeof(void *) > 8 ? sizeof(void *) : 8
 // out of bounds (an unbound caller is worker 0, the only worker by default).
 inline int cur_worker()
 {
-    int w = detws_worker_self();
-    return (w >= 0 && w < DETWS_WORKER_COUNT) ? w : 0;
+    int w = dws_worker_self();
+    return (w >= 0 && w < DWS_WORKER_COUNT) ? w : 0;
 }
 
 // Debug tripwire: each arena must only ever be touched from one task (its
@@ -70,7 +70,7 @@ inline int cur_worker()
 inline void assert_single_owner(int w)
 {
 #if defined(ARDUINO) && !defined(NDEBUG)
-    static TaskHandle_t s_owner[DETWS_WORKER_COUNT] = {nullptr};
+    static TaskHandle_t s_owner[DWS_WORKER_COUNT] = {nullptr};
     TaskHandle_t cur = xTaskGetCurrentTaskHandle();
     if (s_owner[w] == nullptr)
         s_owner[w] = cur;
@@ -97,7 +97,7 @@ void *scratch_alloc(size_t n, size_t align)
     // Overflow-safe capacity check: reject if n alone exceeds the arena, or if
     // the aligned allocation would run past the end. (n <= capacity here, so
     // capacity - n does not underflow; base may exceed it after rounding.)
-    if (n > DETWS_SCRATCH_ARENA_SIZE || base > DETWS_SCRATCH_ARENA_SIZE - n)
+    if (n > DWS_SCRATCH_ARENA_SIZE || base > DWS_SCRATCH_ARENA_SIZE - n)
         return nullptr;
 
     void *p = &s_scratch_arena.arena[w][base];
@@ -136,9 +136,9 @@ size_t scratch_used(void)
 
 size_t scratch_high_water(void)
 {
-    // Peak any single arena reached - the value to size DETWS_SCRATCH_ARENA_SIZE by.
+    // Peak any single arena reached - the value to size DWS_SCRATCH_ARENA_SIZE by.
     size_t peak = 0;
-    for (int w = 0; w < DETWS_WORKER_COUNT; w++)
+    for (int w = 0; w < DWS_WORKER_COUNT; w++)
         if (s_scratch.high_water[w] > peak)
             peak = s_scratch.high_water[w];
     return peak;
@@ -146,5 +146,5 @@ size_t scratch_high_water(void)
 
 size_t scratch_capacity(void)
 {
-    return DETWS_SCRATCH_ARENA_SIZE;
+    return DWS_SCRATCH_ARENA_SIZE;
 }

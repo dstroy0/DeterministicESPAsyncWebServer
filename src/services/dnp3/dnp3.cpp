@@ -8,7 +8,7 @@
 
 #include "services/dnp3/dnp3.h"
 
-#if DETWS_ENABLE_DNP3
+#if DWS_ENABLE_DNP3
 
 #include <string.h>
 
@@ -119,4 +119,4 @@ bool dnp3_parse_frame(const uint8_t *buf, size_t len, Dnp3Frame *out, uint8_t *o
     return true;
 }
 
-#endif // DETWS_ENABLE_DNP3
+#endif // DWS_ENABLE_DNP3

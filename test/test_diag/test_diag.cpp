@@ -1,8 +1,8 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Exercises the runtime build-flag reporter (server.diag() / DETWS_ENABLE_DIAG):
-// the gated diag() method + the compile-time DETWS_DIAG_JSON build-info string are
+// Exercises the runtime build-flag reporter (server.diag() / DWS_ENABLE_DIAG):
+// the gated diag() method + the compile-time DWS_DIAG_JSON build-info string are
 // only compiled when the flag is on, so this env (native_diag) is what keeps that
 // code building + running in CI rather than bit-rotting.
 
@@ -10,7 +10,7 @@
 #include <string.h>
 #include <unity.h>
 
-static DetWebServer server;
+static DWS server;
 
 static void push_str(uint8_t slot, const char *s)
 {
@@ -30,7 +30,7 @@ static void diag_handler(uint8_t slot, HttpReq *req)
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     for (int i = 0; i < MAX_CONNS; i++)
     {
         conn_pool[i] = {};
@@ -71,7 +71,7 @@ void test_diag_serves_build_info_json()
 // against a malformed macro concatenation).
 void test_diag_json_braces_balanced()
 {
-    const char *j = DETWS_DIAG_JSON;
+    const char *j = DWS_DIAG_JSON;
     int depth = 0, min_depth = 0;
     for (const char *p = j; *p; p++)
     {

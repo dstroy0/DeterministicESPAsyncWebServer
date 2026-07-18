@@ -10,7 +10,7 @@
 #include "services/http_client/http_client.h"
 #include "services/clock.h" // dwsdelay
 
-#if DETWS_ENABLE_HTTP_CLIENT
+#if DWS_ENABLE_HTTP_CLIENT
 
 #include "shared_primitives/mime.h"
 #include "shared_primitives/numparse.h"
@@ -106,11 +106,11 @@ size_t http_client_build_request(const char *method, const char *host, uint16_t 
         n = snprintf(out, cap,
                      "%s %s HTTP/1.1\r\n"
                      "Host: %s\r\n"
-                     "User-Agent: DetWS\r\n"
+                     "User-Agent: DWS\r\n"
                      "Content-Type: %s\r\n"
                      "Content-Length: %u\r\n"
                      "Connection: close\r\n\r\n",
-                     method, path, hosthdr, content_type ? content_type : DET_MIME_OCTET_STREAM, (unsigned)body_len);
+                     method, path, hosthdr, content_type ? content_type : DWS_MIME_OCTET_STREAM, (unsigned)body_len);
         if (n < 0 || (size_t)n + body_len > cap)
             return 0;
         memcpy(out + n, body, body_len);
@@ -120,7 +120,7 @@ size_t http_client_build_request(const char *method, const char *host, uint16_t 
     n = snprintf(out, cap,
                  "%s %s HTTP/1.1\r\n"
                  "Host: %s\r\n"
-                 "User-Agent: DetWS\r\n"
+                 "User-Agent: DWS\r\n"
                  "Connection: close\r\n\r\n",
                  method, path, hosthdr);
     if (n < 0 || (size_t)n >= cap)
@@ -234,7 +234,7 @@ int http_client_parse_response(uint8_t *buf, size_t len, size_t *body_off, size_
     const char *cl = find_header(buf, hdr_end, "Content-Length");
     if (cl)
     {
-        long n = det_strtol(cl, nullptr);
+        long n = dws_strtol(cl, nullptr);
         if (n < 0)
             n = 0;
         size_t want = (size_t)n;
@@ -257,14 +257,14 @@ int http_client_parse_response(uint8_t *buf, size_t len, size_t *body_off, size_
 #include "network_drivers/transport/client.h" // shared outbound TCP client (L4)
 #include <Arduino.h>                          // millis()
 
-#if DETWS_ENABLE_HTTP_CLIENT_TLS
+#if DWS_ENABLE_HTTP_CLIENT_TLS
 #include "network_drivers/tls/tls.h"
 #include <mbedtls/ssl.h> // MBEDTLS_ERR_SSL_WANT_READ for the BIO recv callback
 #endif
 
-// Optional stage tracing: build with -DDETWS_HTTP_CLIENT_DEBUG to print where a
+// Optional stage tracing: build with -DDWS_HTTP_CLIENT_DEBUG to print where a
 // request stalls (DNS / connect / send / receive). Goes to the console UART.
-#ifdef DETWS_HTTP_CLIENT_DEBUG
+#ifdef DWS_HTTP_CLIENT_DEBUG
 #define CL_DBG(...) printf(__VA_ARGS__)
 #else
 #define CL_DBG(...) ((void)0)
@@ -273,32 +273,32 @@ int http_client_parse_response(uint8_t *buf, size_t len, size_t *body_off, size_
 // All HTTP-client state, owned by one instance (internal linkage): a single in-flight request
 // (one loop task). rx holds the *response to parse*: the raw wire bytes for http, or (for
 // https) the plaintext decrypted by the TLS engine; the TCP connection lives in the shared
-// client pool (det_client). One named owner, unreachable from any other translation unit.
+// client pool (dws_client). One named owner, unreachable from any other translation unit.
 struct HttpClientCtx
 {
-    uint8_t rx[DETWS_HTTP_CLIENT_BUF_SIZE];
-    int cid = -1; // active outbound connection id (det_client pool)
+    uint8_t rx[DWS_HTTP_CLIENT_BUF_SIZE];
+    int cid = -1; // active outbound connection id (dws_client pool)
 };
 static HttpClientCtx s_http;
 
-#if DETWS_ENABLE_HTTP_CLIENT_TLS
+#if DWS_ENABLE_HTTP_CLIENT_TLS
 // mbedTLS BIO over the shared client transport: send wire bytes through the pool,
 // recv by draining its wire ring (which carries ciphertext for https).
 static int cl_tls_send(void *ctx, const unsigned char *buf, size_t len)
 {
     (void)ctx;
     size_t cap = len > 0xFFFF ? 0xFFFF : len;
-    return det_client_send(s_http.cid, buf, cap) ? (int)cap : -1;
+    return dws_client_send(s_http.cid, buf, cap) ? (int)cap : -1;
 }
 static int cl_tls_recv(void *ctx, unsigned char *buf, size_t len)
 {
     (void)ctx;
-    size_t n = det_client_read(s_http.cid, buf, len);
+    size_t n = dws_client_read(s_http.cid, buf, len);
     if (n == 0)
-        return det_client_is_closed(s_http.cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
+        return dws_client_is_closed(s_http.cid) ? 0 : MBEDTLS_ERR_SSL_WANT_READ;
     return (int)n;
 }
-#endif // DETWS_ENABLE_HTTP_CLIENT_TLS
+#endif // DWS_ENABLE_HTTP_CLIENT_TLS
 
 // Core request: build, connect, send, receive, parse.
 static int http_request(const char *method, const char *url, const char *content_type, const uint8_t *body,
@@ -317,7 +317,7 @@ static int http_request(const char *method, const char *url, const char *content
     if (!http_client_parse_url(url, &is_https, host, sizeof(host), &port, path, sizeof(path)))
         return (int)HttpClientError::HTTP_CLIENT_ERR_URL;
     CL_DBG("[hc] url host=%s port=%u https=%d path=%s\n", host, (unsigned)port, (int)is_https, path);
-#if !DETWS_ENABLE_HTTP_CLIENT_TLS
+#if !DWS_ENABLE_HTTP_CLIENT_TLS
     if (is_https)
         return (int)HttpClientError::HTTP_CLIENT_ERR_TLS;
 #endif
@@ -328,11 +328,11 @@ static int http_request(const char *method, const char *url, const char *content
     if (reqlen == 0)
         return (int)HttpClientError::HTTP_CLIENT_ERR_URL;
 
-    uint32_t deadline = millis() + DETWS_HTTP_CLIENT_TIMEOUT_MS;
+    uint32_t deadline = millis() + DWS_HTTP_CLIENT_TIMEOUT_MS;
 
     // Open the connection (DNS + connect) via the shared client transport.
-    s_http.cid = det_client_open(host, port, DETWS_HTTP_CLIENT_TIMEOUT_MS);
-    CL_DBG("[hc] det_client_open cid=%d\n", s_http.cid);
+    s_http.cid = dws_client_open(host, port, DWS_HTTP_CLIENT_TIMEOUT_MS);
+    CL_DBG("[hc] dws_client_open cid=%d\n", s_http.cid);
     if (s_http.cid < 0)
         return (s_http.cid == -2) ? (int)HttpClientError::HTTP_CLIENT_ERR_DNS
                                   : (int)HttpClientError::HTTP_CLIENT_ERR_CONNECT;
@@ -343,18 +343,18 @@ static int http_request(const char *method, const char *url, const char *content
 
     if (is_https)
     {
-#if DETWS_ENABLE_HTTP_CLIENT_TLS
-        int rc = det_tls_client_run(host, (const uint8_t *)req, reqlen, s_http.rx, sizeof(s_http.rx), &resp_len,
+#if DWS_ENABLE_HTTP_CLIENT_TLS
+        int rc = dws_tls_client_run(host, (const uint8_t *)req, reqlen, s_http.rx, sizeof(s_http.rx), &resp_len,
                                     cl_tls_send, cl_tls_recv, deadline);
         CL_DBG("[hc] tls rc=%d pt_len=%u\n", rc, (unsigned)resp_len);
         if (rc < 0)
         {
-            det_client_close(s_http.cid);
+            dws_client_close(s_http.cid);
             s_http.cid = -1;
             return (int)HttpClientError::HTTP_CLIENT_ERR_TLS;
         }
 #else
-        det_client_close(s_http.cid);
+        dws_client_close(s_http.cid);
         s_http.cid = -1;
         return (int)HttpClientError::HTTP_CLIENT_ERR_TLS;
 #endif
@@ -363,19 +363,19 @@ static int http_request(const char *method, const char *url, const char *content
     {
         // Plaintext: send the request, then drain wire bytes into s_http.rx until the
         // peer closes (and the ring is empty), the buffer fills, or we time out.
-        if (!det_client_send(s_http.cid, req, reqlen))
+        if (!dws_client_send(s_http.cid, req, reqlen))
         {
-            det_client_close(s_http.cid);
+            dws_client_close(s_http.cid);
             s_http.cid = -1;
             return (int)HttpClientError::HTTP_CLIENT_ERR_SEND;
         }
         while ((int32_t)(deadline - millis()) > 0)
         {
-            size_t n = det_client_read(s_http.cid, s_http.rx + resp_len, sizeof(s_http.rx) - resp_len);
+            size_t n = dws_client_read(s_http.cid, s_http.rx + resp_len, sizeof(s_http.rx) - resp_len);
             resp_len += n;
             if (resp_len >= sizeof(s_http.rx))
                 break;
-            if (det_client_is_closed(s_http.cid) && det_client_available(s_http.cid) == 0)
+            if (dws_client_is_closed(s_http.cid) && dws_client_available(s_http.cid) == 0)
                 break;
             if (n == 0)
                 dwsdelay(5);
@@ -383,7 +383,7 @@ static int http_request(const char *method, const char *url, const char *content
     }
 
     CL_DBG("[hc] done resp_len=%u\n", (unsigned)resp_len);
-    det_client_close(s_http.cid);
+    dws_client_close(s_http.cid);
     s_http.cid = -1;
 
     if (resp_len == 0)
@@ -414,8 +414,8 @@ int http_post(const char *url, const char *content_type, const uint8_t *body, si
 
 void http_client_set_ca(const uint8_t *ca, size_t ca_len)
 {
-#if DETWS_ENABLE_HTTP_CLIENT_TLS
-    det_tls_client_set_ca(ca, ca_len);
+#if DWS_ENABLE_HTTP_CLIENT_TLS
+    dws_tls_client_set_ca(ca, ca_len);
 #else
     (void)ca;
     (void)ca_len;
@@ -423,16 +423,16 @@ void http_client_set_ca(const uint8_t *ca, size_t ca_len)
 }
 void http_client_set_pin(const uint8_t sha256[32])
 {
-#if DETWS_ENABLE_HTTP_CLIENT_TLS
-    det_tls_client_set_pin(sha256);
+#if DWS_ENABLE_HTTP_CLIENT_TLS
+    dws_tls_client_set_pin(sha256);
 #else
     (void)sha256;
 #endif
 }
 void http_client_clear_verify()
 {
-#if DETWS_ENABLE_HTTP_CLIENT_TLS
-    det_tls_client_clear_verify();
+#if DWS_ENABLE_HTTP_CLIENT_TLS
+    dws_tls_client_clear_verify();
 #endif
 }
 
@@ -458,4 +458,4 @@ void http_client_clear_verify()
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_HTTP_CLIENT
+#endif // DWS_ENABLE_HTTP_CLIENT

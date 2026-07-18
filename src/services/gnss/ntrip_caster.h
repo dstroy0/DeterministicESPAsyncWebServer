@@ -3,7 +3,7 @@
 
 /**
  * @file ntrip_caster.h
- * @brief NTRIP caster protocol codec (DETWS_ENABLE_NTRIP_CASTER) - the pure, host-tested core.
+ * @brief NTRIP caster protocol codec (DWS_ENABLE_NTRIP_CASTER) - the pure, host-tested core.
  *
  * NTRIP (Networked Transport of RTCM via Internet Protocol) is how a GNSS base's RTCM corrections reach
  * rovers over TCP. It is HTTP-shaped: a rover opens a connection and sends a request line
@@ -29,7 +29,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_NTRIP_CASTER
+#if DWS_ENABLE_NTRIP_CASTER
 
 #include <stddef.h>
 #include <stdint.h>
@@ -44,13 +44,13 @@ enum class NtripVersion : uint8_t
 /** @brief A parsed NTRIP rover request. String spans point into the caller's request buffer. */
 struct NtripRequest
 {
-    bool complete;        ///< the full request header block (up to a blank line) was present
-    bool is_get;          ///< the request line was a GET
-    NtripVersion version; ///< NTRIP_V2 if an Ntrip-Version: Ntrip/2.0 header was present, else NTRIP_V1
-    char mountpoint[DETWS_NTRIP_MOUNT_MAX]; ///< requested mountpoint (empty = source-table request, "GET /")
-    bool want_sourcetable;                  ///< the request targets "/" (list the source table)
-    const char *auth_b64;                   ///< base64 of user:pass from an "Authorization: Basic" header, or null
-    uint16_t auth_b64_len;                  ///< length of @c auth_b64 (0 if none)
+    bool complete;                        ///< the full request header block (up to a blank line) was present
+    bool is_get;                          ///< the request line was a GET
+    NtripVersion version;                 ///< NTRIP_V2 if an Ntrip-Version: Ntrip/2.0 header was present, else NTRIP_V1
+    char mountpoint[DWS_NTRIP_MOUNT_MAX]; ///< requested mountpoint (empty = source-table request, "GET /")
+    bool want_sourcetable;                ///< the request targets "/" (list the source table)
+    const char *auth_b64;                 ///< base64 of user:pass from an "Authorization: Basic" header, or null
+    uint16_t auth_b64_len;                ///< length of @c auth_b64 (0 if none)
 };
 
 /**
@@ -91,7 +91,7 @@ struct NtripMount
     const char *format_details; ///< RTCM message list, e.g. "1005(1),1006(10)"
     const char *nav_system;     ///< e.g. "GPS" or "GPS+GLO"
     const char *country;        ///< 3-char code, e.g. "USA"
-    const char *generator;      ///< producing hardware/software (null -> "DetWebServer")
+    const char *generator;      ///< producing hardware/software (null -> "DWS")
     double lat_deg;             ///< approximate base latitude (source-table advertises 2 decimals)
     double lon_deg;             ///< approximate base longitude
     bool nmea_required;         ///< rover must send a GGA (1) or not (0); false for a single-base caster
@@ -111,6 +111,6 @@ size_t ntrip_build_str_record(char *out, size_t cap, const NtripMount *m);
 size_t ntrip_build_sourcetable(char *out, size_t cap, NtripVersion version, const NtripMount *mounts,
                                size_t mount_count);
 
-#endif // DETWS_ENABLE_NTRIP_CASTER
+#endif // DWS_ENABLE_NTRIP_CASTER
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_NTRIP_CASTER_H

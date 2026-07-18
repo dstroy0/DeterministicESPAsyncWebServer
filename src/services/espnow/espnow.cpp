@@ -8,38 +8,38 @@
 
 #include "services/espnow/espnow.h"
 
-#if DETWS_ENABLE_ESPNOW
+#if DWS_ENABLE_ESPNOW
 
 #include <string.h>
 
-const uint8_t DETWS_ESPNOW_BROADCAST[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+const uint8_t DWS_ESPNOW_BROADCAST[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 // ---------------------------------------------------------------------------
 // Envelope codec
 // ---------------------------------------------------------------------------
-size_t detws_espnow_encode(uint8_t type, const uint8_t *payload, size_t len, uint8_t *out, size_t cap)
+size_t dws_espnow_encode(uint8_t type, const uint8_t *payload, size_t len, uint8_t *out, size_t cap)
 {
-    if (!out || len > DETWS_ESPNOW_MAX_PAYLOAD || cap < len + DETWS_ESPNOW_HDR)
+    if (!out || len > DWS_ESPNOW_MAX_PAYLOAD || cap < len + DWS_ESPNOW_HDR)
         return 0;
-    out[0] = DETWS_ESPNOW_MAGIC;
+    out[0] = DWS_ESPNOW_MAGIC;
     out[1] = type;
     out[2] = (uint8_t)len;
     if (len && payload)
-        memcpy(out + DETWS_ESPNOW_HDR, payload, len);
-    return len + DETWS_ESPNOW_HDR;
+        memcpy(out + DWS_ESPNOW_HDR, payload, len);
+    return len + DWS_ESPNOW_HDR;
 }
 
-bool detws_espnow_decode(const uint8_t *buf, size_t len, uint8_t *type, const uint8_t **payload, size_t *plen)
+bool dws_espnow_decode(const uint8_t *buf, size_t len, uint8_t *type, const uint8_t **payload, size_t *plen)
 {
-    if (!buf || len < DETWS_ESPNOW_HDR || buf[0] != DETWS_ESPNOW_MAGIC)
+    if (!buf || len < DWS_ESPNOW_HDR || buf[0] != DWS_ESPNOW_MAGIC)
         return false;
     size_t declared = buf[2];
-    if (declared + DETWS_ESPNOW_HDR != len) // length must match exactly (no trailing/short)
+    if (declared + DWS_ESPNOW_HDR != len) // length must match exactly (no trailing/short)
         return false;
     if (type)
         *type = buf[1];
     if (payload)
-        *payload = buf + DETWS_ESPNOW_HDR;
+        *payload = buf + DWS_ESPNOW_HDR;
     if (plen)
         *plen = declared;
     return true;
@@ -61,9 +61,9 @@ struct Peer
 // named owner, unreachable from any other translation unit.
 struct EspnowCtx
 {
-    Peer peers[DETWS_ESPNOW_MAX_PEERS];
+    Peer peers[DWS_ESPNOW_MAX_PEERS];
 #ifdef ARDUINO
-    detws_espnow_recv_fn recv = nullptr;
+    dws_espnow_recv_fn recv = nullptr;
     uint8_t channel = 0;
 #endif
 };
@@ -71,26 +71,26 @@ EspnowCtx s_espnow;
 
 int peer_find(const EspnowCtx &c, const uint8_t mac[6])
 {
-    for (int i = 0; i < DETWS_ESPNOW_MAX_PEERS; i++)
+    for (int i = 0; i < DWS_ESPNOW_MAX_PEERS; i++)
         if (c.peers[i].used && memcmp(c.peers[i].mac, mac, 6) == 0)
             return i;
     return -1;
 }
 } // namespace
 
-void detws_espnow_peers_reset(void)
+void dws_espnow_peers_reset(void)
 {
-    for (int i = 0; i < DETWS_ESPNOW_MAX_PEERS; i++)
+    for (int i = 0; i < DWS_ESPNOW_MAX_PEERS; i++)
         s_espnow.peers[i].used = false;
 }
 
-bool detws_espnow_peer_add(const uint8_t mac[6])
+bool dws_espnow_peer_add(const uint8_t mac[6])
 {
     if (!mac)
         return false;
     if (peer_find(s_espnow, mac) >= 0)
         return true; // idempotent
-    for (int i = 0; i < DETWS_ESPNOW_MAX_PEERS; i++)
+    for (int i = 0; i < DWS_ESPNOW_MAX_PEERS; i++)
         if (!s_espnow.peers[i].used)
         {
             memcpy(s_espnow.peers[i].mac, mac, 6);
@@ -100,12 +100,12 @@ bool detws_espnow_peer_add(const uint8_t mac[6])
     return false; // table full
 }
 
-bool detws_espnow_peer_has(const uint8_t mac[6])
+bool dws_espnow_peer_has(const uint8_t mac[6])
 {
     return mac && peer_find(s_espnow, mac) >= 0;
 }
 
-bool detws_espnow_peer_remove(const uint8_t mac[6])
+bool dws_espnow_peer_remove(const uint8_t mac[6])
 {
     int i = mac ? peer_find(s_espnow, mac) : -1;
     if (i < 0)
@@ -114,10 +114,10 @@ bool detws_espnow_peer_remove(const uint8_t mac[6])
     return true;
 }
 
-int detws_espnow_peer_count(void)
+int dws_espnow_peer_count(void)
 {
     int n = 0;
-    for (int i = 0; i < DETWS_ESPNOW_MAX_PEERS; i++)
+    for (int i = 0; i < DWS_ESPNOW_MAX_PEERS; i++)
         if (s_espnow.peers[i].used)
             n++;
     return n;
@@ -149,7 +149,7 @@ void on_recv(const uint8_t *mac, const uint8_t *data, int len)
     uint8_t type;
     const uint8_t *payload;
     size_t plen;
-    if (detws_espnow_decode(data, (size_t)len, &type, &payload, &plen))
+    if (dws_espnow_decode(data, (size_t)len, &type, &payload, &plen))
         s_espnow.recv(mac, type, payload, plen);
 }
 
@@ -166,57 +166,57 @@ bool radio_add_peer(const uint8_t mac[6], uint8_t channel)
 }
 } // namespace
 
-bool detws_espnow_begin(uint8_t channel, detws_espnow_recv_fn cb)
+bool dws_espnow_begin(uint8_t channel, dws_espnow_recv_fn cb)
 {
     s_espnow.channel = channel;
     s_espnow.recv = cb;
     if (esp_now_init() != ESP_OK)
         return false;
     esp_now_register_recv_cb(on_recv);
-    detws_espnow_peers_reset();
-    return radio_add_peer(DETWS_ESPNOW_BROADCAST, channel); // broadcast is always a peer
+    dws_espnow_peers_reset();
+    return radio_add_peer(DWS_ESPNOW_BROADCAST, channel); // broadcast is always a peer
 }
 
-bool detws_espnow_add_peer(const uint8_t mac[6])
+bool dws_espnow_add_peer(const uint8_t mac[6])
 {
-    if (!detws_espnow_peer_add(mac))
+    if (!dws_espnow_peer_add(mac))
         return false;
     return radio_add_peer(mac, s_espnow.channel);
 }
 
-bool detws_espnow_send(const uint8_t mac[6], uint8_t type, const uint8_t *payload, size_t len)
+bool dws_espnow_send(const uint8_t mac[6], uint8_t type, const uint8_t *payload, size_t len)
 {
-    uint8_t frame[DETWS_ESPNOW_HDR + DETWS_ESPNOW_MAX_PAYLOAD];
-    size_t n = detws_espnow_encode(type, payload, len, frame, sizeof(frame));
+    uint8_t frame[DWS_ESPNOW_HDR + DWS_ESPNOW_MAX_PAYLOAD];
+    size_t n = dws_espnow_encode(type, payload, len, frame, sizeof(frame));
     if (n == 0)
         return false;
     return esp_now_send(mac, frame, n) == ESP_OK;
 }
 
-bool detws_espnow_broadcast(uint8_t type, const uint8_t *payload, size_t len)
+bool dws_espnow_broadcast(uint8_t type, const uint8_t *payload, size_t len)
 {
-    return detws_espnow_send(DETWS_ESPNOW_BROADCAST, type, payload, len);
+    return dws_espnow_send(DWS_ESPNOW_BROADCAST, type, payload, len);
 }
 
 #else // host build - no radio
 
-bool detws_espnow_begin(uint8_t, detws_espnow_recv_fn)
+bool dws_espnow_begin(uint8_t, dws_espnow_recv_fn)
 {
     return false;
 }
-bool detws_espnow_add_peer(const uint8_t mac[6])
+bool dws_espnow_add_peer(const uint8_t mac[6])
 {
-    return detws_espnow_peer_add(mac);
+    return dws_espnow_peer_add(mac);
 }
-bool detws_espnow_send(const uint8_t *, uint8_t, const uint8_t *, size_t)
+bool dws_espnow_send(const uint8_t *, uint8_t, const uint8_t *, size_t)
 {
     return false;
 }
-bool detws_espnow_broadcast(uint8_t, const uint8_t *, size_t)
+bool dws_espnow_broadcast(uint8_t, const uint8_t *, size_t)
 {
     return false;
 }
 
 #endif // ARDUINO
 
-#endif // DETWS_ENABLE_ESPNOW
+#endif // DWS_ENABLE_ESPNOW

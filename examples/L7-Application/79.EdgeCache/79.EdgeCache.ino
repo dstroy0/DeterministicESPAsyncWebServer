@@ -3,7 +3,7 @@
 
 /**
  * @file 79.EdgeCache.ino
- * @brief Cache an upstream origin at the edge (DETWS_ENABLE_EDGE_CACHE).
+ * @brief Cache an upstream origin at the edge (DWS_ENABLE_EDGE_CACHE).
  *
  * The board acts as a caching reverse-proxy: a GET/HEAD under a mapped prefix is fetched from the
  * upstream origin once, cached in RAM, and subsequent hits are served from the board - honoring
@@ -11,18 +11,18 @@
  * never stalling the server (the origin fetch runs asynchronously while the client request is
  * suspended). A /cache/stats route reports the counters and /cache/purge invalidates by prefix.
  *
- * Wiring is two calls: det_edge_cache_map() binds a path prefix to an origin, det_edge_cache_enable()
+ * Wiring is two calls: dws_edge_cache_map() binds a path prefix to an origin, dws_edge_cache_enable()
  * installs the cache on the server. Edit the "CHANGE ME" lines, flash, open Serial @ 115200, then
  * request GET /cdn/<path> and watch the X-Cache header flip from MISS to HIT.
  *
  * NOTE (PlatformIO): the cache is compiled into the *library*, so the flags must reach the whole build:
- * build_flags = -DDETWS_ENABLE_EDGE_CACHE=1 -DDETWS_ENABLE_HTTP_CACHE=1 -DDETWS_ENABLE_HTTP_CLIENT=1.
+ * build_flags = -DDWS_ENABLE_EDGE_CACHE=1 -DDWS_ENABLE_HTTP_CACHE=1 -DDWS_ENABLE_HTTP_CLIENT=1.
  * In the Arduino IDE they are set for you in build_opt.h.
  */
 
-#define DETWS_ENABLE_EDGE_CACHE 1
-#define DETWS_ENABLE_HTTP_CACHE 1
-#define DETWS_ENABLE_HTTP_CLIENT 1
+#define DWS_ENABLE_EDGE_CACHE 1
+#define DWS_ENABLE_HTTP_CACHE 1
+#define DWS_ENABLE_HTTP_CLIENT 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -30,10 +30,10 @@
 #include <Arduino.h>
 #include <WiFi.h>
 
-// --- Optional L2 (SD) persistence tier: set DETWS_ENABLE_DBM=1 (with an SD card) to keep the cached set
+// --- Optional L2 (SD) persistence tier: set DWS_ENABLE_DBM=1 (with an SD card) to keep the cached set
 // across a reboot. Evicted L1 entries spill to a dbm store on the WAL; a reboot replays the log and the
 // first request for a persisted URL revalidates it with a cheap conditional GET instead of re-downloading.
-#if DETWS_ENABLE_DBM
+#if DWS_ENABLE_DBM
 #include "services/dbm/dbm.h"
 #include "services/wal/wal_fs.h"
 #include "services/wal/wal_store.h"
@@ -47,9 +47,9 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 // --- CHANGE ME: the upstream origin the board caches in front of (plaintext http:// only in v1) ---
 static const char *ORIGIN = "http://192.168.1.60:8000";
 
-DetWebServer server;
+DWS server;
 
-#if DETWS_ENABLE_DBM
+#if DWS_ENABLE_DBM
 // L2 persistence: a dbm store on a WAL file on the SD card. The file stays open for the store's lifetime.
 static constexpr uint64_t L2_WAL_BYTES = 512 * 1024; // backing file size (holds the persisted cache set)
 static fs::File g_wal_file;
@@ -69,9 +69,9 @@ static bool setup_l2()
     WalDev dev = wal_fs_dev(&g_wal_file, L2_WAL_BYTES);
     if (!wal_store_mount(&g_wal, &dev) && !wal_store_format(&g_wal, &dev)) // recover, else initialize
         return false;
-    if (!detws_dbm_open(&g_l2, &g_wal)) // rebuild the index by replaying the log (this is reboot recovery)
+    if (!dws_dbm_open(&g_l2, &g_wal)) // rebuild the index by replaying the log (this is reboot recovery)
         return false;
-    det_edge_cache_bind_sd(&g_l2);
+    dws_edge_cache_bind_sd(&g_l2);
     return true;
 }
 #endif
@@ -81,7 +81,7 @@ static void handle_stats(uint8_t slot, HttpReq *req)
 {
     (void)req;
     EdgeCacheStats st;
-    det_edge_cache_stats(&st);
+    dws_edge_cache_stats(&st);
     char body[288];
     snprintf(body, sizeof(body),
              "{\"hits\":%u,\"misses\":%u,\"revalidations\":%u,\"replaces\":%u,\"stores\":%u,\"evictions\":%u,"
@@ -96,7 +96,7 @@ static void handle_stats(uint8_t slot, HttpReq *req)
 static void handle_purge(uint8_t slot, HttpReq *req)
 {
     (void)req;
-    uint32_t n = det_edge_cache_purge_prefix("/cdn/");
+    uint32_t n = dws_edge_cache_purge_prefix("/cdn/");
     char body[48];
     snprintf(body, sizeof(body), "{\"purged\":%u}", (unsigned)n);
     server.send(slot, 200, "application/json", body);
@@ -118,9 +118,9 @@ void setup()
     WiFi.setSleep(false);
 
     // Cache everything under /cdn/ from the origin, then enable the cache on the server.
-    det_edge_cache_map("/cdn/", ORIGIN);
-    det_edge_cache_enable(server);
-#if DETWS_ENABLE_DBM
+    dws_edge_cache_map("/cdn/", ORIGIN);
+    dws_edge_cache_enable(server);
+#if DWS_ENABLE_DBM
     Serial.println(setup_l2() ? "L2 SD tier: mounted (cache survives reboot)" : "L2 SD tier: unavailable (no SD?)");
 #endif
     server.on("/cache/stats", HttpMethod::HTTP_GET, handle_stats);
@@ -135,13 +135,13 @@ void setup()
 void loop()
 {
     server.handle(); // the server poll loop drives the async origin fetch + the cached send
-#if DETWS_ENABLE_DBM
+#if DWS_ENABLE_DBM
     // Make L2 spills durable on a cadence (batched appends are checkpointed in bulk, per the WAL design).
     static uint32_t last_sync = 0;
     if (millis() - last_sync > 5000)
     {
         last_sync = millis();
-        detws_dbm_sync(&g_l2);
+        dws_dbm_sync(&g_l2);
     }
 #endif
 }

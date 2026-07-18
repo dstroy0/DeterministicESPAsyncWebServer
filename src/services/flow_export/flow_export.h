@@ -3,7 +3,7 @@
 
 /**
  * @file flow_export.h
- * @brief Flow-record export codec (DETWS_ENABLE_FLOW_EXPORT) - zero-heap exporter-side
+ * @brief Flow-record export codec (DWS_ENABLE_FLOW_EXPORT) - zero-heap exporter-side
  *        builders for NetFlow v5, NetFlow v9 (RFC 3954), and IPFIX (RFC 7011), so a device
  *        can ship on-device flow accounting to a collector over the existing UDP transport.
  *
@@ -18,7 +18,7 @@
  * (IPFIX), RFC 3954 (NetFlow v9), and the published v5 record layout.
  *
  * This is the wire codec only; the flow cache (the 5-tuple + counters) is the app's, and
- * the datagram send is `det_udp_sendto`.
+ * the datagram send is `dws_udp_sendto`.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -29,7 +29,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_FLOW_EXPORT
+#if DWS_ENABLE_FLOW_EXPORT
 
 #include <stddef.h>
 #include <stdint.h>
@@ -127,6 +127,6 @@ bool flow_export_data_end(FlowWriter *w);
 /** @brief Finish the message (auto-closes an open set); returns total bytes, or 0 on error. */
 size_t flow_export_finish(FlowWriter *w);
 
-#endif // DETWS_ENABLE_FLOW_EXPORT
+#endif // DWS_ENABLE_FLOW_EXPORT
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_FLOW_EXPORT_H

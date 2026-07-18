@@ -3,7 +3,7 @@
 
 /**
  * @file 70.PortForward.ino
- * @brief Publish an internal service through the ESP32 with the TCP relay / DNAT (DETWS_ENABLE_RELAY).
+ * @brief Publish an internal service through the ESP32 with the TCP relay / DNAT (DWS_ENABLE_RELAY).
  *
  * The board fronts a port: anything that connects to the ESP32 on FRONT_PORT is relayed to an
  * internal `host:port` that the board can reach, and the return path comes back automatically. This
@@ -11,7 +11,7 @@
  * device that bridges the two networks.
  *
  * Wiring is two calls: `server.listen(FRONT_PORT, ConnProto::PROTO_RELAY)` opens the front port, and
- * `det_relay_publish()` binds it to the origin. The server's own poll loop pumps the bytes.
+ * `dws_relay_publish()` binds it to the origin. The server's own poll loop pumps the bytes.
  *
  * Edit the lines marked "CHANGE ME" below, flash, and open Serial @ 115200. Then, from another
  * machine, connect to the board on FRONT_PORT and you reach the origin service.
@@ -20,14 +20,14 @@
  * side. Only publish trusted internal targets, and keep FRONT_PORT off untrusted networks.
  *
  * NOTE (PlatformIO): the relay is compiled into the *library*, so the flag must reach the whole
- * build: `build_flags = -DDETWS_ENABLE_RELAY=1`. In the Arduino IDE it is set for you in build_opt.h.
+ * build: `build_flags = -DDWS_ENABLE_RELAY=1`. In the Arduino IDE it is set for you in build_opt.h.
  */
 
-#define DETWS_ENABLE_RELAY 1
+#define DWS_ENABLE_RELAY 1
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include "services/relay/relay_listener.h" // det_relay_publish
+#include "services/relay/relay_listener.h" // dws_relay_publish
 #include <Arduino.h>
 #include <WiFi.h>
 
@@ -40,7 +40,7 @@ static const uint16_t FRONT_PORT = 8080;         // connect here on the ESP32
 static const char *ORIGIN_HOST = "192.168.1.60"; // the internal host the board relays to
 static const uint16_t ORIGIN_PORT = 80;          // ...and its port
 
-DetWebServer server;
+DWS server;
 
 void setup()
 {
@@ -59,7 +59,7 @@ void setup()
 
     // Open the front port for the relay, then bind it to the origin.
     int32_t li = server.listen(FRONT_PORT, ConnProto::PROTO_RELAY);
-    if (li < 0 || !det_relay_publish((uint8_t)li, ORIGIN_HOST, ORIGIN_PORT))
+    if (li < 0 || !dws_relay_publish((uint8_t)li, ORIGIN_HOST, ORIGIN_PORT))
     {
         Serial.println("relay publish failed - check the front port and origin");
         return;

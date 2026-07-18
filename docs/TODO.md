@@ -5,7 +5,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 
 > **Status:** Security/correctness, the ESP32 build blocker, SSH
 > `UNIMPLEMENTED`, housekeeping, the DX feature set (`serve_static` + MIME + gzip,
-> [`redirect()`](@ref DetWebServer::redirect), named [`begin()`](@ref DetWebServer::begin) codes), the **HW-crypto performance** items
+> [`redirect()`](@ref DWS::redirect), named [`begin()`](@ref DWS::begin) codes), the **HW-crypto performance** items
 > (streaming SHA-256 + AES-CTR whole-buffer, **verified on a DevKitV1**), and the
 > **optional services** (mDNS, OTA, WiFi provisioning/captive portal, SNTP, ETag,
 > runtime stats, access-log hook) are all **done** - host-tested where possible
@@ -22,7 +22,7 @@ grouped by area; each names the file(s) involved so the fix is easy to locate.
 >
 > Optional services use only the base SDK + lwIP + mbedTLS (no add-on Arduino
 > libraries): mDNS via the ESP-IDF `mdns` component, the captive-portal DNS via a
-> raw lwIP UDP socket. Each is gated by a `DETWS_ENABLE_*` flag (default off).
+> raw lwIP UDP socket. Each is gated by a `DWS_ENABLE_*` flag (default off).
 >
 > **Still deferred (YAGNI / large):** IPv6 dual-stack and an Ethernet PHY
 > abstraction (the two architectural tracks); concurrent TLS connections
@@ -43,10 +43,10 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
 ### OPEN (actionable now)
 
 - **CDN caching tier** - the RAM-tier reverse-proxy edge cache + cache key / invalidation / purge, the
-  **SD (L2) persistence tier** (`DETWS_ENABLE_DBM`), **Range/`206`-from-cache** (`DETWS_ENABLE_RANGE`),
-  **`https://` origins** (`DETWS_ENABLE_EDGE_ORIGIN_TLS`), and **cross-device mesh distribution**
-  (`DETWS_ENABLE_EDGE_MESH`: sibling-cache pull over `PROTO_MESH`, RFC 9111 age propagation, one-hop loop-free)
-  are all shipped (`DETWS_ENABLE_EDGE_CACHE`, services/edge_cache, examples 79 + 80). The roadmap tier is
+  **SD (L2) persistence tier** (`DWS_ENABLE_DBM`), **Range/`206`-from-cache** (`DWS_ENABLE_RANGE`),
+  **`https://` origins** (`DWS_ENABLE_EDGE_ORIGIN_TLS`), and **cross-device mesh distribution**
+  (`DWS_ENABLE_EDGE_MESH`: sibling-cache pull over `PROTO_MESH`, RFC 9111 age propagation, one-hop loop-free)
+  are all shipped (`DWS_ENABLE_EDGE_CACHE`, services/edge_cache, examples 79 + 80). The roadmap tier is
   complete; remaining are lower-priority follow-ups: a TLS sibling link + UDP-broadcast peer discovery + push
   replication for the mesh, and (TLS origins) an async handshake so a cold https MISS never blocks the worker +
   a multi-session pool for >1 concurrent TLS fetch.
@@ -70,17 +70,17 @@ non-goal or needs hardware / proprietary docs) - **DONE** (`[x]`, the shipped re
     lift the AES-256-GCM record-layer ceiling. curve25519 / Ed25519 stay on the MPI MODMULT (the ECC HW
     is NIST-prime only, not the 2^255-19 field).
   - **ESP32-C3** - RISC-V single core with an RSA/MPI accelerator (to 3072-bit) but **no** ECC block, PIE
-    vector, or HW-GCM: gate the S3 MODMULT paths (`DETWS_FE25519_MPI_HW`, `DETWS_ECDSA_MPI_HW`) on the C3
+    vector, or HW-GCM: gate the S3 MODMULT paths (`DWS_FE25519_MPI_HW`, `DWS_ECDSA_MPI_HW`) on the C3
     too after confirming its `soc/hwcrypto_reg.h` MODMULT register sequence matches; GHASH stays the 4-bit
     table, the `ssh_gf` SIMD path is unavailable. Consider the DS peripheral for eFuse-backed RSA.
   - Each is HW-gated + KAT'd on the real chip (rig KAT self-check pattern), like the S3 work.
 
 ### PARTIAL (`[~]` - shipped, remainder noted)
 
-- **Port forwarding / DNAT** - complete + **HW-verified (2026-07-13)**: the `det_relay` bidirectional
+- **Port forwarding / DNAT** - complete + **HW-verified (2026-07-13)**: the `dws_relay` bidirectional
   TCP byte pump (backpressure + independent half-close, host-tested, `native_relay` 6 cases) **plus the
-  `PROTO_RELAY` server-side listener** (`server.listen(port, PROTO_RELAY)` + `det_relay_publish(...)`
-  dials the origin via `det_client` and pumps the relay from the server poll loop) **plus a runnable
+  `PROTO_RELAY` server-side listener** (`server.listen(port, PROTO_RELAY)` + `dws_relay_publish(...)`
+  dials the origin via `dws_client` and pumps the relay from the server poll loop) **plus a runnable
   example** (`70.PortForward`). On real HW (ESP32-S3 over a W5500 wired link) an inbound->origin round
   trip is **byte-exact** - a 1 MB file pulled through the board's front port matched the origin's SHA256.
   Throughput ~44 KB/s: a single-NIC relay crosses the one W5500 twice per byte and is round-trip-latency
@@ -135,9 +135,9 @@ Ideas and intentions captured from the [Working Thread discussion](https://githu
 ### Codecs / drivers / features
 
 - [ ] Write more niche pure codecs from old manuals - the ones wanted a while ago but never put down on paper.
-- [x] W5500 SPI Ethernet driver, to support non-RMII ESP32s like the S3. _(done, HW-verified on an ESP32-S3 + WIZnet W5500 over HSPI: raw VERSIONR=0x04, then DHCP IP + HTTP served over the wired link. Pins CS7/SCK12/MISO13/MOSI11/RST6/INT5; needs arduino-esp32 3.x + PSRAM=opi on an N16R8. **v5.101.0:** streamed 200 MB byte-exact with a flat heap; added `DETWS_ETH_W5500_SPI_MHZ` (default 20) + a clock-vs-throughput sweep - SPI-bound ~7.2 Mbit/s @20 MHz, ~8.2 @24, plateau ~8.3 @30; reliable-sustained ~24 MHz on breadboard wiring. The earlier "large-transfer crash" was marginal SPI signal integrity, not a library defect - see BUGS.md.)_
+- [x] W5500 SPI Ethernet driver, to support non-RMII ESP32s like the S3. _(done, HW-verified on an ESP32-S3 + WIZnet W5500 over HSPI: raw VERSIONR=0x04, then DHCP IP + HTTP served over the wired link. Pins CS7/SCK12/MISO13/MOSI11/RST6/INT5; needs arduino-esp32 3.x + PSRAM=opi on an N16R8. **v5.101.0:** streamed 200 MB byte-exact with a flat heap; added `DWS_ETH_W5500_SPI_MHZ` (default 20) + a clock-vs-throughput sweep - SPI-bound ~7.2 Mbit/s @20 MHz, ~8.2 @24, plateau ~8.3 @30; reliable-sustained ~24 MHz on breadboard wiring. The earlier "large-transfer crash" was marginal SPI signal integrity, not a library defect - see BUGS.md.)_
 - [ ] Radio-as-a-plugin: strip an ESP to bare metal and do (very legal) radio things as a server plugin.
-- [x] `Industrial_ESPIDF/`: create the directory and write the CMake for it. _(done: `examples/esp-idf/Industrial_ESPIDF` - an industrial edge gateway (HTTP dashboard + Modbus TCP slave + SNMP agent) built with `idf.py`. The top `CMakeLists.txt` turns the feature flags on for the whole build with `add_compile_definitions(DETWS_ENABLE_MODBUS=1 DETWS_ENABLE_SNMP=1)` before `project()` - the ESP-IDF equivalent of build_opt.h. esp32dev compile+link verified (Flash 58%, RAM 29%).)_
+- [x] `Industrial_ESPIDF/`: create the directory and write the CMake for it. _(done: `examples/esp-idf/Industrial_ESPIDF` - an industrial edge gateway (HTTP dashboard + Modbus TCP slave + SNMP agent) built with `idf.py`. The top `CMakeLists.txt` turns the feature flags on for the whole build with `add_compile_definitions(DWS_ENABLE_MODBUS=1 DWS_ENABLE_SNMP=1)` before `project()` - the ESP-IDF equivalent of build_opt.h. esp32dev compile+link verified (Flash 58%, RAM 29%).)_
 
 ### Embedded data stores (SD card)
 
@@ -147,7 +147,7 @@ layer built first, then the store codecs on top. Substrate before stores.
 - [x] **Atomic buffer-to-flash layer (the substrate).** _(done)_ A power-loss-safe write path over the
       FS / SD: a write-ahead log with a CRC per record and an A/B superblock commit marker, so an
       interrupted write is discarded (never half-applied) on the next mount. Zero-heap, bounded, static
-      buffers. `DETWS_ENABLE_WAL` = the pure record codec (`services/wal/wal.h`) + the durable store
+      buffers. `DWS_ENABLE_WAL` = the pure record codec (`services/wal/wal.h`) + the durable store
       (`wal_store.h`: A/B superblock + `wal_store_checkpoint` + mount/tail-replay over a `WalDev`
       block-device seam) + the `fs::FS` binding (`wal_fs.h`, preallocated file, random-access over
       `File::seek`/`flush`). Host-tested (13 cases: CRC vector, torn/truncated-tail recovery, checkpoint
@@ -155,13 +155,13 @@ layer built first, then the store codecs on top. Substrate before stores.
       recovery, torn-tail drop, byte-level payload persistence, and survival across a chip reset all
       pass). _Follow-up:_ a ring-wrap (currently a linear log; wrapping needs a per-record epoch to
       disambiguate stale records); a WAL write-path throughput line in Performance.
-- [x] **dbm**: a hash key-value store on the flash layer. _(done)_ `DETWS_ENABLE_DBM` - a Bitcask-style
+- [x] **dbm**: a hash key-value store on the flash layer. _(done)_ `DWS_ENABLE_DBM` - a Bitcask-style
       log-structured store: put/delete append one WAL record (fast sequential writes), an in-RAM
       open-addressed hash index (fixed BSS, no heap) maps each live key to its value in the log, and
       open rebuilds the index by replaying the log. **Log compaction now reclaims dead space**
-      (`detws_dbm_compact` merges only the live keys - latest value each, no tombstones - into a freshly
+      (`dws_dbm_compact` merges only the live keys - latest value each, no tombstones - into a freshly
       formatted destination store, checkpoints it, then rebinds the handle and rebuilds the index; fails
-      closed leaving the original log intact on any I/O error so no data is lost; `detws_dbm_live_bytes`
+      closed leaving the original log intact on any I/O error so no data is lost; `dws_dbm_live_bytes`
       pairs with `wal_store_used` to measure the dead fraction and decide when to compact). Host-tested over
       a RAM device (11 cases: overwrite, tombstone resurrection, persistence across remount with/without
       checkpoint, collisions, index-full fail-closed, bounds, max-value round-trip, compaction reclaims
@@ -170,7 +170,7 @@ layer built first, then the store codecs on top. Substrate before stores.
       value intact).
 - [x] **sqlite**: SQLite3 **on-disk file-format** access (the documented page / b-tree / record
       encoding) - reader + bounded writer, both done. Not the full SQLite amalgamation (heap + stdio,
-      incompatible with the no-stdlib zero-heap model). `DETWS_ENABLE_SQLITE` - **reading is complete**
+      incompatible with the no-stdlib zero-heap model). `DWS_ENABLE_SQLITE` - **reading is complete**
       (`services/sqlite/sqlite_format.h`): database header, b-tree page header, cell pointers, the
       leaf-table cell (rowid + payload + overflow detection), a record cursor (header varints -> typed
       column values), int/float decoders, and a **multi-page table cursor** that walks an interior
@@ -195,16 +195,16 @@ layer built first, then the store codecs on top. Substrate before stores.
       an ESP32-S3** (build in RAM + read back). **Remaining:** a multi-page writer (page splits) if larger
       datasets are ever needed.
 - [x] **nosql (both)**: _(done)_ a NoSQL **wire client** and a **local on-flash store**.
-  - [x] **wire client**: a Redis **RESP** codec _(done)_ - `DETWS_ENABLE_REDIS` (services/redis_resp)
+  - [x] **wire client**: a Redis **RESP** codec _(done)_ - `DWS_ENABLE_REDIS` (services/redis_resp)
         extended from RESP2 to full RESP2/RESP3 (null / boolean / double / big number / bulk error /
         verbatim / map / set / push); streaming cursor decoder, no heap. Host-tested against Redis spec
         vectors (14 cases) and **verified live against a real redis-server 8.0.2** (SET/GET, nil, DEL,
         RPUSH/LRANGE array, HELLO 3 RESP3 map, INCRBYFLOAT - all pass). MongoDB OP_MSG/BSON is a
         possible later addition.
-  - [x] **local store**: a JSON **document store on the WAL** _(done)_ - `DETWS_ENABLE_DOCSTORE`
+  - [x] **local store**: a JSON **document store on the WAL** _(done)_ - `DWS_ENABLE_DOCSTORE`
         (services/docstore): JSON documents by id via dbm, plus top-level field queries
         (`find_str`/`_int`/`_bool`) over the live docs using the zero-heap JSON reader; distinct from
-        dbm's opaque-value KV. Added `detws_dbm_iterate` to power the scan. Host-tested 5 cases (finds,
+        dbm's opaque-value KV. Added `dws_dbm_iterate` to power the scan. Host-tested 5 cases (finds,
         persistence + query across a remount, early stop). Zero-heap, bounded.
 
 ### Performance
@@ -240,30 +240,30 @@ layer built first, then the store codecs on top. Substrate before stores.
 
 Two link layers reach a CNC controller: legacy **RS-232** (drip-feed / DNC) and modern **Ethernet** (vendor APIs, file transfer, open telemetry). The read/telemetry side already ships as `services/mtconnect` (an ANSI/MTC1.4 agent over the existing HTTP stack); the rest below is open.
 
-- [x] RS-232 DNC codec _(done)_: G-code (RS-274 / ISO 6983) line framing to drip-feed a program to a controller, with software flow control (XON/XOFF = DC1 `0x11` / DC3 `0x13`), `%` program start/end markers, and EIA RS-244 vs ISO 7-bit tape handling. Transport-agnostic so the same framing rides RS-232 or a socket. `DETWS_ENABLE_DNC` (services/dnc): `det_dnc_iso_to_eia`/`det_dnc_eia_to_iso` translate either tape code (EIA RS-244 is a distinct odd-parity 8-track code, parity in channel 5, EOB = 0x80, rewind-stop = EIA End-of-Record 0x0B, uppercase-only; ISO is ASCII with optional even parity); `det_dnc_encode_block` + `det_dnc_encode_marker` + `det_dnc_encode_leader` frame a program; `DncDecoder` reassembles the wire stream back into ASCII G-code lines (fail-closed, drops an over-long block whole); `DncFlow` tracks XON/XOFF on the **reverse** channel (kept out of the forward decode, since EIA `3` is 0x13 = DC3). The EIA table is validated by an odd-parity + exact-inverse host guardrail; full encode -> decode round-trips pass for both codes (`native_dnc`, 13 cases). _Follow-up:_ an example that drip-feeds over `Serial` with live XON/XOFF (needs a UART-wired controller to verify), and the Ethernet DNC item below reuses this framing over a socket.
-- [x] Ethernet DNC _(done, HW-verified)_: stream the same G-code framing over a plain TCP socket (network drip-feed) for controllers that expose a raw program port. **Engine shipped** (services/dnc/dnc_stream): `dnc_stream` drip-feeds a whole program - leader / `%` markers / one block per line / trailer - over a send/recv seam, pausing on a reverse-channel XOFF and resuming on XON. Transport-agnostic (the same engine serves Ethernet DNC over a TCP socket or the RS-232 UART follow-up); host-tested end to end with a scripted mock controller that decodes the stream back and exercises the pause-resume path (`native_dnc`, +8 cases = 22). New knob `DETWS_DNC_XOFF_MAX_POLLS`. **Example shipped** (`examples/L7-Application/69.EthernetDnc`): drip-feeds a program to a controller's raw TCP program port on a real device (WiFi -> det_client -> dnc_stream), with the `cl_send`/`cl_recv` seam glue (a non-blocking reverse-channel read for XON/XOFF); a from-scratch README including a machine-less test (capture the stream with an `nc` listener) + a DncStreamResult troubleshooting table; ESP32-compile-verified via `pio ci` (esp32dev, Flash 68.7%). **HW-verified 2026-07-13** on an ESP32-S3 over a W5500 wired link to a TCP capture sink: the drip is **byte-exact** (108-byte framing - 16 NUL leader, `%`CRLF, CR-before-LF blocks, `%`CRLF, 16 NUL trailer - matched an independently-computed reference), and the **XON/XOFF pacing** path works (0 bytes sent during a 3 s reverse-channel XOFF hold, then the full identical program after XON).
+- [x] RS-232 DNC codec _(done)_: G-code (RS-274 / ISO 6983) line framing to drip-feed a program to a controller, with software flow control (XON/XOFF = DC1 `0x11` / DC3 `0x13`), `%` program start/end markers, and EIA RS-244 vs ISO 7-bit tape handling. Transport-agnostic so the same framing rides RS-232 or a socket. `DWS_ENABLE_DNC` (services/dnc): `dws_dnc_iso_to_eia`/`dws_dnc_eia_to_iso` translate either tape code (EIA RS-244 is a distinct odd-parity 8-track code, parity in channel 5, EOB = 0x80, rewind-stop = EIA End-of-Record 0x0B, uppercase-only; ISO is ASCII with optional even parity); `dws_dnc_encode_block` + `dws_dnc_encode_marker` + `dws_dnc_encode_leader` frame a program; `DncDecoder` reassembles the wire stream back into ASCII G-code lines (fail-closed, drops an over-long block whole); `DncFlow` tracks XON/XOFF on the **reverse** channel (kept out of the forward decode, since EIA `3` is 0x13 = DC3). The EIA table is validated by an odd-parity + exact-inverse host guardrail; full encode -> decode round-trips pass for both codes (`native_dnc`, 13 cases). _Follow-up:_ an example that drip-feeds over `Serial` with live XON/XOFF (needs a UART-wired controller to verify), and the Ethernet DNC item below reuses this framing over a socket.
+- [x] Ethernet DNC _(done, HW-verified)_: stream the same G-code framing over a plain TCP socket (network drip-feed) for controllers that expose a raw program port. **Engine shipped** (services/dnc/dnc_stream): `dnc_stream` drip-feeds a whole program - leader / `%` markers / one block per line / trailer - over a send/recv seam, pausing on a reverse-channel XOFF and resuming on XON. Transport-agnostic (the same engine serves Ethernet DNC over a TCP socket or the RS-232 UART follow-up); host-tested end to end with a scripted mock controller that decodes the stream back and exercises the pause-resume path (`native_dnc`, +8 cases = 22). New knob `DWS_DNC_XOFF_MAX_POLLS`. **Example shipped** (`examples/L7-Application/69.EthernetDnc`): drip-feeds a program to a controller's raw TCP program port on a real device (WiFi -> dws_client -> dnc_stream), with the `cl_send`/`cl_recv` seam glue (a non-blocking reverse-channel read for XON/XOFF); a from-scratch README including a machine-less test (capture the stream with an `nc` listener) + a DncStreamResult troubleshooting table; ESP32-compile-verified via `pio ci` (esp32dev, Flash 68.7%). **HW-verified 2026-07-13** on an ESP32-S3 over a W5500 wired link to a TCP capture sink: the drip is **byte-exact** (108-byte framing - 16 NUL leader, `%`CRLF, CR-before-LF blocks, `%`CRLF, 16 NUL trailer - matched an independently-computed reference), and the **XON/XOFF pacing** path works (0 bytes sent during a 3 s reverse-channel XOFF hold, then the full identical program after XON).
 - [ ] Fanuc FOCAS: client codec for the Fanuc Open CNC API (FOCAS1/2 over Ethernet) - read position/status/alarms and program up/download. Proprietary wire format; reverse from manuals plus a real controller.
-- [x] FTP client _(done)_: many controllers (Fanuc, Haas, Mazak, Heidenhain) expose program storage over FTP - a small RFC 959 client (control + passive data channel) to push/pull `.nc` files. `DETWS_ENABLE_FTP` (services/ftp): the pure wire codec - `ftp_build_command` / `ftp_build_port` / `ftp_build_eprt` (RFC 2428) build control commands, `ftp_parse_reply` detects a complete single/multi-line 3-digit reply and reports the bytes consumed, and `ftp_parse_pasv` / `ftp_parse_epsv` decode the data-channel address. Reply / PASV / EPSV parsing verified against authentic strings captured from a live FTP server (`native_ftp`, 13 cases); the two sockets are the application's. _Follow-up:_ an example that runs a RETR/STOR over the `det_client` transport (needs a real FTP server / controller to HW-verify), and the SMB/CIFS item below for Windows-share storage.
-- [~] SMB/CIFS client: Windows-share program storage is the other common file path - a minimal SMB2 client (negotiate / session-setup / tree-connect / create / read / write) to read and write programs on a share. **Increment 1 shipped** (`DETWS_ENABLE_SMB`, services/smb): the pure SMB2 wire codec - the Direct-TCP transport frame, the 64-byte little-endian sync header (`smb2_build_header`/`smb2_parse_header`, ProtocolId + StructureSize validated), the NEGOTIATE request builder (dialects 2.0.2/2.1/3.0/3.0.2 + client GUID), and the NEGOTIATE response parser (chosen dialect, server GUID, max sizes, the SPNEGO/NTLM security token, bounds-checked). Field layout verified vs MS-SMB2 §2.2.1.2/§2.2.3/§2.2.4; `native_smb`, 6 cases. **Increment 2 shipped** (services/smb/smb_md): the NTLM digests the lib lacked - **MD4 (RFC 1320), MD5 (RFC 1321), HMAC-MD5 (RFC 2104)**, streaming + zero-heap, KAT-verified against the RFC vectors + the well-known NT hash of "password" (`test_smb_crypto`, 5 cases). **Increment 3 shipped** (services/smb/ntlm): the NTLMv2 response computation (MS-NLMP §3.3.2) - `ntlm_nt_hash`, `ntlm_ntowfv2`, `ntlm_v2_response` (NTProofStr / NtChallengeResponse / SessionBaseKey), verified byte-for-byte vs the MS-NLMP §4.2 worked example (`test_ntlm`, 3 cases). **Increment 4 shipped** (services/smb/ntlmssp): the NTLMSSP message codec (MS-NLMP §2.2.1) - `ntlmssp_build_negotiate` (type 1), `ntlmssp_parse_challenge` (type 2, extracts server challenge + target info, bounds-checked), `ntlmssp_build_authenticate` (type 3, Len/MaxLen/Offset payload layout); an end-to-end test parses a CHALLENGE, computes the NTLMv2 response, and confirms the AUTHENTICATE carries it (`test_ntlmssp`, 5 cases). **Increment 5 shipped** (services/smb/spnego): the SPNEGO GSS-API DER wrapping (RFC 4178) - `spnego_wrap_negotiate` (the `[APPLICATION 0]` InitialContextToken advertising the NTLM mech OID + the NTLMSSP NEGOTIATE mechToken), `spnego_parse_response` (extracts the CHALLENGE responseToken from the server NegTokenResp, skipping negState/supportedMech), and `spnego_wrap_authenticate` (the reply NegTokenResp); zero-heap definite-length DER, verified byte-exact + round-trip + independently vs `openssl asn1parse` (`test_spnego`, 4 cases). **Increment 6 shipped** (services/smb/smb2): the SMB2 SESSION_SETUP request/response framing (MS-SMB2 §2.2.5/§2.2.6) - `smb2_build_session_setup` (SecurityMode + PreviousSessionId + the SPNEGO security buffer at offset 88, echoing the server SessionId on round 2) and `smb2_parse_session_setup_response` (StructureSize 9, SessionFlags, server security buffer, bounds-checked; the caller reads SessionId + STATUS_MORE_PROCESSING_REQUIRED/SUCCESS from the header); an end-to-end test routes a full auth round through framing -> SPNEGO -> NTLMSSP and recovers the server challenge intact (`test_smb2`, now 10 cases). **Increment 7 shipped** (services/smb/smb2): the file commands TREE_CONNECT / CREATE / CLOSE (MS-SMB2 §2.2.9-§2.2.16) - `smb2_build_tree_connect` + parse (connect `\\server\share`, TreeId from the response header, ShareType disk/pipe/print), `smb2_build_create` + parse (open/create with DesiredAccess/ShareAccess/CreateDisposition/CreateOptions, returns the 16-byte FileId + EndofFile), `smb2_build_close` + parse (`test_smb2`, now 15 cases). **Increment 8 shipped** (services/smb/smb2): READ / WRITE (MS-SMB2 §2.2.19-§2.2.22) - `smb2_build_read` + parse (read a length at a file offset, response data returned bounds-checked as a pointer into the message) and `smb2_build_write` + parse (write a buffer at an offset, response reports the byte count) (`test_smb2`, now 19 cases). **The SMB2 client codec is complete**: NEGOTIATE -> SESSION_SETUP (NTLMv2 over SPNEGO) -> TREE_CONNECT -> CREATE -> READ / WRITE -> CLOSE. **Client engine shipped** (services/smb/smb_client): `smb_open` drives the whole NEGOTIATE -> two-round NTLMv2 SESSION_SETUP -> TREE_CONNECT -> CREATE handshake over a send/recv seam (Direct-TCP framing + the NTLMSSP/SPNEGO token flow + MsvAvTimestamp extraction handled internally) and returns an `SmbHandle`; `smb_read` / `smb_write` loop the READ / WRITE commands in DETWS_SMB_BUF-sized chunks (read stops at a short read / STATUS_END_OF_FILE, write grows the cached file size); `smb_close` releases the handle - a POSIX-like open/read/write/close surface, host-tested end to end with a scripted mock SMB2 server (`test_smb_client`, 10 cases: the handshake happy path + auth failure / bad share / not found / IO error / arg validation, plus multi-chunk read, read-past-EOF, multi-chunk write, and a byte-exact write-then-read round trip). **Example shipped** (`examples/L7-Application/68.SmbFileClient`): reads a file off a share on a real device (WiFi -> det_client:445 -> smb_open/smb_read/smb_close), showing the `cl_send`/`cl_recv` glue that binds the send/recv seam to `det_client`; a from-scratch README (set up a Samba share, the CHANGE ME fields, an SmbResult troubleshooting table); ESP32-compile-verified via `pio ci` (esp32dev, Flash 69.4%). _Only remainder:_ HW-verify the round trip against a real Samba / Windows share (needs a share to point at). SMB 3.1.1 (negotiate contexts + preauth integrity) + the NTLMSSP MIC + SMB2 signing are later options.
-- [x] MTConnect follow-ups _(done)_: the `probe` (device model) document - `detws_mtc_devices_begin/add_item/end` build an MTConnectDevices doc (a `<Device>` with its `<DataItems>`, optional `name`/`units`); the `asset` document - `detws_mtc_assets_begin` + `detws_mtc_assets_cutting_tool_begin`/`_tool_life`/`_cutting_tool_end` + `detws_mtc_assets_end` build an MTConnectAssets doc (a `<CuttingTool>` with its `<CuttingToolLifeCycle>`/`<ToolLife>`, optional `serialNumber`/`toolId`/`deviceUuid`/`timestamp`/`limit`); and the streaming `sample` sequence cursor - `DetwsMtcSampleBuffer` (a fixed ring, `detws_mtc_sample_buffer_init`/`_add`) with `detws_mtc_sample_query` replaying a from/count window as an MTConnectStreams document whose header carries firstSequence/lastSequence/nextSequence (MTC1.4 §6.7, oldest evicted + firstSequence advances when full). All tested in `test_mtconnect` (12 cases). The MTConnect agent's read documents (current/sample/probe/asset) are now complete.
+- [x] FTP client _(done)_: many controllers (Fanuc, Haas, Mazak, Heidenhain) expose program storage over FTP - a small RFC 959 client (control + passive data channel) to push/pull `.nc` files. `DWS_ENABLE_FTP` (services/ftp): the pure wire codec - `ftp_build_command` / `ftp_build_port` / `ftp_build_eprt` (RFC 2428) build control commands, `ftp_parse_reply` detects a complete single/multi-line 3-digit reply and reports the bytes consumed, and `ftp_parse_pasv` / `ftp_parse_epsv` decode the data-channel address. Reply / PASV / EPSV parsing verified against authentic strings captured from a live FTP server (`native_ftp`, 13 cases); the two sockets are the application's. _Follow-up:_ an example that runs a RETR/STOR over the `dws_client` transport (needs a real FTP server / controller to HW-verify), and the SMB/CIFS item below for Windows-share storage.
+- [~] SMB/CIFS client: Windows-share program storage is the other common file path - a minimal SMB2 client (negotiate / session-setup / tree-connect / create / read / write) to read and write programs on a share. **Increment 1 shipped** (`DWS_ENABLE_SMB`, services/smb): the pure SMB2 wire codec - the Direct-TCP transport frame, the 64-byte little-endian sync header (`smb2_build_header`/`smb2_parse_header`, ProtocolId + StructureSize validated), the NEGOTIATE request builder (dialects 2.0.2/2.1/3.0/3.0.2 + client GUID), and the NEGOTIATE response parser (chosen dialect, server GUID, max sizes, the SPNEGO/NTLM security token, bounds-checked). Field layout verified vs MS-SMB2 §2.2.1.2/§2.2.3/§2.2.4; `native_smb`, 6 cases. **Increment 2 shipped** (services/smb/smb_md): the NTLM digests the lib lacked - **MD4 (RFC 1320), MD5 (RFC 1321), HMAC-MD5 (RFC 2104)**, streaming + zero-heap, KAT-verified against the RFC vectors + the well-known NT hash of "password" (`test_smb_crypto`, 5 cases). **Increment 3 shipped** (services/smb/ntlm): the NTLMv2 response computation (MS-NLMP §3.3.2) - `ntlm_nt_hash`, `ntlm_ntowfv2`, `ntlm_v2_response` (NTProofStr / NtChallengeResponse / SessionBaseKey), verified byte-for-byte vs the MS-NLMP §4.2 worked example (`test_ntlm`, 3 cases). **Increment 4 shipped** (services/smb/ntlmssp): the NTLMSSP message codec (MS-NLMP §2.2.1) - `ntlmssp_build_negotiate` (type 1), `ntlmssp_parse_challenge` (type 2, extracts server challenge + target info, bounds-checked), `ntlmssp_build_authenticate` (type 3, Len/MaxLen/Offset payload layout); an end-to-end test parses a CHALLENGE, computes the NTLMv2 response, and confirms the AUTHENTICATE carries it (`test_ntlmssp`, 5 cases). **Increment 5 shipped** (services/smb/spnego): the SPNEGO GSS-API DER wrapping (RFC 4178) - `spnego_wrap_negotiate` (the `[APPLICATION 0]` InitialContextToken advertising the NTLM mech OID + the NTLMSSP NEGOTIATE mechToken), `spnego_parse_response` (extracts the CHALLENGE responseToken from the server NegTokenResp, skipping negState/supportedMech), and `spnego_wrap_authenticate` (the reply NegTokenResp); zero-heap definite-length DER, verified byte-exact + round-trip + independently vs `openssl asn1parse` (`test_spnego`, 4 cases). **Increment 6 shipped** (services/smb/smb2): the SMB2 SESSION_SETUP request/response framing (MS-SMB2 §2.2.5/§2.2.6) - `smb2_build_session_setup` (SecurityMode + PreviousSessionId + the SPNEGO security buffer at offset 88, echoing the server SessionId on round 2) and `smb2_parse_session_setup_response` (StructureSize 9, SessionFlags, server security buffer, bounds-checked; the caller reads SessionId + STATUS_MORE_PROCESSING_REQUIRED/SUCCESS from the header); an end-to-end test routes a full auth round through framing -> SPNEGO -> NTLMSSP and recovers the server challenge intact (`test_smb2`, now 10 cases). **Increment 7 shipped** (services/smb/smb2): the file commands TREE_CONNECT / CREATE / CLOSE (MS-SMB2 §2.2.9-§2.2.16) - `smb2_build_tree_connect` + parse (connect `\\server\share`, TreeId from the response header, ShareType disk/pipe/print), `smb2_build_create` + parse (open/create with DesiredAccess/ShareAccess/CreateDisposition/CreateOptions, returns the 16-byte FileId + EndofFile), `smb2_build_close` + parse (`test_smb2`, now 15 cases). **Increment 8 shipped** (services/smb/smb2): READ / WRITE (MS-SMB2 §2.2.19-§2.2.22) - `smb2_build_read` + parse (read a length at a file offset, response data returned bounds-checked as a pointer into the message) and `smb2_build_write` + parse (write a buffer at an offset, response reports the byte count) (`test_smb2`, now 19 cases). **The SMB2 client codec is complete**: NEGOTIATE -> SESSION_SETUP (NTLMv2 over SPNEGO) -> TREE_CONNECT -> CREATE -> READ / WRITE -> CLOSE. **Client engine shipped** (services/smb/smb_client): `smb_open` drives the whole NEGOTIATE -> two-round NTLMv2 SESSION_SETUP -> TREE_CONNECT -> CREATE handshake over a send/recv seam (Direct-TCP framing + the NTLMSSP/SPNEGO token flow + MsvAvTimestamp extraction handled internally) and returns an `SmbHandle`; `smb_read` / `smb_write` loop the READ / WRITE commands in DWS_SMB_BUF-sized chunks (read stops at a short read / STATUS_END_OF_FILE, write grows the cached file size); `smb_close` releases the handle - a POSIX-like open/read/write/close surface, host-tested end to end with a scripted mock SMB2 server (`test_smb_client`, 10 cases: the handshake happy path + auth failure / bad share / not found / IO error / arg validation, plus multi-chunk read, read-past-EOF, multi-chunk write, and a byte-exact write-then-read round trip). **Example shipped** (`examples/L7-Application/68.SmbFileClient`): reads a file off a share on a real device (WiFi -> dws_client:445 -> smb_open/smb_read/smb_close), showing the `cl_send`/`cl_recv` glue that binds the send/recv seam to `dws_client`; a from-scratch README (set up a Samba share, the CHANGE ME fields, an SmbResult troubleshooting table); ESP32-compile-verified via `pio ci` (esp32dev, Flash 69.4%). _Only remainder:_ HW-verify the round trip against a real Samba / Windows share (needs a share to point at). SMB 3.1.1 (negotiate contexts + preauth integrity) + the NTLMSSP MIC + SMB2 signing are later options.
+- [x] MTConnect follow-ups _(done)_: the `probe` (device model) document - `dws_mtc_devices_begin/add_item/end` build an MTConnectDevices doc (a `<Device>` with its `<DataItems>`, optional `name`/`units`); the `asset` document - `dws_mtc_assets_begin` + `dws_mtc_assets_cutting_tool_begin`/`_tool_life`/`_cutting_tool_end` + `dws_mtc_assets_end` build an MTConnectAssets doc (a `<CuttingTool>` with its `<CuttingToolLifeCycle>`/`<ToolLife>`, optional `serialNumber`/`toolId`/`deviceUuid`/`timestamp`/`limit`); and the streaming `sample` sequence cursor - `DetwsMtcSampleBuffer` (a fixed ring, `dws_mtc_sample_buffer_init`/`_add`) with `dws_mtc_sample_query` replaying a from/count window as an MTConnectStreams document whose header carries firstSequence/lastSequence/nextSequence (MTC1.4 §6.7, oldest evicted + firstSequence advances when full). All tested in `test_mtconnect` (12 cases). The MTConnect agent's read documents (current/sample/probe/asset) are now complete.
 
 ### Routing / forwarding / inspection
 
 Building on the existing forwarder (`native_forward` / `native_gateway` / `native_southbound`) toward the v5 "interface forwarding" milestone.
 
-- [x] Route-by-tag to interface _(done)_: let a rule tag a flow (by source, destination, port, protocol, or a match expression) and bind that tag to an egress interface, so tagged traffic leaves a chosen NIC / radio - policy routing layered on the forwarder. `det_forward_route_add(src, offset, pattern, mask, patlen, egress_if, rate_cap)` (services/forward): a frame matching the byte pattern (the same offset/mask primitive as the ACL, so it keys on EtherType / IP-proto / port / address-prefix - any field at a known offset) is forwarded only to `egress_if`, taking precedence over the src->dst fan-out (first-match-wins), with the same never-reflect / rate-cap / fail-closed guarantees and a `policy_routed` stat. Static table `DETWS_FWD_MAX_ROUTES`; additive (empty by default = no behavior change). `native_forward` +7 cases (23 total).
-- [x] Port forwarding _(done, HW-verified)_: DNAT-style forward of an inbound port to an internal `host:port` (and the return path), so the server can publish a service that lives behind it. **Engine shipped** (`DETWS_ENABLE_RELAY`, services/relay): `det_relay_step` is a pure, non-blocking bidirectional byte pump over two send/recv seams (inbound connection <-> origin `det_client`), with backpressure carry and independent half-close (each direction finishes on its source's EOF; the peer's optional `shutdown` seam propagates the FIN). New knob `DETWS_RELAY_BUF`. Host-tested with two mock sockets (bidirectional transfer, backpressure, half-close + shutdown propagation, a large byte-exact transfer, a seam error, out-of-band EOF; `native_relay`, 6 cases). **Server-side listener shipped** (services/relay/relay_listener, `PROTO_RELAY`): `server.listen(port, PROTO_RELAY)` + `det_relay_publish(listener_id, origin_host, origin_port)` installs a connection handler that dials the origin via `det_client` on each inbound accept, pumps `det_relay_step` from the server poll loop, and tears both down on close (fixed static bind/bridge tables; opt-in, compiled out by default). **Example shipped** (`examples/L7-Application/70.PortForward`, ESP32-link-verified via `pio ci`, Flash 70.6%; README has a machine-less `python -m http.server` + `curl` test). **HW-verified 2026-07-13** on an ESP32-S3 over a W5500 wired link: a 1 MB file pulled through the board's front port (8080 -> origin :8000) matched the origin's SHA256 **byte-exact**. Throughput ~44 KB/s - a single-NIC relay crosses the one W5500 twice per byte and is round-trip-latency bound (the design point is exposing a service / small control files, not bulk throughput).
-- [x] Optional packet inspection _(done)_: an opt-in inspection hook on the forwarding path (parse / observe / filter before forward) for logging, metrics, or drop rules. Off by default (cost + privacy); a build-time + runtime toggle. `DETWS_FWD_INSPECT` (build-time, compiles the hook out entirely when off) + `det_forward_set_inspector(fn, ctx)` (runtime; null clears): a flexible app callback runs on every ingress frame after the ACL and before routing, returning `DET_FWD_INSPECT_PASS`/`DROP` (a drop is counted as `inspect_dropped`). `native_forward` +3 cases (26 total).
+- [x] Route-by-tag to interface _(done)_: let a rule tag a flow (by source, destination, port, protocol, or a match expression) and bind that tag to an egress interface, so tagged traffic leaves a chosen NIC / radio - policy routing layered on the forwarder. `dws_forward_route_add(src, offset, pattern, mask, patlen, egress_if, rate_cap)` (services/forward): a frame matching the byte pattern (the same offset/mask primitive as the ACL, so it keys on EtherType / IP-proto / port / address-prefix - any field at a known offset) is forwarded only to `egress_if`, taking precedence over the src->dst fan-out (first-match-wins), with the same never-reflect / rate-cap / fail-closed guarantees and a `policy_routed` stat. Static table `DWS_FWD_MAX_ROUTES`; additive (empty by default = no behavior change). `native_forward` +7 cases (23 total).
+- [x] Port forwarding _(done, HW-verified)_: DNAT-style forward of an inbound port to an internal `host:port` (and the return path), so the server can publish a service that lives behind it. **Engine shipped** (`DWS_ENABLE_RELAY`, services/relay): `dws_relay_step` is a pure, non-blocking bidirectional byte pump over two send/recv seams (inbound connection <-> origin `dws_client`), with backpressure carry and independent half-close (each direction finishes on its source's EOF; the peer's optional `shutdown` seam propagates the FIN). New knob `DWS_RELAY_BUF`. Host-tested with two mock sockets (bidirectional transfer, backpressure, half-close + shutdown propagation, a large byte-exact transfer, a seam error, out-of-band EOF; `native_relay`, 6 cases). **Server-side listener shipped** (services/relay/relay_listener, `PROTO_RELAY`): `server.listen(port, PROTO_RELAY)` + `dws_relay_publish(listener_id, origin_host, origin_port)` installs a connection handler that dials the origin via `dws_client` on each inbound accept, pumps `dws_relay_step` from the server poll loop, and tears both down on close (fixed static bind/bridge tables; opt-in, compiled out by default). **Example shipped** (`examples/L7-Application/70.PortForward`, ESP32-link-verified via `pio ci`, Flash 70.6%; README has a machine-less `python -m http.server` + `curl` test). **HW-verified 2026-07-13** on an ESP32-S3 over a W5500 wired link: a 1 MB file pulled through the board's front port (8080 -> origin :8000) matched the origin's SHA256 **byte-exact**. Throughput ~44 KB/s - a single-NIC relay crosses the one W5500 twice per byte and is round-trip-latency bound (the design point is exposing a service / small control files, not bulk throughput).
+- [x] Optional packet inspection _(done)_: an opt-in inspection hook on the forwarding path (parse / observe / filter before forward) for logging, metrics, or drop rules. Off by default (cost + privacy); a build-time + runtime toggle. `DWS_FWD_INSPECT` (build-time, compiles the hook out entirely when off) + `dws_forward_set_inspector(fn, ctx)` (runtime; null clears): a flexible app callback runs on every ingress frame after the ACL and before routing, returning `DWS_FWD_INSPECT_PASS`/`DROP` (a drop is counted as `inspect_dropped`). `native_forward` +3 cases (26 total).
 
 ### Content delivery network (CDN) capability
 
 Let the device act as a caching edge / content-distribution node, not just an origin. Builds on what already exists (file serving, ETag, Range/206, the reverse-proxy `Forwarded` recovery, the forwarder, and the new SD data-store stack) toward serving and replicating content near where it is consumed. Unpolished; **scope to refine with the user** (which role(s), how content is keyed/invalidated, single-device vs the two-rig / mesh case).
 
-- [x] Edge cache for upstream content _(done, HW-verified)_: `DETWS_ENABLE_EDGE_CACHE` (services/edge_cache) - a caching reverse-proxy edge. The **pure engine** (edge_cache): RFC 9111 freshness (`Cache-Control` / `Expires` / heuristic / corrected age over the monotonic clock), the response header-field + HTTP-date parsing httpcache lacks (IMF-fixdate / RFC 850 / asctime), the canonical cache key + SHA-256 digest + `Vary` secondary key, the L1 LRU/TTL store + storeability rules, and conditional revalidation (build `If-None-Match`/`If-Modified-Since`, apply 304). The **async origin-fetch engine** (edge_fetch) accumulates the origin response over a det_client seam (completion by Content-Length / chunked / close) and never stalls the worker. The **glue** (edge_cache_proxy) registers a cache middleware + an async-fetch poll hook (`edge_poll_hook` in `http_poll_slot`): a fresh hit serves from RAM via `send_chunked`, a miss/stale entry suspends the client request and fetches the origin, non-cacheable/error responses use a transient slot, and every failure fails open. `det_edge_cache_enable(server)` + `det_edge_cache_map(prefix, origin)`; replays `Content-Encoding`/`ETag`/`Last-Modified`/`Age`. Host-tested (`native_edge_cache`, 30 cases) and **HW-verified on an ESP32-S3** fetching a real origin over WiFi (example 79.EdgeCache): MISS -> HIT -> REVALIDATED(304) -> purge all **byte-exact**, the origin fetched exactly once per miss, a stale entry refreshed with a cheap 304 (no body re-download). The **L2 SD tier** (edge_cache_sd, gated `DETWS_ENABLE_DBM`) now spills evicted L1 entries to a dbm store on the WAL (SD-backed) and promotes them back on a miss: a compact versioned entry<->dbm-value serialization keyed by the 32-byte cache-key digest, an `on_evict` write-back hook on the L1 store, promote-on-miss forced to revalidate (the monotonic insert time is meaningless across a reboot, so only validator-carrying entries are spilled - a cheap 304 refreshes them), reboot survival via dbm index replay, and L2-aware purge/reset (foreign values in a shared dbm are left untouched). `det_edge_cache_bind_sd(dbm)`; host-tested over a RAM `WalDev` (`native_edge_cache_sd`, 15 cases) incl. serialize roundtrip, spill/promote, oversize-stays-L1, reboot survival, and prefix purge. **Range/`206`** is served straight from a cached body (gated `DETWS_ENABLE_RANGE`): a single-range `Range` request yields `206 Partial Content` + `Content-Range` over the existing `send_chunked` cursor (windowed `off..end`), `416` when unsatisfiable, `Accept-Ranges: bytes` on full hits, via the shared `server/http_range.h` parser reused with the file server. The client `Range` is captured at middleware time into a per-slot buffer because `http_pool[slot]` is reset/reused by the time a miss is served from the poll (an HW-caught bug, see BUGS.md). **`https://` origins** are supported (gated `DETWS_ENABLE_EDGE_ORIGIN_TLS`): a per-route TLS transport layers the shared client-TLS session (`det_tls_csess`) over `det_client` (BIO wrappers mirroring the MQTT/WS clients), selected per route via a `bool https` on the route map and threaded through the fetch slot; the handshake blocks briefly in the transport's `open` (like `det_client_open`'s connect and the MQTT/WS clients), and a `det_tls_client_session_active()` guard fails open rather than tearing down a live shared session (so one TLS origin fetch runs at a time). Verification is off by default (encrypt-only); `det_edge_cache_set_origin_ca` / `_pin` opt into chain+hostname or pin verification (shared client-TLS trust store). **HW-verified on an ESP32-S3** against a real https origin: encrypt-only fetch byte-exact, a correct CA verifies + a wrong CA is rejected (fail-open), and Range/`206` works over the TLS-fetched body. Note: on mbedtls v2 (espressif32 default) an IP-address origin needs a CN-matching cert (IP-address SANs are not matched; DNS origins work normally). **Cross-device mesh** (sibling cache) is shipped too - see the mesh/edge item below (`DETWS_ENABLE_EDGE_MESH`, example 80). _Remaining:_ a holistic fix for the `http_pool[slot]`-goes-stale-after-the-async-fetch root cause (a miss response is emitted `HTTP/1.0`/`Connection: close`, and a `Vary` response cached on a miss stores an empty secondary key - both pre-existing efficiency issues, never a wrong-content serve) by snapshotting the client request across the suspend; and two TLS-origin follow-ups (an async handshake so a cold https MISS never blocks the worker, and a multi-instance client-session pool for >1 concurrent TLS fetch).
-- [x] Cache key + invalidation _(done)_: the deterministic key (method + host + path, SHA-256 digested - also the L2 dbm key) + `Vary` as a secondary key (each variant re-serialized against the request); the purge API `det_edge_cache_purge` (single) / `det_edge_cache_purge_prefix` (prefix/wildcard); TTL expiry + LRU eviction in the bounded store. Part of services/edge_cache above.
-- [x] Origin-side cache directives _(done)_: first-class helpers to emit correct edge-cacheable responses from app routes (immutable static assets, `stale-while-revalidate`, `s-maxage`), so a device sitting _behind_ a real CDN is cached correctly. `DETWS_ENABLE_HTTP_CACHE` (services/httpcache): `cache_control_build` serializes a `DetwsCacheControl` struct into the canonical directive string (pass to `set_cache_control()`) with presets `cache_immutable_asset` / `cache_shared` / `cache_revalidatable` / `cache_no_store`; `cache_control_parse` is a tolerant reader; `cache_freshness_lifetime` implements the RFC 9111 4.2.1 precedence. Verified vs RFC 9111 (+ RFC 8246 `immutable`, RFC 5861 stale-*); `native_httpcache`, 8 cases incl. a build->parse round-trip. This is the standards-mechanics layer; the caching **tier** (below) is the remaining architectural piece to scope with the user.
-- [x] Content distribution across devices (mesh/edge) _(done, HW-verified)_: a fleet shares one warm cache. `DETWS_ENABLE_EDGE_MESH` (services/edge_cache/edge_mesh) - the design pass resolved as **pull (sibling cache), not push**: on a full local miss a node queries its static sibling peers over a plaintext `ConnProto::PROTO_MESH` TCP link before the origin, and pulls a fresh copy from whichever peer has it, so the origin is fetched once per fleet. **Consistency** is RFC 9111 §4.2.3 age propagation (the transfer carries the object's freshness/age, reusing `edge_current_age()`), so a sibling-fresh object serves for its remaining lifetime with zero origin contact - no invalidation protocol, no consistency window (a stale peer copy self-expires by TTL, the puller re-checks freshness). **Addressing** is a static peer list (`det_edge_cache_add_peer`). The wire frame reuses the shared `edge_sd` entry serializer + a timing trailer; the puller ships a bounded request-header snapshot so the peer re-runs the exact `edge_store_find` Vary matcher. A serving node (`det_edge_cache_mesh_serve` after `server.listen(port, PROTO_MESH)`) answers only from its LOCAL cache - one hop, never re-querying its own origin/peers, so the fleet cannot loop. The query is a pre-origin phase of the same async fetch slot (reusing that slot's origin buffer, so no extra per-slot memory) pumped from the poll loop; a peer MISS / exhausted list transitions to the ordinary origin fetch. Pure wire codec + peer-query engine host-tested (`native_edge_mesh`: frame round-trips, age propagation, HIT/MISS/timeout/close), example 80. _Follow-ups:_ a TLS sibling link, UDP-broadcast peer auto-discovery, and push replication with invalidation.
-- [x] Range-aware + chunked delivery from the cache _(done)_: a cached object serves a single-range `Range: bytes=...` request as `206 Partial Content` with a `Content-Range` header (or `416` when unsatisfiable), streaming just the requested window through the existing constant-memory `send_chunked` cursor with backpressure; every full hit advertises `Accept-Ranges: bytes`. Gated `DETWS_ENABLE_RANGE` (now usable by the edge cache without file serving). The single-range parser is promoted to a shared owner `server/http_range.h` (`http_parse_byte_range`) reused by both the static file server and the cache; multi-range falls back to a full 200 (RFC 7233 §3.1), `If-Range` is a documented follow-up. Host-tested (`native_edge_cache` range-math cases; `native_range` regression green after the promotion).
+- [x] Edge cache for upstream content _(done, HW-verified)_: `DWS_ENABLE_EDGE_CACHE` (services/edge_cache) - a caching reverse-proxy edge. The **pure engine** (edge_cache): RFC 9111 freshness (`Cache-Control` / `Expires` / heuristic / corrected age over the monotonic clock), the response header-field + HTTP-date parsing httpcache lacks (IMF-fixdate / RFC 850 / asctime), the canonical cache key + SHA-256 digest + `Vary` secondary key, the L1 LRU/TTL store + storeability rules, and conditional revalidation (build `If-None-Match`/`If-Modified-Since`, apply 304). The **async origin-fetch engine** (edge_fetch) accumulates the origin response over a dws_client seam (completion by Content-Length / chunked / close) and never stalls the worker. The **glue** (edge_cache_proxy) registers a cache middleware + an async-fetch poll hook (`edge_poll_hook` in `http_poll_slot`): a fresh hit serves from RAM via `send_chunked`, a miss/stale entry suspends the client request and fetches the origin, non-cacheable/error responses use a transient slot, and every failure fails open. `dws_edge_cache_enable(server)` + `dws_edge_cache_map(prefix, origin)`; replays `Content-Encoding`/`ETag`/`Last-Modified`/`Age`. Host-tested (`native_edge_cache`, 30 cases) and **HW-verified on an ESP32-S3** fetching a real origin over WiFi (example 79.EdgeCache): MISS -> HIT -> REVALIDATED(304) -> purge all **byte-exact**, the origin fetched exactly once per miss, a stale entry refreshed with a cheap 304 (no body re-download). The **L2 SD tier** (edge_cache_sd, gated `DWS_ENABLE_DBM`) now spills evicted L1 entries to a dbm store on the WAL (SD-backed) and promotes them back on a miss: a compact versioned entry<->dbm-value serialization keyed by the 32-byte cache-key digest, an `on_evict` write-back hook on the L1 store, promote-on-miss forced to revalidate (the monotonic insert time is meaningless across a reboot, so only validator-carrying entries are spilled - a cheap 304 refreshes them), reboot survival via dbm index replay, and L2-aware purge/reset (foreign values in a shared dbm are left untouched). `dws_edge_cache_bind_sd(dbm)`; host-tested over a RAM `WalDev` (`native_edge_cache_sd`, 15 cases) incl. serialize roundtrip, spill/promote, oversize-stays-L1, reboot survival, and prefix purge. **Range/`206`** is served straight from a cached body (gated `DWS_ENABLE_RANGE`): a single-range `Range` request yields `206 Partial Content` + `Content-Range` over the existing `send_chunked` cursor (windowed `off..end`), `416` when unsatisfiable, `Accept-Ranges: bytes` on full hits, via the shared `server/http_range.h` parser reused with the file server. The client `Range` is captured at middleware time into a per-slot buffer because `http_pool[slot]` is reset/reused by the time a miss is served from the poll (an HW-caught bug, see BUGS.md). **`https://` origins** are supported (gated `DWS_ENABLE_EDGE_ORIGIN_TLS`): a per-route TLS transport layers the shared client-TLS session (`dws_tls_csess`) over `dws_client` (BIO wrappers mirroring the MQTT/WS clients), selected per route via a `bool https` on the route map and threaded through the fetch slot; the handshake blocks briefly in the transport's `open` (like `dws_client_open`'s connect and the MQTT/WS clients), and a `dws_tls_client_session_active()` guard fails open rather than tearing down a live shared session (so one TLS origin fetch runs at a time). Verification is off by default (encrypt-only); `dws_edge_cache_set_origin_ca` / `_pin` opt into chain+hostname or pin verification (shared client-TLS trust store). **HW-verified on an ESP32-S3** against a real https origin: encrypt-only fetch byte-exact, a correct CA verifies + a wrong CA is rejected (fail-open), and Range/`206` works over the TLS-fetched body. Note: on mbedtls v2 (espressif32 default) an IP-address origin needs a CN-matching cert (IP-address SANs are not matched; DNS origins work normally). **Cross-device mesh** (sibling cache) is shipped too - see the mesh/edge item below (`DWS_ENABLE_EDGE_MESH`, example 80). _Remaining:_ a holistic fix for the `http_pool[slot]`-goes-stale-after-the-async-fetch root cause (a miss response is emitted `HTTP/1.0`/`Connection: close`, and a `Vary` response cached on a miss stores an empty secondary key - both pre-existing efficiency issues, never a wrong-content serve) by snapshotting the client request across the suspend; and two TLS-origin follow-ups (an async handshake so a cold https MISS never blocks the worker, and a multi-instance client-session pool for >1 concurrent TLS fetch).
+- [x] Cache key + invalidation _(done)_: the deterministic key (method + host + path, SHA-256 digested - also the L2 dbm key) + `Vary` as a secondary key (each variant re-serialized against the request); the purge API `dws_edge_cache_purge` (single) / `dws_edge_cache_purge_prefix` (prefix/wildcard); TTL expiry + LRU eviction in the bounded store. Part of services/edge_cache above.
+- [x] Origin-side cache directives _(done)_: first-class helpers to emit correct edge-cacheable responses from app routes (immutable static assets, `stale-while-revalidate`, `s-maxage`), so a device sitting _behind_ a real CDN is cached correctly. `DWS_ENABLE_HTTP_CACHE` (services/httpcache): `cache_control_build` serializes a `DetwsCacheControl` struct into the canonical directive string (pass to `set_cache_control()`) with presets `cache_immutable_asset` / `cache_shared` / `cache_revalidatable` / `cache_no_store`; `cache_control_parse` is a tolerant reader; `cache_freshness_lifetime` implements the RFC 9111 4.2.1 precedence. Verified vs RFC 9111 (+ RFC 8246 `immutable`, RFC 5861 stale-*); `native_httpcache`, 8 cases incl. a build->parse round-trip. This is the standards-mechanics layer; the caching **tier** (below) is the remaining architectural piece to scope with the user.
+- [x] Content distribution across devices (mesh/edge) _(done, HW-verified)_: a fleet shares one warm cache. `DWS_ENABLE_EDGE_MESH` (services/edge_cache/edge_mesh) - the design pass resolved as **pull (sibling cache), not push**: on a full local miss a node queries its static sibling peers over a plaintext `ConnProto::PROTO_MESH` TCP link before the origin, and pulls a fresh copy from whichever peer has it, so the origin is fetched once per fleet. **Consistency** is RFC 9111 §4.2.3 age propagation (the transfer carries the object's freshness/age, reusing `edge_current_age()`), so a sibling-fresh object serves for its remaining lifetime with zero origin contact - no invalidation protocol, no consistency window (a stale peer copy self-expires by TTL, the puller re-checks freshness). **Addressing** is a static peer list (`dws_edge_cache_add_peer`). The wire frame reuses the shared `edge_sd` entry serializer + a timing trailer; the puller ships a bounded request-header snapshot so the peer re-runs the exact `edge_store_find` Vary matcher. A serving node (`dws_edge_cache_mesh_serve` after `server.listen(port, PROTO_MESH)`) answers only from its LOCAL cache - one hop, never re-querying its own origin/peers, so the fleet cannot loop. The query is a pre-origin phase of the same async fetch slot (reusing that slot's origin buffer, so no extra per-slot memory) pumped from the poll loop; a peer MISS / exhausted list transitions to the ordinary origin fetch. Pure wire codec + peer-query engine host-tested (`native_edge_mesh`: frame round-trips, age propagation, HIT/MISS/timeout/close), example 80. _Follow-ups:_ a TLS sibling link, UDP-broadcast peer auto-discovery, and push replication with invalidation.
+- [x] Range-aware + chunked delivery from the cache _(done)_: a cached object serves a single-range `Range: bytes=...` request as `206 Partial Content` with a `Content-Range` header (or `416` when unsatisfiable), streaming just the requested window through the existing constant-memory `send_chunked` cursor with backpressure; every full hit advertises `Accept-Ranges: bytes`. Gated `DWS_ENABLE_RANGE` (now usable by the edge cache without file serving). The single-range parser is promoted to a shared owner `server/http_range.h` (`http_parse_byte_range`) reused by both the static file server and the cache; multi-range falls back to a full 200 (RFC 7233 §3.1), `If-Range` is a documented follow-up. Host-tested (`native_edge_cache` range-math cases; `native_range` regression green after the promotion).
 
 ### Pentesting
 
@@ -273,14 +273,14 @@ Let the device act as a caching edge / content-distribution node, not just an or
       structure-aware mutation of a valid image), the **Redis RESP decoder** (random bytes + lying `$`/`*`
       length prefixes that must not become an over-read), and the **OPC UA Binary parsers** (random bodies
       behind a valid UACP header, an `OPN` with a lying `SecurityPolicyUri` length, per-type size mismatches;
-      the NodesToRead/Write/Browse counts stay clamped), the **number parsers** (`det_strtol`/`_strtoul`/
+      the NodesToRead/Write/Browse counts stay clamped), the **number parsers** (`dws_strtol`/`_strtoul`/
       `_strtof` on huge integer + exponent strings), the **GraphQL query parser** (huge int / exponent
       literals), the **DNS server** query parse (QNAME over-read + response-builder out_cap), the **DNP3**
       data-link frame, and the **STOMP** frame parser (slice-bounds) - **38/38** cases pass plain and clean under
       ASan+UBSan (run the built `program` directly; the
       PIO runner mishandles the sanitizer binary's signals). Running the binary under `-fno-sanitize-recover=all`
       **found and fixed a whole class of signed-overflow UB + `10^exponent` DoS** in the hand-rolled number
-      parsers (SNMP BER, `det_strtol`, RESP, `det_strtof`, GraphQL, JWT, exc_decoder - see docs/BUGS.md; sweep
+      parsers (SNMP BER, `dws_strtol`, RESP, `dws_strtof`, GraphQL, JWT, exc_decoder - see docs/BUGS.md; sweep
       now complete). _Next candidates:_ the WebSocket frame reassembler (`ws_feed_byte` - needs the
       transport/session mocks wired into the env since it dispatches on frame-ready), and the WebDAV binary decoder.
 
@@ -305,12 +305,12 @@ native Unity tests before moving on. Each must keep the "no heap after
 
 - [x] **1. Custom response headers + cookies (high / easy).** _(done)_
       Per-connection `_extra_hdr[MAX_CONNS][EXTRA_HDR_BUF_SIZE]` buffer injected
-      into [`send()`](@ref DetWebServer::send) /
-      [`send_empty()`](@ref DetWebServer::send_empty) /
-      [`redirect()`](@ref DetWebServer::redirect), the same way the CORS block is
-      injected. New API: [`add_response_header()`](@ref DetWebServer::add_response_header),
-      [`set_cookie()`](@ref DetWebServer::set_cookie),
-      [`clear_response_headers()`](@ref DetWebServer::clear_response_headers).
+      into [`send()`](@ref DWS::send) /
+      [`send_empty()`](@ref DWS::send_empty) /
+      [`redirect()`](@ref DWS::redirect), the same way the CORS block is
+      injected. New API: [`add_response_header()`](@ref DWS::add_response_header),
+      [`set_cookie()`](@ref DWS::set_cookie),
+      [`clear_response_headers()`](@ref DWS::clear_response_headers).
       Oversized headers are dropped whole; the buffer is cleared at the start of
       each dispatch. Tested by `test_response_headers` (9 cases).
 
@@ -332,7 +332,7 @@ native Unity tests before moving on. Each must keep the "no heap after
 - [x] **4. Digest authentication (medium / medium).** _(done)_ HTTP Digest
       (RFC 7616, SHA-256, `qop=auth`) via the existing `ssh_sha256`, selected by
       the new `digest` flag on
-      [`on(..., realm, user, pass, digest=true)`](@ref DetWebServer::on).
+      [`on(..., realm, user, pass, digest=true)`](@ref DWS::on).
       Server nonce regenerated per `begin()`; challenge emitted by
       `send_unauth()`; verified by `check_digest_auth()`. The parser now
       captures the full `Authorization` value into a dedicated
@@ -350,7 +350,7 @@ native Unity tests before moving on. Each must keep the "no heap after
       bounds the replay window in the meantime.
 
 - [x] **5. Response templating (medium / medium).** _(done)_ `{{name}}`
-      substitution via [`send_template()`](@ref DetWebServer::send_template) with
+      substitution via [`send_template()`](@ref DWS::send_template) with
       a `TemplateVar` resolver callback. The body is walked twice (size, then
       write) so it is never buffered whole - constant memory regardless of body
       size. Unterminated/over-long placeholders are emitted literally; HEAD
@@ -360,25 +360,25 @@ native Unity tests before moving on. Each must keep the "no heap after
 - [x] **6. Middleware pipeline (high value / large).** _(done)_ Fixed-size,
       composable global middleware chain (cap `MAX_MIDDLEWARE`, default 4) run in
       registration order before route matching via
-      [`use()`](@ref DetWebServer::use). A [`Middleware`](@ref Middleware) returns
+      [`use()`](@ref DWS::use). A [`Middleware`](@ref Middleware) returns
       [`MW_NEXT`](@ref MwResult) to fall through or [`MW_HALT`](@ref MwResult) to
       short-circuit (after sending its own response); middlewares can also inject
       response headers / log every request (incl. unmatched 404s). Added a
       built-in fixed-window rate limiter,
-      [`enable_rate_limit(max, window_ms)`](@ref DetWebServer::enable_rate_limit),
+      [`enable_rate_limit(max, window_ms)`](@ref DWS::enable_rate_limit),
       that answers over-budget requests with `429` + `Retry-After` before the
       chain (cheapest rejection under flood); rollover-safe, per-server state, no
       per-IP table. Tested by `test_middleware` (9 cases).
       _Design note:_ CORS + Basic/Digest auth were **left as-is** (tested/green)
       rather than re-expressed as middlewares - the chain is additive and
       composes alongside them; "logging middleware" is the existing
-      [`on_request_log()`](@ref DetWebServer::on_request_log) hook plus any
+      [`on_request_log()`](@ref DWS::on_request_log) hook plus any
       user `use()` middleware. _Follow-up:_ per-route middleware attachment (a
       middleware can already gate on `req->path` in user code).
 
 - [x] **7. Chunked / streaming app responses (medium / medium).** _(done; pull
       generator since v4.5.0)_
-      [`send_chunked(slot, code, type, source, ctx)`](@ref DetWebServer::send_chunked)
+      [`send_chunked(slot, code, type, source, ctx)`](@ref DWS::send_chunked)
       writes the status + headers (`Transfer-Encoding: chunked`, plus CORS /
       queued custom headers), then pulls the body from a
       [`ChunkSource`](@ref ChunkSource) generator one piece at a time, frames each
@@ -389,16 +389,16 @@ native Unity tests before moving on. Each must keep the "no heap after
       truncated (the old one-shot `ChunkedResponse` writer silently truncated
       there). The source returns 0 to end and tracks its position in `ctx` (which
       must outlive the response). HEAD sends headers only;
-      [`on_request_log()`](@ref DetWebServer::on_request_log) reports the total body
+      [`on_request_log()`](@ref DWS::on_request_log) reports the total body
       length. Tested by `test_chunked` (10 cases, incl. a 16 KB body).
-      _Follow-up (done):_ `chunk_send_pump` sizes each chunk to `det_conn_sndbuf()`
+      _Follow-up (done):_ `chunk_send_pump` sizes each chunk to `dws_conn_sndbuf()`
       (reserving the frame overhead), flushes and resumes on the next loop when the
       window is full, and clamps a misbehaving source to the window - the same
       per-loop send-window backpressure `file_send_pump()` uses.
 
 - [x] **8. Stretch / lower priority.** _(resolved: the sub-items are shipped, except multi-MCU
       portability which is a closed won't-do per the user's standing request.)_
-  - [x] Regex routes _(done)_: [`on_regex()`](@ref DetWebServer::on_regex):
+  - [x] Regex routes _(done)_: [`on_regex()`](@ref DWS::on_regex):
         whole-path match via a bounded, allocation-free backtracker (`.`, `* + ?`,
         `[...]`/`[^...]` ranges, `\d \w \s`, `\` escapes; non-capturing). A
         `RE_MAX_STEPS` budget keeps it deterministic (fails closed). Tested by
@@ -409,7 +409,7 @@ native Unity tests before moving on. Each must keep the "no heap after
         readers (`src/network_drivers/presentation/json.*`). ArduinoJson stays optional (it heap-allocates).
         Tested by `test_json` (17 cases); example `10.Json`.
   - [x] Interface filters _(done)_: per-route STA/AP gate via
-        [`on(..., DetIface)`](@ref DetWebServer::on) + [`set_ap_ip()`](@ref DetWebServer::set_ap_ip).
+        [`on(..., DWSIface)`](@ref DWS::on) + [`set_ap_ip()`](@ref DWS::set_ap_ip).
         Each connection is tagged `DETIFACE_STA`/`DETIFACE_AP` at accept time by
         comparing its local IP to the softAP IP. Tested by `test_iface` (7 cases);
         example `09.InterfaceFilter`.
@@ -427,41 +427,41 @@ native Unity tests before moving on. Each must keep the "no heap after
 <details>
 <summary><b>Expand Round 2 items</b></summary>
 
-All opt-in (`DETWS_ENABLE_*`, default off), host-tested where a pure codec exists
+All opt-in (`DWS_ENABLE_*`, default off), host-tested where a pure codec exists
 and HW-verified on an ESP32 DevKit. Per-feature footprints are in the README.
 
 - [x] **Architecture pass.** Pluggable per-protocol handler dispatch
       (`network_drivers/session/proto_handler.h` - a `ProtoHandler` table, so a new
       TCP protocol registers a handler instead of editing the dispatchers),
-      flow-control primitives ([`det_conn_send`](@ref det_conn_send) returns bool,
-      `det_conn_sndbuf`, context-safe `det_conn_raw_send`), response header+body
+      flow-control primitives ([`dws_conn_send`](@ref dws_conn_send) returns bool,
+      `dws_conn_sndbuf`, context-safe `dws_conn_raw_send`), response header+body
       write coalescing, and a TLS-BIO unification that fixed a latent handshake
       cross-thread race.
-- [x] **Client TLS hardening** (extends [`DETWS_ENABLE_HTTP_CLIENT_TLS`](@ref DETWS_ENABLE_HTTP_CLIENT_TLS)).
+- [x] **Client TLS hardening** (extends [`DWS_ENABLE_HTTP_CLIENT_TLS`](@ref DWS_ENABLE_HTTP_CLIENT_TLS)).
       Optional CA-chain + hostname verification and SHA-256 cert pinning for
       outbound TLS; encrypt-only by default. `native_http_client`; HW-verified.
-- [x] **MQTT 3.1.1 client** ([`DETWS_ENABLE_MQTT`](@ref DETWS_ENABLE_MQTT)) + MQTTS.
+- [x] **MQTT 3.1.1 client** ([`DWS_ENABLE_MQTT`](@ref DWS_ENABLE_MQTT)) + MQTTS.
       Full QoS 0/1/2 (DUP retransmit + inbound QoS-2 duplicate suppression),
       Last-Will, keepalive.
       Host-tested codec (`native_mqtt`); example `46.MqttClient`.
-- [x] **WebSocket client** ([`DETWS_ENABLE_WS_CLIENT`](@ref DETWS_ENABLE_WS_CLIENT))
+- [x] **WebSocket client** ([`DWS_ENABLE_WS_CLIENT`](@ref DWS_ENABLE_WS_CLIENT))
       + `wss://`. Masked frames, fragment reassembly, ping/pong. Host-tested codec
       (`native_ws_client`); example `47.WebSocketClient`.
-- [x] **SNMP notifications** ([`DETWS_ENABLE_SNMP_TRAP`](@ref DETWS_ENABLE_SNMP_TRAP)).
+- [x] **SNMP notifications** ([`DWS_ENABLE_SNMP_TRAP`](@ref DWS_ENABLE_SNMP_TRAP)).
       Outbound Traps + InformRequests (v2c) and SNMPv3 USM authPriv traps. Host
       -tested PDU builder (`native_snmp_trap`); example `48.SnmpTrap`.
-- [x] **CoAP server** ([`DETWS_ENABLE_COAP`](@ref DETWS_ENABLE_COAP), RFC 7252) with
-      resource **Observe** (RFC 7641, [`DETWS_ENABLE_COAP_OBSERVE`](@ref DETWS_ENABLE_COAP_OBSERVE))
-      and **block-wise transfer** (RFC 7959, [`DETWS_ENABLE_COAP_BLOCK`](@ref DETWS_ENABLE_COAP_BLOCK)).
+- [x] **CoAP server** ([`DWS_ENABLE_COAP`](@ref DWS_ENABLE_COAP), RFC 7252) with
+      resource **Observe** (RFC 7641, [`DWS_ENABLE_COAP_OBSERVE`](@ref DWS_ENABLE_COAP_OBSERVE))
+      and **block-wise transfer** (RFC 7959, [`DWS_ENABLE_COAP_BLOCK`](@ref DWS_ENABLE_COAP_BLOCK)).
       Host-tested core (`native_coap`); examples `49.CoapObserve`, `50.CoapBlock`.
-- [x] **Per-IP accept throttle** ([`DETWS_ENABLE_PER_IP_THROTTLE`](@ref DETWS_ENABLE_PER_IP_THROTTLE)).
+- [x] **Per-IP accept throttle** ([`DWS_ENABLE_PER_IP_THROTTLE`](@ref DWS_ENABLE_PER_IP_THROTTLE)).
       Closes the cross-connection flood gap left by the global throttle. Example
       `51.PerIpThrottle`.
-- [x] **WebDAV** ([`DETWS_ENABLE_WEBDAV`](@ref DETWS_ENABLE_WEBDAV), RFC 4918 class 1
+- [x] **WebDAV** ([`DWS_ENABLE_WEBDAV`](@ref DWS_ENABLE_WEBDAV), RFC 4918 class 1
       + advisory locks): OPTIONS/PROPFIND/GET/HEAD/PUT/DELETE/MKCOL/COPY/MOVE/LOCK/
       UNLOCK over the FS. Host-tested 207 builder (`native_webdav`); example
       `52.WebDav`.
-- [x] **Modbus TCP slave** ([`DETWS_ENABLE_MODBUS`](@ref DETWS_ENABLE_MODBUS)). Fixed
+- [x] **Modbus TCP slave** ([`DWS_ENABLE_MODBUS`](@ref DWS_ENABLE_MODBUS)). Fixed
       data model + MBAP/PDU codec, FC 1/2/3/4/5/6/15/16, via a `PROTO_MODBUS`
       handler. Host-tested (`native_modbus`); example `53.ModbusTcp`.
 - [x] **TLS session resumption** (see the TLS item) and the **web-asset generator**
@@ -483,13 +483,13 @@ Open follow-ups discovered during the above:
       [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE).)_
 - [x] **Client-side TLS resumption** _(done, ESP32 compile-verified)_ - the persistent
       client session (`csess`, e.g. MQTTS/WSS) now enables client session tickets
-      ([`DETWS_ENABLE_TLS_RESUMPTION`](@ref DETWS_ENABLE_TLS_RESUMPTION)), saves the
+      ([`DWS_ENABLE_TLS_RESUMPTION`](@ref DWS_ENABLE_TLS_RESUMPTION)), saves the
       established session with `mbedtls_ssl_get_session()` after each successful
       handshake, and presents it with `mbedtls_ssl_set_session()` on the next
-      `det_tls_client_session_begin()` for an abbreviated handshake;
-      `det_tls_client_session_forget_session()` forces a fresh full handshake. Compiles on the
+      `dws_tls_client_session_begin()` for an abbreviated handshake;
+      `dws_tls_client_session_forget_session()` forces a fresh full handshake. Compiles on the
       ESP32 toolchain. _Full abbreviated-handshake HW proof is blocked by the same
-      stock-Arduino DRAM limit as concurrent TLS (the ~48 KB `DETWS_TLS_ARENA_SIZE`
+      stock-Arduino DRAM limit as concurrent TLS (the ~48 KB `DWS_TLS_ARENA_SIZE`
       plus MQTT + transport overflows DRAM; needs a smaller-record ESP-IDF build)._
 - [x] **SNMPv3 _inform_** _(done)_ - `snmp_inform_v3()` (symmetric with
       `snmp_inform_v2c()` / `snmp_trap_v3()`) builds + sends an authenticated (authPriv
@@ -514,15 +514,15 @@ Open follow-ups discovered during the above:
       (~122 KB, ROM-reserved both ends - NOT the 320 KB PlatformIO prints), so a 2nd
       connection overflows the link (measured: `overflowed by 34048 bytes` at an 88 KB
       arena). Three library-side paths now exist + a build guard that turns the cryptic
-      linker error into a clear message ([`DETWS_TLS_ACK_MULTI_CONN_DRAM`](@ref DETWS_TLS_ACK_MULTI_CONN_DRAM)):
-      (1) [`DETWS_TLS_ARENA_IN_PSRAM`](@ref DETWS_TLS_ARENA_IN_PSRAM) places the arena in
+      linker error into a clear message ([`DWS_TLS_ACK_MULTI_CONN_DRAM`](@ref DWS_TLS_ACK_MULTI_CONN_DRAM)):
+      (1) [`DWS_TLS_ARENA_IN_PSRAM`](@ref DWS_TLS_ARENA_IN_PSRAM) places the arena in
       external RAM via `EXT_RAM_BSS_ATTR` (needs `CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY`;
       the stock precompiled arduino-esp32 2.0.x has it off, so a PSRAM/IDF build is
       required - now HW-verified end to end on an ESP32-S3 N16R8 with a rebuilt flag-enabled
       core: the arena lands at `0x3C0xxxxx` external RAM, the board boots octal with no
       watchdog loop, internal DRAM use drops sharply, and it stays zero-heap; the rebuild
       recipe is `tools/psram/README.md`);
-      (2) [`DETWS_TLS_MAX_FRAG_LEN`](@ref DETWS_TLS_MAX_FRAG_LEN) (RFC 6066 MFL, applied to
+      (2) [`DWS_TLS_MAX_FRAG_LEN`](@ref DWS_TLS_MAX_FRAG_LEN) (RFC 6066 MFL, applied to
       server + client) caps records, pairing with a custom-IDF `CONFIG_MBEDTLS_SSL_IN/OUT_CONTENT_LEN`
       shrink; (3) a `memory.ld` DRAM reclaim (advanced - the `0xdb5c` is ROM-reserved,
       so risky). Full 3-prong decision tree in docs/KNOWN_LIMITATIONS.md. **HW-verified on an
@@ -537,23 +537,23 @@ Open follow-ups discovered during the above:
       because the test host cannot reach the device (AP client isolation on the lab WiFi + no admin
       to add a route - the same topology the interop harness works around with a device-out broker),
       not a code limitation.
-- [~] **Ethernet PHY abstraction** - _(bring-up shipped)_ `DETWS_ENABLE_ETHERNET`:
+- [~] **Ethernet PHY abstraction** - _(bring-up shipped)_ `DWS_ENABLE_ETHERNET`:
       `init_eth_physical()` / `eth_ready()` in `network_drivers/physical` wrap the Arduino
       ETH library for an RMII PHY (LAN8720 / ...), configured by the standard `ETH_PHY_*`
       build flags. The egress reporting + per-route interface classifier already handle a
       wired route (DETIFACE_ETH, host-tested), so the server serves over Ethernet - or
       dual-homed with Wi-Fi - once the link has an IP. Example 19.Ethernet; ESP32-compiled.
       Remaining: verify against a PHY board.
-- [~] **IPv6 dual-stack** - _phase 1 landed (v4.83.0); phase 2 landed (v4.89.0)._ `DETWS_ENABLE_IPV6`
+- [~] **IPv6 dual-stack** - _phase 1 landed (v4.83.0); phase 2 landed (v4.89.0)._ `DWS_ENABLE_IPV6`
       enables IPv6 on the netif (`init_ipv6_physical` / `net_global_ipv6` / `ipv6_ready`); the
       listeners already bind `IPADDR_TYPE_ANY`, so the server accepts v6 once an address is up. The
-      `DetIp` address core (`network_drivers/network/ip.h`) parses / formats / classifies both
+      `DWSIp` address core (`network_drivers/network/ip.h`) parses / formats / classifies both
       families (`native_det_ip`; RFC 4291 + 5952). Example 20.IPv6; both cores compiled. **Phase 2
-      (done):** the transport carries the peer as a protocol-agnostic family-tagged `DetIp`
-      (`det_conn_remote_addr()` / `det_lwip_to_detip()`), and every IP-keyed abuse-prevention feature
+      (done):** the transport carries the peer as a protocol-agnostic family-tagged `DWSIp`
+      (`dws_conn_remote_addr()` / `dws_lwip_to_detip()`), and every IP-keyed abuse-prevention feature
       stores and matches the FULL address - the per-IP throttle + auth lockout by
-      [`det_ip_equal`](@ref det_ip_equal), the IP allowlist by
-      [`det_ip_prefix_match`](@ref det_ip_prefix_match) (v4 /0-32 + v6 /0-128 CIDR via
+      [`dws_ip_equal`](@ref dws_ip_equal), the IP allowlist by
+      [`dws_ip_prefix_match`](@ref dws_ip_prefix_match) (v4 /0-32 + v6 /0-128 CIDR via
       [`listener_ip_allow_add_cidr`](@ref listener_ip_allow_add_cidr)). This replaced the interim v6
       32-bit hash key, which was collidable (see docs/BUGS.md); no abuse-prevention state is keyed on
       a hash or a uint32 flattening any more (the audit log has no client-IP field). **Remaining:**
@@ -563,7 +563,7 @@ Open follow-ups discovered during the above:
       and the ~2 KB `ssh_pkt_recv` stack buffer, header formatting, the upcoming
       deflate window). These are mutually exclusive in time, so one shared arena
       cuts peak DRAM. **Model - region-reset-per-dispatch:** one compile-time-sized
-      BSS arena (`DETWS_SCRATCH_ARENA_SIZE`); `scratch_alloc(n, align)`
+      BSS arena (`DWS_SCRATCH_ARENA_SIZE`); `scratch_alloc(n, align)`
       bump-allocates; the arena is reset to empty at the top of every event
       dispatch in `server_tick()`, before the protocol handler runs.
       **Race-safety (verified):** all codec/protocol logic runs only in the single
@@ -661,16 +661,16 @@ shipped work:
 
 - [x] **No connection-flood / rate limiting.** _(done - opt-in global throttle)_
       `listener.cpp` now has a fixed-window accept-rate gate
-      ([`listener_accept_allowed()`](@ref listener_accept_allowed)): when [`DETWS_ENABLE_ACCEPT_THROTTLE`](@ref DETWS_ENABLE_ACCEPT_THROTTLE) is set,
+      ([`listener_accept_allowed()`](@ref listener_accept_allowed)): when [`DWS_ENABLE_ACCEPT_THROTTLE`](@ref DWS_ENABLE_ACCEPT_THROTTLE) is set,
       the accept callback drops connections beyond
-      [`DETWS_ACCEPT_THROTTLE_MAX`](@ref DETWS_ACCEPT_THROTTLE_MAX) per [`DETWS_ACCEPT_THROTTLE_WINDOW_MS`](@ref DETWS_ACCEPT_THROTTLE_WINDOW_MS)
+      [`DWS_ACCEPT_THROTTLE_MAX`](@ref DWS_ACCEPT_THROTTLE_MAX) per [`DWS_ACCEPT_THROTTLE_WINDOW_MS`](@ref DWS_ACCEPT_THROTTLE_WINDOW_MS)
       (`ServerConfig.h`) before claiming a pool slot. Default off (zero
       cost / no behavior change). Two static counters, global across listeners -
       a per-IP table was deliberately not added (YAGNI; the mock PCB carries no
       remote IP and a 1-3 connection device gains little from per-IP state).
       Rollover-safe; tested by `test_accept_throttle*\*`in`test_transport`.
       A per-IP accept throttle was **since added** (round 2,
-      [`DETWS_ENABLE_PER_IP_THROTTLE`](@ref DETWS_ENABLE_PER_IP_THROTTLE)): a fixed
+      [`DWS_ENABLE_PER_IP_THROTTLE`](@ref DWS_ENABLE_PER_IP_THROTTLE)): a fixed
       BSS bucket table keyed by source IPv4 with a per-address fixed window,
       host-tested in `test_transport`.
 
@@ -689,8 +689,8 @@ shipped work:
       (`strnlen(client_key, WS_MAX_KEY_LEN+1)`) are all correctly bounded.
 
 - [x] **Connection close/abort is driven from L7 holding the raw `tcp_pcb`.** _(done)_
-      The transport now owns the whole teardown: `det_conn_close(slot)` (graceful, was
-      `det_conn_close(slot, pcb)`) and the new `det_conn_abort_slot(slot)` (hard RST)
+      The transport now owns the whole teardown: `dws_conn_close(slot)` (graceful, was
+      `dws_conn_close(slot, pcb)`) and the new `dws_conn_abort_slot(slot)` (hard RST)
       each detach the pcb, free the per-connection TLS context, reset the slot, and
       then FIN/RST - on a captured pcb pointer, so a late lwIP callback finds a freed
       slot. Every hand-rolled teardown now passes only the slot: the WS/SSE close +
@@ -703,8 +703,8 @@ shipped work:
       RSTs on WS-pool exhaustion) reclaim every slot with no leak and the device keeps
       accepting throughout.
 
-- [x] **`detws_oidc_verify_with_key()` decode buffers moved off the stack.** _(done)_
-      The verifier's `hdr[512]` + `sig[DETWS_OIDC_RSA_BYTES]` + `pl[DETWS_OIDC_MAX_LEN]`
+- [x] **`dws_oidc_verify_with_key()` decode buffers moved off the stack.** _(done)_
+      The verifier's `hdr[512]` + `sig[DWS_OIDC_RSA_BYTES]` + `pl[DWS_OIDC_MAX_LEN]`
       + `iss[256]` (~2.6 KB) are now borrowed from the per-dispatch scratch arena under a
       `ScratchScope` (fail-closed if the arena is exhausted), not stacked. This is
       single-worker-race-safe (the arena has one accessor) where a `static` buffer would
@@ -721,13 +721,13 @@ shipped work:
       Measured on COM3: an OIDC RS256 verify (and any `ssh_rsa_verify` path: OIDC, the
       SSH server host key, JWKS) drops the task stack high-water by ~7 KB, dominated by
       the mbedTLS bignum modexp. The "documented minimum worker-stack" option is now
-      **enforced at build time**: [`DETWS_WORKER_STACK_RSA_MIN`](@ref DETWS_WORKER_STACK_RSA_MIN)
+      **enforced at build time**: [`DWS_WORKER_STACK_RSA_MIN`](@ref DWS_WORKER_STACK_RSA_MIN)
       (default 8192, `ServerConfig.h`) is the floor, and a validation `#error`
-      fires when `DETWS_ENABLE_OIDC` or `DETWS_ENABLE_SSH` is set while
-      [`DETWS_WORKER_TASK_STACK`](@ref DETWS_WORKER_TASK_STACK) is below it - so a lowered
+      fires when `DWS_ENABLE_OIDC` or `DWS_ENABLE_SSH` is set while
+      [`DWS_WORKER_TASK_STACK`](@ref DWS_WORKER_TASK_STACK) is below it - so a lowered
       worker stack is caught at compile time instead of overflowing on the first verify.
       An advanced build that marshals every RSA verify onto a dedicated larger-stack task
-      (the worker itself never runs one) can override `DETWS_WORKER_STACK_RSA_MIN`. The
+      (the worker itself never runs one) can override `DWS_WORKER_STACK_RSA_MIN`. The
       other two options (lower `MBEDTLS_MPI_MAX_SIZE`, or the dedicated task) remain
       available but are not required for the default architecture. Verified: the default
       config and OIDC-on-with-8192 compile; OIDC-on-with-4096 fails with the guard message.
@@ -748,37 +748,37 @@ shipped work:
 
 - [~] **SSH channel multiplexing + port-forwarding.** _(channels + direct-tcpip
       `ssh -L` done; forwarded-tcpip + X11 pending)_
-      `ssh_channel.cpp` is a per-connection channel table (`DETWS_SSH_MAX_CHANNELS`,
+      `ssh_channel.cpp` is a per-connection channel table (`DWS_SSH_MAX_CHANNELS`,
       default 1 = the original single channel): up to N concurrent channels per
       connection, each with its own id / window / peer state, every inbound
       `CHANNEL_*` routed to its channel by the recipient id, and the data callback /
-      `det_ssh_conn_send` tagged with the channel id. **direct-tcpip** (`ssh -L`) channels
+      `dws_ssh_conn_send` tagged with the channel id. **direct-tcpip** (`ssh -L`) channels
       now parse + route through a normalized forwarding seam: a channel carries a
       `type` (session / direct-tcpip), `CHANNEL_OPEN` "direct-tcpip" extracts the
-      target host:port and consults `det_ssh_channel_set_forward_open_cb` (opt-in; absent
+      target host:port and consults `dws_ssh_channel_set_forward_open_cb` (opt-in; absent
       = administratively prohibited, refused = connect-failed, accepted = confirmed),
-      and forward-channel data routes to `det_ssh_channel_set_forward_data_cb` instead of
+      and forward-channel data routes to `dws_ssh_channel_set_forward_data_cb` instead of
       the session callback. Host-tested (`test_ssh_channel`: independent routing,
       pool-full -> resource shortage, unknown-type, forward open accept/refuse,
       forward-data routing). The **forward owner** (`ssh_forward`, behind
-      `DETWS_SSH_PORT_FORWARD`) does the actual outbound TCP via the `det_client`
+      `DWS_SSH_PORT_FORWARD`) does the actual outbound TCP via the `dws_client`
       transport and bridges bytes both ways - no I/O in the codec - with an optional
       target policy, a per-poll target->client pump bounded by the channel window,
-      and EOF+CLOSE propagation; `det_ssh_conn_close_channel` sends a server-initiated
+      and EOF+CLOSE propagation; `dws_ssh_conn_close_channel` sends a server-initiated
       close as two packets. ESP32 build + link verified.
       **Global requests** (RFC 4254 §4) now have a real handler
       ([`ssh_global_request_handle`](@ref ssh_global_request_handle)): an unrecognized
       request answers `REQUEST_FAILURE` when `want_reply` is set (never `UNIMPLEMENTED` -
       that was a client-keepalive interop bug, see docs/BUGS.md), and **`tcpip-forward` /
       `cancel-tcpip-forward`** (`ssh -R`) route to an opt-in remote-forward seam
-      (`det_ssh_channel_set_rforward_open_cb` / `_cancel_cb`) that replies `REQUEST_SUCCESS`
+      (`dws_ssh_channel_set_rforward_open_cb` / `_cancel_cb`) that replies `REQUEST_SUCCESS`
       (echoing the allocated port for a port-0 bind, §7.1) when an owner accepts. Host-tested
       (`test_ssh_channel`, +7). **`forwarded-tcpip` (`ssh -R`) now fully works**: the owner
-      (`ssh_forward`, behind `DETWS_SSH_PORT_FORWARD`) allocates a real listener via the new
+      (`ssh_forward`, behind `DWS_SSH_PORT_FORWARD`) allocates a real listener via the new
       **tcpip_thread-marshaled** `listener_add_dynamic` / `listener_stop_dynamic` (a dynamic
       listener created from the SSH worker task must marshal its raw lwIP `tcp_bind`/`tcp_listen`
       onto tcpip_thread), routes each accepted connection through a `PROTO_SSH_RFWD` handler that
-      opens a server-initiated `forwarded-tcpip` channel (`det_ssh_channel_open_forwarded` +
+      opens a server-initiated `forwarded-tcpip` channel (`dws_ssh_channel_open_forwarded` +
       CONFIRMATION/FAILURE handling) and bridges bytes both ways with per-poll window-bounded
       pumps; listeners + bridges are torn down on cancel and on SSH disconnect. Host-tested
       (`test_ssh_channel`: open/confirm/failure/inbound-routing) and **HW-verified end-to-end on
@@ -804,7 +804,7 @@ shipped work:
       equals the single-block derive and K2 chains correctly.
 
 - [x] **Session rekeying (RFC 4253 §9).** _(done)_ A server-initiated re-key now fires from
-      `det_ssh_conn_poll()` when either the volume budget (`SSH_REKEY_PACKET_THRESHOLD`, a packet-count
+      `dws_ssh_conn_poll()` when either the volume budget (`SSH_REKEY_PACKET_THRESHOLD`, a packet-count
       proxy for ~1 GB) or the time budget (`SSH_REKEY_TIME_MS`, default 1 h) since the last KEX is
       spent, on an authenticated channel that is not already re-keying: it emits a fresh KEXINIT via the
       existing `ssh_transport_begin_rekey()`, and the KEXINIT dispatch carries it to completion (session
@@ -814,7 +814,7 @@ shipped work:
       high-throughput session re-keys in place instead of being dropped.
 
 - [~] **Compression (RFC 4253 §6.2).** _(server->client done; client->server deferred)_
-      `DETWS_ENABLE_SSH_ZLIB` adds `zlib@openssh.com` / `zlib` for the **s2c** direction: a
+      `DWS_ENABLE_SSH_ZLIB` adds `zlib@openssh.com` / `zlib` for the **s2c** direction: a
       context-takeover DEFLATE stream (`ssh_zlib`, persistent sliding window + per-packet
       sync-flush + zlib wrapper) owned by `ssh_comp`, negotiated per direction, started after
       USERAUTH_SUCCESS (delayed) or NEWKEYS (plain). HW-verified against OpenSSH 10.3 (42 KB
@@ -849,32 +849,32 @@ shipped work:
       the native AES-CTR KATs and `examples/35.SSHCryptoSelfTest` on-device.
 
 - [x] **DMA UART / I2C / SPI transfer (v5 milestone).** DONE - `services/dma`
-      (`DETWS_ENABLE_DMA`). Channels move peripheral bytes to a static ping-pong (RX) /
+      (`DWS_ENABLE_DMA`). Channels move peripheral bytes to a static ping-pong (RX) /
       staging (TX) buffer; a DMA-complete event carries the bytes to a callback that
       posts them into the preempting task queue. Zero heap, fail-closed. The
-      ingress/egress **simulator** (`DETWS_DMA_SIMULATE`, default on) exercises the whole
+      ingress/egress **simulator** (`DWS_DMA_SIMULATE`, default on) exercises the whole
       pipeline with no physical loopback - on the host bench and on-device; a real silicon
-      driver plugs into the `det_dma_hw_*` hooks. Host-tested (`native_dma`, 11 cases) +
+      driver plugs into the `dws_dma_hw_*` hooks. Host-tested (`native_dma`, 11 cases) +
       HW-verified (example `07.DmaIngest`; and a combined webserver + continuous-DMA rig
       ingested 2.2M+ frames with zero integrity errors under HTTP stress, no heap growth).
       Remaining: the real UHCI-UART / `spi_master`-DMA silicon backend (needs peripheral
       hardware to verify; the seam is in place).
 
 - [x] **User-configurable preempting task queue (v5 milestone).** DONE -
-      `services/preempt_queue` (`DETWS_ENABLE_PREEMPT_QUEUE`). Producers post from a task
+      `services/preempt_queue` (`DWS_ENABLE_PREEMPT_QUEUE`). Producers post from a task
       (`xQueueSendToBack` / `-Front`, wait timeout) or an ISR (`xQueueSendFromISR` +
       `portYIELD_FROM_ISR`); the scheduler preempts to the processing task immediately.
-      Task priority + core are user-settable at `detws_pq_start[_lane]()`, depth is
-      compile-time. **Named lanes**: one USER lane exposed to the app (no-arg `detws_pq_*`)
+      Task priority + core are user-settable at `dws_pq_start[_lane]()`, depth is
+      compile-time. **Named lanes**: one USER lane exposed to the app (no-arg `dws_pq_*`)
       plus internal DMA / FORWARD / DEVICE lanes that run above it (DMA highest, below
       tcpip / WiFi), so internal ingest preempts user work. Host-tested
       (`native_preempt_queue`, 11 cases) + HW-verified (DMA + USER lanes ran continuously
       with zero errors under an HTTP flood; examples 06.PreemptQueue + 08.PreemptLanes).
 
 - [x] **Interface forwarding (v5 milestone), DMA-driven.** DONE - `services/forward`
-      (`DETWS_ENABLE_FORWARD`). A forwarding plane: register interfaces (each with an
+      (`DWS_ENABLE_FORWARD`). A forwarding plane: register interfaces (each with an
       egress send callback), add per-pair rules (allow / deny + rate cap); a frame on one
-      interface (`det_forward_ingress()`, wired from a DMA-complete event on the FORWARD
+      interface (`dws_forward_ingress()`, wired from a DMA-complete event on the FORWARD
       lane) is forwarded to every allowed destination, so the device bridges / routes
       instead of only terminating traffic. Default-deny, never reflects to the source,
       fail-closed (exceeded cap / refused send drops and is counted), multi-destination
@@ -884,7 +884,7 @@ shipped work:
       This is the generic data path the post-v5 wireless gateway bridges sit on top of.
 
 - [~] **Post-v5 southbound bridges + sensing (backlog).** The **generic gateway
-      framework is DONE** - `services/gateway` (`DETWS_ENABLE_GATEWAY`): ports,
+      framework is DONE** - `services/gateway` (`DWS_ENABLE_GATEWAY`): ports,
       address-aware northbound enveloping + topic, bidirectional up/down-link, per-port
       rate cap, stats; fail-closed, zero-heap, HW-verified end to end over DMA + the
       FORWARD lane (example 10.RadioGateway). The per-module **codec + driver** plugins
@@ -906,14 +906,14 @@ shipped work:
 <summary><b>Expand HTTP / core (medium) items</b></summary>
 
 - [x] **TLS (HTTPS).** _(done)_ Opt-in mbedTLS server on a fixed static arena
-      ([`DETWS_ENABLE_TLS`](@ref DETWS_ENABLE_TLS)) - see the HTTPS / TLS item under
+      ([`DWS_ENABLE_TLS`](@ref DWS_ENABLE_TLS)) - see the HTTPS / TLS item under
       Optional services, plus mTLS, `wss://` / TLS-SSE, and RFC 5077 session
       resumption.
 
-- [x] **`Date` response header** _(done, opt-in)_ - [`DETWS_HTTP_EMIT_DATE`](@ref DETWS_HTTP_EMIT_DATE)
+- [x] **`Date` response header** _(done, opt-in)_ - [`DWS_HTTP_EMIT_DATE`](@ref DWS_HTTP_EMIT_DATE)
       (default off, so the hot path is unchanged unless enabled) auto-injects
       `Date: <IMF-fixdate>` into every dynamic response once a wall-clock time exists
-      ([`detws_ntp_http_date()`](@ref detws_ntp_http_date) non-empty); a clock-less / pre-sync device omits it
+      ([`dws_ntp_http_date()`](@ref dws_ntp_http_date) non-empty); a clock-less / pre-sync device omits it
       (RFC 7231 §7.1.1.2). Host-tested via a time-injection seam
       (`test_response_headers`: emitted-when-set / omitted-when-clockless) and HW-verified
       with NTP (`Date: Mon, 29 Jun 2026 ... GMT`). Apps can still add it from a handler.
@@ -934,19 +934,19 @@ shipped work:
 
 Capabilities a small IoT web server commonly needs but the library does not yet
 provide. Each should follow the existing feature-flag convention - a
-`DETWS_ENABLE_*` macro defaulting to 0, gating its own `.cpp`/pool so it costs
+`DWS_ENABLE_*` macro defaulting to 0, gating its own `.cpp`/pool so it costs
 no code, RAM, or flash when disabled (`ServerConfig.h`). Roughly ordered
 by how often a deployed device needs it.
 
-- [x] **mDNS / DNS-SD advertisement ([`DETWS_ENABLE_MDNS`](@ref DETWS_ENABLE_MDNS)).** _(done)_
-      `det_mdns_begin(hostname, port)` (`src/services/mdns_service.*`) makes the
+- [x] **mDNS / DNS-SD advertisement ([`DWS_ENABLE_MDNS`](@ref DWS_ENABLE_MDNS)).** _(done)_
+      `dws_mdns_begin(hostname, port)` (`src/services/mdns_service.*`) makes the
       device reachable at `<hostname>.local` and advertises `_http._tcp`. Uses the
       **ESP-IDF `mdns` component directly** (not the `ESPmDNS` add-on) to keep the
       dependency set to base-SDK + mbedTLS. Firmware links (`examples/37.mDNS`).
 
-- [x] **OTA firmware update ([`DETWS_ENABLE_OTA`](@ref DETWS_ENABLE_OTA)).** _(done)_ Authenticated
+- [x] **OTA firmware update ([`DWS_ENABLE_OTA`](@ref DWS_ENABLE_OTA)).** _(done)_ Authenticated
       streaming `POST /update` into the ESP32 `Update` API
-      (`src/services/ota_service.*`). The HTTP parser gained a `#if DETWS_ENABLE_OTA`
+      (`src/services/ota_service.*`). The HTTP parser gained a `#if DWS_ENABLE_OTA`
       streaming-body hook (`http_parser_set_stream_hooks`) that feeds the image to
       `Update.write()` in [`BODY_BUF_SIZE`](@ref BODY_BUF_SIZE) chunks instead of buffering it - so the
       `BODY_BUF_SIZE`/413 cap is bypassed and multi-MB images never live in RAM.
@@ -954,10 +954,10 @@ by how often a deployed device needs it.
       (`test_http_ota`, env `native_ota`) with **no regression** to the 80 parser
       tests (fully gated); `examples/38.OTA` firmware links.
 
-- [x] **WiFi provisioning / captive portal ([`DETWS_ENABLE_PROVISIONING`](@ref DETWS_ENABLE_PROVISIONING)).** _(done)_
+- [x] **WiFi provisioning / captive portal ([`DWS_ENABLE_PROVISIONING`](@ref DWS_ENABLE_PROVISIONING)).** _(done)_
       `src/services/provisioning_service.*`: first-boot softAP + a catch-all DNS
       responder + a credentials form, persisting SSID/PSK to NVS
-      (`detws_provisioning_load`/`_begin`/`_clear`, `examples/39.Provisioning`).
+      (`dws_provisioning_load`/`_begin`/`_clear`, `examples/39.Provisioning`).
       The DNS responder is a **raw lwIP UDP socket** (no `DNSServer` add-on) -
       callback-driven, so no per-loop polling. The form-field/URL-decode parser is
       native-tested (`test_provisioning`, env `native_prov`); firmware links.
@@ -969,7 +969,7 @@ by how often a deployed device needs it.
       present. Tested by `test_serve_static_gzip_when_accepted` /
       `test_serve_static_no_gzip_when_not_accepted`.
 
-- [x] **Conditional GET / ETag ([`DETWS_ENABLE_ETAG`](@ref DETWS_ENABLE_ETAG)).** _(done)_ `serve_file()` /
+- [x] **Conditional GET / ETag ([`DWS_ENABLE_ETAG`](@ref DWS_ENABLE_ETAG)).** _(done)_ `serve_file()` /
       `serve_static()` emit a strong `ETag` (`"<hexsize>-<hexmtime>"` from
       `f.size()` + `f.getLastWrite()`) and answer a matching `If-None-Match` with
       `304 Not Modified` (no body). The FS test mock gained `getLastWrite()` so it
@@ -979,25 +979,25 @@ by how often a deployed device needs it.
       is present); with no wall clock the date validator is skipped and the ETag
       validator still works.
 
-- [x] **SNTP time sync (`DETWS_ENABLE_NTP`).** _(done)_ [`detws_ntp_begin()`](@ref detws_ntp_begin)/
+- [x] **SNTP time sync (`DWS_ENABLE_NTP`).** _(done)_ [`dws_ntp_begin()`](@ref dws_ntp_begin)/
       `_synced()`/`_epoch()`/`_http_date()` (`src/services/ntp_service.*`) wrap
       `configTzTime` (ESP-IDF SNTP) and format an RFC 7231 `Date`. `examples/40.SNTP`
       exposes `GET /time`; firmware links. (Auto-emitting the `Date` response
       header is left to the app via the helper - kept off the hot path.)
 
-- [x] **Multi-source time fallback ([`DETWS_ENABLE_TIME_SOURCE`](@ref DETWS_ENABLE_TIME_SOURCE)).**
+- [x] **Multi-source time fallback ([`DWS_ENABLE_TIME_SOURCE`](@ref DWS_ENABLE_TIME_SOURCE)).**
       _(done)_ A zero-heap registry of user-defined time sources
       (`src/services/time_source/time_source.*`): each source is a callback
       returning Unix epoch seconds (0 = no valid time), registered with a priority.
-      `detws_time_now()` queries them in ascending priority and returns the first
+      `dws_time_now()` queries them in ascending priority and returns the first
       valid result (stopping early so a costly lower-priority read is skipped), so
       the device falls back automatically (e.g. GPS fix lost -> RTC -> NTP);
-      `detws_time_source_active()` reports which source answered. Host-tested
+      `dws_time_source_active()` reports which source answered. Host-tested
       (`native_time_source`, 9 cases) with mock sources; example
       `56.TimeSourceFallback` (NTP preferred, RTC fallback); esp32dev links.
 
 - [x] **Zero-copy template slicing.** _(addressed by design)_
-      [`send_template()`](@ref DetWebServer::send_template) never buffers the
+      [`send_template()`](@ref DWS::send_template) never buffers the
       expanded body: it walks the template twice (size, then stream each literal
       run and resolved `{{name}}` value straight to the socket), and placeholder
       names over 32 chars are emitted literally - so there is no fixed expansion
@@ -1015,24 +1015,24 @@ by how often a deployed device needs it.
       surrogate becomes U+FFFD and malformed/short hex becomes `?`, with a clean
       truncation when a code point's UTF-8 sequence would not fit (`json.cpp`).
 
-- [x] **Web "serial" terminal ([`DETWS_ENABLE_WEB_TERMINAL`](@ref DETWS_ENABLE_WEB_TERMINAL)).**
+- [x] **Web "serial" terminal ([`DWS_ENABLE_WEB_TERMINAL`](@ref DWS_ENABLE_WEB_TERMINAL)).**
       _(done)_ A WebSerial-style browser terminal over the existing WebSocket
       layer (`src/services/web_terminal.*`): serves a self-contained CRT-themed
       page + a WebSocket endpoint, broadcasts device output to all browsers, and
       delivers typed lines to a command callback - all zero-heap. Tested by
       `test_web_terminal` (7); example `27.WebTerminal`.
 
-- [x] **HTTPS / TLS ([`DETWS_ENABLE_TLS`](@ref DETWS_ENABLE_TLS)).** _(done)_
-      Opt-in mbedTLS on a static memory pool (`src/network_drivers/tls/det_tls.*`):
+- [x] **HTTPS / TLS ([`DWS_ENABLE_TLS`](@ref DWS_ENABLE_TLS)).** _(done)_
+      Opt-in mbedTLS on a static memory pool (`src/network_drivers/tls/dws_tls.*`):
       all mbedTLS allocations come from a fixed BSS arena
-      (`DETWS_TLS_ARENA_SIZE`, default 48 KB) via
+      (`DWS_TLS_ARENA_SIZE`, default 48 KB) via
       `mbedtls_platform_set_calloc_free()`, so the zero-heap guarantee holds. HW
       CSPRNG RNG; BIO bridged to the raw `tcp_pcb` + rx ring; handshake pumped in
-      the session loop. `begin_tls(port, cert, …)` / [`listen_tls()`](@ref DetWebServer::listen_tls).
+      the session loop. `begin_tls(port, cert, …)` / [`listen_tls()`](@ref DWS::listen_tls).
       HW-verified: `ECDHE-ECDSA-AES256-GCM-SHA384`, TLS 1.2+. See SECURITY.md §6.
       Example `22.HTTPS`. `wss://` + TLS-SSE now run over the same record layer,
       and **session resumption** shipped (RFC 5077 tickets,
-      [`DETWS_ENABLE_TLS_RESUMPTION`](@ref DETWS_ENABLE_TLS_RESUMPTION), example
+      [`DWS_ENABLE_TLS_RESUMPTION`](@ref DWS_ENABLE_TLS_RESUMPTION), example
       `54.TlsResumption`). _Still open:_ `MAX_TLS_CONNS` > 1 (needs smaller IDF
       record buffers) and client-side resumption.
 
@@ -1047,13 +1047,13 @@ by how often a deployed device needs it.
         exceptions (`noSuchObject`/`endOfMibView`) and v1 error-status/-index,
         SET gated by a separate read-write community. `snmp_agent_process()` is a
         pure, host-testable core (13 tests); the transport-layer UDP service
-        (`det_udp_listen`) on :161 carries datagrams (the same service the
+        (`dws_udp_listen`) on :161 carries datagrams (the same service the
         provisioning DNS responder uses). `snmp_agent_*` API, example `33.SNMP`.
         **HW-verified** with a UDP client: `snmpget`/walk of the system group in
         OID order, GetBulk, dynamic Gauge32, SET authorization (RO→noAccess,
         RW→success), v1 `noSuchName`, and unknown-community drop all behave per
         net-snmp.
-  - [x] v3 (USM, RFC 3414): gated behind `DETWS_ENABLE_SNMP_V3` (default off).
+  - [x] v3 (USM, RFC 3414): gated behind `DWS_ENABLE_SNMP_V3` (default off).
         Auth = `usmHMAC192SHA256` (HMAC-SHA-256, 24-byte; RFC 7860, reusing the
         SSH SHA-256/HMAC), privacy = `usmAesCfb128` (AES-128-CFB, RFC 3826 - a
         compact portable AES added in `snmp_crypto`). Implements the v3 message
@@ -1072,7 +1072,7 @@ by how often a deployed device needs it.
         flag to enable the user). _Follow-up:_ derive the engine ID from the chip
         MAC; persist engineBoots across reboots.
 
-- [x] **Telnet console ([`DETWS_ENABLE_TELNET`](@ref DETWS_ENABLE_TELNET)).**
+- [x] **Telnet console ([`DWS_ENABLE_TELNET`](@ref DWS_ENABLE_TELNET)).**
       _(done)_ Minimal RFC 854 line-oriented Telnet server dispatched from the
       session layer's `PROTO_TELNET` arm
       (`src/network_drivers/presentation/telnet.*`): negotiates server echo +
@@ -1082,7 +1082,7 @@ by how often a deployed device needs it.
       it only on a trusted LAN (prefer SSH or the WebSocket terminal otherwise).
       Example `36.Telnet`.
 
-- [x] **JWT bearer auth ([`DETWS_ENABLE_JWT`](@ref DETWS_ENABLE_JWT)).** _(done)_
+- [x] **JWT bearer auth ([`DWS_ENABLE_JWT`](@ref DWS_ENABLE_JWT)).** _(done)_
       Stateless `Authorization: Bearer <jwt>` verification, HS256
       (HMAC-SHA-256, reusing the SSH crypto layer), constant-time signature
       compare, all in fixed stack/BSS - no sessions, no heap
@@ -1091,28 +1091,28 @@ by how often a deployed device needs it.
       variants ([`jwt_time_valid`](@ref jwt_time_valid),
       [`jwt_verify_hs256_at`](@ref jwt_verify_hs256_at),
       [`jwt_bearer_valid_at`](@ref jwt_bearer_valid_at)) reject on `exp` (RFC 7519
-      §4.1.4) and `nbf` (§4.1.5) with a skew leeway, given `now = (long)detws_time_now()`
-      (`DETWS_ENABLE_NTP` / any time source); passing `now = 0` on a clockless device
+      §4.1.4) and `nbf` (§4.1.5) with a skew leeway, given `now = (long)dws_time_now()`
+      (`DWS_ENABLE_NTP` / any time source); passing `now = 0` on a clockless device
       skips the time check so the signature still gates. `iat` is informational
       (read via `jwt_claim_int`). The base signature-only functions are unchanged.
       _Out of scope:_ RS256/ES256 (asymmetric, allocation-heavy).
 
-- [x] **Remote syslog ([`DETWS_ENABLE_SYSLOG`](@ref DETWS_ENABLE_SYSLOG)).**
+- [x] **Remote syslog ([`DWS_ENABLE_SYSLOG`](@ref DWS_ENABLE_SYSLOG)).**
       _(done)_ RFC 5424 log lines shipped as UDP datagrams via the transport UDP
       service (`src/services/syslog/*`): a pure host-testable `syslog_format()`
       builds one line into a caller buffer, an ESP32-only `syslog_log()` sends it.
       Host-tested (`native_syslog`); example `41.Syslog`.
 
-- [x] **Streaming file upload ([`DETWS_ENABLE_UPLOAD`](@ref DETWS_ENABLE_UPLOAD)).**
+- [x] **Streaming file upload ([`DWS_ENABLE_UPLOAD`](@ref DWS_ENABLE_UPLOAD)).**
       _(done)_ A `POST` route streams its body straight into a file on an Arduino
       FS (LittleFS/SPIFFS/SD) in `FILE_CHUNK_SIZE` pieces - the upload never has to
       fit in RAM (`src/services/upload_service.*`). Reuses the parser's
       streaming-body hook. Example `30.FileUpload`. _Constraint:_ only one streaming
-      sink exists, so `DETWS_ENABLE_UPLOAD` and [`DETWS_ENABLE_OTA`](@ref DETWS_ENABLE_OTA)
+      sink exists, so `DWS_ENABLE_UPLOAD` and [`DWS_ENABLE_OTA`](@ref DWS_ENABLE_OTA)
       share it - enable at most one per build.
 
 - [x] **WebSocket permessage-deflate - Phase 1 (inbound)**
-      (`DETWS_ENABLE_WS_DEFLATE`, RFC 7692). _(done)_ The handshake negotiates
+      (`DWS_ENABLE_WS_DEFLATE`, RFC 7692). _(done)_ The handshake negotiates
       `permessage-deflate` with `client_no_context_takeover; server_no_context_takeover`,
       so each message decompresses independently. A compressed message (RSV1 on its
       first frame) is INFLATEd before delivery by a hand-rolled bounded RFC 1951
@@ -1125,7 +1125,7 @@ by how often a deployed device needs it.
       grounded against zlib) + `native_ws_deflate` (handshake / RSV1 / delivery);
       esp32dev links; example `55.WebSocketCompression`. _HW test pending a board._
   - [x] **Phase 2 - outbound compress _(shipped)_.** A bounded fixed-Huffman DEFLATE
-        encoder compresses outbound data frames (RSV1) under `DETWS_ENABLE_WS_DEFLATE`,
+        encoder compresses outbound data frames (RSV1) under `DWS_ENABLE_WS_DEFLATE`,
         with an uncompressed fallback when the result would not shrink. permessage-deflate
         is now bidirectional (see ROADMAP "WebSocket permessage-deflate, inbound and
         outbound"); host-tested via `native_deflate` + `native_ws_deflate`.
@@ -1154,14 +1154,14 @@ Newbie / developer experience:
       gzip-static, path-traversal rejection, GET/HEAD only (else 405). Tested by
       the `test_serve_static_*` suite.
 
-- [x] **MIME type auto-detection by extension.** _(done)_ `DetWebServer::mime_type(path)` - a static, case-insensitive extension→type table (html/css/js/json/svg/
+- [x] **MIME type auto-detection by extension.** _(done)_ `DWS::mime_type(path)` - a static, case-insensitive extension→type table (html/css/js/json/svg/
       png/jpg/gif/ico/webp/wasm/woff2/… → falls back to
       `application/octet-stream`). Used automatically by `serve_static()` and
       callable directly with `serve_file()`. Tested by `test_mime_type_detection`.
 
-- [x] **Named `begin()` failure codes.** _(done)_ `begin()`/[`listen()`](@ref DetWebServer::listen)/[`restart()`](@ref DetWebServer::restart)
-      now return a [`DetWebServerResult`](@ref DetWebServerResult) enum: [`DETWS_OK`](@ref DETWS_OK), [`DETWS_ERR_NO_LISTENERS`](@ref DETWS_ERR_NO_LISTENERS),
-      [`DETWS_ERR_LISTENER_FULL`](@ref DETWS_ERR_LISTENER_FULL), [`DETWS_ERR_LISTEN_FAILED`](@ref DETWS_ERR_LISTEN_FAILED)
+- [x] **Named `begin()` failure codes.** _(done)_ `begin()`/[`listen()`](@ref DWS::listen)/[`restart()`](@ref DWS::restart)
+      now return a [`DWSResult`](@ref DWSResult) enum: [`DWS_OK`](@ref DWS_OK), [`DWS_ERR_NO_LISTENERS`](@ref DWS_ERR_NO_LISTENERS),
+      [`DWS_ERR_LISTENER_FULL`](@ref DWS_ERR_LISTENER_FULL), [`DWS_ERR_LISTEN_FAILED`](@ref DWS_ERR_LISTEN_FAILED)
       (`dwserver.h`/`.cpp`). Subsumes the heap-bytes mismatch
       item below (docstring corrected).
 
@@ -1171,7 +1171,7 @@ Newbie / developer experience:
 
 Operator / sysadmin:
 
-- [x] **Runtime stats endpoint ([`DETWS_ENABLE_STATS`](@ref DETWS_ENABLE_STATS)).** _(done)_ `server.stats(slot)`
+- [x] **Runtime stats endpoint ([`DWS_ENABLE_STATS`](@ref DWS_ENABLE_STATS)).** _(done)_ `server.stats(slot)`
       emits a JSON snapshot - uptime, total requests, 2xx/4xx/5xx counts, active
       connection-pool slots, and free heap. Counters are maintained centrally in
       `note_response()` (the single funnel through which `send`/`send_empty`/
@@ -1193,7 +1193,7 @@ Operator / sysadmin:
 
 - [x] **`begin()` heap-bytes contract mismatch.** _(done)_ The misleading
       "abs(result) == heap bytes needed" docstring/example was corrected; `begin()`
-      now returns a `DetWebServerResult` code (see the named-failure-codes item
+      now returns a `DWSResult` code (see the named-failure-codes item
       above). The `heap_needed()`/`heap_available()` no-op shims were removed in
       v4.0.0 (the library makes no heap allocations).
 
@@ -1220,15 +1220,15 @@ Operator / sysadmin:
       [skip ci]`), so it tracks each cycle without a manual pass.
 
 - [x] **Add an SSH usage example** _(done)_ - `examples/34.SSH/34.SSH.ino`:
-      enables SSH, loads the host key from NVS ([`det_ssh_rsa_load_pubkey()`](@ref det_ssh_rsa_load_pubkey)), installs
+      enables SSH, loads the host key from NVS ([`dws_ssh_rsa_load_pubkey()`](@ref dws_ssh_rsa_load_pubkey)), installs
       password + publickey auth callbacks and a channel data callback that echoes
-      via the new [`det_ssh_conn_send()`](@ref det_ssh_conn_send) helper, listens on [`PROTO_SSH`](@ref PROTO_SSH). Required a
-      small public outbound API (`det_ssh_conn_send()`, `ssh_conn.*`) since the
+      via the new [`dws_ssh_conn_send()`](@ref dws_ssh_conn_send) helper, listens on [`PROTO_SSH`](@ref PROTO_SSH). Required a
+      small public outbound API (`dws_ssh_conn_send()`, `ssh_conn.*`) since the
       dispatcher's emit path was internal-only.
 
 - [x] **Publish RSA host-key provisioning docs** _(done)_ - `docs/SSH.md`
       now has a "Host key provisioning" section: `openssl genrsa` →
       `pkcs8 -topk8 -outform DER`, embed + write to NVS (`ssh_host_key/priv_der`)
-      with `Preferences`, and `det_ssh_rsa_load_pubkey()` at boot.
+      with `Preferences`, and `dws_ssh_rsa_load_pubkey()` at boot.
 
 </details>

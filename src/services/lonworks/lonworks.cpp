@@ -8,12 +8,12 @@
 
 #include "services/lonworks/lonworks.h"
 
-#if DETWS_ENABLE_LONWORKS
+#if DWS_ENABLE_LONWORKS
 
 #include <string.h>
 
-size_t detws_lon_build_nv(uint8_t msg_code, uint16_t selector, const uint8_t *value, size_t value_len, uint8_t *out,
-                          size_t cap)
+size_t dws_lon_build_nv(uint8_t msg_code, uint16_t selector, const uint8_t *value, size_t value_len, uint8_t *out,
+                        size_t cap)
 {
     if (!out || (value_len && !value) || selector > Lon::LON_NV_SELECTOR_MAX)
         return 0;
@@ -28,7 +28,7 @@ size_t detws_lon_build_nv(uint8_t msg_code, uint16_t selector, const uint8_t *va
     return n;
 }
 
-bool detws_lon_parse_nv(const uint8_t *pdu, size_t len, LonNv *out)
+bool dws_lon_parse_nv(const uint8_t *pdu, size_t len, LonNv *out)
 {
     if (!pdu || !out || len < 3)
         return false;
@@ -39,7 +39,7 @@ bool detws_lon_parse_nv(const uint8_t *pdu, size_t len, LonNv *out)
     return true;
 }
 
-void detws_lon_snvt_temp_encode(double celsius, uint8_t out[2])
+void dws_lon_snvt_temp_encode(double celsius, uint8_t out[2])
 {
     // SNVT_temp: kelvin in 0.01 K steps -> (celsius + 273.15) * 100, as a signed 16-bit big-endian.
     double kelvin_hundredths = (celsius + 273.15) * 100.0;
@@ -53,13 +53,13 @@ void detws_lon_snvt_temp_encode(double celsius, uint8_t out[2])
     out[1] = (uint8_t)u;
 }
 
-double detws_lon_snvt_temp_decode(const uint8_t in[2])
+double dws_lon_snvt_temp_decode(const uint8_t in[2])
 {
     int16_t v = (int16_t)((in[0] << 8) | in[1]);
     return (double)v / 100.0 - 273.15;
 }
 
-void detws_lon_snvt_switch_encode(double percent, uint8_t state, uint8_t out[2])
+void dws_lon_snvt_switch_encode(double percent, uint8_t state, uint8_t out[2])
 {
     // SNVT_switch: value is 0..200 in 0.5% steps (0..100.5%), state is 0/1/0xFF.
     if (percent < 0)
@@ -71,7 +71,7 @@ void detws_lon_snvt_switch_encode(double percent, uint8_t state, uint8_t out[2])
     out[1] = state;
 }
 
-void detws_lon_snvt_switch_decode(const uint8_t in[2], double *percent, uint8_t *state)
+void dws_lon_snvt_switch_decode(const uint8_t in[2], double *percent, uint8_t *state)
 {
     if (percent)
         *percent = (double)in[0] / 2.0;
@@ -79,4 +79,4 @@ void detws_lon_snvt_switch_decode(const uint8_t in[2], double *percent, uint8_t 
         *state = in[1];
 }
 
-#endif // DETWS_ENABLE_LONWORKS
+#endif // DWS_ENABLE_LONWORKS

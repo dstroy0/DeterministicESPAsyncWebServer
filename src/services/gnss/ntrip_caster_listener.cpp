@@ -9,7 +9,7 @@
 
 #include "services/gnss/ntrip_caster_listener.h"
 
-#if DETWS_ENABLE_NTRIP_CASTER
+#if DWS_ENABLE_NTRIP_CASTER
 
 #include "network_drivers/session/proto_handler.h"
 #include "network_drivers/transport/tcp.h"
@@ -22,7 +22,7 @@ struct CasterMount
 {
     bool active;
     uint8_t listener_id;
-    char name[DETWS_NTRIP_MOUNT_MAX];
+    char name[DWS_NTRIP_MOUNT_MAX];
     NtripMount cfg;       // source-table description (string fields referenced from the caller)
     const char *auth_b64; // required HTTP Basic credentials, or null for open access
 };
@@ -34,21 +34,21 @@ struct CasterRover
     bool streaming;
     uint8_t conn_slot;
     int mount_idx; // index into s_ctx.mounts once streaming, else -1
-    char req[DETWS_NTRIP_REQ_MAX];
+    char req[DWS_NTRIP_REQ_MAX];
     uint16_t req_len;
 };
 
 struct NtripCasterCtx
 {
-    CasterMount mounts[DETWS_NTRIP_MAX_MOUNTS];
-    CasterRover rovers[DETWS_NTRIP_MAX_ROVERS];
+    CasterMount mounts[DWS_NTRIP_MAX_MOUNTS];
+    CasterRover rovers[DWS_NTRIP_MAX_ROVERS];
     bool registered;
 };
 NtripCasterCtx s_ctx;
 
 CasterRover *rover_by_conn(uint8_t slot)
 {
-    for (int i = 0; i < DETWS_NTRIP_MAX_ROVERS; i++)
+    for (int i = 0; i < DWS_NTRIP_MAX_ROVERS; i++)
         if (s_ctx.rovers[i].active && s_ctx.rovers[i].conn_slot == slot)
             return &s_ctx.rovers[i];
     return nullptr;
@@ -56,7 +56,7 @@ CasterRover *rover_by_conn(uint8_t slot)
 
 int rover_find_free()
 {
-    for (int i = 0; i < DETWS_NTRIP_MAX_ROVERS; i++)
+    for (int i = 0; i < DWS_NTRIP_MAX_ROVERS; i++)
         if (!s_ctx.rovers[i].active)
             return i;
     return -1;
@@ -65,7 +65,7 @@ int rover_find_free()
 // Find a mount by name, optionally constrained to a given listener (-1 = any).
 int mount_index(const char *name, int listener_id)
 {
-    for (int i = 0; i < DETWS_NTRIP_MAX_MOUNTS; i++)
+    for (int i = 0; i < DWS_NTRIP_MAX_MOUNTS; i++)
     {
         if (!s_ctx.mounts[i].active)
             continue;
@@ -82,7 +82,7 @@ int mount_index(const char *name, int listener_id)
 size_t mounts_on_listener(uint8_t listener_id, NtripMount *out, size_t cap)
 {
     size_t k = 0;
-    for (int i = 0; i < DETWS_NTRIP_MAX_MOUNTS && k < cap; i++)
+    for (int i = 0; i < DWS_NTRIP_MAX_MOUNTS && k < cap; i++)
         if (s_ctx.mounts[i].active && s_ctx.mounts[i].listener_id == listener_id)
             out[k++] = s_ctx.mounts[i].cfg;
     return k;
@@ -91,10 +91,10 @@ size_t mounts_on_listener(uint8_t listener_id, NtripMount *out, size_t cap)
 // Send a response and close the rover (a control reply is small; a single send is fine).
 void reply_and_close(CasterRover *r, const char *resp, size_t len)
 {
-    if (len && det_conn_active(r->conn_slot))
-        det_conn_send(r->conn_slot, resp, (u16_t)len);
+    if (len && dws_conn_active(r->conn_slot))
+        dws_conn_send(r->conn_slot, resp, (u16_t)len);
     r->active = false;
-    det_conn_close(r->conn_slot);
+    dws_conn_close(r->conn_slot);
 }
 
 // Constant-length credential compare (auth strings are short and app-configured).
@@ -112,9 +112,9 @@ bool auth_ok(const NtripRequest *req, const char *expect)
 
 void serve_sourcetable(CasterRover *r, NtripVersion version)
 {
-    NtripMount list[DETWS_NTRIP_MAX_MOUNTS];
-    size_t nm = mounts_on_listener(det_conn_listener_id(r->conn_slot), list, DETWS_NTRIP_MAX_MOUNTS);
-    char buf[DETWS_NTRIP_REQ_MAX + 256];
+    NtripMount list[DWS_NTRIP_MAX_MOUNTS];
+    size_t nm = mounts_on_listener(dws_conn_listener_id(r->conn_slot), list, DWS_NTRIP_MAX_MOUNTS);
+    char buf[DWS_NTRIP_REQ_MAX + 256];
     size_t n = ntrip_build_sourcetable(buf, sizeof(buf), version, list, nm);
     reply_and_close(r, buf, n);
 }
@@ -134,7 +134,7 @@ void dispatch(CasterRover *r, const NtripRequest *req)
         serve_sourcetable(r, req->version);
         return;
     }
-    int mi = mount_index(req->mountpoint, (int)det_conn_listener_id(r->conn_slot));
+    int mi = mount_index(req->mountpoint, (int)dws_conn_listener_id(r->conn_slot));
     if (mi < 0)
     {
         serve_sourcetable(r, req->version); // unknown mount -> advertise the available ones
@@ -147,10 +147,10 @@ void dispatch(CasterRover *r, const NtripRequest *req)
         return;
     }
     size_t n = ntrip_build_stream_response(buf, sizeof(buf), req->version);
-    if (n == 0 || !det_conn_active(r->conn_slot) || !det_conn_send(r->conn_slot, buf, (u16_t)n))
+    if (n == 0 || !dws_conn_active(r->conn_slot) || !dws_conn_send(r->conn_slot, buf, (u16_t)n))
     {
         r->active = false;
-        det_conn_close(r->conn_slot);
+        dws_conn_close(r->conn_slot);
         return;
     }
     r->streaming = true;
@@ -162,7 +162,7 @@ void caster_on_accept(uint8_t slot)
     int idx = rover_find_free();
     if (idx < 0)
     {
-        det_conn_close(slot); // rover table full
+        dws_conn_close(slot); // rover table full
         return;
     }
     CasterRover *r = &s_ctx.rovers[idx];
@@ -178,22 +178,22 @@ void caster_on_data(uint8_t slot)
     CasterRover *r = rover_by_conn(slot);
     if (!r)
     {
-        det_conn_close(slot);
+        dws_conn_close(slot);
         return;
     }
     if (r->streaming)
     {
         // A streaming rover may send periodic GGA; the base already knows its position, so drain & ignore.
         uint8_t sink[64];
-        while (det_conn_available(slot))
-            if (det_conn_read(slot, sink, sizeof(sink)) == 0)
+        while (dws_conn_available(slot))
+            if (dws_conn_read(slot, sink, sizeof(sink)) == 0)
                 break;
         return;
     }
     // Still reading the request: append what is available, then try to parse.
-    while (det_conn_available(slot) && r->req_len < sizeof(r->req) - 1)
+    while (dws_conn_available(slot) && r->req_len < sizeof(r->req) - 1)
     {
-        size_t got = det_conn_read(slot, (uint8_t *)r->req + r->req_len, sizeof(r->req) - 1 - r->req_len);
+        size_t got = dws_conn_read(slot, (uint8_t *)r->req + r->req_len, sizeof(r->req) - 1 - r->req_len);
         if (got == 0)
             break;
         r->req_len += (uint16_t)got;
@@ -223,15 +223,15 @@ const ProtoHandler s_caster_handler = {caster_on_accept, caster_on_data, caster_
 
 } // namespace
 
-bool det_ntrip_caster_add_mount(uint8_t listener_id, const NtripMount *mount, const char *auth_b64)
+bool dws_ntrip_caster_add_mount(uint8_t listener_id, const NtripMount *mount, const char *auth_b64)
 {
     if (!mount || !mount->mountpoint)
         return false;
-    size_t nl = strnlen(mount->mountpoint, DETWS_NTRIP_MOUNT_MAX + 1);
-    if (nl == 0 || nl >= DETWS_NTRIP_MOUNT_MAX)
+    size_t nl = strnlen(mount->mountpoint, DWS_NTRIP_MOUNT_MAX + 1);
+    if (nl == 0 || nl >= DWS_NTRIP_MOUNT_MAX)
         return false;
     int idx = -1;
-    for (int i = 0; i < DETWS_NTRIP_MAX_MOUNTS; i++)
+    for (int i = 0; i < DWS_NTRIP_MAX_MOUNTS; i++)
         if (!s_ctx.mounts[i].active)
         {
             idx = i;
@@ -254,7 +254,7 @@ bool det_ntrip_caster_add_mount(uint8_t listener_id, const NtripMount *mount, co
     return true;
 }
 
-int det_ntrip_caster_broadcast(const char *mountpoint, const uint8_t *data, size_t len)
+int dws_ntrip_caster_broadcast(const char *mountpoint, const uint8_t *data, size_t len)
 {
     if (!mountpoint || !data || len == 0)
         return 0;
@@ -262,20 +262,20 @@ int det_ntrip_caster_broadcast(const char *mountpoint, const uint8_t *data, size
     if (mi < 0)
         return 0;
     int sent = 0;
-    for (int i = 0; i < DETWS_NTRIP_MAX_ROVERS; i++)
+    for (int i = 0; i < DWS_NTRIP_MAX_ROVERS; i++)
     {
         CasterRover *r = &s_ctx.rovers[i];
         if (!r->active || !r->streaming || r->mount_idx != mi)
             continue;
-        if (!det_conn_active(r->conn_slot))
+        if (!dws_conn_active(r->conn_slot))
             continue;
-        if (det_conn_send(r->conn_slot, data, (u16_t)len))
+        if (dws_conn_send(r->conn_slot, data, (u16_t)len))
             sent++;
     }
     return sent;
 }
 
-int det_ntrip_caster_subscriber_count(const char *mountpoint)
+int dws_ntrip_caster_subscriber_count(const char *mountpoint)
 {
     if (!mountpoint)
         return 0;
@@ -283,18 +283,18 @@ int det_ntrip_caster_subscriber_count(const char *mountpoint)
     if (mi < 0)
         return 0;
     int n = 0;
-    for (int i = 0; i < DETWS_NTRIP_MAX_ROVERS; i++)
+    for (int i = 0; i < DWS_NTRIP_MAX_ROVERS; i++)
         if (s_ctx.rovers[i].active && s_ctx.rovers[i].streaming && s_ctx.rovers[i].mount_idx == mi)
             n++;
     return n;
 }
 
-void det_ntrip_caster_reset(void)
+void dws_ntrip_caster_reset(void)
 {
-    for (int i = 0; i < DETWS_NTRIP_MAX_MOUNTS; i++)
+    for (int i = 0; i < DWS_NTRIP_MAX_MOUNTS; i++)
         s_ctx.mounts[i].active = false;
-    for (int i = 0; i < DETWS_NTRIP_MAX_ROVERS; i++)
+    for (int i = 0; i < DWS_NTRIP_MAX_ROVERS; i++)
         s_ctx.rovers[i].active = false;
 }
 
-#endif // DETWS_ENABLE_NTRIP_CASTER
+#endif // DWS_ENABLE_NTRIP_CASTER

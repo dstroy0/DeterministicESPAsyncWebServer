@@ -8,7 +8,7 @@
 
 #include "services/sparkplug/sparkplug.h"
 
-#if DETWS_ENABLE_SPARKPLUG
+#if DWS_ENABLE_SPARKPLUG
 
 #include "services/protobuf/protobuf.h"
 #include <string.h>
@@ -117,7 +117,7 @@ size_t spb_build_payload(uint8_t *buf, size_t cap, uint64_t timestamp, uint64_t 
         // Serialize each Metric submessage into a bounded temp, then add it as a
         // length-delimited field (Payload.metrics). A metric stays well under this bound
         // unless it carries a large string, in which case the build fails closed.
-        uint8_t metric[DETWS_SPB_METRIC_MAX];
+        uint8_t metric[DWS_SPB_METRIC_MAX];
         size_t mlen = spb_build_metric(metric, sizeof(metric), &metrics[i]);
         if (!mlen)
             return 0;
@@ -127,4 +127,4 @@ size_t spb_build_payload(uint8_t *buf, size_t cap, uint64_t timestamp, uint64_t 
     return pb_writer_finish(&w);
 }
 
-#endif // DETWS_ENABLE_SPARKPLUG
+#endif // DWS_ENABLE_SPARKPLUG

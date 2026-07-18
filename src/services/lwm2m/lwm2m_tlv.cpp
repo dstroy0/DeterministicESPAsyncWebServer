@@ -8,7 +8,7 @@
 
 #include "services/lwm2m/lwm2m_tlv.h"
 
-#if DETWS_ENABLE_LWM2M
+#if DWS_ENABLE_LWM2M
 
 #include <string.h>
 
@@ -167,4 +167,4 @@ bool lwm2m_tlv_value_int(const uint8_t *value, size_t len, int64_t *out)
     return true;
 }
 
-#endif // DETWS_ENABLE_LWM2M
+#endif // DWS_ENABLE_LWM2M

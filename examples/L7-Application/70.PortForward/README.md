@@ -21,7 +21,7 @@ Wiring is two calls:
 
 ```cpp
 int32_t li = server.listen(8080, PROTO_RELAY);   // open the front port
-det_relay_publish((uint8_t)li, "192.168.1.60", 80); // bind it to the origin
+dws_relay_publish((uint8_t)li, "192.168.1.60", 80); // bind it to the origin
 ```
 
 The server's normal `handle()` loop pumps the relay - no extra task.
@@ -84,15 +84,15 @@ connect to this board on port 8080 and you reach the origin
   the origin when the inbound connection arrives; if that fails it drops the
   inbound.
 - **"relay publish failed".** The front port could not be opened (already in use)
-  or more than `DETWS_RELAY_MAX_PUBLISH` ports were published.
+  or more than `DWS_RELAY_MAX_PUBLISH` ports were published.
 - **Only a few connections work at once.** Concurrent relays are capped by
-  `DETWS_RELAY_MAX_CONNS` (raise it in `ServerConfig.h`).
+  `DWS_RELAY_MAX_CONNS` (raise it in `ServerConfig.h`).
 
 ## Going further
 
-- **Publish several ports.** Call `server.listen` + `det_relay_publish` once per
-  port (up to `DETWS_RELAY_MAX_PUBLISH`), each to a different origin.
-- **Throughput.** Each relay carries up to `DETWS_RELAY_BUF` bytes per pump step;
+- **Publish several ports.** Call `server.listen` + `dws_relay_publish` once per
+  port (up to `DWS_RELAY_MAX_PUBLISH`), each to a different origin.
+- **Throughput.** Each relay carries up to `DWS_RELAY_BUF` bytes per pump step;
   raise it for bulk transfers, at the cost of RAM per connection. **HW-verified**
   on an ESP32-S3 over a W5500 wired link: a 1 MB file pulled through the front port
   came back byte-exact (SHA256 matched the origin). Expect ~44 KB/s on a **single-NIC
@@ -108,7 +108,7 @@ The relay lives inside the library, so the flag must reach the whole build:
 pio ci examples/L7-Application/70.PortForward \
   --board esp32dev \
   --lib "." \
-  --project-option="build_flags=-DDETWS_ENABLE_RELAY=1"
+  --project-option="build_flags=-DDWS_ENABLE_RELAY=1"
 ```
 
 (The Arduino IDE reads the flag from `build_opt.h` beside the sketch automatically.)
@@ -119,10 +119,10 @@ pio ci examples/L7-Application/70.PortForward \
 
 `server.listen(port, PROTO_RELAY)` registers a listener whose accepted
 connections are handled by the relay's `ProtoHandler`. On accept it dials the
-origin through `det_client` (the shared outbound TCP transport) and pairs the two
-sockets in a `DetRelay`. Each `server.handle()` tick calls `det_relay_step`,
+origin through `dws_client` (the shared outbound TCP transport) and pairs the two
+sockets in a `DWSRelay`. Each `server.handle()` tick calls `dws_relay_step`,
 which moves whatever bytes are ready in each direction, carrying anything the far
 side is too busy to accept yet (backpressure). When either side closes, the relay
 tears the other down. The byte-pump engine is transport-agnostic and unit-tested
 on its own; this listener is the thin glue that binds its seams to the server's
-inbound connection and an outbound `det_client`.
+inbound connection and an outbound `dws_client`.

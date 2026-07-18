@@ -3,7 +3,7 @@
 
 /**
  * @file file_serving.cpp
- * @brief Filesystem-backed static file serving for DetWebServer (GET/HEAD of an fs::FS path).
+ * @brief Filesystem-backed static file serving for DWS (GET/HEAD of an fs::FS path).
  *
  * Split out of dwserver.cpp (single-purpose server files). Covers the conditional-GET validators
  * (ETag / Last-Modified / If-None-Match / If-Modified-Since), byte-range requests (RFC 7233),
@@ -14,10 +14,10 @@
  */
 
 #include "dwserver.h"
-#include "network_drivers/transport/tcp.h" // conn_pool, det_conn_*, TcpConn/ConnState
+#include "network_drivers/transport/tcp.h" // conn_pool, dws_conn_*, TcpConn/ConnState
 #include "server/dwserver_internal.h"
 #include "server/http_range.h"      // http_parse_byte_range (shared with the edge cache)
-#include "shared_primitives/mime.h" // mime_type, DET_MIME_*
+#include "shared_primitives/mime.h" // mime_type, DWS_MIME_*
 #include <stdio.h>                  // snprintf, sscanf
 #include <string.h>                 // strncasecmp, strchr, strstr, strncmp, strnlen
 #include <time.h>                   // gmtime_r, strftime (RFC 1123 / conditional-GET dates)
@@ -26,7 +26,7 @@
 // File serving
 // ---------------------------------------------------------------------------
 
-#if DETWS_ENABLE_FILE_SERVING
+#if DWS_ENABLE_FILE_SERVING
 // HTTP-date helpers (shared by file serving's Last-Modified / If-Modified-Since and
 // WebDAV's getlastmodified / creationdate). WEBDAV requires FILE_SERVING, so this is
 // the single home for both. Format a time_t as an RFC 1123 GMT date; leaves @p out
@@ -121,17 +121,17 @@ static bool inm_matches(const char *inm, const char *etag)
     return false;
 }
 
-void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, const char *fs_path,
-                                       const char *content_type, const char *content_encoding)
+void DWS::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_sys, const char *fs_path,
+                              const char *content_type, const char *content_encoding)
 {
     fs::File f = file_sys.open(fs_path, "r");
     if (!f)
     {
-        send(slot_id, 404, DET_MIME_TEXT_PLAIN, "Not Found");
+        send(slot_id, 404, DWS_MIME_TEXT_PLAIN, "Not Found");
         return;
     }
 
-    if (!det_conn_active(slot_id))
+    if (!dws_conn_active(slot_id))
     {
         f.close();
         http_reset(slot_id);
@@ -149,7 +149,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     if (content_encoding)
         snprintf(enc_line, sizeof(enc_line), "Content-Encoding: %s\r\n", content_encoding);
 
-#if DETWS_ENABLE_ETAG
+#if DWS_ENABLE_ETAG
     // Conditional GET. Strong validator (ETag) from size + mtime; plus a
     // Last-Modified date validator. A conditional request answers 304 when either
     // the client's If-None-Match matches the ETag, or - per RFC 9110, only when no
@@ -174,7 +174,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
         char h304[RESP_HDR_BUF_SIZE];
         int n304 = snprintf(h304, sizeof(h304), "HTTP/1.1 304 Not Modified\r\nETag: %s\r\n%s%s%s%s\r\n", etag,
                             lastmod_line, _cache_control_buf, _cors_enabled ? _cors_header_buf : "", cl);
-        det_conn_send_flush(slot_id, h304, (u16_t)n304); // 304s are frequent (cache revalidation): one marshal
+        dws_conn_send_flush(slot_id, h304, (u16_t)n304); // 304s are frequent (cache revalidation): one marshal
         resp_end(slot_id, 304, 0, keep, /*pre_flushed=*/true);
         return;
     }
@@ -193,7 +193,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     char range_line[64];
     range_line[0] = '\0';
 
-#if DETWS_ENABLE_RANGE
+#if DWS_ENABLE_RANGE
     accept_ranges = "Accept-Ranges: bytes\r\n"; // advertise range support on every file response
     size_t r_start = 0;
     size_t r_end = 0;
@@ -209,7 +209,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
                             "Content-Length: 0\r\n"
                             "%s%s\r\n",
                             (unsigned)file_size, _cors_enabled ? _cors_header_buf : "", cl);
-        det_conn_send_flush(slot_id, h416, (u16_t)n416);
+        dws_conn_send_flush(slot_id, h416, (u16_t)n416);
         resp_end(slot_id, 416, 0, keep, /*pre_flushed=*/true);
         return;
     }
@@ -235,7 +235,7 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
                  status, status_text(status), content_type, (unsigned)body_len, accept_ranges, range_line, enc_line,
                  etag_line, lastmod_line, _cache_control_buf, _cors_enabled ? _cors_header_buf : "", cl);
 
-    det_conn_send(slot_id, header, (u16_t)hlen);
+    dws_conn_send(slot_id, header, (u16_t)hlen);
 
     // HEAD or empty body: headers only, finish now.
     if (head || body_len == 0)
@@ -260,17 +260,17 @@ void DetWebServer::serve_file_internal(uint8_t slot_id, bool head, fs::FS &file_
     file_send_pump(slot_id);
 }
 
-// Page out a pending file response across worker loops: send up to det_conn_sndbuf()
+// Page out a pending file response across worker loops: send up to dws_conn_sndbuf()
 // bytes now and return; the next loop resumes (woken by the sent callback) until the
 // whole body has been queued, then finish the response. Bounded per loop, never
 // truncates, never blocks the worker.
-void DetWebServer::file_send_pump(uint8_t slot_id)
+void DWS::file_send_pump(uint8_t slot_id)
 {
     FileSend &s = s_send.file[slot_id];
     if (!s.active)
         return;
 
-    if (!det_conn_active(slot_id))
+    if (!dws_conn_active(slot_id))
     {
         // Connection went away mid-transfer: drop the source and the continuation.
         s.file.close();
@@ -280,15 +280,15 @@ void DetWebServer::file_send_pump(uint8_t slot_id)
 
     // A file body still being paged out is active, not idle: keep the CONN_TIMEOUT_MS idle sweep
     // off it so a transient send stall on a large file cannot reap the slot mid-transfer.
-    det_conn_touch_active(slot_id);
+    dws_conn_touch_active(slot_id);
 
     uint8_t chunk[FILE_CHUNK_SIZE];
     while (s.remaining > 0)
     {
-        u16_t avail = det_conn_sndbuf(slot_id);
+        u16_t avail = dws_conn_sndbuf(slot_id);
         if (avail == 0)
         {
-            det_conn_flush(slot_id); // push what is queued; resume on a later loop
+            dws_conn_flush(slot_id); // push what is queued; resume on a later loop
             return;
         }
         size_t want = s.remaining < sizeof(chunk) ? s.remaining : sizeof(chunk);
@@ -300,10 +300,10 @@ void DetWebServer::file_send_pump(uint8_t slot_id)
             s.remaining = 0; // read error / short file: stop (response will be short)
             break;
         }
-        if (!det_conn_send(slot_id, chunk, (u16_t)n))
+        if (!dws_conn_send(slot_id, chunk, (u16_t)n))
         {
             s.file.seek((uint32_t)s.off); // un-read the bytes that did not go out; retry next loop
-            det_conn_flush(slot_id);
+            dws_conn_flush(slot_id);
             return;
         }
         s.off += n;
@@ -313,16 +313,16 @@ void DetWebServer::file_send_pump(uint8_t slot_id)
     // Whole body queued: finish the response (flush, keep-alive/close, log, reset).
     s.file.close();
     s.active = false;
-    det_conn_flush(slot_id);
+    dws_conn_flush(slot_id);
     resp_end(slot_id, s.status, s.total, s.keep);
 }
 
-void DetWebServer::serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_path, const char *content_type)
+void DWS::serve_file(uint8_t slot_id, fs::FS &file_sys, const char *fs_path, const char *content_type)
 {
     serve_file_internal(slot_id, req_is_head(slot_id), file_sys, fs_path, content_type, nullptr);
 }
 
-void DetWebServer::serve_static(const char *url_prefix, fs::FS &file_sys, const char *fs_root)
+void DWS::serve_static(const char *url_prefix, fs::FS &file_sys, const char *fs_root)
 {
     if (_route_count >= MAX_ROUTES)
         return;
@@ -342,11 +342,11 @@ void DetWebServer::serve_static(const char *url_prefix, fs::FS &file_sys, const 
     r->static_root = fs_root;
 }
 
-void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Route *r)
+void DWS::serve_static_request(uint8_t slot_id, HttpReq *req, const Route *r)
 {
     if (!r->static_fs)
     {
-        send(slot_id, 404, DET_MIME_TEXT_PLAIN, "Not Found");
+        send(slot_id, 404, DWS_MIME_TEXT_PLAIN, "Not Found");
         return;
     }
 
@@ -359,7 +359,7 @@ void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Rou
     // Reject path traversal before touching the filesystem.
     if (strstr(sub, ".."))
     {
-        send(slot_id, 404, DET_MIME_TEXT_PLAIN, "Not Found");
+        send(slot_id, 404, DWS_MIME_TEXT_PLAIN, "Not Found");
         return;
     }
 
@@ -380,7 +380,7 @@ void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Rou
                  : snprintf(fs_path, sizeof(fs_path), "%s%s%s", root, sep, sub);
     if (wn <= 0 || wn >= (int)sizeof(fs_path))
     {
-        send(slot_id, 404, DET_MIME_TEXT_PLAIN, "Not Found");
+        send(slot_id, 404, DWS_MIME_TEXT_PLAIN, "Not Found");
         return;
     }
 
@@ -403,4 +403,4 @@ void DetWebServer::serve_static_request(uint8_t slot_id, HttpReq *req, const Rou
 
     serve_file_internal(slot_id, head, *r->static_fs, fs_path, ctype, nullptr);
 }
-#endif // DETWS_ENABLE_FILE_SERVING
+#endif // DWS_ENABLE_FILE_SERVING

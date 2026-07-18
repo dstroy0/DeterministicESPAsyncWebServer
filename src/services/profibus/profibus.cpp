@@ -8,11 +8,11 @@
 
 #include "services/profibus/profibus.h"
 
-#if DETWS_ENABLE_PROFIBUS
+#if DWS_ENABLE_PROFIBUS
 
 #include <string.h>
 
-uint8_t detws_pb_fcs(const uint8_t *bytes, size_t len)
+uint8_t dws_pb_fcs(const uint8_t *bytes, size_t len)
 {
     uint8_t sum = 0;
     for (size_t i = 0; i < len; i++)
@@ -20,7 +20,7 @@ uint8_t detws_pb_fcs(const uint8_t *bytes, size_t len)
     return sum;
 }
 
-size_t detws_pb_build_sd1(uint8_t da, uint8_t sa, uint8_t fc, uint8_t *out, size_t cap)
+size_t dws_pb_build_sd1(uint8_t da, uint8_t sa, uint8_t fc, uint8_t *out, size_t cap)
 {
     if (!out || cap < 6)
         return 0;
@@ -29,13 +29,13 @@ size_t detws_pb_build_sd1(uint8_t da, uint8_t sa, uint8_t fc, uint8_t *out, size
     out[2] = sa;
     out[3] = fc;
     uint8_t body[3] = {da, sa, fc};
-    out[4] = detws_pb_fcs(body, 3);
+    out[4] = dws_pb_fcs(body, 3);
     out[5] = Profibus::PB_ED;
     return 6;
 }
 
-size_t detws_pb_build_sd2(uint8_t da, uint8_t sa, uint8_t fc, const uint8_t *data, size_t data_len, uint8_t *out,
-                          size_t cap)
+size_t dws_pb_build_sd2(uint8_t da, uint8_t sa, uint8_t fc, const uint8_t *data, size_t data_len, uint8_t *out,
+                        size_t cap)
 {
     if (!out || (data_len && !data) || data_len > 246)
         return 0;
@@ -58,12 +58,12 @@ size_t detws_pb_build_sd2(uint8_t da, uint8_t sa, uint8_t fc, const uint8_t *dat
         i += data_len;
     }
     // FCS over DA+SA+FC+data (out[4 .. 4+le-1]).
-    out[i++] = detws_pb_fcs(out + 4, le);
+    out[i++] = dws_pb_fcs(out + 4, le);
     out[i++] = Profibus::PB_ED;
     return i;
 }
 
-bool detws_pb_parse(const uint8_t *frame, size_t len, PbTelegram *out)
+bool dws_pb_parse(const uint8_t *frame, size_t len, PbTelegram *out)
 {
     if (!frame || !out || len < 6)
         return false;
@@ -72,7 +72,7 @@ bool detws_pb_parse(const uint8_t *frame, size_t len, PbTelegram *out)
     {
         // SD1 DA SA FC FCS ED (len >= 6 already guaranteed above)
         uint8_t body[3] = {frame[1], frame[2], frame[3]};
-        if (detws_pb_fcs(body, 3) != frame[4] || frame[5] != Profibus::PB_ED)
+        if (dws_pb_fcs(body, 3) != frame[4] || frame[5] != Profibus::PB_ED)
             return false;
         out->sd = Profibus::PB_SD1;
         out->da = frame[1];
@@ -95,7 +95,7 @@ bool detws_pb_parse(const uint8_t *frame, size_t len, PbTelegram *out)
         size_t total = 4 + le + 2; // header(4) + le body + FCS + ED
         if (len < total)
             return false;
-        if (detws_pb_fcs(frame + 4, le) != frame[4 + le] || frame[4 + le + 1] != Profibus::PB_ED)
+        if (dws_pb_fcs(frame + 4, le) != frame[4 + le] || frame[4 + le + 1] != Profibus::PB_ED)
             return false;
         out->sd = Profibus::PB_SD2;
         out->da = frame[4];
@@ -109,4 +109,4 @@ bool detws_pb_parse(const uint8_t *frame, size_t len, PbTelegram *out)
     return false;
 }
 
-#endif // DETWS_ENABLE_PROFIBUS
+#endif // DWS_ENABLE_PROFIBUS

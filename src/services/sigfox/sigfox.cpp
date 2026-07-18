@@ -11,7 +11,7 @@
 
 #include "services/sigfox/sigfox.h"
 
-#if DETWS_ENABLE_SIGFOX
+#if DWS_ENABLE_SIGFOX
 
 namespace
 {
@@ -42,7 +42,7 @@ bool contains(const char *hay, uint16_t len, const char *needle)
 
 uint16_t sigfox_build_uplink(const uint8_t *payload, uint8_t len, char *out, uint16_t cap)
 {
-    if (!out || !payload || len == 0 || len > DETWS_SIGFOX_MAX_PAYLOAD)
+    if (!out || !payload || len == 0 || len > DWS_SIGFOX_MAX_PAYLOAD)
         return 0;
     // "AT$SF=" (6) + 2*len hex + "\r\n" (2) + NUL (1)
     uint16_t need = (uint16_t)(6 + 2 * len + 2 + 1);
@@ -74,4 +74,4 @@ sigfox_result sigfox_parse_response(const char *buf, uint16_t len)
     return sigfox_result::SIGFOX_PENDING;
 }
 
-#endif // DETWS_ENABLE_SIGFOX
+#endif // DWS_ENABLE_SIGFOX

@@ -3,16 +3,16 @@
 
 /**
  * @file web_terminal.cpp
- * @brief Browser web-serial terminal over WebSocket (DETWS_ENABLE_WEB_TERMINAL).
+ * @brief Browser web-serial terminal over WebSocket (DWS_ENABLE_WEB_TERMINAL).
  */
 
 #include "services/web_terminal/web_terminal.h"
 
-#if DETWS_ENABLE_WEB_TERMINAL
+#if DWS_ENABLE_WEB_TERMINAL
 
 // Dependency (WEB_TERMINAL requires WEBSOCKET) is enforced centrally in ServerConfig.h.
 
-#include "network_drivers/application/web_assets.h" // DETWS_TERMINAL_PAGE
+#include "network_drivers/application/web_assets.h" // DWS_TERMINAL_PAGE
 #include "shared_primitives/mime.h"
 #include <stdarg.h>
 #include <stdio.h>
@@ -27,7 +27,7 @@
 // callbacks, so they reach this single owner directly.)
 struct WebTerminalCtx
 {
-    DetWebServer *srv = nullptr;
+    DWS *srv = nullptr;
     TermCommandCb cb = nullptr;
     char ws_path[MAX_PATH_LEN] = {0};
     bool is_client[MAX_WS_CONNS] = {}; // which ws slots are terminal browsers
@@ -40,7 +40,7 @@ static void term_page_handler(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
     if (s_term.srv)
-        s_term.srv->send(slot_id, 200, DET_MIME_TEXT_HTML, DETWS_TERMINAL_PAGE);
+        s_term.srv->send(slot_id, 200, DWS_MIME_TEXT_HTML, DWS_TERMINAL_PAGE);
 }
 
 static void term_ws_connect(uint8_t ws_id)
@@ -65,7 +65,7 @@ static void term_ws_close(uint8_t ws_id)
 
 // ---- public API -----------------------------------------------------------
 
-void detws_web_terminal_begin(DetWebServer &server, const char *path)
+void dws_web_terminal_begin(DWS &server, const char *path)
 {
     s_term.srv = &server;
     for (uint8_t i = 0; i < MAX_WS_CONNS; i++)
@@ -79,12 +79,12 @@ void detws_web_terminal_begin(DetWebServer &server, const char *path)
     server.on_ws(s_term.ws_path, term_ws_connect, term_ws_message, term_ws_close);
 }
 
-void detws_web_terminal_on_command(TermCommandCb cb)
+void dws_web_terminal_on_command(TermCommandCb cb)
 {
     s_term.cb = cb;
 }
 
-void detws_web_terminal_print(const char *s)
+void dws_web_terminal_print(const char *s)
 {
     if (!s_term.srv || !s)
         return;
@@ -95,24 +95,24 @@ void detws_web_terminal_print(const char *s)
     }
 }
 
-void detws_web_terminal_println(const char *s)
+void dws_web_terminal_println(const char *s)
 {
     char buf[TERM_TX_BUF_SIZE];
     snprintf(buf, sizeof(buf), "%s\n", s ? s : "");
-    detws_web_terminal_print(buf);
+    dws_web_terminal_print(buf);
 }
 
-void detws_web_terminal_printf(const char *fmt, ...)
+void dws_web_terminal_printf(const char *fmt, ...)
 {
     char buf[TERM_TX_BUF_SIZE];
     va_list ap;
     va_start(ap, fmt);
     vsnprintf(buf, sizeof(buf), fmt, ap);
     va_end(ap);
-    detws_web_terminal_print(buf);
+    dws_web_terminal_print(buf);
 }
 
-uint8_t detws_web_terminal_client_count()
+uint8_t dws_web_terminal_client_count()
 {
     uint8_t n = 0;
     for (uint8_t i = 0; i < MAX_WS_CONNS; i++)
@@ -121,4 +121,4 @@ uint8_t detws_web_terminal_client_count()
     return n;
 }
 
-#endif // DETWS_ENABLE_WEB_TERMINAL
+#endif // DWS_ENABLE_WEB_TERMINAL

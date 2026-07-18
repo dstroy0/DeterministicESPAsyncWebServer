@@ -1,6 +1,6 @@
 # 12.Nrf24Gateway - a real nRF24L01+ radio bridged to the gateway
 
-**Layer:** Foundation · **Build flags:** `DETWS_ENABLE_NRF24`, `DETWS_ENABLE_GATEWAY`
+**Layer:** Foundation · **Build flags:** `DWS_ENABLE_NRF24`, `DWS_ENABLE_GATEWAY`
 
 ## What this example teaches
 
@@ -11,7 +11,7 @@ plain register read/write, the nRF24 uses an **SPI command protocol** and a sepa
 **CE** pin, so its `nrf_bus` carries an SPI transfer plus a CE callback.
 
 ```
-nRF24 RX --SPI--> nrf24_recv() -> pipe + payload -> det_gateway_uplink(port, pipe, ...)
+nRF24 RX --SPI--> nrf24_recv() -> pipe + payload -> dws_gateway_uplink(port, pipe, ...)
                                                            |
                                         envelope + topic  nrf24/0/<pipe>
                                                            |
@@ -20,17 +20,17 @@ nRF24 RX --SPI--> nrf24_recv() -> pipe + payload -> det_gateway_uplink(port, pip
 
 The nRF24 does its own **hardware addressing**: a received frame's source is the **pipe
 number** it arrived on, so there is no in-payload header (no codec) - the pipe is the
-address handed to `det_gateway_uplink()`. Payloads are a **static width**
-(`DETWS_NRF24_PAYLOAD`, default 32); a short send is zero-padded.
+address handed to `dws_gateway_uplink()`. Payloads are a **static width**
+(`DWS_NRF24_PAYLOAD`, default 32); a short send is zero-padded.
 
 ```cpp
 nrf_config cfg = {}; cfg.address = addr5; cfg.channel = 76; cfg.data_rate = 0; cfg.tx_power = 3;
 nrf24_init(&bus, &cfg);
 nrf24_set_rx(&bus);
 
-uint8_t buf[DETWS_NRF24_PAYLOAD]; uint8_t pipe;
+uint8_t buf[DWS_NRF24_PAYLOAD]; uint8_t pipe;
 int n = nrf24_recv(&bus, buf, sizeof(buf), &pipe);   // -> a frame, or -1
-det_gateway_uplink(0, pipe, buf, n, 0);                   // pipe = source address
+dws_gateway_uplink(0, pipe, buf, n, 0);                   // pipe = source address
 ```
 
 ## Wiring (ESP32 <-> nRF24L01+)
@@ -55,6 +55,6 @@ The flags must reach the library build, so pass them as build flags:
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_NRF24=1 -DDETWS_ENABLE_GATEWAY=1" \
+  --project-option="build_flags=-DDWS_ENABLE_NRF24=1 -DDWS_ENABLE_GATEWAY=1" \
   --lib="." examples/Foundation/12.Nrf24Gateway/12.Nrf24Gateway.ino
 ```

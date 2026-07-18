@@ -12,15 +12,15 @@
 
 #include "network_drivers/presentation/http2/hpack.h"
 
-#if DETWS_ENABLE_HTTP2
+#if DWS_ENABLE_HTTP2
 
 #include "network_drivers/presentation/hpack_prim/hpack_prim.h" // shared prefix-int + Huffman
 #include <string.h>
 
 namespace
 {
-#define HPACK_BYTES DETWS_HPACK_TABLE_BYTES
-#define HPACK_ENTS DETWS_HPACK_MAX_ENTRIES
+#define HPACK_BYTES DWS_HPACK_TABLE_BYTES
+#define HPACK_ENTS DWS_HPACK_MAX_ENTRIES
 
 // Static table (1-indexed; entry 0 is a placeholder). {name, value}. Generated from RFC 7541 App A.
 const char *const STATIC[62][2] = {
@@ -324,4 +324,4 @@ size_t hpack_encode_header(uint8_t *out, size_t cap, const char *name, size_t na
     return o + vs;
 }
 
-#endif // DETWS_ENABLE_HTTP2
+#endif // DWS_ENABLE_HTTP2

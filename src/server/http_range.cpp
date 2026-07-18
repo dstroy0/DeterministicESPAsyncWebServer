@@ -8,7 +8,7 @@
 
 #include "server/http_range.h"
 
-#if DETWS_ENABLE_RANGE
+#if DWS_ENABLE_RANGE
 
 #include <string.h> // strncasecmp, strchr
 
@@ -82,4 +82,4 @@ int http_parse_byte_range(const char *hdr, size_t size, size_t *out_start, size_
     return 1;
 }
 
-#endif // DETWS_ENABLE_RANGE
+#endif // DWS_ENABLE_RANGE

@@ -3,7 +3,7 @@
 
 /**
  * @file 53.EspNow.ino
- * @brief ESP-NOW peer messaging (DETWS_ENABLE_ESPNOW).
+ * @brief ESP-NOW peer messaging (DWS_ENABLE_ESPNOW).
  *
  * Connectionless peer-to-peer radio messaging - no AP, no IP. Each board
  * broadcasts a counter every 2 s and prints any framed message it receives.
@@ -14,11 +14,11 @@
  * callback to fan ESP-NOW traffic out to browser WebSocket clients.
  *
  * NOTE: enable it for the whole build. In platformio.ini:
- *     build_flags = -DDETWS_ENABLE_ESPNOW=1
+ *     build_flags = -DDWS_ENABLE_ESPNOW=1
  * (Arduino IDE: it is already set for you in the build_opt.h beside this sketch, so it builds as-is.)
  */
 
-#define DETWS_ENABLE_ESPNOW 1
+#define DWS_ENABLE_ESPNOW 1
 
 #include "dwserver.h" // discovers the library (adds src/ to the include path)
 #include "services/espnow/espnow.h"
@@ -44,7 +44,7 @@ void setup()
     WiFi.disconnect();
     esp_wifi_set_channel(CHANNEL, WIFI_SECOND_CHAN_NONE);
 
-    if (!detws_espnow_begin(CHANNEL, on_espnow))
+    if (!dws_espnow_begin(CHANNEL, on_espnow))
     {
         Serial.println("ESP-NOW init failed");
         return;
@@ -64,7 +64,7 @@ void loop()
         last = millis();
         char msg[24];
         int len = snprintf(msg, sizeof(msg), "count=%lu", (unsigned long)n++);
-        bool ok = detws_espnow_broadcast(MSG_COUNTER, (const uint8_t *)msg, (size_t)len);
+        bool ok = dws_espnow_broadcast(MSG_COUNTER, (const uint8_t *)msg, (size_t)len);
         Serial.printf("broadcast %s -> %s\n", msg, ok ? "ok" : "FAIL");
     }
 }

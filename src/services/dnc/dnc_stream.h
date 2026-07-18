@@ -3,7 +3,7 @@
 
 /**
  * @file dnc_stream.h
- * @brief DNC drip-feed engine (DETWS_ENABLE_DNC) - stream a whole G-code program over a transport,
+ * @brief DNC drip-feed engine (DWS_ENABLE_DNC) - stream a whole G-code program over a transport,
  *        pacing on reverse-channel XON/XOFF.
  *
  * The dnc codec (dnc.h) is pure framing; this drives the exchange: it emits the leader, the `%`
@@ -22,7 +22,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_DNC
+#if DWS_ENABLE_DNC
 
 #include "dnc.h"
 #include <stddef.h>
@@ -33,7 +33,7 @@ enum class DncStreamResult : int32_t
 {
     DNC_STREAM_OK = 0,
     DNC_STREAM_ERR_ARG = -1,    ///< a required argument was null
-    DNC_STREAM_ERR_IO = -2,     ///< a send/recv failed, or XOFF never cleared (see DETWS_DNC_XOFF_MAX_POLLS)
+    DNC_STREAM_ERR_IO = -2,     ///< a send/recv failed, or XOFF never cleared (see DWS_DNC_XOFF_MAX_POLLS)
     DNC_STREAM_ERR_ENCODE = -3, ///< a source line had no representation in the tape code, or overran a block
 };
 
@@ -52,7 +52,7 @@ using DncRecvFn = int (*)(void *ctx, uint8_t *buf, size_t cap);
  * @brief Drip-feed @p program (plain ASCII G-code, lines separated by LF; a trailing CR is stripped)
  *        as a framed DNC stream over @p send / @p recv, pausing on XOFF.
  *
- * Each line must fit DETWS_DNC_LINE_MAX; a longer or untranslatable line fails closed with
+ * Each line must fit DWS_DNC_LINE_MAX; a longer or untranslatable line fails closed with
  * ::DNC_STREAM_ERR_ENCODE (nothing partial is left mid-block). An empty @p program still frames the
  * `%` start/end markers.
  *
@@ -61,6 +61,6 @@ using DncRecvFn = int (*)(void *ctx, uint8_t *buf, size_t cap);
 DncStreamResult dnc_stream(const DncCfg *cfg, const char *program, size_t prog_len, DncSendFn send, DncRecvFn recv,
                            void *ctx);
 
-#endif // DETWS_ENABLE_DNC
+#endif // DWS_ENABLE_DNC
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_DNC_STREAM_H

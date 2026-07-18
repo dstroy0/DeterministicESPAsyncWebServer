@@ -3,7 +3,7 @@
 
 /**
  * @file j1939.h
- * @brief SAE J1939 message codec (DETWS_ENABLE_J1939) - the heavy-duty-vehicle / agriculture /
+ * @brief SAE J1939 message codec (DWS_ENABLE_J1939) - the heavy-duty-vehicle / agriculture /
  *        marine / genset CAN higher-layer protocol, over 29-bit extended CAN frames.
  *
  * J1939 packs a 29-bit extended identifier as:
@@ -14,7 +14,7 @@
  * for PDU2 (broadcast, PF >= 240); for PDU1 (PF < 240) PS is the destination address (DA) and
  * the PGN's low octet is 0. This codec encodes / decodes that id, builds single-frame
  * messages, runs the Transport Protocol (BAM broadcast + RTS/CTS connection mode) with a
- * reassembler for messages up to `DETWS_J1939_TP_MAX` octets, and builds the Address Claimed
+ * reassembler for messages up to `DWS_J1939_TP_MAX` octets, and builds the Address Claimed
  * (with a 64-bit NAME) and Request PGN messages.
  *
  * Pure and host-tested. Drive it from the ESP32 TWAI peripheral (or an MCP2515 over SPI) to
@@ -29,7 +29,7 @@
 
 #include "ServerConfig.h"
 
-#if DETWS_ENABLE_J1939
+#if DWS_ENABLE_J1939
 
 #include "shared_primitives/can.h"
 #include <stddef.h>
@@ -85,7 +85,7 @@ struct J1939TpRx
     uint8_t num_packets; ///< announced packet count
     uint8_t next_seq;    ///< next expected sequence number (1-based)
     uint16_t received;   ///< octets stored so far
-    uint8_t buf[DETWS_J1939_TP_MAX];
+    uint8_t buf[DWS_J1939_TP_MAX];
 };
 
 // --- identifier ---
@@ -130,5 +130,5 @@ void j1939_tp_reset(J1939TpRx *rx);
 /** @brief Feed a received frame to the reassembler; see @ref J1939TpResult. */
 J1939TpResult j1939_tp_feed(J1939TpRx *rx, const CanFrame *f);
 
-#endif // DETWS_ENABLE_J1939
+#endif // DWS_ENABLE_J1939
 #endif // DETERMINISTICESPASYNCWEBSERVER_J1939_H

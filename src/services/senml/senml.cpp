@@ -8,7 +8,7 @@
 
 #include "services/senml/senml.h"
 
-#if DETWS_ENABLE_SENML
+#if DWS_ENABLE_SENML
 
 #include "network_drivers/presentation/cbor/cbor.h"
 #include "network_drivers/presentation/json/json.h"
@@ -178,4 +178,4 @@ size_t senml_cbor_build(uint8_t *buf, size_t cap, const SenmlRecord *records, si
     return cbor_ok(&w) ? cbor_len(&w) : 0;
 }
 
-#endif // DETWS_ENABLE_SENML
+#endif // DWS_ENABLE_SENML

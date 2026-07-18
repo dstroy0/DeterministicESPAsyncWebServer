@@ -9,7 +9,7 @@
 #include <string.h>
 #include <unity.h>
 
-static DetWebServer server;
+static DWS server;
 
 static char g_a[64], g_b[64], g_missing[64];
 static bool g_found_a, g_found_b, g_found_missing;
@@ -43,7 +43,7 @@ static void h_form_trunc(uint8_t slot, HttpReq *req)
 
 void setUp()
 {
-    server = DetWebServer();
+    server = DWS();
     g_a[0] = g_b[0] = g_missing[0] = g_trunc[0] = '\0';
     g_found_a = g_found_b = g_found_missing = g_found_trunc = false;
     for (int i = 0; i < MAX_CONNS; i++)

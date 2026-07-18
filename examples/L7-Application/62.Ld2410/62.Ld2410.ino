@@ -3,7 +3,7 @@
 
 /**
  * @file 62.Ld2410.ino
- * @brief Detect people with an HLK-LD2410 mmWave radar (DETWS_ENABLE_LD2410).
+ * @brief Detect people with an HLK-LD2410 mmWave radar (DWS_ENABLE_LD2410).
  *
  * The LD2410 is a cheap 24 GHz radar that sees a person even when they are perfectly still
  * (it senses breathing / micro-motion), through thin walls, and in the dark - no camera. It
@@ -16,10 +16,10 @@
  * VCC -> 5V (the module has its own 3.3V regulator), GND -> GND. Change the pins below if your
  * board's UART2 is elsewhere.
  *
- * Build flag (PlatformIO): `-DDETWS_ENABLE_LD2410=1`
+ * Build flag (PlatformIO): `-DDWS_ENABLE_LD2410=1`
  */
 
-#define DETWS_ENABLE_LD2410 1
+#define DWS_ENABLE_LD2410 1
 
 #include "dwserver.h" // declares the library dependency (Arduino build)
 #include "services/ld2410/ld2410.h"

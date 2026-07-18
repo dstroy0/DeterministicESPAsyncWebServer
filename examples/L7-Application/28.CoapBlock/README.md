@@ -1,6 +1,6 @@
 # 28.CoapBlock - CoAP block-wise transfer (large responses and uploads)
 
-**Layer:** L7 Application · **Build flags:** `DETWS_ENABLE_COAP`, `DETWS_ENABLE_COAP_BLOCK`, `DETWS_COAP_MAX_PAYLOAD`
+**Layer:** L7 Application · **Build flags:** `DWS_ENABLE_COAP`, `DWS_ENABLE_COAP_BLOCK`, `DWS_COAP_MAX_PAYLOAD`
 
 ## What this example teaches
 
@@ -42,14 +42,14 @@ void h_upload(const CoapRequest *req, CoapResponse *resp) {
 }
 ```
 
-`DETWS_COAP_MAX_PAYLOAD` sizes the static reassembly buffer; set it to the largest
+`DWS_COAP_MAX_PAYLOAD` sizes the static reassembly buffer; set it to the largest
 representation/upload you need (here 1024).
 
 ## Build and run
 
 ```sh
 pio ci --board=esp32dev --project-option="framework=arduino" \
-  --project-option="build_flags=-DDETWS_ENABLE_COAP=1 -DDETWS_ENABLE_COAP_BLOCK=1 -DDETWS_COAP_MAX_PAYLOAD=1024" \
+  --project-option="build_flags=-DDWS_ENABLE_COAP=1 -DDWS_ENABLE_COAP_BLOCK=1 -DDWS_COAP_MAX_PAYLOAD=1024" \
   --lib="." examples/L7-Application/28.CoapBlock/28.CoapBlock.ino
 ```
 
@@ -67,9 +67,9 @@ with added explanatory comments:
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-#define DETWS_ENABLE_COAP 1
-#define DETWS_ENABLE_COAP_BLOCK 1
-#define DETWS_COAP_MAX_PAYLOAD 1024 // room for a multi-block representation
+#define DWS_ENABLE_COAP 1
+#define DWS_ENABLE_COAP_BLOCK 1
+#define DWS_COAP_MAX_PAYLOAD 1024 // room for a multi-block representation
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
@@ -119,10 +119,10 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    det_coap_server_reset();
-    det_coap_server_add_resource("/big", CoapMethodMask::COAP_ALLOW_GET, h_big);
-    det_coap_server_add_resource("/upload", CoapMethodMask::COAP_ALLOW_PUT, h_upload);
-    det_coap_server_begin(5683);
+    dws_coap_server_reset();
+    dws_coap_server_add_resource("/big", CoapMethodMask::COAP_ALLOW_GET, h_big);
+    dws_coap_server_add_resource("/upload", CoapMethodMask::COAP_ALLOW_PUT, h_upload);
+    dws_coap_server_begin(5683);
     Serial.println("CoAP server on :5683");
     Serial.println("  GET coap://<ip>/big      (block-wise responses)");
     Serial.println("  PUT coap://<ip>/upload   (block-wise uploads)");
