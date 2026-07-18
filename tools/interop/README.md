@@ -4,7 +4,7 @@
 third-party client (`curl --http3`, ngtcp2, quiche) can complete a full QUIC + TLS 1.3 + HTTP/3
 exchange against the actual code. It drives `quic_server` through the same host seam the unit tests
 use (`quic_server_ingest` + the output sink), wired to a POSIX UDP socket. On an ESP32 the same
-`quic_server` binds UDP through `det_udp`; this is the desktop stand-in that validates the wire
+`quic_server` binds UDP through `dws_udp`; this is the desktop stand-in that validates the wire
 without flashing a board.
 
 This is the faithful third-party proof required by the HTTP/3 profile: our server is

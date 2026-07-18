@@ -7,7 +7,7 @@
 // NOT a unit test: it drives quic_server through the same host seam the unit tests use
 // (quic_server_ingest + the output sink), wired to a real socket. See tools/interop/README.md.
 //
-// On ESP32 the same quic_server binds UDP through det_udp; this harness is the Linux stand-in that
+// On ESP32 the same quic_server binds UDP through dws_udp; this harness is the Linux stand-in that
 // lets a real client validate the wire without flashing a board.
 
 #include "network_drivers/presentation/http3/quic_server.h"

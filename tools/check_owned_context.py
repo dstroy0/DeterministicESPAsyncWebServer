@@ -35,7 +35,7 @@ SHARED_SUBSTRATE = {
     "conn_pool",  # tcp.cpp   - the TCP connection pool (extern in tcp.h)
     "http_pool",  # http_parser.cpp - the parsed-request pool (extern in http_parser.h)
     "ws_pool",  # websocket.cpp   - the WebSocket connection pool (extern in websocket.h)
-    "sse_pool",  # sse.cpp         - the SSE connection pool (extern in sse.h)
+    "dws_sse_pool",  # sse.cpp         - the SSE connection pool (extern in sse.h)
     "listener_pool",  # listener.cpp    - the listener pool
     "http_req_count",  # presentation.cpp - per-slot request counter (extern)
     # SSH per-connection substrate: one row per SSH slot, indexed cross-TU by the SSH layers.
@@ -46,7 +46,7 @@ SHARED_SUBSTRATE = {
     "ssh_sess",  # ssh_transport.cpp- per-conn session state
     "ssh_host_pubkey",  # ssh_rsa.cpp      - the loaded RSA host public key
     "crypto_work",  # ssh_bignum.cpp   - shared SSH bignum scratch
-    "detws_ap_ip",  # tcp.cpp    - the softAP IP (extern)
+    "dws_ap_ip",  # tcp.cpp    - the softAP IP (extern)
 }
 
 # A file-scope definition line (column 0). Optional ALL_CAPS attribute macros
