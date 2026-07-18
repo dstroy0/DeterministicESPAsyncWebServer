@@ -12,35 +12,16 @@
 
 #include <string.h>
 
-static const uint8_t NTLMSSP_SIG[8] = {'N', 'T', 'L', 'M', 'S', 'S', 'P', 0};
+#include "shared_primitives/endian.h"
 
-static uint16_t rd16(const uint8_t *p)
-{
-    return (uint16_t)(p[0] | (p[1] << 8));
-}
-static uint32_t rd32(const uint8_t *p)
-{
-    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
-}
-static void wr16(uint8_t *p, uint16_t v)
-{
-    p[0] = (uint8_t)v;
-    p[1] = (uint8_t)(v >> 8);
-}
-static void wr32(uint8_t *p, uint32_t v)
-{
-    p[0] = (uint8_t)v;
-    p[1] = (uint8_t)(v >> 8);
-    p[2] = (uint8_t)(v >> 16);
-    p[3] = (uint8_t)(v >> 24);
-}
+static const uint8_t NTLMSSP_SIG[8] = {'N', 'T', 'L', 'M', 'S', 'S', 'P', 0};
 
 // Write a Len/MaxLen/BufferOffset field triplet at @p f.
 static void wr_field(uint8_t *f, uint16_t len, uint32_t off)
 {
-    wr16(f + 0, len);
-    wr16(f + 2, len); // MaxLen == Len
-    wr32(f + 4, off);
+    det_wr16le(f + 0, len);
+    det_wr16le(f + 2, len); // MaxLen == Len
+    det_wr32le(f + 4, off);
 }
 
 size_t ntlmssp_build_negotiate(uint8_t *buf, size_t cap, uint32_t flags)
@@ -49,8 +30,8 @@ size_t ntlmssp_build_negotiate(uint8_t *buf, size_t cap, uint32_t flags)
         return 0;
     memset(buf, 0, 32);
     memcpy(buf + 0, NTLMSSP_SIG, 8); // Signature
-    wr32(buf + 8, 1);                // MessageType = NEGOTIATE
-    wr32(buf + 12, flags);           // NegotiateFlags
+    det_wr32le(buf + 8, 1);          // MessageType = NEGOTIATE
+    det_wr32le(buf + 12, flags);     // NegotiateFlags
     wr_field(buf + 16, 0, 32);       // DomainNameFields (empty; offset = end of header)
     wr_field(buf + 24, 0, 32);       // WorkstationFields (empty)
     return 32;
@@ -60,12 +41,12 @@ bool ntlmssp_parse_challenge(const uint8_t *msg, size_t len, NtlmChallenge *out)
 {
     if (!msg || !out || len < 48) // through TargetInfoFields
         return false;
-    if (memcmp(msg, NTLMSSP_SIG, 8) != 0 || rd32(msg + 8) != 2)
+    if (memcmp(msg, NTLMSSP_SIG, 8) != 0 || det_rd32le(msg + 8) != 2)
         return false;
-    out->flags = rd32(msg + 20);
+    out->flags = det_rd32le(msg + 20);
     memcpy(out->server_challenge, msg + 24, 8);
-    uint16_t ti_len = rd16(msg + 40);
-    uint32_t ti_off = rd32(msg + 44);
+    uint16_t ti_len = det_rd16le(msg + 40);
+    uint32_t ti_off = det_rd32le(msg + 44);
     if (ti_len == 0)
     {
         out->target_info = nullptr;
@@ -114,7 +95,7 @@ size_t ntlmssp_build_authenticate(uint8_t *buf, size_t cap, const uint8_t *lm_re
 
     memset(buf, 0, HDR);
     memcpy(buf + 0, NTLMSSP_SIG, 8); // Signature
-    wr32(buf + 8, 3);                // MessageType = AUTHENTICATE
+    det_wr32le(buf + 8, 3);          // MessageType = AUTHENTICATE
 
     // Lay out the payload after the fixed header, then point each field at it.
     size_t off = HDR;
@@ -140,7 +121,7 @@ size_t ntlmssp_build_authenticate(uint8_t *buf, size_t cap, const uint8_t *lm_re
     wr_field(buf + 36, (uint16_t)ulen, (uint32_t)usr_off);  // UserNameFields
     wr_field(buf + 44, (uint16_t)wlen, (uint32_t)wks_off);  // WorkstationFields
     wr_field(buf + 52, 0, (uint32_t)key_off);               // EncryptedRandomSessionKeyFields
-    wr32(buf + 60, flags);                                  // NegotiateFlags
+    det_wr32le(buf + 60, flags);                            // NegotiateFlags
     return total;
 }
 

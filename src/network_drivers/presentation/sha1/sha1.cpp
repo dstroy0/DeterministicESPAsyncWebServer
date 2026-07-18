@@ -29,6 +29,7 @@ void sha1(const uint8_t *data, size_t len, uint8_t digest[SHA1_DIGEST_LEN])
 #else
 
 // --- Native / test: software SHA-1, no external dependencies ---------------
+#include "shared_primitives/endian.h"
 #include <string.h>
 
 // ---------------------------------------------------------------------------
@@ -38,19 +39,6 @@ void sha1(const uint8_t *data, size_t len, uint8_t digest[SHA1_DIGEST_LEN])
 static inline uint32_t rot32(uint32_t x, int n)
 {
     return (x << n) | (x >> (32 - n));
-}
-
-static inline uint32_t load_be32(const uint8_t *p)
-{
-    return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
-}
-
-static inline void store_be32(uint8_t *p, uint32_t v)
-{
-    p[0] = (uint8_t)(v >> 24);
-    p[1] = (uint8_t)(v >> 16);
-    p[2] = (uint8_t)(v >> 8);
-    p[3] = (uint8_t)(v);
 }
 
 // ---------------------------------------------------------------------------
@@ -63,7 +51,7 @@ static void sha1_block(uint32_t h[5], const uint8_t block[64])
     // XOR-and-rotate (the SHA-1 recurrence; the rotate-by-1 is what SHA-0 lacked).
     uint32_t w[80];
     for (int i = 0; i < 16; i++)
-        w[i] = load_be32(block + i * 4);
+        w[i] = det_rd32be(block + i * 4);
     for (int i = 16; i < 80; i++)
         w[i] = rot32(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
 
@@ -146,7 +134,7 @@ void sha1(const uint8_t *data, size_t len, uint8_t digest[SHA1_DIGEST_LEN])
         sha1_block(h, pad + 64);
 
     for (int i = 0; i < 5; i++)
-        store_be32(digest + i * 4, h[i]);
+        det_wr32be(digest + i * 4, h[i]);
 }
 
 #endif // ARDUINO

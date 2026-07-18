@@ -12,32 +12,10 @@
 
 #include <string.h>
 
+#include "shared_primitives/endian.h"
+
 namespace
 {
-void put_u32(uint8_t *p, uint32_t v)
-{
-    p[0] = (uint8_t)v;
-    p[1] = (uint8_t)(v >> 8);
-    p[2] = (uint8_t)(v >> 16);
-    p[3] = (uint8_t)(v >> 24);
-}
-void put_u64(uint8_t *p, uint64_t v)
-{
-    for (int i = 0; i < 8; i++)
-        p[i] = (uint8_t)(v >> (8 * i));
-}
-uint32_t get_u32(const uint8_t *p)
-{
-    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
-}
-uint64_t get_u64(const uint8_t *p)
-{
-    uint64_t v = 0;
-    for (int i = 0; i < 8; i++)
-        v |= (uint64_t)p[i] << (8 * i);
-    return v;
-}
-
 // SUPER_USED bytes are CRC-covered; the u32 CRC follows immediately.
 const size_t SUPER_USED = 28;
 
@@ -56,11 +34,11 @@ bool write_super(WalStore *s, int ab, uint64_t gen, uint64_t head, uint64_t seq)
 {
     uint8_t sb[WAL_SUPER_SIZE];
     memset(sb, 0, sizeof(sb));
-    put_u32(sb + 0, WAL_SUPER_MAGIC);
-    put_u64(sb + 4, gen);
-    put_u64(sb + 12, head);
-    put_u64(sb + 20, seq);
-    put_u32(sb + 28, wal_crc32(sb, SUPER_USED));
+    det_wr32le(sb + 0, WAL_SUPER_MAGIC);
+    det_wr64le(sb + 4, gen);
+    det_wr64le(sb + 12, head);
+    det_wr64le(sb + 20, seq);
+    det_wr32le(sb + 28, wal_crc32(sb, SUPER_USED));
     return dev_write(s->dev, (uint64_t)ab * WAL_SUPER_SIZE, sb, sizeof(sb));
 }
 
@@ -70,13 +48,13 @@ bool read_super(const WalStore *s, int ab, uint64_t &gen, uint64_t &head, uint64
     uint8_t sb[WAL_SUPER_SIZE];
     if (!dev_read(s->dev, (uint64_t)ab * WAL_SUPER_SIZE, sb, sizeof(sb)))
         return false;
-    if (get_u32(sb + 0) != WAL_SUPER_MAGIC)
+    if (det_rd32le(sb + 0) != WAL_SUPER_MAGIC)
         return false;
-    if (get_u32(sb + 28) != wal_crc32(sb, SUPER_USED))
+    if (det_rd32le(sb + 28) != wal_crc32(sb, SUPER_USED))
         return false;
-    gen = get_u64(sb + 4);
-    head = get_u64(sb + 12);
-    seq = get_u64(sb + 20);
+    gen = det_rd64le(sb + 4);
+    head = det_rd64le(sb + 12);
+    seq = det_rd64le(sb + 20);
     // A head past the data region is corruption a matching CRC cannot happen for, but guard anyway.
     if (head > s->data_cap)
         return false;
@@ -96,11 +74,11 @@ void wal_replay_tail(WalStore *s)
             break;
         if (!dev_read(s->dev, s->data_off + off, hdr, WAL_RECORD_HEADER))
             break;
-        if (get_u32(hdr + 0) != WAL_MAGIC)
+        if (det_rd32le(hdr + 0) != WAL_MAGIC)
             break;
-        uint64_t seq = get_u64(hdr + 4);
-        uint32_t plen = get_u32(hdr + 12);
-        uint32_t crc_stored = get_u32(hdr + 16);
+        uint64_t seq = det_rd64le(hdr + 4);
+        uint32_t plen = det_rd32le(hdr + 12);
+        uint32_t crc_stored = det_rd32le(hdr + 16);
         if (off + (uint64_t)WAL_RECORD_HEADER + plen > s->data_cap)
             break; // truncated tail
         // CRC over the 16 header bytes then the payload, streamed in small chunks.
@@ -201,12 +179,12 @@ bool wal_store_append(WalStore *s, const uint8_t *payload, uint32_t len)
         return false; // log full
     // Assemble the 20-byte header (magic+seq+len+crc); CRC covers header + payload without buffering both.
     uint8_t hdr[WAL_RECORD_HEADER];
-    put_u32(hdr + 0, WAL_MAGIC);
-    put_u64(hdr + 4, s->next_seq);
-    put_u32(hdr + 12, len);
+    det_wr32le(hdr + 0, WAL_MAGIC);
+    det_wr64le(hdr + 4, s->next_seq);
+    det_wr32le(hdr + 12, len);
     uint32_t crc = wal_crc32_update(wal_crc32_init(), hdr, 16);
     crc = wal_crc32_update(crc, payload, len);
-    put_u32(hdr + 16, wal_crc32_final(crc));
+    det_wr32le(hdr + 16, wal_crc32_final(crc));
 
     uint64_t at = s->data_off + s->head;
     if (!dev_write(s->dev, at, hdr, WAL_RECORD_HEADER))
@@ -246,9 +224,9 @@ size_t wal_store_scan(WalStore *s, WalStoreRecordCb cb, void *ctx, uint8_t *scra
     {
         if (!dev_read(s->dev, s->data_off + off, scratch, WAL_RECORD_HEADER))
             break;
-        if (get_u32(scratch) != WAL_MAGIC)
+        if (det_rd32le(scratch) != WAL_MAGIC)
             break;
-        uint32_t plen = get_u32(scratch + 12);
+        uint32_t plen = det_rd32le(scratch + 12);
         size_t total = (size_t)WAL_RECORD_HEADER + plen;
         if (off + total > s->head || total > scratch_len)
             break; // truncated within the log, or a record too large for the caller's scratch
@@ -256,10 +234,10 @@ size_t wal_store_scan(WalStore *s, WalStoreRecordCb cb, void *ctx, uint8_t *scra
             break;
         uint32_t crc = wal_crc32_update(wal_crc32_init(), scratch, 16);
         crc = wal_crc32_update(crc, scratch + WAL_RECORD_HEADER, plen);
-        if (wal_crc32_final(crc) != get_u32(scratch + 16))
+        if (wal_crc32_final(crc) != det_rd32le(scratch + 16))
             break;
         if (cb)
-            cb(get_u64(scratch + 4), off, scratch + WAL_RECORD_HEADER, plen, ctx);
+            cb(det_rd64le(scratch + 4), off, scratch + WAL_RECORD_HEADER, plen, ctx);
         count++;
         off += total;
     }

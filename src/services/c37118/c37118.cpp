@@ -12,6 +12,8 @@
 
 #include <string.h>
 
+#include "shared_primitives/endian.h"
+
 uint16_t c37118_crc(const uint8_t *data, size_t len)
 {
     uint16_t crc = 0xFFFF;
@@ -22,32 +24,6 @@ uint16_t c37118_crc(const uint8_t *data, size_t len)
             crc = (crc & 0x8000) ? (uint16_t)((crc << 1) ^ 0x1021) : (uint16_t)(crc << 1);
     }
     return crc;
-}
-
-static size_t put16(uint8_t *p, uint16_t v)
-{
-    p[0] = (uint8_t)(v >> 8);
-    p[1] = (uint8_t)v;
-    return 2;
-}
-
-static size_t put32(uint8_t *p, uint32_t v)
-{
-    p[0] = (uint8_t)(v >> 24);
-    p[1] = (uint8_t)(v >> 16);
-    p[2] = (uint8_t)(v >> 8);
-    p[3] = (uint8_t)v;
-    return 4;
-}
-
-static uint16_t get16(const uint8_t *p)
-{
-    return (uint16_t)(((uint16_t)p[0] << 8) | p[1]);
-}
-
-static uint32_t get32(const uint8_t *p)
-{
-    return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | p[3];
 }
 
 size_t c37118_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint8_t version, uint16_t idcode, uint32_t soc,
@@ -61,24 +37,24 @@ size_t c37118_build_frame(uint8_t *buf, size_t cap, uint8_t type, uint8_t versio
     size_t p = 0;
     buf[p++] = C37118_SYNC_LEADER;
     buf[p++] = (uint8_t)(((type & C37118_TYPE_MASK) << C37118_TYPE_SHIFT) | (version & C37118_VERSION_MASK));
-    p += put16(buf + p, (uint16_t)total);
-    p += put16(buf + p, idcode);
-    p += put32(buf + p, soc);
-    p += put32(buf + p, fracsec);
+    p += det_wr16be(buf + p, (uint16_t)total);
+    p += det_wr16be(buf + p, idcode);
+    p += det_wr32be(buf + p, soc);
+    p += det_wr32be(buf + p, fracsec);
     if (payload_len)
     {
         memcpy(buf + p, payload, payload_len);
         p += payload_len;
     }
     uint16_t crc = c37118_crc(buf, p); // over everything before CHK
-    p += put16(buf + p, crc);
+    p += det_wr16be(buf + p, crc);
     return p;
 }
 
 size_t c37118_build_command(uint8_t *buf, size_t cap, uint16_t idcode, uint32_t soc, uint32_t fracsec, uint16_t cmd)
 {
     uint8_t payload[2];
-    put16(payload, cmd);
+    det_wr16be(payload, cmd);
     return c37118_build_frame(buf, cap, C37118_TYPE_CMD, C37118_VERSION_2011, idcode, soc, fracsec, payload, 2);
 }
 
@@ -88,19 +64,19 @@ bool c37118_parse_frame(const uint8_t *buf, size_t len, C37118Frame *out)
         return false;
     if (buf[0] != C37118_SYNC_LEADER)
         return false;
-    uint16_t framesize = get16(buf + 2);
+    uint16_t framesize = det_rd16be(buf + 2);
     if (framesize < C37118_MIN_FRAME || framesize > len)
         return false; // out of range / not fully buffered
     uint16_t want = c37118_crc(buf, (size_t)framesize - 2);
-    uint16_t got = get16(buf + framesize - 2);
+    uint16_t got = det_rd16be(buf + framesize - 2);
     if (want != got)
         return false; // CHK mismatch
     out->type = (uint8_t)((buf[1] >> C37118_TYPE_SHIFT) & C37118_TYPE_MASK);
     out->version = (uint8_t)(buf[1] & C37118_VERSION_MASK);
     out->framesize = framesize;
-    out->idcode = get16(buf + 4);
-    out->soc = get32(buf + 6);
-    out->fracsec = get32(buf + 10);
+    out->idcode = det_rd16be(buf + 4);
+    out->soc = det_rd32be(buf + 6);
+    out->fracsec = det_rd32be(buf + 10);
     out->data = buf + 14;
     out->data_len = (size_t)framesize - C37118_MIN_FRAME;
     return true;
@@ -111,7 +87,7 @@ bool c37118_parse_command(const C37118Frame *f, uint16_t *cmd)
     if (!f || f->type != C37118_TYPE_CMD || f->data_len < 2)
         return false;
     if (cmd)
-        *cmd = get16(f->data);
+        *cmd = det_rd16be(f->data);
     return true;
 }
 

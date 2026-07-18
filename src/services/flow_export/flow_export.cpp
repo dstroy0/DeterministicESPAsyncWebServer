@@ -12,38 +12,22 @@
 
 #include <string.h>
 
-// ---- bounded big-endian writers into a raw buffer (used by the v5 builders) ----
-
-static size_t put16(uint8_t *p, uint16_t v)
-{
-    p[0] = (uint8_t)(v >> 8);
-    p[1] = (uint8_t)v;
-    return 2;
-}
-
-static size_t put32(uint8_t *p, uint32_t v)
-{
-    p[0] = (uint8_t)(v >> 24);
-    p[1] = (uint8_t)(v >> 16);
-    p[2] = (uint8_t)(v >> 8);
-    p[3] = (uint8_t)v;
-    return 4;
-}
+#include "shared_primitives/endian.h"
 
 size_t flow_v5_write_header(uint8_t *buf, size_t cap, const FlowV5Header *h)
 {
     if (!buf || !h || cap < FLOW_V5_HEADER_SIZE)
         return 0;
     size_t p = 0;
-    p += put16(buf + p, 5); // version
-    p += put16(buf + p, h->count);
-    p += put32(buf + p, h->sys_uptime);
-    p += put32(buf + p, h->unix_secs);
-    p += put32(buf + p, h->unix_nsecs);
-    p += put32(buf + p, h->flow_sequence);
+    p += det_wr16be(buf + p, 5); // version
+    p += det_wr16be(buf + p, h->count);
+    p += det_wr32be(buf + p, h->sys_uptime);
+    p += det_wr32be(buf + p, h->unix_secs);
+    p += det_wr32be(buf + p, h->unix_nsecs);
+    p += det_wr32be(buf + p, h->flow_sequence);
     buf[p++] = h->engine_type;
     buf[p++] = h->engine_id;
-    p += put16(buf + p, h->sampling_interval);
+    p += det_wr16be(buf + p, h->sampling_interval);
     return p; // 24
 }
 
@@ -52,23 +36,23 @@ size_t flow_v5_write_record(uint8_t *buf, size_t cap, const FlowV5Record *r)
     if (!buf || !r || cap < FLOW_V5_RECORD_SIZE)
         return 0;
     size_t p = 0;
-    p += put32(buf + p, r->src_addr);
-    p += put32(buf + p, r->dst_addr);
-    p += put32(buf + p, r->next_hop);
-    p += put16(buf + p, r->input);
-    p += put16(buf + p, r->output);
-    p += put32(buf + p, r->d_pkts);
-    p += put32(buf + p, r->d_octets);
-    p += put32(buf + p, r->first);
-    p += put32(buf + p, r->last);
-    p += put16(buf + p, r->src_port);
-    p += put16(buf + p, r->dst_port);
+    p += det_wr32be(buf + p, r->src_addr);
+    p += det_wr32be(buf + p, r->dst_addr);
+    p += det_wr32be(buf + p, r->next_hop);
+    p += det_wr16be(buf + p, r->input);
+    p += det_wr16be(buf + p, r->output);
+    p += det_wr32be(buf + p, r->d_pkts);
+    p += det_wr32be(buf + p, r->d_octets);
+    p += det_wr32be(buf + p, r->first);
+    p += det_wr32be(buf + p, r->last);
+    p += det_wr16be(buf + p, r->src_port);
+    p += det_wr16be(buf + p, r->dst_port);
     buf[p++] = 0; // pad1
     buf[p++] = r->tcp_flags;
     buf[p++] = r->prot;
     buf[p++] = r->tos;
-    p += put16(buf + p, r->src_as);
-    p += put16(buf + p, r->dst_as);
+    p += det_wr16be(buf + p, r->src_as);
+    p += det_wr16be(buf + p, r->dst_as);
     buf[p++] = r->src_mask;
     buf[p++] = r->dst_mask;
     buf[p++] = 0; // pad2 (2 octets)
@@ -87,7 +71,7 @@ static void w_u16(FlowWriter *w, uint16_t v)
         w->error = true;
         return;
     }
-    w->pos += put16(w->buf + w->pos, v);
+    w->pos += det_wr16be(w->buf + w->pos, v);
 }
 
 static void w_u32(FlowWriter *w, uint32_t v)
@@ -99,7 +83,7 @@ static void w_u32(FlowWriter *w, uint32_t v)
         w->error = true;
         return;
     }
-    w->pos += put32(w->buf + w->pos, v);
+    w->pos += det_wr32be(w->buf + w->pos, v);
 }
 
 static void w_bytes(FlowWriter *w, const uint8_t *p, size_t n)
@@ -131,7 +115,7 @@ static void w_zero(FlowWriter *w, size_t n)
 
 static void patch16(FlowWriter *w, size_t off, uint16_t v)
 {
-    put16(w->buf + off, v);
+    det_wr16be(w->buf + off, v);
 }
 
 bool flow_ipfix_begin(FlowWriter *w, uint8_t *buf, size_t cap, uint32_t export_time, uint32_t seq, uint32_t domain_id)

@@ -60,6 +60,8 @@ void ssh_sha512(const uint8_t *data, size_t len, uint8_t digest[SSH_SHA512_DIGES
 // Software SHA-512 (FIPS 180-4) - native/test builds only
 // ---------------------------------------------------------------------------
 
+#include "shared_primitives/endian.h"
+
 static const uint64_t K512[80] = {
     0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL, 0xb5c0fbcfec4d3b2fULL, 0xe9b5dba58189dbbcULL, 0x3956c25bf348b538ULL,
     0x59f111f1b605d019ULL, 0x923f82a4af194f9bULL, 0xab1c5ed5da6d8118ULL, 0xd807aa98a3030242ULL, 0x12835b0145706fbeULL,
@@ -89,30 +91,12 @@ static inline uint64_t rotr64(uint64_t x, unsigned n)
     return (x >> n) | (x << (64 - n));
 }
 
-static inline uint64_t load_be64(const uint8_t *p)
-{
-    return ((uint64_t)p[0] << 56) | ((uint64_t)p[1] << 48) | ((uint64_t)p[2] << 40) | ((uint64_t)p[3] << 32) |
-           ((uint64_t)p[4] << 24) | ((uint64_t)p[5] << 16) | ((uint64_t)p[6] << 8) | (uint64_t)p[7];
-}
-
-static inline void store_be64(uint8_t *p, uint64_t v)
-{
-    p[0] = (uint8_t)(v >> 56);
-    p[1] = (uint8_t)(v >> 48);
-    p[2] = (uint8_t)(v >> 40);
-    p[3] = (uint8_t)(v >> 32);
-    p[4] = (uint8_t)(v >> 24);
-    p[5] = (uint8_t)(v >> 16);
-    p[6] = (uint8_t)(v >> 8);
-    p[7] = (uint8_t)(v);
-}
-
 // Compress one 128-byte block into the running state h[0..7] (FIPS 180-4 §6.4.2).
 static void sha512_block(uint64_t h[8], const uint8_t blk[128])
 {
     uint64_t W[80];
     for (int i = 0; i < 16; i++)
-        W[i] = load_be64(blk + i * 8);
+        W[i] = det_rd64be(blk + i * 8);
     for (int i = 16; i < 80; i++)
     {
         uint64_t s0 = rotr64(W[i - 15], 1) ^ rotr64(W[i - 15], 8) ^ (W[i - 15] >> 7); // σ0
@@ -204,12 +188,12 @@ void ssh_sha512_final(SshSha512Ctx *ctx, uint8_t digest[SSH_SHA512_DIGEST_LEN])
     while (ctx->buflen < 112)
         ctx->buf[ctx->buflen++] = 0x00;
 
-    store_be64(ctx->buf + 112, len_hi);
-    store_be64(ctx->buf + 120, len_lo);
+    det_wr64be(ctx->buf + 112, len_hi);
+    det_wr64be(ctx->buf + 120, len_lo);
     sha512_block(ctx->s, ctx->buf);
 
     for (int i = 0; i < 8; i++)
-        store_be64(digest + i * 8, ctx->s[i]);
+        det_wr64be(digest + i * 8, ctx->s[i]);
 }
 
 void ssh_sha512(const uint8_t *data, size_t len, uint8_t digest[SSH_SHA512_DIGEST_LEN])

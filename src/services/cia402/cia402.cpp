@@ -12,32 +12,7 @@
 
 #include <string.h>
 
-// CANopen object values are little-endian.
-static size_t put16le(uint8_t *p, uint16_t v)
-{
-    p[0] = (uint8_t)(v & 0xFF);
-    p[1] = (uint8_t)(v >> 8);
-    return 2;
-}
-
-static size_t put32le(uint8_t *p, uint32_t v)
-{
-    p[0] = (uint8_t)(v & 0xFF);
-    p[1] = (uint8_t)((v >> 8) & 0xFF);
-    p[2] = (uint8_t)((v >> 16) & 0xFF);
-    p[3] = (uint8_t)((v >> 24) & 0xFF);
-    return 4;
-}
-
-static uint16_t get16le(const uint8_t *p)
-{
-    return (uint16_t)(p[0] | ((uint16_t)p[1] << 8));
-}
-
-static uint32_t get32le(const uint8_t *p)
-{
-    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
-}
+#include "shared_primitives/endian.h"
 
 Cia402State cia402_state(uint16_t sw)
 {
@@ -105,7 +80,7 @@ uint16_t cia402_enable_sequence(Cia402State state)
 bool cia402_sdo_set_controlword(CanFrame *out, uint8_t node, uint16_t controlword)
 {
     uint8_t d[2];
-    put16le(d, controlword);
+    det_wr16le(d, controlword);
     return canopen_build_sdo_write(out, node, CIA402_OD_CONTROLWORD, 0, d, 2);
 }
 
@@ -118,21 +93,21 @@ bool cia402_sdo_set_mode(CanFrame *out, uint8_t node, Cia402Mode mode)
 bool cia402_sdo_set_target_position(CanFrame *out, uint8_t node, int32_t position)
 {
     uint8_t d[4];
-    put32le(d, (uint32_t)position);
+    det_wr32le(d, (uint32_t)position);
     return canopen_build_sdo_write(out, node, CIA402_OD_TARGET_POSITION, 0, d, 4);
 }
 
 bool cia402_sdo_set_target_velocity(CanFrame *out, uint8_t node, int32_t velocity)
 {
     uint8_t d[4];
-    put32le(d, (uint32_t)velocity);
+    det_wr32le(d, (uint32_t)velocity);
     return canopen_build_sdo_write(out, node, CIA402_OD_TARGET_VELOCITY, 0, d, 4);
 }
 
 bool cia402_sdo_set_target_torque(CanFrame *out, uint8_t node, int16_t torque)
 {
     uint8_t d[2];
-    put16le(d, (uint16_t)torque);
+    det_wr16le(d, (uint16_t)torque);
     return canopen_build_sdo_write(out, node, CIA402_OD_TARGET_TORQUE, 0, d, 2);
 }
 
@@ -161,7 +136,7 @@ bool cia402_sdo_get_u16(const CanFrame *f, uint16_t want_index, uint16_t *value)
     uint8_t d[2];
     if (!value || !sdo_upload_bytes(f, want_index, 2, d))
         return false;
-    *value = get16le(d);
+    *value = det_rd16le(d);
     return true;
 }
 
@@ -170,7 +145,7 @@ bool cia402_sdo_get_i32(const CanFrame *f, uint16_t want_index, int32_t *value)
     uint8_t d[4];
     if (!value || !sdo_upload_bytes(f, want_index, 4, d))
         return false;
-    *value = (int32_t)get32le(d);
+    *value = (int32_t)det_rd32le(d);
     return true;
 }
 
@@ -178,8 +153,8 @@ size_t cia402_pack_command(uint8_t *buf, size_t cap, uint16_t controlword, int32
 {
     if (!buf || cap < 6)
         return 0;
-    size_t p = put16le(buf, controlword);
-    p += put32le(buf + p, (uint32_t)target);
+    size_t p = det_wr16le(buf, controlword);
+    p += det_wr32le(buf + p, (uint32_t)target);
     return p; // 6
 }
 
@@ -187,8 +162,8 @@ bool cia402_unpack_status(const uint8_t *buf, size_t len, uint16_t *statusword, 
 {
     if (!buf || !statusword || !actual || len < 6)
         return false;
-    *statusword = get16le(buf);
-    *actual = (int32_t)get32le(buf + 2);
+    *statusword = det_rd16le(buf);
+    *actual = (int32_t)det_rd32le(buf + 2);
     return true;
 }
 

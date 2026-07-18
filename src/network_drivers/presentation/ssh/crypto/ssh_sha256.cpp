@@ -61,6 +61,8 @@ void ssh_sha256(const uint8_t *data, size_t len, uint8_t digest[SSH_SHA256_DIGES
 
 #else // native software path
 
+#include "shared_primitives/endian.h"
+
 // ---------------------------------------------------------------------------
 // Software SHA-256 (FIPS 180-4) - native/test builds only
 // ---------------------------------------------------------------------------
@@ -85,25 +87,6 @@ static inline uint32_t rotr32(uint32_t x, uint32_t n)
     return (x >> n) | (x << (32 - n));
 }
 
-static inline uint32_t load_be32(const uint8_t *p)
-{
-    return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
-}
-
-static inline void store_be32(uint8_t *p, uint32_t v)
-{
-    p[0] = (uint8_t)(v >> 24);
-    p[1] = (uint8_t)(v >> 16);
-    p[2] = (uint8_t)(v >> 8);
-    p[3] = (uint8_t)(v);
-}
-
-static inline void store_be64(uint8_t *p, uint64_t v)
-{
-    store_be32(p, (uint32_t)(v >> 32));
-    store_be32(p + 4, (uint32_t)(v));
-}
-
 // Compress one 64-byte block into the running hash state h[0..7] (FIPS 180-4
 // §6.2.2). The caller handles padding and length so this sees full blocks only.
 static void sha256_block(uint32_t h[8], const uint8_t blk[64])
@@ -112,7 +95,7 @@ static void sha256_block(uint32_t h[8], const uint8_t blk[64])
     // big-endian; the rest are extended with the sigma-0/sigma-1 recurrence.
     uint32_t W[64];
     for (int i = 0; i < 16; i++)
-        W[i] = load_be32(blk + i * 4);
+        W[i] = det_rd32be(blk + i * 4);
     for (int i = 16; i < 64; i++)
     {
         uint32_t s0 = rotr32(W[i - 15], 7U) ^ rotr32(W[i - 15], 18U) ^ (W[i - 15] >> 3U); // σ0
@@ -212,11 +195,11 @@ void ssh_sha256_final(SshSha256Ctx *ctx, uint8_t digest[SSH_SHA256_DIGEST_LEN])
     while (ctx->buflen < 56)
         ctx->buf[ctx->buflen++] = 0x00;
 
-    store_be64(ctx->buf + 56, bitlen);
+    det_wr64be(ctx->buf + 56, bitlen);
     sha256_block(ctx->s, ctx->buf);
 
     for (int i = 0; i < 8; i++)
-        store_be32(digest + i * 4, ctx->s[i]);
+        det_wr32be(digest + i * 4, ctx->s[i]);
 }
 
 // ---------------------------------------------------------------------------

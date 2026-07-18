@@ -10,22 +10,12 @@
 
 #if DETWS_ENABLE_SMB
 
+#include "shared_primitives/endian.h"
 #include <string.h>
 
 static inline uint32_t rotl(uint32_t v, unsigned n)
 {
     return (v << n) | (v >> (32 - n));
-}
-static inline uint32_t rd32le(const uint8_t *p)
-{
-    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
-}
-static inline void wr32le(uint8_t *p, uint32_t v)
-{
-    p[0] = (uint8_t)v;
-    p[1] = (uint8_t)(v >> 8);
-    p[2] = (uint8_t)(v >> 16);
-    p[3] = (uint8_t)(v >> 24);
 }
 
 // --- MD5 (RFC 1321) --------------------------------------------------------
@@ -49,7 +39,7 @@ static void md5_compress(uint32_t s[4], const uint8_t block[64])
 {
     uint32_t m[16];
     for (int i = 0; i < 16; i++)
-        m[i] = rd32le(block + i * 4);
+        m[i] = det_rd32le(block + i * 4);
     uint32_t a = s[0];
     uint32_t b = s[1];
     uint32_t c = s[2];
@@ -106,7 +96,7 @@ static void md4_compress(uint32_t s[4], const uint8_t block[64])
 {
     uint32_t x[16];
     for (int i = 0; i < 16; i++)
-        x[i] = rd32le(block + i * 4);
+        x[i] = det_rd32le(block + i * 4);
     uint32_t a = s[0];
     uint32_t b = s[1];
     uint32_t c = s[2];
@@ -224,7 +214,7 @@ static void md_finish(MdCtx *c, uint8_t out[16], md_compress_fn compress)
         lenbuf[i] = (uint8_t)(bits >> (8 * i)); // little-endian bit length
     md_absorb(c, lenbuf, 8, compress);          // triggers the final compress
     for (int i = 0; i < 4; i++)
-        wr32le(out + i * 4, c->state[i]);
+        det_wr32le(out + i * 4, c->state[i]);
 }
 
 void md5_update(MdCtx *c, const uint8_t *data, size_t len)
