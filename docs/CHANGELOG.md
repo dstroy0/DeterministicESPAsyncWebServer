@@ -6,6 +6,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`13af4b1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/13af4b1650eee7033f6f38fe1c053c8d75c55620))
+- update CHANGELOG.md [skip ci] ([`24e116c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/24e116c4c8b1c79a5eb278559fab8bce22617d10))
 - update test report + coverage [skip ci] ([`53cb4c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53cb4c55c5e2c77a74d9334ddc8f1fc855359ea8))
 - update CHANGELOG.md [skip ci] ([`9da915d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9da915dbe8552df079b146e5ad6840309752731f))
 - update CHANGELOG.md [skip ci] ([`1841e55`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1841e55d2f0a4b26fb6794df52c26ff1844a5ede))
@@ -14,11 +16,14 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- update ESP32 build footprints [skip ci] ([`783c616`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/783c616f6f7dec19033f640e2091747b60752ce3))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d83e51f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d83e51f52dacd3b8b8535e0b315b716f50cbd540))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a9087d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a9087d638cb925a602f9f58850b8f9d0c589efa3))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c366d49`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c366d4991ee18c75ad84719468660838a380286e))
 
 ### Refactor
 
+- normalize bare-prefix peripheral APIs to dws_ (7.0.0 prep) ([`eb8fad0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/eb8fad04273d05db1d316c725488fb68a1af333d))
 - unify the house prefix to dws_ / DWS / DWS_ everywhere (7.0.0 prep) ([`58ebdcd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/58ebdcde7107935e996fe43bd087e958a5344f25))
 - normalize ssh public API to det_ssh_* (7.0.0 prep) ([`629f20c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/629f20c77baf07417937c61d9078d6e552212e18))
 - normalize mqtt/coap/dtls/h2/webdav/dnc/iface_bridge to det_* (7.0.0 prep) ([`df62eaf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df62eaf0308308cf39853c9b00566b833683ab7f))
