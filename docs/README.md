@@ -549,6 +549,18 @@ not listed).
 
 ```text
 src/
+├── board_profiles/
+│   ├── 16mbflash.h
+│   ├── 16mbpsram.h
+│   ├── 32mbflash.h
+│   ├── 32mbpsram.h
+│   ├── 8mbflash.h
+│   ├── 8mbpsram.h
+│   ├── board_profile.h
+│   ├── c6_defaults.h
+│   ├── classic_defaults.h
+│   ├── p4_defaults.h
+│   └── s3_defaults.h
 ├── network_drivers/
 │   ├── application/
 │   │   ├── binary_asset_blobs.cpp
