@@ -983,6 +983,7 @@ src/
 │   ├── bytes.h
 │   ├── can.h
 │   ├── crypto_opt.h
+│   ├── endian.h
 │   ├── ghash.h
 │   ├── hex.h
 │   ├── http_date.h
@@ -1155,7 +1156,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `WEBDAV` | `L7-Application/29.WebDav` | 821,069 | 105,352 |
 | `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/29.WebDav` | 821,761 | 90,856 |
 | `ETAG` | `L7-Application/09.ETag` | 828,489 | 83,096 |
-| `SSH` | `L5-Session/03.SSHHostKey` | 828,645 | 109,156 |
+| `SSH` | `L5-Session/03.SSHHostKey` | 828,741 | 109,156 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/25.WebSocketClient` | 831,745 | 123,620 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE+TLS_ARENA_SIZE` | `L7-Application/25.WebSocketClient` | 831,925 | 107,236 |
@@ -1165,6 +1166,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `TLS+MTLS` | `L4-Transport/04.mTLS` | 856,829 | 122,356 |
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/06.TlsResumption` | 857,341 | 105,812 |
 | `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/04.mTLS` | 857,497 | 105,988 |
+| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/04.SSHSftp` | 880,945 | 118,508 |
 
 <!-- END GENERATED BUILD-FOOTPRINT -->
 
