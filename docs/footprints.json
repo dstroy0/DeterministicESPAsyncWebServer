@@ -164,7 +164,7 @@
     "example": "L7-Application/79.EdgeCache",
     "flags": "-DDWS_ENABLE_EDGE_CACHE=1 -DDWS_ENABLE_HTTP_CACHE=1 -DDWS_ENABLE_HTTP_CLIENT=1",
     "board": "esp32dev",
-    "flash_bytes": 773645,
+    "flash_bytes": 773669,
     "ram_bytes": 119264
   },
   "EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH": {
@@ -173,6 +173,13 @@
     "board": "esp32dev",
     "flash_bytes": 778433,
     "ram_bytes": 124240
+  },
+  "EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH+EDGE_CACHE_SLOTS+EDGE_FETCH_SLOTS+MESH_MAX_PEERS": {
+    "example": "L7-Application/80.MeshCache",
+    "flags": "-DDWS_ENABLE_EDGE_CACHE=1 -DDWS_ENABLE_HTTP_CACHE=1 -DDWS_ENABLE_HTTP_CLIENT=1 -DDWS_ENABLE_EDGE_MESH=1 -DDWS_EDGE_CACHE_SLOTS=2 -DDWS_EDGE_FETCH_SLOTS=1 -DDWS_MESH_MAX_PEERS=1",
+    "board": "esp32dev",
+    "flash_bytes": 778213,
+    "ram_bytes": 115320
   },
   "ENOCEAN+GATEWAY": {
     "example": "Foundation/13.EnOceanGateway",
@@ -570,7 +577,7 @@
     "example": "L5-Session/04.SSHSftp",
     "flags": "-DDWS_ENABLE_SSH=1 -DDWS_ENABLE_FILE_SERVING=1 -DDWS_ENABLE_SSH_SFTP=1 -DDWS_ENABLE_SSH_SCP=1",
     "board": "esp32dev",
-    "flash_bytes": 880945,
+    "flash_bytes": 881017,
     "ram_bytes": 118508
   },
   "STATS": {

@@ -33,6 +33,7 @@ from each example's `pio ci` size report and aggregated into
 | `DNS_SERVER`                                                                                              | L7-Application/60.DnsServer             | 708.7 KB (55.4%) | 44.9 KB (14.0%)  |
 | `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT`                                                                       | L7-Application/79.EdgeCache             | 755.5 KB (59.0%) | 116.5 KB (36.4%) |
 | `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH`                                                             | L7-Application/80.MeshCache             | 760.2 KB (59.4%) | 121.3 KB (37.9%) |
+| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH+EDGE_CACHE_SLOTS+EDGE_FETCH_SLOTS+MESH_MAX_PEERS`            | L7-Application/80.MeshCache             | 760.0 KB (59.4%) | 112.6 KB (35.2%) |
 | `ENOCEAN+GATEWAY`                                                                                         | Foundation/13.EnOceanGateway            | 262.4 KB (20.5%) | 21.3 KB (6.7%)   |
 | `ESPNOW`                                                                                                  | L7-Application/53.EspNow                | 714.2 KB (55.8%) | 42.6 KB (13.3%)  |
 | `ETAG`                                                                                                    | L7-Application/09.ETag                  | 809.1 KB (63.2%) | 81.1 KB (25.4%)  |
@@ -89,7 +90,7 @@ from each example's `pio ci` size report and aggregated into
 | `SNMP`                                                                                                    | L7-Application/14.SNMP                  | 743.4 KB (58.1%) | 92.0 KB (28.7%)  |
 | `SNMP+SNMP_TRAP`                                                                                          | L7-Application/26.SnmpTrap              | 711.3 KB (55.6%) | 43.9 KB (13.7%)  |
 | `SSH`                                                                                                     | L5-Session/03.SSHHostKey                | 809.3 KB (63.2%) | 106.6 KB (33.3%) |
-| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP`                                                                       | L5-Session/04.SSHSftp                   | 860.3 KB (67.2%) | 115.7 KB (36.2%) |
+| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP`                                                                       | L5-Session/04.SSHSftp                   | 860.4 KB (67.2%) | 115.7 KB (36.2%) |
 | `STATS`                                                                                                   | L7-Application/22.Stats                 | 736.5 KB (57.5%) | 80.0 KB (25.0%)  |
 | `STATS+METRICS`                                                                                           | L7-Application/21.PrometheusMetrics     | 738.6 KB (57.7%) | 80.0 KB (25.0%)  |
 | `STATSD`                                                                                                  | L7-Application/59.StatsdMetrics         | 711.4 KB (55.6%) | 44.0 KB (13.8%)  |
