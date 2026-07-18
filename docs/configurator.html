@@ -246,7 +246,7 @@ function update() {
     // library sources included (a plain -D in the sketch does not reach them). One flag/line.
     const rows = feats.map(([n, v]) => "-D" + n + "=" + v)
       .concat(kn.map(([n, v]) => "-D" + n + "=" + v));
-    text = rows.length ? rows.join("\n") : "-DDETWS_ENABLE_WEBSOCKET=1  // (example) all defaults - build_opt.h optional";
+    text = rows.length ? rows.join("\n") : "-DDWS_ENABLE_WEBSOCKET=1  // (example) all defaults - build_opt.h optional";
   } else {
     const rows = feats.map(([n, v]) => "#define " + n + " " + v)
       .concat(kn.map(([n, v]) => "#define " + n + " " + v));

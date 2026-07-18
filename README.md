@@ -610,6 +610,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 | `DWS_ENABLE_OTA`             | `DWS_ENABLE_STREAM_BODY`  |
 | `DWS_ENABLE_RELAY`           | `DWS_ENABLE_DNS_RESOLVER` |
 | `DWS_ENABLE_SENML`           | `DWS_ENABLE_CBOR`         |
+| `DWS_ENABLE_SMTP`            | `DWS_ENABLE_DNS_RESOLVER` |
 | `DWS_ENABLE_SPARKPLUG`       | `DWS_ENABLE_PROTOBUF`     |
 | `DWS_ENABLE_UPLOAD`          | `DWS_ENABLE_STREAM_BODY`  |
 | `DWS_ENABLE_WEBDAV`          | `DWS_ENABLE_STREAM_BODY`  |
@@ -628,7 +629,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 
 </details>
 
-_34 hard dependencies, 3 PSRAM gates, 16 derived flags._
+_34 hard dependencies, 3 PSRAM gates, 17 derived flags._
 
 <!-- END GENERATED FLAG DEPS -->
 

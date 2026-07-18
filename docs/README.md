@@ -1007,8 +1007,6 @@ src/
 │   │   └── DETWS_TERMINAL_PAGE.html
 │   ├── themes/  (112 generated files)
 │   ├── wizard/
-│   │   ├── __pycache__/
-│   │   │   └── gen_themes.cpython-312.pyc
 │   │   ├── build_assets.py
 │   │   ├── gen_favicons.py
 │   │   ├── gen_theme_blobs.py
@@ -1239,223 +1237,223 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 
 | Flag | Default | Description |
 | :--- | :-----: | :---------- |
-| `DETWS_ENABLE_ACCEPT_THROTTLE` | `0` | Opt-in global accept-rate throttle (connection-flood defense). |
-| `DETWS_ENABLE_ADS` | `0` | Beckhoff ADS / AMS protocol codec (`services/ads`). |
-| `DETWS_ENABLE_ADS1115` | `0` | TI ADS1115 16-bit ADC (I2C) - a precise external analog input. |
-| `DETWS_ENABLE_AMQP` | `0` | AMQP 0-9-1 frame codec (`services/amqp`). |
-| `DETWS_ENABLE_ATC` | `0` | Opt-in ATC (Advanced Traffic Controller) field-I/O interop snapshot. |
-| `DETWS_ENABLE_AUDIT_LOG` | `0` | Tamper-evident audit log. |
-| `DETWS_ENABLE_AUTH` | `1` | HTTP Basic Authentication per-route. |
-| `DETWS_ENABLE_AUTH_LOCKOUT` | `0` | Opt-in per-IP brute-force lockout for HTTP auth (requires DETWS_ENABLE_AUTH). |
-| `DETWS_ENABLE_BACNET` | `0` | BACnet/IP BVLC + NPDU codec (`services/bacnet`). |
-| `DETWS_ENABLE_BLE_GATT` | `0` | Opt-in Bluetooth ATT protocol codec + GATT characteristic bridge. |
-| `DETWS_ENABLE_BUS_CAPTURE` | `0` | Wired field-bus listen-only capture. |
-| `DETWS_ENABLE_C37118` | `0` | IEEE C37.118.2 synchrophasor frame codec (`services/c37118`). |
-| `DETWS_ENABLE_CANOPEN` | `0` | CANopen (CiA 301) message codec (`services/canopen`). |
-| `DETWS_ENABLE_CBOR` | `0` | Zero-heap CBOR (RFC 8949) encoder for compact binary payloads. |
-| `DETWS_ENABLE_CC1101` | `0` | Opt-in CC1101 sub-GHz radio driver. |
-| `DETWS_ENABLE_CCLINK` | `0` | Opt-in CC-Link (CLPA) cyclic fieldbus frame codec. |
-| `DETWS_ENABLE_CIA402` | `0` | CiA 402 / IEC 61800-7-201 drive + motion profile (`services/cia402`). |
-| `DETWS_ENABLE_CIP` | `0` | CIP (Common Industrial Protocol) message codec (`services/cip`). |
-| `DETWS_ENABLE_CLOUDEVENTS` | `0` | CloudEvents v1.0 (CNCF) event envelope (structured JSON + binary headers). |
-| `DETWS_ENABLE_COAP` | `0` | CoAP server (RFC 7252) over UDP/5683. |
-| `DETWS_ENABLE_COAP_BLOCK` | `0` | CoAP block-wise transfer - RFC 7959 (requires DETWS_ENABLE_COAP). |
-| `DETWS_ENABLE_COAP_OBSERVE` | `0` | CoAP resource observation - RFC 7641 (requires DETWS_ENABLE_COAP). |
-| `DETWS_ENABLE_CONFIG_IO` | `0` | Opt-in schema-driven config export / restore. |
-| `DETWS_ENABLE_CONFIG_STORE` | `0` | Typed NVS configuration store (WiFi creds, IP config, ... |
-| `DETWS_ENABLE_CONTROL` | `0` | Closed-loop control law (`services/control`). |
-| `DETWS_ENABLE_COTP` | `0` | TPKT (RFC 1006) + COTP (X.224 class 0) frame codec (`services/cotp`). |
-| `DETWS_ENABLE_CSRF` | `0` | Opt-in CSRF protection for state-changing HTTP requests. |
-| `DETWS_ENABLE_DASHBOARD` | `0` | Real-time SVG dashboard (DETWS_ENABLE_DASHBOARD; requires DETWS_ENABLE_SSE). |
-| `DETWS_ENABLE_DBM` | `0` | Opt-in dbm: a log-structured hash key-value store on the WAL (DETWS_ENABLE_DBM, requires WAL). |
-| `DETWS_ENABLE_DDS` | `0` | Opt-in DDS / RTPS wire-protocol codec. |
-| `DETWS_ENABLE_DEVICENET` | `0` | DeviceNet link-adaptation codec (`services/devicenet`). |
-| `DETWS_ENABLE_DEVICE_ID` | `0` | Stable device UUID derived from the chip MAC (RFC 4122 v5). |
-| `DETWS_ENABLE_DF1` | `0` | Allen-Bradley DF1 full-duplex frame codec (`services/df1`). |
-| `DETWS_ENABLE_DIAG` | `0` | Expose a diagnostic JSON endpoint via server.diag(). |
-| `DETWS_ENABLE_DIRECTNET` | `0` | Opt-in AutomationDirect / Koyo DirectNET serial frame codec. |
-| `DETWS_ENABLE_DMA` | `0` | Enable the DMA peripheral ingest / egress primitive (default off). |
-| `DETWS_ENABLE_DMX` | `0` | DMX512 + RDM (ANSI E1.20) lighting codec (`services/dmx`). |
-| `DETWS_ENABLE_DNC` | `0` | Opt-in CNC RS-232 DNC drip-feed codec. |
-| `DETWS_ENABLE_DNP3` | `0` | DNP3 (IEEE 1815) data-link frame codec (`services/dnp3`). |
-| `DETWS_ENABLE_DNS_RESOLVER` | `0` | Opt-in DNS resolver with answer verification. |
-| `DETWS_ENABLE_DNS_SERVER` | `0` | Authoritative DNS server (services/dns_server) on UDP/53. |
-| `DETWS_ENABLE_DOCSTORE` | `0` | Opt-in local JSON document store on the WAL (DETWS_ENABLE_DOCSTORE, requires DBM + WAL). |
-| `DETWS_ENABLE_DSHOT` | `0` | Opt-in DShot ESC throttle protocol codec. |
-| `DETWS_ENABLE_DTLS` | `0` | DTLS 1.3 datagram security (RFC 9147) - the record layer. |
-| `DETWS_ENABLE_EDGE_CACHE` | `0` | Opt-in CDN edge-cache tier (DETWS_ENABLE_EDGE_CACHE, requires HTTP_CACHE). |
-| `DETWS_ENABLE_EDGE_MESH` | `0` | Opt-in mesh (sibling-cache) distribution for the edge cache. |
-| `DETWS_ENABLE_EDGE_ORIGIN_TLS` | `0` |  |
-| `DETWS_ENABLE_ENIP` | `0` | EtherNet/IP encapsulation codec (`services/enip`). |
-| `DETWS_ENABLE_ENOCEAN` | `0` | Enable the EnOcean ESP3 serial codec (default off). |
-| `DETWS_ENABLE_ESPNOW` | `0` | ESP-NOW peer messaging. |
-| `DETWS_ENABLE_ETAG` | `0` | Conditional GET (ETag + Last-Modified) for served files. |
-| `DETWS_ENABLE_ETHERNET` | `0` | Enable wired Ethernet bring-up (init_eth_physical / eth_ready). |
-| `DETWS_ENABLE_EXC_DECODER` | `0` | Opt-in ESP32 panic / exception decoder for a live diagnostics panel. |
-| `DETWS_ENABLE_FAILSAFE` | `0` | Opt-in software watchdog: deadlock detection + fail-safe safe-state. |
-| `DETWS_ENABLE_FDC2214` | `0` | Opt-in FDC2114/2214 capacitance-to-digital field sensor. |
-| `DETWS_ENABLE_FILE_SERVING` | `1` | Static file serving via Arduino FS (LittleFS, SPIFFS, SD). |
-| `DETWS_ENABLE_FINS` | `0` | Omron FINS frame codec (`services/fins`). |
-| `DETWS_ENABLE_FLOW_EXPORT` | `0` | Flow-record export codec (`services/flow_export`). |
-| `DETWS_ENABLE_FOCAS` | `0` | FANUC FOCAS Ethernet protocol codec (`services/focas`). |
-| `DETWS_ENABLE_FORWARD` | `0` | Enable the interface forwarding plane (default off). |
-| `DETWS_ENABLE_FTP` | `0` | Opt-in FTP client wire codec. |
-| `DETWS_ENABLE_GATEWAY` | `0` | Enable the radio / wireless gateway bridge (default off). |
-| `DETWS_ENABLE_GOOSE` | `0` | Opt-in IEC 61850 GOOSE publisher codec. |
-| `DETWS_ENABLE_GPIO_MAP` | `0` | Opt-in browser GPIO pin-mapper / diagnostics endpoint. |
-| `DETWS_ENABLE_GRAPHQL` | `0` | GraphQL query subset. |
-| `DETWS_ENABLE_GRPC_WEB` | `0` | gRPC-Web message framing (`services/grpcweb`). |
-| `DETWS_ENABLE_GUARDRAILS` | `0` | Opt-in runtime heap/stack guardrails. |
-| `DETWS_ENABLE_HAPPY_EYEBALLS` | `0` | Opt-in dual-stack Happy Eyeballs destination selection. |
-| `DETWS_ENABLE_HART` | `0` | Opt-in HART / HART-IP process-instrument protocol codec. |
-| `DETWS_ENABLE_HOSTLINK` | `0` | Omron Host Link (C-mode) frame codec (`services/hostlink`). |
-| `DETWS_ENABLE_HTTP2` | `0` | HTTP/2 (RFC 9113) over the version-agnostic request/response core. |
-| `DETWS_ENABLE_HTTP3` | `0` | HTTP/3 (RFC 9114) over QUIC (RFC 9000) - implemented, host-tested end-to-end (HW verification pending). |
-| `DETWS_ENABLE_HTTP_CACHE` | `0` | Opt-in HTTP Cache-Control directive helpers. |
-| `DETWS_ENABLE_HTTP_CLIENT` | `0` | Outbound HTTP(S) client (raw lwIP, optional client-side mbedTLS). |
-| `DETWS_ENABLE_HTTP_CLIENT_TLS` | `0` | HTTPS client support inside the HTTP client (needs DETWS_ENABLE_TLS). |
-| `DETWS_ENABLE_HTTP_DELIVERY` | `0` | Opt-in HTTP delivery optimizations. |
-| `DETWS_ENABLE_HW_HEALTH` | `0` | Opt-in hardware-health diagnostics. |
-| `DETWS_ENABLE_ICCP` | `0` | Opt-in ICCP / TASE.2 (IEC 60870-6) inter-control-center telemetry codec. |
-| `DETWS_ENABLE_IEC60870` | `0` | IEC 60870-5-101 / -104 telecontrol (SCADA) codec (`services/iec60870`). |
-| `DETWS_ENABLE_IFACE_BRIDGE` | `0` | User-defined address:port -> hardware-bus bridge (services/iface_bridge). |
-| `DETWS_ENABLE_INA219` | `0` | TI INA219 high-side current / power monitor (I2C). |
-| `DETWS_ENABLE_INTERBUS` | `0` | Opt-in INTERBUS summation-frame fieldbus codec. |
-| `DETWS_ENABLE_IOLINK` | `0` | IO-Link (SDCI, IEC 61131-9) data-link message codec (`services/iolink`). |
-| `DETWS_ENABLE_IPV6` | `0` | Enable IPv6 on the network interface (dual-stack). |
-| `DETWS_ENABLE_IP_ALLOWLIST` | `0` | Opt-in source-IP allowlist (accept-time firewall, IPv4 and IPv6). |
-| `DETWS_ENABLE_J1939` | `0` | SAE J1939 message codec (`services/j1939`). |
-| `DETWS_ENABLE_J2735` | `0` | Opt-in SAE J2735 V2X codec. |
-| `DETWS_ENABLE_JWT` | `0` | JWT bearer-token authentication (HS256). |
-| `DETWS_ENABLE_KEEPALIVE` | `1` | HTTP/1.1 persistent connections (keep-alive). |
-| `DETWS_ENABLE_LD2410` | `0` | HLK-LD2410 24 GHz mmWave presence / motion radar (UART). |
-| `DETWS_ENABLE_LDC1614` | `0` | Opt-in LDC1614 inductance-to-digital field sensor. |
-| `DETWS_ENABLE_LINK_MANAGER` | `0` | Opt-in multi-interface egress selection / failover policy. |
-| `DETWS_ENABLE_LOGBUF` | `0` | Opt-in fixed-RAM rotating log buffer with severity traps. |
-| `DETWS_ENABLE_LONWORKS` | `0` | Opt-in LonWorks / LON-IP (ISO/IEC 14908) network-variable codec. |
-| `DETWS_ENABLE_LORA` | `0` | Enable the LoRa (SX127x) radio codec + driver (default off). |
-| `DETWS_ENABLE_LWM2M` | `0` | OMA LwM2M TLV codec (`services/lwm2m`). |
-| `DETWS_ENABLE_MBPLUS` | `0` | Opt-in Modbus Plus HDLC token-bus frame codec. |
-| `DETWS_ENABLE_MBUS` | `0` | Wired M-Bus (Meter-Bus, EN 13757) frame codec (`services/mbus`). |
-| `DETWS_ENABLE_MDNS` | `0` | mDNS / DNS-SD advertisement (`name.local` + `_http._tcp`) via ESPmDNS. |
-| `DETWS_ENABLE_MDNS_ADAPTIVE` | `0` | Opt-in adaptive mDNS beacon scheduling. |
-| `DETWS_ENABLE_MELSEC` | `0` | Mitsubishi MELSEC MC protocol (binary 3E) codec (`services/melsec`). |
-| `DETWS_ENABLE_METRICS` | `0` | Prometheus `/metrics` endpoint (text exposition format 0.0.4). |
-| `DETWS_ENABLE_MMS` | `0` | Opt-in IEC 61850 MMS PDU codec. |
-| `DETWS_ENABLE_MODBUS` | `0` | Modbus TCP slave/server (Modbus Application Protocol v1.1b3) on TCP/502. |
-| `DETWS_ENABLE_MODBUS_MASTER` | `0` | Opt-in Modbus master codec + register scanner. |
-| `DETWS_ENABLE_MODBUS_RTU` | `0` | Modbus RTU framing (serial / RS-485) over the same data model + PDU dispatch. |
-| `DETWS_ENABLE_MPR121` | `0` | NXP MPR121 12-channel capacitive-touch controller (I2C). |
-| `DETWS_ENABLE_MQTT` | `0` | MQTT 3.1.1 publish/subscribe client (raw lwIP, optional MQTTS over TLS). |
-| `DETWS_ENABLE_MQTT_SN` | `0` | MQTT-SN v1.2 wire codec (`services/mqtt/mqtt_sn`). |
-| `DETWS_ENABLE_MQTT_TLS` | `0` | MQTTS: run the MQTT client over client-side TLS (needs DETWS_ENABLE_TLS). |
-| `DETWS_ENABLE_MSGPACK` | `0` | Zero-heap MessagePack encoder and decoder for compact binary payloads. |
-| `DETWS_ENABLE_MTCONNECT` | `0` | Opt-in MTConnect agent response codec. |
-| `DETWS_ENABLE_MTLS` | `0` | Mutual TLS - require and verify a client certificate (mTLS). |
-| `DETWS_ENABLE_MULTIPART` | `1` | multipart/form-data body parser. |
-| `DETWS_ENABLE_NATS` | `0` | NATS client protocol codec (`services/nats`). |
-| `DETWS_ENABLE_NEMA_TS2` | `0` | Opt-in NEMA TS 2 traffic-cabinet SDLC frame codec. |
-| `DETWS_ENABLE_NETADAPT` | `0` | Opt-in network adaptation decisions. |
-| `DETWS_ENABLE_NMEA0183` | `0` | NMEA 0183 sentence codec (`services/nmea0183`). |
-| `DETWS_ENABLE_NMEA2000` | `0` | NMEA 2000 codec (`services/nmea2000`). |
-| `DETWS_ENABLE_NRF24` | `0` | Enable the nRF24L01+ radio driver (default off). |
-| `DETWS_ENABLE_NTCIP` | `0` | Opt-in NTCIP transportation-device object identifiers. |
-| `DETWS_ENABLE_NTP` | `0` | SNTP wall-clock time sync via the ESP-IDF SNTP client. |
-| `DETWS_ENABLE_NTP_SERVER` | `0` | NTP/SNTP time server (RFC 5905 / RFC 4330 server mode) on UDP/123 (services/ntp_server). |
-| `DETWS_ENABLE_NTRIP_CASTER` | `0` | GNSS RTK base station + NTRIP caster (services/gnss). |
-| `DETWS_ENABLE_NTS` | `0` | Opt-in Network Time Security (NTS, RFC 8915) wire codec. |
-| `DETWS_ENABLE_OAUTH2` | `0` | OAuth2 token-endpoint client. |
-| `DETWS_ENABLE_OBSERVABILITY` | `0` | Transport-layer observability: connection event hook + counters. |
-| `DETWS_ENABLE_OCIT` | `0` | Opt-in OCIT-Outstations message codec. |
-| `DETWS_ENABLE_OIDC` | `0` | OpenID Connect ID-token verification, RS256. |
-| `DETWS_ENABLE_OPCUA` | `0` | OPC UA Binary server. |
-| `DETWS_ENABLE_OPCUA_CLIENT` | `0` | OPC UA Binary client. |
-| `DETWS_ENABLE_OPENADR` | `0` | Opt-in OpenADR 3.0 (Automated Demand Response) JSON codec. |
-| `DETWS_ENABLE_OTA` | `0` | Authenticated OTA firmware update (streaming POST to the ESP32 Update API). |
-| `DETWS_ENABLE_OTA_ROLLBACK` | `0` | Opt-in OTA rollback protection / soft-brick safeguard. |
-| `DETWS_ENABLE_PARTITION_MONITOR` | `0` | Opt-in flash partition-map monitor endpoint. |
-| `DETWS_ENABLE_PCA9685` | `0` | NXP PCA9685 16-channel 12-bit PWM / servo driver (I2C). |
-| `DETWS_ENABLE_PER_IP_THROTTLE` | `0` | Opt-in per-IP accept-rate throttle (connection-flood defense, keyed by source IPv4). |
-| `DETWS_ENABLE_PN532` | `0` | Enable the PN532 NFC frame codec (default off). |
-| `DETWS_ENABLE_POWERLINK` | `0` | Opt-in Ethernet POWERLINK (EPSG) basic frame codec. |
-| `DETWS_ENABLE_PQC_KEX` | `0` | Post-quantum hybrid key exchange: ML-KEM-768 + X25519 (FIPS 203 / RFC 9370 combiner). |
-| `DETWS_ENABLE_PREEMPT_QUEUE` | `0` | Enable the preempting work queue primitive (default off). |
-| `DETWS_ENABLE_PROFIBUS` | `0` | Opt-in PROFIBUS-DP FDL telegram codec. |
-| `DETWS_ENABLE_PROFINET` | `0` | Opt-in PROFINET DCP (Discovery and Configuration Protocol) frame codec. |
-| `DETWS_ENABLE_PROMISC` | `0` | Wi-Fi promiscuous (monitor) capture. |
-| `DETWS_ENABLE_PROTOBUF` | `0` | Protocol Buffers wire codec (`services/protobuf`). |
-| `DETWS_ENABLE_PROVISIONING` | `0` | First-boot WiFi provisioning: softAP + captive-portal credentials form. |
-| `DETWS_ENABLE_PROXY_PROTOCOL` | `0` | HAProxy PROXY protocol codec (`services/proxy_protocol`). |
-| `DETWS_ENABLE_PSRAM_POOL` | `0` | Opt-in buffer placement policy (DRAM vs PSRAM) + SPI DMA ping-pong manager. |
-| `DETWS_ENABLE_RADIO_POWER` | `0` | Opt-in radio power controls. |
-| `DETWS_ENABLE_RADIO_SNIFF` | `0` | Opt-in receive-only radio channel sniffer to pcap. |
-| `DETWS_ENABLE_RANGE` | `0` | HTTP Range requests / 206 Partial Content (requires DETWS_ENABLE_FILE_SERVING or DETWS_ENABLE_EDGE_CACHE). |
-| `DETWS_ENABLE_RAWL2` | `0` | Opt-in raw Layer-2 Ethernet frame codec. |
-| `DETWS_ENABLE_REDIS` | `0` | Redis RESP2 wire codec (`services/redis_resp`). |
-| `DETWS_ENABLE_REDIS` | `0` | Redis RESP2 wire codec (`services/redis_resp`). |
-| `DETWS_ENABLE_RELAY` | `0` | Opt-in TCP relay / DNAT port forwarding. |
-| `DETWS_ENABLE_RTC` | `0` | I2C real-time-clock driver (DS1307 / DS3231) - a battery-backed time source. |
-| `DETWS_ENABLE_S7COMM` | `0` | Siemens S7comm PDU codec (`services/s7comm`). |
-| `DETWS_ENABLE_SDI12` | `0` | SDI-12 sensor-bus codec (`services/sdi12`). |
-| `DETWS_ENABLE_SEN0192` | `0` | DFRobot SEN0192 10.525 GHz microwave Doppler motion sensor (single digital OUT line). |
-| `DETWS_ENABLE_SENML` | `0` | SenML (RFC 8428) measurement-pack builder (`services/senml`). |
-| `DETWS_ENABLE_SEP2` | `0` | Opt-in IEEE 2030.5 (Smart Energy Profile 2.0) resource codec. |
-| `DETWS_ENABLE_SERCOS` | `0` | Opt-in SERCOS III motion-bus telegram codec. |
-| `DETWS_ENABLE_SHT3X` | `0` | Sensirion SHT3x temperature / humidity sensor (I2C). |
-| `DETWS_ENABLE_SIGFOX` | `0` | Enable the Sigfox AT-command codec (default off). |
-| `DETWS_ENABLE_SLEEP_SCHED` | `0` | Opt-in dynamic sleep-cycle scheduler. |
-| `DETWS_ENABLE_SMB` | `0` | Opt-in SMB2 client. |
-| `DETWS_ENABLE_SMTP` | `0` | Outbound SMTP client (RFC 5321) for device email alerts (services/smtp). |
-| `DETWS_ENABLE_SNMP` | `0` | SNMP agent (v1/v2c, + v3 USM when DETWS_ENABLE_SNMP_V3) over lwIP UDP. |
-| `DETWS_ENABLE_SNMP_TRAP` | `0` | Outbound SNMP notifications - traps and informs (requires DETWS_ENABLE_SNMP). |
-| `DETWS_ENABLE_SNMP_V3` | `0` | Add SNMPv3 USM (auth via HMAC-SHA, privacy via AES-128-CFB). |
-| `DETWS_ENABLE_SNP` | `0` | Opt-in GE Fanuc SNP (Series Ninety Protocol) serial frame codec. |
-| `DETWS_ENABLE_SOCKPOOL` | `0` | Opt-in dynamic socket recycling: an LRU connection-slot pool. |
-| `DETWS_ENABLE_SOUTHBOUND` | `0` | Opt-in southbound protocol-driver framework. |
-| `DETWS_ENABLE_SPARKPLUG` | `0` | Sparkplug B payload + topic codec (`services/sparkplug`). |
-| `DETWS_ENABLE_SPA_ROUTER` | `0` | Opt-in single-page-app micro-routing decision. |
-| `DETWS_ENABLE_SQLITE` | `0` | Opt-in SQLite3 on-disk file-format reader. |
-| `DETWS_ENABLE_SSE` | `1` | Server-Sent Events push support. |
-| `DETWS_ENABLE_SSH` | `0` | SSH server support (RFC 4253/4252/4254). |
-| `DETWS_ENABLE_SSH_SCP` | `0` | SCP server over SSH (the legacy RCP protocol via `exec "scp -t/-f"`). |
-| `DETWS_ENABLE_SSH_SFTP` | `0` | SFTP server subsystem over SSH (SSH_FXP_* v3, draft-ietf-secsh-filexfer-02). |
-| `DETWS_ENABLE_SSH_ZLIB` | `0` | SSH server-to-client compression (`zlib@openssh.com` / `zlib`, RFC 4253 sec 6.2). |
-| `DETWS_ENABLE_STATS` | `0` | Runtime stats endpoint (uptime, request/error counts, pool usage, heap). |
-| `DETWS_ENABLE_STATSD` | `0` | Opt-in StatsD metrics client. |
-| `DETWS_ENABLE_STOMP` | `0` | STOMP 1.2 frame codec (`services/stomp`). |
-| `DETWS_ENABLE_SUNSPEC` | `0` | SunSpec Modbus device-information-model codec (`services/sunspec`). |
-| `DETWS_ENABLE_SYSLOG` | `0` | Syslog client (RFC 5424 over UDP). |
-| `DETWS_ENABLE_TELEMETRY` | `0` | Telemetry math helpers (moving-window stats, rate-of-change, totalizer). |
-| `DETWS_ENABLE_TELNET` | `0` | Telnet server support (RFC 854 / IAC option negotiation). |
-| `DETWS_ENABLE_THEMES` | `0` | Embed the theme stylesheet library as runtime-selectable blobs (default off). |
-| `DETWS_ENABLE_THREAD` | `0` | Enable the Thread spinel / HDLC-lite framing codec (default off). |
-| `DETWS_ENABLE_TIME_SOURCE` | `0` | Multi-source time fallback (NTP / RTC / GPS / ... |
-| `DETWS_ENABLE_TLS` | `0` | TLS (HTTPS/WSS) via mbedTLS with a static memory pool (ESP32-only). |
-| `DETWS_ENABLE_TLS_POLICY` | `0` | Opt-in TLS version negotiation + pinned cipher-suite policy. |
-| `DETWS_ENABLE_TLS_RESUMPTION` | `0` | TLS session resumption via RFC 5077 session tickets (requires DETWS_ENABLE_TLS). |
-| `DETWS_ENABLE_TOTP` | `0` | Opt-in TOTP two-factor auth (RFC 6238). |
-| `DETWS_ENABLE_UDP_TELEMETRY` | `0` | Opt-in fire-and-forget UDP telemetry cast. |
-| `DETWS_ENABLE_UMATI` | `0` | umati - OPC UA for Machine Tools information model. |
-| `DETWS_ENABLE_UPLOAD` | `0` | Streaming file upload: POST a body straight to a file on the filesystem. |
-| `DETWS_ENABLE_UTMC` | `0` | Opt-in UTMC (Urban Traffic Management and Control) common-database codec. |
-| `DETWS_ENABLE_VFS` | `0` | Unified virtual filesystem wrapper. |
-| `DETWS_ENABLE_VL53L0X` | `0` | Opt-in VL53L0X optical time-of-flight ranging sensor. |
-| `DETWS_ENABLE_WAL` | `0` | Opt-in write-ahead store for atomic buffer-to-flash storage. |
-| `DETWS_ENABLE_WAMP` | `0` | WAMP messaging codec (`services/wamp`). |
-| `DETWS_ENABLE_WAVE` | `0` | Opt-in IEEE 1609 WAVE (WSMP + 1609.2 envelope) codec. |
-| `DETWS_ENABLE_WEARLEVEL` | `0` | Opt-in flash wear-leveling slot selector. |
-| `DETWS_ENABLE_WEBDAV` | `0` | WebDAV server (RFC 4918, class 1 + advisory locks) over the file system. |
-| `DETWS_ENABLE_WEBHOOK` | `0` | Opt-in outbound webhooks / IFTTT. |
-| `DETWS_ENABLE_WEBSOCKET` | `1` | WebSocket support (RFC 6455 framing + SHA-1/base64 handshake). |
-| `DETWS_ENABLE_WEB_TERMINAL` | `0` | Browser "web serial" terminal over WebSocket (src/services/web_terminal). |
-| `DETWS_ENABLE_WIFI_SNIFFER` | `0` | Opt-in 802.11 sniffer / traffic analyzer. |
-| `DETWS_ENABLE_WISUN` | `0` | Opt-in Wi-SUN FAN border-router connector. |
-| `DETWS_ENABLE_WS_CLIENT` | `0` | Outbound WebSocket client (RFC 6455 over raw lwIP, optional wss:// TLS). |
-| `DETWS_ENABLE_WS_CLIENT_TLS` | `0` | wss://: run the WebSocket client over client-side TLS (needs DETWS_ENABLE_TLS). |
-| `DETWS_ENABLE_WS_DEFLATE` | `0` | WebSocket permessage-deflate (RFC 7692) - bidirectional compression. |
-| `DETWS_ENABLE_XMPP` | `0` | Opt-in XMPP (RFC 6120) stanza codec. |
-| `DETWS_ENABLE_ZIGBEE` | `0` | Enable the Zigbee EZSP / ASH framing codec (default off). |
-| `DETWS_ENABLE_ZWAVE` | `0` | Enable the Z-Wave Serial API frame codec (default off). |
+| `DWS_ENABLE_ACCEPT_THROTTLE` | `0` | Opt-in global accept-rate throttle (connection-flood defense). |
+| `DWS_ENABLE_ADS` | `0` | Beckhoff ADS / AMS protocol codec (`services/ads`). |
+| `DWS_ENABLE_ADS1115` | `0` | TI ADS1115 16-bit ADC (I2C) - a precise external analog input. |
+| `DWS_ENABLE_AMQP` | `0` | AMQP 0-9-1 frame codec (`services/amqp`). |
+| `DWS_ENABLE_ATC` | `0` | Opt-in ATC (Advanced Traffic Controller) field-I/O interop snapshot. |
+| `DWS_ENABLE_AUDIT_LOG` | `0` | Tamper-evident audit log. |
+| `DWS_ENABLE_AUTH` | `1` | HTTP Basic Authentication per-route. |
+| `DWS_ENABLE_AUTH_LOCKOUT` | `0` | Opt-in per-IP brute-force lockout for HTTP auth (requires DWS_ENABLE_AUTH). |
+| `DWS_ENABLE_BACNET` | `0` | BACnet/IP BVLC + NPDU codec (`services/bacnet`). |
+| `DWS_ENABLE_BLE_GATT` | `0` | Opt-in Bluetooth ATT protocol codec + GATT characteristic bridge. |
+| `DWS_ENABLE_BUS_CAPTURE` | `0` | Wired field-bus listen-only capture. |
+| `DWS_ENABLE_C37118` | `0` | IEEE C37.118.2 synchrophasor frame codec (`services/c37118`). |
+| `DWS_ENABLE_CANOPEN` | `0` | CANopen (CiA 301) message codec (`services/canopen`). |
+| `DWS_ENABLE_CBOR` | `0` | Zero-heap CBOR (RFC 8949) encoder for compact binary payloads. |
+| `DWS_ENABLE_CC1101` | `0` | Opt-in CC1101 sub-GHz radio driver. |
+| `DWS_ENABLE_CCLINK` | `0` | Opt-in CC-Link (CLPA) cyclic fieldbus frame codec. |
+| `DWS_ENABLE_CIA402` | `0` | CiA 402 / IEC 61800-7-201 drive + motion profile (`services/cia402`). |
+| `DWS_ENABLE_CIP` | `0` | CIP (Common Industrial Protocol) message codec (`services/cip`). |
+| `DWS_ENABLE_CLOUDEVENTS` | `0` | CloudEvents v1.0 (CNCF) event envelope (structured JSON + binary headers). |
+| `DWS_ENABLE_COAP` | `0` | CoAP server (RFC 7252) over UDP/5683. |
+| `DWS_ENABLE_COAP_BLOCK` | `0` | CoAP block-wise transfer - RFC 7959 (requires DWS_ENABLE_COAP). |
+| `DWS_ENABLE_COAP_OBSERVE` | `0` | CoAP resource observation - RFC 7641 (requires DWS_ENABLE_COAP). |
+| `DWS_ENABLE_CONFIG_IO` | `0` | Opt-in schema-driven config export / restore. |
+| `DWS_ENABLE_CONFIG_STORE` | `0` | Typed NVS configuration store (WiFi creds, IP config, ... |
+| `DWS_ENABLE_CONTROL` | `0` | Closed-loop control law (`services/control`). |
+| `DWS_ENABLE_COTP` | `0` | TPKT (RFC 1006) + COTP (X.224 class 0) frame codec (`services/cotp`). |
+| `DWS_ENABLE_CSRF` | `0` | Opt-in CSRF protection for state-changing HTTP requests. |
+| `DWS_ENABLE_DASHBOARD` | `0` | Real-time SVG dashboard (DWS_ENABLE_DASHBOARD; requires DWS_ENABLE_SSE). |
+| `DWS_ENABLE_DBM` | `0` | Opt-in dbm: a log-structured hash key-value store on the WAL (DWS_ENABLE_DBM, requires WAL). |
+| `DWS_ENABLE_DDS` | `0` | Opt-in DDS / RTPS wire-protocol codec. |
+| `DWS_ENABLE_DEVICENET` | `0` | DeviceNet link-adaptation codec (`services/devicenet`). |
+| `DWS_ENABLE_DEVICE_ID` | `0` | Stable device UUID derived from the chip MAC (RFC 4122 v5). |
+| `DWS_ENABLE_DF1` | `0` | Allen-Bradley DF1 full-duplex frame codec (`services/df1`). |
+| `DWS_ENABLE_DIAG` | `0` | Expose a diagnostic JSON endpoint via server.diag(). |
+| `DWS_ENABLE_DIRECTNET` | `0` | Opt-in AutomationDirect / Koyo DirectNET serial frame codec. |
+| `DWS_ENABLE_DMA` | `0` | Enable the DMA peripheral ingest / egress primitive (default off). |
+| `DWS_ENABLE_DMX` | `0` | DMX512 + RDM (ANSI E1.20) lighting codec (`services/dmx`). |
+| `DWS_ENABLE_DNC` | `0` | Opt-in CNC RS-232 DNC drip-feed codec. |
+| `DWS_ENABLE_DNP3` | `0` | DNP3 (IEEE 1815) data-link frame codec (`services/dnp3`). |
+| `DWS_ENABLE_DNS_RESOLVER` | `0` | Opt-in DNS resolver with answer verification. |
+| `DWS_ENABLE_DNS_SERVER` | `0` | Authoritative DNS server (services/dns_server) on UDP/53. |
+| `DWS_ENABLE_DOCSTORE` | `0` | Opt-in local JSON document store on the WAL (DWS_ENABLE_DOCSTORE, requires DBM + WAL). |
+| `DWS_ENABLE_DSHOT` | `0` | Opt-in DShot ESC throttle protocol codec. |
+| `DWS_ENABLE_DTLS` | `0` | DTLS 1.3 datagram security (RFC 9147) - the record layer. |
+| `DWS_ENABLE_EDGE_CACHE` | `0` | Opt-in CDN edge-cache tier (DWS_ENABLE_EDGE_CACHE, requires HTTP_CACHE). |
+| `DWS_ENABLE_EDGE_MESH` | `0` | Opt-in mesh (sibling-cache) distribution for the edge cache. |
+| `DWS_ENABLE_EDGE_ORIGIN_TLS` | `0` |  |
+| `DWS_ENABLE_ENIP` | `0` | EtherNet/IP encapsulation codec (`services/enip`). |
+| `DWS_ENABLE_ENOCEAN` | `0` | Enable the EnOcean ESP3 serial codec (default off). |
+| `DWS_ENABLE_ESPNOW` | `0` | ESP-NOW peer messaging. |
+| `DWS_ENABLE_ETAG` | `0` | Conditional GET (ETag + Last-Modified) for served files. |
+| `DWS_ENABLE_ETHERNET` | `0` | Enable wired Ethernet bring-up (init_eth_physical / eth_ready). |
+| `DWS_ENABLE_EXC_DECODER` | `0` | Opt-in ESP32 panic / exception decoder for a live diagnostics panel. |
+| `DWS_ENABLE_FAILSAFE` | `0` | Opt-in software watchdog: deadlock detection + fail-safe safe-state. |
+| `DWS_ENABLE_FDC2214` | `0` | Opt-in FDC2114/2214 capacitance-to-digital field sensor. |
+| `DWS_ENABLE_FILE_SERVING` | `1` | Static file serving via Arduino FS (LittleFS, SPIFFS, SD). |
+| `DWS_ENABLE_FINS` | `0` | Omron FINS frame codec (`services/fins`). |
+| `DWS_ENABLE_FLOW_EXPORT` | `0` | Flow-record export codec (`services/flow_export`). |
+| `DWS_ENABLE_FOCAS` | `0` | FANUC FOCAS Ethernet protocol codec (`services/focas`). |
+| `DWS_ENABLE_FORWARD` | `0` | Enable the interface forwarding plane (default off). |
+| `DWS_ENABLE_FTP` | `0` | Opt-in FTP client wire codec. |
+| `DWS_ENABLE_GATEWAY` | `0` | Enable the radio / wireless gateway bridge (default off). |
+| `DWS_ENABLE_GOOSE` | `0` | Opt-in IEC 61850 GOOSE publisher codec. |
+| `DWS_ENABLE_GPIO_MAP` | `0` | Opt-in browser GPIO pin-mapper / diagnostics endpoint. |
+| `DWS_ENABLE_GRAPHQL` | `0` | GraphQL query subset. |
+| `DWS_ENABLE_GRPC_WEB` | `0` | gRPC-Web message framing (`services/grpcweb`). |
+| `DWS_ENABLE_GUARDRAILS` | `0` | Opt-in runtime heap/stack guardrails. |
+| `DWS_ENABLE_HAPPY_EYEBALLS` | `0` | Opt-in dual-stack Happy Eyeballs destination selection. |
+| `DWS_ENABLE_HART` | `0` | Opt-in HART / HART-IP process-instrument protocol codec. |
+| `DWS_ENABLE_HOSTLINK` | `0` | Omron Host Link (C-mode) frame codec (`services/hostlink`). |
+| `DWS_ENABLE_HTTP2` | `0` | HTTP/2 (RFC 9113) over the version-agnostic request/response core. |
+| `DWS_ENABLE_HTTP3` | `0` | HTTP/3 (RFC 9114) over QUIC (RFC 9000) - implemented, host-tested end-to-end (HW verification pending). |
+| `DWS_ENABLE_HTTP_CACHE` | `0` | Opt-in HTTP Cache-Control directive helpers. |
+| `DWS_ENABLE_HTTP_CLIENT` | `0` | Outbound HTTP(S) client (raw lwIP, optional client-side mbedTLS). |
+| `DWS_ENABLE_HTTP_CLIENT_TLS` | `0` | HTTPS client support inside the HTTP client (needs DWS_ENABLE_TLS). |
+| `DWS_ENABLE_HTTP_DELIVERY` | `0` | Opt-in HTTP delivery optimizations. |
+| `DWS_ENABLE_HW_HEALTH` | `0` | Opt-in hardware-health diagnostics. |
+| `DWS_ENABLE_ICCP` | `0` | Opt-in ICCP / TASE.2 (IEC 60870-6) inter-control-center telemetry codec. |
+| `DWS_ENABLE_IEC60870` | `0` | IEC 60870-5-101 / -104 telecontrol (SCADA) codec (`services/iec60870`). |
+| `DWS_ENABLE_IFACE_BRIDGE` | `0` | User-defined address:port -> hardware-bus bridge (services/iface_bridge). |
+| `DWS_ENABLE_INA219` | `0` | TI INA219 high-side current / power monitor (I2C). |
+| `DWS_ENABLE_INTERBUS` | `0` | Opt-in INTERBUS summation-frame fieldbus codec. |
+| `DWS_ENABLE_IOLINK` | `0` | IO-Link (SDCI, IEC 61131-9) data-link message codec (`services/iolink`). |
+| `DWS_ENABLE_IPV6` | `0` | Enable IPv6 on the network interface (dual-stack). |
+| `DWS_ENABLE_IP_ALLOWLIST` | `0` | Opt-in source-IP allowlist (accept-time firewall, IPv4 and IPv6). |
+| `DWS_ENABLE_J1939` | `0` | SAE J1939 message codec (`services/j1939`). |
+| `DWS_ENABLE_J2735` | `0` | Opt-in SAE J2735 V2X codec. |
+| `DWS_ENABLE_JWT` | `0` | JWT bearer-token authentication (HS256). |
+| `DWS_ENABLE_KEEPALIVE` | `1` | HTTP/1.1 persistent connections (keep-alive). |
+| `DWS_ENABLE_LD2410` | `0` | HLK-LD2410 24 GHz mmWave presence / motion radar (UART). |
+| `DWS_ENABLE_LDC1614` | `0` | Opt-in LDC1614 inductance-to-digital field sensor. |
+| `DWS_ENABLE_LINK_MANAGER` | `0` | Opt-in multi-interface egress selection / failover policy. |
+| `DWS_ENABLE_LOGBUF` | `0` | Opt-in fixed-RAM rotating log buffer with severity traps. |
+| `DWS_ENABLE_LONWORKS` | `0` | Opt-in LonWorks / LON-IP (ISO/IEC 14908) network-variable codec. |
+| `DWS_ENABLE_LORA` | `0` | Enable the LoRa (SX127x) radio codec + driver (default off). |
+| `DWS_ENABLE_LWM2M` | `0` | OMA LwM2M TLV codec (`services/lwm2m`). |
+| `DWS_ENABLE_MBPLUS` | `0` | Opt-in Modbus Plus HDLC token-bus frame codec. |
+| `DWS_ENABLE_MBUS` | `0` | Wired M-Bus (Meter-Bus, EN 13757) frame codec (`services/mbus`). |
+| `DWS_ENABLE_MDNS` | `0` | mDNS / DNS-SD advertisement (`name.local` + `_http._tcp`) via ESPmDNS. |
+| `DWS_ENABLE_MDNS_ADAPTIVE` | `0` | Opt-in adaptive mDNS beacon scheduling. |
+| `DWS_ENABLE_MELSEC` | `0` | Mitsubishi MELSEC MC protocol (binary 3E) codec (`services/melsec`). |
+| `DWS_ENABLE_METRICS` | `0` | Prometheus `/metrics` endpoint (text exposition format 0.0.4). |
+| `DWS_ENABLE_MMS` | `0` | Opt-in IEC 61850 MMS PDU codec. |
+| `DWS_ENABLE_MODBUS` | `0` | Modbus TCP slave/server (Modbus Application Protocol v1.1b3) on TCP/502. |
+| `DWS_ENABLE_MODBUS_MASTER` | `0` | Opt-in Modbus master codec + register scanner. |
+| `DWS_ENABLE_MODBUS_RTU` | `0` | Modbus RTU framing (serial / RS-485) over the same data model + PDU dispatch. |
+| `DWS_ENABLE_MPR121` | `0` | NXP MPR121 12-channel capacitive-touch controller (I2C). |
+| `DWS_ENABLE_MQTT` | `0` | MQTT 3.1.1 publish/subscribe client (raw lwIP, optional MQTTS over TLS). |
+| `DWS_ENABLE_MQTT_SN` | `0` | MQTT-SN v1.2 wire codec (`services/mqtt/mqtt_sn`). |
+| `DWS_ENABLE_MQTT_TLS` | `0` | MQTTS: run the MQTT client over client-side TLS (needs DWS_ENABLE_TLS). |
+| `DWS_ENABLE_MSGPACK` | `0` | Zero-heap MessagePack encoder and decoder for compact binary payloads. |
+| `DWS_ENABLE_MTCONNECT` | `0` | Opt-in MTConnect agent response codec. |
+| `DWS_ENABLE_MTLS` | `0` | Mutual TLS - require and verify a client certificate (mTLS). |
+| `DWS_ENABLE_MULTIPART` | `1` | multipart/form-data body parser. |
+| `DWS_ENABLE_NATS` | `0` | NATS client protocol codec (`services/nats`). |
+| `DWS_ENABLE_NEMA_TS2` | `0` | Opt-in NEMA TS 2 traffic-cabinet SDLC frame codec. |
+| `DWS_ENABLE_NETADAPT` | `0` | Opt-in network adaptation decisions. |
+| `DWS_ENABLE_NMEA0183` | `0` | NMEA 0183 sentence codec (`services/nmea0183`). |
+| `DWS_ENABLE_NMEA2000` | `0` | NMEA 2000 codec (`services/nmea2000`). |
+| `DWS_ENABLE_NRF24` | `0` | Enable the nRF24L01+ radio driver (default off). |
+| `DWS_ENABLE_NTCIP` | `0` | Opt-in NTCIP transportation-device object identifiers. |
+| `DWS_ENABLE_NTP` | `0` | SNTP wall-clock time sync via the ESP-IDF SNTP client. |
+| `DWS_ENABLE_NTP_SERVER` | `0` | NTP/SNTP time server (RFC 5905 / RFC 4330 server mode) on UDP/123 (services/ntp_server). |
+| `DWS_ENABLE_NTRIP_CASTER` | `0` | GNSS RTK base station + NTRIP caster (services/gnss). |
+| `DWS_ENABLE_NTS` | `0` | Opt-in Network Time Security (NTS, RFC 8915) wire codec. |
+| `DWS_ENABLE_OAUTH2` | `0` | OAuth2 token-endpoint client. |
+| `DWS_ENABLE_OBSERVABILITY` | `0` | Transport-layer observability: connection event hook + counters. |
+| `DWS_ENABLE_OCIT` | `0` | Opt-in OCIT-Outstations message codec. |
+| `DWS_ENABLE_OIDC` | `0` | OpenID Connect ID-token verification, RS256. |
+| `DWS_ENABLE_OPCUA` | `0` | OPC UA Binary server. |
+| `DWS_ENABLE_OPCUA_CLIENT` | `0` | OPC UA Binary client. |
+| `DWS_ENABLE_OPENADR` | `0` | Opt-in OpenADR 3.0 (Automated Demand Response) JSON codec. |
+| `DWS_ENABLE_OTA` | `0` | Authenticated OTA firmware update (streaming POST to the ESP32 Update API). |
+| `DWS_ENABLE_OTA_ROLLBACK` | `0` | Opt-in OTA rollback protection / soft-brick safeguard. |
+| `DWS_ENABLE_PARTITION_MONITOR` | `0` | Opt-in flash partition-map monitor endpoint. |
+| `DWS_ENABLE_PCA9685` | `0` | NXP PCA9685 16-channel 12-bit PWM / servo driver (I2C). |
+| `DWS_ENABLE_PER_IP_THROTTLE` | `0` | Opt-in per-IP accept-rate throttle (connection-flood defense, keyed by source IPv4). |
+| `DWS_ENABLE_PN532` | `0` | Enable the PN532 NFC frame codec (default off). |
+| `DWS_ENABLE_POWERLINK` | `0` | Opt-in Ethernet POWERLINK (EPSG) basic frame codec. |
+| `DWS_ENABLE_PQC_KEX` | `0` | Post-quantum hybrid key exchange: ML-KEM-768 + X25519 (FIPS 203 / RFC 9370 combiner). |
+| `DWS_ENABLE_PREEMPT_QUEUE` | `0` | Enable the preempting work queue primitive (default off). |
+| `DWS_ENABLE_PROFIBUS` | `0` | Opt-in PROFIBUS-DP FDL telegram codec. |
+| `DWS_ENABLE_PROFINET` | `0` | Opt-in PROFINET DCP (Discovery and Configuration Protocol) frame codec. |
+| `DWS_ENABLE_PROMISC` | `0` | Wi-Fi promiscuous (monitor) capture. |
+| `DWS_ENABLE_PROTOBUF` | `0` | Protocol Buffers wire codec (`services/protobuf`). |
+| `DWS_ENABLE_PROVISIONING` | `0` | First-boot WiFi provisioning: softAP + captive-portal credentials form. |
+| `DWS_ENABLE_PROXY_PROTOCOL` | `0` | HAProxy PROXY protocol codec (`services/proxy_protocol`). |
+| `DWS_ENABLE_PSRAM_POOL` | `0` | Opt-in buffer placement policy (DRAM vs PSRAM) + SPI DMA ping-pong manager. |
+| `DWS_ENABLE_RADIO_POWER` | `0` | Opt-in radio power controls. |
+| `DWS_ENABLE_RADIO_SNIFF` | `0` | Opt-in receive-only radio channel sniffer to pcap. |
+| `DWS_ENABLE_RANGE` | `0` | HTTP Range requests / 206 Partial Content (requires DWS_ENABLE_FILE_SERVING or DWS_ENABLE_EDGE_CACHE). |
+| `DWS_ENABLE_RAWL2` | `0` | Opt-in raw Layer-2 Ethernet frame codec. |
+| `DWS_ENABLE_REDIS` | `0` | Redis RESP2 wire codec (`services/redis_resp`). |
+| `DWS_ENABLE_REDIS` | `0` | Redis RESP2 wire codec (`services/redis_resp`). |
+| `DWS_ENABLE_RELAY` | `0` | Opt-in TCP relay / DNAT port forwarding. |
+| `DWS_ENABLE_RTC` | `0` | I2C real-time-clock driver (DS1307 / DS3231) - a battery-backed time source. |
+| `DWS_ENABLE_S7COMM` | `0` | Siemens S7comm PDU codec (`services/s7comm`). |
+| `DWS_ENABLE_SDI12` | `0` | SDI-12 sensor-bus codec (`services/sdi12`). |
+| `DWS_ENABLE_SEN0192` | `0` | DFRobot SEN0192 10.525 GHz microwave Doppler motion sensor (single digital OUT line). |
+| `DWS_ENABLE_SENML` | `0` | SenML (RFC 8428) measurement-pack builder (`services/senml`). |
+| `DWS_ENABLE_SEP2` | `0` | Opt-in IEEE 2030.5 (Smart Energy Profile 2.0) resource codec. |
+| `DWS_ENABLE_SERCOS` | `0` | Opt-in SERCOS III motion-bus telegram codec. |
+| `DWS_ENABLE_SHT3X` | `0` | Sensirion SHT3x temperature / humidity sensor (I2C). |
+| `DWS_ENABLE_SIGFOX` | `0` | Enable the Sigfox AT-command codec (default off). |
+| `DWS_ENABLE_SLEEP_SCHED` | `0` | Opt-in dynamic sleep-cycle scheduler. |
+| `DWS_ENABLE_SMB` | `0` | Opt-in SMB2 client. |
+| `DWS_ENABLE_SMTP` | `0` | Outbound SMTP client (RFC 5321) for device email alerts (services/smtp). |
+| `DWS_ENABLE_SNMP` | `0` | SNMP agent (v1/v2c, + v3 USM when DWS_ENABLE_SNMP_V3) over lwIP UDP. |
+| `DWS_ENABLE_SNMP_TRAP` | `0` | Outbound SNMP notifications - traps and informs (requires DWS_ENABLE_SNMP). |
+| `DWS_ENABLE_SNMP_V3` | `0` | Add SNMPv3 USM (auth via HMAC-SHA, privacy via AES-128-CFB). |
+| `DWS_ENABLE_SNP` | `0` | Opt-in GE Fanuc SNP (Series Ninety Protocol) serial frame codec. |
+| `DWS_ENABLE_SOCKPOOL` | `0` | Opt-in dynamic socket recycling: an LRU connection-slot pool. |
+| `DWS_ENABLE_SOUTHBOUND` | `0` | Opt-in southbound protocol-driver framework. |
+| `DWS_ENABLE_SPARKPLUG` | `0` | Sparkplug B payload + topic codec (`services/sparkplug`). |
+| `DWS_ENABLE_SPA_ROUTER` | `0` | Opt-in single-page-app micro-routing decision. |
+| `DWS_ENABLE_SQLITE` | `0` | Opt-in SQLite3 on-disk file-format reader. |
+| `DWS_ENABLE_SSE` | `1` | Server-Sent Events push support. |
+| `DWS_ENABLE_SSH` | `0` | SSH server support (RFC 4253/4252/4254). |
+| `DWS_ENABLE_SSH_SCP` | `0` | SCP server over SSH (the legacy RCP protocol via `exec "scp -t/-f"`). |
+| `DWS_ENABLE_SSH_SFTP` | `0` | SFTP server subsystem over SSH (SSH_FXP_* v3, draft-ietf-secsh-filexfer-02). |
+| `DWS_ENABLE_SSH_ZLIB` | `0` | SSH server-to-client compression (`zlib@openssh.com` / `zlib`, RFC 4253 sec 6.2). |
+| `DWS_ENABLE_STATS` | `0` | Runtime stats endpoint (uptime, request/error counts, pool usage, heap). |
+| `DWS_ENABLE_STATSD` | `0` | Opt-in StatsD metrics client. |
+| `DWS_ENABLE_STOMP` | `0` | STOMP 1.2 frame codec (`services/stomp`). |
+| `DWS_ENABLE_SUNSPEC` | `0` | SunSpec Modbus device-information-model codec (`services/sunspec`). |
+| `DWS_ENABLE_SYSLOG` | `0` | Syslog client (RFC 5424 over UDP). |
+| `DWS_ENABLE_TELEMETRY` | `0` | Telemetry math helpers (moving-window stats, rate-of-change, totalizer). |
+| `DWS_ENABLE_TELNET` | `0` | Telnet server support (RFC 854 / IAC option negotiation). |
+| `DWS_ENABLE_THEMES` | `0` | Embed the theme stylesheet library as runtime-selectable blobs (default off). |
+| `DWS_ENABLE_THREAD` | `0` | Enable the Thread spinel / HDLC-lite framing codec (default off). |
+| `DWS_ENABLE_TIME_SOURCE` | `0` | Multi-source time fallback (NTP / RTC / GPS / ... |
+| `DWS_ENABLE_TLS` | `0` | TLS (HTTPS/WSS) via mbedTLS with a static memory pool (ESP32-only). |
+| `DWS_ENABLE_TLS_POLICY` | `0` | Opt-in TLS version negotiation + pinned cipher-suite policy. |
+| `DWS_ENABLE_TLS_RESUMPTION` | `0` | TLS session resumption via RFC 5077 session tickets (requires DWS_ENABLE_TLS). |
+| `DWS_ENABLE_TOTP` | `0` | Opt-in TOTP two-factor auth (RFC 6238). |
+| `DWS_ENABLE_UDP_TELEMETRY` | `0` | Opt-in fire-and-forget UDP telemetry cast. |
+| `DWS_ENABLE_UMATI` | `0` | umati - OPC UA for Machine Tools information model. |
+| `DWS_ENABLE_UPLOAD` | `0` | Streaming file upload: POST a body straight to a file on the filesystem. |
+| `DWS_ENABLE_UTMC` | `0` | Opt-in UTMC (Urban Traffic Management and Control) common-database codec. |
+| `DWS_ENABLE_VFS` | `0` | Unified virtual filesystem wrapper. |
+| `DWS_ENABLE_VL53L0X` | `0` | Opt-in VL53L0X optical time-of-flight ranging sensor. |
+| `DWS_ENABLE_WAL` | `0` | Opt-in write-ahead store for atomic buffer-to-flash storage. |
+| `DWS_ENABLE_WAMP` | `0` | WAMP messaging codec (`services/wamp`). |
+| `DWS_ENABLE_WAVE` | `0` | Opt-in IEEE 1609 WAVE (WSMP + 1609.2 envelope) codec. |
+| `DWS_ENABLE_WEARLEVEL` | `0` | Opt-in flash wear-leveling slot selector. |
+| `DWS_ENABLE_WEBDAV` | `0` | WebDAV server (RFC 4918, class 1 + advisory locks) over the file system. |
+| `DWS_ENABLE_WEBHOOK` | `0` | Opt-in outbound webhooks / IFTTT. |
+| `DWS_ENABLE_WEBSOCKET` | `1` | WebSocket support (RFC 6455 framing + SHA-1/base64 handshake). |
+| `DWS_ENABLE_WEB_TERMINAL` | `0` | Browser "web serial" terminal over WebSocket (src/services/web_terminal). |
+| `DWS_ENABLE_WIFI_SNIFFER` | `0` | Opt-in 802.11 sniffer / traffic analyzer. |
+| `DWS_ENABLE_WISUN` | `0` | Opt-in Wi-SUN FAN border-router connector. |
+| `DWS_ENABLE_WS_CLIENT` | `0` | Outbound WebSocket client (RFC 6455 over raw lwIP, optional wss:// TLS). |
+| `DWS_ENABLE_WS_CLIENT_TLS` | `0` | wss://: run the WebSocket client over client-side TLS (needs DWS_ENABLE_TLS). |
+| `DWS_ENABLE_WS_DEFLATE` | `0` | WebSocket permessage-deflate (RFC 7692) - bidirectional compression. |
+| `DWS_ENABLE_XMPP` | `0` | Opt-in XMPP (RFC 6120) stanza codec. |
+| `DWS_ENABLE_ZIGBEE` | `0` | Enable the Zigbee EZSP / ASH framing codec (default off). |
+| `DWS_ENABLE_ZWAVE` | `0` | Enable the Z-Wave Serial API frame codec (default off). |
 
 <!-- END GENERATED FEATURE-FLAGS -->
 
@@ -1480,203 +1478,203 @@ guards at compile time.
 | Constant | Default | Description |
 | :------- | :-----: | :---------- |
 | `BODY_BUF_SIZE` | `256` | Maximum request body bytes stored in `HttpReq::body`. |
-| `CACHE_CONTROL_BUF_SIZE` | `64` | Size of the optional Cache-Control header line stored in DetWebServer. |
+| `CACHE_CONTROL_BUF_SIZE` | `64` | Size of the optional Cache-Control header line stored in DWS. |
 | `CHUNK_BUF_SIZE` | `1440` | Per-chunk staging buffer for send_chunked()'s ChunkSource (max bytes a source produces per call, hence the largest single chunk on the wire). |
 | `CONN_TIMEOUT_MS` | `5000` | Compile-time default for connection idle timeout in milliseconds. |
-| `CORS_HDR_BUF_SIZE` | `192` | Size of the pre-built CORS header block stored in DetWebServer. |
-| `DETWS_ACCEPT_THROTTLE_MAX` | `20` | Max accepted connections per throttle window (see DETWS_ENABLE_ACCEPT_THROTTLE). |
-| `DETWS_ACCEPT_THROTTLE_WINDOW_MS` | `1000` | Throttle window length in milliseconds (see DETWS_ENABLE_ACCEPT_THROTTLE). |
-| `DETWS_ADS1115_DIFFERENTIAL` | `0` | ADS1115 input mode: 0 = single-ended (AINx vs GND), 1 = differential. |
-| `DETWS_ADS1115_I2C_ADDR` | `0x48` | I2C address of the ADS1115 (0x48 with ADDR to GND; 0x49/0x4A/0x4B for VDD/SDA/SCL). |
-| `DETWS_AUTH_LOCKOUT_BASE_MS` | `1000` | First lockout duration in ms; doubles on each further failure. |
-| `DETWS_AUTH_LOCKOUT_MAX_MS` | `300000` | Maximum lockout duration in ms (the exponential backoff cap). |
-| `DETWS_AUTH_LOCKOUT_SLOTS` | `16` | Number of source IPs the auth lockout tracks (BSS bucket table). |
-| `DETWS_AUTH_LOCKOUT_THRESHOLD` | `5` | Consecutive failed auths from one IP before it is locked out. |
-| `DETWS_BRIDGE_MAX_RULES` | `8` | Max concurrent address:port -> bus rules (services/iface_bridge). |
-| `DETWS_BRIDGE_STREAM_CHUNK` | `256` | STREAM (UART) pipe chunk size (bytes) for services/iface_bridge - one socket<->UART hop. |
-| `DETWS_BRIDGE_TXN_MAX` | `256` | Max write / read payload (bytes) per TRANSACTION frame (services/iface_bridge). |
-| `DETWS_BRIDGE_UART_TXN_MS` | `50` | UART TRANSACTION read window (ms): how long a write-then-read waits for the read_len reply. |
-| `DETWS_CLIENT_CONNS` | `2` | Number of simultaneous outbound client connections (BSS pool size). |
-| `DETWS_CLIENT_RX_BUF` | `8192` | Per-connection wire receive ring size (bytes). |
-| `DETWS_CLOSING_TIMEOUT_MS` | `2000` | Upper bound (ms) a slot may dwell in ConnState::CONN_CLOSING after a graceful close before the idle sweep force-aborts it. |
-| `DETWS_COAP_BLOCK1_MAX` | `1024` | Reassembly buffer for a block-wise (Block1) request upload, in bytes. |
-| `DETWS_COAP_BLOCK_SZX_MAX` | `6` | Largest block-size exponent (SZX) the server will use: block size = 2^(SZX+4) bytes, SZX 0..6 (16..1024). |
-| `DETWS_COAP_MAX_OBSERVERS` | `4` | Maximum simultaneous CoAP observers (one slot per observed resource per client). |
-| `DETWS_COAP_MAX_PATH` | `64` | Maximum reconstructed Uri-Path length, including separators and the leading '/'. |
-| `DETWS_COAP_MAX_PAYLOAD` | `256` | Maximum CoAP request/response payload in bytes. |
-| `DETWS_COAP_MAX_QUERY` | `64` | Maximum reconstructed Uri-Query length (segments joined by '&'). |
-| `DETWS_COAP_MAX_RESOURCES` | `8` | Maximum registered CoAP resources (the server's fixed routing table). |
-| `DETWS_COAP_OBSERVE_PORT` | `5683` | Default UDP port the CoAP observe transport notifies from (IANA well-known 5683). |
-| `DETWS_CONFIG_KEY_MAX` | `16` | Max key length incl. |
-| `DETWS_CONFIG_MAX_ENTRIES` | `16` | Max key/value entries in the host (test) config backend. |
-| `DETWS_CONFIG_VAL_MAX` | `64` | Max value bytes per entry in the host (test) config backend. |
-| `DETWS_DASHBOARD_JSON_BUF` | `1024` | Stack buffer for the dashboard layout / values JSON (bytes). |
-| `DETWS_DASHBOARD_MAX_WIDGETS` | `16` | Maximum widgets in the dashboard table (BSS value array). |
-| `DETWS_DEFER_QUEUE_DEPTH` | `8` | Depth of each worker's deferred-callback queue. |
-| `DETWS_DMA_BUF_SIZE` | `256` | Bytes per DMA transfer buffer (RX is double-buffered at this size). |
-| `DETWS_DMA_CHANNELS` | `2` | Number of DMA channels (static-allocated; each is one peripheral link). |
-| `DETWS_DMA_SIMULATE` | `1` | Route DMA transfers through the ingress/egress simulator (default on). |
-| `DETWS_DNC_LEADER_LEN` | `32` | Default leader/trailer runout length for the DNC encoder. |
-| `DETWS_DNC_LINE_MAX` | `128` | Largest G-code block (one line) the DNC decoder reassembles. |
-| `DETWS_DNC_XOFF_MAX_POLLS` | `200000` | Safety cap on how many times the DNC stream engine polls the reverse channel while paused by an XOFF, before giving up with an I/O error. |
-| `DETWS_DNS_NAME_MAX` | `128` | Max length of a queried/stored DNS name (bytes, incl NUL). |
-| `DETWS_DNS_SERVER_MAX_RECORDS` | `8` | Max A records in the DNS server's fixed table. |
-| `DETWS_DNS_SERVER_TTL` | `60` | TTL (seconds) the DNS server puts on its answers. |
-| `DETWS_DNS_TIMEOUT_MS` | `5000` | DNS resolve timeout in milliseconds. |
-| `DETWS_ENFORCE_HOST_HEADER` | `1` | Enforce the RFC 7230 §5.4 Host-header requirement (default on). |
-| `DETWS_ENOCEAN_MAX_DATA` | `512` | Reject an ESP3 telegram whose declared data length exceeds this (framing sanity). |
-| `DETWS_ETH_W5500` | `0` |  |
-| `DETWS_FAILSAFE_MAX_LIFELINES` | `8` | Max monitored lifelines in the fail-safe registry (static, zero-heap). |
-| `DETWS_FTP_CMD_MAX` | `256` | Suggested FTP control-command buffer size. |
-| `DETWS_FWD_ACL_PATLEN` | `4` | Bytes an ACL entry can match (its pattern / mask length). |
-| `DETWS_FWD_INSPECT` | `0` | Build-time toggle for the forwarding-path inspection hook (default off, for cost + privacy). |
-| `DETWS_FWD_MAX_ACL` | `8` | Max ingress access-control entries (byte-pattern permit/deny; static). |
-| `DETWS_FWD_MAX_IFACES` | `4` | Max interfaces the forwarding plane tracks (static-allocated). |
-| `DETWS_FWD_MAX_ROUTES` | `8` | Max policy routes (byte-pattern -> egress interface; static). |
-| `DETWS_FWD_MAX_RULES` | `8` | Max forwarding rules (src -> dst allow/deny + rate cap; static-allocated). |
-| `DETWS_GPIO_JSON_BUF` | `1024` | Stack buffer for the GPIO-map JSON (bytes). |
-| `DETWS_GPIO_MAX` | `40` | Maximum GPIO pins the mapper reports (BSS table). |
-| `DETWS_GUARDRAIL_FRAG_MIN_BLOCK` | `4096` | Largest-free-block floor (bytes); below this trips the fragmentation guardrail. |
-| `DETWS_GUARDRAIL_HEAP_MIN` | `8192` | Free-heap floor (bytes); below this trips the heap guardrail. |
-| `DETWS_GUARDRAIL_STACK_MIN` | `512` | Task remaining-stack floor (bytes); below this trips the stack guardrail. |
-| `DETWS_GW_MAX_PORTS` | `4` | Max southbound gateway ports (radios / buses; static-allocated). |
-| `DETWS_H2_HDR_BLOCK` | `4096` | Header-block reassembly buffer for HTTP/2 requests that span HEADERS + CONTINUATION frames (a single END_HEADERS frame decodes in place and needs no copy). |
-| `DETWS_H2_MAX_FRAME` | `16384` | Largest HTTP/2 frame we accept, in bytes (advertised as SETTINGS_MAX_FRAME_SIZE). |
-| `DETWS_H2_MAX_STREAMS` | `8` | Max concurrent HTTP/2 streams per connection (advertised as MAX_CONCURRENT_STREAMS). |
-| `DETWS_H2_POOL_IN_PSRAM` | `0` | Place the HTTP/2 connection-engine pool in external PSRAM (ESP32). |
-| `DETWS_H3_CRYPTO_BUF` | `2048` | Maximum bytes of one QUIC/TLS handshake CRYPTO flight (RFC 9001). |
-| `DETWS_H3_MAX_STREAMS` | `8` | Maximum concurrent request streams per HTTP/3 connection. |
-| `DETWS_HPACK_MAX_ENTRIES` | `128` | Max HPACK dynamic-table entries (>= DETWS_HPACK_TABLE_BYTES / 32, the min entry size). |
-| `DETWS_HPACK_TABLE_BYTES` | `4096` | Per-connection HPACK dynamic-table size in bytes (our decoder; advertised to the peer as SETTINGS_HEADER_TABLE_SIZE). |
-| `DETWS_HTTP3_PORT` | `443` | UDP port the HTTP/3 (QUIC) server binds by default (used by DetWebServer::h3_cert). |
-| `DETWS_HTTP_CLIENT_BUF_SIZE` | `2048` | Receive buffer (and max response size) for the outbound HTTP client, bytes. |
-| `DETWS_HTTP_CLIENT_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for the https:// client, bytes. |
-| `DETWS_HTTP_CLIENT_TIMEOUT_MS` | `8000` | Outbound HTTP client connect/response timeout in milliseconds. |
-| `DETWS_HTTP_EMIT_DATE` | `0` | Auto-inject a `Date` response header (RFC 7231 7.1.1.2) when a wall-clock time is available. |
-| `DETWS_INA219_CURRENT_LSB_UA` | `100` | Default INA219 current LSB in microamps per bit (calibration input). |
-| `DETWS_INA219_I2C_ADDR` | `0x40` | I2C address of the INA219 (0x40 default; the A0/A1 pins select 0x40..0x4F). |
-| `DETWS_INA219_SHUNT_MOHM` | `100` | Default INA219 shunt resistance in milliohms (calibration input). |
-| `DETWS_IP_ALLOWLIST_SLOTS` | `8` | Number of CIDR rules the source-IP allowlist can hold (BSS table). |
-| `DETWS_JWT_MAX_LEN` | `512` | Maximum accepted JWT length in bytes (header.payload.signature). |
-| `DETWS_KEEPALIVE_MAX_REQUESTS` | `100` | Maximum requests served on one keep-alive connection before it is closed. |
-| `DETWS_LD2410_BAUD` | `256000` | LD2410 UART baud rate (the module's fixed factory default is 256000). |
-| `DETWS_LOG_LINES` | `32` | Number of log lines retained in the ring. |
-| `DETWS_LOG_LINE_LEN` | `96` | Maximum length of one stored log line (bytes, including null). |
-| `DETWS_LORA_MAX_PAYLOAD` | `251` | Max LoRa payload bytes (SX127x FIFO is 256; RadioHead uses 251 + 4 header). |
-| `DETWS_MAX_UDP_LISTENERS` | `2` | Maximum simultaneously bound UDP ports (transport-layer UDP service). |
-| `DETWS_MODBUS_COILS` | `64` | Number of Modbus coils (FC 1/5/15), single-bit R/W (BSS, bit-packed). |
-| `DETWS_MODBUS_DISCRETE_INPUTS` | `64` | Number of Modbus discrete inputs (FC 2), single-bit read-only (BSS, bit-packed). |
-| `DETWS_MODBUS_HOLDING_REGS` | `64` | Number of Modbus holding registers (FC 3/6/16), 16-bit R/W (BSS). |
-| `DETWS_MODBUS_INPUT_REGS` | `64` | Number of Modbus input registers (FC 4), 16-bit read-only (BSS). |
-| `DETWS_MPR121_I2C_ADDR` | `0x5A` | I2C address of the MPR121 (0x5A default; 0x5B/0x5C/0x5D via the ADDR pin). |
-| `DETWS_MPR121_RELEASE_THRESHOLD` | `6` | MPR121 per-electrode release threshold (delta counts; should be below the touch threshold). |
-| `DETWS_MPR121_TOUCH_THRESHOLD` | `12` | MPR121 per-electrode touch threshold (delta counts from baseline; NXP AN3944 suggests ~4..12). |
-| `DETWS_MQTT_BUF_SIZE` | `1024` | MQTT packet buffer size in bytes (bounds one outgoing/incoming packet). |
-| `DETWS_MQTT_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for MQTTS (draining ring; must exceed one TCP_MSS). |
-| `DETWS_MQTT_INFLIGHT_BUF` | `256` | Stored-packet size per in-flight QoS 1/2 slot (caps a retransmittable PUBLISH). |
-| `DETWS_MQTT_KEEPALIVE_S` | `30` | Default MQTT keep-alive interval in seconds (PINGREQ cadence / CONNECT field). |
-| `DETWS_MQTT_MAX_INFLIGHT` | `4` | Outbound QoS 1/2 in-flight slots (unacknowledged messages held for DUP retransmit). |
-| `DETWS_MQTT_MAX_TOPIC` | `128` | Maximum inbound MQTT topic length (including NUL) delivered to the callback. |
-| `DETWS_MQTT_RETRANSMIT_MS` | `5000` | Retransmit timeout (ms) for an unacknowledged in-flight QoS 1/2 message. |
-| `DETWS_MQTT_RX_QOS2_SLOTS` | `8` | Inbound QoS 2 packet-id de-duplication ring depth (PUBREC-acknowledged, awaiting PUBREL). |
-| `DETWS_MTLS_SUBJECT_MAX` | `128` | Maximum length of a verified mTLS peer subject DN string (incl. |
-| `DETWS_NEED_DET_CLIENT` | `0` |  |
-| `DETWS_NRF24_PAYLOAD` | `32` | nRF24 fixed payload width in bytes (1..32; the chip's static payload size). |
-| `DETWS_NTP_SERVER_STRATUM` | `3` | Stratum the NTP server advertises (distance from a reference clock; 1-15). |
-| `DETWS_NTRIP_MAX_MOUNTS` | `2` | Max distinct mountpoints a single caster serves (each = one RTCM stream). |
-| `DETWS_NTRIP_MAX_ROVERS` | `4` | Max concurrent rover connections a caster serves corrections to (services/gnss). |
-| `DETWS_NTRIP_MOUNT_MAX` | `32` | Max length (incl. |
-| `DETWS_NTRIP_REQ_MAX` | `512` | Max NTRIP client request size (bytes) the caster buffers while reading the request headers. |
-| `DETWS_OIDC_MAX_LEN` | `1600` | Max accepted OIDC ID-token length (also sizes the Authorization buffer). |
-| `DETWS_OTA_CONFIRM_WINDOW_MS` | `30000` | Confirm window (ms): a pending image not confirmed within this rolls back. |
-| `DETWS_PARTITION_JSON_BUF` | `1024` | Stack buffer for the partition-map JSON (bytes). |
-| `DETWS_PARTITION_MAX` | `16` | Maximum partitions the monitor reports (BSS table). |
-| `DETWS_PCA9685_FREQ` | `50` | Default PWM output frequency in Hz (50 Hz suits hobby servos). |
-| `DETWS_PCA9685_I2C_ADDR` | `0x40` | I2C address of the PCA9685 (0x40 default; the six address pins select 0x40..0x7F). |
-| `DETWS_PER_IP_THROTTLE_MAX` | `10` | Max accepted connections per window from one source IP (see DETWS_ENABLE_PER_IP_THROTTLE). |
-| `DETWS_PER_IP_THROTTLE_SLOTS` | `16` | Number of source IPv4 addresses tracked by the per-IP throttle (BSS bucket table). |
-| `DETWS_PER_IP_THROTTLE_WINDOW_MS` | `10000` | Per-IP throttle window length in milliseconds (see DETWS_ENABLE_PER_IP_THROTTLE). |
-| `DETWS_PN532_MAX_DATA` | `254` | Reject a PN532 normal frame whose declared length exceeds this (framing sanity). |
-| `DETWS_PQ_DEPTH` | `16` | Capacity of the preempting queue in items (static-allocated). |
-| `DETWS_PQ_INTERNAL_PRIORITY` | `8` | Base FreeRTOS priority for the internal preempting lanes (DMA / forwarding / device access). |
-| `DETWS_PQ_ITEM_SIZE` | `32` | Bytes per preempting-queue item (the posted item must fit). |
-| `DETWS_PQ_STACK` | `4096` | Stack (bytes) for each preempting-queue processing task (ESP32). |
-| `DETWS_PROTO_MAX` | `11` | Size of the protocol-handler dispatch table; must exceed the largest ConnProto id. |
-| `DETWS_RADIO_MAX_TX_DBM` | `0` | Max TX power cap in dBm (2..20); 0 = leave the platform default. |
-| `DETWS_RADIO_WIFI_PS` | `0` | WiFi modem-sleep mode: 0 = none (max perf), 1 = min modem, 2 = max modem. |
-| `DETWS_RELAY_BUF` | `2048` | Per-direction relay buffer size (bytes) for services/relay. |
-| `DETWS_RELAY_CONNECT_MS` | `5000` | Blocking connect timeout (ms) when the relay listener dials the origin on a new inbound. |
-| `DETWS_RELAY_DRAIN_MAX` | `8` | Max dws_relay_step passes per poll for the relay listener. |
-| `DETWS_RELAY_HOST_MAX` | `64` | Max origin hostname length (bytes, incl. |
-| `DETWS_RELAY_MAX_CONNS` | `4` | Max concurrent relayed connections (bridge table size) for the relay listener. |
-| `DETWS_RELAY_MAX_PUBLISH` | `4` | Max published relay ports (bind table size) for the relay listener. |
-| `DETWS_RTC_I2C_ADDR` | `0x68` | I2C address of the RTC (DS1307/DS3231 are fixed at 0x68). |
-| `DETWS_SCRATCH_ARENA_SIZE` | `8192` | Size in bytes of the shared per-dispatch scratch arena. |
-| `DETWS_SEN0192_ACTIVE_HIGH` | `1` | SEN0192 OUT polarity: 1 = the OUT line reads HIGH on motion, 0 = active-LOW. |
-| `DETWS_SEN0192_HOLD_MS` | `2000` | Presence is held this many ms after the last active (motion) sample before it clears. |
-| `DETWS_SEN0192_PIN` | `4` | GPIO the SEN0192 OUT line is wired to. |
-| `DETWS_SFTP_MAX_HANDLES` | `4` | Max concurrent open SFTP handles (files + dirs) per SSH connection. |
-| `DETWS_SFTP_MAX_READ` | `1024` | Largest SSH_FXP_DATA payload returned for one READ (a short read - the client re-requests). |
-| `DETWS_SFTP_PATH_MAX` | `256` | Largest absolute path the SFTP/SCP server resolves (mount root + request path). |
-| `DETWS_SFTP_PKT_BUF` | `2048` | SFTP packet-assembly buffer per SFTP channel (bytes); bounds one non-streamed request/response. |
-| `DETWS_SHT3X_I2C_ADDR` | `0x44` | I2C address of the SHT3x (0x44 with ADDR low; 0x45 with ADDR high). |
-| `DETWS_SIGFOX_MAX_PAYLOAD` | `12` | Maximum Sigfox uplink payload (the network caps a message at 12 bytes). |
-| `DETWS_SMB_BUF` | `1024` | SMB2 client work-buffer size (bytes) for smb_client's request/response framing. |
-| `DETWS_SMTP_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for SMTPS, bytes (only used when the message is TLS). |
-| `DETWS_SMTP_LINE_MAX` | `256` | Max length of one SMTP command / address line (bytes, incl. |
-| `DETWS_SMTP_MSG_MAX` | `2048` | Max size of the assembled DATA payload (headers + dot-stuffed body), bytes. |
-| `DETWS_SMTP_REPLY_MAX` | `512` | Max size of one (possibly multi-line) server reply held while parsing, bytes. |
-| `DETWS_SMTP_TIMEOUT_MS` | `10000` | SMTP connect / per-reply timeout in milliseconds. |
-| `DETWS_SNMP_TRAP_BUF_SIZE` | `1024` | Static datagram buffer for an outbound SNMP notification, bytes. |
-| `DETWS_SNMP_TRAP_MAX_VARBINDS` | `8` | Maximum extra variable-bindings (beyond sysUpTime/snmpTrapOID) in one notification. |
-| `DETWS_SPB_METRIC_MAX` | `256` | Max serialized size of one Sparkplug B metric submessage (stack temp, bytes). |
-| `DETWS_SSH_ALLOW_PASSWORD` | `1` | Allow SSH password authentication (default on). |
-| `DETWS_SSH_FWD_CHUNK` | `1024` | Max bytes moved per forward channel per poll, target -> client (<= SSH_PKT_BUF_SIZE). |
-| `DETWS_SSH_FWD_CONNECT_MS` | `3000` | Blocking connect timeout (ms) when opening a forward target. |
-| `DETWS_SSH_FWD_HOST_MAX` | `64` | Maximum forward target hostname length including null terminator. |
-| `DETWS_SSH_FWD_MAX` | `2` | Maximum concurrent forwarded TCP connections (must be <= DETWS_CLIENT_CONNS). |
-| `DETWS_SSH_MAX_CHANNELS` | `1` | Maximum concurrent SSH channels per connection (RFC 4254 multiplexing). |
-| `DETWS_SSH_PORT_FORWARD` | `0` | SSH TCP port forwarding (`direct-tcpip`, i.e. |
-| `DETWS_SSH_RFWD_BRIDGE_MAX` | `2` | Maximum concurrent bridged connections across all remote forwards. |
-| `DETWS_SSH_RFWD_MAX` | `1` | Maximum concurrent remote-forward listeners (`ssh -R` / `tcpip-forward`). |
-| `DETWS_SSH_ZLIB_ACK_DRAM` | `0` | Acknowledge placing the SSH compressor in internal DRAM (no PSRAM). |
-| `DETWS_SSH_ZLIB_IN_PSRAM` | `0` | Place the per-connection SSH compression state in external PSRAM (ESP32). |
-| `DETWS_SSH_ZLIB_MAX_IN` | `2048` | Largest uncompressed payload the s2c compressor accepts in one call (bytes). |
-| `DETWS_SSH_ZLIB_WINDOW` | `8192` | SSH s2c DEFLATE sliding-window size in bytes (max back-reference distance). |
-| `DETWS_STATSD_LINE_MAX` | `256` | Stack buffer for one StatsD line (bytes; caps metric name + value + tags). |
-| `DETWS_STATSD_PORT` | `8125` | Default StatsD collector UDP port (StatsD/Graphite standard). |
-| `DETWS_STOMP_MAX_HEADERS` | `16` | Max header lines parsed per STOMP frame (extras beyond this are ignored). |
-| `DETWS_SYSLOG_DEFAULT_PORT` | `514` | Default syslog collector UDP port (RFC 5426 well-known 514; overridable at runtime via syslog_init and here for a non-standard collector). |
-| `DETWS_SYSLOG_FIELD_MAX` | `32` | Maximum syslog HOSTNAME / APP-NAME field length (including NUL). |
-| `DETWS_SYSLOG_MSG_MAX` | `256` | Maximum formatted syslog datagram length in bytes (RFC 5424 line). |
-| `DETWS_TCP_NODELAY` | `1` | Disable Nagle's algorithm (set TCP_NODELAY) on every accepted connection. |
-| `DETWS_THEMES_INCLUDE_TRADEMARKED` | `1` | Include the trademark-named themes in the embedded set (default on / open-source). |
-| `DETWS_THREAD_MAX_DATA` | `256` | Max spinel payload bytes carried in one HDLC-lite frame. |
-| `DETWS_TIME_SOURCE_MAX` | `4` | Maximum registered time sources. |
-| `DETWS_TLS_ACK_MULTI_CONN_DRAM` | `0` | Acknowledge that a MAX_TLS_CONNS > 1 build has been sized to fit. |
-| `DETWS_TLS_ARENA_IN_PSRAM` | `0` | Place the TLS arena in external PSRAM instead of internal DRAM (ESP32). |
-| `DETWS_TLS_ARENA_SIZE` | `49152` | Bytes of the static BSS arena mbedTLS allocates from. |
-| `DETWS_TLS_MAX_FRAG_LEN` | `0` | Cap TLS records via the Maximum Fragment Length extension (RFC 6066). |
-| `DETWS_TLS_TICKET_LIFETIME_S` | `86400` | Session-ticket lifetime / key-rotation period in seconds (see DETWS_ENABLE_TLS_RESUMPTION). |
-| `DETWS_UDP_RX_BUF_SIZE` | `1472` | Shared receive-scratch size for the transport-layer UDP service. |
-| `DETWS_UDP_TELEMETRY_BUF` | `256` | Stack buffer for one telemetry line (bytes). |
-| `DETWS_UMATI_NS` | `1` | NamespaceIndex the umati MachineTool nodes live at (default 1). |
-| `DETWS_WEBDAV_BUF_SIZE` | `2048` | Buffer (BSS) for a WebDAV 207 Multi-Status response, in bytes (see DETWS_ENABLE_WEBDAV). |
-| `DETWS_WEBDAV_MAX_ENTRIES` | `32` | Maximum children listed in a WebDAV Depth-1 PROPFIND (bounds the response). |
-| `DETWS_WEBDAV_MAX_PROPS` | `16` | Maximum properties echoed in a WebDAV PROPPATCH 207 response (bounds the response). |
-| `DETWS_WORKER_CORE` | `1` | Core that worker 0 pins to (ESP32). |
-| `DETWS_WORKER_COUNT` | `1` | Number of server worker tasks (slots partitioned i % N). |
-| `DETWS_WORKER_POLL_TICKS` | `1` | Idle-sweep timeout, in FreeRTOS ticks, that a worker blocks between service iterations when no events are pending. |
-| `DETWS_WORKER_STACK_CURVE_MIN` | `12288` | Minimum worker-task stack (bytes) required once SSH is compiled in. |
-| `DETWS_WORKER_STACK_PQC_MIN` | `16384` |  |
-| `DETWS_WORKER_STACK_RSA_MIN` | `8192` | Minimum worker-task stack (bytes) required once an RSA-2048 verifier is compiled in (OIDC / SSH). |
-| `DETWS_WORKER_TASK_PRIORITY` | `5` | FreeRTOS priority for each server worker task (ESP32). |
-| `DETWS_WS_CLIENT_BUF_SIZE` | `1024` | WebSocket client send/receive buffer size in bytes (bounds one frame). |
-| `DETWS_WS_CLIENT_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for wss:// (draining ring; must exceed one TCP_MSS). |
-| `DETWS_WS_FRAG_SIZE` | `0` | WebSocket outbound fragmentation size (RFC 6455 sec 5.4), in payload bytes. |
-| `DETWS_ZIGBEE_MAX_DATA` | `128` | Max ASH payload bytes (an EZSP frame; the ASH data field caps near 128). |
-| `DETWS_ZWAVE_MAX_DATA` | `64` | Reject a Z-Wave frame whose declared length exceeds this data cap (sanity). |
+| `CORS_HDR_BUF_SIZE` | `192` | Size of the pre-built CORS header block stored in DWS. |
 | `DIGEST_AUTH_HDR_MAX` | `384` | Capacity for the full `Authorization` header value (Digest auth). |
+| `DWS_ACCEPT_THROTTLE_MAX` | `20` | Max accepted connections per throttle window (see DWS_ENABLE_ACCEPT_THROTTLE). |
+| `DWS_ACCEPT_THROTTLE_WINDOW_MS` | `1000` | Throttle window length in milliseconds (see DWS_ENABLE_ACCEPT_THROTTLE). |
+| `DWS_ADS1115_DIFFERENTIAL` | `0` | ADS1115 input mode: 0 = single-ended (AINx vs GND), 1 = differential. |
+| `DWS_ADS1115_I2C_ADDR` | `0x48` | I2C address of the ADS1115 (0x48 with ADDR to GND; 0x49/0x4A/0x4B for VDD/SDA/SCL). |
+| `DWS_AUTH_LOCKOUT_BASE_MS` | `1000` | First lockout duration in ms; doubles on each further failure. |
+| `DWS_AUTH_LOCKOUT_MAX_MS` | `300000` | Maximum lockout duration in ms (the exponential backoff cap). |
+| `DWS_AUTH_LOCKOUT_SLOTS` | `16` | Number of source IPs the auth lockout tracks (BSS bucket table). |
+| `DWS_AUTH_LOCKOUT_THRESHOLD` | `5` | Consecutive failed auths from one IP before it is locked out. |
+| `DWS_BRIDGE_MAX_RULES` | `8` | Max concurrent address:port -> bus rules (services/iface_bridge). |
+| `DWS_BRIDGE_STREAM_CHUNK` | `256` | STREAM (UART) pipe chunk size (bytes) for services/iface_bridge - one socket<->UART hop. |
+| `DWS_BRIDGE_TXN_MAX` | `256` | Max write / read payload (bytes) per TRANSACTION frame (services/iface_bridge). |
+| `DWS_BRIDGE_UART_TXN_MS` | `50` | UART TRANSACTION read window (ms): how long a write-then-read waits for the read_len reply. |
+| `DWS_CLIENT_CONNS` | `2` | Number of simultaneous outbound client connections (BSS pool size). |
+| `DWS_CLIENT_RX_BUF` | `8192` | Per-connection wire receive ring size (bytes). |
+| `DWS_CLOSING_TIMEOUT_MS` | `2000` | Upper bound (ms) a slot may dwell in ConnState::CONN_CLOSING after a graceful close before the idle sweep force-aborts it. |
+| `DWS_COAP_BLOCK1_MAX` | `1024` | Reassembly buffer for a block-wise (Block1) request upload, in bytes. |
+| `DWS_COAP_BLOCK_SZX_MAX` | `6` | Largest block-size exponent (SZX) the server will use: block size = 2^(SZX+4) bytes, SZX 0..6 (16..1024). |
+| `DWS_COAP_MAX_OBSERVERS` | `4` | Maximum simultaneous CoAP observers (one slot per observed resource per client). |
+| `DWS_COAP_MAX_PATH` | `64` | Maximum reconstructed Uri-Path length, including separators and the leading '/'. |
+| `DWS_COAP_MAX_PAYLOAD` | `256` | Maximum CoAP request/response payload in bytes. |
+| `DWS_COAP_MAX_QUERY` | `64` | Maximum reconstructed Uri-Query length (segments joined by '&'). |
+| `DWS_COAP_MAX_RESOURCES` | `8` | Maximum registered CoAP resources (the server's fixed routing table). |
+| `DWS_COAP_OBSERVE_PORT` | `5683` | Default UDP port the CoAP observe transport notifies from (IANA well-known 5683). |
+| `DWS_CONFIG_KEY_MAX` | `16` | Max key length incl. |
+| `DWS_CONFIG_MAX_ENTRIES` | `16` | Max key/value entries in the host (test) config backend. |
+| `DWS_CONFIG_VAL_MAX` | `64` | Max value bytes per entry in the host (test) config backend. |
+| `DWS_DASHBOARD_JSON_BUF` | `1024` | Stack buffer for the dashboard layout / values JSON (bytes). |
+| `DWS_DASHBOARD_MAX_WIDGETS` | `16` | Maximum widgets in the dashboard table (BSS value array). |
+| `DWS_DEFER_QUEUE_DEPTH` | `8` | Depth of each worker's deferred-callback queue. |
+| `DWS_DMA_BUF_SIZE` | `256` | Bytes per DMA transfer buffer (RX is double-buffered at this size). |
+| `DWS_DMA_CHANNELS` | `2` | Number of DMA channels (static-allocated; each is one peripheral link). |
+| `DWS_DMA_SIMULATE` | `1` | Route DMA transfers through the ingress/egress simulator (default on). |
+| `DWS_DNC_LEADER_LEN` | `32` | Default leader/trailer runout length for the DNC encoder. |
+| `DWS_DNC_LINE_MAX` | `128` | Largest G-code block (one line) the DNC decoder reassembles. |
+| `DWS_DNC_XOFF_MAX_POLLS` | `200000` | Safety cap on how many times the DNC stream engine polls the reverse channel while paused by an XOFF, before giving up with an I/O error. |
+| `DWS_DNS_NAME_MAX` | `128` | Max length of a queried/stored DNS name (bytes, incl NUL). |
+| `DWS_DNS_SERVER_MAX_RECORDS` | `8` | Max A records in the DNS server's fixed table. |
+| `DWS_DNS_SERVER_TTL` | `60` | TTL (seconds) the DNS server puts on its answers. |
+| `DWS_DNS_TIMEOUT_MS` | `5000` | DNS resolve timeout in milliseconds. |
+| `DWS_ENFORCE_HOST_HEADER` | `1` | Enforce the RFC 7230 §5.4 Host-header requirement (default on). |
+| `DWS_ENOCEAN_MAX_DATA` | `512` | Reject an ESP3 telegram whose declared data length exceeds this (framing sanity). |
+| `DWS_ETH_W5500` | `0` |  |
+| `DWS_FAILSAFE_MAX_LIFELINES` | `8` | Max monitored lifelines in the fail-safe registry (static, zero-heap). |
+| `DWS_FTP_CMD_MAX` | `256` | Suggested FTP control-command buffer size. |
+| `DWS_FWD_ACL_PATLEN` | `4` | Bytes an ACL entry can match (its pattern / mask length). |
+| `DWS_FWD_INSPECT` | `0` | Build-time toggle for the forwarding-path inspection hook (default off, for cost + privacy). |
+| `DWS_FWD_MAX_ACL` | `8` | Max ingress access-control entries (byte-pattern permit/deny; static). |
+| `DWS_FWD_MAX_IFACES` | `4` | Max interfaces the forwarding plane tracks (static-allocated). |
+| `DWS_FWD_MAX_ROUTES` | `8` | Max policy routes (byte-pattern -> egress interface; static). |
+| `DWS_FWD_MAX_RULES` | `8` | Max forwarding rules (src -> dst allow/deny + rate cap; static-allocated). |
+| `DWS_GPIO_JSON_BUF` | `1024` | Stack buffer for the GPIO-map JSON (bytes). |
+| `DWS_GPIO_MAX` | `40` | Maximum GPIO pins the mapper reports (BSS table). |
+| `DWS_GUARDRAIL_FRAG_MIN_BLOCK` | `4096` | Largest-free-block floor (bytes); below this trips the fragmentation guardrail. |
+| `DWS_GUARDRAIL_HEAP_MIN` | `8192` | Free-heap floor (bytes); below this trips the heap guardrail. |
+| `DWS_GUARDRAIL_STACK_MIN` | `512` | Task remaining-stack floor (bytes); below this trips the stack guardrail. |
+| `DWS_GW_MAX_PORTS` | `4` | Max southbound gateway ports (radios / buses; static-allocated). |
+| `DWS_H2_HDR_BLOCK` | `4096` | Header-block reassembly buffer for HTTP/2 requests that span HEADERS + CONTINUATION frames (a single END_HEADERS frame decodes in place and needs no copy). |
+| `DWS_H2_MAX_FRAME` | `16384` | Largest HTTP/2 frame we accept, in bytes (advertised as SETTINGS_MAX_FRAME_SIZE). |
+| `DWS_H2_MAX_STREAMS` | `8` | Max concurrent HTTP/2 streams per connection (advertised as MAX_CONCURRENT_STREAMS). |
+| `DWS_H2_POOL_IN_PSRAM` | `0` | Place the HTTP/2 connection-engine pool in external PSRAM (ESP32). |
+| `DWS_H3_CRYPTO_BUF` | `2048` | Maximum bytes of one QUIC/TLS handshake CRYPTO flight (RFC 9001). |
+| `DWS_H3_MAX_STREAMS` | `8` | Maximum concurrent request streams per HTTP/3 connection. |
+| `DWS_HPACK_MAX_ENTRIES` | `128` | Max HPACK dynamic-table entries (>= DWS_HPACK_TABLE_BYTES / 32, the min entry size). |
+| `DWS_HPACK_TABLE_BYTES` | `4096` | Per-connection HPACK dynamic-table size in bytes (our decoder; advertised to the peer as SETTINGS_HEADER_TABLE_SIZE). |
+| `DWS_HTTP3_PORT` | `443` | UDP port the HTTP/3 (QUIC) server binds by default (used by DWS::h3_cert). |
+| `DWS_HTTP_CLIENT_BUF_SIZE` | `2048` | Receive buffer (and max response size) for the outbound HTTP client, bytes. |
+| `DWS_HTTP_CLIENT_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for the https:// client, bytes. |
+| `DWS_HTTP_CLIENT_TIMEOUT_MS` | `8000` | Outbound HTTP client connect/response timeout in milliseconds. |
+| `DWS_HTTP_EMIT_DATE` | `0` | Auto-inject a `Date` response header (RFC 7231 7.1.1.2) when a wall-clock time is available. |
+| `DWS_INA219_CURRENT_LSB_UA` | `100` | Default INA219 current LSB in microamps per bit (calibration input). |
+| `DWS_INA219_I2C_ADDR` | `0x40` | I2C address of the INA219 (0x40 default; the A0/A1 pins select 0x40..0x4F). |
+| `DWS_INA219_SHUNT_MOHM` | `100` | Default INA219 shunt resistance in milliohms (calibration input). |
+| `DWS_IP_ALLOWLIST_SLOTS` | `8` | Number of CIDR rules the source-IP allowlist can hold (BSS table). |
+| `DWS_JWT_MAX_LEN` | `512` | Maximum accepted JWT length in bytes (header.payload.signature). |
+| `DWS_KEEPALIVE_MAX_REQUESTS` | `100` | Maximum requests served on one keep-alive connection before it is closed. |
+| `DWS_LD2410_BAUD` | `256000` | LD2410 UART baud rate (the module's fixed factory default is 256000). |
+| `DWS_LOG_LINES` | `32` | Number of log lines retained in the ring. |
+| `DWS_LOG_LINE_LEN` | `96` | Maximum length of one stored log line (bytes, including null). |
+| `DWS_LORA_MAX_PAYLOAD` | `251` | Max LoRa payload bytes (SX127x FIFO is 256; RadioHead uses 251 + 4 header). |
+| `DWS_MAX_UDP_LISTENERS` | `2` | Maximum simultaneously bound UDP ports (transport-layer UDP service). |
+| `DWS_MODBUS_COILS` | `64` | Number of Modbus coils (FC 1/5/15), single-bit R/W (BSS, bit-packed). |
+| `DWS_MODBUS_DISCRETE_INPUTS` | `64` | Number of Modbus discrete inputs (FC 2), single-bit read-only (BSS, bit-packed). |
+| `DWS_MODBUS_HOLDING_REGS` | `64` | Number of Modbus holding registers (FC 3/6/16), 16-bit R/W (BSS). |
+| `DWS_MODBUS_INPUT_REGS` | `64` | Number of Modbus input registers (FC 4), 16-bit read-only (BSS). |
+| `DWS_MPR121_I2C_ADDR` | `0x5A` | I2C address of the MPR121 (0x5A default; 0x5B/0x5C/0x5D via the ADDR pin). |
+| `DWS_MPR121_RELEASE_THRESHOLD` | `6` | MPR121 per-electrode release threshold (delta counts; should be below the touch threshold). |
+| `DWS_MPR121_TOUCH_THRESHOLD` | `12` | MPR121 per-electrode touch threshold (delta counts from baseline; NXP AN3944 suggests ~4..12). |
+| `DWS_MQTT_BUF_SIZE` | `1024` | MQTT packet buffer size in bytes (bounds one outgoing/incoming packet). |
+| `DWS_MQTT_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for MQTTS (draining ring; must exceed one TCP_MSS). |
+| `DWS_MQTT_INFLIGHT_BUF` | `256` | Stored-packet size per in-flight QoS 1/2 slot (caps a retransmittable PUBLISH). |
+| `DWS_MQTT_KEEPALIVE_S` | `30` | Default MQTT keep-alive interval in seconds (PINGREQ cadence / CONNECT field). |
+| `DWS_MQTT_MAX_INFLIGHT` | `4` | Outbound QoS 1/2 in-flight slots (unacknowledged messages held for DUP retransmit). |
+| `DWS_MQTT_MAX_TOPIC` | `128` | Maximum inbound MQTT topic length (including NUL) delivered to the callback. |
+| `DWS_MQTT_RETRANSMIT_MS` | `5000` | Retransmit timeout (ms) for an unacknowledged in-flight QoS 1/2 message. |
+| `DWS_MQTT_RX_QOS2_SLOTS` | `8` | Inbound QoS 2 packet-id de-duplication ring depth (PUBREC-acknowledged, awaiting PUBREL). |
+| `DWS_MTLS_SUBJECT_MAX` | `128` | Maximum length of a verified mTLS peer subject DN string (incl. |
+| `DWS_NEED_DET_CLIENT` | `0` |  |
+| `DWS_NRF24_PAYLOAD` | `32` | nRF24 fixed payload width in bytes (1..32; the chip's static payload size). |
+| `DWS_NTP_SERVER_STRATUM` | `3` | Stratum the NTP server advertises (distance from a reference clock; 1-15). |
+| `DWS_NTRIP_MAX_MOUNTS` | `2` | Max distinct mountpoints a single caster serves (each = one RTCM stream). |
+| `DWS_NTRIP_MAX_ROVERS` | `4` | Max concurrent rover connections a caster serves corrections to (services/gnss). |
+| `DWS_NTRIP_MOUNT_MAX` | `32` | Max length (incl. |
+| `DWS_NTRIP_REQ_MAX` | `512` | Max NTRIP client request size (bytes) the caster buffers while reading the request headers. |
+| `DWS_OIDC_MAX_LEN` | `1600` | Max accepted OIDC ID-token length (also sizes the Authorization buffer). |
+| `DWS_OTA_CONFIRM_WINDOW_MS` | `30000` | Confirm window (ms): a pending image not confirmed within this rolls back. |
+| `DWS_PARTITION_JSON_BUF` | `1024` | Stack buffer for the partition-map JSON (bytes). |
+| `DWS_PARTITION_MAX` | `16` | Maximum partitions the monitor reports (BSS table). |
+| `DWS_PCA9685_FREQ` | `50` | Default PWM output frequency in Hz (50 Hz suits hobby servos). |
+| `DWS_PCA9685_I2C_ADDR` | `0x40` | I2C address of the PCA9685 (0x40 default; the six address pins select 0x40..0x7F). |
+| `DWS_PER_IP_THROTTLE_MAX` | `10` | Max accepted connections per window from one source IP (see DWS_ENABLE_PER_IP_THROTTLE). |
+| `DWS_PER_IP_THROTTLE_SLOTS` | `16` | Number of source IPv4 addresses tracked by the per-IP throttle (BSS bucket table). |
+| `DWS_PER_IP_THROTTLE_WINDOW_MS` | `10000` | Per-IP throttle window length in milliseconds (see DWS_ENABLE_PER_IP_THROTTLE). |
+| `DWS_PN532_MAX_DATA` | `254` | Reject a PN532 normal frame whose declared length exceeds this (framing sanity). |
+| `DWS_PQ_DEPTH` | `16` | Capacity of the preempting queue in items (static-allocated). |
+| `DWS_PQ_INTERNAL_PRIORITY` | `8` | Base FreeRTOS priority for the internal preempting lanes (DMA / forwarding / device access). |
+| `DWS_PQ_ITEM_SIZE` | `32` | Bytes per preempting-queue item (the posted item must fit). |
+| `DWS_PQ_STACK` | `4096` | Stack (bytes) for each preempting-queue processing task (ESP32). |
+| `DWS_PROTO_MAX` | `11` | Size of the protocol-handler dispatch table; must exceed the largest ConnProto id. |
+| `DWS_RADIO_MAX_TX_DBM` | `0` | Max TX power cap in dBm (2..20); 0 = leave the platform default. |
+| `DWS_RADIO_WIFI_PS` | `0` | WiFi modem-sleep mode: 0 = none (max perf), 1 = min modem, 2 = max modem. |
+| `DWS_RELAY_BUF` | `2048` | Per-direction relay buffer size (bytes) for services/relay. |
+| `DWS_RELAY_CONNECT_MS` | `5000` | Blocking connect timeout (ms) when the relay listener dials the origin on a new inbound. |
+| `DWS_RELAY_DRAIN_MAX` | `8` | Max dws_relay_step passes per poll for the relay listener. |
+| `DWS_RELAY_HOST_MAX` | `64` | Max origin hostname length (bytes, incl. |
+| `DWS_RELAY_MAX_CONNS` | `4` | Max concurrent relayed connections (bridge table size) for the relay listener. |
+| `DWS_RELAY_MAX_PUBLISH` | `4` | Max published relay ports (bind table size) for the relay listener. |
+| `DWS_RTC_I2C_ADDR` | `0x68` | I2C address of the RTC (DS1307/DS3231 are fixed at 0x68). |
+| `DWS_SCRATCH_ARENA_SIZE` | `8192` | Size in bytes of the shared per-dispatch scratch arena. |
+| `DWS_SEN0192_ACTIVE_HIGH` | `1` | SEN0192 OUT polarity: 1 = the OUT line reads HIGH on motion, 0 = active-LOW. |
+| `DWS_SEN0192_HOLD_MS` | `2000` | Presence is held this many ms after the last active (motion) sample before it clears. |
+| `DWS_SEN0192_PIN` | `4` | GPIO the SEN0192 OUT line is wired to. |
+| `DWS_SFTP_MAX_HANDLES` | `4` | Max concurrent open SFTP handles (files + dirs) per SSH connection. |
+| `DWS_SFTP_MAX_READ` | `1024` | Largest SSH_FXP_DATA payload returned for one READ (a short read - the client re-requests). |
+| `DWS_SFTP_PATH_MAX` | `256` | Largest absolute path the SFTP/SCP server resolves (mount root + request path). |
+| `DWS_SFTP_PKT_BUF` | `2048` | SFTP packet-assembly buffer per SFTP channel (bytes); bounds one non-streamed request/response. |
+| `DWS_SHT3X_I2C_ADDR` | `0x44` | I2C address of the SHT3x (0x44 with ADDR low; 0x45 with ADDR high). |
+| `DWS_SIGFOX_MAX_PAYLOAD` | `12` | Maximum Sigfox uplink payload (the network caps a message at 12 bytes). |
+| `DWS_SMB_BUF` | `1024` | SMB2 client work-buffer size (bytes) for smb_client's request/response framing. |
+| `DWS_SMTP_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for SMTPS, bytes (only used when the message is TLS). |
+| `DWS_SMTP_LINE_MAX` | `256` | Max length of one SMTP command / address line (bytes, incl. |
+| `DWS_SMTP_MSG_MAX` | `2048` | Max size of the assembled DATA payload (headers + dot-stuffed body), bytes. |
+| `DWS_SMTP_REPLY_MAX` | `512` | Max size of one (possibly multi-line) server reply held while parsing, bytes. |
+| `DWS_SMTP_TIMEOUT_MS` | `10000` | SMTP connect / per-reply timeout in milliseconds. |
+| `DWS_SNMP_TRAP_BUF_SIZE` | `1024` | Static datagram buffer for an outbound SNMP notification, bytes. |
+| `DWS_SNMP_TRAP_MAX_VARBINDS` | `8` | Maximum extra variable-bindings (beyond sysUpTime/snmpTrapOID) in one notification. |
+| `DWS_SPB_METRIC_MAX` | `256` | Max serialized size of one Sparkplug B metric submessage (stack temp, bytes). |
+| `DWS_SSH_ALLOW_PASSWORD` | `1` | Allow SSH password authentication (default on). |
+| `DWS_SSH_FWD_CHUNK` | `1024` | Max bytes moved per forward channel per poll, target -> client (<= SSH_PKT_BUF_SIZE). |
+| `DWS_SSH_FWD_CONNECT_MS` | `3000` | Blocking connect timeout (ms) when opening a forward target. |
+| `DWS_SSH_FWD_HOST_MAX` | `64` | Maximum forward target hostname length including null terminator. |
+| `DWS_SSH_FWD_MAX` | `2` | Maximum concurrent forwarded TCP connections (must be <= DWS_CLIENT_CONNS). |
+| `DWS_SSH_MAX_CHANNELS` | `1` | Maximum concurrent SSH channels per connection (RFC 4254 multiplexing). |
+| `DWS_SSH_PORT_FORWARD` | `0` | SSH TCP port forwarding (`direct-tcpip`, i.e. |
+| `DWS_SSH_RFWD_BRIDGE_MAX` | `2` | Maximum concurrent bridged connections across all remote forwards. |
+| `DWS_SSH_RFWD_MAX` | `1` | Maximum concurrent remote-forward listeners (`ssh -R` / `tcpip-forward`). |
+| `DWS_SSH_ZLIB_ACK_DRAM` | `0` | Acknowledge placing the SSH compressor in internal DRAM (no PSRAM). |
+| `DWS_SSH_ZLIB_IN_PSRAM` | `0` | Place the per-connection SSH compression state in external PSRAM (ESP32). |
+| `DWS_SSH_ZLIB_MAX_IN` | `2048` | Largest uncompressed payload the s2c compressor accepts in one call (bytes). |
+| `DWS_SSH_ZLIB_WINDOW` | `8192` | SSH s2c DEFLATE sliding-window size in bytes (max back-reference distance). |
+| `DWS_STATSD_LINE_MAX` | `256` | Stack buffer for one StatsD line (bytes; caps metric name + value + tags). |
+| `DWS_STATSD_PORT` | `8125` | Default StatsD collector UDP port (StatsD/Graphite standard). |
+| `DWS_STOMP_MAX_HEADERS` | `16` | Max header lines parsed per STOMP frame (extras beyond this are ignored). |
+| `DWS_SYSLOG_DEFAULT_PORT` | `514` | Default syslog collector UDP port (RFC 5426 well-known 514; overridable at runtime via syslog_init and here for a non-standard collector). |
+| `DWS_SYSLOG_FIELD_MAX` | `32` | Maximum syslog HOSTNAME / APP-NAME field length (including NUL). |
+| `DWS_SYSLOG_MSG_MAX` | `256` | Maximum formatted syslog datagram length in bytes (RFC 5424 line). |
+| `DWS_TCP_NODELAY` | `1` | Disable Nagle's algorithm (set TCP_NODELAY) on every accepted connection. |
+| `DWS_THEMES_INCLUDE_TRADEMARKED` | `1` | Include the trademark-named themes in the embedded set (default on / open-source). |
+| `DWS_THREAD_MAX_DATA` | `256` | Max spinel payload bytes carried in one HDLC-lite frame. |
+| `DWS_TIME_SOURCE_MAX` | `4` | Maximum registered time sources. |
+| `DWS_TLS_ACK_MULTI_CONN_DRAM` | `0` | Acknowledge that a MAX_TLS_CONNS > 1 build has been sized to fit. |
+| `DWS_TLS_ARENA_IN_PSRAM` | `0` | Place the TLS arena in external PSRAM instead of internal DRAM (ESP32). |
+| `DWS_TLS_ARENA_SIZE` | `49152` | Bytes of the static BSS arena mbedTLS allocates from. |
+| `DWS_TLS_MAX_FRAG_LEN` | `0` | Cap TLS records via the Maximum Fragment Length extension (RFC 6066). |
+| `DWS_TLS_TICKET_LIFETIME_S` | `86400` | Session-ticket lifetime / key-rotation period in seconds (see DWS_ENABLE_TLS_RESUMPTION). |
+| `DWS_UDP_RX_BUF_SIZE` | `1472` | Shared receive-scratch size for the transport-layer UDP service. |
+| `DWS_UDP_TELEMETRY_BUF` | `256` | Stack buffer for one telemetry line (bytes). |
+| `DWS_UMATI_NS` | `1` | NamespaceIndex the umati MachineTool nodes live at (default 1). |
+| `DWS_WEBDAV_BUF_SIZE` | `2048` | Buffer (BSS) for a WebDAV 207 Multi-Status response, in bytes (see DWS_ENABLE_WEBDAV). |
+| `DWS_WEBDAV_MAX_ENTRIES` | `32` | Maximum children listed in a WebDAV Depth-1 PROPFIND (bounds the response). |
+| `DWS_WEBDAV_MAX_PROPS` | `16` | Maximum properties echoed in a WebDAV PROPPATCH 207 response (bounds the response). |
+| `DWS_WORKER_CORE` | `1` | Core that worker 0 pins to (ESP32). |
+| `DWS_WORKER_COUNT` | `1` | Number of server worker tasks (slots partitioned i % N). |
+| `DWS_WORKER_POLL_TICKS` | `1` | Idle-sweep timeout, in FreeRTOS ticks, that a worker blocks between service iterations when no events are pending. |
+| `DWS_WORKER_STACK_CURVE_MIN` | `12288` | Minimum worker-task stack (bytes) required once SSH is compiled in. |
+| `DWS_WORKER_STACK_PQC_MIN` | `16384` |  |
+| `DWS_WORKER_STACK_RSA_MIN` | `8192` | Minimum worker-task stack (bytes) required once an RSA-2048 verifier is compiled in (OIDC / SSH). |
+| `DWS_WORKER_TASK_PRIORITY` | `5` | FreeRTOS priority for each server worker task (ESP32). |
+| `DWS_WS_CLIENT_BUF_SIZE` | `1024` | WebSocket client send/receive buffer size in bytes (bounds one frame). |
+| `DWS_WS_CLIENT_CT_BUF_SIZE` | `4096` | Ciphertext receive-ring size for wss:// (draining ring; must exceed one TCP_MSS). |
+| `DWS_WS_FRAG_SIZE` | `0` | WebSocket outbound fragmentation size (RFC 6455 sec 5.4), in payload bytes. |
+| `DWS_ZIGBEE_MAX_DATA` | `128` | Max ASH payload bytes (an EZSP frame; the ASH data field caps near 128). |
+| `DWS_ZWAVE_MAX_DATA` | `64` | Reject a Z-Wave frame whose declared length exceeds this data cap (sanity). |
 | `EXTRA_HDR_BUF_SIZE` | `256` | Per-connection buffer for app-supplied custom response headers and cookies. |
 | `FILE_CHUNK_SIZE` | `1024` | Bytes read from the filesystem and passed to tcp_write() per loop(). |
 | `JSON_MAX_DEPTH` | `8` | Maximum object/array nesting depth for the JsonWriter (see json.h). |
