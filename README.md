@@ -593,7 +593,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 </picture>
 </a>
 
-> Not drawn (so the tree stays uncrossed): **`DETWS_ENABLE_RANGE`** also need `DETWS_ENABLE_EDGE_CACHE`; **`DETWS_ENABLE_EDGE_CACHE`** also need `DETWS_ENABLE_HTTP_CLIENT`; **`DETWS_ENABLE_EDGE_ORIGIN_TLS`, `DETWS_ENABLE_HTTP_CLIENT_TLS`, `DETWS_ENABLE_MQTT_TLS`, `DETWS_ENABLE_WS_CLIENT_TLS`** also need `DETWS_ENABLE_TLS`.
+> Not drawn (so the tree stays uncrossed): **`DETWS_ENABLE_RANGE`, `DETWS_ENABLE_SSH_SCP`, `DETWS_ENABLE_SSH_SFTP`** also need `DETWS_ENABLE_FILE_SERVING`; **`DETWS_ENABLE_EDGE_CACHE`** also need `DETWS_ENABLE_HTTP_CLIENT`; **`DETWS_ENABLE_EDGE_ORIGIN_TLS`, `DETWS_ENABLE_HTTP_CLIENT_TLS`, `DETWS_ENABLE_MQTT_TLS`, `DETWS_ENABLE_WS_CLIENT_TLS`** also need `DETWS_ENABLE_TLS`.
 
 <details><summary><b>Auto-derived flags</b> - enabling the left flag turns the right one on for you; do not set it yourself.</summary>
 
@@ -628,7 +628,7 @@ Each **green** node is a parent feature and each **blue** node a child that requ
 
 </details>
 
-_30 hard dependencies, 3 PSRAM gates, 16 derived flags._
+_34 hard dependencies, 3 PSRAM gates, 16 derived flags._
 
 <!-- END GENERATED FLAG DEPS -->
 
@@ -661,7 +661,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | Core  | `IPV6`              |             1.9 KB |          15.2 KB |
 | L4    | `IP_ALLOWLIST`      |             0.8 KB |          15.2 KB |
 | L4    | `KEEPALIVE`         |           < 0.5 KB |          15.2 KB |
-| L4    | `PER_IP_THROTTLE`   |           < 0.5 KB |          15.6 KB |
+| L4    | `PER_IP_THROTTLE`   |           < 0.5 KB |          15.7 KB |
 | L4    | `ACCEPT_THROTTLE`   |           < 0.5 KB |          15.2 KB |
 | L5    | `SSH`               |       66.6-74.0 KB |     21.8-41.9 KB |
 | L5    | `TELNET`            |             1.7 KB |          15.7 KB |
@@ -676,26 +676,26 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `ETAG`              |        0.0-73.9 KB |      0.0-16.5 KB |
 | L7    | `WEBDAV`            |       26.2-66.6 KB |     38.2-38.7 KB |
 | L7    | `VFS`               |            42.1 KB |          19.6 KB |
-| L7    | `RANGE`             |        0.6-41.2 KB |      0.0-15.2 KB |
+| L7    | `RANGE`             |        0.6-41.2 KB |      0.0-15.3 KB |
 | L7    | `UPLOAD`            |            41.0 KB |          24.3 KB |
 | L7    | `OPCUA_CLIENT`      |        6.8-29.9 KB |     10.0-29.0 KB |
 | L7    | `IFACE_BRIDGE`      |            26.9 KB |          16.0 KB |
 | L7    | `NTP`               |            24.6 KB |          17.7 KB |
 | L7    | `MDNS`              |            24.4 KB |          17.1 KB |
-| L7    | `EDGE_CACHE`        |            20.4 KB |          51.4 KB |
+| L7    | `EDGE_CACHE`        |            20.3 KB |          51.8 KB |
 | L7    | `TIME_SOURCE`       |            20.2 KB |          16.8 KB |
 | L7    | `DASHBOARD`         |            19.9 KB |          15.6 KB |
 | L7    | `ADS`               |            18.6 KB |         < 0.5 KB |
 | L7    | `NTRIP_CASTER`      |            17.3 KB |          18.1 KB |
 | L7    | `RTC`               |            13.5 KB |         < 0.5 KB |
-| L7    | `OIDC`              |            13.0 KB |          32.8 KB |
+| L7    | `OIDC`              |            13.0 KB |          32.9 KB |
 | L7    | `OAUTH2`            |            12.1 KB |          37.5 KB |
 | L7    | `WEBHOOK`           |            10.0 KB |          34.5 KB |
 | L7    | `RELAY`             |             9.3 KB |          49.0 KB |
 | L7    | `SNMP`              |             8.2 KB |          27.3 KB |
 | L7    | `TELEMETRY`         |             8.2 KB |          15.5 KB |
 | L7    | `OPCUA`             |         6.8-7.5 KB |     10.0-25.3 KB |
-| L7    | `PROVISIONING`      |             7.0 KB |          16.7 KB |
+| L7    | `PROVISIONING`      |             7.0 KB |          16.8 KB |
 | L7    | `DNS_RESOLVER`      |             5.4 KB |          16.5 KB |
 | L7    | `COAP`              |             5.0 KB |          17.7 KB |
 | L7    | `OTA`               |             4.7 KB |          35.1 KB |
@@ -717,7 +717,7 @@ Measured on `esp32dev` (Arduino core). The **default server** baseline (HTTP + W
 | L7    | `PARTITION_MONITOR` |           < 0.5 KB |          15.2 KB |
 | L7    | `DIAG`              |           < 0.5 KB |          15.2 KB |
 | L7    | `GUARDRAILS`        |           < 0.5 KB |          15.2 KB |
-| L7    | `DEVICE_ID`         |           < 0.5 KB |          15.2 KB |
+| L7    | `DEVICE_ID`         |           < 0.5 KB |          15.3 KB |
 | L7    | `RADIO_POWER`       |           < 0.5 KB |          15.2 KB |
 | -     | `FILE_SERVING`      |         0.0-4.2 KB |         < 0.5 KB |
 | -     | `WEBSOCKET`         |         0.0-3.7 KB |       0.0-1.5 KB |

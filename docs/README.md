@@ -710,11 +710,16 @@ src/
 │   ├── auth.cpp
 │   ├── dwserver_internal.h
 │   ├── file_serving.cpp
+│   ├── fs_path.h
 │   ├── http_range.cpp
 │   ├── http_range.h
 │   ├── middleware.cpp
 │   ├── regex.cpp
 │   ├── response.cpp
+│   ├── ssh_scp.cpp
+│   ├── ssh_scp.h
+│   ├── ssh_sftp.cpp
+│   ├── ssh_sftp.h
 │   ├── webdav.cpp
 │   └── websocket_sse.cpp
 ├── services/
@@ -897,11 +902,13 @@ src/
 │   │   └── relay_listener.h
 │   ├── rtc/  (rtc.h, rtc.cpp)
 │   ├── s7comm/  (s7comm.h, s7comm.cpp)
+│   ├── scp/  (scp.h, scp.cpp)
 │   ├── sdi12/  (sdi12.h, sdi12.cpp)
 │   ├── sen0192/  (sen0192.h, sen0192.cpp)
 │   ├── senml/  (senml.h, senml.cpp)
 │   ├── sep2/  (sep2.h, sep2.cpp)
 │   ├── sercos/  (sercos.h, sercos.cpp)
+│   ├── sftp/  (sftp.h, sftp.cpp)
 │   ├── sht3x/  (sht3x.h, sht3x.cpp)
 │   ├── sigfox/  (sigfox.h, sigfox.cpp)
 │   ├── sleep_sched/  (sleep_sched.h, sleep_sched.cpp)
@@ -1061,92 +1068,93 @@ Feature Tables workflow from `docs/footprints.json`.
 | `MQTT` | `L7-Application/24.MqttClient` | 736,413 | 65,320 |
 | `SMB` | `L7-Application/68.SmbFileClient` | 742,469 | 65,208 |
 | `NTP_SERVER+TIME_SOURCE+NMEA0183+NTP` | `L7-Application/58.NtpServer` | 748,109 | 46,668 |
-| `ACCEPT_THROTTLE` | `L4-Transport/02.AcceptThrottle` | 752,169 | 81,784 |
-| `core/71.MediaStreaming` | `L7-Application/71.MediaStreaming` | 752,269 | 81,776 |
-| `core/02.CORS` | `L7-Application/02.CORS` | 752,333 | 81,776 |
-| `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 752,409 | 81,776 |
-| `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 752,409 | 81,776 |
-| `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 752,533 | 81,776 |
-| `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 752,653 | 81,776 |
-| `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 752,677 | 82,224 |
-| `KEEPALIVE` | `L4-Transport/01.KeepAlive` | 752,697 | 81,776 |
-| `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 752,733 | 81,816 |
-| `core/05.PathParams` | `L7-Application/05.PathParams` | 752,737 | 81,776 |
-| `core/09.WebSocket` | `L6-Presentation/09.WebSocket` | 752,785 | 81,776 |
+| `ACCEPT_THROTTLE` | `L4-Transport/02.AcceptThrottle` | 752,169 | 81,792 |
+| `core/71.MediaStreaming` | `L7-Application/71.MediaStreaming` | 752,269 | 81,784 |
+| `core/02.CORS` | `L7-Application/02.CORS` | 752,333 | 81,784 |
+| `RADIO_POWER+RADIO_WIFI_PS` | `L7-Application/47.RadioPower` | 752,409 | 81,784 |
+| `core/04.BasicAuth` | `L6-Presentation/04.BasicAuth` | 752,409 | 81,784 |
+| `core/05.DigestAuth` | `L6-Presentation/05.DigestAuth` | 752,533 | 81,784 |
+| `core/06.RegexRoutes` | `L7-Application/06.RegexRoutes` | 752,653 | 81,784 |
+| `PER_IP_THROTTLE` | `L4-Transport/05.PerIpThrottle` | 752,677 | 82,232 |
+| `KEEPALIVE` | `L4-Transport/01.KeepAlive` | 752,697 | 81,784 |
+| `DEVICE_ID` | `L7-Application/32.DeviceUuid` | 752,733 | 81,824 |
+| `core/05.PathParams` | `L7-Application/05.PathParams` | 752,737 | 81,784 |
+| `core/09.WebSocket` | `L6-Presentation/09.WebSocket` | 752,785 | 81,784 |
 | `GUARDRAILS` | `L7-Application/40.Guardrails` | 752,857 | 81,792 |
-| `core/07.ResponseHeaders` | `L7-Application/07.ResponseHeaders` | 752,869 | 81,776 |
+| `core/07.ResponseHeaders` | `L7-Application/07.ResponseHeaders` | 752,869 | 81,784 |
 | `core/04.Middleware` | `L7-Application/04.Middleware` | 752,961 | 81,784 |
-| `core/08.ServerSentEvents` | `L6-Presentation/08.ServerSentEvents` | 752,969 | 81,784 |
-| `DIAG` | `L7-Application/20.Diagnostics` | 753,009 | 81,776 |
-| `core/36.NetEgress` | `L7-Application/36.NetEgress` | 753,037 | 81,776 |
-| `PARTITION_MONITOR` | `L7-Application/37.PartitionMonitor` | 753,065 | 81,784 |
+| `core/08.ServerSentEvents` | `L6-Presentation/08.ServerSentEvents` | 752,969 | 81,792 |
+| `DIAG` | `L7-Application/20.Diagnostics` | 753,009 | 81,784 |
+| `core/36.NetEgress` | `L7-Application/36.NetEgress` | 753,037 | 81,784 |
+| `PARTITION_MONITOR` | `L7-Application/37.PartitionMonitor` | 753,065 | 81,792 |
 | `core/01.ChunkedResponse` | `L7-Application/01.ChunkedResponse` | 753,065 | 81,792 |
-| `core/01.FormParams` | `L6-Presentation/01.FormParams` | 753,161 | 81,776 |
-| `AUTH_LOCKOUT` | `L6-Presentation/12.AuthLockout` | 753,401 | 82,352 |
+| `core/01.FormParams` | `L6-Presentation/01.FormParams` | 753,161 | 81,784 |
+| `AUTH_LOCKOUT` | `L6-Presentation/12.AuthLockout` | 753,401 | 82,360 |
 | `OTA_ROLLBACK` | `L7-Application/44.OtaRollback` | 753,401 | 81,792 |
-| `core/03.Multipart` | `L6-Presentation/03.Multipart` | 753,497 | 81,776 |
+| `core/03.Multipart` | `L6-Presentation/03.Multipart` | 753,497 | 81,784 |
 | `TOTP` | `L7-Application/45.Totp` | 753,517 | 81,816 |
-| `IP_ALLOWLIST` | `L4-Transport/07.IpAllowlist` | 753,697 | 81,776 |
+| `IP_ALLOWLIST` | `L4-Transport/07.IpAllowlist` | 753,697 | 81,784 |
 | `LOGBUF` | `L7-Application/41.LogBuffer` | 753,877 | 84,904 |
-| `CSRF` | `L7-Application/33.Csrf` | 753,941 | 81,832 |
-| `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 753,961 | 81,776 |
+| `CSRF` | `L7-Application/33.Csrf` | 753,941 | 81,840 |
+| `core/03.InterfaceFilter` | `L7-Application/03.InterfaceFilter` | 753,961 | 81,784 |
 | `MODBUS` | `L7-Application/30.ModbusTcp` | 754,093 | 82,064 |
 | `core/08.Templating` | `L7-Application/08.Templating` | 754,137 | 81,824 |
-| `STATS` | `L7-Application/22.Stats` | 754,209 | 81,880 |
+| `STATS` | `L7-Application/22.Stats` | 754,209 | 81,888 |
 | `CONTROL` | `L7-Application/74.PidTuning` | 754,325 | 89,856 |
 | `core/01.Basic` | `Foundation/01.Basic` | 754,421 | 81,792 |
-| `MODBUS+MODBUS_MASTER` | `L7-Application/43.ModbusScan` | 754,429 | 82,056 |
-| `JWT` | `L6-Presentation/06.JWTAuth` | 754,549 | 82,928 |
+| `MODBUS+MODBUS_MASTER` | `L7-Application/43.ModbusScan` | 754,429 | 82,064 |
+| `JWT` | `L6-Presentation/06.JWTAuth` | 754,549 | 82,936 |
 | `TELNET` | `L5-Session/04.Telnet` | 754,581 | 82,320 |
-| `AUDIT_LOG` | `L7-Application/49.AuditLog` | 754,633 | 84,768 |
-| `CBOR` | `L6-Presentation/13.Cbor` | 754,717 | 81,856 |
-| `IPV6` | `Foundation/20.IPv6` | 754,821 | 81,776 |
-| `core/03.Expert` | `Foundation/03.Expert` | 755,069 | 81,800 |
+| `AUDIT_LOG` | `L7-Application/49.AuditLog` | 754,633 | 84,776 |
+| `CBOR` | `L6-Presentation/13.Cbor` | 754,717 | 81,864 |
+| `IPV6` | `Foundation/20.IPv6` | 754,821 | 81,784 |
+| `core/03.Expert` | `Foundation/03.Expert` | 755,069 | 81,808 |
 | `SYSLOG` | `L7-Application/19.Syslog` | 755,741 | 83,640 |
-| `MSGPACK` | `L6-Presentation/14.MsgPack` | 756,017 | 81,856 |
-| `STATS+METRICS` | `L7-Application/21.PrometheusMetrics` | 756,373 | 81,920 |
-| `core/02.Json` | `L6-Presentation/02.Json` | 756,433 | 81,784 |
-| `GPIO_MAP` | `L7-Application/38.GpioMap` | 756,701 | 81,840 |
-| `WS_DEFLATE` | `L6-Presentation/11.WebSocketCompression` | 757,025 | 89,976 |
+| `MSGPACK` | `L6-Presentation/14.MsgPack` | 756,017 | 81,864 |
+| `STATS+METRICS` | `L7-Application/21.PrometheusMetrics` | 756,373 | 81,928 |
+| `core/02.Json` | `L6-Presentation/02.Json` | 756,433 | 81,792 |
+| `GPIO_MAP` | `L7-Application/38.GpioMap` | 756,701 | 81,848 |
+| `WS_DEFLATE` | `L6-Presentation/11.WebSocketCompression` | 757,025 | 89,984 |
 | `WEB_TERMINAL` | `L6-Presentation/10.WebTerminal` | 757,169 | 81,864 |
 | `GRAPHQL` | `L7-Application/52.GraphQL` | 757,285 | 86,192 |
-| `CONFIG_STORE+CONFIG_IO` | `L7-Application/42.ConfigExport` | 757,329 | 81,844 |
+| `CONFIG_STORE+CONFIG_IO` | `L7-Application/42.ConfigExport` | 757,329 | 81,852 |
 | `OTA` | `L7-Application/16.OTA` | 757,669 | 102,128 |
 | `COAP` | `L7-Application/13.CoAP` | 758,001 | 84,296 |
-| `DNS_RESOLVER` | `L7-Application/48.DnsResolver` | 758,329 | 83,064 |
-| `PROVISIONING` | `L7-Application/17.Provisioning` | 760,021 | 83,348 |
-| `OPCUA` | `L7-Application/55.OpcUa` | 760,497 | 92,064 |
-| `core/02.Advanced` | `Foundation/02.Advanced` | 761,093 | 81,888 |
-| `TELEMETRY` | `L7-Application/34.Telemetry` | 761,201 | 82,100 |
-| `SNMP` | `L7-Application/14.SNMP` | 761,237 | 94,184 |
-| `RELAY` | `L7-Application/70.PortForward` | 762,365 | 116,392 |
+| `DNS_RESOLVER` | `L7-Application/48.DnsResolver` | 758,329 | 83,072 |
+| `PROVISIONING` | `L7-Application/17.Provisioning` | 760,021 | 83,356 |
+| `OPCUA` | `L7-Application/55.OpcUa` | 760,497 | 92,072 |
+| `core/02.Advanced` | `Foundation/02.Advanced` | 761,093 | 81,896 |
+| `TELEMETRY` | `L7-Application/34.Telemetry` | 761,201 | 82,108 |
+| `SNMP` | `L7-Application/14.SNMP` | 761,237 | 94,192 |
+| `RELAY` | `L7-Application/70.PortForward` | 762,365 | 116,400 |
 | `HTTP_CLIENT+WEBHOOK` | `L7-Application/46.Webhook` | 763,053 | 101,536 |
 | `PROMISC+FORWARD+ETHERNET` | `Foundation/21.WifiCapture` | 764,637 | 47,520 |
-| `OAUTH2+HTTP_CLIENT` | `L7-Application/54.OAuth2` | 765,285 | 104,600 |
-| `OIDC` | `L7-Application/50.OidcAuth` | 766,149 | 99,824 |
-| `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 766,301 | 81,792 |
+| `OAUTH2+HTTP_CLIENT` | `L7-Application/54.OAuth2` | 765,285 | 104,608 |
+| `OIDC` | `L7-Application/50.OidcAuth` | 766,149 | 99,856 |
+| `core/04.Sysadmin` | `Foundation/04.Sysadmin` | 766,301 | 81,800 |
 | `RTC+TIME_SOURCE+NTP` | `L7-Application/61.Rtc` | 766,653 | 45,372 |
-| `OPCUA+UMATI` | `L7-Application/72.Umati` | 767,217 | 92,208 |
+| `OPCUA+UMATI` | `L7-Application/72.Umati` | 767,217 | 92,216 |
 | `NTRIP_CASTER` | `L7-Application/76.NtripCaster` | 770,525 | 84,700 |
 | `BUS_CAPTURE+FORWARD+ETHERNET` | `Foundation/22.CanCapture` | 771,165 | 45,516 |
 | `ADS` | `L7-Application/73.AdsClient` | 771,933 | 45,440 |
 | `DASHBOARD` | `L7-Application/35.Dashboard` | 773,173 | 82,152 |
-| `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 773,549 | 83,396 |
-| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT` | `L7-Application/79.EdgeCache` | 773,697 | 118,864 |
-| `MDNS` | `L7-Application/15.mDNS` | 777,813 | 83,680 |
-| `NTP` | `L7-Application/18.SNTP` | 778,073 | 84,328 |
-| `IFACE_BRIDGE` | `L7-Application/75.InterfaceBridge` | 780,393 | 82,624 |
+| `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 773,549 | 83,404 |
+| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT` | `L7-Application/79.EdgeCache` | 773,661 | 119,264 |
+| `MDNS` | `L7-Application/15.mDNS` | 777,813 | 83,688 |
+| `NTP` | `L7-Application/18.SNTP` | 778,073 | 84,336 |
+| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH` | `L7-Application/80.MeshCache` | 778,449 | 124,240 |
+| `IFACE_BRIDGE` | `L7-Application/75.InterfaceBridge` | 780,393 | 82,632 |
 | `COAP+DTLS` | `L7-Application/78.CoapSecure` | 780,501 | 102,864 |
 | `OPCUA+OPCUA_CLIENT` | `L7-Application/56.OpcUaClient` | 783,461 | 95,936 |
-| `ETHERNET` | `Foundation/19.Ethernet` | 791,209 | 81,828 |
-| `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | `Foundation/23.EthernetW5500` | 791,225 | 81,828 |
-| `core/10.FileServing` | `L7-Application/10.FileServing` | 793,713 | 81,816 |
+| `ETHERNET` | `Foundation/19.Ethernet` | 791,209 | 81,836 |
+| `ETHERNET+ETH_W5500+ETH_W5500_CS+ETH_W5500_RST+ETH_W5500_INT+ETH_W5500_SCK+ETH_W5500_MISO+ETH_W5500_MOSI` | `Foundation/23.EthernetW5500` | 791,225 | 81,836 |
+| `core/10.FileServing` | `L7-Application/10.FileServing` | 793,713 | 81,824 |
 | `UPLOAD` | `L7-Application/11.FileUpload` | 794,853 | 91,128 |
-| `RANGE` | `L7-Application/12.Range` | 795,005 | 81,816 |
-| `VFS` | `L7-Application/51.Vfs` | 795,973 | 86,304 |
+| `RANGE` | `L7-Application/12.Range` | 795,005 | 81,824 |
+| `VFS` | `L7-Application/51.Vfs` | 795,973 | 86,312 |
 | `WEBDAV` | `L7-Application/29.WebDav` | 821,069 | 105,352 |
 | `WEBDAV+WEBDAV_MAX_ENTRIES+WEBDAV_BUF_SIZE` | `L7-Application/29.WebDav` | 821,761 | 90,856 |
-| `ETAG` | `L7-Application/09.ETag` | 828,489 | 83,088 |
+| `ETAG` | `L7-Application/09.ETag` | 828,489 | 83,096 |
 | `SSH` | `L5-Session/03.SSHHostKey` | 828,645 | 109,156 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS` | `L7-Application/25.WebSocketClient` | 831,333 | 120,548 |
 | `WS_CLIENT+TLS+WS_CLIENT_TLS+WS_CLIENT_BUF_SIZE` | `L7-Application/25.WebSocketClient` | 831,745 | 123,620 |
@@ -1402,6 +1410,8 @@ The complete set of `DETWS_ENABLE_*` flags and their defaults, scraped from
 | `DETWS_ENABLE_SQLITE` | `0` | Opt-in SQLite3 on-disk file-format reader. |
 | `DETWS_ENABLE_SSE` | `1` | Server-Sent Events push support. |
 | `DETWS_ENABLE_SSH` | `0` | SSH server support (RFC 4253/4252/4254). |
+| `DETWS_ENABLE_SSH_SCP` | `0` | SCP server over SSH (the legacy RCP protocol via `exec "scp -t/-f"`). |
+| `DETWS_ENABLE_SSH_SFTP` | `0` | SFTP server subsystem over SSH (SSH_FXP_* v3, draft-ietf-secsh-filexfer-02). |
 | `DETWS_ENABLE_SSH_ZLIB` | `0` | SSH server-to-client compression (`zlib@openssh.com` / `zlib`, RFC 4253 sec 6.2). |
 | `DETWS_ENABLE_STATS` | `0` | Runtime stats endpoint (uptime, request/error counts, pool usage, heap). |
 | `DETWS_ENABLE_STATSD` | `0` | Opt-in StatsD metrics client. |
@@ -1598,6 +1608,10 @@ guards at compile time.
 | `DETWS_SEN0192_ACTIVE_HIGH` | `1` | SEN0192 OUT polarity: 1 = the OUT line reads HIGH on motion, 0 = active-LOW. |
 | `DETWS_SEN0192_HOLD_MS` | `2000` | Presence is held this many ms after the last active (motion) sample before it clears. |
 | `DETWS_SEN0192_PIN` | `4` | GPIO the SEN0192 OUT line is wired to. |
+| `DETWS_SFTP_MAX_HANDLES` | `4` | Max concurrent open SFTP handles (files + dirs) per SSH connection. |
+| `DETWS_SFTP_MAX_READ` | `1024` | Largest SSH_FXP_DATA payload returned for one READ (a short read - the client re-requests). |
+| `DETWS_SFTP_PATH_MAX` | `256` | Largest absolute path the SFTP/SCP server resolves (mount root + request path). |
+| `DETWS_SFTP_PKT_BUF` | `2048` | SFTP packet-assembly buffer per SFTP channel (bytes); bounds one non-streamed request/response. |
 | `DETWS_SHT3X_I2C_ADDR` | `0x44` | I2C address of the SHT3x (0x44 with ADDR low; 0x45 with ADDR high). |
 | `DETWS_SIGFOX_MAX_PAYLOAD` | `12` | Maximum Sigfox uplink payload (the network caps a message at 12 bytes). |
 | `DETWS_SMB_BUF` | `1024` | SMB2 client work-buffer size (bytes) for smb_client's request/response framing. |
@@ -1693,7 +1707,6 @@ guards at compile time.
 | `SSE_BUF_SIZE` | `256` | Output buffer size in bytes for a single SSE event. |
 | `SSH_AUTH_PASS_MAX` | `64` | Max stored password length. |
 | `SSH_AUTH_USER_MAX` | `32` | Max stored user name (RFC 4252 imposes no limit; we cap for BSS). |
-| `SSH_CHAN_MAX_PACKET` | `32768u` | Maximum SSH channel data payload the server accepts per message. |
 | `SSH_CHAN_WINDOW` | `32768u` | Initial receive window the SSH server advertises (RFC 4254 §5.1). |
 | `SSH_CRYPTO_WORK_SIZE` | `1536` | Shared scratch buffer for SSH big-number operations. |
 | `SSH_KEXINIT_MAX` | `2048` | Max stored size of the CLIENT KEXINIT payload (I_C, for the exchange hash). |
