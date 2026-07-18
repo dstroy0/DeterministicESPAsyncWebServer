@@ -2,20 +2,33 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
-## [Unreleased]
+## [7.0.1] - 2026-07-18
+
+<details>
+<summary><b>Show Changelog for version 7.0.1 - 2026-07-18</b></summary>
 
 ### Bug Fixes
 
+- remediate all SonarCloud + CodeQL findings; size MeshCache for classic ESP32 ([`2504b9e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2504b9e744d6f9ac235746c828c4f12a2a9cac35))
 - rename web-asset sources DETWS_->DWS_ + regenerate (7.0.0) ([`f4419d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4419d711fec76c91a341aa2f72cb980962b37e4))
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`991188f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/991188fc4d278e5beafc8771066d3ef8d27b3a41))
+- update CHANGELOG.md [skip ci] ([`1051e29`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1051e29d9f8e18f86de10faa3090c0d4ae8ab949))
 - update test report + coverage [skip ci] ([`a05a97f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a05a97f9d249c6b1192575331075c5aa91c6af34))
 - update CHANGELOG.md [skip ci] ([`65a256b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65a256ba6f1dad95ef067dce94c7e42d66fc5e07))
 
+### Changes
+
+- Bump version: 7.0.0 → 7.0.1 ([`5ed08d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/5ed08d6b51a48fc178986ae9085749ed81ae9b6a))
+
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`cff14f7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cff14f7bcb0088eeb4a5c227b4675f7a6eb7275f))
 - update ESP32 build footprints [skip ci] ([`677bdf4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/677bdf4bd59beee9e43ac4f88a7304b052e865fe))
+
+</details>
 
 ## [7.0.0] - 2026-07-18
 
