@@ -10670,7 +10670,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Eval all breached
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DWSBreach::DWS_BREACH_HEAP | DWSBreach::DWS_BREACH_FRAG | DWSBreach::DWS_BREACH_STACK,</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWSBreach::DWS_BREACH_HEAP | DWSBreach::DWS_BREACH_FRAG | DWSBreach::DWS_BREACH_STACK, b);</code>
   </details>
 
   <details style="margin-left: 20px;">
