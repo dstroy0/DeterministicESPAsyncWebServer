@@ -375,7 +375,7 @@ struct MqttCtx
 
     // Inbound plaintext byte ring (consumer = process_rx). It is fed by a pump in
     // process_rx: for plain TCP from det_client_read, for MQTTS from the TLS session
-    // (det_tls_csess_read), whose BIO in turn reads ciphertext from det_client.
+    // (det_tls_client_session_read), whose BIO in turn reads ciphertext from det_client.
     uint8_t rx[DETWS_MQTT_BUF_SIZE];
     volatile size_t rx_head;
     volatile size_t rx_tail;
@@ -487,7 +487,7 @@ static void mq_pump_tls()
         if (freey == 0)
             break;
         size_t want = freey < sizeof(tmp) ? freey : sizeof(tmp);
-        int n = det_tls_csess_read(tmp, want);
+        int n = det_tls_client_session_read(tmp, want);
         if (n <= 0)
         {
             if (n < 0)
@@ -509,7 +509,7 @@ static bool mq_tx(const uint8_t *data, size_t len)
     bool ok;
 #if DETWS_ENABLE_MQTT_TLS
     if (s_mqtt.use_tls)
-        ok = det_tls_csess_write(data, len) == (int)len;
+        ok = det_tls_client_session_write(data, len) == (int)len;
     else
 #endif
         ok = mq_tx_plain(data, len);
@@ -522,7 +522,7 @@ static void mq_close()
 {
 #if DETWS_ENABLE_MQTT_TLS
     if (s_mqtt.use_tls)
-        det_tls_csess_end();
+        det_tls_client_session_end();
 #endif
     if (s_mqtt.cid >= 0)
         det_client_close(s_mqtt.cid);
@@ -718,13 +718,13 @@ bool mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttConne
 #if DETWS_ENABLE_MQTT_TLS
     if (s_mqtt.use_tls)
     {
-        if (!det_tls_csess_begin(host, mq_tls_send, mq_tls_recv))
+        if (!det_tls_client_session_begin(host, mq_tls_send, mq_tls_recv))
         {
             mq_close();
             return false;
         }
         int h;
-        while ((h = det_tls_csess_handshake()) == 0 && !s_mqtt.closed && (int32_t)(deadline - millis()) > 0)
+        while ((h = det_tls_client_session_handshake()) == 0 && !s_mqtt.closed && (int32_t)(deadline - millis()) > 0)
             dwsdelay(5);
         if (h != 1)
         {

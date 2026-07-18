@@ -24,7 +24,7 @@
 #include "services/http_client/http_client.h" // http_client_parse_url
 #include "shared_primitives/mime.h"           // DET_MIME_TEXT_PLAIN
 #if DETWS_ENABLE_EDGE_ORIGIN_TLS
-#include "network_drivers/tls/tls.h" // det_tls_csess_* (TLS upstream origin fetch)
+#include "network_drivers/tls/tls.h" // det_tls_client_session_* (TLS upstream origin fetch)
 #include <mbedtls/ssl.h>             // MBEDTLS_ERR_SSL_WANT_READ / WANT_WRITE
 #endif
 #if DETWS_ENABLE_EDGE_MESH
@@ -187,7 +187,7 @@ void t_close(void *c, int cid)
 #if DETWS_ENABLE_EDGE_ORIGIN_TLS
 // --- TLS transport seam (det_tls_csess layered over det_client) -----------------------------------
 // The client TLS session is a singleton, so the underlying cid + peer-closed latch live in the owned Ctx
-// (one TLS fetch at a time, enforced by det_tls_csess_active() in start_fetch). The BIO callbacks move
+// (one TLS fetch at a time, enforced by det_tls_client_session_active() in start_fetch). The BIO callbacks move
 // ciphertext over det_client's wire ring for that cid - the same bridge the MQTT/WS clients use.
 int edge_tls_bio_send(void *ctx, const unsigned char *buf, size_t len)
 {
@@ -211,7 +211,7 @@ int t_tls_open(void *c, const char *host, uint16_t port, uint32_t timeout)
     if (s_ctx.tls_cid < 0)
         return -1;
     s_ctx.tls_peer_closed = false;
-    if (!det_tls_csess_begin(host, edge_tls_bio_send, edge_tls_bio_recv))
+    if (!det_tls_client_session_begin(host, edge_tls_bio_send, edge_tls_bio_recv))
     {
         det_client_close(s_ctx.tls_cid);
         s_ctx.tls_cid = -1;
@@ -223,12 +223,12 @@ int t_tls_open(void *c, const char *host, uint16_t port, uint32_t timeout)
     // the network stack between handshake flights so the peer's records arrive.
     uint32_t deadline = detws_millis() + timeout;
     int h = 0;
-    while ((h = det_tls_csess_handshake()) == 0 && !det_client_is_closed(s_ctx.tls_cid) &&
+    while ((h = det_tls_client_session_handshake()) == 0 && !det_client_is_closed(s_ctx.tls_cid) &&
            (int32_t)(deadline - detws_millis()) > 0)
         dwsdelay(5);
     if (h != 1)
     {
-        det_tls_csess_end();
+        det_tls_client_session_end();
         det_client_close(s_ctx.tls_cid);
         s_ctx.tls_cid = -1;
         return -1;
@@ -239,13 +239,13 @@ bool t_tls_send(void *c, int cid, const void *d, size_t l)
 {
     (void)c;
     (void)cid;
-    return det_tls_csess_write((const uint8_t *)d, l) == (int)l;
+    return det_tls_client_session_write((const uint8_t *)d, l) == (int)l;
 }
 size_t t_tls_read(void *c, int cid, uint8_t *b, size_t cap)
 {
     (void)c;
     (void)cid;
-    int n = det_tls_csess_read(b, cap);
+    int n = det_tls_client_session_read(b, cap);
     if (n < 0)
         s_ctx.tls_peer_closed = true; // close_notify / decrypt error -> report closed via t_tls_closed
     return n > 0 ? (size_t)n : 0;
@@ -258,7 +258,7 @@ bool t_tls_closed(void *c, int cid)
 void t_tls_close(void *c, int cid)
 {
     (void)c;
-    det_tls_csess_end();
+    det_tls_client_session_end();
     det_client_close(cid);
     s_ctx.tls_cid = -1;
 }
@@ -514,7 +514,7 @@ bool begin_origin_fetch(EdgeFetchSlot *fs, uint32_t now)
 #if DETWS_ENABLE_EDGE_ORIGIN_TLS
     if (m->https)
     {
-        if (det_tls_csess_active())
+        if (det_tls_client_session_active())
             return false; // the shared client-TLS session is busy -> fail open (never tear down a live one)
         tport = &s_ctx.transport_tls;
     }

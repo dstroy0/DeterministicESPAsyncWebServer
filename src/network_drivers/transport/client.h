@@ -16,7 +16,7 @@
  *
  * The receive ring carries **wire bytes**: for a plaintext connection those are
  * the application bytes; for a TLS connection they are ciphertext and the caller
- * layers the shared client-TLS session (`det_tls_csess_*`) on top, pointing its
+ * layers the shared client-TLS session (`det_tls_client_session_*`) on top, pointing its
  * BIO at det_client_send() / det_client_read().
  *
  * The core is non-blocking (read/available/send), so it suits both a polling

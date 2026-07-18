@@ -40,10 +40,10 @@ struct MdnsBeacon
 };
 
 /** @brief The continuous-refresher cadence for a record TTL: half the TTL, in milliseconds. */
-uint32_t detws_mdns_refresh_interval(uint32_t ttl_s);
+uint32_t det_mdns_refresh_interval(uint32_t ttl_s);
 
 /** @brief Initialize a beacon. @p cur_ms starts at @p base_ms. */
-void detws_mdns_beacon_init(MdnsBeacon *b, uint32_t base_ms, uint32_t max_ms, uint16_t hi_thresh);
+void det_mdns_beacon_init(MdnsBeacon *b, uint32_t base_ms, uint32_t max_ms, uint16_t hi_thresh);
 
 /**
  * @brief Adapt the interval to observed RF contention (announces/collisions seen in the last window).
@@ -51,17 +51,17 @@ void detws_mdns_beacon_init(MdnsBeacon *b, uint32_t base_ms, uint32_t max_ms, ui
  *        toward base_ms; moderate contention holds.
  * @return the new interval (ms).
  */
-uint32_t detws_mdns_beacon_adapt(MdnsBeacon *b, uint16_t contention);
+uint32_t det_mdns_beacon_adapt(MdnsBeacon *b, uint16_t contention);
 
 /** @brief Is an announce due now? (wrap-safe: elapsed since @p last_ms >= the current interval). */
-bool detws_mdns_beacon_due(const MdnsBeacon *b, uint32_t last_ms, uint32_t now_ms);
+bool det_mdns_beacon_due(const MdnsBeacon *b, uint32_t last_ms, uint32_t now_ms);
 
 /**
  * @brief Auto-sleep beacon: should we announce *before* sleeping for @p sleep_ms?
  *        True when the elapsed-since-last plus the sleep would meet/exceed the interval - i.e. the record
  *        would lapse mid-sleep - so we refresh proactively before the radio goes off.
  */
-bool detws_mdns_beacon_presleep_due(const MdnsBeacon *b, uint32_t last_ms, uint32_t now_ms, uint32_t sleep_ms);
+bool det_mdns_beacon_presleep_due(const MdnsBeacon *b, uint32_t last_ms, uint32_t now_ms, uint32_t sleep_ms);
 
 #endif // DETWS_ENABLE_MDNS_ADAPTIVE
 #endif // DETERMINISTICESPASYNCWEBSERVER_MDNS_ADAPTIVE_H

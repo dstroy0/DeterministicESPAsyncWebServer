@@ -63,7 +63,7 @@ struct QuicIngest
 struct QuicSlot
 {
     bool used;
-    uint32_t id; ///< stable handle for quic_server_respond()
+    uint32_t id; ///< stable handle for det_quic_server_respond()
     QuicConn qc;
     H3Conn h3;
     char peer_ip[16];
@@ -128,7 +128,7 @@ void server_send(const char *ip, uint16_t port, const uint8_t *data, size_t len)
 #endif
 }
 
-// --- ingest ring (SPSC: one producer fills, quic_server_poll consumes) ------------------------
+// --- ingest ring (SPSC: one producer fills, det_quic_server_poll consumes) ------------------------
 bool ring_push(const uint8_t *dg, size_t len, const char *ip, uint16_t port)
 {
     if (len == 0 || len > DETWS_QUIC_MAX_DATAGRAM)
@@ -297,7 +297,7 @@ void udp_ingest_cb(const uint8_t *data, size_t len, DetUdpPeer *peer, void * /*c
 #endif
 } // namespace
 
-bool quic_server_begin(uint16_t port, const QuicServerConfig *cfg, QuicServerRequestFn on_request, void *app)
+bool det_quic_server_begin(uint16_t port, const QuicServerConfig *cfg, QuicServerRequestFn on_request, void *app)
 {
     if (!cfg || !cfg->rng)
         return false;
@@ -314,11 +314,11 @@ bool quic_server_begin(uint16_t port, const QuicServerConfig *cfg, QuicServerReq
 #if defined(ARDUINO)
     return det_udp_listen(s_quic.port, udp_ingest_cb, nullptr);
 #else
-    return true; // host: fed through quic_server_ingest()
+    return true; // host: fed through det_quic_server_ingest()
 #endif
 }
 
-void quic_server_poll(uint32_t now_ms)
+void det_quic_server_poll(uint32_t now_ms)
 {
     if (!s_quic.running)
         return;
@@ -338,8 +338,8 @@ void quic_server_poll(uint32_t now_ms)
     flush_and_reap(now_ms);
 }
 
-bool quic_server_respond(uint32_t conn_id, uint64_t stream_id, int status, const char *content_type,
-                         const uint8_t *body, size_t body_len)
+bool det_quic_server_respond(uint32_t conn_id, uint64_t stream_id, int status, const char *content_type,
+                             const uint8_t *body, size_t body_len)
 {
     QuicSlot *s = slot_by_id(conn_id);
     if (!s)
@@ -347,7 +347,7 @@ bool quic_server_respond(uint32_t conn_id, uint64_t stream_id, int status, const
     return h3_conn_respond(&s->h3, stream_id, status, content_type, body, body_len);
 }
 
-uint8_t quic_server_active_conns(void)
+uint8_t det_quic_server_active_conns(void)
 {
     uint8_t n = 0;
     for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
@@ -356,7 +356,7 @@ uint8_t quic_server_active_conns(void)
     return n;
 }
 
-void quic_server_stop(void)
+void det_quic_server_stop(void)
 {
     s_quic.running = false;
     for (uint8_t i = 0; i < DETWS_QUIC_MAX_CONNS; i++)
@@ -366,13 +366,13 @@ void quic_server_stop(void)
 }
 
 #if !defined(ARDUINO)
-void quic_server_set_out_sink(QuicServerOutFn fn, void *ctx)
+void det_quic_server_set_out_sink_cb(QuicServerOutFn fn, void *ctx)
 {
     s_quic.out_sink = fn;
     s_quic.out_ctx = ctx;
 }
 
-bool quic_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port)
+bool det_quic_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port)
 {
     return ring_push(datagram, len, ip, port);
 }

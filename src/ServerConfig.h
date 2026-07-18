@@ -2298,7 +2298,7 @@
  * @brief Authoritative DNS server (services/dns_server) on UDP/53.
  *
  * Default off. Resolves a small fixed table of `name -> IPv4` A records you register with
- * dns_server_add(), so devices on an offline / air-gapped LAN can use names instead of raw
+ * det_dns_server_add(), so devices on an offline / air-gapped LAN can use names instead of raw
  * IPs (a companion to the NTP server for offline infrastructure). Answers A/IN queries from
  * the table, returns NXDOMAIN for unknown names, and ignores other query types. The response
  * builder is pure and host-tested; the wire binding is the transport UDP service. This is a
@@ -3745,10 +3745,10 @@
 /**
  * @brief Opt-in adaptive mDNS beacon scheduling (DETWS_ENABLE_MDNS_ADAPTIVE).
  *
- * Pure scheduling decisions on top of the shipped mDNS service: detws_mdns_beacon_adapt backs the
+ * Pure scheduling decisions on top of the shipped mDNS service: det_mdns_beacon_adapt backs the
  * announce interval off toward a ceiling under RF contention and recovers it when the air is quiet,
- * detws_mdns_refresh_interval gives the TTL/2 continuous-refresher cadence, detws_mdns_beacon_due says
- * when an announce is due, and detws_mdns_beacon_presleep_due says whether to announce before a sleep
+ * det_mdns_refresh_interval gives the TTL/2 continuous-refresher cadence, det_mdns_beacon_due says
+ * when an announce is due, and det_mdns_beacon_presleep_due says whether to announce before a sleep
  * window that would otherwise let the record lapse. Wrap-safe time math, no heap/stdlib. Default off.
  */
 #ifndef DETWS_ENABLE_MDNS_ADAPTIVE
@@ -4531,7 +4531,7 @@
 #endif
 
 // The outbound clients (det_client) resolve hostnames through the shared DNS
-// resolver (detws_dns_resolve), so enabling any client implies the resolver - one
+// resolver (det_dns_resolver_resolve), so enabling any client implies the resolver - one
 // owner of the gethostbyname-marshal pattern instead of a private copy per client.
 // DETWS_NEED_DET_CLIENT marks when the client transport is actually used; the
 // det_client translation unit compiles its body only then (a server-only Arduino

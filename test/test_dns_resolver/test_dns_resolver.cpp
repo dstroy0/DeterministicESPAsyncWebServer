@@ -18,56 +18,56 @@ void tearDown()
 
 void test_classify()
 {
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_UNSPECIFIED, detws_dns_classify(0u));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_BROADCAST, detws_dns_classify(0xFFFFFFFFu));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_LOOPBACK, detws_dns_classify(IPV4(127, 0, 0, 1)));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PRIVATE, detws_dns_classify(IPV4(10, 0, 0, 5)));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PRIVATE, detws_dns_classify(IPV4(172, 16, 0, 1)));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PRIVATE, detws_dns_classify(IPV4(192, 168, 1, 1)));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_LINKLOCAL, detws_dns_classify(IPV4(169, 254, 1, 1)));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_MULTICAST, detws_dns_classify(IPV4(224, 0, 0, 1)));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PUBLIC, detws_dns_classify(IPV4(8, 8, 8, 8)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_UNSPECIFIED, det_dns_resolver_classify(0u));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_BROADCAST, det_dns_resolver_classify(0xFFFFFFFFu));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_LOOPBACK, det_dns_resolver_classify(IPV4(127, 0, 0, 1)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PRIVATE, det_dns_resolver_classify(IPV4(10, 0, 0, 5)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PRIVATE, det_dns_resolver_classify(IPV4(172, 16, 0, 1)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PRIVATE, det_dns_resolver_classify(IPV4(192, 168, 1, 1)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_LINKLOCAL, det_dns_resolver_classify(IPV4(169, 254, 1, 1)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_MULTICAST, det_dns_resolver_classify(IPV4(224, 0, 0, 1)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PUBLIC, det_dns_resolver_classify(IPV4(8, 8, 8, 8)));
     // 172.32.x is OUTSIDE the 172.16/12 private block -> public.
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PUBLIC, detws_dns_classify(IPV4(172, 32, 0, 1)));
+    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DETWS_IP_PUBLIC, det_dns_resolver_classify(IPV4(172, 32, 0, 1)));
 }
 
 void test_verify_rejects_suspicious()
 {
-    TEST_ASSERT_FALSE(detws_dns_verify(IPV4(0, 0, 0, 0)));         // blocked / no answer
-    TEST_ASSERT_FALSE(detws_dns_verify(IPV4(127, 0, 0, 1)));       // rebinding to localhost
-    TEST_ASSERT_FALSE(detws_dns_verify(IPV4(255, 255, 255, 255))); // broadcast
-    TEST_ASSERT_FALSE(detws_dns_verify(IPV4(224, 0, 0, 1)));       // multicast
+    TEST_ASSERT_FALSE(det_dns_resolver_verify(IPV4(0, 0, 0, 0)));         // blocked / no answer
+    TEST_ASSERT_FALSE(det_dns_resolver_verify(IPV4(127, 0, 0, 1)));       // rebinding to localhost
+    TEST_ASSERT_FALSE(det_dns_resolver_verify(IPV4(255, 255, 255, 255))); // broadcast
+    TEST_ASSERT_FALSE(det_dns_resolver_verify(IPV4(224, 0, 0, 1)));       // multicast
 }
 
 void test_verify_accepts_plausible()
 {
-    TEST_ASSERT_TRUE(detws_dns_verify(IPV4(8, 8, 8, 8)));      // public
-    TEST_ASSERT_TRUE(detws_dns_verify(IPV4(192, 168, 1, 50))); // private (LAN host)
-    TEST_ASSERT_TRUE(detws_dns_verify(IPV4(169, 254, 0, 2)));  // link-local
+    TEST_ASSERT_TRUE(det_dns_resolver_verify(IPV4(8, 8, 8, 8)));      // public
+    TEST_ASSERT_TRUE(det_dns_resolver_verify(IPV4(192, 168, 1, 50))); // private (LAN host)
+    TEST_ASSERT_TRUE(det_dns_resolver_verify(IPV4(169, 254, 0, 2)));  // link-local
 }
 
 void test_resolve_is_noop_on_host()
 {
     uint32_t ip = 0xDEADBEEF;
-    TEST_ASSERT_FALSE(detws_dns_resolve("example.com", &ip));
-    TEST_ASSERT_FALSE(detws_dns_resolve_verified("example.com", &ip));
+    TEST_ASSERT_FALSE(det_dns_resolver_resolve("example.com", &ip));
+    TEST_ASSERT_FALSE(det_dns_resolver_resolve_verified("example.com", &ip));
 }
 
 void test_resolve_verified_paths()
 {
     uint32_t ip = 0;
     // resolve fails -> false.
-    detws_dns_test_set_resolve(false, 0);
-    TEST_ASSERT_FALSE(detws_dns_resolve_verified("example.com", &ip));
+    det_dns_resolver_test_set_resolve(false, 0);
+    TEST_ASSERT_FALSE(det_dns_resolver_resolve_verified("example.com", &ip));
     // resolve succeeds but the answer is a loopback (DNS-rebinding) -> verify rejects it.
-    detws_dns_test_set_resolve(true, IPV4(127, 0, 0, 1));
-    TEST_ASSERT_FALSE(detws_dns_resolve_verified("example.com", &ip));
+    det_dns_resolver_test_set_resolve(true, IPV4(127, 0, 0, 1));
+    TEST_ASSERT_FALSE(det_dns_resolver_resolve_verified("example.com", &ip));
     // resolve succeeds and the answer is a plausible public address -> true, out_ip set.
-    detws_dns_test_set_resolve(true, IPV4(8, 8, 8, 8));
-    TEST_ASSERT_TRUE(detws_dns_resolve_verified("example.com", &ip));
+    det_dns_resolver_test_set_resolve(true, IPV4(8, 8, 8, 8));
+    TEST_ASSERT_TRUE(det_dns_resolver_resolve_verified("example.com", &ip));
     TEST_ASSERT_EQUAL_UINT32(IPV4(8, 8, 8, 8), ip);
-    TEST_ASSERT_TRUE(detws_dns_resolve_verified("example.com", nullptr)); // null out_ip ok
-    detws_dns_test_set_resolve(false, 0);                                 // reset the hook
+    TEST_ASSERT_TRUE(det_dns_resolver_resolve_verified("example.com", nullptr)); // null out_ip ok
+    det_dns_resolver_test_set_resolve(false, 0);                                 // reset the hook
 }
 
 int main()

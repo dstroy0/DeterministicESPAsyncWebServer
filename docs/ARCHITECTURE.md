@@ -113,7 +113,7 @@ client-side peer of the server transport. It is a small fixed pool of outbound
 connections with the same rules - every raw `tcp_*()` marshaled to tcpip_thread, a
 per-connection wire ring, and **ack-on-consume** (`det_client_read()` reopens the
 window as the caller drains; `DETWS_CLIENT_RX_BUF >= TCP_WND`), so client and server
-share one flow-control model. TLS clients layer `det_tls_csess_*` on top, pointing
+share one flow-control model. TLS clients layer `det_tls_client_session_*` on top, pointing
 the BIO at `det_client_send` / `det_client_read` (the ring carries ciphertext).
 
 The `s_rx` ring inside `mqtt.cpp` / `ws_client.cpp` is a separate **plaintext frame

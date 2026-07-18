@@ -14,12 +14,12 @@ and whether it passed verification.
 
 ```cpp
 uint32_t ip = 0;
-bool ok = detws_dns_resolve(host, &ip);   // false on lookup failure
+bool ok = det_dns_resolver_resolve(host, &ip);   // false on lookup failure
 // ...
-detws_dns_verify(ip)                        // false for 0.0.0.0 / loopback / broadcast / multicast
+det_dns_resolver_verify(ip)                        // false for 0.0.0.0 / loopback / broadcast / multicast
 ```
 
-`detws_dns_resolve()` does the lookup; `detws_dns_verify()` is the safety filter you
+`det_dns_resolver_resolve()` does the lookup; `det_dns_resolver_verify()` is the safety filter you
 apply before you connect anywhere with the result.
 
 **Where to resolve.** The lookup is blocking. This demo runs it in the handler for
@@ -78,7 +78,7 @@ void setup()
             return;
         }
         uint32_t ip = 0;
-        bool ok = detws_dns_resolve(host, &ip);
+        bool ok = det_dns_resolver_resolve(host, &ip);
         if (!ok)
         {
             server.send(id, 502, "application/json", "{\"error\":\"resolve failed\"}");
@@ -86,7 +86,7 @@ void setup()
         }
         char b[80];
         snprintf(b, sizeof(b), "{\"ip\":\"%u.%u.%u.%u\",\"verified\":%s}", (ip >> 24) & 0xFF, (ip >> 16) & 0xFF,
-                 (ip >> 8) & 0xFF, ip & 0xFF, detws_dns_verify(ip) ? "true" : "false");
+                 (ip >> 8) & 0xFF, ip & 0xFF, det_dns_resolver_verify(ip) ? "true" : "false");
         server.send(id, 200, "application/json", b);
     });
     server.begin(80);

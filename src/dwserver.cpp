@@ -536,8 +536,8 @@ int32_t DetWebServer::begin(const WebServerConfig *cfg)
             return (int32_t)DetWebServerResult::DETWS_ERR_LISTEN_FAILED;
     }
 #if DETWS_ENABLE_HTTP3
-    // Bind the HTTP/3 QUIC server (UDP on device; on host it is fed via quic_server_ingest). Requests
-    // dispatch through this instance's routes via the trampoline; quic_server_poll() runs in service_once.
+    // Bind the HTTP/3 QUIC server (UDP on device; on host it is fed via det_quic_server_ingest). Requests
+    // dispatch through this instance's routes via the trampoline; det_quic_server_poll() runs in service_once.
     if (_h3_enabled)
     {
         QuicServerConfig h3cfg;
@@ -546,7 +546,7 @@ int32_t DetWebServer::begin(const WebServerConfig *cfg)
         h3cfg.cert_len = _h3_cert_len;
         memcpy(h3cfg.ed25519_seed, _h3_seed, sizeof(h3cfg.ed25519_seed));
         h3cfg.rng = detws_h3_rng;
-        s_inst.h3_running = quic_server_begin(_h3_port, &h3cfg, detws_h3_request_trampoline, this);
+        s_inst.h3_running = det_quic_server_begin(_h3_port, &h3cfg, detws_h3_request_trampoline, this);
     }
 #endif
 #ifdef ARDUINO
@@ -585,7 +585,7 @@ bool DetWebServer::h3_cert(const uint8_t *cert_der, size_t cert_len, const uint8
 static bool h3_resp_sink(uint8_t slot, int code, const char *content_type, const char *body, size_t len)
 {
     TcpConn *c = &conn_pool[slot];
-    return quic_server_respond(c->h3_conn_id, c->h3_stream, code, content_type, (const uint8_t *)body, len);
+    return det_quic_server_respond(c->h3_conn_id, c->h3_stream, code, content_type, (const uint8_t *)body, len);
 }
 
 void DetWebServer::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, const char *method, const char *path,
@@ -653,7 +653,7 @@ void DetWebServer::dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, con
     c->state = ConnState::CONN_ACTIVE;
     c->pcb = nullptr;
 
-    match_and_execute(slot); // -> handler -> send() -> resp_sink -> quic_server_respond()
+    match_and_execute(slot); // -> handler -> send() -> resp_sink -> det_quic_server_respond()
 
     // Release the dispatch slot for the next request (a no-response handler simply leaves the stream open).
     c->h3 = 0;
@@ -1031,7 +1031,7 @@ void DetWebServer::service_once(int worker_id)
     // Drive the QUIC/HTTP-3 server: ingest queued datagrams, run the engines (which dispatch requests
     // through this instance's routes), flush replies. One worker owns it, so requests stay single-threaded.
     if (worker_id == 0 && s_inst.h3_running)
-        quic_server_poll(detws_millis());
+        det_quic_server_poll(detws_millis());
 #endif
 
     for (uint8_t i = 0; i < MAX_CONNS; i++)

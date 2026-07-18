@@ -835,7 +835,7 @@ int det_tls_client_run(const char *host, const uint8_t *req, size_t reqlen, uint
 
 // --- Persistent client session (csess): one long-lived outbound TLS connection
 // (e.g. MQTTS). Handshake once, then read/write application data over the
-// caller's BIO until det_tls_csess_end(). Honors the CA/pin trust config above. ---
+// caller's BIO until det_tls_client_session_end(). Honors the CA/pin trust config above. ---
 // Persistent client session (csess) state, owned by one instance (internal linkage): the
 // long-lived outbound TLS ssl/config + active flag, and (with resumption) the saved session
 // holding the server's ticket. One named owner, unreachable from any other translation unit.
@@ -856,24 +856,24 @@ static TlsCsessCtx s_csess;
 // ticket). Presented on the next begin() for an abbreviated handshake. Lives in
 // the static arena like every other mbedTLS object - no heap growth.
 
-void det_tls_csess_forget_session()
+void det_tls_client_session_forget_session()
 {
     if (s_csess.saved_valid)
         mbedtls_ssl_session_free(&s_csess.saved);
     s_csess.saved_valid = false;
 }
 #else
-void det_tls_csess_forget_session()
+void det_tls_client_session_forget_session()
 {
 }
 #endif
 
-bool det_tls_csess_begin(const char *host, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn)
+bool det_tls_client_session_begin(const char *host, det_tls_bio_send_fn send_fn, det_tls_bio_recv_fn recv_fn)
 {
     if (!send_fn || !recv_fn)
         return false;
     if (s_csess.active)
-        det_tls_csess_end();
+        det_tls_client_session_end();
     client_arena_ensure();
     mbedtls_ssl_init(&s_csess.ssl);
     mbedtls_ssl_config_init(&s_csess.conf);
@@ -896,12 +896,12 @@ bool det_tls_csess_begin(const char *host, det_tls_bio_send_fn send_fn, det_tls_
     return true;
 }
 
-bool det_tls_csess_active()
+bool det_tls_client_session_active()
 {
     return s_csess.active;
 }
 
-int det_tls_csess_handshake()
+int det_tls_client_session_handshake()
 {
     if (!s_csess.active)
         return -1;
@@ -912,7 +912,7 @@ int det_tls_csess_handshake()
             return -1;
 #if DETWS_ENABLE_TLS_RESUMPTION
         // Capture the established session (incl. any new ticket) for next time.
-        det_tls_csess_forget_session();
+        det_tls_client_session_forget_session();
         mbedtls_ssl_session_init(&s_csess.saved);
         s_csess.saved_valid = (mbedtls_ssl_get_session(&s_csess.ssl, &s_csess.saved) == 0);
 #endif
@@ -923,7 +923,7 @@ int det_tls_csess_handshake()
     return -1;
 }
 
-int det_tls_csess_read(uint8_t *buf, size_t len)
+int det_tls_client_session_read(uint8_t *buf, size_t len)
 {
     if (!s_csess.active)
         return -1;
@@ -935,7 +935,7 @@ int det_tls_csess_read(uint8_t *buf, size_t len)
     return -1;    // close_notify / peer close / fatal
 }
 
-int det_tls_csess_write(const uint8_t *data, size_t len)
+int det_tls_client_session_write(const uint8_t *data, size_t len)
 {
     if (!s_csess.active)
         return -1;
@@ -962,7 +962,7 @@ int det_tls_csess_write(const uint8_t *data, size_t len)
     return (int)sent;
 }
 
-void det_tls_csess_end()
+void det_tls_client_session_end()
 {
     if (!s_csess.active)
         return;

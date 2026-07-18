@@ -47,7 +47,7 @@ void setup()
             return;
         }
         uint32_t ip = 0;
-        bool ok = detws_dns_resolve(host, &ip);
+        bool ok = det_dns_resolver_resolve(host, &ip);
         if (!ok)
         {
             server.send(id, 502, "application/json", "{\"error\":\"resolve failed\"}");
@@ -55,7 +55,7 @@ void setup()
         }
         char b[80];
         snprintf(b, sizeof(b), "{\"ip\":\"%u.%u.%u.%u\",\"verified\":%s}", (ip >> 24) & 0xFF, (ip >> 16) & 0xFF,
-                 (ip >> 8) & 0xFF, ip & 0xFF, detws_dns_verify(ip) ? "true" : "false");
+                 (ip >> 8) & 0xFF, ip & 0xFF, det_dns_resolver_verify(ip) ? "true" : "false");
         server.send(id, 200, "application/json", b);
     });
     server.begin(80);

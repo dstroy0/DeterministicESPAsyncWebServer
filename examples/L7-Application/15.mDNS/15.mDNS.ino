@@ -5,7 +5,7 @@
  * @file 15.mDNS.ino
  * @brief Advertise the device over mDNS / DNS-SD (DETWS_ENABLE_MDNS).
  *
- * detws_mdns_begin(hostname, port) makes the device reachable at
+ * det_mdns_begin(hostname, port) makes the device reachable at
  * `<hostname>.local` and advertises an `_http._tcp` service, so clients on the
  * LAN can find it without knowing its IP.
  *
@@ -49,12 +49,12 @@ void setup()
               [](uint8_t id, HttpReq *) { server.send(id, 200, "text/plain", "hello via mDNS"); });
     server.begin(80);
 
-    if (detws_mdns_begin(HOSTNAME, 80))
+    if (det_mdns_begin(HOSTNAME, 80))
     {
         // Bonjour TXT records (shown by DNS-SD browsers) + advertise HTTPS too.
-        detws_mdns_txt("path", "/");
-        detws_mdns_txt("fw", "1.0");
-        detws_mdns_add_service("_https", "_tcp", 443);
+        det_mdns_txt("path", "/");
+        det_mdns_txt("fw", "1.0");
+        det_mdns_add_service("_https", "_tcp", 443);
         Serial.printf("mDNS: http://%s.local/\n", HOSTNAME);
     }
 }

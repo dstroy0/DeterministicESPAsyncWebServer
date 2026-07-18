@@ -38,7 +38,7 @@ bool ci_eq(const char *a, const char *b)
 // byte just past QTYPE/QCLASS). Returns false on a malformed or over-long question.
 bool parse_question(const uint8_t *q, size_t qlen, char *name, size_t name_cap, uint16_t *qtype, size_t *qend)
 {
-    // GCOVR_EXCL_START  the sole caller (dns_server_build_response) already rejects qlen < 12
+    // GCOVR_EXCL_START  the sole caller (det_dns_server_build_response) already rejects qlen < 12
     if (qlen < 12)
         return false;
     // GCOVR_EXCL_STOP
@@ -77,8 +77,8 @@ bool parse_question(const uint8_t *q, size_t qlen, char *name, size_t name_cap, 
 }
 } // namespace
 
-size_t dns_server_build_response(const uint8_t *query, size_t qlen, uint32_t ttl, DnsResolveFn resolve, uint8_t *out,
-                                 size_t out_cap)
+size_t det_dns_server_build_response(const uint8_t *query, size_t qlen, uint32_t ttl, DnsResolveFn resolve,
+                                     uint8_t *out, size_t out_cap)
 {
     if (!query || !out || !resolve || qlen < 12)
         return 0;
@@ -146,7 +146,7 @@ size_t dns_server_build_response(const uint8_t *query, size_t qlen, uint32_t ttl
 }
 
 // ---------------------------------------------------------------------------
-// Built-in A-record table (host-testable; used by dns_server_begin()).
+// Built-in A-record table (host-testable; used by det_dns_server_begin()).
 // ---------------------------------------------------------------------------
 
 namespace
@@ -162,7 +162,7 @@ struct DnsSrvCtx
 DnsSrvCtx s_dns;
 } // namespace
 
-bool dns_server_add(const char *name, uint8_t a, uint8_t b, uint8_t c, uint8_t d)
+bool det_dns_server_add(const char *name, uint8_t a, uint8_t b, uint8_t c, uint8_t d)
 {
     if (!name || !name[0])
         return false;
@@ -177,7 +177,7 @@ bool dns_server_add(const char *name, uint8_t a, uint8_t b, uint8_t c, uint8_t d
     return true;
 }
 
-uint32_t dns_server_lookup(const char *name)
+uint32_t det_dns_server_lookup(const char *name)
 {
     if (!name)
         return 0;
@@ -187,7 +187,7 @@ uint32_t dns_server_lookup(const char *name)
     return 0;
 }
 
-void dns_server_clear()
+void det_dns_server_clear()
 {
     s_dns.count = 0;
 }
@@ -198,24 +198,25 @@ void dns_server_clear()
 
 namespace
 {
-void dns_server_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer *peer, void *ctx)
+void det_dns_server_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer *peer, void *ctx)
 {
     (void)ctx;
     uint8_t resp[DETWS_DNS_NAME_MAX + 32]; // header + question + one A answer
-    size_t n = dns_server_build_response(data, len, DETWS_DNS_SERVER_TTL, dns_server_lookup, resp, sizeof(resp));
+    size_t n =
+        det_dns_server_build_response(data, len, DETWS_DNS_SERVER_TTL, det_dns_server_lookup, resp, sizeof(resp));
     if (n)
         det_udp_send(peer, resp, n);
 }
 } // namespace
 
-bool dns_server_begin()
+bool det_dns_server_begin()
 {
-    return det_udp_listen(53, dns_server_udp_handler, nullptr);
+    return det_udp_listen(53, det_dns_server_udp_handler, nullptr);
 }
 
 #else // host build: no lwIP. The codec + table above are host-tested; begin is a stub.
 
-bool dns_server_begin()
+bool det_dns_server_begin()
 {
     return false;
 }

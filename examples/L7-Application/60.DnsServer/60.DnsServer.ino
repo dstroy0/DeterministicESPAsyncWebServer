@@ -42,11 +42,11 @@ void setup()
     WiFi.setSleep(false);
 
     // The name -> IPv4 records this server will answer. Edit these for your network.
-    dns_server_add("esp32.lan", ip[0], ip[1], ip[2], ip[3]); // this board, by name
-    dns_server_add("printer.lan", 192, 168, 1, 50);
-    dns_server_add("nas.lan", 192, 168, 1, 60);
+    det_dns_server_add("esp32.lan", ip[0], ip[1], ip[2], ip[3]); // this board, by name
+    det_dns_server_add("printer.lan", 192, 168, 1, 50);
+    det_dns_server_add("nas.lan", 192, 168, 1, 60);
 
-    if (dns_server_begin())
+    if (det_dns_server_begin())
         Serial.println("DNS server on UDP/53 (point a device's DNS here, then: nslookup printer.lan <this-ip>)");
     else
         Serial.println("DNS server failed to bind :53");

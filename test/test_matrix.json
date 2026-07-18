@@ -2532,7 +2532,7 @@
       "tests": ["test_h3_e2e"]
     },
     "native_quic_server": {
-      "desc": "HTTP/3 server glue (network_drivers/presentation/http3/quic_server): the UDP-facing pool\nthat routes datagrams by Destination Connection ID to a pool of QuicConn + H3Conn engines. A QUIC\nclient in the test injects datagrams through the host ingest seam and captures the server's replies\nthrough the output sink, driving a full handshake + HTTP/3 GET and verifying the 200 + body - the\nsame end-to-end flow as test_h3_e2e but through quic_server_begin / poll / respond, exercising the\nconnection-ID routing, the ingest ring, and new-connection creation from a client Initial.",
+      "desc": "HTTP/3 server glue (network_drivers/presentation/http3/quic_server): the UDP-facing pool\nthat routes datagrams by Destination Connection ID to a pool of QuicConn + H3Conn engines. A QUIC\nclient in the test injects datagrams through the host ingest seam and captures the server's replies\nthrough the output sink, driving a full handshake + HTTP/3 GET and verifying the 200 + body - the\nsame end-to-end flow as test_h3_e2e but through det_quic_server_begin / poll / respond, exercising the\nconnection-ID routing, the ingest ring, and new-connection creation from a client Initial.",
       "flags": ["-DDETWS_ENABLE_HTTP3=1"],
       "src": [
         "+<network_drivers/presentation/http3/quic_server.cpp>",
@@ -2560,7 +2560,7 @@
       "tests": ["test_quic_server"]
     },
     "native_h3_server": {
-      "desc": "HTTP/3 dispatch bridge end-to-end through DetWebServer (the full Layer-7 app built with\nDETWS_ENABLE_HTTP3=1): a QUIC client completes the handshake and sends an HTTP/3 GET, quic_server\nroutes it to the reserved dispatch slot, match_and_execute runs the registered route, and the\nhandler's send() is routed back onto the request stream via quic_server_respond. Verifies the whole\nwire: a real route handler answers an HTTP/3 request. Reuses the native_app full-app base.",
+      "desc": "HTTP/3 dispatch bridge end-to-end through DetWebServer (the full Layer-7 app built with\nDETWS_ENABLE_HTTP3=1): a QUIC client completes the handshake and sends an HTTP/3 GET, quic_server\nroutes it to the reserved dispatch slot, match_and_execute runs the registered route, and the\nhandler's send() is routed back onto the request stream via det_quic_server_respond. Verifies the whole\nwire: a real route handler answers an HTTP/3 request. Reuses the native_app full-app base.",
       "base": "env:native_app",
       "flags": ["-DDETWS_ENABLE_HTTP3=1"],
       "src": [

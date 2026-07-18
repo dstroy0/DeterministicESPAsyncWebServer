@@ -732,7 +732,7 @@ class DetWebServer
     /**
      * @brief Internal: run a completed HTTP/3 request through the shared route dispatcher on the
      * reserved conn-pool slot (called by the quic_server request trampoline, not by app code). The
-     * response routes back to @p stream_id on @p conn_id via send() -> quic_server_respond.
+     * response routes back to @p stream_id on @p conn_id via send() -> det_quic_server_respond.
      */
     void dispatch_h3_request(uint32_t conn_id, uint64_t stream_id, const char *method, const char *path,
                              const char *authority, const uint8_t *body, size_t body_len);

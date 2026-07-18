@@ -9,13 +9,13 @@
  * HTTP/3 UDP port through the transport layer (det_udp), routes each inbound datagram to the right
  * connection by its Destination Connection ID (a new client Initial opens a pool slot), drives the
  * handshake + streams, and pulls the outbound datagrams back onto the wire. A completed HTTP/3
- * request is surfaced through a single callback; the application answers with quic_server_respond().
+ * request is surfaced through a single callback; the application answers with det_quic_server_respond().
  *
  * Threading (ESP32): det_udp delivers datagrams on the lwIP thread, but requests must be dispatched
  * on the server's worker/main loop, so the UDP handler only copies each datagram into a lock-free
- * ingest ring; quic_server_poll() (called from the loop) drains the ring, runs the engines, and
+ * ingest ring; det_quic_server_poll() (called from the loop) drains the ring, runs the engines, and
  * sends replies. The engines therefore only ever run in one context. On host builds there is no UDP;
- * datagrams are injected with quic_server_ingest() and replies captured through an output sink, so
+ * datagrams are injected with det_quic_server_ingest() and replies captured through an output sink, so
  * the whole server is exercised by shuttling byte buffers between it and a test client.
  *
  * The pool (QuicConn + H3Conn per slot + the ingest ring) is large, so like HTTP/2 it is a
@@ -42,7 +42,7 @@
 #define DETWS_QUIC_MAX_CONNS 2 ///< simultaneous HTTP/3 connections (each is a QuicConn + H3Conn, PSRAM-class)
 #endif
 #ifndef DETWS_QUIC_INGEST_RING
-#define DETWS_QUIC_INGEST_RING 8 ///< datagrams buffered from the lwIP thread until quic_server_poll() drains them
+#define DETWS_QUIC_INGEST_RING 8 ///< datagrams buffered from the lwIP thread until det_quic_server_poll() drains them
 #endif
 #ifndef DETWS_HTTP3_PORT
 #define DETWS_HTTP3_PORT 443 ///< default UDP port the HTTP/3 server binds (QUIC)
@@ -57,7 +57,7 @@
 /**
  * @brief A completed HTTP/3 request handed to the application on the poll thread.
  *
- * Reply synchronously with quic_server_respond(@p conn_id, @p stream_id, ...) (typically from inside
+ * Reply synchronously with det_quic_server_respond(@p conn_id, @p stream_id, ...) (typically from inside
  * this call). @p body / @p body_len are valid only during the call.
  */
 typedef void (*QuicServerRequestFn)(void *app, uint32_t conn_id, uint64_t stream_id, const char *method,
@@ -76,9 +76,9 @@ struct QuicServerConfig
  * @brief Start the HTTP/3 server: install @p cfg, bind @p port over UDP, and route datagrams into the
  * connection pool. @p on_request is invoked (on the poll thread) for each completed request.
  * @return false if UDP is unavailable (host build) or the bind fails; the server is still usable on
- * host builds through quic_server_ingest() / the output sink.
+ * host builds through det_quic_server_ingest() / the output sink.
  */
-bool quic_server_begin(uint16_t port, const QuicServerConfig *cfg, QuicServerRequestFn on_request, void *app);
+bool det_quic_server_begin(uint16_t port, const QuicServerConfig *cfg, QuicServerRequestFn on_request, void *app);
 
 /**
  * @brief Drive the server once: drain queued inbound datagrams into their connections, run the
@@ -86,21 +86,21 @@ bool quic_server_begin(uint16_t port, const QuicServerConfig *cfg, QuicServerReq
  * loop iteration. @p now_ms is the caller's monotonic millisecond clock (the module stays
  * platform-agnostic); closed or idle (DETWS_QUIC_IDLE_MS) connections are reaped here.
  */
-void quic_server_poll(uint32_t now_ms);
+void det_quic_server_poll(uint32_t now_ms);
 
 /**
  * @brief Send an HTTP/3 response (HEADERS + DATA, finishing the stream) for @p stream_id on the
  * connection @p conn_id. Call from within the request callback. @return false on a stale conn_id /
  * stream or a serialization overflow.
  */
-bool quic_server_respond(uint32_t conn_id, uint64_t stream_id, int status, const char *content_type,
-                         const uint8_t *body, size_t body_len);
+bool det_quic_server_respond(uint32_t conn_id, uint64_t stream_id, int status, const char *content_type,
+                             const uint8_t *body, size_t body_len);
 
 /** @brief Number of pool slots currently in use (open connections). For diagnostics / tests. */
-uint8_t quic_server_active_conns(void);
+uint8_t det_quic_server_active_conns(void);
 
 /** @brief Stop the server: close the UDP binding and release every pool slot. */
-void quic_server_stop(void);
+void det_quic_server_stop(void);
 
 // ---------------------------------------------------------------------------
 // Host / test seam (no UDP on host builds)
@@ -110,13 +110,13 @@ void quic_server_stop(void);
 typedef void (*QuicServerOutFn)(void *ctx, const uint8_t *datagram, size_t len, const char *ip, uint16_t port);
 
 /** @brief Register the outbound-datagram sink used on host builds. */
-void quic_server_set_out_sink(QuicServerOutFn fn, void *ctx);
+void det_quic_server_set_out_sink_cb(QuicServerOutFn fn, void *ctx);
 
 /**
  * @brief Inject a received datagram from @p ip:@p port (the host-build stand-in for the UDP handler).
- * quic_server_poll() then processes it exactly as a real datagram. @return false if the ring is full.
+ * det_quic_server_poll() then processes it exactly as a real datagram. @return false if the ring is full.
  */
-bool quic_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port);
+bool det_quic_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port);
 #endif
 
 #endif // DETWS_ENABLE_HTTP3

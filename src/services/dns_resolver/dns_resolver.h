@@ -42,7 +42,7 @@ enum class DetwsIpClass : uint8_t
 // ---------------------------------------------------------------------------
 
 /** @brief Classify a host-order IPv4 word (e.g. (10u << 24) | (0u << 16) | (0u << 8) | 1u). */
-DetwsIpClass detws_dns_classify(uint32_t ip);
+DetwsIpClass det_dns_resolver_classify(uint32_t ip);
 
 /**
  * @brief Is @p ip a plausible A-record answer for a remote host?
@@ -50,7 +50,7 @@ DetwsIpClass detws_dns_classify(uint32_t ip);
  * Rejects unspecified / broadcast / loopback / multicast (spoof / rebinding
  * indicators); accepts private / link-local / public. Host order.
  */
-bool detws_dns_verify(uint32_t ip);
+bool det_dns_resolver_verify(uint32_t ip);
 
 // ---------------------------------------------------------------------------
 // Resolve (ESP32; returns false on host)
@@ -62,17 +62,17 @@ bool detws_dns_verify(uint32_t ip);
  * Accepts a dotted-quad directly; otherwise queries DNS with a
  * DETWS_DNS_TIMEOUT_MS deadline. Blocking. @return true on success.
  */
-bool detws_dns_resolve(const char *host, uint32_t *out_ip);
+bool det_dns_resolver_resolve(const char *host, uint32_t *out_ip);
 
 /**
- * @brief Resolve @p host and require the answer to pass detws_dns_verify().
+ * @brief Resolve @p host and require the answer to pass det_dns_resolver_verify().
  * @return true only if it resolved AND the address is a plausible answer.
  */
-bool detws_dns_resolve_verified(const char *host, uint32_t *out_ip);
+bool det_dns_resolver_resolve_verified(const char *host, uint32_t *out_ip);
 
 #if !defined(ARDUINO)
-/** @brief Host test hook: make detws_dns_resolve() return @p ip (host order) when @p ok, else fail. */
-void detws_dns_test_set_resolve(bool ok, uint32_t ip);
+/** @brief Host test hook: make det_dns_resolver_resolve() return @p ip (host order) when @p ok, else fail. */
+void det_dns_resolver_test_set_resolve(bool ok, uint32_t ip);
 #endif
 
 #endif // DETWS_ENABLE_DNS_RESOLVER

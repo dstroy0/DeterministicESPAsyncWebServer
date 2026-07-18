@@ -7446,16 +7446,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 172.32.x is OUTSIDE the 172.16/12 private block -> public.
     * **Assertions**:
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_UNSPECIFIED, detws_dns_classify(0u))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_BROADCAST, detws_dns_classify(0xFFFFFFFFu))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_LOOPBACK, detws_dns_classify(IPV4(127, 0, 0, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PRIVATE, detws_dns_classify(IPV4(10, 0, 0, 5)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PRIVATE, detws_dns_classify(IPV4(172, 16, 0, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PRIVATE, detws_dns_classify(IPV4(192, 168, 1, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_LINKLOCAL, detws_dns_classify(IPV4(169, 254, 1, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_MULTICAST, detws_dns_classify(IPV4(224, 0, 0, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PUBLIC, detws_dns_classify(IPV4(8, 8, 8, 8)))</code>
-      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PUBLIC, detws_dns_classify(IPV4(172, 32, 0, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_UNSPECIFIED, det_dns_resolver_classify(0u))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_BROADCAST, det_dns_resolver_classify(0xFFFFFFFFu))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_LOOPBACK, det_dns_resolver_classify(IPV4(127, 0, 0, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PRIVATE, det_dns_resolver_classify(IPV4(10, 0, 0, 5)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PRIVATE, det_dns_resolver_classify(IPV4(172, 16, 0, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PRIVATE, det_dns_resolver_classify(IPV4(192, 168, 1, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_LINKLOCAL, det_dns_resolver_classify(IPV4(169, 254, 1, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_MULTICAST, det_dns_resolver_classify(IPV4(224, 0, 0, 1)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PUBLIC, det_dns_resolver_classify(IPV4(8, 8, 8, 8)))</code>
+      * <code>Assert equal int (DetwsIpClass::DETWS_IP_PUBLIC, det_dns_resolver_classify(IPV4(172, 32, 0, 1)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7463,10 +7463,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Verify rejects suspicious
     * **Assertions**:
-      * <code>Assert false (detws_dns_verify(IPV4(0, 0, 0, 0)))</code>
-      * <code>Assert false (detws_dns_verify(IPV4(127, 0, 0, 1)))</code>
-      * <code>Assert false (detws_dns_verify(IPV4(255, 255, 255, 255)))</code>
-      * <code>Assert false (detws_dns_verify(IPV4(224, 0, 0, 1)))</code>
+      * <code>Assert false (det_dns_resolver_verify(IPV4(0, 0, 0, 0)))</code>
+      * <code>Assert false (det_dns_resolver_verify(IPV4(127, 0, 0, 1)))</code>
+      * <code>Assert false (det_dns_resolver_verify(IPV4(255, 255, 255, 255)))</code>
+      * <code>Assert false (det_dns_resolver_verify(IPV4(224, 0, 0, 1)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7474,9 +7474,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Verify accepts plausible
     * **Assertions**:
-      * <code>Assert true (detws_dns_verify(IPV4(8, 8, 8, 8)))</code>
-      * <code>Assert true (detws_dns_verify(IPV4(192, 168, 1, 50))); // private (LAN host)</code>
-      * <code>Assert true (detws_dns_verify(IPV4(169, 254, 0, 2)))</code>
+      * <code>Assert true (det_dns_resolver_verify(IPV4(8, 8, 8, 8)))</code>
+      * <code>Assert true (det_dns_resolver_verify(IPV4(192, 168, 1, 50))); // private (LAN host)</code>
+      * <code>Assert true (det_dns_resolver_verify(IPV4(169, 254, 0, 2)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7484,8 +7484,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Resolve is noop on host
     * **Assertions**:
-      * <code>Assert false (detws_dns_resolve("example.com", &ip))</code>
-      * <code>Assert false (detws_dns_resolve_verified("example.com", &ip))</code>
+      * <code>Assert false (det_dns_resolver_resolve("example.com", &ip))</code>
+      * <code>Assert false (det_dns_resolver_resolve_verified("example.com", &ip))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7493,11 +7493,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: resolve fails -> false.
     * **Assertions**:
-      * <code>Assert false (detws_dns_resolve_verified("example.com", &ip))</code>
-      * <code>Assert false (detws_dns_resolve_verified("example.com", &ip))</code>
-      * <code>Assert true (detws_dns_resolve_verified("example.com", &ip))</code>
+      * <code>Assert false (det_dns_resolver_resolve_verified("example.com", &ip))</code>
+      * <code>Assert false (det_dns_resolver_resolve_verified("example.com", &ip))</code>
+      * <code>Assert true (det_dns_resolver_resolve_verified("example.com", &ip))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(IPV4(8, 8, 8, 8), ip);</code>
-      * <code>Assert true (detws_dns_resolve_verified("example.com", nullptr))</code>
+      * <code>Assert true (det_dns_resolver_resolve_verified("example.com", nullptr))</code>
   </details>
 
 </details>
@@ -7566,11 +7566,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A compression pointer inside the question is illegal.
     * **Assertions**:
-      * <code>Assert equal uint (0, dns_server_build_response(q, 11, 60, resolve_foo, out, sizeof(out)))</code>
-      * <code>Assert equal uint (0, dns_server_build_response(nullptr, qlen, 60, resolve_foo, out, sizeof(out)))</code>
-      * <code>Assert equal uint (0, dns_server_build_response(q, qlen, 60, nullptr, out, sizeof(out)))</code>
-      * <code>Assert equal uint (0, dns_server_build_response(bad, sizeof(bad), 60, resolve_foo, out, sizeof(out)))</code>
-      * <code>Assert equal uint (0, dns_server_build_response(q, qlen, 60, resolve_foo, out, qlen + 8))</code>
+      * <code>Assert equal uint (0, det_dns_server_build_response(q, 11, 60, resolve_foo, out, sizeof(out)))</code>
+      * <code>Assert equal uint (0, det_dns_server_build_response(nullptr, qlen, 60, resolve_foo, out, sizeof(out)))</code>
+      * <code>Assert equal uint (0, det_dns_server_build_response(q, qlen, 60, nullptr, out, sizeof(out)))</code>
+      * <code>Assert equal uint (0, det_dns_server_build_response(bad, sizeof(bad), 60, resolve_foo, out, sizeof(out)))</code>
+      * <code>Assert equal uint (0, det_dns_server_build_response(q, qlen, 60, resolve_foo, out, qlen + 8))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7578,13 +7578,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Table add lookup case insensitive
     * **Assertions**:
-      * <code>Assert true (dns_server_add("Printer.LAN", 192, 168, 1, 10))</code>
-      * <code>Assert true (dns_server_add("clock.lan", 192, 168, 1, 11))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A8010Au, dns_server_lookup("printer.lan")); // case-insensitive hit</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A8010Au, dns_server_lookup("PRINTER.LAN"));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A8010Bu, dns_server_lookup("clock.lan"));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0u, dns_server_lookup("absent.lan"));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0u, dns_server_lookup("printer.lan"));</code>
+      * <code>Assert true (det_dns_server_add("Printer.LAN", 192, 168, 1, 10))</code>
+      * <code>Assert true (det_dns_server_add("clock.lan", 192, 168, 1, 11))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A8010Au, det_dns_server_lookup("printer.lan")); // case-insensitive hit</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A8010Au, det_dns_server_lookup("PRINTER.LAN"));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0xC0A8010Bu, det_dns_server_lookup("clock.lan"));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0u, det_dns_server_lookup("absent.lan"));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0u, det_dns_server_lookup("printer.lan"));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7606,8 +7606,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal uint (12, n)</code>
       * <code>Assert true (out[2] & 0x80)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0x04, out[3] & 0x0F);                                           // NOTIMP</code>
-      * <code>Assert equal uint (0, dns_server_build_response(q, qlen, 60, resolve_foo, out, 8))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0x04, out[3] & 0x0F);                                               // NOTIMP</code>
+      * <code>Assert equal uint (0, det_dns_server_build_response(q, qlen, 60, resolve_foo, out, 8))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7615,9 +7615,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dns truncated questions
     * **Assertions**:
-      * <code>Assert equal uint (0, dns_server_build_response(hdr_only, sizeof(hdr_only), 60, resolve_foo, out, sizeof(out)))</code>
       * <code>TEST_ASSERT_EQUAL_UINT(</code>
-      * <code>Assert equal uint (0, dns_server_build_response(no_qtype, sizeof(no_qtype), 60, resolve_foo, out, sizeof(out)))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7625,8 +7625,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dns oversized name
     * **Assertions**:
-      * <code>Assert equal uint (0, dns_server_build_response(q, qa, 60, resolve_foo, out, sizeof(out)))</code>
-      * <code>Assert equal uint (0, dns_server_build_response(q, qb, 60, resolve_foo, out, sizeof(out)))</code>
+      * <code>Assert equal uint (0, det_dns_server_build_response(q, qa, 60, resolve_foo, out, sizeof(out)))</code>
+      * <code>Assert equal uint (0, det_dns_server_build_response(q, qb, 60, resolve_foo, out, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7634,7 +7634,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dns question exceeds out cap
     * **Assertions**:
-      * <code>Assert equal uint (0, dns_server_build_response(q, qlen, 60, resolve_foo, out, 20))</code>
+      * <code>Assert equal uint (0, det_dns_server_build_response(q, qlen, 60, resolve_foo, out, 20))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7642,12 +7642,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dns add and lookup guards
     * **Assertions**:
-      * <code>Assert false (dns_server_add(nullptr, 1, 2, 3, 4))</code>
-      * <code>Assert false (dns_server_add("", 1, 2, 3, 4))</code>
-      * <code>Assert false (dns_server_add(toolong, 1, 2, 3, 4))</code>
-      * <code>Assert true (dns_server_add(nm, 10, 0, 0, (uint8_t)i))</code>
-      * <code>Assert false (dns_server_add("overflow.lan", 10, 0, 0, 99))</code>
-      * <code>TEST_ASSERT_EQUAL_HEX32(0u, dns_server_lookup(nullptr));</code>
+      * <code>Assert false (det_dns_server_add(nullptr, 1, 2, 3, 4))</code>
+      * <code>Assert false (det_dns_server_add("", 1, 2, 3, 4))</code>
+      * <code>Assert false (det_dns_server_add(toolong, 1, 2, 3, 4))</code>
+      * <code>Assert true (det_dns_server_add(nm, 10, 0, 0, (uint8_t)i))</code>
+      * <code>Assert false (det_dns_server_add("overflow.lan", 10, 0, 0, 99))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX32(0u, det_dns_server_lookup(nullptr));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7655,7 +7655,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dns begin host stub
     * **Assertions**:
-      * <code>Assert false (dns_server_begin())</code>
+      * <code>Assert false (det_dns_server_begin())</code>
   </details>
 
 </details>
@@ -11323,12 +11323,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert true (server.h3_cert(CERT, sizeof(CERT), SERVER_SEED, 443))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(DetWebServerResult::DETWS_OK, server.begin());</code>
-      * <code>Assert true (quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
+      * <code>Assert true (det_quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
       * <code>Assert greater than (0, g_out_n)</code>
       * <code>Assert true (quic_parse_long_header(g_out[0], g_out_len[0], &sh_hdr))</code>
       * <code>Assert true (server_pub_from_sh(sh, shl, server_pub))</code>
-      * <code>Assert true (quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000))</code>
-      * <code>Assert true (quic_server_ingest(s1, s1l, "192.0.2.10", 40000))</code>
+      * <code>Assert true (det_quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000))</code>
+      * <code>Assert true (det_quic_server_ingest(s1, s1l, "192.0.2.10", 40000))</code>
       * <code>Assert true (g_handler_ran)</code>
       * <code>Assert true (response_ok(&ap_s))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, conn_pool[DETWS_H3_DISPATCH_SLOT].h3); // dispatch slot released</code>
@@ -15884,8 +15884,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Refresh interval
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(60000, detws_mdns_refresh_interval(120)); // 120s TTL -&gt; refresh at 60s</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(0, detws_mdns_refresh_interval(0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(60000, det_mdns_refresh_interval(120)); // 120s TTL -&gt; refresh at 60s</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(0, det_mdns_refresh_interval(0));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15893,15 +15893,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Crowded: double each window, capped at ceiling.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(120000, detws_mdns_beacon_adapt(&b, 8));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(240000, detws_mdns_beacon_adapt(&b, 8));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(480000, detws_mdns_beacon_adapt(&b, 8));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(480000, detws_mdns_beacon_adapt(&b, 8)); // clamped at ceiling</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(480000, detws_mdns_beacon_adapt(&b, 3));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(240000, detws_mdns_beacon_adapt(&b, 0));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(120000, detws_mdns_beacon_adapt(&b, 0));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(60000, detws_mdns_beacon_adapt(&b, 0));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(60000, detws_mdns_beacon_adapt(&b, 0)); // clamped at base</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(120000, det_mdns_beacon_adapt(&b, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(240000, det_mdns_beacon_adapt(&b, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(480000, det_mdns_beacon_adapt(&b, 8));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(480000, det_mdns_beacon_adapt(&b, 8)); // clamped at ceiling</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(480000, det_mdns_beacon_adapt(&b, 3));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(240000, det_mdns_beacon_adapt(&b, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(120000, det_mdns_beacon_adapt(&b, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(60000, det_mdns_beacon_adapt(&b, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(60000, det_mdns_beacon_adapt(&b, 0)); // clamped at base</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15909,10 +15909,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Wrap-safe: last just below the uint32 rollover, now just after.
     * **Assertions**:
-      * <code>Assert false (detws_mdns_beacon_due(&b, 1000, 1000 + 59999))</code>
-      * <code>Assert true (detws_mdns_beacon_due(&b, 1000, 1000 + 60000))</code>
-      * <code>Assert true (detws_mdns_beacon_due(&b, 1000, 1000 + 120000))</code>
-      * <code>Assert true (detws_mdns_beacon_due(&b, 0xFFFFFF00u, 0xFFFFFF00u + 60000))</code>
+      * <code>Assert false (det_mdns_beacon_due(&b, 1000, 1000 + 59999))</code>
+      * <code>Assert true (det_mdns_beacon_due(&b, 1000, 1000 + 60000))</code>
+      * <code>Assert true (det_mdns_beacon_due(&b, 1000, 1000 + 120000))</code>
+      * <code>Assert true (det_mdns_beacon_due(&b, 0xFFFFFF00u, 0xFFFFFF00u + 60000))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15920,9 +15920,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 10s since last announce; a 40s sleep would leave us at 50s < 60s -> not due yet.
     * **Assertions**:
-      * <code>Assert false (detws_mdns_beacon_presleep_due(&b, 0, 10000, 40000))</code>
-      * <code>Assert true (detws_mdns_beacon_presleep_due(&b, 0, 10000, 60000))</code>
-      * <code>Assert true (detws_mdns_beacon_presleep_due(&b, 0, 0xFFFFFFF0u, 0xFFFFFFF0u))</code>
+      * <code>Assert false (det_mdns_beacon_presleep_due(&b, 0, 10000, 40000))</code>
+      * <code>Assert true (det_mdns_beacon_presleep_due(&b, 0, 10000, 60000))</code>
+      * <code>Assert true (det_mdns_beacon_presleep_due(&b, 0, 0xFFFFFFF0u, 0xFFFFFFF0u))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -15930,7 +15930,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Refresh interval and beacon
     * **Assertions**:
-      * <code>Assert false (detws_mdns_beacon_due(&b, 1000, 1000))</code>
+      * <code>Assert false (det_mdns_beacon_due(&b, 1000, 1000))</code>
   </details>
 
 </details>
@@ -23951,16 +23951,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Start the server: it owns the QuicConn + H3Conn pool and routes by connection ID.
     * **Assertions**:
-      * <code>Assert true (quic_server_begin(443, &scfg, app_request, nullptr))</code>
-      * <code>Assert true (quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, quic_server_active_conns());</code>
+      * <code>Assert true (det_quic_server_begin(443, &scfg, app_request, nullptr))</code>
+      * <code>Assert true (det_quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, det_quic_server_active_conns());</code>
       * <code>Assert greater than (0, g_out_n); // the coalesced Initial(SH) + Handshake(EE..Finished)</code>
-      * <code>Assert true (quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000))</code>
-      * <code>Assert true (quic_server_ingest(s1, s1l, "192.0.2.10", 40000))</code>
+      * <code>Assert true (det_quic_server_ingest(idg, idl + hdl, "192.0.2.10", 40000))</code>
+      * <code>Assert true (det_quic_server_ingest(s1, s1l, "192.0.2.10", 40000))</code>
       * <code>Assert equal string ("GET", g_method)</code>
       * <code>Assert equal string ("/hello", g_path)</code>
       * <code>Assert true (response_ok(&ap_s))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, quic_server_active_conns());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, det_quic_server_active_conns());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23968,10 +23968,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Open a connection with a client Initial (the handshake need not complete to hold a slot).
     * **Assertions**:
-      * <code>Assert true (quic_server_begin(443, &scfg, app_request, nullptr))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, quic_server_active_conns());</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, quic_server_active_conns());</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, quic_server_active_conns());</code>
+      * <code>Assert true (det_quic_server_begin(443, &scfg, app_request, nullptr))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, det_quic_server_active_conns());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, det_quic_server_active_conns());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, det_quic_server_active_conns());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23979,16 +23979,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: begin() rejects a null config and a null RNG.
     * **Assertions**:
-      * <code>Assert false (quic_server_begin(443, nullptr, app_request, nullptr))</code>
-      * <code>Assert false (quic_server_begin(443, &scfg, app_request, nullptr))</code>
-      * <code>Assert true (quic_server_begin(443, &scfg, app_request, nullptr))</code>
-      * <code>Assert false (quic_server_ingest(one, 0, "192.0.2.1", 1))</code>
-      * <code>Assert false (quic_server_ingest(huge, sizeof(huge), "192.0.2.1", 1))</code>
-      * <code>Assert false (quic_server_respond(999999, 0, 200, "text/plain", nullptr, 0))</code>
-      * <code>Assert true (quic_server_ingest(bad_long, 1, "192.0.2.1", 1))</code>
-      * <code>Assert true (quic_server_ingest(short_tiny, 2, "192.0.2.1", 1))</code>
-      * <code>Assert true (quic_server_ingest(short_unknown, sizeof(short_unknown), "192.0.2.1", 1))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, quic_server_active_conns());</code>
+      * <code>Assert false (det_quic_server_begin(443, nullptr, app_request, nullptr))</code>
+      * <code>Assert false (det_quic_server_begin(443, &scfg, app_request, nullptr))</code>
+      * <code>Assert true (det_quic_server_begin(443, &scfg, app_request, nullptr))</code>
+      * <code>Assert false (det_quic_server_ingest(one, 0, "192.0.2.1", 1))</code>
+      * <code>Assert false (det_quic_server_ingest(huge, sizeof(huge), "192.0.2.1", 1))</code>
+      * <code>Assert false (det_quic_server_respond(999999, 0, 200, "text/plain", nullptr, 0))</code>
+      * <code>Assert true (det_quic_server_ingest(bad_long, 1, "192.0.2.1", 1))</code>
+      * <code>Assert true (det_quic_server_ingest(short_tiny, 2, "192.0.2.1", 1))</code>
+      * <code>Assert true (det_quic_server_ingest(short_unknown, sizeof(short_unknown), "192.0.2.1", 1))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, det_quic_server_active_conns());</code>
       * <code>Assert equal int (DETWS_QUIC_INGEST_RING - 1, pushed)</code>
   </details>
 
@@ -23997,9 +23997,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: One more distinct-DCID Initial than the pool holds: the extra alloc_slot()/open_conn() fails.
     * **Assertions**:
-      * <code>Assert true (quic_server_begin(443, &scfg, app_request, nullptr))</code>
-      * <code>Assert true (quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_QUIC_MAX_CONNS, quic_server_active_conns()); // capped at the pool size</code>
+      * <code>Assert true (det_quic_server_begin(443, &scfg, app_request, nullptr))</code>
+      * <code>Assert true (det_quic_server_ingest(dg, dl, "192.0.2.10", 40000))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_QUIC_MAX_CONNS, det_quic_server_active_conns()); // capped at the pool size</code>
   </details>
 
 </details>

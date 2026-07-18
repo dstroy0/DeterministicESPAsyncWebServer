@@ -396,12 +396,12 @@ preempting queue, so sensing shares the real-time ingest path.
   RSSI-hysteresis channel-agility roaming decision. Pure, host-tested (`native_wifi_sniffer`).
   _Remaining:_ the promiscuous-mode radio callback + a live channel-hop scan loop on hardware (M).
 - [x] DNS resolver + answer verification _(shipped)_ - `DETWS_ENABLE_DNS_RESOLVER`: `services/dns_resolver` resolves a hostname to IPv4 (lwIP dns_gethostbyname marshalled to tcpip_thread, dotted-quad fast path) and verifies the answer - rejecting 0.0.0.0 / broadcast / loopback / multicast as spoof / DNS-rebinding indicators; classifier + verifier host-tested, HW-verified against live DNS (example 77.DnsResolver). Remaining (M): captive-portal DNS-spoof mitigation, captive-portal auto-teardown timer.
-- [x] mDNS TXT / `_https._tcp` / extra services _(shipped)_ - `detws_mdns_txt` / `detws_mdns_add_service`.
+- [x] mDNS TXT / `_https._tcp` / extra services _(shipped)_ - `det_mdns_txt` / `det_mdns_add_service`.
 - [~] mDNS adaptive / auto-sleep beacons + a continuous refresher for crowded RF (M) _(scheduler shipped)_ -
-  `DETWS_ENABLE_MDNS_ADAPTIVE` (`services/mdns_adaptive`): `detws_mdns_beacon_adapt` backs the announce
+  `DETWS_ENABLE_MDNS_ADAPTIVE` (`services/mdns_adaptive`): `det_mdns_beacon_adapt` backs the announce
   interval off toward a ceiling under RF contention and recovers it toward the nominal cadence when the
-  air is quiet, `detws_mdns_refresh_interval` gives the TTL/2 continuous-refresher cadence,
-  `detws_mdns_beacon_due` says when an announce is due, and `detws_mdns_beacon_presleep_due` is the
+  air is quiet, `det_mdns_refresh_interval` gives the TTL/2 continuous-refresher cadence,
+  `det_mdns_beacon_due` says when an announce is due, and `det_mdns_beacon_presleep_due` is the
   auto-sleep beacon (announce before a sleep window that would let the record lapse). Wrap-safe time math,
   pure, host-tested (`native_mdns_adaptive`). _Remaining:_ wiring the schedule to the mDNS transmit + a
   live contention counter from the WiFi driver (M).

@@ -687,21 +687,21 @@ request. The AES-SIV-CMAC-256 AEAD + the TLS-exporter key derivation sit on top 
 ### DNS server (DETWS_ENABLE_DNS_SERVER)
 
 An authoritative DNS server on UDP/53 answers A/IN queries from a fixed table (NXDOMAIN otherwise).
-`dns_server_build_response` is the per-query hot op: it parses the first question, resolves the name via a
+`det_dns_server_build_response` is the per-query hot op: it parses the first question, resolves the name via a
 callback, and appends one compressed A answer (or NXDOMAIN / NOTIMP). Pure (no clock, no socket). Host from
 [`perf/bench_dns.cpp`](../perf/bench_dns.cpp); device from the rig `/bench` op.
 
-| Operation                           | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| ----------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `dns_server_build_response` (hit)   |       26.8 |     971.4 |             420 |           1750 |
-| `dns_server_build_response` (NXDOM) |       25.4 |    1022.1 |               - |              - |
+| Operation                               | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| --------------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `det_dns_server_build_response` (hit)   |       26.8 |     971.4 |             420 |           1750 |
+| `det_dns_server_build_response` (NXDOM) |       25.4 |    1022.1 |               - |              - |
 
 - A **~1.75 us** query on the device (parse the question labels + emit a 16-octet answer). The security
   shape matters more than the speed: DNS is the #1 reflection/amplification vector, and this server closes
   both doors - it is **authoritative-only** (an unconfigured name gets NXDOMAIN, never resolved, so it is
   **not an open resolver**) and an A answer is only **~1.6x** the query (no amplification, vs the 10-50x of a
   real reflector). It also **rejects compression pointers in the question** (`len & 0xC0` -> drop), so the
-  classic compression-pointer parser loop cannot fire. The `dns_server_abuse` attack confirmed
+  classic compression-pointer parser loop cannot fire. The `det_dns_server_abuse` attack confirmed
   `open_resolver=False`, `max_amp=1.64x`, and 14 malformed/pointer/opcode cases handled with the server up.
   HW-verified against the real `dnspython` client (11/11 interop: three A records + AA flag + NXDOMAIN).
 

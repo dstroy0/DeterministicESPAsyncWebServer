@@ -5,7 +5,7 @@
 ## What this example teaches
 
 mDNS (multicast DNS) plus DNS-SD lets a device be found on the LAN by name and by
-service, with no central DNS server. `detws_mdns_begin(hostname, port)` claims
+service, with no central DNS server. `det_mdns_begin(hostname, port)` claims
 `<hostname>.local` and advertises an `_http._tcp` service, so a browser or a
 DNS-SD tool finds the board without anyone knowing its IP.
 
@@ -13,15 +13,15 @@ DNS-SD tool finds the board without anyone knowing its IP.
 
 ```cpp
 server.begin(80);
-if (detws_mdns_begin(HOSTNAME, 80)) {
-    detws_mdns_txt("path", "/");              // TXT records shown by DNS-SD browsers
-    detws_mdns_txt("fw", "1.0");
-    detws_mdns_add_service("_https", "_tcp", 443); // advertise a second service
+if (det_mdns_begin(HOSTNAME, 80)) {
+    det_mdns_txt("path", "/");              // TXT records shown by DNS-SD browsers
+    det_mdns_txt("fw", "1.0");
+    det_mdns_add_service("_https", "_tcp", 443); // advertise a second service
 }
 ```
 
-`detws_mdns_txt()` attaches Bonjour TXT key/value pairs to the primary service,
-and `detws_mdns_add_service()` advertises additional services (here HTTPS on 443).
+`det_mdns_txt()` attaches Bonjour TXT key/value pairs to the primary service,
+and `det_mdns_add_service()` advertises additional services (here HTTPS on 443).
 After flashing you can reach the board at `http://detws-demo.local/` and see it in
 any DNS-SD browser (`dns-sd -B _http._tcp`, Avahi, Bonjour).
 
@@ -79,12 +79,12 @@ void setup()
     server.begin(80);
 
     // Claim <hostname>.local and advertise _http._tcp on port 80.
-    if (detws_mdns_begin(HOSTNAME, 80))
+    if (det_mdns_begin(HOSTNAME, 80))
     {
         // Bonjour TXT records (shown by DNS-SD browsers) + advertise HTTPS too.
-        detws_mdns_txt("path", "/");
-        detws_mdns_txt("fw", "1.0");
-        detws_mdns_add_service("_https", "_tcp", 443);
+        det_mdns_txt("path", "/");
+        det_mdns_txt("fw", "1.0");
+        det_mdns_add_service("_https", "_tcp", 443);
         Serial.printf("mDNS: http://%s.local/\n", HOSTNAME);
     }
 }

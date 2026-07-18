@@ -33,17 +33,17 @@
  * @return true if the responder started; false if disabled at compile time,
  *         not on Arduino, or the mdns component failed to start.
  */
-bool detws_mdns_begin(const char *hostname, uint16_t http_port = 80);
+bool det_mdns_begin(const char *hostname, uint16_t http_port = 80);
 
 /**
  * @brief Add a TXT key/value record to the advertised `_http._tcp` service.
  *
  * Bonjour / DNS-SD browsers display these (e.g. `"path"`=`"/"`, `"fw"`=`"1.2.3"`).
- * Call after detws_mdns_begin().
+ * Call after det_mdns_begin().
  *
  * @return true on success; false if mDNS is disabled or not running.
  */
-bool detws_mdns_txt(const char *key, const char *value);
+bool det_mdns_txt(const char *key, const char *value);
 
 /**
  * @brief Advertise an additional service, e.g. `("_https", "_tcp", 443)`.
@@ -53,6 +53,6 @@ bool detws_mdns_txt(const char *key, const char *value);
  * @param port         TCP/UDP port the service listens on.
  * @return true on success; false if mDNS is disabled or not running.
  */
-bool detws_mdns_add_service(const char *service_type, const char *proto, uint16_t port);
+bool det_mdns_add_service(const char *service_type, const char *proto, uint16_t port);
 
 #endif // DETERMINISTICESPASYNCWEBSERVER_MDNS_SERVICE_H

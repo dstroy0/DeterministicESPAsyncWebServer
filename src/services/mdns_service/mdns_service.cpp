@@ -15,7 +15,7 @@
 
 #include "mdns.h"
 
-bool detws_mdns_begin(const char *hostname, uint16_t http_port)
+bool det_mdns_begin(const char *hostname, uint16_t http_port)
 {
     if (!hostname || hostname[0] == '\0')
         return false;
@@ -28,7 +28,7 @@ bool detws_mdns_begin(const char *hostname, uint16_t http_port)
     return true;
 }
 
-bool detws_mdns_txt(const char *key, const char *value)
+bool det_mdns_txt(const char *key, const char *value)
 {
     if (!key || !value)
         return false;
@@ -36,7 +36,7 @@ bool detws_mdns_txt(const char *key, const char *value)
     return mdns_service_txt_item_set("_http", "_tcp", key, value) == ESP_OK;
 }
 
-bool detws_mdns_add_service(const char *service_type, const char *proto, uint16_t port)
+bool det_mdns_add_service(const char *service_type, const char *proto, uint16_t port)
 {
     if (!service_type || !proto)
         return false;
@@ -46,7 +46,7 @@ bool detws_mdns_add_service(const char *service_type, const char *proto, uint16_
 
 #else
 
-bool detws_mdns_begin(const char *hostname, uint16_t http_port)
+bool det_mdns_begin(const char *hostname, uint16_t http_port)
 {
     (void)hostname;
     (void)http_port;

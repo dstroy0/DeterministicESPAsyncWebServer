@@ -13,7 +13,7 @@
 
 #if DETWS_ENABLE_DNS_RESOLVER
 
-DetwsIpClass detws_dns_classify(uint32_t ip)
+DetwsIpClass det_dns_resolver_classify(uint32_t ip)
 {
     if (ip == 0u)
         return DetwsIpClass::DETWS_IP_UNSPECIFIED;
@@ -36,9 +36,9 @@ DetwsIpClass detws_dns_classify(uint32_t ip)
     return DetwsIpClass::DETWS_IP_PUBLIC;
 }
 
-bool detws_dns_verify(uint32_t ip)
+bool det_dns_resolver_verify(uint32_t ip)
 {
-    switch (detws_dns_classify(ip))
+    switch (det_dns_resolver_classify(ip))
     {
     case DetwsIpClass::DETWS_IP_UNSPECIFIED: // 0.0.0.0 - blocked / no answer
     case DetwsIpClass::DETWS_IP_BROADCAST:   // 255.255.255.255 - never a host
@@ -111,7 +111,7 @@ uint32_t to_host_order(const ip_addr_t *a)
 }
 } // namespace
 
-bool detws_dns_resolve(const char *host, uint32_t *out_ip)
+bool det_dns_resolver_resolve(const char *host, uint32_t *out_ip)
 {
     if (!host || !out_ip)
         return false;
@@ -145,7 +145,7 @@ bool detws_dns_resolve(const char *host, uint32_t *out_ip)
 namespace
 {
 // The injected synthetic answer, owned by one instance (internal linkage): a host test sets
-// it via detws_dns_test_set_resolve() and detws_dns_resolve() returns it, grouped so it is one
+// it via det_dns_resolver_test_set_resolve() and det_dns_resolver_resolve() returns it, grouped so it is one
 // named owner rather than loose file-scope mutables.
 struct DnsTestCtx
 {
@@ -155,12 +155,12 @@ struct DnsTestCtx
 DnsTestCtx s_dns_test;
 } // namespace
 
-void detws_dns_test_set_resolve(bool ok, uint32_t ip)
+void det_dns_resolver_test_set_resolve(bool ok, uint32_t ip)
 {
     s_dns_test.ok = ok;
     s_dns_test.ip = ip;
 }
-bool detws_dns_resolve(const char *, uint32_t *out_ip)
+bool det_dns_resolver_resolve(const char *, uint32_t *out_ip)
 {
     if (!s_dns_test.ok)
         return false;
@@ -171,12 +171,12 @@ bool detws_dns_resolve(const char *, uint32_t *out_ip)
 
 #endif // ARDUINO
 
-bool detws_dns_resolve_verified(const char *host, uint32_t *out_ip)
+bool det_dns_resolver_resolve_verified(const char *host, uint32_t *out_ip)
 {
     uint32_t ip = 0;
-    if (!detws_dns_resolve(host, &ip))
+    if (!det_dns_resolver_resolve(host, &ip))
         return false;
-    if (!detws_dns_verify(ip))
+    if (!det_dns_resolver_verify(ip))
         return false;
     if (out_ip)
         *out_ip = ip;

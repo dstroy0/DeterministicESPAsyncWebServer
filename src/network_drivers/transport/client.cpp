@@ -47,7 +47,7 @@ struct DetClientCtx
 };
 static DetClientCtx s_client;
 
-// Hostname resolution is delegated to the shared DNS resolver (detws_dns_resolve,
+// Hostname resolution is delegated to the shared DNS resolver (det_dns_resolver_resolve,
 // services/dns_resolver) so there is one owner of the gethostbyname-marshal +
 // deadline-poll pattern instead of a private copy here.
 
@@ -214,7 +214,7 @@ int det_client_open(const char *host, uint16_t port, uint32_t timeout_ms)
     // Resolve through the shared DNS owner (its own DETWS_DNS_TIMEOUT_MS budget),
     // then give the connect its full timeout_ms.
     uint32_t ip = 0;
-    if (!detws_dns_resolve(host, &ip))
+    if (!det_dns_resolver_resolve(host, &ip))
     {
         c->in_use = false;
         return -2; // DNS failure

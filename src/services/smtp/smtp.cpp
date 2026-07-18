@@ -317,14 +317,14 @@ int tls_bio_recv(void *ctx, unsigned char *buf, size_t len)
 int tls_send(void *ctx, const uint8_t *data, size_t len)
 {
     (void)ctx;
-    return det_tls_csess_write(data, len) == (int)len ? (int)len : -1;
+    return det_tls_client_session_write(data, len) == (int)len ? (int)len : -1;
 }
 int tls_recv(void *ctx, uint8_t *buf, size_t cap)
 {
     SmtpXport *x = (SmtpXport *)ctx;
     while ((int32_t)(x->deadline - millis()) > 0)
     {
-        int n = det_tls_csess_read(buf, cap);
+        int n = det_tls_client_session_read(buf, cap);
         if (n > 0)
             return n;
         if (n < 0 && n != MBEDTLS_ERR_SSL_WANT_READ && n != MBEDTLS_ERR_SSL_WANT_WRITE)
@@ -351,22 +351,22 @@ SmtpResult smtp_send(const SmtpConfig *cfg, const SmtpMessage *msg)
     if (cfg->tls)
     {
 #if DETWS_ENABLE_TLS
-        if (!det_tls_csess_begin(cfg->host, tls_bio_send, tls_bio_recv))
+        if (!det_tls_client_session_begin(cfg->host, tls_bio_send, tls_bio_recv))
         {
             det_client_close(x.cid);
             return SmtpResult::SMTP_ERR_TLS;
         }
         int h;
-        while ((h = det_tls_csess_handshake()) == 0 && (int32_t)(x.deadline - millis()) > 0)
+        while ((h = det_tls_client_session_handshake()) == 0 && (int32_t)(x.deadline - millis()) > 0)
             dwsdelay(5);
         if (h != 1) // 1 = established; 0 = still pending at timeout; <0 = fatal
         {
-            det_tls_csess_end();
+            det_tls_client_session_end();
             det_client_close(x.cid);
             return SmtpResult::SMTP_ERR_TLS;
         }
         rc = smtp_run(cfg, msg, tls_send, tls_recv, &x);
-        det_tls_csess_end();
+        det_tls_client_session_end();
 #else
         det_client_close(x.cid);
         return SmtpResult::SMTP_ERR_TLS; // SMTPS requested but TLS not built in

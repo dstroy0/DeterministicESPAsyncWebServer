@@ -56,7 +56,7 @@ static uint32_t resolve_none(const char *name)
 
 void setUp()
 {
-    dns_server_clear();
+    det_dns_server_clear();
 }
 void tearDown()
 {
@@ -66,7 +66,7 @@ void test_a_record_answer()
 {
     uint8_t q[128], out[256];
     size_t qlen = make_query(q, 0x1234, "foo.lan", 1, true);
-    size_t n = dns_server_build_response(q, qlen, 60, resolve_foo, out, sizeof(out));
+    size_t n = det_dns_server_build_response(q, qlen, 60, resolve_foo, out, sizeof(out));
 
     TEST_ASSERT_EQUAL_UINT(qlen + 16, n);  // header+question copied + 16-byte A answer
     TEST_ASSERT_EQUAL_UINT8(0x12, out[0]); // id preserved
@@ -97,7 +97,7 @@ void test_nxdomain()
 {
     uint8_t q[128], out[256];
     size_t qlen = make_query(q, 1, "unknown.lan", 1, false);
-    size_t n = dns_server_build_response(q, qlen, 60, resolve_none, out, sizeof(out));
+    size_t n = det_dns_server_build_response(q, qlen, 60, resolve_none, out, sizeof(out));
     TEST_ASSERT_EQUAL_UINT(qlen, n);              // no answer appended
     TEST_ASSERT_EQUAL_UINT8(0x00, out[7]);        // ANCOUNT = 0
     TEST_ASSERT_EQUAL_UINT8(0x03, out[3] & 0x0F); // RCODE = 3 (NXDOMAIN)
@@ -107,7 +107,7 @@ void test_non_a_query_no_error()
 {
     uint8_t q[128], out[256];
     size_t qlen = make_query(q, 1, "foo.lan", 28, false); // AAAA
-    size_t n = dns_server_build_response(q, qlen, 60, resolve_foo, out, sizeof(out));
+    size_t n = det_dns_server_build_response(q, qlen, 60, resolve_foo, out, sizeof(out));
     TEST_ASSERT_EQUAL_UINT(qlen, n);
     TEST_ASSERT_EQUAL_UINT8(0x00, out[7]);        // ANCOUNT = 0
     TEST_ASSERT_EQUAL_UINT8(0x00, out[3] & 0x0F); // RCODE 0 (not NXDOMAIN - we just don't serve AAAA)
@@ -127,7 +127,7 @@ void test_multilabel_name_reaches_resolver()
     };
     uint8_t q[128], out[256];
     size_t qlen = make_query(q, 1, "a.b.c.example", 1, false);
-    dns_server_build_response(q, qlen, 60, L::cap, out, sizeof(out));
+    det_dns_server_build_response(q, qlen, 60, L::cap, out, sizeof(out));
     TEST_ASSERT_EQUAL_STRING("a.b.c.example", seen);
 }
 
@@ -135,34 +135,34 @@ void test_malformed_guards()
 {
     uint8_t q[128], out[256];
     size_t qlen = make_query(q, 1, "foo.lan", 1, false);
-    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(q, 11, 60, resolve_foo, out, sizeof(out))); // < header
-    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(nullptr, qlen, 60, resolve_foo, out, sizeof(out)));
-    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(q, qlen, 60, nullptr, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, det_dns_server_build_response(q, 11, 60, resolve_foo, out, sizeof(out))); // < header
+    TEST_ASSERT_EQUAL_UINT(0, det_dns_server_build_response(nullptr, qlen, 60, resolve_foo, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, det_dns_server_build_response(q, qlen, 60, nullptr, out, sizeof(out)));
     // A compression pointer inside the question is illegal.
     uint8_t bad[16] = {0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0xC0, 0x0C, 0, 1};
-    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(bad, sizeof(bad), 60, resolve_foo, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, det_dns_server_build_response(bad, sizeof(bad), 60, resolve_foo, out, sizeof(out)));
     // Output too small for the answer.
-    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(q, qlen, 60, resolve_foo, out, qlen + 8));
+    TEST_ASSERT_EQUAL_UINT(0, det_dns_server_build_response(q, qlen, 60, resolve_foo, out, qlen + 8));
 }
 
 void test_table_add_lookup_case_insensitive()
 {
-    TEST_ASSERT_TRUE(dns_server_add("Printer.LAN", 192, 168, 1, 10));
-    TEST_ASSERT_TRUE(dns_server_add("clock.lan", 192, 168, 1, 11));
-    TEST_ASSERT_EQUAL_HEX32(0xC0A8010Au, dns_server_lookup("printer.lan")); // case-insensitive hit
-    TEST_ASSERT_EQUAL_HEX32(0xC0A8010Au, dns_server_lookup("PRINTER.LAN"));
-    TEST_ASSERT_EQUAL_HEX32(0xC0A8010Bu, dns_server_lookup("clock.lan"));
-    TEST_ASSERT_EQUAL_HEX32(0u, dns_server_lookup("absent.lan"));
-    dns_server_clear();
-    TEST_ASSERT_EQUAL_HEX32(0u, dns_server_lookup("printer.lan"));
+    TEST_ASSERT_TRUE(det_dns_server_add("Printer.LAN", 192, 168, 1, 10));
+    TEST_ASSERT_TRUE(det_dns_server_add("clock.lan", 192, 168, 1, 11));
+    TEST_ASSERT_EQUAL_HEX32(0xC0A8010Au, det_dns_server_lookup("printer.lan")); // case-insensitive hit
+    TEST_ASSERT_EQUAL_HEX32(0xC0A8010Au, det_dns_server_lookup("PRINTER.LAN"));
+    TEST_ASSERT_EQUAL_HEX32(0xC0A8010Bu, det_dns_server_lookup("clock.lan"));
+    TEST_ASSERT_EQUAL_HEX32(0u, det_dns_server_lookup("absent.lan"));
+    det_dns_server_clear();
+    TEST_ASSERT_EQUAL_HEX32(0u, det_dns_server_lookup("printer.lan"));
 }
 
 void test_end_to_end_with_table()
 {
-    dns_server_add("gw.lan", 10, 0, 0, 1);
+    det_dns_server_add("gw.lan", 10, 0, 0, 1);
     uint8_t q[128], out[256];
     size_t qlen = make_query(q, 0xABCD, "gw.lan", 1, false);
-    size_t n = dns_server_build_response(q, qlen, 60, dns_server_lookup, out, sizeof(out));
+    size_t n = det_dns_server_build_response(q, qlen, 60, det_dns_server_lookup, out, sizeof(out));
     TEST_ASSERT_EQUAL_UINT(qlen + 16, n);
     const uint8_t *a = out + qlen;
     TEST_ASSERT_EQUAL_UINT8(10, a[12]);
@@ -197,11 +197,11 @@ void test_dns_opcode_notimp()
     uint8_t q[128], out[256];
     size_t qlen = make_query(q, 0x2222, "foo.lan", 1, false);
     q[2] = (uint8_t)(q[2] | (2u << 3)); // opcode = 2 (STATUS)
-    size_t n = dns_server_build_response(q, qlen, 60, resolve_foo, out, sizeof(out));
+    size_t n = det_dns_server_build_response(q, qlen, 60, resolve_foo, out, sizeof(out));
     TEST_ASSERT_EQUAL_UINT(12, n);
-    TEST_ASSERT_TRUE(out[2] & 0x80);                                                        // QR = 1
-    TEST_ASSERT_EQUAL_UINT8(0x04, out[3] & 0x0F);                                           // NOTIMP
-    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(q, qlen, 60, resolve_foo, out, 8)); // out_cap < 12
+    TEST_ASSERT_TRUE(out[2] & 0x80);                                                            // QR = 1
+    TEST_ASSERT_EQUAL_UINT8(0x04, out[3] & 0x0F);                                               // NOTIMP
+    TEST_ASSERT_EQUAL_UINT(0, det_dns_server_build_response(q, qlen, 60, resolve_foo, out, 8)); // out_cap < 12
 }
 
 // Truncated questions are rejected: a header with no question, a label running past the datagram,
@@ -210,12 +210,14 @@ void test_dns_truncated_questions()
 {
     uint8_t out[64];
     uint8_t hdr_only[12] = {0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0};
-    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(hdr_only, sizeof(hdr_only), 60, resolve_foo, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(
+        0, det_dns_server_build_response(hdr_only, sizeof(hdr_only), 60, resolve_foo, out, sizeof(out)));
     uint8_t label_past[15] = {0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0x05, 'a', 'b'}; // label len 5, only 2 bytes
     TEST_ASSERT_EQUAL_UINT(
-        0, dns_server_build_response(label_past, sizeof(label_past), 60, resolve_foo, out, sizeof(out)));
+        0, det_dns_server_build_response(label_past, sizeof(label_past), 60, resolve_foo, out, sizeof(out)));
     uint8_t no_qtype[17] = {0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0x03, 'a', 'b', 'c', 0x00}; // name ok, no QTYPE/QCLASS
-    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(no_qtype, sizeof(no_qtype), 60, resolve_foo, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(
+        0, det_dns_server_build_response(no_qtype, sizeof(no_qtype), 60, resolve_foo, out, sizeof(out)));
 }
 
 // A name that overflows the reassembly buffer is rejected (both the dot-insert and the label-char
@@ -225,10 +227,10 @@ void test_dns_oversized_name()
     uint8_t q[320], out[64];
     const uint8_t dot_overflow[3] = {63, 63, 1}; // 63 + '.' + 63 -> the dot before the 3rd label overflows
     size_t qa = make_query_labels(q, dot_overflow, 3);
-    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(q, qa, 60, resolve_foo, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, det_dns_server_build_response(q, qa, 60, resolve_foo, out, sizeof(out)));
     const uint8_t char_overflow[3] = {63, 62, 2}; // the first char of the 3rd label overflows
     size_t qb = make_query_labels(q, char_overflow, 3);
-    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(q, qb, 60, resolve_foo, out, sizeof(out)));
+    TEST_ASSERT_EQUAL_UINT(0, det_dns_server_build_response(q, qb, 60, resolve_foo, out, sizeof(out)));
 }
 
 // A valid question that does not fit the output buffer (before the answer) is dropped.
@@ -236,33 +238,33 @@ void test_dns_question_exceeds_out_cap()
 {
     uint8_t q[128], out[256];
     size_t qlen = make_query(q, 1, "foo.lan", 1, false); // qend ~ 24
-    TEST_ASSERT_EQUAL_UINT(0, dns_server_build_response(q, qlen, 60, resolve_foo, out, 20));
+    TEST_ASSERT_EQUAL_UINT(0, det_dns_server_build_response(q, qlen, 60, resolve_foo, out, 20));
 }
 
-// dns_server_add rejects an empty/null/over-long name and a full table; lookup(nullptr) is 0.
+// det_dns_server_add rejects an empty/null/over-long name and a full table; lookup(nullptr) is 0.
 void test_dns_add_and_lookup_guards()
 {
-    TEST_ASSERT_FALSE(dns_server_add(nullptr, 1, 2, 3, 4));
-    TEST_ASSERT_FALSE(dns_server_add("", 1, 2, 3, 4));
+    TEST_ASSERT_FALSE(det_dns_server_add(nullptr, 1, 2, 3, 4));
+    TEST_ASSERT_FALSE(det_dns_server_add("", 1, 2, 3, 4));
     char toolong[DETWS_DNS_NAME_MAX + 4];
     memset(toolong, 'a', sizeof(toolong) - 1);
     toolong[sizeof(toolong) - 1] = '\0';
-    TEST_ASSERT_FALSE(dns_server_add(toolong, 1, 2, 3, 4));
+    TEST_ASSERT_FALSE(det_dns_server_add(toolong, 1, 2, 3, 4));
 
     char nm[16];
     for (int i = 0; i < DETWS_DNS_SERVER_MAX_RECORDS; i++)
     {
         snprintf(nm, sizeof(nm), "h%d.lan", i);
-        TEST_ASSERT_TRUE(dns_server_add(nm, 10, 0, 0, (uint8_t)i));
+        TEST_ASSERT_TRUE(det_dns_server_add(nm, 10, 0, 0, (uint8_t)i));
     }
-    TEST_ASSERT_FALSE(dns_server_add("overflow.lan", 10, 0, 0, 99)); // table full
-    TEST_ASSERT_EQUAL_HEX32(0u, dns_server_lookup(nullptr));
+    TEST_ASSERT_FALSE(det_dns_server_add("overflow.lan", 10, 0, 0, 99)); // table full
+    TEST_ASSERT_EQUAL_HEX32(0u, det_dns_server_lookup(nullptr));
 }
 
-// The host build's dns_server_begin() is a stub (no lwIP) and reports failure.
+// The host build's det_dns_server_begin() is a stub (no lwIP) and reports failure.
 void test_dns_begin_host_stub()
 {
-    TEST_ASSERT_FALSE(dns_server_begin());
+    TEST_ASSERT_FALSE(det_dns_server_begin());
 }
 
 int main()

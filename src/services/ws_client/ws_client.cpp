@@ -237,7 +237,7 @@ struct WsClientCtx
     bool use_tls;
 
     // Inbound plaintext ring, fed by a pump in the loop: from det_client_read for
-    // plain ws, from the TLS session (det_tls_csess_read) for wss.
+    // plain ws, from the TLS session (det_tls_client_session_read) for wss.
     uint8_t rx[DETWS_WS_CLIENT_BUF_SIZE];
     volatile size_t rx_head;
     volatile size_t rx_tail;
@@ -327,7 +327,7 @@ static void ws_pump_tls()
         if (freey == 0)
             break;
         size_t want = freey < sizeof(tmp) ? freey : sizeof(tmp);
-        int n = det_tls_csess_read(tmp, want);
+        int n = det_tls_client_session_read(tmp, want);
         if (n <= 0)
         {
             if (n < 0)
@@ -348,7 +348,7 @@ static bool ws_tx(const uint8_t *data, size_t len)
 {
 #if DETWS_ENABLE_WS_CLIENT_TLS
     if (s_wsc.use_tls)
-        return det_tls_csess_write(data, len) == (int)len;
+        return det_tls_client_session_write(data, len) == (int)len;
 #endif
     return ws_tx_plain(data, len);
 }
@@ -368,7 +368,7 @@ static void ws_close_tcp()
 {
 #if DETWS_ENABLE_WS_CLIENT_TLS
     if (s_wsc.use_tls)
-        det_tls_csess_end();
+        det_tls_client_session_end();
 #endif
     if (s_wsc.cid >= 0)
         det_client_close(s_wsc.cid);
@@ -493,14 +493,14 @@ bool ws_client_connect(const char *host, uint16_t port, bool use_tls, const char
 #if DETWS_ENABLE_WS_CLIENT_TLS
     if (s_wsc.use_tls)
     {
-        if (!det_tls_csess_begin(host, ws_tls_send, ws_tls_recv))
+        if (!det_tls_client_session_begin(host, ws_tls_send, ws_tls_recv))
         {
             WSC_DBG("[wsc] csess_begin failed\n");
             ws_close_tcp();
             return false;
         }
         int h;
-        while ((h = det_tls_csess_handshake()) == 0 && !s_wsc.closed && (int32_t)(deadline - millis()) > 0)
+        while ((h = det_tls_client_session_handshake()) == 0 && !s_wsc.closed && (int32_t)(deadline - millis()) > 0)
             dwsdelay(5);
         if (h != 1)
         {
