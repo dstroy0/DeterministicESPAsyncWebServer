@@ -162,13 +162,13 @@ static void tls_data(uint8_t slot)
         if (alpn && strcmp(alpn, "h2") == 0)
         {
             conn_pool[slot].h2 = 1;
-            conn_pool[slot].resp_sink = h2_server_respond; // route responses through the h2 framer
-            h2_server_open(slot);
+            conn_pool[slot].resp_sink = det_h2_server_respond; // route responses through the h2 framer
+            det_h2_server_open(slot);
         }
     }
     if (conn_pool[slot].h2)
     {
-        h2_server_data(slot);
+        det_h2_server_data(slot);
         return;
     }
 #endif

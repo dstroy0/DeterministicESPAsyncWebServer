@@ -2655,7 +2655,7 @@ _Telnet server test: drives a ConnProto::PROTO_TELNET connection through the rea
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the CoAP server core (coap_server_process). Each test encodes a_
+_Unit tests for the CoAP server core (det_coap_server_process). Each test encodes a_
 
 |   # | Test                                       | Status | Description                                                                         |
 | --: | :----------------------------------------- | :----: | :---------------------------------------------------------------------------------- |
@@ -2713,7 +2713,7 @@ _Unit tests for the CoAP server core (coap_server_process). Each test encodes a_
 <details>
 <summary><b>Expand Suite Details</b></summary>
 
-_Unit tests for the CoAP server core (coap_server_process). Each test encodes a_
+_Unit tests for the CoAP server core (det_coap_server_process). Each test encodes a_
 
 |   # | Test                                       | Status | Description                                                                         |
 | --: | :----------------------------------------- | :----: | :---------------------------------------------------------------------------------- |

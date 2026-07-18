@@ -240,7 +240,7 @@ void service_txn(uint8_t slot, const BridgeTarget *t)
         uint16_t pw = 0;
         uint16_t pr = 0;
         const uint8_t *wd = nullptr;
-        if (bridge_txn_parse(frame, need, &pw, &pr, &wd) != need)
+        if (det_iface_bridge_txn_parse(frame, need, &pw, &pr, &wd) != need)
         {
             det_conn_close(slot); // codec disagreed with the header - drop the connection
             return;
@@ -300,13 +300,13 @@ const ProtoHandler s_bridge_handler = {bridge_on_accept, bridge_on_data, bridge_
 
 } // namespace
 
-bool det_bridge_publish(uint8_t listener_id, uint16_t port, BridgeProto proto, const BridgeTarget *target)
+bool det_iface_bridge_publish(uint8_t listener_id, uint16_t port, BridgeProto proto, const BridgeTarget *target)
 {
     if (!target)
         return false;
-    if (!bridge_map(nullptr, port, proto, target)) // store + validate + dedupe in the pure table
+    if (!det_iface_bridge_map(nullptr, port, proto, target)) // store + validate + dedupe in the pure table
         return false;
-    const BridgeRule *rule = bridge_find(port, proto);
+    const BridgeRule *rule = det_iface_bridge_find(port, proto);
     if (!rule)
         return false;
     int idx = -1;
@@ -330,11 +330,11 @@ bool det_bridge_publish(uint8_t listener_id, uint16_t port, BridgeProto proto, c
     return true;
 }
 
-void det_bridge_listener_reset(void)
+void det_iface_bridge_listener_reset(void)
 {
     for (int i = 0; i < DETWS_BRIDGE_MAX_RULES; i++)
         s_ctx.binds[i].active = false;
-    bridge_clear();
+    det_iface_bridge_clear();
 }
 
 #endif // DETWS_ENABLE_IFACE_BRIDGE

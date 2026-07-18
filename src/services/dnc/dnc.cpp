@@ -75,7 +75,7 @@ static const DncEiaPair DNC_EIA_MAP[] = {
 
 static const size_t DNC_EIA_MAP_LEN = sizeof(DNC_EIA_MAP) / sizeof(DNC_EIA_MAP[0]);
 
-uint8_t dnc_iso_to_eia(char c)
+uint8_t det_dnc_iso_to_eia(char c)
 {
     for (size_t i = 0; i < DNC_EIA_MAP_LEN; i++)
         if (DNC_EIA_MAP[i].ascii == c)
@@ -83,7 +83,7 @@ uint8_t dnc_iso_to_eia(char c)
     return 0xFF; // no EIA representation - fail closed
 }
 
-char dnc_eia_to_iso(uint8_t b)
+char det_dnc_eia_to_iso(uint8_t b)
 {
     for (size_t i = 0; i < DNC_EIA_MAP_LEN; i++)
         if (DNC_EIA_MAP[i].eia == b)
@@ -91,7 +91,7 @@ char dnc_eia_to_iso(uint8_t b)
     return 0; // unknown EIA code (e.g. blank / runout)
 }
 
-uint8_t dnc_iso_add_parity(uint8_t ascii7)
+uint8_t det_dnc_iso_add_parity(uint8_t ascii7)
 {
     uint8_t v = ascii7 & 0x7F;
     uint8_t x = v;
@@ -104,12 +104,12 @@ uint8_t dnc_iso_add_parity(uint8_t ascii7)
     return (uint8_t)(v | (p ? 0x80 : 0x00)); // even parity: set bit 7 to make the total even
 }
 
-void dnc_flow_init(DncFlow *f)
+void det_dnc_flow_init(DncFlow *f)
 {
     f->paused = false;
 }
 
-bool dnc_flow_feed(DncFlow *f, uint8_t rx)
+bool det_dnc_flow_feed(DncFlow *f, uint8_t rx)
 {
     if (rx == (uint8_t)DncFlowByte::DNC_XOFF)
     {
@@ -136,19 +136,19 @@ static size_t dnc_put_eob(const DncCfg *cfg, uint8_t *out, size_t cap, size_t n)
     }
     if (cfg->crlf)
     {
-        uint8_t cr = cfg->even_parity ? dnc_iso_add_parity(0x0D) : 0x0D;
+        uint8_t cr = cfg->even_parity ? det_dnc_iso_add_parity(0x0D) : 0x0D;
         if (n >= cap)
             return 0;
         out[n++] = cr;
     }
-    uint8_t lf = cfg->even_parity ? dnc_iso_add_parity(0x0A) : 0x0A;
+    uint8_t lf = cfg->even_parity ? det_dnc_iso_add_parity(0x0A) : 0x0A;
     if (n >= cap)
         return 0;
     out[n++] = lf;
     return n;
 }
 
-size_t dnc_encode_block(const DncCfg *cfg, const char *line, size_t line_len, uint8_t *out, size_t out_cap)
+size_t det_dnc_encode_block(const DncCfg *cfg, const char *line, size_t line_len, uint8_t *out, size_t out_cap)
 {
     size_t n = 0;
     for (size_t i = 0; i < line_len; i++)
@@ -156,7 +156,7 @@ size_t dnc_encode_block(const DncCfg *cfg, const char *line, size_t line_len, ui
         uint8_t b;
         if (cfg->code == DncCode::DNC_CODE_EIA)
         {
-            uint8_t e = dnc_iso_to_eia(line[i]);
+            uint8_t e = det_dnc_iso_to_eia(line[i]);
             if (e == 0xFF)
                 return 0; // non-representable character - fail closed
             b = e;
@@ -165,7 +165,7 @@ size_t dnc_encode_block(const DncCfg *cfg, const char *line, size_t line_len, ui
         {
             b = (uint8_t)line[i] & 0x7F;
             if (cfg->even_parity)
-                b = dnc_iso_add_parity(b);
+                b = det_dnc_iso_add_parity(b);
         }
         if (n >= out_cap)
             return 0;
@@ -174,7 +174,7 @@ size_t dnc_encode_block(const DncCfg *cfg, const char *line, size_t line_len, ui
     return dnc_put_eob(cfg, out, out_cap, n);
 }
 
-size_t dnc_encode_marker(const DncCfg *cfg, uint8_t *out, size_t out_cap)
+size_t det_dnc_encode_marker(const DncCfg *cfg, uint8_t *out, size_t out_cap)
 {
     size_t n = 0;
     if (cfg->code == DncCode::DNC_CODE_EIA)
@@ -185,7 +185,7 @@ size_t dnc_encode_marker(const DncCfg *cfg, uint8_t *out, size_t out_cap)
     }
     else
     {
-        uint8_t pct = cfg->even_parity ? dnc_iso_add_parity(0x25) : 0x25;
+        uint8_t pct = cfg->even_parity ? det_dnc_iso_add_parity(0x25) : 0x25;
         if (n >= out_cap)
             return 0;
         out[n++] = pct;
@@ -193,7 +193,7 @@ size_t dnc_encode_marker(const DncCfg *cfg, uint8_t *out, size_t out_cap)
     return dnc_put_eob(cfg, out, out_cap, n);
 }
 
-size_t dnc_encode_leader(const DncCfg *cfg, uint8_t *out, size_t out_cap)
+size_t det_dnc_encode_leader(const DncCfg *cfg, uint8_t *out, size_t out_cap)
 {
     uint16_t n = cfg->leader_len;
     if ((size_t)n > out_cap)
@@ -203,7 +203,7 @@ size_t dnc_encode_leader(const DncCfg *cfg, uint8_t *out, size_t out_cap)
     return n;
 }
 
-void dnc_decode_init(DncDecoder *d, DncCode code)
+void det_dnc_decode_init(DncDecoder *d, DncCode code)
 {
     d->code = code;
     d->len = 0;
@@ -213,7 +213,7 @@ void dnc_decode_init(DncDecoder *d, DncCode code)
     d->line[0] = 0;
 }
 
-DncEvent dnc_decode_feed(DncDecoder *d, uint8_t wire)
+DncEvent det_dnc_decode_feed(DncDecoder *d, uint8_t wire)
 {
     // The line delivered by the previous call is now consumed; start fresh.
     if (d->line_ready)
@@ -224,7 +224,7 @@ DncEvent dnc_decode_feed(DncDecoder *d, uint8_t wire)
     }
 
     // Note: XON/XOFF are NOT filtered here. Flow control rides the reverse channel
-    // (controller -> sender), handled by dnc_flow_feed; this decodes the forward program
+    // (controller -> sender), handled by det_dnc_flow_feed; this decodes the forward program
     // stream, where 0x13 is the EIA data character '3', not DC3.
     bool is_eob = false;
     bool is_marker = false;
@@ -237,7 +237,7 @@ DncEvent dnc_decode_feed(DncDecoder *d, uint8_t wire)
         else if (wire == (uint8_t)DncEiaCode::DNC_EIA_EOR)
             is_marker = true;
         else
-            ascii = (uint8_t)dnc_eia_to_iso(wire); // 0 for blank/runout/unknown -> ignored
+            ascii = (uint8_t)det_dnc_eia_to_iso(wire); // 0 for blank/runout/unknown -> ignored
     }
     else
     {

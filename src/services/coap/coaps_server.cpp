@@ -12,7 +12,7 @@
 
 #include "network_drivers/presentation/dtls/dtls_conn.h"
 #include "services/clock.h"         // detws_millis() - idle-reap clock (the DTLS PTO uses it internally too)
-#include "services/coap/coaps.h"    // coaps_process()
+#include "services/coap/coaps.h"    // det_coaps_process()
 #include "shared_primitives/ring.h" // DetAtomic (SPSC ingest-ring cursors)
 #include <string.h>
 
@@ -149,7 +149,7 @@ void server_send(const char *ip, uint16_t port, const uint8_t *data, size_t len)
 #endif
 }
 
-// --- ingest ring (SPSC: one producer fills, coaps_server_poll consumes) ------------------------
+// --- ingest ring (SPSC: one producer fills, det_coaps_server_poll consumes) ------------------------
 bool ring_push(const uint8_t *dg, size_t len, const char *ip, uint16_t port)
 {
     if (len == 0 || len > DETWS_COAPS_MAX_DATAGRAM)
@@ -200,7 +200,7 @@ CoapsSlot *slot_by_cid(const uint8_t *cid, size_t avail)
         CoapsSlot *s = &s_cpool.pool[i];
         if (!s->used)
             continue;
-        size_t sl = dtls_conn_local_cid(&s->conn, sc);
+        size_t sl = det_dtls_conn_local_cid(&s->conn, sc);
         if (sl && sl <= avail && memcmp(cid, sc, sl) == 0)
             return s;
     }
@@ -236,7 +236,7 @@ CoapsSlot *open_conn(const char *ip, uint16_t port)
     s->cfg.cookie_key = s_coaps.cookie_key;
     uint8_t paddr[DETWS_COAPS_PEER_SER];
     bool ok = serialize_peer(ip, port, paddr);
-    dtls_conn_init(&s->conn, &s->cfg, ok ? paddr : nullptr, ok ? sizeof paddr : 0);
+    det_dtls_conn_init(&s->conn, &s->cfg, ok ? paddr : nullptr, ok ? sizeof paddr : 0);
     copy_str(s->peer_ip, sizeof s->peer_ip, ip);
     s->peer_port = port;
     return s;
@@ -275,7 +275,7 @@ void coaps_route_datagram(const CoapsIngest *ig, uint32_t now, uint8_t *out, siz
         s->peer_port = ig->port;
     }
     s->last_ms = now;
-    int n = coaps_process(&s->conn, ig->data, ig->len, out, out_cap);
+    int n = det_coaps_process(&s->conn, ig->data, ig->len, out, out_cap);
     if (n > 0)
         server_send(s->peer_ip, s->peer_port, out, (size_t)n);
     else if (n < 0)
@@ -288,9 +288,9 @@ void coaps_service_slot(CoapsSlot *s, uint32_t now, uint8_t *out, size_t out_cap
 {
     if (!s->used)
         return;
-    if (dtls_conn_timeout_ms(&s->conn) == 0) // 0 == due now (-1 == no timer, >0 == still pending)
+    if (det_dtls_conn_timeout_ms(&s->conn) == 0) // 0 == due now (-1 == no timer, >0 == still pending)
     {
-        int n = dtls_conn_on_timeout(&s->conn, out, out_cap);
+        int n = det_dtls_conn_on_timeout(&s->conn, out, out_cap);
         if (n > 0)
             server_send(s->peer_ip, s->peer_port, out, (size_t)n);
         else if (n < 0)
@@ -304,7 +304,7 @@ void coaps_service_slot(CoapsSlot *s, uint32_t now, uint8_t *out, size_t out_cap
 }
 } // namespace
 
-bool coaps_server_begin(uint16_t port, const CoapsServerConfig *cfg)
+bool det_coaps_server_begin(uint16_t port, const CoapsServerConfig *cfg)
 {
     if (!cfg || !cfg->rng || !cfg->cert_der || cfg->cert_len == 0)
         return false;
@@ -322,11 +322,11 @@ bool coaps_server_begin(uint16_t port, const CoapsServerConfig *cfg)
 #if defined(ARDUINO)
     return det_udp_listen(s_coaps.port, udp_ingest_cb, nullptr);
 #else
-    return true; // host: fed through coaps_server_ingest()
+    return true; // host: fed through det_coaps_server_ingest()
 #endif
 }
 
-void coaps_server_poll()
+void det_coaps_server_poll()
 {
     if (!s_coaps.running)
         return;
@@ -344,7 +344,7 @@ void coaps_server_poll()
         coaps_service_slot(&s_cpool.pool[i], now, out, sizeof out);
 }
 
-uint8_t coaps_server_active_conns()
+uint8_t det_coaps_server_active_conns()
 {
     uint8_t n = 0;
     for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
@@ -353,7 +353,7 @@ uint8_t coaps_server_active_conns()
     return n;
 }
 
-void coaps_server_stop()
+void det_coaps_server_stop()
 {
     s_coaps.running = false;
     for (uint8_t i = 0; i < DETWS_COAPS_MAX_CONNS; i++)
@@ -363,13 +363,13 @@ void coaps_server_stop()
 }
 
 #if !defined(ARDUINO)
-void coaps_server_set_out_sink(CoapsServerOutFn fn, void *ctx)
+void det_coaps_server_set_out_sink_cb(CoapsServerOutFn fn, void *ctx)
 {
     s_coaps.out_sink = fn;
     s_coaps.out_ctx = ctx;
 }
 
-bool coaps_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port)
+bool det_coaps_server_ingest(const uint8_t *datagram, size_t len, const char *ip, uint16_t port)
 {
     return ring_push(datagram, len, ip, port);
 }

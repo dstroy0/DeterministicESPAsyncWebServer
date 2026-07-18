@@ -11,15 +11,15 @@ the open Internet you want `coaps://` - CoAP inside a DTLS 1.3 session (RFC 7252
 authenticated.
 
 **The resource table is transport-independent.** You register resources exactly
-once with `coap_server_add_resource()`; the plaintext server (`coap_server_begin_udp`)
+once with `det_coap_server_add_resource()`; the plaintext server (`det_coap_server_begin`)
 and this secure front-end both dispatch against the same table. Here we bind only
 the secure one:
 
 ```cpp
-coap_server_init();
-coap_server_add_resource("/info", CoapMethodMask::COAP_ALLOW_GET, coap_info);
-coap_server_add_resource("/led",  CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_PUT, coap_led);
-coap_server_add_resource("/hello", CoapMethodMask::COAP_ALLOW_GET, coap_hello);
+det_coap_server_reset();
+det_coap_server_add_resource("/info", CoapMethodMask::COAP_ALLOW_GET, coap_info);
+det_coap_server_add_resource("/led",  CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_PUT, coap_led);
+det_coap_server_add_resource("/hello", CoapMethodMask::COAP_ALLOW_GET, coap_hello);
 
 CoapsServerConfig cfg;
 memset(&cfg, 0, sizeof cfg);
@@ -28,18 +28,18 @@ cfg.cert_len = sizeof(COAPS_CERT_DER);
 memcpy(cfg.ed25519_seed, COAPS_ED25519_SEED, 32);
 esp_fill_random(cfg.cookie_key, 32);        // per-boot HelloRetryRequest cookie secret
 cfg.rng = coaps_rng;                        // hardware CSPRNG (esp_fill_random)
-coaps_server_begin(DETWS_COAPS_PORT, &cfg); // UDP 5684
+det_coaps_server_begin(DETWS_COAPS_PORT, &cfg); // UDP 5684
 ```
 
 **One poll drives everything.** `coaps_server` owns a small pool of DTLS
-connections keyed by peer address. `coaps_server_poll()` - called every loop -
+connections keyed by peer address. `det_coaps_server_poll()` - called every loop -
 routes each queued datagram to its connection, runs the handshake (or decrypts a
 CoAP request, answers it, and re-encrypts), fires the DTLS **retransmission timer**
 so a lost handshake flight is re-sent (RFC 9147 §5.8), and reaps idle connections:
 
 ```cpp
 void loop() {
-    coaps_server_poll(); // DTLS handshakes + retransmission + idle reaping
+    det_coaps_server_poll(); // DTLS handshakes + retransmission + idle reaping
     server.handle();     // the TCP server (CoAPs runs off lwIP UDP callbacks + this poll)
 }
 ```

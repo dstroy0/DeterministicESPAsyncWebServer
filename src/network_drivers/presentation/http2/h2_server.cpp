@@ -138,7 +138,7 @@ void cb_data(void *app, uint32_t, const uint8_t *data, size_t len, bool)
 }
 } // namespace
 
-void h2_server_open(uint8_t slot)
+void det_h2_server_open(uint8_t slot)
 {
     H2Callbacks cb;
     memset(&cb, 0, sizeof cb);
@@ -152,7 +152,7 @@ void h2_server_open(uint8_t slot)
     http_parser_reset(&http_pool[slot]);
 }
 
-void h2_server_data(uint8_t slot)
+void det_h2_server_data(uint8_t slot)
 {
     uint8_t buf[512];
     int n;
@@ -166,14 +166,14 @@ void h2_server_data(uint8_t slot)
     }
 }
 
-bool h2_server_respond(uint8_t slot, int code, const char *content_type, const char *body, size_t len)
+bool det_h2_server_respond(uint8_t slot, int code, const char *content_type, const char *body, size_t len)
 {
     bool ok = h2_conn_respond(&s_h2.pool[slot], conn_pool[slot].h2_stream, code, content_type, body, len);
     http_parser_reset(&http_pool[slot]); // ready for the next stream; keep the connection open
     return ok;
 }
 
-void h2_server_close(uint8_t slot)
+void det_h2_server_close(uint8_t slot)
 {
     conn_pool[slot].h2 = 0;
     conn_pool[slot].h2_checked = 0;

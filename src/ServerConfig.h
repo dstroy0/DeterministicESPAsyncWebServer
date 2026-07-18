@@ -2092,7 +2092,7 @@
  * @brief CoAP resource observation - RFC 7641 (requires DETWS_ENABLE_COAP).
  *
  * Default off. When set, a client GET with the Observe option registers as an
- * observer of a resource; the application calls coap_notify(path) to push the
+ * observer of a resource; the application calls det_coap_notify(path) to push the
  * resource's current representation to every observer (a CoAP notification from
  * the server port with an increasing Observe sequence). Observers are dropped on
  * a deregister GET, a client RST, or send failure.
@@ -3103,7 +3103,7 @@
 /**
  * @brief Default leader/trailer runout length for the DNC encoder (DETWS_ENABLE_DNC).
  *
- * The number of NUL runout bytes ::dnc_encode_leader emits before the program (and can emit after
+ * The number of NUL runout bytes ::det_dnc_encode_leader emits before the program (and can emit after
  * it). The reader skips them until the first `%`. Traditional tape leaders were a few inches of
  * blank feed; 32 bytes is a serial-link equivalent. Overridable per call via DncCfg::leader_len.
  */

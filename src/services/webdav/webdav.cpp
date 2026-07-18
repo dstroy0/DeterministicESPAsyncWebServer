@@ -14,7 +14,7 @@
 
 #include <string.h>
 
-WebDavMethod webdav_method(const char *m)
+WebDavMethod det_webdav_method(const char *m)
 {
     if (!m)
         return WebDavMethod::DAV_M_UNSUPPORTED;
@@ -45,7 +45,7 @@ WebDavMethod webdav_method(const char *m)
     return WebDavMethod::DAV_M_UNSUPPORTED;
 }
 
-int webdav_depth(const char *depth_hdr, int dflt)
+int det_webdav_depth(const char *depth_hdr, int dflt)
 {
     if (!depth_hdr || !depth_hdr[0])
         return dflt;
@@ -71,7 +71,7 @@ static bool app(char *buf, size_t cap, size_t *len, const char *s)
     return true;
 }
 
-size_t webdav_xml_escape(char *dst, size_t cap, const char *src)
+size_t det_webdav_xml_escape(char *dst, size_t cap, const char *src)
 {
     size_t o = 0;
     if (cap == 0)
@@ -118,7 +118,7 @@ size_t webdav_xml_escape(char *dst, size_t cap, const char *src)
     return o;
 }
 
-bool webdav_dest_path(const char *destination, char *out, size_t cap)
+bool det_webdav_dest_path(const char *destination, char *out, size_t cap)
 {
     if (!destination || !out || cap == 0)
         return false;
@@ -164,14 +164,14 @@ bool webdav_dest_path(const char *destination, char *out, size_t cap)
     return true;
 }
 
-size_t webdav_ms_begin(char *buf, size_t cap, size_t len)
+size_t det_webdav_ms_begin(char *buf, size_t cap, size_t len)
 {
     app(buf, cap, &len, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<D:multistatus xmlns:D=\"DAV:\">\n");
     return len;
 }
 
-size_t webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, bool is_collection, uint32_t size,
-                       const char *rfc1123_mtime, const char *content_type)
+size_t det_webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, bool is_collection, uint32_t size,
+                           const char *rfc1123_mtime, const char *content_type)
 {
     // Build the whole <response> in a temp first so the append is atomic: a
     // partial element is never left in the document when the buffer fills.
@@ -179,7 +179,7 @@ size_t webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, bool
     size_t t = 0;
     char esc[256];
 
-    webdav_xml_escape(esc, sizeof(esc), href);
+    det_webdav_xml_escape(esc, sizeof(esc), href);
     // The href block is at most 26 + esc(<=255) + 62 == 343 bytes, and adding the collection
     // marker + resourcetype close reaches <=376 - all well within tmp[512], so these three
     // atomic-append guards cannot fire (esc is capped by its own 256-byte buffer above).
@@ -240,7 +240,7 @@ size_t webdav_ms_entry(char *buf, size_t cap, size_t len, const char *href, bool
     return len;
 }
 
-size_t webdav_ms_end(char *buf, size_t cap, size_t len)
+size_t det_webdav_ms_end(char *buf, size_t cap, size_t len)
 {
     app(buf, cap, &len, "</D:multistatus>\n");
     return len;
@@ -252,13 +252,13 @@ static bool name_end_char(char c)
     return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '/' || c == '>';
 }
 
-size_t webdav_proppatch_ms(char *buf, size_t cap, const char *href, const char *body, size_t body_len)
+size_t det_webdav_proppatch_ms(char *buf, size_t cap, const char *href, const char *body, size_t body_len)
 {
     size_t len = 0;
     if (cap)
         buf[0] = '\0'; // always a valid C-string, even if nothing below fits
     char esc[256];
-    webdav_xml_escape(esc, sizeof(esc), href);
+    det_webdav_xml_escape(esc, sizeof(esc), href);
     if (!app(buf, cap, &len,
              "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<D:multistatus xmlns:D=\"DAV:\">\n"
              "  <D:response>\n    <D:href>") ||

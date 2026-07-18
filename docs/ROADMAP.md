@@ -525,8 +525,8 @@ aes256-gcm + aes256-ctr, hmac-sha2-256/512 (+ETM), zlib@openssh.com s2c, passwor
       matching app keys) and **wolfSSL DTLS 1.3 interop** (direct + HelloRetryRequest group renegotiation).
       **HelloRetryRequest** group renegotiation (§5.1, address-bound cookie) and **ACK/timeout retransmission**
       (§5.8, fresh-seq flight re-send on exponential backoff) are shipped, and the **CoAP-over-DTLS front-end**
-      is complete - the `coaps_process` bridge plus `coaps_server`, a per-peer DtlsConn pool binding UDP 5684
-      (`coaps://`), driven by one `coaps_server_poll()` (`native_coaps` / `native_coaps_server`; example
+      is complete - the `det_coaps_process` bridge plus `coaps_server`, a per-peer DtlsConn pool binding UDP 5684
+      (`coaps://`), driven by one `det_coaps_server_poll()` (`native_coaps` / `native_coaps_server`; example
       78.CoapSecure). **Connection IDs** (§9 / RFC 9146) are shipped too - the connection_id extension is
       negotiated in the handshake, every DTLSCiphertext carries the peer's CID, and `coaps_server` routes by
       CID so a session survives a client address change / NAT rebinding (`native_dtls*` + wolfSSL `--cid`

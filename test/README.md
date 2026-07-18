@@ -99,7 +99,7 @@ The native test matrix has **242 environments**, one per feature, generated from
 | `native_coap` | `ETWS_ENABLE_COAP=1`, `ETWS_ENABLE_COAP_BLOCK=1`, `ETWS_COAP_BLOCK_SZX_MAX=2`, `ETWS_COAP_BLOCK1_MAX=128` | `test_coap` | CoAP server (RFC 7252) message codec + resource dispatch. |
 | `native_coap_observe` | `ETWS_ENABLE_COAP=1`, `ETWS_ENABLE_COAP_BLOCK=1`, `ETWS_COAP_BLOCK_SZX_MAX=2`, `ETWS_COAP_BLOCK1_MAX=128`, `ETWS_ENABLE_COAP_OBSERVE=1` | `test_coap` | CoAP with resource observation (RFC 7641) enabled. |
 | `native_coaps` | `ETWS_ENABLE_DTLS=1`, `ETWS_ENABLE_COAP=1` | `test_coaps` | CoAP over DTLS (services/coap/coaps, RFC 7252 sec 9): the bridge that drives a DtlsConn handshake and, once established, unwraps each epoch-3 application record, answers it with coap_server_process(),... |
-| `native_coaps_server` | `ETWS_ENABLE_DTLS=1`, `ETWS_ENABLE_COAP=1` | `test_coaps_server` | CoAP-over-DTLS server front-end (services/coap/coaps_server): the per-peer DtlsConn pool + ingest/poll seam on top of coaps_process(). |
+| `native_coaps_server` | `ETWS_ENABLE_DTLS=1`, `ETWS_ENABLE_COAP=1` | `test_coaps_server` | CoAP-over-DTLS server front-end (services/coap/coaps_server): the per-peer DtlsConn pool + ingest/poll seam on top of det_coaps_process(). |
 | `native_codeql` | `ETWS_ENABLE_CSRF=1`, `ETWS_ENABLE_AUTH_LOCKOUT=1`, `ETWS_ENABLE_IP_ALLOWLIST=1`, `ETWS_ENABLE_WS_DEFLATE=1`, `ETWS_ENABLE_TIME_SOURCE=1`, `ETWS_ENABLE_CONFIG_STORE=1`, `ETWS_ENABLE_DEVICE_ID=1`, `ETWS_ENABLE_TELEMETRY=1`, `ETWS_ENABLE_DASHBOARD=1`, `ETWS_ENABLE_PARTITION_MONITOR=1`, `ETWS_ENABLE_CBOR=1`, `ETWS_ENABLE_MSGPACK=1`, `ETWS_ENABLE_GPIO_MAP=1`, `ETWS_ENABLE_UDP_TELEMETRY=1`, `ETWS_ENABLE_GUARDRAILS=1`, `ETWS_ENABLE_FAILSAFE=1`, `ETWS_ENABLE_SLEEP_SCHED=1`, `ETWS_ENABLE_WEARLEVEL=1`, `ETWS_ENABLE_NETADAPT=1`, `ETWS_ENABLE_DSHOT=1`, `ETWS_ENABLE_HART=1`, `ETWS_ENABLE_NTS=1`, `ETWS_ENABLE_DDS=1`, `ETWS_ENABLE_XMPP=1`, `ETWS_ENABLE_RAWL2=1`, `ETWS_ENABLE_SPA_ROUTER=1`, `ETWS_ENABLE_GOOSE=1`, `ETWS_ENABLE_MTCONNECT=1`, `ETWS_ENABLE_J2735=1`, `ETWS_ENABLE_NEMA_TS2=1`, `ETWS_ENABLE_SNP=1`, `ETWS_ENABLE_DIRECTNET=1`, `ETWS_ENABLE_SEP2=1`, `ETWS_ENABLE_PROFINET=1`, `ETWS_ENABLE_NTCIP=1`, `ETWS_ENABLE_OPENADR=1`, `ETWS_ENABLE_MMS=1`, `ETWS_ENABLE_CCLINK=1`, `ETWS_ENABLE_POWERLINK=1`, `ETWS_ENABLE_SERCOS=1`, `ETWS_ENABLE_PROFIBUS=1`, `ETWS_ENABLE_LONWORKS=1`, `ETWS_ENABLE_MBPLUS=1`, `ETWS_ENABLE_INTERBUS=1`, `ETWS_ENABLE_ICCP=1`, `ETWS_ENABLE_WAVE=1`, `ETWS_ENABLE_UTMC=1`, `ETWS_ENABLE_OCIT=1`, `ETWS_ENABLE_ATC=1`, `ETWS_ENABLE_SOUTHBOUND=1`, `ETWS_ENABLE_EXC_DECODER=1`, `ETWS_ENABLE_HTTP_DELIVERY=1`, `ETWS_ENABLE_HW_HEALTH=1`, `ETWS_ENABLE_MDNS_ADAPTIVE=1`, `ETWS_ENABLE_SOCKPOOL=1`, `ETWS_ENABLE_PSRAM_POOL=1`, `ETWS_ENABLE_HAPPY_EYEBALLS=1`, `ETWS_ENABLE_WIFI_SNIFFER=1`, `ETWS_ENABLE_LINK_MANAGER=1`, `ETWS_ENABLE_CC1101=1`, `ETWS_ENABLE_FDC2214=1`, `ETWS_ENABLE_LDC1614=1`, `ETWS_ENABLE_VL53L0X=1`, `ETWS_ENABLE_RADIO_SNIFF=1`, `ETWS_ENABLE_BLE_GATT=1`, `ETWS_ENABLE_TLS_POLICY=1`, `ETWS_ENABLE_WISUN=1`, `ETWS_ENABLE_LOGBUF=1`, `ETWS_ENABLE_OTA_ROLLBACK=1`, `ETWS_ENABLE_TOTP=1`, `ETWS_ENABLE_WEBHOOK=1`, `ETWS_ENABLE_RADIO_POWER=1`, `ETWS_ENABLE_AUDIT_LOG=1`, `ETWS_ENABLE_OIDC=1`, `ETWS_ENABLE_VFS=1`, `ETWS_ENABLE_GRAPHQL=1`, `ETWS_ENABLE_ESPNOW=1`, `ETWS_ENABLE_OAUTH2=1`, `ETWS_ENABLE_OPCUA=1`, `ETWS_ENABLE_OPCUA_CLIENT=1` | `test_dispatch` | CodeQL coverage env: the full app compiled with every new feature flag ON so CodeQL traces the integration paths (CSRF / lockout / allowlist gates, permessage-deflate) AND the new service modules, whi... |
 | `native_compliance` | default | `test_compliance` | RFC-compliance suite: builds with all enforcement at production defaults (DETWS_ENFORCE_HOST_HEADER=1) and exercises the strict behaviors. |
 | `native_concurrency` | `O1`, `pthread` | `test_concurrency` | Concurrency proof for the cross-thread slot fields (DetAtomic state / rx_head / rx_tail). |
@@ -4027,10 +4027,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Add resource limits
     * **Assertions**:
-      * <code>Assert false (coap_server_add_resource(nullptr, CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
-      * <code>Assert false (coap_server_add_resource("/x", CoapMethodMask::COAP_ALLOW_GET, nullptr))</code>
+      * <code>Assert false (det_coap_server_add_resource(nullptr, CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
+      * <code>Assert false (det_coap_server_add_resource("/x", CoapMethodMask::COAP_ALLOW_GET, nullptr))</code>
       * <code>Assert less than (64, added)</code>
-      * <code>Assert false (coap_server_add_resource("/nope", CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
+      * <code>Assert false (det_coap_server_add_resource("/nope", CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4038,7 +4038,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: CON with TKL=3 but no token bytes present (len == 4): RST with an empty token.
     * **Assertions**:
-      * <code>Assert equal uint (0, coap_server_process(too_short, 3, resp, sizeof(resp)))</code>
+      * <code>Assert equal uint (0, det_coap_server_process(too_short, 3, resp, sizeof(resp)))</code>
       * <code>Assert equal uint (4, n)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)CoapType::COAP_TYPE_RST, (resp[0] &gt;&gt; 4) & 0x03);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, resp[1]);</code>
@@ -4069,9 +4069,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Oversized path and query
     * **Assertions**:
-      * <code>Assert true (coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
+      * <code>Assert true (det_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1])</code>
-      * <code>Assert true (coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
+      * <code>Assert true (det_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1])</code>
   </details>
 
@@ -4080,9 +4080,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Block option too wide
     * **Assertions**:
-      * <code>Assert true (coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
+      * <code>Assert true (det_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1])</code>
-      * <code>Assert true (coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
+      * <code>Assert true (det_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1])</code>
   </details>
 
@@ -4091,7 +4091,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Block1 reserved szx
     * **Assertions**:
-      * <code>Assert true (coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
+      * <code>Assert true (det_coap_server_process(req, e.len, resp, sizeof(resp)) &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, resp[1])</code>
   </details>
 
@@ -4100,7 +4100,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Block1 continue no space
     * **Assertions**:
-      * <code>Assert equal uint (0, coap_server_process(req, e.len, resp, sizeof(resp)))</code>
+      * <code>Assert equal uint (0, det_coap_server_process(req, e.len, resp, sizeof(resp)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4108,7 +4108,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Response payload clamped
     * **Assertions**:
-      * <code>Assert true (coap_server_add_resource("/of", CoapMethodMask::COAP_ALLOW_GET, h_overflow))</code>
+      * <code>Assert true (det_coap_server_add_resource("/of", CoapMethodMask::COAP_ALLOW_GET, h_overflow))</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1])</code>
   </details>
@@ -4118,7 +4118,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Response buffer too small
     * **Assertions**:
-      * <code>Assert equal uint (0, coap_server_process(req, e.len, resp, sizeof(resp)))</code>
+      * <code>Assert equal uint (0, det_coap_server_process(req, e.len, resp, sizeof(resp)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -4126,7 +4126,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Well known core truncates
     * **Assertions**:
-      * <code>Assert true (coap_server_add_resource(g_longpaths[i], CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
+      * <code>Assert true (det_coap_server_add_resource(g_longpaths[i], CoapMethodMask::COAP_ALLOW_GET, h_resource))</code>
       * <code>Assert true (n &gt; 0)</code>
       * <code>Assert equal uint ((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1])</code>
   </details>
@@ -4136,8 +4136,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Observe large seq encoding
     * **Assertions**:
-      * <code>Assert true (coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x0102) &gt; 0)</code>
-      * <code>Assert true (coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x010203) &gt; 0)</code>
+      * <code>Assert true (det_coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x0102) &gt; 0)</code>
+      * <code>Assert true (det_coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x010203) &gt; 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7081,7 +7081,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: odd parity across all 8 tracks (EIA characteristic)
     * **Assertions**:
       * <code>Assert true message ((popcount8(e) & 1) == 1, "EIA code must have odd parity")</code>
-      * <code>Assert equal int (c, (int)(unsigned char)dnc_eia_to_iso(e))</code>
+      * <code>Assert equal int (c, (int)(unsigned char)det_dnc_eia_to_iso(e))</code>
       * <code>TEST_ASSERT_EQUAL_UINT8_MESSAGE(0, seen[e], "two characters collide on one EIA byte");</code>
       * <code>Assert equal int (43, representable)</code>
   </details>
@@ -7091,23 +7091,23 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: no lowercase / no ':' '(' ')' in EIA -> fail closed
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x20, dnc_iso_to_eia('0'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, dnc_iso_to_eia('1'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x07, dnc_iso_to_eia('7'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x61, dnc_iso_to_eia('A'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x73, dnc_iso_to_eia('C')); // even hole count -&gt; parity added</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x26, dnc_iso_to_eia('W')); // numeral 6 + channel 6 (documented)</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x29, dnc_iso_to_eia('Z'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x10, dnc_iso_to_eia(' '));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x6B, dnc_iso_to_eia('.'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x40, dnc_iso_to_eia('-'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x31, dnc_iso_to_eia('/'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x0B, dnc_iso_to_eia('%')); // rewind stop = EIA End-of-Record</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, dnc_iso_to_eia('a'));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, dnc_iso_to_eia('('));</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, dnc_iso_to_eia(':'));</code>
-      * <code>Assert equal int (0, (int)dnc_eia_to_iso(0x00))</code>
-      * <code>Assert equal int (0, (int)dnc_eia_to_iso(0x80))</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x20, det_dnc_iso_to_eia('0'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x01, det_dnc_iso_to_eia('1'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x07, det_dnc_iso_to_eia('7'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x61, det_dnc_iso_to_eia('A'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x73, det_dnc_iso_to_eia('C')); // even hole count -&gt; parity added</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x26, det_dnc_iso_to_eia('W')); // numeral 6 + channel 6 (documented)</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x29, det_dnc_iso_to_eia('Z'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x10, det_dnc_iso_to_eia(' '));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x6B, det_dnc_iso_to_eia('.'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x40, det_dnc_iso_to_eia('-'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x31, det_dnc_iso_to_eia('/'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x0B, det_dnc_iso_to_eia('%')); // rewind stop = EIA End-of-Record</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, det_dnc_iso_to_eia('a'));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, det_dnc_iso_to_eia('('));</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xFF, det_dnc_iso_to_eia(':'));</code>
+      * <code>Assert equal int (0, (int)det_dnc_eia_to_iso(0x00))</code>
+      * <code>Assert equal int (0, (int)det_dnc_eia_to_iso(0x80))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7117,8 +7117,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT8((uint8_t)c, (uint8_t)(p & 0x7F)); // low 7 bits unchanged</code>
       * <code>Assert true message ((popcount8(p) & 1) == 0, "even parity total")</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0x41, dnc_iso_add_parity('A')); // 0x41 has 2 bits -&gt; even -&gt; bit7 clear</code>
-      * <code>TEST_ASSERT_EQUAL_HEX8(0xB1, dnc_iso_add_parity('1')); // 0x31 has 3 bits -&gt; odd -&gt; bit7 set</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0x41, det_dnc_iso_add_parity('A')); // 0x41 has 2 bits -&gt; even -&gt; bit7 clear</code>
+      * <code>TEST_ASSERT_EQUAL_HEX8(0xB1, det_dnc_iso_add_parity('1')); // 0x31 has 3 bits -&gt; odd -&gt; bit7 set</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7149,9 +7149,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Encode block fail closed
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&cfg, "g01", 3, out, sizeof(out)));   // lowercase</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&cfg, "(cmt)", 5, out, sizeof(out))); // '(' not in EIA</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&cfg, "G01", 3, tiny, sizeof(tiny))); // overflow</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_block(&cfg, "g01", 3, out, sizeof(out)));   // lowercase</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_block(&cfg, "(cmt)", 5, out, sizeof(out))); // '(' not in EIA</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_block(&cfg, "G01", 3, tiny, sizeof(tiny))); // overflow</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7173,7 +7173,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(5, n);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, out[i]);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_leader(&cfg, tiny, sizeof(tiny)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_leader(&cfg, tiny, sizeof(tiny)));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7181,13 +7181,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Flow control
     * **Assertions**:
-      * <code>Assert true (dnc_flow_can_send(&f))</code>
-      * <code>Assert true (dnc_flow_feed(&f, (uint8_t)DncFlowByte::DNC_XOFF))</code>
-      * <code>Assert false (dnc_flow_can_send(&f))</code>
-      * <code>Assert false (dnc_flow_feed(&f, 'G'))</code>
-      * <code>Assert false (dnc_flow_can_send(&f))</code>
-      * <code>Assert true (dnc_flow_feed(&f, (uint8_t)DncFlowByte::DNC_XON))</code>
-      * <code>Assert true (dnc_flow_can_send(&f))</code>
+      * <code>Assert true (det_dnc_flow_can_send(&f))</code>
+      * <code>Assert true (det_dnc_flow_feed(&f, (uint8_t)DncFlowByte::DNC_XOFF))</code>
+      * <code>Assert false (det_dnc_flow_can_send(&f))</code>
+      * <code>Assert false (det_dnc_flow_feed(&f, 'G'))</code>
+      * <code>Assert false (det_dnc_flow_can_send(&f))</code>
+      * <code>Assert true (det_dnc_flow_feed(&f, (uint8_t)DncFlowByte::DNC_XON))</code>
+      * <code>Assert true (det_dnc_flow_can_send(&f))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7236,11 +7236,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Encode overflow paths
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&eia, "G01", 3, o, 3)); // chars fill cap, EOB overflows</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&iso, "G", 1, o, 1));   // CR overflows</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_block(&iso, "G", 1, o, 2));   // CR fits, LF overflows</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_marker(&eia, o, 0));          // EIA EOR has no room</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, dnc_encode_marker(&iso, o, 0));          // ISO '%' has no room</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_block(&eia, "G01", 3, o, 3)); // chars fill cap, EOB overflows</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_block(&iso, "G", 1, o, 1));   // CR overflows</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_block(&iso, "G", 1, o, 2));   // CR fits, LF overflows</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_marker(&eia, o, 0));          // EIA EOR has no room</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_dnc_encode_marker(&iso, o, 0));          // ISO '%' has no room</code>
   </details>
 
 </details>
@@ -13559,16 +13559,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Map and find
     * **Assertions**:
-      * <code>Assert true (bridge_map("192.168.1.50", 4001, BridgeProto::tcp, &u))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(1, bridge_count());</code>
+      * <code>Assert true (det_iface_bridge_map("192.168.1.50", 4001, BridgeProto::tcp, &u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(1, det_iface_bridge_count());</code>
       * <code>Assert not null (r)</code>
       * <code>Assert equal (BridgeBus::uart, r-&gt;target.bus)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(4001, r-&gt;listen_port);</code>
       * <code>Assert equal (DetIpFamily::DET_IP_V4, r-&gt;listen_ip.family)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(192, r-&gt;listen_ip.bytes[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(50, r-&gt;listen_ip.bytes[3]);</code>
-      * <code>Assert null (bridge_find(4001, BridgeProto::udp))</code>
-      * <code>Assert null (bridge_find(4002, BridgeProto::tcp))</code>
+      * <code>Assert null (det_iface_bridge_find(4001, BridgeProto::udp))</code>
+      * <code>Assert null (det_iface_bridge_find(4002, BridgeProto::tcp))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13576,13 +13576,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Same port+proto is a duplicate -> rejected.
     * **Assertions**:
-      * <code>Assert true (bridge_map(nullptr, 5000, BridgeProto::tcp, &i))</code>
+      * <code>Assert true (det_iface_bridge_map(nullptr, 5000, BridgeProto::tcp, &i))</code>
       * <code>Assert not null (r)</code>
       * <code>Assert equal (DetIpFamily::DET_IP_NONE, r-&gt;listen_ip.family)</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x40, r-&gt;target.addr_cs);</code>
-      * <code>Assert false (bridge_map("10.0.0.1", 5000, BridgeProto::tcp, &u))</code>
-      * <code>Assert true (bridge_map(nullptr, 5000, BridgeProto::udp, &i))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(2, bridge_count());</code>
+      * <code>Assert false (det_iface_bridge_map("10.0.0.1", 5000, BridgeProto::tcp, &u))</code>
+      * <code>Assert true (det_iface_bridge_map(nullptr, 5000, BridgeProto::udp, &i))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(2, det_iface_bridge_count());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13590,8 +13590,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Bad address rejected
     * **Assertions**:
-      * <code>Assert false (bridge_map("not.an.ip", 6000, BridgeProto::tcp, &u))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, bridge_count());</code>
+      * <code>Assert false (det_iface_bridge_map("not.an.ip", 6000, BridgeProto::tcp, &u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, det_iface_bridge_count());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13599,10 +13599,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Table full
     * **Assertions**:
-      * <code>Assert true (bridge_map(nullptr, (uint16_t)(7000 + p), BridgeProto::tcp, &u))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_BRIDGE_MAX_RULES, bridge_count());</code>
-      * <code>Assert false (bridge_map(nullptr, 9999, BridgeProto::tcp, &u))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(0, bridge_count());</code>
+      * <code>Assert true (det_iface_bridge_map(nullptr, (uint16_t)(7000 + p), BridgeProto::tcp, &u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DETWS_BRIDGE_MAX_RULES, det_iface_bridge_count());</code>
+      * <code>Assert false (det_iface_bridge_map(nullptr, 9999, BridgeProto::tcp, &u))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(0, det_iface_bridge_count());</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -13623,9 +13623,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Partial header (< 4 bytes) -> need more.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, bridge_txn_parse(hdr2, sizeof(hdr2), nullptr, nullptr, nullptr));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, bridge_txn_parse(partial, sizeof(partial), nullptr, nullptr, nullptr));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(DETWS_BRIDGE_TXN_HDR, bridge_txn_parse(readonly, sizeof(readonly), &wl, &rl, &wd));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_iface_bridge_txn_parse(hdr2, sizeof(hdr2), nullptr, nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_iface_bridge_txn_parse(partial, sizeof(partial), nullptr, nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(DETWS_BRIDGE_TXN_HDR,</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0, wl);</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(8, rl);</code>
   </details>
@@ -13635,8 +13635,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Build overflow fails closed
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, bridge_txn_build(small, sizeof(small), wr, 4, 0));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, bridge_txn_parse(nullptr, 10, nullptr, nullptr, nullptr));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_iface_bridge_txn_build(small, sizeof(small), wr, 4, 0));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_iface_bridge_txn_parse(nullptr, 10, nullptr, nullptr, nullptr));</code>
   </details>
 
 </details>
@@ -16701,26 +16701,26 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Oversized will payload overflows the body scratch.
     * **Assertions**:
-      * <code>Assert equal uint (0, mqtt_build_connect(nullptr, sizeof(out), &o))</code>
-      * <code>Assert equal uint (0, mqtt_build_connect(out, sizeof(out), nullptr))</code>
-      * <code>Assert equal uint (0, mqtt_build_connect(out, sizeof(out), &no_id))</code>
-      * <code>Assert equal uint (0, mqtt_build_connect(out, sizeof(out), &wo))</code>
-      * <code>Assert equal uint (0, mqtt_build_connect(out, 2, &o))</code>
-      * <code>Assert equal uint (0, mqtt_build_publish(nullptr, sizeof(out), "t", nullptr, 0, 0, 0, false, false))</code>
-      * <code>Assert equal uint (0, mqtt_build_publish(out, sizeof(out), "t", nullptr, 0, 3, 0, false, false))</code>
-      * <code>Assert equal uint (0, mqtt_build_publish(out, sizeof(out), "t", nullptr, 2000, 0, 0, false, false))</code>
-      * <code>Assert equal uint (0, mqtt_build_publish(out, 2, "topic", (const uint8_t *)"hi", 2, 0, 0, false, false))</code>
-      * <code>Assert equal uint (0, mqtt_build_subscribe(nullptr, sizeof(out), 1, "t", 0))</code>
-      * <code>Assert equal uint (0, mqtt_build_subscribe(out, sizeof(out), 1, "t", 3))</code>
-      * <code>Assert equal uint (0, mqtt_build_subscribe(out, sizeof(out), 1, big_topic, 0))</code>
-      * <code>Assert equal uint (0, mqtt_build_unsubscribe(nullptr, sizeof(out), 1, "t"))</code>
-      * <code>Assert equal uint (0, mqtt_build_unsubscribe(out, sizeof(out), 1, big_topic))</code>
-      * <code>Assert equal uint (0, mqtt_build_ack(nullptr, 4, (MqttType)4, 1))</code>
-      * <code>Assert equal uint (0, mqtt_build_ack(out, 3, (MqttType)4, 1))</code>
-      * <code>Assert equal uint (0, mqtt_build_pingreq(nullptr, 2))</code>
-      * <code>Assert equal uint (0, mqtt_build_pingreq(out, 1))</code>
-      * <code>Assert equal uint (0, mqtt_build_disconnect(nullptr, 2))</code>
-      * <code>Assert equal uint (0, mqtt_build_disconnect(out, 1))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_connect(nullptr, sizeof(out), &o))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_connect(out, sizeof(out), nullptr))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_connect(out, sizeof(out), &no_id))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_connect(out, sizeof(out), &wo))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_connect(out, 2, &o))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_publish(nullptr, sizeof(out), "t", nullptr, 0, 0, 0, false, false))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_publish(out, sizeof(out), "t", nullptr, 0, 3, 0, false, false))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_publish(out, sizeof(out), "t", nullptr, 2000, 0, 0, false, false))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT(</code>
+      * <code>Assert equal uint (0, det_mqtt_build_subscribe(nullptr, sizeof(out), 1, "t", 0))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_subscribe(out, sizeof(out), 1, "t", 3))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_subscribe(out, sizeof(out), 1, big_topic, 0))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_unsubscribe(nullptr, sizeof(out), 1, "t"))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_unsubscribe(out, sizeof(out), 1, big_topic))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_ack(nullptr, 4, (MqttType)4, 1))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_ack(out, 3, (MqttType)4, 1))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_pingreq(nullptr, 2))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_pingreq(out, 1))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_disconnect(nullptr, 2))</code>
+      * <code>Assert equal uint (0, det_mqtt_build_disconnect(out, 1))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16728,13 +16728,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Parse guards
     * **Assertions**:
-      * <code>Assert false (mqtt_parse_fixed_header(one, 1, &type, &flags, &rl, &hl))</code>
-      * <code>Assert false (mqtt_parse_fixed_header(bad_rl, 5, &type, &flags, &rl, &hl))</code>
-      * <code>Assert false (mqtt_parse_publish(nullptr, 0, 0, topic, sizeof(topic), &tl, &pay, &pl, &pid))</code>
-      * <code>Assert false (mqtt_parse_publish(claim, 2, 0, topic, sizeof(topic), &tl, &pay, &pl, &pid))</code>
-      * <code>Assert false (mqtt_parse_publish(q1, 4, 0x02, topic, sizeof(topic), &tl, &pay, &pl, &pid))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0, mqtt_parse_ack(nullptr, 0));</code>
-      * <code>Assert false (mqtt_parse_suback(two, 2, &spid, &rc))</code>
+      * <code>Assert false (det_mqtt_parse_fixed_header(one, 1, &type, &flags, &rl, &hl))</code>
+      * <code>Assert false (det_mqtt_parse_fixed_header(bad_rl, 5, &type, &flags, &rl, &hl))</code>
+      * <code>Assert false (det_mqtt_parse_publish(nullptr, 0, 0, topic, sizeof(topic), &tl, &pay, &pl, &pid))</code>
+      * <code>Assert false (det_mqtt_parse_publish(claim, 2, 0, topic, sizeof(topic), &tl, &pay, &pl, &pid))</code>
+      * <code>Assert false (det_mqtt_parse_publish(q1, 4, 0x02, topic, sizeof(topic), &tl, &pay, &pl, &pid))</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0, det_mqtt_parse_ack(nullptr, 0));</code>
+      * <code>Assert false (det_mqtt_parse_suback(two, 2, &spid, &rc))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16742,12 +16742,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Host transport stubs
     * **Assertions**:
-      * <code>Assert false (mqtt_connect("h", 1883, false, &o))</code>
-      * <code>Assert false (mqtt_publish("t", nullptr, 0, 0, false))</code>
-      * <code>Assert false (mqtt_subscribe("t", 0))</code>
-      * <code>Assert false (mqtt_unsubscribe("t"))</code>
-      * <code>Assert false (mqtt_loop())</code>
-      * <code>Assert false (mqtt_connected())</code>
+      * <code>Assert false (det_mqtt_connect("h", 1883, false, &o))</code>
+      * <code>Assert false (det_mqtt_publish("t", nullptr, 0, 0, false))</code>
+      * <code>Assert false (det_mqtt_subscribe("t", 0))</code>
+      * <code>Assert false (det_mqtt_unsubscribe("t"))</code>
+      * <code>Assert false (det_mqtt_loop())</code>
+      * <code>Assert false (det_mqtt_connected())</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16761,7 +16761,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Remlen too big
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, mqtt_encode_remlen(b, 268435456u));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_mqtt_encode_remlen(b, 268435456u));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16769,7 +16769,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Remlen decode incomplete
     * **Assertions**:
-      * <code>Assert false (mqtt_decode_remlen(b, 2, &v, &used))</code>
+      * <code>Assert false (det_mqtt_decode_remlen(b, 2, &v, &used))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16777,7 +16777,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Remlen decode malformed
     * **Assertions**:
-      * <code>Assert false (mqtt_decode_remlen(b, 5, &v, &used))</code>
+      * <code>Assert false (det_mqtt_decode_remlen(b, 5, &v, &used))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16787,7 +16787,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert greater than (0, len)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x10, buf[0]); // CONNECT, flags 0</code>
-      * <code>Assert true (mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
+      * <code>Assert true (det_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
       * <code>Assert equal (MqttType::MQTT_CONNECT, type)</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(0, b[0]);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(4, b[1]);</code>
@@ -16804,7 +16804,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: flags: clean(0x02)\|will(0x04)\|willQoS1(0x08)\|willRetain(0x20)\|user(0x80)\|pass(0x40) = 0xEE
     * **Assertions**:
       * <code>Assert greater than (0, len)</code>
-      * <code>Assert true (mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
+      * <code>Assert true (det_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xEE, buf[hl + 7]);</code>
   </details>
 
@@ -16815,9 +16815,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert greater than (0, len)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x30, buf[0]); // PUBLISH, qos0</code>
-      * <code>Assert true (mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
+      * <code>Assert true (det_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
       * <code>Assert equal (MqttType::MQTT_PUBLISH, type)</code>
-      * <code>Assert true (mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
+      * <code>Assert true (det_mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
       * <code>Assert equal string ("a/b", topic)</code>
       * <code>TEST_ASSERT_EQUAL_size_t(2, plen);</code>
       * <code>Assert equal memory ("hi", payload, 2)</code>
@@ -16831,8 +16831,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert greater than (0, len)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x3B, buf[0]);</code>
-      * <code>Assert true (mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
-      * <code>Assert true (mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
+      * <code>Assert true (det_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
+      * <code>Assert true (det_mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(0x1234, pid);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(1, plen);</code>
   </details>
@@ -16842,7 +16842,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Publish topic overflow rejected
     * **Assertions**:
-      * <code>Assert false (mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
+      * <code>Assert false (det_mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16850,7 +16850,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Publish qos3 rejected
     * **Assertions**:
-      * <code>Assert false (mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
+      * <code>Assert false (det_mqtt_parse_publish(buf + hl, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16859,7 +16859,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: A plain topic with no wildcards still builds.
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_size_t(</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0,</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(</code>
       * <code>TEST_ASSERT_GREATER_THAN(</code>
   </details>
 
@@ -16869,8 +16869,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: topic length 2, bytes {0xC3,0x28} = invalid UTF-8 sequence, qos0 (flags 0).
     * **Assertions**:
       * <code>TEST_ASSERT_FALSE(</code>
-      * <code>TEST_ASSERT_FALSE(</code>
-      * <code>Assert true (mqtt_parse_publish(ok, sizeof(ok), 0, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
+      * <code>Assert false (det_mqtt_parse_publish(embedded_nul, sizeof(embedded_nul), 0, topic, sizeof(topic)</code>
+      * <code>Assert true (det_mqtt_parse_publish(ok, sizeof(ok), 0, topic, sizeof(topic), &tlen, &payload, &plen, &pid))</code>
       * <code>Assert equal string ("a/b", topic)</code>
   </details>
 
@@ -16881,7 +16881,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert greater than (0, len)</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x82, buf[0]); // SUBSCRIBE, required flags 0010</code>
-      * <code>Assert true (mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
+      * <code>Assert true (det_mqtt_parse_fixed_header(buf, len, &type, &flags, &rl, &hl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(10, (uint16_t)((b[0] &lt;&lt; 8) | b[1]));</code>
       * <code>TEST_ASSERT_EQUAL_MEMORY("\\x00\\x03"</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, b[7]); // requested QoS</code>
@@ -16901,10 +16901,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ack packets
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(4, mqtt_build_ack(buf, sizeof(buf), MqttType::MQTT_PUBACK, 0x2222));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, det_mqtt_build_ack(buf, sizeof(buf), MqttType::MQTT_PUBACK, 0x2222));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x40, buf[0]);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT16(0x2222, mqtt_parse_ack(buf + 2, 2));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(4, mqtt_build_ack(buf, sizeof(buf), MqttType::MQTT_PUBREL, 0x3333));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT16(0x2222, det_mqtt_parse_ack(buf + 2, 2));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(4, det_mqtt_build_ack(buf, sizeof(buf), MqttType::MQTT_PUBREL, 0x3333));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x62, buf[0]); // PUBREL requires flags 0010</code>
   </details>
 
@@ -16913,11 +16913,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Connack
     * **Assertions**:
-      * <code>Assert equal int (0, mqtt_parse_connack(ok, 2, &sp))</code>
+      * <code>Assert equal int (0, det_mqtt_parse_connack(ok, 2, &sp))</code>
       * <code>Assert true (sp)</code>
-      * <code>Assert equal int (5, mqtt_parse_connack(bad, 2, &sp))</code>
+      * <code>Assert equal int (5, det_mqtt_parse_connack(bad, 2, &sp))</code>
       * <code>Assert false (sp)</code>
-      * <code>Assert equal int (-1, mqtt_parse_connack(bad, 1, &sp))</code>
+      * <code>Assert equal int (-1, det_mqtt_parse_connack(bad, 1, &sp))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -16925,7 +16925,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Suback
     * **Assertions**:
-      * <code>Assert true (mqtt_parse_suback(b, 3, &pid, &rc))</code>
+      * <code>Assert true (det_mqtt_parse_suback(b, 3, &pid, &rc))</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(10, pid);</code>
       * <code>TEST_ASSERT_EQUAL_UINT8(1, rc);</code>
   </details>
@@ -16935,10 +16935,10 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ping disconnect
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(2, mqtt_build_pingreq(buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, det_mqtt_build_pingreq(buf, sizeof(buf)));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xC0, buf[0]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, buf[1]);</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(2, mqtt_build_disconnect(buf, sizeof(buf)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(2, det_mqtt_build_disconnect(buf, sizeof(buf)));</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0xE0, buf[0]);</code>
   </details>
 
@@ -16947,7 +16947,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Remaining length 300 -> 2-byte field {0xAC, 0x02}.
     * **Assertions**:
-      * <code>Assert true (mqtt_parse_fixed_header(buf, 3, &type, &flags, &rl, &hl))</code>
+      * <code>Assert true (det_mqtt_parse_fixed_header(buf, 3, &type, &flags, &rl, &hl))</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(300, rl);</code>
       * <code>TEST_ASSERT_EQUAL_size_t(3, hl);</code>
   </details>
@@ -34853,19 +34853,19 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Method classification
     * **Assertions**:
-      * <code>Assert equal int (WebDavMethod::DAV_M_OPTIONS, webdav_method("OPTIONS"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_PROPFIND, webdav_method("PROPFIND"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_PROPPATCH, webdav_method("PROPPATCH"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_MKCOL, webdav_method("MKCOL"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_COPY, webdav_method("COPY"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_MOVE, webdav_method("MOVE"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_LOCK, webdav_method("LOCK"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_UNLOCK, webdav_method("UNLOCK"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_PUT, webdav_method("PUT"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_GET, webdav_method("GET"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_DELETE, webdav_method("DELETE"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, webdav_method("BREW"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, webdav_method(nullptr))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_OPTIONS, det_webdav_method("OPTIONS"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_PROPFIND, det_webdav_method("PROPFIND"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_PROPPATCH, det_webdav_method("PROPPATCH"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_MKCOL, det_webdav_method("MKCOL"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_COPY, det_webdav_method("COPY"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_MOVE, det_webdav_method("MOVE"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_LOCK, det_webdav_method("LOCK"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNLOCK, det_webdav_method("UNLOCK"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_PUT, det_webdav_method("PUT"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_GET, det_webdav_method("GET"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_DELETE, det_webdav_method("DELETE"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, det_webdav_method("BREW"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, det_webdav_method(nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34873,13 +34873,13 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A plain (unescaped) run that overruns a tiny buffer stops mid-copy, still NUL-terminated.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, webdav_xml_escape(out, 0, "x")); // zero cap</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_webdav_xml_escape(out, 0, "x")); // zero cap</code>
       * <code>Assert true (strlen(tiny) &lt; sizeof(tiny))</code>
-      * <code>Assert false (webdav_dest_path(nullptr, out, sizeof(out)))</code>
-      * <code>Assert false (webdav_dest_path("/x", nullptr, sizeof(out)))</code>
-      * <code>Assert false (webdav_dest_path("/x", out, 0))</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(7, webdav_ms_entry(buf, sizeof(buf), 7, href, false, 42, nullptr, "text/plain"));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, webdav_proppatch_ms(small, sizeof(small), "/x", "", 0));</code>
+      * <code>Assert false (det_webdav_dest_path(nullptr, out, sizeof(out)))</code>
+      * <code>Assert false (det_webdav_dest_path("/x", nullptr, sizeof(out)))</code>
+      * <code>Assert false (det_webdav_dest_path("/x", out, 0))</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(7, det_webdav_ms_entry(buf, sizeof(buf), 7, href, false, 42, nullptr, "text/plain"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_webdav_proppatch_ms(small, sizeof(small), "/x", "", 0));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34887,11 +34887,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Depth parsing
     * **Assertions**:
-      * <code>Assert equal int (0, webdav_depth("0", 1))</code>
-      * <code>Assert equal int (1, webdav_depth("1", 0))</code>
-      * <code>Assert equal int (DAV_DEPTH_INFINITY, webdav_depth("infinity", 0))</code>
-      * <code>Assert equal int (1, webdav_depth(nullptr, 1))</code>
-      * <code>Assert equal int (7, webdav_depth("bogus", 7))</code>
+      * <code>Assert equal int (0, det_webdav_depth("0", 1))</code>
+      * <code>Assert equal int (1, det_webdav_depth("1", 0))</code>
+      * <code>Assert equal int (DAV_DEPTH_INFINITY, det_webdav_depth("infinity", 0))</code>
+      * <code>Assert equal int (1, det_webdav_depth(nullptr, 1))</code>
+      * <code>Assert equal int (7, det_webdav_depth("bogus", 7))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -34917,7 +34917,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dest absolute uri
     * **Assertions**:
-      * <code>Assert true (webdav_dest_path("http://host:8080/dav/new name.txt", out, sizeof(out)))</code>
+      * <code>Assert true (det_webdav_dest_path("http://host:8080/dav/new name.txt", out, sizeof(out)))</code>
       * <code>Assert equal string ("/dav/new name.txt", out)</code>
   </details>
 
@@ -34926,7 +34926,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dest percent decoded
     * **Assertions**:
-      * <code>Assert true (webdav_dest_path("http://h/dav/a%20b%2Fc.txt", out, sizeof(out)))</code>
+      * <code>Assert true (det_webdav_dest_path("http://h/dav/a%20b%2Fc.txt", out, sizeof(out)))</code>
       * <code>Assert equal string ("/dav/a b/c.txt", out)</code>
   </details>
 
@@ -34935,7 +34935,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dest abs path
     * **Assertions**:
-      * <code>Assert true (webdav_dest_path("/dav/x.txt", out, sizeof(out)))</code>
+      * <code>Assert true (det_webdav_dest_path("/dav/x.txt", out, sizeof(out)))</code>
       * <code>Assert equal string ("/dav/x.txt", out)</code>
   </details>
 
@@ -34944,9 +34944,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dest rejects malformed
     * **Assertions**:
-      * <code>Assert false (webdav_dest_path("dav/x.txt", out, sizeof(out)))</code>
-      * <code>Assert false (webdav_dest_path("http://hostonly", out, sizeof(out)))</code>
-      * <code>Assert false (webdav_dest_path("/bad%zz", out, sizeof(out)))</code>
+      * <code>Assert false (det_webdav_dest_path("dav/x.txt", out, sizeof(out)))</code>
+      * <code>Assert false (det_webdav_dest_path("http://hostonly", out, sizeof(out)))</code>
+      * <code>Assert false (det_webdav_dest_path("/bad%zz", out, sizeof(out)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35060,15 +35060,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Method all including head
     * **Assertions**:
-      * <code>Assert equal int (WebDavMethod::DAV_M_HEAD, webdav_method("HEAD"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_OPTIONS, webdav_method("OPTIONS"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_MKCOL, webdav_method("MKCOL"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_COPY, webdav_method("COPY"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_MOVE, webdav_method("MOVE"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_LOCK, webdav_method("LOCK"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_UNLOCK, webdav_method("UNLOCK"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, webdav_method("BOGUS"))</code>
-      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, webdav_method(nullptr))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_HEAD, det_webdav_method("HEAD"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_OPTIONS, det_webdav_method("OPTIONS"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_MKCOL, det_webdav_method("MKCOL"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_COPY, det_webdav_method("COPY"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_MOVE, det_webdav_method("MOVE"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_LOCK, det_webdav_method("LOCK"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNLOCK, det_webdav_method("UNLOCK"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, det_webdav_method("BOGUS"))</code>
+      * <code>Assert equal int (WebDavMethod::DAV_M_UNSUPPORTED, det_webdav_method(nullptr))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35076,12 +35076,12 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Malformed %-escape in the destination path fails closed.
     * **Assertions**:
-      * <code>Assert equal int (7, webdav_depth(nullptr, 7))</code>
-      * <code>Assert equal int (7, webdav_depth("", 7))</code>
-      * <code>Assert equal int (0, webdav_depth("0", 7))</code>
-      * <code>Assert equal int (1, webdav_depth("1", 7))</code>
-      * <code>Assert false (webdav_dest_path("http://host/a%zzb", out, sizeof(out)))</code>
-      * <code>Assert false (webdav_dest_path("http://host/aaaaaaaaaaaaaaaaaaaaaaaaaaaa", out, 8))</code>
+      * <code>Assert equal int (7, det_webdav_depth(nullptr, 7))</code>
+      * <code>Assert equal int (7, det_webdav_depth("", 7))</code>
+      * <code>Assert equal int (0, det_webdav_depth("0", 7))</code>
+      * <code>Assert equal int (1, det_webdav_depth("1", 7))</code>
+      * <code>Assert false (det_webdav_dest_path("http://host/a%zzb", out, sizeof(out)))</code>
+      * <code>Assert false (det_webdav_dest_path("http://host/aaaaaaaaaaaaaaaaaaaaaaaaaaaa", out, 8))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35097,8 +35097,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Oversized mtime overflows the element buffer -> len unchanged.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_size_t(0, webdav_ms_entry(buf, sizeof(buf), 0, "/f.txt", false, 100, mtime, "text/plain"));</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, webdav_ms_entry(tiny, sizeof(tiny), 0, "/f.txt", false, 100, "", "text/plain"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_webdav_ms_entry(buf, sizeof(buf), 0, "/f.txt", false, 100, mtime, "text/plain"));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_webdav_ms_entry(tiny, sizeof(tiny), 0, "/f.txt", false, 100, "", "text/plain"));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -35107,7 +35107,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: A self-closed property with trailing whitespace exercises the open-tag trim.
     * **Assertions**:
       * <code>Assert true (n &gt; 0)</code>
-      * <code>TEST_ASSERT_EQUAL_size_t(0, webdav_proppatch_ms(buf, 20, "/file.txt", body, strlen(body)));</code>
+      * <code>TEST_ASSERT_EQUAL_size_t(0, det_webdav_proppatch_ms(buf, 20, "/file.txt", body, strlen(body)));</code>
   </details>
 
 </details>

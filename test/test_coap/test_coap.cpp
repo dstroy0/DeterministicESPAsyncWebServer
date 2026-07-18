@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Douglas Quigg (dstroy0) <dquigg123@gmail.com>
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //
-// Unit tests for the CoAP server core (coap_server_process). Each test encodes a
+// Unit tests for the CoAP server core (det_coap_server_process). Each test encodes a
 // real RFC 7252 request datagram, runs it through the server, and decodes the
 // response - no sockets, no heap.
 
@@ -90,17 +90,17 @@ void setUp()
     g_cf = CoapContentFormat::COAP_CF_NONE;
     g_payload_len = 0;
 
-    coap_server_init();
-    coap_server_add_resource("/temp",
-                             CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_POST |
-                                 CoapMethodMask::COAP_ALLOW_PUT | CoapMethodMask::COAP_ALLOW_DELETE,
-                             h_resource);
-    coap_server_add_resource("/ro", CoapMethodMask::COAP_ALLOW_GET, h_resource);
-    coap_server_add_resource("/a/b", CoapMethodMask::COAP_ALLOW_GET, h_resource);
-    coap_server_add_resource("/longresourcename12345", CoapMethodMask::COAP_ALLOW_GET,
-                             h_resource); // >12 chars: extended opt length
-    coap_server_add_resource("/", CoapMethodMask::COAP_ALLOW_GET, h_resource);
-    coap_server_add_resource(
+    det_coap_server_reset();
+    det_coap_server_add_resource("/temp",
+                                 CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_POST |
+                                     CoapMethodMask::COAP_ALLOW_PUT | CoapMethodMask::COAP_ALLOW_DELETE,
+                                 h_resource);
+    det_coap_server_add_resource("/ro", CoapMethodMask::COAP_ALLOW_GET, h_resource);
+    det_coap_server_add_resource("/a/b", CoapMethodMask::COAP_ALLOW_GET, h_resource);
+    det_coap_server_add_resource("/longresourcename12345", CoapMethodMask::COAP_ALLOW_GET,
+                                 h_resource); // >12 chars: extended opt length
+    det_coap_server_add_resource("/", CoapMethodMask::COAP_ALLOW_GET, h_resource);
+    det_coap_server_add_resource(
         "/big", CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_POST | CoapMethodMask::COAP_ALLOW_PUT,
         h_big);
 }
@@ -324,7 +324,7 @@ void test_get_content()
     uint8_t req[128], resp[128];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 4, 0x1234, paths, 1,
                       nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     TEST_ASSERT_GREATER_THAN_UINT(0, n);
 
     CoapDec d;
@@ -350,7 +350,7 @@ void test_not_found()
     uint8_t req[128], resp[128];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x0001, paths,
                       1, nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_NOT_FOUND, d.code);
@@ -364,7 +364,7 @@ void test_method_not_allowed()
     uint8_t req[128], resp[128];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_PUT, nullptr, 0, 0x0002, paths,
                       1, nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, d.code);
@@ -377,7 +377,7 @@ void test_non_request_type()
     uint8_t req[128], resp[128];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_NON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x0003, paths,
                       1, nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapType::COAP_TYPE_NON, d.type); // NON request -> NON response
@@ -391,7 +391,7 @@ void test_put_with_payload()
     uint8_t req[128], resp[128];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_PUT, nullptr, 0, 0x0004, paths,
                       1, nullptr, 0, (uint16_t)CoapContentFormat::COAP_CF_TEXT, body, 2);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CHANGED, d.code);
@@ -409,7 +409,7 @@ void test_multi_segment_path()
     uint8_t req[128], resp[128];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x0005, paths,
                       2, nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code);
@@ -423,7 +423,7 @@ void test_uri_query()
     uint8_t req[128], resp[128];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x0006, paths,
                       1, queries, 2, -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code);
@@ -435,7 +435,7 @@ void test_empty_con_ping_rst()
     uint8_t req[8], resp[16];
     CoapEnc e;
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, 0 /* empty */, nullptr, 0, 0x4242);
-    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, e.len, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapType::COAP_TYPE_RST, d.type);
@@ -452,7 +452,7 @@ void test_bad_version_rst()
     req[2] = 0x12;
     req[3] = 0x34;
     uint8_t resp[16];
-    size_t n = coap_server_process(req, 4, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, 4, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapType::COAP_TYPE_RST, d.type);
@@ -465,7 +465,7 @@ void test_delete()
     uint8_t req[128], resp[128];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_DELETE, nullptr, 0, 0x0007,
                       paths, 1, nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_DELETED, d.code);
@@ -479,7 +479,7 @@ void test_token_8_bytes()
     uint8_t req[128], resp[128];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 8, 0x0008, paths, 1,
                       nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT(8, d.tkl);
@@ -492,7 +492,7 @@ void test_extended_option_length()
     uint8_t req[128], resp[128];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x0009, paths,
                       1, nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code);
@@ -506,7 +506,7 @@ void test_ack_ignored()
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_ACK, (uint8_t)CoapResponseCode::COAP_RSP_CONTENT, nullptr, 0,
              0x00AA);
     uint8_t resp[16];
-    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, e.len, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_UINT(0, n); // ACK is not a request
 }
 
@@ -515,7 +515,7 @@ void test_root_path()
     uint8_t req[16], resp[64];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x000B, nullptr,
                       0, nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code);
@@ -530,7 +530,7 @@ void test_unknown_method_not_allowed()
     // an unrecognized/unsupported Method Code MUST get 4.05 Method Not Allowed.
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, COAP_CODE(0, 5), nullptr, 0, 0x000C, paths, 1, nullptr, 0,
                       -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, d.code);
@@ -557,13 +557,13 @@ void test_unknown_critical_option_bad_option()
     m[k++] = 'p';
     m[k++] = (uint8_t)((6 << 4) | 1); // option delta=6 -> opt 17 (Accept, critical), len=1
     m[k++] = 0x00;                    // Accept value
-    size_t n = coap_server_process(m, k, resp, sizeof(resp));
+    size_t n = det_coap_server_process(m, k, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, d.code);
 }
 
-// RFC 7641: coap_server_process_ex() includes an Observe option (6, before
+// RFC 7641: det_coap_server_process_ex() includes an Observe option (6, before
 // Content-Format 12) carrying the notification sequence on a 2.xx response.
 void test_observe_option_in_response()
 {
@@ -572,7 +572,7 @@ void test_observe_option_in_response()
     uint8_t req[128], resp[128];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 2, 0x2222, paths, 1,
                       nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process_ex(req, rl, resp, sizeof(resp), 5);
+    size_t n = det_coap_server_process_ex(req, rl, resp, sizeof(resp), 5);
     TEST_ASSERT_GREATER_THAN_UINT(0, n);
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
@@ -593,7 +593,7 @@ void test_response_option_overflows_buffer()
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 2, 0x2222, paths, 1,
                       nullptr, 0, -1, nullptr, 0);
     // resp holds the 4-byte header + 2-byte token (=6) but not the Content-Format option.
-    size_t n = coap_server_process(req, rl, resp, 6);
+    size_t n = det_coap_server_process(req, rl, resp, 6);
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT16((uint16_t)CoapContentFormat::COAP_CF_NONE,
@@ -606,7 +606,7 @@ void test_no_observe_option_when_seq_negative()
     uint8_t req[128], resp[128];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x2223, paths,
                       1, nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process_ex(req, rl, resp, sizeof(resp), -1);
+    size_t n = det_coap_server_process_ex(req, rl, resp, sizeof(resp), -1);
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_INT(-1, d.observe); // no Observe option
@@ -631,7 +631,7 @@ void test_block2_explicit_paging()
                  (uint16_t)(0x3000 + num));
         enc_option(&e, 11, (const uint8_t *)"big", 3);
         enc_block(&e, 23, num, 0, 2); // Block2: NUM, M=0, SZX=2 (64 bytes)
-        size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+        size_t n = det_coap_server_process(req, e.len, resp, sizeof(resp));
         TEST_ASSERT_GREATER_THAN_UINT(0, n);
 
         CoapDec d;
@@ -655,7 +655,7 @@ void test_block2_auto_when_large()
     CoapEnc e;
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x3100);
     enc_option(&e, 11, (const uint8_t *)"big", 3);
-    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, e.len, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_TRUE(d.block2 >= 0);
@@ -674,7 +674,7 @@ void test_block2_szx_clamped()
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x3200);
     enc_option(&e, 11, (const uint8_t *)"big", 3);
     enc_block(&e, 23, 0, 0, 6); // ask for 1024-byte blocks
-    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, e.len, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT(2, BLK_SZX(d.block2)); // server clamps to SZX_MAX=2
@@ -689,7 +689,7 @@ void test_block2_absent_for_small()
     uint8_t req[64], resp[128];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x3300, paths,
                       1, nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_INT(-1, d.block2);
@@ -704,7 +704,7 @@ void test_block2_out_of_range()
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x3400);
     enc_option(&e, 11, (const uint8_t *)"big", 3);
     enc_block(&e, 23, 10, 0, 2); // offset 640 > 150
-    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, e.len, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, d.code);
@@ -718,7 +718,7 @@ void test_block2_reserved_szx()
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x3500);
     enc_option(&e, 11, (const uint8_t *)"big", 3);
     enc_block(&e, 23, 0, 0, 7);
-    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, e.len, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, d.code);
@@ -741,7 +741,7 @@ void test_block1_upload_two_blocks()
     enc_option(&e, 11, (const uint8_t *)"temp", 4);
     enc_block(&e, 27, 0, 1, 2); // Block1: NUM=0, M=1, SZX=2
     enc_payload(&e, chunk0, 64);
-    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, e.len, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, d.code);
@@ -755,7 +755,7 @@ void test_block1_upload_two_blocks()
     enc_option(&e, 11, (const uint8_t *)"temp", 4);
     enc_block(&e, 27, 1, 0, 2); // Block1: NUM=1, M=0
     enc_payload(&e, chunk1, 20);
-    n = coap_server_process(req, e.len, resp, sizeof(resp));
+    n = det_coap_server_process(req, e.len, resp, sizeof(resp));
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CREATED, d.code);
     TEST_ASSERT_TRUE(d.block1 >= 0);
@@ -782,13 +782,13 @@ void test_block1_out_of_order()
     enc_option(&e, 11, (const uint8_t *)"temp", 4);
     enc_block(&e, 27, 0, 1, 2);
     enc_payload(&e, chunk, 64);
-    coap_server_process(req, e.len, resp, sizeof(resp)); // block 0 -> Continue
+    det_coap_server_process(req, e.len, resp, sizeof(resp)); // block 0 -> Continue
 
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_POST, nullptr, 0, 0x3701);
     enc_option(&e, 11, (const uint8_t *)"temp", 4);
     enc_block(&e, 27, 2, 0, 2); // skip block 1
     enc_payload(&e, chunk, 64);
-    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, e.len, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_REQUEST_INCOMPLETE, d.code);
@@ -810,7 +810,7 @@ void test_block1_too_large()
         enc_option(&e, 11, (const uint8_t *)"temp", 4);
         enc_block(&e, 27, num, 1, 2); // all More=1
         enc_payload(&e, chunk, 64);
-        size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+        size_t n = det_coap_server_process(req, e.len, resp, sizeof(resp));
         TEST_ASSERT_TRUE(dec(resp, n, &d));
         if (num < 2)
             TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTINUE, d.code); // 64, 128 bytes buffered
@@ -829,7 +829,7 @@ void test_well_known_core_discovery()
     uint8_t req[160], resp[256];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x0CDE, paths,
                       2, nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, d.code);
@@ -849,7 +849,7 @@ void test_well_known_core_rejects_post()
     uint8_t req[160], resp[256];
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_POST, nullptr, 0, 0x0CDF, paths,
                       2, nullptr, 0, -1, nullptr, 0);
-    size_t n = coap_server_process(req, rl, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, rl, resp, sizeof(resp));
     CoapDec d;
     TEST_ASSERT_TRUE(dec(resp, n, &d));
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_METHOD_NOT_ALLOWED, d.code);
@@ -868,17 +868,17 @@ static void h_overflow(const CoapRequest *req, CoapResponse *resp)
     resp->payload_len = resp->payload_cap + 1000; // absurd; the server must clamp
 }
 
-// coap_server_add_resource rejects null args and a full table.
+// det_coap_server_add_resource rejects null args and a full table.
 void test_add_resource_limits()
 {
-    TEST_ASSERT_FALSE(coap_server_add_resource(nullptr, CoapMethodMask::COAP_ALLOW_GET, h_resource));
-    TEST_ASSERT_FALSE(coap_server_add_resource("/x", CoapMethodMask::COAP_ALLOW_GET, nullptr));
+    TEST_ASSERT_FALSE(det_coap_server_add_resource(nullptr, CoapMethodMask::COAP_ALLOW_GET, h_resource));
+    TEST_ASSERT_FALSE(det_coap_server_add_resource("/x", CoapMethodMask::COAP_ALLOW_GET, nullptr));
     int added = 0;
-    while (coap_server_add_resource("/fill", CoapMethodMask::COAP_ALLOW_GET, h_resource))
+    while (det_coap_server_add_resource("/fill", CoapMethodMask::COAP_ALLOW_GET, h_resource))
         if (++added > 64)
             break; // safety: the table is bounded, so this loop must terminate
     TEST_ASSERT_LESS_THAN(64, added);
-    TEST_ASSERT_FALSE(coap_server_add_resource("/nope", CoapMethodMask::COAP_ALLOW_GET, h_resource));
+    TEST_ASSERT_FALSE(det_coap_server_add_resource("/nope", CoapMethodMask::COAP_ALLOW_GET, h_resource));
 }
 
 // A datagram too short for a header, and a token length that runs past the buffer.
@@ -886,12 +886,12 @@ void test_short_and_truncated_token()
 {
     uint8_t resp[64];
     uint8_t too_short[3] = {0x40, (uint8_t)CoapMethod::COAP_GET, 0x00};
-    TEST_ASSERT_EQUAL_UINT(0, coap_server_process(too_short, 3, resp, sizeof(resp)));
+    TEST_ASSERT_EQUAL_UINT(0, det_coap_server_process(too_short, 3, resp, sizeof(resp)));
 
     // CON with TKL=3 but no token bytes present (len == 4): RST with an empty token.
     uint8_t bad_tkl[4] = {(uint8_t)((1 << 6) | ((uint8_t)CoapType::COAP_TYPE_CON << 4) | 3),
                           (uint8_t)CoapMethod::COAP_GET, 0x12, 0x34};
-    size_t n = coap_server_process(bad_tkl, 4, resp, sizeof(resp));
+    size_t n = det_coap_server_process(bad_tkl, 4, resp, sizeof(resp));
     TEST_ASSERT_EQUAL_UINT(4, n);
     TEST_ASSERT_EQUAL_UINT8((uint8_t)CoapType::COAP_TYPE_RST, (resp[0] >> 4) & 0x03);
     TEST_ASSERT_EQUAL_UINT8(0, resp[1]);
@@ -924,7 +924,7 @@ void test_malformed_options_bad_request()
         uint8_t req[16];
         memcpy(req, hdr, 4);
         memcpy(req + 4, cases[i].opt, cases[i].olen);
-        size_t n = coap_server_process(req, 4 + cases[i].olen, resp, sizeof(resp));
+        size_t n = det_coap_server_process(req, 4 + cases[i].olen, resp, sizeof(resp));
         TEST_ASSERT_TRUE(n > 0);
         TEST_ASSERT_EQUAL_UINT_MESSAGE((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1], cases[i].name);
     }
@@ -938,7 +938,7 @@ void test_extended_delta_and_length_ignored()
     CoapEnc e;
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 0, 1);
     enc_option(&e, 300, nullptr, 0); // option 300: delta uses the 2-byte extension
-    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, e.len, resp, sizeof(resp));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1]);
 
@@ -946,7 +946,7 @@ void test_extended_delta_and_length_ignored()
     memset(big, 'x', sizeof(big));
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 0, 2);
     enc_option(&e, 60, big, sizeof(big)); // 269-byte value: length uses the 2-byte extension
-    n = coap_server_process(req, e.len, resp, sizeof(resp));
+    n = det_coap_server_process(req, e.len, resp, sizeof(resp));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1]);
 }
@@ -962,13 +962,13 @@ void test_oversized_path_and_query()
     memset(seg, 'p', sizeof(seg));
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 0, 1);
     enc_option(&e, 11, seg, sizeof(seg)); // Uri-Path
-    TEST_ASSERT_TRUE(coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
+    TEST_ASSERT_TRUE(det_coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1]);
 
     memset(seg, 'q', sizeof(seg));
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 0, 2);
     enc_option(&e, 15, seg, sizeof(seg)); // Uri-Query
-    TEST_ASSERT_TRUE(coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
+    TEST_ASSERT_TRUE(det_coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1]);
 }
 
@@ -981,13 +981,13 @@ void test_block_option_too_wide()
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_PUT, tok, 0, 1);
     enc_option(&e, 11, (const uint8_t *)"temp", 4);
     enc_option(&e, 27, v4, 4); // Block1, 4-byte value
-    TEST_ASSERT_TRUE(coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
+    TEST_ASSERT_TRUE(det_coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1]);
 
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 0, 2);
     enc_option(&e, 11, (const uint8_t *)"temp", 4);
     enc_option(&e, 23, v4, 4); // Block2, 4-byte value
-    TEST_ASSERT_TRUE(coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
+    TEST_ASSERT_TRUE(det_coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_BAD_REQUEST, resp[1]);
 }
 
@@ -999,7 +999,7 @@ void test_block1_reserved_szx()
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_POST, tok, 0, 1);
     enc_option(&e, 11, (const uint8_t *)"temp", 4);
     enc_option(&e, 27, v, 1);
-    TEST_ASSERT_TRUE(coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
+    TEST_ASSERT_TRUE(det_coap_server_process(req, e.len, resp, sizeof(resp)) > 0);
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_BAD_OPTION, resp[1]);
 }
 
@@ -1014,18 +1014,18 @@ void test_block1_continue_no_space()
     enc_option(&e, 11, (const uint8_t *)"big", 3);
     enc_option(&e, 27, v, 1);
     enc_payload(&e, pl, sizeof(pl));
-    TEST_ASSERT_EQUAL_UINT(0, coap_server_process(req, e.len, resp, sizeof(resp)));
+    TEST_ASSERT_EQUAL_UINT(0, det_coap_server_process(req, e.len, resp, sizeof(resp)));
 }
 
 // A handler reporting an over-capacity body is clamped, not overflowed.
 void test_response_payload_clamped()
 {
-    TEST_ASSERT_TRUE(coap_server_add_resource("/of", CoapMethodMask::COAP_ALLOW_GET, h_overflow));
+    TEST_ASSERT_TRUE(det_coap_server_add_resource("/of", CoapMethodMask::COAP_ALLOW_GET, h_overflow));
     uint8_t req[32], resp[256], tok[1] = {0};
     CoapEnc e;
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 0, 1);
     enc_option(&e, 11, (const uint8_t *)"of", 2);
-    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, e.len, resp, sizeof(resp));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1]);
 }
@@ -1037,7 +1037,7 @@ void test_response_buffer_too_small()
     CoapEnc e;
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 0, 1);
     enc_option(&e, 11, (const uint8_t *)"temp", 4);
-    TEST_ASSERT_EQUAL_UINT(0, coap_server_process(req, e.len, resp, sizeof(resp)));
+    TEST_ASSERT_EQUAL_UINT(0, det_coap_server_process(req, e.len, resp, sizeof(resp)));
 }
 
 static char g_longpaths[8][40];
@@ -1046,20 +1046,20 @@ static char g_longpaths[8][40];
 // boundary rather than overflowing.
 void test_well_known_core_truncates()
 {
-    coap_server_init();
+    det_coap_server_reset();
     for (int i = 0; i < 8; i++)
     {
         memset(g_longpaths[i], 'a' + i, 34);
         g_longpaths[i][0] = '/';
         g_longpaths[i][34] = '\0'; // 8 * ("<path>" + ',') = 8*36-1 = 287 > MAX_PAYLOAD (256)
-        TEST_ASSERT_TRUE(coap_server_add_resource(g_longpaths[i], CoapMethodMask::COAP_ALLOW_GET, h_resource));
+        TEST_ASSERT_TRUE(det_coap_server_add_resource(g_longpaths[i], CoapMethodMask::COAP_ALLOW_GET, h_resource));
     }
     uint8_t req[64], resp[512], tok[1] = {0};
     CoapEnc e;
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 0, 1);
     enc_option(&e, 11, (const uint8_t *)".well-known", 11);
     enc_option(&e, 11, (const uint8_t *)"core", 4);
-    size_t n = coap_server_process(req, e.len, resp, sizeof(resp));
+    size_t n = det_coap_server_process(req, e.len, resp, sizeof(resp));
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_UINT((uint8_t)CoapResponseCode::COAP_RSP_CONTENT, resp[1]);
 }
@@ -1072,8 +1072,8 @@ void test_observe_large_seq_encoding()
     enc_init(&e, req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, tok, 2, 1);
     enc_option(&e, 6, nullptr, 0); // Observe (register)
     enc_option(&e, 11, (const uint8_t *)"temp", 4);
-    TEST_ASSERT_TRUE(coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x0102) > 0);   // 2-byte seq
-    TEST_ASSERT_TRUE(coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x010203) > 0); // 3-byte seq
+    TEST_ASSERT_TRUE(det_coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x0102) > 0);   // 2-byte seq
+    TEST_ASSERT_TRUE(det_coap_server_process_ex(req, e.len, resp, sizeof(resp), 0x010203) > 0); // 3-byte seq
 }
 
 // The response encoder ships what fits rather than overflowing a tight output
@@ -1086,7 +1086,7 @@ void test_response_option_capacity_stop()
     size_t rl = build(req, (uint8_t)CoapType::COAP_TYPE_CON, (uint8_t)CoapMethod::COAP_GET, nullptr, 0, 0x77, paths, 1,
                       nullptr, 0, -1, nullptr, 0);
     uint8_t resp[64];
-    size_t n = coap_server_process_ex(req, rl, resp, 5, -1); // header (4) fits; the option does not
+    size_t n = det_coap_server_process_ex(req, rl, resp, 5, -1); // header (4) fits; the option does not
     TEST_ASSERT_TRUE(n >= 4 && n <= 5);
 }
 
@@ -1095,7 +1095,7 @@ void test_response_option_capacity_stop()
 void test_coap_udp_handler_basic()
 {
     det_udp_reset_listeners();
-    coap_server_begin_udp(5683);
+    det_coap_server_begin(5683);
     det_udp_capture_enable();
 
     const char *paths[] = {"temp"};
@@ -1129,12 +1129,12 @@ static size_t build_observe_get(uint8_t *buf, const char *path, int observe, con
 }
 
 // RFC 7641 Observe over the UDP transport, driven through the injectable host UDP mock: a GET with
-// Observe:0 registers the client (the response carries an Observe option); coap_notify() pushes a
+// Observe:0 registers the client (the response carries an Observe option); det_coap_notify() pushes a
 // NON notification; an unreachable peer, an Observe:1, and a Reset each drop the observation.
 void test_coap_observe_over_udp()
 {
     det_udp_reset_listeners();
-    coap_server_begin_udp(5683);
+    det_coap_server_begin(5683);
     det_udp_capture_enable();
     const uint8_t tok[2] = {0xAA, 0xBB};
     uint8_t req[64];
@@ -1151,15 +1151,15 @@ void test_coap_observe_over_udp()
 
     // Notify the registered observer.
     det_udp_capture_reset();
-    coap_notify("/temp");
+    det_coap_notify("/temp");
     TEST_ASSERT_TRUE(det_udp_captured_len() > 0);
 
     // A notification to an unreachable peer drops the observer.
     det_udp_set_listener_sendto_result(false);
-    coap_notify("/temp");
+    det_coap_notify("/temp");
     det_udp_set_listener_sendto_result(true);
     det_udp_capture_reset();
-    coap_notify("/temp"); // observer gone -> nothing sent
+    det_coap_notify("/temp"); // observer gone -> nothing sent
     TEST_ASSERT_EQUAL_UINT(0, det_udp_captured_len());
 
     // Re-register, then deregister with Observe:1.
@@ -1168,7 +1168,7 @@ void test_coap_observe_over_udp()
     rl = build_observe_get(req, "temp", 1, tok, sizeof(tok), 0x0003);
     det_udp_inject(5683, "10.0.0.9", 40000, req, rl);
     det_udp_capture_reset();
-    coap_notify("/temp");
+    det_coap_notify("/temp");
     TEST_ASSERT_EQUAL_UINT(0, det_udp_captured_len());
 
     // Re-register, then a Reset from the peer drops all its observations.
@@ -1179,18 +1179,18 @@ void test_coap_observe_over_udp()
     enc_init(&re, rst, (uint8_t)CoapType::COAP_TYPE_RST, 0, nullptr, 0, 0x0004);
     det_udp_inject(5683, "10.0.0.9", 40000, rst, re.len);
     det_udp_capture_reset();
-    coap_notify("/temp");
+    det_coap_notify("/temp");
     TEST_ASSERT_EQUAL_UINT(0, det_udp_captured_len());
 
     // A notification for an unknown resource path is a no-op.
-    coap_notify("/no-such-resource");
+    det_coap_notify("/no-such-resource");
 }
 
 // A full observer registry declines further registrations; the resource is still served.
 void test_coap_observe_registry_full()
 {
     det_udp_reset_listeners();
-    coap_server_begin_udp(5683);
+    det_coap_server_begin(5683);
     det_udp_capture_enable();
     uint8_t req[64];
     // Distinct tokens from one peer fill the DETWS_COAP_MAX_OBSERVERS slots; extras are declined
@@ -1203,7 +1203,7 @@ void test_coap_observe_registry_full()
         det_udp_inject(5683, "10.0.0.9", 40000, req, rl);
         TEST_ASSERT_TRUE(det_udp_captured_len() > 0);
     }
-    coap_notify("/temp"); // deliver to the registered observers
+    det_coap_notify("/temp"); // deliver to the registered observers
 }
 #endif // DETWS_ENABLE_COAP_OBSERVE
 

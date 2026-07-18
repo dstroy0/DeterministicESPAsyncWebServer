@@ -21,7 +21,7 @@ static bool flow_drain(DncFlow *flow, DncRecvFn recv, void *ctx)
     if (r < 0)
         return false;
     for (int i = 0; i < r; i++)
-        dnc_flow_feed(flow, tmp[i]);
+        det_dnc_flow_feed(flow, tmp[i]);
     return true;
 }
 
@@ -31,7 +31,7 @@ static bool emit(DncFlow *flow, DncSendFn send, DncRecvFn recv, void *ctx, const
     if (!flow_drain(flow, recv, ctx))
         return false;
     uint32_t polls = 0;
-    while (!dnc_flow_can_send(flow))
+    while (!det_dnc_flow_can_send(flow))
     {
         if (++polls > DETWS_DNC_XOFF_MAX_POLLS)
             return false; // XOFF never cleared
@@ -63,7 +63,7 @@ DncStreamResult dnc_stream(const DncCfg *cfg, const char *program, size_t prog_l
         return DncStreamResult::DNC_STREAM_ERR_ARG;
 
     DncFlow flow;
-    dnc_flow_init(&flow);
+    det_dnc_flow_init(&flow);
     uint8_t buf[DETWS_DNC_LINE_MAX + 8];
 
     // leader runout
@@ -71,7 +71,7 @@ DncStreamResult dnc_stream(const DncCfg *cfg, const char *program, size_t prog_l
         return DncStreamResult::DNC_STREAM_ERR_IO;
 
     // program-start marker
-    size_t n = dnc_encode_marker(cfg, buf, sizeof(buf));
+    size_t n = det_dnc_encode_marker(cfg, buf, sizeof(buf));
     if (n == 0)
         return DncStreamResult::DNC_STREAM_ERR_ENCODE;
     if (!emit(&flow, send, recv, ctx, buf, n))
@@ -87,7 +87,7 @@ DncStreamResult dnc_stream(const DncCfg *cfg, const char *program, size_t prog_l
         size_t line_len = j - i;
         if (line_len && program[i + line_len - 1] == '\r')
             line_len--; // strip a trailing CR (CRLF sources)
-        n = dnc_encode_block(cfg, program + i, line_len, buf, sizeof(buf));
+        n = det_dnc_encode_block(cfg, program + i, line_len, buf, sizeof(buf));
         if (n == 0)
             return DncStreamResult::DNC_STREAM_ERR_ENCODE; // untranslatable char or over-long block - fail closed
         if (!emit(&flow, send, recv, ctx, buf, n))
@@ -96,7 +96,7 @@ DncStreamResult dnc_stream(const DncCfg *cfg, const char *program, size_t prog_l
     }
 
     // program-end marker (byte-identical to the start marker)
-    n = dnc_encode_marker(cfg, buf, sizeof(buf));
+    n = det_dnc_encode_marker(cfg, buf, sizeof(buf));
     if (!emit(&flow, send, recv, ctx, buf, n))
         return DncStreamResult::DNC_STREAM_ERR_IO;
 

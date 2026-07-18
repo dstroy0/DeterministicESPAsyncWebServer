@@ -220,16 +220,16 @@ the pure, transport-free hot op behind every `sse_send()` / `sse_broadcast()`. H
 
 ### WebDAV 207 Multi-Status builder (DETWS_ENABLE_WEBDAV)
 
-`webdav_ms_entry()` builds one `<response>` element (RFC 4918 Multi-Status) for a resource; it runs
+`det_webdav_ms_entry()` builds one `<response>` element (RFC 4918 Multi-Status) for a resource; it runs
 once per directory child on every PROPFIND, and internally XML-escapes the href. Pure (no filesystem),
 so it benches standalone. Host figures from [`perf/bench_webdav.cpp`](../perf/bench_webdav.cpp); the
 device figure is the rig `/bench` CCOUNT op (N=20000 warm).
 
-| Operation                             | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| ------------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `webdav_ms_entry` (one file response) |      128.4 |    3161.2 |            4598 |          19158 |
-| PROPFIND Depth-1 body (8 children)    |     1223.2 |    2992.3 |               - |              - |
-| `webdav_xml_escape` (5 escapables)    |       67.0 |     582.3 |               - |              - |
+| Operation                                 | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ----------------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `det_webdav_ms_entry` (one file response) |      128.4 |    3161.2 |            4598 |          19158 |
+| PROPFIND Depth-1 body (8 children)        |     1223.2 |    2992.3 |               - |              - |
+| `det_webdav_xml_escape` (5 escapables)    |       67.0 |     582.3 |               - |              - |
 
 - One `<response>` costs ~19.2 us on the S3 - the heaviest of the presentation-layer builders (it
   escapes the href and does a hand-rolled itoa for the content length into a 512 B temp), but PROPFIND
@@ -242,16 +242,16 @@ device figure is the rig `/bench` CCOUNT op (N=20000 warm).
 
 ### CoAP server codec (DETWS_ENABLE_COAP)
 
-`coap_server_process()` is the whole CoAP request→response path (RFC 7252): parse the 4-byte header +
+`det_coap_server_process()` is the whole CoAP request→response path (RFC 7252): parse the 4-byte header +
 options, reconstruct the Uri-Path, dispatch against the resource table, and encode the piggybacked
 reply. Pure (no sockets, no heap). Host figures from [`perf/bench_coap.cpp`](../perf/bench_coap.cpp);
 the device figure is the rig `/bench` CCOUNT op (N=20000 warm), including the handler that renders the
 `/info` JSON.
 
-| Operation                               | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| --------------------------------------- | ---------: | --------: | --------------: | -------------: |
-| `coap_server_process` GET /info         |       58.8 |     221.0 |            5331 |          22212 |
-| `coap_server_process` GET /a/b/c (3seg) |       29.6 |     338.3 |               - |              - |
+| Operation                                   | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| ------------------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `det_coap_server_process` GET /info         |       58.8 |     221.0 |            5331 |          22212 |
+| `det_coap_server_process` GET /a/b/c (3seg) |       29.6 |     338.3 |               - |              - |
 
 - A full CoAP GET round trip (parse + dispatch + encode, plus the handler's `snprintf` of the JSON body)
   is ~22 us on the S3. That is a complete datagram exchange, not a micro-codec, so it is the honest
@@ -548,16 +548,16 @@ ed25519_sign 84.6 vs 85.6 ms, `fe_mul` 1377 vs 1386 cyc), which cross-validates 
 
 ### MQTT 3.1.1 client codec (DETWS_ENABLE_MQTT)
 
-The device is an MQTT client; these are its pure packet build/parse hot ops - `mqtt_build_connect` /
-`mqtt_build_publish` (TX) and `mqtt_parse_publish` (the inbound-message decode). Host figures from
+The device is an MQTT client; these are its pure packet build/parse hot ops - `det_mqtt_build_connect` /
+`det_mqtt_build_publish` (TX) and `det_mqtt_parse_publish` (the inbound-message decode). Host figures from
 [`perf/bench_mqtt.cpp`](../perf/bench_mqtt.cpp); the device figure is the rig `/bench` CCOUNT op
-(`mqtt_build_publish`, QoS 1 to a telemetry topic).
+(`det_mqtt_build_publish`, QoS 1 to a telemetry topic).
 
-| Operation                    | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
-| ---------------------------- | ---------: | --------: | --------------: | -------------: |
-| `mqtt_build_connect`         |       24.6 |    1055.1 |               - |              - |
-| `mqtt_build_publish` (QoS 1) |       44.9 |    1446.9 |            1008 |           4200 |
-| `mqtt_parse_publish`         |       60.6 |    1073.4 |               - |              - |
+| Operation                        | Host ns/op | Host MB/s | ESP32-S3 cyc/op | ESP32-S3 ns/op |
+| -------------------------------- | ---------: | --------: | --------------: | -------------: |
+| `det_mqtt_build_connect`         |       24.6 |    1055.1 |               - |              - |
+| `det_mqtt_build_publish` (QoS 1) |       44.9 |    1446.9 |            1008 |           4200 |
+| `det_mqtt_parse_publish`         |       60.6 |    1073.4 |               - |              - |
 
 - Building a PUBLISH is ~4.2 us on the S3 (a length-prefixed topic + the variable-length Remaining Length
   field + the payload copy) - cheap; an MQTT client can publish at a high rate without the encode being

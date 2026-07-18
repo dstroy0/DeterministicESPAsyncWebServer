@@ -109,11 +109,11 @@ void setup()
     WiFi.setSleep(false);
 
     // Build the resource table, then bind the server to UDP/5683.
-    coap_server_init();
-    coap_server_add_resource("/info", CoapMethodMask::COAP_ALLOW_GET, coap_info);
-    coap_server_add_resource("/led", CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_PUT, coap_led);
-    coap_server_add_resource("/hello", CoapMethodMask::COAP_ALLOW_GET, coap_hello);
-    coap_server_begin_udp(5683);
+    det_coap_server_reset();
+    det_coap_server_add_resource("/info", CoapMethodMask::COAP_ALLOW_GET, coap_info);
+    det_coap_server_add_resource("/led", CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_PUT, coap_led);
+    det_coap_server_add_resource("/hello", CoapMethodMask::COAP_ALLOW_GET, coap_hello);
+    det_coap_server_begin(5683);
     Serial.println("CoAP server listening on UDP/5683 (try: coap-client -m get coap://<ip>/info)");
 
     int32_t result = server.begin(80);

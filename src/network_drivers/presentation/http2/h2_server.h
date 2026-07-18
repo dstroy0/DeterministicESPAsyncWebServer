@@ -30,19 +30,19 @@
 #include <stdint.h>
 
 /** @brief Start the HTTP/2 engine for @p slot after ALPN "h2" (sends our initial SETTINGS). */
-void h2_server_open(uint8_t slot);
+void det_h2_server_open(uint8_t slot);
 
 /** @brief Feed the slot's decrypted inbound bytes into the engine; drives requests via HttpReq. */
-void h2_server_data(uint8_t slot);
+void det_h2_server_data(uint8_t slot);
 
 /**
  * @brief Serialize a handler's response for the slot's current stream (HEADERS + DATA), then ready
  * the slot's HttpReq for the next stream (the connection stays open). @return false on error.
  */
-bool h2_server_respond(uint8_t slot, int code, const char *content_type, const char *body, size_t len);
+bool det_h2_server_respond(uint8_t slot, int code, const char *content_type, const char *body, size_t len);
 
 /** @brief Release per-slot HTTP/2 state on connection close. */
-void h2_server_close(uint8_t slot);
+void det_h2_server_close(uint8_t slot);
 
 #endif // DETWS_ENABLE_HTTP2 && DETWS_ENABLE_TLS
 #endif // DETERMINISTICESPASYNCWEBSERVER_H2_SERVER_H

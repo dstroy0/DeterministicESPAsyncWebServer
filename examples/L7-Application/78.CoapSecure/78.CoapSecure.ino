@@ -13,8 +13,8 @@
  *
  * coaps_server owns a small pool of DTLS connections keyed by peer address, binds UDP/5684 through the
  * transport layer, and (once a peer's handshake completes) hands each decrypted CoAP request to the
- * same coap_server_process() the plaintext server uses - so the resource table is registered exactly
- * once with coap_server_add_resource(). coaps_server_poll() drives the handshakes, the DTLS
+ * same det_coap_server_process() the plaintext server uses - so the resource table is registered exactly
+ * once with det_coap_server_add_resource(). det_coaps_server_poll() drives the handshakes, the DTLS
  * retransmission timer, and idle-connection reaping; call it every loop iteration.
  *
  * The profile is TLS_AES_128_GCM_SHA256 + X25519 + an Ed25519 server certificate. The sketch ships a
@@ -150,10 +150,10 @@ void setup()
     WiFi.setSleep(false);
 
     // Build the resource table once (shared by every transport), then start the DTLS front-end on 5684.
-    coap_server_init();
-    coap_server_add_resource("/info", CoapMethodMask::COAP_ALLOW_GET, coap_info);
-    coap_server_add_resource("/led", CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_PUT, coap_led);
-    coap_server_add_resource("/hello", CoapMethodMask::COAP_ALLOW_GET, coap_hello);
+    det_coap_server_reset();
+    det_coap_server_add_resource("/info", CoapMethodMask::COAP_ALLOW_GET, coap_info);
+    det_coap_server_add_resource("/led", CoapMethodMask::COAP_ALLOW_GET | CoapMethodMask::COAP_ALLOW_PUT, coap_led);
+    det_coap_server_add_resource("/hello", CoapMethodMask::COAP_ALLOW_GET, coap_hello);
 
     CoapsServerConfig cfg;
     memset(&cfg, 0, sizeof cfg);
@@ -162,10 +162,10 @@ void setup()
     memcpy(cfg.ed25519_seed, COAPS_ED25519_SEED, sizeof cfg.ed25519_seed);
     esp_fill_random(cfg.cookie_key, sizeof cfg.cookie_key); // fresh HelloRetryRequest cookie secret per boot
     cfg.rng = coaps_rng;
-    if (coaps_server_begin(DETWS_COAPS_PORT, &cfg))
+    if (det_coaps_server_begin(DETWS_COAPS_PORT, &cfg))
         Serial.println("CoAPs (DTLS 1.3) server listening on UDP/5684 (try: coap-client -m get coaps://<ip>/info)");
     else
-        Serial.println("coaps_server_begin() failed (UDP bind)");
+        Serial.println("det_coaps_server_begin() failed (UDP bind)");
 
     int32_t result = server.begin(80);
     if (result < 0)
@@ -174,6 +174,6 @@ void setup()
 
 void loop()
 {
-    coaps_server_poll(); // drive DTLS handshakes, the retransmission timer, and idle-connection reaping
-    server.handle();     // the TCP server (CoAPs itself runs off lwIP UDP callbacks + this poll)
+    det_coaps_server_poll(); // drive DTLS handshakes, the retransmission timer, and idle-connection reaping
+    server.handle();         // the TCP server (CoAPs itself runs off lwIP UDP callbacks + this poll)
 }

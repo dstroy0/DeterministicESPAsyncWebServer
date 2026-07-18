@@ -39,7 +39,7 @@ struct MockCtrl
 static void mock_init(MockCtrl *m, DncCode code)
 {
     memset(m, 0, sizeof(*m));
-    dnc_decode_init(&m->dec, code);
+    det_dnc_decode_init(&m->dec, code);
 }
 
 static int mock_send(void *c, const uint8_t *d, size_t len)
@@ -50,7 +50,7 @@ static int mock_send(void *c, const uint8_t *d, size_t len)
     m->bytes_sent += len;
     for (size_t k = 0; k < len; k++)
     {
-        DncEvent ev = dnc_decode_feed(&m->dec, d[k]);
+        DncEvent ev = det_dnc_decode_feed(&m->dec, d[k]);
         if (ev == DncEvent::DNC_EV_LINE && m->nlines < 16)
         {
             strcpy(m->lines[m->nlines], m->dec.line);

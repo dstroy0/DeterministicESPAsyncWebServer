@@ -13,18 +13,18 @@ notifies all observers. It builds on the plain CoAP server in
 
 **Register an ordinary resource, then notify on change.** The handler is the same
 shape as any CoAP handler; what makes it observable is that observers are tracked
-by the library and you call `coap_notify()` when the representation changes:
+by the library and you call `det_coap_notify()` when the representation changes:
 
 ```cpp
-coap_server_add_resource("/count", CoapMethodMask::COAP_ALLOW_GET, h_count);
-coap_server_begin_udp(5683);
+det_coap_server_add_resource("/count", CoapMethodMask::COAP_ALLOW_GET, h_count);
+det_coap_server_begin(5683);
 ```
 
 ```cpp
 void loop() {
     if (/* once a second */) {
         g_count++;
-        coap_notify("/count"); // push the new value to every observer
+        det_coap_notify("/count"); // push the new value to every observer
     }
 }
 ```
@@ -93,9 +93,9 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    coap_server_init();
-    coap_server_add_resource("/count", CoapMethodMask::COAP_ALLOW_GET, h_count);
-    coap_server_begin_udp(5683);
+    det_coap_server_reset();
+    det_coap_server_add_resource("/count", CoapMethodMask::COAP_ALLOW_GET, h_count);
+    det_coap_server_begin(5683);
     Serial.println("CoAP server on :5683, observe coap://<ip>/count");
 }
 
@@ -106,7 +106,7 @@ void loop()
     {
         last = millis();
         g_count++;
-        coap_notify("/count"); // push the new value to every observer
+        det_coap_notify("/count"); // push the new value to every observer
     }
 }
 ```

@@ -7,7 +7,7 @@
  *
  * Serves an observable "/count" resource over CoAP/UDP. A client that sends a GET
  * with the Observe option is registered as an observer; every second the sketch
- * increments the counter and calls coap_notify("/count"), pushing the new value to
+ * increments the counter and calls det_coap_notify("/count"), pushing the new value to
  * all observers (a CoAP notification from the server port with an increasing
  * Observe sequence). Try it with:
  *     coap-client -m get -s 30 coap://<ip>/count      # libcoap, -s = observe
@@ -56,9 +56,9 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    coap_server_init();
-    coap_server_add_resource("/count", CoapMethodMask::COAP_ALLOW_GET, h_count);
-    coap_server_begin_udp(5683);
+    det_coap_server_reset();
+    det_coap_server_add_resource("/count", CoapMethodMask::COAP_ALLOW_GET, h_count);
+    det_coap_server_begin(5683);
     Serial.println("CoAP server on :5683, observe coap://<ip>/count");
 }
 
@@ -69,6 +69,6 @@ void loop()
     {
         last = millis();
         g_count++;
-        coap_notify("/count"); // push the new value to every observer
+        det_coap_notify("/count"); // push the new value to every observer
     }
 }

@@ -13,11 +13,11 @@
  * @code
  *   int32_t li = server.listen(2323, ConnProto::PROTO_BRIDGE);          // front port 2323
  *   BridgeTarget uart = {BridgeBus::uart, BridgeMode::stream, 1, 0, 115200, 0, 0};
- *   det_bridge_publish((uint8_t)li, 2323, BridgeProto::tcp, &uart);     // -> UART1 raw passthrough
+ *   det_iface_bridge_publish((uint8_t)li, 2323, BridgeProto::tcp, &uart);     // -> UART1 raw passthrough
  *
  *   int32_t ls = server.listen(2324, ConnProto::PROTO_BRIDGE);
  *   BridgeTarget spi = {BridgeBus::spi, BridgeMode::transaction, 0, 5, 1000000, 0, 0}; // 5 = CS gpio
- *   det_bridge_publish((uint8_t)ls, 2324, BridgeProto::tcp, &spi);      // -> SPI write-then-read frames
+ *   det_iface_bridge_publish((uint8_t)ls, 2324, BridgeProto::tcp, &spi);      // -> SPI write-then-read frames
  * @endcode
  *
  * Security: a published port is a direct pipe to the bus. Only expose it on a trusted interface / behind
@@ -40,7 +40,7 @@
 /**
  * @brief Bind a PROTO_BRIDGE listener to a hardware target and install the handler (first call).
  *
- * Registers the rule in the pure table (bridge_map), records the listener_id -> rule binding used to
+ * Registers the rule in the pure table (det_iface_bridge_map), records the listener_id -> rule binding used to
  * dispatch accepted connections, and brings up the bus (Serial.begin / SPI CS pin / Wire).
  *
  * @param listener_id  the id returned by `server.listen(port, ConnProto::PROTO_BRIDGE)`.
@@ -49,10 +49,10 @@
  * @param target       the UART / SPI / I2C endpoint (copied into the rule).
  * @return true; false if @p target is null, the rule table is full, or the port+proto is already bound.
  */
-bool det_bridge_publish(uint8_t listener_id, uint16_t port, BridgeProto proto, const BridgeTarget *target);
+bool det_iface_bridge_publish(uint8_t listener_id, uint16_t port, BridgeProto proto, const BridgeTarget *target);
 
 /** @brief Clear all listener bindings and rules (start from empty). */
-void det_bridge_listener_reset(void);
+void det_iface_bridge_listener_reset(void);
 
 #endif // DETWS_ENABLE_IFACE_BRIDGE
 

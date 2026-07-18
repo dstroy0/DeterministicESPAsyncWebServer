@@ -42,7 +42,7 @@ static inline size_t put_str(uint8_t *p, const char *s)
     return put_field(p, (const uint8_t *)s, s ? strnlen(s, DETWS_MQTT_BUF_SIZE) : 0);
 }
 
-size_t mqtt_encode_remlen(uint8_t *out, uint32_t len)
+size_t det_mqtt_encode_remlen(uint8_t *out, uint32_t len)
 {
     if (len > 268435455u) // 4 * 7 bits
         return 0;
@@ -58,7 +58,7 @@ size_t mqtt_encode_remlen(uint8_t *out, uint32_t len)
     return n;
 }
 
-bool mqtt_decode_remlen(const uint8_t *buf, size_t avail, uint32_t *value, size_t *used)
+bool det_mqtt_decode_remlen(const uint8_t *buf, size_t avail, uint32_t *value, size_t *used)
 {
     uint32_t v = 0;
     uint32_t mult = 1;
@@ -90,9 +90,9 @@ static size_t compose(uint8_t *out, size_t cap, uint8_t byte0, const uint8_t *bo
 {
     uint8_t rl[4];
     // Every caller pre-builds body in body[DETWS_MQTT_BUF_SIZE] (1024), so blen is bounded far below
-    // the 2^28 remaining-length limit and mqtt_encode_remlen never rejects here; the len > 256MB reject
-    // is covered directly on the public mqtt_encode_remlen.
-    size_t rln = mqtt_encode_remlen(rl, (uint32_t)blen);
+    // the 2^28 remaining-length limit and det_mqtt_encode_remlen never rejects here; the len > 256MB reject
+    // is covered directly on the public det_mqtt_encode_remlen.
+    size_t rln = det_mqtt_encode_remlen(rl, (uint32_t)blen);
     if (rln == 0)
         return 0; // GCOVR_EXCL_LINE  unreachable: blen <= DETWS_MQTT_BUF_SIZE << 2^28 via compose's bounded callers
     size_t total = 1 + rln + blen;
@@ -105,7 +105,7 @@ static size_t compose(uint8_t *out, size_t cap, uint8_t byte0, const uint8_t *bo
     return total;
 }
 
-size_t mqtt_build_connect(uint8_t *out, size_t cap, const MqttConnectOpts *opts)
+size_t det_mqtt_build_connect(uint8_t *out, size_t cap, const MqttConnectOpts *opts)
 {
     if (!out || !opts || !opts->client_id)
         return 0;
@@ -159,8 +159,8 @@ size_t mqtt_build_connect(uint8_t *out, size_t cap, const MqttConnectOpts *opts)
     return compose(out, cap, (uint8_t)((uint8_t)MqttType::MQTT_CONNECT << 4), body, n);
 }
 
-size_t mqtt_build_publish(uint8_t *out, size_t cap, const char *topic, const uint8_t *payload, size_t payload_len,
-                          uint8_t qos, uint16_t packet_id, bool retain, bool dup)
+size_t det_mqtt_build_publish(uint8_t *out, size_t cap, const char *topic, const uint8_t *payload, size_t payload_len,
+                              uint8_t qos, uint16_t packet_id, bool retain, bool dup)
 {
     if (!out || !topic || qos > 2)
         return 0;
@@ -193,7 +193,7 @@ size_t mqtt_build_publish(uint8_t *out, size_t cap, const char *topic, const uin
     return compose(out, cap, (uint8_t)(((uint8_t)MqttType::MQTT_PUBLISH << 4) | f), body, n);
 }
 
-size_t mqtt_build_subscribe(uint8_t *out, size_t cap, uint16_t packet_id, const char *topic, uint8_t qos)
+size_t det_mqtt_build_subscribe(uint8_t *out, size_t cap, uint16_t packet_id, const char *topic, uint8_t qos)
 {
     if (!out || !topic || qos > 2)
         return 0;
@@ -211,7 +211,7 @@ size_t mqtt_build_subscribe(uint8_t *out, size_t cap, uint16_t packet_id, const 
                    n); // SUBSCRIBE flags = 0010
 }
 
-size_t mqtt_build_unsubscribe(uint8_t *out, size_t cap, uint16_t packet_id, const char *topic)
+size_t det_mqtt_build_unsubscribe(uint8_t *out, size_t cap, uint16_t packet_id, const char *topic)
 {
     if (!out || !topic)
         return 0;
@@ -228,7 +228,7 @@ size_t mqtt_build_unsubscribe(uint8_t *out, size_t cap, uint16_t packet_id, cons
                    n); // UNSUBSCRIBE flags = 0010
 }
 
-size_t mqtt_build_ack(uint8_t *out, size_t cap, MqttType type, uint16_t packet_id)
+size_t det_mqtt_build_ack(uint8_t *out, size_t cap, MqttType type, uint16_t packet_id)
 {
     if (!out || cap < 4)
         return 0;
@@ -239,7 +239,7 @@ size_t mqtt_build_ack(uint8_t *out, size_t cap, MqttType type, uint16_t packet_i
     return 4;
 }
 
-size_t mqtt_build_pingreq(uint8_t *out, size_t cap)
+size_t det_mqtt_build_pingreq(uint8_t *out, size_t cap)
 {
     if (!out || cap < 2)
         return 0;
@@ -248,7 +248,7 @@ size_t mqtt_build_pingreq(uint8_t *out, size_t cap)
     return 2;
 }
 
-size_t mqtt_build_disconnect(uint8_t *out, size_t cap)
+size_t det_mqtt_build_disconnect(uint8_t *out, size_t cap)
 {
     if (!out || cap < 2)
         return 0;
@@ -257,14 +257,14 @@ size_t mqtt_build_disconnect(uint8_t *out, size_t cap)
     return 2;
 }
 
-bool mqtt_parse_fixed_header(const uint8_t *buf, size_t avail, uint8_t *type, uint8_t *flags, uint32_t *remaining_len,
-                             size_t *header_len)
+bool det_mqtt_parse_fixed_header(const uint8_t *buf, size_t avail, uint8_t *type, uint8_t *flags,
+                                 uint32_t *remaining_len, size_t *header_len)
 {
     if (avail < 2)
         return false;
     uint32_t rl;
     size_t used;
-    if (!mqtt_decode_remlen(buf + 1, avail - 1, &rl, &used))
+    if (!det_mqtt_decode_remlen(buf + 1, avail - 1, &rl, &used))
         return false;
     *type = (uint8_t)(buf[0] >> 4);
     *flags = (uint8_t)(buf[0] & 0x0F);
@@ -273,8 +273,9 @@ bool mqtt_parse_fixed_header(const uint8_t *buf, size_t avail, uint8_t *type, ui
     return true;
 }
 
-bool mqtt_parse_publish(const uint8_t *buf, uint32_t remaining_len, uint8_t flags, char *topic_out, size_t topic_cap,
-                        size_t *topic_len, const uint8_t **payload, size_t *payload_len, uint16_t *packet_id)
+bool det_mqtt_parse_publish(const uint8_t *buf, uint32_t remaining_len, uint8_t flags, char *topic_out,
+                            size_t topic_cap, size_t *topic_len, const uint8_t **payload, size_t *payload_len,
+                            uint16_t *packet_id)
 {
     if (!buf || remaining_len < 2)
         return false;
@@ -308,14 +309,14 @@ bool mqtt_parse_publish(const uint8_t *buf, uint32_t remaining_len, uint8_t flag
     return true;
 }
 
-uint16_t mqtt_parse_ack(const uint8_t *buf, uint32_t remaining_len)
+uint16_t det_mqtt_parse_ack(const uint8_t *buf, uint32_t remaining_len)
 {
     if (!buf || remaining_len < 2)
         return 0;
     return get_u16(buf);
 }
 
-int mqtt_parse_connack(const uint8_t *buf, uint32_t remaining_len, bool *session_present)
+int det_mqtt_parse_connack(const uint8_t *buf, uint32_t remaining_len, bool *session_present)
 {
     if (!buf || remaining_len < 2)
         return -1;
@@ -324,7 +325,7 @@ int mqtt_parse_connack(const uint8_t *buf, uint32_t remaining_len, bool *session
     return buf[1];
 }
 
-bool mqtt_parse_suback(const uint8_t *buf, uint32_t remaining_len, uint16_t *packet_id, uint8_t *return_code)
+bool det_mqtt_parse_suback(const uint8_t *buf, uint32_t remaining_len, uint16_t *packet_id, uint8_t *return_code)
 {
     if (!buf || remaining_len < 3)
         return false;
@@ -567,7 +568,7 @@ static void handle_packet(uint8_t type, uint8_t flags, const uint8_t *body, uint
     switch ((MqttType)type) // wire byte -> typed control-packet dispatch
     {
     case MqttType::MQTT_CONNACK:
-        s_mqtt.connack_code = mqtt_parse_connack(body, rl, nullptr);
+        s_mqtt.connack_code = det_mqtt_parse_connack(body, rl, nullptr);
         if (s_mqtt.connack_code == 0)
             s_mqtt.mqtt_up = true;
         MQ_DBG("[mqtt] CONNACK code=%d\n", s_mqtt.connack_code);
@@ -578,7 +579,7 @@ static void handle_packet(uint8_t type, uint8_t flags, const uint8_t *body, uint
         size_t plen;
         const uint8_t *payload;
         uint16_t pid;
-        if (!mqtt_parse_publish(body, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))
+        if (!det_mqtt_parse_publish(body, rl, flags, topic, sizeof(topic), &tlen, &payload, &plen, &pid))
         {
             mq_close(); // MQTT-4.8.0-1: a malformed PUBLISH (incl. QoS=3) MUST close the connection
             break;
@@ -590,7 +591,7 @@ static void handle_packet(uint8_t type, uint8_t flags, const uint8_t *body, uint
                 s_mqtt.cb(topic, payload, plen);
             if (qos == 1)
             {
-                size_t n = mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBACK, pid);
+                size_t n = det_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBACK, pid);
                 mq_tx(s_mqtt.tx, n);
             }
         }
@@ -602,7 +603,7 @@ static void handle_packet(uint8_t type, uint8_t flags, const uint8_t *body, uint
                     s_mqtt.cb(topic, payload, plen);
                 rxqos2_add(pid);
             }
-            size_t n = mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBREC, pid);
+            size_t n = det_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBREC, pid);
             mq_tx(s_mqtt.tx, n);
         }
         break;
@@ -610,29 +611,29 @@ static void handle_packet(uint8_t type, uint8_t flags, const uint8_t *body, uint
     case MqttType::MQTT_PUBACK:  // our QoS 1 publish acknowledged
     case MqttType::MQTT_PUBCOMP: // our QoS 2 publish completed
     {
-        int s = inflight_find(mqtt_parse_ack(body, rl));
+        int s = inflight_find(det_mqtt_parse_ack(body, rl));
         if (s >= 0)
             s_mqtt.inflight[s].state = 0;
         break;
     }
     case MqttType::MQTT_PUBREC: // our QoS 2 publish: reply PUBREL, await PUBCOMP
     {
-        uint16_t pid = mqtt_parse_ack(body, rl);
+        uint16_t pid = det_mqtt_parse_ack(body, rl);
         int s = inflight_find(pid);
         if (s >= 0)
         {
             s_mqtt.inflight[s].state = 2;
             s_mqtt.inflight[s].sent_ms = millis();
         }
-        size_t n = mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBREL, pid);
+        size_t n = det_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBREL, pid);
         mq_tx(s_mqtt.tx, n);
         break;
     }
     case MqttType::MQTT_PUBREL: // broker releasing an inbound QoS 2 message: reply PUBCOMP
     {
-        uint16_t pid = mqtt_parse_ack(body, rl);
+        uint16_t pid = det_mqtt_parse_ack(body, rl);
         rxqos2_del(pid);
-        size_t n = mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBCOMP, pid);
+        size_t n = det_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBCOMP, pid);
         mq_tx(s_mqtt.tx, n);
         break;
     }
@@ -669,7 +670,7 @@ static void process_rx()
         uint8_t flags;
         uint32_t rl;
         size_t hl;
-        if (!mqtt_parse_fixed_header(hdr, hn, &type, &flags, &rl, &hl))
+        if (!det_mqtt_parse_fixed_header(hdr, hn, &type, &flags, &rl, &hl))
             return; // incomplete header
         size_t total = hl + rl;
         if (avail < total)
@@ -685,12 +686,12 @@ static void process_rx()
     }
 }
 
-void mqtt_on_message(MqttMessageCb cb)
+void det_mqtt_set_message_cb(MqttMessageCb cb)
 {
     s_mqtt.cb = cb;
 }
 
-bool mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttConnectOpts *opts)
+bool det_mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttConnectOpts *opts)
 {
     if (!host || !opts)
         return false;
@@ -735,7 +736,7 @@ bool mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttConne
     }
 #endif
 
-    size_t n = mqtt_build_connect(s_mqtt.tx, sizeof(s_mqtt.tx), opts);
+    size_t n = det_mqtt_build_connect(s_mqtt.tx, sizeof(s_mqtt.tx), opts);
     if (n == 0 || !mq_tx(s_mqtt.tx, n))
     {
         mq_close();
@@ -757,13 +758,13 @@ bool mqtt_connect(const char *host, uint16_t port, bool use_tls, const MqttConne
     return true;
 }
 
-bool mqtt_publish(const char *topic, const uint8_t *payload, size_t len, uint8_t qos, bool retain)
+bool det_mqtt_publish(const char *topic, const uint8_t *payload, size_t len, uint8_t qos, bool retain)
 {
     if (!s_mqtt.mqtt_up || qos > 2)
         return false;
     if (qos == 0)
     {
-        size_t n = mqtt_build_publish(s_mqtt.tx, sizeof(s_mqtt.tx), topic, payload, len, 0, 0, retain, false);
+        size_t n = det_mqtt_build_publish(s_mqtt.tx, sizeof(s_mqtt.tx), topic, payload, len, 0, 0, retain, false);
         return n && mq_tx(s_mqtt.tx, n);
     }
     // QoS 1/2: take an in-flight slot, store the serialized packet for retransmit.
@@ -778,8 +779,8 @@ bool mqtt_publish(const char *topic, const uint8_t *payload, size_t len, uint8_t
     if (slot < 0)
         return false; // in-flight window full
     uint16_t pid = next_pid();
-    size_t n = mqtt_build_publish(s_mqtt.inflight[slot].pkt, sizeof(s_mqtt.inflight[slot].pkt), topic, payload, len,
-                                  qos, pid, retain, false);
+    size_t n = det_mqtt_build_publish(s_mqtt.inflight[slot].pkt, sizeof(s_mqtt.inflight[slot].pkt), topic, payload, len,
+                                      qos, pid, retain, false);
     if (n == 0)
         return false; // too large for an in-flight slot
     s_mqtt.inflight[slot].pid = pid;
@@ -789,23 +790,23 @@ bool mqtt_publish(const char *topic, const uint8_t *payload, size_t len, uint8_t
     return mq_tx(s_mqtt.inflight[slot].pkt, n);
 }
 
-bool mqtt_subscribe(const char *topic, uint8_t qos)
+bool det_mqtt_subscribe(const char *topic, uint8_t qos)
 {
     if (!s_mqtt.mqtt_up)
         return false;
-    size_t n = mqtt_build_subscribe(s_mqtt.tx, sizeof(s_mqtt.tx), next_pid(), topic, qos);
+    size_t n = det_mqtt_build_subscribe(s_mqtt.tx, sizeof(s_mqtt.tx), next_pid(), topic, qos);
     return n && mq_tx(s_mqtt.tx, n);
 }
 
-bool mqtt_unsubscribe(const char *topic)
+bool det_mqtt_unsubscribe(const char *topic)
 {
     if (!s_mqtt.mqtt_up)
         return false;
-    size_t n = mqtt_build_unsubscribe(s_mqtt.tx, sizeof(s_mqtt.tx), next_pid(), topic);
+    size_t n = det_mqtt_build_unsubscribe(s_mqtt.tx, sizeof(s_mqtt.tx), next_pid(), topic);
     return n && mq_tx(s_mqtt.tx, n);
 }
 
-bool mqtt_loop()
+bool det_mqtt_loop()
 {
     if (!s_mqtt.mqtt_up)
         return false;
@@ -829,7 +830,7 @@ bool mqtt_loop()
         }
         if (!s_mqtt.ping_pending && (now - s_mqtt.last_tx_ms) >= ka)
         {
-            size_t n = mqtt_build_pingreq(s_mqtt.tx, sizeof(s_mqtt.tx));
+            size_t n = det_mqtt_build_pingreq(s_mqtt.tx, sizeof(s_mqtt.tx));
             if (mq_tx(s_mqtt.tx, n))
             {
                 s_mqtt.ping_pending = true;
@@ -852,7 +853,7 @@ bool mqtt_loop()
         }
         else // state 2: re-send PUBREL
         {
-            size_t n = mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBREL, s_mqtt.inflight[i].pid);
+            size_t n = det_mqtt_build_ack(s_mqtt.tx, sizeof(s_mqtt.tx), MqttType::MQTT_PUBREL, s_mqtt.inflight[i].pid);
             mq_tx(s_mqtt.tx, n);
         }
         s_mqtt.inflight[i].sent_ms = now;
@@ -860,16 +861,16 @@ bool mqtt_loop()
     return true;
 }
 
-bool mqtt_connected()
+bool det_mqtt_connected()
 {
     return s_mqtt.mqtt_up;
 }
 
-void mqtt_disconnect()
+void det_mqtt_disconnect()
 {
     if (s_mqtt.cid >= 0 && s_mqtt.mqtt_up)
     {
-        size_t n = mqtt_build_disconnect(s_mqtt.tx, sizeof(s_mqtt.tx));
+        size_t n = det_mqtt_build_disconnect(s_mqtt.tx, sizeof(s_mqtt.tx));
         mq_tx(s_mqtt.tx, n);
     }
     mq_close();
@@ -877,34 +878,34 @@ void mqtt_disconnect()
 
 #else // host build: transport is a stub
 
-void mqtt_on_message(MqttMessageCb)
+void det_mqtt_set_message_cb(MqttMessageCb)
 {
 }
-bool mqtt_connect(const char *, uint16_t, bool, const MqttConnectOpts *)
-{
-    return false;
-}
-bool mqtt_publish(const char *, const uint8_t *, size_t, uint8_t, bool)
+bool det_mqtt_connect(const char *, uint16_t, bool, const MqttConnectOpts *)
 {
     return false;
 }
-bool mqtt_subscribe(const char *, uint8_t)
+bool det_mqtt_publish(const char *, const uint8_t *, size_t, uint8_t, bool)
 {
     return false;
 }
-bool mqtt_unsubscribe(const char *)
+bool det_mqtt_subscribe(const char *, uint8_t)
 {
     return false;
 }
-bool mqtt_loop()
+bool det_mqtt_unsubscribe(const char *)
 {
     return false;
 }
-bool mqtt_connected()
+bool det_mqtt_loop()
 {
     return false;
 }
-void mqtt_disconnect()
+bool det_mqtt_connected()
+{
+    return false;
+}
+void det_mqtt_disconnect()
 {
 }
 

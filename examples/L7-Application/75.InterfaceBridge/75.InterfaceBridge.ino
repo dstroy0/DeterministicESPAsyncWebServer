@@ -15,7 +15,7 @@
  *     and gets back the read_len bytes clocked off the bus. This is what master-initiated buses need.
  *
  * Wiring mirrors the relay: `server.listen(port, ConnProto::PROTO_BRIDGE)` opens the port, then
- * `det_bridge_publish()` binds it to a target and brings the bus up. The server poll loop does the rest.
+ * `det_iface_bridge_publish()` binds it to a target and brings the bus up. The server poll loop does the rest.
  *
  * Edit the lines marked "CHANGE ME", flash, open Serial @ 115200, then from another machine:
  *   - UART stream:  `nc <board-ip> 2323`  (type; it goes out UART1, replies come back)
@@ -33,7 +33,7 @@
 
 #include "dwserver.h"
 #include "network_drivers/physical/physical.h"
-#include "services/iface_bridge/iface_bridge_hw.h" // det_bridge_publish
+#include "services/iface_bridge/iface_bridge_hw.h" // det_iface_bridge_publish
 #include <Arduino.h>
 #include <WiFi.h>
 
@@ -66,13 +66,13 @@ void setup()
     //     {bus, mode, unit, addr_cs, rate, spi_mode, bit_order}
     BridgeTarget uart = {BridgeBus::uart, BridgeMode::stream, 1, 0, 115200, 0, 0};
     int32_t lu = server.listen(UART_PORT, ConnProto::PROTO_BRIDGE);
-    if (lu < 0 || !det_bridge_publish((uint8_t)lu, UART_PORT, BridgeProto::tcp, &uart))
+    if (lu < 0 || !det_iface_bridge_publish((uint8_t)lu, UART_PORT, BridgeProto::tcp, &uart))
         Serial.println("UART bridge publish failed");
 
     // (2) An SPI device on chip-select GPIO 5, mode 0, MSB-first, 1 MHz, as write-then-read transactions.
     BridgeTarget spi = {BridgeBus::spi, BridgeMode::transaction, 0, 5 /*CS gpio*/, 1000000, 0, 0};
     int32_t ls = server.listen(SPI_PORT, ConnProto::PROTO_BRIDGE);
-    if (ls < 0 || !det_bridge_publish((uint8_t)ls, SPI_PORT, BridgeProto::tcp, &spi))
+    if (ls < 0 || !det_iface_bridge_publish((uint8_t)ls, SPI_PORT, BridgeProto::tcp, &spi))
         Serial.println("SPI bridge publish failed");
 
     server.begin();

@@ -45,7 +45,7 @@ per rule:
     stays generic across devices.
 
 Wiring is two calls per endpoint: `server.listen(port, ConnProto::PROTO_BRIDGE)`
-opens the port, and `det_bridge_publish()` binds it to a `BridgeTarget` and
+opens the port, and `det_iface_bridge_publish()` binds it to a `BridgeTarget` and
 brings the bus up. The server's own poll loop pumps everything.
 
 ```

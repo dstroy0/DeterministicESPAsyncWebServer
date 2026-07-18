@@ -374,7 +374,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         plen--;
     const char *root = r->static_root ? r->static_root : "";
 
-    switch (webdav_method(req->method))
+    switch (det_webdav_method(req->method))
     {
     case WebDavMethod::DAV_M_OPTIONS:
         add_response_header(slot_id, "DAV", "1, 2");
@@ -399,7 +399,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
             dav_send_status(slot_id, 405, ""); // GET on a collection is not a download
             return;
         }
-        serve_file_internal(slot_id, webdav_method(req->method) == WebDavMethod::DAV_M_HEAD, fsys, fs_path,
+        serve_file_internal(slot_id, det_webdav_method(req->method) == WebDavMethod::DAV_M_HEAD, fsys, fs_path,
                             mime_type(fs_path), nullptr);
         return;
     }
@@ -470,7 +470,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
     case WebDavMethod::DAV_M_MOVE: {
         const char *dest_hdr = http_get_header(req, "Destination");
         char dest_url[256];
-        if (!dest_hdr || !webdav_dest_path(dest_hdr, dest_url, sizeof(dest_url)))
+        if (!dest_hdr || !det_webdav_dest_path(dest_hdr, dest_url, sizeof(dest_url)))
         {
             dav_send_status(slot_id, 400, "");
             return;
@@ -506,7 +506,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
             return;
         }
 
-        if (webdav_method(req->method) == WebDavMethod::DAV_M_MOVE)
+        if (det_webdav_method(req->method) == WebDavMethod::DAV_M_MOVE)
         {
             if (dest_exists)
                 dav_rm_recursive(fsys, dest_fs, 0); // replace
@@ -582,7 +582,7 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         uint32_t fsize = (uint32_t)f.size();
         time_t mtime = f.getLastWrite();
 
-        int depth = webdav_depth(http_get_header(req, "Depth"), 1);
+        int depth = det_webdav_depth(http_get_header(req, "Depth"), 1);
 
         // RFC 4918 9.1.1: this server lists at most one level, so a Depth: infinity
         // PROPFIND is rejected with 403 + the propfind-finite-depth precondition rather
@@ -611,10 +611,10 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
         }
 
         size_t cap = sizeof(s_dav.buf), len = 0;
-        len = webdav_ms_begin(s_dav.buf, cap, len);
+        len = det_webdav_ms_begin(s_dav.buf, cap, len);
         char mt[40];
         http_rfc1123(mtime, mt, sizeof(mt));
-        len = webdav_ms_entry(s_dav.buf, cap, len, self_href, isdir, fsize, mt, isdir ? "" : mime_type(fs_path));
+        len = det_webdav_ms_entry(s_dav.buf, cap, len, self_href, isdir, fsize, mt, isdir ? "" : mime_type(fs_path));
 
         if (isdir && depth >= 1)
         {
@@ -639,14 +639,14 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
                 http_rfc1123(cmt, cmtbuf, sizeof(cmtbuf));
                 c.close();
                 size_t before = len;
-                len = webdav_ms_entry(s_dav.buf, cap, len, chref, cdir, csize, cmtbuf, cdir ? "" : mime_type(base));
+                len = det_webdav_ms_entry(s_dav.buf, cap, len, chref, cdir, csize, cmtbuf, cdir ? "" : mime_type(base));
                 if (len == before)
                     break; // buffer full - stop listing
                 count++;
             }
         }
         f.close();
-        len = webdav_ms_end(s_dav.buf, cap, len);
+        len = det_webdav_ms_end(s_dav.buf, cap, len);
         send(slot_id, 207, "application/xml; charset=utf-8", s_dav.buf);
         return;
     }
@@ -660,7 +660,8 @@ void DetWebServer::serve_dav_request(uint8_t slot_id, HttpReq *req, const Route 
             dav_send_status(slot_id, 404, "");
             return;
         }
-        size_t n = webdav_proppatch_ms(s_dav.buf, sizeof(s_dav.buf), req->path, (const char *)req->body, req->body_len);
+        size_t n =
+            det_webdav_proppatch_ms(s_dav.buf, sizeof(s_dav.buf), req->path, (const char *)req->body, req->body_len);
         if (!n)
         {
             dav_send_status(slot_id, 507, ""); // Insufficient Storage: response did not fit the buffer

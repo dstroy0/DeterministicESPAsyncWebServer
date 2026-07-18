@@ -430,7 +430,7 @@ void process_ack(DtlsConn *c, const uint8_t *body, size_t len)
     flight_disarm(c);
 }
 
-// One-record outcome for the dtls_conn_process datagram walk.
+// One-record outcome for the det_dtls_conn_process datagram walk.
 enum class DtlsRecStep
 {
     NEXT,  // record consumed; keep walking the datagram
@@ -493,7 +493,7 @@ DtlsRecStep process_plaintext_record(DtlsConn *c, const uint8_t *dgram, size_t l
 // (3, application), covering the epoch-2 Finished record (§7). Sent at most once.
 void maybe_send_completion_ack(DtlsConn *c, uint8_t *out, size_t out_cap, size_t *out_len)
 {
-    if (!dtls_conn_established(c) || c->hs_ack_sent)
+    if (!det_dtls_conn_established(c) || c->hs_ack_sent)
         return;
     DtlsRecordNumber rn = {2, c->rx_ep2_seq};
     uint8_t ack_body[2 + 16];
@@ -509,7 +509,7 @@ void maybe_send_completion_ack(DtlsConn *c, uint8_t *out, size_t out_cap, size_t
 }
 } // namespace
 
-void dtls_conn_init(DtlsConn *c, const DtlsServerConfig *cfg, const uint8_t *peer_addr, size_t peer_addr_len)
+void det_dtls_conn_init(DtlsConn *c, const DtlsServerConfig *cfg, const uint8_t *peer_addr, size_t peer_addr_len)
 {
     memset(c, 0, sizeof(*c));
     c->cfg = *cfg;
@@ -528,7 +528,7 @@ void dtls_conn_init(DtlsConn *c, const DtlsServerConfig *cfg, const uint8_t *pee
     dtls_hs_reasm_init(&c->reasm, 0, c->reasm_buf + 4, DTLS_CONN_REASM_CAP);
 }
 
-int dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *out, size_t out_cap)
+int det_dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *out, size_t out_cap)
 {
     if (c->state == DtlsConnState::FAILED)
         return -1;
@@ -549,7 +549,7 @@ int dtls_conn_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *ou
     return (int)out_len;
 }
 
-int dtls_conn_timeout_ms(const DtlsConn *c)
+int det_dtls_conn_timeout_ms(const DtlsConn *c)
 {
     if (!c->awaiting_reply || c->state == DtlsConnState::FAILED || c->state == DtlsConnState::DONE)
         return -1;
@@ -558,7 +558,7 @@ int dtls_conn_timeout_ms(const DtlsConn *c)
     return remaining > 0 ? remaining : 0;
 }
 
-int dtls_conn_on_timeout(DtlsConn *c, uint8_t *out, size_t out_cap)
+int det_dtls_conn_on_timeout(DtlsConn *c, uint8_t *out, size_t out_cap)
 {
     if (!c->awaiting_reply || c->state == DtlsConnState::FAILED || c->state == DtlsConnState::DONE)
         return 0;
@@ -580,27 +580,27 @@ int dtls_conn_on_timeout(DtlsConn *c, uint8_t *out, size_t out_cap)
     return (int)out_len;
 }
 
-bool dtls_conn_established(const DtlsConn *c)
+bool det_dtls_conn_established(const DtlsConn *c)
 {
     return c->state == DtlsConnState::DONE && c->ep3_ready;
 }
 
-uint8_t dtls_conn_alert(const DtlsConn *c)
+uint8_t det_dtls_conn_alert(const DtlsConn *c)
 {
     return c->alert;
 }
 
-const DtlsRecordKeys *dtls_conn_app_write_keys(const DtlsConn *c)
+const DtlsRecordKeys *det_dtls_conn_app_write_keys(const DtlsConn *c)
 {
     return c->ep3_ready ? &c->ep3_srv : nullptr;
 }
 
-const DtlsRecordKeys *dtls_conn_app_read_keys(const DtlsConn *c)
+const DtlsRecordKeys *det_dtls_conn_app_read_keys(const DtlsConn *c)
 {
     return c->ep3_ready ? &c->ep3_cli : nullptr;
 }
 
-size_t dtls_conn_local_cid(const DtlsConn *c, uint8_t *out)
+size_t det_dtls_conn_local_cid(const DtlsConn *c, uint8_t *out)
 {
     if (!c->cid_negotiated || c->local_cid_len == 0)
         return 0;
@@ -608,9 +608,10 @@ size_t dtls_conn_local_cid(const DtlsConn *c, uint8_t *out)
     return c->local_cid_len;
 }
 
-bool dtls_conn_open_app(DtlsConn *c, const uint8_t *rec, size_t rec_len, uint8_t *out, size_t out_cap, size_t *out_len)
+bool det_dtls_conn_open_app(DtlsConn *c, const uint8_t *rec, size_t rec_len, uint8_t *out, size_t out_cap,
+                            size_t *out_len)
 {
-    if (!dtls_conn_established(c))
+    if (!det_dtls_conn_established(c))
         return false;
     DtlsCiphertext info;
     uint64_t next = c->replay_ep3.seeded ? c->replay_ep3.highest + 1 : 0;
@@ -627,9 +628,9 @@ bool dtls_conn_open_app(DtlsConn *c, const uint8_t *rec, size_t rec_len, uint8_t
     return true;
 }
 
-size_t dtls_conn_seal_app(DtlsConn *c, const uint8_t *data, size_t len, uint8_t *out, size_t out_cap)
+size_t det_dtls_conn_seal_app(DtlsConn *c, const uint8_t *data, size_t len, uint8_t *out, size_t out_cap)
 {
-    if (!dtls_conn_established(c))
+    if (!det_dtls_conn_established(c))
         return 0;
     // tx_seq_ep3 is shared with the completion ACK, so app records never reuse its sequence number.
     return dtls_ciphertext_protect(&c->ep3_srv, c->tx_seq_ep3++, DTLS_CT_APPLICATION_DATA, data, len, out, out_cap,

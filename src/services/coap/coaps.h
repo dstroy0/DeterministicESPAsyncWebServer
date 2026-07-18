@@ -9,7 +9,7 @@
  * CoAP secured with DTLS is the standard way to run CoAP over the open Internet (coaps://, UDP port
  * 5684). This is the transport-neutral glue: it drives one @ref DtlsConn through its handshake and,
  * once established, unwraps each encrypted application record, hands the CoAP request to
- * coap_server_process(), and re-wraps the response. The socket / per-peer routing lives in a thin
+ * det_coap_server_process(), and re-wraps the response. The socket / per-peer routing lives in a thin
  * front-end (dtls_server) on top; this file has no sockets, so it is host-testable with an in-test
  * DTLS client, exactly like dtls_conn itself.
  *
@@ -31,16 +31,16 @@
 /**
  * @brief Process one inbound DTLS datagram for a CoAP-over-DTLS connection @p c.
  *
- * While the handshake is in progress the datagram is driven through @ref dtls_conn_process. Once the
+ * While the handshake is in progress the datagram is driven through @ref det_dtls_conn_process. Once the
  * connection is established, an epoch-3 application record is decrypted, its CoAP request is answered
- * by coap_server_process(), and the response is sealed as an epoch-3 record. A handshake record that
+ * by det_coap_server_process(), and the response is sealed as an epoch-3 record. A handshake record that
  * arrives after establishment (a retransmitted client Finished whose ACK was lost) is routed back to
  * the state machine so it is re-acknowledged (RFC 9147 §5.8.3).
  *
  * @return bytes written to @p out (0 if there is nothing to send), or -1 on a fatal handshake error
- *         (then @p c is FAILED and @ref dtls_conn_alert gives the reason).
+ *         (then @p c is FAILED and @ref det_dtls_conn_alert gives the reason).
  */
-int coaps_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *out, size_t out_cap);
+int det_coaps_process(DtlsConn *c, const uint8_t *dgram, size_t len, uint8_t *out, size_t out_cap);
 
 #endif // DETWS_ENABLE_DTLS && DETWS_ENABLE_COAP
 #endif // DETERMINISTICESPASYNCWEBSERVER_COAPS_H

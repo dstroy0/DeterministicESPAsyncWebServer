@@ -72,7 +72,7 @@ struct CoapCtx
 #if DETWS_ENABLE_COAP_OBSERVE
     uint16_t port = DETWS_COAP_OBSERVE_PORT; // UDP port the observe transport notifies from
     CoapObserver obs[DETWS_COAP_MAX_OBSERVERS];
-    // Last-request fields recorded by coap_server_process_ex() for the Observe transport.
+    // Last-request fields recorded by det_coap_server_process_ex() for the Observe transport.
     int last_observe = -1;
     uint8_t last_method = 0;
     uint8_t last_token[8];
@@ -89,7 +89,7 @@ struct CoapCtx
 
 static CoapCtx s_coap;
 
-void coap_server_init()
+void det_coap_server_reset()
 {
     s_coap.res_count = 0;
     memset(s_coap.res, 0, sizeof(s_coap.res));
@@ -99,7 +99,7 @@ void coap_server_init()
 #endif
 }
 
-bool coap_server_add_resource(const char *path, uint8_t methods, CoapHandler handler)
+bool det_coap_server_add_resource(const char *path, uint8_t methods, CoapHandler handler)
 {
     if (s_coap.res_count >= DETWS_COAP_MAX_RESOURCES || !path || !handler)
         return false;
@@ -245,7 +245,8 @@ static size_t emit_options_payload(uint8_t *resp, size_t cap, size_t n, uint8_t 
 // Core processing (no sockets, no heap)
 // ---------------------------------------------------------------------------
 
-size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap, int32_t observe_seq)
+size_t det_coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap,
+                                  int32_t observe_seq)
 {
     if (req_len < 4)
         return 0; // too short for a header
@@ -609,9 +610,9 @@ size_t coap_server_process_ex(const uint8_t *req, size_t req_len, uint8_t *resp,
                                 block1_echo, cresp.payload, cresp.payload_len);
 }
 
-size_t coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap)
+size_t det_coap_server_process(const uint8_t *req, size_t req_len, uint8_t *resp, size_t resp_cap)
 {
-    return coap_server_process_ex(req, req_len, resp, resp_cap, -1); // no Observe option
+    return det_coap_server_process_ex(req, req_len, resp, resp_cap, -1); // no Observe option
 }
 
 // ---------------------------------------------------------------------------
@@ -670,7 +671,7 @@ static void obs_remove(const char *ip, uint16_t port, const uint8_t *token, uint
             s_coap.obs[i].active = false;
 }
 
-void coap_notify(const char *path)
+void det_coap_notify(const char *path)
 {
     int ridx = find_resource_index(s_coap, path);
     if (ridx < 0)
@@ -725,7 +726,7 @@ static void coap_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer 
         return;
     }
 
-    size_t rn = coap_server_process_ex(data, len, s_coap.tx, sizeof(s_coap.tx), -1);
+    size_t rn = det_coap_server_process_ex(data, len, s_coap.tx, sizeof(s_coap.tx), -1);
     if (!rn)
         return;
 
@@ -739,7 +740,7 @@ static void coap_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer 
             {
                 // Re-encode the response carrying the Observe option (registration ack).
                 size_t rn2 =
-                    coap_server_process_ex(data, len, s_coap.tx, sizeof(s_coap.tx), (int32_t)s_coap.obs[slot].seq);
+                    det_coap_server_process_ex(data, len, s_coap.tx, sizeof(s_coap.tx), (int32_t)s_coap.obs[slot].seq);
                 if (rn2)
                     rn = rn2;
             }
@@ -753,7 +754,7 @@ static void coap_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer 
     det_udp_send(peer, s_coap.tx, rn);
 }
 
-void coap_server_begin_udp(uint16_t port)
+void det_coap_server_begin(uint16_t port)
 {
     s_coap.port = port;
     for (int i = 0; i < DETWS_COAP_MAX_OBSERVERS; i++)
@@ -766,12 +767,12 @@ void coap_server_begin_udp(uint16_t port)
 static void coap_udp_handler(const uint8_t *data, size_t len, struct DetUdpPeer *peer, void *ctx)
 {
     (void)ctx;
-    size_t rn = coap_server_process(data, len, s_coap.tx, sizeof(s_coap.tx));
+    size_t rn = det_coap_server_process(data, len, s_coap.tx, sizeof(s_coap.tx));
     if (rn)
         det_udp_send(peer, s_coap.tx, rn);
 }
 
-void coap_server_begin_udp(uint16_t port)
+void det_coap_server_begin(uint16_t port)
 {
     det_udp_listen(port, coap_udp_handler, nullptr);
 }

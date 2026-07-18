@@ -11,7 +11,7 @@
  * own broker for real telemetry / command.
  *
  * Flash, open Serial @ 115200. Full QoS 0/1/2, keep-alive, and DUP retransmit are
- * handled by mqtt_loop(); call it every loop().
+ * handled by det_mqtt_loop(); call it every loop().
  *
  * NOTE: optional services are gated by a compile flag the *library* sources must
  * also see; for PlatformIO enable it for the whole build, e.g.:
@@ -54,7 +54,7 @@ void setup()
     Serial.println(WiFi.localIP());
     WiFi.setSleep(false);
 
-    mqtt_on_message(on_message);
+    det_mqtt_set_message_cb(on_message);
 
     MqttConnectOpts opts;
     memset(&opts, 0, sizeof(opts));
@@ -62,10 +62,10 @@ void setup()
     opts.keepalive_s = 30;
     opts.clean_session = true;
 
-    if (mqtt_connect(BROKER, PORT, false, &opts))
+    if (det_mqtt_connect(BROKER, PORT, false, &opts))
     {
         Serial.println("MQTT connected");
-        mqtt_subscribe(TOPIC, 1);
+        det_mqtt_subscribe(TOPIC, 1);
     }
     else
     {
@@ -75,15 +75,15 @@ void setup()
 
 void loop()
 {
-    mqtt_loop();
+    det_mqtt_loop();
 
     static uint32_t last = 0;
     static uint32_t n = 0;
-    if (mqtt_connected() && millis() - last >= 1000)
+    if (det_mqtt_connected() && millis() - last >= 1000)
     {
         last = millis();
         char msg[48];
         int len = snprintf(msg, sizeof(msg), "hello from esp32 #%lu", (unsigned long)n++);
-        mqtt_publish(TOPIC, (const uint8_t *)msg, (size_t)len, 1, false);
+        det_mqtt_publish(TOPIC, (const uint8_t *)msg, (size_t)len, 1, false);
     }
 }

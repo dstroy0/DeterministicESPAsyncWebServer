@@ -654,7 +654,7 @@
       "tests": ["test_coap"]
     },
     "native_coap_observe": {
-      "desc": "CoAP with resource observation (RFC 7641) enabled. Compiles + runs test_coap\nwith DETWS_ENABLE_COAP_OBSERVE on, so the Observe-gated code (request Observe\nrecording, the observer registry, coap_notify) is actually built in CI instead\nof bit-rotting (it is enabled by no other env).",
+      "desc": "CoAP with resource observation (RFC 7641) enabled. Compiles + runs test_coap\nwith DETWS_ENABLE_COAP_OBSERVE on, so the Observe-gated code (request Observe\nrecording, the observer registry, det_coap_notify) is actually built in CI instead\nof bit-rotting (it is enabled by no other env).",
       "flags": [
         "-DDETWS_ENABLE_COAP=1",
         "-DDETWS_ENABLE_COAP_BLOCK=1",
@@ -2353,7 +2353,7 @@
       "tests": ["test_coaps"]
     },
     "native_coaps_server": {
-      "desc": "CoAP-over-DTLS server front-end (services/coap/coaps_server): the per-peer DtlsConn pool +\ningest/poll seam on top of coaps_process(). An in-test DTLS 1.3 client drives the server only through\ncoaps_server_ingest() and an output sink, exercising peer-address routing, the handshake + CoAP\nexchange, the poll-driven retransmission timer (RFC 9147 sec 5.8), and idle-connection reaping. Two\nsimultaneous peers are routed to their own connections. Pure host tests.",
+      "desc": "CoAP-over-DTLS server front-end (services/coap/coaps_server): the per-peer DtlsConn pool +\ningest/poll seam on top of det_coaps_process(). An in-test DTLS 1.3 client drives the server only through\ncoaps_server_ingest() and an output sink, exercising peer-address routing, the handshake + CoAP\nexchange, the poll-driven retransmission timer (RFC 9147 sec 5.8), and idle-connection reaping. Two\nsimultaneous peers are routed to their own connections. Pure host tests.",
       "flags": ["-DDETWS_ENABLE_DTLS=1", "-DDETWS_ENABLE_COAP=1"],
       "src": [
         "+<services/coap/coaps_server.cpp>",

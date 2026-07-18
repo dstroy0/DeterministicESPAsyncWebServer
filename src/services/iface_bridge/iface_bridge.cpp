@@ -18,18 +18,18 @@ struct BridgeCtx
 BridgeCtx s_bridge;
 } // namespace
 
-void bridge_clear()
+void det_iface_bridge_clear()
 {
     for (uint8_t i = 0; i < DETWS_BRIDGE_MAX_RULES; i++)
         s_bridge.rules[i].used = false;
     s_bridge.count = 0;
 }
 
-bool bridge_add(const BridgeRule *rule)
+bool det_iface_bridge_add(const BridgeRule *rule)
 {
     if (!rule)
         return false;
-    if (bridge_find(rule->listen_port, rule->proto))
+    if (det_iface_bridge_find(rule->listen_port, rule->proto))
         return false; // a rule already binds this port+proto
     for (uint8_t i = 0; i < DETWS_BRIDGE_MAX_RULES; i++)
     {
@@ -44,7 +44,7 @@ bool bridge_add(const BridgeRule *rule)
     return false; // table full
 }
 
-bool bridge_map(const char *ip, uint16_t port, BridgeProto proto, const BridgeTarget *target)
+bool det_iface_bridge_map(const char *ip, uint16_t port, BridgeProto proto, const BridgeTarget *target)
 {
     if (!target)
         return false;
@@ -56,10 +56,10 @@ bool bridge_map(const char *ip, uint16_t port, BridgeProto proto, const BridgeTa
     r.listen_port = port;
     r.proto = proto;
     r.target = *target;
-    return bridge_add(&r);
+    return det_iface_bridge_add(&r);
 }
 
-const BridgeRule *bridge_find(uint16_t port, BridgeProto proto)
+const BridgeRule *det_iface_bridge_find(uint16_t port, BridgeProto proto)
 {
     for (uint8_t i = 0; i < DETWS_BRIDGE_MAX_RULES; i++)
         if (s_bridge.rules[i].used && s_bridge.rules[i].listen_port == port && s_bridge.rules[i].proto == proto)
@@ -67,13 +67,13 @@ const BridgeRule *bridge_find(uint16_t port, BridgeProto proto)
     return nullptr;
 }
 
-uint8_t bridge_count()
+uint8_t det_iface_bridge_count()
 {
     return s_bridge.count;
 }
 
-size_t bridge_txn_parse(const uint8_t *buf, size_t len, uint16_t *write_len, uint16_t *read_len,
-                        const uint8_t **write_data)
+size_t det_iface_bridge_txn_parse(const uint8_t *buf, size_t len, uint16_t *write_len, uint16_t *read_len,
+                                  const uint8_t **write_data)
 {
     if (!buf || len < (size_t)DETWS_BRIDGE_TXN_HDR)
         return 0;
@@ -90,7 +90,8 @@ size_t bridge_txn_parse(const uint8_t *buf, size_t len, uint16_t *write_len, uin
     return (size_t)DETWS_BRIDGE_TXN_HDR + wl;
 }
 
-size_t bridge_txn_build(uint8_t *out, size_t cap, const uint8_t *write_data, uint16_t write_len, uint16_t read_len)
+size_t det_iface_bridge_txn_build(uint8_t *out, size_t cap, const uint8_t *write_data, uint16_t write_len,
+                                  uint16_t read_len)
 {
     size_t need = (size_t)DETWS_BRIDGE_TXN_HDR + write_len;
     if (!out || cap < need)

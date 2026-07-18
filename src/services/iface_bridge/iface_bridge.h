@@ -90,20 +90,20 @@ struct BridgeRule
 // ---------------------------------------------------------------------------------------------
 
 /// Remove all rules.
-void bridge_clear();
+void det_iface_bridge_clear();
 
 /// Register a rule. Returns false if the table is full or a rule already binds the same port+proto.
-bool bridge_add(const BridgeRule *rule);
+bool det_iface_bridge_add(const BridgeRule *rule);
 
 /// Convenience: build + add a rule in one call. @p ip may be NULL for "any interface". Returns false on
 /// a bad address, a full table, or a duplicate port+proto.
-bool bridge_map(const char *ip, uint16_t port, BridgeProto proto, const BridgeTarget *target);
+bool det_iface_bridge_map(const char *ip, uint16_t port, BridgeProto proto, const BridgeTarget *target);
 
 /// Find the rule bound to @p port + @p proto, or NULL. This is the listener-dispatch lookup.
-const BridgeRule *bridge_find(uint16_t port, BridgeProto proto);
+const BridgeRule *det_iface_bridge_find(uint16_t port, BridgeProto proto);
 
 /// Number of registered rules.
-uint8_t bridge_count();
+uint8_t det_iface_bridge_count();
 
 // ---------------------------------------------------------------------------------------------
 // Transaction frame codec (pure). write_len / read_len are big-endian.
@@ -117,14 +117,15 @@ uint8_t bridge_count();
  * does not yet hold the whole frame (the caller should read more), so a partial header or a partial write
  * payload both yield 0.
  */
-size_t bridge_txn_parse(const uint8_t *buf, size_t len, uint16_t *write_len, uint16_t *read_len,
-                        const uint8_t **write_data);
+size_t det_iface_bridge_txn_parse(const uint8_t *buf, size_t len, uint16_t *write_len, uint16_t *read_len,
+                                  const uint8_t **write_data);
 
 /**
  * @brief Build a transaction request frame (header + write payload) into @p out.
  * @return bytes written, or 0 if @p out is too small.
  */
-size_t bridge_txn_build(uint8_t *out, size_t cap, const uint8_t *write_data, uint16_t write_len, uint16_t read_len);
+size_t det_iface_bridge_txn_build(uint8_t *out, size_t cap, const uint8_t *write_data, uint16_t write_len,
+                                  uint16_t read_len);
 
 #endif // DETWS_ENABLE_IFACE_BRIDGE
 

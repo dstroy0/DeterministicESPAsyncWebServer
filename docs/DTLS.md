@@ -24,10 +24,10 @@ HTTP/3 - no second TLS stack.
 > offer an X25519 key_share up front is answered with an HRR carrying an address-bound cookie and
 > renegotiates the group (§5.1). Lost flights are recovered by a **retransmission timer** with
 > exponential backoff (§5.8), and inbound **ACKs** cancel it. The **CoAP-over-DTLS front-end** is
-> complete: the bridge (`coaps_process`) drives the handshake and then runs `coap_server_process`
+> complete: the bridge (`det_coaps_process`) drives the handshake and then runs `det_coap_server_process`
 > inside the encrypted records, and `coaps_server` binds a UDP port (5684, `coaps://`) to a per-peer
 > connection pool - routing each datagram to its connection by peer address, driving every handshake
-> and the retransmission timer from one `coaps_server_poll()`, and reaping idle connections
+> and the retransmission timer from one `det_coaps_server_poll()`, and reaping idle connections
 > (example [78.CoapSecure](../examples/L7-Application/78.CoapSecure)). Each layer is a complete,
 > independently tested unit.
 
