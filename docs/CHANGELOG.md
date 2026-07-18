@@ -6,16 +6,20 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update test report + coverage [skip ci] ([`53cb4c5`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/53cb4c55c5e2c77a74d9334ddc8f1fc855359ea8))
+- update CHANGELOG.md [skip ci] ([`9da915d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/9da915dbe8552df079b146e5ad6840309752731f))
 - update CHANGELOG.md [skip ci] ([`1841e55`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1841e55d2f0a4b26fb6794df52c26ff1844a5ede))
 - update CHANGELOG.md [skip ci] ([`d9a23af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9a23afb378bec74d24fb05392e63a3fd7b6d1f3))
 - update CHANGELOG.md [skip ci] ([`bfe85b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfe85b67280a846bd4aec7ecdb10d89d2be45886))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`a9087d6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a9087d638cb925a602f9f58850b8f9d0c589efa3))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`c366d49`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c366d4991ee18c75ad84719468660838a380286e))
 
 ### Refactor
 
+- unify the house prefix to dws_ / DWS / DWS_ everywhere (7.0.0 prep) ([`58ebdcd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/58ebdcde7107935e996fe43bd087e958a5344f25))
 - normalize ssh public API to det_ssh_* (7.0.0 prep) ([`629f20c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/629f20c77baf07417937c61d9078d6e552212e18))
 - normalize mqtt/coap/dtls/h2/webdav/dnc/iface_bridge to det_* (7.0.0 prep) ([`df62eaf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df62eaf0308308cf39853c9b00566b833683ab7f))
 - normalize dns/mdns/quic/tls-client-session to det_* (7.0.0 prep) ([`251fc4f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/251fc4f39403b35b6b8a88f8277f7c59d357012f))
