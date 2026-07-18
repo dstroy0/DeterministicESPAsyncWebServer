@@ -12,6 +12,8 @@
 
 #include <string.h>
 
+#include "shared_primitives/strbuf.h"
+
 void detws_hwhealth_rail_init(HwRailMonitor *m, uint32_t nominal_mv, uint32_t warn_mv, uint32_t crit_mv)
 {
     if (!m)
@@ -43,61 +45,20 @@ HwRailVerdict detws_hwhealth_rail_sample(HwRailMonitor *m, uint32_t mv)
     return HwRailVerdict::HW_RAIL_OK;
 }
 
-namespace
-{
-struct Buf
-{
-    char *p;
-    size_t cap;
-    size_t len;
-    bool ok;
-};
-
-void put(Buf *b, const char *s)
-{
-    if (!b->ok)
-        return;
-    size_t sl = strnlen(s, b->cap + 1);
-    if (b->len + sl >= b->cap)
-    {
-        b->ok = false;
-        return;
-    }
-    memcpy(b->p + b->len, s, sl);
-    b->len += sl;
-}
-
-void put_u32(Buf *b, uint32_t v)
-{
-    char t[10];
-    int n = 0;
-    do
-    {
-        t[n++] = (char)('0' + v % 10);
-        v /= 10;
-    } while (v);
-    char o[11];
-    for (int i = 0; i < n; i++)
-        o[i] = t[n - 1 - i];
-    o[n] = '\0';
-    put(b, o);
-}
-} // namespace
-
 size_t detws_hwhealth_rail_json(const HwRailMonitor *m, char *out, size_t cap)
 {
     if (!m || !out || cap == 0)
         return 0;
-    Buf b = {out, cap, 0, true};
-    put(&b, "{\"nominal_mv\":");
-    put_u32(&b, m->nominal_mv);
-    put(&b, ",\"min_mv\":");
-    put_u32(&b, m->min_mv);
-    put(&b, ",\"sag\":");
-    put_u32(&b, m->sag_events);
-    put(&b, ",\"brownout\":");
-    put_u32(&b, m->brownout_events);
-    put(&b, "}");
+    DetSb b = {out, cap, 0, true};
+    det_sb_put(&b, "{\"nominal_mv\":");
+    det_sb_u32(&b, m->nominal_mv);
+    det_sb_put(&b, ",\"min_mv\":");
+    det_sb_u32(&b, m->min_mv);
+    det_sb_put(&b, ",\"sag\":");
+    det_sb_u32(&b, m->sag_events);
+    det_sb_put(&b, ",\"brownout\":");
+    det_sb_u32(&b, m->brownout_events);
+    det_sb_put(&b, "}");
     if (!b.ok)
         return 0;
     out[b.len] = '\0';

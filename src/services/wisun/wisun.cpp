@@ -12,6 +12,8 @@
 
 #include <string.h>
 
+#include "shared_primitives/strbuf.h"
+
 namespace
 {
 // Emit one CoAP option (RFC 7252 sec 3.1): the (delta,length) nibble header + extended bytes + value.
@@ -177,50 +179,25 @@ size_t wisun_joined_count(const WisunFan *fan)
     return c;
 }
 
-namespace
-{
-struct Buf
-{
-    char *p;
-    size_t cap;
-    size_t len;
-    bool ok;
-};
-
-void put(Buf *b, const char *s)
-{
-    if (!b->ok)
-        return;
-    size_t sl = strnlen(s, b->cap + 1);
-    if (b->len + sl >= b->cap)
-    {
-        b->ok = false;
-        return;
-    }
-    memcpy(b->p + b->len, s, sl);
-    b->len += sl;
-}
-} // namespace
-
 size_t wisun_nodes_json(const WisunFan *fan, char *out, size_t cap)
 {
     if (!fan || !out || cap == 0)
         return 0;
-    Buf b = {out, cap, 0, true};
-    put(&b, "[");
+    DetSb b = {out, cap, 0, true};
+    det_sb_put(&b, "[");
     for (size_t i = 0; i < fan->count; i++)
     {
         if (i)
-            put(&b, ",");
+            det_sb_put(&b, ",");
         char astr[DET_IP_STR_MAX];
         det_ip_format(&fan->nodes[i].addr, astr, sizeof(astr));
-        put(&b, "{\"addr\":\"");
-        put(&b, astr);
-        put(&b, "\",\"joined\":");
-        put(&b, fan->nodes[i].joined ? "true" : "false");
-        put(&b, "}");
+        det_sb_put(&b, "{\"addr\":\"");
+        det_sb_put(&b, astr);
+        det_sb_put(&b, "\",\"joined\":");
+        det_sb_put(&b, fan->nodes[i].joined ? "true" : "false");
+        det_sb_put(&b, "}");
     }
-    put(&b, "]");
+    det_sb_put(&b, "]");
     if (!b.ok)
         return 0;
     out[b.len] = '\0';

@@ -10,8 +10,9 @@
  * `char[]` and latches @c ok to false the first time something would not fit, so every
  * later append is a no-op and callers test one flag at the end. These header-only inline
  * helpers are the single home for it, mirroring hex.h / numparse.h - no `<stdlib.h>`,
- * no heap, and zero link cost when unused. Per-codec numeric/JSON formatters stay local;
- * only the verbatim pieces (struct + raw append + XML escape + terminate) live here.
+ * no heap, and zero link cost when unused. The verbatim pieces (struct + raw append + XML
+ * escape + decimal + JSON-string + terminate) live here; the JSON emitters (hw_health,
+ * http_delivery, ble_gatt, ...) shared them byte-for-byte, so they are no longer per-codec.
  *
  * @author  Douglas Quigg (dstroy0)
  * @date    2026
@@ -84,6 +85,43 @@ inline void det_sb_xml(DetSb *b, const char *s)
             b->p[b->len++] = *s;
         }
     }
+}
+
+/** @brief Append @p v as decimal (no leading zeros; "0" for zero). */
+inline void det_sb_u32(DetSb *b, uint32_t v)
+{
+    char t[10];
+    int n = 0;
+    do
+    {
+        t[n++] = (char)('0' + v % 10);
+        v /= 10;
+    } while (v);
+    char o[11];
+    for (int i = 0; i < n; i++)
+        o[i] = t[n - 1 - i];
+    o[n] = '\0';
+    det_sb_put(b, o);
+}
+
+/** @brief Append @p s as a JSON string literal: double-quoted, with `"` and `\` backslash-escaped. A NULL
+ * @p s emits `""`. (Control chars are passed through, matching the emitters this replaced.) */
+inline void det_sb_json(DetSb *b, const char *s)
+{
+    det_sb_put(b, "\"");
+    for (const char *p = s ? s : ""; *p; p++)
+    {
+        if (*p == '"' || *p == '\\')
+        {
+            char esc[3] = {'\\', *p, '\0'};
+            det_sb_put(b, esc);
+        }
+        else if (b->len + 1 < b->cap)
+            b->p[b->len++] = *p;
+        else
+            b->ok = false;
+    }
+    det_sb_put(b, "\"");
 }
 
 /** @brief NUL-terminate and return the built length, or 0 if the build overflowed. */

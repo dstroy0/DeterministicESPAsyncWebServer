@@ -12,6 +12,8 @@
 
 #include <string.h>
 
+#include "shared_primitives/strbuf.h"
+
 size_t att_read_req(uint16_t handle, uint8_t *out, size_t cap)
 {
     if (!out || cap < 3)
@@ -118,51 +120,13 @@ bool att_parse(const uint8_t *pdu, size_t len, AttPdu *out)
 
 namespace
 {
-struct Buf
-{
-    char *p;
-    size_t cap;
-    size_t len;
-    bool ok;
-};
-
-void put(Buf *b, const char *s)
-{
-    if (!b->ok)
-        return;
-    size_t sl = strnlen(s, b->cap + 1);
-    if (b->len + sl >= b->cap)
-    {
-        b->ok = false;
-        return;
-    }
-    memcpy(b->p + b->len, s, sl);
-    b->len += sl;
-}
-
-void put_u(Buf *b, uint32_t v)
-{
-    char t[10];
-    int n = 0;
-    do
-    {
-        t[n++] = (char)('0' + v % 10);
-        v /= 10;
-    } while (v);
-    char o[11];
-    for (int i = 0; i < n; i++)
-        o[i] = t[n - 1 - i];
-    o[n] = '\0';
-    put(b, o);
-}
-
-void put_hex16(Buf *b, uint16_t v)
+void put_hex16(DetSb *b, uint16_t v)
 {
     char t[7] = "0x0000";
     static const char *H = "0123456789abcdef";
     for (int i = 0; i < 4; i++)
         t[2 + i] = H[(v >> ((3 - i) * 4)) & 0xF];
-    put(b, t);
+    det_sb_put(b, t);
 }
 } // namespace
 
@@ -170,21 +134,21 @@ size_t gatt_char_json(const GattChar *chars, size_t n, char *out, size_t cap)
 {
     if (!out || cap == 0 || (n && !chars))
         return 0;
-    Buf b = {out, cap, 0, true};
-    put(&b, "[");
+    DetSb b = {out, cap, 0, true};
+    det_sb_put(&b, "[");
     for (size_t i = 0; i < n; i++)
     {
         if (i)
-            put(&b, ",");
-        put(&b, "{\"handle\":");
-        put_u(&b, chars[i].handle);
-        put(&b, ",\"uuid\":\"");
+            det_sb_put(&b, ",");
+        det_sb_put(&b, "{\"handle\":");
+        det_sb_u32(&b, chars[i].handle);
+        det_sb_put(&b, ",\"uuid\":\"");
         put_hex16(&b, chars[i].uuid);
-        put(&b, "\",\"props\":");
-        put_u(&b, chars[i].props);
-        put(&b, "}");
+        det_sb_put(&b, "\",\"props\":");
+        det_sb_u32(&b, chars[i].props);
+        det_sb_put(&b, "}");
     }
-    put(&b, "]");
+    det_sb_put(&b, "]");
     if (!b.ok)
         return 0;
     out[b.len] = '\0';

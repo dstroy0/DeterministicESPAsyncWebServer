@@ -12,6 +12,8 @@
 
 #include <string.h>
 
+#include "shared_primitives/strbuf.h"
+
 namespace
 {
 // Parse a run of decimal digits at *p (advancing it); write *out. Returns false on no digit or
@@ -34,62 +36,6 @@ bool read_u32(const char **p, uint32_t *out)
     *p = s;
     *out = (uint32_t)v;
     return true;
-}
-
-struct Buf
-{
-    char *p;
-    size_t cap;
-    size_t len;
-    bool ok;
-};
-
-void put(Buf *b, const char *s)
-{
-    if (!b->ok)
-        return;
-    size_t sl = strnlen(s, b->cap + 1);
-    if (b->len + sl >= b->cap)
-    {
-        b->ok = false;
-        return;
-    }
-    memcpy(b->p + b->len, s, sl);
-    b->len += sl;
-}
-
-void put_u32(Buf *b, uint32_t v)
-{
-    char t[10];
-    int n = 0;
-    do
-    {
-        t[n++] = (char)('0' + v % 10);
-        v /= 10;
-    } while (v);
-    char o[11];
-    for (int i = 0; i < n; i++)
-        o[i] = t[n - 1 - i];
-    o[n] = '\0';
-    put(b, o);
-}
-
-void put_json_str(Buf *b, const char *s)
-{
-    put(b, "\"");
-    for (const char *p = s ? s : ""; *p; p++)
-    {
-        if (*p == '"' || *p == '\\')
-        {
-            char esc[3] = {'\\', *p, '\0'};
-            put(b, esc);
-        }
-        else if (b->len + 1 < b->cap)
-            b->p[b->len++] = *p;
-        else
-            b->ok = false;
-    }
-    put(b, "\"");
 }
 
 // Parse "bytes=<s>-<e>" (either bound optional) from a Range header. Fills the out-params and returns
@@ -147,13 +93,13 @@ size_t detws_delivery_cache_control(uint32_t max_age_s, uint32_t swr_s, char *ou
 {
     if (!out || cap == 0)
         return 0;
-    Buf b = {out, cap, 0, true};
-    put(&b, "public, max-age=");
-    put_u32(&b, max_age_s);
+    DetSb b = {out, cap, 0, true};
+    det_sb_put(&b, "public, max-age=");
+    det_sb_u32(&b, max_age_s);
     if (swr_s)
     {
-        put(&b, ", stale-while-revalidate=");
-        put_u32(&b, swr_s);
+        det_sb_put(&b, ", stale-while-revalidate=");
+        det_sb_u32(&b, swr_s);
     }
     if (!b.ok)
         return 0;
@@ -202,13 +148,13 @@ size_t detws_delivery_content_range(uint32_t start, uint32_t end, uint32_t total
 {
     if (!out || cap == 0)
         return 0;
-    Buf b = {out, cap, 0, true};
-    put(&b, "bytes ");
-    put_u32(&b, start);
-    put(&b, "-");
-    put_u32(&b, end);
-    put(&b, "/");
-    put_u32(&b, total);
+    DetSb b = {out, cap, 0, true};
+    det_sb_put(&b, "bytes ");
+    det_sb_u32(&b, start);
+    det_sb_put(&b, "-");
+    det_sb_u32(&b, end);
+    det_sb_put(&b, "/");
+    det_sb_u32(&b, total);
     if (!b.ok)
         return 0;
     out[b.len] = '\0';
@@ -219,17 +165,17 @@ size_t detws_delivery_sw_manifest(const char *const *paths, size_t n, const char
 {
     if (!out || cap == 0 || (n && !paths))
         return 0;
-    Buf b = {out, cap, 0, true};
-    put(&b, "{\"version\":");
-    put_json_str(&b, version ? version : "");
-    put(&b, ",\"precache\":[");
+    DetSb b = {out, cap, 0, true};
+    det_sb_put(&b, "{\"version\":");
+    det_sb_json(&b, version ? version : "");
+    det_sb_put(&b, ",\"precache\":[");
     for (size_t i = 0; i < n; i++)
     {
         if (i)
-            put(&b, ",");
-        put_json_str(&b, paths[i]);
+            det_sb_put(&b, ",");
+        det_sb_json(&b, paths[i]);
     }
-    put(&b, "]}");
+    det_sb_put(&b, "]}");
     if (!b.ok)
         return 0;
     out[b.len] = '\0';
