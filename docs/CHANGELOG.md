@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`809c569`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/809c569273e418b69a2ea1db6b086406b4590b7f))
 - update CHANGELOG.md [skip ci] ([`34da0d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34da0d8af83b3aa94442a122ff339b44100ca26e))
 - update CHANGELOG.md [skip ci] ([`e44814c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e44814ca74ec39d516cfbe8dce9882f943f706c9))
 - update CHANGELOG.md [skip ci] ([`7d9c29e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7d9c29e2c9152c910f2a47e3187d3a1d0f2de323))
@@ -14,6 +15,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`6fdf7dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6fdf7ddd7a112ac653ad0d6dc3021f5f8b5ec473))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`caf7955`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/caf7955ff1c53b153ff0fbae18f3b73792fdcfa6))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d375c8f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d375c8ffb6cfd0f74df4461bfc75e00e19756f6e))
 - update ESP32 build footprints [skip ci] ([`31f4795`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31f47953a3e02066729af37df3d1d7da223da66a))
@@ -23,6 +25,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- move the HPACK/QPACK string codec into hpack_prim ([`a81f266`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a81f2669a2efb4561da140262267080e5a9b12fd))
 - shared bitio.h - dedup the DEFLATE bit writer ([`e842807`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e8428078090ce8693ccb58349d033978bf77198f))
 - adopt strbuf.h for the JSON emitters ([`ad639dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad639dd94f38276e05c65994b816baf38fa95199))
 - shared aes_block.h - dedup software AES schedule + block encrypt ([`3b07545`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b0754549d79f1e8a05778bd607a1f784b896ddd))
