@@ -82,8 +82,8 @@ Interactive consoles:
 [01.SSH](https://github.com/dstroy0/DeterministicESPAsyncWebServer/tree/main/examples/L5-Session/01.SSH) ·
 [02.SSHCryptoSelfTest](https://github.com/dstroy0/DeterministicESPAsyncWebServer/tree/main/examples/L5-Session/02.SSHCryptoSelfTest) ·
 [03.SSHHostKey](https://github.com/dstroy0/DeterministicESPAsyncWebServer/tree/main/examples/L5-Session/03.SSHHostKey) ·
-[04.SSHSftp](https://github.com/dstroy0/DeterministicESPAsyncWebServer/tree/main/examples/L5-Session/04.SSHSftp) ·
-[04.Telnet](https://github.com/dstroy0/DeterministicESPAsyncWebServer/tree/main/examples/L5-Session/04.Telnet)
+[04.Telnet](https://github.com/dstroy0/DeterministicESPAsyncWebServer/tree/main/examples/L5-Session/04.Telnet) ·
+[04.SSHSftp](https://github.com/dstroy0/DeterministicESPAsyncWebServer/tree/main/examples/L5-Session/04.SSHSftp)
 
 ## L6 Presentation
 
