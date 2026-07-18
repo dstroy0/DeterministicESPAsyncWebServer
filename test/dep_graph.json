@@ -170,6 +170,7 @@
 "native_rtc",
 "native_rtcm3",
 "native_s7comm",
+"native_scp",
 "native_scratch",
 "native_sdi12",
 "native_sen0192",
@@ -195,6 +196,7 @@
 "native_ssh_conn",
 "native_ssh_hardened",
 "native_ssh_pqc",
+"native_ssh_sftp",
 "native_ssh_zlib",
 "native_statsd",
 "native_stomp",
@@ -2820,6 +2822,12 @@
 "src/services/s7comm/s7comm.h": [
 "native_s7comm"
 ],
+"src/services/scp/scp.cpp": [
+"native_scp"
+],
+"src/services/scp/scp.h": [
+"native_scp"
+],
 "src/services/sdi12/sdi12.cpp": [
 "native_sdi12"
 ],
@@ -2849,6 +2857,12 @@
 ],
 "src/services/sercos/sercos.h": [
 "native_sercos"
+],
+"src/services/sftp/sftp.cpp": [
+"native_ssh_sftp"
+],
+"src/services/sftp/sftp.h": [
+"native_ssh_sftp"
 ],
 "src/services/sht3x/sht3x.cpp": [
 "native_sht3x"
