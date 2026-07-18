@@ -22,11 +22,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 EXAMPLES_DIR = os.path.join(ROOT, "examples")
 EXAMPLES_MD = os.path.join(ROOT, "docs", "EXAMPLES.md")
 
-# Link to the examples on GitHub, not a relative ../examples path: this index is rendered
-# both on github.com (where the repo tree exists) AND by Doxygen onto GitHub Pages, where
-# examples/ is deliberately not deployed (see docs/Doxyfile) - so a relative link 404s there.
-# An absolute repo-tree URL resolves in both contexts (/tree redirects to /blob for files).
-REPO_TREE = "https://github.com/dstroy0/DeterministicESPAsyncWebServer/tree/main"
+# Link each example to its README, relative: on github.com the README renders in place, and
+# Doxygen (which now takes examples/**/README.md as input, see docs/Doxyfile) resolves the same
+# relative link to the rendered Pages page. So the walkthroughs live ON the site, not as bare
+# repo links. Each README documents its example directory, so the pages nest under the Files
+# tree by path (no nav-root flood); this index just links them by OSI-layer group.
 
 BEGIN = "<!-- BEGIN GENERATED EXAMPLE INDEX (docs/utilities/gen_examples.py) -->"
 END = "<!-- END GENERATED EXAMPLE INDEX -->"
@@ -50,7 +50,10 @@ def examples_in(group_dir):
     """Return the `NN.Name` example dirs under a group, sorted by the numeric prefix."""
     path = os.path.join(EXAMPLES_DIR, group_dir)
     names = [n for n in os.listdir(path) if os.path.isdir(os.path.join(path, n)) and re.match(r"^\d+\.", n)]
-    return sorted(names, key=lambda n: int(n.split(".", 1)[0]))
+    # Sort by numeric prefix, then by full name so a duplicated number (e.g. L5-Session has
+    # two 04.* dirs) has a deterministic, filesystem-independent order (else the CI --check
+    # diverges from a local regen depending on readdir order).
+    return sorted(names, key=lambda n: (int(n.split(".", 1)[0]), n))
 
 
 def build_index():
@@ -60,7 +63,7 @@ def build_index():
     for group_dir, heading, desc in GROUPS:
         names = examples_in(group_dir)
         total += len(names)
-        links = [f"[{n}]({REPO_TREE}/examples/{group_dir}/{n})" for n in names]
+        links = [f"[{n}](../examples/{group_dir}/{n}/README.md)" for n in names]
         parts += [f"## {heading}", "", desc, "", " ·\n".join(links), ""]
     parts.append(END)
     return "\n".join(parts), total

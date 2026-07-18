@@ -16,15 +16,18 @@ PROJECT_LOGO           =
 #---------------------------------------------------------------------------
 # Input / output
 #---------------------------------------------------------------------------
-# examples/ is intentionally NOT an input: each examples/**/README.md would otherwise
-# become a top-level page and flood the navigation tree root with ~115 entries. The
-# examples are documented in the generated docs/EXAMPLES.md index (grouped by OSI layer,
-# one line each) and in full on GitHub; the site keeps the API reference + the guides.
-INPUT                  = src docs
+# examples/ READMEs ARE rendered as pages so each example walkthrough lives on the Pages
+# site itself (the docs/EXAMPLES.md index links to these rendered pages, not out to the
+# repo). Only the READMEs are pulled in - the example .ino/.cpp/.h sources are excluded
+# below (their source is reproduced inside each README) so the file list stays the API
+# reference. Each README documents its own directory (Doxygen's dir-doc behavior), so the
+# example pages nest under the Files directory tree by path - the nav tree root is not
+# flooded (which is why examples/ was formerly excluded). docs/EXAMPLES.md links to them.
+INPUT                  = src docs examples
 FILE_PATTERNS          = *.h *.cpp *.ino *.md
 RECURSIVE              = YES
 EXCLUDE                =
-EXCLUDE_PATTERNS       = */test/* */docs/html/* */docs/utilities/* */docs/Doxyfile */docs/cliff.toml */docs/custom.css
+EXCLUDE_PATTERNS       = */test/* */docs/html/* */docs/utilities/* */docs/Doxyfile */docs/cliff.toml */docs/custom.css */examples/*.ino */examples/*.cpp */examples/*.h */examples/esp-idf/*
 USE_MDFILE_AS_MAINPAGE = docs/README.md
 
 OUTPUT_DIRECTORY       = docs/html
