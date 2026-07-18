@@ -979,6 +979,7 @@ src/
 │   ├── clock.h
 │   └── i2c.h
 ├── shared_primitives/
+│   ├── aes_block.h
 │   ├── aes_sbox.h
 │   ├── bytes.h
 │   ├── can.h
