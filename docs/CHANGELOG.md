@@ -6,6 +6,24 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Bug Fixes
 
+- rename web-asset sources DETWS_->DWS_ + regenerate (7.0.0) ([`f4419d7`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f4419d711fec76c91a341aa2f72cb980962b37e4))
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`a05a97f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a05a97f9d249c6b1192575331075c5aa91c6af34))
+- update CHANGELOG.md [skip ci] ([`65a256b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/65a256ba6f1dad95ef067dce94c7e42d66fc5e07))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`677bdf4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/677bdf4bd59beee9e43ac4f88a7304b052e865fe))
+
+## [7.0.0] - 2026-07-18
+
+<details>
+<summary><b>Show Changelog for version 7.0.0 - 2026-07-18</b></summary>
+
+### Bug Fixes
+
 - update owner-context substrate allowlist + interop refs to dws_ ([`c060208`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c060208fde710507d56e6182200e334c9439d1f1))
 
 ### CI / Build
@@ -19,8 +37,13 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - update CHANGELOG.md [skip ci] ([`d9a23af`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d9a23afb378bec74d24fb05392e63a3fd7b6d1f3))
 - update CHANGELOG.md [skip ci] ([`bfe85b6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/bfe85b67280a846bd4aec7ecdb10d89d2be45886))
 
+### Changes
+
+- Bump version: 6.30.1 → 7.0.0 ([`26e8f0f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/26e8f0f692e4ceb46af681e0db54451894e7daab))
+
 ### Documentation
 
+- 7.0.0 migration guide (dws_ house prefix) [ci full] ([`3a22e21`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3a22e218372903457dfdceaeac1cb01c1c5a9928))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`4f26023`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4f26023e7c784804a67899f875214e4e8a40119d))
 - update ESP32 build footprints [skip ci] ([`783c616`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/783c616f6f7dec19033f640e2091747b60752ce3))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d83e51f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d83e51f52dacd3b8b8535e0b315b716f50cbd540))
@@ -35,6 +58,8 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 - normalize mqtt/coap/dtls/h2/webdav/dnc/iface_bridge to det_* (7.0.0 prep) ([`df62eaf`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/df62eaf0308308cf39853c9b00566b833683ab7f))
 - normalize dns/mdns/quic/tls-client-session to det_* (7.0.0 prep) ([`251fc4f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/251fc4f39403b35b6b8a88f8277f7c59d357012f))
 - normalize gateway API to det_gateway_* (7.0.0 prep) ([`a951a18`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a951a185b6d86414efe7ad1b27c5c467cf7579f6))
+
+</details>
 
 ## [6.30.1] - 2026-07-18
 
