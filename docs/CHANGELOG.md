@@ -2,6 +2,31 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [6.30.0] - 2026-07-18
+
+<details>
+<summary><b>Show Changelog for version 6.30.0 - 2026-07-18</b></summary>
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`741e7f1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/741e7f18307b58385504b1fdae636c7c73ce007c))
+- update CHANGELOG.md [skip ci] ([`67ab4c1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/67ab4c11e9d12074b051ffc88345d618c16f7d35))
+
+### Changes
+
+- Bump version: 6.29.0 → 6.30.0 ([`1176c5c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/1176c5c1e15d2c0c22ab0feb724fd04a0245f9e7))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`7fb9cc2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7fb9cc2837f05a0e44c75e6c1015f5434ee4b412))
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`b086772`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/b0867728864828ea2c598fa521078b1fb348a0c5))
+
+### Features
+
+- SFTP v3 server subsystem + SCP upload (DETWS_ENABLE_SSH_SFTP / _SCP) ([`812eaa8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/812eaa89352668a6ca77b169bc12bdc70b8be237))
+
+</details>
+
 ## [6.29.0] - 2026-07-17
 
 <details>
