@@ -1143,10 +1143,10 @@ Feature Tables workflow from `docs/footprints.json`.
 | `ADS` | `L7-Application/73.AdsClient` | 771,933 | 45,440 |
 | `DASHBOARD` | `L7-Application/35.Dashboard` | 773,173 | 82,152 |
 | `NTP+TIME_SOURCE` | `L7-Application/31.TimeSourceFallback` | 773,549 | 83,404 |
-| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT` | `L7-Application/79.EdgeCache` | 773,669 | 119,264 |
+| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT` | `L7-Application/79.EdgeCache` | 773,689 | 119,264 |
 | `MDNS` | `L7-Application/15.mDNS` | 777,813 | 83,688 |
 | `NTP` | `L7-Application/18.SNTP` | 778,057 | 84,336 |
-| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH+EDGE_CACHE_SLOTS+EDGE_FETCH_SLOTS+MESH_MAX_PEERS` | `L7-Application/80.MeshCache` | 778,213 | 115,320 |
+| `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH+EDGE_CACHE_SLOTS+EDGE_FETCH_SLOTS+MESH_MAX_PEERS` | `L7-Application/80.MeshCache` | 778,289 | 115,320 |
 | `EDGE_CACHE+HTTP_CACHE+HTTP_CLIENT+EDGE_MESH` | `L7-Application/80.MeshCache` | 778,433 | 124,240 |
 | `IFACE_BRIDGE` | `L7-Application/75.InterfaceBridge` | 780,393 | 82,632 |
 | `COAP+DTLS` | `L7-Application/78.CoapSecure` | 780,501 | 102,864 |
@@ -1170,7 +1170,7 @@ Feature Tables workflow from `docs/footprints.json`.
 | `TLS+MTLS` | `L4-Transport/04.mTLS` | 856,829 | 122,356 |
 | `TLS+TLS_RESUMPTION+TLS_ARENA_SIZE` | `L4-Transport/06.TlsResumption` | 857,325 | 105,812 |
 | `TLS+MTLS+TLS_ARENA_SIZE` | `L4-Transport/04.mTLS` | 857,497 | 105,988 |
-| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/04.SSHSftp` | 881,017 | 118,508 |
+| `SSH+FILE_SERVING+SSH_SFTP+SSH_SCP` | `L5-Session/04.SSHSftp` | 881,025 | 118,508 |
 
 <!-- END GENERATED BUILD-FOOTPRINT -->
 
