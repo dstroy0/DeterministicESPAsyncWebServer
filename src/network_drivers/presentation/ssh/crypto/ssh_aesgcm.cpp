@@ -36,132 +36,17 @@ static inline void aes256_free_key(SshAesGcmCtx *ctx)
 
 #else // Native software AES-256
 
-#include "shared_primitives/aes_sbox.h"
-
-namespace
-{
-// AES round constants (Rcon[1..7] are used by the 256-bit schedule; index 0 unused).
-const uint8_t RCON[8] = {0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40};
-
-inline uint8_t xtime(uint8_t a)
-{
-    return (uint8_t)((a << 1) ^ ((a >> 7) ? 0x1bu : 0x00u));
-}
-
-// AES SubWord (FIPS 197 sec 5.2): apply the S-box to each of the four bytes of a 32-bit word.
-uint32_t aes_sub_word(uint32_t w)
-{
-    return ((uint32_t)DET_AES_SBOX[w >> 24] << 24) | ((uint32_t)DET_AES_SBOX[(w >> 16) & 0xff] << 16) |
-           ((uint32_t)DET_AES_SBOX[(w >> 8) & 0xff] << 8) | (uint32_t)DET_AES_SBOX[w & 0xff];
-}
-// AES RotWord (FIPS 197 sec 5.2): cyclically rotate a 32-bit word one byte left.
-uint32_t aes_rot_word(uint32_t w)
-{
-    return (w << 8) | (w >> 24);
-}
-
-// AES-256 key schedule (FIPS 197 sec 5.2): Nk=8, Nr=14 -> 15 round keys x 4 words = 60 words.
-void aes256_key_expand(const uint8_t key[32], uint32_t rk[60])
-{
-    for (int i = 0; i < 8; i++)
-        rk[i] = ((uint32_t)key[4 * i] << 24) | ((uint32_t)key[4 * i + 1] << 16) | ((uint32_t)key[4 * i + 2] << 8) |
-                (uint32_t)key[4 * i + 3];
-
-    for (int i = 8; i < 60; i++)
-    {
-        uint32_t t = rk[i - 1];
-        if (i % 8 == 0)
-            t = aes_sub_word(aes_rot_word(t)) ^ ((uint32_t)RCON[i / 8] << 24);
-        else if (i % 8 == 4) // AES-256 applies an extra SubWord at the mid-point of each 8-word run.
-            t = aes_sub_word(t);
-        rk[i] = rk[i - 8] ^ t;
-    }
-}
-
-// AES-256 block encrypt (FIPS 197 sec 5.1), 14 rounds. State column-major: s[col*4 + row].
-void aes256_encrypt_block(const uint32_t rk[60], const uint8_t in[16], uint8_t out[16])
-{
-    uint8_t s[16];
-    for (int i = 0; i < 16; i++)
-        s[i] = in[i] ^ (uint8_t)(rk[i / 4] >> (24 - (i % 4) * 8));
-
-    for (int r = 1; r <= 13; r++)
-    {
-        for (int i = 0; i < 16; i++)
-            s[i] = DET_AES_SBOX[s[i]];
-
-        uint8_t t;
-        t = s[1]; // row 1 <<< 1
-        s[1] = s[5];
-        s[5] = s[9];
-        s[9] = s[13];
-        s[13] = t;
-        t = s[2]; // row 2 <<< 2
-        s[2] = s[10];
-        s[10] = t;
-        t = s[6];
-        s[6] = s[14];
-        s[14] = t;
-        t = s[15]; // row 3 <<< 3
-        s[15] = s[11];
-        s[11] = s[7];
-        s[7] = s[3];
-        s[3] = t;
-
-        for (int c = 0; c < 4; c++)
-        {
-            uint8_t a = s[c * 4];
-            uint8_t b = s[c * 4 + 1];
-            uint8_t cc = s[c * 4 + 2];
-            uint8_t d = s[c * 4 + 3];
-            uint8_t e = a ^ b ^ cc ^ d;
-            s[c * 4] = a ^ e ^ xtime(a ^ b);
-            s[c * 4 + 1] = b ^ e ^ xtime(b ^ cc);
-            s[c * 4 + 2] = cc ^ e ^ xtime(cc ^ d);
-            s[c * 4 + 3] = d ^ e ^ xtime(d ^ a);
-        }
-
-        for (int i = 0; i < 16; i++)
-            s[i] ^= (uint8_t)(rk[r * 4 + i / 4] >> (24 - (i % 4) * 8));
-    }
-
-    for (int i = 0; i < 16; i++)
-        s[i] = DET_AES_SBOX[s[i]];
-
-    uint8_t t;
-    t = s[1];
-    s[1] = s[5];
-    s[5] = s[9];
-    s[9] = s[13];
-    s[13] = t;
-    t = s[2];
-    s[2] = s[10];
-    s[10] = t;
-    t = s[6];
-    s[6] = s[14];
-    s[14] = t;
-    t = s[15];
-    s[15] = s[11];
-    s[11] = s[7];
-    s[7] = s[3];
-    s[3] = t;
-
-    for (int i = 0; i < 16; i++)
-        s[i] ^= (uint8_t)(rk[56 + i / 4] >> (24 - (i % 4) * 8));
-
-    memcpy(out, s, 16);
-}
-} // namespace
+#include "shared_primitives/aes_block.h"
 
 // Non-const ctx for signature parity with the ARDUINO path (below), where aes256_ecb wraps
 // mbedtls_aes_crypt_ecb() on a non-const mbedtls_aes_context. (S995 does not apply portably.)
 static inline void aes256_ecb(SshAesGcmCtx *ctx, const uint8_t in[16], uint8_t out[16])
 {
-    aes256_encrypt_block(ctx->rk, in, out);
+    det_aes_encrypt_block(ctx->rk, 14, in, out);
 }
 static inline void aes256_load_key(SshAesGcmCtx *ctx, const uint8_t key[32])
 {
-    aes256_key_expand(key, ctx->rk);
+    det_aes_key_expand(key, 8, ctx->rk);
 }
 static inline void aes256_free_key(SshAesGcmCtx *)
 {
