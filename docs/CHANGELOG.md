@@ -6,6 +6,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`f44fcd0`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f44fcd0f30be5b0a46fa5d77f7aedcf19356d6c5))
 - update CHANGELOG.md [skip ci] ([`809c569`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/809c569273e418b69a2ea1db6b086406b4590b7f))
 - update CHANGELOG.md [skip ci] ([`34da0d8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/34da0d8af83b3aa94442a122ff339b44100ca26e))
 - update CHANGELOG.md [skip ci] ([`e44814c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e44814ca74ec39d516cfbe8dce9882f943f706c9))
@@ -25,6 +26,7 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### Refactor
 
+- shared fmtbuf.h - dedup the snprintf JSON appender [ci full] ([`4de5137`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/4de5137af8ca201c39873dfb5d6b80a50374d7b5))
 - move the HPACK/QPACK string codec into hpack_prim ([`a81f266`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/a81f2669a2efb4561da140262267080e5a9b12fd))
 - shared bitio.h - dedup the DEFLATE bit writer ([`e842807`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e8428078090ce8693ccb58349d033978bf77198f))
 - adopt strbuf.h for the JSON emitters ([`ad639dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad639dd94f38276e05c65994b816baf38fa95199))
