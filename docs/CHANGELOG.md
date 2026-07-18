@@ -6,18 +6,22 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`e44814c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e44814ca74ec39d516cfbe8dce9882f943f706c9))
 - update CHANGELOG.md [skip ci] ([`7d9c29e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7d9c29e2c9152c910f2a47e3187d3a1d0f2de323))
 - update test report + coverage [skip ci] ([`fb6af56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb6af56050ea3a8da3660f7f9d612782dfb20308))
 - update CHANGELOG.md [skip ci] ([`cc0334b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc0334bdf891179c27f809f363d9b2e877efca3f))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`d375c8f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/d375c8ffb6cfd0f74df4461bfc75e00e19756f6e))
+- update ESP32 build footprints [skip ci] ([`31f4795`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/31f47953a3e02066729af37df3d1d7da223da66a))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fc6d1d4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc6d1d49758eb676ce6d05fb52655bdb1e9182d7))
 - update ESP32 build footprints [skip ci] ([`35b3bc3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/35b3bc3255f44eebdfc4e6236f0edd420695b7fc))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`720c7aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/720c7aaa5ac978cd63b8dc8c1c6b95815d598188))
 
 ### Refactor
 
+- adopt strbuf.h for the JSON emitters ([`ad639dd`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/ad639dd94f38276e05c65994b816baf38fa95199))
 - shared aes_block.h - dedup software AES schedule + block encrypt ([`3b07545`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b0754549d79f1e8a05778bd607a1f784b896ddd))
 - shared endian.h - dedup fixed-width int serializers ([`e5df3bc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e5df3bc8d06a604a9ec62417054743e8aac0820a))
 
