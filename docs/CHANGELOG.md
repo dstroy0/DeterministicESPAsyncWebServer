@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.0.3] - 2026-07-18
+
+<details>
+<summary><b>Show Changelog for version 7.0.3 - 2026-07-18</b></summary>
+
+### Bug Fixes
+
+- close the strlen ban + S995 const-correctness; docs cleanup ([`4834097`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/48340975f8dbeb9f4577eb463e18816fedfcf9c8))
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`6013de6`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/6013de65b94013e9dc26a69dc7abcdca8748155b))
+- update CHANGELOG.md [skip ci] ([`14856e1`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/14856e130db821f477105b7b18800a80c0b1b274))
+
+### Changes
+
+- Bump version: 7.0.2 → 7.0.3 ([`f1ad01f`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/f1ad01f020cf7306f9191caf4e97171f78ffd8ef))
+
+### Documentation
+
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`123244c`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/123244c809155fc78d210e61599e020fdd46c87f))
+
+</details>
+
 ## [7.0.2] - 2026-07-18
 
 <details>
