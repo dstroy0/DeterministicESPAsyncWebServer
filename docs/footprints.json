@@ -115,7 +115,7 @@
     "example": "L7-Application/20.Diagnostics",
     "flags": "-DDWS_ENABLE_DIAG=1",
     "board": "esp32dev",
-    "flash_bytes": 753009,
+    "flash_bytes": 753025,
     "ram_bytes": 81784
   },
   "DMA+PREEMPT_QUEUE+DMA_SIMULATE": {
@@ -584,7 +584,7 @@
     "example": "L7-Application/21.PrometheusMetrics",
     "flags": "-DDWS_ENABLE_STATS=1 -DDWS_ENABLE_METRICS=1",
     "board": "esp32dev",
-    "flash_bytes": 756309,
+    "flash_bytes": 756325,
     "ram_bytes": 81928
   },
   "STATSD": {
