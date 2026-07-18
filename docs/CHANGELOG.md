@@ -2,6 +2,30 @@
 
 All notable changes to DeterministicESPAsyncWebServer are documented here.
 
+## [7.0.2] - 2026-07-18
+
+<details>
+<summary><b>Show Changelog for version 7.0.2 - 2026-07-18</b></summary>
+
+### Bug Fixes
+
+- complete the dws_ rename - Detws* -> DWS* (7.0.0 leftovers) ([`0dc7e8d`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/0dc7e8dc34fdd9d8dc2a4608168186591e372a29))
+
+### CI / Build
+
+- update test report + coverage [skip ci] ([`87aa6db`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/87aa6db2a1bdd7e1432d6e201220f0429571beab))
+- update CHANGELOG.md [skip ci] ([`2956bb2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/2956bb20b6ef7d5daa20a2959353732841a0e7ca))
+
+### Changes
+
+- Bump version: 7.0.1 → 7.0.2 ([`61ce3c2`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/61ce3c282672504710efdc74415b07fcef20016f))
+
+### Documentation
+
+- update ESP32 build footprints [skip ci] ([`c3829b8`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/c3829b890915c99236f256a031bffe411aa1087f))
+
+</details>
+
 ## [7.0.1] - 2026-07-18
 
 <details>
