@@ -986,6 +986,7 @@ src/
 │   ├── can.h
 │   ├── crypto_opt.h
 │   ├── endian.h
+│   ├── fmtbuf.h
 │   ├── ghash.h
 │   ├── hex.h
 │   ├── http_date.h
