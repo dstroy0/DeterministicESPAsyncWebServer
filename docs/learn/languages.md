@@ -68,7 +68,7 @@ control while still reading nicely.
   available so other files can use it.
 - The `.ino` files are **Arduino sketches** - the example programs. An `.ino` is just
   C++ with a friendlier wrapper that the Arduino toolchain understands (it provides
-  `setup()` and `loop()` for you). Every example in [`examples/`](../../examples/) is
+  `setup()` and `loop()` for you). Every example in [`examples/`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/tree/main/examples/) is
   an `.ino`.
 
 > The code is written in a deliberately **terse** style (short names, dense lines) -

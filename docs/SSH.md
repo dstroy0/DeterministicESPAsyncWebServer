@@ -125,7 +125,7 @@ per device:
 
    (`ssh_host.der` must be ≤ [`SSH_RSA_KEY_DER_MAX`](@ref SSH_RSA_KEY_DER_MAX) bytes - ~1.2 KB for RSA-2048.)
    For a worked end-to-end walkthrough of both provisioning paths, see the
-   [`03.SSHHostKey`](../examples/L5-Session/03.SSHHostKey/) example.
+   [`03.SSHHostKey`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/tree/main/examples/L5-Session/03.SSHHostKey/) example.
 
 2. **Write the DER blob into NVS** from a one-time provisioning sketch:
 

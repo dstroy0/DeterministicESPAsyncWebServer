@@ -22,6 +22,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 EXAMPLES_DIR = os.path.join(ROOT, "examples")
 EXAMPLES_MD = os.path.join(ROOT, "docs", "EXAMPLES.md")
 
+# Link to the examples on GitHub, not a relative ../examples path: this index is rendered
+# both on github.com (where the repo tree exists) AND by Doxygen onto GitHub Pages, where
+# examples/ is deliberately not deployed (see docs/Doxyfile) - so a relative link 404s there.
+# An absolute repo-tree URL resolves in both contexts (/tree redirects to /blob for files).
+REPO_TREE = "https://github.com/dstroy0/DeterministicESPAsyncWebServer/tree/main"
+
 BEGIN = "<!-- BEGIN GENERATED EXAMPLE INDEX (docs/utilities/gen_examples.py) -->"
 END = "<!-- END GENERATED EXAMPLE INDEX -->"
 
@@ -54,7 +60,7 @@ def build_index():
     for group_dir, heading, desc in GROUPS:
         names = examples_in(group_dir)
         total += len(names)
-        links = [f"[{n}](../examples/{group_dir}/{n})" for n in names]
+        links = [f"[{n}]({REPO_TREE}/examples/{group_dir}/{n})" for n in names]
         parts += [f"## {heading}", "", desc, "", " ·\n".join(links), ""]
     parts.append(END)
     return "\n".join(parts), total

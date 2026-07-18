@@ -28,7 +28,7 @@ HTTP/3 - no second TLS stack.
 > inside the encrypted records, and `coaps_server` binds a UDP port (5684, `coaps://`) to a per-peer
 > connection pool - routing each datagram to its connection by peer address, driving every handshake
 > and the retransmission timer from one `dws_coaps_server_poll()`, and reaping idle connections
-> (example [78.CoapSecure](../examples/L7-Application/78.CoapSecure)). Each layer is a complete,
+> (example [78.CoapSecure](https://github.com/dstroy0/DeterministicESPAsyncWebServer/tree/main/examples/L7-Application/78.CoapSecure)). Each layer is a complete,
 > independently tested unit.
 
 ## The record layer
