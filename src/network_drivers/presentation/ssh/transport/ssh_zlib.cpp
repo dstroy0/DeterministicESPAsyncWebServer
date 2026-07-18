@@ -25,6 +25,8 @@
 
 #if DETWS_ENABLE_SSH_ZLIB
 
+#include "shared_primitives/bitio.h"
+
 #include <string.h>
 
 namespace
@@ -96,52 +98,8 @@ void build_fixed(SshDeflate *z)
         z->d_code[sym] = reverse_bits((uint16_t)sym, 5);
 }
 
-// LSB-first bit writer over the caller's output buffer.
-struct BitWriter
-{
-    uint8_t *out;
-    size_t cap;
-    size_t cnt;
-    uint32_t acc; // bit accumulator (LSB-first)
-    int nbits;    // bits currently buffered (< 8 between calls)
-    bool overflow;
-};
-
-void put_bits(BitWriter *w, uint32_t bits, int n)
-{
-    w->acc |= bits << w->nbits;
-    w->nbits += n;
-    while (w->nbits >= 8)
-    {
-        if (w->cnt >= w->cap)
-        {
-            w->overflow = true;
-            return;
-        }
-        w->out[w->cnt++] = (uint8_t)(w->acc & 0xFF);
-        w->acc >>= 8;
-        w->nbits -= 8;
-    }
-}
-
-// Flush any partial byte, padding the high bits with zero (byte alignment).
-void align_byte(BitWriter *w)
-{
-    if (w->nbits > 0)
-    {
-        if (w->cnt >= w->cap)
-        {
-            w->overflow = true;
-            return;
-        }
-        w->out[w->cnt++] = (uint8_t)(w->acc & 0xFF);
-        w->acc = 0;
-        w->nbits = 0;
-    }
-}
-
 // Emit one raw byte (only valid on a byte boundary: the zlib header and sync marker).
-void put_byte(BitWriter *w, uint8_t b)
+void put_byte(DetBitWriter *w, uint8_t b)
 {
     if (w->cnt >= w->cap)
     {
@@ -157,27 +115,27 @@ inline int hash3(const uint8_t *p)
     return (int)(((uint32_t)p[0] << 10 ^ (uint32_t)p[1] << 5 ^ (uint32_t)p[2]) & HASH_MASK);
 }
 
-void emit_literal(BitWriter *w, const SshDeflate *z, uint8_t b)
+void emit_literal(DetBitWriter *w, const SshDeflate *z, uint8_t b)
 {
-    put_bits(w, z->ll_code[b], z->ll_len[b]);
+    det_bitw_put(w, z->ll_code[b], z->ll_len[b]);
 }
 
-void emit_match(BitWriter *w, const SshDeflate *z, int len, int dist)
+void emit_match(DetBitWriter *w, const SshDeflate *z, int len, int dist)
 {
     int li = 0;
     while (li < 28 && len >= LEN_BASE[li + 1])
         li++;
     int lsym = 257 + li;
-    put_bits(w, z->ll_code[lsym], z->ll_len[lsym]);
+    det_bitw_put(w, z->ll_code[lsym], z->ll_len[lsym]);
     if (LEN_EXTRA[li])
-        put_bits(w, (uint32_t)(len - LEN_BASE[li]), LEN_EXTRA[li]);
+        det_bitw_put(w, (uint32_t)(len - LEN_BASE[li]), LEN_EXTRA[li]);
 
     int di = 0;
     while (di < 29 && dist >= DIST_BASE[di + 1])
         di++;
-    put_bits(w, z->d_code[di], z->d_len[di]);
+    det_bitw_put(w, z->d_code[di], z->d_len[di]);
     if (DIST_EXTRA[di])
-        put_bits(w, (uint32_t)(dist - DIST_BASE[di]), DIST_EXTRA[di]);
+        det_bitw_put(w, (uint32_t)(dist - DIST_BASE[di]), DIST_EXTRA[di]);
 }
 
 // Walk the hash chain from cand (newest-first) for the longest match of buf[i..] within WINDOW.
@@ -246,7 +204,7 @@ int ssh_deflate_packet(SshDeflate *z, const uint8_t *src, size_t src_len, uint8_
         z->head[h] = (uint16_t)p;
     }
 
-    BitWriter w;
+    DetBitWriter w;
     w.out = dst;
     w.cap = dst_cap;
     w.cnt = 0;
@@ -264,8 +222,8 @@ int ssh_deflate_packet(SshDeflate *z, const uint8_t *src, size_t src_len, uint8_
     }
 
     // One fixed-Huffman block, not final: BFINAL=0 (1 bit), BTYPE=01 (2 bits, value 1).
-    put_bits(&w, 0, 1);
-    put_bits(&w, 1, 2);
+    det_bitw_put(&w, 0, 1);
+    det_bitw_put(&w, 1, 2);
 
     size_t i = hist; // emit tokens only for the new input
     while (i < total)
@@ -312,10 +270,10 @@ int ssh_deflate_packet(SshDeflate *z, const uint8_t *src, size_t src_len, uint8_
 
     // End-of-block, then a Z_SYNC_FLUSH: byte-align via an empty stored block and KEEP its
     // 0x00 0x00 0xff 0xff tail on the wire (SSH sends it; a zlib inflate() flushes at the boundary).
-    put_bits(&w, z->ll_code[256], z->ll_len[256]); // end-of-block symbol
-    put_bits(&w, 0, 1);                            // BFINAL=0 (empty stored block)
-    put_bits(&w, 0, 2);                            // BTYPE=00 (stored)
-    align_byte(&w);
+    det_bitw_put(&w, z->ll_code[256], z->ll_len[256]); // end-of-block symbol
+    det_bitw_put(&w, 0, 1);                            // BFINAL=0 (empty stored block)
+    det_bitw_put(&w, 0, 2);                            // BTYPE=00 (stored)
+    det_bitw_align(&w);
     put_byte(&w, 0x00);
     put_byte(&w, 0x00);
     put_byte(&w, 0xff);

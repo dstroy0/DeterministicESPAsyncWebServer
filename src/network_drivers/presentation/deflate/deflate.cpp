@@ -23,6 +23,8 @@
 
 #include <string.h>
 
+#include "shared_primitives/bitio.h"
+
 namespace
 {
 constexpr int MIN_MATCH = 3;   // shortest LZ77 back-reference
@@ -110,50 +112,6 @@ void build_fixed(Tables *t)
         t->d_code[sym] = reverse_bits((uint16_t)sym, 5);
 }
 
-// LSB-first bit writer over the caller's output buffer.
-struct BitWriter
-{
-    uint8_t *out;
-    size_t cap;
-    size_t cnt;
-    uint32_t acc; // bit accumulator (LSB-first)
-    int nbits;    // bits currently buffered (< 8 between calls)
-    bool overflow;
-};
-
-void put_bits(BitWriter *w, uint32_t bits, int n)
-{
-    w->acc |= bits << w->nbits;
-    w->nbits += n;
-    while (w->nbits >= 8)
-    {
-        if (w->cnt >= w->cap)
-        {
-            w->overflow = true;
-            return;
-        }
-        w->out[w->cnt++] = (uint8_t)(w->acc & 0xFF);
-        w->acc >>= 8;
-        w->nbits -= 8;
-    }
-}
-
-// Flush any partial byte, padding the high bits with zero (byte alignment).
-void align_byte(BitWriter *w)
-{
-    if (w->nbits > 0)
-    {
-        if (w->cnt >= w->cap)
-        {
-            w->overflow = true;
-            return;
-        }
-        w->out[w->cnt++] = (uint8_t)(w->acc & 0xFF);
-        w->acc = 0;
-        w->nbits = 0;
-    }
-}
-
 // 3-byte rolling hash into a HASH_SIZE bucket.
 inline int hash3(const uint8_t *p)
 {
@@ -161,28 +119,28 @@ inline int hash3(const uint8_t *p)
 }
 
 // Emit one literal byte via the fixed lit/length code.
-void emit_literal(BitWriter *w, const Tables *t, uint8_t b)
+void emit_literal(DetBitWriter *w, const Tables *t, uint8_t b)
 {
-    put_bits(w, t->ll_code[b], t->ll_len[b]);
+    det_bitw_put(w, t->ll_code[b], t->ll_len[b]);
 }
 
 // Emit a (length, distance) back-reference via the fixed code tables.
-void emit_match(BitWriter *w, const Tables *t, int len, int dist)
+void emit_match(DetBitWriter *w, const Tables *t, int len, int dist)
 {
     int li = 0;
     while (li < 28 && len >= LEN_BASE[li + 1])
         li++;
     int lsym = 257 + li;
-    put_bits(w, t->ll_code[lsym], t->ll_len[lsym]);
+    det_bitw_put(w, t->ll_code[lsym], t->ll_len[lsym]);
     if (LEN_EXTRA[li])
-        put_bits(w, (uint32_t)(len - LEN_BASE[li]), LEN_EXTRA[li]);
+        det_bitw_put(w, (uint32_t)(len - LEN_BASE[li]), LEN_EXTRA[li]);
 
     int di = 0;
     while (di < 29 && dist >= DIST_BASE[di + 1])
         di++;
-    put_bits(w, t->d_code[di], t->d_len[di]);
+    det_bitw_put(w, t->d_code[di], t->d_len[di]);
     if (DIST_EXTRA[di])
-        put_bits(w, (uint32_t)(dist - DIST_BASE[di]), DIST_EXTRA[di]);
+        det_bitw_put(w, (uint32_t)(dist - DIST_BASE[di]), DIST_EXTRA[di]);
 }
 } // namespace
 
@@ -197,7 +155,7 @@ DeflateResult deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size
     for (int i = 0; i < HASH_SIZE; i++)
         t->head[i] = NONE;
 
-    BitWriter w;
+    DetBitWriter w;
     w.out = dst;
     w.cap = dst_cap;
     w.cnt = 0;
@@ -207,8 +165,8 @@ DeflateResult deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size
 
     // One fixed-Huffman block, not final (permessage-deflate streams never set
     // BFINAL): BFINAL=0 (1 bit), BTYPE=01 (2 bits, value 1).
-    put_bits(&w, 0, 1);
-    put_bits(&w, 1, 2);
+    det_bitw_put(&w, 0, 1);
+    det_bitw_put(&w, 1, 2);
 
     size_t i = 0;
     while (i < src_len)
@@ -277,10 +235,10 @@ DeflateResult deflate_raw(const uint8_t *src, size_t src_len, uint8_t *dst, size
     // End-of-block, then a sync flush: byte-align via an empty stored block and
     // drop its 0x00 0x00 0xff 0xff tail (RFC 7692 sec 7.2.1), leaving a ready
     // permessage-deflate payload.
-    put_bits(&w, t->ll_code[256], t->ll_len[256]); // end-of-block symbol
-    put_bits(&w, 0, 1);                            // BFINAL=0 (empty stored block)
-    put_bits(&w, 0, 2);                            // BTYPE=00 (stored)
-    align_byte(&w);
+    det_bitw_put(&w, t->ll_code[256], t->ll_len[256]); // end-of-block symbol
+    det_bitw_put(&w, 0, 1);                            // BFINAL=0 (empty stored block)
+    det_bitw_put(&w, 0, 2);                            // BTYPE=00 (stored)
+    det_bitw_align(&w);
     const uint8_t marker[4] = {0x00, 0x00, 0xff, 0xff};
     for (int k = 0; k < 4; k++)
     {
