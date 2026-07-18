@@ -29,7 +29,7 @@
 #if DWS_ENABLE_GUARDRAILS
 
 /** @brief A health snapshot. */
-struct DetwsHealth
+struct DWSHealth
 {
     uint32_t free_heap;          ///< current free heap (bytes).
     uint32_t min_free_heap;      ///< lowest free heap since boot (bytes).
@@ -39,7 +39,7 @@ struct DetwsHealth
 
 /** @brief Guardrail breach flags: a bitmask OR'd together, so integer constants in a namespacing
  *  struct (cast-free at every | / &). */
-struct DetwsBreach
+struct DWSBreach
 {
     static constexpr uint8_t DWS_BREACH_NONE = 0;
     static constexpr uint8_t DWS_BREACH_HEAP = 1;  ///< free heap below DWS_GUARDRAIL_HEAP_MIN.
@@ -52,23 +52,23 @@ struct DetwsBreach
 // ---------------------------------------------------------------------------
 
 /** @brief Evaluate @p h against the floors; returns a DWS_BREACH_* bitmask. */
-uint8_t dws_guardrail_eval(const DetwsHealth *h, uint32_t heap_min, uint32_t frag_min_block, uint32_t stack_min);
+uint8_t dws_guardrail_eval(const DWSHealth *h, uint32_t heap_min, uint32_t frag_min_block, uint32_t stack_min);
 
 /**
  * @brief Serialize a health snapshot as JSON into @p out.
  * @return characters written, or 0 if @p cap is too small (fail-closed).
  */
-int dws_health_json(const DetwsHealth *h, char *out, size_t cap);
+int dws_health_json(const DWSHealth *h, char *out, size_t cap);
 
 // ---------------------------------------------------------------------------
 // Sampling + guardrail check (ESP32; zeros / no-op on host)
 // ---------------------------------------------------------------------------
 
 /** @brief Fill @p h from the live esp_* / FreeRTOS counters (zeros on host). */
-void dws_guardrails_sample(DetwsHealth *h);
+void dws_guardrails_sample(DWSHealth *h);
 
 /** @brief Breach callback: @p breaches is a DWS_BREACH_* bitmask, @p h the snapshot. */
-typedef void (*dws_breach_fn)(uint8_t breaches, const DetwsHealth *h);
+typedef void (*dws_breach_fn)(uint8_t breaches, const DWSHealth *h);
 
 /** @brief Install the breach callback (thresholds come from DWS_GUARDRAIL_*). */
 void dws_guardrails_begin(dws_breach_fn cb);

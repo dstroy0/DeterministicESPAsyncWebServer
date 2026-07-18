@@ -65,7 +65,7 @@ int main()
         char buf[4096];
         volatile size_t sink = 0;
         double ns = bench_ns(200000, [&] {
-            DetwsMtcStreams s;
+            DWSMtcStreams s;
             detws_mtc_streams_begin(&s, buf, sizeof(buf), 1500, 20, "cnc1");
             for (int i = 0; i < 20; i++)
                 detws_mtc_streams_add(&s, DETWS_MTC_SAMPLE, "Position", "xpos", (uint64_t)i, "2026-07-09T00:00:00Z",

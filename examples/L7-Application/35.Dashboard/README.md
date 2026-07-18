@@ -14,7 +14,7 @@ by the library - you only declare widgets and feed data.
 entry is type, label, data key, min, max, and unit:
 
 ```cpp
-static const DetwsWidget WIDGETS[] = {
+static const DWSWidget WIDGETS[] = {
     {DWS_WIDGET_GAUGE,  "Free heap",  "heap",   0, 320000, "B"},
     {DWS_WIDGET_VALUE,  "Uptime",     "uptime", 0, 0,      "s"},
     {DWS_WIDGET_CHART,  "WiFi RSSI",  "rssi",  -100, 0,    "dBm"},
@@ -85,7 +85,7 @@ static const int LED_PIN = 2; // onboard LED on many ESP32 dev boards
 
 // Compile-time widget table - the dashboard's deterministic source of truth.
 // Display widgets are fed over SSE; control widgets send values back over WS.
-static const DetwsWidget WIDGETS[] = {
+static const DWSWidget WIDGETS[] = {
     {DWS_WIDGET_GAUGE, "Free heap", "heap", 0, 320000, "B"}, {DWS_WIDGET_VALUE, "Uptime", "uptime", 0, 0, "s"},
     {DWS_WIDGET_CHART, "WiFi RSSI", "rssi", -100, 0, "dBm"}, {DWS_WIDGET_TOGGLE, "Onboard LED", "led", 0, 1, ""},
     {DWS_WIDGET_SLIDER, "Brightness", "bright", 0, 255, ""}, {DWS_WIDGET_BUTTON, "Identify", "ident", 0, 0, ""},

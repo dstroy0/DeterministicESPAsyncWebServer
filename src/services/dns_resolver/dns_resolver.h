@@ -26,7 +26,7 @@
 #if DWS_ENABLE_DNS_RESOLVER
 
 /** @brief IPv4 address category (RFC special-purpose ranges). */
-enum class DetwsIpClass : uint8_t
+enum class DWSIpClass : uint8_t
 {
     DWS_IP_UNSPECIFIED = 0, ///< 0.0.0.0
     DWS_IP_LOOPBACK,        ///< 127.0.0.0/8
@@ -42,7 +42,7 @@ enum class DetwsIpClass : uint8_t
 // ---------------------------------------------------------------------------
 
 /** @brief Classify a host-order IPv4 word (e.g. (10u << 24) | (0u << 16) | (0u << 8) | 1u). */
-DetwsIpClass dws_dns_resolver_classify(uint32_t ip);
+DWSIpClass dws_dns_resolver_classify(uint32_t ip);
 
 /**
  * @brief Is @p ip a plausible A-record answer for a remote host?

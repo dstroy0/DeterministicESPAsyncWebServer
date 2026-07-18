@@ -27,7 +27,7 @@
 #if DWS_ENABLE_GOOSE
 
 /** @brief The GOOSE control fields (strings are borrowed, not copied). */
-struct DetwsGoose
+struct DWSGoose
 {
     const char *gocb_ref;          ///< the GOOSE control-block reference.
     uint32_t time_allowed_to_live; ///< ms the subscriber should keep this valid.
@@ -47,14 +47,14 @@ struct DetwsGoose
 /**
  * @brief Build the BER IECGoosePdu (the `61 ...` structure) into @p out. @return length, or 0 on overflow.
  */
-size_t dws_goose_pdu(const DetwsGoose *g, uint8_t *out, size_t cap);
+size_t dws_goose_pdu(const DWSGoose *g, uint8_t *out, size_t cap);
 
 /**
  * @brief Build a full GOOSE Ethernet frame: [dst][src][88B8][APPID len rsvd rsvd][IECGoosePdu].
  * @param appid the GOOSE APPID.
  * @return the frame length, or 0 on overflow. Requires DWS_ENABLE_RAWL2 for the Ethernet framing.
  */
-size_t dws_goose_frame(const uint8_t *dst, const uint8_t *src, uint16_t appid, const DetwsGoose *g, uint8_t *out,
+size_t dws_goose_frame(const uint8_t *dst, const uint8_t *src, uint16_t appid, const DWSGoose *g, uint8_t *out,
                        size_t cap);
 
 #endif // DWS_ENABLE_GOOSE

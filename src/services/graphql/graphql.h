@@ -41,7 +41,7 @@
 #if DWS_ENABLE_GRAPHQL
 
 /** @brief Scalar value kinds a resolver can return. */
-enum class DetwsGqlType : uint8_t
+enum class DWSGqlType : uint8_t
 {
     DWS_GQL_NULL = 0,
     DWS_GQL_INT,
@@ -51,9 +51,9 @@ enum class DetwsGqlType : uint8_t
 };
 
 /** @brief A scalar value (resolver output, or an argument). */
-struct DetwsGqlValue
+struct DWSGqlValue
 {
-    DetwsGqlType type; ///< the value's type.
+    DWSGqlType type; ///< the value's type.
     long long i;
     double f;
     bool b;
@@ -61,14 +61,14 @@ struct DetwsGqlValue
 };
 
 /** @brief Opaque view of the arguments in scope at a resolved field. */
-struct DetwsGqlArgs;
+struct DWSGqlArgs;
 
 /** @brief Read an int argument @p name; false if absent / not an int. */
-bool dws_gql_arg_int(const DetwsGqlArgs *args, const char *name, long long *out);
+bool dws_gql_arg_int(const DWSGqlArgs *args, const char *name, long long *out);
 /** @brief Read a string argument @p name; false if absent / not a string. */
-bool dws_gql_arg_str(const DetwsGqlArgs *args, const char *name, const char **out);
+bool dws_gql_arg_str(const DWSGqlArgs *args, const char *name, const char **out);
 /** @brief Read a bool argument @p name; false if absent / not a bool. */
-bool dws_gql_arg_bool(const DetwsGqlArgs *args, const char *name, bool *out);
+bool dws_gql_arg_bool(const DWSGqlArgs *args, const char *name, bool *out);
 
 /**
  * @brief Resolve the scalar leaf at dotted @p path (e.g. "device.uptime").
@@ -76,10 +76,10 @@ bool dws_gql_arg_bool(const DetwsGqlArgs *args, const char *name, bool *out);
  * Fill @p out with the value and return true; return false to emit JSON null.
  * @p args exposes every argument in scope along the path.
  */
-typedef bool (*dws_gql_resolver_fn)(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *out);
+typedef bool (*dws_gql_resolver_fn)(const char *path, const DWSGqlArgs *args, DWSGqlValue *out);
 
 /** @brief dws_graphql_execute() result codes. */
-enum class DetwsGqlResult : int32_t
+enum class DWSGqlResult : int32_t
 {
     DWS_GQL_OK = 0,           ///< Executed; @p out holds `{"data":{...}}`.
     DWS_GQL_ERR_PARSE = -1,   ///< Malformed query (syntax / unsupported construct).
@@ -97,9 +97,9 @@ enum class DetwsGqlResult : int32_t
  * @param query,len  the query document.
  * @param resolver   leaf resolver (may be nullptr -> every leaf is null).
  * @param out,cap    response buffer and capacity.
- * @return ::DWS_GQL_OK or a negative ::DetwsGqlResult.
+ * @return ::DWS_GQL_OK or a negative ::DWSGqlResult.
  */
-DetwsGqlResult dws_graphql_execute(const char *query, size_t len, dws_gql_resolver_fn resolver, char *out, size_t cap);
+DWSGqlResult dws_graphql_execute(const char *query, size_t len, dws_gql_resolver_fn resolver, char *out, size_t cap);
 
 #endif // DWS_ENABLE_GRAPHQL
 #endif // DETERMINISTICESPASYNCWEBSERVER_GRAPHQL_H

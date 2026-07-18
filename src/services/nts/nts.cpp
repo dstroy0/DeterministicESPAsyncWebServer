@@ -62,7 +62,7 @@ size_t dws_nts_ke_request(uint8_t *out, size_t cap)
     return n;
 }
 
-bool dws_nts_ke_parse(const uint8_t *buf, size_t len, DetwsNtsKeCb cb, void *arg)
+bool dws_nts_ke_parse(const uint8_t *buf, size_t len, DWSNtsKeCb cb, void *arg)
 {
     size_t off = 0;
     bool saw_end = false;

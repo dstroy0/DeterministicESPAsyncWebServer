@@ -252,7 +252,7 @@ int64_t edge_parse_http_date(const char *s, size_t len)
     return days * 86400 + (int64_t)hh * 3600 + (int64_t)mm * 60 + ss;
 }
 
-long edge_freshness_lifetime(const DetwsCacheControl *cc, bool shared, int64_t date_epoch, int64_t expires_epoch)
+long edge_freshness_lifetime(const DWSCacheControl *cc, bool shared, int64_t date_epoch, int64_t expires_epoch)
 {
     long expires_minus_date = -1;
     if (date_epoch >= 0 && expires_epoch >= 0)
@@ -521,7 +521,7 @@ EdgeEntry *edge_store_find(EdgeCacheStore *s, const char *canon, EdgeHdrLookup l
     return nullptr;
 }
 
-void edge_entry_set_freshness(EdgeEntry *e, const DetwsCacheControl *cc, bool shared, int64_t date_epoch,
+void edge_entry_set_freshness(EdgeEntry *e, const DWSCacheControl *cc, bool shared, int64_t date_epoch,
                               int64_t expires_epoch, int64_t last_modified_epoch, int32_t age_hdr,
                               int64_t response_time_epoch, uint32_t now_ms)
 {
@@ -606,7 +606,7 @@ void edge_store_free_entry(EdgeCacheStore *s, const EdgeEntry *e)
         }
 }
 
-bool edge_is_storeable(int status, const char *method, const DetwsCacheControl *cc, const char *vary_header,
+bool edge_is_storeable(int status, const char *method, const DWSCacheControl *cc, const char *vary_header,
                        size_t body_len)
 {
     if (!method || strcmp(method, "GET") != 0)
@@ -650,7 +650,7 @@ size_t edge_build_conditional(const EdgeEntry *e, char *out, size_t cap)
 void edge_apply_304(EdgeEntry *e, const char *new_hdrs, size_t hdr_len, int64_t response_time_epoch, uint32_t now_ms)
 {
     char v[128];
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     if (edge_header_value(new_hdrs, hdr_len, "Cache-Control", v, sizeof(v)))
         cache_control_parse(v, strnlen(v, sizeof(v)), &cc);
     else

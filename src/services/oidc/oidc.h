@@ -13,7 +13,7 @@
  *      real modular exponentiation; mbedTLS-accelerated on ESP32),
  *   4. checks `iss`, `aud` (string or array), `exp`, and `nbf` against the
  *      caller's expectations and clock,
- *   5. extracts `sub` / `email` and the times into ::DetwsOidcClaims.
+ *   5. extracts `sub` / `email` and the times into ::DWSOidcClaims.
  *
  * Zero-heap (fixed stack/BSS buffers) and host-tested against real openssl-signed
  * RS256 vectors. The verifier is pure: it does NOT fetch anything. Fetching the
@@ -43,7 +43,7 @@
 #define DWS_OIDC_RSA_BYTES 256
 
 /** @brief Verification result codes (0 = success, negatives = failure reasons). */
-enum class DetwsOidcResult : int32_t
+enum class DWSOidcResult : int32_t
 {
     DWS_OIDC_OK = 0,             ///< Token verified and all claims pass.
     DWS_OIDC_ERR_FORMAT = -1,    ///< Not a 3-part JWT / bad base64 / oversized.
@@ -57,7 +57,7 @@ enum class DetwsOidcResult : int32_t
 };
 
 /** @brief A parsed RSA public key (from a JWKS entry). */
-struct DetwsOidcKey
+struct DWSOidcKey
 {
     uint8_t n[DWS_OIDC_RSA_BYTES]; ///< Modulus, big-endian, right-aligned.
     uint8_t e[4];                  ///< Public exponent, big-endian (4 bytes).
@@ -65,7 +65,7 @@ struct DetwsOidcKey
 };
 
 /** @brief Claims extracted from a verified token. */
-struct DetwsOidcClaims
+struct DWSOidcClaims
 {
     char sub[DWS_OIDC_SUB_LEN];     ///< Subject identifier.
     char email[DWS_OIDC_EMAIL_LEN]; ///< Email (empty if the claim is absent).
@@ -87,7 +87,7 @@ bool dws_oidc_token_kid(const char *token, size_t token_len, char *kid_out, size
  * @param key        receives n/e on success.
  * @return true if a matching RSA key was found and parsed.
  */
-bool dws_oidc_jwks_find(const char *jwks_json, const char *kid, DetwsOidcKey *key);
+bool dws_oidc_jwks_find(const char *jwks_json, const char *kid, DWSOidcKey *key);
 
 /**
  * @brief Verify an ID token against an already-resolved key.
@@ -99,20 +99,20 @@ bool dws_oidc_jwks_find(const char *jwks_json, const char *kid, DetwsOidcKey *ke
  *                          the `aud` array).
  * @param now_unix          current time (epoch seconds) for exp/nbf checks.
  * @param claims            receives extracted claims on success (may be nullptr).
- * @return ::DWS_OIDC_OK or a negative ::DetwsOidcResult.
+ * @return ::DWS_OIDC_OK or a negative ::DWSOidcResult.
  */
-DetwsOidcResult dws_oidc_verify_with_key(const char *token, size_t token_len, const DetwsOidcKey *key,
-                                         const char *expected_iss, const char *expected_aud, uint32_t now_unix,
-                                         DetwsOidcClaims *claims);
+DWSOidcResult dws_oidc_verify_with_key(const char *token, size_t token_len, const DWSOidcKey *key,
+                                       const char *expected_iss, const char *expected_aud, uint32_t now_unix,
+                                       DWSOidcClaims *claims);
 
 /**
  * @brief Verify an ID token, resolving the key from @p jwks_json by the token's kid.
  *
  * Convenience wrapper over dws_oidc_jwks_find() + dws_oidc_verify_with_key().
- * @return ::DWS_OIDC_OK or a negative ::DetwsOidcResult (ERR_KEY if no key matches).
+ * @return ::DWS_OIDC_OK or a negative ::DWSOidcResult (ERR_KEY if no key matches).
  */
-DetwsOidcResult dws_oidc_verify(const char *token, size_t token_len, const char *jwks_json, const char *expected_iss,
-                                const char *expected_aud, uint32_t now_unix, DetwsOidcClaims *claims);
+DWSOidcResult dws_oidc_verify(const char *token, size_t token_len, const char *jwks_json, const char *expected_iss,
+                              const char *expected_aud, uint32_t now_unix, DWSOidcClaims *claims);
 
 #endif // DWS_ENABLE_OIDC
 #endif // DETERMINISTICESPASYNCWEBSERVER_OIDC_H

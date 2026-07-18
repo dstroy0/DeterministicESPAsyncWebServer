@@ -36,7 +36,7 @@
 #include <stdint.h>
 
 /** @brief One in-RAM index slot. `state`: 0 empty, 1 live, 2 deleted (tombstone, still probed through). */
-struct DetwsDbmSlot
+struct DWSDbmSlot
 {
     uint8_t state;
     uint16_t key_len;
@@ -47,53 +47,53 @@ struct DetwsDbmSlot
 };
 
 /** @brief A dbm handle bound to a mounted ::WalStore. Declare one (static for BSS); no heap. */
-struct DetwsDbm
+struct DWSDbm
 {
     WalStore *wal;
     uint32_t count; ///< live keys
-    DetwsDbmSlot slots[DWS_DBM_SLOTS];
+    DWSDbmSlot slots[DWS_DBM_SLOTS];
 };
 
 /**
  * @brief Bind @p db to a mounted @p wal and rebuild the index by replaying the log.
  * @return false if the log holds more distinct live keys than ::DWS_DBM_SLOTS (index would overflow).
  */
-bool dws_dbm_open(DetwsDbm *db, WalStore *wal);
+bool dws_dbm_open(DWSDbm *db, WalStore *wal);
 
 /**
  * @brief Insert or overwrite @p key -> @p val. Appends a WAL record and updates the index (not synced).
  * @return false if @p key_len > ::DWS_DBM_KEY_MAX, @p val_len > ::DWS_DBM_VAL_MAX, the index is full
  * (a new key with no free slot), or the WAL is full.
  */
-bool dws_dbm_put(DetwsDbm *db, const char *key, uint16_t key_len, const uint8_t *val, uint32_t val_len);
+bool dws_dbm_put(DWSDbm *db, const char *key, uint16_t key_len, const uint8_t *val, uint32_t val_len);
 
 /**
  * @brief Fetch @p key's value into @p buf (up to @p cap).
  * @return the value length on success, or -1 if the key is absent or the value is larger than @p cap.
  */
-long dws_dbm_get(DetwsDbm *db, const char *key, uint16_t key_len, uint8_t *buf, size_t cap);
+long dws_dbm_get(DWSDbm *db, const char *key, uint16_t key_len, uint8_t *buf, size_t cap);
 
 /**
  * @brief Delete @p key (appends a tombstone record and drops it from the index).
  * @return true if the key existed (and the tombstone was appended); false if absent or the WAL is full.
  */
-bool dws_dbm_del(DetwsDbm *db, const char *key, uint16_t key_len);
+bool dws_dbm_del(DWSDbm *db, const char *key, uint16_t key_len);
 
 /** @brief @return true if @p key is live. */
-bool dws_dbm_contains(DetwsDbm *db, const char *key, uint16_t key_len);
+bool dws_dbm_contains(DWSDbm *db, const char *key, uint16_t key_len);
 
 /** @brief @return the number of live keys. */
-uint32_t dws_dbm_count(DetwsDbm *db);
+uint32_t dws_dbm_count(DWSDbm *db);
 
 /** @brief Make all writes since the last sync durable (checkpoints the WAL). @return false on I/O failure. */
-bool dws_dbm_sync(DetwsDbm *db);
+bool dws_dbm_sync(DWSDbm *db);
 
 /** @brief Per-key callback for ::dws_dbm_iterate; return false to stop early. The key bytes are not
  * NUL-terminated. Do not put/delete during iteration (it mutates the index). */
-using DetwsDbmIterCb = bool (*)(const char *key, uint16_t key_len, void *ctx);
+using DWSDbmIterCb = bool (*)(const char *key, uint16_t key_len, void *ctx);
 
 /** @brief Visit every live key (unordered). @return the number of keys visited. */
-uint32_t dws_dbm_iterate(DetwsDbm *db, DetwsDbmIterCb cb, void *ctx);
+uint32_t dws_dbm_iterate(DWSDbm *db, DWSDbmIterCb cb, void *ctx);
 
 /**
  * @brief Bytes the live keys would occupy after a compaction (the summed framed size of one WAL record per
@@ -101,7 +101,7 @@ uint32_t dws_dbm_iterate(DetwsDbm *db, DetwsDbmIterCb cb, void *ctx);
  * difference is reclaimable dead space from overwritten and deleted keys. Pair the two to decide when the
  * dead fraction is worth a ::dws_dbm_compact.
  */
-uint64_t dws_dbm_live_bytes(DetwsDbm *db);
+uint64_t dws_dbm_live_bytes(DWSDbm *db);
 
 /**
  * @brief Compact the store: copy only the live keys (the latest value each, no tombstones) into a freshly
@@ -114,7 +114,7 @@ uint64_t dws_dbm_live_bytes(DetwsDbm *db);
  * caller can retry or keep using the old store.
  * @return true when every live key was copied, the destination checkpointed, and the index rebuilt.
  */
-bool dws_dbm_compact(DetwsDbm *db, WalStore *dst);
+bool dws_dbm_compact(DWSDbm *db, WalStore *dst);
 
 #endif // DWS_ENABLE_DBM
 #endif // DETERMINISTICESPASYNCWEBSERVER_DBM_H

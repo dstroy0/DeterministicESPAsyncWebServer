@@ -15,7 +15,7 @@ host-tested; only the digital read/write run on the ESP32.
 outlive the server; mark a pin `DWS_GPIO_OUT` to make it drivable from the panel:
 
 ```cpp
-static DetwsGpioPin gpio_pins[] = {
+static DWSGpioPin gpio_pins[] = {
     {2,  "Onboard LED", DWS_GPIO_OUT,       0},
     {0,  "BOOT button", DWS_GPIO_IN_PULLUP, 0},
     {4,  "Relay",       DWS_GPIO_OUT,       0},
@@ -69,7 +69,7 @@ DWS server;
 
 // The pins to expose. Caller-owned and must outlive the server. Mark a pin
 // DWS_GPIO_OUT to make it drivable from the panel.
-static DetwsGpioPin gpio_pins[] = {
+static DWSGpioPin gpio_pins[] = {
     {2, "Onboard LED", DWS_GPIO_OUT, 0},
     {0, "BOOT button", DWS_GPIO_IN_PULLUP, 0},
     {4, "Relay", DWS_GPIO_OUT, 0},

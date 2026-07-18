@@ -27,7 +27,7 @@
 #if DWS_ENABLE_PSRAM_POOL
 
 /** @brief Placement verdict (the sole return of dws_psram_place). */
-enum class DetwsPlace : uint8_t
+enum class DWSPlace : uint8_t
 {
     PLACE_DRAM = 0,  ///< allocate in internal DRAM.
     PLACE_PSRAM = 1, ///< allocate in external PSRAM.
@@ -49,8 +49,8 @@ enum class DetwsPlace : uint8_t
  * @param dram_reserve   internal DRAM to keep free after a DRAM placement.
  * @return PLACE_DRAM / PLACE_PSRAM / PLACE_FAIL.
  */
-DetwsPlace dws_psram_place(size_t size, bool dma_required, size_t free_dram, size_t free_psram, size_t psram_threshold,
-                           size_t dram_reserve);
+DWSPlace dws_psram_place(size_t size, bool dma_required, size_t free_dram, size_t free_psram, size_t psram_threshold,
+                         size_t dram_reserve);
 
 /** @brief SPI DMA ping-pong double-buffer state. */
 struct PingPong

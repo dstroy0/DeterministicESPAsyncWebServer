@@ -13,37 +13,37 @@
 
 #if DWS_ENABLE_DNS_RESOLVER
 
-DetwsIpClass dws_dns_resolver_classify(uint32_t ip)
+DWSIpClass dws_dns_resolver_classify(uint32_t ip)
 {
     if (ip == 0u)
-        return DetwsIpClass::DWS_IP_UNSPECIFIED;
+        return DWSIpClass::DWS_IP_UNSPECIFIED;
     if (ip == 0xFFFFFFFFu)
-        return DetwsIpClass::DWS_IP_BROADCAST;
+        return DWSIpClass::DWS_IP_BROADCAST;
     uint8_t a = (uint8_t)((ip >> 24) & 0xFF);
     uint8_t b = (uint8_t)((ip >> 16) & 0xFF);
     if (a == 127)
-        return DetwsIpClass::DWS_IP_LOOPBACK;
+        return DWSIpClass::DWS_IP_LOOPBACK;
     if (a == 10)
-        return DetwsIpClass::DWS_IP_PRIVATE;
+        return DWSIpClass::DWS_IP_PRIVATE;
     if (a == 172 && b >= 16 && b <= 31)
-        return DetwsIpClass::DWS_IP_PRIVATE;
+        return DWSIpClass::DWS_IP_PRIVATE;
     if (a == 192 && b == 168)
-        return DetwsIpClass::DWS_IP_PRIVATE;
+        return DWSIpClass::DWS_IP_PRIVATE;
     if (a == 169 && b == 254)
-        return DetwsIpClass::DWS_IP_LINKLOCAL;
+        return DWSIpClass::DWS_IP_LINKLOCAL;
     if (a >= 224 && a <= 239)
-        return DetwsIpClass::DWS_IP_MULTICAST;
-    return DetwsIpClass::DWS_IP_PUBLIC;
+        return DWSIpClass::DWS_IP_MULTICAST;
+    return DWSIpClass::DWS_IP_PUBLIC;
 }
 
 bool dws_dns_resolver_verify(uint32_t ip)
 {
     switch (dws_dns_resolver_classify(ip))
     {
-    case DetwsIpClass::DWS_IP_UNSPECIFIED: // 0.0.0.0 - blocked / no answer
-    case DetwsIpClass::DWS_IP_BROADCAST:   // 255.255.255.255 - never a host
-    case DetwsIpClass::DWS_IP_LOOPBACK:    // 127.x - DNS-rebinding to localhost
-    case DetwsIpClass::DWS_IP_MULTICAST:   // 224-239 - never an A-record host
+    case DWSIpClass::DWS_IP_UNSPECIFIED: // 0.0.0.0 - blocked / no answer
+    case DWSIpClass::DWS_IP_BROADCAST:   // 255.255.255.255 - never a host
+    case DWSIpClass::DWS_IP_LOOPBACK:    // 127.x - DNS-rebinding to localhost
+    case DWSIpClass::DWS_IP_MULTICAST:   // 224-239 - never an A-record host
         return false;
     default:
         return true; // private / link-local / public are plausible

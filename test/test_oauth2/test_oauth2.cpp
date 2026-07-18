@@ -66,7 +66,7 @@ void test_parse_token_response()
 {
     const char *json = "{\"access_token\":\"AT123\",\"token_type\":\"Bearer\",\"expires_in\":3600,"
                        "\"refresh_token\":\"RT456\",\"id_token\":\"eyJ.x.y\"}";
-    DetwsOAuth2Tokens t;
+    DWSOAuth2Tokens t;
     TEST_ASSERT_TRUE(dws_oauth2_parse_token_response(json, &t));
     TEST_ASSERT_EQUAL_STRING("AT123", t.access_token);
     TEST_ASSERT_EQUAL_STRING("Bearer", t.token_type);
@@ -78,7 +78,7 @@ void test_parse_token_response()
 void test_parse_minimal_response()
 {
     // Only access_token present: still valid; optional fields stay empty/0.
-    DetwsOAuth2Tokens t;
+    DWSOAuth2Tokens t;
     TEST_ASSERT_TRUE(dws_oauth2_parse_token_response("{\"access_token\":\"only\"}", &t));
     TEST_ASSERT_EQUAL_STRING("only", t.access_token);
     TEST_ASSERT_EQUAL_STRING("", t.refresh_token);
@@ -88,7 +88,7 @@ void test_parse_minimal_response()
 void test_parse_error_response_fails()
 {
     const char *err = "{\"error\":\"invalid_grant\",\"error_description\":\"bad code\"}";
-    DetwsOAuth2Tokens t;
+    DWSOAuth2Tokens t;
     TEST_ASSERT_FALSE(dws_oauth2_parse_token_response(err, &t));
 }
 
@@ -98,7 +98,7 @@ void test_oauth2_build_parse_guards()
     TEST_ASSERT_EQUAL_INT(
         0, dws_oauth2_build_code_request(nullptr, "uri", "cid", "sec", "ver", out, sizeof(out)));        // null code
     TEST_ASSERT_EQUAL_INT(0, dws_oauth2_build_refresh_request(nullptr, "cid", "sec", out, sizeof(out))); // null refresh
-    DetwsOAuth2Tokens tok;
+    DWSOAuth2Tokens tok;
     TEST_ASSERT_FALSE(dws_oauth2_parse_token_response(nullptr, &tok)); // null json
     // A value needing percent-encoding into a tiny buffer overflows (b.ok=false).
     TEST_ASSERT_EQUAL_INT(0, dws_oauth2_build_code_request("a b&c", "uri", "cid", "sec", "ver", out, 8));

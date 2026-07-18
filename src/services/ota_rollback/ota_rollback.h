@@ -26,7 +26,7 @@
 
 /** @brief OTA image states (mirror esp_ota_img_states_t so the core is host-pure). These arrive from
  *  ESP-IDF as a uint8_t and are compared, so integer constants in a namespacing struct - cast-free. */
-struct DetwsOtaImg
+struct DWSOtaImg
 {
     static constexpr uint8_t DWS_OTA_IMG_NEW = 0;
     static constexpr uint8_t DWS_OTA_IMG_PENDING_VERIFY = 1;
@@ -37,7 +37,7 @@ struct DetwsOtaImg
 };
 
 /** @brief What the rollback tick should do. */
-enum class DetwsOtaAction : uint8_t
+enum class DWSOtaAction : uint8_t
 {
     DWS_OTA_WAIT = 0,     ///< still pending, within the window: keep waiting.
     DWS_OTA_COMMIT = 1,   ///< self-test passed: mark the image valid.
@@ -54,16 +54,16 @@ enum class DetwsOtaAction : uint8_t
  * @param self_test_ok  application self-test result.
  * @param ms_since_boot uptime in ms.
  * @param window_ms     confirm window.
- * @return DetwsOtaAction::DWS_OTA_WAIT / _COMMIT / _ROLLBACK. Only a PENDING_VERIFY image acts;
+ * @return DWSOtaAction::DWS_OTA_WAIT / _COMMIT / _ROLLBACK. Only a PENDING_VERIFY image acts;
  *         any other state returns WAIT (nothing to do).
  */
-DetwsOtaAction dws_ota_decide(uint8_t img_state, bool self_test_ok, uint32_t ms_since_boot, uint32_t window_ms);
+DWSOtaAction dws_ota_decide(uint8_t img_state, bool self_test_ok, uint32_t ms_since_boot, uint32_t window_ms);
 
 // ---------------------------------------------------------------------------
 // ESP32 actions (no-op / stubs on host)
 // ---------------------------------------------------------------------------
 
-/** @brief Current running image's OTA state (DetwsOtaImg::DWS_OTA_IMG_UNDEFINED on host). */
+/** @brief Current running image's OTA state (DWSOtaImg::DWS_OTA_IMG_UNDEFINED on host). */
 uint8_t dws_ota_img_state(void);
 
 /** @brief Commit the running image (cancel rollback). */
@@ -77,7 +77,7 @@ void dws_ota_rollback(void);
  *        millis(), and act. Call periodically until the image is committed.
  * @return the action taken.
  */
-DetwsOtaAction dws_ota_rollback_tick(bool self_test_ok);
+DWSOtaAction dws_ota_rollback_tick(bool self_test_ok);
 
 #endif // DWS_ENABLE_OTA_ROLLBACK
 #endif // DETERMINISTICESPASYNCWEBSERVER_OTA_ROLLBACK_H

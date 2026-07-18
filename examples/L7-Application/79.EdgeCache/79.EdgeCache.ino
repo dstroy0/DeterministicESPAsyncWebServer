@@ -54,7 +54,7 @@ DWS server;
 static constexpr uint64_t L2_WAL_BYTES = 512 * 1024; // backing file size (holds the persisted cache set)
 static fs::File g_wal_file;
 static WalStore g_wal;
-static DetwsDbm g_l2;
+static DWSDbm g_l2;
 
 // Mount (or format) the WAL file on SD, open the dbm over it, and bind it as the cache's L2 tier.
 static bool setup_l2()

@@ -40,13 +40,13 @@ static const int LED_PIN = 2; // onboard LED on many ESP32 dev boards
 
 // Compile-time widget table - the dashboard's deterministic source of truth.
 // Display widgets are fed over SSE; control widgets send values back over WS.
-static const DetwsWidget WIDGETS[] = {
-    {DetwsWidgetType::DWS_WIDGET_GAUGE, "Free heap", "heap", 0, 320000, "B"},
-    {DetwsWidgetType::DWS_WIDGET_VALUE, "Uptime", "uptime", 0, 0, "s"},
-    {DetwsWidgetType::DWS_WIDGET_CHART, "WiFi RSSI", "rssi", -100, 0, "dBm"},
-    {DetwsWidgetType::DWS_WIDGET_TOGGLE, "Onboard LED", "led", 0, 1, ""},
-    {DetwsWidgetType::DWS_WIDGET_SLIDER, "Brightness", "bright", 0, 255, ""},
-    {DetwsWidgetType::DWS_WIDGET_BUTTON, "Identify", "ident", 0, 0, ""},
+static const DWSWidget WIDGETS[] = {
+    {DWSWidgetType::DWS_WIDGET_GAUGE, "Free heap", "heap", 0, 320000, "B"},
+    {DWSWidgetType::DWS_WIDGET_VALUE, "Uptime", "uptime", 0, 0, "s"},
+    {DWSWidgetType::DWS_WIDGET_CHART, "WiFi RSSI", "rssi", -100, 0, "dBm"},
+    {DWSWidgetType::DWS_WIDGET_TOGGLE, "Onboard LED", "led", 0, 1, ""},
+    {DWSWidgetType::DWS_WIDGET_SLIDER, "Brightness", "bright", 0, 255, ""},
+    {DWSWidgetType::DWS_WIDGET_BUTTON, "Identify", "ident", 0, 0, ""},
 };
 
 // Invoked when a control widget sends a value from the browser.

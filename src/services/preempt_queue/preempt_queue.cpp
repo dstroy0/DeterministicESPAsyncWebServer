@@ -24,7 +24,7 @@ namespace
 // in scope. One named owner, unreachable from any other translation unit.
 struct PqCtx
 {
-    DetwsPqHandler handler[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {};
+    DWSPqHandler handler[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {};
     void *ctx[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {};
     size_t high_water[(size_t)dws_pq_lane::DWS_PQ_LANE_COUNT] = {}; // peak items queued at once (sizing aid)
 };
@@ -114,7 +114,7 @@ void pq_task(void *arg)
 }
 } // namespace
 
-bool dws_pq_start_lane(dws_pq_lane lane, const DetwsPqConfig *cfg)
+bool dws_pq_start_lane(dws_pq_lane lane, const DWSPqConfig *cfg)
 {
     if (!lane_ok(lane) || s_pqq.run[(size_t)lane] || !cfg || !cfg->handler)
         return false;
@@ -220,7 +220,7 @@ void note_count(dws_pq_lane lane)
 }
 } // namespace
 
-bool dws_pq_start_lane(dws_pq_lane lane, const DetwsPqConfig *cfg)
+bool dws_pq_start_lane(dws_pq_lane lane, const DWSPqConfig *cfg)
 {
     if (!lane_ok(lane) || s_pqr.started[(size_t)lane] || !cfg || !cfg->handler)
         return false;

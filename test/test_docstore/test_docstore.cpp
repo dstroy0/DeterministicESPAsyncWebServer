@@ -50,8 +50,8 @@ static uint8_t g_disk[64 * 1024];
 static RamDisk g_d;
 static WalDev g_dev;
 static WalStore g_wal;
-static DetwsDbm g_db;
-static DetwsDocStore g_ds;
+static DWSDbm g_db;
+static DWSDocStore g_ds;
 
 static WalDev dev_over(RamDisk *d)
 {

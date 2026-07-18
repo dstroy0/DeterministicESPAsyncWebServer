@@ -27,7 +27,7 @@
 #if DWS_ENABLE_SPA_ROUTER
 
 /** @brief What to do with a request path. */
-enum class DetwsSpaAction : uint8_t
+enum class DWSSpaAction : uint8_t
 {
     DWS_SPA_SERVE_FILE,  ///< a real asset (has a file extension): serve it statically.
     DWS_SPA_SERVE_SHELL, ///< a client route (extensionless): serve the SPA shell (index.html).
@@ -46,7 +46,7 @@ bool dws_spa_has_extension(const char *path);
  * "/" (or empty) serves the shell. A path starting with @p api_prefix passes through. A path whose last
  * segment has an extension serves the file; otherwise the shell.
  */
-DetwsSpaAction dws_spa_route(const char *path, const char *api_prefix);
+DWSSpaAction dws_spa_route(const char *path, const char *api_prefix);
 
 #endif // DWS_ENABLE_SPA_ROUTER
 #endif // DETERMINISTICESPASYNCWEBSERVER_SPA_ROUTER_H

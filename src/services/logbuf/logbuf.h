@@ -27,7 +27,7 @@
 
 /** @brief Severity levels (ordered low -> high). Compared (level >= threshold) and passed through the
  *  uint8_t trap-callback ABI, so integer constants in a namespacing struct - cast-free. */
-struct DetwsLogLevel
+struct DWSLogLevel
 {
     static constexpr uint8_t DWS_LOG_DEBUG = 0;
     static constexpr uint8_t DWS_LOG_INFO = 1;

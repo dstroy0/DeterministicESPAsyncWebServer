@@ -20,24 +20,24 @@
 
 #include "shared_primitives/fmtbuf.h"
 
-const char *dws_gpio_dir_name(DetwsGpioDir dir)
+const char *dws_gpio_dir_name(DWSGpioDir dir)
 {
     switch (dir)
     {
-    case DetwsGpioDir::DWS_GPIO_IN:
+    case DWSGpioDir::DWS_GPIO_IN:
         return "in";
-    case DetwsGpioDir::DWS_GPIO_IN_PULLUP:
+    case DWSGpioDir::DWS_GPIO_IN_PULLUP:
         return "in_pullup";
-    case DetwsGpioDir::DWS_GPIO_IN_PULLDOWN:
+    case DWSGpioDir::DWS_GPIO_IN_PULLDOWN:
         return "in_pulldown";
-    case DetwsGpioDir::DWS_GPIO_OUT:
+    case DWSGpioDir::DWS_GPIO_OUT:
         return "out";
     default:
         return "in";
     }
 }
 
-int dws_gpio_json(const DetwsGpioPin *pins, uint8_t count, char *out, size_t cap)
+int dws_gpio_json(const DWSGpioPin *pins, uint8_t count, char *out, size_t cap)
 {
     if (!out || cap == 0)
         return 0;
@@ -49,7 +49,7 @@ int dws_gpio_json(const DetwsGpioPin *pins, uint8_t count, char *out, size_t cap
         return 0;
     for (uint8_t i = 0; i < count; i++)
     {
-        const DetwsGpioPin *p = &pins[i];
+        const DWSGpioPin *p = &pins[i];
         if (dws_fmt_append(out, cap, &pos, "%s{\"pin\":%u,\"label\":\"%s\",\"dir\":\"%s\",\"level\":%u}", i ? "," : "",
                            (unsigned)p->pin, p->label ? p->label : "", dws_gpio_dir_name(p->dir),
                            p->level ? 1u : 0u) != 0)
@@ -95,12 +95,12 @@ bool dws_gpio_parse_set(const char *body, size_t len, uint8_t *pin, uint8_t *lev
     return true;
 }
 
-bool dws_gpio_is_output(const DetwsGpioPin *pins, uint8_t count, uint8_t pin)
+bool dws_gpio_is_output(const DWSGpioPin *pins, uint8_t count, uint8_t pin)
 {
     if (!pins)
         return false;
     for (uint8_t i = 0; i < count; i++)
-        if (pins[i].pin == pin && pins[i].dir == DetwsGpioDir::DWS_GPIO_OUT)
+        if (pins[i].pin == pin && pins[i].dir == DWSGpioDir::DWS_GPIO_OUT)
             return true;
     return false;
 }
@@ -109,7 +109,7 @@ bool dws_gpio_is_output(const DetwsGpioPin *pins, uint8_t count, uint8_t pin)
 
 #include <Arduino.h>
 
-void dws_gpio_begin_pins(const DetwsGpioPin *pins, uint8_t count)
+void dws_gpio_begin_pins(const DWSGpioPin *pins, uint8_t count)
 {
     if (!pins)
         return;
@@ -117,13 +117,13 @@ void dws_gpio_begin_pins(const DetwsGpioPin *pins, uint8_t count)
     {
         switch (pins[i].dir)
         {
-        case DetwsGpioDir::DWS_GPIO_OUT:
+        case DWSGpioDir::DWS_GPIO_OUT:
             pinMode(pins[i].pin, OUTPUT);
             break;
-        case DetwsGpioDir::DWS_GPIO_IN_PULLUP:
+        case DWSGpioDir::DWS_GPIO_IN_PULLUP:
             pinMode(pins[i].pin, INPUT_PULLUP);
             break;
-        case DetwsGpioDir::DWS_GPIO_IN_PULLDOWN:
+        case DWSGpioDir::DWS_GPIO_IN_PULLDOWN:
             pinMode(pins[i].pin, INPUT_PULLDOWN);
             break;
         default:
@@ -133,7 +133,7 @@ void dws_gpio_begin_pins(const DetwsGpioPin *pins, uint8_t count)
     }
 }
 
-void dws_gpio_read(DetwsGpioPin *pins, uint8_t count)
+void dws_gpio_read(DWSGpioPin *pins, uint8_t count)
 {
     if (!pins)
         return;
@@ -148,11 +148,11 @@ void dws_gpio_write(uint8_t pin, uint8_t level)
 
 #else // host build - no GPIO
 
-void dws_gpio_begin_pins(const DetwsGpioPin *, uint8_t)
+void dws_gpio_begin_pins(const DWSGpioPin *, uint8_t)
 {
 }
 
-void dws_gpio_read(DetwsGpioPin *, uint8_t)
+void dws_gpio_read(DWSGpioPin *, uint8_t)
 {
 }
 

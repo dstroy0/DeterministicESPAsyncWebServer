@@ -14,11 +14,11 @@ const char *dws_radio_ps_name(uint8_t mode)
 {
     switch (mode)
     {
-    case DetwsRadioPs::DWS_PS_MIN_MODEM:
+    case DWSRadioPs::DWS_PS_MIN_MODEM:
         return "min_modem";
-    case DetwsRadioPs::DWS_PS_MAX_MODEM:
+    case DWSRadioPs::DWS_PS_MAX_MODEM:
         return "max_modem";
-    case DetwsRadioPs::DWS_PS_NONE:
+    case DWSRadioPs::DWS_PS_NONE:
         return "none";
     default:
         return "none";
@@ -33,9 +33,9 @@ namespace
 {
 wifi_ps_type_t to_esp_ps(uint8_t mode)
 {
-    if (mode == DetwsRadioPs::DWS_PS_MIN_MODEM)
+    if (mode == DWSRadioPs::DWS_PS_MIN_MODEM)
         return WIFI_PS_MIN_MODEM;
-    if (mode == DetwsRadioPs::DWS_PS_MAX_MODEM)
+    if (mode == DWSRadioPs::DWS_PS_MAX_MODEM)
         return WIFI_PS_MAX_MODEM;
     return WIFI_PS_NONE;
 }
@@ -60,12 +60,12 @@ uint8_t dws_radio_ps_get(void)
 {
     wifi_ps_type_t m = WIFI_PS_NONE;
     if (esp_wifi_get_ps(&m) != ESP_OK)
-        return DetwsRadioPs::DWS_PS_NONE;
+        return DWSRadioPs::DWS_PS_NONE;
     if (m == WIFI_PS_MIN_MODEM)
-        return DetwsRadioPs::DWS_PS_MIN_MODEM;
+        return DWSRadioPs::DWS_PS_MIN_MODEM;
     if (m == WIFI_PS_MAX_MODEM)
-        return DetwsRadioPs::DWS_PS_MAX_MODEM;
-    return DetwsRadioPs::DWS_PS_NONE;
+        return DWSRadioPs::DWS_PS_MAX_MODEM;
+    return DWSRadioPs::DWS_PS_NONE;
 }
 
 void dws_radio_busy_hold(void)
@@ -87,7 +87,7 @@ void dws_radio_power_apply(void)
 }
 uint8_t dws_radio_ps_get(void)
 {
-    return DetwsRadioPs::DWS_PS_NONE;
+    return DWSRadioPs::DWS_PS_NONE;
 }
 void dws_radio_busy_hold(void)
 {

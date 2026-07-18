@@ -20,16 +20,16 @@ void tearDown()
 }
 
 // Tamper helper: the test owns the storage, so cast away const to corrupt it.
-static DetwsAuditEntry *mutable_at(uint16_t i)
+static DWSAuditEntry *mutable_at(uint16_t i)
 {
-    return const_cast<DetwsAuditEntry *>(dws_audit_at(i));
+    return const_cast<DWSAuditEntry *>(dws_audit_at(i));
 }
 
 void test_append_assigns_monotonic_seq()
 {
-    TEST_ASSERT_EQUAL_UINT32(1, dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH, "login alice"));
-    TEST_ASSERT_EQUAL_UINT32(2, dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH_FAIL, "bad password bob"));
-    TEST_ASSERT_EQUAL_UINT32(3, dws_audit_append(DetwsAuditCat::DWS_AUDIT_CONFIG, "set http_port=80"));
+    TEST_ASSERT_EQUAL_UINT32(1, dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH, "login alice"));
+    TEST_ASSERT_EQUAL_UINT32(2, dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH_FAIL, "bad password bob"));
+    TEST_ASSERT_EQUAL_UINT32(3, dws_audit_append(DWSAuditCat::DWS_AUDIT_CONFIG, "set http_port=80"));
     TEST_ASSERT_EQUAL_UINT16(3, dws_audit_count());
     TEST_ASSERT_EQUAL_STRING("login alice", dws_audit_at(0)->msg);
     TEST_ASSERT_EQUAL_STRING("set http_port=80", dws_audit_at(2)->msg);
@@ -39,7 +39,7 @@ void test_append_assigns_monotonic_seq()
 void test_chain_verifies_when_untouched()
 {
     for (int i = 0; i < 10; i++)
-        dws_audit_append(DetwsAuditCat::DWS_AUDIT_ACCESS, "GET /resource");
+        dws_audit_append(DWSAuditCat::DWS_AUDIT_ACCESS, "GET /resource");
     uint32_t broken = 999;
     TEST_ASSERT_TRUE(dws_audit_verify(&broken));
     TEST_ASSERT_EQUAL_UINT32(999, broken); // untouched on success
@@ -48,9 +48,9 @@ void test_chain_verifies_when_untouched()
 void test_tampered_message_breaks_chain()
 {
     for (int i = 0; i < 6; i++)
-        dws_audit_append(DetwsAuditCat::DWS_AUDIT_SYSTEM, "tick");
+        dws_audit_append(DWSAuditCat::DWS_AUDIT_SYSTEM, "tick");
     // Corrupt record #4's message in place (hash now mismatches its fields).
-    DetwsAuditEntry *e = mutable_at(3);
+    DWSAuditEntry *e = mutable_at(3);
     strcpy(e->msg, "EVIL");
     uint32_t broken = 0;
     TEST_ASSERT_FALSE(dws_audit_verify(&broken));
@@ -60,7 +60,7 @@ void test_tampered_message_breaks_chain()
 void test_tampered_hash_breaks_chain()
 {
     for (int i = 0; i < 5; i++)
-        dws_audit_append(DetwsAuditCat::DWS_AUDIT_SYSTEM, "tick");
+        dws_audit_append(DWSAuditCat::DWS_AUDIT_SYSTEM, "tick");
     mutable_at(2)->hash[0] ^= 0xFF; // flip a hash bit
     uint32_t broken = 0;
     TEST_ASSERT_FALSE(dws_audit_verify(&broken));
@@ -71,8 +71,8 @@ void test_tampered_hash_breaks_chain()
 void test_tampered_category_breaks_chain()
 {
     for (int i = 0; i < 4; i++)
-        dws_audit_append(DetwsAuditCat::DWS_AUDIT_ACCESS, "ok");
-    mutable_at(1)->category = DetwsAuditCat::DWS_AUDIT_ADMIN;
+        dws_audit_append(DWSAuditCat::DWS_AUDIT_ACCESS, "ok");
+    mutable_at(1)->category = DWSAuditCat::DWS_AUDIT_ADMIN;
     TEST_ASSERT_FALSE(dws_audit_verify(nullptr));
 }
 
@@ -80,7 +80,7 @@ void test_ring_evicts_oldest_and_still_verifies()
 {
     const int extra = 8;
     for (int i = 0; i < DWS_AUDIT_LOG_ENTRIES + extra; i++)
-        dws_audit_append(DetwsAuditCat::DWS_AUDIT_SYSTEM, "msg");
+        dws_audit_append(DWSAuditCat::DWS_AUDIT_SYSTEM, "msg");
     // Ring is capped; oldest seq advanced past the evicted records.
     TEST_ASSERT_EQUAL_UINT16(DWS_AUDIT_LOG_ENTRIES, dws_audit_count());
     TEST_ASSERT_EQUAL_UINT32((uint32_t)(extra + 1), dws_audit_at(0)->seq);
@@ -95,8 +95,8 @@ void test_ring_evicts_oldest_and_still_verifies()
 void test_tamper_after_wrap_detected_at_oldest()
 {
     for (int i = 0; i < DWS_AUDIT_LOG_ENTRIES + 5; i++)
-        dws_audit_append(DetwsAuditCat::DWS_AUDIT_SYSTEM, "x");
-    DetwsAuditEntry *oldest = mutable_at(0);
+        dws_audit_append(DWSAuditCat::DWS_AUDIT_SYSTEM, "x");
+    DWSAuditEntry *oldest = mutable_at(0);
     oldest->msg[0] = (oldest->msg[0] == 'x') ? 'y' : 'x';
     uint32_t broken = 0;
     TEST_ASSERT_FALSE(dws_audit_verify(&broken));
@@ -105,20 +105,20 @@ void test_tamper_after_wrap_detected_at_oldest()
 
 void test_reset_clears_everything()
 {
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH, "a");
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH, "b");
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH, "a");
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH, "b");
     dws_audit_reset();
     TEST_ASSERT_EQUAL_UINT16(0, dws_audit_count());
     TEST_ASSERT_TRUE(dws_audit_verify(nullptr)); // empty chain is trivially intact
     // Sequence restarts at 1 after reset.
-    TEST_ASSERT_EQUAL_UINT32(1, dws_audit_append(DetwsAuditCat::DWS_AUDIT_SYSTEM, "fresh"));
+    TEST_ASSERT_EQUAL_UINT32(1, dws_audit_append(DWSAuditCat::DWS_AUDIT_SYSTEM, "fresh"));
 }
 
 // Sink receives every record at append time (the durable-forwarding path).
 static int s_sink_calls = 0;
 static uint32_t s_sink_last_seq = 0;
 static char s_sink_last_msg[DWS_AUDIT_MSG_LEN];
-static void test_sink(const DetwsAuditEntry *e)
+static void test_sink(const DWSAuditEntry *e)
 {
     s_sink_calls++;
     s_sink_last_seq = e->seq;
@@ -129,9 +129,9 @@ void test_sink_receives_each_record()
 {
     s_sink_calls = 0;
     dws_audit_set_sink(test_sink);
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH, "one");
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH, "two");
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH, "three");
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH, "one");
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH, "two");
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH, "three");
     TEST_ASSERT_EQUAL_INT(3, s_sink_calls);
     TEST_ASSERT_EQUAL_UINT32(3, s_sink_last_seq);
     TEST_ASSERT_EQUAL_STRING("three", s_sink_last_msg);
@@ -139,7 +139,7 @@ void test_sink_receives_each_record()
 
 void test_format_and_dump_json()
 {
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH, "login \"alice\"\n"); // forces JSON escaping
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH, "login \"alice\"\n"); // forces JSON escaping
     char one[256];
     int n = dws_audit_format(dws_audit_at(0), one, sizeof(one));
     TEST_ASSERT_TRUE(n > 0);
@@ -158,7 +158,7 @@ void test_format_and_dump_json()
 void test_dump_json_reports_broken_chain()
 {
     for (int i = 0; i < 4; i++)
-        dws_audit_append(DetwsAuditCat::DWS_AUDIT_SYSTEM, "ok");
+        dws_audit_append(DWSAuditCat::DWS_AUDIT_SYSTEM, "ok");
     mutable_at(2)->msg[0] ^= 0xFF;
     char doc[1024]; // 4 records * (~64 hex hash + fields)
     TEST_ASSERT_TRUE(dws_audit_dump_json(doc, sizeof(doc)) > 0);
@@ -168,7 +168,7 @@ void test_dump_json_reports_broken_chain()
 
 void test_format_fails_closed_on_small_buffer()
 {
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH, "some message here");
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH, "some message here");
     char tiny[8];
     TEST_ASSERT_EQUAL_INT(0, dws_audit_format(dws_audit_at(0), tiny, sizeof(tiny)));
 }
@@ -176,14 +176,14 @@ void test_format_fails_closed_on_small_buffer()
 // A NULL message stores an empty string; each category renders its name.
 void test_null_msg_and_categories()
 {
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_SYSTEM, nullptr);
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_SYSTEM, nullptr);
     TEST_ASSERT_EQUAL_STRING("", dws_audit_at(0)->msg);
 
     dws_audit_reset();
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH_FAIL, "a");
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_ACCESS, "b");
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_CONFIG, "c");
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_ADMIN, "d");
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH_FAIL, "a");
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_ACCESS, "b");
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_CONFIG, "c");
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_ADMIN, "d");
     char doc[1024];
     TEST_ASSERT_TRUE(dws_audit_dump_json(doc, sizeof(doc)) > 0);
     TEST_ASSERT_NOT_NULL(strstr(doc, "\"cat\":\"auth_fail\""));
@@ -195,7 +195,7 @@ void test_null_msg_and_categories()
 // Every JSON escape branch: backslash, tab, CR, and a \u00XX control char.
 void test_json_escape_all_chars()
 {
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_SYSTEM, "a\\b\tc\r\x01");
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_SYSTEM, "a\\b\tc\r\x01");
     char buf[256];
     TEST_ASSERT_TRUE(dws_audit_format(dws_audit_at(0), buf, sizeof(buf)) > 0);
     TEST_ASSERT_NOT_NULL(strstr(buf, "\\\\"));    // backslash
@@ -208,8 +208,8 @@ void test_json_escape_all_chars()
 // the full length (walking cap across each stage: head, escape, mid, hash, close).
 void test_format_fails_closed_all_stages()
 {
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH, "hi\tthere");
-    const DetwsAuditEntry *e = dws_audit_at(0);
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH, "hi\tthere");
+    const DWSAuditEntry *e = dws_audit_at(0);
     char full[256];
     int flen = dws_audit_format(e, full, sizeof(full));
     TEST_ASSERT_TRUE(flen > 0);
@@ -227,7 +227,7 @@ void test_format_fails_closed_all_stages()
 void test_dump_fails_closed_all_stages()
 {
     for (int i = 0; i < 3; i++)
-        dws_audit_append(DetwsAuditCat::DWS_AUDIT_SYSTEM, "rec");
+        dws_audit_append(DWSAuditCat::DWS_AUDIT_SYSTEM, "rec");
     char full[1024];
     int flen = dws_audit_dump_json(full, sizeof(full));
     TEST_ASSERT_TRUE(flen > 0);

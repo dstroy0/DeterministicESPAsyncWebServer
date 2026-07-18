@@ -63,7 +63,7 @@ bool dws_pn_dcp_parse_header(const uint8_t *frame, size_t len, PnDcpHeader *out)
     return true;
 }
 
-bool dws_pn_dcp_walk(const uint8_t *blocks, size_t len, DetwsPnDcpBlockCb cb, void *arg)
+bool dws_pn_dcp_walk(const uint8_t *blocks, size_t len, DWSPnDcpBlockCb cb, void *arg)
 {
     size_t off = 0;
     while (off + 4 <= len)

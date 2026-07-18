@@ -22,7 +22,7 @@
 
 #if DWS_ENABLE_EDGE_CACHE
 
-#include "services/httpcache/httpcache.h" // DetwsCacheControl, cache_freshness_lifetime
+#include "services/httpcache/httpcache.h" // DWSCacheControl, cache_freshness_lifetime
 #include <stddef.h>
 #include <stdint.h>
 
@@ -51,7 +51,7 @@ int64_t edge_parse_http_date(const char *s, size_t len);
  * locally (a difference of two origin-supplied times - valid with no local wall clock). @p date_epoch
  * and @p expires_epoch are -1 when the header was absent.
  */
-long edge_freshness_lifetime(const DetwsCacheControl *cc, bool shared, int64_t date_epoch, int64_t expires_epoch);
+long edge_freshness_lifetime(const DWSCacheControl *cc, bool shared, int64_t date_epoch, int64_t expires_epoch);
 
 /**
  * @brief Heuristic freshness (RFC 9111 sec 4.2.2): 10% of (Date - Last-Modified), or -1 if either
@@ -197,7 +197,7 @@ EdgeEntry *edge_store_lookup(EdgeCacheStore *s, const char *canon, const char *v
 EdgeEntry *edge_store_find(EdgeCacheStore *s, const char *canon, EdgeHdrLookup lookup, void *ctx, uint32_t now_ms);
 
 /** @brief Resolve and store an entry's freshness (lifetime with heuristic / default fallback + age). */
-void edge_entry_set_freshness(EdgeEntry *e, const DetwsCacheControl *cc, bool shared, int64_t date_epoch,
+void edge_entry_set_freshness(EdgeEntry *e, const DWSCacheControl *cc, bool shared, int64_t date_epoch,
                               int64_t expires_epoch, int64_t last_modified_epoch, int32_t age_hdr,
                               int64_t response_time_epoch, uint32_t now_ms);
 
@@ -229,7 +229,7 @@ void edge_store_free_entry(EdgeCacheStore *s, const EdgeEntry *e);
  *
  * @p vary_header may be nullptr. Authorization handling is the caller's (private requests bypass first).
  */
-bool edge_is_storeable(int status, const char *method, const DetwsCacheControl *cc, const char *vary_header,
+bool edge_is_storeable(int status, const char *method, const DWSCacheControl *cc, const char *vary_header,
                        size_t body_len);
 
 // --- conditional revalidation (RFC 9111 sec 4.3) -------------------------------------------------

@@ -56,7 +56,7 @@ static uint8_t g_disk[128 * 1024];
 static RamDisk g_d;
 static WalDev g_dev;
 static WalStore g_wal;
-static DetwsDbm g_db;
+static DWSDbm g_db;
 static uint8_t g_scratch[EDGE_SD_VALUE_MAX];
 
 static WalDev dev_over(RamDisk *d)
@@ -260,7 +260,7 @@ static uint32_t g_spills = 0;
 static void spill_cb(void *ctx, const EdgeEntry *v)
 {
     (void)ctx;
-    if (edge_sd_put((DetwsDbm *)ctx, v, g_scratch, sizeof(g_scratch)))
+    if (edge_sd_put((DWSDbm *)ctx, v, g_scratch, sizeof(g_scratch)))
         g_spills++;
 }
 

@@ -14,7 +14,7 @@ tick.
 It is one queue feeding one core-pinned task, with static (zero-heap) storage:
 
 ```cpp
-DetwsPqConfig cfg = {};
+DWSPqConfig cfg = {};
 cfg.handler  = on_reading; // runs in the high-priority task, once per item
 cfg.priority = 6;          // above loop(): a post preempts into the handler
 cfg.core     = 1;          // pin the task

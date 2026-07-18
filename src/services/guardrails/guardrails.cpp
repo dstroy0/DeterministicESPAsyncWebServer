@@ -15,21 +15,21 @@
 
 #include <stdio.h>
 
-uint8_t dws_guardrail_eval(const DetwsHealth *h, uint32_t heap_min, uint32_t frag_min_block, uint32_t stack_min)
+uint8_t dws_guardrail_eval(const DWSHealth *h, uint32_t heap_min, uint32_t frag_min_block, uint32_t stack_min)
 {
-    uint8_t b = DetwsBreach::DWS_BREACH_NONE;
+    uint8_t b = DWSBreach::DWS_BREACH_NONE;
     if (!h)
         return b;
     if (h->free_heap < heap_min)
-        b |= DetwsBreach::DWS_BREACH_HEAP;
+        b |= DWSBreach::DWS_BREACH_HEAP;
     if (h->largest_free_block < frag_min_block)
-        b |= DetwsBreach::DWS_BREACH_FRAG;
+        b |= DWSBreach::DWS_BREACH_FRAG;
     if (h->stack_free < stack_min)
-        b |= DetwsBreach::DWS_BREACH_STACK;
+        b |= DWSBreach::DWS_BREACH_STACK;
     return b;
 }
 
-int dws_health_json(const DetwsHealth *h, char *out, size_t cap)
+int dws_health_json(const DWSHealth *h, char *out, size_t cap)
 {
     if (!out || cap == 0)
         return 0;
@@ -65,7 +65,7 @@ struct GuardrailsCtx
 GuardrailsCtx s_gr;
 } // namespace
 
-void dws_guardrails_sample(DetwsHealth *h)
+void dws_guardrails_sample(DWSHealth *h)
 {
     if (!h)
         return;
@@ -82,27 +82,27 @@ void dws_guardrails_begin(dws_breach_fn cb)
 
 uint8_t dws_guardrails_check(void)
 {
-    DetwsHealth h;
+    DWSHealth h;
     dws_guardrails_sample(&h);
     uint8_t b = dws_guardrail_eval(&h, DWS_GUARDRAIL_HEAP_MIN, DWS_GUARDRAIL_FRAG_MIN_BLOCK, DWS_GUARDRAIL_STACK_MIN);
-    if (b != DetwsBreach::DWS_BREACH_NONE && s_gr.cb)
+    if (b != DWSBreach::DWS_BREACH_NONE && s_gr.cb)
         s_gr.cb(b, &h);
     return b;
 }
 
 #else // host build - no live counters
 
-void dws_guardrails_sample(DetwsHealth *h)
+void dws_guardrails_sample(DWSHealth *h)
 {
     if (h)
-        *h = DetwsHealth{};
+        *h = DWSHealth{};
 }
 void dws_guardrails_begin(dws_breach_fn)
 {
 }
 uint8_t dws_guardrails_check(void)
 {
-    return DetwsBreach::DWS_BREACH_NONE;
+    return DWSBreach::DWS_BREACH_NONE;
 }
 
 #endif // ARDUINO

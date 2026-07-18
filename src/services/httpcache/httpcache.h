@@ -42,7 +42,7 @@
  * field-name lists on `no-cache` / `private` are not captured (presence only). @ref max_stale
  * uses -1 = absent and -2 = present with no value ("accept any staleness").
  */
-struct DetwsCacheControl
+struct DWSCacheControl
 {
     // response cacheability
     bool cc_public;        ///< `public`
@@ -66,7 +66,7 @@ struct DetwsCacheControl
 };
 
 /** @brief Reset to an empty set (all flags false, all delta-seconds -1). */
-void cache_control_init(DetwsCacheControl *cc);
+void cache_control_init(DWSCacheControl *cc);
 
 /**
  * @brief Build the canonical `Cache-Control` value (no `Cache-Control:` prefix, no CRLF).
@@ -76,7 +76,7 @@ void cache_control_init(DetwsCacheControl *cc);
  *
  * @return bytes written (excluding NUL), or 0 on overflow or an empty directive set.
  */
-size_t cache_control_build(char *buf, size_t cap, const DetwsCacheControl *cc);
+size_t cache_control_build(char *buf, size_t cap, const DWSCacheControl *cc);
 
 /**
  * @brief Parse a `Cache-Control` header value into @p cc (initializes it first).
@@ -86,24 +86,24 @@ size_t cache_control_build(char *buf, size_t cap, const DetwsCacheControl *cc);
  *
  * @return true if at least one known directive was parsed.
  */
-bool cache_control_parse(const char *s, size_t len, DetwsCacheControl *cc);
+bool cache_control_parse(const char *s, size_t len, DWSCacheControl *cc);
 
 // --- first-class origin presets (fill @p cc for a common edge-cacheable response) ---
 
 /** @brief Long-lived immutable static asset: `public, max-age=<secs>, immutable`. */
-void cache_immutable_asset(DetwsCacheControl *cc, uint32_t max_age);
+void cache_immutable_asset(DWSCacheControl *cc, uint32_t max_age);
 
 /**
  * @brief Cacheable but served-while-revalidating: `public, max-age=<secs>` plus
  *        `stale-while-revalidate=<swr>` when @p stale_while_revalidate >= 0.
  */
-void cache_revalidatable(DetwsCacheControl *cc, uint32_t max_age, int32_t stale_while_revalidate);
+void cache_revalidatable(DWSCacheControl *cc, uint32_t max_age, int32_t stale_while_revalidate);
 
 /** @brief Dynamic / sensitive - never store: `no-store`. */
-void cache_no_store(DetwsCacheControl *cc);
+void cache_no_store(DWSCacheControl *cc);
 
 /** @brief Distinct shared-cache TTL: `public, max-age=<browser>, s-maxage=<shared>`. */
-void cache_shared(DetwsCacheControl *cc, uint32_t max_age, uint32_t s_maxage);
+void cache_shared(DWSCacheControl *cc, uint32_t max_age, uint32_t s_maxage);
 
 /**
  * @brief Freshness lifetime in seconds (RFC 9111 sec 4.2.1), first-match precedence:
@@ -113,7 +113,7 @@ void cache_shared(DetwsCacheControl *cc, uint32_t max_age, uint32_t s_maxage);
  * @param expires_minus_date `Expires` minus `Date` in seconds, or < 0 when that pair is absent.
  * @return the freshness lifetime in seconds, or -1 when none is explicit (caller applies a heuristic).
  */
-long cache_freshness_lifetime(const DetwsCacheControl *cc, bool shared, long expires_minus_date);
+long cache_freshness_lifetime(const DWSCacheControl *cc, bool shared, long expires_minus_date);
 
 #endif // DWS_ENABLE_HTTP_CACHE
 

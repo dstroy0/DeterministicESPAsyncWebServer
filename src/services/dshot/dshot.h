@@ -80,7 +80,7 @@ bool dws_dshot_decode(uint16_t frame, uint16_t *value11, bool *telemetry, bool b
 uint32_t dws_dshot_bit_ns(uint16_t rate_kbit, bool bit);
 
 /** @brief The legacy analog-PWM ESC protocols (pulse width carries the throttle), for dws_esc_pwm_ns. */
-enum class DetwsEscPwm : uint8_t
+enum class DWSEscPwm : uint8_t
 {
     DWS_ESC_PWM,        ///< standard servo PWM: 1000-2000 us.
     DWS_ESC_ONESHOT125, ///< OneShot125: 125-250 us.
@@ -91,11 +91,11 @@ enum class DetwsEscPwm : uint8_t
 /**
  * @brief Pulse width (ns) for an analog-PWM ESC protocol at a given throttle.
  * @param throttle_1000 throttle 0..1000 (clamped); 0 = min pulse (idle/arm), 1000 = max.
- * @param mode          one of DetwsEscPwm.
+ * @param mode          one of DWSEscPwm.
  * @return the pulse high-time in nanoseconds, linearly mapped across the mode's [min, max] range. These
  *         are driven by the MCPWM peripheral; this is the pure throttle->width mapping the driver needs.
  */
-uint32_t dws_esc_pwm_ns(uint16_t throttle_1000, DetwsEscPwm mode);
+uint32_t dws_esc_pwm_ns(uint16_t throttle_1000, DWSEscPwm mode);
 
 #endif // DWS_ENABLE_DSHOT
 #endif // DETERMINISTICESPASYNCWEBSERVER_DSHOT_H

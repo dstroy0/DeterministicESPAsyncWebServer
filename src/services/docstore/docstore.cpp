@@ -13,37 +13,37 @@
 #include "network_drivers/presentation/json/json.h"
 #include <string.h>
 
-void dws_docstore_open(DetwsDocStore *ds, DetwsDbm *db)
+void dws_docstore_open(DWSDocStore *ds, DWSDbm *db)
 {
     ds->db = db;
 }
 
-bool dws_docstore_put(DetwsDocStore *ds, const char *id, uint16_t id_len, const uint8_t *json, uint32_t json_len)
+bool dws_docstore_put(DWSDocStore *ds, const char *id, uint16_t id_len, const uint8_t *json, uint32_t json_len)
 {
     return dws_dbm_put(ds->db, id, id_len, json, json_len);
 }
 
-long dws_docstore_get(DetwsDocStore *ds, const char *id, uint16_t id_len, uint8_t *buf, size_t cap)
+long dws_docstore_get(DWSDocStore *ds, const char *id, uint16_t id_len, uint8_t *buf, size_t cap)
 {
     return dws_dbm_get(ds->db, id, id_len, buf, cap);
 }
 
-bool dws_docstore_del(DetwsDocStore *ds, const char *id, uint16_t id_len)
+bool dws_docstore_del(DWSDocStore *ds, const char *id, uint16_t id_len)
 {
     return dws_dbm_del(ds->db, id, id_len);
 }
 
-bool dws_docstore_contains(DetwsDocStore *ds, const char *id, uint16_t id_len)
+bool dws_docstore_contains(DWSDocStore *ds, const char *id, uint16_t id_len)
 {
     return dws_dbm_contains(ds->db, id, id_len);
 }
 
-uint32_t dws_docstore_count(DetwsDocStore *ds)
+uint32_t dws_docstore_count(DWSDocStore *ds)
 {
     return dws_dbm_count(ds->db);
 }
 
-bool dws_docstore_sync(DetwsDocStore *ds)
+bool dws_docstore_sync(DWSDocStore *ds)
 {
     return dws_dbm_sync(ds->db);
 }
@@ -61,13 +61,13 @@ enum class FindKind : uint8_t
 // for the reader); `fieldtmp` extracts a string field for comparison. Both are bounded (no heap).
 struct FindCtx
 {
-    DetwsDbm *db;
+    DWSDbm *db;
     const char *field;
     FindKind kind;
     const char *sval;
     long ival;
     bool bval;
-    DetwsDocMatchCb user_cb;
+    DWSDocMatchCb user_cb;
     void *user_ctx;
     uint32_t matches;
     uint8_t doc[DWS_DBM_VAL_MAX + 1];
@@ -119,7 +119,7 @@ uint32_t run_find(FindCtx *f)
 }
 } // namespace
 
-uint32_t dws_docstore_find_str(DetwsDocStore *ds, const char *field, const char *value, DetwsDocMatchCb cb, void *ctx)
+uint32_t dws_docstore_find_str(DWSDocStore *ds, const char *field, const char *value, DWSDocMatchCb cb, void *ctx)
 {
     FindCtx f;
     f.db = ds->db;
@@ -131,7 +131,7 @@ uint32_t dws_docstore_find_str(DetwsDocStore *ds, const char *field, const char 
     return run_find(&f);
 }
 
-uint32_t dws_docstore_find_int(DetwsDocStore *ds, const char *field, long value, DetwsDocMatchCb cb, void *ctx)
+uint32_t dws_docstore_find_int(DWSDocStore *ds, const char *field, long value, DWSDocMatchCb cb, void *ctx)
 {
     FindCtx f;
     f.db = ds->db;
@@ -143,7 +143,7 @@ uint32_t dws_docstore_find_int(DetwsDocStore *ds, const char *field, long value,
     return run_find(&f);
 }
 
-uint32_t dws_docstore_find_bool(DetwsDocStore *ds, const char *field, bool value, DetwsDocMatchCb cb, void *ctx)
+uint32_t dws_docstore_find_bool(DWSDocStore *ds, const char *field, bool value, DWSDocMatchCb cb, void *ctx)
 {
     FindCtx f;
     f.db = ds->db;

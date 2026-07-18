@@ -41,7 +41,7 @@ int main()
     // A protection-trip GOOSE control block (two boolean dataset entries in allData: 83 01 00, 83 01 01).
     const uint8_t utc[8] = {0x66, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a};
     const uint8_t all_data[] = {0x83, 0x01, 0x00, 0x83, 0x01, 0x01};
-    DetwsGoose g = {};
+    DWSGoose g = {};
     g.gocb_ref = "IED1LD0/LLN0$GO$gcb01";
     g.time_allowed_to_live = 2000;
     g.dat_set = "IED1LD0/LLN0$DataSet1";

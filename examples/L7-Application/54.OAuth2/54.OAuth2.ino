@@ -57,7 +57,7 @@ void setup()
             server.send(id, 400, "application/json", "{\"error\":\"missing code\"}");
             return;
         }
-        DetwsOAuth2Tokens t;
+        DWSOAuth2Tokens t;
         int st = dws_oauth2_exchange_code(TOKEN_URL, code, REDIRECT_URI, CLIENT_ID, CLIENT_SECRET, nullptr, &t);
         if (st != 200)
         {

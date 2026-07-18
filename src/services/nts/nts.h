@@ -71,13 +71,13 @@ size_t dws_nts_ke_record(bool critical, uint16_t type, const uint8_t *body, size
 size_t dws_nts_ke_request(uint8_t *out, size_t cap);
 
 /** @brief One record surfaced by dws_nts_ke_parse. */
-typedef void (*DetwsNtsKeCb)(bool critical, uint16_t type, const uint8_t *body, size_t body_len, void *arg);
+typedef void (*DWSNtsKeCb)(bool critical, uint16_t type, const uint8_t *body, size_t body_len, void *arg);
 
 /**
  * @brief Walk an NTS-KE record stream, invoking @p cb for each record.
  * @return true if the stream is well-formed and ends with an End-of-Message record.
  */
-bool dws_nts_ke_parse(const uint8_t *buf, size_t len, DetwsNtsKeCb cb, void *arg);
+bool dws_nts_ke_parse(const uint8_t *buf, size_t len, DWSNtsKeCb cb, void *arg);
 
 /**
  * @brief Build an RFC 7822 extension field `[type][length][value][padding-to-4]`.

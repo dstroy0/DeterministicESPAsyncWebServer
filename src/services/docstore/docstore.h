@@ -27,56 +27,56 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/** @brief A document store bound to a mounted ::DetwsDbm. */
-struct DetwsDocStore
+/** @brief A document store bound to a mounted ::DWSDbm. */
+struct DWSDocStore
 {
-    DetwsDbm *db;
+    DWSDbm *db;
 };
 
 /** @brief Bind @p ds to an open @p db. */
-void dws_docstore_open(DetwsDocStore *ds, DetwsDbm *db);
+void dws_docstore_open(DWSDocStore *ds, DWSDbm *db);
 
 /**
  * @brief Insert or replace the document @p id with JSON body @p json. Not synced (batched).
  * @return false on the same bounds/full conditions as ::dws_dbm_put.
  */
-bool dws_docstore_put(DetwsDocStore *ds, const char *id, uint16_t id_len, const uint8_t *json, uint32_t json_len);
+bool dws_docstore_put(DWSDocStore *ds, const char *id, uint16_t id_len, const uint8_t *json, uint32_t json_len);
 
 /**
  * @brief Fetch document @p id's JSON body into @p buf (up to @p cap).
  * @return the body length, or -1 if absent or larger than @p cap.
  */
-long dws_docstore_get(DetwsDocStore *ds, const char *id, uint16_t id_len, uint8_t *buf, size_t cap);
+long dws_docstore_get(DWSDocStore *ds, const char *id, uint16_t id_len, uint8_t *buf, size_t cap);
 
 /** @brief Delete document @p id. @return true if it existed. */
-bool dws_docstore_del(DetwsDocStore *ds, const char *id, uint16_t id_len);
+bool dws_docstore_del(DWSDocStore *ds, const char *id, uint16_t id_len);
 
 /** @brief @return true if document @p id exists. */
-bool dws_docstore_contains(DetwsDocStore *ds, const char *id, uint16_t id_len);
+bool dws_docstore_contains(DWSDocStore *ds, const char *id, uint16_t id_len);
 
 /** @brief @return the number of documents. */
-uint32_t dws_docstore_count(DetwsDocStore *ds);
+uint32_t dws_docstore_count(DWSDocStore *ds);
 
 /** @brief Make all writes durable (checkpoints the WAL). @return false on I/O failure. */
-bool dws_docstore_sync(DetwsDocStore *ds);
+bool dws_docstore_sync(DWSDocStore *ds);
 
 /**
  * @brief Per-match callback for the find calls: the matching document's id and JSON body (the body points
  * into a temporary buffer valid only for this call). Return false to stop the scan early.
  */
-using DetwsDocMatchCb = bool (*)(const char *id, uint16_t id_len, const uint8_t *json, uint32_t json_len, void *ctx);
+using DWSDocMatchCb = bool (*)(const char *id, uint16_t id_len, const uint8_t *json, uint32_t json_len, void *ctx);
 
 /**
  * @brief Find documents whose top-level string field @p field equals @p value. @return the match count.
  * Field string values longer than ::DWS_DOCSTORE_FIELD_MAX will not match.
  */
-uint32_t dws_docstore_find_str(DetwsDocStore *ds, const char *field, const char *value, DetwsDocMatchCb cb, void *ctx);
+uint32_t dws_docstore_find_str(DWSDocStore *ds, const char *field, const char *value, DWSDocMatchCb cb, void *ctx);
 
 /** @brief Find documents whose top-level integer field @p field equals @p value. @return the match count. */
-uint32_t dws_docstore_find_int(DetwsDocStore *ds, const char *field, long value, DetwsDocMatchCb cb, void *ctx);
+uint32_t dws_docstore_find_int(DWSDocStore *ds, const char *field, long value, DWSDocMatchCb cb, void *ctx);
 
 /** @brief Find documents whose top-level boolean field @p field equals @p value. @return the match count. */
-uint32_t dws_docstore_find_bool(DetwsDocStore *ds, const char *field, bool value, DetwsDocMatchCb cb, void *ctx);
+uint32_t dws_docstore_find_bool(DWSDocStore *ds, const char *field, bool value, DWSDocMatchCb cb, void *ctx);
 
 #endif // DWS_ENABLE_DOCSTORE
 #endif // DETERMINISTICESPASYNCWEBSERVER_DOCSTORE_H

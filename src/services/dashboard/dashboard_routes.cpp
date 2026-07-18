@@ -76,7 +76,7 @@ static void dash_ws_close(uint8_t ws_id)
 }
 #endif
 
-void dws_dashboard_begin(DWS &server, const char *path, const DetwsWidget *widgets, uint8_t count)
+void dws_dashboard_begin(DWS &server, const char *path, const DWSWidget *widgets, uint8_t count)
 {
     s_dashr.srv = &server;
     dws_dashboard_configure(widgets, count);

@@ -25,37 +25,37 @@
 // unreachable from any other translation unit.
 struct DashboardCtx
 {
-    const DetwsWidget *widgets = nullptr;
+    const DWSWidget *widgets = nullptr;
     uint8_t count = 0;
     float values[DWS_DASHBOARD_MAX_WIDGETS] = {};
-    DetwsControlCb control_cb = nullptr;
+    DWSControlCb control_cb = nullptr;
 };
 static DashboardCtx s_dash;
 
-static const char *widget_type_name(DetwsWidgetType t)
+static const char *widget_type_name(DWSWidgetType t)
 {
     switch (t)
     {
-    case DetwsWidgetType::DWS_WIDGET_GAUGE:
+    case DWSWidgetType::DWS_WIDGET_GAUGE:
         return "gauge";
-    case DetwsWidgetType::DWS_WIDGET_BAR:
+    case DWSWidgetType::DWS_WIDGET_BAR:
         return "bar";
-    case DetwsWidgetType::DWS_WIDGET_SPARKLINE:
+    case DWSWidgetType::DWS_WIDGET_SPARKLINE:
         return "sparkline";
-    case DetwsWidgetType::DWS_WIDGET_CHART:
+    case DWSWidgetType::DWS_WIDGET_CHART:
         return "chart";
-    case DetwsWidgetType::DWS_WIDGET_BUTTON:
+    case DWSWidgetType::DWS_WIDGET_BUTTON:
         return "button";
-    case DetwsWidgetType::DWS_WIDGET_TOGGLE:
+    case DWSWidgetType::DWS_WIDGET_TOGGLE:
         return "toggle";
-    case DetwsWidgetType::DWS_WIDGET_SLIDER:
+    case DWSWidgetType::DWS_WIDGET_SLIDER:
         return "slider";
     default:
         return "value";
     }
 }
 
-void dws_dashboard_configure(const DetwsWidget *widgets, uint8_t count)
+void dws_dashboard_configure(const DWSWidget *widgets, uint8_t count)
 {
     s_dash.widgets = widgets;
     s_dash.count = count > DWS_DASHBOARD_MAX_WIDGETS ? DWS_DASHBOARD_MAX_WIDGETS : count;
@@ -90,7 +90,7 @@ int dws_dashboard_layout_json(char *out, size_t cap)
         return 0;
     for (uint8_t i = 0; i < s_dash.count; i++)
     {
-        const DetwsWidget *w = &s_dash.widgets[i];
+        const DWSWidget *w = &s_dash.widgets[i];
         if (dws_fmt_append(out, cap, &pos,
                            "%s{\"type\":\"%s\",\"label\":\"%s\",\"key\":\"%s\",\"min\":%g,\"max\":%g,\"unit\":\"%s\"}",
                            i ? "," : "", widget_type_name(w->type), w->label ? w->label : "", w->key ? w->key : "",
@@ -127,7 +127,7 @@ int dws_dashboard_values_json(char *out, size_t cap)
 // Controls (inbound WebSocket messages)
 // ---------------------------------------------------------------------------
 
-void dws_dashboard_on_control(DetwsControlCb cb)
+void dws_dashboard_on_control(DWSControlCb cb)
 {
     s_dash.control_cb = cb;
 }

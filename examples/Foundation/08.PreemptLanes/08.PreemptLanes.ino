@@ -40,13 +40,13 @@ void setup()
     delay(300);
 
     // Internal DMA lane: priority 0 -> the lane default (ranks above the user lane).
-    DetwsPqConfig dma = {};
+    DWSPqConfig dma = {};
     dma.handler = on_critical;
     dma.core = 1;
     dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &dma);
 
     // User lane via the no-arg API (unchanged from 06.PreemptQueue).
-    DetwsPqConfig user = {};
+    DWSPqConfig user = {};
     user.handler = on_background;
     user.priority = 5; // stays below the internal lanes
     user.core = 1;

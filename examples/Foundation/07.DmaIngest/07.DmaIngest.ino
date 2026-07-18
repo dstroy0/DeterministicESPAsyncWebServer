@@ -76,7 +76,7 @@ void setup()
 
     // Start the internal DMA lane: a high-priority task (priority 0 -> the lane default,
     // which ranks above the user lane) that processes completed DMA frames.
-    DetwsPqConfig pq = {};
+    DWSPqConfig pq = {};
     pq.handler = on_dma_frame;
     pq.priority = 0; // 0 -> dws_pq_lane::DWS_PQ_LANE_DMA's default priority (internal > user)
     pq.core = 1;

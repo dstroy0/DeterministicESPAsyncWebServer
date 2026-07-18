@@ -1840,9 +1840,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Append assigns monotonic seq
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH, "login alice"));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_audit_append(DetwsAuditCat::DWS_AUDIT_AUTH_FAIL, "bad password bob"));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(3, dws_audit_append(DetwsAuditCat::DWS_AUDIT_CONFIG, "set http_port=80"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH, "login alice"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(2, dws_audit_append(DWSAuditCat::DWS_AUDIT_AUTH_FAIL, "bad password bob"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(3, dws_audit_append(DWSAuditCat::DWS_AUDIT_CONFIG, "set http_port=80"));</code>
       * <code>TEST_ASSERT_EQUAL_UINT16(3, dws_audit_count());</code>
       * <code>Assert equal string ("login alice", dws_audit_at(0)-&gt;msg)</code>
       * <code>Assert equal string ("set http_port=80", dws_audit_at(2)-&gt;msg)</code>
@@ -1911,7 +1911,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT16(0, dws_audit_count());</code>
       * <code>Assert true (dws_audit_verify(nullptr))</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_audit_append(DetwsAuditCat::DWS_AUDIT_SYSTEM, "fresh"));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1, dws_audit_append(DWSAuditCat::DWS_AUDIT_SYSTEM, "fresh"));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7446,16 +7446,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 172.32.x is OUTSIDE the 172.16/12 private block -> public.
     * **Assertions**:
-      * <code>Assert equal int (DetwsIpClass::DWS_IP_UNSPECIFIED, dws_dns_resolver_classify(0u))</code>
-      * <code>Assert equal int (DetwsIpClass::DWS_IP_BROADCAST, dws_dns_resolver_classify(0xFFFFFFFFu))</code>
-      * <code>Assert equal int (DetwsIpClass::DWS_IP_LOOPBACK, dws_dns_resolver_classify(IPV4(127, 0, 0, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(10, 0, 0, 5)))</code>
-      * <code>Assert equal int (DetwsIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(172, 16, 0, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(192, 168, 1, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DWS_IP_LINKLOCAL, dws_dns_resolver_classify(IPV4(169, 254, 1, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DWS_IP_MULTICAST, dws_dns_resolver_classify(IPV4(224, 0, 0, 1)))</code>
-      * <code>Assert equal int (DetwsIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(8, 8, 8, 8)))</code>
-      * <code>Assert equal int (DetwsIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(172, 32, 0, 1)))</code>
+      * <code>Assert equal int (DWSIpClass::DWS_IP_UNSPECIFIED, dws_dns_resolver_classify(0u))</code>
+      * <code>Assert equal int (DWSIpClass::DWS_IP_BROADCAST, dws_dns_resolver_classify(0xFFFFFFFFu))</code>
+      * <code>Assert equal int (DWSIpClass::DWS_IP_LOOPBACK, dws_dns_resolver_classify(IPV4(127, 0, 0, 1)))</code>
+      * <code>Assert equal int (DWSIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(10, 0, 0, 5)))</code>
+      * <code>Assert equal int (DWSIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(172, 16, 0, 1)))</code>
+      * <code>Assert equal int (DWSIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(192, 168, 1, 1)))</code>
+      * <code>Assert equal int (DWSIpClass::DWS_IP_LINKLOCAL, dws_dns_resolver_classify(IPV4(169, 254, 1, 1)))</code>
+      * <code>Assert equal int (DWSIpClass::DWS_IP_MULTICAST, dws_dns_resolver_classify(IPV4(224, 0, 0, 1)))</code>
+      * <code>Assert equal int (DWSIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(8, 8, 8, 8)))</code>
+      * <code>Assert equal int (DWSIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(172, 32, 0, 1)))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -7824,15 +7824,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: OneShot125: 125..250 us.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT32(125000, dws_esc_pwm_ns(0, DetwsEscPwm::DWS_ESC_ONESHOT125));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(250000, dws_esc_pwm_ns(1000, DetwsEscPwm::DWS_ESC_ONESHOT125));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(187500, dws_esc_pwm_ns(500, DetwsEscPwm::DWS_ESC_ONESHOT125));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(5000, dws_esc_pwm_ns(0, DetwsEscPwm::DWS_ESC_MULTISHOT));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(25000, dws_esc_pwm_ns(1000, DetwsEscPwm::DWS_ESC_MULTISHOT));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(15000, dws_esc_pwm_ns(500, DetwsEscPwm::DWS_ESC_MULTISHOT));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(1500000, dws_esc_pwm_ns(500, DetwsEscPwm::DWS_ESC_PWM));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(84000, dws_esc_pwm_ns(1000, DetwsEscPwm::DWS_ESC_ONESHOT42));</code>
-      * <code>TEST_ASSERT_EQUAL_UINT32(250000, dws_esc_pwm_ns(5000, DetwsEscPwm::DWS_ESC_ONESHOT125));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(125000, dws_esc_pwm_ns(0, DWSEscPwm::DWS_ESC_ONESHOT125));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(250000, dws_esc_pwm_ns(1000, DWSEscPwm::DWS_ESC_ONESHOT125));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(187500, dws_esc_pwm_ns(500, DWSEscPwm::DWS_ESC_ONESHOT125));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(5000, dws_esc_pwm_ns(0, DWSEscPwm::DWS_ESC_MULTISHOT));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(25000, dws_esc_pwm_ns(1000, DWSEscPwm::DWS_ESC_MULTISHOT));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(15000, dws_esc_pwm_ns(500, DWSEscPwm::DWS_ESC_MULTISHOT));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(1500000, dws_esc_pwm_ns(500, DWSEscPwm::DWS_ESC_PWM));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(84000, dws_esc_pwm_ns(1000, DWSEscPwm::DWS_ESC_ONESHOT42));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT32(250000, dws_esc_pwm_ns(5000, DWSEscPwm::DWS_ESC_ONESHOT125));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10137,11 +10137,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Dir name
     * **Assertions**:
-      * <code>Assert equal string ("in", dws_gpio_dir_name(DetwsGpioDir::DWS_GPIO_IN))</code>
-      * <code>Assert equal string ("in_pullup", dws_gpio_dir_name(DetwsGpioDir::DWS_GPIO_IN_PULLUP))</code>
-      * <code>Assert equal string ("in_pulldown", dws_gpio_dir_name(DetwsGpioDir::DWS_GPIO_IN_PULLDOWN))</code>
-      * <code>Assert equal string ("out", dws_gpio_dir_name(DetwsGpioDir::DWS_GPIO_OUT))</code>
-      * <code>Assert equal string ("in", dws_gpio_dir_name((DetwsGpioDir)99))</code>
+      * <code>Assert equal string ("in", dws_gpio_dir_name(DWSGpioDir::DWS_GPIO_IN))</code>
+      * <code>Assert equal string ("in_pullup", dws_gpio_dir_name(DWSGpioDir::DWS_GPIO_IN_PULLUP))</code>
+      * <code>Assert equal string ("in_pulldown", dws_gpio_dir_name(DWSGpioDir::DWS_GPIO_IN_PULLDOWN))</code>
+      * <code>Assert equal string ("out", dws_gpio_dir_name(DWSGpioDir::DWS_GPIO_OUT))</code>
+      * <code>Assert equal string ("in", dws_gpio_dir_name((DWSGpioDir)99))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10228,9 +10228,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Malformed tokens fail
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ 1 }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ 1 }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10238,8 +10238,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Query keyword forms fail
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("query Op"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("query 123"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("query Op"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("query 123"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10247,9 +10247,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: One string argument longer than the decode buffer (256).
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10257,7 +10257,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: String pool exhaustion
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10273,8 +10273,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 31,31,31,31: the 4th separator check trips (plen reaches 95, then '.' -> 96).
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10303,7 +10303,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: \n \t \r \\ \/ and an unknown escape (\z) are all decoded by the arg lexer.
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_OK, run_rc("{ greet(name: \\"a\\\\nb\\\\tc\\\\rd\\\\\\\\e\\\\/f\\\\z\\") }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ greet(name: \\"a\\\\nb\\\\tc\\\\rd\\\\\\\\e\\\\/f\\\\z\\") }"))</code>
       * <code>Assert not null (strstr(out, "\\"greet\\":\\"hi a"))</code>
   </details>
 
@@ -10312,7 +10312,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: float, exponent, signed-exponent and negative-int argument values all parse
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DWS_GQL_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_OK,</code>
       * <code>Assert not null (strstr(out, "\\"value\\":70"))</code>
   </details>
 
@@ -10346,7 +10346,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unterminated string arg fails
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"oops) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"oops) }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10354,7 +10354,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Arg missing colon fails
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10362,7 +10362,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Bad arg value fails
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10370,7 +10370,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Trailing junk fails
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ name } junk"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ name } junk"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10378,7 +10378,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Long field name hits limit
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DWS_GQL_ERR_LIMIT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_LIMIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10386,8 +10386,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Null inputs fail closed
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute(0, 0, resolver, out, sizeof(out)))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{ name }", 8, resolver, 0, 0))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute(0, 0, resolver, out, sizeof(out)))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{ name }", 8, resolver, 0, 0))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10395,7 +10395,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unknown operation keyword fails
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("subscription { name }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("subscription { name }"))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10467,39 +10467,39 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: \n \t \r \\ \/ and an unknown escape (\z) are all decoded by the arg lexer.
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, rc)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, rc)</code>
       * <code>Assert not null (strstr(out, "\\"errors\\""))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, rc)</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, rc)</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_OVERFLOW, rc)</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_OK, run_rc("{ greet(name: \\"a\\\\nb\\\\tc\\\\rd\\\\\\\\e\\\\/f\\\\z\\") }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, rc)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_LIMIT, rc)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_OVERFLOW, rc)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_OK, run_rc("{ greet(name: \\"a\\\\nb\\\\tc\\\\rd\\\\\\\\e\\\\/f\\\\z\\") }"))</code>
       * <code>Assert not null (strstr(out, "\\"greet\\":\\"hi a"))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DWS_GQL_OK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_OK,</code>
       * <code>Assert not null (strstr(out, "\\"value\\":70"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"flag\\":true}}", run("{ flag(on: true) }"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"flag\\":false}}", run("{ flag(on: false) }"))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"greet\\":\\"hi ?\\"}}", run("{ greet(name: null) }"))</code>
       * <code>Assert not null (strstr(run("{ ctrl }"), "\\\\u0001"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"oops) }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ name } junk"))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsGqlResult::DWS_GQL_ERR_LIMIT,</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute(0, 0, resolver, out, sizeof(out)))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{ name }", 8, resolver, 0, 0))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("subscription { name }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ 1 }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("query Op"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, run_rc("query 123"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: \\"oops) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ sensor(id 7) { value } }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ greet(name: @) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ name } junk"))</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSGqlResult::DWS_GQL_ERR_LIMIT,</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute(0, 0, resolver, out, sizeof(out)))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, dws_graphql_execute("{ name }", 8, resolver, 0, 0))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("subscription { name }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(a: -) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ f(: 1) }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("{ 1 }"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("query Op"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, run_rc("query 123"))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_LIMIT, run_rc(q))</code>
       * <code>Assert equal string ("{\\"data\\":{\\"nullval\\":null}}", run("{ nullval }"))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_OVERFLOW, run_rc(q))</code>
       * <code>Assert false (dws_gql_arg_int(nullptr, "x", &i))</code>
       * <code>Assert false (dws_gql_arg_str(nullptr, "x", &s))</code>
       * <code>Assert false (dws_gql_arg_bool(nullptr, "x", &b))</code>
@@ -10513,7 +10513,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Mutation rejected
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_PARSE, rc)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_PARSE, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10521,7 +10521,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Depth limit
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_LIMIT, rc)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_LIMIT, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10529,7 +10529,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Overflow fails closed
     * **Assertions**:
-      * <code>Assert equal int (DetwsGqlResult::DWS_GQL_ERR_OVERFLOW, rc)</code>
+      * <code>Assert equal int (DWSGqlResult::DWS_GQL_ERR_OVERFLOW, rc)</code>
   </details>
 
 </details>
@@ -10646,7 +10646,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Eval all clear
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DWS_BREACH_NONE, dws_guardrail_eval(&h, 8192, 4096, 512));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWSBreach::DWS_BREACH_NONE, dws_guardrail_eval(&h, 8192, 4096, 512));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10654,7 +10654,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Eval heap breach
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DWS_BREACH_HEAP, dws_guardrail_eval(&h, 8192, 4096, 512));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWSBreach::DWS_BREACH_HEAP, dws_guardrail_eval(&h, 8192, 4096, 512));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10662,7 +10662,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Eval frag and stack
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DWS_BREACH_FRAG | DetwsBreach::DWS_BREACH_STACK, b);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWSBreach::DWS_BREACH_FRAG | DWSBreach::DWS_BREACH_STACK, b);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10670,7 +10670,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Eval all breached
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DWS_BREACH_HEAP | DetwsBreach::DWS_BREACH_FRAG | DetwsBreach::DWS_BREACH_STACK,</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWSBreach::DWS_BREACH_HEAP | DWSBreach::DWS_BREACH_FRAG | DWSBreach::DWS_BREACH_STACK,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10695,7 +10695,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A null health snapshot reports no breach (nothing to evaluate).
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DWS_BREACH_NONE, dws_guardrail_eval(nullptr, 8192, 4096, 512));</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWSBreach::DWS_BREACH_NONE, dws_guardrail_eval(nullptr, 8192, 4096, 512));</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -10716,7 +10716,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>TEST_ASSERT_EQUAL_UINT32(0, h.free_heap);</code>
       * <code>TEST_ASSERT_EQUAL_UINT32(0, h.stack_free);</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsBreach::DWS_BREACH_NONE, dws_guardrails_check());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWSBreach::DWS_BREACH_NONE, dws_guardrails_check());</code>
   </details>
 
 </details>
@@ -15218,7 +15218,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert equal int (0, g_traps)</code>
       * <code>Assert equal int (2, g_traps)</code>
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsLogLevel::DWS_LOG_ERROR, g_last_level);</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWSLogLevel::DWS_LOG_ERROR, g_last_level);</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19395,16 +19395,16 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Crafted headers whose "alg" value trips a find_field edge (before sig verify) -> ERR_ALG:
     * **Assertions**:
       * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_ALG,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_ALG,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_ALG,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_ALG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_ALG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_ALG,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert false (dws_oidc_jwks_find(K_JWKS_BADN, "bad", &bad))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_NOT_YET,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_NOT_YET,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert true (dws_oidc_token_kid(K_TOK_VALID, strlen(K_TOK_VALID), kid, sizeof(kid)))</code>
       * <code>Assert equal string ("test-key-1", kid)</code>
       * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
@@ -19414,20 +19414,20 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>TEST_ASSERT_EQUAL_HEX8(0x00, key.e[2]);</code>
       * <code>TEST_ASSERT_EQUAL_HEX8(0x01, key.e[3]);</code>
       * <code>Assert false (dws_oidc_jwks_find(K_JWKS, "nope", &key))</code>
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_OK, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_OK, rc)</code>
       * <code>Assert equal string ("user-42", c.sub)</code>
       * <code>Assert equal string ("alice@example.com", c.email)</code>
       * <code>Assert true (c.iat == 1700000000LL)</code>
       * <code>Assert true (c.exp == 4102444800LL)</code>
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_OK, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_EXPIRED, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_ISS, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_AUD, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_ALG, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_SIGNATURE, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_SIGNATURE, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_KEY, rc)</code>
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_FORMAT, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_OK, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_EXPIRED, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_ISS, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_AUD, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_ALG, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_KEY, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_FORMAT, rc)</code>
       * <code>Assert false (dws_oidc_token_kid(nullptr, 10, kid, sizeof(kid)))</code>
       * <code>Assert false (dws_oidc_token_kid("a.b.c", 5, nullptr, sizeof(kid)))</code>
       * <code>Assert false (dws_oidc_token_kid("a.b.c", 5, kid, 0))</code>
@@ -19437,14 +19437,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert false (dws_oidc_jwks_find("{\\"foo\\":1}", "k", &key))</code>
       * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"x\\"", "x", &key))</code>
       * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "k1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert false (dws_oidc_jwks_find("", "k", &key))</code>
       * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\\\\\\\b\\"}]}", "zzz", &key))</code>
       * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"abc}]}", "abc", &key))</code>
@@ -19460,11 +19460,11 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No `aud` member at all -> aud_contains find_field fails -> ERR_AUD.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_AUD,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_NOT_YET,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_AUD,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_NOT_YET,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19503,14 +19503,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
       * <code>Assert false (dws_oidc_jwks_find("{\\"foo\\":1}", "k", &key))</code>
       * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"x\\"", "x", &key))</code>
       * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"k1\\"}]}", "k1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert false (dws_oidc_jwks_find("", "k", &key))</code>
       * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"a\\\\\\\\b\\"}]}", "zzz", &key))</code>
       * <code>Assert false (dws_oidc_jwks_find("{\\"keys\\":[{\\"kid\\":\\"abc}]}", "abc", &key))</code>
@@ -19526,14 +19526,14 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Wrong segment counts (one '.' / three '.').
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
       * <code>Assert true (dws_oidc_jwks_find(K_JWKS, "test-key-1", &key))</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOidcResult::DWS_OIDC_ERR_FORMAT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19571,7 +19571,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Verify valid token and claims
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_OK, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_OK, rc)</code>
       * <code>Assert equal string ("user-42", c.sub)</code>
       * <code>Assert equal string ("alice@example.com", c.email)</code>
       * <code>Assert true (c.iat == 1700000000LL)</code>
@@ -19583,7 +19583,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Verify aud array
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_OK, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_OK, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19591,7 +19591,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reject expired
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_EXPIRED, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_EXPIRED, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19599,7 +19599,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reject wrong issuer
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_ISS, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_ISS, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19607,7 +19607,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reject wrong audience
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_AUD, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_AUD, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19615,7 +19615,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reject non rs256 header
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_ALG, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_ALG, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19623,7 +19623,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reject tampered payload
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_SIGNATURE, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19631,7 +19631,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Reject tampered signature
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_SIGNATURE, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_SIGNATURE, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19639,7 +19639,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: JWKS whose only key has a different kid than the token's.
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_KEY, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_KEY, rc)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -19647,7 +19647,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No kid extractable -> the sole JWKS key is selected, then the token shape
     * **Assertions**:
-      * <code>Assert equal int (DetwsOidcResult::DWS_OIDC_ERR_FORMAT, rc)</code>
+      * <code>Assert equal int (DWSOidcResult::DWS_OIDC_ERR_FORMAT, rc)</code>
   </details>
 
 </details>
@@ -20724,8 +20724,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A normally-booted (valid/undefined) image never rolls back.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_WAIT,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_WAIT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOtaAction::DWS_OTA_WAIT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOtaAction::DWS_OTA_WAIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20733,7 +20733,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pending self test ok commits
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_COMMIT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOtaAction::DWS_OTA_COMMIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20741,7 +20741,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pending within window waits
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_WAIT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOtaAction::DWS_OTA_WAIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20749,8 +20749,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Pending window elapsed rolls back
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_ROLLBACK,</code>
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_ROLLBACK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOtaAction::DWS_OTA_ROLLBACK,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOtaAction::DWS_OTA_ROLLBACK,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20758,7 +20758,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: A passing self-test commits even past the window.
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_INT(DetwsOtaAction::DWS_OTA_COMMIT,</code>
+      * <code>TEST_ASSERT_EQUAL_INT(DWSOtaAction::DWS_OTA_COMMIT,</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -20766,9 +20766,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: On a host build there are no OTA partitions: img_state reports UNDEFINED and the
     * **Assertions**:
-      * <code>Assert equal int (DetwsOtaImg::DWS_OTA_IMG_UNDEFINED, dws_ota_img_state())</code>
-      * <code>Assert equal int (DetwsOtaAction::DWS_OTA_WAIT, dws_ota_rollback_tick(true))</code>
-      * <code>Assert equal int (DetwsOtaAction::DWS_OTA_WAIT, dws_ota_rollback_tick(false))</code>
+      * <code>Assert equal int (DWSOtaImg::DWS_OTA_IMG_UNDEFINED, dws_ota_img_state())</code>
+      * <code>Assert equal int (DWSOtaAction::DWS_OTA_WAIT, dws_ota_rollback_tick(true))</code>
+      * <code>Assert equal int (DWSOtaAction::DWS_OTA_WAIT, dws_ota_rollback_tick(false))</code>
   </details>
 
 </details>
@@ -23028,9 +23028,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 64KB asset, threshold 4KB, plenty of both heaps, 32KB DRAM reserve.
     * **Assertions**:
-      * <code>Assert equal int (DetwsPlace::PLACE_PSRAM, dws_psram_place(65536, false, 120000, 2000000, 4096, 32768))</code>
-      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, dws_psram_place(65536, false, 120000, 0, 4096, 32768))</code>
-      * <code>Assert equal int (DetwsPlace::PLACE_FAIL, dws_psram_place(65536, false, 80000, 0, 4096, 32768))</code>
+      * <code>Assert equal int (DWSPlace::PLACE_PSRAM, dws_psram_place(65536, false, 120000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DWSPlace::PLACE_DRAM, dws_psram_place(65536, false, 120000, 0, 4096, 32768))</code>
+      * <code>Assert equal int (DWSPlace::PLACE_FAIL, dws_psram_place(65536, false, 80000, 0, 4096, 32768))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23038,8 +23038,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: 512B hot buffer, threshold 4KB -> DRAM.
     * **Assertions**:
-      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, dws_psram_place(512, false, 120000, 2000000, 4096, 32768))</code>
-      * <code>Assert equal int (DetwsPlace::PLACE_PSRAM, dws_psram_place(512, false, 33000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DWSPlace::PLACE_DRAM, dws_psram_place(512, false, 120000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DWSPlace::PLACE_PSRAM, dws_psram_place(512, false, 33000, 2000000, 4096, 32768))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23047,8 +23047,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: DMA-required buffer must be DRAM even if large.
     * **Assertions**:
-      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, dws_psram_place(8192, true, 120000, 2000000, 4096, 32768))</code>
-      * <code>Assert equal int (DetwsPlace::PLACE_FAIL, dws_psram_place(8192, true, 40000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DWSPlace::PLACE_DRAM, dws_psram_place(8192, true, 120000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DWSPlace::PLACE_FAIL, dws_psram_place(8192, true, 40000, 2000000, 4096, 32768))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -23056,9 +23056,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: At exactly the threshold -> treated as large (>=), prefers PSRAM.
     * **Assertions**:
-      * <code>Assert equal int (DetwsPlace::PLACE_FAIL, dws_psram_place(0, false, 120000, 2000000, 4096, 32768))</code>
-      * <code>Assert equal int (DetwsPlace::PLACE_PSRAM, dws_psram_place(4096, false, 120000, 2000000, 4096, 0))</code>
-      * <code>Assert equal int (DetwsPlace::PLACE_DRAM, dws_psram_place(100, false, 1100, 0, 4096, 1000))</code>
+      * <code>Assert equal int (DWSPlace::PLACE_FAIL, dws_psram_place(0, false, 120000, 2000000, 4096, 32768))</code>
+      * <code>Assert equal int (DWSPlace::PLACE_PSRAM, dws_psram_place(4096, false, 120000, 2000000, 4096, 0))</code>
+      * <code>Assert equal int (DWSPlace::PLACE_DRAM, dws_psram_place(100, false, 1100, 0, 4096, 1000))</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -24338,9 +24338,9 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Ps names
     * **Assertions**:
-      * <code>Assert equal string ("none", dws_radio_ps_name(DetwsRadioPs::DWS_PS_NONE))</code>
-      * <code>Assert equal string ("min_modem", dws_radio_ps_name(DetwsRadioPs::DWS_PS_MIN_MODEM))</code>
-      * <code>Assert equal string ("max_modem", dws_radio_ps_name(DetwsRadioPs::DWS_PS_MAX_MODEM))</code>
+      * <code>Assert equal string ("none", dws_radio_ps_name(DWSRadioPs::DWS_PS_NONE))</code>
+      * <code>Assert equal string ("min_modem", dws_radio_ps_name(DWSRadioPs::DWS_PS_MIN_MODEM))</code>
+      * <code>Assert equal string ("max_modem", dws_radio_ps_name(DWSRadioPs::DWS_PS_MAX_MODEM))</code>
       * <code>Assert equal string ("none", dws_radio_ps_name(99))</code>
   </details>
 
@@ -24349,7 +24349,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Apply is noop on host
     * **Assertions**:
-      * <code>TEST_ASSERT_EQUAL_UINT8(DetwsRadioPs::DWS_PS_NONE, dws_radio_ps_get());</code>
+      * <code>TEST_ASSERT_EQUAL_UINT8(DWSRadioPs::DWS_PS_NONE, dws_radio_ps_get());</code>
   </details>
 
 </details>
@@ -28640,15 +28640,15 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: No API prefix configured: an /api path is just a route.
     * **Assertions**:
-      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/dashboard", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/devices/42", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_FILE, dws_spa_route("/app.js", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_FILE, dws_spa_route("/assets/logo.svg", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_PASSTHROUGH, dws_spa_route("/api/state", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_PASSTHROUGH, dws_spa_route("/api/devices/42", "/api/"))</code>
-      * <code>Assert equal int (DetwsSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/api/state", nullptr))</code>
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/", "/api/"))</code>
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("", "/api/"))</code>
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/dashboard", "/api/"))</code>
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/devices/42", "/api/"))</code>
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_FILE, dws_spa_route("/app.js", "/api/"))</code>
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_FILE, dws_spa_route("/assets/logo.svg", "/api/"))</code>
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_PASSTHROUGH, dws_spa_route("/api/state", "/api/"))</code>
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_PASSTHROUGH, dws_spa_route("/api/devices/42", "/api/"))</code>
+      * <code>Assert equal int (DWSSpaAction::DWS_SPA_SERVE_SHELL, dws_spa_route("/api/state", nullptr))</code>
   </details>
 
 </details>
@@ -33894,7 +33894,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Assertions**:
       * <code>Assert false (dws_vfs_exists("/nope"))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_vfs_size("/nope"));</code>
-      * <code>Assert true (dws_vfs_open("/nope", DetwsVfsMode::DWS_VFS_READ) &lt; 0)</code>
+      * <code>Assert true (dws_vfs_open("/nope", DWSVfsMode::DWS_VFS_READ) &lt; 0)</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_vfs_read_file("/nope", buf, sizeof(buf)));</code>
       * <code>Assert false (dws_vfs_remove("/nope"))</code>
       * <code>Assert false (dws_vfs_rename("/nope", "/x"))</code>
@@ -33933,8 +33933,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
     * **Objective**: Handle pool exhaustion
     * **Assertions**:
       * <code>Assert true (handles[i] &gt;= 0)</code>
-      * <code>Assert true (dws_vfs_open("/h", DetwsVfsMode::DWS_VFS_READ) &lt; 0)</code>
-      * <code>Assert true (dws_vfs_open("/h", DetwsVfsMode::DWS_VFS_READ) &gt;= 0)</code>
+      * <code>Assert true (dws_vfs_open("/h", DWSVfsMode::DWS_VFS_READ) &lt; 0)</code>
+      * <code>Assert true (dws_vfs_open("/h", DWSVfsMode::DWS_VFS_READ) &gt;= 0)</code>
   </details>
 
   <details style="margin-left: 20px;">
@@ -33942,7 +33942,7 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Unmounted fails closed
     * **Assertions**:
-      * <code>Assert true (dws_vfs_open("/a", DetwsVfsMode::DWS_VFS_READ) &lt; 0)</code>
+      * <code>Assert true (dws_vfs_open("/a", DWSVfsMode::DWS_VFS_READ) &lt; 0)</code>
       * <code>Assert false (dws_vfs_exists("/a"))</code>
       * <code>TEST_ASSERT_EQUAL_INT32(-1, dws_vfs_size("/a"));</code>
       * <code>Assert false (dws_vfs_write_file("/a", "x", 1))</code>
@@ -33953,8 +33953,8 @@ A thorough directory of all **3210 test cases** across **260 suites**. Expand a 
 
     * **Objective**: Null path and an over-long name both fail closed on open.
     * **Assertions**:
-      * <code>Assert equal int (-1, dws_vfs_open(nullptr, DetwsVfsMode::DWS_VFS_WRITE))</code>
-      * <code>Assert equal int (-1, dws_vfs_open(longname, DetwsVfsMode::DWS_VFS_WRITE))</code>
+      * <code>Assert equal int (-1, dws_vfs_open(nullptr, DWSVfsMode::DWS_VFS_WRITE))</code>
+      * <code>Assert equal int (-1, dws_vfs_open(longname, DWSVfsMode::DWS_VFS_WRITE))</code>
       * <code>Assert equal int (-1, dws_vfs_read(999, b, sizeof(b)))</code>
       * <code>Assert equal int (-1, dws_vfs_write(999, b, sizeof(b)))</code>
       * <code>Assert true (dws_vfs_read_file("/nope", b, sizeof(b)) &lt; 0)</code>

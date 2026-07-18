@@ -19,7 +19,7 @@ void tearDown()
 void test_window_classic_stats()
 {
     float buf[8];
-    DetwsWindow w;
+    DWSWindow w;
     dws_window_init(&w, buf, 8);
     const float samples[8] = {2, 4, 4, 4, 5, 5, 7, 9};
     for (int i = 0; i < 8; i++)
@@ -36,7 +36,7 @@ void test_window_classic_stats()
 void test_window_empty()
 {
     float buf[4];
-    DetwsWindow w;
+    DWSWindow w;
     dws_window_init(&w, buf, 4);
     TEST_ASSERT_EQUAL_UINT16(0, dws_window_count(&w));
     TEST_ASSERT_EQUAL_FLOAT(0.0f, dws_window_mean(&w));
@@ -49,7 +49,7 @@ void test_window_empty()
 void test_window_single_sample()
 {
     float buf[4];
-    DetwsWindow w;
+    DWSWindow w;
     dws_window_init(&w, buf, 4);
     dws_window_push(&w, 42.0f);
     TEST_ASSERT_FLOAT_WITHIN(1e-4f, 42.0f, dws_window_mean(&w));
@@ -60,7 +60,7 @@ void test_window_single_sample()
 void test_window_eviction()
 {
     float buf[3];
-    DetwsWindow w;
+    DWSWindow w;
     dws_window_init(&w, buf, 3);
     dws_window_push(&w, 1);
     dws_window_push(&w, 2);
@@ -76,7 +76,7 @@ void test_window_eviction()
 // Rate of change: first sample yields 0, then units per second.
 void test_rate_basic()
 {
-    DetwsRate r;
+    DWSRate r;
     dws_rate_init(&r);
     TEST_ASSERT_FLOAT_WITHIN(1e-4f, 0.0f, dws_rate_update(&r, 10.0f, 0));     // first
     TEST_ASSERT_FLOAT_WITHIN(1e-4f, 10.0f, dws_rate_update(&r, 20.0f, 1000)); // +10 / 1s
@@ -86,7 +86,7 @@ void test_rate_basic()
 // A zero elapsed time yields 0 (no divide-by-zero).
 void test_rate_zero_dt()
 {
-    DetwsRate r;
+    DWSRate r;
     dws_rate_init(&r);
     dws_rate_update(&r, 5.0f, 100);
     TEST_ASSERT_FLOAT_WITHIN(1e-4f, 0.0f, dws_rate_update(&r, 9.0f, 100));
@@ -95,7 +95,7 @@ void test_rate_zero_dt()
 // Constant rate of 2/s for 2 s totals 4.
 void test_totalizer_constant_rate()
 {
-    DetwsTotalizer t;
+    DWSTotalizer t;
     dws_totalizer_init(&t);
     dws_totalizer_add(&t, 2.0f, 0);    // seed
     dws_totalizer_add(&t, 2.0f, 1000); // +2
@@ -106,7 +106,7 @@ void test_totalizer_constant_rate()
 // Trapezoidal rule: ramp 0 -> 10 over 1 s totals 5; reset clears it.
 void test_totalizer_trapezoid_and_reset()
 {
-    DetwsTotalizer t;
+    DWSTotalizer t;
     dws_totalizer_init(&t);
     dws_totalizer_add(&t, 0.0f, 0);
     double total = dws_totalizer_add(&t, 10.0f, 1000);

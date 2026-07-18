@@ -20,7 +20,7 @@ void tearDown()
 
 void test_preset_immutable()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     cache_immutable_asset(&cc, 31536000u); // 1 year
     char b[96];
     size_t n = cache_control_build(b, sizeof(b), &cc);
@@ -30,7 +30,7 @@ void test_preset_immutable()
 
 void test_preset_no_store_and_shared_and_revalidatable()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     char b[96];
 
     cache_no_store(&cc);
@@ -52,7 +52,7 @@ void test_preset_no_store_and_shared_and_revalidatable()
 
 void test_build_manual_and_edges()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     cache_control_init(&cc);
     cc.cc_private = true;
     cc.no_cache = true;
@@ -76,7 +76,7 @@ void test_build_manual_and_edges()
 
 void test_parse_response_directives()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     const char *s = "public, max-age=31536000, immutable";
     TEST_ASSERT_TRUE(cache_control_parse(s, strlen(s), &cc));
     TEST_ASSERT_TRUE(cc.cc_public);
@@ -87,7 +87,7 @@ void test_parse_response_directives()
 
 void test_parse_case_insensitive_and_quoted_and_unknown()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     // case-insensitive names, a quoted delta, extra OWS, and an unknown directive to ignore
     const char *s = "  No-Store ,  MAX-AGE=\"3600\" , community=cats , s-maxage = 120 ";
     TEST_ASSERT_TRUE(cache_control_parse(s, strlen(s), &cc));
@@ -103,7 +103,7 @@ void test_parse_case_insensitive_and_quoted_and_unknown()
 
 void test_parse_request_directives()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     const char *s = "max-stale, min-fresh=30, only-if-cached";
     TEST_ASSERT_TRUE(cache_control_parse(s, strlen(s), &cc));
     TEST_ASSERT_EQUAL_INT32(-2, cc.max_stale); // present, no value = "any"
@@ -118,7 +118,7 @@ void test_parse_request_directives()
 // build -> parse -> the response directives survive intact.
 void test_build_parse_roundtrip()
 {
-    DetwsCacheControl a;
+    DWSCacheControl a;
     cache_control_init(&a);
     a.cc_public = true;
     a.max_age = 300;
@@ -130,7 +130,7 @@ void test_build_parse_roundtrip()
     size_t n = cache_control_build(b, sizeof(b), &a);
     TEST_ASSERT_GREATER_THAN_size_t(0, n);
 
-    DetwsCacheControl c;
+    DWSCacheControl c;
     TEST_ASSERT_TRUE(cache_control_parse(b, n, &c));
     TEST_ASSERT_EQUAL(a.cc_public, c.cc_public);
     TEST_ASSERT_EQUAL(a.must_revalidate, c.must_revalidate);
@@ -144,7 +144,7 @@ void test_build_parse_roundtrip()
 
 void test_freshness_precedence()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     cache_control_init(&cc);
     cc.max_age = 100;
     cc.s_maxage = 200;
@@ -165,7 +165,7 @@ void test_freshness_precedence()
 // Build every directive (exercises the less-common emit branches) and the request directives.
 void test_build_all_directives()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     cache_control_init(&cc);
     cc.cc_private = true;
     cc.no_cache = true;
@@ -197,7 +197,7 @@ void test_build_all_directives()
 
 void test_parse_all_directives()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     const char *s = "private, no-cache, no-transform, must-revalidate, proxy-revalidate, "
                     "must-understand, immutable, only-if-cached, stale-while-revalidate=30";
     TEST_ASSERT_TRUE(cache_control_parse(s, strlen(s), &cc));
@@ -214,7 +214,7 @@ void test_parse_all_directives()
 
 void test_parse_and_build_guards()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     TEST_ASSERT_FALSE(cache_control_parse(nullptr, 0, &cc)); // null input
     // a recognized numeric directive with no value stays absent (-1)
     TEST_ASSERT_TRUE(cache_control_parse("max-age", 7, &cc));
@@ -239,7 +239,7 @@ void test_parse_and_build_guards()
 // A delta above INT32_MAX passed to a preset clamps (the `> INT32_MAX` side of each preset).
 void test_preset_clamps()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     cache_immutable_asset(&cc, 0xFFFFFFFFu);
     TEST_ASSERT_EQUAL_INT32(2147483647, cc.max_age);
     cache_revalidatable(&cc, 0xFFFFFFFFu, -1);
@@ -253,7 +253,7 @@ void test_preset_clamps()
 // token itself overflowing (CC_SENT into cc_kv), and an exact fill with no room for the NUL.
 void test_build_boundaries()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     char b[32];
     cache_control_init(&cc);
     cc.max_age = 5;
@@ -271,7 +271,7 @@ void test_build_boundaries()
 // and one that extends past a directive (target ends first).
 void test_parse_ci_length_edges()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     TEST_ASSERT_FALSE(cache_control_parse("max", 3, &cc));     // prefix of "max-age": i==len, target[i]!=0
     TEST_ASSERT_FALSE(cache_control_parse("publicX", 7, &cc)); // extends past "public": i<len, target[i]==0
 }
@@ -280,7 +280,7 @@ void test_parse_ci_length_edges()
 // value present with no digits, a delta ending on a non-digit above '9').
 void test_parse_ows_and_empty()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     const char *tabs = "public,\tmax-age=\t42"; // tab separator + tab as leading delta OWS
     TEST_ASSERT_TRUE(cache_control_parse(tabs, strlen(tabs), &cc));
     TEST_ASSERT_TRUE(cc.cc_public);

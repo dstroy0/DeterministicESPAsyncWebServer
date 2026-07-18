@@ -19,7 +19,7 @@ void tearDown()
 void test_int_and_uint_fields()
 {
     char buf[128];
-    DetwsLine l;
+    DWSLine l;
     dws_line_init(&l, buf, sizeof(buf), "env");
     dws_line_add_int(&l, "rssi", -42);
     dws_line_add_uint(&l, "uptime", 1234u);
@@ -31,7 +31,7 @@ void test_int_and_uint_fields()
 void test_float_field()
 {
     char buf[64];
-    DetwsLine l;
+    DWSLine l;
     dws_line_init(&l, buf, sizeof(buf), "weather");
     dws_line_add_float(&l, "temp", 21.5f, 1);
     dws_line_add_float(&l, "hum", 60.25f, 2);
@@ -42,7 +42,7 @@ void test_float_field()
 void test_no_fields_not_ok()
 {
     char buf[32];
-    DetwsLine l;
+    DWSLine l;
     dws_line_init(&l, buf, sizeof(buf), "m");
     TEST_ASSERT_FALSE(dws_line_ok(&l)); // measurement only, no fields
     TEST_ASSERT_EQUAL_STRING("m", buf);
@@ -51,7 +51,7 @@ void test_no_fields_not_ok()
 void test_overflow_fails_closed()
 {
     char buf[16];
-    DetwsLine l;
+    DWSLine l;
     dws_line_init(&l, buf, sizeof(buf), "measurement_with_a_long_name");
     dws_line_add_int(&l, "x", 1);
     TEST_ASSERT_FALSE(dws_line_ok(&l)); // did not fit
@@ -62,7 +62,7 @@ void test_overflow_fails_closed()
 void test_tags_and_timestamp()
 {
     char buf[128];
-    DetwsLine l;
+    DWSLine l;
     dws_line_init(&l, buf, sizeof(buf), "env");
     dws_line_add_tag(&l, "host", "esp32-1");
     dws_line_add_tag(&l, "room", "lab");
@@ -76,7 +76,7 @@ void test_tags_and_timestamp()
 void test_tag_escaping()
 {
     char buf[128];
-    DetwsLine l;
+    DWSLine l;
     dws_line_init(&l, buf, sizeof(buf), "m");
     dws_line_add_tag(&l, "a b", "x,y=z");
     dws_line_add_int(&l, "f", 1);
@@ -88,7 +88,7 @@ void test_tag_escaping()
 void test_tag_after_field_fails_closed()
 {
     char buf[64];
-    DetwsLine l;
+    DWSLine l;
     dws_line_init(&l, buf, sizeof(buf), "m");
     dws_line_add_int(&l, "f", 1);
     dws_line_add_tag(&l, "late", "nope"); // invalid ordering
@@ -99,7 +99,7 @@ void test_host_stubs_and_line_overflow()
 {
     dws_udp_telemetry_begin("host", 8125); // host no-op stub
     char buf[8];
-    DetwsLine l;
+    DWSLine l;
     dws_line_init(&l, buf, sizeof(buf), "measurementNameFarTooLongForBuf");
     TEST_ASSERT_TRUE(l.overflow); // measurement did not fit
     dws_udp_telemetry_cast(&l);   // host no-op stub

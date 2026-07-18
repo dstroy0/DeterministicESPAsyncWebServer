@@ -72,14 +72,14 @@ size_t dws_rtps_header(const uint8_t *guid_prefix, const uint8_t *vendor_id, uin
 size_t dws_rtps_submessage(uint8_t id, uint8_t flags, const uint8_t *body, uint16_t body_len, uint8_t *out, size_t cap);
 
 /** @brief One submessage surfaced by dws_rtps_parse. */
-typedef void (*DetwsRtpsCb)(uint8_t id, uint8_t flags, const uint8_t *body, size_t body_len, void *arg);
+typedef void (*DWSRtpsCb)(uint8_t id, uint8_t flags, const uint8_t *body, size_t body_len, void *arg);
 
 /**
  * @brief Validate an RTPS message header and walk its submessages.
  * @return true if the header is a well-formed RTPS message (magic + version <= ours) and every
  *         submessage fits. An octetsToNextHeader of 0 on the last submessage means "to end of message".
  */
-bool dws_rtps_parse(const uint8_t *msg, size_t len, DetwsRtpsCb cb, void *arg);
+bool dws_rtps_parse(const uint8_t *msg, size_t len, DWSRtpsCb cb, void *arg);
 
 #endif // DWS_ENABLE_DDS
 #endif // DETERMINISTICESPASYNCWEBSERVER_DDS_H

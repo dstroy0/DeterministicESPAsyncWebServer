@@ -29,9 +29,9 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 DWS server;
 
 static float g_window_buf[16]; // caller-owned window storage (no heap)
-static DetwsWindow g_window;
-static DetwsRate g_rate;
-static DetwsTotalizer g_total;
+static DWSWindow g_window;
+static DWSRate g_rate;
+static DWSTotalizer g_total;
 static float g_last_rate = 0.0f;
 
 void setup()

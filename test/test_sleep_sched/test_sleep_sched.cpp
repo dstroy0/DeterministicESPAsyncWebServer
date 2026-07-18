@@ -14,7 +14,7 @@ void tearDown(void)
 }
 
 // idle_ms=1000, ramp doubles min=100 every 500ms of idle-past-threshold, up to max=2000.
-static const DetwsSleepCfg CFG = {1000, 100, 2000, 500};
+static const DWSSleepCfg CFG = {1000, 100, 2000, 500};
 
 void test_awake_when_recent(void)
 {
@@ -48,14 +48,14 @@ void test_clamps_to_ceiling(void)
 
 void test_no_ramp_jumps_to_ceiling(void)
 {
-    DetwsSleepCfg cfg = {1000, 100, 2000, 0};                         // ramp_ms 0
+    DWSSleepCfg cfg = {1000, 100, 2000, 0};                           // ramp_ms 0
     TEST_ASSERT_EQUAL_UINT32(0, dws_sleep_next(1500, 1000, &cfg));    // still awake
     TEST_ASSERT_EQUAL_UINT32(2000, dws_sleep_next(2000, 1000, &cfg)); // straight to max
 }
 
 void test_degenerate_max_below_min(void)
 {
-    DetwsSleepCfg cfg = {1000, 500, 100, 0}; // max < min -> clamp to min
+    DWSSleepCfg cfg = {1000, 500, 100, 0}; // max < min -> clamp to min
     TEST_ASSERT_EQUAL_UINT32(500, dws_sleep_next(2000, 1000, &cfg));
 }
 

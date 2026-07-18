@@ -22,7 +22,7 @@
 struct GpioRoutesCtx
 {
     DWS *srv = nullptr;
-    DetwsGpioPin *pins = nullptr;
+    DWSGpioPin *pins = nullptr;
     uint8_t count = 0;
 };
 static GpioRoutesCtx s_gpior;
@@ -60,7 +60,7 @@ static void gpio_post_handler(uint8_t slot_id, HttpReq *req)
     s_gpior.srv->send(slot_id, 200, DWS_MIME_JSON, buf);
 }
 
-void dws_gpio_map_begin(DWS &server, const char *path, DetwsGpioPin *pins, uint8_t count)
+void dws_gpio_map_begin(DWS &server, const char *path, DWSGpioPin *pins, uint8_t count)
 {
     s_gpior.srv = &server;
     s_gpior.pins = pins;

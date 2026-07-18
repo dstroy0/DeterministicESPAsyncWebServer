@@ -13,7 +13,7 @@ minimal phone client and a rich dashboard without new routes.
 paths (`net.rssi`); arguments are visible to the resolver for that field:
 
 ```cpp
-static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *out) {
+static bool resolver(const char *path, const DWSGqlArgs *args, DWSGqlValue *out) {
     if (!strcmp(path, "heap"))     { out->type = DWS_GQL_INT; out->i = ESP.getFreeHeap(); return true; }
     if (!strcmp(path, "net.rssi")) { out->type = DWS_GQL_INT; out->i = WiFi.RSSI();       return true; }
     if (!strcmp(path, "greet")) {
@@ -33,7 +33,7 @@ recursing into the resolver for each child; returning false yields `null`.
 and writes the response envelope:
 
 ```cpp
-DetwsGqlResult rc = dws_graphql_execute(req->body, req->body_len, resolver, body, sizeof(body));
+DWSGqlResult rc = dws_graphql_execute(req->body, req->body_len, resolver, body, sizeof(body));
 server.send(id, rc == DWS_GQL_OK ? 200 : 400, "application/json", body);
 ```
 
@@ -77,7 +77,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 DWS server;
 
 // One scalar per dotted path; nested objects recurse, arguments are per-field.
-static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *out)
+static bool resolver(const char *path, const DWSGqlArgs *args, DWSGqlValue *out)
 {
     if (!strcmp(path, "heap"))
     {
@@ -130,7 +130,7 @@ void setup()
 
     server.on("/graphql", HTTP_POST, [](uint8_t id, HttpReq *req) {
         char body[512];
-        DetwsGqlResult rc = dws_graphql_execute((const char *)req->body, req->body_len, resolver, body, sizeof(body));
+        DWSGqlResult rc = dws_graphql_execute((const char *)req->body, req->body_len, resolver, body, sizeof(body));
         // The engine writes {"data":...} on success or {"errors":...} on a parse
         // error; 200 with the GraphQL error envelope is the conventional reply.
         server.send(id, rc == DWS_GQL_OK ? 200 : 400, "application/json", body);

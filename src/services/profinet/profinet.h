@@ -78,13 +78,13 @@ struct PnDcpHeader
 bool dws_pn_dcp_parse_header(const uint8_t *frame, size_t len, PnDcpHeader *out);
 
 /** @brief One DCP block surfaced by dws_pn_dcp_walk. */
-typedef void (*DetwsPnDcpBlockCb)(uint8_t option, uint8_t suboption, const uint8_t *value, size_t value_len, void *arg);
+typedef void (*DWSPnDcpBlockCb)(uint8_t option, uint8_t suboption, const uint8_t *value, size_t value_len, void *arg);
 
 /**
  * @brief Walk the DCP blocks after the header (@p blocks points at header+10, @p len = dataLength).
  * @return true if every block fits; invokes @p cb per block (value excludes the even-pad filler).
  */
-bool dws_pn_dcp_walk(const uint8_t *blocks, size_t len, DetwsPnDcpBlockCb cb, void *arg);
+bool dws_pn_dcp_walk(const uint8_t *blocks, size_t len, DWSPnDcpBlockCb cb, void *arg);
 
 #endif // DWS_ENABLE_PROFINET
 #endif // DETERMINISTICESPASYNCWEBSERVER_PROFINET_H

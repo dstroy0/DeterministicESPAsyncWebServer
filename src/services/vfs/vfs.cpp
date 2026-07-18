@@ -32,7 +32,7 @@ struct RamHandle
     bool open;
     int file;
     size_t pos;
-    DetwsVfsMode mode;
+    DWSVfsMode mode;
 };
 
 // All VFS dispatch + RAM-backend state, owned by one instance (internal linkage): the
@@ -41,7 +41,7 @@ struct RamHandle
 // vtable entries, so they reach this single owner directly.)
 struct VfsCtx
 {
-    const DetwsVfsBackend *backend = nullptr;
+    const DWSVfsBackend *backend = nullptr;
     RamFile rf[DWS_VFS_RAM_FILES];
     RamHandle rh[DWS_VFS_MAX_OPEN];
 };
@@ -80,9 +80,9 @@ int ram_open(const char *path, int mode)
 {
     if (!path)
         return -1;
-    const DetwsVfsMode m = (DetwsVfsMode)mode; // the backend ABI carries mode as int; read it back as the enum
+    const DWSVfsMode m = (DWSVfsMode)mode; // the backend ABI carries mode as int; read it back as the enum
     int f = ram_find(path);
-    if (m == DetwsVfsMode::DWS_VFS_READ)
+    if (m == DWSVfsMode::DWS_VFS_READ)
     {
         if (f < 0)
             return -1;
@@ -93,7 +93,7 @@ int ram_open(const char *path, int mode)
             f = ram_create(path);
         if (f < 0)
             return -1;
-        if (m == DetwsVfsMode::DWS_VFS_WRITE)
+        if (m == DWSVfsMode::DWS_VFS_WRITE)
             s_vfs.rf[f].len = 0;
     }
     for (int h = 0; h < DWS_VFS_MAX_OPEN; h++)
@@ -102,7 +102,7 @@ int ram_open(const char *path, int mode)
             s_vfs.rh[h].open = true;
             s_vfs.rh[h].file = f;
             s_vfs.rh[h].mode = m;
-            s_vfs.rh[h].pos = (m == DetwsVfsMode::DWS_VFS_APPEND) ? s_vfs.rf[f].len : 0;
+            s_vfs.rh[h].pos = (m == DWSVfsMode::DWS_VFS_APPEND) ? s_vfs.rf[f].len : 0;
             return h;
         }
     return -1; // handle pool exhausted
@@ -122,7 +122,7 @@ int ram_read(int h, void *buf, size_t n)
 
 int ram_write(int h, const void *buf, size_t n)
 {
-    if (!ram_handle_ok(h) || s_vfs.rh[h].mode == DetwsVfsMode::DWS_VFS_READ)
+    if (!ram_handle_ok(h) || s_vfs.rh[h].mode == DWSVfsMode::DWS_VFS_READ)
         return -1;
     RamFile *f = &s_vfs.rf[s_vfs.rh[h].file];
     size_t cap = (s_vfs.rh[h].pos < DWS_VFS_RAM_FILE_SIZE) ? (DWS_VFS_RAM_FILE_SIZE - s_vfs.rh[h].pos) : 0;
@@ -175,16 +175,16 @@ bool ram_rename(const char *from, const char *to)
     return true;
 }
 
-const DetwsVfsBackend s_ram_backend = {ram_open, ram_read,   ram_write,  ram_close,
-                                       ram_size, ram_exists, ram_remove, ram_rename};
+const DWSVfsBackend s_ram_backend = {ram_open, ram_read,   ram_write,  ram_close,
+                                     ram_size, ram_exists, ram_remove, ram_rename};
 } // namespace
 
-void dws_vfs_mount(const DetwsVfsBackend *backend)
+void dws_vfs_mount(const DWSVfsBackend *backend)
 {
     s_vfs.backend = backend;
 }
 
-const DetwsVfsBackend *dws_vfs_ram(void)
+const DWSVfsBackend *dws_vfs_ram(void)
 {
     return &s_ram_backend;
 }
@@ -197,7 +197,7 @@ void dws_vfs_ram_format(void)
         s_vfs.rh[h].open = false;
 }
 
-int dws_vfs_open(const char *path, DetwsVfsMode mode)
+int dws_vfs_open(const char *path, DWSVfsMode mode)
 {
     return s_vfs.backend ? s_vfs.backend->open(path, (int)mode) : -1; // cross the int backend ABI
 }
@@ -236,7 +236,7 @@ long dws_vfs_read_file(const char *path, void *buf, size_t cap)
     long sz = dws_vfs_size(path);
     if (sz < 0 || (size_t)sz > cap)
         return -1;
-    int h = dws_vfs_open(path, DetwsVfsMode::DWS_VFS_READ);
+    int h = dws_vfs_open(path, DWSVfsMode::DWS_VFS_READ);
     if (h < 0)
         return -1;
     size_t total = 0;
@@ -254,7 +254,7 @@ long dws_vfs_read_file(const char *path, void *buf, size_t cap)
 
 bool dws_vfs_write_file(const char *path, const void *buf, size_t n)
 {
-    int h = dws_vfs_open(path, DetwsVfsMode::DWS_VFS_WRITE);
+    int h = dws_vfs_open(path, DWSVfsMode::DWS_VFS_WRITE);
     if (h < 0)
         return false;
     size_t total = 0;
@@ -294,10 +294,10 @@ int fs_open(const char *path, int mode)
 {
     if (!s_vfs_fs.fs || !path)
         return -1;
-    const DetwsVfsMode md = (DetwsVfsMode)mode; // ABI int -> enum
-    const char *m = (md == DetwsVfsMode::DWS_VFS_WRITE)    ? FILE_WRITE
-                    : (md == DetwsVfsMode::DWS_VFS_APPEND) ? FILE_APPEND
-                                                           : FILE_READ;
+    const DWSVfsMode md = (DWSVfsMode)mode; // ABI int -> enum
+    const char *m = (md == DWSVfsMode::DWS_VFS_WRITE)    ? FILE_WRITE
+                    : (md == DWSVfsMode::DWS_VFS_APPEND) ? FILE_APPEND
+                                                         : FILE_READ;
     for (int h = 0; h < DWS_VFS_MAX_OPEN; h++)
         if (!s_vfs_fs.fsopen[h])
         {
@@ -353,10 +353,10 @@ bool fs_rename(const char *from, const char *to)
     return s_vfs_fs.fs && s_vfs_fs.fs->rename(from, to);
 }
 
-const DetwsVfsBackend s_fs_backend = {fs_open, fs_read, fs_write, fs_close, fs_size, fs_exists, fs_remove, fs_rename};
+const DWSVfsBackend s_fs_backend = {fs_open, fs_read, fs_write, fs_close, fs_size, fs_exists, fs_remove, fs_rename};
 } // namespace
 
-const DetwsVfsBackend *dws_vfs_fs(fs::FS *filesystem)
+const DWSVfsBackend *dws_vfs_fs(fs::FS *filesystem)
 {
     s_vfs_fs.fs = filesystem;
     for (int h = 0; h < DWS_VFS_MAX_OPEN; h++)

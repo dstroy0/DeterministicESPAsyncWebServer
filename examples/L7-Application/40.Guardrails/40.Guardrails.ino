@@ -29,7 +29,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 DWS server;
 
-static void on_breach(uint8_t breaches, const DetwsHealth *h)
+static void on_breach(uint8_t breaches, const DWSHealth *h)
 {
     Serial.printf("[guardrail] breach=0x%02x heap=%u frag=%u stack=%u\n", breaches, (unsigned)h->free_heap,
                   (unsigned)h->largest_free_block, (unsigned)h->stack_free);
@@ -49,7 +49,7 @@ void setup()
     dws_guardrails_begin(on_breach);
 
     server.on("/health", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *) {
-        DetwsHealth h;
+        DWSHealth h;
         dws_guardrails_sample(&h);
         char buf[128];
         dws_health_json(&h, buf, sizeof(buf));

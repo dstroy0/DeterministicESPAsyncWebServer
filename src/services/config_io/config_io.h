@@ -26,17 +26,17 @@
 #if DWS_ENABLE_CONFIG_IO
 
 /** @brief Type of a config field (selects the typed get/set used). */
-enum class DetwsCfgType : uint8_t
+enum class DWSCfgType : uint8_t
 {
     DWS_CFG_STR = 0, ///< null-terminated string.
     DWS_CFG_U32 = 1, ///< unsigned 32-bit integer (serialized as decimal).
 };
 
 /** @brief One field in an export/restore schema. */
-struct DetwsCfgField
+struct DWSCfgField
 {
-    const char *key;   ///< config-store key (<= 15 chars).
-    DetwsCfgType type; ///< the field's value type.
+    const char *key; ///< config-store key (<= 15 chars).
+    DWSCfgType type; ///< the field's value type.
 };
 
 /**
@@ -44,7 +44,7 @@ struct DetwsCfgField
  *        lines into @p out.
  * @return characters written, or 0 on a too-small buffer / failure (fail-closed).
  */
-int dws_config_export(const char *ns, const DetwsCfgField *fields, size_t n, char *out, size_t cap);
+int dws_config_export(const char *ns, const DWSCfgField *fields, size_t n, char *out, size_t cap);
 
 /**
  * @brief Import `key=value` lines from @p text into namespace @p ns, writing each
@@ -52,7 +52,7 @@ int dws_config_export(const char *ns, const DetwsCfgField *fields, size_t n, cha
  *        skipped.
  * @return number of fields written.
  */
-int dws_config_import(const char *ns, const DetwsCfgField *fields, size_t n, const char *text, size_t len);
+int dws_config_import(const char *ns, const DWSCfgField *fields, size_t n, const char *text, size_t len);
 
 #endif // DWS_ENABLE_CONFIG_IO
 #endif // DETERMINISTICESPASYNCWEBSERVER_CONFIG_IO_H

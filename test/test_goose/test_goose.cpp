@@ -25,9 +25,9 @@ static int find(const uint8_t *hay, size_t hlen, const uint8_t *needle, size_t n
     return -1;
 }
 
-static DetwsGoose base(void)
+static DWSGoose base(void)
 {
-    DetwsGoose g = {};
+    DWSGoose g = {};
     g.gocb_ref = "X";
     g.time_allowed_to_live = 1;
     g.dat_set = "D";
@@ -46,7 +46,7 @@ static DetwsGoose base(void)
 
 void test_pdu_structure(void)
 {
-    DetwsGoose g = base();
+    DWSGoose g = base();
     uint8_t out[128];
     size_t n = dws_goose_pdu(&g, out, sizeof(out));
     // Content is 42 octets (see goose.cpp field sizes); PDU = 61 2A <42> = 44.
@@ -68,7 +68,7 @@ void test_pdu_structure(void)
 
 void test_integer_leading_zero(void)
 {
-    DetwsGoose g = base();
+    DWSGoose g = base();
     g.st_num = 200; // 0xC8, MSB set -> BER positive INTEGER needs a leading 0x00: 85 02 00 C8.
     uint8_t out[128];
     size_t n = dws_goose_pdu(&g, out, sizeof(out));
@@ -83,7 +83,7 @@ void test_integer_leading_zero(void)
 
 void test_frame(void)
 {
-    DetwsGoose g = base();
+    DWSGoose g = base();
     uint8_t dst[6] = {0x01, 0x0C, 0xCD, 0x01, 0x00, 0x01};
     uint8_t src[6] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF};
     uint8_t out[128];
@@ -104,7 +104,7 @@ void test_frame(void)
 // encoding (long-form), driven by a >=128-octet allData.
 void test_goose_error_and_longform(void)
 {
-    DetwsGoose g = base();
+    DWSGoose g = base();
     uint8_t out[512];
 
     TEST_ASSERT_EQUAL_size_t(0, dws_goose_pdu(nullptr, out, sizeof(out))); // null g
@@ -124,7 +124,7 @@ void test_goose_error_and_longform(void)
 
     uint8_t dst[6] = {0};
     uint8_t src[6] = {0};
-    DetwsGoose g2 = base();
+    DWSGoose g2 = base();
     TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(nullptr, src, 0x1234, &g2, out, sizeof(out))); // null dst
     TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, &g2, out, 20));              // cap < 22
     TEST_ASSERT_EQUAL_size_t(0, dws_goose_frame(dst, src, 0x1234, &g2, out, 30)); // >=22 but the PDU cannot fit

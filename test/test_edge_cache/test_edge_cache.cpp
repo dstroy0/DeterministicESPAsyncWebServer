@@ -81,14 +81,14 @@ static void test_http_date_epoch_zero_and_invalid()
 
 static void test_freshness_lifetime_precedence()
 {
-    DetwsCacheControl cc;
+    DWSCacheControl cc;
     cache_control_init(&cc);
     cc.max_age = 100;
     cc.s_maxage = 50;
     TEST_ASSERT_EQUAL_INT32(50, edge_freshness_lifetime(&cc, /*shared=*/true, -1, -1));   // s-maxage wins (shared)
     TEST_ASSERT_EQUAL_INT32(100, edge_freshness_lifetime(&cc, /*shared=*/false, -1, -1)); // private ignores s-maxage
 
-    DetwsCacheControl empty;
+    DWSCacheControl empty;
     cache_control_init(&empty);
     TEST_ASSERT_EQUAL_INT32(100, edge_freshness_lifetime(&empty, true, 1000, 1100)); // Expires - Date
     TEST_ASSERT_EQUAL_INT32(-1, edge_freshness_lifetime(&empty, true, -1, -1));      // nothing explicit
@@ -232,7 +232,7 @@ static void test_store_lru_evict()
 static void test_store_ttl_sweep()
 {
     edge_store_init(&g_store);
-    DetwsCacheControl s10, s1000;
+    DWSCacheControl s10, s1000;
     cache_control_init(&s10);
     s10.max_age = 10;
     cache_control_init(&s1000);
@@ -315,7 +315,7 @@ static void test_store_find_vary()
 static void test_entry_freshness_resolution()
 {
     edge_store_init(&g_store);
-    DetwsCacheControl cc, empty;
+    DWSCacheControl cc, empty;
     cache_control_init(&cc);
     cc.max_age = 100;
     cache_control_init(&empty);
@@ -341,7 +341,7 @@ static void test_entry_freshness_resolution()
 
 static void test_storeability()
 {
-    DetwsCacheControl cc, ns, pv;
+    DWSCacheControl cc, ns, pv;
     cache_control_init(&cc);
     cache_control_init(&ns);
     ns.no_store = true;
@@ -379,7 +379,7 @@ static void test_build_conditional()
 static void test_apply_304()
 {
     edge_store_init(&g_store);
-    DetwsCacheControl s10;
+    DWSCacheControl s10;
     cache_control_init(&s10);
     s10.max_age = 10;
     EdgeEntry *e = edge_store_alloc(&g_store, "GET\nh\n/a", "");

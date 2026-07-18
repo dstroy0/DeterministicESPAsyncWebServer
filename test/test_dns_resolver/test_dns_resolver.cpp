@@ -18,17 +18,17 @@ void tearDown()
 
 void test_classify()
 {
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DWS_IP_UNSPECIFIED, dws_dns_resolver_classify(0u));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DWS_IP_BROADCAST, dws_dns_resolver_classify(0xFFFFFFFFu));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DWS_IP_LOOPBACK, dws_dns_resolver_classify(IPV4(127, 0, 0, 1)));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(10, 0, 0, 5)));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(172, 16, 0, 1)));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(192, 168, 1, 1)));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DWS_IP_LINKLOCAL, dws_dns_resolver_classify(IPV4(169, 254, 1, 1)));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DWS_IP_MULTICAST, dws_dns_resolver_classify(IPV4(224, 0, 0, 1)));
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(8, 8, 8, 8)));
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_UNSPECIFIED, dws_dns_resolver_classify(0u));
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_BROADCAST, dws_dns_resolver_classify(0xFFFFFFFFu));
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_LOOPBACK, dws_dns_resolver_classify(IPV4(127, 0, 0, 1)));
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(10, 0, 0, 5)));
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(172, 16, 0, 1)));
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_PRIVATE, dws_dns_resolver_classify(IPV4(192, 168, 1, 1)));
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_LINKLOCAL, dws_dns_resolver_classify(IPV4(169, 254, 1, 1)));
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_MULTICAST, dws_dns_resolver_classify(IPV4(224, 0, 0, 1)));
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(8, 8, 8, 8)));
     // 172.32.x is OUTSIDE the 172.16/12 private block -> public.
-    TEST_ASSERT_EQUAL_INT(DetwsIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(172, 32, 0, 1)));
+    TEST_ASSERT_EQUAL_INT(DWSIpClass::DWS_IP_PUBLIC, dws_dns_resolver_classify(IPV4(172, 32, 0, 1)));
 }
 
 void test_verify_rejects_suspicious()

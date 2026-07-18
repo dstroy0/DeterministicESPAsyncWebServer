@@ -51,14 +51,14 @@ uint64_t key_hash(const char *key, uint16_t len)
 }
 
 // Find a live slot for (hash,key). Linear probe, stopping at the first empty. -1 if absent.
-int find_live(DetwsDbm *db, uint64_t hash, const char *key, uint16_t key_len)
+int find_live(DWSDbm *db, uint64_t hash, const char *key, uint16_t key_len)
 {
     const size_t n = DWS_DBM_SLOTS;
     size_t start = (size_t)(hash % n);
     for (size_t i = 0; i < n; i++)
     {
         size_t j = (start + i) % n;
-        DetwsDbmSlot *s = &db->slots[j];
+        DWSDbmSlot *s = &db->slots[j];
         if (s->state == 0)
             return -1; // empty -> the probe chain ends, key not present
         if (s->state == 1 && s->hash == hash && s->key_len == key_len && memcmp(s->key, key, key_len) == 0)
@@ -69,7 +69,7 @@ int find_live(DetwsDbm *db, uint64_t hash, const char *key, uint16_t key_len)
 
 // Find the slot to write (hash,key): an existing live match, or the first reusable slot (tombstone/empty).
 // Sets *is_new when the returned slot is not already this key. -1 if the table has no room for a new key.
-int reserve(DetwsDbm *db, uint64_t hash, const char *key, uint16_t key_len, bool *is_new)
+int reserve(DWSDbm *db, uint64_t hash, const char *key, uint16_t key_len, bool *is_new)
 {
     const size_t n = DWS_DBM_SLOTS;
     size_t start = (size_t)(hash % n);
@@ -77,7 +77,7 @@ int reserve(DetwsDbm *db, uint64_t hash, const char *key, uint16_t key_len, bool
     for (size_t i = 0; i < n; i++)
     {
         size_t j = (start + i) % n;
-        DetwsDbmSlot *s = &db->slots[j];
+        DWSDbmSlot *s = &db->slots[j];
         if (s->state == 1)
         {
             if (s->hash == hash && s->key_len == key_len && memcmp(s->key, key, key_len) == 0)
@@ -104,7 +104,7 @@ int reserve(DetwsDbm *db, uint64_t hash, const char *key, uint16_t key_len, bool
 
 struct ReplayCtx
 {
-    DetwsDbm *db;
+    DWSDbm *db;
     bool overflow;
 };
 
@@ -112,7 +112,7 @@ void replay_cb(uint64_t seq, uint64_t data_off, const uint8_t *payload, uint32_t
 {
     (void)seq;
     ReplayCtx *rc = (ReplayCtx *)ctx;
-    DetwsDbm *db = rc->db;
+    DWSDbm *db = rc->db;
     if (len < DBM_HDR)
         return;
     uint8_t op = payload[0];
@@ -133,7 +133,7 @@ void replay_cb(uint64_t seq, uint64_t data_off, const uint8_t *payload, uint32_t
             rc->overflow = true;
             return;
         }
-        DetwsDbmSlot *s = &db->slots[slot];
+        DWSDbmSlot *s = &db->slots[slot];
         if (s->state != 1)
             db->count++;
         s->state = 1;
@@ -155,7 +155,7 @@ void replay_cb(uint64_t seq, uint64_t data_off, const uint8_t *payload, uint32_t
 }
 } // namespace
 
-bool dws_dbm_open(DetwsDbm *db, WalStore *wal)
+bool dws_dbm_open(DWSDbm *db, WalStore *wal)
 {
     memset(db, 0, sizeof(*db));
     db->wal = wal;
@@ -165,7 +165,7 @@ bool dws_dbm_open(DetwsDbm *db, WalStore *wal)
     return !rc.overflow;
 }
 
-bool dws_dbm_put(DetwsDbm *db, const char *key, uint16_t key_len, const uint8_t *val, uint32_t val_len)
+bool dws_dbm_put(DWSDbm *db, const char *key, uint16_t key_len, const uint8_t *val, uint32_t val_len)
 {
     if (key_len == 0 || key_len > DWS_DBM_KEY_MAX || val_len > DWS_DBM_VAL_MAX)
         return false;
@@ -186,7 +186,7 @@ bool dws_dbm_put(DetwsDbm *db, const char *key, uint16_t key_len, const uint8_t 
     if (!dws_wal_store_append(db->wal, rec, (uint32_t)(DBM_HDR + key_len + val_len)))
         return false; // WAL full: index unchanged
 
-    DetwsDbmSlot *s = &db->slots[slot];
+    DWSDbmSlot *s = &db->slots[slot];
     if (s->state != 1)
         db->count++;
     s->state = 1;
@@ -198,13 +198,13 @@ bool dws_dbm_put(DetwsDbm *db, const char *key, uint16_t key_len, const uint8_t 
     return true;
 }
 
-long dws_dbm_get(DetwsDbm *db, const char *key, uint16_t key_len, uint8_t *buf, size_t cap)
+long dws_dbm_get(DWSDbm *db, const char *key, uint16_t key_len, uint8_t *buf, size_t cap)
 {
     uint64_t h = key_hash(key, key_len);
     int slot = find_live(db, h, key, key_len);
     if (slot < 0)
         return -1;
-    DetwsDbmSlot *s = &db->slots[slot];
+    DWSDbmSlot *s = &db->slots[slot];
     if (s->val_len > cap)
         return -1;
     if (s->val_len && !dws_wal_store_pread(db->wal, s->val_off, buf, s->val_len))
@@ -212,7 +212,7 @@ long dws_dbm_get(DetwsDbm *db, const char *key, uint16_t key_len, uint8_t *buf, 
     return (long)s->val_len;
 }
 
-bool dws_dbm_del(DetwsDbm *db, const char *key, uint16_t key_len)
+bool dws_dbm_del(DWSDbm *db, const char *key, uint16_t key_len)
 {
     uint64_t h = key_hash(key, key_len);
     int slot = find_live(db, h, key, key_len);
@@ -230,27 +230,27 @@ bool dws_dbm_del(DetwsDbm *db, const char *key, uint16_t key_len)
     return true;
 }
 
-bool dws_dbm_contains(DetwsDbm *db, const char *key, uint16_t key_len)
+bool dws_dbm_contains(DWSDbm *db, const char *key, uint16_t key_len)
 {
     return find_live(db, key_hash(key, key_len), key, key_len) >= 0;
 }
 
-uint32_t dws_dbm_count(DetwsDbm *db)
+uint32_t dws_dbm_count(DWSDbm *db)
 {
     return db->count;
 }
 
-bool dws_dbm_sync(DetwsDbm *db)
+bool dws_dbm_sync(DWSDbm *db)
 {
     return dws_wal_store_checkpoint(db->wal);
 }
 
-uint32_t dws_dbm_iterate(DetwsDbm *db, DetwsDbmIterCb cb, void *ctx)
+uint32_t dws_dbm_iterate(DWSDbm *db, DWSDbmIterCb cb, void *ctx)
 {
     uint32_t visited = 0;
     for (uint32_t i = 0; i < DWS_DBM_SLOTS; i++)
     {
-        DetwsDbmSlot *s = &db->slots[i];
+        DWSDbmSlot *s = &db->slots[i];
         if (s->state != 1)
             continue;
         visited++;
@@ -260,26 +260,26 @@ uint32_t dws_dbm_iterate(DetwsDbm *db, DetwsDbmIterCb cb, void *ctx)
     return visited;
 }
 
-uint64_t dws_dbm_live_bytes(DetwsDbm *db)
+uint64_t dws_dbm_live_bytes(DWSDbm *db)
 {
     uint64_t bytes = 0;
     for (uint32_t i = 0; i < DWS_DBM_SLOTS; i++)
     {
-        const DetwsDbmSlot *s = &db->slots[i];
+        const DWSDbmSlot *s = &db->slots[i];
         if (s->state == 1)
             bytes += WAL_RECORD_HEADER + DBM_HDR + s->key_len + s->val_len; // one framed record per live key
     }
     return bytes;
 }
 
-bool dws_dbm_compact(DetwsDbm *db, WalStore *dst)
+bool dws_dbm_compact(DWSDbm *db, WalStore *dst)
 {
     // Copy each live key (latest value, no tombstones) into the fresh destination. Read the value straight
     // from the old log so this needs no per-key RAM beyond one record buffer, the same the put path uses.
     uint8_t rec[DBM_HDR + DWS_DBM_KEY_MAX + DWS_DBM_VAL_MAX];
     for (uint32_t i = 0; i < DWS_DBM_SLOTS; i++)
     {
-        const DetwsDbmSlot *s = &db->slots[i];
+        const DWSDbmSlot *s = &db->slots[i];
         if (s->state != 1)
             continue;
         rec[0] = 0; // put

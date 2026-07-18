@@ -14,7 +14,7 @@
 
 static const size_t CC_SENT = (size_t)-1; // overflow sentinel threaded through the emitters
 
-void cache_control_init(DetwsCacheControl *cc)
+void cache_control_init(DWSCacheControl *cc)
 {
     cc->cc_public = false;
     cc->cc_private = false;
@@ -84,7 +84,7 @@ static size_t cc_kv(char *buf, size_t cap, size_t n, bool *first, const char *ke
     return cc_emit_uint(buf, cap, n, (unsigned)v);
 }
 
-size_t cache_control_build(char *buf, size_t cap, const DetwsCacheControl *cc)
+size_t cache_control_build(char *buf, size_t cap, const DWSCacheControl *cc)
 {
     if (!buf || !cc || cap == 0)
         return 0;
@@ -175,7 +175,7 @@ static int32_t cc_parse_delta(const char *v, size_t vlen)
     return any ? (int32_t)val : -1;
 }
 
-static bool cc_match(DetwsCacheControl *cc, const char *name, size_t nlen, const char *val, size_t vlen)
+static bool cc_match(DWSCacheControl *cc, const char *name, size_t nlen, const char *val, size_t vlen)
 {
     if (cc_ci_eq(name, nlen, "public"))
         cc->cc_public = true;
@@ -216,7 +216,7 @@ static bool cc_match(DetwsCacheControl *cc, const char *name, size_t nlen, const
 
 // Parse one comma-separated directive starting at *i (advancing past it) and apply it; returns true
 // if a known directive matched.
-static bool cache_parse_one_directive(const char *s, size_t len, size_t *i, DetwsCacheControl *cc)
+static bool cache_parse_one_directive(const char *s, size_t len, size_t *i, DWSCacheControl *cc)
 {
     while (*i < len && (s[*i] == ',' || s[*i] == ' ' || s[*i] == '\t'))
         (*i)++; // skip separators / OWS
@@ -239,7 +239,7 @@ static bool cache_parse_one_directive(const char *s, size_t len, size_t *i, Detw
     return nlen && cc_match(cc, s + start, nlen, val, vlen);
 }
 
-bool cache_control_parse(const char *s, size_t len, DetwsCacheControl *cc)
+bool cache_control_parse(const char *s, size_t len, DWSCacheControl *cc)
 {
     cache_control_init(cc);
     if (!s)
@@ -256,7 +256,7 @@ bool cache_control_parse(const char *s, size_t len, DetwsCacheControl *cc)
 
 // --- presets + freshness ---------------------------------------------------
 
-void cache_immutable_asset(DetwsCacheControl *cc, uint32_t max_age)
+void cache_immutable_asset(DWSCacheControl *cc, uint32_t max_age)
 {
     cache_control_init(cc);
     cc->cc_public = true;
@@ -264,7 +264,7 @@ void cache_immutable_asset(DetwsCacheControl *cc, uint32_t max_age)
     cc->cc_immutable = true;
 }
 
-void cache_revalidatable(DetwsCacheControl *cc, uint32_t max_age, int32_t stale_while_revalidate)
+void cache_revalidatable(DWSCacheControl *cc, uint32_t max_age, int32_t stale_while_revalidate)
 {
     cache_control_init(cc);
     cc->cc_public = true;
@@ -273,13 +273,13 @@ void cache_revalidatable(DetwsCacheControl *cc, uint32_t max_age, int32_t stale_
         cc->stale_while_revalidate = stale_while_revalidate;
 }
 
-void cache_no_store(DetwsCacheControl *cc)
+void cache_no_store(DWSCacheControl *cc)
 {
     cache_control_init(cc);
     cc->no_store = true;
 }
 
-void cache_shared(DetwsCacheControl *cc, uint32_t max_age, uint32_t s_maxage)
+void cache_shared(DWSCacheControl *cc, uint32_t max_age, uint32_t s_maxage)
 {
     cache_control_init(cc);
     cc->cc_public = true;
@@ -287,7 +287,7 @@ void cache_shared(DetwsCacheControl *cc, uint32_t max_age, uint32_t s_maxage)
     cc->s_maxage = (int32_t)(s_maxage > 2147483647u ? 2147483647u : s_maxage);
 }
 
-long cache_freshness_lifetime(const DetwsCacheControl *cc, bool shared, long expires_minus_date)
+long cache_freshness_lifetime(const DWSCacheControl *cc, bool shared, long expires_minus_date)
 {
     if (shared && cc->s_maxage >= 0)
         return cc->s_maxage;

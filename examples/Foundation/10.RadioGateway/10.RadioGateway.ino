@@ -86,7 +86,7 @@ void setup()
     Serial.begin(115200);
     delay(300);
 
-    DetwsPqConfig fwd = {};
+    DWSPqConfig fwd = {};
     fwd.handler = on_forward;
     fwd.priority = 0; // FORWARD lane default (above the user lane)
     fwd.core = 1;

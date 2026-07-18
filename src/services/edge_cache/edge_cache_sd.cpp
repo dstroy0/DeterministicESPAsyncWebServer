@@ -138,7 +138,7 @@ bool peek_canon(const uint8_t *buf, size_t len, char *canon_out, size_t cap)
 constexpr int EDGE_SD_PURGE_BATCH = 8;
 struct CollectCtx
 {
-    DetwsDbm *db;
+    DWSDbm *db;
     const char *prefix; // nullptr = match every edge entry
     size_t plen;
     uint8_t *scratch;
@@ -174,7 +174,7 @@ bool collect_cb(const char *key, uint16_t key_len, void *vctx)
     return true;
 }
 
-uint32_t purge_matching(DetwsDbm *db, const char *prefix, uint8_t *scratch, size_t scratch_cap)
+uint32_t purge_matching(DWSDbm *db, const char *prefix, uint8_t *scratch, size_t scratch_cap)
 {
     uint32_t total = 0;
     for (;;)
@@ -198,7 +198,7 @@ uint32_t purge_matching(DetwsDbm *db, const char *prefix, uint8_t *scratch, size
 }
 } // namespace
 
-bool edge_sd_put(DetwsDbm *db, const EdgeEntry *e, uint8_t *scratch, size_t scratch_cap)
+bool edge_sd_put(DWSDbm *db, const EdgeEntry *e, uint8_t *scratch, size_t scratch_cap)
 {
     if (!db || !e || !scratch)
         return false;
@@ -210,7 +210,7 @@ bool edge_sd_put(DetwsDbm *db, const EdgeEntry *e, uint8_t *scratch, size_t scra
     return dws_dbm_put(db, (const char *)e->digest, 32, scratch, (uint32_t)n);
 }
 
-bool edge_sd_get(DetwsDbm *db, const uint8_t digest[32], EdgeEntry *e, uint8_t *scratch, size_t scratch_cap)
+bool edge_sd_get(DWSDbm *db, const uint8_t digest[32], EdgeEntry *e, uint8_t *scratch, size_t scratch_cap)
 {
     if (!db || !digest || !e || !scratch)
         return false;
@@ -220,19 +220,19 @@ bool edge_sd_get(DetwsDbm *db, const uint8_t digest[32], EdgeEntry *e, uint8_t *
     return edge_sd_deserialize(scratch, (size_t)n, e);
 }
 
-bool edge_sd_del(DetwsDbm *db, const uint8_t digest[32])
+bool edge_sd_del(DWSDbm *db, const uint8_t digest[32])
 {
     return db && digest && dws_dbm_del(db, (const char *)digest, 32);
 }
 
-uint32_t edge_sd_purge_prefix(DetwsDbm *db, const char *path_prefix, uint8_t *scratch, size_t scratch_cap)
+uint32_t edge_sd_purge_prefix(DWSDbm *db, const char *path_prefix, uint8_t *scratch, size_t scratch_cap)
 {
     if (!db || !path_prefix || !scratch)
         return 0;
     return purge_matching(db, path_prefix, scratch, scratch_cap);
 }
 
-uint32_t edge_sd_purge_all(DetwsDbm *db)
+uint32_t edge_sd_purge_all(DWSDbm *db)
 {
     if (!db)
         return 0;

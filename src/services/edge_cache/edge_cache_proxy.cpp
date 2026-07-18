@@ -135,7 +135,7 @@ struct EdgeCacheProxyCtx
     char range_hdr[MAX_CONNS][48];
 #endif
 #if DWS_ENABLE_DBM
-    DetwsDbm *l2;                      // the persistent L2 tier (nullptr = L1-only)
+    DWSDbm *l2;                        // the persistent L2 tier (nullptr = L1-only)
     uint8_t sd_buf[EDGE_SD_VALUE_MAX]; // serialize/deserialize scratch for one L2 value
 #endif
 #if DWS_ENABLE_EDGE_MESH
@@ -406,7 +406,7 @@ void serve_passthrough(uint8_t slot, EdgeFetch *f)
 }
 
 // Store a cacheable 200 response into a fresh entry and serve it.
-void store_response(uint8_t slot, EdgeFetchSlot *fs, HttpReq *req, const DetwsCacheControl *cc, const char *vary_hdr,
+void store_response(uint8_t slot, EdgeFetchSlot *fs, HttpReq *req, const DWSCacheControl *cc, const char *vary_hdr,
                     uint32_t now)
 {
     EdgeFetch *f = &fs->f;
@@ -476,7 +476,7 @@ void on_fetch_done(uint8_t slot, EdgeFetchSlot *fs, uint32_t now)
     }
     if (f->status == 200)
     {
-        DetwsCacheControl cc;
+        DWSCacheControl cc;
         cache_control_init(&cc);
         char v[128];
         if (edge_header_value(head, head_len, "Cache-Control", v, sizeof(v)))
@@ -1072,7 +1072,7 @@ void dws_edge_cache_enable(DWS &server)
 }
 
 #if DWS_ENABLE_DBM
-void dws_edge_cache_bind_sd(DetwsDbm *dbm)
+void dws_edge_cache_bind_sd(DWSDbm *dbm)
 {
     s_ctx.l2 = dbm;
     s_ctx.store.on_evict = dbm ? edge_on_evict : nullptr;

@@ -28,7 +28,7 @@
 class DWS;
 
 /** @brief One flash partition entry. */
-struct DetwsPartitionInfo
+struct DWSPartitionInfo
 {
     char label[17];   ///< partition label (null-terminated).
     uint8_t type;     ///< esp_partition type (0 = app, 1 = data).
@@ -49,13 +49,13 @@ const char *dws_partition_kind(uint8_t type, uint8_t subtype);
  * @brief Serialize a partition array as JSON `{"partitions":[...]}` into @p out.
  * @return characters written, or 0 if @p cap is too small.
  */
-int dws_partition_json(const DetwsPartitionInfo *parts, uint8_t count, char *out, size_t cap);
+int dws_partition_json(const DWSPartitionInfo *parts, uint8_t count, char *out, size_t cap);
 
 /**
  * @brief Walk the flash partition table into @p out (ESP32; 0 on host builds).
  * @return number of partitions written (<= @p max).
  */
-uint8_t dws_partition_collect(DetwsPartitionInfo *out, uint8_t max);
+uint8_t dws_partition_collect(DWSPartitionInfo *out, uint8_t max);
 
 // ---------------------------------------------------------------------------
 // Server integration

@@ -55,7 +55,7 @@ size_t dws_rtps_submessage(uint8_t id, uint8_t flags, const uint8_t *body, uint1
     return n;
 }
 
-bool dws_rtps_parse(const uint8_t *msg, size_t len, DetwsRtpsCb cb, void *arg)
+bool dws_rtps_parse(const uint8_t *msg, size_t len, DWSRtpsCb cb, void *arg)
 {
     if (!msg || len < Rtps::RTPS_HEADER_LEN)
         return false;

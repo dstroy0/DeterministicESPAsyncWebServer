@@ -15,9 +15,9 @@ returns them as JSON for a dashboard or an alert rule.
 
 ```cpp
 static float g_window_buf[16];   // caller-owned window storage
-static DetwsWindow g_window;
-static DetwsRate g_rate;
-static DetwsTotalizer g_total;
+static DWSWindow g_window;
+static DWSRate g_rate;
+static DWSTotalizer g_total;
 
 dws_window_init(&g_window, g_window_buf, 16);
 dws_rate_init(&g_rate);
@@ -71,9 +71,9 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 DWS server;
 
 static float g_window_buf[16]; // caller-owned window storage (no heap)
-static DetwsWindow g_window;
-static DetwsRate g_rate;
-static DetwsTotalizer g_total;
+static DWSWindow g_window;
+static DWSRate g_rate;
+static DWSTotalizer g_total;
 static float g_last_rate = 0.0f;
 
 void setup()

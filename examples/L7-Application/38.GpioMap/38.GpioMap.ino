@@ -31,12 +31,12 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 DWS server;
 
 // The pins to expose. Caller-owned and must outlive the server. Mark a pin
-// DetwsGpioDir::DWS_GPIO_OUT to make it drivable from the panel.
-static DetwsGpioPin gpio_pins[] = {
-    {2, "Onboard LED", DetwsGpioDir::DWS_GPIO_OUT, 0},
-    {0, "BOOT button", DetwsGpioDir::DWS_GPIO_IN_PULLUP, 0},
-    {4, "Relay", DetwsGpioDir::DWS_GPIO_OUT, 0},
-    {34, "ADC sense", DetwsGpioDir::DWS_GPIO_IN, 0},
+// DWSGpioDir::DWS_GPIO_OUT to make it drivable from the panel.
+static DWSGpioPin gpio_pins[] = {
+    {2, "Onboard LED", DWSGpioDir::DWS_GPIO_OUT, 0},
+    {0, "BOOT button", DWSGpioDir::DWS_GPIO_IN_PULLUP, 0},
+    {4, "Relay", DWSGpioDir::DWS_GPIO_OUT, 0},
+    {34, "ADC sense", DWSGpioDir::DWS_GPIO_IN, 0},
 };
 static const uint8_t gpio_count = sizeof(gpio_pins) / sizeof(gpio_pins[0]);
 

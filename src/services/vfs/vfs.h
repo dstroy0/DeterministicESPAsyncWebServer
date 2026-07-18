@@ -40,7 +40,7 @@
 #if DWS_ENABLE_VFS
 
 /** @brief Open modes. */
-enum class DetwsVfsMode : uint8_t
+enum class DWSVfsMode : uint8_t
 {
     DWS_VFS_READ = 0,   ///< Read existing file (fails if absent).
     DWS_VFS_WRITE = 1,  ///< Create/truncate for writing.
@@ -53,7 +53,7 @@ enum class DetwsVfsMode : uint8_t
  * Implement this to add a backend; the built-in RAM and Arduino-FS backends are
  * returned by dws_vfs_ram() / dws_vfs_fs().
  */
-struct DetwsVfsBackend
+struct DWSVfsBackend
 {
     int (*open)(const char *path, int mode);             ///< -> handle (>=0) or -1.
     int (*read)(int handle, void *buf, size_t n);        ///< bytes read, or -1.
@@ -66,10 +66,10 @@ struct DetwsVfsBackend
 };
 
 /** @brief Mount the active backend (call once at setup; nullptr unmounts). */
-void dws_vfs_mount(const DetwsVfsBackend *backend);
+void dws_vfs_mount(const DWSVfsBackend *backend);
 
 /** @brief The built-in deterministic RAM backend (fixed BSS pool, no heap). */
-const DetwsVfsBackend *dws_vfs_ram(void);
+const DWSVfsBackend *dws_vfs_ram(void);
 
 /** @brief Clear the RAM backend (all files + open handles). */
 void dws_vfs_ram_format(void);
@@ -78,8 +78,8 @@ void dws_vfs_ram_format(void);
 // Unified API - dispatches to the mounted backend (fails closed if unmounted).
 // ---------------------------------------------------------------------------
 
-/** @brief Open @p path with @p mode (DetwsVfsMode). @return a handle (>= 0), or -1 on error. */
-int dws_vfs_open(const char *path, DetwsVfsMode mode);
+/** @brief Open @p path with @p mode (DWSVfsMode). @return a handle (>= 0), or -1 on error. */
+int dws_vfs_open(const char *path, DWSVfsMode mode);
 /** @brief Read up to @p n bytes from @p handle into @p buf. @return bytes read, or -1. */
 int dws_vfs_read(int handle, void *buf, size_t n);
 /** @brief Write @p n bytes from @p buf to @p handle. @return bytes written, or -1. */
@@ -115,7 +115,7 @@ class FS;
  * Pass the mounted FS object; returns a backend to hand to dws_vfs_mount().
  * Example: `dws_vfs_mount(dws_vfs_fs(&LittleFS));`
  */
-const DetwsVfsBackend *dws_vfs_fs(fs::FS *filesystem);
+const DWSVfsBackend *dws_vfs_fs(fs::FS *filesystem);
 #endif
 
 #endif // DWS_ENABLE_VFS

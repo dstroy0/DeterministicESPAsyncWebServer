@@ -35,23 +35,23 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 
 DWS server;
 
-static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *out)
+static bool resolver(const char *path, const DWSGqlArgs *args, DWSGqlValue *out)
 {
     if (!strcmp(path, "heap"))
     {
-        out->type = DetwsGqlType::DWS_GQL_INT;
+        out->type = DWSGqlType::DWS_GQL_INT;
         out->i = ESP.getFreeHeap();
         return true;
     }
     if (!strcmp(path, "uptime"))
     {
-        out->type = DetwsGqlType::DWS_GQL_INT;
+        out->type = DWSGqlType::DWS_GQL_INT;
         out->i = millis() / 1000;
         return true;
     }
     if (!strcmp(path, "net.rssi"))
     {
-        out->type = DetwsGqlType::DWS_GQL_INT;
+        out->type = DWSGqlType::DWS_GQL_INT;
         out->i = WiFi.RSSI();
         return true;
     }
@@ -59,7 +59,7 @@ static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *
     {
         static char ip[20];
         WiFi.localIP().toString().toCharArray(ip, sizeof(ip));
-        out->type = DetwsGqlType::DWS_GQL_STR;
+        out->type = DWSGqlType::DWS_GQL_STR;
         out->s = ip;
         return true;
     }
@@ -69,7 +69,7 @@ static bool resolver(const char *path, const DetwsGqlArgs *args, DetwsGqlValue *
         dws_gql_arg_str(args, "name", &who);
         static char b[64];
         snprintf(b, sizeof(b), "hi %s", who);
-        out->type = DetwsGqlType::DWS_GQL_STR;
+        out->type = DWSGqlType::DWS_GQL_STR;
         out->s = b;
         return true;
     }
@@ -88,10 +88,10 @@ void setup()
 
     server.on("/graphql", HttpMethod::HTTP_POST, [](uint8_t id, HttpReq *req) {
         char body[512];
-        DetwsGqlResult rc = dws_graphql_execute((const char *)req->body, req->body_len, resolver, body, sizeof(body));
+        DWSGqlResult rc = dws_graphql_execute((const char *)req->body, req->body_len, resolver, body, sizeof(body));
         // The engine writes {"data":...} on success or {"errors":...} on a parse
         // error; 200 with the GraphQL error envelope is the conventional reply.
-        server.send(id, rc == DetwsGqlResult::DWS_GQL_OK ? 200 : 400, "application/json", body);
+        server.send(id, rc == DWSGqlResult::DWS_GQL_OK ? 200 : 400, "application/json", body);
     });
 
     server.begin(80);

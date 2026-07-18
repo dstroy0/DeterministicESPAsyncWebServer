@@ -33,11 +33,11 @@ char level_letter(uint8_t level)
 {
     switch (level)
     {
-    case DetwsLogLevel::DWS_LOG_ERROR:
+    case DWSLogLevel::DWS_LOG_ERROR:
         return 'E';
-    case DetwsLogLevel::DWS_LOG_WARN:
+    case DWSLogLevel::DWS_LOG_WARN:
         return 'W';
-    case DetwsLogLevel::DWS_LOG_INFO:
+    case DWSLogLevel::DWS_LOG_INFO:
         return 'I';
     default:
         return 'D';

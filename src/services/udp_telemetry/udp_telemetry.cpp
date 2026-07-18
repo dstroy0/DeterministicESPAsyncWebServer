@@ -20,7 +20,7 @@
 // Line builder (pure)
 // ---------------------------------------------------------------------------
 
-static void line_append(DetwsLine *l, const char *s)
+static void line_append(DWSLine *l, const char *s)
 {
     if (l->overflow)
         return;
@@ -36,13 +36,13 @@ static void line_append(DetwsLine *l, const char *s)
 }
 
 // Separator before a field: a space before the first, a comma after.
-static void line_sep(DetwsLine *l)
+static void line_sep(DWSLine *l)
 {
     line_append(l, l->have_fields ? "," : " ");
     l->have_fields = true;
 }
 
-void dws_line_init(DetwsLine *l, char *buf, size_t cap, const char *measurement)
+void dws_line_init(DWSLine *l, char *buf, size_t cap, const char *measurement)
 {
     l->buf = buf;
     l->cap = cap;
@@ -56,7 +56,7 @@ void dws_line_init(DetwsLine *l, char *buf, size_t cap, const char *measurement)
 
 // Append a string with InfluxDB tag/key escaping: comma, equals and space are
 // backslash-escaped (line protocol, "Special characters").
-static void line_append_escaped(DetwsLine *l, const char *s)
+static void line_append_escaped(DWSLine *l, const char *s)
 {
     if (!s)
         return;
@@ -75,7 +75,7 @@ static void line_append_escaped(DetwsLine *l, const char *s)
     }
 }
 
-void dws_line_add_tag(DetwsLine *l, const char *key, const char *val)
+void dws_line_add_tag(DWSLine *l, const char *key, const char *val)
 {
     // Tags are part of the series key: they come right after the measurement,
     // comma-separated, BEFORE the space-separated fields. Adding one after a field
@@ -91,7 +91,7 @@ void dws_line_add_tag(DetwsLine *l, const char *key, const char *val)
     line_append_escaped(l, val);
 }
 
-void dws_line_set_timestamp(DetwsLine *l, int64_t timestamp)
+void dws_line_set_timestamp(DWSLine *l, int64_t timestamp)
 {
     if (!l->have_fields) // a line needs at least one field before the timestamp
     {
@@ -103,7 +103,7 @@ void dws_line_set_timestamp(DetwsLine *l, int64_t timestamp)
     line_append(l, num);
 }
 
-void dws_line_add_int(DetwsLine *l, const char *field, int64_t v)
+void dws_line_add_int(DWSLine *l, const char *field, int64_t v)
 {
     char num[24];
     snprintf(num, sizeof(num), "%lldi", (long long)v); // InfluxDB integer suffix
@@ -113,7 +113,7 @@ void dws_line_add_int(DetwsLine *l, const char *field, int64_t v)
     line_append(l, num);
 }
 
-void dws_line_add_uint(DetwsLine *l, const char *field, uint64_t v)
+void dws_line_add_uint(DWSLine *l, const char *field, uint64_t v)
 {
     char num[24];
     snprintf(num, sizeof(num), "%lluu", (unsigned long long)v); // InfluxDB UInteger suffix 'u' (not signed 'i')
@@ -123,7 +123,7 @@ void dws_line_add_uint(DetwsLine *l, const char *field, uint64_t v)
     line_append(l, num);
 }
 
-void dws_line_add_float(DetwsLine *l, const char *field, float v, uint8_t decimals)
+void dws_line_add_float(DWSLine *l, const char *field, float v, uint8_t decimals)
 {
     char num[32];
     snprintf(num, sizeof(num), "%.*f", (int)decimals, (double)v);
@@ -133,12 +133,12 @@ void dws_line_add_float(DetwsLine *l, const char *field, float v, uint8_t decima
     line_append(l, num);
 }
 
-size_t dws_line_len(const DetwsLine *l)
+size_t dws_line_len(const DWSLine *l)
 {
     return l->pos;
 }
 
-bool dws_line_ok(const DetwsLine *l)
+bool dws_line_ok(const DWSLine *l)
 {
     return !l->overflow && l->have_fields;
 }
@@ -192,7 +192,7 @@ bool dws_udp_telemetry_send(const char *, size_t)
 
 #endif // ARDUINO
 
-bool dws_udp_telemetry_cast(const DetwsLine *l)
+bool dws_udp_telemetry_cast(const DWSLine *l)
 {
     if (!dws_line_ok(l))
         return false;

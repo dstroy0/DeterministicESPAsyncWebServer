@@ -68,9 +68,9 @@ void setup()
         const char *token = hdr + 7;
         uint32_t now = 1700000100; // production: read from NTP
 
-        DetwsOidcClaims claims;
-        DetwsOidcResult rc = dws_oidc_verify(token, strlen(token), JWKS, ISSUER, AUDIENCE, now, &claims);
-        if (rc != DetwsOidcResult::DWS_OIDC_OK)
+        DWSOidcClaims claims;
+        DWSOidcResult rc = dws_oidc_verify(token, strlen(token), JWKS, ISSUER, AUDIENCE, now, &claims);
+        if (rc != DWSOidcResult::DWS_OIDC_OK)
         {
             char b[40];
             snprintf(b, sizeof(b), "{\"error\":%d}", (int)rc);

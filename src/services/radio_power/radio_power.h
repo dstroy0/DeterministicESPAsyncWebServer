@@ -24,7 +24,7 @@
 
 /** @brief Modem-sleep modes (match DWS_RADIO_WIFI_PS). Config/compare values that map to esp_wifi's
  *  wifi_ps_type_t, so integer constants in a namespacing struct (cast-free at ==/switch/the ESP-IDF map). */
-struct DetwsRadioPs
+struct DWSRadioPs
 {
     static constexpr uint8_t DWS_PS_NONE = 0;      ///< no modem sleep (max performance).
     static constexpr uint8_t DWS_PS_MIN_MODEM = 1; ///< wake at every DTIM (balanced).

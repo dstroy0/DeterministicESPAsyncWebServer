@@ -163,7 +163,7 @@ inline uint32_t dws_micros(void)
  *        subsystem (the preempting queue, a DMA path, a forwarding rule) keeps one
  *        and reports it for real-time visibility.
  */
-struct DetwsLatencyStat
+struct DWSLatencyStat
 {
     uint32_t count;
     uint32_t over_budget; ///< samples whose latency exceeded the budget
@@ -173,7 +173,7 @@ struct DetwsLatencyStat
 };
 
 /** @brief Zero a stat (min seeded high so the first sample sets it). */
-inline void dws_lat_reset(DetwsLatencyStat *s)
+inline void dws_lat_reset(DWSLatencyStat *s)
 {
     s->count = 0;
     s->over_budget = 0;
@@ -192,7 +192,7 @@ inline uint32_t dws_lat_begin(void)
  * @brief End of a span started at @p start_us: record its latency, counting it as
  *        over-budget when @p budget_us is non-zero and exceeded. Wrap-safe.
  */
-inline void dws_lat_end(DetwsLatencyStat *s, uint32_t start_us, uint32_t budget_us)
+inline void dws_lat_end(DWSLatencyStat *s, uint32_t start_us, uint32_t budget_us)
 {
     uint32_t lat = dws_micros() - start_us; // wrap-safe unsigned delta
     s->count++;
@@ -206,7 +206,7 @@ inline void dws_lat_end(DetwsLatencyStat *s, uint32_t start_us, uint32_t budget_
 }
 
 /** @brief Mean latency (us) over the recorded samples, 0 if none. */
-inline uint32_t dws_lat_avg_us(const DetwsLatencyStat *s)
+inline uint32_t dws_lat_avg_us(const DWSLatencyStat *s)
 {
     return s->count ? (uint32_t)(s->sum_us / s->count) : 0u;
 }

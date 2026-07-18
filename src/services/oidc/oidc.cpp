@@ -221,7 +221,7 @@ bool right_align(const uint8_t *src, size_t len, uint8_t *dst, size_t width)
     return true;
 }
 
-bool parse_rsa_jwk(const char *s, const char *e, DetwsOidcKey *key)
+bool parse_rsa_jwk(const char *s, const char *e, DWSOidcKey *key)
 {
     char b64[400];
     if (!get_str(s, e, "n", b64, sizeof(b64)))
@@ -258,7 +258,7 @@ bool dws_oidc_token_kid(const char *token, size_t token_len, char *kid_out, size
     return get_str((const char *)hdr, (const char *)hdr + hn, "kid", kid_out, kid_cap);
 }
 
-bool dws_oidc_jwks_find(const char *jwks_json, const char *kid, DetwsOidcKey *key)
+bool dws_oidc_jwks_find(const char *jwks_json, const char *kid, DWSOidcKey *key)
 {
     if (!jwks_json || !key)
         return false;
@@ -296,17 +296,17 @@ bool dws_oidc_jwks_find(const char *jwks_json, const char *kid, DetwsOidcKey *ke
     return false;
 }
 
-DetwsOidcResult dws_oidc_verify_with_key(const char *token, size_t token_len, const DetwsOidcKey *key,
-                                         const char *expected_iss, const char *expected_aud, uint32_t now_unix,
-                                         DetwsOidcClaims *claims)
+DWSOidcResult dws_oidc_verify_with_key(const char *token, size_t token_len, const DWSOidcKey *key,
+                                       const char *expected_iss, const char *expected_aud, uint32_t now_unix,
+                                       DWSOidcClaims *claims)
 {
     if (!token || !key || !key->loaded || token_len == 0 || token_len > DWS_OIDC_MAX_LEN)
-        return DetwsOidcResult::DWS_OIDC_ERR_FORMAT;
+        return DWSOidcResult::DWS_OIDC_ERR_FORMAT;
 
     const char *seg[3];
     size_t seglen[3];
     if (!split3(token, token_len, seg, seglen))
-        return DetwsOidcResult::DWS_OIDC_ERR_FORMAT;
+        return DWSOidcResult::DWS_OIDC_ERR_FORMAT;
 
     // Borrow the large decode buffers from the per-dispatch scratch arena rather
     // than the worker stack (was ~2.6 KB of stack frame: hdr + sig + pl + iss).
@@ -321,31 +321,31 @@ DetwsOidcResult dws_oidc_verify_with_key(const char *token, size_t token_len, co
     uint8_t *pl = (uint8_t *)scratch_alloc(DWS_OIDC_MAX_LEN, 1);
     char *iss = (char *)scratch_alloc(iss_cap, 1);
     if (!hdr || !sig || !pl || !iss)
-        return DetwsOidcResult::DWS_OIDC_ERR_FORMAT; // scratch exhausted: fail closed
+        return DWSOidcResult::DWS_OIDC_ERR_FORMAT; // scratch exhausted: fail closed
 
     // Header: require alg == RS256 (rejects alg:none / HS256 confusion).
     size_t hn = dws_base64url_decode(seg[0], seglen[0], hdr, hdr_cap - 1);
     if (hn == 0)
-        return DetwsOidcResult::DWS_OIDC_ERR_FORMAT;
+        return DWSOidcResult::DWS_OIDC_ERR_FORMAT;
     hdr[hn] = '\0';
     char alg[16];
     if (!get_str((const char *)hdr, (const char *)hdr + hn, "alg", alg, sizeof(alg)) || strcmp(alg, "RS256") != 0)
-        return DetwsOidcResult::DWS_OIDC_ERR_ALG;
+        return DWSOidcResult::DWS_OIDC_ERR_ALG;
 
     // Signature: RSA-2048 -> exactly 256 bytes.
     if (dws_base64url_decode(seg[2], seglen[2], sig, DWS_OIDC_RSA_BYTES) != DWS_OIDC_RSA_BYTES)
-        return DetwsOidcResult::DWS_OIDC_ERR_FORMAT;
+        return DWSOidcResult::DWS_OIDC_ERR_FORMAT;
 
     // Verify over the signing input "header.payload" (ssh_rsa_verify hashes it). RS256 = SHA-256.
     size_t signing_len = (size_t)(seg[1] + seglen[1] - token);
     if (ssh_rsa_verify(key->n, key->e, (const uint8_t *)token, signing_len, sig, DWS_OIDC_RSA_BYTES,
                        SshRsaHash::SHA256) != 0)
-        return DetwsOidcResult::DWS_OIDC_ERR_SIGNATURE;
+        return DWSOidcResult::DWS_OIDC_ERR_SIGNATURE;
 
     // Claims (trusted only now that the signature is valid).
     size_t pn = dws_base64url_decode(seg[1], seglen[1], pl, DWS_OIDC_MAX_LEN - 1);
     if (pn == 0)
-        return DetwsOidcResult::DWS_OIDC_ERR_FORMAT;
+        return DWSOidcResult::DWS_OIDC_ERR_FORMAT;
     pl[pn] = '\0';
     const char *ps = (const char *)pl;
     const char *pe = ps + pn;
@@ -353,20 +353,20 @@ DetwsOidcResult dws_oidc_verify_with_key(const char *token, size_t token_len, co
     if (expected_iss && *expected_iss)
     {
         if (!get_str(ps, pe, "iss", iss, iss_cap) || strcmp(iss, expected_iss) != 0)
-            return DetwsOidcResult::DWS_OIDC_ERR_ISS;
+            return DWSOidcResult::DWS_OIDC_ERR_ISS;
     }
     if (expected_aud && *expected_aud)
     {
         if (!aud_contains(ps, pe, expected_aud))
-            return DetwsOidcResult::DWS_OIDC_ERR_AUD;
+            return DWSOidcResult::DWS_OIDC_ERR_AUD;
     }
 
     int64_t exp = 0;
     if (!get_int64(ps, pe, "exp", &exp) || (int64_t)now_unix >= exp)
-        return DetwsOidcResult::DWS_OIDC_ERR_EXPIRED;
+        return DWSOidcResult::DWS_OIDC_ERR_EXPIRED;
     int64_t nbf = 0;
     if (get_int64(ps, pe, "nbf", &nbf) && (int64_t)now_unix < nbf)
-        return DetwsOidcResult::DWS_OIDC_ERR_NOT_YET;
+        return DWSOidcResult::DWS_OIDC_ERR_NOT_YET;
 
     if (claims)
     {
@@ -378,19 +378,19 @@ DetwsOidcResult dws_oidc_verify_with_key(const char *token, size_t token_len, co
         get_str(ps, pe, "email", claims->email, sizeof(claims->email));
         get_int64(ps, pe, "iat", &claims->iat);
     }
-    return DetwsOidcResult::DWS_OIDC_OK;
+    return DWSOidcResult::DWS_OIDC_OK;
 }
 
-DetwsOidcResult dws_oidc_verify(const char *token, size_t token_len, const char *jwks_json, const char *expected_iss,
-                                const char *expected_aud, uint32_t now_unix, DetwsOidcClaims *claims)
+DWSOidcResult dws_oidc_verify(const char *token, size_t token_len, const char *jwks_json, const char *expected_iss,
+                              const char *expected_aud, uint32_t now_unix, DWSOidcClaims *claims)
 {
     char kid[DWS_OIDC_KID_LEN];
     if (!dws_oidc_token_kid(token, token_len, kid, sizeof(kid)))
         kid[0] = '\0'; // no kid -> let jwks_find pick the sole key
-    DetwsOidcKey key;
+    DWSOidcKey key;
     key.loaded = false;
     if (!dws_oidc_jwks_find(jwks_json, kid[0] ? kid : nullptr, &key))
-        return DetwsOidcResult::DWS_OIDC_ERR_KEY;
+        return DWSOidcResult::DWS_OIDC_ERR_KEY;
     return dws_oidc_verify_with_key(token, token_len, &key, expected_iss, expected_aud, now_unix, claims);
 }
 

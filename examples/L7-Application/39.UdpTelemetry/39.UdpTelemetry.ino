@@ -54,7 +54,7 @@ void loop()
     {
         last = millis();
         char buf[DWS_UDP_TELEMETRY_BUF];
-        DetwsLine line;
+        DWSLine line;
         dws_line_init(&line, buf, sizeof(buf), "esp32");
         dws_line_add_uint(&line, "heap", ESP.getFreeHeap());
         dws_line_add_int(&line, "rssi", WiFi.RSSI());

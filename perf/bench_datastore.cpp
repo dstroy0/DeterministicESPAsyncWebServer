@@ -136,7 +136,7 @@ int main()
         RamDisk d{disk, 16u * 1024 * 1024};
         WalDev dev = dev_over(&d);
         static WalStore wal;
-        static DetwsDbm db;
+        static DWSDbm db;
         wal_store_format(&wal, &dev);
         detws_dbm_open(&db, &wal);
         char keys[100][8];
@@ -170,8 +170,8 @@ int main()
         RamDisk d{disk, 16u * 1024 * 1024};
         WalDev dev = dev_over(&d);
         static WalStore wal;
-        static DetwsDbm db;
-        static DetwsDocStore ds;
+        static DWSDbm db;
+        static DWSDocStore ds;
         wal_store_format(&wal, &dev);
         detws_dbm_open(&db, &wal);
         detws_docstore_open(&ds, &db);

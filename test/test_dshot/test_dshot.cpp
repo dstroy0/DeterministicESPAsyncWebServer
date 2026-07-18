@@ -72,18 +72,18 @@ void test_bit_timing(void)
 void test_esc_pwm_mapping(void)
 {
     // OneShot125: 125..250 us.
-    TEST_ASSERT_EQUAL_UINT32(125000, dws_esc_pwm_ns(0, DetwsEscPwm::DWS_ESC_ONESHOT125));
-    TEST_ASSERT_EQUAL_UINT32(250000, dws_esc_pwm_ns(1000, DetwsEscPwm::DWS_ESC_ONESHOT125));
-    TEST_ASSERT_EQUAL_UINT32(187500, dws_esc_pwm_ns(500, DetwsEscPwm::DWS_ESC_ONESHOT125));
+    TEST_ASSERT_EQUAL_UINT32(125000, dws_esc_pwm_ns(0, DWSEscPwm::DWS_ESC_ONESHOT125));
+    TEST_ASSERT_EQUAL_UINT32(250000, dws_esc_pwm_ns(1000, DWSEscPwm::DWS_ESC_ONESHOT125));
+    TEST_ASSERT_EQUAL_UINT32(187500, dws_esc_pwm_ns(500, DWSEscPwm::DWS_ESC_ONESHOT125));
     // Multishot: 5..25 us.
-    TEST_ASSERT_EQUAL_UINT32(5000, dws_esc_pwm_ns(0, DetwsEscPwm::DWS_ESC_MULTISHOT));
-    TEST_ASSERT_EQUAL_UINT32(25000, dws_esc_pwm_ns(1000, DetwsEscPwm::DWS_ESC_MULTISHOT));
-    TEST_ASSERT_EQUAL_UINT32(15000, dws_esc_pwm_ns(500, DetwsEscPwm::DWS_ESC_MULTISHOT));
+    TEST_ASSERT_EQUAL_UINT32(5000, dws_esc_pwm_ns(0, DWSEscPwm::DWS_ESC_MULTISHOT));
+    TEST_ASSERT_EQUAL_UINT32(25000, dws_esc_pwm_ns(1000, DWSEscPwm::DWS_ESC_MULTISHOT));
+    TEST_ASSERT_EQUAL_UINT32(15000, dws_esc_pwm_ns(500, DWSEscPwm::DWS_ESC_MULTISHOT));
     // Standard PWM 1..2 ms, and OneShot42 42..84 us.
-    TEST_ASSERT_EQUAL_UINT32(1500000, dws_esc_pwm_ns(500, DetwsEscPwm::DWS_ESC_PWM));
-    TEST_ASSERT_EQUAL_UINT32(84000, dws_esc_pwm_ns(1000, DetwsEscPwm::DWS_ESC_ONESHOT42));
+    TEST_ASSERT_EQUAL_UINT32(1500000, dws_esc_pwm_ns(500, DWSEscPwm::DWS_ESC_PWM));
+    TEST_ASSERT_EQUAL_UINT32(84000, dws_esc_pwm_ns(1000, DWSEscPwm::DWS_ESC_ONESHOT42));
     // Throttle clamps at 1000.
-    TEST_ASSERT_EQUAL_UINT32(250000, dws_esc_pwm_ns(5000, DetwsEscPwm::DWS_ESC_ONESHOT125));
+    TEST_ASSERT_EQUAL_UINT32(250000, dws_esc_pwm_ns(5000, DWSEscPwm::DWS_ESC_ONESHOT125));
 }
 
 void test_bit_ns_all_rates()

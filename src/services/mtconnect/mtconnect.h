@@ -34,7 +34,7 @@
 #if DWS_ENABLE_MTCONNECT
 
 /** @brief The MTConnect DataItem category (which stream element wraps the value). */
-enum class DetwsMtcCategory : uint8_t
+enum class DWSMtcCategory : uint8_t
 {
     DWS_MTC_SAMPLE,   ///< a measured value (<Samples>).
     DWS_MTC_EVENT,    ///< a discrete state (<Events>).
@@ -42,7 +42,7 @@ enum class DetwsMtcCategory : uint8_t
 };
 
 /** @brief Incremental MTConnectStreams builder over a caller buffer. */
-struct DetwsMtcStreams
+struct DWSMtcStreams
 {
     char *buf;
     size_t cap;
@@ -57,7 +57,7 @@ struct DetwsMtcStreams
  * @param next_seq    the nextSequence the agent will assign.
  * @param device_name the single device's name/uuid for the ComponentStream.
  */
-void dws_mtc_streams_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, uint64_t next_seq,
+void dws_mtc_streams_begin(DWSMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, uint64_t next_seq,
                            const char *device_name);
 
 /**
@@ -69,11 +69,11 @@ void dws_mtc_streams_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t i
  * @param timestamp  ISO-8601 timestamp string.
  * @param value      the value text (XML-escaped); for a CONDITION it is the sub-element (Normal/Fault/...).
  */
-void dws_mtc_streams_add(DetwsMtcStreams *s, DetwsMtcCategory cat, const char *type, const char *data_id, uint64_t seq,
+void dws_mtc_streams_add(DWSMtcStreams *s, DWSMtcCategory cat, const char *type, const char *data_id, uint64_t seq,
                          const char *timestamp, const char *value);
 
 /** @brief Finish the document (close any open component + <Streams> + root). @return length, or 0 on overflow. */
-size_t dws_mtc_streams_end(DetwsMtcStreams *s);
+size_t dws_mtc_streams_end(DWSMtcStreams *s);
 
 /**
  * @brief Build a complete MTConnectError document.
@@ -88,9 +88,9 @@ size_t dws_mtc_error(uint64_t instance_id, const char *error_code, const char *m
  * @param device_name the Device `name` attribute.
  * @param uuid        the Device `uuid` attribute.
  *
- * Reuses ::DetwsMtcStreams as the incremental buffer builder (as ::dws_mtc_error does).
+ * Reuses ::DWSMtcStreams as the incremental buffer builder (as ::dws_mtc_error does).
  */
-void dws_mtc_devices_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, const char *device_id,
+void dws_mtc_devices_begin(DWSMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, const char *device_id,
                            const char *device_name, const char *uuid);
 
 /**
@@ -101,11 +101,11 @@ void dws_mtc_devices_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t i
  * @param name  optional `name` attribute (omitted when null/empty).
  * @param units optional `units` attribute (omitted when null/empty).
  */
-void dws_mtc_devices_add_item(DetwsMtcStreams *s, DetwsMtcCategory cat, const char *id, const char *type,
-                              const char *name, const char *units);
+void dws_mtc_devices_add_item(DWSMtcStreams *s, DWSMtcCategory cat, const char *id, const char *type, const char *name,
+                              const char *units);
 
 /** @brief Finish the probe document (close `<DataItems>` + `<Device>` + root). @return length, or 0 on overflow. */
-size_t dws_mtc_devices_end(DetwsMtcStreams *s);
+size_t dws_mtc_devices_end(DWSMtcStreams *s);
 
 /**
  * @brief Begin an MTConnectAssets (`asset`) document: XML declaration + header + open `<Assets>`.
@@ -113,9 +113,9 @@ size_t dws_mtc_devices_end(DetwsMtcStreams *s);
  * @param asset_count       the number of assets in this response (the Header `assetCount`).
  * @param asset_buffer_size the agent's total asset capacity (the Header `assetBufferSize`).
  *
- * Reuses ::DetwsMtcStreams as the incremental buffer builder (as ::dws_mtc_devices_begin does).
+ * Reuses ::DWSMtcStreams as the incremental buffer builder (as ::dws_mtc_devices_begin does).
  */
-void dws_mtc_assets_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, uint32_t asset_count,
+void dws_mtc_assets_begin(DWSMtcStreams *s, char *buf, size_t cap, uint64_t instance_id, uint32_t asset_count,
                           uint32_t asset_buffer_size);
 
 /**
@@ -126,7 +126,7 @@ void dws_mtc_assets_begin(DetwsMtcStreams *s, char *buf, size_t cap, uint64_t in
  * @param device_uuid   optional `deviceUuid` attribute (omitted when null/empty).
  * @param timestamp     optional ISO-8601 `timestamp` attribute (omitted when null/empty).
  */
-void dws_mtc_assets_cutting_tool_begin(DetwsMtcStreams *s, const char *asset_id, const char *serial_number,
+void dws_mtc_assets_cutting_tool_begin(DWSMtcStreams *s, const char *asset_id, const char *serial_number,
                                        const char *tool_id, const char *device_uuid, const char *timestamp);
 
 /**
@@ -136,21 +136,21 @@ void dws_mtc_assets_cutting_tool_begin(DetwsMtcStreams *s, const char *asset_id,
  * @param limit           optional `limit` attribute (the max/threshold; omitted when null/empty).
  * @param value           the current life value text (XML-escaped).
  */
-void dws_mtc_assets_tool_life(DetwsMtcStreams *s, const char *type, const char *count_direction, const char *limit,
+void dws_mtc_assets_tool_life(DWSMtcStreams *s, const char *type, const char *count_direction, const char *limit,
                               const char *value);
 
 /** @brief Close the open `<CuttingToolLifeCycle>` + `<CuttingTool>`. */
-void dws_mtc_assets_cutting_tool_end(DetwsMtcStreams *s);
+void dws_mtc_assets_cutting_tool_end(DWSMtcStreams *s);
 
 /** @brief Finish the asset document (close `<Assets>` + root). @return length, or 0 on overflow. */
-size_t dws_mtc_assets_end(DetwsMtcStreams *s);
+size_t dws_mtc_assets_end(DWSMtcStreams *s);
 
 // --- sample sequence cursor: a rolling observation buffer for the `sample` from/count long-poll ---
 
 /** @brief One buffered observation (a value at a sequence number), stored in fixed fields. */
-struct DetwsMtcObservation
+struct DWSMtcObservation
 {
-    DetwsMtcCategory cat;
+    DWSMtcCategory cat;
     uint64_t seq;                   ///< the monotonic sequence number assigned when it was recorded.
     char type[DWS_MTC_STR_MAX + 1]; ///< DataItem type element name (e.g. "Position").
     char data_id[DWS_MTC_STR_MAX + 1];
@@ -167,9 +167,9 @@ struct DetwsMtcObservation
  * sub-window as an MTConnectStreams document whose header carries firstSequence / lastSequence /
  * nextSequence (MTC1.4 §6.7). Zero heap, single-owner (the caller serializes access).
  */
-struct DetwsMtcSampleBuffer
+struct DWSMtcSampleBuffer
 {
-    DetwsMtcObservation obs[DWS_MTC_SAMPLE_BUFFER];
+    DWSMtcObservation obs[DWS_MTC_SAMPLE_BUFFER];
     uint32_t count;     ///< valid entries (<= DWS_MTC_SAMPLE_BUFFER).
     uint32_t head;      ///< ring write index (next slot to fill).
     uint64_t next_seq;  ///< sequence the next add will assign (one past the newest).
@@ -180,13 +180,13 @@ struct DetwsMtcSampleBuffer
  * @brief Initialize an empty sample buffer.
  * @param start_seq the first sequence number the agent will assign (0 is treated as 1).
  */
-void dws_mtc_sample_buffer_init(DetwsMtcSampleBuffer *b, uint64_t start_seq);
+void dws_mtc_sample_buffer_init(DWSMtcSampleBuffer *b, uint64_t start_seq);
 
 /**
  * @brief Record one observation, assigning it the next sequence number (evicting the oldest if full).
  * @return the sequence number assigned to this observation.
  */
-uint64_t dws_mtc_sample_buffer_add(DetwsMtcSampleBuffer *b, DetwsMtcCategory cat, const char *type, const char *data_id,
+uint64_t dws_mtc_sample_buffer_add(DWSMtcSampleBuffer *b, DWSMtcCategory cat, const char *type, const char *data_id,
                                    const char *timestamp, const char *value);
 
 /**
@@ -198,8 +198,8 @@ uint64_t dws_mtc_sample_buffer_add(DetwsMtcSampleBuffer *b, DetwsMtcCategory cat
  * nextSequence the client uses to resume (the sequence past the last one returned, or the buffer's
  * nextSequence when @p from is already at/after the newest). @return document length, or 0 on overflow.
  */
-size_t dws_mtc_sample_query(DetwsMtcSampleBuffer *b, char *buf, size_t cap, uint64_t instance_id,
-                            const char *device_name, uint64_t from, uint32_t count);
+size_t dws_mtc_sample_query(DWSMtcSampleBuffer *b, char *buf, size_t cap, uint64_t instance_id, const char *device_name,
+                            uint64_t from, uint32_t count);
 
 #endif // DWS_ENABLE_MTCONNECT
 #endif // DETERMINISTICESPASYNCWEBSERVER_MTCONNECT_H

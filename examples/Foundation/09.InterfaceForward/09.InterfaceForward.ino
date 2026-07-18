@@ -79,7 +79,7 @@ void setup()
     delay(300);
 
     // FORWARD lane task (internal, high priority): runs the forwarding plane.
-    DetwsPqConfig fwd = {};
+    DWSPqConfig fwd = {};
     fwd.handler = on_forward;
     fwd.priority = 0; // 0 -> the FORWARD lane default (above the user lane)
     fwd.core = 1;

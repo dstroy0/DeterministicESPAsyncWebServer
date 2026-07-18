@@ -2643,7 +2643,7 @@
  * @brief Real-time SVG dashboard (DWS_ENABLE_DASHBOARD; requires DWS_ENABLE_SSE).
  *
  * Default off. Serves a self-contained, hand-rolled SVG dashboard page whose
- * widgets are declared in a fixed compile-time DetwsWidget table (zero-heap,
+ * widgets are declared in a fixed compile-time DWSWidget table (zero-heap,
  * deterministic). The page fetches the widget layout as JSON and subscribes to an
  * SSE stream of live values; dws_dashboard_set() + dws_dashboard_publish()
  * push the current readings. The widget-table -> JSON serializers are
@@ -2977,7 +2977,7 @@
  * lastSequence / nextSequence so the client knows what it received and where to resume. Each retained
  * observation stores its type / dataItemId / timestamp / value in fixed char fields; when the ring is
  * full the oldest is evicted and firstSequence advances. Zero-heap, compile-time sized; the buffer costs
- * ~DWS_MTC_SAMPLE_BUFFER * (48 + the four string caps) bytes only where a DetwsMtcSampleBuffer is used.
+ * ~DWS_MTC_SAMPLE_BUFFER * (48 + the four string caps) bytes only where a DWSMtcSampleBuffer is used.
  */
 #ifndef DWS_MTC_SAMPLE_BUFFER
 #define DWS_MTC_SAMPLE_BUFFER 32 // observations retained for `sample` replay

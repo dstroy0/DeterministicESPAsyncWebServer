@@ -31,7 +31,7 @@
 // ---------------------------------------------------------------------------
 
 /** @brief Builder for one telemetry line over a caller buffer. */
-struct DetwsLine
+struct DWSLine
 {
     char *buf;        ///< destination buffer.
     size_t cap;       ///< buffer capacity in bytes.
@@ -41,7 +41,7 @@ struct DetwsLine
 };
 
 /** @brief Start a line for @p measurement (bound to @p buf / @p cap). */
-void dws_line_init(DetwsLine *l, char *buf, size_t cap, const char *measurement);
+void dws_line_init(DWSLine *l, char *buf, size_t cap, const char *measurement);
 
 /**
  * @brief Append a `,key=value` tag (InfluxDB tag set, part of the series key).
@@ -50,28 +50,28 @@ void dws_line_init(DetwsLine *l, char *buf, size_t cap, const char *measurement)
  * fields); adding one after a field fails the line closed. Key and value are
  * escaped per line protocol (comma / equals / space backslash-escaped).
  */
-void dws_line_add_tag(DetwsLine *l, const char *key, const char *val);
+void dws_line_add_tag(DWSLine *l, const char *key, const char *val);
 
 /**
  * @brief Append the trailing ` <timestamp>` (line protocol; nanoseconds by default
  *        on InfluxDB). Call after all fields; a line with no field fails closed.
  */
-void dws_line_set_timestamp(DetwsLine *l, int64_t timestamp);
+void dws_line_set_timestamp(DWSLine *l, int64_t timestamp);
 
 /** @brief Append `field=<v>i` (integer field). */
-void dws_line_add_int(DetwsLine *l, const char *field, int64_t v);
+void dws_line_add_int(DWSLine *l, const char *field, int64_t v);
 
 /** @brief Append `field=<v>i` (unsigned integer field). */
-void dws_line_add_uint(DetwsLine *l, const char *field, uint64_t v);
+void dws_line_add_uint(DWSLine *l, const char *field, uint64_t v);
 
 /** @brief Append `field=<v>` (float field, @p decimals places). */
-void dws_line_add_float(DetwsLine *l, const char *field, float v, uint8_t decimals);
+void dws_line_add_float(DWSLine *l, const char *field, float v, uint8_t decimals);
 
 /** @brief Encoded length (bytes), excluding the null terminator. */
-size_t dws_line_len(const DetwsLine *l);
+size_t dws_line_len(const DWSLine *l);
 
 /** @brief True if every field fit and the line has at least one field. */
-bool dws_line_ok(const DetwsLine *l);
+bool dws_line_ok(const DWSLine *l);
 
 // ---------------------------------------------------------------------------
 // Cast (ESP32; no-op on host)
@@ -84,7 +84,7 @@ void dws_udp_telemetry_begin(const char *collector_ip, uint16_t port);
 bool dws_udp_telemetry_send(const char *data, size_t len);
 
 /** @brief Cast a built line to the collector (no-op if the line overflowed). */
-bool dws_udp_telemetry_cast(const DetwsLine *l);
+bool dws_udp_telemetry_cast(const DWSLine *l);
 
 #endif // DWS_ENABLE_UDP_TELEMETRY
 #endif // DETERMINISTICESPASYNCWEBSERVER_UDP_TELEMETRY_H

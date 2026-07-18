@@ -26,7 +26,7 @@ The callback receives a bitmask of which floors were breached and the full healt
 snapshot:
 
 ```cpp
-static void on_breach(uint8_t breaches, const DetwsHealth *h) {
+static void on_breach(uint8_t breaches, const DWSHealth *h) {
     Serial.printf("[guardrail] breach=0x%02x heap=%u frag=%u stack=%u\n",
                   breaches, (unsigned)h->free_heap, (unsigned)h->largest_free_block, (unsigned)h->stack_free);
     // Real app: shed load, drop to a safe state, or ESP.restart().
@@ -70,7 +70,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 DWS server;
 
 // Fired when any guardrail floor is crossed; breaches is a bitmask.
-static void on_breach(uint8_t breaches, const DetwsHealth *h)
+static void on_breach(uint8_t breaches, const DWSHealth *h)
 {
     Serial.printf("[guardrail] breach=0x%02x heap=%u frag=%u stack=%u\n", breaches, (unsigned)h->free_heap,
                   (unsigned)h->largest_free_block, (unsigned)h->stack_free);
@@ -90,7 +90,7 @@ void setup()
     dws_guardrails_begin(on_breach);
 
     server.on("/health", HTTP_GET, [](uint8_t id, HttpReq *) {
-        DetwsHealth h;
+        DWSHealth h;
         dws_guardrails_sample(&h);
         char buf[128];
         dws_health_json(&h, buf, sizeof(buf));

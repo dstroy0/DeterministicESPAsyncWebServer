@@ -10,7 +10,7 @@
 
 #if DWS_ENABLE_SLEEP_SCHED
 
-uint32_t dws_sleep_next(uint32_t now, uint32_t last_active_ms, const DetwsSleepCfg *cfg)
+uint32_t dws_sleep_next(uint32_t now, uint32_t last_active_ms, const DWSSleepCfg *cfg)
 {
     if (!cfg)
         return 0;

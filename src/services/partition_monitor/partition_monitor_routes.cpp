@@ -27,7 +27,7 @@ static PartitionRoutesCtx s_partr;
 static void partition_handler(uint8_t slot_id, HttpReq *req)
 {
     (void)req;
-    DetwsPartitionInfo parts[DWS_PARTITION_MAX];
+    DWSPartitionInfo parts[DWS_PARTITION_MAX];
     uint8_t n = dws_partition_collect(parts, DWS_PARTITION_MAX);
     char buf[DWS_PARTITION_JSON_BUF];
     dws_partition_json(parts, n, buf, sizeof(buf));

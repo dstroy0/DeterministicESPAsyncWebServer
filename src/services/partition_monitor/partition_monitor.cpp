@@ -55,7 +55,7 @@ const char *dws_partition_kind(uint8_t type, uint8_t subtype)
     }
 }
 
-int dws_partition_json(const DetwsPartitionInfo *parts, uint8_t count, char *out, size_t cap)
+int dws_partition_json(const DWSPartitionInfo *parts, uint8_t count, char *out, size_t cap)
 {
     if (!out || cap == 0)
         return 0;
@@ -67,7 +67,7 @@ int dws_partition_json(const DetwsPartitionInfo *parts, uint8_t count, char *out
         return 0;
     for (uint8_t i = 0; i < count; i++)
     {
-        const DetwsPartitionInfo *p = &parts[i];
+        const DWSPartitionInfo *p = &parts[i];
         if (dws_fmt_append(out, cap, &pos,
                            "%s{\"label\":\"%s\",\"kind\":\"%s\",\"type\":%u,\"subtype\":%u,\"addr\":%u,\"size\":%u,"
                            "\"running\":%s}",
@@ -86,7 +86,7 @@ int dws_partition_json(const DetwsPartitionInfo *parts, uint8_t count, char *out
 #include <esp_ota_ops.h>
 #include <esp_partition.h>
 
-uint8_t dws_partition_collect(DetwsPartitionInfo *out, uint8_t max)
+uint8_t dws_partition_collect(DWSPartitionInfo *out, uint8_t max)
 {
     if (!out || max == 0)
         return 0;
@@ -96,7 +96,7 @@ uint8_t dws_partition_collect(DetwsPartitionInfo *out, uint8_t max)
     for (; it != NULL && n < max; it = esp_partition_next(it))
     {
         const esp_partition_t *p = esp_partition_get(it);
-        DetwsPartitionInfo *d = &out[n++];
+        DWSPartitionInfo *d = &out[n++];
         strncpy(d->label, p->label, sizeof(d->label) - 1);
         d->label[sizeof(d->label) - 1] = '\0';
         d->type = (uint8_t)p->type;
@@ -111,7 +111,7 @@ uint8_t dws_partition_collect(DetwsPartitionInfo *out, uint8_t max)
 
 #else // host build - no flash
 
-uint8_t dws_partition_collect(DetwsPartitionInfo *, uint8_t)
+uint8_t dws_partition_collect(DWSPartitionInfo *, uint8_t)
 {
     return 0;
 }

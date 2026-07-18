@@ -122,7 +122,7 @@ int dws_oauth2_build_refresh_request(const char *refresh_token, const char *clie
     return finish(b);
 }
 
-bool dws_oauth2_parse_token_response(const char *json, DetwsOAuth2Tokens *out)
+bool dws_oauth2_parse_token_response(const char *json, DWSOAuth2Tokens *out)
 {
     if (!json || !out)
         return false;
@@ -159,27 +159,27 @@ struct Oauth2Ctx
 };
 Oauth2Ctx s_oauth;
 
-int post_and_parse(Oauth2Ctx &c, const char *token_url, int body_len, DetwsOAuth2Tokens *out)
+int post_and_parse(Oauth2Ctx &c, const char *token_url, int body_len, DWSOAuth2Tokens *out)
 {
     if (body_len <= 0)
-        return (int)DetwsOAuth2Result::DWS_OAUTH2_ERR_BUILD;
+        return (int)DWSOAuth2Result::DWS_OAUTH2_ERR_BUILD;
     HttpClientResult r;
     int st = http_post(token_url, "application/x-www-form-urlencoded", (const uint8_t *)c.body, (size_t)body_len, &r);
     if (st <= 0)
-        return (int)DetwsOAuth2Result::DWS_OAUTH2_ERR_TRANSPORT;
+        return (int)DWSOAuth2Result::DWS_OAUTH2_ERR_TRANSPORT;
     size_t k = r.body_len < sizeof(c.resp) - 1 ? r.body_len : sizeof(c.resp) - 1;
     if (r.body && k)
         memcpy(c.resp, r.body, k);
     c.resp[k] = '\0';
     if (!dws_oauth2_parse_token_response(c.resp, out))
         return st >= 400 ? st
-                         : (int)DetwsOAuth2Result::DWS_OAUTH2_ERR_RESPONSE; // surface the provider's 4xx, else generic
+                         : (int)DWSOAuth2Result::DWS_OAUTH2_ERR_RESPONSE; // surface the provider's 4xx, else generic
     return st;
 }
 } // namespace
 
 int dws_oauth2_exchange_code(const char *token_url, const char *code, const char *redirect_uri, const char *client_id,
-                             const char *client_secret, const char *code_verifier, DetwsOAuth2Tokens *out)
+                             const char *client_secret, const char *code_verifier, DWSOAuth2Tokens *out)
 {
     int n = dws_oauth2_build_code_request(code, redirect_uri, client_id, client_secret, code_verifier, s_oauth.body,
                                           sizeof(s_oauth.body));
@@ -187,7 +187,7 @@ int dws_oauth2_exchange_code(const char *token_url, const char *code, const char
 }
 
 int dws_oauth2_refresh(const char *token_url, const char *refresh_token, const char *client_id,
-                       const char *client_secret, DetwsOAuth2Tokens *out)
+                       const char *client_secret, DWSOAuth2Tokens *out)
 {
     int n =
         dws_oauth2_build_refresh_request(refresh_token, client_id, client_secret, s_oauth.body, sizeof(s_oauth.body));

@@ -28,7 +28,7 @@
 #if DWS_ENABLE_SLEEP_SCHED
 
 /** @brief Scheduler configuration (all times in ms). */
-struct DetwsSleepCfg
+struct DWSSleepCfg
 {
     uint32_t idle_ms; ///< stay fully awake until idle at least this long.
     uint32_t min_ms;  ///< first sleep window once idle (also the floor).
@@ -48,7 +48,7 @@ struct DetwsSleepCfg
  * streak (doubling every `cfg.ramp_ms`, or straight to `max_ms` when `ramp_ms` is 0). If `max_ms` <
  * `min_ms` the result is clamped to `min_ms`.
  */
-uint32_t dws_sleep_next(uint32_t now, uint32_t last_active_ms, const DetwsSleepCfg *cfg);
+uint32_t dws_sleep_next(uint32_t now, uint32_t last_active_ms, const DWSSleepCfg *cfg);
 
 #endif // DWS_ENABLE_SLEEP_SCHED
 #endif // DETERMINISTICESPASYNCWEBSERVER_SLEEP_SCHED_H

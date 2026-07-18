@@ -13,7 +13,7 @@
  *  - **Pure core (host-tested):** build the `application/x-www-form-urlencoded`
  *    request body (proper percent-encoding) for the `authorization_code` and
  *    `refresh_token` grants, and parse the JSON token response (reusing the
- *    library's zero-heap JSON reader) into ::DetwsOAuth2Tokens.
+ *    library's zero-heap JSON reader) into ::DWSOAuth2Tokens.
  *  - **ESP32 convenience (needs DWS_ENABLE_HTTP_CLIENT):**
  *    dws_oauth2_exchange_code() / _refresh() POST to the token URL over the
  *    HTTP(S) client and parse the result.
@@ -36,7 +36,7 @@
 #if DWS_ENABLE_OAUTH2
 
 /** @brief Tokens parsed from a token-endpoint response. Absent fields are empty / 0. */
-struct DetwsOAuth2Tokens
+struct DWSOAuth2Tokens
 {
     char access_token[DWS_OAUTH2_TOKEN_LEN];
     char id_token[DWS_OAUTH2_TOKEN_LEN]; ///< OIDC ID token (verify with services/oidc).
@@ -46,7 +46,7 @@ struct DetwsOAuth2Tokens
 };
 
 /** @brief oauth2 result codes (HTTP status codes are positive on success). */
-enum class DetwsOAuth2Result : int32_t
+enum class DWSOAuth2Result : int32_t
 {
     DWS_OAUTH2_ERR_BUILD = -1,     ///< request body did not fit @p cap.
     DWS_OAUTH2_ERR_TRANSPORT = -2, ///< HTTP client error (no DNS / TLS / connection).
@@ -79,7 +79,7 @@ int dws_oauth2_build_refresh_request(const char *refresh_token, const char *clie
  * @brief Parse a token-endpoint JSON response into @p out.
  * @return true if an access_token is present (a usable token response).
  */
-bool dws_oauth2_parse_token_response(const char *json, DetwsOAuth2Tokens *out);
+bool dws_oauth2_parse_token_response(const char *json, DWSOAuth2Tokens *out);
 
 #if DWS_ENABLE_HTTP_CLIENT
 // ---------------------------------------------------------------------------
@@ -88,17 +88,17 @@ bool dws_oauth2_parse_token_response(const char *json, DetwsOAuth2Tokens *out);
 
 /**
  * @brief Exchange an authorization code at @p token_url for tokens.
- * @return the HTTP status (200 on success) or a negative ::DetwsOAuth2Result.
+ * @return the HTTP status (200 on success) or a negative ::DWSOAuth2Result.
  */
 int dws_oauth2_exchange_code(const char *token_url, const char *code, const char *redirect_uri, const char *client_id,
-                             const char *client_secret, const char *code_verifier, DetwsOAuth2Tokens *out);
+                             const char *client_secret, const char *code_verifier, DWSOAuth2Tokens *out);
 
 /**
  * @brief Refresh tokens at @p token_url using a refresh token.
- * @return the HTTP status (200 on success) or a negative ::DetwsOAuth2Result.
+ * @return the HTTP status (200 on success) or a negative ::DWSOAuth2Result.
  */
 int dws_oauth2_refresh(const char *token_url, const char *refresh_token, const char *client_id,
-                       const char *client_secret, DetwsOAuth2Tokens *out);
+                       const char *client_secret, DWSOAuth2Tokens *out);
 #endif
 
 #endif // DWS_ENABLE_OAUTH2

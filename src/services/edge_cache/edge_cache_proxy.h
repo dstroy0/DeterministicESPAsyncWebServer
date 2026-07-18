@@ -58,7 +58,7 @@ void dws_edge_cache_set_origin_pin(const uint8_t sha256[32]);
 #endif
 
 #if DWS_ENABLE_DBM
-struct DetwsDbm;
+struct DWSDbm;
 /**
  * @brief Bind an L2 persistent tier: an opened dbm handle (on a mounted WAL store, SD-backed on device)
  *        the cache spills evicted L1 entries to and promotes them back from - so the cached set survives
@@ -67,7 +67,7 @@ struct DetwsDbm;
  * Only entries carrying a validator are spilled (a promoted entry is force-revalidated, since the
  * monotonic clock resets across a reboot). The dbm should be dedicated to the cache.
  */
-void dws_edge_cache_bind_sd(DetwsDbm *dbm);
+void dws_edge_cache_bind_sd(DWSDbm *dbm);
 #endif
 
 #if DWS_ENABLE_EDGE_MESH

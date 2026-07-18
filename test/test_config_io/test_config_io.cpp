@@ -10,10 +10,10 @@
 #include <string.h>
 #include <unity.h>
 
-static const DetwsCfgField SCHEMA[] = {
-    {"ssid", DetwsCfgType::DWS_CFG_STR},
-    {"port", DetwsCfgType::DWS_CFG_U32},
-    {"name", DetwsCfgType::DWS_CFG_STR},
+static const DWSCfgField SCHEMA[] = {
+    {"ssid", DWSCfgType::DWS_CFG_STR},
+    {"port", DWSCfgType::DWS_CFG_U32},
+    {"name", DWSCfgType::DWS_CFG_STR},
 };
 static const size_t N = sizeof(SCHEMA) / sizeof(SCHEMA[0]);
 
@@ -78,7 +78,7 @@ void test_export_overflow_fails_closed()
 void test_export_import_null_guards()
 {
     char out[128];
-    DetwsCfgField fields[1] = {};
+    DWSCfgField fields[1] = {};
     TEST_ASSERT_EQUAL_INT(0, dws_config_export("ns", fields, 1, nullptr, sizeof(out))); // null out
     TEST_ASSERT_EQUAL_INT(0, dws_config_export("ns", nullptr, 1, out, sizeof(out)));    // null fields
     TEST_ASSERT_EQUAL_INT(0, dws_config_import("ns", nullptr, 1, "text", 4));           // null fields

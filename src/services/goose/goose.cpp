@@ -92,7 +92,7 @@ bool dws_ber_bool(uint8_t *out, size_t cap, size_t *n, uint8_t tag, bool v)
 }
 } // namespace
 
-size_t dws_goose_pdu(const DetwsGoose *g, uint8_t *out, size_t cap)
+size_t dws_goose_pdu(const DWSGoose *g, uint8_t *out, size_t cap)
 {
     if (!g || !out)
         return 0;
@@ -121,7 +121,7 @@ size_t dws_goose_pdu(const DetwsGoose *g, uint8_t *out, size_t cap)
     return hdr + content_len;
 }
 
-size_t dws_goose_frame(const uint8_t *dst, const uint8_t *src, uint16_t appid, const DetwsGoose *g, uint8_t *out,
+size_t dws_goose_frame(const uint8_t *dst, const uint8_t *src, uint16_t appid, const DWSGoose *g, uint8_t *out,
                        size_t cap)
 {
     if (!dst || !src || !g || !out || cap < 22)

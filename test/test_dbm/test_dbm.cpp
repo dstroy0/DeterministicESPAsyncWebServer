@@ -69,7 +69,7 @@ static WalDev dev_over(RamDisk *d)
 
 // Fresh, formatted store + dbm over the shared disk.
 static WalStore g_wal;
-static DetwsDbm g_db;
+static DWSDbm g_db;
 static void fresh(void)
 {
     g_d.buf = g_disk;

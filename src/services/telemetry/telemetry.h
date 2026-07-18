@@ -10,12 +10,12 @@
  * Arduino dependency, all state in caller-supplied storage or small POD structs,
  * so the whole cluster unit-tests on the host:
  *
- *   - DetwsWindow    moving-window statistics (mean / variance / stddev / min /
+ *   - DWSWindow    moving-window statistics (mean / variance / stddev / min /
  *                    max) over a caller-provided ring buffer, O(1) mean/variance
  *                    via running sums.
- *   - DetwsRate      derivative / rate-of-change between successive samples
+ *   - DWSRate      derivative / rate-of-change between successive samples
  *                    (units per second), for slope alerts.
- *   - DetwsTotalizer trapezoidal integration of a rate over time (a running
+ *   - DWSTotalizer trapezoidal integration of a rate over time (a running
  *                    total / odometer).
  *
  * @author  Douglas Quigg (dstroy0)
@@ -40,7 +40,7 @@
  * The caller owns the `float` storage (no heap). Mean and variance are kept O(1)
  * via running sums; min/max are an O(window) scan.
  */
-struct DetwsWindow
+struct DWSWindow
 {
     float *buf;     ///< caller-provided sample storage (>= cap floats).
     uint16_t cap;   ///< window capacity (samples).
@@ -51,35 +51,35 @@ struct DetwsWindow
 };
 
 /** @brief Bind @p w to @p buf (capacity @p cap samples) and reset it to empty. */
-void dws_window_init(DetwsWindow *w, float *buf, uint16_t cap);
+void dws_window_init(DWSWindow *w, float *buf, uint16_t cap);
 
 /** @brief Add @p sample, evicting the oldest once the window is full. */
-void dws_window_push(DetwsWindow *w, float sample);
+void dws_window_push(DWSWindow *w, float sample);
 
 /** @brief Number of samples currently in the window. */
-uint16_t dws_window_count(const DetwsWindow *w);
+uint16_t dws_window_count(const DWSWindow *w);
 
 /** @brief Arithmetic mean of the window (0 when empty). */
-float dws_window_mean(const DetwsWindow *w);
+float dws_window_mean(const DWSWindow *w);
 
 /** @brief Population variance of the window (0 when empty). */
-float dws_window_variance(const DetwsWindow *w);
+float dws_window_variance(const DWSWindow *w);
 
 /** @brief Population standard deviation of the window (0 when empty). */
-float dws_window_stddev(const DetwsWindow *w);
+float dws_window_stddev(const DWSWindow *w);
 
 /** @brief Smallest sample in the window (0 when empty). */
-float dws_window_min(const DetwsWindow *w);
+float dws_window_min(const DWSWindow *w);
 
 /** @brief Largest sample in the window (0 when empty). */
-float dws_window_max(const DetwsWindow *w);
+float dws_window_max(const DWSWindow *w);
 
 // ---------------------------------------------------------------------------
 // Rate of change (first derivative)
 // ---------------------------------------------------------------------------
 
 /** @brief Derivative / rate-of-change tracker between successive samples. */
-struct DetwsRate
+struct DWSRate
 {
     float last_value; ///< previous sample value.
     uint32_t last_ms; ///< millis() of the previous sample.
@@ -87,7 +87,7 @@ struct DetwsRate
 };
 
 /** @brief Reset @p r so the next sample is treated as the first. */
-void dws_rate_init(DetwsRate *r);
+void dws_rate_init(DWSRate *r);
 
 /**
  * @brief Feed a sample; returns the rate of change in units per second since the
@@ -97,14 +97,14 @@ void dws_rate_init(DetwsRate *r);
  * time is 0. The elapsed-time math is unsigned, so it survives a millis()
  * rollover.
  */
-float dws_rate_update(DetwsRate *r, float value, uint32_t now_ms);
+float dws_rate_update(DWSRate *r, float value, uint32_t now_ms);
 
 // ---------------------------------------------------------------------------
 // Totalizer (run-time integral / odometer)
 // ---------------------------------------------------------------------------
 
 /** @brief Running total from trapezoidal integration of a rate over time. */
-struct DetwsTotalizer
+struct DWSTotalizer
 {
     double total;     ///< accumulated total (in rate-units * seconds).
     float last_rate;  ///< previous rate sample.
@@ -113,7 +113,7 @@ struct DetwsTotalizer
 };
 
 /** @brief Reset @p t to a zero total with no prior sample. */
-void dws_totalizer_init(DetwsTotalizer *t);
+void dws_totalizer_init(DWSTotalizer *t);
 
 /**
  * @brief Integrate @p rate (units per second) over the time since the last call
@@ -122,13 +122,13 @@ void dws_totalizer_init(DetwsTotalizer *t);
  * The first call only seeds the baseline (total stays 0). Unsigned elapsed-time
  * math survives a millis() rollover.
  */
-double dws_totalizer_add(DetwsTotalizer *t, float rate, uint32_t now_ms);
+double dws_totalizer_add(DWSTotalizer *t, float rate, uint32_t now_ms);
 
 /** @brief Current running total. */
-double dws_totalizer_total(const DetwsTotalizer *t);
+double dws_totalizer_total(const DWSTotalizer *t);
 
 /** @brief Reset the running total to 0 and drop the prior sample. */
-void dws_totalizer_reset(DetwsTotalizer *t);
+void dws_totalizer_reset(DWSTotalizer *t);
 
 #endif // DWS_ENABLE_TELEMETRY
 #endif // DETERMINISTICESPASYNCWEBSERVER_TELEMETRY_H

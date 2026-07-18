@@ -12,7 +12,7 @@
 
 #include <math.h>
 
-void dws_window_init(DetwsWindow *w, float *buf, uint16_t cap)
+void dws_window_init(DWSWindow *w, float *buf, uint16_t cap)
 {
     w->buf = buf;
     w->cap = cap;
@@ -22,7 +22,7 @@ void dws_window_init(DetwsWindow *w, float *buf, uint16_t cap)
     w->sum_sq = 0.0;
 }
 
-void dws_window_push(DetwsWindow *w, float sample)
+void dws_window_push(DWSWindow *w, float sample)
 {
     if (!w->buf || w->cap == 0)
         return;
@@ -43,19 +43,19 @@ void dws_window_push(DetwsWindow *w, float sample)
     w->head = (uint16_t)((w->head + 1) % w->cap);
 }
 
-uint16_t dws_window_count(const DetwsWindow *w)
+uint16_t dws_window_count(const DWSWindow *w)
 {
     return w->count;
 }
 
-float dws_window_mean(const DetwsWindow *w)
+float dws_window_mean(const DWSWindow *w)
 {
     if (w->count == 0)
         return 0.0f;
     return (float)(w->sum / (double)w->count);
 }
 
-float dws_window_variance(const DetwsWindow *w)
+float dws_window_variance(const DWSWindow *w)
 {
     if (w->count == 0)
         return 0.0f;
@@ -64,12 +64,12 @@ float dws_window_variance(const DetwsWindow *w)
     return var < 0.0 ? 0.0f : (float)var; // clamp tiny negatives from rounding
 }
 
-float dws_window_stddev(const DetwsWindow *w)
+float dws_window_stddev(const DWSWindow *w)
 {
     return sqrtf(dws_window_variance(w));
 }
 
-float dws_window_min(const DetwsWindow *w)
+float dws_window_min(const DWSWindow *w)
 {
     if (w->count == 0)
         return 0.0f;
@@ -80,7 +80,7 @@ float dws_window_min(const DetwsWindow *w)
     return m;
 }
 
-float dws_window_max(const DetwsWindow *w)
+float dws_window_max(const DWSWindow *w)
 {
     if (w->count == 0)
         return 0.0f;
@@ -91,14 +91,14 @@ float dws_window_max(const DetwsWindow *w)
     return m;
 }
 
-void dws_rate_init(DetwsRate *r)
+void dws_rate_init(DWSRate *r)
 {
     r->last_value = 0.0f;
     r->last_ms = 0;
     r->primed = false;
 }
 
-float dws_rate_update(DetwsRate *r, float value, uint32_t now_ms)
+float dws_rate_update(DWSRate *r, float value, uint32_t now_ms)
 {
     if (!r->primed)
     {
@@ -116,7 +116,7 @@ float dws_rate_update(DetwsRate *r, float value, uint32_t now_ms)
     return rate;
 }
 
-void dws_totalizer_init(DetwsTotalizer *t)
+void dws_totalizer_init(DWSTotalizer *t)
 {
     t->total = 0.0;
     t->last_rate = 0.0f;
@@ -124,7 +124,7 @@ void dws_totalizer_init(DetwsTotalizer *t)
     t->primed = false;
 }
 
-double dws_totalizer_add(DetwsTotalizer *t, float rate, uint32_t now_ms)
+double dws_totalizer_add(DWSTotalizer *t, float rate, uint32_t now_ms)
 {
     if (!t->primed)
     {
@@ -142,12 +142,12 @@ double dws_totalizer_add(DetwsTotalizer *t, float rate, uint32_t now_ms)
     return t->total;
 }
 
-double dws_totalizer_total(const DetwsTotalizer *t)
+double dws_totalizer_total(const DWSTotalizer *t)
 {
     return t->total;
 }
 
-void dws_totalizer_reset(DetwsTotalizer *t)
+void dws_totalizer_reset(DWSTotalizer *t)
 {
     t->total = 0.0;
     t->last_rate = 0.0f;

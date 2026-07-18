@@ -9,9 +9,9 @@
 #include <string.h>
 #include <unity.h>
 
-static const DetwsWidget W[] = {
-    {DetwsWidgetType::DWS_WIDGET_GAUGE, "Temp", "temp", 0, 100, "C"},
-    {DetwsWidgetType::DWS_WIDGET_VALUE, "Count", "count", 0, 0, ""},
+static const DWSWidget W[] = {
+    {DWSWidgetType::DWS_WIDGET_GAUGE, "Temp", "temp", 0, 100, "C"},
+    {DWSWidgetType::DWS_WIDGET_VALUE, "Count", "count", 0, 0, ""},
 };
 
 void setUp()
@@ -134,11 +134,11 @@ void test_dispatch_control_invokes_cb()
 // The new control / chart widget types serialize with their type names.
 void test_layout_control_types()
 {
-    static const DetwsWidget CW[] = {
-        {DetwsWidgetType::DWS_WIDGET_CHART, "C", "c", 0, 1, ""},
-        {DetwsWidgetType::DWS_WIDGET_BUTTON, "B", "b", 0, 0, ""},
-        {DetwsWidgetType::DWS_WIDGET_TOGGLE, "T", "t", 0, 1, ""},
-        {DetwsWidgetType::DWS_WIDGET_SLIDER, "S", "s", 0, 100, "%"},
+    static const DWSWidget CW[] = {
+        {DWSWidgetType::DWS_WIDGET_CHART, "C", "c", 0, 1, ""},
+        {DWSWidgetType::DWS_WIDGET_BUTTON, "B", "b", 0, 0, ""},
+        {DWSWidgetType::DWS_WIDGET_TOGGLE, "T", "t", 0, 1, ""},
+        {DWSWidgetType::DWS_WIDGET_SLIDER, "S", "s", 0, 100, "%"},
     };
     dws_dashboard_configure(CW, 4);
     char buf[512];
@@ -152,9 +152,9 @@ void test_layout_control_types()
 // The bar and sparkline widget types serialize with their type names.
 void test_layout_bar_sparkline_types()
 {
-    static const DetwsWidget AW[] = {
-        {DetwsWidgetType::DWS_WIDGET_BAR, "B", "b", 0, 1, ""},
-        {DetwsWidgetType::DWS_WIDGET_SPARKLINE, "S", "s", 0, 1, ""},
+    static const DWSWidget AW[] = {
+        {DWSWidgetType::DWS_WIDGET_BAR, "B", "b", 0, 1, ""},
+        {DWSWidgetType::DWS_WIDGET_SPARKLINE, "S", "s", 0, 1, ""},
     };
     dws_dashboard_configure(AW, 2);
     char buf[256];

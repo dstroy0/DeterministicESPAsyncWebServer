@@ -46,7 +46,7 @@ void setUp()
     g_seen.clear();
     g_seen_dma.clear();
     stop_all_lanes();
-    DetwsPqConfig cfg = {};
+    DWSPqConfig cfg = {};
     cfg.handler = on_item;
     cfg.ctx = nullptr;
     cfg.priority = 5;
@@ -63,10 +63,10 @@ void test_start_validates_and_runs()
 {
     dws_pq_stop();
     TEST_ASSERT_FALSE(dws_pq_start(nullptr)); // null config
-    DetwsPqConfig bad = {};
+    DWSPqConfig bad = {};
     bad.handler = nullptr;
     TEST_ASSERT_FALSE(dws_pq_start(&bad)); // null handler
-    DetwsPqConfig ok = {};
+    DWSPqConfig ok = {};
     ok.handler = on_item;
     TEST_ASSERT_TRUE(dws_pq_start(&ok));
     TEST_ASSERT_TRUE(dws_pq_running());
@@ -159,7 +159,7 @@ void test_internal_lanes_outrank_user()
 void test_lanes_are_isolated()
 {
     // The USER lane is already started by setUp; start the internal DMA lane too.
-    DetwsPqConfig dma = {};
+    DWSPqConfig dma = {};
     dma.handler = on_item_dma;
     dma.core = 1;
     TEST_ASSERT_TRUE(dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &dma));
@@ -184,7 +184,7 @@ void test_lane_start_stop_running_independent()
     TEST_ASSERT_TRUE(dws_pq_running_lane(dws_pq_lane::DWS_PQ_LANE_USER)); // setUp started it
     TEST_ASSERT_FALSE(dws_pq_running_lane(dws_pq_lane::DWS_PQ_LANE_DMA));
 
-    DetwsPqConfig dma = {};
+    DWSPqConfig dma = {};
     dma.handler = on_item_dma;
     TEST_ASSERT_TRUE(dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &dma));
     TEST_ASSERT_TRUE(dws_pq_running_lane(dws_pq_lane::DWS_PQ_LANE_DMA));
@@ -197,7 +197,7 @@ void test_lane_start_stop_running_independent()
 
 void test_lane_high_water_is_per_lane()
 {
-    DetwsPqConfig dma = {};
+    DWSPqConfig dma = {};
     dma.handler = on_item_dma;
     TEST_ASSERT_TRUE(dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &dma));
     uint32_t v = 5;
@@ -210,7 +210,7 @@ void test_lane_high_water_is_per_lane()
 void test_lane_api_urgent_and_drain()
 {
     stop_all_lanes();
-    DetwsPqConfig cfg = {};
+    DWSPqConfig cfg = {};
     cfg.handler = on_item_dma;
     TEST_ASSERT_TRUE(dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_DMA, &cfg));
     uint32_t a = 10, b = 20;

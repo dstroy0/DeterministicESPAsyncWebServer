@@ -39,7 +39,7 @@ DWS server;
 
 // Durable forwarding: runs once per record at append time. Point it wherever you
 // keep authoritative logs.
-static void audit_sink(const DetwsAuditEntry *e)
+static void audit_sink(const DWSAuditEntry *e)
 {
     char line[256];
     if (dws_audit_format(e, line, sizeof(line)) > 0)
@@ -63,7 +63,7 @@ void setup()
 
     dws_audit_reset();
     dws_audit_set_sink(audit_sink);
-    dws_audit_append(DetwsAuditCat::DWS_AUDIT_SYSTEM, "boot");
+    dws_audit_append(DWSAuditCat::DWS_AUDIT_SYSTEM, "boot");
 
     server.on("/login", HttpMethod::HTTP_GET, [](uint8_t id, HttpReq *req) {
         const char *user = http_get_query(req, "user");
@@ -71,7 +71,7 @@ void setup()
         char msg[DWS_AUDIT_MSG_LEN];
         bool ok = pass && strcmp(pass, "secret") == 0;
         snprintf(msg, sizeof(msg), "login %s", user ? user : "?");
-        dws_audit_append(ok ? DetwsAuditCat::DWS_AUDIT_AUTH : DetwsAuditCat::DWS_AUDIT_AUTH_FAIL, msg);
+        dws_audit_append(ok ? DWSAuditCat::DWS_AUDIT_AUTH : DWSAuditCat::DWS_AUDIT_AUTH_FAIL, msg);
         server.send(id, ok ? 200 : 401, "application/json", ok ? "{\"ok\":true}" : "{\"ok\":false}");
     });
 
@@ -79,7 +79,7 @@ void setup()
         const char *port = http_get_query(req, "http_port");
         char msg[DWS_AUDIT_MSG_LEN];
         snprintf(msg, sizeof(msg), "set http_port=%s", port ? port : "?");
-        dws_audit_append(DetwsAuditCat::DWS_AUDIT_CONFIG, msg);
+        dws_audit_append(DWSAuditCat::DWS_AUDIT_CONFIG, msg);
         server.send(id, 200, "application/json", "{\"ok\":true}");
     });
 

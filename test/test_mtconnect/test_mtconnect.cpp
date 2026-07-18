@@ -23,12 +23,12 @@ static bool contains(const char *hay, const char *needle)
 void test_streams_document(void)
 {
     char buf[1024];
-    DetwsMtcStreams s;
+    DWSMtcStreams s;
     dws_mtc_streams_begin(&s, buf, sizeof(buf), 1500, 42, "cnc1");
-    dws_mtc_streams_add(&s, DetwsMtcCategory::DWS_MTC_EVENT, "Availability", "avail", 40, "2026-07-06T00:00:00Z",
+    dws_mtc_streams_add(&s, DWSMtcCategory::DWS_MTC_EVENT, "Availability", "avail", 40, "2026-07-06T00:00:00Z",
                         "AVAILABLE");
-    dws_mtc_streams_add(&s, DetwsMtcCategory::DWS_MTC_SAMPLE, "Position", "xpos", 41, "2026-07-06T00:00:01Z", "12.5");
-    dws_mtc_streams_add(&s, DetwsMtcCategory::DWS_MTC_CONDITION, "SystemCondition", "sys", 42, "2026-07-06T00:00:02Z",
+    dws_mtc_streams_add(&s, DWSMtcCategory::DWS_MTC_SAMPLE, "Position", "xpos", 41, "2026-07-06T00:00:01Z", "12.5");
+    dws_mtc_streams_add(&s, DWSMtcCategory::DWS_MTC_CONDITION, "SystemCondition", "sys", 42, "2026-07-06T00:00:02Z",
                         "Fault");
     size_t n = dws_mtc_streams_end(&s);
     TEST_ASSERT_TRUE(n > 0);
@@ -50,9 +50,9 @@ void test_streams_document(void)
 void test_streams_escapes_value(void)
 {
     char buf[512];
-    DetwsMtcStreams s;
+    DWSMtcStreams s;
     dws_mtc_streams_begin(&s, buf, sizeof(buf), 1, 1, "d");
-    dws_mtc_streams_add(&s, DetwsMtcCategory::DWS_MTC_EVENT, "Message", "msg", 1, "T", "a<b&c");
+    dws_mtc_streams_add(&s, DWSMtcCategory::DWS_MTC_EVENT, "Message", "msg", 1, "T", "a<b&c");
     dws_mtc_streams_end(&s);
     TEST_ASSERT_TRUE(contains(buf, ">a&lt;b&amp;c</Message>"));
 }
@@ -70,26 +70,26 @@ void test_error_document(void)
 void test_overflow_returns_zero(void)
 {
     char buf[40];
-    DetwsMtcStreams s;
+    DWSMtcStreams s;
     dws_mtc_streams_begin(&s, buf, sizeof(buf), 1, 1, "device");
-    dws_mtc_streams_add(&s, DetwsMtcCategory::DWS_MTC_SAMPLE, "Position", "x", 1, "T", "1.0");
+    dws_mtc_streams_add(&s, DWSMtcCategory::DWS_MTC_SAMPLE, "Position", "x", 1, "T", "1.0");
     TEST_ASSERT_EQUAL_size_t(0, dws_mtc_streams_end(&s)); // did not fit
 }
 
 void test_escape_gt_quote_and_overflow()
 {
     char buf[512];
-    DetwsMtcStreams s;
+    DWSMtcStreams s;
     dws_mtc_streams_begin(&s, buf, sizeof(buf), 1, 1, "d");
-    dws_mtc_streams_add(&s, DetwsMtcCategory::DWS_MTC_EVENT, "Message", "msg", 1, "T", "a>b\"c");
+    dws_mtc_streams_add(&s, DWSMtcCategory::DWS_MTC_EVENT, "Message", "msg", 1, "T", "a>b\"c");
     dws_mtc_streams_end(&s);
     TEST_ASSERT_NOT_NULL(strstr(buf, "&gt;"));
     TEST_ASSERT_NOT_NULL(strstr(buf, "&quot;"));
     // Stream overflow closes at end(); error document overflow fails closed.
     char tiny[64];
-    DetwsMtcStreams s2;
+    DWSMtcStreams s2;
     dws_mtc_streams_begin(&s2, tiny, sizeof(tiny), 1, 1, "device-with-a-very-long-name");
-    dws_mtc_streams_add(&s2, DetwsMtcCategory::DWS_MTC_SAMPLE, "Position", "xpos", 1, "2026-07-06T00:00:01Z", "12.5");
+    dws_mtc_streams_add(&s2, DWSMtcCategory::DWS_MTC_SAMPLE, "Position", "xpos", 1, "2026-07-06T00:00:01Z", "12.5");
     TEST_ASSERT_EQUAL_size_t(0, dws_mtc_streams_end(&s2));
     char t2[8];
     TEST_ASSERT_EQUAL_size_t(0, dws_mtc_error(1, "X", "y", t2, sizeof(t2)));
@@ -98,11 +98,11 @@ void test_escape_gt_quote_and_overflow()
 void test_devices_probe_document(void)
 {
     char buf[1024];
-    DetwsMtcStreams s;
+    DWSMtcStreams s;
     dws_mtc_devices_begin(&s, buf, sizeof(buf), 1500, "dev1", "cnc1", "uuid-abc");
-    dws_mtc_devices_add_item(&s, DetwsMtcCategory::DWS_MTC_EVENT, "avail", "Availability", nullptr, nullptr);
-    dws_mtc_devices_add_item(&s, DetwsMtcCategory::DWS_MTC_SAMPLE, "xpos", "Position", "Xabs", "MILLIMETER");
-    dws_mtc_devices_add_item(&s, DetwsMtcCategory::DWS_MTC_CONDITION, "sys", "SystemCondition", nullptr, nullptr);
+    dws_mtc_devices_add_item(&s, DWSMtcCategory::DWS_MTC_EVENT, "avail", "Availability", nullptr, nullptr);
+    dws_mtc_devices_add_item(&s, DWSMtcCategory::DWS_MTC_SAMPLE, "xpos", "Position", "Xabs", "MILLIMETER");
+    dws_mtc_devices_add_item(&s, DWSMtcCategory::DWS_MTC_CONDITION, "sys", "SystemCondition", nullptr, nullptr);
     size_t n = dws_mtc_devices_end(&s);
     TEST_ASSERT_TRUE(n > 0);
     TEST_ASSERT_EQUAL_size_t(strlen(buf), n);
@@ -121,24 +121,24 @@ void test_devices_probe_document(void)
 void test_devices_escape_and_overflow(void)
 {
     char buf[1024];
-    DetwsMtcStreams s;
+    DWSMtcStreams s;
     dws_mtc_devices_begin(&s, buf, sizeof(buf), 1, "d<1", "n&m", "u");
-    dws_mtc_devices_add_item(&s, DetwsMtcCategory::DWS_MTC_EVENT, "i\"d", "T>y", nullptr, nullptr);
+    dws_mtc_devices_add_item(&s, DWSMtcCategory::DWS_MTC_EVENT, "i\"d", "T>y", nullptr, nullptr);
     TEST_ASSERT_TRUE(dws_mtc_devices_end(&s) > 0);
     TEST_ASSERT_TRUE(contains(buf, "id=\"d&lt;1\" name=\"n&amp;m\""));
     TEST_ASSERT_TRUE(contains(buf, "id=\"i&quot;d\" type=\"T&gt;y\""));
     // A device document that does not fit fails closed.
     char tiny[40];
-    DetwsMtcStreams s2;
+    DWSMtcStreams s2;
     dws_mtc_devices_begin(&s2, tiny, sizeof(tiny), 1, "dev", "device-with-a-very-long-name", "uuid");
-    dws_mtc_devices_add_item(&s2, DetwsMtcCategory::DWS_MTC_SAMPLE, "xpos", "Position", "Xabs", "MILLIMETER");
+    dws_mtc_devices_add_item(&s2, DWSMtcCategory::DWS_MTC_SAMPLE, "xpos", "Position", "Xabs", "MILLIMETER");
     TEST_ASSERT_EQUAL_size_t(0, dws_mtc_devices_end(&s2));
 }
 
 void test_assets_document(void)
 {
     char buf[1024];
-    DetwsMtcStreams s;
+    DWSMtcStreams s;
     dws_mtc_assets_begin(&s, buf, sizeof(buf), 1500, 2, 1024);
     dws_mtc_assets_cutting_tool_begin(&s, "tool-1", "SN-42", "T17", "uuid-abc", "2026-07-09T00:00:00Z");
     dws_mtc_assets_tool_life(&s, "MINUTES", "DOWN", "100", "42");
@@ -167,7 +167,7 @@ void test_assets_document(void)
 void test_assets_escape_and_overflow(void)
 {
     char buf[1024];
-    DetwsMtcStreams s;
+    DWSMtcStreams s;
     dws_mtc_assets_begin(&s, buf, sizeof(buf), 1, 1, 8);
     dws_mtc_assets_cutting_tool_begin(&s, "a<1", "s&n", nullptr, nullptr, nullptr);
     dws_mtc_assets_tool_life(&s, "WEAR", "UP", nullptr, "1>2");
@@ -177,7 +177,7 @@ void test_assets_escape_and_overflow(void)
     TEST_ASSERT_TRUE(contains(buf, ">1&gt;2</ToolLife>"));
     // An asset document that does not fit fails closed.
     char tiny[40];
-    DetwsMtcStreams s2;
+    DWSMtcStreams s2;
     dws_mtc_assets_begin(&s2, tiny, sizeof(tiny), 1, 1, 8);
     dws_mtc_assets_cutting_tool_begin(&s2, "a-tool-with-a-very-long-asset-id", nullptr, nullptr, nullptr, nullptr);
     dws_mtc_assets_cutting_tool_end(&s2);
@@ -186,14 +186,14 @@ void test_assets_escape_and_overflow(void)
 
 void test_sample_buffer_and_query(void)
 {
-    DetwsMtcSampleBuffer b;
+    DWSMtcSampleBuffer b;
     dws_mtc_sample_buffer_init(&b, 1);
     TEST_ASSERT_EQUAL_UINT64(
-        1, dws_mtc_sample_buffer_add(&b, DetwsMtcCategory::DWS_MTC_SAMPLE, "Position", "xpos", "T1", "1.0"));
+        1, dws_mtc_sample_buffer_add(&b, DWSMtcCategory::DWS_MTC_SAMPLE, "Position", "xpos", "T1", "1.0"));
     TEST_ASSERT_EQUAL_UINT64(
-        2, dws_mtc_sample_buffer_add(&b, DetwsMtcCategory::DWS_MTC_SAMPLE, "Position", "xpos", "T2", "2.0"));
+        2, dws_mtc_sample_buffer_add(&b, DWSMtcCategory::DWS_MTC_SAMPLE, "Position", "xpos", "T2", "2.0"));
     TEST_ASSERT_EQUAL_UINT64(
-        3, dws_mtc_sample_buffer_add(&b, DetwsMtcCategory::DWS_MTC_EVENT, "Execution", "exec", "T3", "ACTIVE"));
+        3, dws_mtc_sample_buffer_add(&b, DWSMtcCategory::DWS_MTC_EVENT, "Execution", "exec", "T3", "ACTIVE"));
 
     char buf[1024];
     size_t n = dws_mtc_sample_query(&b, buf, sizeof(buf), 1500, "cnc1", 1, 10);
@@ -216,7 +216,7 @@ void test_sample_buffer_and_query(void)
 
 void test_sample_buffer_eviction(void)
 {
-    DetwsMtcSampleBuffer b;
+    DWSMtcSampleBuffer b;
     dws_mtc_sample_buffer_init(&b, 1);
     // Overfill the ring: DWS_MTC_SAMPLE_BUFFER + 8 observations, so the oldest 8 are evicted.
     const uint32_t total = DWS_MTC_SAMPLE_BUFFER + 8;
@@ -237,7 +237,7 @@ void test_sample_buffer_eviction(void)
         while (q > 0)
             ts[p++] = d[--q];
         ts[p] = '\0';
-        dws_mtc_sample_buffer_add(&b, DetwsMtcCategory::DWS_MTC_SAMPLE, "Position", "xpos", ts, "9.9");
+        dws_mtc_sample_buffer_add(&b, DWSMtcCategory::DWS_MTC_SAMPLE, "Position", "xpos", ts, "9.9");
     }
     // Retained window is [total-BUFFER+1, total]; first advanced by 8.
     char buf[8192];
@@ -256,9 +256,9 @@ void test_sample_buffer_eviction(void)
 
 void test_sample_query_future_and_empty(void)
 {
-    DetwsMtcSampleBuffer b;
+    DWSMtcSampleBuffer b;
     dws_mtc_sample_buffer_init(&b, 5);
-    dws_mtc_sample_buffer_add(&b, DetwsMtcCategory::DWS_MTC_SAMPLE, "Position", "xpos", "T", "1.0"); // seq 5
+    dws_mtc_sample_buffer_add(&b, DWSMtcCategory::DWS_MTC_SAMPLE, "Position", "xpos", "T", "1.0"); // seq 5
 
     char buf[512];
     // A `from` past the newest yields no observations and nextSequence = the buffer's next (6).
@@ -268,7 +268,7 @@ void test_sample_query_future_and_empty(void)
     TEST_ASSERT_FALSE(contains(buf, "<Position"));
 
     // An empty buffer answers with lastSequence = first-1 and no observations.
-    DetwsMtcSampleBuffer e;
+    DWSMtcSampleBuffer e;
     dws_mtc_sample_buffer_init(&e, 1);
     n = dws_mtc_sample_query(&e, buf, sizeof(buf), 1, "d", 1, 10);
     TEST_ASSERT_TRUE(n > 0);

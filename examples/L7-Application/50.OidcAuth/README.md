@@ -14,7 +14,7 @@ valid token, `401` otherwise.
 **Verify the token, then trust its claims:**
 
 ```cpp
-DetwsOidcClaims claims;
+DWSOidcClaims claims;
 int rc = dws_oidc_verify(token, strlen(token), JWKS, ISSUER, AUDIENCE, now, &claims);
 if (rc != DWS_OIDC_OK) { /* 401 */ }
 // claims.sub / claims.email are now trusted
@@ -100,7 +100,7 @@ void setup()
         const char *token = hdr + 7;
         uint32_t now = 1700000100; // production: read from NTP
 
-        DetwsOidcClaims claims;
+        DWSOidcClaims claims;
         int rc = dws_oidc_verify(token, strlen(token), JWKS, ISSUER, AUDIENCE, now, &claims);
         if (rc != DWS_OIDC_OK)
         {

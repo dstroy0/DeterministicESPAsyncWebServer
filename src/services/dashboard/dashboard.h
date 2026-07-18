@@ -5,7 +5,7 @@
  * @file dashboard.h
  * @brief Real-time SVG telemetry dashboard (DWS_ENABLE_DASHBOARD).
  *
- * Widgets are declared once in a fixed compile-time DetwsWidget table - no heap,
+ * Widgets are declared once in a fixed compile-time DWSWidget table - no heap,
  * fixed at link. dws_dashboard_begin() serves three things at @p path:
  *   - GET path           the self-contained SVG dashboard page (from web_assets);
  *   - GET path/layout    the widget table serialized as a JSON array;
@@ -33,7 +33,7 @@
 class DWS;
 
 /** @brief Widget rendering / interaction style. */
-enum class DetwsWidgetType : uint8_t
+enum class DWSWidgetType : uint8_t
 {
     // Display widgets - updated from the SSE value stream.
     DWS_WIDGET_VALUE = 0, ///< plain numeric readout
@@ -48,17 +48,17 @@ enum class DetwsWidgetType : uint8_t
 };
 
 /** @brief Control callback: invoked when a control widget sends a value over WebSocket. */
-typedef void (*DetwsControlCb)(const char *key, float value);
+typedef void (*DWSControlCb)(const char *key, float value);
 
 /** @brief One dashboard widget, declared in a fixed compile-time table. */
-struct DetwsWidget
+struct DWSWidget
 {
-    DetwsWidgetType type; ///< rendering style.
-    const char *label;    ///< display label.
-    const char *key;      ///< telemetry source key (matches dws_dashboard_set()).
-    float min;            ///< scale minimum (gauge / bar / sparkline).
-    float max;            ///< scale maximum.
-    const char *unit;     ///< unit suffix shown by the widget (may be "").
+    DWSWidgetType type; ///< rendering style.
+    const char *label;  ///< display label.
+    const char *key;    ///< telemetry source key (matches dws_dashboard_set()).
+    float min;          ///< scale minimum (gauge / bar / sparkline).
+    float max;          ///< scale maximum.
+    const char *unit;   ///< unit suffix shown by the widget (may be "").
 };
 
 // ---------------------------------------------------------------------------
@@ -66,7 +66,7 @@ struct DetwsWidget
 // ---------------------------------------------------------------------------
 
 /** @brief Bind the widget table and reset every value to 0. */
-void dws_dashboard_configure(const DetwsWidget *widgets, uint8_t count);
+void dws_dashboard_configure(const DWSWidget *widgets, uint8_t count);
 
 /** @brief Set a widget's current value by key. @return false if the key is unknown. */
 bool dws_dashboard_set(const char *key, float value);
@@ -84,7 +84,7 @@ int dws_dashboard_layout_json(char *out, size_t cap);
 int dws_dashboard_values_json(char *out, size_t cap);
 
 /** @brief Register the callback invoked when a control widget sends a value. */
-void dws_dashboard_on_control(DetwsControlCb cb);
+void dws_dashboard_on_control(DWSControlCb cb);
 
 /**
  * @brief Parse a control message `{"k":"<key>","v":<number>}` from the page.
@@ -107,7 +107,7 @@ bool dws_dashboard_dispatch_control(const char *msg);
  *
  * Calls dws_dashboard_configure(@p widgets, @p count). Default path "/dashboard".
  */
-void dws_dashboard_begin(DWS &server, const char *path, const DetwsWidget *widgets, uint8_t count);
+void dws_dashboard_begin(DWS &server, const char *path, const DWSWidget *widgets, uint8_t count);
 
 /** @brief Broadcast the current values to all SSE subscribers (after dws_dashboard_set()). */
 void dws_dashboard_publish();

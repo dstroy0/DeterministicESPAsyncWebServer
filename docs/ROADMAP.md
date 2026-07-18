@@ -104,7 +104,7 @@ preempts immediately to process it, with the priorities exposed to the user.
 - [x] \*Deeper clock-awareness (M) _(shipped)_ - `services/dws_clock` gains a
       microsecond time base beside the 1000 Hz `dws_millis()`: `dws_micros()`
       (pluggable like the ms clock, ISR-safe, for hardware-event timestamps) plus a
-      `DetwsLatencyStat` budget helper (`dws_lat_begin` / `_end` / `_avg_us`:
+      `DWSLatencyStat` budget helper (`dws_lat_begin` / `_end` / `_avg_us`:
       count, min/max/mean, over-budget count). Header-only, zero heap. HW-verified
       measuring the preempting queue's ISR-to-handler latency against a budget
       (avg 12 us, 0 over a 50 us budget). Host-tested in `native_clock`.
@@ -299,7 +299,7 @@ preempting queue, so sensing shares the real-time ingest path.
 
 - [x] WebSocket permessage-deflate, inbound and outbound _(shipped)_ - bounded fixed-Huffman DEFLATE compresses server-to-client data frames (RSV1), with an uncompressed fallback when the result would not shrink.
 - [x] REST substrate, AJAX _(shipped)_.
-- [x] Real-time **dashboard** _(shipped, phase 1)_ - `DWS_ENABLE_DASHBOARD`: a compile-time `DetwsWidget` table served as hand-rolled SVG (gauge / value / bar / sparkline, no external JS) via the `web_assets` pipeline, live over SSE; `dws_dashboard_set` / `_publish` (example 62.Dashboard). **Flagship.**
+- [x] Real-time **dashboard** _(shipped, phase 1)_ - `DWS_ENABLE_DASHBOARD`: a compile-time `DWSWidget` table served as hand-rolled SVG (gauge / value / bar / sparkline, no external JS) via the `web_assets` pipeline, live over SSE; `dws_dashboard_set` / `_publish` (example 62.Dashboard). **Flagship.**
 - [x] Dashboard phase 2 _(shipped)_ - WebSocket controls (button / toggle / slider widgets send values to a `dws_dashboard_on_control` callback) and a Canvas chart widget for dense series.
 - [x] **Telemetry math** cluster _(shipped)_ - `services/telemetry`: moving-window stats (mean / variance / stddev / min / max), a rate-of-change tracker, and a trapezoidal run-time totalizer (example 61.Telemetry).
 - [x] HTTP caching: `Cache-Control` beside ETag _(shipped)_ - `set_cache_control()` injects it into serve_file / serve_static responses.
@@ -1310,7 +1310,7 @@ the LXI transports (VXI-11 / HiSLIP) and a GPIB gateway extend reach to older an
 ### Databases & time-series
 
 - [x] **InfluxDB Line Protocol** (S, time-series ingest) _(shipped)_ - the
-      `DetwsLine` builder (`services/udp_telemetry`, `DWS_ENABLE_UDP_TELEMETRY`) emits
+      `DWSLine` builder (`services/udp_telemetry`, `DWS_ENABLE_UDP_TELEMETRY`) emits
       the full `measurement,tag=v field=v timestamp` form: `dws_line_add_tag()` (escaped
       tag set, must precede fields) + `dws_line_set_timestamp()` on top of the existing
       int/uint/float fields. Host-tested (`test_udp_telemetry`: tags+timestamp ordering,

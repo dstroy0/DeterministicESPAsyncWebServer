@@ -45,7 +45,7 @@ void setup()
     Serial.begin(115200);
     delay(300);
 
-    DetwsPqConfig cfg = {};
+    DWSPqConfig cfg = {};
     cfg.handler = on_reading;
     cfg.priority = 6; // above loop(): a post preempts straight into on_reading
     cfg.core = 1;

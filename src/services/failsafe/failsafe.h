@@ -27,7 +27,7 @@
 #if DWS_ENABLE_FAILSAFE
 
 /** @brief One monitored lifeline. */
-struct DetwsLifeline
+struct DWSLifeline
 {
     const char *name;      ///< label (for the breach callback + JSON); not copied.
     uint32_t deadline_ms;  ///< max interval between feeds before it is considered stuck.
@@ -37,7 +37,7 @@ struct DetwsLifeline
 };
 
 /** @brief Breach callback: invoked once when @p id (named @p name) misses its deadline. */
-typedef void (*DetwsFailsafeCb)(int id, const char *name, void *arg);
+typedef void (*DWSFailsafeCb)(int id, const char *name, void *arg);
 
 // ---------------------------------------------------------------------------
 // Host-testable core
@@ -77,7 +77,7 @@ bool dws_failsafe_feed(int id);
 bool dws_failsafe_feed_at(int id, uint32_t now);
 
 /** @brief Install the breach callback (fired once per stuck episode). */
-void dws_failsafe_on_breach(DetwsFailsafeCb cb, void *arg);
+void dws_failsafe_on_breach(DWSFailsafeCb cb, void *arg);
 
 /**
  * @brief Evaluate every armed lifeline; fire the callback for each newly-overdue one.

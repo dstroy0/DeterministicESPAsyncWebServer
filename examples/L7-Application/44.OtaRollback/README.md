@@ -21,7 +21,7 @@ static bool self_test() { return wifi_ready() && ESP.getFreeHeap() > 20000; }
 void loop() {
     static bool done = false;
     if (!done) {
-        DetwsOtaAction a = dws_ota_rollback_tick(self_test());
+        DWSOtaAction a = dws_ota_rollback_tick(self_test());
         if (a == DWS_OTA_COMMIT) { Serial.println("[ota] image committed"); done = true; }
     }
     server.handle();
@@ -99,7 +99,7 @@ void loop()
     static bool done = false;
     if (!done)
     {
-        DetwsOtaAction a = dws_ota_rollback_tick(self_test());
+        DWSOtaAction a = dws_ota_rollback_tick(self_test());
         if (a == DWS_OTA_COMMIT)
         {
             Serial.println("[ota] image committed");

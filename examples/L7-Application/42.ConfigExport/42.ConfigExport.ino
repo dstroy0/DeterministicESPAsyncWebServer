@@ -30,10 +30,10 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 DWS server;
 
 // The persisted fields to back up / restore.
-static const DetwsCfgField SCHEMA[] = {
-    {"hostname", DetwsCfgType::DWS_CFG_STR},
-    {"http_port", DetwsCfgType::DWS_CFG_U32},
-    {"location", DetwsCfgType::DWS_CFG_STR},
+static const DWSCfgField SCHEMA[] = {
+    {"hostname", DWSCfgType::DWS_CFG_STR},
+    {"http_port", DWSCfgType::DWS_CFG_U32},
+    {"location", DWSCfgType::DWS_CFG_STR},
 };
 static const size_t SCHEMA_N = sizeof(SCHEMA) / sizeof(SCHEMA[0]);
 

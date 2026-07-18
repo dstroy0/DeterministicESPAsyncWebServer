@@ -32,7 +32,7 @@ receives the full record including its chain hash, so the external copy keeps th
 same tamper-evident chain even after the in-RAM ring rolls over:
 
 ```cpp
-static void audit_sink(const DetwsAuditEntry *e) {
+static void audit_sink(const DWSAuditEntry *e) {
     char line[256];
     if (dws_audit_format(e, line, sizeof(line)) > 0) {
         Serial.print("[AUDIT] "); Serial.println(line);
@@ -82,7 +82,7 @@ DWS server;
 
 // Durable forwarding: runs once per record at append time. Point it wherever you
 // keep authoritative logs.
-static void audit_sink(const DetwsAuditEntry *e)
+static void audit_sink(const DWSAuditEntry *e)
 {
     char line[256];
     if (dws_audit_format(e, line, sizeof(line)) > 0)

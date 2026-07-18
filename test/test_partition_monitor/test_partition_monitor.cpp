@@ -37,7 +37,7 @@ void test_kind_data()
 
 void test_json()
 {
-    DetwsPartitionInfo p[2] = {
+    DWSPartitionInfo p[2] = {
         {"nvs", 1, 0x02, 0x9000, 0x6000, false},
         {"app0", 0, 0x10, 0x10000, 0x140000, true},
     };
@@ -54,14 +54,14 @@ void test_json()
 
 void test_json_small_buffer_fails_closed()
 {
-    DetwsPartitionInfo p[1] = {{"nvs", 1, 0x02, 0x9000, 0x6000, false}};
+    DWSPartitionInfo p[1] = {{"nvs", 1, 0x02, 0x9000, 0x6000, false}};
     char buf[8];
     TEST_ASSERT_EQUAL_INT(0, dws_partition_json(p, 1, buf, sizeof(buf)));
 }
 
 void test_collect_host_stub()
 {
-    DetwsPartitionInfo p[4];
+    DWSPartitionInfo p[4];
     TEST_ASSERT_EQUAL_UINT8(0, dws_partition_collect(p, 4));
 }
 

@@ -65,16 +65,16 @@ enum class dws_pq_lane : uint8_t
  * @param item pointer to DWS_PQ_ITEM_SIZE bytes (the posted item).
  * @param ctx  the opaque pointer passed to dws_pq_start[_lane]().
  */
-typedef void (*DetwsPqHandler)(const void *item, void *ctx);
+typedef void (*DWSPqHandler)(const void *item, void *ctx);
 
 /** @brief Processing-task configuration set by the caller at start. */
-struct DetwsPqConfig
+struct DWSPqConfig
 {
-    DetwsPqHandler handler; ///< Called once per dequeued item (required).
-    void *ctx;              ///< Opaque, forwarded to @ref handler.
-    uint8_t priority;       ///< Task priority; 0 = use the lane's default (internal > user).
-    uint8_t core;           ///< Core to pin the task to (ESP32; ignored on host).
-    const char *name;       ///< Task name (debug); may be nullptr.
+    DWSPqHandler handler; ///< Called once per dequeued item (required).
+    void *ctx;            ///< Opaque, forwarded to @ref handler.
+    uint8_t priority;     ///< Task priority; 0 = use the lane's default (internal > user).
+    uint8_t core;         ///< Core to pin the task to (ESP32; ignored on host).
+    const char *name;     ///< Task name (debug); may be nullptr.
 };
 
 // --- Lane API -------------------------------------------------------------------------
@@ -87,7 +87,7 @@ struct DetwsPqConfig
  * lane's default priority is used (internal lanes default above the user lane).
  * @return true if started; false on a bad lane / null handler / already running.
  */
-bool dws_pq_start_lane(dws_pq_lane lane, const DetwsPqConfig *cfg);
+bool dws_pq_start_lane(dws_pq_lane lane, const DWSPqConfig *cfg);
 
 /** @brief Post to the back of a lane from a task context (copies DWS_PQ_ITEM_SIZE
  *         bytes, blocks up to @p timeout_ticks, then fails closed). */
@@ -119,7 +119,7 @@ uint8_t dws_pq_lane_priority(dws_pq_lane lane);
 // --- User-lane API (unchanged; drives dws_pq_lane::DWS_PQ_LANE_USER) -----------------------------
 
 /** @brief Start the USER lane. @see dws_pq_start_lane. */
-inline bool dws_pq_start(const DetwsPqConfig *cfg)
+inline bool dws_pq_start(const DWSPqConfig *cfg)
 {
     return dws_pq_start_lane(dws_pq_lane::DWS_PQ_LANE_USER, cfg);
 }

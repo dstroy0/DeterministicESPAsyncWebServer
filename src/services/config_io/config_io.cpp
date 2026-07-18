@@ -23,8 +23,8 @@ namespace
 constexpr size_t VAL_MAX = 128; // export/import value field cap
 constexpr size_t KEY_MAX = 16;  // NVS key cap (15 + null)
 
-// Look up a key in the schema; write its DetwsCfgType to *out and return true, or return false if absent.
-bool field_type(const DetwsCfgField *fields, size_t n, const char *key, DetwsCfgType *out)
+// Look up a key in the schema; write its DWSCfgType to *out and return true, or return false if absent.
+bool field_type(const DWSCfgField *fields, size_t n, const char *key, DWSCfgType *out)
 {
     for (size_t i = 0; i < n; i++)
         if (fields[i].key && strcmp(fields[i].key, key) == 0)
@@ -53,7 +53,7 @@ bool append_kv(char *out, size_t cap, size_t *pos, const char *key, const char *
 }
 } // namespace
 
-int dws_config_export(const char *ns, const DetwsCfgField *fields, size_t n, char *out, size_t cap)
+int dws_config_export(const char *ns, const DWSCfgField *fields, size_t n, char *out, size_t cap)
 {
     if (!out || cap == 0)
         return 0;
@@ -65,7 +65,7 @@ int dws_config_export(const char *ns, const DetwsCfgField *fields, size_t n, cha
     for (size_t i = 0; i < n; i++)
     {
         char val[VAL_MAX];
-        if (fields[i].type == DetwsCfgType::DWS_CFG_U32)
+        if (fields[i].type == DWSCfgType::DWS_CFG_U32)
             snprintf(val, sizeof(val), "%u", (unsigned)dws_config_get_u32(fields[i].key, 0));
         else
             dws_config_get_str(fields[i].key, val, sizeof(val), "");
@@ -81,19 +81,19 @@ int dws_config_export(const char *ns, const DetwsCfgField *fields, size_t n, cha
 
 // Set one key=val pair against the field table; returns true iff a matching field was found and its
 // setter accepted the value. Extracted so the import loop stays flat (one dispatch, no nested type switch).
-static bool config_apply_field(const DetwsCfgField *fields, size_t n, const char *key, const char *val)
+static bool config_apply_field(const DWSCfgField *fields, size_t n, const char *key, const char *val)
 {
-    DetwsCfgType t;
+    DWSCfgType t;
     if (!field_type(fields, n, key, &t))
         return false;
-    if (t == DetwsCfgType::DWS_CFG_U32)
+    if (t == DWSCfgType::DWS_CFG_U32)
         return dws_config_set_u32(key, (uint32_t)dws_strtoul(val, nullptr));
-    if (t == DetwsCfgType::DWS_CFG_STR)
+    if (t == DWSCfgType::DWS_CFG_STR)
         return dws_config_set_str(key, val);
     return false;
 }
 
-int dws_config_import(const char *ns, const DetwsCfgField *fields, size_t n, const char *text, size_t len)
+int dws_config_import(const char *ns, const DWSCfgField *fields, size_t n, const char *text, size_t len)
 {
     if (!text || !fields || !dws_config_begin(ns))
         return 0;

@@ -14,7 +14,7 @@ _obtains_ the tokens.
 
 ```cpp
 const char *code = http_get_query(req, "code");
-DetwsOAuth2Tokens t;
+DWSOAuth2Tokens t;
 int st = dws_oauth2_exchange_code(TOKEN_URL, code, REDIRECT_URI, CLIENT_ID, CLIENT_SECRET, nullptr, &t);
 if (st != 200) { /* 502 */ }
 // t.access_token / t.id_token / t.refresh_token are now populated
@@ -88,7 +88,7 @@ void setup()
             server.send(id, 400, "application/json", "{\"error\":\"missing code\"}");
             return;
         }
-        DetwsOAuth2Tokens t;
+        DWSOAuth2Tokens t;
         int st = dws_oauth2_exchange_code(TOKEN_URL, code, REDIRECT_URI, CLIENT_ID, CLIENT_SECRET, nullptr, &t);
         if (st != 200)
         {

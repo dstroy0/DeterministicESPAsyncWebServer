@@ -61,8 +61,8 @@ void loop()
     static bool done = false;
     if (!done)
     {
-        DetwsOtaAction a = dws_ota_rollback_tick(self_test());
-        if (a == DetwsOtaAction::DWS_OTA_COMMIT)
+        DWSOtaAction a = dws_ota_rollback_tick(self_test());
+        if (a == DWSOtaAction::DWS_OTA_COMMIT)
         {
             Serial.println("[ota] image committed");
             done = true;

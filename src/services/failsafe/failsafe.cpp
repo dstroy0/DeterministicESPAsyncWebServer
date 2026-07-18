@@ -18,8 +18,8 @@ namespace
 // grouped for auditability, unreachable from any other translation unit.
 struct FailsafeCtx
 {
-    DetwsLifeline lines[DWS_FAILSAFE_MAX_LIFELINES];
-    DetwsFailsafeCb cb = nullptr;
+    DWSLifeline lines[DWS_FAILSAFE_MAX_LIFELINES];
+    DWSFailsafeCb cb = nullptr;
     void *cb_arg = nullptr;
 };
 FailsafeCtx s_fs;
@@ -43,7 +43,7 @@ size_t u32_dec(uint32_t v, char *out)
 void dws_failsafe_reset(void)
 {
     for (int i = 0; i < DWS_FAILSAFE_MAX_LIFELINES; i++)
-        s_fs.lines[i] = DetwsLifeline{};
+        s_fs.lines[i] = DWSLifeline{};
     s_fs.cb = nullptr;
     s_fs.cb_arg = nullptr;
 }
@@ -84,7 +84,7 @@ bool dws_failsafe_feed(int id)
     return dws_failsafe_feed_at(id, dws_millis());
 }
 
-void dws_failsafe_on_breach(DetwsFailsafeCb cb, void *arg)
+void dws_failsafe_on_breach(DWSFailsafeCb cb, void *arg)
 {
     s_fs.cb = cb;
     s_fs.cb_arg = arg;
@@ -95,7 +95,7 @@ uint32_t dws_failsafe_check_at(uint32_t now)
     uint32_t mask = 0;
     for (int i = 0; i < DWS_FAILSAFE_MAX_LIFELINES; i++)
     {
-        DetwsLifeline &l = s_fs.lines[i];
+        DWSLifeline &l = s_fs.lines[i];
         if (!l.armed)
             continue;
         if (!dws_lifeline_overdue(now, l.last_feed_ms, l.deadline_ms))
@@ -140,7 +140,7 @@ int dws_failsafe_json_at(uint32_t now, char *out, size_t cap)
     bool first = true;
     for (int i = 0; i < DWS_FAILSAFE_MAX_LIFELINES; i++)
     {
-        DetwsLifeline &l = s_fs.lines[i];
+        DWSLifeline &l = s_fs.lines[i];
         if (!l.armed)
             continue;
         if (!first)

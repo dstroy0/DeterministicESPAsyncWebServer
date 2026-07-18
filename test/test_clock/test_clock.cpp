@@ -82,7 +82,7 @@ void test_micros_custom_divides_to_1mhz()
 void test_latency_stat_records_and_budgets()
 {
     dws_set_micros_clock(fake_us, 1000000u); // 1 MHz -> microseconds == counter
-    DetwsLatencyStat s;
+    DWSLatencyStat s;
     dws_lat_reset(&s);
 
     g_fake_us = 1000;
@@ -110,7 +110,7 @@ void test_latency_stat_records_and_budgets()
 void test_latency_budget_zero_disables()
 {
     dws_set_micros_clock(fake_us, 1000000u);
-    DetwsLatencyStat s;
+    DWSLatencyStat s;
     dws_lat_reset(&s);
     g_fake_us = 0;
     uint32_t t = dws_lat_begin();

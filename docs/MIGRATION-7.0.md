@@ -27,7 +27,7 @@ guards, the standard `intN_t`/`uintN_t` types, and a handful of generic-internal
     ```
 2. **The class + API** — the two substitutions that cover almost everything:
     ```
-    sed -i -E 's/\bDetWebServer\b/DWS/g; s/\bdet_/dws_/g; s/\bdetws_/dws_/g; s/\bDet([A-Z])/DWS\1/g' your_sketch.ino
+    sed -i -E 's/\bDetWebServer\b/DWS/g; s/\bdet_/dws_/g; s/\bdetws_/dws_/g; s/\bDetws/DWS/g; s/\bDet([A-Z])/DWS\1/g' your_sketch.ino
     ```
 3. Rebuild. Any remaining unresolved name is a bare-prefixed peripheral call — prefix it with `dws_`
    (e.g. `modbus_…` → `dws_modbus_…`). The configurator (`docs/configurator.html`) and the README feature

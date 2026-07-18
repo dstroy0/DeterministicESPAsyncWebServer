@@ -21,12 +21,12 @@ work, and neither starves networking.
 
 ```cpp
 // internal lane (priority 0 -> the lane default, above the user lane):
-DetwsPqConfig dma = {}; dma.handler = on_critical; dma.core = 1;
+DWSPqConfig dma = {}; dma.handler = on_critical; dma.core = 1;
 dws_pq_start_lane(DWS_PQ_LANE_DMA, &dma);
 dws_pq_post_lane(DWS_PQ_LANE_DMA, &item, 0);
 
 // user lane - the no-arg API is unchanged (it drives DWS_PQ_LANE_USER):
-DetwsPqConfig user = {}; user.handler = on_background; user.priority = 5;
+DWSPqConfig user = {}; user.handler = on_background; user.priority = 5;
 dws_pq_start(&user);
 dws_pq_post(&item, 0);
 ```

@@ -13,7 +13,7 @@ typed NVS config store - deterministic and zero-heap.
 **Declare the schema once, with field types:**
 
 ```cpp
-static const DetwsCfgField SCHEMA[] = {
+static const DWSCfgField SCHEMA[] = {
     {"hostname",  DWS_CFG_STR},
     {"http_port", DWS_CFG_U32},
     {"location",  DWS_CFG_STR},
@@ -69,7 +69,7 @@ static const char *PASSWORD = "YOUR_PASSWORD";
 DWS server;
 
 // The persisted fields to back up / restore (shared by export and import).
-static const DetwsCfgField SCHEMA[] = {
+static const DWSCfgField SCHEMA[] = {
     {"hostname", DWS_CFG_STR},
     {"http_port", DWS_CFG_U32},
     {"location", DWS_CFG_STR},

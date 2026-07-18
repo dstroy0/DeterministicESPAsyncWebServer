@@ -42,7 +42,7 @@
 #define DWS_AUDIT_HASH_LEN 32
 
 /** @brief Standard audit event categories (extend with your own values). */
-enum class DetwsAuditCat : uint8_t
+enum class DWSAuditCat : uint8_t
 {
     DWS_AUDIT_SYSTEM = 0,    ///< Boot, shutdown, time change, generic.
     DWS_AUDIT_AUTH = 1,      ///< Authentication success (login).
@@ -53,17 +53,17 @@ enum class DetwsAuditCat : uint8_t
 };
 
 /** @brief One audit record. seq is monotonic and never reused across evictions. */
-struct DetwsAuditEntry
+struct DWSAuditEntry
 {
     uint32_t seq;                     ///< Monotonic sequence number (1-based).
     uint32_t ts;                      ///< Timestamp from dws_millis() at append.
-    DetwsAuditCat category;           ///< audit category (a ::DetwsAuditCat, or a user value cast in).
+    DWSAuditCat category;             ///< audit category (a ::DWSAuditCat, or a user value cast in).
     char msg[DWS_AUDIT_MSG_LEN];      ///< Null-terminated message (truncated).
     uint8_t hash[DWS_AUDIT_HASH_LEN]; ///< SHA-256(prev_hash || fields).
 };
 
 /** @brief Sink invoked once per record, at append time, for durable forwarding. */
-typedef void (*dws_audit_sink_fn)(const DetwsAuditEntry *entry);
+typedef void (*dws_audit_sink_fn)(const DWSAuditEntry *entry);
 
 /** @brief Clear the ring, reset the sequence counter and the chain anchor to genesis. */
 void dws_audit_reset(void);
@@ -79,17 +79,17 @@ void dws_audit_set_sink(dws_audit_sink_fn sink);
 /**
  * @brief Append a record and return its sequence number.
  *
- * @param category  ::DetwsAuditCat or a user-defined value.
+ * @param category  ::DWSAuditCat or a user-defined value.
  * @param msg       Null-terminated message (truncated to DWS_AUDIT_MSG_LEN-1).
  * @return the assigned monotonic sequence number.
  */
-uint32_t dws_audit_append(DetwsAuditCat category, const char *msg);
+uint32_t dws_audit_append(DWSAuditCat category, const char *msg);
 
 /** @brief Number of records currently retained in the ring (0 .. DWS_AUDIT_LOG_ENTRIES). */
 uint16_t dws_audit_count(void);
 
 /** @brief Record @p i (0 = oldest retained .. count-1 = newest), or nullptr if out of range. */
-const DetwsAuditEntry *dws_audit_at(uint16_t i);
+const DWSAuditEntry *dws_audit_at(uint16_t i);
 
 /**
  * @brief Recompute the chain over the retained window and report integrity.
@@ -100,14 +100,14 @@ const DetwsAuditEntry *dws_audit_at(uint16_t i);
  */
 bool dws_audit_verify(uint32_t *first_broken_seq);
 
-/** @brief Human-readable name for a standard ::DetwsAuditCat ("system" for unknown). */
-const char *dws_audit_cat_name(DetwsAuditCat category);
+/** @brief Human-readable name for a standard ::DWSAuditCat ("system" for unknown). */
+const char *dws_audit_cat_name(DWSAuditCat category);
 
 /**
  * @brief Render one record as a JSON object (hash as full 64-char hex).
  * @return characters written (excluding NUL), or 0 if @p cap is too small.
  */
-int dws_audit_format(const DetwsAuditEntry *entry, char *out, size_t cap);
+int dws_audit_format(const DWSAuditEntry *entry, char *out, size_t cap);
 
 /**
  * @brief Dump the retained window as a JSON document for an endpoint.
