@@ -6,16 +6,19 @@ All notable changes to DeterministicESPAsyncWebServer are documented here.
 
 ### CI / Build
 
+- update CHANGELOG.md [skip ci] ([`7d9c29e`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/7d9c29e2c9152c910f2a47e3187d3a1d0f2de323))
 - update test report + coverage [skip ci] ([`fb6af56`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fb6af56050ea3a8da3660f7f9d612782dfb20308))
 - update CHANGELOG.md [skip ci] ([`cc0334b`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/cc0334bdf891179c27f809f363d9b2e877efca3f))
 
 ### Documentation
 
+- regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`fc6d1d4`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/fc6d1d49758eb676ce6d05fb52655bdb1e9182d7))
 - update ESP32 build footprints [skip ci] ([`35b3bc3`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/35b3bc3255f44eebdfc4e6236f0edd420695b7fc))
 - regenerate feature tables + configurator + build_opt.h + example index [skip ci] ([`720c7aa`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/720c7aaa5ac978cd63b8dc8c1c6b95815d598188))
 
 ### Refactor
 
+- shared aes_block.h - dedup software AES schedule + block encrypt ([`3b07545`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/3b0754549d79f1e8a05778bd607a1f784b896ddd))
 - shared endian.h - dedup fixed-width int serializers ([`e5df3bc`](https://github.com/dstroy0/DeterministicESPAsyncWebServer/commit/e5df3bc8d06a604a9ec62417054743e8aac0820a))
 
 ## [6.30.0] - 2026-07-18
