@@ -159,57 +159,6 @@ void dyn_insert(HpackDynTable *t, const char *name, size_t nlen, const char *val
     t->used += entry_size;
 }
 
-// --- String coding ---------------------------------------------------------------------------
-
-// Read a length-prefixed string at block[*pos] into out; advances *pos.
-bool decode_string(const uint8_t *block, size_t len, size_t *pos, char *out, size_t cap, size_t *out_len)
-{
-    if (*pos >= len)
-        return false;
-    bool huff = (block[*pos] & 0x80) != 0;
-    size_t c = 0;
-    uint32_t slen = 0;
-    if (!hpack_decode_int(block + *pos, len - *pos, 7, &c, &slen))
-        return false;
-    *pos += c;
-    if (*pos + slen > len)
-        return false;
-    if (huff)
-    {
-        if (!hpack_huff_decode(block + *pos, slen, out, cap, out_len))
-            return false;
-    }
-    else
-    {
-        if (slen > cap)
-            return false;
-        memcpy(out, block + *pos, slen);
-        *out_len = slen;
-    }
-    *pos += slen;
-    return true;
-}
-
-size_t encode_string(uint8_t *out, size_t cap, const char *s, size_t n)
-{
-    size_t hl = hpack_huff_len(s, n);
-    if (hl < n)
-    {
-        size_t hdr = hpack_encode_int(out, cap, 7, 0x80, (uint32_t)hl);
-        if (!hdr)
-            return 0;
-        size_t body = hpack_huff_encode(out + hdr, cap - hdr, s, n);
-        if (body != hl)
-            return 0;
-        return hdr + body;
-    }
-    size_t hdr = hpack_encode_int(out, cap, 7, 0x00, (uint32_t)n);
-    if (!hdr || hdr + n > cap)
-        return 0;
-    memcpy(out + hdr, s, n);
-    return hdr + n;
-}
-
 // Copy an indexed header's name (idx>=1) into out; false if idx invalid / too big.
 bool resolve_name(const HpackDynTable *t, uint32_t idx, char *out, size_t cap, size_t *out_len)
 {
@@ -271,7 +220,7 @@ bool decode_literal(HpackDynTable *t, const uint8_t *block, size_t len, size_t *
     size_t name_len = 0;
     if (name_idx == 0)
     {
-        if (!decode_string(block, len, pos, scratch, cap, &name_len))
+        if (!hpack_decode_str(block, len, pos, scratch, cap, &name_len))
             return false;
     }
     else if (!resolve_name(t, name_idx, scratch, cap, &name_len))
@@ -279,7 +228,7 @@ bool decode_literal(HpackDynTable *t, const uint8_t *block, size_t len, size_t *
         return false;
     }
     size_t val_len = 0;
-    if (!decode_string(block, len, pos, scratch + name_len, cap - name_len, &val_len))
+    if (!hpack_decode_str(block, len, pos, scratch + name_len, cap - name_len, &val_len))
         return false;
     if (do_index)
         dyn_insert(t, scratch, name_len, scratch + name_len, val_len);
@@ -364,12 +313,12 @@ size_t hpack_encode_header(uint8_t *out, size_t cap, const char *name, size_t na
         return 0;
     if (name_idx == 0)
     {
-        size_t ns = encode_string(out + o, cap - o, name, name_len);
+        size_t ns = hpack_encode_str(out + o, cap - o, name, name_len);
         if (!ns)
             return 0;
         o += ns;
     }
-    size_t vs = encode_string(out + o, cap - o, value, value_len);
+    size_t vs = hpack_encode_str(out + o, cap - o, value, value_len);
     if (!vs)
         return 0;
     return o + vs;

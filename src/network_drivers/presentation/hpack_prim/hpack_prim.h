@@ -37,5 +37,15 @@ size_t hpack_huff_len(const char *s, size_t n);
 /** @brief Huffman-decode @p n bytes into @p out; sets @p out_len. @return false on a bad code. */
 bool hpack_huff_decode(const uint8_t *in, size_t n, char *out, size_t cap, size_t *out_len);
 
+/**
+ * @brief Decode a length-prefixed string literal (H bit at 0x80 + 7-bit length prefix, RFC 7541 sec 5.2,
+ *        reused verbatim by RFC 9204) at @p block[*pos] into @p out; advances @p *pos, sets @p out_len.
+ * @return false if truncated, over @p cap, or a bad Huffman code. Shared by HPACK and QPACK string literals.
+ */
+bool hpack_decode_str(const uint8_t *block, size_t len, size_t *pos, char *out, size_t cap, size_t *out_len);
+/** @brief Encode @p n bytes of @p s as a length-prefixed string literal (Huffman when it is shorter).
+ * @return bytes written, or 0 on overflow. */
+size_t hpack_encode_str(uint8_t *out, size_t cap, const char *s, size_t n);
+
 #endif // DETWS_ENABLE_HTTP2 || DETWS_ENABLE_HTTP3
 #endif // DETERMINISTICESPASYNCWEBSERVER_HPACK_PRIM_H

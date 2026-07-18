@@ -123,56 +123,6 @@ const char *const QPACK_STATIC[99][2] = {
     {"x-frame-options", "sameorigin"},
 };
 
-// Read a length-prefixed string (H bit at 0x80, 7-bit length prefix) at block[*pos] into out.
-bool decode_str7(const uint8_t *block, size_t len, size_t *pos, char *out, size_t cap, size_t *out_len)
-{
-    if (*pos >= len)
-        return false;
-    bool huff = (block[*pos] & 0x80) != 0;
-    size_t c = 0;
-    uint32_t slen = 0;
-    if (!hpack_decode_int(block + *pos, len - *pos, 7, &c, &slen))
-        return false;
-    *pos += c;
-    if (*pos + slen > len)
-        return false;
-    if (huff)
-    {
-        if (!hpack_huff_decode(block + *pos, slen, out, cap, out_len))
-            return false;
-    }
-    else
-    {
-        if (slen > cap)
-            return false;
-        memcpy(out, block + *pos, slen);
-        *out_len = slen;
-    }
-    *pos += slen;
-    return true;
-}
-
-// Encode a length-prefixed string (H bit at 0x80, 7-bit length prefix); Huffman when shorter.
-size_t encode_str7(uint8_t *out, size_t cap, const char *s, size_t n)
-{
-    size_t hl = hpack_huff_len(s, n);
-    if (hl < n)
-    {
-        size_t hdr = hpack_encode_int(out, cap, 7, 0x80, (uint32_t)hl);
-        if (!hdr)
-            return 0;
-        size_t body = hpack_huff_encode(out + hdr, cap - hdr, s, n);
-        if (body != hl)
-            return 0;
-        return hdr + body;
-    }
-    size_t hdr = hpack_encode_int(out, cap, 7, 0x00, (uint32_t)n);
-    if (!hdr || hdr + n > cap)
-        return 0;
-    memcpy(out + hdr, s, n);
-    return hdr + n;
-}
-
 } // namespace
 
 size_t qpack_encode_prefix(uint8_t *out, size_t cap)
@@ -210,7 +160,7 @@ size_t qpack_encode_header(uint8_t *out, size_t cap, const char *name, size_t na
         size_t o = hpack_encode_int(out, cap, 4, 0x50, (uint32_t)name_idx);
         if (!o)
             return 0;
-        size_t vs = encode_str7(out + o, cap - o, value, value_len);
+        size_t vs = hpack_encode_str(out + o, cap - o, value, value_len);
         if (!vs)
             return 0;
         return o + vs;
@@ -237,7 +187,7 @@ size_t qpack_encode_header(uint8_t *out, size_t cap, const char *name, size_t na
         memcpy(out + o, name, name_len);
         o += name_len;
     }
-    size_t vs = encode_str7(out + o, cap - o, value, value_len);
+    size_t vs = hpack_encode_str(out + o, cap - o, value, value_len);
     if (!vs)
         return 0;
     return o + vs;
@@ -290,7 +240,7 @@ bool qpack_decode(const uint8_t *block, size_t len, char *scratch, size_t scratc
                 return false;
             memcpy(scratch, nm, nlen);
             size_t vlen = 0;
-            if (!decode_str7(block, len, &pos, scratch + nlen, scratch_cap - nlen, &vlen))
+            if (!hpack_decode_str(block, len, &pos, scratch + nlen, scratch_cap - nlen, &vlen))
                 return false;
             if (!emit(ctx, scratch, nlen, scratch + nlen, vlen))
                 return false;
@@ -319,7 +269,7 @@ bool qpack_decode(const uint8_t *block, size_t len, char *scratch, size_t scratc
             }
             pos += nlen32;
             size_t vlen = 0;
-            if (!decode_str7(block, len, &pos, scratch + nlen, scratch_cap - nlen, &vlen))
+            if (!hpack_decode_str(block, len, &pos, scratch + nlen, scratch_cap - nlen, &vlen))
                 return false;
             if (!emit(ctx, scratch, nlen, scratch + nlen, vlen))
                 return false;

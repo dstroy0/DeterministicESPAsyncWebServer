@@ -13,6 +13,8 @@
 
 #if DETWS_ENABLE_HTTP2 || DETWS_ENABLE_HTTP3
 
+#include <string.h>
+
 namespace
 {
 
@@ -220,6 +222,56 @@ bool hpack_huff_decode(const uint8_t *in, size_t n, char *out, size_t cap, size_
     }
     *out_len = o;
     return true;
+}
+
+// --- string literal (RFC 7541 sec 5.2; RFC 9204 reuses it verbatim) -------------------------------
+
+bool hpack_decode_str(const uint8_t *block, size_t len, size_t *pos, char *out, size_t cap, size_t *out_len)
+{
+    if (*pos >= len)
+        return false;
+    bool huff = (block[*pos] & 0x80) != 0;
+    size_t c = 0;
+    uint32_t slen = 0;
+    if (!hpack_decode_int(block + *pos, len - *pos, 7, &c, &slen))
+        return false;
+    *pos += c;
+    if (*pos + slen > len)
+        return false;
+    if (huff)
+    {
+        if (!hpack_huff_decode(block + *pos, slen, out, cap, out_len))
+            return false;
+    }
+    else
+    {
+        if (slen > cap)
+            return false;
+        memcpy(out, block + *pos, slen);
+        *out_len = slen;
+    }
+    *pos += slen;
+    return true;
+}
+
+size_t hpack_encode_str(uint8_t *out, size_t cap, const char *s, size_t n)
+{
+    size_t hl = hpack_huff_len(s, n);
+    if (hl < n)
+    {
+        size_t hdr = hpack_encode_int(out, cap, 7, 0x80, (uint32_t)hl);
+        if (!hdr)
+            return 0;
+        size_t body = hpack_huff_encode(out + hdr, cap - hdr, s, n);
+        if (body != hl)
+            return 0;
+        return hdr + body;
+    }
+    size_t hdr = hpack_encode_int(out, cap, 7, 0x00, (uint32_t)n);
+    if (!hdr || hdr + n > cap)
+        return 0;
+    memcpy(out + hdr, s, n);
+    return hdr + n;
 }
 
 #endif // DETWS_ENABLE_HTTP2 || DETWS_ENABLE_HTTP3
